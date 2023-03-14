@@ -257,17 +257,20 @@ struct tofPidFull {
   }
   PROCESS_SWITCH(tofPidFull, processWSlice, "Process with track slices", true);
 
-  void processWoSlice(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
+  template <o2::track::PID::ID pid>
+  using ResponseImplementationIU = o2::pid::tof::ExpTimes<TrksIU::iterator, pid>;
+  void processWoSlice(TrksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
   {
-    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
-    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
-    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
-    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
-    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
-    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
-    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
-    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
+    constexpr auto responseEl = ResponseImplementationIU<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementationIU<PID::Muon>();
+    constexpr auto responsePi = ResponseImplementationIU<PID::Pion>();
+    constexpr auto responseKa = ResponseImplementationIU<PID::Kaon>();
+    constexpr auto responsePr = ResponseImplementationIU<PID::Proton>();
+    constexpr auto responseDe = ResponseImplementationIU<PID::Deuteron>();
+    constexpr auto responseTr = ResponseImplementationIU<PID::Triton>();
+    constexpr auto responseHe = ResponseImplementationIU<PID::Helium3>();
+    constexpr auto responseAl = ResponseImplementationIU<PID::Alpha>();
 
     auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
       if (flag.value != 1) {
@@ -353,17 +356,17 @@ struct tofPidFull {
   }
   PROCESS_SWITCH(tofPidFull, processWoSlice, "Process without track slices", false);
 
-  void processWoSliceDev(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  void processWoSliceDev(TrksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
   {
-    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
-    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
-    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
-    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
-    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
-    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
-    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
-    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
+    constexpr auto responseEl = ResponseImplementationIU<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementationIU<PID::Muon>();
+    constexpr auto responsePi = ResponseImplementationIU<PID::Pion>();
+    constexpr auto responseKa = ResponseImplementationIU<PID::Kaon>();
+    constexpr auto responsePr = ResponseImplementationIU<PID::Proton>();
+    constexpr auto responseDe = ResponseImplementationIU<PID::Deuteron>();
+    constexpr auto responseTr = ResponseImplementationIU<PID::Triton>();
+    constexpr auto responseHe = ResponseImplementationIU<PID::Helium3>();
+    constexpr auto responseAl = ResponseImplementationIU<PID::Alpha>();
 
 #define doReserveTable(Particle)               \
   if (pid##Particle.value == 1) {              \
@@ -386,10 +389,9 @@ struct tofPidFull {
     for (auto const& track : tracks) { // Loop on all tracks
       if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
 
-#define doFillTableEmpty(Particle) \
-  if (pid##Particle.value == 1) {  \
-    tablePID##Particle(-999.f,     \
-                       -999.f);    \
+#define doFillTableEmpty(Particle)      \
+  if (pid##Particle.value == 1) {       \
+    tablePID##Particle(-999.f, -999.f); \
   }
 
         doFillTableEmpty(El);
@@ -411,14 +413,27 @@ struct tofPidFull {
         lastCollisionId = track.collisionId();                                       // Cache last collision ID
         timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
         LOG(debug) << "Updating parametrization from path '" << parametrizationPath << "' and timestamp " << timestamp.value;
-        mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp));
+        if (useParamCollection) {
+          if (!ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath, timestamp.value)->retrieveParameters(mRespParamsV2, passName.value)) {
+            if (fatalOnPassNotAvailable) {
+              LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+            } else {
+              LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+            }
+          }
+        } else {
+          mRespParams.SetParameters(ccdb->getForTimeStamp<o2::pid::tof::TOFResoParams>(parametrizationPath, timestamp));
+        }
       }
 
 // Check and fill enabled tables
-#define doFillTable(Particle)                                                   \
-  if (pid##Particle.value == 1) {                                               \
-    tablePID##Particle(response##Particle.GetExpectedSigma(mRespParams, track), \
-                       response##Particle.GetSeparation(mRespParams, track));   \
+#define doFillTable(Particle)                                                                                                                \
+  if (pid##Particle.value == 1) {                                                                                                            \
+    if (useParamCollection) {                                                                                                                \
+      tablePID##Particle(response##Particle.GetExpectedSigma(mRespParamsV2, track), response##Particle.GetSeparation(mRespParamsV2, track)); \
+    } else {                                                                                                                                 \
+      tablePID##Particle(response##Particle.GetExpectedSigma(mRespParams, track), response##Particle.GetSeparation(mRespParams, track));     \
+    }                                                                                                                                        \
   }
 
       doFillTable(El);
