@@ -110,7 +110,8 @@ struct HfCandidateSelectorLcMl {
           LOGF(warning, "Model for Lc with negative input shape likely because converted with hummingbird, setting it to 1.");
           inputShapes[0][0] = 1;
         }
-        model.evalModel(std::vector<float>(model.getNumInputNodes(), 1.)); /// Init the model evaluations
+        std::vector<float> dummyInput(model.getNumInputNodes(), 1.);
+        model.evalModel(dummyInput); // Init the model evaluations
         dataTypeML = session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetElementType();
       } else {
         LOG(fatal) << "Error encountered while fetching/loading the ML model from CCDB! Maybe the ML model doesn't exist yet for this runnumber/timestamp?";
