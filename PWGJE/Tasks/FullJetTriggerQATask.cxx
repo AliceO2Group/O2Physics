@@ -497,6 +497,7 @@ struct JetTriggerQA {
       float mTriggerObservable;
       float mEta;
       float mPhi;
+      bool mEMCALcluster;
     };
     std::vector<ClusterData> analysedClusters;
 
@@ -507,14 +508,15 @@ struct JetTriggerQA {
       if (cluster.time() < f_minClusterTime || cluster.time() > f_maxClusterTime) {
         continue;
       }
+      bool emcalCluster = isClusterInEmcal(cluster);
       double clusterObservable = (f_GammaObservable == 0) ? cluster.energy() : cluster.energy() / std::cosh(cluster.eta());
-      analysedClusters.push_back({static_cast<float>(clusterObservable), cluster.eta(), cluster.phi()});
+      analysedClusters.push_back({static_cast<float>(clusterObservable), cluster.eta(), cluster.phi(), emcalCluster});
 
-      if (isClusterInEmcal(cluster) && clusterObservable > maxClusterObservableEMCAL) {
+      if (emcalCluster && (clusterObservable > maxClusterObservableEMCAL)) {
         maxClusterObservableEMCAL = clusterObservable;
         maxClusterEMCAL = cluster;
       }
-      if (!isClusterInEmcal(cluster) && clusterObservable > maxClusterObservableDCAL) {
+      if (!emcalCluster && (clusterObservable > maxClusterObservableDCAL)) {
         maxClusterObservableDCAL = clusterObservable;
         maxClusterDCAL = cluster;
       }
@@ -553,7 +555,9 @@ struct JetTriggerQA {
       // hClusterMaxPtPhi->Fill(maxClusterPt, maxCluster.phi());
       hClusterEMCALMaxPtEtaPhi->Fill(maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
       for (const auto& cluster : analysedClusters) {
-        hClusterEMCALMaxPtClusterEMCALPt->Fill(maxClusterObservableEMCAL, cluster.mTriggerObservable);
+        if (cluster.mEMCALcluster) {
+          hClusterEMCALMaxPtClusterEMCALPt->Fill(maxClusterObservableEMCAL, cluster.mTriggerObservable);
+        }
       }
       if (isEvtSelected) {
         hSelectedClusterMaxPtEta->Fill(maxClusterObservableEMCAL, maxClusterEMCAL.eta());
@@ -574,7 +578,9 @@ struct JetTriggerQA {
     if (maxClusterObservableDCAL > 0) {
       hClusterDCALMaxPtEtaPhi->Fill(maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
       for (const auto& cluster : analysedClusters) {
-        hClusterDCALMaxPtClusterDCALPt->Fill(maxClusterObservableDCAL, cluster.mTriggerObservable);
+        if (!cluster.mEMCALcluster) {
+          hClusterDCALMaxPtClusterDCALPt->Fill(maxClusterObservableDCAL, cluster.mTriggerObservable);
+        }
       }
       if (isEvtSelectedGammaDCAL) {
         hSelectedGammaDCALMaxPtEta->Fill(maxClusterObservableDCAL, maxClusterDCAL.eta());
