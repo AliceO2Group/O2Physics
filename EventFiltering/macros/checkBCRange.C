@@ -134,7 +134,6 @@ void checkBCRange(const char* filename, const char* rangeFileName)
     }
   }
 
-
   std::vector<bool> found(bcids.size(), false);
   for (uint32_t i{0}; i < bcids.size(); i++) {
     for (auto& frame : frames) {

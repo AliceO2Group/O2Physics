@@ -102,7 +102,7 @@ namespace decision
 
 DECLARE_SOA_COLUMN(BCId, bcIndex, uint64_t);                   //! Bunch crossing Id
 DECLARE_SOA_COLUMN(GlobalBCId, globalBC, uint64_t);            //! Global Bunch crossing Id
-DECLARE_SOA_COLUMN(EvSelBC, evSelBC, uint64_t);               //! Global Bunch crossing Id
+DECLARE_SOA_COLUMN(EvSelBC, evSelBC, uint64_t);                //! Global Bunch crossing Id
 DECLARE_SOA_COLUMN(CollisionTime, collisionTime, float);       //! Collision time
 DECLARE_SOA_COLUMN(CollisionTimeRes, collisionTimeRes, float); //! Collision time resolution
 DECLARE_SOA_COLUMN(CefpTriggered, cefpTriggered, uint64_t);    //! CEFP triggers before downscalings
