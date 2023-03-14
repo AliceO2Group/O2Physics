@@ -207,7 +207,7 @@ struct OnTheFlyTOFPID {
 
       // get mass to calculate velocity
       auto pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
-      if (pdgInfo != nullptr) {
+      if (pdgInfo == nullptr) {
         continue;
       }
       float expectedTimeInnerTOF = trackLengthInnerTOF / velocity(o2track.getP(), pdgInfo->Mass());
