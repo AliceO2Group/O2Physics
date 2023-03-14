@@ -1095,7 +1095,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/Kine/relativeResoPtMean"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
     if (track.eta() > 0) {
       histos.fill(HIST("Tracks/Kine/relativeResoPtEtaPlus"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
-    } else if (track.eta() < 0) {
+    } else {
       histos.fill(HIST("Tracks/Kine/relativeResoPtEtaMinus"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
     }
 
