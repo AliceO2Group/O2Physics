@@ -265,8 +265,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       for (int i = 0; i <= kTPCnsigmaNbins; ++i)
         tpcNsigmaBinLims[i] = -7.0 + 0.2 * i;
 
-      const int kPinEleNbins = 10;
-      double pinEleBinLims[kPinEleNbins + 1] = {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0, 4.0, 6.0};
+      const int kPinEleNbins = 15;
+      double pinEleBinLims[kPinEleNbins + 1] = {0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10.0, 15.0};
 
       const int kEtaNbins = 9;
       double etaBinLimsI[kEtaNbins + 1] = {-0.9, -0.7, -0.5, -0.3, -0.1, 0.1, 0.3, 0.5, 0.7, 0.9};
