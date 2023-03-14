@@ -58,7 +58,7 @@ class OnnxModel
 
     try {
       auto outputTensors = mSession->Run(mInputNames, input, mOutputNames);
-      LOG(info) << "Number of output tensors: " << outputTensors.size();
+      LOG(debug) << "Number of output tensors: " << outputTensors.size();
       if (outputTensors.size() != mOutputNames.size()) {
         LOG(fatal) << "Number of output tensors: " << outputTensors.size() << " does not agree with the model specified size: " << mOutputNames.size();
       }
