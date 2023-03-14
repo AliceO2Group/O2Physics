@@ -121,15 +121,7 @@ struct HfCandidateCreatorB0 {
 
     // loop over D candidates
     for (const auto& candD : candsD) {
-      if (!TESTBIT(candD.hfflag(), hf_cand_3prong::DecayType::DplusToPiKPi)) {
-        // FIXME: useless(?) this condition gives a flag=0 in DPlusToPiKPi selector
-        // and we filter flag>=1
-        continue;
-      }
-      if (candD.isSelDplusToPiKPi() >= selectionFlagD) {
-        // FIXME: useless(?) as candidates are already filtered
-        hMassDToPiKPi->Fill(invMassDplusToPiKPi(candD), candD.pt());
-      }
+      hMassDToPiKPi->Fill(invMassDplusToPiKPi(candD), candD.pt());
       hPtD->Fill(candD.pt());
       hCPAD->Fill(candD.cpa());
 
