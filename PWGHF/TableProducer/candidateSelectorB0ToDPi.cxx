@@ -122,7 +122,7 @@ struct HfCandidateSelectorB0ToDPi {
 
   // Apply PID selection; return true if candidate passes all selections
   template <typename T>
-  bool selectionPID(const T& pidTrackPi) 
+  bool selectionPID(const T& pidTrackPi)
   {
     if (pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
       return false;
@@ -152,7 +152,7 @@ struct HfCandidateSelectorB0ToDPi {
         // LOGF(info, "B0 candidate selection failed at hfflag check");
         continue;
       }
-      SETBIT(statusB0ToDPi, aod::SelectionStep::RecoSkims); // RecoSkims = 0 --> statusB0ToDPi = 1 
+      SETBIT(statusB0ToDPi, aod::SelectionStep::RecoSkims); // RecoSkims = 0 --> statusB0ToDPi = 1
 
       auto candD = hfCandB0.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
       auto trackPi = hfCandB0.prong1_as<TracksPIDWithSel>();
