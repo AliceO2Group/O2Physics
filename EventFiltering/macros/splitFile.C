@@ -28,35 +28,26 @@ void splitFile(const char* inputFileName = "bcSelection.root", const char* outpu
   // Open the output ROOT files
   TFile* outputFile1 = TFile::Open(outputFileName1, "RECREATE");
   if (!outputFile1) {
-    std::cerr << "Error: could not create output files " << outputFileName1 << " and " << outputFileName2 << std::endl;
+    std::cerr << "Error: could not create output files " << outputFileName1 << std::endl;
     return;
   }
 
-  // Loop over the TDirectories in the input file
-  TList* directoryList = inputFile->GetListOfKeys();
-  if (!directoryList) {
-    std::cerr << "Error: input file has no TDirectory keys" << std::endl;
-    return;
-  }
-  bool first = true;
   TDirectory* outputDir1 = nullptr;
   TList coll;
-  for (int iDir = 0; iDir < directoryList->GetEntries(); ++iDir) {
-    TKey* directoryKey = static_cast<TKey*>(directoryList->At(iDir));
+  for (auto key : *inputFile->GetListOfKeys()) {
 
-    TDirectoryFile* inputDir = dynamic_cast<TDirectoryFile*>(directoryKey->ReadObj());
+    TDirectoryFile* inputDir = dynamic_cast<TDirectoryFile*>(inputFile->Get(key->GetName()));
     if (!inputDir) {
       continue;
     }
-
-    if (first) {
+    std::cout << "Processing directory " << inputDir->GetName() << std::endl;
+    if (!outputDir1) {
       // Create the output directories in the output files
       outputDir1 = outputFile1->mkdir(inputDir->GetName());
       if (!outputDir1) {
         std::cerr << "Error: could not create output directories for " << inputDir->GetName() << std::endl;
         continue;
       }
-      first = false;
     }
     // Read the trees in the input directory and copy them to the output directories
     TTree* tree1 = dynamic_cast<TTree*>(inputDir->Get("O2bcranges"));
