@@ -195,7 +195,9 @@ struct qaEventTrack {
       histos.add<TH2>("Tracks/Kine/resoEta", "", kTH2D, {axisDeltaEta, axisEta})->GetYaxis()->SetTitle("#eta_{rec}");
       histos.add<TH2>("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, axisPhi})->GetYaxis()->SetTitle("#varphi_{rec}");
     }
-    histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution;#sigma{#it{p}}/#it{p}_{T};#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution;#sigma{#it{p}_{T}}/#it{p}_{T};#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaPlus", "relative #it{p}_{T} resolution positive eta;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta>0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaMinus", "relative #it{p}_{T} resolution negtive eta;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta<0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
     histos.add("Tracks/Kine/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT#sigma{#it{p}}/#it{p}_{T}#GT;#it{p}_{T}", kTProfile, {{axisPt}});
 
     // count filtered tracks matched to a collision
@@ -1091,6 +1093,11 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/Kine/phivspt"), track.pt(), track.phi());
     histos.fill(HIST("Tracks/Kine/relativeResoPt"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
     histos.fill(HIST("Tracks/Kine/relativeResoPtMean"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+    if (track.eta() > 0) {
+      histos.fill(HIST("Tracks/Kine/relativeResoPtEtaPlus"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+    } else {
+      histos.fill(HIST("Tracks/Kine/relativeResoPtEtaMinus"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+    }
 
     // fill track parameters
     histos.fill(HIST("Tracks/alpha"), track.alpha());
