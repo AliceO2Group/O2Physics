@@ -447,7 +447,7 @@ struct JetTriggerQA {
         ptD += z * z;
         hJetRPtTrackPt->Fill(jetR, jetPt, trackPt);
         hJetRPtChargeFrag->Fill(jetR, jetPt, chargeFrag);
-        if (isEvtSelected) {
+        if (isEvtSelected || isEventSelectedNeutralJet) {
           hSelectedJetRPtTrackPt->Fill(jetR, jetPt, trackPt);
           hSelectedJetRPtChargeFrag->Fill(jetR, jetPt, chargeFrag);
         }
@@ -466,7 +466,7 @@ struct JetTriggerQA {
         zThetaSq += z * dR * dR / (jetR * jetR);
         ptD += z * z;
         hJetRPtClusterPt->Fill(jetR, jetPt, clusterPt);
-        if (isEvtSelected) {
+        if (isEvtSelected || isEventSelectedNeutralJet) {
           hSelectedJetRPtClusterPt->Fill(jetR, jetPt, clusterPt);
         }
       } // for clusters in jet
@@ -482,7 +482,7 @@ struct JetTriggerQA {
       hJetRPtZSqTheta->Fill(jetR, jetPt, zSqTheta);
       hJetRPtZThetaSq->Fill(jetR, jetPt, zThetaSq);
       registry.get<THn>(HIST("jetRPtEtaPhi"))->Fill(jetR, jetPt, jet.eta(), jet.phi());
-      if (isEvtSelected) {
+      if (isEvtSelected || isEventSelectedNeutralJet) {
         hSelectedJetRPtEta->Fill(jetR, jetPt, jet.eta());
         hSelectedJetRPtPhi->Fill(jetR, jetPt, jet.phi());
         hSelectedJetRPtPtd->Fill(jetR, jetPt, ptD);
