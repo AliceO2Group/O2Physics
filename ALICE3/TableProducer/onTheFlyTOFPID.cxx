@@ -188,7 +188,7 @@ struct OnTheFlyTOFPID {
       // first step: find precise arrival time (if any)
       // --- convert track into perfect track
       if (!track.has_mcParticle()) // should always be OK but check please
-        continue; 
+        continue;
 
       o2::track::TrackParCov o2track;
       auto mcParticle = track.mcParticle();
@@ -242,11 +242,11 @@ struct OnTheFlyTOFPID {
       if (doQAplots) {
         float momentum = recoTrack.getP();
         // unit conversion: length in cm, time in ps
-        float innerBeta = 1e+3*(trackLengthInnerTOF / measuredTimeInnerTOF) / o2::constants::physics::LightSpeedCm2NS;
-        float outerBeta = 1e+3*(trackLengthOuterTOF / measuredTimeOuterTOF) / o2::constants::physics::LightSpeedCm2NS;
-        if( trackLengthRecoInnerTOF > 0)
+        float innerBeta = 1e+3 * (trackLengthInnerTOF / measuredTimeInnerTOF) / o2::constants::physics::LightSpeedCm2NS;
+        float outerBeta = 1e+3 * (trackLengthOuterTOF / measuredTimeOuterTOF) / o2::constants::physics::LightSpeedCm2NS;
+        if (trackLengthRecoInnerTOF > 0)
           histos.fill(HIST("h2dVelocityVsMomentumInner"), momentum, innerBeta);
-        if( trackLengthRecoOuterTOF > 0)
+        if (trackLengthRecoOuterTOF > 0)
           histos.fill(HIST("h2dVelocityVsMomentumOuter"), momentum, outerBeta);
       }
 
