@@ -187,7 +187,7 @@ struct OnTheFlyTOFPID {
       // first step: find precise arrival time (if any)
       // --- convert track into perfect track
       if (!track.has_mcParticle()) // should always be OK but check please
-        LOG(error) << "Oh no! No mcParticle label for this track! This shouldn't happen!";
+        continue;                  // fake
 
       o2::track::TrackParCov o2track;
       auto mcParticle = track.mcParticle();
