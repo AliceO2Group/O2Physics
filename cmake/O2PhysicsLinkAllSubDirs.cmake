@@ -12,8 +12,8 @@
 function(o2physics_link_all_subdirs mainDir currentDir installDir)
   # Find the relative subdirectory of currentDir wrt mainDir
   # and create for each of the subdirectory levels a symlink in installDir
-  
-  # Find the relative directory
+
+  # Find the relative subdirectory
   string(REPLACE "${mainDir}" "" relDir "${currentDir}")
   # Splite the relative directory to a list of subdirectories
   string(REPLACE "/" ";" listDirs "${relDir}")
