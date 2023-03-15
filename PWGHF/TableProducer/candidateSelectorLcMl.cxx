@@ -23,6 +23,7 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "Tools/ML/model.h"
@@ -276,7 +277,7 @@ struct HfCandidateSelectorLcMl {
       const float massPi = RecoDecay::getMassPDG(kPiPlus);
       const float massK = RecoDecay::getMassPDG(kKPlus);
       const float massProton = RecoDecay::getMassPDG(kProton);
-      const float massLc = RecoDecay::getMassPDG(kLambdaCPlus);
+      const float massLc = RecoDecay::getMassPDG(o2::analysis::pdg::kLambdaCPlus);
       if (statusLcToPiKP == 1) {
         auto invMassLcToPiKP = RecoDecay::m(std::array{pVecPos1, pVecNeg, pVecPos2}, std::array{massPi, massK, massProton});
         if (std::abs(invMassLcToPiKP - massLc) >= maxDeltaMass && candidate.pt() < 10) {
