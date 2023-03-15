@@ -36,12 +36,7 @@ using namespace o2::track;
 struct PidMultiplicity {
   Produces<aod::PIDMults> mult;
 
-  // For vertex-Z corrections in calibration
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
-  Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
   bool enableTable = false;
-
   void init(InitContext& initContext)
   {
     LOG(info) << "Initializing PID Mult Task";
@@ -55,16 +50,20 @@ struct PidMultiplicity {
     }
   }
 
+  using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
+  Partition<TrksIU> tracksWithTPCIU = (aod::track::tpcNClsFindable > (uint8_t)0);
   void processIU(aod::Collision const& collision, TrksIU const& tracksExtra)
   {
     if (!enableTable) {
       return;
     }
-    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto tracksGrouped = tracksWithTPCIU->sliceByCached(aod::track::collisionId, collision.globalIndex());
     mult(tracksGrouped.size());
   }
   PROCESS_SWITCH(PidMultiplicity, processIU, "Process with IU tracks, faster but works on Run3 only", false);
 
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
+  Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
   void processStandard(aod::Collision const& collision, Trks const& tracksExtra)
   {
     if (!enableTable) {
