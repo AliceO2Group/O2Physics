@@ -611,9 +611,9 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Kaon and electron pair from B+", {pronge, pronge, prongKaon}, {2, 2, 1});
     return signal;
   }
-
+  
   if (!nameStr.compare("Bplus")) {
-    MCProng prong(1, {521}, {true}, {false}, {0}, {0}, {false}); 
+    MCProng prong(1, {521}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "B+", {prong}, {-1});
     return signal;
   }
