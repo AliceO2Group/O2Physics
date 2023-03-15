@@ -90,7 +90,7 @@ struct OnTheFlyTracker {
   {
     auto pdgInfo = pdg->GetParticle(particle.pdgCode());
     int charge = 0;
-    if (pdgInfo == nullptr) {
+    if (pdgInfo != nullptr) {
       charge = pdgInfo->Charge();
     }
     std::array<float, 5> params;
