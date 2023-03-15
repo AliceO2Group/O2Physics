@@ -1,4 +1,18 @@
+# Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+# See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+# All rights not expressly granted are reserved.
+#
+# This software is distributed under the terms of the GNU General Public
+# License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+#
+# In applying this license CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as an Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
 function(o2physics_link_all_subdirs mainDir currentDir installDir)
+  # Find the relative subdirectory of currentDir wrt mainDir
+  # and create for each of the subdirectory levels a symlink in installDir
+  
   # Find the relative directory
   string(REPLACE "${mainDir}" "" relDir "${currentDir}")
   # Splite the relative directory to a list of subdirectories
