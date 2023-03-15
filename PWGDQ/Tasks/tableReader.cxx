@@ -631,32 +631,18 @@ struct AnalysisEventMixing {
 
   // barrel-barrel and muon-muon event mixing
   template <int TPairType, uint32_t TEventFillMap, typename TEvents, typename TTracks>
-  void runSameSide(TEvents& events, TTracks const& tracks)
+  void runSameSide(TEvents& events, TTracks const& tracks, Preslice<TTracks>& preSlice)
   {
     events.bindExternalIndices(&tracks);
-    auto tracksTuple = std::make_tuple(tracks);
     int mixingDepth = fConfigMixingDepth.value;
-    GroupSlicer slicerTracks(events, tracksTuple);
     for (auto& [event1, event2] : selfCombinations(hashBin, mixingDepth, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
-      auto it1 = slicerTracks.begin();
-      for (auto& slice : slicerTracks) {
-        if (slice.groupingElement().index() == event1.index()) {
-          it1 = slice;
-          break;
-        }
-      }
-      auto tracks1 = std::get<TTracks>(it1.associatedTables());
+
+      auto tracks1 = tracks.sliceBy(preSlice, event1.globalIndex());
       tracks1.bindExternalIndices(&events);
-      auto it2 = slicerTracks.begin();
-      for (auto& slice : slicerTracks) {
-        if (slice.groupingElement().index() == event2.index()) {
-          it2 = slice;
-          break;
-        }
-      }
-      auto tracks2 = std::get<TTracks>(it2.associatedTables());
+
+      auto tracks2 = tracks.sliceBy(preSlice, event2.globalIndex());
       tracks2.bindExternalIndices(&events);
 
       runMixedPairing<TPairType>(tracks1, tracks2);
@@ -668,43 +654,31 @@ struct AnalysisEventMixing {
   void runBarrelMuon(TEvents& events, TTracks const& tracks, TMuons const& muons)
   {
     events.bindExternalIndices(&muons);
-    auto tracksTuple = std::make_tuple(tracks);
-    auto muonsTuple = std::make_tuple(muons);
-    GroupSlicer slicerTracks(events, tracksTuple);
-    GroupSlicer slicerMuons(events, muonsTuple);
+
     for (auto& [event1, event2] : selfCombinations(hashBin, 100, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
-      auto it1 = slicerTracks.begin();
-      for (auto& slice : slicerTracks) {
-        if (slice.groupingElement().index() == event1.index()) {
-          it1 = slice;
-          break;
-        }
-      }
-      auto tracks1 = std::get<TTracks>(it1.associatedTables());
+
+      auto tracks1 = tracks.sliceBy(perEventsSelectedT, event1.globalIndex());
       tracks1.bindExternalIndices(&events);
-      auto it2 = slicerMuons.begin();
-      for (auto& slice : slicerMuons) {
-        if (slice.groupingElement().index() == event2.index()) {
-          it2 = slice;
-          break;
-        }
-      }
-      auto muons2 = std::get<TMuons>(it2.associatedTables());
+
+      auto muons2 = muons.sliceBy(perEventsSelectedM, event2.globalIndex());
       muons2.bindExternalIndices(&events);
 
       runMixedPairing<pairTypeEMu>(tracks1, muons2);
     } // end event loop
   }
 
+  Preslice<soa::Filtered<MyBarrelTracksSelected>> perEventsSelectedT = aod::reducedtrack::reducedeventId;
+  Preslice<soa::Filtered<MyMuonTracksSelected>> perEventsSelectedM = aod::reducedmuon::reducedeventId;
+
   void processBarrelSkimmed(soa::Filtered<MyEventsHashSelected>& events, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
-    runSameSide<pairTypeEE, gkEventFillMap>(events, tracks);
+    runSameSide<pairTypeEE, gkEventFillMap>(events, tracks, perEventsSelectedT);
   }
   void processMuonSkimmed(soa::Filtered<MyEventsHashSelected>& events, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
-    runSameSide<pairTypeMuMu, gkEventFillMap>(events, muons);
+    runSameSide<pairTypeMuMu, gkEventFillMap>(events, muons, perEventsSelectedM);
   }
   void processBarrelMuonSkimmed(soa::Filtered<MyEventsHashSelected>& events, soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
@@ -712,11 +686,11 @@ struct AnalysisEventMixing {
   }
   void processBarrelVnSkimmed(soa::Filtered<MyEventsHashSelectedQvector>& events, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
-    runSameSide<pairTypeEE, gkEventFillMapWithQvector>(events, tracks);
+    runSameSide<pairTypeEE, gkEventFillMapWithQvector>(events, tracks, perEventsSelectedT);
   }
   void processMuonVnSkimmed(soa::Filtered<MyEventsHashSelectedQvector>& events, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
-    runSameSide<pairTypeMuMu, gkEventFillMapWithQvector>(events, muons);
+    runSameSide<pairTypeMuMu, gkEventFillMapWithQvector>(events, muons, perEventsSelectedM);
   }
   // TODO: This is a dummy process function for the case when the user does not want to run any of the process functions (no event mixing)
   //    If there is no process function enabled, the workflow hangs
@@ -1030,7 +1004,7 @@ struct AnalysisSameEventPairing {
                 fHistMan->FillHistClass(histNames[iCut][2].Data(), VarManager::fgValues);
               }
             }
-          } // end loop (pair cuts)
+          }      // end loop (pair cuts)
         } else { // end if (filter bits)
           iCut++;
         }
