@@ -604,20 +604,20 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electron pair from Jpsi from B+ decays", {prong, prong}, {1, 1});
     return signal;
   }
-  
+
   if (!nameStr.compare("eeKaonFromBplus")) {
     MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Kaon and electron pair from B+", {pronge, pronge, prongKaon}, {2, 2, 1});
     return signal;
   }
-  
+
   if (!nameStr.compare("Bplus")) {
     MCProng prong(1, {521}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "B+", {prong}, {-1});
     return signal;
   }
-  
+
   if (!nameStr.compare("beautyPairs")) {
     MCProng prong(1, {503}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal("beautyPairs", "Beauty hadron pair", {prong, prong}, {-1, -1});
