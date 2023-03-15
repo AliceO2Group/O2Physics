@@ -170,7 +170,7 @@ DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
 using MultFilter = MultFilters::iterator;
 
 // photons
-DECLARE_SOA_TABLE(PhotFilters, "AOD", "PhotonFilters", //!
+DECLARE_SOA_TABLE(PhotFilters, "AOD", "PhotFilters", //!
                   filtering::PHOSPhoton, filtering::PHOSElectron, filtering::PHOSPair, filtering::PHOSnbar);
 
 using PhotFilter = PhotFilters::iterator;
