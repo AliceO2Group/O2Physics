@@ -79,9 +79,9 @@ struct HfCandidateSelectorLcMl {
   {
     AxisSpec bdtAxis{100, 0.f, 1.f};
     if (applyML && activateQA != 0) {
-      registry.add<TH1>("LcBDTScoreBkgDistr", "BDT background score distribution for Lc;BDT background score;counts", HistType::kTH1F, {bdtAxis});
-      registry.add<TH1>("LcBDTScorePromptDistr", "BDT prompt score distribution for Lc;BDT prompt score;counts", HistType::kTH1F, {bdtAxis});
-      registry.add<TH1>("LcBDTScoreNonPromptDistr", "BDT nonprompt score distribution for Lc;BDT nonprompt score;counts", HistType::kTH1F, {bdtAxis});
+      registry.add<TH1>("hLcBDTScoreBkg", "BDT background score distribution for Lc;BDT background score;counts", HistType::kTH1F, {bdtAxis});
+      registry.add<TH1>("hLcBDTScorePrompt", "BDT prompt score distribution for Lc;BDT prompt score;counts", HistType::kTH1F, {bdtAxis});
+      registry.add<TH1>("hLcBDTScoreNonPrompt", "BDT nonprompt score distribution for Lc;BDT nonprompt score;counts", HistType::kTH1F, {bdtAxis});
     }
 
     ccdbApi.init(url);
@@ -273,10 +273,10 @@ struct HfCandidateSelectorLcMl {
       std::array<float, 3> pVecPos1 = {trackPos1.px(), trackPos1.py(), trackPos1.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
       std::array<float, 3> pVecPos2 = {trackPos2.px(), trackPos2.py(), trackPos2.pz()};
-      const float massPi = RecoDecay::getMassPDG(211);
-      const float massK = RecoDecay::getMassPDG(321);
-      const float massProton = RecoDecay::getMassPDG(2212);
-      const float massLc = RecoDecay::getMassPDG(4122);
+      const float massPi = RecoDecay::getMassPDG(kPiPlus);
+      const float massK = RecoDecay::getMassPDG(kKPlus);
+      const float massProton = RecoDecay::getMassPDG(kProton);
+      const float massLc = RecoDecay::getMassPDG(kLambdaCPlus);
       if (statusLcToPiKP == 1) {
         auto invMassLcToPiKP = RecoDecay::m(std::array{pVecPos1, pVecNeg, pVecPos2}, std::array{massPi, massK, massProton});
         if (std::abs(invMassLcToPiKP - massLc) >= maxDeltaMass && candidate.pt() < 10) {
@@ -329,9 +329,9 @@ struct HfCandidateSelectorLcMl {
           // NOTE: Can be both prompt and non-prompt!
         }
         if (activateQA != 0) {
-          registry.fill(HIST("LcBDTScoreBkgDistr"), scores[0]);
-          registry.fill(HIST("LcBDTScorePromptDistr"), scores[1]);
-          registry.fill(HIST("LcBDTScoreNonPromptDistr"), scores[2]);
+          registry.fill(HIST("hLcBDTScoreBkg"), scores[0]);
+          registry.fill(HIST("hLcBDTScorePrompt"), scores[1]);
+          registry.fill(HIST("hLcBDTScoreNonPrompt"), scores[2]);
         }
       }
 
