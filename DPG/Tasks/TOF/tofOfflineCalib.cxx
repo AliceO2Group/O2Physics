@@ -127,6 +127,14 @@ struct tofOfflineCalib {
       evTimeT0AC = collision.t0AC() * 1000.f;
       evTimeT0ACErr = collision.t0resolution() * 1000.f;
     }
+    float evTimeT0A = 0.f;
+    if (collision.t0ACorrectedValid()) {
+      evTimeT0A = collision.t0ACorrected() * 1000.f;
+    }
+    float evTimeT0C = 0.f;
+    if (collision.t0CCorrectedValid()) {
+      evTimeT0C = collision.t0CCorrected() * 1000.f;
+    }
 
     if (lastRun != collision.bc().runNumber()) {
       lastRun = collision.bc().runNumber();
@@ -212,8 +220,13 @@ struct tofOfflineCalib {
                  track2.tofSignal(),
                  track2.evTimeTOF(),
                  track2.evTimeTOFErr(),
+                 track2.evTimeTOFMult(),
+                 evTimeT0A,
+                 evTimeT0C,
                  evTimeT0AC,
                  evTimeT0ACErr,
+                 collision.collisionTime(),
+                 collision.collisionTimeRes(),
                  track2.tofFlags(),
                  lastTRDLayer);
 

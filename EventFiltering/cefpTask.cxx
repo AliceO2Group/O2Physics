@@ -27,6 +27,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonDataFormat/InteractionRecord.h"
 
@@ -341,36 +342,45 @@ struct centralEventFilterTask {
     auto bcTabPtr{bcTabConsumer->asArrowTable()};
     auto collTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::Collisions>>::metadata::tableLabel());
     auto collTabPtr{collTabConsumer->asArrowTable()};
+    auto evSelConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::EvSels>>::metadata::tableLabel());
+    auto evSelTabPtr{evSelConsumer->asArrowTable()};
+
     if (outDecision.size() != static_cast<uint64_t>(collTabPtr->num_rows())) {
       LOG(fatal) << "Inconsistent number of rows across Collision table and CEFP decision vector.";
     }
-    auto columnGloBCId{bcTabPtr->GetColumnByName("fGlobalBC")};
-    auto columnBCId{collTabPtr->GetColumnByName("fIndexBCs")};
-    auto columnCollTime{collTabPtr->GetColumnByName("fCollisionTime")};
-    auto columnCollTimeRes{collTabPtr->GetColumnByName("fCollisionTimeRes")};
+    if (outDecision.size() != static_cast<uint64_t>(evSelTabPtr->num_rows())) {
+      LOG(fatal) << "Inconsistent number of rows across EvSel table and CEFP decision vector.";
+    }
 
-    LOG(debug) << "columnBCId has " << columnBCId->num_chunks() << " chunks";
+    auto columnGloBCId{bcTabPtr->GetColumnByName(aod::BC::GlobalBC::mLabel)};
+    auto columnBCId{collTabPtr->GetColumnByName(aod::Collision::BCId::mLabel)};
+    auto columnCollTime{collTabPtr->GetColumnByName(aod::Collision::CollisionTime::mLabel)};
+    auto columnCollTimeRes{collTabPtr->GetColumnByName(aod::Collision::CollisionTimeRes::mLabel)};
+    auto columnFoundBC{evSelTabPtr->GetColumnByName(o2::aod::evsel::FoundBCId::mLabel)};
 
     auto chunkBC{columnBCId->chunk(0)};
     auto chunkCollTime{columnCollTime->chunk(0)};
     auto chunkCollTimeRes{columnCollTimeRes->chunk(0)};
     auto chunkGloBC{columnGloBCId->chunk(0)};
+    auto chunkFoundBC{columnFoundBC->chunk(0)};
 
     auto BCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkBC);
-    auto CollTimeArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTime);
-    auto CollTimeResArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTimeRes);
+    auto CollTimeArray = std::static_pointer_cast<arrow::NumericArray<arrow::FloatType>>(chunkCollTime);
+    auto CollTimeResArray = std::static_pointer_cast<arrow::NumericArray<arrow::FloatType>>(chunkCollTimeRes);
     auto GloBCArray = std::static_pointer_cast<arrow::NumericArray<arrow::UInt64Type>>(chunkGloBC);
+    auto FoundBCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkFoundBC);
 
-    o2::InteractionRecord first, last;
-    first.setFromLong(GloBCArray->Value(0));
-    last.setFromLong(GloBCArray->Value(GloBCArray->length() - 1));
     for (uint64_t iD{0}; iD < outDecision.size(); ++iD) {
-      tags(BCArray->Value(iD), GloBCArray->Value(BCArray->Value(iD)), CollTimeArray->Value(iD), CollTimeResArray->Value(iD), outTrigger[iD], outDecision[iD]);
+      uint64_t foundBC = FoundBCArray->Value(iD) >= 0 && FoundBCArray->Value(iD) < GloBCArray->length() ? GloBCArray->Value(FoundBCArray->Value(iD)) : -1;
+      tags(BCArray->Value(iD), GloBCArray->Value(BCArray->Value(iD)), foundBC, CollTimeArray->Value(iD), CollTimeResArray->Value(iD), outTrigger[iD], outDecision[iD]);
     }
   }
 
-  /// Trivial process to have automatically the collision and BC input tables
-  void process(aod::Collisions const&, aod::BCs const&)
+  using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  using BC = BCs::iterator;
+  using CCs = soa::Join<aod::Collisions, aod::EvSels>;
+  using CC = CCs::iterator;
+  void process(CCs const& collisions, BCs const& bcs)
   {
   }
 

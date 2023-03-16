@@ -79,13 +79,13 @@ struct BCRangeSelector {
     auto filt = fdecs.begin();
     std::vector<std::pair<uint64_t, uint64_t>> bcRanges;
     for (auto collision : cols) {
-      if (filt.hasCefpSelected()) {
+      if (filt.cefpSelected()) {
 
         LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
 
         // return if collisions has no associated BC
         if (!collision.has_foundBC()) {
-          LOGF(warning, "No compatible BCs found for collision that the framework assigned to BC %i", filt.hasGlobalBCId());
+          LOGF(warning, "No compatible BCs found for collision that the framework assigned to BC %i", filt.globalBC());
           filt++;
           continue;
         }
@@ -121,13 +121,22 @@ struct BCRangeSelector {
           }
         }
         localIter = bcIter;
-        while (localIter.globalIndex() < bcs.size()) {
+        while (localIter.globalIndex() < bcs.size() - 1) {
           ++localIter;
           if (localIter.globalBC() <= maxBC.toLong()) {
             maxBCId = localIter.globalIndex();
           } else {
             break;
           }
+        }
+
+        auto ao2dBC = filt.bcIndex();
+        if (ao2dBC < minBCId) {
+          LOGF(debug, "Extending the window to keep into account the AO2D/EvSel BC discrepancy by %d BCs", minBCId - ao2dBC);
+          minBCId = ao2dBC;
+        } else if (ao2dBC > maxBCId) {
+          LOGF(debug, "Extending the window to keep into account the AO2D/EvSel BC discrepancy by %d BCs", ao2dBC - maxBCId);
+          maxBCId = ao2dBC;
         }
 
         bcRanges.push_back(std::make_pair(minBCId, maxBCId));
@@ -141,8 +150,8 @@ struct BCRangeSelector {
     });
     std::vector<std::pair<uint64_t, uint64_t>> bcRangesMerged(1, bcRanges[0]);
     for (uint64_t iR{1}; iR < bcRanges.size(); ++iR) {
-      if (bcRanges[iR - 1].second >= bcRanges[iR].first) {
-        bcRangesMerged.back().second = bcRanges[iR].second;
+      if (bcRangesMerged.back().second >= bcRanges[iR].first) {
+        bcRangesMerged.back().second = std::max(bcRangesMerged.back().second, bcRanges[iR].second);
       } else {
         bcRangesMerged.push_back(bcRanges[iR]);
       }
@@ -199,7 +208,7 @@ struct BCRangeSelector {
     LOGF(debug, "Merged and extended sorted ranges");
     for (auto& range : bcRanges) {
       LOGF(debug, "  %i - %i", range.first, range.second);
-      uint64_t first{bcs.iteratorAt(range.first).globalBC()}, second{bcs.iteratorAt(range.second).globalBC()};
+      uint64_t first{bcs.rawIteratorAt(range.first).globalBC()}, second{bcs.rawIteratorAt(range.second).globalBC()};
       IR1.setFromLong(first);
       IR2.setFromLong(second);
       res.emplace_back(IR1, IR2);

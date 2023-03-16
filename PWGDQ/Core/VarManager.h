@@ -120,6 +120,7 @@ class VarManager : public TObject
     // Run wise variables
     kRunNo = 0,
     kRunId,
+    kRunIndex,
     kNRunWiseVariables,
 
     // Event wise variables
@@ -433,6 +434,8 @@ class VarManager : public TObject
 
   static void SetRunNumbers(int n, int* runs);
   static void SetRunNumbers(std::vector<int> runs);
+  static float GetRunIndex(double);
+  static void SetRunlist(TString period);
   static int GetNRuns()
   {
     return fgRunMap.size();
@@ -540,6 +543,7 @@ class VarManager : public TObject
 
   static std::map<int, int> fgRunMap; // map of runs to be used in histogram axes
   static TString fgRunStr;            // semi-colon separated list of runs, to be used for histogram axis labels
+  static std::vector<int> fgRunList;  // vector of runs, to be used for histogram axis
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
@@ -706,6 +710,7 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & ReducedEvent) > 0) {
     values[kRunNo] = event.runNumber();
+    values[kRunIndex] = GetRunIndex(event.runNumber());
     values[kVtxX] = event.posX();
     values[kVtxY] = event.posY();
     values[kVtxZ] = event.posZ();

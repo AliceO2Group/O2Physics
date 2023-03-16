@@ -811,7 +811,7 @@ Ort::Experimental::Session* InitONNXSession(std::string& onnxFile, std::string p
 
   std::map<std::string, std::string> metadata;
   bool retrieveSuccess = true;
-  if (loadModelsFromCCDB && timestampCCDB > 0) {
+  if (loadModelsFromCCDB) {
     retrieveSuccess = ccdbApi.retrieveBlob(mlModelPathCCDB + partName, ".", metadata, timestampCCDB, false, onnxFile);
   }
   if (retrieveSuccess) {

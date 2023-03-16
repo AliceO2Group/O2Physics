@@ -11,10 +11,10 @@
 
 o2physics_add_dpl_workflow(tof-skimscreation
   SOURCES tofSkimsTableCreator.cxx
-  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
   COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tof-calib
   SOURCES tofOfflineCalib.cxx
-  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
   COMPONENT_NAME Analysis)

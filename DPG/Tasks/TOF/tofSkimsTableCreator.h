@@ -26,6 +26,8 @@ using namespace o2::track;
 
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {
@@ -51,6 +53,20 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,                   //! Flag to check i
 // Calibration information
 
 } // namespace tofskims
+
+DECLARE_SOA_TABLE(SkimmedTOFColl, "AOD", "SKIMMEDTOFCOL", //! Table of the skimmed TOF data format. One entry per collision.
+                  o2::soa::Index<>,
+                  tofskims::CollisionId,
+                  pidtofevtime::EvTimeTOF,
+                  pidtofevtime::EvTimeTOFErr,
+                  pidtofevtime::EvTimeTOFMult,
+                  ft0::T0ACorrected,
+                  ft0::T0CCorrected,
+                  tofskims::EvTimeT0AC,
+                  tofskims::EvTimeT0ACErr,
+                  collision::CollisionTime,
+                  collision::CollisionTimeRes,
+                  pidflags::TOFFlags);
 
 DECLARE_SOA_TABLE(SkimmedTOF, "AOD", "SKIMMEDTOF", //! Table of the skimmed TOF data format. One entry per track.
                   o2::soa::Index<>,
@@ -101,8 +117,13 @@ DECLARE_SOA_TABLE(DeltaTOF, "AOD", "DELTATOF", //! Table of the delta TOF data f
                   pidtofsignal::TOFSignal,
                   pidtofevtime::EvTimeTOF,
                   pidtofevtime::EvTimeTOFErr,
+                  pidtofevtime::EvTimeTOFMult,
+                  ft0::T0ACorrected,
+                  ft0::T0CCorrected,
                   tofskims::EvTimeT0AC,
                   tofskims::EvTimeT0ACErr,
+                  collision::CollisionTime,
+                  collision::CollisionTimeRes,
                   pidflags::TOFFlags,
                   tofskims::LastTRDCluster);
 
