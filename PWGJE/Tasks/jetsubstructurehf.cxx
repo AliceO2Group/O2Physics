@@ -145,7 +145,7 @@ struct JetSubstructureHFTask {
       }
       bool isHFInSubjet1 = false;
       for (auto& subjet1Constituent : parentSubJet1.constituents()) {
-        if (subjet1Constituent.user_info<FastJetUtilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidateHF)) {
+        if (subjet1Constituent.template user_info<FastJetUtilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidateHF)) {
           isHFInSubjet1 = true;
           break;
         }

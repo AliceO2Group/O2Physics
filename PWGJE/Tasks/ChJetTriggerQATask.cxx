@@ -76,7 +76,7 @@ struct ChJetTriggerQATask {
     "cfgPtThr", 10.,
     "jet pT threshold for some QA plots"}; // jet pT threshold for some QA plots
 
-  float fiducialVolume;                        // 0.9 - jetR
+  float fiducialVolume; // 0.9 - jetR
 
   HistogramRegistry spectra{
     "spectra",
@@ -258,7 +258,6 @@ struct ChJetTriggerQATask {
       if (leadingJetPt > -1. && leadingTrackPt > -1.) {
         spectra.fill(HIST("fLeadJetChPtVsLeadingTrack"), leadingTrackPt,
                      leadingJetPt); // leading jet pT versus leading track pT
-
 
         if ((leadingTrackPt - leadingJetPt) > 1e-4) { // pathological case
           spectra.fill(HIST("fLeadJetEtaVsLeadingTrackEtaPathologicalAll"),
