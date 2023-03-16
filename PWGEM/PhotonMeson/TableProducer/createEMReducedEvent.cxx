@@ -19,20 +19,9 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
-//#include "Common/Core/trackUtilities.h"
-//#include "Common/Core/TrackSelection.h"
-//#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-//#include "Common/DataModel/PIDResponse.h"
-//#include "Common/Core/RecoDecay.h"
-//#include "DetectorsVertexing/DCAFitterN.h"
-//#include "DetectorsBase/Propagator.h"
-//#include "DetectorsBase/GeometryManager.h"
-//#include "DataFormatsParameters/GRPObject.h"
-//#include "DataFormatsParameters/GRPMagField.h"
-//#include "CCDB/BasicCCDBManager.h"
-//#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 using namespace o2;
@@ -73,9 +62,10 @@ struct createEMReducedEvent {
     hEventCounter->GetXaxis()->SetBinLabel(6, "sel8");
   }
 
+  using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
+
   template <uint8_t system, typename TPCMs, typename TPHOSs, typename TEMCs>
-  void process(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const&, TPCMs const& v0photons, TPHOSs const& phosclusters, TEMCs const& emcclusters)
-  // void process(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const&, aod::V0Datas const& v0photons)
+  void process(MyCollisions const& collisions, aod::BCs const&, TPCMs const& v0photons, TPHOSs const& phosclusters, TEMCs const& emcclusters)
   {
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
@@ -126,46 +116,48 @@ struct createEMReducedEvent {
       event(collision.globalIndex(), tag, collision.bc().runNumber(), collision.sel8(),
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes(),
+            collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
+            collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1(),
             ng_pcm, ng_phos, ng_emc); // ng is needed for event mixing to filter events that contain at least 1 photon.
 
     } // end of collision loop
 
   } // end of process
 
-  void process_PCM(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::V0Datas const& v0photons)
+  void process_PCM(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0Datas const& v0photons)
   {
     process<kPCM>(collisions, bcs, v0photons, nullptr, nullptr);
   }
-  void process_PHOS(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::PHOSClusters const& phosclusters)
+  void process_PHOS(MyCollisions const& collisions, aod::BCs const& bcs, aod::PHOSClusters const& phosclusters)
   {
     process<kPHOS>(collisions, bcs, nullptr, phosclusters, nullptr);
   }
-  void process_EMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::SkimEMCClusters const& emcclusters)
+  void process_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::SkimEMCClusters const& emcclusters)
   {
     process<kEMC>(collisions, bcs, nullptr, nullptr, emcclusters);
   }
-  void process_PCM_PHOS(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::V0Datas const& v0photons, aod::PHOSClusters const& phosclusters)
+  void process_PCM_PHOS(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0Datas const& v0photons, aod::PHOSClusters const& phosclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS;
     process<sysflag>(collisions, bcs, v0photons, phosclusters, nullptr);
   }
-  void process_PCM_EMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::V0Datas const& v0photons, aod::SkimEMCClusters const& emcclusters)
+  void process_PCM_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0Datas const& v0photons, aod::SkimEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPCM | kEMC;
     process<sysflag>(collisions, bcs, v0photons, nullptr, emcclusters);
   }
-  void process_PHOS_EMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
+  void process_PHOS_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPHOS | kEMC;
     process<sysflag>(collisions, bcs, nullptr, phosclusters, emcclusters);
   }
-  void process_PCM_PHOS_EMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCs const& bcs, aod::V0Datas const& v0photons, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
+  void process_PCM_PHOS_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0Datas const& v0photons, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS | kEMC;
     process<sysflag>(collisions, bcs, v0photons, phosclusters, emcclusters);
   }
 
-  void processDummy(soa::Join<aod::Collisions, aod::EvSels> const& collisions) {}
+  void processDummy(MyCollisions const& collisions) {}
 
   PROCESS_SWITCH(createEMReducedEvent, process_PCM, "create em event table for PCM", false);
   PROCESS_SWITCH(createEMReducedEvent, process_PHOS, "create em event table for PHOS", false);
