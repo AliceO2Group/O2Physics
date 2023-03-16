@@ -99,6 +99,7 @@ struct TrackSelectionTask {
       }
     }
 
+    globalTracks.print();
     // Extra requirement on the ITS -> Run 2: asking for 1 hit SDD and no hit in SPD
     globalTracksSDD = getGlobalTrackSelectionSDD();
     globalTracksSDD.SetPtRange(ptMin, ptMax);

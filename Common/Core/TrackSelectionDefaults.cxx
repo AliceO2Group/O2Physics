@@ -82,7 +82,7 @@ TrackSelection getGlobalTrackSelectionSDD()
 // Default track selection for nuclei analysis in run3 (STILL JUST A PLACEHOLDER)
 TrackSelection getGlobalTrackSelectionRun3Nuclei()
 {
-  return getGlobalTrackSelection();
+  return getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo);
 }
 
 // Default track selection for HF analysis (global tracks, with its points, but no tight selection for primary) in run3 (STILL JUST A PLACEHOLDER)

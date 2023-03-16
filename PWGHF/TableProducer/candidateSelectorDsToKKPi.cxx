@@ -184,11 +184,11 @@ struct HfCandidateSelectorDsToKKPi {
       }
 
       // track-level PID selection
-      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDAll(trackPos1);
-      int pidTrackPos1Kaon = selectorKaon.getStatusTrackPIDAll(trackPos1);
-      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDAll(trackPos2);
-      int pidTrackPos2Kaon = selectorKaon.getStatusTrackPIDAll(trackPos2);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDAll(trackNeg);
+      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos1);
+      int pidTrackPos1Kaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos1);
+      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
+      int pidTrackPos2Kaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos2);
+      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
 
       bool pidDsToKKPi = !(pidTrackPos1Kaon == TrackSelectorPID::Status::PIDRejected ||
                            pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||

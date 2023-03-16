@@ -87,8 +87,8 @@ constexpr static uint32_t gkEventFillMapWithMult = VarManager::ObjTypes::BC | Va
 constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
 constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult;
 // constexpr static uint32_t gkEventFillMapWithCentRun2 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2; // Unused variable
-constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
-constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
+constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMap | VarManager::ObjTypes::TrackV0Bits;
 constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
@@ -115,7 +115,7 @@ struct TableMaker {
   HistogramManager* fHistMan;
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
-  Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
@@ -132,12 +132,16 @@ struct TableMaker {
   Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
+  Configurable<std::string> fConfigRunPeriods{"cfgRunPeriods", "LHC22f", "run periods for used data"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
   std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
   std::vector<AnalysisCompositeCut> fMuonCuts;  //! Muon track cuts
+
+  Preslice<MyBarrelTracks> perCollisionTracks = aod::track::collisionId;
+  Preslice<MyMuons> perCollisionMuons = aod::fwdtrack::collisionId;
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
@@ -175,17 +179,20 @@ struct TableMaker {
                                context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCovAndEventFilter") ||
-                               context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits"));
+                               context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") ||
+                               context.mOptions.get<bool>("processAmbiguousBarrelOnly"));
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                              context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                              context.mOptions.get<bool>("processMuonOnly") || context.mOptions.get<bool>("processMuonOnlyWithCent") ||
-                             context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithFilter"));
+                             context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithFilter") ||
+                             context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") || context.mOptions.get<bool>("processAmbiguousMuonOnly"));
 
     if (enableBarrelHistos) {
       if (fDoDetailedQA) {
         histClasses += "TrackBarrel_BeforeCuts;";
         if (fIsAmbiguous) {
           histClasses += "Ambiguous_TrackBarrel_BeforeCuts;";
+          histClasses += "Orphan_TrackBarrel;";
         }
       }
       if (fConfigQA) {
@@ -202,6 +209,8 @@ struct TableMaker {
         histClasses += "Muons_BeforeCuts;";
         if (fIsAmbiguous) {
           histClasses += "Ambiguous_Muons_BeforeCuts;";
+          histClasses += "Orphan_Muons_MFTMCHMID;";
+          histClasses += "Orphan_Muons_MCHMID;";
         }
       }
       if (fConfigQA) {
@@ -214,6 +223,7 @@ struct TableMaker {
       }
     }
 
+    VarManager::SetRunlist((TString)fConfigRunPeriods);
     DefineHistograms(histClasses);                   // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -297,6 +307,7 @@ struct TableMaker {
     VarManager::fgValues[VarManager::kRunNo] = bc.runNumber();
     VarManager::fgValues[VarManager::kBC] = bc.globalBC();
     VarManager::fgValues[VarManager::kTimestamp] = bc.timestamp();
+    VarManager::fgValues[VarManager::kRunIndex] = VarManager::GetRunIndex(bc.runNumber());
     VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
     if (fDoDetailedQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -329,10 +340,10 @@ struct TableMaker {
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0 && (TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
       eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
                     collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
-                    collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(),
+                    collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
                     collision.centFT0C());
     } else {
-      eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+      eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
     }
     eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
@@ -415,7 +426,9 @@ struct TableMaker {
                     track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                     track.tpcNClsShared(), track.tpcChi2NCl(),
                     track.trdChi2(), track.trdPattern(), track.tofChi2(),
-                    track.length(), track.dcaXY(), track.dcaZ());
+                    track.length(), track.dcaXY(), track.dcaZ(),
+                    track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
+                    track.detectorMap());
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
           trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                          track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
@@ -538,7 +551,9 @@ struct TableMaker {
         muonBasic(event.lastIndex(), trackFilteringTag, muon.pt(), muon.eta(), muon.phi(), muon.sign(), isAmbiguous);
         muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                   muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                  muon.matchScoreMCHMFT(), newMatchIndex.find(muon.index())->second, muon.mchBitMap(), muon.midBitMap(), muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY());
+                  muon.matchScoreMCHMFT(), newMatchIndex.find(muon.index())->second, muon.mchBitMap(), muon.midBitMap(),
+                  muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
+                  muon.trackTime(), muon.trackTimeRes());
         if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
           muonCov(muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(),
                   muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(), muon.cPhiPhi(),
@@ -722,10 +737,10 @@ struct TableMaker {
   }
 
   // Produce barrel tables only, with track cov matrix ----------------------------------------------------------------------------------------
-  void processBarrelOnlyWithCov(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+  void processBarrelOnlyWithCov(MyEventsWithMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                 soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
   {
-    fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithMult, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce barrel tables only ----------------------------------------------------------------------------------------------------------------
@@ -772,23 +787,70 @@ struct TableMaker {
   }
 
   // Produce muon tables only for ambiguous tracks studies --------------------------------------------------------------------------------------
-  void processAmbiguousMuonOnly(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+  void processAmbiguousMuonOnly(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
                                 soa::Filtered<MyMuons> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd)
   {
-    fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, ambiTracksFwd);
+    // Process orphan tracks
+    if (fDoDetailedQA && fIsAmbiguous) {
+      for (auto& ambiTrackFwd : ambiTracksFwd) {
+        auto muon = ambiTrackFwd.template fwdtrack_as<MyMuons>();
+        if (muon.collisionId() < 0) {
+          VarManager::FillTrack<gkMuonFillMapWithAmbi>(muon);
+          if ((static_cast<int>(muon.trackType()) == 0)) {
+            fHistMan->FillHistClass("Orphan_Muons_MFTMCHMID", VarManager::fgValues);
+          } else if ((static_cast<int>(muon.trackType()) == 3)) {
+            fHistMan->FillHistClass("Orphan_Muons_MCHMID", VarManager::fgValues);
+          }
+        }
+      }
+    }
+    for (auto& collision : collisions) {
+      auto groupedMuons = tracksMuon.sliceBy(perCollisionMuons, collision.globalIndex());
+      fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collision, bcs, nullptr, groupedMuons, nullptr, ambiTracksFwd);
+    }
   }
 
-  void processAmbiguousMuonOnlyWithCov(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+  void processAmbiguousMuonOnlyWithCov(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
                                        soa::Filtered<MyMuonsWithCov> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd)
   {
-    fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, ambiTracksFwd);
+    // Process orphan tracks
+    if (fDoDetailedQA && fIsAmbiguous) {
+      for (auto& ambiTrackFwd : ambiTracksFwd) {
+        auto muon = ambiTrackFwd.template fwdtrack_as<MyMuonsWithCov>();
+        if (muon.collisionId() < 0) {
+          VarManager::FillTrack<gkMuonFillMapWithCovAmbi>(muon);
+          if ((static_cast<int>(muon.trackType()) == 0)) {
+            fHistMan->FillHistClass("Orphan_Muons_MFTMCHMID", VarManager::fgValues);
+          } else if ((static_cast<int>(muon.trackType()) == 3)) {
+            fHistMan->FillHistClass("Orphan_Muons_MCHMID", VarManager::fgValues);
+          }
+        }
+      }
+    }
+    for (auto& collision : collisions) {
+      auto groupedMuons = tracksMuon.sliceBy(perCollisionMuons, collision.globalIndex());
+      fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, groupedMuons, nullptr, ambiTracksFwd);
+    }
   }
 
   // Produce track tables only for ambiguous tracks studies -------------------------------------------------------------------------------------
-  void processAmbiguousBarrelOnly(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+  void processAmbiguousBarrelOnly(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
                                   soa::Filtered<MyBarrelTracks> const& tracksBarrel, aod::AmbiguousTracksMid const& ambiTracksMid)
   {
-    fullSkimming<gkEventFillMap, gkTrackFillMapWithAmbi, 0u>(collision, bcs, tracksBarrel, nullptr, ambiTracksMid, nullptr);
+    // Process orphan tracks
+    if (fDoDetailedQA && fIsAmbiguous) {
+      for (auto& ambiTrack : ambiTracksMid) {
+        auto trk = ambiTrack.template track_as<MyBarrelTracks>();
+        if (trk.collisionId() < 0) {
+          VarManager::FillTrack<gkTrackFillMapWithAmbi>(trk);
+          fHistMan->FillHistClass("Orphan_TrackBarrel", VarManager::fgValues);
+        }
+      }
+    }
+    for (auto& collision : collisions) {
+      auto groupedTracks = tracksBarrel.sliceBy(perCollisionTracks, collision.globalIndex());
+      fullSkimming<gkEventFillMap, gkTrackFillMapWithAmbi, 0u>(collision, bcs, groupedTracks, nullptr, ambiTracksMid, nullptr);
+    }
   }
 
   // Process the BCs and store stats for luminosity retrieval -----------------------------------------------------------------------------------

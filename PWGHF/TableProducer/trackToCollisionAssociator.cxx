@@ -15,6 +15,7 @@
 /// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova
 
+#include "CommonConstants/LHCConstants.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -83,7 +84,7 @@ struct HfTrackToCollisionAssociation {
           trackTime = track.trackTime();
           trackTimeRes = track.trackTimeRes();
         }
-        const float deltaTime = trackTime - collTime + bcOffset * 25.f;
+        const float deltaTime = trackTime - collTime + bcOffset * constants::lhc::LHCBunchSpacingNS;
         float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
         LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), track.trackTime(), track.trackTimeRes(), collBC, track.collision().bc().globalBC(), deltaTime);
         // optimization to avoid looping over the full track list each time. This assumes that tracks are sorted by BCs (which they should be because collisions are sorted by BCs)

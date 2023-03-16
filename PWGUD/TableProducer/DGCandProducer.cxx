@@ -52,6 +52,16 @@ struct DGCandProducer {
   Produces<aod::UDMcParticles> outputMcParticles;
   Produces<aod::UDMcTrackLabels> outputMcTrackLabels;
 
+  // define histograms
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"pt1Vspt2", "#pt1Vspt2", {HistType::kTH2F, {{100, -3., 3.}, {100, -3., 3.0}}}},
+      {"TPCsignal1", "#TPCsignal1", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}}},
+      {"TPCsignal2", "#TPCsignal2", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}}},
+      {"sig1VsSig2TPC", "#sig1VsSig2TPC", {HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}}}},
+    }};
+
   // data inputs
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
@@ -190,7 +200,8 @@ struct DGCandProducer {
                     track.tofNSigmaPi(),
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
-    outputTracksExtra(track.itsClusterMap(),
+    outputTracksExtra(track.tpcInnerParam(),
+                      track.itsClusterMap(),
                       track.tpcNClsFindable(),
                       track.tpcNClsFindableMinusFound(),
                       track.tpcNClsFindableMinusCrossedRows(),
@@ -208,6 +219,8 @@ struct DGCandProducer {
                       track.detectorMap());
     outputTracksFlag(track.has_collision(),
                      track.isPVContributor());
+    LOGF(debug, "<DGCandProducer> %d %d  %d %f %f %f %f %f",
+         track.isPVContributor(), track.isQualityTrack(), track.isGlobalTrack(), track.px(), track.py(), track.pz(), track.pt(), track.p());
   }
 
   // this function properly updates UDMcCollisions and UDMcParticles and returns the value
@@ -278,7 +291,6 @@ struct DGCandProducer {
   void processData(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
                    aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
-
     // nominal BC
     if (!collision.has_foundBC()) {
       return;
@@ -317,9 +329,35 @@ struct DGCandProducer {
       for (auto& track : tracks) {
         updateUDTrackTables(track, bc.globalBC());
       }
+
+      // produce TPC signal histograms for 2-track events
+      if (collision.numContrib() == 2) {
+        auto cnt = 0;
+        float pt1 = 0., pt2 = 0.;
+        float signalTPC1 = 0., signalTPC2 = 0.;
+        for (auto tr : tracks) {
+          if (tr.isPVContributor()) {
+            cnt++;
+            switch (cnt) {
+              case 1:
+                pt1 = tr.pt() * tr.sign();
+                signalTPC1 = tr.tpcSignal();
+                break;
+              case 2:
+                pt2 = tr.pt() * tr.sign();
+                signalTPC2 = tr.tpcSignal();
+            }
+            LOGF(debug, "track[%d] %d pT %f ITS %d TPC %d TRD %d TOF %d",
+                 cnt, tr.isGlobalTrack(), tr.pt(), tr.itsNCls(), tr.tpcNClsCrossedRows(), tr.hasTRD(), tr.hasTOF());
+          }
+        }
+        registry.get<TH2>(HIST("pt1Vspt2"))->Fill(pt1, pt2);
+        registry.get<TH2>(HIST("TPCsignal1"))->Fill(pt1, signalTPC1);
+        registry.get<TH2>(HIST("TPCsignal2"))->Fill(pt2, signalTPC2);
+        registry.get<TH2>(HIST("sig1VsSig2TPC"))->Fill(signalTPC1, signalTPC2);
+      }
     }
   }
-
   PROCESS_SWITCH(DGCandProducer, processData, "Process real data", false);
 
   Preslice<MCTCs> tracksPerCollision = aod::track::collisionId;
@@ -389,7 +427,7 @@ struct DGCandProducer {
 
       // save information of DG events
       if (isDGEvent == 0) {
-        LOGF(info, "  MC: good collision!");
+        LOGF(debug, "  MC: good collision!");
 
         // update UDMcCollisions and UDMcParticles if not already done
         if (!mcColIsSaved) {
@@ -421,7 +459,6 @@ struct DGCandProducer {
       }
     }
   }
-
   PROCESS_SWITCH(DGCandProducer, processMc, "Process MC data", false);
 };
 

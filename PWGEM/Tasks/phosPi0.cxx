@@ -112,29 +112,16 @@ struct phosPi0 {
     }
     uint64_t bcevent = 0;
     for (const auto& clu : clusters) {
-      if (clu.bc().globalBC() != bcevent) {
-        if (clu.colId() >= 0) {
-          auto coliter = collisions.begin() + clu.colId();
-          mHistManager.fill(HIST("vertex2"), coliter.posZ());
-        }
+      if (clu.collision().bc().globalBC() != bcevent) {
+        mHistManager.fill(HIST("vertex2"), clu.collision().posZ());
         mHistManager.fill(HIST("eventsAll"), 0.);
-        bcevent = clu.bc().globalBC();
+        bcevent = clu.collision().bc().globalBC();
       }
 
       mHistManager.fill(HIST("cluETime"), clu.e(), clu.time(), clu.mod());
 
-      if (clu.caloType() != 0 || clu.e() < mMinCluE || clu.ncell() < mMinCluNcell ||
+      if (clu.e() < mMinCluE || clu.ncell() < mMinCluNcell ||
           clu.time() > mMaxCluTime || clu.time() < mMinCluTime) {
-        continue;
-      }
-
-      float cen1 = 99.;
-      if (clu.colId() >= 0) {
-        auto coliter = collisions.begin() + clu.colId();
-        cen1 = log(1. + coliter.numContrib()) / log(2.);
-      }
-      int iCenBin1 = static_cast<int>(cen1 / 10);
-      if (iCenBin1 < 0 || iCenBin1 > 9) {
         continue;
       }
 
@@ -153,26 +140,17 @@ struct phosPi0 {
         mHistManager.fill(HIST("cluE"), clu.x(), clu.z(), clu.mod(), clu.e());
       }
 
+      float cen1 = 1.; // TODO: To be extended to use centrality
       // inv mass
       auto clu2 = clu;
       ++clu2;
       int nMix = mMixedEvents; // Number of events to mix
       uint64_t bcurrent = 0;
       for (; clu2 != clusters.end() && nMix > 0; clu2++) {
-        if (clu2.caloType() != 0 || clu2.e() < mMinCluE || clu2.ncell() < mMinCluNcell ||
+        if (clu2.e() < mMinCluE || clu2.ncell() < mMinCluNcell ||
             clu2.time() > mMaxCluTime || clu2.time() < mMinCluTime) {
           continue;
         }
-        float cen2 = 99.;
-        if (clu2.colId() >= 0) {
-          auto coliter2 = collisions.begin() + clu2.colId();
-          cen2 = log(1. + coliter2.numContrib()) / log(2.);
-        }
-        int iCenBin2 = static_cast<int>(cen2 / 10);
-        if (iCenBin1 != iCenBin2) {
-          continue;
-        }
-
         double m = pow(clu.e() + clu2.e(), 2) - pow(clu.px() + clu2.px(), 2) -
                    pow(clu.py() + clu2.py(), 2) - pow(clu.pz() + clu2.pz(), 2);
         if (m > 0) {
@@ -180,7 +158,7 @@ struct phosPi0 {
         }
         double pt = sqrt(pow(clu.px() + clu2.px(), 2) +
                          pow(clu.py() + clu2.py(), 2));
-        if (clu.bc().globalBC() == clu2.bc().globalBC()) { // Real
+        if (clu.collision() == clu2.collision()) { // Real
           mHistManager.fill(HIST("mggRe"), m, pt, cen1);
           if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
             mHistManager.fill(HIST("mggReCPV"), m, pt, cen1);
@@ -189,9 +167,9 @@ struct phosPi0 {
             mHistManager.fill(HIST("mggReDisp"), m, pt, cen1);
           }
         } else { // Mixed
-          if (clu2.bc().globalBC() != bcurrent) {
+          if (clu2.collision().bc().globalBC() != bcurrent) {
             --nMix;
-            bcurrent = clu2.bc().globalBC();
+            bcurrent = clu2.collision().bc().globalBC();
           }
           mHistManager.fill(HIST("mggMi"), m, pt, cen1);
           if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {

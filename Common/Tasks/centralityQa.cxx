@@ -11,6 +11,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "TH1F.h"
@@ -20,6 +21,7 @@ using namespace o2::framework;
 
 struct CentralityQa {
   Configurable<int> nBins{"nBins", 1050, "number of bins"};
+  Configurable<bool> INELgtZERO{"INELgtZERO", 1, "0 - no, 1 - yes"};
   OutputObj<TH1F> hCentRun2V0M{TH1F("hCentRun2V0M", "V0M", nBins, 0, 105.)};
   OutputObj<TH1F> hCentRun2SPDTks{TH1F("hCentRun2SPDTks", "SPD Tracklets", nBins, 0, 105.)};
   OutputObj<TH1F> hCentRun2SPDCls{TH1F("hCentRun2SPDCls", "SPD Clusters", nBins, 0, 105.)};
@@ -32,7 +34,7 @@ struct CentralityQa {
   OutputObj<TH1F> hCentFDDM{TH1F("hCentFDDM", "FDDM", nBins, 0, 105.)};
   OutputObj<TH1F> hCentNTPV{TH1F("hCentNTPV", "NTPV", nBins, 0, 105.)};
 
-  void processRun2PP(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2SPDClss>::iterator const& col)
+  void processRun2PP(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2SPDClss, aod::Mults>::iterator const& col)
   {
     if (!col.alias()[kINT7]) {
       return;
@@ -40,7 +42,9 @@ struct CentralityQa {
     if (!col.sel7()) {
       return;
     }
-
+    if (INELgtZERO && col.multNTracksPVeta1() < 1) {
+      return;
+    }
     LOGF(debug, "centV0M=%.0f", col.centRun2V0M());
     LOGF(debug, "centSPDTracklets=%.0f", col.centRun2SPDTracklets());
     LOGF(debug, "centSPDClusters=%.0f", col.centRun2SPDClusters());
@@ -51,7 +55,7 @@ struct CentralityQa {
   }
   PROCESS_SWITCH(CentralityQa, processRun2PP, "Process with Run2 SPD clusters centrality/multiplicity estimation", false);
 
-  void processRun2PbPb(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator const& col)
+  void processRun2PbPb(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2CL0s, aod::CentRun2CL1s, aod::Mults>::iterator const& col)
   {
     if (!col.alias()[kINT7]) {
       return;
@@ -59,7 +63,9 @@ struct CentralityQa {
     if (!col.sel7()) {
       return;
     }
-
+    if (INELgtZERO && col.multNTracksPVeta1() < 1) {
+      return;
+    }
     LOGF(debug, "centV0M=%.0f", col.centRun2V0M());
     LOGF(debug, "centSPDTracklets=%.0f", col.centRun2SPDTracklets());
     LOGF(debug, "centCL0=%.0f", col.centRun2CL0());
@@ -72,8 +78,11 @@ struct CentralityQa {
   }
   PROCESS_SWITCH(CentralityQa, processRun2PbPb, "Process with Run2 CL0 and CL1 multiplicities centrality/multiplicity  estimation", false);
 
-  void processRun3_FV0A(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As>::iterator const& col)
+  void processRun3_FV0A(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>::iterator const& col)
   {
+    if (INELgtZERO && col.multNTracksPVeta1() < 1) {
+      return;
+    }
     if (!col.sel8())
       return;
     LOGF(debug, "centFV0A=%.0f", col.centFV0A());
@@ -81,8 +90,11 @@ struct CentralityQa {
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FV0A, "Process with Run 3 FV0A estimator", false);
 
-  void processRun3_FT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& col)
+  void processRun3_FT0M(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator const& col)
   {
+    if (INELgtZERO && col.multNTracksPVeta1() < 1) {
+      return;
+    }
     if (!col.sel8())
       return;
     LOGF(debug, "centFT0M=%.0f", col.centFT0M());
@@ -90,32 +102,44 @@ struct CentralityQa {
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0M, "Process with Run 3 FT0M estimator", false);
 
-  void processRun3_FT0A(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As>::iterator const& col)
+  void processRun3_FT0A(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0As>::iterator const& col)
   {
+    if (INELgtZERO && col.multNTracksPVeta1() < 1) {
+      return;
+    }
     if (!col.sel8())
       return;
     hCentFT0A->Fill(col.centFT0A());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0A, "Process with Run 3 FT0A estimator", false);
 
-  void processRun3_FT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& col)
+  void processRun3_FT0C(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>::iterator const& col)
   {
+    if (INELgtZERO && col.multNTracksPVeta1() < 1) {
+      return;
+    }
     if (!col.sel8())
       return;
     hCentFT0C->Fill(col.centFT0C());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0C, "Process with Run 3 FT0A estimator", false);
 
-  void processRun3_FDDM(soa::Join<aod::Collisions, aod::EvSels, aod::CentFDDMs>::iterator const& col)
+  void processRun3_FDDM(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFDDMs>::iterator const& col)
   {
+    if (INELgtZERO && col.multNTracksPVeta1() < 1) {
+      return;
+    }
     if (!col.sel8())
       return;
     hCentFDDM->Fill(col.centFDDM());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FDDM, "Process with Run 3 FDDM estimator", false);
 
-  void processRun3_NTPV(soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>::iterator const& col)
+  void processRun3_NTPV(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentNTPVs>::iterator const& col)
   {
+    if (INELgtZERO && col.multNTracksPVeta1() < 1) {
+      return;
+    }
     if (!col.sel8())
       return;
     hCentNTPV->Fill(col.centNTPV());

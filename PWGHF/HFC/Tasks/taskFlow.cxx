@@ -18,7 +18,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "Framework/GroupSlicer.h"
 #include "Framework/StepTHn.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"

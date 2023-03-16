@@ -259,26 +259,6 @@ DGParticle::DGParticle()
 {
 }
 
-DGParticle::DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, UDTracksFull const& tracks, std::vector<uint> comb)
-{
-  // compute invariant mass
-  TLorentzVector lvtmp;
-  auto pids = anaPars.PIDs();
-
-  // loop over tracks and update mIVM
-  mIVM = TLorentzVector(0., 0., 0., 0.);
-  auto cnt = -1;
-  for (auto ind : comb) {
-    cnt++;
-    auto track = tracks.rawIteratorAt(ind);
-    lvtmp.SetXYZM(track.px(), track.py(), track.pz(), particleMass(pdg, pids[cnt]));
-    mIVM += lvtmp;
-  }
-
-  // set array of track indices
-  mtrkinds = comb;
-}
-
 DGParticle::~DGParticle()
 {
   mtrkinds.clear();
@@ -289,6 +269,10 @@ void DGParticle::Print()
 {
   LOGF(info, "DGParticle:");
   LOGF(info, "  Number of particles: %i", mtrkinds.size());
+  LOGF(info, "  Indices:");
+  for (auto ind : mtrkinds) {
+    LOGF(info, "    %d", ind);
+  }
   LOGF(info, "  Mass / pt: %f / %f", mIVM.M(), mIVM.Perp());
   LOGF(info, "");
 }
@@ -316,197 +300,6 @@ void DGPIDSelector::init(DGAnaparHolder anaPars)
 {
   mAnaPars = anaPars;
   mIVMs.clear();
-}
-
-// -----------------------------------------------------------------------------
-float DGPIDSelector::getTPCnSigma(UDTrackFull track, int pid)
-{
-  auto hypo = pid2ind(pid);
-  switch (hypo) {
-    case 0:
-      return track.tpcNSigmaEl();
-    case 1:
-      return track.tpcNSigmaPi();
-    case 2:
-      return track.tpcNSigmaMu();
-    case 3:
-      return track.tpcNSigmaKa();
-    case 4:
-      return track.tpcNSigmaPr();
-    default:
-      return 0.;
-  }
-}
-
-// -----------------------------------------------------------------------------
-float DGPIDSelector::getTOFnSigma(UDTrackFull track, int pid)
-{
-  auto hypo = pid2ind(pid);
-  switch (hypo) {
-    case 0:
-      return track.tofNSigmaEl();
-    case 1:
-      return track.tofNSigmaPi();
-    case 2:
-      return track.tofNSigmaMu();
-    case 3:
-      return track.tofNSigmaKa();
-    case 4:
-      return track.tofNSigmaPr();
-    default:
-      return 0.;
-  }
-}
-
-// -----------------------------------------------------------------------------
-bool DGPIDSelector::isGoodCombination(std::vector<uint> comb, UDTracksFull const& tracks)
-{
-  // compute net charge of track combination
-  int netCharge = 0.;
-  for (auto const& ind : comb) {
-    netCharge += tracks.iteratorAt(ind).sign();
-  }
-  LOGF(debug, "Net charge %i", netCharge);
-
-  // is this in the list of accepted net charges?
-  auto netCharges = mAnaPars.netCharges();
-  if (std::find(netCharges.begin(), netCharges.end(), netCharge) != netCharges.end()) {
-    return true;
-  }
-  return false;
-}
-
-// -----------------------------------------------------------------------------
-bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
-{
-  // get pid of particle cnt
-  auto pid = mAnaPars.PIDs()[cnt];
-
-  // unknown PID
-  auto pidhypo = pid2ind(pid);
-  if (pidhypo < 0) {
-    return false;
-  }
-
-  // cut on dcaXY and dcaZ
-  // LOGF(debug, "mAnaPars.maxDCAxyz %f %f", mAnaPars.maxDCAxy(), mAnaPars.maxDCAz());
-  // if (track.dcaXY() < -abs(mAnaPars.maxDCAxy()) || track.dcaXY() > abs(mAnaPars.maxDCAxy())) {
-  //  return false;
-  //}
-
-  // if (track.dcaZ() < -abs(mAnaPars.maxDCAz()) || track.dcaZ() > abs(mAnaPars.maxDCAz())) {
-  //   return false;
-  // }
-
-  // loop over all PIDCuts and apply the ones which apply to this track
-  auto pidcuts = mAnaPars.PIDCuts().Cuts();
-  for (auto pidcut : pidcuts) {
-
-    // skip cut if it does not apply to this track
-    LOGF(debug, "nPart %i %i, Type %i Apply %i", pidcut.nPart(), cnt, pidcut.cutType(), pidcut.cutApply());
-    if (pidcut.nPart() != cnt || pidcut.cutApply() <= 0) {
-      continue;
-    }
-
-    // check pt of track
-    if (track.pt() < mAnaPars.minpt() || track.pt() > mAnaPars.maxpt()) {
-      return false;
-    }
-
-    // check pt for pid cut
-    LOGF(debug, "pT %f %f %f", track.pt(), pidcut.cutPtMin(), pidcut.cutPtMax());
-    if (track.pt() < pidcut.cutPtMin() || track.pt() > pidcut.cutPtMax()) {
-      continue;
-    }
-
-    // is detector information required
-    LOGF(debug, "TPC %i TOF %i", track.hasTPC(), track.hasTOF());
-    if (pidcut.cutApply() == 2) {
-      if (pidcut.cutDetector() == 1 && !track.hasTPC()) {
-        return false;
-      }
-      if (pidcut.cutDetector() == 2 && !track.hasTOF()) {
-        return false;
-      }
-    }
-
-    // get detector value
-    LOGF(debug, "cutPID %i", pidcut.cutPID());
-    float detValue = 0.;
-    if (pidcut.cutDetector() == 1) {
-      if (!track.hasTPC()) {
-        continue;
-      }
-      switch (abs(pidcut.cutType())) {
-        case 1:
-          detValue = getTPCnSigma(track, pidcut.cutPID());
-          break;
-        case 2:
-          detValue = track.tpcSignal();
-      }
-      LOGF(debug, "detValue TPC %f", detValue);
-    } else if (abs(pidcut.cutDetector()) == 2) {
-      if (!track.hasTOF()) {
-        continue;
-      }
-      switch (abs(pidcut.cutType())) {
-        case 1:
-          detValue = getTOFnSigma(track, pidcut.cutPID());
-          break;
-        case 2:
-          detValue = track.tofSignal();
-      }
-      LOGF(debug, "detValue TOF %f", detValue);
-    } else {
-      continue;
-    }
-    LOGF(debug, "detValue %f", detValue);
-
-    // inclusive / exclusive
-    if (pidcut.cutType() > 0 && (detValue < pidcut.cutdetValueMin() || detValue > pidcut.cutdetValueMax())) {
-      return false;
-    } else if (pidcut.cutType() < 0 && (detValue > pidcut.cutdetValueMin() && detValue < pidcut.cutdetValueMax())) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-// -----------------------------------------------------------------------------
-int DGPIDSelector::computeIVMs(UDTracksFull const& tracks)
-{
-  // reset
-  mIVMs.clear();
-
-  // create combinations including permutations
-  auto combs = combinations(tracks.size());
-
-  // loop over unique combinations
-  for (auto comb : combs) {
-    // is combination compatible with netCharge requirements?
-    if (!isGoodCombination(comb, tracks)) {
-      continue;
-    }
-    // is tracks compatible with PID requirements?
-    bool isGoodComb = true;
-    auto cnt = -1;
-    for (auto ind : comb) {
-      cnt++;
-      if (!isGoodTrack(tracks.rawIteratorAt(ind), cnt)) {
-        isGoodComb = false;
-        break;
-      }
-    }
-
-    // update list of IVMs
-    if (isGoodComb) {
-      DGParticle IVM(fPDG, mAnaPars, tracks, comb);
-      mIVMs.push_back(IVM);
-    }
-  }
-
-  return mIVMs.size();
 }
 
 // -----------------------------------------------------------------------------

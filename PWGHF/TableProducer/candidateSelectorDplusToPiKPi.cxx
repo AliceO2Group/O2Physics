@@ -148,9 +148,9 @@ struct HfCandidateSelectorDplusToPiKPi {
       SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoTopol);
 
       // track-level PID selection
-      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDAll(trackPos1);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDAll(trackNeg);
-      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDAll(trackPos2);
+      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos1);
+      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
+      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
 
       if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
           pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
