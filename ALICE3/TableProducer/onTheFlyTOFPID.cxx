@@ -94,6 +94,7 @@ struct OnTheFlyTOFPID {
   Configurable<float> outerTOFTimeReso{"outerTOFTimeReso", 20, "barrel outer TOF time error (ps)"};
   Configurable<int> nStepsLIntegrator{"nStepsLIntegrator", 200, "number of steps in length integrator"};
   Configurable<bool> doQAplots{"doQAplots", true, "do basic velocity plot qa"};
+  Configurable<int> nBinsBeta{"nBinsBeta", 2200, "number of bins in beta"};
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
@@ -109,7 +110,7 @@ struct OnTheFlyTOFPID {
 
     if (doQAplots) {
       const AxisSpec axisMomentum{static_cast<int>(80), 0.0f, +4.0f, "#it{p} (GeV/#it{c})"};
-      const AxisSpec axisVelocity{static_cast<int>(110), 0.0f, +1.1f, "Measured #beta"};
+      const AxisSpec axisVelocity{static_cast<int>(nBinsBeta), 0.0f, +1.1f, "Measured #beta"};
       histos.add("h2dVelocityVsMomentumInner", "h2dVelocityVsMomentumInner", kTH2F, {axisMomentum, axisVelocity});
       histos.add("h2dVelocityVsMomentumOuter", "h2dVelocityVsMomentumOuter", kTH2F, {axisMomentum, axisVelocity});
     }
@@ -187,7 +188,7 @@ struct OnTheFlyTOFPID {
       // first step: find precise arrival time (if any)
       // --- convert track into perfect track
       if (!track.has_mcParticle()) // should always be OK but check please
-        continue;                  // fake
+        continue;
 
       o2::track::TrackParCov o2track;
       auto mcParticle = track.mcParticle();
@@ -240,11 +241,13 @@ struct OnTheFlyTOFPID {
 
       if (doQAplots) {
         float momentum = recoTrack.getP();
-        float innerBeta = (trackLengthInnerTOF / (1e+3 * measuredTimeInnerTOF)) / o2::constants::physics::LightSpeedCm2NS;
-        float outerBeta = (trackLengthOuterTOF / (1e+3 * measuredTimeOuterTOF)) / o2::constants::physics::LightSpeedCm2NS;
-
-        histos.fill(HIST("h2dVelocityVsMomentumInner"), momentum, innerBeta);
-        histos.fill(HIST("h2dVelocityVsMomentumOuter"), momentum, outerBeta);
+        // unit conversion: length in cm, time in ps
+        float innerBeta = 1e+3 * (trackLengthInnerTOF / measuredTimeInnerTOF) / o2::constants::physics::LightSpeedCm2NS;
+        float outerBeta = 1e+3 * (trackLengthOuterTOF / measuredTimeOuterTOF) / o2::constants::physics::LightSpeedCm2NS;
+        if (trackLengthRecoInnerTOF > 0)
+          histos.fill(HIST("h2dVelocityVsMomentumInner"), momentum, innerBeta);
+        if (trackLengthRecoOuterTOF > 0)
+          histos.fill(HIST("h2dVelocityVsMomentumOuter"), momentum, outerBeta);
       }
 
       for (int ii = 0; ii < 5; ii++) {
