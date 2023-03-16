@@ -57,15 +57,6 @@ struct BcTracks {
   std::vector<o2::track::TrackParCovFwd> trackParams = {};
 };
 
-
-/* 
-struct MyAwesomeTrack {
-  std::vector<aod::AmbiguousMFTTrack> tracks;
-  std::vector<o2::track::TrackParCovFwd> trackParams;
-};
-
-*/
-
 //-----------------------------------------------------------------------------------------
 struct UpcMftRec {
 
@@ -115,7 +106,11 @@ struct UpcMftRec {
     // propagated tracks control plots
     registry.add("PropControlHistos/hTrackPt", "Track p_{T}; p_{T} (GeV/c); Entries", kTH1F, {{200, 0, 1.0}});
     registry.add("PropControlHistos/hTrackEta", "Track #eta; #eta; Entries", kTH1F, {{50, -4, -2}});
+    registry.add("PropControlHistos/hTrackEtaPos", "Positive track #eta; #eta; Entries", kTH1F, {{50, -4, -2}});
+    registry.add("PropControlHistos/hTrackEtaNeg", "Negative track #eta; #eta; Entries", kTH1F, {{50, -4, -2}});
     registry.add("PropControlHistos/hTrackPhi", "Track #phi; #phi; Entries", kTH1F, {{100, -3.2, 3.2}});
+    registry.add("PropControlHistos/hTrackPhiPos", "Positive track #phi; #phi; Entries", kTH1F, {{100, -3.2, 3.2}});
+    registry.add("PropControlHistos/hTrackPhiNeg", "Negative track #phi; #phi; Entries", kTH1F, {{100, -3.2, 3.2}});
     }
 
     void initCCDB(ExtBCs::iterator const& bc)
@@ -143,31 +138,12 @@ struct UpcMftRec {
 	       aod::AmbiguousMFTTracks const& ambiguousTracksMFT,
 	       aod::FT0s const& ft0s,
          ExtBCs const& ebcs) {
-    
-    // std::cout << " JGC: there are " << ambiguousTracksMFT.size() << " ambiguous MFT tracks, "
-	  //     << " collisions: " << collisions.size()
-	  //     << " and MFT tracks " << tracksMFT.size()
-	  //     << " BCs: " << bcs.size()
-	  //     << " FT0s: " << ft0s.size()
-	  //     << std::endl;
-    
-    
-    std::map<int, BcTracks> bcGroups; // Map of tracks that belong to a given bunch crossing. One track can be associated with multiple BCs.
-    //std::map<int, o2::track::TrackParCovFwd> trackParams; 
 
-    initCCDB(ebcs.begin()); //if Bz is needed
+    std::map<int, BcTracks> bcGroups; // Map of tracks that belong to a given bunch crossing. One track can be associated with multiple BCs.
+
+    initCCDB(ebcs.begin()); // Bz is needed for propagation 
 
     for (auto& ambiguousTrackMFT : ambiguousTracksMFT) { 
-
-      //auto track = ambiguousTrackMFT.mfttrack();
-        // -----
-
-      // ------
-      //trackParams[track.globalIndex()] = trackPar;  
-
-
-
-    // previous code
         auto mftBCs = ambiguousTrackMFT.bc(); 
         for (auto& mftBC : mftBCs) {
           int bcId = mftBC.globalBC(); // Get global BC that will be used for grouping.
@@ -180,28 +156,19 @@ struct UpcMftRec {
             std::vector<double> v1; // Temporary null vector for the computation of the covariance matrix
             SMatrix55 tcovs(v1.begin(), v1.end());
             SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
-            //LOG(info) << "pt of MFT track is " << track.pt();  
             o2::track::TrackParCovFwd trackPar{track.z(), tpars, tcovs, track.chi2()};
             bct.trackParams.push_back(trackPar);
-            //LOG(info) << "pt of MFT track (from params) is " << trackPar.getPt();  
             bcGroups.emplace(std::make_pair(bcId, bct));
           } else { // If this BcId was already encountered, add the track to the existing vector
             element->second.tracks.push_back(ambiguousTrackMFT);
-
             auto track = ambiguousTrackMFT.mfttrack();
-            //LOG(info) << "pt of MFT track is " << track.pt();  
             std::vector<double> v1; // Temporary null vector for the computation of the covariance matrix
             SMatrix55 tcovs(v1.begin(), v1.end());
             SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
             o2::track::TrackParCovFwd trackPar{track.z(), tpars, tcovs, track.chi2()};
-            //LOG(info) << "pt of the MFT track (from params) is " << trackPar.getPt();
             element->second.trackParams.push_back(trackPar);
-            
           }
         }
-
-        
-    
     
     for (auto& ft0 : ft0s) {
       int collisionBC = (bcs.iteratorAt(ft0.bcId())).globalBC(); // Get global BC that will be used for grouping.
@@ -213,28 +180,17 @@ struct UpcMftRec {
         element->second.timeFT0A = ft0.timeA();
         element->second.ZposFT0 = ft0.posZ();
       }     
-      // trackPar.propagateToZhelix(ft0.posZ(), Bz); // track parameters propagation to the z position given by FT0
-      
-      
     }
-   /*
-     for (auto& trackParam : trackParams){
-        LOG(info) << "id of propagated track is " << trackParam.first << "; pt is " << trackParam.second.getPt();
-    }
-   */
-  
-    
 
     BcTracks defaultBcTrack; // Struct with default values used later to filter out default FT0 time
     for (auto& bcGroup : bcGroups) {
-      //LOG(info) << "------- STARTING TO LOOP THROUGH BCGROUPS ";
       registry.fill(HIST("hTracksPerBC"), bcGroup.second.tracks.size());
-      // std::cout << " ----------DMK: Global index " << bcGroup.first << ", track count:  " << bcGroup.second.tracks.size() << ", FT0 time is: " << bcGroup.second.timeFT0C << std::endl;
-      //trackPar.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
-      if (bcGroup.second.timeFT0C != defaultBcTrack.timeFT0C && std::abs(bcGroup.second.timeFT0C)<1 && std::abs(bcGroup.second.timeFT0A)>5 && bcGroup.second.tracks.size() == 2) {
-        // Fill control histos
+ 
+     if (bcGroup.second.timeFT0C != defaultBcTrack.timeFT0C && std::abs(bcGroup.second.timeFT0C)<1 && std::abs(bcGroup.second.timeFT0A)>5 && bcGroup.second.tracks.size() == 2) {
+
+        // Fill control histos for non-propagated tracks
         for (int i=0; i<2; i++) {
-          auto mftTrack = bcGroup.second.tracks[i].mfttrack();
+          auto mftTrack = bcGroup.second.tracks[i].mfttrack(); // Get MFT tracks for the two-track case
           registry.fill(HIST("ControlHistos/hTrackChi2"), mftTrack.chi2());
           registry.fill(HIST("ControlHistos/hTrackNClusters"), mftTrack.nClusters());
           registry.fill(HIST("ControlHistos/hTrackPt"), mftTrack.pt());
@@ -249,66 +205,72 @@ struct UpcMftRec {
             registry.fill(HIST("ControlHistos/hTrackPhiNeg"), mftTrack.phi());
           }
         }
-        // Get tracks for the two-track case
-	      auto mftTrack1 = bcGroup.second.tracks[0].mfttrack();
-        auto mftTrack2 = bcGroup.second.tracks[0].mfttrack();
 
-        // Get propagated tracks (two-track case)
+        // Get propagated MFT tracks (two-track case)
         auto mftPropTrack1 = bcGroup.second.trackParams[0];
         auto mftPropTrack2 = bcGroup.second.trackParams[1];
 
-        mftPropTrack1.propagateToZhelix(bcGroup.second.ZposFT0, Bz);
-        mftPropTrack2.propagateToZhelix(bcGroup.second.ZposFT0, Bz);
+        mftPropTrack1.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
+        mftPropTrack2.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
 
-        //LOG(info) << "--------- pt of the MFT track 1  (after propagation) is " << mftPropTrack1.getPt();
-        //LOG(info) << "--------- pt of the MFT track 2  (after propagation) is " << mftPropTrack2.getPt();
+      // Fill control histos for the propagated tracks
 
-
-
-      // fill control histos for propagated tracks
-
-      registry.fill(HIST("PropControlHistos/hTrackPt"), mftPropTrack1.getPt()); 
-      registry.fill(HIST("PropControlHistos/hTrackPt"), mftPropTrack2.getPt()); 
-      registry.fill(HIST("PropControlHistos/hTrackEta"), mftPropTrack1.getEta());
-      registry.fill(HIST("PropControlHistos/hTrackEta"), mftPropTrack2.getEta());
-      registry.fill(HIST("PropControlHistos/hTrackPhi"), mftPropTrack1.getPhi());
-      registry.fill(HIST("PropControlHistos/hTrackPhi"), mftPropTrack2.getPhi());
-
-
-	      // Make a rho candidate
+              for (int i=0; i<2; i++) {
+          auto mftPropTrack = bcGroup.second.trackParams[i];
+          registry.fill(HIST("PropControlHistos/hTrackPt"), mftPropTrack.getPt());
+          registry.fill(HIST("PropControlHistos/hTrackEta"), mftPropTrack.getEta());
+          registry.fill(HIST("PropControlHistos/hTrackPhi"), mftPropTrack.getPhi());
+          if (mftPropTrack.getCharge() > 0) {
+            registry.fill(HIST("PropControlHistos/hTrackEtaPos"), mftPropTrack.getEta());
+            registry.fill(HIST("PropControlHistos/hTrackPhiPos"), mftPropTrack.getPhi());
+          }
+          if (mftPropTrack.getCharge() < 0) {
+            registry.fill(HIST("PropControlHistos/hTrackEtaNeg"), mftPropTrack.getEta());
+            registry.fill(HIST("PropControlHistos/hTrackPhiNeg"), mftPropTrack.getPhi());
+          }
+        }
+	     
+        // Make a rho candidate ( using propagated tracks )
 	      const float mPion = 0.13957; // GeV/c2
-        if (mftTrack1.sign()+mftTrack2.sign() != 0) continue; // Skip if total charge is not 0 
+        if (mftPropTrack1.getCharge()+mftPropTrack2.getCharge() != 0) continue; // Skip if total charge is not 0 ; if using non propagated tracks use sign() instead of getCharge()
 	      TLorentzVector pi1LV;
 	      TLorentzVector pi2LV;
-	      pi1LV.SetPtEtaPhiM(mftTrack1.pt(),mftTrack1.eta(),mftTrack1.phi(),mPion);
-	      pi2LV.SetPtEtaPhiM(mftTrack2.pt(),mftTrack2.eta(),mftTrack2.phi(),mPion);
+	      pi1LV.SetPtEtaPhiM(mftPropTrack1.getPt(),mftPropTrack1.getEta(),mftPropTrack1.getPhi(),mPion); // if using non propagated tracks use pt(),eta(),phi() instead 
+	      pi2LV.SetPtEtaPhiM(mftPropTrack2.getPt(),mftPropTrack2.getEta(),mftPropTrack2.getPhi(),mPion); // if using non propagated tracks use pt(),eta(),phi() instead 
 	      TLorentzVector rhoLV = pi1LV+pi2LV;        
 	      // Fill histos
         registry.fill(HIST("hMassRhoRec"), rhoLV.M());
 	      registry.fill(HIST("hPtRhoRec"), rhoLV.Pt());
         registry.fill(HIST("hMassPtRhoRec"), rhoLV.M(), rhoLV.Pt());
 	      registry.fill(HIST("hTimeFT0C"), bcGroup.second.timeFT0C);
-
-
-    
         
       }
+
       if (bcGroup.second.timeFT0C != defaultBcTrack.timeFT0C  && std::abs(bcGroup.second.timeFT0C)<1 && std::abs(bcGroup.second.timeFT0A)>5 && bcGroup.second.tracks.size() == 4) { //4 tracks events
         // Get tracks
 	      auto mftTrack1 = bcGroup.second.tracks[0].mfttrack();
 	      auto mftTrack2 = bcGroup.second.tracks[1].mfttrack();
         auto mftTrack3 = bcGroup.second.tracks[2].mfttrack();
         auto mftTrack4 = bcGroup.second.tracks[3].mfttrack();
+        // Get propagated MFT tracks (four-track case)
+        auto mftPropTrack1 = bcGroup.second.trackParams[0];
+        auto mftPropTrack2 = bcGroup.second.trackParams[1];
+        auto mftPropTrack3 = bcGroup.second.trackParams[2];
+        auto mftPropTrack4 = bcGroup.second.trackParams[3];
+        mftPropTrack1.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
+        mftPropTrack2.propagateToZhelix(bcGroup.second.ZposFT0, Bz);
+        mftPropTrack3.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
+        mftPropTrack4.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
 	      // Make a rho candidate
 	      const float mPion = 0.13957; // GeV/c2
         TLorentzVector pi1LV;
 	      TLorentzVector pi2LV;
         TLorentzVector pi3LV;
         TLorentzVector pi4LV;
-	      pi1LV.SetPtEtaPhiM(mftTrack1.pt(),mftTrack1.eta(),mftTrack1.phi(),mPion);
-	      pi2LV.SetPtEtaPhiM(mftTrack2.pt(),mftTrack2.eta(),mftTrack2.phi(),mPion);
-        pi3LV.SetPtEtaPhiM(mftTrack3.pt(),mftTrack3.eta(),mftTrack3.phi(),mPion);
-        pi2LV.SetPtEtaPhiM(mftTrack4.pt(),mftTrack4.eta(),mftTrack4.phi(),mPion);
+	      pi1LV.SetPtEtaPhiM(mftPropTrack1.getPt(),mftPropTrack1.getEta(),mftPropTrack1.getPhi(),mPion);
+	      pi2LV.SetPtEtaPhiM(mftPropTrack2.getPt(),mftPropTrack2.getEta(),mftPropTrack2.getPhi(),mPion);
+        pi3LV.SetPtEtaPhiM(mftPropTrack3.getPt(),mftPropTrack3.getEta(),mftPropTrack3.getPhi(),mPion);
+        pi4LV.SetPtEtaPhiM(mftPropTrack4.getPt(),mftPropTrack4.getEta(),mftPropTrack4.getPhi(),mPion);
 	      TLorentzVector rhoLV = pi1LV+pi2LV+pi3LV+pi4LV;
 	      // Fill histos
         registry.fill(HIST("hChargeDistribution4Tracks"), mftTrack1.sign()+mftTrack2.sign()+mftTrack3.sign()+mftTrack4.sign());
@@ -318,17 +280,25 @@ struct UpcMftRec {
         registry.fill(HIST("hMassPtRhoRec4"), rhoLV.M(), rhoLV.Pt());
         registry.fill(HIST("hTimeFT0C4"), bcGroup.second.timeFT0C);
         }
+
       if (bcGroup.second.timeFT0C != defaultBcTrack.timeFT0C  && std::abs(bcGroup.second.timeFT0C)<1 && std::abs(bcGroup.second.timeFT0A)>5 && bcGroup.second.tracks.size() == 2) { //electron mass hypothesis
         // Get tracks
 	      auto mftTrack1 = bcGroup.second.tracks[0].mfttrack();
 	      auto mftTrack2 = bcGroup.second.tracks[1].mfttrack();
+        // Get propagated MFT tracks (two-track case)
+        auto mftPropTrack1 = bcGroup.second.trackParams[0];
+        auto mftPropTrack2 = bcGroup.second.trackParams[1];
+
+        mftPropTrack1.propagateToZhelix(bcGroup.second.ZposFT0, Bz); 
+        mftPropTrack2.propagateToZhelix(bcGroup.second.ZposFT0, Bz); 
+
 	      // Make a rho candidate
 	      const float mElectron = 0.000511; // GeV/c2
         if (mftTrack1.sign()+mftTrack2.sign() != 0) continue; // Skip if total charge is not 0 
 	      TLorentzVector el1LV;
 	      TLorentzVector el2LV;
-	      el1LV.SetPtEtaPhiM(mftTrack1.pt(),mftTrack1.eta(),mftTrack1.phi(),mElectron);
-	      el2LV.SetPtEtaPhiM(mftTrack2.pt(),mftTrack2.eta(),mftTrack2.phi(),mElectron);
+	      el1LV.SetPtEtaPhiM(mftPropTrack1.getPt(),mftPropTrack1.getEta(),mftPropTrack1.getPhi(),mElectron);
+	      el2LV.SetPtEtaPhiM(mftPropTrack2.getPt(),mftPropTrack2.getEta(),mftPropTrack2.getPhi(),mElectron);
 	      TLorentzVector rhoLV = el1LV+el2LV;
 	      // Fill histos
 	      registry.fill(HIST("hMassPtRhoRecElectrons"), rhoLV.M(), rhoLV.Pt());
@@ -336,17 +306,6 @@ struct UpcMftRec {
 
     }
 
-    /*
-        for (auto& trackParam: trackParams) {
-      // fill control histos for propagated tracks
-
-      registry.fill(HIST("PropControlHistos/hTrackPt"), trackParam.second.getPt()); 
-      registry.fill(HIST("PropControlHistos/hTrackEta"), trackParam.second.getEta());
-      registry.fill(HIST("PropControlHistos/hTrackPhi"), trackParam.second.getPhi());
-    }
-    */
-
-    
          }
 }
 };
@@ -354,6 +313,5 @@ struct UpcMftRec {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-   // o2::framework::adaptAnalysisTask<UpcMftGen>(cfgc)};
    o2::framework::adaptAnalysisTask<UpcMftRec>(cfgc)};
 }
