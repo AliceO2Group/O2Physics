@@ -42,7 +42,7 @@ namespace o2::aod
 namespace NucleiTableHist
 {
 DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);
+DECLARE_SOA_COLUMN(Sign, sign, int);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(ITSnCls, itsNCls, uint8_t);
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int16_t);
@@ -56,8 +56,8 @@ DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float);
 DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float);
 DECLARE_SOA_COLUMN(TOFmass2, tofmass2, float);
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
-DECLARE_SOA_COLUMN(DCAxy, dcaxy, int8_t);
-DECLARE_SOA_COLUMN(DCAz, dcaz, int8_t);
+DECLARE_SOA_COLUMN(DCAxy, dcaxy, float);
+DECLARE_SOA_COLUMN(DCAz, dcaz, float);
 } // namespace NucleiTableHist
 DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableHist::Pt,
