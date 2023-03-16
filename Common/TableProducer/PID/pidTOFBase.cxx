@@ -99,7 +99,7 @@ float trackSampleMaxMomentum = 2.f;
 template <typename trackType>
 bool filterForTOFEventTime(const trackType& tr)
 {
-  return (tr.hasTOF() && tr.p() > trackSampleMinMomentum && tr.p() < trackSampleMaxMomentum && tr.trackType() == o2::aod::track::TrackTypeEnum::Track);
+  return (tr.hasTOF() && tr.p() > trackSampleMinMomentum && tr.p() < trackSampleMaxMomentum && (tr.trackType() == o2::aod::track::TrackTypeEnum::Track || tr.trackType() == o2::aod::track::TrackTypeEnum::TrackIU));
 } // accept all
 
 /// Specialization of TOF event time maker
@@ -265,14 +265,14 @@ struct tofEventTime {
       int nGoodTracksForTOF = 0;
       float et = evTimeTOF.mEventTime;
       float erret = evTimeTOF.mEventTimeError;
-      float errDiamond = diamond * 33.356409f;
+      const float& errDiamond = diamond * 33.356409f;
 
       for (auto const& trk : tracksInCollision) { // Loop on Tracks
         if constexpr (removeTOFEvTimeBias) {
           evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
         }
         uint8_t flags = 0;
-        if (erret < errDiamond && abs(et) < maxEvTimeTOF) {
+        if (erret < errDiamond && (maxEvTimeTOF <= 0.f || abs(et) < maxEvTimeTOF)) {
           flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
         } else {
           et = 0.f;
@@ -349,7 +349,7 @@ struct tofEventTime {
         if constexpr (removeTOFEvTimeBias) {
           evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
         }
-        if (t0TOF[1] < errDiamond && abs(t0TOF[0]) < maxEvTimeTOF) {
+        if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
           flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
 
           weight = 1.f / (t0TOF[1] * t0TOF[1]);
