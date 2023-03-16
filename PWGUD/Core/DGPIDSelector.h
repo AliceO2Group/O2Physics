@@ -15,6 +15,7 @@
 #include <gandiva/projector.h>
 #include <string>
 #include <vector>
+#include <TVector3.h>
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "PWGUD/DataModel/UDTables.h"
@@ -110,10 +111,11 @@ struct DGAnaparHolder {
                  int dBCMin = 0, int dBCMax = 0,
                  float minptsys = 0.0, float maxptsys = 100.0,
                  float minpt = 0.0, float maxpt = 100.0,
+                 float mineta = -2.0, float maxeta = 2.0,
                  float minalpha = 0.0, float maxalpha = 3.2,
                  std::vector<int> netCharges = {-2, -1, 0, 1, 2},
                  std::vector<float> DGPIDs = {211, 211},
-                 std::vector<float> DGPIDCutValues = {}) : mNCombine{nCombine}, mdBCMin{dBCMin}, mdBCMax{dBCMax}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mMinpt{minpt}, mMaxpt{maxpt}, mMinptsys{minptsys}, mMaxptsys{maxptsys}, mMinAlpha{minalpha}, mMaxAlpha{maxalpha}, mNetCharges{netCharges}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
+                 std::vector<float> DGPIDCutValues = {}) : mNCombine{nCombine}, mdBCMin{dBCMin}, mdBCMax{dBCMax}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mMinpt{minpt}, mMaxpt{maxpt}, mMineta{mineta}, mMaxeta{maxeta}, mMinptsys{minptsys}, mMaxptsys{maxptsys}, mMinAlpha{minalpha}, mMaxAlpha{maxalpha}, mNetCharges{netCharges}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
   {
     if (mdBCMin < -16) {
       mdBCMin = -16;
@@ -141,6 +143,8 @@ struct DGAnaparHolder {
   float maxptsys() { return mMaxptsys; }
   float minpt() { return mMinpt; }
   float maxpt() { return mMaxpt; }
+  float mineta() { return mMineta; }
+  float maxeta() { return mMaxeta; }
   float minAlpha() { return mMinAlpha; }
   float maxAlpha() { return mMaxAlpha; }
   std::vector<int> netCharges() { return mNetCharges; }
@@ -168,6 +172,10 @@ struct DGAnaparHolder {
   // pt-range of tracks
   float mMinpt;
   float mMaxpt;
+
+  // eta range of tracks
+  float mMineta;
+  float mMaxeta;
 
   // pt-range of system
   float mMinptsys;
@@ -275,6 +283,17 @@ struct DGPIDSelector {
       return false;
     }
 
+    // check pt of track
+    if (track.pt() < mAnaPars.minpt() || track.pt() > mAnaPars.maxpt()) {
+      return false;
+    }
+
+    // check eta of track
+    auto v = TVector3(track.px(), track.py(), track.pz());
+    if (v.Eta() < mAnaPars.mineta() || v.Eta() > mAnaPars.maxeta()) {
+      return false;
+    }
+
     // cut on dcaXY and dcaZ
     // LOGF(debug, "mAnaPars.maxDCAxyz %f %f", mAnaPars.maxDCAxy(), mAnaPars.maxDCAz());
     // if (track.dcaXY() < -abs(mAnaPars.maxDCAxy()) || track.dcaXY() > abs(mAnaPars.maxDCAxy())) {
@@ -293,11 +312,6 @@ struct DGPIDSelector {
       LOGF(debug, "nPart %i %i, Type %i Apply %i", pidcut.nPart(), cnt, pidcut.cutType(), pidcut.cutApply());
       if (pidcut.nPart() != cnt || pidcut.cutApply() <= 0) {
         continue;
-      }
-
-      // check pt of track
-      if (track.pt() < mAnaPars.minpt() || track.pt() > mAnaPars.maxpt()) {
-        return false;
       }
 
       // check pt for pid cut
