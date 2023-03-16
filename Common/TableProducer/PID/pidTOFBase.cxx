@@ -123,6 +123,8 @@ struct tofEventTime {
   Produces<o2::aod::pidEvTimeFlags> tableFlags;
   static constexpr bool removeTOFEvTimeBias = true; // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
   static constexpr float diamond = 6.0;             // Collision diamond used in the estimation of the TOF event time
+  static constexpr float errDiamond = diamond * 33.356409f;
+  static constexpr float weightDiamond = 1.f / (errDiamond * errDiamond);
 
   bool enableTable = false;
   bool enableTableTOFOnly = false;
@@ -265,7 +267,6 @@ struct tofEventTime {
       int nGoodTracksForTOF = 0;
       float et = evTimeTOF.mEventTime;
       float erret = evTimeTOF.mEventTimeError;
-      const float& errDiamond = diamond * 33.356409f;
 
       for (auto const& trk : tracksInCollision) { // Loop on Tracks
         if constexpr (removeTOFEvTimeBias) {
@@ -335,8 +336,6 @@ struct tofEventTime {
       float eventTime = 0.f;
       float sumOfWeights = 0.f;
       float weight = 0.f;
-      float errDiamond = diamond * 33.356409f;
-      float weightDiamond = 1. / (errDiamond * errDiamond);
 
       for (auto const& trk : tracksInCollision) { // Loop on Tracks
         // Reset the flag
