@@ -122,6 +122,15 @@ DECLARE_SOA_COLUMN(Sign, sign, int);     //!
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int); //!
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float); //!
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);   //!
+DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t); //! Detector map: see enum DetectorMapEnum
+DECLARE_SOA_DYNAMIC_COLUMN(HasITS, hasITS,             //! Flag to check if track has a ITS match
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasTPC, hasTPC, //! Flag to check if track has a TPC match
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TPC; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasTRD, hasTRD, //! Flag to check if track has a TRD match
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TRD; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF, //! Flag to check if track has a TOF measurement
+                           [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,       //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
@@ -148,12 +157,16 @@ DECLARE_SOA_TABLE(ReducedTracksBarrel, "AOD", "RTBARREL", //!
                   track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
                   track::TPCNClsShared, track::TPCChi2NCl,
                   track::TRDChi2, track::TRDPattern, track::TOFChi2, track::Length, reducedtrack::DcaXY, reducedtrack::DcaZ,
+                  track::TrackTime, track::TrackTimeRes, track::TOFExpMom,
+                  reducedtrack::DetectorMap,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>);
+                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  reducedtrack::HasITS<reducedtrack::DetectorMap>, reducedtrack::HasTRD<reducedtrack::DetectorMap>,
+                  reducedtrack::HasTOF<reducedtrack::DetectorMap>, reducedtrack::HasTPC<reducedtrack::DetectorMap>);
 
 // barrel covariance matrix  TODO: add all the elements required for secondary vertexing
 DECLARE_SOA_TABLE(ReducedTracksBarrelCov, "AOD", "RTBARRELCOV", //!
-                  track::X, track::Alpha,
+                  track::X, track::Alpha, track::IsWithinBeamPipe<track::X>,
                   track::Y, track::Z, track::Snp, track::Tgl, track::Signed1Pt,
                   track::CYY, track::CZY, track::CZZ, track::CSnpY, track::CSnpZ,
                   track::CSnpSnp, track::CTglY, track::CTglZ, track::CTglSnp, track::CTglTgl,
@@ -290,7 +303,8 @@ DECLARE_SOA_TABLE(ReducedMuonsExtra, "AOD", "RTMUONEXTRA", //!
                   fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
                   fwdtrack::MatchScoreMCHMFT, reducedmuon::MCHTrackId,
                   fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards, fwdtrack::TrackType,
-                  reducedmuon::FwdDcaX, reducedmuon::FwdDcaY);
+                  reducedmuon::FwdDcaX, reducedmuon::FwdDcaY,
+                  fwdtrack::TrackTime, fwdtrack::TrackTimeRes);
 
 // Muon covariance, TODO: the rest of the matrix should be added when needed
 DECLARE_SOA_TABLE(ReducedMuonsCov, "AOD", "RTMUONCOV",

@@ -844,6 +844,32 @@ struct DiffQA {
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(21., (zdc.energySectorZPC())[3]);
   };
   PROCESS_SWITCH(DiffQA, processZDC, "Process ZDC", true);
+
+  // ...............................................................................................................
+  void processTest(CCs const& collisions, BCs const& bcs)
+  {
+    uint64_t bc1, bc2, bc3;
+    for (auto col : collisions) {
+      bc1 = -1;
+      bc2 = -2;
+      bc3 = -3;
+      if (col.has_foundBC()) {
+        auto bc = col.foundBC_as<BCs>();
+        bc1 = bc.globalBC();
+      }
+      if (col.has_bc()) {
+        auto bc = col.bc_as<BCs>();
+        bc2 = bc.globalBC();
+      }
+      auto bc = bcs.rawIteratorAt(col.globalIndex());
+      bc3 = bc.globalBC();
+
+      if (bc1 != bc2 || bc1 != bc3) {
+        LOGF(info, "BC missmatch: %d %d %d", bc1, bc2, bc3);
+      }
+    }
+  };
+  PROCESS_SWITCH(DiffQA, processTest, "Process test", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

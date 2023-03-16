@@ -195,7 +195,11 @@ struct qaEventTrack {
       histos.add<TH2>("Tracks/Kine/resoEta", "", kTH2D, {axisDeltaEta, axisEta})->GetYaxis()->SetTitle("#eta_{rec}");
       histos.add<TH2>("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, axisPhi})->GetYaxis()->SetTitle("#varphi_{rec}");
     }
-    histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution;#sigma{#it{p}}/#it{p}_{T};#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution;#sigma{#it{p}_{T}}/#it{p}_{T};#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaPlus", "relative #it{p}_{T} resolution positive #eta;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta>0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaMinus", "relative #it{p}_{T} resolution negative #eta;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta<0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaWithin04", "relative #it{p}_{T} resolution for |#eta| < 0.4;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta>0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaAbove04", "relative #it{p}_{T} resolution for |#eta| > 0.4;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta<0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
     histos.add("Tracks/Kine/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT#sigma{#it{p}}/#it{p}_{T}#GT;#it{p}_{T}", kTProfile, {{axisPt}});
 
     // count filtered tracks matched to a collision
@@ -321,6 +325,9 @@ struct qaEventTrack {
 
     // tracks vs tracks @ IU
     if (doprocessDataIU) {
+      // Events
+      histos.add("Events/nContribTracksIUWithTOFvsWithTRD", ";PV contrib. with TOF; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
+
       // Full distributions
       auto h1 = histos.add<TH1>("Tracks/IU/Pt", "IU: Pt", kTH1F, {axisPt});
       h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
@@ -522,9 +529,10 @@ struct qaEventTrack {
   PROCESS_SWITCH(qaEventTrack, processRun2ConvertedData, "process for run 2 converted data", false);
 
   // Process function for IU vs DCA track comparison
+  using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
   void processDataIU(CollisionTableData::iterator const& collision,
                      aod::FullTracks const& tracksUnfiltered,
-                     aod::TracksIU const& tracksIU)
+                     FullTracksIU const& tracksIU)
   {
     if (!isSelectedCollision<false>(collision)) {
       return;
@@ -533,6 +541,22 @@ struct qaEventTrack {
     if (tracksUnfiltered.size() != tracksIU.size()) {
       LOG(fatal) << "Tables are of different size!!!!!!!!! " << tracksUnfiltered.size() << " vs " << tracksIU.size();
     }
+
+    /// look for PV contributors and check correlation between TRD and TOF
+    /// to check if TRD time shift creates issues or not
+    int nPvContrWithTOF = 0;
+    int nPvContrWithTRD = 0;
+    for (const auto& trk : tracksIU) {
+      if (trk.isPVContributor()) {
+        if (trk.hasTOF()) {
+          nPvContrWithTOF++;
+        }
+        if (trk.hasTRD()) {
+          nPvContrWithTRD++;
+        }
+      }
+    }
+    histos.fill(HIST("Events/nContribTracksIUWithTOFvsWithTRD"), nPvContrWithTOF, nPvContrWithTRD);
 
     uint64_t trackIndex = 0;
     for (const auto& trk : tracksUnfiltered) {
@@ -1071,6 +1095,22 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/Kine/phivspt"), track.pt(), track.phi());
     histos.fill(HIST("Tracks/Kine/relativeResoPt"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
     histos.fill(HIST("Tracks/Kine/relativeResoPtMean"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+    auto eta = track.eta();
+    if (eta > 0) { /// positive eta
+      histos.fill(HIST("Tracks/Kine/relativeResoPtEtaPlus"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      if (eta < 0.4) { /// |eta| < 0.4
+        histos.fill(HIST("Tracks/Kine/relativeResoPtEtaWithin04"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      } else { /// |eta| > 0.4
+        histos.fill(HIST("Tracks/Kine/relativeResoPtEtaAbove04"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      }
+    } else { /// negative eta
+      histos.fill(HIST("Tracks/Kine/relativeResoPtEtaMinus"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      if (eta > -0.4) { /// |eta| < 0.4
+        histos.fill(HIST("Tracks/Kine/relativeResoPtEtaWithin04"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      } else { /// |eta| > 0.4
+        histos.fill(HIST("Tracks/Kine/relativeResoPtEtaAbove04"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      }
+    }
 
     // fill track parameters
     histos.fill(HIST("Tracks/alpha"), track.alpha());

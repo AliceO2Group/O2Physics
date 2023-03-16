@@ -120,6 +120,7 @@ class VarManager : public TObject
     // Run wise variables
     kRunNo = 0,
     kRunId,
+    kRunIndex,
     kNRunWiseVariables,
 
     // Event wise variables
@@ -207,6 +208,15 @@ class VarManager : public TObject
 
     // Barrel track variables
     kPin,
+    kTOFExpMom,
+    kTrackTime,
+    kTrackTimeRes,
+    kTrackTimeResRelative,
+    kDetectorMap,
+    kHasITS,
+    kHasTRD,
+    kHasTOF,
+    kHasTPC,
     kIsGlobalTrack,
     kIsGlobalTrackSDD,
     kIsITSrefit,
@@ -262,6 +272,7 @@ class VarManager : public TObject
     kTrackTimeResIsRange, // Gaussian or range (see Framework/DataTypes)
     kPVContributor,       // This track has contributed to the collision vertex fit (see Framework/DataTypes)
     kOrphanTrack,         // Track has no association with any collision vertex (see Framework/DataTypes)
+    kIsAmbiguous,
     kIsLegFromGamma,
     kIsLegFromK0S,
     kIsLegFromLambda,
@@ -289,6 +300,8 @@ class VarManager : public TObject
     kMuonTrackType,
     kMuonDCAx,
     kMuonDCAy,
+    kMuonTime,
+    kMuonTimeRes,
 
     // MC particle variables
     kMCPdgCode,
@@ -421,6 +434,8 @@ class VarManager : public TObject
 
   static void SetRunNumbers(int n, int* runs);
   static void SetRunNumbers(std::vector<int> runs);
+  static float GetRunIndex(double);
+  static void SetRunlist(TString period);
   static int GetNRuns()
   {
     return fgRunMap.size();
@@ -528,6 +543,7 @@ class VarManager : public TObject
 
   static std::map<int, int> fgRunMap; // map of runs to be used in histogram axes
   static TString fgRunStr;            // semi-colon separated list of runs, to be used for histogram axis labels
+  static std::vector<int> fgRunList;  // vector of runs, to be used for histogram axis
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
@@ -694,6 +710,7 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & ReducedEvent) > 0) {
     values[kRunNo] = event.runNumber();
+    values[kRunIndex] = GetRunIndex(event.runNumber());
     values[kVtxX] = event.posX();
     values[kVtxY] = event.posY();
     values[kVtxZ] = event.posZ();
@@ -828,6 +845,7 @@ void VarManager::FillTrack(T const& track, float* values)
     if constexpr ((fillMap & ReducedTrack) > 0 && !((fillMap & Pair) > 0)) {
       values[kIsGlobalTrack] = track.filteringFlags() & (uint64_t(1) << 0);
       values[kIsGlobalTrackSDD] = track.filteringFlags() & (uint64_t(1) << 1);
+      values[kIsAmbiguous] = track.isAmbiguous();
 
       values[kIsLegFromGamma] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 2));
       values[kIsLegFromK0S] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 3));
@@ -876,6 +894,10 @@ void VarManager::FillTrack(T const& track, float* values)
     if (fgUsedVars[kITSClusterMap]) {
       values[kITSClusterMap] = track.itsClusterMap();
     }
+    values[kTrackTime] = track.trackTime();
+    values[kTrackTimeRes] = track.trackTimeRes();
+    values[kTrackTimeResRelative] = track.trackTimeRes() / track.trackTime();
+    values[kTOFExpMom] = track.tofExpMom();
     values[kITSchi2] = track.itsChi2NCl();
     values[kTPCncls] = track.tpcNClsFound();
     values[kTPCchi2] = track.tpcChi2NCl();
@@ -885,6 +907,12 @@ void VarManager::FillTrack(T const& track, float* values)
 
     values[kTPCsignal] = track.tpcSignal();
     values[kTRDsignal] = track.trdSignal();
+
+    values[kDetectorMap] = track.detectorMap();
+    values[kHasITS] = track.hasITS();
+    values[kHasTRD] = track.hasTRD();
+    values[kHasTOF] = track.hasTOF();
+    values[kHasTPC] = track.hasTPC();
 
     if constexpr ((fillMap & TrackExtra) > 0) {
       if (fgUsedVars[kITSncls]) {
@@ -1071,6 +1099,8 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMuonTrackType] = track.trackType();
     values[kMuonDCAx] = track.fwdDcaX();
     values[kMuonDCAy] = track.fwdDcaY();
+    values[kMuonTime] = track.trackTime();
+    values[kMuonTimeRes] = track.trackTimeRes();
   }
   // Quantities based on the muon covariance table
   if constexpr ((fillMap & ReducedMuonCov) > 0 || (fillMap & MuonCov) > 0) {

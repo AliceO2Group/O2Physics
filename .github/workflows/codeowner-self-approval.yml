@@ -7,6 +7,10 @@ name: PR self-approval
     types:
       - auto_merge_enabled
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   approve:
     runs-on: ubuntu-latest

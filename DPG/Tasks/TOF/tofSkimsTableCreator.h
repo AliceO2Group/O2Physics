@@ -26,6 +26,8 @@ using namespace o2::track;
 
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {
@@ -35,10 +37,12 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);              //! Index to the co
 DECLARE_SOA_COLUMN(P, p, float);                             //! Momentum of the track
 DECLARE_SOA_COLUMN(Pt, pt, float);                           //! Pt of the track
 DECLARE_SOA_COLUMN(DeltaP, deltaP, float);                   //! Momentum difference with respect to the reference track
+DECLARE_SOA_COLUMN(DeltaPt, deltaPt, float);                 //! Transverse momentum difference with respect to the reference track
 DECLARE_SOA_COLUMN(Eta, eta, float);                         //! Eta of the track
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);               //! Eta difference with respect to the reference track
 DECLARE_SOA_COLUMN(Phi, phi, float);                         //! Phi of the track
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);               //! Phi difference with respect to the reference track
+DECLARE_SOA_COLUMN(DeltaTPi, deltaTPi, float);               //! Difference between the tofSignal and the pion expected signal
 DECLARE_SOA_COLUMN(DoubleDelta, doubleDelta, float);         //! Double difference between DeltaT
 DECLARE_SOA_COLUMN(PIDForTracking, pidForTracking, uint8_t); //! Index for mass hypothesis used in tracking see PID.h for definition
 DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);           //! Event time of the track computed with the T0AC
@@ -49,6 +53,20 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,                   //! Flag to check i
 // Calibration information
 
 } // namespace tofskims
+
+DECLARE_SOA_TABLE(SkimmedTOFColl, "AOD", "SKIMMEDTOFCOL", //! Table of the skimmed TOF data format. One entry per collision.
+                  o2::soa::Index<>,
+                  tofskims::CollisionId,
+                  pidtofevtime::EvTimeTOF,
+                  pidtofevtime::EvTimeTOFErr,
+                  pidtofevtime::EvTimeTOFMult,
+                  ft0::T0ACorrected,
+                  ft0::T0CCorrected,
+                  tofskims::EvTimeT0AC,
+                  tofskims::EvTimeT0ACErr,
+                  collision::CollisionTime,
+                  collision::CollisionTimeRes,
+                  pidflags::TOFFlags);
 
 DECLARE_SOA_TABLE(SkimmedTOF, "AOD", "SKIMMEDTOF", //! Table of the skimmed TOF data format. One entry per track.
                   o2::soa::Index<>,
@@ -86,10 +104,12 @@ DECLARE_SOA_TABLE(DeltaTOF, "AOD", "DELTATOF", //! Table of the delta TOF data f
                   tofskims::P,
                   tofskims::DeltaP,
                   tofskims::Pt,
+                  tofskims::DeltaPt,
                   tofskims::Eta,
                   tofskims::DeltaEta,
                   tofskims::Phi,
                   tofskims::DeltaPhi,
+                  tofskims::DeltaTPi,
                   tofskims::DoubleDelta,
                   track::Length,
                   track::TOFChi2,
@@ -97,8 +117,13 @@ DECLARE_SOA_TABLE(DeltaTOF, "AOD", "DELTATOF", //! Table of the delta TOF data f
                   pidtofsignal::TOFSignal,
                   pidtofevtime::EvTimeTOF,
                   pidtofevtime::EvTimeTOFErr,
+                  pidtofevtime::EvTimeTOFMult,
+                  ft0::T0ACorrected,
+                  ft0::T0CCorrected,
                   tofskims::EvTimeT0AC,
                   tofskims::EvTimeT0ACErr,
+                  collision::CollisionTime,
+                  collision::CollisionTimeRes,
                   pidflags::TOFFlags,
                   tofskims::LastTRDCluster);
 

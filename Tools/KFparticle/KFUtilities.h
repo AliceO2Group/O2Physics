@@ -48,15 +48,14 @@ KFPVertex createKFPVertexFromCollision(const T& collision)
   return kfpVertex;
 }
 
-/// @brief Function to create a KFPTrack from AO2D tracks. The Covariance matrix is needed.
-/// @tparam T
-/// @param track Track from aod::Tracks, aod::TracksExtra, aod::TracksCov
+/// @brief Function to create a KFPTrack from o2::track::TrackParametrizationWithError tracks. The Covariance matrix is needed.
+/// @param track Track from o2::track::TrackParametrizationWithError
 /// @return KFPTrack
-template <typename T>
-KFPTrack createKFPTrackFromTrack(const T& track)
+KFPTrack createKFPTrack(const o2::track::TrackParametrizationWithError<float>& trackparCov,
+                        int16_t trackSign,
+                        int16_t tpcNClsFound,
+                        float tpcChi2NCl)
 {
-  o2::track::TrackParametrizationWithError trackparCov;
-  trackparCov = getTrackParCov(track);
   array<float, 3> trkpos_par;
   array<float, 3> trkmom_par;
   array<float, 21> trk_cov;
@@ -72,9 +71,35 @@ KFPTrack createKFPTrackFromTrack(const T& track)
   KFPTrack kfpTrack;
   kfpTrack.SetParameters(trkpar_KF);
   kfpTrack.SetCovarianceMatrix(trkcov_KF);
-  kfpTrack.SetCharge(track.sign());
-  kfpTrack.SetNDF(track.tpcNClsFound() - 5);
-  kfpTrack.SetChi2(track.tpcChi2NCl() * track.tpcNClsFound());
+  kfpTrack.SetCharge(trackSign);
+  kfpTrack.SetNDF(tpcNClsFound - 5);
+  kfpTrack.SetChi2(tpcNClsFound * tpcChi2NCl);
+  return kfpTrack;
+}
+
+/// @brief Function to create a KFPTrack from AO2D tracks. The Covariance matrix is needed.
+/// @tparam T
+/// @param track Track from aod::Tracks, aod::TracksExtra, aod::TracksCov
+/// @return KFPTrack
+template <typename T>
+KFPTrack createKFPTrackFromTrack(const T& track)
+{
+  o2::track::TrackParametrizationWithError trackparCov;
+  trackparCov = getTrackParCov(track);
+
+  KFPTrack kfpTrack = createKFPTrack(trackparCov, track.sign(), track.tpcNClsFound(), track.tpcChi2NCl());
+  return kfpTrack;
+}
+
+/// @brief Function to create a KFPTrack from o2::track::TrackParametrizationWithError tracks. The Covariance matrix is needed.
+/// @param track Track from o2::track::TrackParametrizationWithError
+/// @return KFPTrack
+KFPTrack createKFPTrackFromTrackParCov(const o2::track::TrackParametrizationWithError<float>& trackparCov,
+                                       int16_t trackSign,
+                                       int16_t tpcNClsFound,
+                                       float tpcChi2NCl)
+{
+  KFPTrack kfpTrack = createKFPTrack(trackparCov, trackSign, tpcNClsFound, tpcChi2NCl);
   return kfpTrack;
 }
 
