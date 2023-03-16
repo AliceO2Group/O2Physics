@@ -22,7 +22,7 @@ function(o2physics_link_all_subdirs mainDir currentDir installDir)
     # This helps to use #include "A/B/C/x.h" from the flat installation of header files
     message("Linking ${dir} in ${installDir}")
     execute_process(
-      COMMAND ln -sfh . ${dir}
+      COMMAND ln -sfn . ${dir}
       WORKING_DIRECTORY ${installDir}
       )
   endforeach()
