@@ -331,7 +331,7 @@ template <typename T>
 bool cleanFV0(T& bc, float limitA)
 {
   if (bc.has_foundFV0()) {
-   bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
+    bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
     return oma;
   } else {
     return true;
