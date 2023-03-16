@@ -28,7 +28,7 @@ struct Consume {
   {
     for (auto& track : tracks) {
       if (track.globalIndex() % 500 == 0 && track.inpt() && track.ineta()) {
-        LOG(info) << "Pt = " << track.pt() << " [0, " << (float)ptCutOff << "); eta = " << track.eta() << "(-" << (float)etaRange << ", " << (float)etaRange << ");";
+        LOG(info) << "Pt = " << track.pt() << " [0, " << static_cast<float>(ptCutOff) << "); eta = " << track.eta() << "(-" << (float)etaRange << ", " << (float)etaRange << ");";
       }
     }
   }

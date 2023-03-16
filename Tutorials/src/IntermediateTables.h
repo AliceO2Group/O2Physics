@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef INTABLES_H
-#define INTABLES_H
+#ifndef TUTORIALS_SRC_INTERMEDIATETABLES_H_
+#define TUTORIALS_SRC_INTERMEDIATETABLES_H_
 #include "Framework/AnalysisDataModel.h"
 
 /// Definition of output table to store the flat tree for re-weighting model
@@ -27,4 +27,4 @@ DECLARE_SOA_TABLE(Decisions, "AOD", "DECISIONS", o2::soa::Index<>,
                   vars::InEta);
 } // namespace o2::aod
 
-#endif // INTABLES_H
+#endif // TUTORIALS_SRC_INTERMEDIATETABLES_H_

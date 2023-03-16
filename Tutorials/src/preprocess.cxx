@@ -40,13 +40,13 @@ struct PreProcess {
         auto ptoption = std::find_if(consumer->options.begin(), consumer->options.end(), [](auto const& o) { return o.name == "ptcutoff"; });
         if (ptoption != consumer->options.end()) {
           auto value = ptoption->defaultValue.get<float>();
-          LOG(info) << "Resetting option pt cut off from " << (float)ptCutOff << " to " << value;
+          LOG(info) << "Resetting option pt cut off from " << static_cast<float>(ptCutOff) << " to " << value;
           ptCutOff.value = value;
         }
         auto etaoption = std::find_if(consumer->options.begin(), consumer->options.end(), [](auto const& o) { return o.name == "etarange"; });
         if (etaoption != consumer->options.end()) {
           auto value = etaoption->defaultValue.get<float>();
-          LOG(info) << "Resetting option eta range from " << (float)etaRange << " to " << value;
+          LOG(info) << "Resetting option eta range from " << static_cast<float>(etaRange) << " to " << value;
           etaRange.value = value;
         }
       }
