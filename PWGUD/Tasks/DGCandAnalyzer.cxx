@@ -325,7 +325,7 @@ struct DGCandAnalyzer {
         registry.get<TH1>(HIST("trackQC"))->Fill(2., track.hasTPC() * 1.);
         registry.get<TH1>(HIST("trackQC"))->Fill(3., track.hasTRD() * 1.);
         registry.get<TH1>(HIST("trackQC"))->Fill(4., track.hasTOF() * 1.);
- 
+
         // registry.get<TH1>(HIST("dcaXYDG"))->Fill(track.dcaXY());
         // registry.get<TH2>(HIST("ptTrkdcaXYDG"))->Fill(track.pt(), track.dcaXY());
         // registry.get<TH1>(HIST("dcaZDG"))->Fill(track.dcaZ());
