@@ -42,6 +42,7 @@ struct HfTaskMcEfficiency {
   Configurable<float> mcAcceptanceEta{"mcAcceptanceEta", 0.8, "MC Acceptance: upper eta limit"};
 
   enum HFStep { kHFStepMC = 0,
+                kHFStepMcInRapidity,        // MC mothers in rapidity |y| < 0.5
                 kHFStepAcceptance,          // MC mothers where all prongs are in the acceptance
                 kHFStepTrackable,           // MC mothers where all prongs have a reconstructed track
                 kHFStepAcceptanceTrackable, // MC mothers where all prongs are in the acceptance and have a reconstructed track
@@ -86,7 +87,7 @@ struct HfTaskMcEfficiency {
   }
 
   template <bool mc, typename T1, typename T2, typename T3>
-  void candidateLoop(T1& candidates, T2& tracks, T3& mcParticles)
+  void candidate2ProngLoop(T1& candidates, T2& tracks, T3& mcParticles)
   {
     using TracksType = std::decay_t<decltype(tracks)>;
 
@@ -181,15 +182,16 @@ struct HfTaskMcEfficiency {
     }
   }
 
-  void processData(soa::Join<aod::HfCand2Prong, aod::HfSelD0>& candidates, TracksWithSelection& tracks)
+  void processDataD0(soa::Join<aod::HfCand2Prong, aod::HfSelD0>& candidates, TracksWithSelection& tracks)
   {
-    candidateLoop<false>(candidates, tracks, tracks); // NOTE third argument has to be provided but is not used as template argument is <false>
+    candidate2ProngLoop<false>(candidates, tracks, tracks); // NOTE third argument has to be provided but is not used as template argument is <false>
   }
-  PROCESS_SWITCH(HfTaskMcEfficiency, processData, "Process data (no MC information needed)", false);
+  PROCESS_SWITCH(HfTaskMcEfficiency, processDataD0, "Process D0 data (no MC information needed)", false);
 
-  void processMc(soa::Join<aod::HfCand2Prong, aod::HfSelD0>& candidates, TracksWithSelectionMC& tracks, aod::McParticles& mcParticles, aod::McCollisionLabels&)
+  template <typename C>
+  void candidate2ProngMcLoop(C& candidates, TracksWithSelectionMC& tracks, aod::McParticles& mcParticles, aod::McCollisionLabels& colls)
   {
-    candidateLoop<true>(candidates, tracks, mcParticles);
+    candidate2ProngLoop<true>(candidates, tracks, mcParticles);
 
     auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
     auto hTrackablePtEta = registry.get<StepTHn>(HIST("hTrackablePtEta"));
@@ -222,6 +224,10 @@ struct HfTaskMcEfficiency {
           continue;
         }
         hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, pdgCode, 1.0, true);
+
+        if (std::abs(mcParticle.y()) < 0.5 ) {
+          hCandidates->Fill(kHFStepMcInRapidity, mcParticle.pt(), mass, pdgCode, 1.0, true);
+        }
 
         if (mcParticle.daughtersIds().size() != 2) {
           LOGP(fatal, "Invalid numbers of daughters for D0(bar) {}: {}", mcParticle.globalIndex(), mcParticle.daughtersIds().size());
@@ -283,7 +289,11 @@ struct HfTaskMcEfficiency {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskMcEfficiency, processMc, "Process MC", true);
+
+  void processMcD0(soa::Join<aod::HfCand2Prong, aod::HfSelD0>& candidates, TracksWithSelectionMC& tracks, aod::McParticles& mcParticles, aod::McCollisionLabels& colls) {
+    candidate2ProngMcLoop(candidates, tracks, mcParticles, colls);
+  }
+  PROCESS_SWITCH(HfTaskMcEfficiency, processMcD0, "Process MC for D0 signal", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
