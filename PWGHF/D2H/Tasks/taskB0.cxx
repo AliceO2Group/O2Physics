@@ -37,6 +37,8 @@ struct HfTaskB0 {
   Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
 
+  using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0);
 
   HistogramRegistry registry{
@@ -110,7 +112,6 @@ struct HfTaskB0 {
     registry.add("hPtGen", "MC particles (generated);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
   }
 
-  using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
   void process(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, TracksWithSel const&)
   {
     for (auto const& candidate : candidates) {
@@ -148,8 +149,8 @@ struct HfTaskB0 {
 
   /// B0 MC analysis and fill histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi, aod::HfCandB0McRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandB0McGen> const& particlesMC,
-                 aod::BigTracksMC const& tracks,
+                 soa::Join<aod::McParticles, aod::HfCandB0McGen> const& particlesMc,
+                 aod::BigTracksMC const&,
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec> const&)
   {
     // MC rec
@@ -165,8 +166,8 @@ struct HfTaskB0 {
 
       auto candD = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
       if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_b0::DecayType::B0ToDPi)) {
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0McGen>>(), pdg::Code::kB0, true);
-        auto particleMother = particlesMC.rawIteratorAt(indexMother);
+        auto indexMother = RecoDecay::getMother(particlesMc, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0McGen>>(), pdg::Code::kB0, true);
+        auto particleMother = particlesMc.rawIteratorAt(indexMother);
 
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), ptCandB0);
@@ -208,8 +209,8 @@ struct HfTaskB0 {
     } // rec
 
     // MC gen. level
-    // Printf("MC Particles: %d", particlesMC.size());
-    for (auto const& particle : particlesMC) {
+    // Printf("MC Particles: %d", particlesMc.size());
+    for (auto const& particle : particlesMc) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
 
         auto ptParticle = particle.pt();
