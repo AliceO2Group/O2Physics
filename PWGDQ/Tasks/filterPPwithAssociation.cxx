@@ -198,7 +198,7 @@ struct DQBarrelTrackSelection {
   std::vector<TString> fCutHistNames;
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
-  std::map<uint64_t, uint32_t> fSelectedTracks;
+  std::map<int64_t, uint32_t> fSelectedTracks;
 
   // int fTimeFrameAssociation;
   // int fTimeFrameSelection;
@@ -352,7 +352,7 @@ struct DQBarrelTrackSelection {
     }
 
     // map to keep all collision-track associations (ordered based on the key by construction); for each collision there is a vector of tracks
-    std::map<uint64_t, std::vector<uint64_t>> collTrackIds;
+    std::map<int64_t, std::vector<int64_t>> collTrackIds;
     // map to hold collision - BC associations
     std::map<uint64_t, uint64_t> collBCmap;
 
@@ -361,7 +361,7 @@ struct DQBarrelTrackSelection {
       auto track = tracksBarrel.rawIteratorAt(trackIdx);
       auto collId = track.collisionId();
       if (collTrackIds.find(collId) == collTrackIds.end()) { // this colision is not in the map
-        std::vector<uint64_t> idxs{trackIdx};
+        std::vector<int64_t> idxs{trackIdx};
         collTrackIds[collId] = idxs;
       } else { // collision is in the map, add track to the vector
         auto idxs = collTrackIds[collId];
@@ -396,9 +396,9 @@ struct DQBarrelTrackSelection {
         // loop over the track BC slice and check if this collision matches
         for (const auto& bc : ambTrack.bc()) {
           if (bc.globalBC() == mostProbableBc) { // found a match, add it to the association map
-            const uint64_t trackId = track.globalIndex();
+            const int64_t trackId = track.globalIndex();
             if (collTrackIds.find(collId) == collTrackIds.end()) {
-              std::vector<uint64_t> idxs{trackId};
+              std::vector<int64_t> idxs{trackId};
               collTrackIds[collId] = idxs;
             } else {
               auto idxs = collTrackIds[collId];
@@ -435,7 +435,7 @@ struct DQBarrelTrackSelection {
       for (const auto& pileupCollId : pileupCollIds) {
         for (const auto& assocTrack : assocTracks) {
           if (collTrackIds.find(pileupCollId) == collTrackIds.end()) { // this colision is not in the map
-            std::vector<uint64_t> idxs{assocTrack};
+            std::vector<int64_t> idxs{assocTrack};
             collTrackIds[pileupCollId] = idxs;
           } else {
             auto idxs = collTrackIds[pileupCollId];
@@ -557,7 +557,7 @@ struct DQMuonsSelection {
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<TString> fCutHistNames;
 
-  std::map<uint64_t, uint32_t> fSelectedMuons;
+  std::map<int64_t, uint32_t> fSelectedMuons;
 
   void init(o2::framework::InitContext&)
   {
@@ -701,7 +701,7 @@ struct DQMuonsSelection {
       return;
     }
 
-    std::map<uint64_t, std::vector<uint64_t>> collTrackIds; // map to keep all collision-track associations (ordered based on the key by construction)
+    std::map<int64_t, std::vector<int64_t>> collTrackIds;   // map to keep all collision-track associations (ordered based on the key by construction)
     std::map<uint64_t, uint64_t> collBCmap;                 // map to hold collision - BC associations
 
     // first lets associate all the non-orphan muons to their primary collision Id
@@ -712,7 +712,7 @@ struct DQMuonsSelection {
       }
       auto collId = muon.collisionId();
       if (collTrackIds.find(collId) == collTrackIds.end()) { // this colision is not in the map
-        std::vector<uint64_t> idxs{muonIdx};
+        std::vector<int64_t> idxs{muonIdx};
         collTrackIds[collId] = idxs;
       } else { // collision is in the map, add track to the associated vector
         auto idxs = collTrackIds[collId];
@@ -746,9 +746,9 @@ struct DQMuonsSelection {
         // loop over the BCs compatible with the muon
         for (const auto& bc : ambMuon.bc()) {
           if (bc.globalBC() == mostProbableBc) { // found a match
-            const uint64_t muonId = muon.globalIndex();
+            const int64_t muonId = muon.globalIndex();
             if (collTrackIds.find(collId) == collTrackIds.end()) { // this colision is not in the map, adding it
-              std::vector<uint64_t> idxs{muonId};
+              std::vector<int64_t> idxs{muonId};
               collTrackIds[collId] = idxs;
             } else {
               auto idxs = collTrackIds[collId];
@@ -765,7 +765,7 @@ struct DQMuonsSelection {
     // Check only collisions that are associated with filtered muons
     for (auto const& [collId, assocTracks] : collTrackIds) {
       const uint64_t currentBC = collBCmap[collId];
-      std::vector<uint64_t> pileupCollIds{};
+      std::vector<int64_t> pileupCollIds{};
       for (const auto& collision : collisions) { // NOTE: since collisions should be ordered in time, one could optimize here and not make the full loop (similar as with the tracks in the time based association)
         if (collision.bc().globalBC() == currentBC) {
           if (collision.globalIndex() != collId) { // add the collision only if its a different one
@@ -783,7 +783,7 @@ struct DQMuonsSelection {
       for (const auto& pileupCollId : pileupCollIds) {
         for (const auto& assocTrack : assocTracks) {
           if (collTrackIds.find(pileupCollId) == collTrackIds.end()) { // this colision is not in the map
-            std::vector<uint64_t> idxs{assocTrack};
+            std::vector<int64_t> idxs{assocTrack};
             collTrackIds[pileupCollId] = idxs;
           } else {
             auto idxs = collTrackIds[pileupCollId];
