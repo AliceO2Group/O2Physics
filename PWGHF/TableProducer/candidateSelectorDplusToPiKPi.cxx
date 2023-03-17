@@ -105,11 +105,11 @@ struct HfCandidateSelectorDplusToPiKPi {
     return true;
   }
 
-  // Apply PID selection
-  // \param pidTrackPos1Pion is the PID status of trackPos1 (prong0 of D candidate)
-  // \param pidTrackNegKaon is the PID status of trackNeg (prong1 of D candidate)
-  // \param pidTrackPos2Pion is the PID status of trackPos2 (prong2 of D candidate)
-  // \return true if prongs pass all selections
+  /// Apply PID selection
+  /// \param pidTrackPos1Pion is the PID status of trackPos1 (prong0 of D candidate)
+  /// \param pidTrackNegKaon is the PID status of trackNeg (prong1 of D candidate)
+  /// \param pidTrackPos2Pion is the PID status of trackPos2 (prong2 of D candidate)
+  /// \return true if prongs pass all selections
   template <typename T = int>
   bool selectionPID(const T& pidTrackPos1Pion, const T& pidTrackNegKaon, const T& pidTrackPos2Pion)
   {
