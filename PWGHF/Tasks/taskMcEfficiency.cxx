@@ -25,7 +25,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
+//using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 struct HfTaskMcEfficiency {
@@ -87,6 +87,143 @@ struct HfTaskMcEfficiency {
   }
 
   template <bool mc, typename T1, typename T2, typename T3>
+  void candidate3ProngLoop(T1& candidates, T2& tracks, T3& mcParticles)
+  {
+    using TracksType = std::decay_t<decltype(tracks)>;
+
+    auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
+    std::map<std::size_t, int> duplicates;
+
+    for (const auto& candidate : candidates) { /// loop over candidates
+
+      for (const auto pdgCode : pdgCodes.value) { /// loop on pdg codes
+        auto decayType = -1;
+        std::array<int, 3> pdgDaughters;
+
+        if (pdgCode == pdg::kLambdaCPlus) {
+          decayType = 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi;
+          pdgDaughters[0] = +kProton;
+          pdgDaughters[1] = -kKPlus;
+          pdgDaughters[2] = +kPiPlus;
+        } else {
+          LOGP(fatal, "Not implemented for PDG {}", pdgCode);
+        }
+
+        if (!(candidate.hfflag() & decayType)) {
+          continue;
+        }
+
+        auto trackPos = candidate.template prong0_as<TracksType>();
+        auto trackNeg = candidate.template prong1_as<TracksType>();
+        auto trackThird = candidate.template prong2_as<TracksType>();
+
+        bool isHypoMass1TrackStep = true;
+        bool isHypoMass2TrackStep = true;
+        bool isHypoMass1SelStep = false;
+        bool isHypoMass2SelStep = false;
+        if (pdg == pdg::kLambdaCPlus) {
+          isHypoMass1SelStep = candidate.isSelLcToPKPi();  /// from candidate selector!
+          isHypoMass2SelStep = candidate.isSelLcToPiKP();  /// from candidate selector!
+        }
+        bool collisionMatched = false;
+        if constexpr (mc) { /// info MC used
+          int8_t sign = 0;
+          int indexRec = -999;
+          if (pdg == pdg::kLambdaCPlus) {
+            indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg, trackThird}, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+          }
+          
+          if (indexRec < 0) {
+            continue;
+          }
+
+          if (pdg == pdg::kLambdaCPlus) {
+            auto daugther = trackPos.mcParticle();
+            if (std::abs( daughter.pdgCode() ) == kProton ) {
+              isHypoMass1TrackStep = true;
+              isHypoMass1SelStep = true;
+              isHypoMass2TrackStep = false;
+              isHypoMass2SelStep = false;
+            } else if (std::abs( daughter.pdgCode() ) == kPiPlus) {
+              isHypoMass1TrackStep = false;
+              isHypoMass1SelStep = false;
+              isHypoMass2TrackStep = true;
+              isHypoMass2SelStep = true;
+            } else {
+              continue;
+            }
+          }
+
+          collisionMatched = candidate.template collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRec).mcCollisionId();
+        } /// end info MC used
+
+        float massHypo1 = -1;
+        float massHypo2 = -1;
+        float cpa = candidate.cpa();
+        float pt = candidate.pt();
+        bool selected = false;
+
+        /// all candidates
+        if (isHypoMass1TrackStep) {
+          if (pdg == pdg::kLambdaCPlus) {
+            massHypo1 = invMassLcToPKPi(candidate);
+          }
+          hCandidates->Fill(kHFStepTracked, pt, massHypo1, pdgCode, cpa, collisionMatched);
+        }
+        if (isHypoMass2TrackStep) {
+          if (pdg == pdg::kLambdaCPlus) {
+            massHypo2 = invMassLcToPiKP(candidate);
+          }
+          hCandidates->Fill(kHFStepTracked, pt, massHypo2, pdgCode, cpa, collisionMatched);
+        }
+
+        // check if prongs have passed track cuts
+        if (checkTrack(trackPos) && checkTrack(trackNeg) && checkTrack(trackThird)) {
+          if (isHypoMass1TrackStep) {
+            hCandidates->Fill(kHFStepTrackedCuts, pt, massHypo1, pdgCode, cpa, collisionMatched);
+          }
+          if (isHypoMass2TrackStep) {
+            hCandidates->Fill(kHFStepTrackedCuts, pt, massHypo2, pdgCode, cpa, collisionMatched);
+          }
+        }
+
+        if (!isHypoMass1SelStep && !isHypoMass2SelStep) {
+          continue;
+        }
+
+        // selected candidates
+        if (isHypoMass1SelStep) {
+          hCandidates->Fill(kHFStepTrackedSelected, pt, massHypo1, pdgCode, cpa, collisionMatched);
+        }
+        if (isHypoMass2SelStep) {
+          hCandidates->Fill(kHFStepTrackedSelected, pt, massHypo2, pdgCode, cpa, collisionMatched);
+        }
+
+        // duplicates
+        std::array<int, 3> prongIds = {candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id()};
+        std::sort(prongIds.begin(), prongIds.end());
+        std::string concat = std::to_string(prongIds[0]) + std::to_string(prongIds[1]) + std::to_string(prongIds[2]);
+        std::size_t hash = std::hash<std::string>{}(concat); /// unique value for the 'concat' string
+        if (duplicates.find(hash) != duplicates.end()) {
+          if (isHypoMass1TrackStep) {
+            hCandidates->Fill(kHFStepTrackedDuplicates, pt, massHypo1, pdgCode, cpa, collisionMatched);
+          }
+          if (isHypoMass2TrackStep) {
+            hCandidates->Fill(kHFStepTrackedDuplicates, pt, massHypo2, pdgCode, cpa, collisionMatched);
+          }
+        }
+        duplicates[hash]++;
+
+      } /// end loop on pdg codes
+    } /// end loop over candidates
+
+    auto hDuplicateCount = registry.get<TH1>(HIST("hDuplicateCount"));
+    for (const auto& i : duplicates) {
+      hDuplicateCount->Fill(i.second);
+    }
+  }
+
+  template <bool mc, typename T1, typename T2, typename T3>
   void candidate2ProngLoop(T1& candidates, T2& tracks, T3& mcParticles)
   {
     using TracksType = std::decay_t<decltype(tracks)>;
@@ -99,11 +236,11 @@ struct HfTaskMcEfficiency {
       std::array<int, 2> pdgDaughters;
 
       if (pdgCode == pdg::kD0) {
-        decayType = 1 << DecayType::D0ToPiK;
+        decayType = 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK;
         pdgDaughters[0] = +kPiPlus;
         pdgDaughters[1] = -kKPlus;
       } else if (pdgCode == pdg::kD0Bar) {
-        decayType = 1 << DecayType::D0ToPiK;
+        decayType = 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK;
         pdgDaughters[0] = -kPiPlus;
         pdgDaughters[1] = +kKPlus;
       } else {
@@ -161,6 +298,7 @@ struct HfTaskMcEfficiency {
         ++nSelected;
 
         // duplicates
+        /// put two 32-bit indices in a 64-bit integer
         int64_t hash = 0;
         if (candidate.prong0Id() < candidate.prong1Id()) {
           hash = ((int64_t)candidate.prong0Id() << 32) | candidate.prong1Id();
