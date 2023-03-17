@@ -36,6 +36,7 @@ struct HfCandidateSelectorB0ToDPi {
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
   Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
+  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", false, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
@@ -50,7 +51,11 @@ struct HfCandidateSelectorB0ToDPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_b0_to_d_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B0 candidate selection per pT bin"};
 
-  // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all selections
+  // Apply topological cuts as defined in SelectorCuts.h
+  // \param hfCandB0 is the B0 candidate
+  // \param hfCandD is prong1 of B0 candidate
+  // \param trackPi is prong1 of B0 candidate
+  // \return true if candidate passes all selections
   template <typename T1, typename T2, typename T3>
   bool selectionTopol(const T1& hfCandB0, const T2& hfCandD, const T3& trackPi)
   {
@@ -120,11 +125,16 @@ struct HfCandidateSelectorB0ToDPi {
     return true;
   }
 
-  // Apply PID selection; return true if candidate passes all selections
-  template <typename T>
+  // Apply PID selection
+  // \param pidTrackPi is the PID status of trackPi (prong1 of B0 candidate)
+  // \return true if prong1 of B0 candidate passes all selections
+  template <typename T = int>
   bool selectionPID(const T& pidTrackPi)
   {
-    if (pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
+    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
+      return false;
+    }
+    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Status::PIDRejected) {
       return false;
     }
 
@@ -172,7 +182,7 @@ struct HfCandidateSelectorB0ToDPi {
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           continue;
         }
-        int pidTrackPi = selectorPion.getStatusTrackPIDTpcOrTof(trackPi);
+        int pidTrackPi = selectorPion.getStatusTrackPIDTpcAndTof(trackPi);
         if (!selectionPID(pidTrackPi)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
           hfSelB0ToDPiCandidate(statusB0ToDPi);
