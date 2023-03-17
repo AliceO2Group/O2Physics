@@ -170,23 +170,7 @@ struct skimmerGammaConversions {
   template <typename TV0, typename TTRACK>
   void fillTrackTable(TV0 const& theV0, TTRACK const& theTrack, bool theIsPositive)
   {
-    //    fFuncTableV0DaughterTracks(
-    //      theV0.v0Id(),
-    //      theTrack.dcaXY(),
-    //      theTrack.eta(),
-    //      theTrack.p(),
-    //      theTrack.phi(),
-    //      theTrack.pt(),
-    //      theIsPositive,
-    //      theTrack.tpcCrossedRowsOverFindableCls(),
-    //      theTrack.tpcFoundOverFindableCls(),
-    //      theTrack.tpcNClsCrossedRows(),
-    //      theTrack.tpcNSigmaEl(),
-    //      theTrack.tpcNSigmaPi(),
-    //      theTrack.tpcSignal());
-
-    auto collision = theTrack.template collision_as<aod::Collisions>();
-    v0legs(collision.globalIndex(),
+    v0legs(theTrack.collisionId(),
            theTrack.globalIndex(), theTrack.sign(), false,
            theTrack.pt(), theTrack.eta(), theTrack.phi(), theTrack.p(), theTrack.dcaXY(), theTrack.dcaZ(),
            theTrack.tpcNClsFindable(), theTrack.tpcNClsFindableMinusFound(), theTrack.tpcNClsFindableMinusCrossedRows(),
