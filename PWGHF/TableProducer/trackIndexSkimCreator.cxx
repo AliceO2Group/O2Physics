@@ -40,6 +40,7 @@
 #include "ReconstructionDataFormats/Vertex.h" // for PV refit
 #include "ReconstructionDataFormats/V0.h"
 
+#include "Common/DataModel/CollisionAssociation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
@@ -758,11 +759,11 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
   /// Partition for PV contributors
 
-  Preslice<HfTrackAssoc> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  Preslice<TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Partition<TracksWithSelAndDCA> pvContributors = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
 
   void process(aod::Collisions const& collisions,
-               HfTrackAssoc const& trackIndices,
+               TrackAssoc const& trackIndices,
                TracksWithSelAndDCA const& tracks,
                aod::BCsWithTimestamps const& bcWithTimeStamps // for PV refit
 #ifdef MY_DEBUG
@@ -1454,8 +1455,8 @@ struct HfTrackIndexSkimCreator {
   Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
 
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
-  using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::HfTrackAssoc, aod::HfSelTrack>>;
-  Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
+  Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
 
   void processNo2And3Prongs(SelectedCollisions const&)
   {
@@ -1466,7 +1467,7 @@ struct HfTrackIndexSkimCreator {
   void process2And3Prongs( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
     SelectedCollisions const& collisions,
     aod::BCsWithTimestamps const& bcWithTimeStamps,
-    FilteredHfTrackAssocSel const& trackIndices,
+    FilteredTrackAssocSel const& trackIndices,
     TracksWithPVRefitAndDCA const& tracks)
   {
 
@@ -2311,8 +2312,8 @@ struct HfTrackIndexSkimCreatorCascades {
   // Partition<MyTracks> TracksWithPVRefitAndDCA = aod::hf_sel_track::isSelProng >= 4;
 
   Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
-  using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::HfTrackAssoc, aod::HfSelTrack>>;
-  Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
+  Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
 
   // histograms
@@ -2347,7 +2348,7 @@ struct HfTrackIndexSkimCreatorCascades {
                        aod::BCsWithTimestamps const&,
                        // soa::Filtered<aod::V0Datas> const& V0s,
                        aod::V0Datas const& V0s,
-                       FilteredHfTrackAssocSel const& trackIndices,
+                       FilteredTrackAssocSel const& trackIndices,
                        TracksWithPVRefitAndDCA const& tracks
 #ifdef MY_DEBUG
                        ,
@@ -2682,8 +2683,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
   Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
-  using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::HfTrackAssoc, aod::HfSelTrack>>;
-  Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
+  Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::CascDataFull> cascadesPerCollision = aod::cascdata::collisionId;
 
   /// Single-cascade cuts for 2-prongs or 3-prongs
@@ -2746,7 +2747,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                          aod::V0sLinked const&,
                          V0Full const&,
                          aod::CascDataFull const& cascades,
-                         FilteredHfTrackAssocSel const& trackIndices,
+                         FilteredTrackAssocSel const& trackIndices,
                          TracksWithPVRefitAndDCA const& tracks)
   {
     for (const auto& collision : collisions) {
