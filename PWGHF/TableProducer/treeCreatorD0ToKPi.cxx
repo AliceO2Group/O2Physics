@@ -173,7 +173,7 @@ struct HfTreeCreatorD0ToKPi {
 
 template <typename T, typename U, typename V>
 auto fillTable(const T& candidate, const U& prong0, const V& prong1, int CandFlag, int FunctionSelection, double FunctionInvMass, double FunctionCosThetaStar,
-            double FunctionCt, double FunctionY, double FunctionE, int8_t flagMc, int8_t origin) {
+            double FunctionCt, double FunctionY, double FunctionE, int8_t FlagMc, int8_t Origin) {
         if (FunctionSelection >= 1) {
           rowCandidateFull(
             prong0.collision().bcId(),
@@ -229,8 +229,8 @@ auto fillTable(const T& candidate, const U& prong0, const V& prong1, int CandFla
             candidate.phi(),
             FunctionY,
             FunctionE,
-            flagMc,
-            origin);
+            FlagMc,
+            Origin);
         }
   }
 
