@@ -15,6 +15,7 @@
 ///        In this file are defined and filled the output tables
 ///
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
+/// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -46,14 +47,14 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(E, e, float);
-DECLARE_SOA_COLUMN(NSigTpcPi0, nsigTpcPi0, float);
-DECLARE_SOA_COLUMN(NSigTpcKa0, nsigTpcKa0, float);
-DECLARE_SOA_COLUMN(NSigTofPi0, nsigTofPi0, float);
-DECLARE_SOA_COLUMN(NSigTofKa0, nsigTofKa0, float);
-DECLARE_SOA_COLUMN(NSigTpcPi1, nsigTpcPi1, float);
-DECLARE_SOA_COLUMN(NSigTpcKa1, nsigTpcKa1, float);
-DECLARE_SOA_COLUMN(NSigTofPi1, nsigTofPi1, float);
-DECLARE_SOA_COLUMN(NSigTofKa1, nsigTofKa1, float);
+DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);
+DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);
+DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);
+DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);
+DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);
+DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
@@ -63,7 +64,7 @@ DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);
 DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
-DECLARE_SOA_COLUMN(Mcflag, mcflag, int8_t);
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -125,7 +126,7 @@ DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
                   full::Phi,
                   full::Y,
                   full::E,
-                  full::Mcflag,
+                  full::FlagMc,
                   full::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCand2ProngFullEvents, "AOD", "HFCAND2PFullE",
@@ -143,7 +144,7 @@ DECLARE_SOA_TABLE(HfCand2ProngFullParticles, "AOD", "HFCAND2PFullP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::Mcflag,
+                  full::FlagMc,
                   full::OriginMcGen);
 
 } // namespace o2::aod
@@ -172,10 +173,10 @@ struct HfTreeCreatorD0ToKPi {
   }
 
   template <typename T, typename U, typename V>
-  auto fillTable(const T& candidate, const U& prong0, const V& prong1, int CandFlag, int FunctionSelection, double FunctionInvMass, double FunctionCosThetaStar,
-                 double FunctionCt, double FunctionY, double FunctionE, int8_t FlagMc, int8_t Origin) 
+  auto fillTable(const T& candidate, const U& prong0, const V& prong1, int candFlag, int functionSelection, double functionInvMass, double functionCosThetaStar,
+                 double functionCt, double functionY, double functionE, int8_t flagMc, int8_t origin) 
   {
-    if (FunctionSelection >= 1) {
+    if (functionSelection >= 1) {
       rowCandidateFull(
         prong0.collision().bcId(),
         prong0.collision().numContrib(),
@@ -217,21 +218,21 @@ struct HfTreeCreatorD0ToKPi {
         prong1.tpcNSigmaKa(),
         prong1.tofNSigmaPi(),
         prong1.tofNSigmaKa(),
-        1 << CandFlag,
-        FunctionInvMass,
+        1 << candFlag,
+        functionInvMass,
         candidate.impactParameterProduct(),
-        FunctionCosThetaStar,
+        functionCosThetaStar,
         candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
-        FunctionCt,
+        functionCt,
         candidate.eta(),
         candidate.phi(),
-        FunctionY,
-        FunctionE,
-        FlagMc,
-        Origin);
+        functionY,
+        functionE,
+        flagMc,
+        origin);
     }
   }
 
@@ -295,7 +296,7 @@ struct HfTreeCreatorD0ToKPi {
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMc, "Process Mc", false);
+  PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
