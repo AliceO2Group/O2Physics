@@ -32,6 +32,8 @@
 #include "TLorentzVector.h"
 #include "CommonConstants/MathConstants.h"
 #include "TRandom.h"
+#include <vector>
+#include <string>
 
 using namespace o2::framework;
 using namespace o2::constants::math;
