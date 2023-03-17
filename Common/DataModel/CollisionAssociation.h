@@ -18,22 +18,13 @@ namespace o2::aod
 
 namespace track_association
 {
-
-enum TrackTypes { Regular = 0,
-                  Ambiguous,
-                  PVContributor };
-
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);   //! Collision index
-DECLARE_SOA_INDEX_COLUMN(Track, track);           //! Track index
-DECLARE_SOA_COLUMN(TrackType, trackType, int8_t); //! Track type
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Collision index
+DECLARE_SOA_INDEX_COLUMN(Track, track);         //! Track index
 } // namespace track_association
 
 DECLARE_SOA_TABLE(TrackAssoc, "AOD", "TRACKASSOC", //! Table for track-to-collision association for e.g. HF vertex finding - tracks can appear for several collisions
                   track_association::CollisionId,
                   track_association::TrackId);
-
-DECLARE_SOA_TABLE(TrackAssocExtra, "AOD", "TRACKASSOCEX", //!
-                  track_association::TrackType);
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_COLLISIONASSOCIATION_H_

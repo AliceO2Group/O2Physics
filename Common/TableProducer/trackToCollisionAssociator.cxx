@@ -30,7 +30,6 @@ using namespace o2::aod;
 
 struct TrackToCollisionAssociation {
   Produces<TrackAssoc> association;
-  Produces<TrackAssocExtra> associationExtra;
 
   Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 4.f, "number of sigmas for time compatibility"};
   Configurable<float> timeMargin{"timeMargin", 0.f, "time margin in ns added to uncertainty because of uncalibrated TPC"};
@@ -58,14 +57,13 @@ struct TrackToCollisionAssociation {
   }
 
   void processAssocWithTime(Collisions const& collisions,
-                            TracksWithSel const& tracksUnfiltered,
                             TracksWithSelFilter const& tracks,
                             AmbiguousTracks const& ambiguousTracks,
                             BCs const& bcs)
   {
     // cache globalBC
     std::vector<uint64_t> globalBC;
-    for (const auto& track : tracksUnfiltered) {
+    for (const auto& track : tracks) {
       if (track.has_collision()) {
         globalBC.push_back(track.collision().bc().globalBC());
       } else {
@@ -80,44 +78,47 @@ struct TrackToCollisionAssociation {
 
     // loop over collisions to find time-compatible tracks
     auto trackBegin = tracks.begin();
-    const auto bOffsetMax = 241; // 6 mus (ITS)
+    constexpr auto bOffsetMax = 241; // 6 mus (ITS)
     for (const auto& collision : collisions) {
       const float collTime = collision.collisionTime();
       const float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
       uint64_t collBC = collision.bc().globalBC();
-      bool iteratorMoved = false;
+      // bool iteratorMoved = false;
       for (auto track = trackBegin; track != tracks.end(); ++track) {
         if (!includeUnassigned && !track.has_collision()) {
-          continue; // seems not supported by candidator creator, yet
+          continue;
         }
-        const int64_t bcOffset = (int64_t)globalBC[track.globalIndex()] - (int64_t)collBC;
+        const int64_t bcOffset = (int64_t)globalBC[track.filteredIndex()] - (int64_t)collBC;
+        if (std::abs(bcOffset) > bOffsetMax) {
+          continue;
+        }
 
         float trackTime{0.};
         float trackTimeRes{0.};
-        int trackType = track_association::TrackTypes::Ambiguous;
         if (usePVAssociation && track.isPVContributor()) {
           trackTime = track.collision().collisionTime();    // if PV contributor, we assume the time to be the one of the collision
           trackTimeRes = constants::lhc::LHCBunchSpacingNS; // 1 BC
-          trackType = track_association::TrackTypes::PVContributor;
         } else {
           trackTime = track.trackTime();
           trackTimeRes = track.trackTimeRes();
         }
         const float deltaTime = trackTime - collTime + bcOffset * constants::lhc::LHCBunchSpacingNS;
         float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
-        LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), track.trackTime(), track.trackTimeRes(), collBC, track.collision().bc().globalBC(), deltaTime);
+        LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), track.trackTime(), track.trackTimeRes(), collBC, globalBC[track.filteredIndex()], deltaTime);
+
         // optimization to avoid looping over the full track list each time. This assumes that tracks are sorted by BCs (which they should be because collisions are sorted by BCs)
-        if (!iteratorMoved && bcOffset > -bOffsetMax) {
-          trackBegin.setCursor(track.filteredIndex());
-          iteratorMoved = true;
-          LOGP(debug, "Moving iterator begin {}", track.globalIndex());
-        } else if (bcOffset > bOffsetMax) {
-          LOGP(debug, "Stopping iterator {}", track.globalIndex());
-          break;
-        }
+        // NOTE this does not work anymore if includeUnassigned is set as the unassigned blocks can be somewhere (and we can have merged DFs, too)
+        // if (!iteratorMoved && bcOffset > -bOffsetMax) {
+        //   trackBegin.setCursor(track.filteredIndex());
+        //   iteratorMoved = true;
+        //   LOGP(debug, "Moving iterator begin {}", track.globalIndex());
+        // } else if (bcOffset > bOffsetMax) {
+        //   LOGP(debug, "Stopping iterator {}", track.globalIndex());
+        //   break;
+        // }
 
         float thresholdTime = 0.;
-        if (track.isPVContributor()) {
+        if (usePVAssociation && track.isPVContributor()) {
           thresholdTime = trackTimeRes;
         } else if (TESTBIT(track.flags(), o2::aod::track::TrackTimeResIsRange)) {
           thresholdTime = std::sqrt(sigmaTimeRes2) + timeMargin;
@@ -130,9 +131,6 @@ struct TrackToCollisionAssociation {
           const auto trackIdx = track.globalIndex();
           LOGP(debug, "Filling track id {} for coll id {}", trackIdx, collIdx);
           association(collIdx, trackIdx);
-          if (debug) {
-            associationExtra(trackType);
-          }
         }
       }
     }
