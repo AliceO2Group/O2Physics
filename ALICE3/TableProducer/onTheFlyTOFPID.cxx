@@ -181,14 +181,14 @@ struct OnTheFlyTOFPID {
                                       {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()});
 
     std::array<float, 6> mcPvCov = {0.};
-    o2::dataformats::VertexBase mcPvVtx({0.0f,0.0f,0.0f}, mcPvCov);
-    if(collision.has_mcCollision()){
+    o2::dataformats::VertexBase mcPvVtx({0.0f, 0.0f, 0.0f}, mcPvCov);
+    if (collision.has_mcCollision()) {
       auto mcCollision = collision.mcCollision();
       mcPvVtx.setX(mcCollision.posX());
       mcPvVtx.setY(mcCollision.posY());
       mcPvVtx.setZ(mcCollision.posZ());
     } // else remains untreated for now
-    
+
     for (const auto& track : tracks) {
       // first step: find precise arrival time (if any)
       // --- convert track into perfect track
