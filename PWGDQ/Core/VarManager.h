@@ -120,6 +120,7 @@ class VarManager : public TObject
     // Run wise variables
     kRunNo = 0,
     kRunId,
+    kRunIndex,
     kNRunWiseVariables,
 
     // Event wise variables
@@ -343,6 +344,8 @@ class VarManager : public TObject
     kDeltaPhiPair,
     kQuadDCAabsXY,
     kQuadDCAsigXY,
+    kQuadDCAabsZ,
+    kQuadDCAsigZ,
     kQuadDCAsigXYZ,
     kCosPointingAngle,
     kImpParXYJpsi,
@@ -433,6 +436,8 @@ class VarManager : public TObject
 
   static void SetRunNumbers(int n, int* runs);
   static void SetRunNumbers(std::vector<int> runs);
+  static float GetRunIndex(double);
+  static void SetRunlist(TString period);
   static int GetNRuns()
   {
     return fgRunMap.size();
@@ -540,6 +545,7 @@ class VarManager : public TObject
 
   static std::map<int, int> fgRunMap; // map of runs to be used in histogram axes
   static TString fgRunStr;            // semi-colon separated list of runs, to be used for histogram axis labels
+  static std::vector<int> fgRunList;  // vector of runs, to be used for histogram axis
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
@@ -706,6 +712,7 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & ReducedEvent) > 0) {
     values[kRunNo] = event.runNumber();
+    values[kRunIndex] = GetRunIndex(event.runNumber());
     values[kVtxX] = event.posX();
     values[kVtxY] = event.posY();
     values[kVtxZ] = event.posZ();
@@ -1193,7 +1200,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
   if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
 
-    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAsigXYZ]) {
+    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ]) {
       // Quantities based on the barrel tables
       double dca1XY = t1.dcaXY();
       double dca2XY = t2.dcaXY();
@@ -1201,9 +1208,13 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       double dca2Z = t2.dcaZ();
       double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
       double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
+      double dca1sigZ = dca1Z / std::sqrt(t1.cZZ());
+      double dca2sigZ = dca2Z / std::sqrt(t2.cZZ());
 
       values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
       values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+      values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
+      values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
 
       double det1 = t1.cZY() * t1.cZZ() - t1.cZY() * t1.cZY();
       double det2 = t2.cZY() * t2.cZZ() - t2.cZY() * t2.cZY();

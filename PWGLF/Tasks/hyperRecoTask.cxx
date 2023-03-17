@@ -219,6 +219,11 @@ struct hyperRecoTask {
     qaRegistry.add("hNsigma3HeSel", "; p^{TPC}/z; n_{#sigma} ({}^{3}He) (GeV/#it{c})", HistType::kTH2F, {{200, -10, 10}, {200, -5, 5}});
     qaRegistry.add("hDeDx3HeSel", ";p^{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {{200, -10, 10}, {200, 0, 1000}});
     qaRegistry.add("hDeDxTot", ";p^{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {{200, -10, 10}, {200, 0, 1000}});
+    qaRegistry.add("hEvents", ";Events; ", HistType::kTH1F, {{3, -0.5, 2.5}});
+    qaRegistry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(1, "All");
+    qaRegistry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
+    qaRegistry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(3, "z vtx");
+    qaRegistry.add("hZvtx", ";z_{vtx} (cm); ", HistType::kTH1F, {{100, -20, 20}});
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -293,19 +298,14 @@ struct hyperRecoTask {
       auto nSigmaTPCneg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
 
       // ITS only tracks do not have TPC information. TPCnSigma: only lower cut to allow for both hypertriton and hyperhydrogen4 reconstruction
-      if (!((nSigmaTPCpos > -1 * heliumNsigmaMax && posTrack.hasTPC()) || (nSigmaTPCneg > -1 * heliumNsigmaMax && negTrack.hasTPC())))
+      bool isHe = posTrack.hasTPC() && nSigmaTPCpos > -1 * heliumNsigmaMax;
+      bool isAntiHe = negTrack.hasTPC() && nSigmaTPCneg > -1 * heliumNsigmaMax;
+
+      if (!isHe && !isAntiHe)
         continue;
 
-      bool matter = false;
-      if (posTrack.hasTPC() && !negTrack.hasTPC())
-        matter = true;
-      else if (!posTrack.hasTPC() && negTrack.hasTPC())
-        matter = false;
-      else
-        matter = abs(nSigmaTPCpos) < abs(nSigmaTPCneg);
-
       hyperCandidate hypCand;
-      hypCand.isMatter = matter;
+      hypCand.isMatter = isHe && isAntiHe ? abs(nSigmaTPCpos) < abs(nSigmaTPCneg) : isHe;
       auto& he3track = hypCand.isMatter ? posTrack : negTrack;
       if (he3track.tpcNClsFindable() < heliumNtpcClusMin)
         continue;
@@ -484,11 +484,18 @@ struct hyperRecoTask {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
+      qaRegistry.fill(HIST("hEvents"), 0.);
+
       if (!collision.sel8())
         continue;
 
+      qaRegistry.fill(HIST("hEvents"), 1.);
+
       if (abs(collision.posZ()) > 10.f)
         continue;
+
+      qaRegistry.fill(HIST("hEvents"), 2.);
+      qaRegistry.fill(HIST("hZvtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);

@@ -332,7 +332,7 @@ class TOFSignal
   /// Returns the expected time of a track, given its TOF response to use to compute the expected time
   /// \param track input track
   template <o2::track::PID::ID pid>
-  static float GetTOFSignal(const TrackType& track, const ResponseImplementation<pid>& response)
+  static float GetTOFSignalForParticleHypothesis(const TrackType& track, const ResponseImplementation<pid>& response)
   {
     return ComputeTOFSignal(track.trackTime(), response.GetExpectedSignal(track));
   }
@@ -343,23 +343,23 @@ class TOFSignal
   {
     switch (track.pidForTracking()) {
       case 0:
-        return GetTOFSignal(track, responseEl);
+        return GetTOFSignalForParticleHypothesis(track, responseEl);
       case 1:
-        return GetTOFSignal(track, responseMu);
+        return GetTOFSignalForParticleHypothesis(track, responseMu);
       case 2:
-        return GetTOFSignal(track, responsePi);
+        return GetTOFSignalForParticleHypothesis(track, responsePi);
       case 3:
-        return GetTOFSignal(track, responseKa);
+        return GetTOFSignalForParticleHypothesis(track, responseKa);
       case 4:
-        return GetTOFSignal(track, responsePr);
+        return GetTOFSignalForParticleHypothesis(track, responsePr);
       case 5:
-        return GetTOFSignal(track, responseDe);
+        return GetTOFSignalForParticleHypothesis(track, responseDe);
       case 6:
-        return GetTOFSignal(track, responseTr);
+        return GetTOFSignalForParticleHypothesis(track, responseTr);
       case 7:
-        return GetTOFSignal(track, responseHe);
+        return GetTOFSignalForParticleHypothesis(track, responseHe);
       case 8:
-        return GetTOFSignal(track, responseAl);
+        return GetTOFSignalForParticleHypothesis(track, responseAl);
       default:
         return 0.f;
         break;

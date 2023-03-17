@@ -70,9 +70,9 @@ struct DGCandAnalyzer {
       {"TPCsignal1", "#TPCsignal1", {HistType::kTH2F, {{100, 0., 3.}, {400, -100., 100.0}}}},
       {"TPCsignal2", "#TPCsignal2", {HistType::kTH2F, {{100, 0., 3.}, {400, -100., 100.0}}}},
       {"sig1VsSig2TPC", "#sig1VsSig2TPC", {HistType::kTH2F, {{100, -100., 100.}, {100, -100., 100.}}}},
-      {"TOFsignal1", "#TOFsignal1", {HistType::kTH2F, {{100, 0., 3.}, {400, -1000., 1000.}}}},
-      {"TOFsignal2", "#TOFsignal2", {HistType::kTH2F, {{100, 0., 3.}, {400, -1000., 1000.}}}},
-      {"sig1VsSig2TOF", "#sig1VsSig2TOF", {HistType::kTH2F, {{100, -1000., 1000.}, {100, -1000., 1000.}}}},
+      {"TOFsignal1", "#TOFsignal1", {HistType::kTH2F, {{100, 0., 3.}, {400, -200., 200.}}}},
+      {"TOFsignal2", "#TOFsignal2", {HistType::kTH2F, {{100, 0., 3.}, {400, -200., 200.}}}},
+      {"sig1VsSig2TOF", "#sig1VsSig2TOF", {HistType::kTH2F, {{100, -200., 200.}, {100, -200., 200.}}}},
       {"nSigmaTPCPtEl", "#nSigmaTPCPtEl", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
       {"nSigmaTPCPtPi", "#nSigmaTPCPtPi", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
       {"nSigmaTPCPtMu", "#nSigmaTPCPtMu", {HistType::kTH2F, {{250, 0.0, 2.5}, {100, -20.0, 20.0}}}},
@@ -158,6 +158,8 @@ struct DGCandAnalyzer {
 
     registry.add("2TrackAngle", "#2TrackAngle", {HistType::kTH1F, {{140, -0.2, 3.3}}});
     registry.add("2TrackAngleIVM", "#2TrackAngleIVM", {HistType::kTH2F, {axisIVM, {140, -0.2, 3.3}}});
+    registry.add("2Tracketa1IVM", "#2Tracketa1IVM", {HistType::kTH2F, {axisIVM, {160, -2.0, 2.0}}});
+    registry.add("2Tracketa2IVM", "#2Tracketa2IVM", {HistType::kTH2F, {axisIVM, {160, -2.0, 2.0}}});
 
     registry.add("FT0AAmplitude", "#FT0AAmplitude", {HistType::kTH1F, {{5000, 0., 5000.}}});
     registry.add("FT0CAmplitude", "#FT0CAmplitude", {HistType::kTH1F, {{5000, 0., 5000.}}});
@@ -306,6 +308,9 @@ struct DGCandAnalyzer {
           registry.get<TH1>(HIST("2TrackAngle"))->Fill(angle, 1.);
           registry.get<TH2>(HIST("2TrackAngleIVM"))->Fill(ivm.M(), angle, 1.);
         }
+
+        registry.get<TH2>(HIST("2Tracketa1IVM"))->Fill(ivm.M(), v1.Eta(), 1.);
+        registry.get<TH2>(HIST("2Tracketa2IVM"))->Fill(ivm.M(), v2.Eta(), 1.);
       }
 
       registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());

@@ -28,7 +28,7 @@ using namespace evsel;
 using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
-
+using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 struct EventSelectionQaTask {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Configurable<int> nGlobalBCs{"nGlobalBCs", 100000, "number of global bcs"};
@@ -450,12 +450,12 @@ struct EventSelectionQaTask {
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun2, "Process Run2 event selection QA", true);
 
-  Preslice<aod::FullTracks> perCollision = aod::track::collisionId;
+  Preslice<FullTracksIU> perCollision = aod::track::collisionId;
   Preslice<ColEvSels> perFoundBC = aod::evsel::foundBCId;
 
   void processRun3(
     ColEvSels const& cols,
-    aod::FullTracks const& tracks,
+    FullTracksIU const& tracks,
     aod::AmbiguousTracks const& ambTracks,
     BCsRun3 const& bcs,
     aod::Zdcs const& zdcs,

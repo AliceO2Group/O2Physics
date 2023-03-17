@@ -219,7 +219,7 @@ struct DGCandProducer {
                       track.detectorMap());
     outputTracksFlag(track.has_collision(),
                      track.isPVContributor());
-    LOGF(info, "<DGCandProducer> %d %d  %d %f %f %f %f %f",
+    LOGF(debug, "<DGCandProducer> %d %d  %d %f %f %f %f %f",
          track.isPVContributor(), track.isQualityTrack(), track.isGlobalTrack(), track.px(), track.py(), track.pz(), track.pt(), track.p());
   }
 
@@ -347,7 +347,7 @@ struct DGCandProducer {
                 pt2 = tr.pt() * tr.sign();
                 signalTPC2 = tr.tpcSignal();
             }
-            LOGF(info, "track[%d] %d pT %f ITS %d TPC %d TRD %d TOF %d",
+            LOGF(debug, "track[%d] %d pT %f ITS %d TPC %d TRD %d TOF %d",
                  cnt, tr.isGlobalTrack(), tr.pt(), tr.itsNCls(), tr.tpcNClsCrossedRows(), tr.hasTRD(), tr.hasTOF());
           }
         }
@@ -427,7 +427,7 @@ struct DGCandProducer {
 
       // save information of DG events
       if (isDGEvent == 0) {
-        LOGF(info, "  MC: good collision!");
+        LOGF(debug, "  MC: good collision!");
 
         // update UDMcCollisions and UDMcParticles if not already done
         if (!mcColIsSaved) {

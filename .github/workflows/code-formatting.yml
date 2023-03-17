@@ -3,6 +3,8 @@ name: Formatting
 
 'on': [pull_request_target]
 
+permissions: {}
+
 jobs:
   formatting:
     name: PR formatting
