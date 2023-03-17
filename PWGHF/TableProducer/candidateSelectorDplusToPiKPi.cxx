@@ -33,7 +33,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   // PID option
-  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", false, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
+  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
