@@ -239,7 +239,7 @@ struct HfTreeCreatorD0ToKPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates,
-                   aod::BigTracksPID const& tracks)
+                   aod::BigTracksPID const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -266,7 +266,7 @@ struct HfTreeCreatorD0ToKPi {
                  aod::McCollisions const& mccollisions,
                  soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particles,
-                 aod::BigTracksPID const& tracks)
+                 aod::BigTracksPID const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
