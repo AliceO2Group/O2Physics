@@ -24,12 +24,12 @@
 #include "Math/Vector4D.h"
 #include "TMath.h"
 #include "TDatabasePDG.h"
-#include <vector>
-#include <string>
 
 #include "TLorentzVector.h"
 #include "CommonConstants/MathConstants.h"
 #include "TRandom.h"
+#include <vector>
+#include <string>
 
 using namespace o2::framework;
 using namespace o2::constants::math;
@@ -196,4 +196,4 @@ class FemtoWorldContainer
 
 } // namespace o2::analysis::femtoWorld
 
-#endif /* PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCONTAINER_H_  */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCONTAINER_H_
