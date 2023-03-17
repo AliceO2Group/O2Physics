@@ -162,82 +162,83 @@ struct HfTreeCreatorD0ToKPi {
   void fillEvent(const T& collision, int8_t isEventReject, int8_t runNumber)
   {
     rowCandidateFullEvents(
-        collision.bcId(),
-        collision.numContrib(),
-        collision.posX(),
-        collision.posY(),
-        collision.posZ(),
-        isEventReject,
-        runNumber);
+      collision.bcId(),
+      collision.numContrib(),
+      collision.posX(),
+      collision.posY(),
+      collision.posZ(),
+      isEventReject,
+      runNumber);
   }
 
-template <typename T, typename U, typename V>
-auto fillTable(const T& candidate, const U& prong0, const V& prong1, int CandFlag, int FunctionSelection, double FunctionInvMass, double FunctionCosThetaStar,
-            double FunctionCt, double FunctionY, double FunctionE, int8_t FlagMc, int8_t Origin) {
-        if (FunctionSelection >= 1) {
-          rowCandidateFull(
-            prong0.collision().bcId(),
-            prong0.collision().numContrib(),
-            candidate.posX(),
-            candidate.posY(),
-            candidate.posZ(),
-            candidate.xSecondaryVertex(),
-            candidate.ySecondaryVertex(),
-            candidate.zSecondaryVertex(),
-            candidate.errorDecayLength(),
-            candidate.errorDecayLengthXY(),
-            candidate.chi2PCA(),
-            candidate.rSecondaryVertex(),
-            candidate.decayLength(),
-            candidate.decayLengthXY(),
-            candidate.decayLengthNormalised(),
-            candidate.decayLengthXYNormalised(),
-            candidate.impactParameterNormalised0(),
-            candidate.ptProng0(),
-            RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-            candidate.impactParameterNormalised1(),
-            candidate.ptProng1(),
-            RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-            candidate.pxProng0(),
-            candidate.pyProng0(),
-            candidate.pzProng0(),
-            candidate.pxProng1(),
-            candidate.pyProng1(),
-            candidate.pzProng1(),
-            candidate.impactParameter0(),
-            candidate.impactParameter1(),
-            candidate.errorImpactParameter0(),
-            candidate.errorImpactParameter1(),
-            prong0.tpcNSigmaPi(),
-            prong0.tpcNSigmaKa(),
-            prong0.tofNSigmaPi(),
-            prong0.tofNSigmaKa(),
-            prong1.tpcNSigmaPi(),
-            prong1.tpcNSigmaKa(),
-            prong1.tofNSigmaPi(),
-            prong1.tofNSigmaKa(),
-            1 << CandFlag,
-            FunctionInvMass,
-            candidate.impactParameterProduct(),
-            FunctionCosThetaStar,
-            candidate.pt(),
-            candidate.p(),
-            candidate.cpa(),
-            candidate.cpaXY(),
-            FunctionCt,
-            candidate.eta(),
-            candidate.phi(),
-            FunctionY,
-            FunctionE,
-            FlagMc,
-            Origin);
-        }
+  template <typename T, typename U, typename V>
+  auto fillTable(const T& candidate, const U& prong0, const V& prong1, int CandFlag, int FunctionSelection, double FunctionInvMass, double FunctionCosThetaStar,
+                 double FunctionCt, double FunctionY, double FunctionE, int8_t FlagMc, int8_t Origin) 
+  {
+    if (FunctionSelection >= 1) {
+      rowCandidateFull(
+        prong0.collision().bcId(),
+        prong0.collision().numContrib(),
+        candidate.posX(),
+        candidate.posY(),
+        candidate.posZ(),
+        candidate.xSecondaryVertex(),
+        candidate.ySecondaryVertex(),
+        candidate.zSecondaryVertex(),
+        candidate.errorDecayLength(),
+        candidate.errorDecayLengthXY(),
+        candidate.chi2PCA(),
+        candidate.rSecondaryVertex(),
+        candidate.decayLength(),
+        candidate.decayLengthXY(),
+        candidate.decayLengthNormalised(),
+        candidate.decayLengthXYNormalised(),
+        candidate.impactParameterNormalised0(),
+        candidate.ptProng0(),
+        RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+        candidate.impactParameterNormalised1(),
+        candidate.ptProng1(),
+        RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+        candidate.pxProng0(),
+        candidate.pyProng0(),
+        candidate.pzProng0(),
+        candidate.pxProng1(),
+        candidate.pyProng1(),
+        candidate.pzProng1(),
+        candidate.impactParameter0(),
+        candidate.impactParameter1(),
+        candidate.errorImpactParameter0(),
+        candidate.errorImpactParameter1(),
+        prong0.tpcNSigmaPi(),
+        prong0.tpcNSigmaKa(),
+        prong0.tofNSigmaPi(),
+        prong0.tofNSigmaKa(),
+        prong1.tpcNSigmaPi(),
+        prong1.tpcNSigmaKa(),
+        prong1.tofNSigmaPi(),
+        prong1.tofNSigmaKa(),
+        1 << CandFlag,
+        FunctionInvMass,
+        candidate.impactParameterProduct(),
+        FunctionCosThetaStar,
+        candidate.pt(),
+        candidate.p(),
+        candidate.cpa(),
+        candidate.cpaXY(),
+        FunctionCt,
+        candidate.eta(),
+        candidate.phi(),
+        FunctionY,
+        FunctionE,
+        FlagMc,
+        Origin);
+    }
   }
 
 
   void processData(aod::Collisions const& collisions,
-               soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates,
-               aod::BigTracksPID const& tracks)
+                   soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates,
+                   aod::BigTracksPID const& tracks)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -258,10 +259,10 @@ auto fillTable(const T& candidate, const U& prong0, const V& prong1, int CandFla
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processData, "Process data", true);
 
   void processMc(aod::Collisions const& collisions,
-               aod::McCollisions const& mccollisions,
-               soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particles,
-               aod::BigTracksPID const& tracks)
+                 aod::McCollisions const& mccollisions,
+                 soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0> const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particles,
+                 aod::BigTracksPID const& tracks)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
