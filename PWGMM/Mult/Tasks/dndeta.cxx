@@ -38,7 +38,6 @@ AxisSpec EtaAxis = {22, -2.2, 2.2};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
 AxisSpec PtAxis_wide = {1041, -0.05, 104.05};
-AxisSpec CentAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
 
 static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
@@ -61,6 +60,7 @@ struct MultiplicityCounter {
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   Configurable<bool> fillResponse{"fillResponse", false, "Fill response matrix"};
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
+  ConfigurableAxis centBinning{"centBinning", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 100}, ""};
 
   HistogramRegistry registry{
     "registry",
@@ -75,6 +75,7 @@ struct MultiplicityCounter {
   void init(InitContext&)
   {
     AxisSpec MultAxis = {multBinning, "N_{trk}"};
+    AxisSpec CentAxis = {centBinning, "centrality"};
 
     auto hstat = registry.get<TH1>(HIST("Events/BCSelection"));
     auto* x = hstat->GetXaxis();
