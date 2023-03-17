@@ -33,11 +33,11 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
-//#include "DetectorsVertexing/DCAFitterN.h"
-//#include "DetectorsBase/Propagator.h"
-//#include "DetectorsBase/GeometryManager.h"
-//#include "DataFormatsParameters/GRPObject.h"
-//#include "DataFormatsParameters/GRPMagField.h"
+// #include "DetectorsVertexing/DCAFitterN.h"
+// #include "DetectorsBase/Propagator.h"
+// #include "DetectorsBase/GeometryManager.h"
+// #include "DataFormatsParameters/GRPObject.h"
+// #include "DataFormatsParameters/GRPMagField.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
@@ -144,9 +144,8 @@ struct PCMQC {
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hGammaRxy"), v0.vx(), v0.vy());
   }
 
-  Preslice<aod::V0Datas> perCollision = aod::v0data::collisionId;
-  Preslice<aod::V0DaughterTracks> perV0 = aod::v0data::v0Id;
-  void processQC(aod::EMReducedEvents::iterator const& collision, aod::V0Datas const& v0photons, aod::V0DaughterTracks const& v0daughters)
+  Preslice<aod::V0Photons> perCollision = aod::v0data::collisionId;
+  void processQC(aod::EMReducedEvents::iterator const& collision, aod::V0Photons const& v0photons, aod::V0Legs const& v0daughters)
   {
     registry.fill(HIST("hCollisionCounter"), 1.0); // all
     if (!collision.sel8()) {
@@ -165,40 +164,34 @@ struct PCMQC {
     registry.fill(HIST("hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
     auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
 
-    // int ng_nonamb = 0;
-    // int ng_amb = 0;
+    int ng_nonamb = 0;
+    int ng_amb = 0;
     for (auto& g : V0Photons_coll) {
-      auto V0Daughters = v0daughters.sliceBy(perV0, g.globalIndex());
-      for (auto& daughter : V0Daughters) {
-        if (daughter.positivelyCharged() == true) {
-          registry.fill(HIST("NonAmbTrack/hEtaPhiPosDaughter"), daughter.eta(), daughter.phi());
-        } else {
-          registry.fill(HIST("NonAmbTrack/hEtaPhiNegDaughter"), daughter.eta(), daughter.phi());
-        }
-      } // end of loop over V0 daughters
-      // auto pos = g.posTrack_as<aod::V0DaughterTracks>();
-      // auto ele = g.negTrack_as<aod::V0DaughterTracks>();
+      auto pos = g.posTrack_as<aod::V0Legs>();
+      auto ele = g.negTrack_as<aod::V0Legs>();
+      registry.fill(HIST("NonAmbTrack/hEtaPhiPosDaughter"), pos.eta(), pos.phi());
+      registry.fill(HIST("NonAmbTrack/hEtaPhiNegDaughter"), ele.eta(), ele.phi());
 
-      // if (ele.isAmbTrack() || pos.isAmbTrack()) {
-      //   fillHistosV0<1>(g);
-      //   ng_amb++;
-      // } else {
-      //   fillHistosV0<0>(g);
-      //   ng_nonamb++;
-      // }
-      // for (auto& leg : {pos, ele}) {
-      //   if (leg.isAmbTrack())
-      //     fillHistosLeg<1>(leg);
-      //   else
-      //     fillHistosLeg<0>(leg);
-      // }
+      if (ele.isAmbTrack() || pos.isAmbTrack()) {
+        fillHistosV0<1>(g);
+        ng_amb++;
+      } else {
+        fillHistosV0<0>(g);
+        ng_nonamb++;
+      }
+      for (auto& leg : {pos, ele}) {
+        if (leg.isAmbTrack())
+          fillHistosLeg<1>(leg);
+        else
+          fillHistosLeg<0>(leg);
+      }
 
     } // end of v0 loop
     // registry.fill(HIST("NonAmbV0/hNgamma"), ng_nonamb);
     // registry.fill(HIST("AmbV0/hNgamma"), ng_amb);
   } // end of processSame
 
-  void processDummy(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& v0photons)
+  void processDummy(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Photons const& v0photons)
   {
     // do nothing
   }
@@ -244,7 +237,7 @@ struct Pi0EtaToGammaGamma {
     registry.add("EMCEMC/h2MggPt_Rotated", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/#it{c}^{2});p_{T,#gamma#gamma} (GeV/#it{c})", HistType::kTH2F, {{400, 0, 0.8}, {200, 0.0f, 40}});
   }
 
-  Preslice<aod::V0Datas> perCollision = aod::v0data::collisionId;
+  Preslice<aod::V0Photons> perCollision = aod::v0data::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
@@ -286,11 +279,11 @@ struct Pi0EtaToGammaGamma {
             v1.SetPt(g1.pt());
             v1.SetEta(g1.eta());
             v1.SetPhi(g1.phi());
-            v1.SetM(g1.mGamma());
+            v1.SetM(0.);
             v2.SetPt(g2.pt());
             v2.SetEta(g2.eta());
             v2.SetPhi(g2.phi());
-            v2.SetM(g2.mGamma());
+            v2.SetM(0.);
           } else if constexpr (pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) {
             v1.SetPt(g1.pt(0.));
             v1.SetEta(g1.eta());
@@ -534,7 +527,7 @@ struct Pi0EtaToGammaGamma {
 
   // Filter collisionFilter_PCM_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0;
   // using MyFilteredCollisions_PCM_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::V0Datas const& v0photons)
+  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::V0Photons const& v0photons)
   {
     SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision, perCollision);
     MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision);
@@ -560,13 +553,13 @@ struct Pi0EtaToGammaGamma {
 
   // Filter collisionFilter_pcm_phos_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0 && o2::aod::emreducedevent::ngphos > 0;
   // using MyFilteredCollisions_pcm_phos_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::V0Datas const& v0photons, aod::PHOSClusters const& phosclusters)
+  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::V0Photons const& v0photons, aod::PHOSClusters const& phosclusters)
   {
     SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision, perCollision_phos);
     MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision, perCollision_phos);
   }
 
-  void processPCMEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::V0Datas const& v0photons, aod::SkimEMCClusters const& emcclusters)
+  void processPCMEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::V0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters)
   {
     SameEventPairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision, perCollision_emc);
     MixedEventPairing<PairType::kPCMEMC>(filtered_collisions, v0photons, emcclusters, perCollision, perCollision_emc);
@@ -578,7 +571,7 @@ struct Pi0EtaToGammaGamma {
     MixedEventPairing<PairType::kPHOSEMC>(filtered_collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc);
   }
 
-  void processDummy(soa::Join<aod::Collisions, aod::EvSels> const& collision, aod::V0Datas const& v0photons)
+  void processDummy(soa::Join<aod::Collisions, aod::EvSels> const& collision, aod::V0Photons const& v0photons)
   {
     // do nothing
   }

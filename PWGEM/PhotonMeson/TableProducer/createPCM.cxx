@@ -367,17 +367,17 @@ struct createPCM {
                  pvec1[0], pvec1[1], pvec1[2], v0CosinePA, v0dca); // if v0leg is empty, lastIndex = -1.
         v0leg(collision.globalIndex(),
               pos.globalIndex(), pos.sign(), pos.isAmbiguousTrack(),
-              pos.pt(), pos.eta(), pos.phi(), pos.dcaXY(), pos.dcaZ(),
+              pos.pt(), pos.eta(), pos.phi(), pos.p(), pos.dcaXY(), pos.dcaZ(),
               pos.tpcNClsFindable(), pos.tpcNClsFindableMinusFound(), pos.tpcNClsFindableMinusCrossedRows(),
               pos.tpcChi2NCl(), pos.tpcInnerParam(), pos.tpcSignal(),
-              pos.tpcNSigmaEl(), pos.tpcNSigmaPi(), pos.tpcNSigmaKa(), pos.tpcNSigmaPr(),
+              pos.tpcNSigmaEl(), pos.tpcNSigmaPi(),
               pos.itsClusterMap(), pos.itsChi2NCl(), pos.detectorMap());
         v0leg(collision.globalIndex(),
               ele.globalIndex(), ele.sign(), ele.isAmbiguousTrack(),
-              ele.pt(), ele.eta(), ele.phi(), ele.dcaXY(), ele.dcaZ(),
+              ele.pt(), ele.eta(), ele.phi(), ele.p(), ele.dcaXY(), ele.dcaZ(),
               ele.tpcNClsFindable(), ele.tpcNClsFindableMinusFound(), ele.tpcNClsFindableMinusCrossedRows(),
               ele.tpcChi2NCl(), ele.tpcInnerParam(), ele.tpcSignal(),
-              ele.tpcNSigmaEl(), ele.tpcNSigmaPi(), ele.tpcNSigmaKa(), ele.tpcNSigmaPr(),
+              ele.tpcNSigmaEl(), ele.tpcNSigmaPi(),
               ele.itsClusterMap(), ele.itsChi2NCl(), ele.detectorMap());
 
       } // end of pairing loop
