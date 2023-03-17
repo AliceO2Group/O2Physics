@@ -189,8 +189,7 @@ struct HfCandidateSelectorB0ToDPi {
           continue;
         }
         SETBIT(statusB0ToDPi, aod::SelectionStep::RecoPID); // RecoPID = 2 --> statusB0ToDPi = 7
-      }
-      else {
+      } else {
         if (TESTBIT(candD.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) {
           LOG(warning) << "No PID selections required on B0 daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD=7). Set selectionFlagD<7 in hf-candidate-creator-b0";
           hfSelB0ToDPiCandidate(statusB0ToDPi);
