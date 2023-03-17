@@ -46,20 +46,20 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(E, e, float);
-DECLARE_SOA_COLUMN(NSigTPCPi0, nsigTPCPi0, float);
-DECLARE_SOA_COLUMN(NSigTPCKa0, nsigTPCKa0, float);
-DECLARE_SOA_COLUMN(NSigTOFPi0, nsigTOFPi0, float);
-DECLARE_SOA_COLUMN(NSigTOFKa0, nsigTOFKa0, float);
-DECLARE_SOA_COLUMN(NSigTPCPi1, nsigTPCPi1, float);
-DECLARE_SOA_COLUMN(NSigTPCKa1, nsigTPCKa1, float);
-DECLARE_SOA_COLUMN(NSigTOFPi1, nsigTOFPi1, float);
-DECLARE_SOA_COLUMN(NSigTOFKa1, nsigTOFKa1, float);
+DECLARE_SOA_COLUMN(NSigTpcPi0, nsigTpcPi0, float);
+DECLARE_SOA_COLUMN(NSigTpcKa0, nsigTpcKa0, float);
+DECLARE_SOA_COLUMN(NSigTofPi0, nsigTofPi0, float);
+DECLARE_SOA_COLUMN(NSigTofKa0, nsigTofKa0, float);
+DECLARE_SOA_COLUMN(NSigTpcPi1, nsigTpcPi1, float);
+DECLARE_SOA_COLUMN(NSigTpcKa1, nsigTpcKa1, float);
+DECLARE_SOA_COLUMN(NSigTofPi1, nsigTofPi1, float);
+DECLARE_SOA_COLUMN(NSigTofKa1, nsigTofKa1, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);
-DECLARE_SOA_COLUMN(CPA, cpa, float);
-DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
+DECLARE_SOA_COLUMN(Cpa, cpa, float);
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);
 DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
@@ -104,22 +104,22 @@ DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
                   hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
-                  full::NSigTPCPi0,
-                  full::NSigTPCKa0,
-                  full::NSigTOFPi0,
-                  full::NSigTOFKa0,
-                  full::NSigTPCPi1,
-                  full::NSigTPCKa1,
-                  full::NSigTOFPi1,
-                  full::NSigTOFKa1,
+                  full::NSigTpcPi0,
+                  full::NSigTpcKa0,
+                  full::NSigTofPi0,
+                  full::NSigTofKa0,
+                  full::NSigTpcPi1,
+                  full::NSigTpcKa1,
+                  full::NSigTofPi1,
+                  full::NSigTofKa1,
                   full::CandidateSelFlag,
                   full::M,
                   full::ImpactParameterProduct,
                   full::CosThetaStar,
                   full::Pt,
                   full::P,
-                  full::CPA,
-                  full::CPAXY,
+                  full::Cpa,
+                  full::CpaXY,
                   full::Ct,
                   full::Eta,
                   full::Phi,
