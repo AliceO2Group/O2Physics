@@ -252,8 +252,11 @@ struct HfTreeCreatorD0ToKPi {
     for (auto& candidate : candidates) {
       auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
       auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
-      fillTable(candidate, prong0, prong1, 0, candidate.isSelD0(), invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD0(candidate), yD0(candidate), eD0(candidate), 0, 0);
-      fillTable(candidate, prong0, prong1, 1, candidate.isSelD0bar(), invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD0(candidate), yD0(candidate), eD0(candidate), 0, 0);
+      double yD = yD0(candidate);
+      double eD = eD0(candidate);
+      double ctD = ctD0(candidate);
+      fillTable(candidate, prong0, prong1, 0, candidate.isSelD0(), invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD, yD, eD, 0, 0);
+      fillTable(candidate, prong0, prong1, 1, candidate.isSelD0bar(), invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD, yD, eD, 0, 0);
     }
   }
 
@@ -276,8 +279,11 @@ struct HfTreeCreatorD0ToKPi {
     for (auto& candidate : candidates) {
       auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
       auto prong1 = candidate.prong0_as<aod::BigTracksPID>();
-      fillTable(candidate, prong0, prong1, 0, candidate.isSelD0(), invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD0(candidate), yD0(candidate), eD0(candidate), candidate.flagMcMatchRec(), candidate.originMcRec());
-      fillTable(candidate, prong0, prong1, 1, candidate.isSelD0bar(), invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD0(candidate), yD0(candidate), eD0(candidate), candidate.flagMcMatchRec(), candidate.originMcRec());
+      double yD = yD0(candidate);
+      double eD = eD0(candidate);
+      double ctD = ctD0(candidate);
+      fillTable(candidate, prong0, prong1, 0, candidate.isSelD0(), invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+      fillTable(candidate, prong0, prong1, 1, candidate.isSelD0bar(), invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
     }
 
     // Filling particle properties
