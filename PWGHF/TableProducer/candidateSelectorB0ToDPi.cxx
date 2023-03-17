@@ -14,12 +14,12 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include "Common/Core/TrackSelectorPID.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/TrackSelectorPID.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -36,7 +36,7 @@ struct HfCandidateSelectorB0ToDPi {
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
   Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
-  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", false, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
+  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
@@ -177,8 +177,8 @@ struct HfCandidateSelectorB0ToDPi {
 
       // track-level PID selection
       if (usePid) {
-        if (!TESTBIT(candD.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) { // safety
-          LOG(warning) << "PID not enabled in DplusToPiKPi selector. Set selectionFlagD=7 in hf-candidate-creator-b0";
+        if (!TESTBIT(candD.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) {
+          LOG(warning) << "PID selections required on B0 daughters (usePid=true) but no PID selections on D candidates were required a priori (selectionFlagD<7). Set selectionFlagD=7 in hf-candidate-creator-b0";
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           continue;
         }
@@ -189,6 +189,13 @@ struct HfCandidateSelectorB0ToDPi {
           continue;
         }
         SETBIT(statusB0ToDPi, aod::SelectionStep::RecoPID); // RecoPID = 2 --> statusB0ToDPi = 7
+      }
+      else {
+        if (TESTBIT(candD.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) {
+          LOG(warning) << "No PID selections required on B0 daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD=7). Set selectionFlagD<7 in hf-candidate-creator-b0";
+          hfSelB0ToDPiCandidate(statusB0ToDPi);
+          continue;
+        }
       }
 
       hfSelB0ToDPiCandidate(statusB0ToDPi);
