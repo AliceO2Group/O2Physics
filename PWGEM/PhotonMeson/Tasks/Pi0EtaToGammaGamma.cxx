@@ -191,7 +191,7 @@ struct PCMQC {
     // registry.fill(HIST("AmbV0/hNgamma"), ng_amb);
   } // end of processSame
 
-  void processDummy(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Photons const& v0photons)
+  void processDummy(aod::EMReducedEvents::iterator const& collision)
   {
     // do nothing
   }
@@ -571,7 +571,7 @@ struct Pi0EtaToGammaGamma {
     MixedEventPairing<PairType::kPHOSEMC>(filtered_collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc);
   }
 
-  void processDummy(soa::Join<aod::Collisions, aod::EvSels> const& collision, aod::V0Photons const& v0photons)
+  void processDummy(aod::EMReducedEvents::iterator const& collision)
   {
     // do nothing
   }
