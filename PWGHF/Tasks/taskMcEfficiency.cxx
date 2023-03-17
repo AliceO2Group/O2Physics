@@ -121,7 +121,7 @@ struct HfTaskMcEfficiency {
         bool isHypoMass2TrackStep = true;
         bool isHypoMass1SelStep = false;
         bool isHypoMass2SelStep = false;
-        if (pdg == pdg::kLambdaCPlus) {
+        if (pdgCode == pdg::kLambdaCPlus) {
           isHypoMass1SelStep = candidate.isSelLcToPKPi();  /// from candidate selector!
           isHypoMass2SelStep = candidate.isSelLcToPiKP();  /// from candidate selector!
         }
@@ -129,7 +129,7 @@ struct HfTaskMcEfficiency {
         if constexpr (mc) { /// info MC used
           int8_t sign = 0;
           int indexRec = -999;
-          if (pdg == pdg::kLambdaCPlus) {
+          if (pdgCode == pdg::kLambdaCPlus) {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg, trackThird}, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
           }
           
@@ -137,8 +137,8 @@ struct HfTaskMcEfficiency {
             continue;
           }
 
-          if (pdg == pdg::kLambdaCPlus) {
-            auto daugther = trackPos.mcParticle();
+          if (pdgCode == pdg::kLambdaCPlus) {
+            auto daughter = trackPos.mcParticle();
             if (std::abs( daughter.pdgCode() ) == kProton ) {
               isHypoMass1TrackStep = true;
               isHypoMass1SelStep = true;
@@ -165,13 +165,13 @@ struct HfTaskMcEfficiency {
 
         /// all candidates
         if (isHypoMass1TrackStep) {
-          if (pdg == pdg::kLambdaCPlus) {
+          if (pdgCode == pdg::kLambdaCPlus) {
             massHypo1 = invMassLcToPKPi(candidate);
           }
           hCandidates->Fill(kHFStepTracked, pt, massHypo1, pdgCode, cpa, collisionMatched);
         }
         if (isHypoMass2TrackStep) {
-          if (pdg == pdg::kLambdaCPlus) {
+          if (pdgCode == pdg::kLambdaCPlus) {
             massHypo2 = invMassLcToPiKP(candidate);
           }
           hCandidates->Fill(kHFStepTracked, pt, massHypo2, pdgCode, cpa, collisionMatched);
