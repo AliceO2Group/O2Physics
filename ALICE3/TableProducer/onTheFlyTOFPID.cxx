@@ -180,9 +180,14 @@ struct OnTheFlyTOFPID {
     o2::dataformats::VertexBase pvVtx({collision.posX(), collision.posY(), collision.posZ()},
                                       {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()});
 
-    auto mcCollision = collision.mcCollision();
     std::array<float, 6> mcPvCov = {0.};
-    o2::dataformats::VertexBase mcPvVtx({mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()}, mcPvCov);
+    o2::dataformats::VertexBase mcPvVtx({0.0f, 0.0f, 0.0f}, mcPvCov);
+    if (collision.has_mcCollision()) {
+      auto mcCollision = collision.mcCollision();
+      mcPvVtx.setX(mcCollision.posX());
+      mcPvVtx.setY(mcCollision.posY());
+      mcPvVtx.setZ(mcCollision.posZ());
+    } // else remains untreated for now
 
     for (const auto& track : tracks) {
       // first step: find precise arrival time (if any)
