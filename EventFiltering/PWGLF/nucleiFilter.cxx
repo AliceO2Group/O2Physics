@@ -67,7 +67,6 @@ struct nucleiFilter {
 
   Produces<aod::NucleiFilters> tags;
 
-
   Configurable<float> cfgCutVertex{"cfgCutVertex", 12.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 1.f, "Eta range for tracks"};
 
