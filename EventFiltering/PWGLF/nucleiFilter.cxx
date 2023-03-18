@@ -57,6 +57,10 @@ constexpr double bbMomScalingDefault[nNuclei][2]{
   {1., 1.},
   {1., 1.}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
+
+std::shared_ptr<TH2> h2TPCsignal[nNuclei];
+std::shared_ptr<TH2> h2TPCnSigma[nNuclei];
+
 } // namespace
 
 struct nucleiFilter {
@@ -84,8 +88,12 @@ struct nucleiFilter {
     AxisSpec centAxis = {centBinning, "V0M (%)"};
 
     qaHists.add("fCollZpos", "collision z position", HistType::kTH1F, {{600, -20., +20., "z position (cm)"}});
-    qaHists.add("fTPCsignal", "Specific energy loss", HistType::kTH2F, {{600, 0., 3, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
-    qaHists.add("fTPCcounts", "n-sigma TPC", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{He} (a. u.)"}});
+    qaHists.add("fTPCsignal", "Specific energy loss", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
+
+    for (int iN{0}; iN < nNuclei; ++iN) {
+      h2TPCsignal[iN] = qaHists.add<TH2>(Form("fTPCsignal_%s", nucleiNames[iN].data()), "Specific energy loss", HistType::kTH2F, {{1200, -6, 6., "#it{p}/Z (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
+      h2TPCnSigma[iN] = qaHists.add<TH2>(Form("fTPCcounts_%s", nucleiNames[iN].data()), "n-sigma TPC", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{He} (a. u.)"}});
+    }
 
     auto scalers{std::get<std::shared_ptr<TH1>>(qaHists.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{nNuclei + 1, -0.5, nNuclei + 0.5}}))};
     scalers->GetXaxis()->SetBinLabel(1, "Processed events");
@@ -124,6 +132,7 @@ struct nucleiFilter {
           double expSigma{expBethe * cfgBetheBlochParams->get(iN, 5u)};
           nSigmaTPC[iN] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         }
+        h2TPCnSigma[iN]->Fill(track.tpcInnerParam(), nSigmaTPC[iN]);
         if (nSigmaTPC[iN] < cfgCutsPID->get(iN, 0u) || nSigmaTPC[iN] > cfgCutsPID->get(iN, 1u)) {
           continue;
         }
@@ -131,13 +140,15 @@ struct nucleiFilter {
           continue;
         }
         keepEvent[iN] = true;
+        if (keepEvent[iN]) {
+          h2TPCsignal[iN]->Fill(track.sign() * track.tpcInnerParam(), track.tpcSignal());
+        }
       }
 
       //
       // fill QA histograms
       //
-      qaHists.fill(HIST("fTPCsignal"), track.tpcInnerParam(), track.tpcSignal());
-      qaHists.fill(HIST("fTPCcounts"), track.tpcInnerParam(), nSigmaTPC[2]);
+      qaHists.fill(HIST("fTPCsignal"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
 
     } // end loop over tracks
     //
