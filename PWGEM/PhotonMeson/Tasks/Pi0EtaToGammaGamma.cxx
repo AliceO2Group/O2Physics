@@ -86,16 +86,16 @@ struct PCMQC {
       registry.add(Form("%sV0/hNgamma", pairtype[i].Data()), "Number of #photon candidates;Number of #gamma candidates", HistType::kTH1F, {{101, -0.5f, 100.5}});
       registry.add(Form("%sV0/hPt", pairtype[i].Data()), "pT;p_{T} (GeV/c)", HistType::kTH1F, {{1000, 0.0f, 10}});
       registry.add(Form("%sV0/hEtaPhi", pairtype[i].Data()), "#eta vs. #varphi;#varphi (rad.);#eta", HistType::kTH2F, {{180, 0, TMath::TwoPi()}, {40, -2.0f, 2.0f}});
-      registry.add(Form("%sV0/hRadius", pairtype[i].Data()), "V0Radius; radius in Z (cm);radius in XY (cm)", HistType::kTH2F, {{400, -200, 200}, {2000, 0.0f, 200.0f}});
-      registry.add(Form("%sV0/hRadius_recalc", pairtype[i].Data()), "V0Radius; radius in Z (cm);radius in XY (cm)", HistType::kTH2F, {{400, -200, 200}, {2000, 0.0f, 200.0f}});
+      registry.add(Form("%sV0/hRadius", pairtype[i].Data()), "V0Radius; radius in Z (cm);radius in XY (cm)", HistType::kTH2F, {{500, -250, 250}, {500, 0.0f, 250.0f}});
+      registry.add(Form("%sV0/hRadius_recalc", pairtype[i].Data()), "V0Radius; radius in Z (cm);radius in XY (cm)", HistType::kTH2F, {{500, -250, 250}, {500, 0.0f, 250.0f}});
       registry.add(Form("%sV0/hCosPA", pairtype[i].Data()), "V0CosPA;cosine pointing angle", HistType::kTH1F, {{200, 0.8f, 1.0f}});
       registry.add(Form("%sV0/hPCA", pairtype[i].Data()), "distance between 2 legs; PCA (cm)", HistType::kTH1F, {{100, 0.0f, 10.0f}});
       registry.add(Form("%sV0/hAPplot", pairtype[i].Data()), "AP plot;#alpha;q_{T} (GeV/c)", HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
       registry.add(Form("%sV0/hGammaPsiPair", pairtype[i].Data()), "#psi_{pair} for photon conversion;#psi_{pair} (rad.);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{160, 0.0, TMath::PiOver2()}, {100, 0.0f, 0.1f}});
-      registry.add(Form("%sV0/hMassGamma", pairtype[i].Data()), "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.0f, 0.1f}});
+      registry.add(Form("%sV0/hMassGamma", pairtype[i].Data()), "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{2000, 0.0f, 200.0f}, {100, 0.0f, 0.1f}});
       registry.add(Form("%sV0/hMassGamma_recalc", pairtype[i].Data()), "recalc. KF hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{2000, 0.0f, 200.0f}, {100, 0.0f, 0.1f}});
-      registry.add(Form("%sV0/hGammaRxy", pairtype[i].Data()), "conversion point in XY;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{2000, -200.0f, 200.0f}, {2000, -200.0f, 200.0f}});
-      registry.add(Form("%sV0/hGammaRxy_recalc", pairtype[i].Data()), "recalc. KF conversion point in XY;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{5000, -200.0f, 200.0f}, {2000, -200.0f, 200.0f}});
+      registry.add(Form("%sV0/hGammaRxy", pairtype[i].Data()), "conversion point in XY;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{1000, -250.0f, 250.0f}, {1000, -250.0f, 250.0f}});
+      registry.add(Form("%sV0/hGammaRxy_recalc", pairtype[i].Data()), "recalc. KF conversion point in XY;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{1000, -250.0f, 250.0f}, {1000, -250.0f, 250.0f}});
     }
   }
 
