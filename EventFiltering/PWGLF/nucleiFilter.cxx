@@ -67,10 +67,11 @@ struct nucleiFilter {
 
   Produces<aod::NucleiFilters> tags;
 
-  Configurable<float> yBeam{"yBeam", 0., "Beam rapidity"};
-
-  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> cfgCutVertex{"cfgCutVertex", 12.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 1.f, "Eta range for tracks"};
+
+  Configurable<float> cfgCutNclusITS{"cfgCutNclusITS", 2, "Minimum number of ITS clusters"};
+  Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 80, "Minimum number of TPC clusters"};
 
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nNuclei, 6, nucleiNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {bbMomScalingDefault[0], nNuclei, 2, nucleiNames, matterOrNot}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
@@ -102,7 +103,7 @@ struct nucleiFilter {
     }
   }
 
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta);
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
   void process(aod::Collisions::iterator const& collision, TrackCandidates const& tracks)
@@ -119,7 +120,10 @@ struct nucleiFilter {
       {charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / masses[2], charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / masses[2]}};
 
     for (auto& track : tracks) { // start loop over tracks
-
+      if (track.itsNCls() < cfgCutNclusITS ||
+          track.tpcNClsFound() < cfgCutNclusTPC) {
+        continue;
+      }
       float nSigmaTPC[nNuclei]{
         track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe()};
       const float nSigmaTOF[nNuclei]{
