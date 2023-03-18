@@ -33,4 +33,4 @@ DECLARE_SOA_TABLE(F1ProtonFilters, "AOD", "F1ProtonFilters",
                   filtering::TriggerEventF1Proton);
 using F1ProtonFilter = F1ProtonFilters::iterator;
 } // namespace o2::aod
-#endif
+#endif // PWGLF_DATAMODEL_FILTERF1PROTONTABLES_H_
