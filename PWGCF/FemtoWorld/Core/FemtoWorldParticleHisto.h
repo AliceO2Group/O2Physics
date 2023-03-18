@@ -70,7 +70,7 @@ class FemtoWorldParticleHisto
         int mInvBins = 1000;
         framework::AxisSpec mInvAxis = {mInvBins, 0.5, 1.5};
         mHistogramRegistry->add((folderName + "/InvariantMass").c_str(), ";M_{K^{+}K^{-}} (GeV/#it{c}^{2});", kTH1D, {mInvAxis});
-        mHistogramRegistry->add((folderName + "/EtaVsMultiplicity").c_str(), "; multiplicity; #eta", kTH2F, {{12, 0., 200.}, {29, -2., 2.}}); 
+        mHistogramRegistry->add((folderName + "/EtaVsMultiplicity").c_str(), "; multiplicity; #eta", kTH2F, {{12, 0., 200.}, {29, -2., 2.}});
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhiChild) {
         /// Phi daughters histograms
       } else {
@@ -115,7 +115,6 @@ class FemtoWorldParticleHisto
     }
   }
 
-
   /// Filling of the histograms
   /// \tparam T Data type of the particle
   /// \param part Particle
@@ -152,7 +151,6 @@ class FemtoWorldParticleHisto
       }
     }
   }
-  
 
  private:
   HistogramRegistry* mHistogramRegistry;                                                                      ///< For QA output

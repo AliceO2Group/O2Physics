@@ -133,7 +133,6 @@ class FemtoWorldContainer
     const float kT = FemtoWorldMath::getkT(part1, mMassOne, part2, mMassTwo);
     const float mT = FemtoWorldMath::getmT(part1, mMassOne, part2, mMassTwo);
 
-
     double delta_eta = part1.eta() - part2.eta();
     double delta_phi = part1.phi() - part2.phi();
 
