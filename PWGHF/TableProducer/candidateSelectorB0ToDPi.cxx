@@ -51,6 +51,8 @@ struct HfCandidateSelectorB0ToDPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_b0_to_d_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B0 candidate selection per pT bin"};
 
+  using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
+
   /// Apply topological cuts as defined in SelectorCuts.h
   /// \param hfCandB0 is the B0 candidate
   /// \param hfCandD is prong1 of B0 candidate
@@ -140,8 +142,6 @@ struct HfCandidateSelectorB0ToDPi {
 
     return true;
   }
-
-  using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
 
   void process(aod::HfCandB0 const& hfCandsB0, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, TracksPIDWithSel const&)
   {
