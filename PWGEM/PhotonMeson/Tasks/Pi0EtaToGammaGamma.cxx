@@ -314,7 +314,7 @@ struct Pi0EtaToGammaGamma {
             v1.SetPt(g1.pt());
             v1.SetEta(g1.eta());
             v1.SetPhi(g1.phi());
-            v1.SetM(g1.mGamma());
+            v1.SetM(0.);
             v2.SetPt(g2.pt(0.));
             v2.SetEta(g2.eta());
             v2.SetPhi(g2.phi());
@@ -411,11 +411,11 @@ struct Pi0EtaToGammaGamma {
           v1.SetPt(g1.pt());
           v1.SetEta(g1.eta());
           v1.SetPhi(g1.phi());
-          v1.SetM(g1.mGamma());
+          v1.SetM(0.);
           v2.SetPt(g2.pt());
           v2.SetEta(g2.eta());
           v2.SetPhi(g2.phi());
-          v2.SetM(g2.mGamma());
+          v2.SetM(0.);
         } else if constexpr (pairtype == PairType::kPHOSPHOS) {
           v1.SetPt(g1.pt(0.));
           v1.SetEta(g1.eta());
@@ -438,7 +438,7 @@ struct Pi0EtaToGammaGamma {
           v1.SetPt(g1.pt());
           v1.SetEta(g1.eta());
           v1.SetPhi(g1.phi());
-          v1.SetM(g1.mGamma());
+          v1.SetM(0.);
           v2.SetPt(g2.pt(0.));
           v2.SetEta(g2.eta());
           v2.SetPhi(g2.phi());
@@ -447,7 +447,7 @@ struct Pi0EtaToGammaGamma {
           v1.SetPt(g1.pt());
           v1.SetEta(g1.eta());
           v1.SetPhi(g1.phi());
-          v1.SetM(g1.mGamma());
+          v1.SetM(0.);
           v2.SetPt(g2.pt(0.));
           v2.SetEta(g2.eta());
           v2.SetPhi(g2.phi());
