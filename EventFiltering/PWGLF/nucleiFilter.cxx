@@ -56,6 +56,10 @@ constexpr double bbMomScalingDefault[nNuclei][2]{
   {1., 1.},
   {1., 1.},
   {1., 1.}};
+constexpr double minPt[nNuclei][2]{
+  {0., 0.},
+  {0., 0.},
+  {0.8, 0.}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 
 std::shared_ptr<TH2> h2TPCsignal[nNuclei];
@@ -75,6 +79,7 @@ struct nucleiFilter {
 
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nNuclei, 6, nucleiNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {bbMomScalingDefault[0], nNuclei, 2, nucleiNames, matterOrNot}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
+  Configurable<LabeledArray<double>> cfgMinPt{"cfgMinPt", {minPt[0], nNuclei, 2, nucleiNames, matterOrNot}, "Minimum pT/Z for nuclei PID"};
 
   Configurable<LabeledArray<float>> cfgCutsPID{"nucleiCutsPID", {cutsPID[0], nNuclei, nCutsPID, nucleiNames, cutsNames}, "Nuclei PID selections"};
 
@@ -82,24 +87,22 @@ struct nucleiFilter {
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> ptBinning = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5.};
-    std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
+    std::vector<double> ptBinning = {0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5.};
 
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec centAxis = {centBinning, "V0M (%)"};
 
     qaHists.add("fCollZpos", "collision z position", HistType::kTH1F, {{600, -20., +20., "z position (cm)"}});
     qaHists.add("fTPCsignal", "Specific energy loss", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
 
     for (int iN{0}; iN < nNuclei; ++iN) {
       h2TPCsignal[iN] = qaHists.add<TH2>(Form("fTPCsignal_%s", nucleiNames[iN].data()), "Specific energy loss", HistType::kTH2F, {{1200, -6, 6., "#it{p}/Z (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
-      h2TPCnSigma[iN] = qaHists.add<TH2>(Form("fTPCcounts_%s", nucleiNames[iN].data()), "n-sigma TPC", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{He} (a. u.)"}});
+      h2TPCnSigma[iN] = qaHists.add<TH2>(Form("fTPCcounts_%s", nucleiNames[iN].data()), "n-sigma TPC", HistType::kTH2F, {ptAxis, {200, -10., +10., "n#sigma_{He} (a. u.)"}});
     }
 
     auto scalers{std::get<std::shared_ptr<TH1>>(qaHists.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{nNuclei + 1, -0.5, nNuclei + 0.5}}))};
     scalers->GetXaxis()->SetBinLabel(1, "Processed events");
-    for (uint32_t iS{2}; iS <= nucleiNames.size() + 1; ++iS) {
-      scalers->GetXaxis()->SetBinLabel(iS, nucleiNames[iS - 1].data());
+    for (uint32_t iS{0}; iS < nucleiNames.size(); ++iS) {
+      scalers->GetXaxis()->SetBinLabel(iS + 2, nucleiNames[iS].data());
     }
   }
 
@@ -131,6 +134,11 @@ struct nucleiFilter {
       const int iC{track.sign() < 0};
 
       for (int iN{0}; iN < nNuclei; ++iN) {
+        /// Cheap checks first
+        if (track.pt() < cfgMinPt->get(iN, iC)) {
+          continue;
+        }
+
         if (cfgBetheBlochParams->get(iN, 5u) > 0.f) {
           double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScalings[iN][iC]), cfgBetheBlochParams->get(iN, 0u), cfgBetheBlochParams->get(iN, 1u), cfgBetheBlochParams->get(iN, 2u), cfgBetheBlochParams->get(iN, 3u), cfgBetheBlochParams->get(iN, 4u))};
           double expSigma{expBethe * cfgBetheBlochParams->get(iN, 5u)};
@@ -156,9 +164,9 @@ struct nucleiFilter {
 
     } // end loop over tracks
     //
-    for (int iDecision{0}; iDecision < 4; ++iDecision) {
+    for (int iDecision{0}; iDecision < 3; ++iDecision) {
       if (keepEvent[iDecision]) {
-        qaHists.fill(HIST("fProcessedEvents"), iDecision);
+        qaHists.fill(HIST("fProcessedEvents"), iDecision + 1);
       }
     }
     tags(keepEvent[0], keepEvent[1], keepEvent[2]);
