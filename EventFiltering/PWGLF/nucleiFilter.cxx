@@ -76,6 +76,8 @@ struct nucleiFilter {
 
   Configurable<float> cfgCutNclusITS{"cfgCutNclusITS", 2, "Minimum number of ITS clusters"};
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 80, "Minimum number of TPC clusters"};
+  Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 3, "Max DCAxy"};
+  Configurable<float> cfgCutDCAz{"cfgCutDCAz", 10, "Max DCAz"};
 
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nNuclei, 6, nucleiNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {bbMomScalingDefault[0], nNuclei, 2, nucleiNames, matterOrNot}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
@@ -125,6 +127,10 @@ struct nucleiFilter {
     for (auto& track : tracks) { // start loop over tracks
       if (track.itsNCls() < cfgCutNclusITS ||
           track.tpcNClsFound() < cfgCutNclusTPC) {
+        continue;
+      }
+      if (track.sign() > 0 && (std::abs(track.dcaXY()) > cfgCutDCAxy ||
+                               std::abs(track.dcaZ()) > cfgCutDCAz)) {
         continue;
       }
       float nSigmaTPC[nNuclei]{
