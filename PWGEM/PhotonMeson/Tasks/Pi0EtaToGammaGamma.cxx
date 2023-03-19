@@ -33,11 +33,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
-// #include "DetectorsVertexing/DCAFitterN.h"
-// #include "DetectorsBase/Propagator.h"
-// #include "DetectorsBase/GeometryManager.h"
-// #include "DataFormatsParameters/GRPObject.h"
-// #include "DataFormatsParameters/GRPMagField.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
@@ -46,6 +41,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
+
+using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF>;
+using MyV0Photon = MyV0Photons::iterator;
 
 struct PCMQC {
   HistogramRegistry registry{
@@ -88,13 +86,16 @@ struct PCMQC {
       registry.add(Form("%sV0/hNgamma", pairtype[i].Data()), "Number of #photon candidates;Number of #gamma candidates", HistType::kTH1F, {{101, -0.5f, 100.5}});
       registry.add(Form("%sV0/hPt", pairtype[i].Data()), "pT;p_{T} (GeV/c)", HistType::kTH1F, {{1000, 0.0f, 10}});
       registry.add(Form("%sV0/hEtaPhi", pairtype[i].Data()), "#eta vs. #varphi;#varphi (rad.);#eta", HistType::kTH2F, {{180, 0, TMath::TwoPi()}, {40, -2.0f, 2.0f}});
-      registry.add(Form("%sV0/hRadius", pairtype[i].Data()), "V0Radius; radius in Z (cm);radius in XY (cm)", HistType::kTH2F, {{500, -250, 250}, {2500, 0.0f, 250.0f}});
+      registry.add(Form("%sV0/hRadius", pairtype[i].Data()), "V0Radius; radius in Z (cm);radius in XY (cm)", HistType::kTH2F, {{500, -250, 250}, {500, 0.0f, 250.0f}});
+      registry.add(Form("%sV0/hRadius_recalc", pairtype[i].Data()), "V0Radius; radius in Z (cm);radius in XY (cm)", HistType::kTH2F, {{500, -250, 250}, {500, 0.0f, 250.0f}});
       registry.add(Form("%sV0/hCosPA", pairtype[i].Data()), "V0CosPA;cosine pointing angle", HistType::kTH1F, {{200, 0.8f, 1.0f}});
       registry.add(Form("%sV0/hPCA", pairtype[i].Data()), "distance between 2 legs; PCA (cm)", HistType::kTH1F, {{100, 0.0f, 10.0f}});
       registry.add(Form("%sV0/hAPplot", pairtype[i].Data()), "AP plot;#alpha;q_{T} (GeV/c)", HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
       registry.add(Form("%sV0/hGammaPsiPair", pairtype[i].Data()), "#psi_{pair} for photon conversion;#psi_{pair} (rad.);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{160, 0.0, TMath::PiOver2()}, {100, 0.0f, 0.1f}});
-      registry.add(Form("%sV0/hMassGamma", pairtype[i].Data()), "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.0f, 0.1f}});
-      registry.add(Form("%sV0/hGammaRxy", pairtype[i].Data()), "conversion point in XY;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{1800, -90.0f, 90.0f}, {1800, -90.0f, 90.0f}});
+      registry.add(Form("%sV0/hMassGamma", pairtype[i].Data()), "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{2000, 0.0f, 200.0f}, {100, 0.0f, 0.1f}});
+      registry.add(Form("%sV0/hMassGamma_recalc", pairtype[i].Data()), "recalc. KF hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{2000, 0.0f, 200.0f}, {100, 0.0f, 0.1f}});
+      registry.add(Form("%sV0/hGammaRxy", pairtype[i].Data()), "conversion point in XY;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{1000, -250.0f, 250.0f}, {1000, -250.0f, 250.0f}});
+      registry.add(Form("%sV0/hGammaRxy_recalc", pairtype[i].Data()), "recalc. KF conversion point in XY;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{1000, -250.0f, 250.0f}, {1000, -250.0f, 250.0f}});
     }
   }
 
@@ -136,16 +137,19 @@ struct PCMQC {
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hPt"), v0.pt());
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hEtaPhi"), v0.phi(), v0.eta());
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hRadius"), v0.vz(), v0.v0radius());
+    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hRadius_recalc"), v0.recalculatedVtxZ(), v0.recalculatedVtxR());
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hCosPA"), v0.cospa());
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hPCA"), v0.pca());
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hAPplot"), v0.alpha(), v0.qtarm());
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hMassGamma"), v0.v0radius(), v0.mGamma());
+    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hMassGamma_recalc"), v0.recalculatedVtxR(), v0.mGamma());
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hGammaPsiPair"), v0.psipair(), v0.mGamma());
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hGammaRxy"), v0.vx(), v0.vy());
+    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hGammaRxy_recalc"), v0.recalculatedVtxX(), v0.recalculatedVtxY());
   }
 
-  Preslice<aod::V0Photons> perCollision = aod::v0data::collisionId;
-  void processQC(aod::EMReducedEvents::iterator const& collision, aod::V0Photons const& v0photons, aod::V0Legs const& v0daughters)
+  Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
+  void processQC(aod::EMReducedEvents::iterator const& collision, MyV0Photons const& v0photons, aod::V0Legs const& v0daughters)
   {
     registry.fill(HIST("hCollisionCounter"), 1.0); // all
     if (!collision.sel8()) {
@@ -237,7 +241,7 @@ struct Pi0EtaToGammaGamma {
     registry.add("EMCEMC/h2MggPt_Rotated", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/#it{c}^{2});p_{T,#gamma#gamma} (GeV/#it{c})", HistType::kTH2F, {{400, 0, 0.8}, {200, 0.0f, 40}});
   }
 
-  Preslice<aod::V0Photons> perCollision = aod::v0data::collisionId;
+  Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
@@ -310,7 +314,7 @@ struct Pi0EtaToGammaGamma {
             v1.SetPt(g1.pt());
             v1.SetEta(g1.eta());
             v1.SetPhi(g1.phi());
-            v1.SetM(g1.mGamma());
+            v1.SetM(0.);
             v2.SetPt(g2.pt(0.));
             v2.SetEta(g2.eta());
             v2.SetPhi(g2.phi());
@@ -407,11 +411,11 @@ struct Pi0EtaToGammaGamma {
           v1.SetPt(g1.pt());
           v1.SetEta(g1.eta());
           v1.SetPhi(g1.phi());
-          v1.SetM(g1.mGamma());
+          v1.SetM(0.);
           v2.SetPt(g2.pt());
           v2.SetEta(g2.eta());
           v2.SetPhi(g2.phi());
-          v2.SetM(g2.mGamma());
+          v2.SetM(0.);
         } else if constexpr (pairtype == PairType::kPHOSPHOS) {
           v1.SetPt(g1.pt(0.));
           v1.SetEta(g1.eta());
@@ -434,7 +438,7 @@ struct Pi0EtaToGammaGamma {
           v1.SetPt(g1.pt());
           v1.SetEta(g1.eta());
           v1.SetPhi(g1.phi());
-          v1.SetM(g1.mGamma());
+          v1.SetM(0.);
           v2.SetPt(g2.pt(0.));
           v2.SetEta(g2.eta());
           v2.SetPhi(g2.phi());
@@ -443,7 +447,7 @@ struct Pi0EtaToGammaGamma {
           v1.SetPt(g1.pt());
           v1.SetEta(g1.eta());
           v1.SetPhi(g1.phi());
-          v1.SetM(g1.mGamma());
+          v1.SetM(0.);
           v2.SetPt(g2.pt(0.));
           v2.SetEta(g2.eta());
           v2.SetPhi(g2.phi());
@@ -527,7 +531,7 @@ struct Pi0EtaToGammaGamma {
 
   // Filter collisionFilter_PCM_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0;
   // using MyFilteredCollisions_PCM_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::V0Photons const& v0photons)
+  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons)
   {
     SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision, perCollision);
     MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision);
@@ -553,13 +557,13 @@ struct Pi0EtaToGammaGamma {
 
   // Filter collisionFilter_pcm_phos_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0 && o2::aod::emreducedevent::ngphos > 0;
   // using MyFilteredCollisions_pcm_phos_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::V0Photons const& v0photons, aod::PHOSClusters const& phosclusters)
+  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::PHOSClusters const& phosclusters)
   {
     SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision, perCollision_phos);
     MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision, perCollision_phos);
   }
 
-  void processPCMEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::V0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters)
+  void processPCMEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters)
   {
     SameEventPairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision, perCollision_emc);
     MixedEventPairing<PairType::kPCMEMC>(filtered_collisions, v0photons, emcclusters, perCollision, perCollision_emc);
