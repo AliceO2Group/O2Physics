@@ -56,7 +56,7 @@ constexpr double bbMomScalingDefault[nNuclei][2]{
   {1., 1.},
   {1., 1.},
   {1., 1.}};
-constexpr double minPt[nNuclei][2]{
+constexpr double minTPCmom[nNuclei][2]{
   {0., 0.},
   {0., 0.},
   {0.8, 0.}};
@@ -79,7 +79,7 @@ struct nucleiFilter {
 
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nNuclei, 6, nucleiNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {bbMomScalingDefault[0], nNuclei, 2, nucleiNames, matterOrNot}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
-  Configurable<LabeledArray<double>> cfgMinPt{"cfgMinPt", {minPt[0], nNuclei, 2, nucleiNames, matterOrNot}, "Minimum pT/Z for nuclei PID"};
+  Configurable<LabeledArray<double>> cfgMinTPCmom{"cfgMinTPCmom", {minTPCmom[0], nNuclei, 2, nucleiNames, matterOrNot}, "Minimum TPC p/Z for nuclei PID"};
 
   Configurable<LabeledArray<float>> cfgCutsPID{"nucleiCutsPID", {cutsPID[0], nNuclei, nCutsPID, nucleiNames, cutsNames}, "Nuclei PID selections"};
 
@@ -96,7 +96,7 @@ struct nucleiFilter {
 
     for (int iN{0}; iN < nNuclei; ++iN) {
       h2TPCsignal[iN] = qaHists.add<TH2>(Form("fTPCsignal_%s", nucleiNames[iN].data()), "Specific energy loss", HistType::kTH2F, {{1200, -6, 6., "#it{p}/Z (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
-      h2TPCnSigma[iN] = qaHists.add<TH2>(Form("fTPCcounts_%s", nucleiNames[iN].data()), "n-sigma TPC", HistType::kTH2F, {ptAxis, {200, -10., +10., "n#sigma_{He} (a. u.)"}});
+      h2TPCnSigma[iN] = qaHists.add<TH2>(Form("fTPCcounts_%s", nucleiNames[iN].data()), "n-sigma TPC", HistType::kTH2F, {{100, -5, 5, "#it{p} /Z (GeV/#it{c})"}, {200, -10., +10., "n#sigma_{He} (a. u.)"}});
     }
 
     auto scalers{std::get<std::shared_ptr<TH1>>(qaHists.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{nNuclei + 1, -0.5, nNuclei + 0.5}}))};
@@ -135,7 +135,7 @@ struct nucleiFilter {
 
       for (int iN{0}; iN < nNuclei; ++iN) {
         /// Cheap checks first
-        if (track.pt() < cfgMinPt->get(iN, iC)) {
+        if (track.tpcInnerParam() < cfgMinTPCmom->get(iN, iC)) {
           continue;
         }
 
@@ -144,7 +144,7 @@ struct nucleiFilter {
           double expSigma{expBethe * cfgBetheBlochParams->get(iN, 5u)};
           nSigmaTPC[iN] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         }
-        h2TPCnSigma[iN]->Fill(track.tpcInnerParam(), nSigmaTPC[iN]);
+        h2TPCnSigma[iN]->Fill(track.sign() * track.tpcInnerParam(), nSigmaTPC[iN]);
         if (nSigmaTPC[iN] < cfgCutsPID->get(iN, 0u) || nSigmaTPC[iN] > cfgCutsPID->get(iN, 1u)) {
           continue;
         }
