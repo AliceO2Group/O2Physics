@@ -130,7 +130,7 @@ struct nucleiFilter {
         continue;
       }
       if (track.sign() > 0 && (std::abs(track.dcaXY()) > cfgCutDCAxy ||
-          std::abs(track.dcaZ()) > cfgCutDCAz)) {
+                               std::abs(track.dcaZ()) > cfgCutDCAz)) {
         continue;
       }
       float nSigmaTPC[nNuclei]{
