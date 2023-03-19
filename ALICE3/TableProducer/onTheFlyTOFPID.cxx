@@ -95,6 +95,7 @@ struct OnTheFlyTOFPID {
   Configurable<int> nStepsLIntegrator{"nStepsLIntegrator", 200, "number of steps in length integrator"};
   Configurable<bool> doQAplots{"doQAplots", true, "do basic velocity plot qa"};
   Configurable<int> nBinsBeta{"nBinsBeta", 2200, "number of bins in beta"};
+  Configurable<int> nBinsP{"nBinsP", 80, "number of bins in momentum"};
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
@@ -109,7 +110,7 @@ struct OnTheFlyTOFPID {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
     if (doQAplots) {
-      const AxisSpec axisMomentum{static_cast<int>(80), 0.0f, +4.0f, "#it{p} (GeV/#it{c})"};
+      const AxisSpec axisMomentum{static_cast<int>(nBinsP), 0.0f, +4.0f, "#it{p} (GeV/#it{c})"};
       const AxisSpec axisVelocity{static_cast<int>(nBinsBeta), 0.0f, +1.1f, "Measured #beta"};
       histos.add("h2dVelocityVsMomentumInner", "h2dVelocityVsMomentumInner", kTH2F, {axisMomentum, axisVelocity});
       histos.add("h2dVelocityVsMomentumOuter", "h2dVelocityVsMomentumOuter", kTH2F, {axisMomentum, axisVelocity});
