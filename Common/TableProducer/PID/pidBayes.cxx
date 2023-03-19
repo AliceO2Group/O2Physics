@@ -75,7 +75,7 @@ struct bayesPid {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paramfileTOF{"param-file-TOF", "", "Path to the TOF parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> paramfileTPC{"param-file-TPC", "", "Path to the TPC parametrization object, if empty the parametrization is not taken from file"};
-  Configurable<std::string> TOFsigmaname{"param-tof-sigma", "TOFReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
+  Configurable<std::string> TOFsigmaname{"param-tof-sigma", "TOFReso", "Name of the parametrization. Used in both file and CCDB mode"};
   Configurable<bool> enableTOF{"enableTOF", false, "Enabling TOF"};
   Configurable<bool> enableTPC{"enableTPC", false, "Enabling TPC"};
   /// Ordering has to respect the one in ProbType
@@ -83,7 +83,7 @@ struct bayesPid {
   std::array<bool, kNDet> enabledDet{false};
 
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPathTOF{"ccdbPathTOF", "Analysis/PID/TOF", "Path of the TOF parametrization on the CCDB"};
+  Configurable<std::string> ccdbPathTOF{"ccdbPathTOF", "TOF/Calib", "Path of the TOF parametrization on the CCDB"};
   Configurable<std::string> ccdbPathTPC{"ccdbPathTPC", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
   Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
 
@@ -357,10 +357,10 @@ struct bayesPid {
 
     const float meanCorrFactor = 0.07 / fTOFtail; // Correction factor on the mean because of the tail (should be ~ 0.1 with tail = 1.1)
 
-    const float nsigmas = responseTOFPID.GetSeparation(Response[kTOF], track) + meanCorrFactor;
+    const float nsigmas = /*responseTOFPID.GetSeparation(Response[kTOF], track) +*/ meanCorrFactor;
 
     const float expTime = responseTOFPID.GetExpectedSignal(track);
-    const float sig = responseTOFPID.GetExpectedSigma(Response[kTOF], track);
+    const float sig = /*responseTOFPID.GetExpectedSigma(Response[kTOF], track)*/ +0.f;
 
     if (nsigmas < fTOFtail) {
       Probability[kTOF][pid] = exp(-0.5 * nsigmas * nsigmas) / sig;

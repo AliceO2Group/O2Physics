@@ -523,10 +523,7 @@ DECLARE_SOA_TABLE(TOFSignal, "AOD", "TOFSignal", //! Table of the TOF signal
                   pidtofsignal::TOFSignal);
 
 DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta
-                  pidtofbeta::Beta, pidtofbeta::BetaError,
-                  pidtofbeta::ExpBetaEl, pidtofbeta::ExpBetaElError,
-                  pidtofbeta::SeparationBetaEl,
-                  pidtofbeta::DiffBetaEl<pidtofbeta::Beta, pidtofbeta::ExpBetaEl>);
+                  pidtofbeta::Beta, pidtofbeta::BetaError);
 
 DECLARE_SOA_TABLE(pidTOFmass, "AOD", "pidTOFmass", //! Table of the TOF mass
                   pidtofmass::TOFMass);

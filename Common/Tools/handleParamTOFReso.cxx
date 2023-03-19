@@ -54,8 +54,8 @@ struct DebugTrack { // Track that mimics the O2 data structure
 bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv[])
 {
   options.add_options()(
-    "ccdb-path,c", bpo::value<std::string>()->default_value("Analysis/PID/TOF"), "CCDB path for storage/retrieval")(
-    "reso-name,n", bpo::value<std::string>()->default_value("TOFResoParams"), "Name of the parametrization object")(
+    "ccdb-path,c", bpo::value<std::string>()->default_value("TOF/Calib/Params"), "CCDB path for storage/retrieval")(
+    "reso-name,n", bpo::value<std::string>()->default_value("Params"), "Name of the parametrization object")(
     "mode,m", bpo::value<unsigned int>()->default_value(1), "Working mode: 0 push, 1 pull and test, 2 create and performance")(
     "p0", bpo::value<float>()->default_value(0.008f), "Parameter 0 of the TOF resolution")(
     "p1", bpo::value<float>()->default_value(0.008f), "Parameter 1 of the TOF resolution")(
@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
 
   // Fetch options
   const auto mode = arguments["mode"].as<unsigned int>();
-  const auto ccdbPath = arguments["ccdb-path"].as<std::string>() + "/" + arguments["reso-name"].as<std::string>();
+  const auto parametrizationPath = arguments["ccdb-path"].as<std::string>() + "/" + arguments["reso-name"].as<std::string>();
 
   // Init CCDB
   initCCDBApi();
@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
       f.ls();
       f.Close();
     } else { // Saving it to CCDB
-      LOG(info) << "Saving parametrization to CCDB " << ccdbPath << " with validity " << validityStart << " "
+      LOG(info) << "Saving parametrization to CCDB " << parametrizationPath << " with validity " << validityStart << " "
                 << validityStop;
 
       std::map<std::string, std::string> metadata;
@@ -135,12 +135,12 @@ int main(int argc, char* argv[])
       }
       reso->AddToMetadata(metadata);
       // Storing parametrization parameters
-      storeOnCCDB(ccdbPath, metadata, validityStart, validityStop, reso);
+      storeOnCCDB(parametrizationPath, metadata, validityStart, validityStop, reso);
     }
   } else if (mode == 1) { // Pull and test mode
     LOG(info) << "Handling TOF parametrization in test mode for timestamp "
               << ccdbTimestamp << " -> " << timeStampToHReadble(ccdbTimestamp);
-    reso = retrieveFromCCDB<TOFResoParams>(ccdbPath, ccdbTimestamp);
+    reso = retrieveFromCCDB<TOFResoParams>(parametrizationPath, ccdbTimestamp);
     reso->Print();
     using RespImp = ExpTimes<DebugTrack, 2>;
     LOG(info) << "TOF expected resolution at p=" << debugTrack.p() << " GeV/c and mass " << RespImp::mMassZ << ":" << RespImp::GetExpectedSigma(*reso, debugTrack);
@@ -187,14 +187,14 @@ int main(int argc, char* argv[])
       graphs["durationNSigma"]->SetPoint(i + 1, i, duration);
       //
       start = high_resolution_clock::now();
-      RespImp::GetExpectedSigma(response, debugTrack);
+      // RespImp::GetExpectedSigma(response, debugTrack);
       stop = high_resolution_clock::now();
       duration = duration_cast<nanoseconds>(stop - start).count();
       graphs["ExpSigmaOld"]->SetPoint(i, debugTrack.p(), RespImp::GetExpectedSigma(*reso, debugTrack));
       graphs["durationExpSigmaOld"]->SetPoint(i + 1, i, duration);
       //
       start = high_resolution_clock::now();
-      RespImp::GetSeparation(response, debugTrack);
+      // RespImp::GetSeparation(response, debugTrack);
       stop = high_resolution_clock::now();
       duration = duration_cast<nanoseconds>(stop - start).count();
       graphs["NSigmaOld"]->SetPoint(i, debugTrack.p(), RespImp::GetSeparation(*reso, debugTrack));
