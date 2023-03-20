@@ -23,7 +23,7 @@
 
 #include "CCDB/BasicCCDBManager.h" // for PV refit
 #include "Common/Core/trackUtilities.h"
-// #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociation.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "DataFormatsParameters/GRPMagField.h" // for PV refit
@@ -35,14 +35,12 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGHF/Utils/utilsDebugLcToK0sP.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "ReconstructionDataFormats/Vertex.h" // for PV refit
-#include "ReconstructionDataFormats/V0.h"
-
-#include "Common/DataModel/CollisionAssociation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsDebugLcToK0sP.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "ReconstructionDataFormats/V0.h"
+#include "ReconstructionDataFormats/Vertex.h" // for PV refit
 
 using namespace o2;
 using namespace o2::framework;

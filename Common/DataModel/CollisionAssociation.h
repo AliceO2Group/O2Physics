@@ -8,6 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file CollisionAssociation.h
+/// \brief Table definitions for track to collision associator
+
 #ifndef COMMON_DATAMODEL_COLLISIONASSOCIATION_H_
 #define COMMON_DATAMODEL_COLLISIONASSOCIATION_H_
 

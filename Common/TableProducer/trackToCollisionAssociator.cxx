@@ -15,13 +15,13 @@
 /// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova
 
+#include "Common/DataModel/CollisionAssociation.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
-#include "Common/DataModel/CollisionAssociation.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -33,13 +33,12 @@ struct TrackToCollisionAssociation {
 
   Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 4.f, "number of sigmas for time compatibility"};
   Configurable<float> timeMargin{"timeMargin", 0.f, "time margin in ns added to uncertainty because of uncalibrated TPC"};
-  Configurable<bool> applyTrackSelForRun2{"applyMinimalTrackSelForRun2", false, "flag to apply minimal track selection for Run 2 in case of standard association"};
-  Configurable<bool> applyIsGlobalTrack{"applyIsGlobalTrackWoDCA", true, "flag to apply global track w/o DCA selection"};
+  Configurable<bool> applyMinimalTrackSelForRun2{"applyMinimalTrackSelForRun2", false, "flag to apply minimal track selection for Run 2 in case of standard association"};
+  Configurable<bool> applyIsGlobalTrackWoDCA{"applyIsGlobalTrackWoDCA", true, "flag to apply global track w/o DCA selection"};
   Configurable<bool> usePVAssociation{"usePVAssociation", true, "if the track is a PV contributor, use the collision time for it"};
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
-  Configurable<bool> debug{"debug", false, "fill a table with flag to keep track of kind of track (PV contributor or ambiguous)"};
 
-  Filter trackFilter = (applyIsGlobalTrack == false) || requireGlobalTrackWoDCAInFilter();
+  Filter trackFilter = (applyIsGlobalTrackWoDCA == false) || requireGlobalTrackWoDCAInFilter();
   using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   using TracksWithSelFilter = soa::Filtered<TracksWithSel>;
 
@@ -51,8 +50,8 @@ struct TrackToCollisionAssociation {
       LOGP(fatal, "Exactly one process function should be enabled! Exit");
     }
 
-    if (applyIsGlobalTrack && applyTrackSelForRun2) {
-      LOGP(fatal, "You cannot apply simultaneously Run 2 track selections and isGlobalWoDCA! Exit");
+    if (applyIsGlobalTrackWoDCA && applyMinimalTrackSelForRun2) {
+      LOGP(fatal, "You cannot apply simultaneously Run 2 track selections and applyIsGlobalTrackWoDCA!");
     }
   }
 
@@ -144,9 +143,9 @@ struct TrackToCollisionAssociation {
     // we do it for all tracks, to be compatible with Run 2 analyses
     for (const auto& track : tracksPerCollision) {
       bool hasGoodQuality = true;
-      if (applyIsGlobalTrack && !track.isGlobalTrackWoDCA()) {
+      if (applyIsGlobalTrackWoDCA && !track.isGlobalTrackWoDCA()) {
         hasGoodQuality = false;
-      } else if (applyTrackSelForRun2) {
+      } else if (applyMinimalTrackSelForRun2) {
         unsigned char itsClusterMap = track.itsClusterMap();
         if (!(track.tpcNClsFound() >= 50 && track.flags() & o2::aod::track::ITSrefit && track.flags() & o2::aod::track::TPCrefit && (TESTBIT(itsClusterMap, 0) || TESTBIT(itsClusterMap, 1)))) {
           hasGoodQuality = false;
@@ -164,8 +163,5 @@ struct TrackToCollisionAssociation {
 //________________________________________________________________________________________________________________________
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<TrackToCollisionAssociation>(cfgc));
-
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<TrackToCollisionAssociation>(cfgc)};
 }
