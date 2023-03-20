@@ -243,13 +243,13 @@ struct HfTreeCreatorD0ToKPi {
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
+    for (auto const& candidate : candidates) {
       auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
       auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
       double yD = yD0(candidate);
@@ -263,20 +263,20 @@ struct HfTreeCreatorD0ToKPi {
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processData, "Process data", true);
 
   void processMc(aod::Collisions const& collisions,
-                 aod::McCollisions const& mccollisions,
+                 aod::McCollisions const&,
                  soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particles,
                  aod::BigTracksPID const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
+    for (auto const& candidate : candidates) {
       auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
       auto prong1 = candidate.prong0_as<aod::BigTracksPID>();
       double yD = yD0(candidate);
@@ -288,7 +288,7 @@ struct HfTreeCreatorD0ToKPi {
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto& particle : particles) {
+    for (auto const& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
