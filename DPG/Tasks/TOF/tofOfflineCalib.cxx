@@ -149,6 +149,7 @@ struct tofOfflineCalib {
     }
 
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
     constexpr auto responsePi = ResponseImplementation<PID::Pion>();
     constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
     constexpr auto responsePr = ResponseImplementation<PID::Proton>();
@@ -172,6 +173,7 @@ struct tofOfflineCalib {
           continue;
         }
         const float& texp2El = responseEl.GetExpectedSignal(track2);
+        const float& texp2Mu = responseMu.GetExpectedSignal(track2);
         const float& texp2Pi = responsePi.GetExpectedSignal(track2);
         const float& texp2Ka = responseKa.GetExpectedSignal(track2);
         const float& texp2Pr = responsePr.GetExpectedSignal(track2);
@@ -219,6 +221,7 @@ struct tofOfflineCalib {
                  track2.phi(),
                  track1.phi() - track2.phi(),
                  track2.tofSignal() - texp2El,
+                 track2.tofSignal() - texp2Mu,
                  delta2Pi,
                  track2.tofSignal() - texp2Ka,
                  track2.tofSignal() - texp2Pr,

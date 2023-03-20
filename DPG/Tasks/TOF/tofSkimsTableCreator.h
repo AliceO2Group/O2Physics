@@ -43,6 +43,7 @@ DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);               //! Eta difference 
 DECLARE_SOA_COLUMN(Phi, phi, float);                         //! Phi of the track
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);               //! Phi difference with respect to the reference track
 DECLARE_SOA_COLUMN(DeltaTEl, deltaTEl, float);               //! Difference between the tofSignal and the electron expected signal
+DECLARE_SOA_COLUMN(DeltaTMu, deltaTMu, float);               //! Difference between the tofSignal and the muon expected signal
 DECLARE_SOA_COLUMN(DeltaTPi, deltaTPi, float);               //! Difference between the tofSignal and the pion expected signal
 DECLARE_SOA_COLUMN(DeltaTKa, deltaTKa, float);               //! Difference between the tofSignal and the kaon expected signal
 DECLARE_SOA_COLUMN(DeltaTPr, deltaTPr, float);               //! Difference between the tofSignal and the proton expected signal
@@ -113,6 +114,7 @@ DECLARE_SOA_TABLE(DeltaTOF, "AOD", "DELTATOF", //! Table of the delta TOF data f
                   tofskims::Phi,
                   tofskims::DeltaPhi,
                   tofskims::DeltaTEl,
+                  tofskims::DeltaTMu,
                   tofskims::DeltaTPi,
                   tofskims::DeltaTKa,
                   tofskims::DeltaTPr,
