@@ -174,6 +174,36 @@ struct MultiplicityCounter {
       x->SetBinLabel(5, "Selected INEL>0");
     }
 
+    if (doprocessGenFT0C || doprocessGenFT0M) {
+      registry.add({"Events/Centrality/NtrkZvtxGen", "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+      registry.add({"Events/Centrality/NtrkZvtxGen_t", "; N_{part}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/EtaZvtxGen", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/EtaZvtxGen_t", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/EtaZvtxGen_gt0", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/EtaZvtxGen_gt0t", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/Control/PtEtaGen", " ; p_{T} (GeV/c) ; #eta; centrality", {HistType::kTHnSparseF, {PtAxis, EtaAxis, CentAxis}}});
+
+      registry.add({"Tracks/Centrality/PhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/Control/PhiEtaGenDuplicates", "; #varphi; #eta; tracks", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/Control/PhiEtaDuplicates", "; #varphi; #eta; tracks", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
+      registry.add({"Events/Centrality/Efficiency", "; status; centrality; events", {HistType::kTH2F, {{5, 0.5, 5.5}, CentAxis}}});
+      registry.add({"Events/Centrality/NotFoundEventZvtx", " ; Z_{vtx} (cm); centrality; events", {HistType::kTH2F, {ZAxis, CentAxis}}});
+
+      if (fillResponse) {
+        registry.add({"Events/Centrality/Response", " ; N_{rec}; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, ZAxis, CentAxis}}});
+        registry.add({"Events/Centrality/EfficiencyMult", " ; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+        registry.add({"Events/Centrality/SplitMult", " ; N_{gen} ; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+      }
+
+      auto heff = registry.get<TH2>(HIST("Events/Centrality/Efficiency"));
+      auto* x = heff->GetXaxis();
+      x->SetBinLabel(1, "Generated");
+      x->SetBinLabel(2, "Generated INEL>0");
+      x->SetBinLabel(3, "Reconstructed");
+      x->SetBinLabel(4, "Selected");
+      x->SetBinLabel(5, "Selected INEL>0");
+    }
+
     if (doprocessTrackEfficiency) {
       registry.add({"Tracks/Control/PtGen", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiency", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
@@ -217,7 +247,7 @@ struct MultiplicityCounter {
           }
         }
         for (auto& col : cols) {
-          float c = 0;
+          float c = -1;
           if constexpr (hasCentrality) {
             if constexpr (C::template contains<aod::CentFT0Cs>()) {
               c = col.centFT0C();
@@ -288,7 +318,7 @@ struct MultiplicityCounter {
     FiTracks const& tracks,
     soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
   {
-    float c = 0;
+    float c = -1;
     constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>();
     if constexpr (hasCentrality) {
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
@@ -596,11 +626,107 @@ struct MultiplicityCounter {
 
   Preslice<FiTracks> perCol = aod::track::collisionId;
 
-  void processGen(
+  //  void processGen(
+  //    aod::McCollisions::iterator const& mcCollision,
+  //    o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
+  //    Particles const& particles, FiTracks const& tracks)
+  //  {
+  //    auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+  //    auto nCharged = 0;
+  //    for (auto& particle : perCollisionMCSample) {
+  //      auto charge = 0.;
+  //      auto p = pdg->GetParticle(particle.pdgCode());
+  //      if (p != nullptr) {
+  //        charge = p->Charge();
+  //      }
+  //      if (std::abs(charge) < 3.) {
+  //        continue;
+  //      }
+  //      nCharged++;
+  //    }
+  //    registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ());
+  //    registry.fill(HIST("Events/Efficiency"), 1.);
+
+  //    if (nCharged > 0) {
+  //      registry.fill(HIST("Events/Efficiency"), 2.);
+  //    }
+  //    bool atLeastOne = false;
+  //    bool atLeastOne_gt0 = false;
+  //    auto moreThanOne = 0;
+  //    LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
+
+  //    auto Nrec = 0;
+
+  //    for (auto& collision : collisions) {
+  //      registry.fill(HIST("Events/Efficiency"), 3.);
+  //      if (!useEvSel || collision.sel8()) {
+  //        auto perCollisionSample = tracks.sliceBy(perCol, collision.globalIndex());
+  //        registry.fill(HIST("Events/Efficiency"), 4.);
+  //        if (perCollisionSample.size() > 0) {
+  //          registry.fill(HIST("Events/Efficiency"), 5.);
+  //        }
+  //        ++moreThanOne;
+  //        atLeastOne = true;
+  //        for (auto& t : perCollisionSample) {
+  //          if (std::abs(t.eta()) < estimatorEta) {
+  //            ++Nrec;
+  //          }
+  //        }
+  //        if (perCollisionSample.size() > 0) {
+  //          atLeastOne_gt0 = true;
+  //        }
+  //        registry.fill(HIST("Events/NtrkZvtxGen"), Nrec, collision.posZ());
+  //      }
+  //    }
+  //    if (fillResponse) {
+  //      if (atLeastOne) {
+  //        registry.fill(HIST("Events/Response"), Nrec, nCharged, mcCollision.posZ());
+  //        registry.fill(HIST("Events/EfficiencyMult"), nCharged, mcCollision.posZ());
+  //      }
+  //      if (moreThanOne > 1) {
+  //        registry.fill(HIST("Events/SplitMult"), nCharged, mcCollision.posZ());
+  //      }
+  //    }
+  //    if (collisions.size() == 0) {
+  //      registry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ());
+  //    }
+  //    for (auto& particle : particles) {
+  //      auto p = pdg->GetParticle(particle.pdgCode());
+  //      auto charge = 0.;
+  //      if (p != nullptr) {
+  //        charge = p->Charge();
+  //      }
+  //      if (std::abs(charge) < 3.) {
+  //        continue;
+  //      }
+  //      registry.fill(HIST("Tracks/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
+  //      registry.fill(HIST("Tracks/Control/PtEtaGen"), particle.pt(), particle.eta());
+  //      if (perCollisionMCSample.size() > 0) {
+  //        registry.fill(HIST("Tracks/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ());
+  //      }
+  //      if (atLeastOne) {
+  //        registry.fill(HIST("Tracks/EtaZvtxGen"), particle.eta(), mcCollision.posZ());
+  //        if (atLeastOne_gt0) {
+  //          registry.fill(HIST("Tracks/EtaZvtxGen_gt0"), particle.eta(), mcCollision.posZ());
+  //        }
+  //      }
+  //      registry.fill(HIST("Tracks/PhiEtaGen"), particle.phi(), particle.eta());
+  //    }
+  //  }
+
+  //  PROCESS_SWITCH(MultiplicityCounter, processGen, "Process generator-level info", false);
+
+  template <typename C>
+  void processGenGeneral(
     aod::McCollisions::iterator const& mcCollision,
-    o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
+    o2::soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks)
   {
+    constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>();
+    float c_rec = -1;
+    float c_gen = -1;
+    // add generated centrality estimation
+
     auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
     auto nCharged = 0;
     for (auto& particle : perCollisionMCSample) {
@@ -614,11 +740,20 @@ struct MultiplicityCounter {
       }
       nCharged++;
     }
-    registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ());
-    registry.fill(HIST("Events/Efficiency"), 1.);
+    if constexpr (hasCentrality) {
+      registry.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), c_gen);
+      registry.fill(HIST("Events/Centrality/Efficiency"), 1., c_gen);
+    } else {
+      registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ());
+      registry.fill(HIST("Events/Efficiency"), 1.);
+    }
 
     if (nCharged > 0) {
-      registry.fill(HIST("Events/Efficiency"), 2.);
+      if constexpr (hasCentrality) {
+        registry.fill(HIST("Events/Centrality/Efficiency"), 2., c_gen);
+      } else {
+        registry.fill(HIST("Events/Efficiency"), 2.);
+      }
     }
     bool atLeastOne = false;
     bool atLeastOne_gt0 = false;
@@ -628,12 +763,33 @@ struct MultiplicityCounter {
     auto Nrec = 0;
 
     for (auto& collision : collisions) {
-      registry.fill(HIST("Events/Efficiency"), 3.);
+      c_rec = -1;
+      if constexpr (hasCentrality) {
+        if constexpr (C::template contains<aod::CentFT0Cs>()) {
+          c_rec = collision.centFT0C();
+        } else if (C::template contains<aod::CentFT0Ms>()) {
+          c_rec = collision.centFT0M();
+        }
+      }
+      if constexpr (hasCentrality) {
+        registry.fill(HIST("Events/Centrality/Efficiency"), 3., c_gen);
+      } else {
+        registry.fill(HIST("Events/Efficiency"), 3.);
+      }
       if (!useEvSel || collision.sel8()) {
         auto perCollisionSample = tracks.sliceBy(perCol, collision.globalIndex());
-        registry.fill(HIST("Events/Efficiency"), 4.);
+        if constexpr (hasCentrality) {
+          registry.fill(HIST("Events/Centrality/Efficiency"), 4., c_gen);
+        } else {
+          registry.fill(HIST("Events/Efficiency"), 4.);
+        }
+
         if (perCollisionSample.size() > 0) {
-          registry.fill(HIST("Events/Efficiency"), 5.);
+          if constexpr (hasCentrality) {
+            registry.fill(HIST("Events/Centrality/Efficiency"), 5., c_gen);
+          } else {
+            registry.fill(HIST("Events/Efficiency"), 5.);
+          }
         }
         ++moreThanOne;
         atLeastOne = true;
@@ -645,21 +801,56 @@ struct MultiplicityCounter {
         if (perCollisionSample.size() > 0) {
           atLeastOne_gt0 = true;
         }
-        registry.fill(HIST("Events/NtrkZvtxGen"), Nrec, collision.posZ());
+        if constexpr (hasCentrality) {
+          registry.fill(HIST("Events/Centrality/NtrkZvtxGen"), Nrec, collision.posZ(), c_rec);
+        } else {
+          registry.fill(HIST("Events/NtrkZvtxGen"), Nrec, collision.posZ());
+        }
       }
     }
+
     if (fillResponse) {
-      if (atLeastOne) {
-        registry.fill(HIST("Events/Response"), Nrec, nCharged, mcCollision.posZ());
-        registry.fill(HIST("Events/EfficiencyMult"), nCharged, mcCollision.posZ());
+      for (auto& collision : collisions) {
+        c_rec = -1;
+        if constexpr (hasCentrality) {
+          if constexpr (C::template contains<aod::CentFT0Cs>()) {
+            c_rec = collision.centFT0C();
+          } else if (C::template contains<aod::CentFT0Ms>()) {
+            c_rec = collision.centFT0M();
+          }
+        }
+        auto perCollisionSample = tracks.sliceBy(perCol, collision.globalIndex());
+        Nrec = 0;
+        for (auto& t : perCollisionSample) {
+          if (std::abs(t.eta()) < estimatorEta) {
+            ++Nrec;
+          }
+        }
+        if constexpr (hasCentrality) {
+          registry.fill(HIST("Events/Centrality/Response"), Nrec, nCharged, mcCollision.posZ(), c_rec);
+          registry.fill(HIST("Events/Centrality/EfficiencyMult"), nCharged, mcCollision.posZ(), c_rec);
+        } else {
+          registry.fill(HIST("Events/Response"), Nrec, nCharged, mcCollision.posZ());
+          registry.fill(HIST("Events/EfficiencyMult"), nCharged, mcCollision.posZ());
+        }
       }
       if (moreThanOne > 1) {
-        registry.fill(HIST("Events/SplitMult"), nCharged, mcCollision.posZ());
+        if constexpr (hasCentrality) {
+          registry.fill(HIST("Events/Centrality/SplitMult"), nCharged, mcCollision.posZ(), c_gen);
+        } else {
+          registry.fill(HIST("Events/SplitMult"), nCharged, mcCollision.posZ());
+        }
       }
     }
+
     if (collisions.size() == 0) {
-      registry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ());
+      if constexpr (hasCentrality) {
+        registry.fill(HIST("Events/Centrality/NotFoundEventZvtx"), mcCollision.posZ(), c_gen);
+      } else {
+        registry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ());
+      }
     }
+
     for (auto& particle : particles) {
       auto p = pdg->GetParticle(particle.pdgCode());
       auto charge = 0.;
@@ -669,22 +860,67 @@ struct MultiplicityCounter {
       if (std::abs(charge) < 3.) {
         continue;
       }
-      registry.fill(HIST("Tracks/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
-      registry.fill(HIST("Tracks/Control/PtEtaGen"), particle.pt(), particle.eta());
-      if (perCollisionMCSample.size() > 0) {
-        registry.fill(HIST("Tracks/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ());
+      if constexpr (hasCentrality) {
+        registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ(), c_gen);
+        registry.fill(HIST("Tracks/Centrality/Control/PtEtaGen"), particle.pt(), particle.eta(), c_gen);
+      } else {
+        registry.fill(HIST("Tracks/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
+        registry.fill(HIST("Tracks/Control/PtEtaGen"), particle.pt(), particle.eta());
       }
-      if (atLeastOne) {
-        registry.fill(HIST("Tracks/EtaZvtxGen"), particle.eta(), mcCollision.posZ());
-        if (atLeastOne_gt0) {
-          registry.fill(HIST("Tracks/EtaZvtxGen_gt0"), particle.eta(), mcCollision.posZ());
+      if (perCollisionMCSample.size() > 0) {
+        if constexpr (hasCentrality) {
+          registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ(), c_gen);
+        } else {
+          registry.fill(HIST("Tracks/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ());
         }
       }
-      registry.fill(HIST("Tracks/PhiEtaGen"), particle.phi(), particle.eta());
+      if (atLeastOne) {
+        if constexpr (hasCentrality) {
+          registry.fill(HIST("Tracks/Centrality/EtaZvtxGen"), particle.eta(), mcCollision.posZ(), c_gen);
+          if (atLeastOne_gt0) {
+            registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_gt0"), particle.eta(), mcCollision.posZ(), c_gen);
+          }
+          registry.fill(HIST("Tracks/Centrality/PhiEtaGen"), particle.phi(), particle.eta(), c_gen);
+        } else {
+          registry.fill(HIST("Tracks/EtaZvtxGen"), particle.eta(), mcCollision.posZ());
+          if (atLeastOne_gt0) {
+            registry.fill(HIST("Tracks/EtaZvtxGen_gt0"), particle.eta(), mcCollision.posZ());
+          }
+          registry.fill(HIST("Tracks/PhiEtaGen"), particle.phi(), particle.eta());
+        }
+      }
     }
   }
 
+  void processGen(
+    aod::McCollisions::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExCols, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks)
+  {
+    processGenGeneral<ExCols>(mcCollision, collisions, particles, tracks);
+  }
+
   PROCESS_SWITCH(MultiplicityCounter, processGen, "Process generator-level info", false);
+
+  void processGenFT0C(
+    aod::McCollisions::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks)
+  {
+    processGenGeneral<ExColsCentFT0C>(mcCollision, collisions, particles, tracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenFT0C, "Process generator-level info (FT0C centrality)", false);
+
+  void processGenFT0M(
+    aod::McCollisions::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks)
+  {
+    processGenGeneral<ExColsCentFT0M>(mcCollision, collisions, particles, tracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenFT0M, "Process generator-level info (FT0M centrality)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
