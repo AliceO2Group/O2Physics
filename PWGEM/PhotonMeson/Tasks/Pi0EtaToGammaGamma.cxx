@@ -42,7 +42,59 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 
-using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF>;
+namespace o2::aod
+{
+namespace v0photonflag // flag to distinguish 1 track belongs to 1 V0 or 2 (or more) V0s in a collision.
+{
+DECLARE_SOA_COLUMN(IsCloser, isCloser, bool); //! true if 2 legs of this v0 do not belong to other V0s in a collision or PCA between 2 legs is closer.
+} // namespace v0photonflag
+DECLARE_SOA_TABLE(V0PhotonFlags, "AOD", "V0PHOTONFLAG", v0photonflag::IsCloser);
+using V0PhotonFlag = V0PhotonFlags::iterator;
+} // namespace o2::aod
+
+struct LabelUniqueV0 {
+  Produces<aod::V0PhotonFlags> v0flags;
+
+  Preslice<aod::V0Photons> perCollision = aod::v0photon::collisionId;
+  void process(aod::EMReducedEvents::iterator const& collision, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs)
+  {
+    auto v0photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
+
+    for (auto& g1 : v0photons_coll) {
+      auto pos1 = g1.posTrack_as<aod::V0Legs>();
+      auto ele1 = g1.negTrack_as<aod::V0Legs>();
+      bool flag = true;
+
+      int posid1 = pos1.trackId(); // unique index to point o2::track
+      int eleid1 = ele1.trackId(); // unique index to point o2::track
+      float pca1 = g1.pca();
+
+      for (auto& g2 : v0photons_coll) {
+        if (g2.index() == g1.index()) {
+          continue;
+        }
+
+        auto pos2 = g2.posTrack_as<aod::V0Legs>();
+        auto ele2 = g2.negTrack_as<aod::V0Legs>();
+        int posid2 = pos2.trackId(); // unique index to point o2::track
+        int eleid2 = ele2.trackId(); // unique index to point o2::track
+        float pca2 = g2.pca();
+
+        if (posid2 == posid1 || eleid2 == eleid1) {
+          if (pca1 > pca2) {
+            flag = false;
+            // LOGF(info, "g1 id = %d , g2 id = %d , posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f", g1.index(), g2.index(), posid1, eleid1, posid2, eleid2, pca1, pca2);
+          } else {
+            flag = true;
+          }
+        }
+      }
+      v0flags(flag);
+    }
+  }
+};
+
+using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF, aod::V0PhotonFlags>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct PCMQC {
@@ -96,6 +148,8 @@ struct PCMQC {
       registry.add(Form("%sV0/hMassGamma_recalc", pairtype[i].Data()), "recalc. KF hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{2000, 0.0f, 200.0f}, {100, 0.0f, 0.1f}});
       registry.add(Form("%sV0/hGammaRxy", pairtype[i].Data()), "conversion point in XY;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{1000, -250.0f, 250.0f}, {1000, -250.0f, 250.0f}});
       registry.add(Form("%sV0/hGammaRxy_recalc", pairtype[i].Data()), "recalc. KF conversion point in XY;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{1000, -250.0f, 250.0f}, {1000, -250.0f, 250.0f}});
+      registry.add(Form("%sV0/hKFChi2vsR_recalc", pairtype[i].Data()), "recalc. KF conversion point in XY;R_{xy} (cm);KF chi2/NDF", HistType::kTH2F, {{250, 0.0f, 250.0f}, {5000, 0.f, 5000.0f}});
+      registry.add(Form("%sV0/hKFChi2vsZ_recalc", pairtype[i].Data()), "recalc. KF conversion point in Z;Z (cm);KF chi2/NDF", HistType::kTH2F, {{500, -250.0f, 250.0f}, {5000, 0.f, 5000.0f}});
     }
   }
 
@@ -146,10 +200,14 @@ struct PCMQC {
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hGammaPsiPair"), v0.psipair(), v0.mGamma());
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hGammaRxy"), v0.vx(), v0.vy());
     registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hGammaRxy_recalc"), v0.recalculatedVtxX(), v0.recalculatedVtxY());
+    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hKFChi2vsR_recalc"), v0.recalculatedVtxR(), v0.chiSquareNDF());
+    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hKFChi2vsZ_recalc"), v0.recalculatedVtxZ(), v0.chiSquareNDF());
   }
 
+  Filter v0filter = o2::aod::v0photonflag::isCloser == true;
+  using MyFilteredV0Photons = soa::Filtered<MyV0Photons>;
   Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
-  void processQC(aod::EMReducedEvents::iterator const& collision, MyV0Photons const& v0photons, aod::V0Legs const& v0daughters)
+  void processQC(aod::EMReducedEvents::iterator const& collision, MyFilteredV0Photons const& v0photons, aod::V0Legs const& v0legs)
   {
     registry.fill(HIST("hCollisionCounter"), 1.0); // all
     if (!collision.sel8()) {
@@ -214,7 +272,6 @@ struct Pi0EtaToGammaGamma {
     kPHOSEMC = 5,
   };
 
-  Partition<aod::EMReducedEvents> goodEventsPCM = o2::aod::emreducedevent::ngpcm > 0; // && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0;
   Filter collisionFilter = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
   using MyFilteredCollisions = soa::Filtered<aod::EMReducedEvents>;
 
@@ -235,10 +292,10 @@ struct Pi0EtaToGammaGamma {
       registry.add(Form("%s/hCollisionCounter", pairnames[i].data()), "Collision counter", HistType::kTH1F, {{5, 0.5f, 5.5f}});
       registry.add(Form("%s/hNgamma1", pairnames[i].data()), "Number of #gamma1 candidates per collision", HistType::kTH1F, {{101, -0.5f, 100.5f}});
       registry.add(Form("%s/hNgamma2", pairnames[i].data()), "Number of #gamma2 candidates per collision", HistType::kTH1F, {{101, -0.5f, 100.5f}});
-      registry.add(Form("%s/h2MggPt_Same", pairnames[i].data()), "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", HistType::kTH2F, {{400, 0, 0.8}, {200, 0.0f, 40}});
-      registry.add(Form("%s/h2MggPt_Mixed", pairnames[i].data()), "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", HistType::kTH2F, {{400, 0, 0.8}, {200, 0.0f, 40}});
+      registry.add(Form("%s/h2MggPt_Same", pairnames[i].data()), "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}});
+      registry.add(Form("%s/h2MggPt_Mixed", pairnames[i].data()), "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}});
     }
-    registry.add("EMCEMC/h2MggPt_Rotated", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/#it{c}^{2});p_{T,#gamma#gamma} (GeV/#it{c})", HistType::kTH2F, {{400, 0, 0.8}, {200, 0.0f, 40}});
+    registry.add("EMCEMC/h2MggPt_Rotated", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/#it{c}^{2});p_{T,#gamma#gamma} (GeV/#it{c})", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}});
   }
 
   Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
@@ -529,16 +586,15 @@ struct Pi0EtaToGammaGamma {
     }
   }
 
-  // Filter collisionFilter_PCM_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0;
-  // using MyFilteredCollisions_PCM_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons)
+  Filter v0filter = o2::aod::v0photonflag::isCloser == true;
+  using MyFilteredV0Photons = soa::Filtered<MyV0Photons>;
+
+  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyFilteredV0Photons const& v0photons)
   {
     SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision, perCollision);
     MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision);
   }
 
-  // Filter collisionFilter_phos_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngphos > 0;
-  // using MyFilteredCollisions_phos_mix = soa::Filtered<aod::EMReducedEvents>;
   void processPHOSPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters)
   {
     SameEventPairing<PairType::kPHOSPHOS>(collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos);
@@ -555,15 +611,13 @@ struct Pi0EtaToGammaGamma {
     MixedEventPairing<PairType::kEMCEMC>(filtered_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc);
   }
 
-  // Filter collisionFilter_pcm_phos_mix = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && o2::aod::emreducedevent::ngpcm > 0 && o2::aod::emreducedevent::ngphos > 0;
-  // using MyFilteredCollisions_pcm_phos_mix = soa::Filtered<aod::EMReducedEvents>;
-  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::PHOSClusters const& phosclusters)
+  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyFilteredV0Photons const& v0photons, aod::PHOSClusters const& phosclusters)
   {
     SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision, perCollision_phos);
     MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision, perCollision_phos);
   }
 
-  void processPCMEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters)
+  void processPCMEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyFilteredV0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters)
   {
     SameEventPairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision, perCollision_emc);
     MixedEventPairing<PairType::kPCMEMC>(filtered_collisions, v0photons, emcclusters, perCollision, perCollision_emc);
@@ -592,6 +646,7 @@ struct Pi0EtaToGammaGamma {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
+    adaptAnalysisTask<LabelUniqueV0>(cfgc, TaskName{"label-unique-v0"}),
     adaptAnalysisTask<PCMQC>(cfgc, TaskName{"pcm-qc"}),
     adaptAnalysisTask<Pi0EtaToGammaGamma>(cfgc, TaskName{"pi0eta-to-gammagamma"}),
   };
