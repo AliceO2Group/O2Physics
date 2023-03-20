@@ -160,7 +160,7 @@ struct HfTreeCreatorD0ToKPi {
   }
 
   template <typename T>
-  void fillEvent(const T& collision, int8_t isEventReject, int8_t runNumber)
+  void fillEvent(const T& collision, int isEventReject, int runNumber)
   {
     rowCandidateFullEvents(
       collision.bcId(),
