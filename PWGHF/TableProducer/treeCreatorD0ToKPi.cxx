@@ -176,7 +176,7 @@ struct HfTreeCreatorD0ToKPi {
   auto fillTable(const T& candidate, const U& prong0, const U& prong1, int candFlag, int selection, double invMass, double cosThetaStar,
                  double ct, double y, double e, int8_t flagMc, int8_t origin) 
   {
-    if (functionSelection >= 1) {
+    if (selection >= 1) {
       rowCandidateFull(
         prong0.collision().bcId(),
         prong0.collision().numContrib(),
@@ -219,18 +219,18 @@ struct HfTreeCreatorD0ToKPi {
         prong1.tofNSigmaPi(),
         prong1.tofNSigmaKa(),
         1 << candFlag,
-        functionInvMass,
+        invMass,
         candidate.impactParameterProduct(),
-        functionCosThetaStar,
+        cosThetaStar,
         candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
-        functionCt,
+        ct,
         candidate.eta(),
         candidate.phi(),
-        functionY,
-        functionE,
+        y,
+        e,
         flagMc,
         origin);
     }
