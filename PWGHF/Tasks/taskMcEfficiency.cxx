@@ -109,6 +109,8 @@ struct HfTaskMcEfficiency {
         LOGP(fatal, "Not implemented for PDG {}", pdgCode);
       }
 
+      int nTracked = 0;
+      int nSelected = 0;
       for (const auto& candidate : candidates) {
         if (!(candidate.hfflag() & decayType)) {
           continue;
@@ -142,6 +144,7 @@ struct HfTaskMcEfficiency {
 
         // all candidates
         hCandidates->Fill(kHFStepTracked, pt, mass, pdgCode, cpa, collisionMatched);
+        ++nTracked;
 
         // check if prongs have passed track cuts
         if (checkTrack(trackPos) && checkTrack(trackNeg)) {
@@ -154,6 +157,7 @@ struct HfTaskMcEfficiency {
 
         // selected candidates
         hCandidates->Fill(kHFStepTrackedSelected, pt, mass, pdgCode, cpa, collisionMatched);
+        ++nSelected;
 
         // duplicates
         int64_t hash = 0;
@@ -167,6 +171,8 @@ struct HfTaskMcEfficiency {
         }
         duplicates[hash]++;
       }
+
+      LOGP(debug, "PDG code: {}: Tracked: {} | Selected: {}", pdgCode, nTracked, nSelected);
     }
 
     auto hDuplicateCount = registry.get<TH1>(HIST("hDuplicateCount"));
