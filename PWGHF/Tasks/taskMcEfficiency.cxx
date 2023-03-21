@@ -35,7 +35,7 @@ struct HfTaskMcEfficiency {
   ConfigurableAxis axisPt{"axisPt", {10, 0, 10}, "pT axis"};
   ConfigurableAxis axisMass{"axisMass", {120, 1.5848, 2.1848}, "m_inv axis"};
   ConfigurableAxis axisPdg{"axisPdg", {VARIABLE_WIDTH, -421.5, 0, 421.5}, "PDG code axis"};
-  ConfigurableAxis axisCPA{"axisCPA", {100, 0.9, 1.0001}, "Cosine of pointing angle axis"};
+  ConfigurableAxis axisCPA{"axisCPA", {102, -1.02, 1.02}, "Cosine of pointing angle axis"};
   Configurable<std::vector<int>> pdgCodes{"pdgCodes", {pdg::kD0Bar, pdg::kD0}, "PDG codes to process"};
 
   Configurable<float> mcAcceptancePt{"mcAcceptancePt", 0.1, "MC Acceptance: lower pt limit"};
