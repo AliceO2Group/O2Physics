@@ -153,7 +153,7 @@ struct TableMaker {
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
   Configurable<std::string> fConfigRunPeriods{"cfgRunPeriods", "LHC22f", "run periods for used data"};
-  Configurable<bool> fReassociation{"cfgReassociation", true, "Use track-collision reassociation in skimming"};
+  Configurable<bool> fReassociation{"cfgReassociation", false, "Use track-collision reassociation in skimming"};
   Configurable<float> fSigmaTrack{"cfgSigmaTrack", 1.0, "Number of sigma for track time window"};
   Configurable<float> fSigmaVtx{"cfgSigmaVtx", 4.0, "Number of sigma for vertex time window"};
   Configurable<float> fTimeMarginTrack{"cfgTimeMarginTrack", 0.0, "Number of sigma for track time window"};
