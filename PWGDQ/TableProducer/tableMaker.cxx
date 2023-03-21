@@ -1008,7 +1008,7 @@ struct TableMaker {
         if (tmax < vtxmin) {
           break; // all following collisions will be later and not compatible
         } else if (tmin > vtxmax) {
-          continue;                           // following vertex with longer span might still match this track
+          continue; // following vertex with longer span might still match this track
         } else {
           vtxList.push_back(vtxBracket.second);
           vtxminOK = vtxmin;
