@@ -44,10 +44,8 @@ struct TrackToCollisionAssociation {
 
   void init(InitContext const&)
   {
-    std::array<int, 2> doProcess = {doprocessAssocWithTime, doprocessStandardAssoc};
-    int doProcessSum = std::accumulate(doProcess.begin(), doProcess.end(), 0);
-    if (doProcessSum != 1) {
-      LOGP(fatal, "Exactly one process function should be enabled! Exit");
+    if (doprocessAssocWithTime == doprocessStandardAssoc) {
+      LOGP(fatal, "Exactly one process function should be enabled!");
     }
 
     if (applyIsGlobalTrackWoDCA && applyMinimalTrackSelForRun2) {
