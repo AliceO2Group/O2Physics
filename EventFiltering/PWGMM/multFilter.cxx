@@ -19,6 +19,8 @@
 
 #include "EventFiltering/filterTables.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 #include "DataFormatsFT0/Digit.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/DataModel/EventSelection.h"
@@ -30,11 +32,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 static const std::vector<std::string> mmObjectsNames{"kHmTrk", "kHmFv0", "kHfFv0", "kHmFt0", "kHfFt0", "kHmFt0cFv0", "kHfFt0cFv0", "kHtPt"};
-int nevFT0 = 0;
-float totFT0C = 0.f;
-float totFT0A = 0.f;
-int MultFV0 = 0.f;
-int nevFV0 = 0;
+float meanMultT0A = 0.f;
+float meanMultT0C = 0.f;
+float meanMultV0A = 0.f;
 
 struct multFilter {
   enum { kHighTrackMult = 0,
@@ -49,13 +49,13 @@ struct multFilter {
   // my track selection, discussed with Mesut and Matia
   TrackSelection mTrackSelector;
   // event selection cuts
-  Configurable<float> selHTrkMult{"selHTrkMult", 30., "global trk multiplicity threshold"};
+  Configurable<float> selHTrkMult{"selHTrkMult", 38., "global trk multiplicity threshold"};
   Configurable<float> selHMFv0{"selHMFv0", 33559.5, "FV0-amplitude threshold"};
-  Configurable<float> sel1Ffv0{"sel1Ffv0", 0.93, "1-flatenicity FV0  threshold"};
-  Configurable<float> sel1Mft0{"sel1Mft0", 112.0, "FT0 mult threshold"};
-  Configurable<float> sel1Fft0{"sel1Fft0", 0.845, "1-flatenicity FT0 threshold"};
-  Configurable<float> sel1Mft0cFv0{"sel1Mft0cfv0", 187.0, "FT0C+FV0 mult threshold"};
-  Configurable<float> sel1Fft0cFv0{"sel1Fft0cfv0", 0.885, "1-flatenicity FT0C+FV0 threshold"};
+  Configurable<float> sel1Ffv0{"sel1Ffv0", 0.955, "1-flatenicity FV0  threshold"};
+  Configurable<float> sel1Mft0{"sel1Mft0", 220.0, "FT0 mult threshold"};
+  Configurable<float> sel1Fft0{"sel1Fft0", 0.855, "1-flatenicity FT0 threshold"};
+  Configurable<float> sel1Mft0cFv0{"sel1Mft0cfv0", 280.0, "FT0C+FV0 mult threshold"};
+  Configurable<float> sel1Fft0cFv0{"sel1Fft0cfv0", 0.895, "1-flatenicity FT0C+FV0 threshold"};
   Configurable<float> selPtTrig{"selPtTrig", 5., "track pT leading threshold"};
   Configurable<bool> sel8{"sel8", 1, "apply sel8 event selection"};
   Configurable<bool> selt0time{"selt0time", 0, "apply 1ns cut T0A and T0C"};
@@ -64,6 +64,8 @@ struct multFilter {
   Configurable<float> avPyT0A{"avPyT0A", 8.16, "nch from pythia T0A"};
   Configurable<float> avPyT0C{"avPyT0C", 8.83, "nch from pythia T0C"};
   Configurable<float> avPyFV0{"avPyFV0", 21.44, "nch from pythia FV0"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch",
+                                "URL of the CCDB database"};
 
   Produces<aod::MultFilters> tags;
 
@@ -83,8 +85,21 @@ struct multFilter {
   static constexpr std::string_view tEst[8] = {
     "GlobalTrk", "FV0", "1-flatencity_FV0", "FT0", "1-flatencityFT0", "FT0C_FV0", "1-flatencity_FT0C_FV0", "pT^{trig} (GeV/#it{c})"};
 
+  int RunNumber = 0;
+  o2::ccdb::CcdbApi ccdbApi;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   void init(o2::framework::InitContext&)
   {
+
+    ccdbApi.init(o2::base::NameConf::getCCDBServer());
+    ccdb->setURL(url.value); //
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    if (!ccdbApi.isHostReachable()) {
+      LOGF(fatal, "CCDB host %s is not reacheable, cannot go forward",
+           url.value.data());
+    }
     mTrackSelector.SetPtRange(0.15f, 1e10f);
     mTrackSelector.SetEtaRange(-0.8f, 0.8f);
     mTrackSelector.SetRequireITSRefit(true);
@@ -115,6 +130,13 @@ struct multFilter {
     multiplicity.add("hMultFT0C", "hMultFT0C", HistType::kTH1F, {{600, -0.5, 5999.5, "FT0C amplitude"}});
     multiplicity.add("hMultFT0A", "hMultFT0A", HistType::kTH1F, {{600, -0.5, 5999.5, "FT0A amplitude"}});
     multiplicity.add("hMultFV0", "hMultFV0", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude"}});
+    multiplicity.add("hMultFV01to4Ring", "hMultFV01to4Ring", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude (rings 1-4)"}});
+    multiplicity.add("hMultFV05Ring", "hMultFV05Ring", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude (ring 5)"}});
+
+    multiplicity.add("hMultFV0sel", "hMultFV0sel", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude"}});
+    multiplicity.add("hMultFV01to4Ringsel", "hMultFV01to4Ringsel", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude (rings 1-4)"}});
+    multiplicity.add("hMultFV05Ringsel", "hMultFV05Ringsel", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude (ring 5)"}});
+
     multiplicity.add("hT0C_time", "T0C_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
     multiplicity.add("hT0A_time", "T0A_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
     multiplicity.add("hT0Cafter_time", "T0C_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
@@ -222,20 +244,31 @@ struct multFilter {
     }
     return flat;
   }
-
-  void processMult(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::BCsWithTimestamps const&, TrackCandidates const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
-    int min_n_ev = 100;
+    meanMultT0C = 0.f;
+    auto vMeanMultT0C = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanT0C", bc.timestamp());
+    meanMultT0C = (*vMeanMultT0C)[0];
+    meanMultT0A = 0.f;
+    auto vMeanMultT0A = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanT0A", bc.timestamp());
+    meanMultT0A = (*vMeanMultT0A)[0];
+    meanMultV0A = 0.f;
+    auto vMeanMultV0A = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanV0A", bc.timestamp());
+    meanMultV0A = (*vMeanMultV0A)[0];
+
     float fac_FT0A_ebe = 1.;
     float fac_FT0C_ebe = 1.;
     float fac_FV0_ebe = 1.;
-    if (nevFT0 > min_n_ev) {
-      fac_FT0A_ebe = avPyT0A / (totFT0A / nevFT0);
-      fac_FT0C_ebe = avPyT0C / (totFT0C / nevFT0);
+    if (meanMultT0A > 0) {
+      fac_FT0A_ebe = avPyT0A / meanMultT0A;
     }
-    if (nevFV0 > min_n_ev) {
-      fac_FV0_ebe = avPyFV0 / (MultFV0 / nevFV0);
+    if (meanMultT0C > 0) {
+      fac_FT0C_ebe = avPyT0C / meanMultT0C;
+    }
+    if (meanMultV0A > 0) {
+      fac_FV0_ebe = avPyFV0 / meanMultV0A;
     }
 
     bool keepEvent[kNtriggersMM]{false};
@@ -243,8 +276,11 @@ struct multFilter {
     multiplicity.fill(HIST("fProcessedEvents"), 0);
     multiplicity.fill(HIST("fCollZpos"), collision.posZ());
 
+    float sumAmpFT0A = 0.f;
+    float sumAmpFT0C = 0.f;
     bool isOkTimeFT0 = false;
     bool isOkvtxtrig = false;
+    bool isOkFV0OrA = false;
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
       std::bitset<8> triggers = ft0.triggerMask();
@@ -256,9 +292,57 @@ struct multFilter {
       }
       multiplicity.fill(HIST("hT0C_time"), t0_c);
       multiplicity.fill(HIST("hT0A_time"), t0_a);
+
+      for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++) {
+        float amplitude = ft0.amplitudeA()[i_a];
+        sumAmpFT0A += amplitude;
+      }
+      for (std::size_t i_c = 0; i_c < ft0.amplitudeC().size(); i_c++) {
+        float amplitude = ft0.amplitudeC()[i_c];
+        sumAmpFT0C += amplitude;
+      }
+      multiplicity.fill(HIST("hMultFT0A"), sumAmpFT0A);
+      multiplicity.fill(HIST("hMultFT0C"), sumAmpFT0C);
     }
 
-    if (selt0vtx && !isOkvtxtrig) {
+    double flatenicity_fv0 = 9999;
+    float sumAmpFV0 = 0;
+    float sumAmpFV01to4Ring = 0;
+    float sumAmpFV05Ring = 0;
+    int innerFV0 = 32;
+    const int nCells = 48; // 48 sectors in FV0
+
+    if (collision.has_foundFV0()) {
+      float RhoLattice[nCells];
+      for (Int_t iCh = 0; iCh < nCells; iCh++) {
+        RhoLattice[iCh] = 0;
+      }
+
+      auto fv0 = collision.foundFV0();
+      std::bitset<8> fV0Triggers = fv0.triggerMask();
+      isOkFV0OrA = fV0Triggers[o2::fit::Triggers::bitA];
+      // LOGP(info, "amplitude.size()={}", fv0.amplitude().size());
+      for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
+
+        int channelv0 = fv0.channel()[ich];
+        float ampl_ch = fv0.amplitude()[ich];
+        sumAmpFV0 += ampl_ch;
+        if (channelv0 < innerFV0) {
+          RhoLattice[channelv0] = ampl_ch;
+          sumAmpFV01to4Ring += ampl_ch;
+        } else {
+          RhoLattice[channelv0] = ampl_ch / 2.0; // two channels per bin
+          sumAmpFV05Ring += ampl_ch;
+        }
+      }
+
+      flatenicity_fv0 = GetFlatenicity(RhoLattice, nCells);
+    }
+    multiplicity.fill(HIST("hMultFV0"), sumAmpFV0);
+    multiplicity.fill(HIST("hMultFV01to4Ring"), sumAmpFV01to4Ring);
+    multiplicity.fill(HIST("hMultFV05Ring"), sumAmpFV05Ring);
+
+    if (selt0vtx && !isOkvtxtrig && !isOkFV0OrA) {
       tags(false, false, false, false, false, false, false, false);
       return;
     }
@@ -272,42 +356,14 @@ struct multFilter {
       return;
     }
 
+    multiplicity.fill(HIST("hMultFV0sel"), sumAmpFV0);
+    multiplicity.fill(HIST("hMultFV01to4Ringsel"), sumAmpFV01to4Ring);
+    multiplicity.fill(HIST("hMultFV05Ringsel"), sumAmpFV05Ring);
+
     // global observables
     int multTrack = 0;
     float flPt = 0; // leading pT
-    double flatenicity_fv0 = 9999;
 
-    float sumAmpFV0 = 0;
-    // float sumAmpFV01to4Ch = 0;
-    int innerFV0 = 32;
-    const int nCells = 48; // 48 sectors in FV0
-
-    if (collision.has_foundFV0()) {
-      float RhoLattice[nCells];
-      for (Int_t iCh = 0; iCh < nCells; iCh++) {
-        RhoLattice[iCh] = 0;
-      }
-
-      auto fv0 = collision.foundFV0();
-      // LOGP(info, "amplitude.size()={}", fv0.amplitude().size());
-      for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
-
-        int channelv0 = fv0.channel()[ich];
-        float ampl_ch = fv0.amplitude()[ich];
-        sumAmpFV0 += ampl_ch;
-        if (channelv0 < innerFV0) {
-          RhoLattice[channelv0] = ampl_ch;
-        } else {
-          RhoLattice[channelv0] = ampl_ch / 2.0; // two channels per bin
-        }
-      }
-
-      flatenicity_fv0 = GetFlatenicity(RhoLattice, nCells);
-    }
-
-    // FT0
-    float sumAmpFT0A = 0.f;
-    float sumAmpFT0C = 0.f;
     const int nCellsT0A = 24;
     float RhoLatticeT0A[nCellsT0A];
     for (int iCh = 0; iCh < nCellsT0A; iCh++) {
@@ -333,12 +389,12 @@ struct multFilter {
           RhoLatticeT0A[sector] += amplitude;
           multiplicity.fill(HIST("hAmpT0AVsCh"), sector, amplitude);
         }
-        sumAmpFT0A += amplitude;
+        // sumAmpFT0A += amplitude;
         multiplicity.fill(HIST("hFT0A"), amplitude);
       }
       for (std::size_t i_c = 0; i_c < ft0.amplitudeC().size(); i_c++) {
         float amplitude = ft0.amplitudeC()[i_c];
-        sumAmpFT0C += amplitude;
+        // sumAmpFT0C += amplitude;
         uint8_t channel = ft0.channelC()[i_c];
         int sector = getT0CSector(channel);
         if (sector >= 0 && sector < 28) {
@@ -400,7 +456,7 @@ struct multFilter {
       isOK_estimator5 = true;
     }
     if (isOK_estimator5) {
-      if (nevFT0 > min_n_ev) {
+      if (meanMultT0A > 0 && meanMultT0C > 0) {
         combined_estimator5 = sumAmpFT0C * fac_FT0C_ebe + sumAmpFT0A * fac_FT0A_ebe;
       } else {
         combined_estimator5 = sumAmpFT0C * weigthsEta5[0] + sumAmpFT0A * weigthsEta5[1];
@@ -413,7 +469,7 @@ struct multFilter {
       isOK_estimator6 = true;
     }
     if (isOK_estimator6) {
-      if (nevFV0 > min_n_ev) {
+      if (meanMultV0A > 0 && meanMultT0C > 0) {
         combined_estimator6 = sumAmpFT0C * fac_FT0C_ebe + sumAmpFV0 * fac_FV0_ebe;
       } else {
         combined_estimator6 = sumAmpFT0C * weigthsEta6[0] + sumAmpFV0 * weigthsEta6[1];
@@ -477,73 +533,8 @@ struct multFilter {
       }
     }
   }
-
-  PROCESS_SWITCH(multFilter, processMult, "Process Mult Filt", true);
-  // aqui
-  void process(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
-  {
-    MultFV0 = 0.f;
-    totFT0A = 0.f;
-    totFT0C = 0.f;
-    nevFT0 = 0;
-    nevFV0 = 0;
-    // LOGP(info, "****************    processing processFT0", nevFT0);
-    //  get FT0 average multiplicity
-    for (auto& collision : collisions) {
-      if (collision.has_foundFT0()) {
-        bool isOkTimeFT0 = false;
-        bool isOkvtxtrig = false;
-
-        auto ft0 = collision.foundFT0();
-        std::bitset<8> triggers = ft0.triggerMask();
-        isOkvtxtrig = triggers[o2::fit::Triggers::bitVertex];
-        float t0_a = ft0.timeA();
-        float t0_c = ft0.timeC();
-        if (abs(t0_a) < 1. && abs(t0_c) < 1.) {
-          isOkTimeFT0 = true;
-        }
-        float MultFT0A = 0.f;
-        float MultFT0C = 0.f;
-        if (isOkTimeFT0 && isOkvtxtrig) {
-
-          nevFT0++;
-          for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++) {
-            float amplitude = ft0.amplitudeA()[i_a];
-            MultFT0A += amplitude;
-          }
-          for (std::size_t i_c = 0; i_c < ft0.amplitudeC().size(); i_c++) {
-            float amplitude = ft0.amplitudeC()[i_c];
-            MultFT0C += amplitude;
-          }
-          totFT0A += MultFT0A;
-          totFT0C += MultFT0C;
-          multiplicity.fill(HIST("hMultFT0A"), MultFT0A);
-          multiplicity.fill(HIST("hMultFT0C"), MultFT0C);
-        }
-      }
-
-      if (collision.has_foundFV0()) {
-        if (sel8 && collision.sel8()) {
-          float sumAmpFV0 = 0;
-          auto fv0 = collision.foundFV0();
-          // LOGP(info, "amplitude.size()={}", fv0.amplitude().size());
-          for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
-
-            float ampl_ch = fv0.amplitude()[ich];
-            sumAmpFV0 += ampl_ch;
-          }
-          MultFV0 += sumAmpFV0;
-          nevFV0++;
-          multiplicity.fill(HIST("hMultFV0"), sumAmpFV0);
-        }
-      }
-    }
-  }
 };
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
-  WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<multFilter>(cfg));
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<multFilter>(cfg)};
 }

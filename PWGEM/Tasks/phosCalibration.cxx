@@ -32,6 +32,8 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "Framework/HistogramRegistry.h"
+#include "CommonUtils/NameConf.h"
+#include "CCDB/BasicCCDBManager.h"
 
 #include "CommonDataFormat/InteractionRecord.h"
 
@@ -70,9 +72,11 @@ struct phosCalibration {
   Configurable<double> mMinCellTimeMain{"minCellTimeMain", -50.e-9, "Min. cell time of main bunch selection"};
   Configurable<double> mMaxCellTimeMain{"maxCellTimeMain", 100.e-9, "Max. cell time of main bunch selection"};
   Configurable<int> mMixedEvents{"mixedEvents", 10, "number of events to mix"};
-  Configurable<uint32_t> mL1{"L1", 0, "L1 phase"};
+  Configurable<bool> mSkipL1phase{"skipL1phase", false, "do not correct L1 phase from CCDB"};
   Configurable<std::string> mBadMapPath{"badmapPath", "alien:///alice/cern.ch/user/p/prsnko/Calib/BadMap/snapshot.root", "path to BadMap snapshot"};
   Configurable<std::string> mCalibPath{"calibPath", "alien:///alice/cern.ch/user/p/prsnko/Calib/CalibParams/snapshot.root", "path to Calibration snapshot"};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   HistogramRegistry mHistManager{"phosCallQAHistograms"};
 
@@ -84,6 +88,7 @@ struct phosCalibration {
   std::vector<o2::phos::Cluster> phosClusters;
   std::vector<o2::phos::TriggerRecord> phosClusterTrigRecs;
   std::vector<photon> event;
+  int mL1 = 0;
 
   // calibration will be set on first processing
   std::unique_ptr<const o2::phos::BadChannelsMap> badMap;   // = ccdb->get<o2::phos::BadChannelsMap>("PHS/Calib/BadMap");
@@ -129,19 +134,26 @@ struct phosCalibration {
     mHistManager.add("hResum", "Real m_{#gamma#gamma}", HistType::kTH2F, {mggAxis, amplitudeAxisLarge});
     mHistManager.add("hMisum", "Mixed m_{#gamma#gamma}", HistType::kTH2F, {mggAxis, amplitudeAxisLarge});
 
+    ccdb->setURL(o2::base::NameConf::getCCDBServer());
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
     geom = o2::phos::Geometry::GetInstance("Run3");
     LOG(info) << "Calibration configured ...";
   }
 
   /// \brief Process PHOS data
-  void process(o2::aod::BCs const& bcs,
-               o2::aod::Collisions const& collisions,
+  void process(o2::aod::BCsWithTimestamps const& bcs,
                o2::aod::Calos const& cells,
                o2::aod::CaloTriggers const& ctrs)
   {
     // Fill cell histograms
     // clusterize
     // Fill clusters histograms
+
+    if (bcs.begin() == bcs.end()) {
+      return;
+    }
 
     if (!clusterizer) {
       clusterizer = std::make_unique<o2::phos::Clusterer>();
@@ -168,8 +180,17 @@ struct phosCalibration {
       calibParams.reset(calib1);
       fCalib->Close();
       clusterizer->setCalibration(calibParams.get());
-      clusterizer->setL1phase(mL1);
       LOG(info) << "Read calibration";
+    }
+    if (!mSkipL1phase && mL1 == 0) { // should be read, but not read yet
+      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", bcs.begin().timestamp());
+      if (vec) {
+        clusterizer->setL1phase((*vec)[0]);
+        mL1 = (*vec)[0];
+        LOG(info) << "Got L1phase=" << mL1;
+      } else {
+        LOG(fatal) << "Can not get PHOS L1phase calibration";
+      }
     }
 
     phosCells.clear();
@@ -181,29 +202,20 @@ struct phosCalibration {
     phosClusterTrigRecs.clear();
     event.clear();
 
-    // Make map between collision and BC tables
-    //  map: (bcId_long,collision index)
-    std::map<int64_t, int> bcMap;
-    int collId = 0;
-    for (auto cl : collisions) {
-      bcMap[cl.bc().globalBC()] = collId;
-      collId++;
-    }
-
     InteractionRecord ir;
     for (auto& c : cells) {
       if (c.caloType() != 0) { // PHOS
         continue;
       }
       if (phosCellTRs.size() == 0) { // first cell, first TrigRec
-        ir.setFromLong(c.bc().globalBC());
+        ir.setFromLong(c.bc_as<aod::BCsWithTimestamps>().globalBC());
         phosCellTRs.emplace_back(ir, 0, 0); // BC,first cell, ncells
       }
-      if (static_cast<uint64_t>(phosCellTRs.back().getBCData().toLong()) != c.bc().globalBC()) { // switch to new BC
+      if (static_cast<uint64_t>(phosCellTRs.back().getBCData().toLong()) != c.bc_as<aod::BCsWithTimestamps>().globalBC()) { // switch to new BC
         // switch to another BC: set size and create next TriRec
         phosCellTRs.back().setNumberOfObjects(phosCells.size() - phosCellTRs.back().getFirstEntry());
         // Next event/trig rec.
-        ir.setFromLong(c.bc().globalBC());
+        ir.setFromLong(c.bc_as<aod::BCsWithTimestamps>().globalBC());
         phosCellTRs.emplace_back(ir, phosCells.size(), 0);
         mHistManager.fill(HIST("eventsAll"), 1.);
       }
@@ -219,13 +231,16 @@ struct phosCalibration {
       mHistManager.fill(HIST("cellAmp"), relid[0], relid[1], relid[2], c.amplitude());
 
       int ddl = (relid[0] - 1) * 4 + (relid[1] - 1) / 16 - 2;
-      uint64_t bc = c.bc().globalBC();
-      int shift = (mL1 >> (ddl * 2)) & 3; // extract 2 bits corresponding to this ddl
-      shift = bc % 4 - shift;
-      if (shift < 0) {
-        shift += 4;
+      uint64_t bc = c.bc_as<aod::BCsWithTimestamps>().globalBC();
+      float tcorr = c.time();
+      if (!mSkipL1phase) {
+        int shift = (mL1 >> (ddl * 2)) & 3; // extract 2 bits corresponding to this ddl
+        shift = bc % 4 - shift;
+        if (shift < 0) {
+          shift += 4;
+        }
+        tcorr -= shift * 25.e-9;
       }
-      float tcorr = c.time() - shift * 25.e-9;
       if (c.amplitude() > mCellTimeMinE) {
         mHistManager.fill(HIST("timeDDL"), tcorr, bc % 4, ddl);
         if (c.cellType() == o2::phos::HIGH_GAIN) {
@@ -254,11 +269,8 @@ struct phosCalibration {
       int firstClusterInEvent = tr.getFirstEntry();
       int lastClusterInEvent = firstClusterInEvent + tr.getNumberOfObjects();
 
-      // find collision corresponding to current clu
-      auto clvtx = collisions.begin() + (bcMap[tr.getBCData().toLong()]);
-
-      // Extract primary vertex
-      TVector3 vtx = {clvtx.posX(), clvtx.posY(), clvtx.posZ()};
+      // primary vertex
+      TVector3 vtx = {0., 0., 0.};
 
       for (int i = firstClusterInEvent; i < lastClusterInEvent; i++) {
         o2::phos::Cluster& clu = phosClusters[i];
