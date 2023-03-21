@@ -634,16 +634,19 @@ struct MultiplicityCounter {
 
   PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiency, "Calculate tracking efficiency vs pt", false);
 
-  template <typename C>
+  template <typename MC, typename C>
   void processGenGeneral(
-    aod::McCollisions::iterator const& mcCollision,
+    typename MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks)
   {
-    constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>();
+    constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>() || MC::template contains<aod::HepMCHeavyIons>();
     float c_rec = -1;
     float c_gen = -1;
     // add generated centrality estimation
+    if constexpr (MC::template contains<aod::HepMCHeavyIons>()) {
+      c_gen = mcCollision.centrality();
+    }
 
     auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nCharged = 0;
@@ -810,35 +813,58 @@ struct MultiplicityCounter {
     }
   }
 
+  using MC = soa::Join<aod::McCollisions, aod::HepMCXSections>;
   void processGen(
-    aod::McCollisions::iterator const& mcCollision,
+    MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExCols, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks)
   {
-    processGenGeneral<ExCols>(mcCollision, collisions, particles, tracks);
+    processGenGeneral<MC, ExCols>(mcCollision, collisions, particles, tracks);
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processGen, "Process generator-level info", false);
 
   void processGenFT0C(
-    aod::McCollisions::iterator const& mcCollision,
+    MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks)
   {
-    processGenGeneral<ExColsCentFT0C>(mcCollision, collisions, particles, tracks);
+    processGenGeneral<MC, ExColsCentFT0C>(mcCollision, collisions, particles, tracks);
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0C, "Process generator-level info (FT0C centrality)", false);
 
   void processGenFT0M(
-    aod::McCollisions::iterator const& mcCollision,
+    MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
     Particles const& particles, FiTracks const& tracks)
   {
-    processGenGeneral<ExColsCentFT0M>(mcCollision, collisions, particles, tracks);
+    processGenGeneral<MC, ExColsCentFT0M>(mcCollision, collisions, particles, tracks);
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0M, "Process generator-level info (FT0M centrality)", false);
+
+  using MChi = soa::Join<aod::McCollisions, aod::HepMCHeavyIons>;
+
+  void processGenFT0Chi(
+    MChi::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks)
+  {
+    processGenGeneral<MChi, ExColsCentFT0C>(mcCollision, collisions, particles, tracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenFT0Chi, "Process generator-level info (FT0C centrality, HI)", false);
+
+  void processGenFT0Mhi(
+    MChi::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks)
+  {
+    processGenGeneral<MChi, ExColsCentFT0M>(mcCollision, collisions, particles, tracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenFT0Mhi, "Process generator-level info (FT0M centrality, HI)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
