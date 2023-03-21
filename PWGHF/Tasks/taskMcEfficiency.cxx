@@ -64,6 +64,10 @@ struct HfTaskMcEfficiency {
 
   HistogramRegistry registry{"registry"};
 
+  bool isThereD0 = (std::find(pdgCodes.value.begin(), pdgCodes.value.end(), pdg::kD0) != pdgCodes.value.end());
+  bool isThereD0Bar = (std::find(pdgCodes.value.begin(), pdgCodes.value.end(), pdg::kD0Bar) != pdgCodes.value.end());
+  bool isThereLc = (std::find(pdgCodes.value.begin(), pdgCodes.value.end(), pdg::kLambdaCPlus) != pdgCodes.value.end());
+
   void init(o2::framework::InitContext&)
   {
     auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, axisPdg, axisCPA, {2, -0.5, 1.5, "collision matched"}}, kHFNSteps});
@@ -161,7 +165,7 @@ struct HfTaskMcEfficiency {
         float massHypo2 = -1;
         float cpa = candidate.cpa();
         float pt = candidate.pt();
-        bool selected = false;
+        //bool selected = false;
 
         /// all candidates
         if (isHypoMass1TrackStep) {
@@ -361,6 +365,12 @@ struct HfTaskMcEfficiency {
         if (mcParticle.pdgCode() != pdgCode) {
           continue;
         }
+        /// check if we end-up with the correct final state using MC info
+        int8_t sign = 0;
+        if(std::abs(mcParticle.pdgCode()) == pdg::kD0 && (isThereD0 || isThereD0Bar) && !RecoDecay::isMatchedMCGen(mcParticles, mcParticle, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign) ) {
+          /// check if we have D0(bar) → π± K∓
+          continue;
+        }
         hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, pdgCode, 1.0, true);
 
         if (std::abs(mcParticle.y()) < 0.5 ) {
@@ -432,6 +442,356 @@ struct HfTaskMcEfficiency {
     candidate2ProngMcLoop(candidates, tracks, mcParticles, colls);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcD0, "Process MC for D0 signal", true);
+
+  /// 3-prong analyses
+
+  template <typename C>
+  void candidate3ProngMcLoop(C& candidates, TracksWithSelectionMC& tracks, aod::McParticles& mcParticles, aod::McCollisionLabels& colls)
+  {
+    candidate3ProngLoop<true>(candidates, tracks, mcParticles);
+
+    auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
+    auto hTrackablePtEta = registry.get<StepTHn>(HIST("hTrackablePtEta"));
+
+    // lists for optimization
+    std::vector<bool> tracked(mcParticles.size(), false);
+    std::vector<bool> hasITS(mcParticles.size(), false);
+    std::vector<bool> hasTPC(mcParticles.size(), false);
+    std::vector<bool> selected(mcParticles.size(), false);
+    for (const auto& track : tracks) {
+      if (track.mcParticleId() >= 0) {
+        tracked[track.mcParticleId()] = true;
+        if (checkTrack(track)) {
+          selected[track.mcParticleId()] = true;
+        }
+        if (track.hasITS()) {
+          hasITS[track.mcParticleId()] = true;
+        }
+        if (track.hasTPC()) {
+          hasTPC[track.mcParticleId()] = true;
+        }
+      }
+    }
+
+    for (const auto pdgCode : pdgCodes.value) { /// loop over PDG codes
+      auto mass = RecoDecay::getMassPDG(pdgCode);
+
+      for (const auto& mcParticle : mcParticles) { /// loop over MC particles
+
+        //////////////////////////
+        ///   Step kHFStepMC   ///
+        //////////////////////////
+        if (std::abs(mcParticle.pdgCode()) != pdgCode) { /// abs. value because only "kLambdaCPlus" is defined, not "kAntiLambdaCPlus"
+          continue;
+        }
+        /// check if we end-up with the correct final state using MC info
+        int8_t sign = 0;
+        if (std::abs(mcParticle.pdgCode()) == pdg::kLambdaCPlus && isThereLc && !RecoDecay::isMatchedMCGen(mcParticles, mcParticle, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+          /// check if we have Λc± → p± K∓ π± (either direct or resonant)
+          continue;
+        }
+        hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, pdgCode, 1.0, true);
+
+        ////////////////////////////////////
+        ///   Step kHFStepMcInRapidity   ///
+        ////////////////////////////////////
+        if (std::abs(mcParticle.y()) < 0.5 ) {
+          hCandidates->Fill(kHFStepMcInRapidity, mcParticle.pt(), mass, pdgCode, 1.0, true);
+        }
+
+        auto nDaughters = mcParticle.daughtersIds().size();
+        if (nDaughters != 2 && nDaughters != 3) {
+          /// # daughters==3: direct decay
+          /// # daughters==2: resonant channel
+          LOGP(fatal, "Invalid numbers of daughters for 3-prong candidate {}: {}", mcParticle.globalIndex(), mcParticle.daughtersIds().size());
+        }
+
+        int32_t prong0Id = -1, prong1Id = -1, prong2Id = -1;
+        prong0Id = mcParticle.daughtersIds()[0];
+        prong1Id = mcParticle.daughtersIds()[1];
+        if (prong0Id < 0 || prong1Id < 0) {
+          /// this excludes both resonant and direct channels
+          continue;
+        }
+        if(nDaughters == 3) {
+          prong2Id = mcParticle.daughtersIds()[2];
+          if (prong2Id < 0) {
+            /// this excludes the direct channel
+            continue;
+          }
+        }
+
+        //////////////////////////////////
+        ///   Step kHFStepAcceptance   ///
+        //////////////////////////////////
+        sign = 0;
+        bool inAcceptance = true;
+        auto daughters = mcParticle.daughters_as<aod::McParticles>();
+        nDaughters = daughters.size();
+
+        //
+        // Λc± → p± K∓ π± case
+        bool isDirect = false;
+        bool isResonanceFound = false;
+        int resoId = -1;
+        //std::array<int, 2> resoProngsId = {-1, -1};
+        int otherDaughterId = -1;
+        if (isThereLc) {
+          if(nDaughters == 3) {
+            // direct channel: Λc± → p± K∓ π±
+            isDirect = true;
+            for (const auto& daughter : daughters) {
+              if (daughter.pt() < mcAcceptancePt || std::abs(daughter.eta()) > mcAcceptanceEta) {
+                inAcceptance = false;
+              }
+            }
+          } else {
+            // this means resonant channels (i.e. 2 prongs)
+            
+            //bool isResonanceFound = false;
+            //int resoId = -1;
+            //int otherDaughterId = -1;
+            std::vector<int> arrDaughIndex;
+            std::vector<int> arrPDGDaugh;
+            RecoDecay::getDaughters(mcParticle, &arrDaughIndex, array{0}, 1); /// get indices of Lc daughters (resonant channels)
+            if (arrDaughIndex.size() != 2) {
+              continue;
+            }
+            
+            // resonant channel Λc± → p± K* (kProton, 313)
+            if (!isResonanceFound) {
+              for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) { /// loop of Lc daughters (resonant channel)
+                auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
+                arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
+                if(arrPDGDaugh[jProng] == 313) {
+                  /// this is the K*
+                  resoId = arrDaughIndex[jProng];
+                } else if (arrPDGDaugh[jProng] == kProton) {
+                  /// this is the proton
+                  otherDaughterId = arrDaughIndex[jProng];
+                } else {
+                  /// this means that the current case is not a Λc± → p± K*
+                  /// let's move directly to the next case
+                  break;
+                }
+                if(resoId > 0 && otherDaughterId > 0) {
+                  /// we found the Λc± → p± K* resonant channel!
+                  isResonanceFound = true;
+                }
+              } /// end loop of Lc daughters (resonant channel)
+            }
+
+            // resonant channel Λc± → Δ(1232)±± K∓ (2224, kKPlus)
+            if (!isResonanceFound) {
+              for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) { /// loop of Lc daughters (resonant channel)
+                auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
+                arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
+                if(arrPDGDaugh[jProng] == 2224) {
+                  /// this is the Δ(1232)±±
+                  resoId = arrDaughIndex[jProng];
+                } else if (arrPDGDaugh[jProng] == kKPlus) {
+                  /// this is the kaon
+                  otherDaughterId = arrDaughIndex[jProng];
+                } else {
+                  /// this means that the current case is not a Λc± → Δ(1232)±± K∓
+                  /// let's move directly to the next case
+                  break;
+                }
+                if(resoId > 0 && otherDaughterId > 0) {
+                  /// we found the Λc± → Δ(1232)±± K∓ resonant channel!
+                  isResonanceFound = true;
+                }
+              } /// end loop of Lc daughters (resonant channel)
+            }
+
+            // resonant channel Λc± → Λ(1520) π± (3124, kPiPlus)
+            if (!isResonanceFound) {
+              for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) { /// loop of Lc daughters (resonant channel)
+                auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
+                arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
+                if(arrPDGDaugh[jProng] == 3124) {
+                  /// this is the Λ(1520)
+                  resoId = arrDaughIndex[jProng];
+                } else if (arrPDGDaugh[jProng] == kPiPlus) {
+                  /// this is the pion
+                  otherDaughterId = arrDaughIndex[jProng];
+                } else {
+                  /// this means that the current case is not a Λ(1520) π±
+                  /// let's move directly to the next case
+                  break;
+                }
+                if(resoId > 0 && otherDaughterId > 0) {
+                  /// we found the Λ(1520) π± resonant channel!
+                  isResonanceFound = true;
+                }
+              } /// end loop of Lc daughters (resonant channel)
+            }
+            if(!isResonanceFound) {
+              continue;
+            }
+
+            /// check if the prong of resonance daughter are in acceptance
+            auto resoProngs = mcParticles.rawIteratorAt(resoId).daughters_as<aod::McParticles>();
+            if(resoProngs.size() != 2) {
+              continue;
+            }
+            for (const auto& resoProng : resoProngs) {
+              if (resoProng.pt() < mcAcceptancePt || std::abs(resoProng.eta()) > mcAcceptanceEta) {
+                inAcceptance = false;
+              }
+            }
+            prong0Id = mcParticles.rawIteratorAt(resoId).daughtersIds()[0];
+            prong1Id = mcParticles.rawIteratorAt(resoId).daughtersIds()[1];
+            /// check if the other daughter is in acceptance
+            auto otherDaug = mcParticles.rawIteratorAt(otherDaughterId);
+            if (otherDaug.pt() < mcAcceptancePt || std::abs(otherDaug.eta()) > mcAcceptanceEta) {
+              inAcceptance = false;
+            }
+            prong2Id = otherDaughterId;
+
+          } /// end study resonant channels Λc± → p± K∓ π± decays
+        }
+        // end Λc± → p± K∓ π± case
+        //
+        else {
+          /// this should be changed if we add more 3-prong particles, eg D+, Ds+, ...
+          LOGP(fatal, ">>> test inAcceptance step for PDG {} not implemented", pdgCode);
+        }
+
+        if (inAcceptance) {
+          hCandidates->Fill(kHFStepAcceptance, mcParticle.pt(), mass, pdgCode, 1.0, true);
+        }
+
+        /////////////////////////////////
+        ///   Step kHFStepTrackable   ///
+        /////////////////////////////////
+        if (tracked[prong0Id] && tracked[prong1Id] && tracked[prong2Id]) {
+          hCandidates->Fill(kHFStepTrackable, mcParticle.pt(), mass, pdgCode, 1.0, true);
+
+          ///////////////////////////////////////////
+          ///   Step kHFStepAcceptanceTrackable   ///
+          ///////////////////////////////////////////
+          if (inAcceptance) {
+            hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, pdgCode, 1.0, true);
+          } else {
+            LOGP(debug, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
+            //for (const auto& daughter : daughters) {
+            //  LOGP(debug, "   MC: pt={} eta={}", daughter.pt(), daughter.eta());
+            //}
+          }
+
+          /// +++ direct channel +++
+          if (isDirect) {
+            
+            for (const auto& daughter : daughters) {
+              //////////////////////////////
+              ///   Step kTrackableAll   ///
+              //////////////////////////////
+              hTrackablePtEta->Fill(kTrackableAll, daughter.pt(), daughter.eta());
+              //////////////////////////////
+              ///   Step kTrackableITS   ///
+              //////////////////////////////
+              if (hasITS[daughter.globalIndex()]) {
+                hTrackablePtEta->Fill(kTrackableITS, daughter.pt(), daughter.eta());
+              }
+              //////////////////////////////
+              ///   Step kTrackableTPC   ///
+              //////////////////////////////
+              if (hasTPC[daughter.globalIndex()]) {
+                hTrackablePtEta->Fill(kTrackableTPC, daughter.pt(), daughter.eta());
+              }
+              /////////////////////////////////
+              ///   Step kTrackableITSTPC   ///
+              /////////////////////////////////
+              if (hasITS[daughter.globalIndex()] && hasTPC[daughter.globalIndex()]) {
+                hTrackablePtEta->Fill(kTrackableITSTPC, daughter.pt(), daughter.eta());
+              }
+            }
+
+          }
+          /// +++ resonant channel +++
+          else if (isResonanceFound) {
+            
+            /// +++ resonance daughters +++
+            auto resoProngs = mcParticles.rawIteratorAt(resoId).daughters_as<aod::McParticles>();
+            for (const auto& resoProng : resoProngs) {
+              //////////////////////////////
+              ///   Step kTrackableAll   ///
+              //////////////////////////////
+              hTrackablePtEta->Fill(kTrackableAll, resoProng.pt(), resoProng.eta());
+              //////////////////////////////
+              ///   Step kTrackableITS   ///
+              //////////////////////////////
+              if (hasITS[resoProng.globalIndex()]) {
+                hTrackablePtEta->Fill(kTrackableITS, resoProng.pt(), resoProng.eta());
+              }
+              //////////////////////////////
+              ///   Step kTrackableTPC   ///
+              //////////////////////////////
+              if (hasTPC[resoProng.globalIndex()]) {
+                hTrackablePtEta->Fill(kTrackableTPC, resoProng.pt(), resoProng.eta());
+              }
+              /////////////////////////////////
+              ///   Step kTrackableITSTPC   ///
+              /////////////////////////////////
+              if (hasITS[resoProng.globalIndex()] && hasTPC[resoProng.globalIndex()]) {
+                hTrackablePtEta->Fill(kTrackableITSTPC, resoProng.pt(), resoProng.eta());
+              }
+            }
+
+            /// +++ other daughter +++
+            auto otherDaug = mcParticles.rawIteratorAt(otherDaughterId);
+            //////////////////////////////
+            ///   Step kTrackableAll   ///
+            //////////////////////////////
+            hTrackablePtEta->Fill(kTrackableAll, otherDaug.pt(), otherDaug.eta());
+            //////////////////////////////
+            ///   Step kTrackableITS   ///
+            //////////////////////////////
+            if (hasITS[otherDaug.globalIndex()]) {
+              hTrackablePtEta->Fill(kTrackableITS, otherDaug.pt(), otherDaug.eta());
+            }
+            //////////////////////////////
+            ///   Step kTrackableTPC   ///
+            //////////////////////////////
+            if (hasTPC[otherDaug.globalIndex()]) {
+              hTrackablePtEta->Fill(kTrackableTPC, otherDaug.pt(), otherDaug.eta());
+            }
+            /////////////////////////////////
+            ///   Step kTrackableITSTPC   ///
+            /////////////////////////////////
+            if (hasITS[otherDaug.globalIndex()] && hasTPC[otherDaug.globalIndex()]) {
+              hTrackablePtEta->Fill(kTrackableITSTPC, otherDaug.pt(), otherDaug.eta());
+            }
+          }
+        } /// end "if(tracked[...])"
+
+        /////////////////////////////////////
+        ///   Step kHFStepTrackableCuts   ///
+        /////////////////////////////////////
+        if (selected[prong0Id] && selected[prong1Id] && selected[prong2Id]) {
+          hCandidates->Fill(kHFStepTrackableCuts, mcParticle.pt(), mass, pdgCode, 1.0, true);
+          if (!inAcceptance) {
+            LOGP(info, "Candidate {} not in acceptance but tracked and selected.", mcParticle.globalIndex());
+          }
+        } /// end "if(selected[...])"
+
+      } /// end loop over MC particles
+    } /// end loop over PDG codes
+
+  } /// end candidate3ProngMcLoop
+
+  void processDataLc(soa::Join<aod::HfCand3Prong, aod::HfSelLc>& candidates, TracksWithSelection& tracks) {
+    candidate3ProngLoop<false>(candidates, tracks, tracks);
+  }
+  PROCESS_SWITCH(HfTaskMcEfficiency, processDataLc, "Process Lc data (no MC information needed)", false);
+
+  void processMcLc(soa::Join<aod::HfCand3Prong, aod::HfSelLc>& candidates, TracksWithSelectionMC& tracks, aod::McParticles& mcParticles, aod::McCollisionLabels& colls) {
+    candidate3ProngMcLoop(candidates, tracks, mcParticles, colls);
+  }
+  PROCESS_SWITCH(HfTaskMcEfficiency, processMcLc, "Process MC for Lc signal", false);
+
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
