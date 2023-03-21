@@ -653,7 +653,7 @@ struct DQMuonsSelection {
       std::pair<std::pair<double, double>, int> timeNID = {timeBracket, collision.globalIndex()};
       vtxOrdBrack.emplace_back(timeNID);
     }
-    // sorting collision according to time 
+    // sorting collision according to time
     std::sort(vtxOrdBrack.begin(), vtxOrdBrack.end(), [](const std::pair<std::pair<double, double>, int>& a, const std::pair<std::pair<double, double>, int>& b) { return a.first.first < b.first.first; });
   }
 
@@ -848,7 +848,7 @@ struct DQMuonsSelection {
                                            BCsWithTimestamps const& bcs,
                                            AmbiguousFwdTracks const& ambiTracksFwd)
   {
-    // first processing tracks registered in the ambigous tracks table	  
+    // first processing tracks registered in the ambigous tracks table
     for (auto& ambiTrackFwd : ambiTracksFwd) {
       if (fSelectedMuons.find(ambiTrackFwd.fwdtrackId()) == fSelectedMuons.end()) {
         continue;
@@ -891,7 +891,7 @@ struct DQMuonsSelection {
       } else if (vtxList.size() == 0) {
         registry.fill(HIST("Association/AssociationTrackStatus"), 4); // track is now orphan
       } else {
-        isMuonReassigned[muon.globalIndex()] = vtxList.front(); // track is non-ambiguously associated
+        isMuonReassigned[muon.globalIndex()] = vtxList.front();                             // track is non-ambiguously associated
         muonAssoc(vtxList.front(), muon.globalIndex(), fSelectedMuons[muon.globalIndex()]); // writes in the table (collId, fwdtrackId, filterMap)
         registry.fill(HIST("Association/AssociationTrackStatus"), 5);
         registry.fill(HIST("Association/DeltaT"), (vtxminOK + vtxmaxOK) / 2 - t0);
@@ -912,7 +912,7 @@ struct DQMuonsSelection {
       auto collision = collisions.rawIteratorAt(muon.collisionId() - collisions.offset());
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       double t0 = muon.trackTime() + bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS - collision.collisionTime() + fTimeBias; // computing track time relative to associated collisino time
-      double err = muon.trackTimeRes()*fSigmaTrack+fTimeMarginTrack;
+      double err = muon.trackTimeRes() * fSigmaTrack + fTimeMarginTrack;
       double tmin = t0 - err;
       double tmax = t0 + err;
       double vtxminOK = 0;
@@ -936,7 +936,7 @@ struct DQMuonsSelection {
       } else if (vtxList.size() == 0) {
         registry.fill(HIST("Association/AssociationTrackStatus"), 4); // track is now orphan
       } else {
-        isMuonReassigned[muon.globalIndex()] = vtxList.front(); // track is non-ambiguously associated
+        isMuonReassigned[muon.globalIndex()] = vtxList.front();                             // track is non-ambiguously associated
         muonAssoc(vtxList.front(), muon.globalIndex(), fSelectedMuons[muon.globalIndex()]); // writes in the table (collId, fwdtrackId, filterMap)
         registry.fill(HIST("Association/AssociationTrackStatus"), 5);
         registry.fill(HIST("Association/DeltaT"), (vtxminOK + vtxmaxOK) / 2 - t0);

@@ -997,7 +997,7 @@ struct TableMaker {
       auto collision = collisions.rawIteratorAt(muon.collisionId() - collisions.offset());
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       double t0 = muon.trackTime() + bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS - collision.collisionTime() + fTimeBias; // computing track time relative to associated collisino time
-      double err = muon.trackTimeRes()*fSigmaTrack+fTimeMarginTrack;
+      double err = muon.trackTimeRes() * fSigmaTrack + fTimeMarginTrack;
       double tmin = t0 - err;
       double tmax = t0 + err;
       double vtxminOK = 0;
@@ -1005,7 +1005,7 @@ struct TableMaker {
       for (auto& vtxBracket : vtxOrdBrack) {
         double vtxmin = vtxBracket.first.first;
         double vtxmax = vtxBracket.first.second;
-	if (tmax < vtxmin) {
+        if (tmax < vtxmin) {
           break; // all following collisions will be later and not compatible
         } else if (tmin > vtxmax) {
           continue;                           // following vertex with longer span might still match this track
