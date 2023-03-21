@@ -29,6 +29,7 @@
 #include "EventFiltering/filterTables.h"
 #include "HFFilterHelpers.h"
 
+#include "Common/DataModel/CollisionAssociation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -249,17 +250,17 @@ struct HfFilter { // Main struct for HF triggers
   Filter trackFilter = requireGlobalTrackWoDCAInFilter();
   using BigTracksPID = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
 
-  Preslice<aod::HfTrackAssoc> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
-  Preslice<aod::Hf2Prongs> hf2ProngPerCollision = aod::hf_track_association::collisionId;
-  Preslice<aod::Hf3Prongs> hf3ProngPerCollision = aod::hf_track_association::collisionId;
+  Preslice<aod::Hf2Prongs> hf2ProngPerCollision = aod::track_association::collisionId;
+  Preslice<aod::Hf3Prongs> hf3ProngPerCollision = aod::track_association::collisionId;
 
   void process(aod::Collisions const& collisions,
                aod::BCsWithTimestamps const&,
                aod::V0Datas const& theV0s,
                aod::Hf2Prongs const& cand2Prongs,
                aod::Hf3Prongs const& cand3Prongs,
-               aod::HfTrackAssoc const& trackIndices,
+               aod::TrackAssoc const& trackIndices,
                BigTracksPID const& tracks)
   {
     for (const auto& collision : collisions) {
