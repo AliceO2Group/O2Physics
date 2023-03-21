@@ -511,7 +511,7 @@ struct TableMaker {
 
       for (auto& muon : tracksMuon) {
         if (fReassociation) {
-          if (isMuonReassigned[muon.globalIndex()] > -1) {
+          if (isMuonReassigned[muon.globalIndex()] > -1) { // skipping tracks which were reassociated (if using reassociation)
             continue;
           }
         }
@@ -540,7 +540,7 @@ struct TableMaker {
       // now let's save the muons with the correct indices and matches
       for (auto& muon : tracksMuon) {
         if (fReassociation) {
-          if (isMuonReassigned[muon.globalIndex()] > -1) {
+          if (isMuonReassigned[muon.globalIndex()] > -1) { // skipping tracks which were reassociated (if using reassociation)
             continue;
           }
         }
@@ -928,6 +928,7 @@ struct TableMaker {
         }
       }
     }
+    // association of time brackets to each collision
     std::vector<std::pair<std::pair<double, double>, int>> vtxOrdBrack;
     for (auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -937,6 +938,7 @@ struct TableMaker {
       std::pair<std::pair<double, double>, int> timeNID = {timeBracket, collision.globalIndex()};
       vtxOrdBrack.emplace_back(timeNID);
     }
+    // sorting collision according to time
     std::sort(vtxOrdBrack.begin(), vtxOrdBrack.end(), [](const std::pair<std::pair<double, double>, int>& a, const std::pair<std::pair<double, double>, int>& b) { return a.first.first < b.first.first; });
     for (auto& ambiTrackFwd : ambiTracksFwd) {
       auto muon = ambiTrackFwd.template fwdtrack_as<MyMuonsWithCov>();
@@ -952,7 +954,7 @@ struct TableMaker {
         auto first = bcSlice.begin();
         trackBC = first.globalBC();
       }
-      double t0 = muon.trackTime() + trackBC * o2::constants::lhc::LHCBunchSpacingNS + fTimeBias;
+      double t0 = muon.trackTime() + trackBC * o2::constants::lhc::LHCBunchSpacingNS + fTimeBias; // computing track time relative to first BC of the compatible BC slice
       double err = muon.trackTimeRes() * fSigmaTrack + fTimeMarginTrack;
       double tmin = t0 - err;
       double tmax = t0 + err;
@@ -962,7 +964,7 @@ struct TableMaker {
         double vtxmin = vtxBracket.first.first;
         double vtxmax = vtxBracket.first.second;
         if (tmax < vtxmin) {
-          break;
+          break; // computing track time relative to first BC of the compatible BC slice
         } else if (tmin > vtxmax) {
           continue; // following vertex with longer span might still match this track
         } else {
@@ -973,15 +975,16 @@ struct TableMaker {
       }
       isMuonReassigned[muon.globalIndex()] = -1;
       if (vtxList.size() > 1) {
-        registry.fill(HIST("Association/AssociationTrackStatus"), 3);
+        registry.fill(HIST("Association/AssociationTrackStatus"), 3); // track is still ambiguous
       } else if (vtxList.size() == 0) {
-        registry.fill(HIST("Association/AssociationTrackStatus"), 4);
+        registry.fill(HIST("Association/AssociationTrackStatus"), 4); // track is now orphan
       } else {
-        isMuonReassigned[muon.globalIndex()] = vtxList.front();
+        isMuonReassigned[muon.globalIndex()] = vtxList.front(); // track is non-ambiguously associated
         registry.fill(HIST("Association/AssociationTrackStatus"), 5);
         registry.fill(HIST("Association/DeltaT"), (vtxminOK + vtxmaxOK) / 2 - t0);
       }
     }
+    // now processing all other tracks (which were not registered in the ambiguous table)
     for (auto& muon : tracksMuon) {
       if (!(muon.has_collision())) {
         continue;
@@ -993,8 +996,8 @@ struct TableMaker {
       std::vector<int> vtxList;
       auto collision = collisions.rawIteratorAt(muon.collisionId() - collisions.offset());
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-      double t0 = muon.trackTime() + bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS - collision.collisionTime() + fTimeBias;
-      double err = muon.trackTimeRes();
+      double t0 = muon.trackTime() + bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS - collision.collisionTime() + fTimeBias; // computing track time relative to associated collisino time
+      double err = muon.trackTimeRes()*fSigmaTrack+fTimeMarginTrack;
       double tmin = t0 - err;
       double tmax = t0 + err;
       double vtxminOK = 0;
@@ -1002,7 +1005,9 @@ struct TableMaker {
       for (auto& vtxBracket : vtxOrdBrack) {
         double vtxmin = vtxBracket.first.first;
         double vtxmax = vtxBracket.first.second;
-        if (tmax < vtxmin || tmin > vtxmax) { // vertex preceeds the track
+	if (tmax < vtxmin) {
+          break; // all following collisions will be later and not compatible
+        } else if (tmin > vtxmax) {
           continue;                           // following vertex with longer span might still match this track
         } else {
           vtxList.push_back(vtxBracket.second);
@@ -1012,11 +1017,11 @@ struct TableMaker {
       }
       isMuonReassigned[muon.globalIndex()] = -1;
       if (vtxList.size() > 1) {
-        registry.fill(HIST("Association/AssociationTrackStatus"), 3);
+        registry.fill(HIST("Association/AssociationTrackStatus"), 3); // track is still ambiguous
       } else if (vtxList.size() == 0) {
-        registry.fill(HIST("Association/AssociationTrackStatus"), 4);
+        registry.fill(HIST("Association/AssociationTrackStatus"), 4); // track is now orphan
       } else {
-        isMuonReassigned[muon.globalIndex()] = vtxList.front();
+        isMuonReassigned[muon.globalIndex()] = vtxList.front(); // track is non-ambiguously associated
         registry.fill(HIST("Association/AssociationTrackStatus"), 5);
         registry.fill(HIST("Association/DeltaT"), (vtxminOK + vtxmaxOK) / 2 - t0);
       }
@@ -1027,7 +1032,7 @@ struct TableMaker {
     std::map<int, int> newMatchIndex;
     uint64_t trackFilteringTag = 0;
     uint8_t trackTempFilterMap = 0;
-
+    // computation of correct indices for reassociated tracks
     for (auto const& [muID, collID] : isMuonReassigned) {
       if (collID < 0) {
         continue;
@@ -1053,7 +1058,9 @@ struct TableMaker {
     }
     for (auto& collision : collisions) {
       auto groupedMuons = tracksMuon.sliceBy(perCollisionMuons, collision.globalIndex());
+      // skimming tracks which were not reassociated
       fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, groupedMuons, nullptr, ambiTracksFwd);
+      // skimming tracks which were reassociated
       for (auto const& [muID, collID] : isMuonReassigned) {
         if (collID != collision.globalIndex()) {
           continue;

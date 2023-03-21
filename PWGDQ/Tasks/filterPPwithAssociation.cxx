@@ -642,9 +642,9 @@ struct DQMuonsSelection {
     } // end loop over muons
   }
 
-  //  void runCollisionMap(Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   void runCollisionMap(Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
+    // association of time brackets to each collision
     for (auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       double t0 = bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS - collision.collisionTime();
@@ -653,6 +653,7 @@ struct DQMuonsSelection {
       std::pair<std::pair<double, double>, int> timeNID = {timeBracket, collision.globalIndex()};
       vtxOrdBrack.emplace_back(timeNID);
     }
+    // sorting collision according to time 
     std::sort(vtxOrdBrack.begin(), vtxOrdBrack.end(), [](const std::pair<std::pair<double, double>, int>& a, const std::pair<std::pair<double, double>, int>& b) { return a.first.first < b.first.first; });
   }
 
@@ -847,6 +848,7 @@ struct DQMuonsSelection {
                                            BCsWithTimestamps const& bcs,
                                            AmbiguousFwdTracks const& ambiTracksFwd)
   {
+    // first processing tracks registered in the ambigous tracks table	  
     for (auto& ambiTrackFwd : ambiTracksFwd) {
       if (fSelectedMuons.find(ambiTrackFwd.fwdtrackId()) == fSelectedMuons.end()) {
         continue;
@@ -864,7 +866,7 @@ struct DQMuonsSelection {
         auto first = bcSlice.begin();
         trackBC = first.globalBC();
       }
-      double t0 = muon.trackTime() + trackBC * o2::constants::lhc::LHCBunchSpacingNS + fTimeBias;
+      double t0 = muon.trackTime() + trackBC * o2::constants::lhc::LHCBunchSpacingNS + fTimeBias; // computing track time relative to first BC of the compatible BC slice
       double err = muon.trackTimeRes() * fSigmaTrack + fTimeMarginTrack;
       double tmin = t0 - err;
       double tmax = t0 + err;
@@ -874,7 +876,7 @@ struct DQMuonsSelection {
         double vtxmin = vtxBracket.first.first;
         double vtxmax = vtxBracket.first.second;
         if (tmax < vtxmin) {
-          break;
+          break; // all following collisions will be later and not compatible
         } else if (tmin > vtxmax) {
           continue; // following vertex with longer span might still match this track
         } else {
@@ -885,17 +887,18 @@ struct DQMuonsSelection {
       }
       isMuonReassigned[muon.globalIndex()] = -1;
       if (vtxList.size() > 1) {
-        registry.fill(HIST("Association/AssociationTrackStatus"), 3);
+        registry.fill(HIST("Association/AssociationTrackStatus"), 3); // track is still ambiguous
       } else if (vtxList.size() == 0) {
-        registry.fill(HIST("Association/AssociationTrackStatus"), 4);
+        registry.fill(HIST("Association/AssociationTrackStatus"), 4); // track is now orphan
       } else {
-        isMuonReassigned[muon.globalIndex()] = vtxList.front();
+        isMuonReassigned[muon.globalIndex()] = vtxList.front(); // track is non-ambiguously associated
         muonAssoc(vtxList.front(), muon.globalIndex(), fSelectedMuons[muon.globalIndex()]); // writes in the table (collId, fwdtrackId, filterMap)
         registry.fill(HIST("Association/AssociationTrackStatus"), 5);
         registry.fill(HIST("Association/DeltaT"), (vtxminOK + vtxmaxOK) / 2 - t0);
       }
     }
     auto trackBegin = fSelectedMuons.begin();
+    // now processing all other tracks (which were not registered in the ambiguous table)
     for (auto trackFiltered = trackBegin; trackFiltered != fSelectedMuons.end(); trackFiltered++) {
       auto muon = muons.rawIteratorAt(trackFiltered->first);
       if (!(muon.has_collision())) {
@@ -908,8 +911,8 @@ struct DQMuonsSelection {
       std::vector<int> vtxList;
       auto collision = collisions.rawIteratorAt(muon.collisionId() - collisions.offset());
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-      double t0 = muon.trackTime() + bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS - collision.collisionTime() + fTimeBias;
-      double err = muon.trackTimeRes();
+      double t0 = muon.trackTime() + bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS - collision.collisionTime() + fTimeBias; // computing track time relative to associated collisino time
+      double err = muon.trackTimeRes()*fSigmaTrack+fTimeMarginTrack;
       double tmin = t0 - err;
       double tmax = t0 + err;
       double vtxminOK = 0;
@@ -918,7 +921,7 @@ struct DQMuonsSelection {
         double vtxmin = vtxBracket.first.first;
         double vtxmax = vtxBracket.first.second;
         if (tmax < vtxmin) {
-          break;
+          break; // all following collisions will be later and not compatible
         } else if (tmin > vtxmax) {
           continue; // following vertex with longer span might still match this track
         } else {
@@ -929,11 +932,11 @@ struct DQMuonsSelection {
       }
       isMuonReassigned[muon.globalIndex()] = -1;
       if (vtxList.size() > 1) {
-        registry.fill(HIST("Association/AssociationTrackStatus"), 3);
+        registry.fill(HIST("Association/AssociationTrackStatus"), 3); // track is still ambiguous
       } else if (vtxList.size() == 0) {
-        registry.fill(HIST("Association/AssociationTrackStatus"), 4);
+        registry.fill(HIST("Association/AssociationTrackStatus"), 4); // track is now orphan
       } else {
-        isMuonReassigned[muon.globalIndex()] = vtxList.front();
+        isMuonReassigned[muon.globalIndex()] = vtxList.front(); // track is non-ambiguously associated
         muonAssoc(vtxList.front(), muon.globalIndex(), fSelectedMuons[muon.globalIndex()]); // writes in the table (collId, fwdtrackId, filterMap)
         registry.fill(HIST("Association/AssociationTrackStatus"), 5);
         registry.fill(HIST("Association/DeltaT"), (vtxminOK + vtxmaxOK) / 2 - t0);
@@ -949,7 +952,7 @@ struct DQMuonsSelection {
                         AmbiguousFwdTracks const& ambFwdTracks)
   {
     runMuonSelection<gkMuonFillMap>(filteredMuons);
-    runCollisionMap(collisions, bcs);
+    runCollisionMap(collisions, bcstimestamp);
     if (fConfigCollisionMuonAssoc.value == 0) {
       associateMuonsToCollisionsStandard(collisions, muons);
     } else if (fConfigCollisionMuonAssoc.value == 1) {
