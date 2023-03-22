@@ -118,6 +118,7 @@ struct filterf1proton {
   Configurable<double> cMaxMassKKs0{"cMaxMassKKs0", 1.04, "Mass cut on K-KS0 pair"};
   Configurable<double> cMaxMassF1{"cMaxMassF1", 1.80001, "Mass cut on F1 resonance"};
   Configurable<double> cMinF1Pt{"cMinF1Pt", 1.0, "Minimum pT cut on F1"};
+  Configurable<double> cMinKaonPt{"cMinKaonPt", 0.3, "Minimum pT cut on Kaon daughter"};
 
   // config Femto relative momentum
   Configurable<double> cMaxRelMom{"cMaxRelMom", 0.5, "Relative momentum cut"};
@@ -498,7 +499,7 @@ struct filterf1proton {
           }
         }
 
-        if ((track.sign() > 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaP[1])) || (track.sign() < 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaN[1]))) {
+        if ((track.pt() > cMinKaonPt && track.sign() > 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaP[1])) || (track.pt() > cMinKaonPt && track.sign() < 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaN[1]))) {
           ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massKa);
           kaons.push_back(temp);
           KaonIndex.push_back(track.globalIndex());
@@ -584,7 +585,7 @@ struct filterf1proton {
               F1Vector = KKs0Vector + pions.at(i1);
               if (F1Vector.M() > cMaxMassF1)
                 continue;
-              if (F1Vector.M() < cMinF1Pt)
+              if (F1Vector.Pt() < cMinF1Pt)
                 continue;
               if (PionCharge.at(i1) * KaonCharge.at(i2) > 0) {
                 qaRegistry.fill(HIST("hInvMassf1Like"), F1Vector.M(), F1Vector.Pt());
