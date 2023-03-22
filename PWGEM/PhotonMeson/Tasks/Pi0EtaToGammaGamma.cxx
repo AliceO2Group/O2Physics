@@ -80,13 +80,10 @@ struct LabelUniqueV0 {
         int eleid2 = ele2.trackId(); // unique index to point o2::track
         float pca2 = g2.pca();
 
-        if (posid2 == posid1 || eleid2 == eleid1) {
-          if (pca1 > pca2) {
-            flag = false;
-            // LOGF(info, "g1 id = %d , g2 id = %d , posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f", g1.index(), g2.index(), posid1, eleid1, posid2, eleid2, pca1, pca2);
-          } else {
-            flag = true;
-          }
+        if ((posid2 == posid1 || eleid2 == eleid1) && pca1 > pca2) {
+          // LOGF(info, "g1 id = %d , g2 id = %d , posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f", g1.index(), g2.index(), posid1, eleid1, posid2, eleid2, pca1, pca2);
+          flag = false;
+          break;
         }
       }
       v0flags(flag);
