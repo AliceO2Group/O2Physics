@@ -16,7 +16,7 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 #include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
+// #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -35,11 +35,11 @@ namespace o2::aod
 {
 namespace hf_cand_b0_config
 {
-DECLARE_SOA_COLUMN(SelectionFlagD, mySelectionFlagD, int);
+DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int);
 } // namespace hf_cand_b0_config
 
 DECLARE_SOA_TABLE(HfCandB0Config, "AOD", "HFCANDB0CONFIG", //!
-                  hf_cand_b0_config::SelectionFlagD);
+                  hf_cand_b0_config::MySelectionFlagD);
 } // namespace o2::aod
 
 struct HfCandidateSelectorB0ToDPi {
@@ -66,7 +66,7 @@ struct HfCandidateSelectorB0ToDPi {
   // check if selectionFlagD (defined in candidateCreatorB0.cxx) and usePid configurables are in sync
   bool selectionFlagDAndUsePidInSync = true;
   // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-  int selectionFlagD = -1;
+  int mySelectionFlagD = -1;
 
   using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
 
@@ -193,13 +193,13 @@ struct HfCandidateSelectorB0ToDPi {
   {
     // FIXME: get B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
     for (const auto& config : configs) {
-      selectionFlagD = config.mySelectionFlagD();
+      mySelectionFlagD = config.mySelectionFlagD();
 
-      if (usePid && !TESTBIT(selectionFlagD, SelectionStep::RecoPID)) {
+      if (usePid && !TESTBIT(mySelectionFlagD, SelectionStep::RecoPID)) {
         selectionFlagDAndUsePidInSync = false;
         LOG(warning) << "PID selections required on B0 daughters (usePid=true) but no PID selections on D candidates were required a priori (selectionFlagD<7). Set selectionFlagD=7 in hf-candidate-creator-b0";
       }
-      if (!usePid && TESTBIT(selectionFlagD, SelectionStep::RecoPID)) {
+      if (!usePid && TESTBIT(mySelectionFlagD, SelectionStep::RecoPID)) {
         selectionFlagDAndUsePidInSync = false;
         LOG(warning) << "No PID selections required on B0 daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD=7). Set selectionFlagD<7 in hf-candidate-creator-b0";
       }

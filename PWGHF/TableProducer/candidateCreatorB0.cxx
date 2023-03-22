@@ -38,11 +38,11 @@ namespace o2::aod
 {
 namespace hf_cand_b0_config
 {
-DECLARE_SOA_COLUMN(SelectionFlagD, mySelectionFlagD, int);
+DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int);
 } // namespace hf_cand_b0_config
 
 DECLARE_SOA_TABLE(HfCandB0Config, "AOD", "HFCANDB0CONFIG", //!
-                  hf_cand_b0_config::SelectionFlagD);
+                  hf_cand_b0_config::MySelectionFlagD);
 } // namespace o2::aod
 
 /// Reconstruction of B0 candidates
