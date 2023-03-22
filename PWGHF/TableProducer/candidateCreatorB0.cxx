@@ -33,9 +33,22 @@ using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::framework::expressions;
 
+// FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
+namespace o2::aod
+{
+namespace hf_cand_b0_config
+{
+DECLARE_SOA_COLUMN(SelectionFlagD, mySelectionFlagD, int);
+} // namespace hf_cand_b0_config
+
+DECLARE_SOA_TABLE(HfCandB0Config, "AOD", "HFCANDB0CONFIG", //!
+                  hf_cand_b0_config::SelectionFlagD);
+} // namespace o2::aod
+
 /// Reconstruction of B0 candidates
 struct HfCandidateCreatorB0 {
   Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandB0Config> rowCandidateConfig;
 
   // vertexing
   Configurable<double> bz{"bz", 5., "magnetic field"};
@@ -53,6 +66,8 @@ struct HfCandidateCreatorB0 {
   Configurable<LabeledArray<double>> cutsTrackPionDCA{"cutsTrackPionDCA", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for pions"};
   Configurable<double> invMassWindowB0{"invMassWindowB0", 0.3, "invariant-mass window for B0 candidates"};
   Configurable<int> selectionFlagD{"selectionFlagD", 1, "Selection Flag for D"};
+  // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
+  bool isHfCandB0ConfigFilled = false;
 
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massD = RecoDecay::getMassPDG(pdg::Code::kDMinus);
@@ -97,6 +112,12 @@ struct HfCandidateCreatorB0 {
                TracksWithSel const&,
                soa::Filtered<TracksWithSel> const& tracksPion)
   {
+    // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
+    if (!isHfCandB0ConfigFilled) {
+      int mySelectionFlagD = selectionFlagD;
+      rowCandidateConfig(mySelectionFlagD);
+      isHfCandB0ConfigFilled = true;
+    }
     // Initialise fitter for B vertex (2-prong vertex filter)
     o2::vertexing::DCAFitterN<2> df2;
     df2.setBz(bz);
