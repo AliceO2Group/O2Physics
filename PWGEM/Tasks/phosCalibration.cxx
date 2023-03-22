@@ -151,6 +151,10 @@ struct phosCalibration {
     // clusterize
     // Fill clusters histograms
 
+    if (bcs.begin() == bcs.end()) {
+      return;
+    }
+
     if (!clusterizer) {
       clusterizer = std::make_unique<o2::phos::Clusterer>();
       clusterizer->initialize();
@@ -179,16 +183,13 @@ struct phosCalibration {
       LOG(info) << "Read calibration";
     }
     if (!mSkipL1phase && mL1 == 0) { // should be read, but not read yet
-      for (auto bc : bcs) {
-        const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", bc.timestamp());
-        if (vec) {
-          clusterizer->setL1phase((*vec)[0]);
-          mL1 = (*vec)[0];
-          LOG(info) << "Got L1phase=" << mL1;
-        } else {
-          LOG(fatal) << "Can not get PHOS L1phase calibration";
-        }
-        break;
+      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", bcs.begin().timestamp());
+      if (vec) {
+        clusterizer->setL1phase((*vec)[0]);
+        mL1 = (*vec)[0];
+        LOG(info) << "Got L1phase=" << mL1;
+      } else {
+        LOG(fatal) << "Can not get PHOS L1phase calibration";
       }
     }
 

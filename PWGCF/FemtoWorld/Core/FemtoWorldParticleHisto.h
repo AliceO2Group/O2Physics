@@ -70,6 +70,7 @@ class FemtoWorldParticleHisto
         int mInvBins = 1000;
         framework::AxisSpec mInvAxis = {mInvBins, 0.5, 1.5};
         mHistogramRegistry->add((folderName + "/InvariantMass").c_str(), ";M_{K^{+}K^{-}} (GeV/#it{c}^{2});", kTH1D, {mInvAxis});
+        mHistogramRegistry->add((folderName + "/EtaVsMultiplicity").c_str(), "; multiplicity; #eta", kTH2F, {{12, 0., 200.}, {29, -2., 2.}});
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhiChild) {
         /// Phi daughters histograms
       } else {
@@ -106,6 +107,43 @@ class FemtoWorldParticleHisto
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
         /// Phi histograms
         mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST("/InvariantMass"), part.mass());
+      } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhiChild) {
+        /// Phi daughters histograms
+      } else {
+        LOG(fatal) << "FemtoWorldParticleHisto: Histogramming for requested object not defined - quitting!";
+      }
+    }
+  }
+
+  /// Filling of the histograms
+  /// \tparam T Data type of the particle
+  /// \param part Particle
+  template <typename T>
+  void fillQAMult(T const& part, const int mult)
+  {
+    if (mHistogramRegistry) {
+      /// Histograms of the kinematic properties
+      mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hPt"), part.pt());
+      mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hEta"), part.eta());
+      mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hPhi"), part.phi());
+      mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/dEdxTPCVsMomentum"), part.p(), part.tpcSignal());
+      mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/TOFBetaVsMomentum"), part.p(), part.beta());
+
+      /// Particle-type specific histograms
+      if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kTrack) {
+        /// Track histograms
+        mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hDCAxy"), part.pt(), part.tempFitVar());
+        mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hDCAz"), part.pt(), part.dcaZ());
+      } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kV0) {
+        /// V0 histograms
+        mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hCPA"),
+                                 part.pt(), part.tempFitVar());
+      } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kCascade) {
+        /// Cascade histograms
+      } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
+        /// Phi histograms
+        mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST("/InvariantMass"), part.mass());
+        mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST("/EtaVsMultiplicity"), mult, part.eta());
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhiChild) {
         /// Phi daughters histograms
       } else {
