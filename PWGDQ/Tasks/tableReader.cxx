@@ -979,7 +979,7 @@ struct AnalysisSameEventPairing {
       }
 
       int iCut = 0;
-      for (unsigned int icut = 0; icut < ncuts; icut++) {
+      for (int icut = 0; icut < ncuts; icut++) {
         if (twoTrackFilter & (uint32_t(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
             fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);

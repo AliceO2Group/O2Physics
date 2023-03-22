@@ -184,6 +184,12 @@ struct hyperRecoTask {
   Configurable<int> hyperPdg{"hyperPDG", 1010010030, "PDG code of the hyper-mother (could be 3LamH or 4LamH)"};
   Configurable<int> heDauPdg{"heDauPDG", 1000020030, "PDG code of the helium (could be 3He or 4He)"};
 
+  // histogram axes
+  ConfigurableAxis rigidityBins{"rigidityBins", {200, -10.f, 10.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
+  ConfigurableAxis dedxBins{"dedxBins", {1000, 0.f, 1000.f}, "Binning for dE/dx"};
+  ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n sigma"};
+  ConfigurableAxis zVtxBins{"zVtxBins", {100, -20.f, 20.f}, "Binning for n sigma"};
+
   // std vector of candidates
   std::vector<hyperCandidate> hyperCandidates;
 
@@ -216,14 +222,19 @@ struct hyperRecoTask {
     int mat{static_cast<int>(cfgMaterialCorrection)};
     fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
-    qaRegistry.add("hNsigma3HeSel", "; p^{TPC}/z; n_{#sigma} ({}^{3}He) (GeV/#it{c})", HistType::kTH2F, {{200, -10, 10}, {200, -5, 5}});
-    qaRegistry.add("hDeDx3HeSel", ";p^{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {{200, -10, 10}, {200, 0, 1000}});
-    qaRegistry.add("hDeDxTot", ";p^{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {{200, -10, 10}, {200, 0, 1000}});
+    const AxisSpec rigidityAxis{rigidityBins, "#it{p}^{TPC}/#it{z}"};
+    const AxisSpec dedxAxis{dedxBins, "d#it{E}/d#it{x}"};
+    const AxisSpec nSigma3HeAxis{nSigmaBins, "n_{#sigma}({}^{3}He)"};
+    const AxisSpec zVtxAxis{zVtxBins, "z_{vtx} (cm)"};
+
+    qaRegistry.add("hNsigma3HeSel", "", HistType::kTH2F, {rigidityAxis, nSigma3HeAxis});
+    qaRegistry.add("hDeDx3HeSel", "", HistType::kTH2F, {rigidityAxis, dedxAxis});
+    qaRegistry.add("hDeDxTot", "", HistType::kTH2F, {rigidityAxis, dedxAxis});
     qaRegistry.add("hEvents", ";Events; ", HistType::kTH1F, {{3, -0.5, 2.5}});
     qaRegistry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(1, "All");
     qaRegistry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
     qaRegistry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(3, "z vtx");
-    qaRegistry.add("hZvtx", ";z_{vtx} (cm); ", HistType::kTH1F, {{100, -20, 20}});
+    qaRegistry.add("hZvtx", "", HistType::kTH1F, {zVtxAxis});
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)

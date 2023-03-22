@@ -34,7 +34,7 @@ struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to -294 for apass2/apass3 in LHC22o-t"};
+  Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to 294 for apass2/apass3 in LHC22o-t"};
 
   void init(InitContext&)
   {
@@ -198,7 +198,7 @@ struct BcSelectionTask {
     int triggerBcShift = confTriggerBcShift;
     if (confTriggerBcShift == 999) {
       int run = bcs.iteratorAt(0).runNumber();
-      triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734) ? 0 : -294;
+      triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734) ? 0 : 294;
     }
 
     for (auto bc : bcs) {
