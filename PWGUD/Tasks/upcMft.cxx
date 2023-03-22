@@ -104,11 +104,9 @@ struct UpcMftRec {
     // propagated tracks control plots
     registry.add("PropControlHistos/hTrackPt", "Track p_{T}; p_{T} (GeV/c); Entries", kTH1F, {{200, 0, 1.0}});
     registry.add("PropControlHistos/hTrackEta", "Track #eta; #eta; Entries", kTH1F, {{50, -4, -2}});
-    registry.add("PropControlHistos/hTrackEtaPos", "Positive track #eta; #eta; Entries", kTH1F, {{50, -4, -2}});
-    registry.add("PropControlHistos/hTrackEtaNeg", "Negative track #eta; #eta; Entries", kTH1F, {{50, -4, -2}});
+    registry.add("PropControlHistos/hTrackEta2D", "Pseudorapidity of propagated track pairs; #eta^{+}; #eta^{-}", {HistType::kTH2F, {{50, -4, -2}, {50, -4, -2}}});
     registry.add("PropControlHistos/hTrackPhi", "Track #phi; #phi; Entries", kTH1F, {{100, -3.2, 3.2}});
-    registry.add("PropControlHistos/hTrackPhiPos", "Positive track #phi; #phi; Entries", kTH1F, {{100, -3.2, 3.2}});
-    registry.add("PropControlHistos/hTrackPhiNeg", "Negative track #phi; #phi; Entries", kTH1F, {{100, -3.2, 3.2}});
+    registry.add("PropControlHistos/hTrackPhi2D", "#phi of propagated track pairs; #phi^{+}; #phi^{-}", {HistType::kTH2F, {{100, -3.2, 3.2}, {100, -3.2, 3.2}}});
   }
 
   void initCCDB(ExtBCs::iterator const& bc)
@@ -212,26 +210,26 @@ struct UpcMftRec {
           mftPropTrack2.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
 
           // Fill control histos for the propagated tracks
-
           for (int i = 0; i < 2; i++) {
             auto mftPropTrack = bcGroup.second.trackParams[i];
             registry.fill(HIST("PropControlHistos/hTrackPt"), mftPropTrack.getPt());
             registry.fill(HIST("PropControlHistos/hTrackEta"), mftPropTrack.getEta());
-            registry.fill(HIST("PropControlHistos/hTrackPhi"), mftPropTrack.getPhi());
-            if (mftPropTrack.getCharge() > 0) {
-              registry.fill(HIST("PropControlHistos/hTrackEtaPos"), mftPropTrack.getEta());
-              registry.fill(HIST("PropControlHistos/hTrackPhiPos"), mftPropTrack.getPhi());
-            }
-            if (mftPropTrack.getCharge() < 0) {
-              registry.fill(HIST("PropControlHistos/hTrackEtaNeg"), mftPropTrack.getEta());
-              registry.fill(HIST("PropControlHistos/hTrackPhiNeg"), mftPropTrack.getPhi());
-            }
+            registry.fill(HIST("PropControlHistos/hTrackPhi"), mftPropTrack.getPhi()); // getCharge() is below
           }
 
           // Make a rho candidate ( using propagated tracks )
           const float mPion = 0.13957; // GeV/c2
           if (mftPropTrack1.getCharge() + mftPropTrack2.getCharge() != 0)
             continue; // Skip if total charge is not 0 ; if using non propagated tracks use sign() instead of getCharge()
+          if (mftPropTrack1.getCharge() > 0 && mftPropTrack2.getCharge() < 0) {
+            registry.fill(HIST("PropControlHistos/hTrackEta2D"), mftPropTrack1.getEta(), mftPropTrack2.getEta());
+            registry.fill(HIST("PropControlHistos/hTrackPhi2D"), mftPropTrack1.getPhi(), mftPropTrack2.getPhi());
+          }
+          if (mftPropTrack1.getCharge() < 0 && mftPropTrack2.getCharge() > 0) {
+            registry.fill(HIST("PropControlHistos/hTrackEta2D"), mftPropTrack2.getEta(), mftPropTrack1.getEta());
+            registry.fill(HIST("PropControlHistos/hTrackPhi2D"), mftPropTrack2.getPhi(), mftPropTrack1.getPhi());
+          }
+
           TLorentzVector pi1LV;
           TLorentzVector pi2LV;
           pi1LV.SetPtEtaPhiM(mftPropTrack1.getPt(), mftPropTrack1.getEta(), mftPropTrack1.getPhi(), mPion); // if using non propagated tracks use pt(),eta(),phi() instead
