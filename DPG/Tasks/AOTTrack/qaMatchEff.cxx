@@ -227,88 +227,44 @@ struct qaMatchEff {
     //
     // thnsparse for fractions - only if selected
     if (makethn)
-      histos.add("data/thnsforfrac",
-                 "Sparse histo for imp. par. fraction analysis - data",
-                 kTHnSparseF,
-                 {thnd0Axis, thnPtAxis, thnPhiAxis, thnEtaAxis, thnTypeAxis,
-                  thnLabelSignAxis, thnSpecAxis});
+      histos.add("data/thnsforfrac", "Sparse histo for imp. par. fraction analysis - data", kTHnSparseF, {thnd0Axis, thnPtAxis, thnPhiAxis, thnEtaAxis, thnTypeAxis,  thnLabelSignAxis, thnSpecAxis});
+    
     //
     // tpc request and tpc+its request for all, positive and negative charges vs
     // pt, phi, eta (18 histos tot)
-    histos.add("data/pthist_tpc", "#it{p}_{T} distribution - data TPC tag",
-               kTH1F, {axisPt}, true);
-    histos.add("data/etahist_tpc", "#eta distribution - data TPC tag", kTH1F,
-               {axisEta}, true);
-    histos.add("data/phihist_tpc", "#phi distribution - data TPC tag", kTH1F,
-               {axisPhi}, true);
-    histos.add("data/pthist_tpcits",
-               "#it{p}_{T} distribution - data TPC+ITS tag", kTH1F, {axisPt},
-               true);
-    histos.add("data/etahist_tpcits", "#eta distribution - data TPC+ITS tag",
-               kTH1F, {axisEta}, true);
-    histos.add("data/phihist_tpcits", "#phi distribution - data TPC+ITS tag",
-               kTH1F, {axisPhi}, true);
-    histos.add("data/pthist_tpc_pos",
-               "#it{p}_{T} distribution - data q>0 TPC tag", kTH1F, {axisPt},
-               true);
-    histos.add("data/etahist_tpc_pos", "#eta distribution - data q>0 TPC tag",
-               kTH1F, {axisEta}, true);
-    histos.add("data/phihist_tpc_pos", "#phi distribution - data q>0 TPC tag",
-               kTH1F, {axisPhi}, true);
-    histos.add("data/pthist_tpcits_pos",
-               "#it{p}_{T} distribution - data q>0 TPC+ITS tag", kTH1F,
-               {axisPt}, true);
-    histos.add("data/etahist_tpcits_pos",
-               "#eta distribution - data q>0 TPC+ITS tag", kTH1F, {axisEta},
-               true);
-    histos.add("data/phihist_tpcits_pos",
-               "#phi distribution - data q>0 TPC+ITS tag", kTH1F, {axisPhi},
-               true);
-    histos.add("data/pthist_tpc_neg",
-               "#it{p}_{T} distribution - data q<0 TPC tag", kTH1F, {axisPt},
-               true);
-    histos.add("data/etahist_tpc_neg", "#eta distribution - data q<0 TPC tag",
-               kTH1F, {axisEta}, true);
-    histos.add("data/phihist_tpc_neg", "#phi distribution - data q<0 TPC tag",
-               kTH1F, {axisPhi}, true);
-    histos.add("data/pthist_tpcits_neg",
-               "#it{p}_{T} distribution - data q<0 TPC+ITS tag", kTH1F,
-               {axisPt}, true);
-    histos.add("data/etahist_tpcits_neg",
-               "#eta distribution - data q<0 TPC+ITS tag", kTH1F, {axisEta},
-               true);
-    histos.add("data/phihist_tpcits_neg",
-               "#phi distribution - data q<0 TPC+ITS tag", kTH1F, {axisPhi},
-               true);
+    histos.add("data/pthist_tpc", "#it{p}_{T} distribution - data TPC tag", kTH1F, {axisPt}, true);
+    histos.add("data/etahist_tpc", "#eta distribution - data TPC tag", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpc", "#phi distribution - data TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("data/pthist_tpcits", "#it{p}_{T} distribution - data TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("data/etahist_tpcits", "#eta distribution - data TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpcits", "#phi distribution - data TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("data/pthist_tpc_pos", "#it{p}_{T} distribution - data q>0 TPC tag", kTH1F, {axisPt}, true);
+    histos.add("data/etahist_tpc_pos", "#eta distribution - data q>0 TPC tag", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpc_pos", "#phi distribution - data q>0 TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("data/pthist_tpcits_pos", "#it{p}_{T} distribution - data q>0 TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("data/etahist_tpcits_pos", "#eta distribution - data q>0 TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpcits_pos", "#phi distribution - data q>0 TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("data/pthist_tpc_neg", "#it{p}_{T} distribution - data q<0 TPC tag", kTH1F, {axisPt}, true);
+    histos.add("data/etahist_tpc_neg", "#eta distribution - data q<0 TPC tag", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpc_neg", "#phi distribution - data q<0 TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("data/pthist_tpcits_neg", "#it{p}_{T} distribution - data q<0 TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("data/etahist_tpcits_neg", "#eta distribution - data q<0 TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpcits_neg", "#phi distribution - data q<0 TPC+ITS tag", kTH1F, {axisPhi}, true);
     //
     // pt>0.5 GeV/c threshold
-    histos.add("data/pthist_tpc_05",
-               "#it{p}_{T} distribution - data TPC tag, #it{p}_{T}>0.5", kTH1F,
-               {axisPt}, true);
-    histos.add("data/etahist_tpc_05",
-               "#eta distribution - data TPC tag, #it{p}_{T}>0.5", kTH1F,
-               {axisEta}, true);
-    histos.add("data/phihist_tpc_05",
-               "#phi distribution - data TPC tag, #it{p}_{T}>0.5", kTH1F,
-               {axisPhi}, true);
-    histos.add("data/pthist_tpcits_05",
-               "#it{p}_{T} distribution - data TPC+ITS tag #it{p}_{T}>0.5",
-               kTH1F, {axisPt}, true);
-    histos.add("data/etahist_tpcits_05",
-               "#eta distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1F,
-               {axisEta}, true);
-    histos.add("data/phihist_tpcits_05",
-               "#phi distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1F,
-               {axisPhi}, true);
+    histos.add("data/pthist_tpc_05", "#it{p}_{T} distribution - data TPC tag, #it{p}_{T}>0.5", kTH1F, {axisPt}, true);
+    histos.add("data/etahist_tpc_05", "#eta distribution - data TPC tag, #it{p}_{T}>0.5", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpc_05", "#phi distribution - data TPC tag, #it{p}_{T}>0.5", kTH1F, {axisPhi}, true);
+    histos.add("data/pthist_tpcits_05", "#it{p}_{T} distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1F, {axisPt}, true);
+    histos.add("data/etahist_tpcits_05", "#eta distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpcits_05", "#phi distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1F, {axisPhi}, true);
   }
   //
   // Init MC function
   void initMC()
   {
     if (doDebug)
-      LOGF(info,
-           " %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    MC  "
-           "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+      LOGF(info, " %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    MC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
 
     //
     // adding histos to the registry
@@ -320,283 +276,124 @@ struct qaMatchEff {
     //
     // thnsparse for fractions
     if (makethn)
-      histos.add("MC/thnsforfrac",
-                 "Sparse histo for imp. par. fraction analysis - MC",
-                 kTHnSparseF,
-                 {thnd0Axis, thnPtAxis, thnPhiAxis, thnEtaAxis, thnTypeAxis,
-                  thnLabelSignAxis, thnSpecAxis});
+      histos.add("MC/thnsforfrac", "Sparse histo for imp. par. fraction analysis - MC", kTHnSparseF, {thnd0Axis, thnPtAxis, thnPhiAxis, thnEtaAxis, thnTypeAxis,  thnLabelSignAxis, thnSpecAxis});
 
     //
     // all, positive, negative
-    histos.add("MC/pthist_tpc", "#it{p}_{T} distribution - MC TPC tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpc", "#eta distribution - MC TPC tag", kTH1F,
-               {axisEta}, true);
-    histos.add("MC/phihist_tpc", "#phi distribution - MC TPC tag", kTH1F,
-               {axisPhi}, true);
-    histos.add("MC/pthist_tpcits", "#it{p}_{T} distribution - MC TPC+ITS tag",
-               kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits", "#eta distribution - MC TPC+ITS tag", kTH1F,
-               {axisEta}, true);
-    histos.add("MC/phihist_tpcits", "#phi distribution - MC TPC+ITS tag", kTH1F,
-               {axisPhi}, true);
-    histos.add("MC/pthist_tpc_pos", "#it{p}_{T} distribution - MC q>0 TPC tag",
-               kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_pos", "#eta distribution - MC q>0 TPC tag",
-               kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_pos", "#phi distribution - MC q>0 TPC tag",
-               kTH1F, {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_pos",
-               "#it{p}_{T} distribution - MC q>0 TPC+ITS tag", kTH1F, {axisPt},
-               true);
-    histos.add("MC/etahist_tpcits_pos",
-               "#eta distribution - MC q>0 TPC+ITS tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpcits_pos",
-               "#phi distribution - MC q>0 TPC+ITS tag", kTH1F, {axisPhi},
-               true);
-    histos.add("MC/pthist_tpc_neg", "#it{p}_{T} distribution - MC q<0 TPC tag",
-               kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_neg", "#eta distribution - MC q<0 TPC tag",
-               kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_neg", "#phi distribution - MC q<0 TPC tag",
-               kTH1F, {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_neg",
-               "#it{p}_{T} distribution - MC q<0 TPC+ITS tag", kTH1F, {axisPt},
-               true);
-    histos.add("MC/etahist_tpcits_neg",
-               "#eta distribution - MC q<0 TPC+ITS tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpcits_neg",
-               "#phi distribution - MC q<0 TPC+ITS tag", kTH1F, {axisPhi},
-               true);
+    histos.add("MC/pthist_tpc", "#it{p}_{T} distribution - MC TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc", "#eta distribution - MC TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc", "#phi distribution - MC TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits", "#it{p}_{T} distribution - MC TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits", "#eta distribution - MC TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits", "#phi distribution - MC TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_pos", "#it{p}_{T} distribution - MC q>0 TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_pos", "#eta distribution - MC q>0 TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_pos", "#phi distribution - MC q>0 TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_pos", "#it{p}_{T} distribution - MC q>0 TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_pos", "#eta distribution - MC q>0 TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_pos", "#phi distribution - MC q>0 TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_neg", "#it{p}_{T} distribution - MC q<0 TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_neg", "#eta distribution - MC q<0 TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_neg", "#phi distribution - MC q<0 TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_neg", "#it{p}_{T} distribution - MC q<0 TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_neg", "#eta distribution - MC q<0 TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_neg", "#phi distribution - MC q<0 TPC+ITS tag", kTH1F, {axisPhi}, true);
     //
     // primaries, secondaries
-    histos.add("MC/pthist_tpc_prim",
-               "#it{p}_{T} distribution - MC prim TPC tag", kTH1F, {axisPt},
-               true);
-    histos.add("MC/etahist_tpc_prim", "#eta distribution - MC prim TPC tag",
-               kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_prim", "#phi distribution - MC prim TPC tag",
-               kTH1F, {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_prim",
-               "#it{p}_{T} distribution - MC prim TPC+ITS tag", kTH1F, {axisPt},
-               true);
-    histos.add("MC/etahist_tpcits_prim",
-               "#eta distribution - MC prim TPC+ITS tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpcits_prim",
-               "#phi distribution - MC prim TPC+ITS tag", kTH1F, {axisPhi},
-               true);
-    histos.add("MC/pthist_tpc_secd",
-               "#it{p}_{T} distribution - MC dec. sec. TPC tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpc_secd",
-               "#eta distribution - MC dec. sec. TPC tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpc_secd",
-               "#phi distribution - MC dec. sec. TPC tag", kTH1F, {axisPhi},
-               true);
-    histos.add("MC/pthist_tpcits_secd",
-               "#it{p}_{T} distribution - MC dec.sec. TPC+ITS tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpcits_secd",
-               "#eta distribution - MC dec. sec. TPC+ITS tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpcits_secd",
-               "#phi distribution - MC dec. sec. TPC+ITS tag", kTH1F, {axisPhi},
-               true);
-    histos.add("MC/pthist_tpc_secm",
-               "#it{p}_{T} distribution - MC mat. sec. TPC tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpc_secm",
-               "#eta distribution - MC mat. sec. TPC tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpc_secm",
-               "#phi distribution - MC mat. sec. TPC tag", kTH1F, {axisPhi},
-               true);
-    histos.add("MC/pthist_tpcits_secm",
-               "#it{p}_{T} distribution - MC mat.sec. TPC+ITS tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpcits_secm",
-               "#eta distribution - MC mat. sec. TPC+ITS tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpcits_secm",
-               "#phi distribution - MC mat. sec. TPC+ITS tag", kTH1F, {axisPhi},
-               true);
+    histos.add("MC/pthist_tpc_prim", "#it{p}_{T} distribution - MC prim TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_prim", "#eta distribution - MC prim TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_prim", "#phi distribution - MC prim TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_prim", "#it{p}_{T} distribution - MC prim TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_prim", "#eta distribution - MC prim TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_prim", "#phi distribution - MC prim TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_secd", "#it{p}_{T} distribution - MC dec. sec. TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_secd", "#eta distribution - MC dec. sec. TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_secd", "#phi distribution - MC dec. sec. TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_secd", "#it{p}_{T} distribution - MC dec.sec. TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_secd", "#eta distribution - MC dec. sec. TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_secd", "#phi distribution - MC dec. sec. TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_secm", "#it{p}_{T} distribution - MC mat. sec. TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_secm", "#eta distribution - MC mat. sec. TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_secm", "#phi distribution - MC mat. sec. TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_secm", "#it{p}_{T} distribution - MC mat.sec. TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_secm", "#eta distribution - MC mat. sec. TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_secm", "#phi distribution - MC mat. sec. TPC+ITS tag", kTH1F, {axisPhi}, true);
     //
     // pions only
     // all
-    histos.add("MC/pthist_tpc_pi", "#it{p}_{T} distribution - #pi MC TPC tag",
-               kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_pi", "#eta distribution - #pi MC TPC tag", kTH1F,
-               {axisEta}, true);
-    histos.add("MC/phihist_tpc_pi", "#phi distribution - #pi MC TPC tag", kTH1F,
-               {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_pi",
-               "#it{p}_{T} distribution - #pi MC TPC+ITS tag", kTH1F, {axisPt},
-               true);
-    histos.add("MC/etahist_tpcits_pi", "#eta distribution - #pi MC TPC+ITS tag",
-               kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_pi", "#phi distribution - #pi MC TPC+ITS tag",
-               kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_pi", "#it{p}_{T} distribution - #pi MC TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_pi", "#eta distribution - #pi MC TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_pi", "#phi distribution - #pi MC TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_pi", "#it{p}_{T} distribution - #pi MC TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_pi", "#eta distribution - #pi MC TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_pi", "#phi distribution - #pi MC TPC+ITS tag", kTH1F, {axisPhi}, true);
     // split in prim secd secm
-    histos.add("MC/pthist_tpc_pi_prim",
-               "#it{p}_{T} distribution - #pi MC prim TPC tag", kTH1F, {axisPt},
-               true);
-    histos.add("MC/etahist_tpc_pi_prim",
-               "#eta distribution - #pi MC prim TPC tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpc_pi_prim",
-               "#phi distribution - #pi MC prim TPC tag", kTH1F, {axisPhi},
-               true);
-    histos.add("MC/pthist_tpcits_pi_prim",
-               "#it{p}_{T} distribution - #pi MC prim TPC+ITS tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpcits_pi_prim",
-               "#eta distribution - #pi MC prim TPC+ITS tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpcits_pi_prim",
-               "#phi distribution - #pi MC prim TPC+ITS tag", kTH1F, {axisPhi},
-               true);
-    histos.add("MC/pthist_tpc_pi_secd",
-               "#it{p}_{T} distribution - #pi MC dec. sec. TPC tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpc_pi_secd",
-               "#eta distribution - #pi MC dec. sec. TPC tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpc_pi_secd",
-               "#phi distribution - #pi MC dec. sec. TPC tag", kTH1F, {axisPhi},
-               true);
-    histos.add("MC/pthist_tpcits_pi_secd",
-               "#it{p}_{T} distribution - #pi MC dec.sec. TPC+ITS tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpcits_pi_secd",
-               "#eta distribution - #pi MC dec. sec. TPC+ITS tag", kTH1F,
-               {axisEta}, true);
-    histos.add("MC/phihist_tpcits_pi_secd",
-               "#phi distribution - #pi MC dec. sec. TPC+ITS tag", kTH1F,
-               {axisPhi}, true);
-    histos.add("MC/pthist_tpc_pi_secm",
-               "#it{p}_{T} distribution - #pi MC mat. sec. TPC tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpc_pi_secm",
-               "#eta distribution - #pi MC mat. sec. TPC tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpc_pi_secm",
-               "#phi distribution - #pi MC mat. sec. TPC tag", kTH1F, {axisPhi},
-               true);
-    histos.add("MC/pthist_tpcits_pi_secm",
-               "#it{p}_{T} distribution - #pi MC mat.sec. TPC+ITS tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpcits_pi_secm",
-               "#eta distribution - #pi MC mat. sec. TPC+ITS tag", kTH1F,
-               {axisEta}, true);
-    histos.add("MC/phihist_tpcits_pi_secm",
-               "#phi distribution - #pi MC mat. sec. TPC+ITS tag", kTH1F,
-               {axisPhi}, true);
+    histos.add("MC/pthist_tpc_pi_prim", "#it{p}_{T} distribution - #pi MC prim TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_pi_prim", "#eta distribution - #pi MC prim TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_pi_prim", "#phi distribution - #pi MC prim TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_pi_prim", "#it{p}_{T} distribution - #pi MC prim TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_pi_prim", "#eta distribution - #pi MC prim TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_pi_prim", "#phi distribution - #pi MC prim TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_pi_secd", "#it{p}_{T} distribution - #pi MC dec. sec. TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_pi_secd", "#eta distribution - #pi MC dec. sec. TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_pi_secd", "#phi distribution - #pi MC dec. sec. TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_pi_secd", "#it{p}_{T} distribution - #pi MC dec.sec. TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_pi_secd", "#eta distribution - #pi MC dec. sec. TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_pi_secd", "#phi distribution - #pi MC dec. sec. TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_pi_secm", "#it{p}_{T} distribution - #pi MC mat. sec. TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_pi_secm", "#eta distribution - #pi MC mat. sec. TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_pi_secm", "#phi distribution - #pi MC mat. sec. TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_pi_secm", "#it{p}_{T} distribution - #pi MC mat.sec. TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_pi_secm", "#eta distribution - #pi MC mat. sec. TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_pi_secm", "#phi distribution - #pi MC mat. sec. TPC+ITS tag", kTH1F, {axisPhi}, true);
     // protons only
     // all
-    histos.add("MC/pthist_tpc_P", "#it{p}_{T} distribution - prot MC TPC tag",
-               kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_P", "#eta distribution - prot MC TPC tag", kTH1F,
-               {axisEta}, true);
-    histos.add("MC/phihist_tpc_P", "#phi distribution - prot MC TPC tag", kTH1F,
-               {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_P",
-               "#it{p}_{T} distribution - prot MC TPC+ITS tag", kTH1F, {axisPt},
-               true);
-    histos.add("MC/etahist_tpcits_P", "#eta distribution - prot MC TPC+ITS tag",
-               kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_P", "#phi distribution - prot MC TPC+ITS tag",
-               kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_P", "#it{p}_{T} distribution - prot MC TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_P", "#eta distribution - prot MC TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_P", "#phi distribution - prot MC TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_P", "#it{p}_{T} distribution - prot MC TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_P", "#eta distribution - prot MC TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_P", "#phi distribution - prot MC TPC+ITS tag", kTH1F, {axisPhi}, true);
     // kaons only
     // all
-    histos.add("MC/pthist_tpc_K", "#it{p}_{T} distribution - kaons MC TPC tag",
-               kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_K", "#eta distribution - kaons MC TPC tag",
-               kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_K", "#phi distribution - kaons MC TPC tag",
-               kTH1F, {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_K",
-               "#it{p}_{T} distribution - kaons MC TPC+ITS tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpcits_K",
-               "#eta distribution - kaons MC TPC+ITS tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpcits_K",
-               "#phi distribution - kaons MC TPC+ITS tag", kTH1F, {axisPhi},
-               true);
+    histos.add("MC/pthist_tpc_K", "#it{p}_{T} distribution - kaons MC TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_K", "#eta distribution - kaons MC TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_K", "#phi distribution - kaons MC TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_K", "#it{p}_{T} distribution - kaons MC TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_K", "#eta distribution - kaons MC TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_K", "#phi distribution - kaons MC TPC+ITS tag", kTH1F, {axisPhi}, true);
     // pions+kaons
     // all
-    histos.add("MC/pthist_tpc_piK",
-               "#it{p}_{T} distribution - #pi+kaons MC TPC tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpc_piK", "#eta distribution - #pi+kaons MC TPC tag",
-               kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_piK", "#phi distribution - #pi+kaons MC TPC tag",
-               kTH1F, {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_piK",
-               "#it{p}_{T} distribution - #pi+kaons MC TPC+ITS tag", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpcits_piK",
-               "#eta distribution - #pi+kaons MC TPC+ITS tag", kTH1F, {axisEta},
-               true);
-    histos.add("MC/phihist_tpcits_piK",
-               "#phi distribution - #pi+kaons MC TPC+ITS tag", kTH1F, {axisPhi},
-               true);
+    histos.add("MC/pthist_tpc_piK", "#it{p}_{T} distribution - #pi+kaons MC TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_piK", "#eta distribution - #pi+kaons MC TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_piK", "#phi distribution - #pi+kaons MC TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_piK", "#it{p}_{T} distribution - #pi+kaons MC TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_piK", "#eta distribution - #pi+kaons MC TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_piK", "#phi distribution - #pi+kaons MC TPC+ITS tag", kTH1F, {axisPhi}, true);
     //
     // pt>0.5 GeV/c threshold
-    histos.add("MC/pthist_tpc_05",
-               "#it{p}_{T} distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpc_05",
-               "#eta distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1F,
-               {axisEta}, true);
-    histos.add("MC/phihist_tpc_05",
-               "#phi distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1F,
-               {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_05",
-               "#it{p}_{T} distribution - MC TPC+ITS tag, #it{p}_{T}>0.5",
-               kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_05",
-               "#eta distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1F,
-               {axisEta}, true);
-    histos.add("MC/phihist_tpcits_05",
-               "#phi distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1F,
-               {axisPhi}, true);
+    histos.add("MC/pthist_tpc_05", "#it{p}_{T} distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_05", "#eta distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_05", "#phi distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_05", "#it{p}_{T} distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_05", "#eta distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_05", "#phi distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1F, {axisPhi}, true);
     //
     // all but primary/secondary pions
-    histos.add("MC/pthist_tpc_nopi",
-               "#it{p}_{T} distribution - MC TPC tag ! prim/secd #pi", kTH1F,
-               {axisPt}, true);
-    histos.add("MC/etahist_tpc_nopi",
-               "#eta distribution - MC TPC tag ! prim/secd #pi", kTH1F,
-               {axisEta}, true);
-    histos.add("MC/phihist_tpc_nopi",
-               "#phi distribution - MC TPC tag ! prim/secd #pi", kTH1F,
-               {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_nopi",
-               "#it{p}_{T} distribution - MC TPC+ITS tag ! prim/secd #pi",
-               kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_nopi",
-               "#eta distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1F,
-               {axisEta}, true);
-    histos.add("MC/phihist_tpcits_nopi",
-               "#phi distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1F,
-               {axisPhi}, true);
+    histos.add("MC/pthist_tpc_nopi", "#it{p}_{T} distribution - MC TPC tag ! prim/secd #pi", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_nopi", "#eta distribution - MC TPC tag ! prim/secd #pi", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_nopi", "#phi distribution - MC TPC tag ! prim/secd #pi", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_nopi", "#it{p}_{T} distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_nopi", "#eta distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_nopi", "#phi distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1F, {axisPhi}, true);
     //
     // extras: difference between reconstructed and MC truth for eta, phi
-    histos.add("MC/etahist_diff", "#eta difference track-MC ", kTH1F,
-               {axisDEta}, true);
-    histos.add("MC/phihist_diff", "#phi difference track-MC", kTH1F, {axisDPh},
-               true);
+    histos.add("MC/etahist_diff", "#eta difference track-MC ", kTH1F, {axisDEta}, true);
+    histos.add("MC/phihist_diff", "#phi difference track-MC", kTH1F, {axisDPh}, true);
     //
     // hist sorting out PDG codes in wide bins
-    histos.add("MC/pdghist_num", "PDG code - when non primary #pi TPC+ITS tag",
-               kTH1F, {axisPDG}, true);
-    histos.add("MC/pdghist_den", "PDG code - when non primary #pi TPC tag",
-               kTH1F, {axisPDG}, true);
+    histos.add("MC/pdghist_num", "PDG code - when non primary #pi TPC+ITS tag", kTH1F, {axisPDG}, true);
+    histos.add("MC/pdghist_den", "PDG code - when non primary #pi TPC tag", kTH1F, {axisPDG}, true);
 
   } // end initMC
 
@@ -664,22 +461,6 @@ struct qaMatchEff {
     return true;
   }
 
-  //
-  // //
-  // // fill histos for TPC (all tracks)
-  // void fillAllTPC(){
-  //   histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
-  //   histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(jT.phi());
-  //   histos.get<TH1>(HIST("MC/etahist_tpc"))->Fill(jT.eta());
-  // }
-  // //
-  // // fill histos for TPC+ITS (all tracks)
-  // void fillAllTPCITS(){
-  //   histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(trackPt);
-  //   histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(jT.phi());
-  //   histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(jT.eta());
-  // }
-  //
   // define global variables
   int count = 0;
   int countData = 0;
@@ -688,875 +469,445 @@ struct qaMatchEff {
   int tpPDGCode = 0;
   std::vector<int>::iterator itr_pdg;
   float pdg_fill = 0.0;
-  //
-  //////////////////////////////////////////////// PROCESS FUNCTIONS
+
   /////////////////////////////////////////////////////
-  //
-  //
+  ///   Template function to perform the analysis   ///
+  /////////////////////////////////////////////////////
+  template <bool IS_MC, typename T, typename P>
+  void fillHistograms(T& tracks, P& mcParticles) {
+
+    //
+    //
+    for (auto& jT : tracks) {
+      // choose if we keep the track according to the TRD presence requirement
+      if ((isTRDThere == 1) && !jT.hasTRD())
+        continue;
+      if ((isTRDThere == 0) && jT.hasTRD())
+        continue;
+
+      if constexpr (IS_MC) {
+        if (!jT.has_mcParticle()) {
+          countNoMC++;
+          if (doDebug)
+            LOGF(warning, " N. %d track without MC particle, skipping...", countNoMC);
+          continue;
+        }
+      }
+        
+      //
+      // pt from full tracking or from TPCinnerWallPt
+      float trackPt = jT.pt();
+      if (b_useTPCinnerWallPt) {
+        /// Using pt calculated at the inner wall of TPC
+        /// Caveat: tgl still from tracking: this is not the value of tgl at the
+        /// inner wall of TPC
+        trackPt = computePtInParamTPC(jT);
+      }
+
+      // kinematic track seletions for all tracks
+      if (!isTrackSelectedKineCuts(jT))
+        continue;
+
+      countData++;
+
+      int sayPrim = -1, signPDGCode = -2, specind = 0;
+      if constexpr (IS_MC) {
+        auto mcpart = jT.mcParticle();
+        siPDGCode = mcpart.pdgCode();
+        tpPDGCode = TMath::Abs(siPDGCode);
+        if (mcpart.isPhysicalPrimary()) {
+          histos.get<TH1>(HIST("MC/etahist_diff"))->Fill(mcpart.eta() - jT.eta());
+          auto delta = mcpart.phi() - jT.phi();
+          if (delta > PI) {
+            delta -= TwoPI;
+          }
+          if (delta < -PI) {
+            delta += TwoPI;
+          }
+          histos.get<TH1>(HIST("MC/phihist_diff"))->Fill(delta);
+        }
+
+        /// MC info for THnSparse filling
+        sayPrim = 0;
+        specind = 0;
+        if (mcpart.isPhysicalPrimary())
+          sayPrim = 0;
+        else if (mcpart.getProcess() == 4)
+          sayPrim = 1;
+        else
+          sayPrim = 2;
+        signPDGCode = siPDGCode / tpPDGCode;
+        switch (tpPDGCode) {
+          case 11:
+            specind = 1;
+            break;
+          case 211:
+            specind = 2;
+            break;
+          case 321:
+            specind = 3;
+            break;
+          case 2212:
+            specind = 4;
+            break;
+          default:
+            specind = 5;
+        }
+      }
+      
+      //
+      //
+      // fill thnsparse for fraction analysis
+      if (makethn) {
+        if constexpr (IS_MC) {
+          histos.fill(HIST("MC/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(), jT.eta(), sayPrim, signPDGCode, specind);
+        } else {
+          histos.fill(HIST("data/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(), jT.eta(), sayPrim, signPDGCode, specind);
+        }
+        
+      }
+      //
+      // all tracks, no conditions
+      if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+        if constexpr (IS_MC) {
+          histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
+          histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(jT.phi());
+          histos.get<TH1>(HIST("MC/etahist_tpc"))->Fill(jT.eta());
+        } else {
+          histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(trackPt);
+          histos.get<TH1>(HIST("data/phihist_tpc"))->Fill(jT.phi());
+          histos.get<TH1>(HIST("data/etahist_tpc"))->Fill(jT.eta());
+        }
+        
+        if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+          if constexpr (IS_MC) {
+            histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(jT.eta());
+          } else {
+            histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(trackPt);
+            histos.get<TH1>(HIST("data/phihist_tpcits"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("data/etahist_tpcits"))->Fill(jT.eta());
+          }
+        } //  end if ITS
+      }   //  end if TPC
+      //
+      // all tracks with pt>0.5
+      if (trackPt > 0.5) {
+        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+          if constexpr (IS_MC) {
+            histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_05"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_05"))->Fill(jT.eta());
+          } else {
+            histos.get<TH1>(HIST("data/pthist_tpc_05"))->Fill(trackPt);
+            histos.get<TH1>(HIST("data/phihist_tpc_05"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("data/etahist_tpc_05"))->Fill(jT.eta());
+          }
+          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+            if constexpr (IS_MC) {
+              histos.get<TH1>(HIST("MC/pthist_tpcits_05"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_05"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_05"))->Fill(jT.eta());
+            } else {
+              histos.get<TH1>(HIST("data/pthist_tpcits_05"))->Fill(trackPt);
+              histos.get<TH1>(HIST("data/phihist_tpcits_05"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("data/etahist_tpcits_05"))->Fill(jT.eta());
+            }
+          } //  end if ITS
+        }   //  end if TPC
+      }     //  end if pt > 0.5
+      //
+      // positive only
+      if (jT.signed1Pt() > 0) {
+        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+          if constexpr (IS_MC) {
+            histos.get<TH1>(HIST("MC/pthist_tpc_pos"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_pos"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_pos"))->Fill(jT.eta());
+          } else {
+            histos.get<TH1>(HIST("data/pthist_tpc_pos"))->Fill(trackPt);
+            histos.get<TH1>(HIST("data/phihist_tpc_pos"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("data/etahist_tpc_pos"))->Fill(jT.eta());
+          }
+          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+            if constexpr (IS_MC) {
+              histos.get<TH1>(HIST("MC/pthist_tpcits_pos"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_pos"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_pos"))->Fill(jT.eta());
+            } else {
+              histos.get<TH1>(HIST("data/pthist_tpcits_pos"))->Fill(trackPt);
+              histos.get<TH1>(HIST("data/phihist_tpcits_pos"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("data/etahist_tpcits_pos"))->Fill(jT.eta());
+            }
+          } //  end if ITS
+        }   //  end if TPC
+            //
+      }     // end positive
+      //
+      // negative only
+      if (jT.signed1Pt() < 0) {
+        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+          if constexpr (IS_MC) {
+            histos.get<TH1>(HIST("MC/pthist_tpc_neg"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_neg"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_neg"))->Fill(jT.eta());
+          } else {
+            histos.get<TH1>(HIST("data/pthist_tpc_neg"))->Fill(trackPt);
+            histos.get<TH1>(HIST("data/phihist_tpc_neg"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("data/etahist_tpc_neg"))->Fill(jT.eta());
+          }
+          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+            if constexpr (IS_MC) {
+              histos.get<TH1>(HIST("MC/pthist_tpcits_neg"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_neg"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_neg"))->Fill(jT.eta());
+            } else {
+              histos.get<TH1>(HIST("data/pthist_tpcits_neg"))->Fill(trackPt);
+              histos.get<TH1>(HIST("data/phihist_tpcits_neg"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("data/etahist_tpcits_neg"))->Fill(jT.eta());
+            }
+          } //  end if ITS
+        }   //  end if TPC
+            //
+      }     // end negative
+
+      if constexpr (IS_MC) {
+        auto mcpart = jT.mcParticle();
+        //
+        // only primaries
+        if (mcpart.isPhysicalPrimary()) {
+          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+            histos.get<TH1>(HIST("MC/pthist_tpc_prim"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_prim"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_prim"))->Fill(jT.eta());
+            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+              histos.get<TH1>(HIST("MC/pthist_tpcits_prim"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_prim"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_prim"))->Fill(jT.eta());
+            } //  end if ITS
+          }   //  end if TPC
+        }     //  end if primaries
+        //
+        // only secondaries from decay
+        else if (mcpart.getProcess() == 4) {
+          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+            histos.get<TH1>(HIST("MC/pthist_tpc_secd"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_secd"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_secd"))->Fill(jT.eta());
+            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+              histos.get<TH1>(HIST("MC/pthist_tpcits_secd"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_secd"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_secd"))->Fill(jT.eta());
+            } //  end if ITS
+          }   //  end if TPC
+          //
+          // only secondaries from material
+          else {
+            if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+              histos.get<TH1>(HIST("MC/pthist_tpc_secm"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpc_secm"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpc_secm"))->Fill(jT.eta());
+              if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+                histos.get<TH1>(HIST("MC/pthist_tpcits_secm"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/phihist_tpcits_secm"))->Fill(jT.phi());
+                histos.get<TH1>(HIST("MC/etahist_tpcits_secm"))->Fill(jT.eta());
+              } //  end if ITS
+            }   //  end if TPC
+          }     // end if secondaries from material
+                //
+        }       // end if secondaries from decay
+        //
+        // protons only
+        if (tpPDGCode == 2212) {
+          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+            histos.get<TH1>(HIST("MC/pthist_tpc_P"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_P"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_P"))->Fill(jT.eta());
+            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+              histos.get<TH1>(HIST("MC/pthist_tpcits_P"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_P"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_P"))->Fill(jT.eta());
+            } //  end if ITS
+          }   //  end if TPC
+        }
+        //
+        // pions only
+        if (tpPDGCode == 211) {
+          //
+          // all tracks
+          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+            histos.get<TH1>(HIST("MC/pthist_tpc_pi"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_pi"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_pi"))->Fill(jT.eta());
+            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+              histos.get<TH1>(HIST("MC/pthist_tpcits_pi"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_pi"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_pi"))->Fill(jT.eta());
+            } //  end if ITS
+          }   //  end if TPC
+          //
+          // only primary pions
+          if (mcpart.isPhysicalPrimary()) {
+            if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+              histos.get<TH1>(HIST("MC/pthist_tpc_pi_prim"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpc_pi_prim"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpc_pi_prim"))->Fill(jT.eta());
+              if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+                histos.get<TH1>(HIST("MC/pthist_tpcits_pi_prim"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/phihist_tpcits_pi_prim"))->Fill(jT.phi());
+                histos.get<TH1>(HIST("MC/etahist_tpcits_pi_prim"))->Fill(jT.eta());
+              } //  end if ITS
+            }   //  end if TPC
+          }     //  end if primaries
+          //
+          // only secondary pions from decay
+          else if (mcpart.getProcess() == 4) {
+            if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+              histos.get<TH1>(HIST("MC/pthist_tpc_pi_secd"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpc_pi_secd"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpc_pi_secd"))->Fill(jT.eta());
+              if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+                histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secd"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secd"))->Fill(jT.phi());
+                histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secd"))->Fill(jT.eta());
+              } //  end if ITS
+            }   //  end if TPC
+            //
+            // only secondary pions from material
+            else {
+              if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+                histos.get<TH1>(HIST("MC/pthist_tpc_pi_secm"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/phihist_tpc_pi_secm"))->Fill(jT.phi());
+                histos.get<TH1>(HIST("MC/etahist_tpc_pi_secm"))->Fill(jT.eta());
+                if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+                  histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secd"))->Fill(trackPt);
+                  histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secd"))->Fill(jT.phi());
+                  histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secd"))->Fill(jT.eta());
+                } //  end if ITS
+              }   //  end if TPC
+            }     // end if secondaries from material
+            //
+          } // end if secondaries from decay
+            //
+        }   // end pions only
+        //
+        // no primary/sec-d pions
+        if (!((tpPDGCode == 211) && (mcpart.isPhysicalPrimary()))) {
+          // gets the pdg code and finds its index in our vector
+          itr_pdg = std::find(pdgChoice.begin(), pdgChoice.end(), tpPDGCode);
+          if (itr_pdg != pdgChoice.cend())
+            // index from zero, so increase by 1 to put in the right bin (and 0.5
+            // not needed but just not to sit in the edge)
+            pdg_fill = (float)std::distance(pdgChoice.begin(), itr_pdg) + 1.5;
+          else
+            pdg_fill = -10.0;
+          //
+          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+            histos.get<TH1>(HIST("MC/pthist_tpc_nopi"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_nopi"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_nopi"))->Fill(jT.eta());
+            histos.get<TH1>(HIST("MC/pdghist_den"))->Fill(pdg_fill);
+            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+              histos.get<TH1>(HIST("MC/pthist_tpcits_nopi"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_nopi"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_nopi"))->Fill(jT.eta());
+              histos.get<TH1>(HIST("MC/pdghist_num"))->Fill(pdg_fill);
+            } //  end if ITS
+          }   //  end if TPC
+        }     // end if not prim/sec-d pi
+        //
+        // kaons only
+        if (tpPDGCode == 321) {
+          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+            histos.get<TH1>(HIST("MC/pthist_tpc_K"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_K"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_K"))->Fill(jT.eta());
+            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+              histos.get<TH1>(HIST("MC/pthist_tpcits_K"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_K"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_K"))->Fill(jT.eta());
+            } //  end if ITS
+          }   //  end if TPC
+        }
+        //
+        // pions and kaons together
+        if (tpPDGCode == 211 || tpPDGCode == 321) {
+          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
+            histos.get<TH1>(HIST("MC/pthist_tpc_piK"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_piK"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_piK"))->Fill(jT.eta());
+            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
+              histos.get<TH1>(HIST("MC/pthist_tpcits_piK"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_piK"))->Fill(jT.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_piK"))->Fill(jT.eta());
+            } //  end if ITS
+          }   //  end if TPC
+        }
+      }
+      //
+      //
+    } //  end loop on tracks
+    //
+    //
+    if (doDebug) {
+      LOGF(info, "Selected tracks: %d ", countData);
+      LOGF(info, "Selected tracks with MC: %d, tracks w/o MC: %d ", countData, countNoMC);
+    }
+  }
+
+  //////////////////////////////////////////////
+  ///   Process MC with collision grouping   ///
+  //////////////////////////////////////////////
   void processMC(aod::Collision const& collision,
-                 soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                           aod::McTrackLabels> const& jTracks,
+                 soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& jTracks,
                  aod::McParticles const& mcParticles)
   {
-    //
-    //
-    for (auto& jT : jTracks) {
-      // choose if we keep the track according to the TRD presence requirement
-      if ((isTRDThere == 1) && !jT.hasTRD())
-        continue;
-      if ((isTRDThere == 0) && jT.hasTRD())
-        continue;
-
-      if (!jT.has_mcParticle()) {
-        countNoMC++;
-        if (doDebug)
-          LOGF(warning, " N.%d track without MC particle, skipping...",
-               countNoMC);
-        continue;
-      }
-      //
-      // pt from full tracking or from TPCinnerWallPt
-      float trackPt = jT.pt();
-      if (b_useTPCinnerWallPt) {
-        /// Using pt calculated at the inner wall of TPC
-        /// Caveat: tgl still from tracking: this is not the value of tgl at the
-        /// inner wall of TPC
-        trackPt = computePtInParamTPC(jT);
-      }
-
-      // kinematic track seletions for all tracks
-      if (!isTrackSelectedKineCuts(jT))
-        continue;
-
-      auto mcpart = jT.mcParticle();
-      siPDGCode = mcpart.pdgCode();
-      tpPDGCode = TMath::Abs(siPDGCode);
-      if (mcpart.isPhysicalPrimary()) {
-        histos.get<TH1>(HIST("MC/etahist_diff"))->Fill(mcpart.eta() - jT.eta());
-        auto delta = mcpart.phi() - jT.phi();
-        if (delta > PI) {
-          delta -= TwoPI;
-        }
-        if (delta < -PI) {
-          delta += TwoPI;
-        }
-        histos.get<TH1>(HIST("MC/phihist_diff"))->Fill(delta);
-      }
-      // count the tracks contained in the input file if they have MC
-      // counterpart
-      count++;
-      //
-      //
-      // fill thnsparse for fraction analysis
-      if (makethn) {
-        int sayPrim = 0, specind = 0;
-        if (mcpart.isPhysicalPrimary())
-          sayPrim = 0;
-        else if (mcpart.getProcess() == 4)
-          sayPrim = 1;
-        else
-          sayPrim = 2;
-        int signPDGCode = siPDGCode / tpPDGCode;
-        switch (tpPDGCode) {
-          case 11:
-            specind = 1;
-            break;
-          case 211:
-            specind = 2;
-            break;
-          case 321:
-            specind = 3;
-            break;
-          case 2212:
-            specind = 4;
-            break;
-          default:
-            specind = 5;
-        }
-        histos.fill(HIST("MC/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(),
-                    jT.eta(), sayPrim, signPDGCode, specind);
-      }
-      //
-      // all tracks, no conditions
-      if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-        histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
-        histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(jT.phi());
-        histos.get<TH1>(HIST("MC/etahist_tpc"))->Fill(jT.eta());
-        if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(jT.eta());
-        } //  end if ITS
-      }   //  end if TPC
-      //
-      // all tracks with pt>0.5
-      if (trackPt > 0.5) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_05"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_05"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_05"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_05"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_05"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-      }     //  end if pt > 0.5
-      //
-      // positive only
-      if (jT.signed1Pt() > 0) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_pos"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_pos"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_pos"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_pos"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_pos"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_pos"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-            //
-      }     // end positive
-      //
-      // negative only
-      if (jT.signed1Pt() < 0) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_neg"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_neg"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_neg"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_neg"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_neg"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_neg"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-            //
-      }     // end negative
-      //
-      // only primaries
-      if (mcpart.isPhysicalPrimary()) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_prim"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_prim"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_prim"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_prim"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_prim"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_prim"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-      }     //  end if primaries
-      //
-      // only secondaries from decay
-      else if (mcpart.getProcess() == 4) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_secd"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_secd"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_secd"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_secd"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_secd"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_secd"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-        //
-        // only secondaries from material
-        else {
-          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_secm"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpc_secm"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpc_secm"))->Fill(jT.eta());
-            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_secm"))->Fill(trackPt);
-              histos.get<TH1>(HIST("MC/phihist_tpcits_secm"))->Fill(jT.phi());
-              histos.get<TH1>(HIST("MC/etahist_tpcits_secm"))->Fill(jT.eta());
-            } //  end if ITS
-          }   //  end if TPC
-        }     // end if secondaries from material
-              //
-      }       // end if secondaries from decay
-      //
-      // protons only
-      if (tpPDGCode == 2212) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_P"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_P"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_P"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_P"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_P"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_P"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-      }
-      //
-      // pions only
-      if (tpPDGCode == 211) {
-        //
-        // all tracks
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_pi"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_pi"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_pi"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_pi"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_pi"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_pi"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-        //
-        // only primary pions
-        if (mcpart.isPhysicalPrimary()) {
-          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_pi_prim"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpc_pi_prim"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpc_pi_prim"))->Fill(jT.eta());
-            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_pi_prim"))->Fill(trackPt);
-              histos.get<TH1>(HIST("MC/phihist_tpcits_pi_prim"))
-                ->Fill(jT.phi());
-              histos.get<TH1>(HIST("MC/etahist_tpcits_pi_prim"))
-                ->Fill(jT.eta());
-            } //  end if ITS
-          }   //  end if TPC
-        }     //  end if primaries
-        //
-        // only secondary pions from decay
-        else if (mcpart.getProcess() == 4) {
-          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_pi_secd"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpc_pi_secd"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpc_pi_secd"))->Fill(jT.eta());
-            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secd"))->Fill(trackPt);
-              histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secd"))
-                ->Fill(jT.phi());
-              histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secd"))
-                ->Fill(jT.eta());
-            } //  end if ITS
-          }   //  end if TPC
-          //
-          // only secondary pions from material
-          else {
-            if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpc_pi_secm"))->Fill(trackPt);
-              histos.get<TH1>(HIST("MC/phihist_tpc_pi_secm"))->Fill(jT.phi());
-              histos.get<TH1>(HIST("MC/etahist_tpc_pi_secm"))->Fill(jT.eta());
-              if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-                histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secm"))
-                  ->Fill(trackPt);
-                histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secm"))
-                  ->Fill(jT.phi());
-                histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secm"))
-                  ->Fill(jT.eta());
-              } //  end if ITS
-            }   //  end if TPC
-          }     // end if secondaries from material
-          //
-        } // end if secondaries from decay
-          //
-      }   // end pions only
-      //
-      // no primary/sec-d pions
-      if (!((tpPDGCode == 211) && (mcpart.isPhysicalPrimary()))) {
-        // gets the pdg code and finds its index in our vector
-        itr_pdg = std::find(pdgChoice.begin(), pdgChoice.end(), tpPDGCode);
-        if (itr_pdg != pdgChoice.cend())
-          // index from zero, so increase by 1 to put in the right bin (and 0.5
-          // not needed but just not to sit in the edge)
-          pdg_fill = (float)std::distance(pdgChoice.begin(), itr_pdg) + 1.5;
-        else
-          pdg_fill = -10.0;
-        //
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_nopi"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_nopi"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_nopi"))->Fill(jT.eta());
-          histos.get<TH1>(HIST("MC/pdghist_den"))->Fill(pdg_fill);
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_nopi"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_nopi"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_nopi"))->Fill(jT.eta());
-            histos.get<TH1>(HIST("MC/pdghist_num"))->Fill(pdg_fill);
-          } //  end if ITS
-        }   //  end if TPC
-      }     // end if not prim/sec-d pi
-      //
-      // kaons only
-      if (tpPDGCode == 321) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_K"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_K"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_K"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_K"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_K"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_K"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-      }
-      //
-      // pions and kaons together
-      if (tpPDGCode == 211 || tpPDGCode == 321) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_piK"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_piK"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_piK"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_piK"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_piK"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_piK"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-      }
-      //
-      //
-    } //  end loop on tracks
-    //
-    //
-    if (doDebug)
-      LOGF(info, "Tracks: %d, w/out MC: %d ", count, countNoMC);
-  } // end processMC
-  //
+    //constexpr std::string_view names[nHistosData];
+    //for (int i=0; i<nHistosData; i++) {
+    //  names[i] = namesHistoData[i];
+    //}
+    
+    fillHistograms<true>(jTracks, mcParticles);
+  }
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
-  //
-  //
-  void processMCNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                                 aod::McTrackLabels> const& jTracks,
+  
+
+  
+  /////////////////////////////////////////////
+  ///   Process MC w/o collision grouping   ///
+  /////////////////////////////////////////////
+  void processMCNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& jTracks,
                        aod::McParticles const& mcParticles)
   {
-    //
-    //
-    for (auto& jT : jTracks) {
+    fillHistograms<true>(jTracks, mcParticles);
+  }
+  PROCESS_SWITCH(qaMatchEff, processMCNoColl, "process MC - no collision grouping", false);
+  
 
-      // choose if we keep the track according to the TRD presence requirement
-      if ((isTRDThere == 1) && !jT.hasTRD())
-        continue;
-      if ((isTRDThere == 0) && jT.hasTRD())
-        continue;
 
-      if (!jT.has_mcParticle()) {
-        countNoMC++;
-        if (doDebug)
-          LOGF(warning, " N.%d track without MC particle, skipping...",
-               countNoMC);
-        continue;
-      }
-      //
-      // pt from full tracking or from TPCinnerWallPt
-      float trackPt = jT.pt();
-      if (b_useTPCinnerWallPt) {
-        /// Using pt calculated at the inner wall of TPC
-        /// Caveat: tgl still from tracking: this is not the value of tgl at the
-        /// inner wall of TPC
-        trackPt = computePtInParamTPC(jT);
-      }
-
-      // kinematic track seletions for all tracks
-      if (!isTrackSelectedKineCuts(jT))
-        continue;
-
-      if (!jT.has_mcParticle()) {
-        countNoMC++;
-        if (doDebug)
-          LOGF(warning, " N.%d track without MC particle, skipping...",
-               countNoMC);
-        continue;
-      }
-      auto mcpart = jT.mcParticle();
-      tpPDGCode = TMath::Abs(mcpart.pdgCode());
-      if (mcpart.isPhysicalPrimary()) {
-        histos.get<TH1>(HIST("MC/etahist_diff"))->Fill(mcpart.eta() - jT.eta());
-        auto delta = mcpart.phi() - jT.phi();
-        if (delta > PI) {
-          delta -= TwoPI;
-        }
-        if (delta < -PI) {
-          delta += TwoPI;
-        }
-        histos.get<TH1>(HIST("MC/phihist_diff"))->Fill(delta);
-      }
-      // count the tracks contained in the input file if they have MC
-      // counterpart
-      count++;
-      //
-      //
-      // fill thnsparse for fraction analysis
-      if (makethn) {
-        int sayPrim = 0, specind = 0;
-        if (mcpart.isPhysicalPrimary())
-          sayPrim = 0;
-        else if (mcpart.getProcess() == 4)
-          sayPrim = 1;
-        else
-          sayPrim = 2;
-        int signPDGCode = siPDGCode / tpPDGCode;
-        switch (tpPDGCode) {
-          case 11:
-            specind = 1;
-            break;
-          case 211:
-            specind = 2;
-            break;
-          case 321:
-            specind = 3;
-            break;
-          case 2212:
-            specind = 4;
-            break;
-          default:
-            specind = 5;
-        }
-        histos.fill(HIST("MC/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(),
-                    jT.eta(), sayPrim, signPDGCode, specind);
-      }
-      //
-      // all tracks, no conditions
-      if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-        histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
-        histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(jT.phi());
-        histos.get<TH1>(HIST("MC/etahist_tpc"))->Fill(jT.eta());
-        if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(jT.eta());
-        } //  end if ITS
-      }   //  end if TPC
-      //
-      // all tracks with pt>0.5
-      if (trackPt > 0.5) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_05"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_05"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_05"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_05"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_05"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-      }     //  end if pt > 0.5
-      //
-      // positive only
-      if (jT.signed1Pt() > 0) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_pos"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_pos"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_pos"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_pos"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_pos"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_pos"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-            //
-      }     // end positive
-      //
-      // negative only
-      if (jT.signed1Pt() < 0) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_neg"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_neg"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_neg"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_neg"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_neg"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_neg"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-            //
-      }     // end negative
-      //
-      // only primaries
-      if (mcpart.isPhysicalPrimary()) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_prim"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_prim"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_prim"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_prim"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_prim"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_prim"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-      }     //  end if primaries
-      //
-      // only secondaries from decay
-      else if (mcpart.getProcess() == 4) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_secd"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_secd"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_secd"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_secd"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_secd"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_secd"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-        //
-        // only secondaries from material
-        else {
-          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_secm"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpc_secm"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpc_secm"))->Fill(jT.eta());
-            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_secm"))->Fill(trackPt);
-              histos.get<TH1>(HIST("MC/phihist_tpcits_secm"))->Fill(jT.phi());
-              histos.get<TH1>(HIST("MC/etahist_tpcits_secm"))->Fill(jT.eta());
-            } //  end if ITS
-          }   //  end if TPC
-        }     // end if secondaries from material
-              //
-      }       // end if secondaries from decay
-      //
-      // protons only
-      if (tpPDGCode == 2212) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_P"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_P"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_P"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_P"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_P"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_P"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-      }
-      //
-      // pions only
-      if (tpPDGCode == 211) {
-        //
-        // all tracks
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_pi"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_pi"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_pi"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_pi"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_pi"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_pi"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-        //
-        // only primary pions
-        if (mcpart.isPhysicalPrimary()) {
-          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_pi_prim"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpc_pi_prim"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpc_pi_prim"))->Fill(jT.eta());
-            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_pi_prim"))->Fill(trackPt);
-              histos.get<TH1>(HIST("MC/phihist_tpcits_pi_prim"))
-                ->Fill(jT.phi());
-              histos.get<TH1>(HIST("MC/etahist_tpcits_pi_prim"))
-                ->Fill(jT.eta());
-            } //  end if ITS
-          }   //  end if TPC
-        }     //  end if primaries
-        //
-        // only secondary pions from decay
-        else if (mcpart.getProcess() == 4) {
-          if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_pi_secd"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpc_pi_secd"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpc_pi_secd"))->Fill(jT.eta());
-            if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secd"))->Fill(trackPt);
-              histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secd"))
-                ->Fill(jT.phi());
-              histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secd"))
-                ->Fill(jT.eta());
-            } //  end if ITS
-          }   //  end if TPC
-          //
-          // only secondary pions from material
-          else {
-            if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpc_pi_secm"))->Fill(trackPt);
-              histos.get<TH1>(HIST("MC/phihist_tpc_pi_secm"))->Fill(jT.phi());
-              histos.get<TH1>(HIST("MC/etahist_tpc_pi_secm"))->Fill(jT.eta());
-              if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-                histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secm"))
-                  ->Fill(trackPt);
-                histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secm"))
-                  ->Fill(jT.phi());
-                histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secm"))
-                  ->Fill(jT.eta());
-              } //  end if ITS
-            }   //  end if TPC
-          }     // end if secondaries from material
-          //
-        } // end if secondaries from decay
-          //
-      }   // end pions only
-      //
-      // no primary/sec-d pions
-      if (!((tpPDGCode == 211) && (mcpart.isPhysicalPrimary()))) {
-        // gets the pdg code and finds its index in our vector
-        itr_pdg = std::find(pdgChoice.begin(), pdgChoice.end(), tpPDGCode);
-        if (itr_pdg != pdgChoice.cend())
-          // index from zero, so increase by 1 to put in the right bin (and 0.5
-          // not needed but just not to sit in the edge)
-          pdg_fill = (float)std::distance(pdgChoice.begin(), itr_pdg) + 1.5;
-        else
-          pdg_fill = -10.0;
-        //
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_nopi"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_nopi"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_nopi"))->Fill(jT.eta());
-          histos.get<TH1>(HIST("MC/pdghist_den"))->Fill(pdg_fill);
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_nopi"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_nopi"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_nopi"))->Fill(jT.eta());
-            histos.get<TH1>(HIST("MC/pdghist_num"))->Fill(pdg_fill);
-          } //  end if ITS
-        }   //  end if TPC
-      }     // end if not prim/sec-d pi
-      //
-      // kaons only
-      if (tpPDGCode == 321) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_K"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_K"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_K"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_K"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_K"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_K"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-      }
-      //
-      // pions and kaons together
-      if (tpPDGCode == 211 || tpPDGCode == 321) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_piK"))->Fill(trackPt);
-          histos.get<TH1>(HIST("MC/phihist_tpc_piK"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("MC/etahist_tpc_piK"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_piK"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpcits_piK"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpcits_piK"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-      }
-      //
-      //
-    } //  end loop on tracks
-    //
-    //
-    if (doDebug)
-      LOGF(info, "Tracks: %d, w/out MC: %d ", count, countNoMC);
-  } // end processMCNoColl
-  //
-  PROCESS_SWITCH(qaMatchEff, processMCNoColl,
-                 "process MC - no loop on collisions", false);
-  //
-  //
-  void processData(
-    aod::Collision const& collision,
-    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& jTracks)
+  ////////////////////////////////////////////////
+  ///   Process data with collision grouping   ///
+  ////////////////////////////////////////////////
+  void processData(aod::Collision const& collision,
+                   soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& jTracks)
   {
-    //
-    //
-    for (auto& jT : jTracks) {
-
-      // choose if we keep the track according to the TRD presence requirement
-      if ((isTRDThere == 1) && !jT.hasTRD())
-        continue;
-      if ((isTRDThere == 0) && jT.hasTRD())
-        continue;
-
-      float trackPt = jT.pt();
-      if (b_useTPCinnerWallPt) {
-        /// Using pt calculated at the inner wall of TPC
-        /// Caveat: tgl still from tracking: this is not the value of tgl at the
-        /// inner wall of TPC
-        trackPt = computePtInParamTPC(jT);
-      }
-
-      // kinematic track seletions for all tracks
-      if (!isTrackSelectedKineCuts(jT))
-        continue;
-      //
-      countData++;
-      //
-      //
-      // fill thnsparse for fraction analysis
-      if (makethn) {
-        int sayPrim = -1, signPDGCode = -2, specind = 0;
-        histos.fill(HIST("data/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(),
-                    jT.eta(), sayPrim, signPDGCode, specind);
-      }
-      //
-      // all tracks, no conditions
-      if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-        histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(trackPt);
-        histos.get<TH1>(HIST("data/phihist_tpc"))->Fill(jT.phi());
-        histos.get<TH1>(HIST("data/etahist_tpc"))->Fill(jT.eta());
-        if (trackPt > 0.5) {
-          histos.get<TH1>(HIST("data/pthist_tpc_05"))->Fill(trackPt);
-          histos.get<TH1>(HIST("data/phihist_tpc_05"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("data/etahist_tpc_05"))->Fill(jT.eta());
-        }
-        if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-          histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(trackPt);
-          histos.get<TH1>(HIST("data/phihist_tpcits"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("data/etahist_tpcits"))->Fill(jT.eta());
-          if (trackPt > 0.5) {
-            histos.get<TH1>(HIST("data/pthist_tpcits_05"))->Fill(trackPt);
-            histos.get<TH1>(HIST("data/phihist_tpcits_05"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("data/etahist_tpcits_05"))->Fill(jT.eta());
-          }
-        } //  end if ITS
-      }   //  end if TPC
-      //
-
-      // positive only
-      if (jT.signed1Pt() > 0) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("data/pthist_tpc_pos"))->Fill(trackPt);
-          histos.get<TH1>(HIST("data/phihist_tpc_pos"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("data/etahist_tpc_pos"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("data/pthist_tpcits_pos"))->Fill(trackPt);
-            histos.get<TH1>(HIST("data/phihist_tpcits_pos"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("data/etahist_tpcits_pos"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-            //
-      }     // end positive
-      //
-      // negative only
-      if (jT.signed1Pt() < 0) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("data/pthist_tpc_neg"))->Fill(trackPt);
-          histos.get<TH1>(HIST("data/phihist_tpc_neg"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("data/etahist_tpc_neg"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("data/pthist_tpcits_neg"))->Fill(trackPt);
-            histos.get<TH1>(HIST("data/phihist_tpcits_neg"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("data/etahist_tpcits_neg"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-            //
-      }     // end negative
-      //
-      //
-    } //  end loop on tracks
-    //
-    //
-    if (doDebug)
-      LOGF(info, "Tracks: %d ", countData);
-    //
-  } // end processData
-  //
+    fillHistograms<false>(jTracks, jTracks); // 2nd argument not used in this case
+  }
   PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
-  //
-  //
-  void processDataNoColl(
-    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& jTracks)
+  
+
+
+  ///////////////////////////////////////////////
+  ///   Process data w/o collision grouping   ///
+  ///////////////////////////////////////////////
+  void processDataNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& jTracks)
   {
-    //
-    //
-    for (auto& jT : jTracks) {
-
-      // choose if we keep the track according to the TRD presence requirement
-      if ((isTRDThere == 1) && !jT.hasTRD())
-        continue;
-      if ((isTRDThere == 0) && jT.hasTRD())
-        continue;
-
-      float trackPt = jT.pt();
-      if (b_useTPCinnerWallPt) {
-        /// Using pt calculated at the inner wall of TPC
-        /// Caveat: tgl still from tracking: this is not the value of tgl at the
-        /// inner wall of TPC
-        trackPt = computePtInParamTPC(jT);
-      }
-
-      // kinematic track seletions for all tracks
-      if (!isTrackSelectedKineCuts(jT))
-        continue;
-      //
-      countData++;
-      //
-      // fill thnsparse for fraction analysis
-      if (makethn) {
-        int sayPrim = -1, signPDGCode = -2, specind = 0;
-        histos.fill(HIST("data/thnsforfrac"), jT.dcaXY(), trackPt, jT.phi(),
-                    jT.eta(), sayPrim, signPDGCode, specind);
-      }
-      //
-      // all tracks, no conditions
-      if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-        histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(trackPt);
-        histos.get<TH1>(HIST("data/phihist_tpc"))->Fill(jT.phi());
-        histos.get<TH1>(HIST("data/etahist_tpc"))->Fill(jT.eta());
-        if (trackPt > 0.5) {
-          histos.get<TH1>(HIST("data/pthist_tpc_05"))->Fill(trackPt);
-          histos.get<TH1>(HIST("data/phihist_tpc_05"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("data/etahist_tpc_05"))->Fill(jT.eta());
-        }
-        if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-          histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(trackPt);
-          histos.get<TH1>(HIST("data/phihist_tpcits"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("data/etahist_tpcits"))->Fill(jT.eta());
-          if (trackPt > 0.5) {
-            histos.get<TH1>(HIST("data/pthist_tpcits_05"))->Fill(trackPt);
-            histos.get<TH1>(HIST("data/phihist_tpcits_05"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("data/etahist_tpcits_05"))->Fill(jT.eta());
-          }
-        } //  end if ITS
-      }   //  end if TPC
-      //
-
-      // positive only
-      if (jT.signed1Pt() > 0) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("data/pthist_tpc_pos"))->Fill(trackPt);
-          histos.get<TH1>(HIST("data/phihist_tpc_pos"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("data/etahist_tpc_pos"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("data/pthist_tpcits_pos"))->Fill(trackPt);
-            histos.get<TH1>(HIST("data/phihist_tpcits_pos"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("data/etahist_tpcits_pos"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-            //
-      }     // end positive
-      //
-      // negative only
-      if (jT.signed1Pt() < 0) {
-        if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("data/pthist_tpc_neg"))->Fill(trackPt);
-          histos.get<TH1>(HIST("data/phihist_tpc_neg"))->Fill(jT.phi());
-          histos.get<TH1>(HIST("data/etahist_tpc_neg"))->Fill(jT.eta());
-          if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("data/pthist_tpcits_neg"))->Fill(trackPt);
-            histos.get<TH1>(HIST("data/phihist_tpcits_neg"))->Fill(jT.phi());
-            histos.get<TH1>(HIST("data/etahist_tpcits_neg"))->Fill(jT.eta());
-          } //  end if ITS
-        }   //  end if TPC
-            //
-      }     // end negative
-      //
-      //
-    } //  end loop on tracks
-    //
-    //
-    if (doDebug)
-      LOGF(info, "Tracks: %d ", countData);
-    //
-  } // end processDataNoColl
-  //
-  PROCESS_SWITCH(qaMatchEff, processDataNoColl,
-                 "process data - no collision dependence", true);
-  //
-  //
+    fillHistograms<false>(jTracks, jTracks); // 2nd argument not used in this case
+  }
+  PROCESS_SWITCH(qaMatchEff, processDataNoColl, "process data - no collision grouping", true);
+  
+  
 }; // end of structure
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
