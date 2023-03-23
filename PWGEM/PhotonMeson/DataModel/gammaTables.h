@@ -132,35 +132,6 @@ DECLARE_SOA_TABLE(V0Photons, "AOD", "V0PHOTON", //!
 // iterators
 using V0Photon = V0Photons::iterator;
 
-// namespace gammatrackreco
-//{
-// DECLARE_SOA_COLUMN(Eta, eta, float);                                                     //! Pseudorapidity
-// DECLARE_SOA_COLUMN(P, p, float);                                                         //! Total momentum in GeV/c
-// DECLARE_SOA_COLUMN(Phi, phi, float);                                                     //! Azimuthal angle
-// DECLARE_SOA_COLUMN(Pt, pt, float);                                                       //! Transversal momentum in GeV/c
-// DECLARE_SOA_COLUMN(PositivelyCharged, positivelyCharged, bool);                          //! True for positively charged track
-// DECLARE_SOA_COLUMN(TpcCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float); //! Ratio  crossed rows over findable clusters
-// DECLARE_SOA_COLUMN(TpcFoundOverFindableCls, tpcFoundOverFindableCls, float);             //! Ratio of found over findable clusters
-// DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, float);                       //! Number of crossed TPC Rows
-//
-// } // namespace gammatrackreco
-//
-// DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
-//                   o2::soa::Index<>,
-//                   v0data::V0Id,
-//                   track::DcaXY,
-//                   gammatrackreco::Eta,
-//                   gammatrackreco::P,
-//                   gammatrackreco::Phi,
-//                   gammatrackreco::Pt,
-//                   gammatrackreco::PositivelyCharged,
-//                   gammatrackreco::TpcCrossedRowsOverFindableCls,
-//                   gammatrackreco::TpcFoundOverFindableCls,
-//                   gammatrackreco::TpcNClsCrossedRows,
-//                   pidtpc::TPCNSigmaEl,
-//                   pidtpc::TPCNSigmaPi,
-//                   track::TPCSignal);
-
 namespace MCTracksTrue
 {
 DECLARE_SOA_COLUMN(SameMother, sameMother, bool); // Do the tracks have the same mother particle?
@@ -274,11 +245,11 @@ DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! numbe
 
 namespace emccluster
 {
-DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                                                                        //! cluster core energy (GeV)
-DECLARE_SOA_COLUMN(Time, time, float);                                                                                    //! cluster time (ns)
-DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                                                                             //! flag to mark cluster as exotic
-DECLARE_SOA_COLUMN(Definition, definition, int);                                                                          //! cluster definition, see EMCALClusterDefinition.h
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float eta, float m) -> float { return sqrt(e * e - m * m) / cosh(eta); }); //! cluster pt, mass to be given as argument when getter is called!
+DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                                                                            //! cluster core energy (GeV)
+DECLARE_SOA_COLUMN(Time, time, float);                                                                                        //! cluster time (ns)
+DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                                                                                 //! flag to mark cluster as exotic
+DECLARE_SOA_COLUMN(Definition, definition, int);                                                                              //! cluster definition, see EMCALClusterDefinition.h
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float eta, float m = 0) -> float { return sqrt(e * e - m * m) / cosh(eta); }); //! cluster pt, mass to be given as argument when getter is called!
 // DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! transverse momentum of a photon candidate
 //                               (emccluster::energy * 2.f) / (nexp(emccluster::eta) + nexp(emccluster::eta * -1.f)));
 } // namespace emccluster
@@ -299,10 +270,10 @@ DECLARE_SOA_COLUMN(Z, z, float);                                                
 // DECLARE_SOA_COLUMN(TrackPhi, trackphi, float);                                      //! phi of the matched track
 // DECLARE_SOA_COLUMN(TrackP, trackp, float);                                          //! momentum of the matched track
 // DECLARE_SOA_COLUMN(TrackPt, trackpt, float);                                        //! pt of the matched track
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float e, float x, float y, float z, float m) -> float { return x / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
-DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float e, float x, float y, float z, float m) -> float { return y / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float e, float x, float y, float z, float m) -> float { return z / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float x, float y, float z, float m) -> float { return RecoDecay::sqrtSumOfSquares(x, y) / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float e, float x, float y, float z, float m = 0) -> float { return x / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float e, float x, float y, float z, float m = 0) -> float { return y / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float e, float x, float y, float z, float m = 0) -> float { return z / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float x, float y, float z, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(x, y) / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float x, float y, float z) -> float { return RecoDecay::eta(array{x, y, z}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float x, float y) -> float { return RecoDecay::phi(x, y); });
 } // namespace phoscluster

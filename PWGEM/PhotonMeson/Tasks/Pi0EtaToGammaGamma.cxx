@@ -330,29 +330,8 @@ struct Pi0EtaToGammaGamma {
       if (pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) {
         for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_coll, photons2_coll))) {
 
-          ROOT::Math::PtEtaPhiMVector v1;
-          ROOT::Math::PtEtaPhiMVector v2;
-
-          if constexpr (pairtype == PairType::kPCMPCM) {
-            v1.SetPt(g1.pt());
-            v1.SetEta(g1.eta());
-            v1.SetPhi(g1.phi());
-            v1.SetM(0.);
-            v2.SetPt(g2.pt());
-            v2.SetEta(g2.eta());
-            v2.SetPhi(g2.phi());
-            v2.SetM(0.);
-          } else if constexpr (pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) {
-            v1.SetPt(g1.pt(0.));
-            v1.SetEta(g1.eta());
-            v1.SetPhi(g1.phi());
-            v1.SetM(0.);
-            v2.SetPt(g2.pt(0.));
-            v2.SetEta(g2.eta());
-            v2.SetPhi(g2.phi());
-            v2.SetM(0.);
-          }
-
+          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           registry.fill(HIST(pairnames[itmp]) + HIST("/h2MggPt_Same"), v12.M(), v12.Pt());
 
@@ -361,29 +340,8 @@ struct Pi0EtaToGammaGamma {
       } else {
         for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_coll, photons2_coll))) {
 
-          ROOT::Math::PtEtaPhiMVector v1;
-          ROOT::Math::PtEtaPhiMVector v2;
-
-          if constexpr (pairtype == PairType::kPCMPHOS || pairtype == PairType::kPCMEMC) {
-            v1.SetPt(g1.pt());
-            v1.SetEta(g1.eta());
-            v1.SetPhi(g1.phi());
-            v1.SetM(0.);
-            v2.SetPt(g2.pt(0.));
-            v2.SetEta(g2.eta());
-            v2.SetPhi(g2.phi());
-            v2.SetM(0.);
-          } else if constexpr (pairtype == PairType::kPHOSEMC) {
-            v1.SetPt(g1.pt(0.));
-            v1.SetEta(g1.eta());
-            v1.SetPhi(g1.phi());
-            v1.SetM(0.);
-            v2.SetPt(g2.pt(0.));
-            v2.SetEta(g2.eta());
-            v2.SetPhi(g2.phi());
-            v2.SetM(0.);
-          }
-
+          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           registry.fill(HIST(pairnames[itmp]) + HIST("/h2MggPt_Same"), v12.M(), v12.Pt());
 
@@ -420,17 +378,8 @@ struct Pi0EtaToGammaGamma {
 
       for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons_coll, photons_coll))) {
 
-        ROOT::Math::PtEtaPhiMVector v1;
-        ROOT::Math::PtEtaPhiMVector v2;
-        v1.SetPt(g1.pt(0.));
-        v1.SetEta(g1.eta());
-        v1.SetPhi(g1.phi());
-        v1.SetM(0.);
-        v2.SetPt(g2.pt(0.));
-        v2.SetEta(g2.eta());
-        v2.SetPhi(g2.phi());
-        v2.SetM(0.);
-
+        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         registry.fill(HIST("EMCEMC/h2MggPt_Same"), v12.M(), v12.Pt());
 
@@ -458,65 +407,8 @@ struct Pi0EtaToGammaGamma {
       for (auto& [g1, g2] : combinations(soa::CombinationsFullIndexPolicy(photons_coll1, photons_coll2))) {
         // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.collisionId(), g2.collisionId());
 
-        ROOT::Math::PtEtaPhiMVector v1;
-        ROOT::Math::PtEtaPhiMVector v2;
-
-        if constexpr (pairtype == PairType::kPCMPCM) {
-          v1.SetPt(g1.pt());
-          v1.SetEta(g1.eta());
-          v1.SetPhi(g1.phi());
-          v1.SetM(0.);
-          v2.SetPt(g2.pt());
-          v2.SetEta(g2.eta());
-          v2.SetPhi(g2.phi());
-          v2.SetM(0.);
-        } else if constexpr (pairtype == PairType::kPHOSPHOS) {
-          v1.SetPt(g1.pt(0.));
-          v1.SetEta(g1.eta());
-          v1.SetPhi(g1.phi());
-          v1.SetM(0.);
-          v2.SetPt(g2.pt(0.));
-          v2.SetEta(g2.eta());
-          v2.SetPhi(g2.phi());
-          v2.SetM(0.);
-        } else if constexpr (pairtype == PairType::kEMCEMC) {
-          v1.SetPt(g1.pt(0.));
-          v1.SetEta(g1.eta());
-          v1.SetPhi(g1.phi());
-          v1.SetM(0.);
-          v2.SetPt(g2.pt(0.));
-          v2.SetEta(g2.eta());
-          v2.SetPhi(g2.phi());
-          v2.SetM(0.);
-        } else if constexpr (pairtype == PairType::kPCMPHOS) {
-          v1.SetPt(g1.pt());
-          v1.SetEta(g1.eta());
-          v1.SetPhi(g1.phi());
-          v1.SetM(0.);
-          v2.SetPt(g2.pt(0.));
-          v2.SetEta(g2.eta());
-          v2.SetPhi(g2.phi());
-          v2.SetM(0.);
-        } else if constexpr (pairtype == PairType::kPCMEMC) {
-          v1.SetPt(g1.pt());
-          v1.SetEta(g1.eta());
-          v1.SetPhi(g1.phi());
-          v1.SetM(0.);
-          v2.SetPt(g2.pt(0.));
-          v2.SetEta(g2.eta());
-          v2.SetPhi(g2.phi());
-          v2.SetM(0.);
-        } else if constexpr (pairtype == PairType::kPHOSEMC) {
-          v1.SetPt(g1.pt(0.));
-          v1.SetEta(g1.eta());
-          v1.SetPhi(g1.phi());
-          v1.SetM(0.);
-          v2.SetPt(g2.pt(0.));
-          v2.SetEta(g2.eta());
-          v2.SetPhi(g2.phi());
-          v2.SetM(0.);
-        }
-
+        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         registry.fill(HIST(pairnames[itmp]) + HIST("/h2MggPt_Mixed"), v12.M(), v12.Pt());
 
@@ -556,7 +448,7 @@ struct Pi0EtaToGammaGamma {
         continue;
       }
       ROOT::Math::PtEtaPhiMVector photon3;
-      photon3.SetPt(photon.pt(0.));
+      photon3.SetPt(photon.pt());
       photon3.SetEta(photon.eta());
       photon3.SetPhi(photon.phi());
       photon3.SetM(0.);
