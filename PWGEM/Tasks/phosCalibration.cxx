@@ -233,6 +233,12 @@ struct phosCalibration {
       int ddl = (relid[0] - 1) * 4 + (relid[1] - 1) / 16 - 2;
       uint64_t bc = c.bc_as<aod::BCsWithTimestamps>().globalBC();
       float tcorr = c.time();
+      if (c.cellType() == o2::phos::HIGH_GAIN) {
+        tcorr -= calibParams->getHGTimeCalib(c.cellNumber());
+      } else {
+        tcorr -= calibParams->getLGTimeCalib(c.cellNumber());
+      }
+
       if (!mSkipL1phase) {
         int shift = (mL1 >> (ddl * 2)) & 3; // extract 2 bits corresponding to this ddl
         shift = bc % 4 - shift;
@@ -312,6 +318,10 @@ struct phosCalibration {
         }
         if (e > 1.5) {
           mHistManager.fill(HIST("hHardClu"), mod, relid[1], relid[2]);
+        }
+
+        if (clu.getTime() < mMinCellTimeMain || clu.getTime() > mMaxCellTimeMain) {
+          continue;
         }
 
         TVector3 globaPos;
