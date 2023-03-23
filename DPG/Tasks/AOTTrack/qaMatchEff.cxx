@@ -755,7 +755,7 @@ struct qaMatchEff {
           if (itr_pdg != pdgChoice.cend())
             // index from zero, so increase by 1 to put in the right bin (and 0.5
             // not needed but just not to sit in the edge)
-            pdg_fill = (float)std::distance(pdgChoice.begin(), itr_pdg) + 1.5;
+            pdg_fill = static_cast<float>(std::distance(pdgChoice.begin(), itr_pdg)) + 1.5;
           else
             pdg_fill = -10.0;
           //
