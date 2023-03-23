@@ -230,7 +230,7 @@ DECLARE_SOA_TABLE(V0DataLink, "AOD", "V0DATALINK", //! Joinable table with V0s w
 using V0sLinked = soa::Join<V0s, V0DataLink>;
 using V0Linked = V0sLinked::iterator;
 
-// helper for building 
+// helper for building
 namespace v0tag
 {
 // Global bool
@@ -251,7 +251,7 @@ DECLARE_SOA_COLUMN(IsLambdaCandidate, isLambdaCandidate, bool);                 
 DECLARE_SOA_COLUMN(IsAntiLambdaCandidate, isAntiLambdaCandidate, bool);           //! compatible with dE/dx hypotheses
 DECLARE_SOA_COLUMN(IsHypertritonCandidate, isHypertritonCandidate, bool);         //! compatible with dE/dx hypotheses
 DECLARE_SOA_COLUMN(IsAntiHypertritonCandidate, isAntiHypertritonCandidate, bool); //! compatible with dE/dx hypotheses
-}
+} // namespace v0tag
 DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
                   v0tag::IsInteresting,
                   v0tag::IsTrueGamma,
@@ -412,7 +412,7 @@ DECLARE_SOA_COLUMN(IsXiMinusCandidate, isXiMinusCandidate, bool);       //! comp
 DECLARE_SOA_COLUMN(IsXiPlusCandidate, isXiPlusCandidate, bool);         //! compatible with dE/dx hypotheses
 DECLARE_SOA_COLUMN(IsOmegaMinusCandidate, isOmegaMinusCandidate, bool); //! compatible with dE/dx hypotheses
 DECLARE_SOA_COLUMN(IsOmegaPlusCandidate, isOmegaPlusCandidate, bool);   //! compatible with dE/dx hypotheses
-}
+} // namespace casctag
 DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
                   casctag::IsInteresting,
                   casctag::IsTrueXiMinus,
