@@ -66,17 +66,17 @@ DECLARE_SOA_COLUMN(MassH4L, massH4L, float);       // Squared mass w/ H4L mass h
 DECLARE_SOA_COLUMN(DcaV0Daug, dcaV0Daug, float);   // DCA between daughters
 DECLARE_SOA_COLUMN(CosPA, cosPA, double);          // Cosine of the pointing angle
 DECLARE_SOA_COLUMN(NSigmaHe, nSigmaHe, float);     // Number of sigmas of the He daughter
-DECLARE_SOA_COLUMN(NTPCclusHe, nTPCclusHe, uint8_t);   // Number of TPC clusters of the He daughter
-DECLARE_SOA_COLUMN(NTPCclusPi, nTPCclusPi, uint8_t);   // Number of TPC clusters of the Pi daughter
-DECLARE_SOA_COLUMN(TPCsignalHe, tpcSignalHe, uint16_t);   // TPC signal of the He daughter
-DECLARE_SOA_COLUMN(TPCsignalPi, tpcSignalPi, uint16_t);   // TPC signal of the Pi daughter
-DECLARE_SOA_COLUMN(TPCmomHe, tpcMomHe, float);     // TPC momentum of the He daughter
-DECLARE_SOA_COLUMN(TPCmomPi, tpcMomPi, float);     // TPC momentum of the Pi daughter
+DECLARE_SOA_COLUMN(NTPCclusHe, nTPCclusHe, uint8_t);    // Number of TPC clusters of the He daughter
+DECLARE_SOA_COLUMN(NTPCclusPi, nTPCclusPi, uint8_t);    // Number of TPC clusters of the Pi daughter
+DECLARE_SOA_COLUMN(TPCsignalHe, tpcSignalHe, uint16_t); // TPC signal of the He daughter
+DECLARE_SOA_COLUMN(TPCsignalPi, tpcSignalPi, uint16_t); // TPC signal of the Pi daughter
+DECLARE_SOA_COLUMN(TPCmomHe, tpcMomHe, float);          // TPC momentum of the He daughter
+DECLARE_SOA_COLUMN(TPCmomPi, tpcMomPi, float);          // TPC momentum of the Pi daughter
 DECLARE_SOA_COLUMN(DcaHe, dcaHe, float);           // DCA between He daughter and V0
 DECLARE_SOA_COLUMN(DcaPi, dcaPi, float);           // DCA between pi daughter and V0
 DECLARE_SOA_COLUMN(GenPt, genPt, float);           // Momentum of the candidate (x direction)
-DECLARE_SOA_COLUMN(GenPhi, genPhi, float);           // Momentum of the candidate (y direction)
-DECLARE_SOA_COLUMN(GenEta, genEta, float);           // Momentum of the candidate (z direction)
+DECLARE_SOA_COLUMN(GenPhi, genPhi, float);         // Momentum of the candidate (y direction)
+DECLARE_SOA_COLUMN(GenEta, genEta, float);         // Momentum of the candidate (z direction)
 DECLARE_SOA_COLUMN(GenXDecVtx, genXDecVtx, float); // Decay vertex of the candidate (x direction)
 DECLARE_SOA_COLUMN(GenYDecVtx, genYDecVtx, float); // Decay vertex of the candidate (y direction)
 DECLARE_SOA_COLUMN(GenZDecVtx, genZDecVtx, float); // Decay vertex of the candidate (z direction)
@@ -257,9 +257,9 @@ struct hyperRecoTask {
     const AxisSpec nSigma3HeAxis{nSigmaBins, "n_{#sigma}({}^{3}He)"};
     const AxisSpec zVtxAxis{zVtxBins, "z_{vtx} (cm)"};
 
-    hNsigma3HeSel = qaRegistry.add<TH2>("hNsigma3HeSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}He)", HistType::kTH2F,  {rigidityAxis, nSigma3HeAxis});
-    hDeDx3HeSel = qaRegistry.add<TH2>("hDeDx3HeSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F,  {rigidityAxis, dedxAxis});
-    hDeDxTot = qaRegistry.add<TH2>("hDeDxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F,  {rigidityAxis, dedxAxis});
+    hNsigma3HeSel = qaRegistry.add<TH2>("hNsigma3HeSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}He)", HistType::kTH2F, {rigidityAxis, nSigma3HeAxis});
+    hDeDx3HeSel = qaRegistry.add<TH2>("hDeDx3HeSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
+    hDeDxTot = qaRegistry.add<TH2>("hDeDxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1F, {{3, -0.5, 2.5}});
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
