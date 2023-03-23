@@ -21,6 +21,7 @@
 #include "CommonConstants/MathConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 
 //
 // base namespaces
@@ -152,7 +153,7 @@ struct qaMatchEff {
   float trackPtInParamTPC = -1.;
   // Init function
   //
-  void init(InitContext&)
+  void init(o2::framework::InitContext& initContext)
   {
     if (doDebug)
       LOG(info) << "===========================================>>>>>>>>>>>>>>>>"
@@ -165,16 +166,22 @@ struct qaMatchEff {
     else
       initData();
 
-    if ((!isitMC && (doprocessMC || doprocessMCNoColl)) ||
-        (isitMC && (doprocessData && doprocessDataNoColl)))
+    if ((!isitMC && (doprocessMC || doprocessMCNoColl || doprocessTrkIUMC)) ||
+        (isitMC && (doprocessData && doprocessDataNoColl && doprocessTrkIUMC)))
       LOGF(fatal,
            "Initialization set for MC and processData function flagged "
            "(or viceversa)! Fix the configuration.");
-    if ((doprocessMC && doprocessMCNoColl) ||
-        (doprocessData && doprocessDataNoColl))
+    if ((doprocessMC && doprocessMCNoColl && doprocessTrkIUMC) ||
+        (doprocessData && doprocessDataNoColl && doprocessTrkIUData))
       LOGF(fatal,
            "Cannot process for both without collision tag and with "
            "collision tag at the same time! Fix the configuration.");
+    if (doprocessTrkIUMC && makethn) {
+      LOGF(fatal, "No DCA for IU tracks. Put makethn = false.");
+    }
+    if (doprocessTrkIUData && makethn) {
+      LOGF(fatal, "No DCA for IU tracks. Put makethn = false.");
+    }
     //
     /// initialize the track selections
     if (b_useTrackSelections) {
@@ -863,14 +870,21 @@ struct qaMatchEff {
                  soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& jTracks,
                  aod::McParticles const& mcParticles)
   {
-    //constexpr std::string_view names[nHistosData];
-    //for (int i=0; i<nHistosData; i++) {
-    //  names[i] = namesHistoData[i];
-    //}
-    
     fillHistograms<true>(jTracks, mcParticles);
   }
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
+
+
+  ////////////////////////////////////////////////////////////
+  ///   Process MC with collision grouping and IU tracks   ///
+  ////////////////////////////////////////////////////////////
+  void processTrkIUMC(aod::Collision const& collision,
+                 soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& jTracks,
+                 aod::McParticles const& mcParticles)
+  {    
+    fillHistograms<true>(jTracks, mcParticles);
+  }
+  PROCESS_SWITCH(qaMatchEff, processTrkIUMC, "process MC for IU tracks", false);
   
 
   
@@ -895,6 +909,18 @@ struct qaMatchEff {
     fillHistograms<false>(jTracks, jTracks); // 2nd argument not used in this case
   }
   PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
+
+
+
+  /////////////////////////////////////////////////////////////
+  ///   Process data with collision grouping and IU tracks  ///
+  /////////////////////////////////////////////////////////////
+  void processTrkIUData(aod::Collision const& collision,
+                   soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA> const& jTracks)
+  {
+    fillHistograms<false>(jTracks, jTracks); // 2nd argument not used in this case
+  }
+  PROCESS_SWITCH(qaMatchEff, processTrkIUData, "process data", false);
   
 
 
