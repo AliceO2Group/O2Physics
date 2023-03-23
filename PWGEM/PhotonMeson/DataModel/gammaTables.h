@@ -45,6 +45,93 @@ DECLARE_SOA_TABLE(EMReducedEvents, "AOD", "EMREDUCEDEVENT", //!   Main event inf
                   emreducedevent::NgammaPCM, emreducedevent::NgammaPHOS, emreducedevent::NgammaEMC);
 using EMReducedEvent = EMReducedEvents::iterator;
 
+namespace emreducedmcevent
+{
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //!
+DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);          //!
+DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);          //!
+DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);          //!
+} // namespace emreducedmcevent
+DECLARE_SOA_TABLE(EMReducedMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
+                  o2::soa::Index<>, emreducedmcevent::McCollisionId,
+                  mccollision::GeneratorsID, emreducedmcevent::MCPosX, emreducedmcevent::MCPosY, emreducedmcevent::MCPosZ,
+                  mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
+using EMReducedMCEvent = EMReducedMCEvents::iterator;
+
+namespace emmceventlabel
+{
+DECLARE_SOA_INDEX_COLUMN(EMReducedMCEvent, emreducedmcevent); //! MC collision
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);                 //! Bit mask to indicate collision mismatches (bit ON means mismatch). Bit 15: indicates negative label
+} // namespace emmceventlabel
+
+DECLARE_SOA_TABLE(EMReducedMCEventLabels, "AOD", "EMMCEVENTLABEL", //! Table joined to the EMReducedEvents table containing the MC index
+                  emmceventlabel::EMReducedMCEventId, emmceventlabel::McMask);
+using EMReducedMCEventLabel = EMReducedMCEventLabels::iterator;
+
+namespace emmcparticle
+{
+DECLARE_SOA_INDEX_COLUMN(EMReducedMCEvent, emreducedmcevent);                             //!
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);                                       //!
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother0, mother0, int, "EMMCParticles_Mother0");       //! Track index of the first mother
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother1, mother1, int, "EMMCParticles_Mother1");       //! Track index of the last mother
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "EMMCParticles_Daughter0"); //! Track index of the first daughter
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter1, daughter1, int, "EMMCParticles_Daughter1"); //! Track index of the last daughter
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);                                    //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
+DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);                                //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                        //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                                                      //!
+DECLARE_SOA_COLUMN(Phi, phi, float);                                                      //!
+DECLARE_SOA_COLUMN(E, e, float);                                                          //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
+                           [](float pt, float eta, float e) -> float {
+                             float pz = pt * std::sinh(eta);
+                             if ((e - pz) > static_cast<float>(1e-7)) {
+                               return 0.5f * std::log((e + pz) / (e - pz));
+                             } else {
+                               return -999.0f;
+                             }
+                           });
+} // namespace emmcparticle
+// NOTE: This table is nearly identical to the one from Framework (except that it points to the event ID, not the BC id)
+//       This table contains all MC truth tracks (both barrel and muon)
+DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
+                       o2::soa::Index<>, emmcparticle::EMReducedMCEventId, mcparticle::McCollisionId,
+                       mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
+                       emmcparticle::MothersIds, emmcparticle::DaughtersIdSlice,
+                       mcparticle::Weight,
+                       emmcparticle::Pt, emmcparticle::Eta, emmcparticle::Phi, emmcparticle::E,
+                       mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
+
+                       // dynamic column
+                       emmcparticle::Px<emmcparticle::Pt, emmcparticle::Phi>,
+                       emmcparticle::Py<emmcparticle::Pt, emmcparticle::Phi>,
+                       emmcparticle::Pz<emmcparticle::Pt, emmcparticle::Eta>,
+                       emmcparticle::P<emmcparticle::Pt, emmcparticle::Eta>,
+                       emmcparticle::Y<emmcparticle::Pt, emmcparticle::Eta, emmcparticle::E>,
+                       mcparticle::ProducedByGenerator<mcparticle::Flags>,
+                       mcparticle::FromBackgroundEvent<mcparticle::Flags>,
+                       mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
+                       mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
+                       mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
+
+using EMMCParticle = EMMCParticles::iterator;
+
+namespace emmcparticlelabel
+{
+DECLARE_SOA_INDEX_COLUMN(EMMCParticle, emmcparticle); //!
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
+} // namespace emmcparticlelabel
+
+// NOTE: MC labels. This table has one entry for each reconstructed track (joinable with the track tables)
+DECLARE_SOA_TABLE(EMMCParticleLabels, "AOD", "EMMCPARLABEL", //!
+                  emmcparticlelabel::EMMCParticleId, emmcparticlelabel::McMask);
+
+using EMMCParticleLabel = EMMCParticleLabels::iterator;
+
 namespace v0leg
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);   //!
@@ -131,6 +218,13 @@ DECLARE_SOA_TABLE(V0Photons, "AOD", "V0PHOTON", //!
                   v0data::MGamma<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>);
 // iterators
 using V0Photon = V0Photons::iterator;
+
+namespace v0photonflag // flag to distinguish 1 track belongs to 1 V0 or 2 (or more) V0s in a collision.
+{
+DECLARE_SOA_COLUMN(IsCloser, isCloser, bool); //! true if 2 legs of this v0 do not belong to other V0s in a collision or PCA between 2 legs is closer.
+} // namespace v0photonflag
+DECLARE_SOA_TABLE(V0PhotonFlags, "AOD", "V0PHOTONFLAG", v0photonflag::IsCloser);
+using V0PhotonFlag = V0PhotonFlags::iterator;
 
 namespace MCTracksTrue
 {
