@@ -170,7 +170,7 @@ struct qaMatchEff {
       LOG(info) << "### set_customITShitmap.size(): " << set_customITShitmap.size();
       LOG(info) << "### Custom ITS hitmap checked: ";
       for (std::set<uint8_t>::iterator it = set_customITShitmap.begin(); it != set_customITShitmap.end(); it++) {
-        LOG(info) << "Layer " << (int)(*it) << " ";
+        LOG(info) << "Layer " << static_cast<int>(*it) << " ";
       }
       LOG(info) << "############";
       cutObject.SetRequireHitsInITSLayers(customMinITShits, set_customITShitmap);
@@ -645,10 +645,10 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/etahist_tpcits_prim"))->Fill(track.eta());
             } //  end if ITS
           }   //  end if TPC
-        }     //  end if primaries
-        //
-        // only secondaries from decay
-        else if (mcpart.getProcess() == 4) {
+          //  end if primaries
+        } else if (mcpart.getProcess() == 4) {
+          //
+          // only secondaries from decay
           if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
             histos.get<TH1>(HIST("MC/pthist_tpc_secd"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpc_secd"))->Fill(track.phi());
@@ -659,22 +659,21 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/etahist_tpcits_secd"))->Fill(track.eta());
             } //  end if ITS
           }   //  end if TPC
+          // end if secondaries from decay
+        } else {
           //
           // only secondaries from material
-          else {
-            if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
-              histos.get<TH1>(HIST("MC/pthist_tpc_secm"))->Fill(trackPt);
-              histos.get<TH1>(HIST("MC/phihist_tpc_secm"))->Fill(track.phi());
-              histos.get<TH1>(HIST("MC/etahist_tpc_secm"))->Fill(track.eta());
-              if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-                histos.get<TH1>(HIST("MC/pthist_tpcits_secm"))->Fill(trackPt);
-                histos.get<TH1>(HIST("MC/phihist_tpcits_secm"))->Fill(track.phi());
-                histos.get<TH1>(HIST("MC/etahist_tpcits_secm"))->Fill(track.eta());
-              } //  end if ITS
-            }   //  end if TPC
-          }     // end if secondaries from material
-                //
-        }       // end if secondaries from decay
+          if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
+            histos.get<TH1>(HIST("MC/pthist_tpc_secm"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_secm"))->Fill(track.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_secm"))->Fill(track.eta());
+            if (track.hasITS() && isTrackSelectedITSCuts(track)) {
+              histos.get<TH1>(HIST("MC/pthist_tpcits_secm"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_secm"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_secm"))->Fill(track.eta());
+            } //  end if ITS
+          }   //  end if TPC
+        }     // end if secondaries from material
         //
         // protons only
         if (tpPDGCode == 2212) {
@@ -717,10 +716,10 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/etahist_tpcits_pi_prim"))->Fill(track.eta());
               } //  end if ITS
             }   //  end if TPC
-          }     //  end if primaries
-          //
-          // only secondary pions from decay
-          else if (mcpart.getProcess() == 4) {
+            //  end if primaries
+          } else if (mcpart.getProcess() == 4) {
+            //
+            // only secondary pions from decay
             if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
               histos.get<TH1>(HIST("MC/pthist_tpc_pi_secd"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpc_pi_secd"))->Fill(track.phi());
@@ -731,24 +730,23 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secd"))->Fill(track.eta());
               } //  end if ITS
             }   //  end if TPC
+            // end if secondaries from decay
+          } else {
             //
             // only secondary pions from material
-            else {
-              if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
-                histos.get<TH1>(HIST("MC/pthist_tpc_pi_secm"))->Fill(trackPt);
-                histos.get<TH1>(HIST("MC/phihist_tpc_pi_secm"))->Fill(track.phi());
-                histos.get<TH1>(HIST("MC/etahist_tpc_pi_secm"))->Fill(track.eta());
-                if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-                  histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secd"))->Fill(trackPt);
-                  histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secd"))->Fill(track.phi());
-                  histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secd"))->Fill(track.eta());
-                } //  end if ITS
-              }   //  end if TPC
-            }     // end if secondaries from material
-            //
-          } // end if secondaries from decay
-            //
-        }   // end pions only
+            if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
+              histos.get<TH1>(HIST("MC/pthist_tpc_pi_secm"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpc_pi_secm"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpc_pi_secm"))->Fill(track.eta());
+              if (track.hasITS() && isTrackSelectedITSCuts(track)) {
+                histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secd"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secd"))->Fill(track.phi());
+                histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secd"))->Fill(track.eta());
+              } //  end if ITS
+            }   //  end if TPC
+          }     // end if secondaries from material
+                //
+        }       // end pions only
         //
         // no primary/sec-d pions
         if (!((tpPDGCode == 211) && (mcpart.isPhysicalPrimary()))) {
