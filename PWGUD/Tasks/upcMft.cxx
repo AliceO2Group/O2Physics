@@ -52,6 +52,7 @@ struct BcTracks {
   float timeFT0C = -999; // Default is -999, because FT0 time can be negative, so the usual -1 is not ideal.
   float timeFT0A = -999;
   float ZposFT0 = -999; // Z position calculated from timeA and timeC in cm
+  int nChannelsFT0C = 0;
   std::vector<o2::track::TrackParCovFwd> trackParams = {};
 };
 
@@ -89,6 +90,7 @@ struct UpcMftRec {
     registry.add("hMassPtRhoRecElectrons", "#gamma#gamma#rightarrow#it{e}^{+}#it{e}^{-} (2 tracks);mass (GeV/c^{2}) ;#it{p}_{T} (GeV/c)", {HistType::kTH2F, {{150, 0., 1.5}, {200, 0., 1.0}}});
     registry.add("hTimeFT0C", "FT0C time (ns); Entries", kTH1F, {{200, -1.0, 1.0}});
     registry.add("hTimeFT0C4", "FT0C time (ns) (4 tracks); Entries", kTH1F, {{200, -1.0, 1.0}});
+    registry.add("hFT0CSignalsPerBC", "Number of FT0C channels with signal per BC; Entries", kTH1F, {{112, 0.5, 112.5}});
     registry.add("hTracksPerBC", "Tracks per BC; Tracks per BC; Entries", kTH1F, {{10000, 0, 10000}});
     registry.add("hChargeDistribution4Tracks", "Charge distribution of 4-track events; q_{1}+q_{2}+q_{3}+q_{4}; Entries", kTH1F, {{9, -4.5, 4.5}});
     // control plots for 2-track events
@@ -175,132 +177,130 @@ struct UpcMftRec {
           element->second.timeFT0C = ft0.timeC();
           element->second.timeFT0A = ft0.timeA();
           element->second.ZposFT0 = ft0.posZ();
+          element->second.nChannelsFT0C = ft0.channelC().size();
         }
       }
+    }
+    BcTracks defaultBcTrack; // Struct with default values used later to filter out default FT0 time
+    for (auto& bcGroup : bcGroups) {
+      registry.fill(HIST("hTracksPerBC"), bcGroup.second.tracks.size());
 
-      BcTracks defaultBcTrack; // Struct with default values used later to filter out default FT0 time
-      for (auto& bcGroup : bcGroups) {
-        registry.fill(HIST("hTracksPerBC"), bcGroup.second.tracks.size());
+      if (bcGroup.second.timeFT0C != defaultBcTrack.timeFT0C && std::abs(bcGroup.second.timeFT0C) < 1 && std::abs(bcGroup.second.timeFT0A) > 5 && bcGroup.second.tracks.size() == 2) {
 
-        if (bcGroup.second.timeFT0C != defaultBcTrack.timeFT0C && std::abs(bcGroup.second.timeFT0C) < 1 && std::abs(bcGroup.second.timeFT0A) > 5 && bcGroup.second.tracks.size() == 2) {
-
-          // Fill control histos for non-propagated tracks
-          for (int i = 0; i < 2; i++) {
-            auto mftTrack = bcGroup.second.tracks[i].mfttrack(); // Get MFT tracks for the two-track case
-            registry.fill(HIST("ControlHistos/hTrackChi2"), mftTrack.chi2());
-            registry.fill(HIST("ControlHistos/hTrackNClusters"), mftTrack.nClusters());
-            registry.fill(HIST("ControlHistos/hTrackPt"), mftTrack.pt());
-            registry.fill(HIST("ControlHistos/hTrackEta"), mftTrack.eta());
-            registry.fill(HIST("ControlHistos/hTrackPhi"), mftTrack.phi());
-            if (mftTrack.sign() > 0) {
-              registry.fill(HIST("ControlHistos/hTrackEtaPos"), mftTrack.eta());
-              registry.fill(HIST("ControlHistos/hTrackPhiPos"), mftTrack.phi());
-            }
-            if (mftTrack.sign() < 0) {
-              registry.fill(HIST("ControlHistos/hTrackEtaNeg"), mftTrack.eta());
-              registry.fill(HIST("ControlHistos/hTrackPhiNeg"), mftTrack.phi());
-            }
+        // Fill control histos for non-propagated tracks
+        for (int i = 0; i < 2; i++) {
+          auto mftTrack = bcGroup.second.tracks[i].mfttrack(); // Get MFT tracks for the two-track case
+          registry.fill(HIST("ControlHistos/hTrackChi2"), mftTrack.chi2());
+          registry.fill(HIST("ControlHistos/hTrackNClusters"), mftTrack.nClusters());
+          registry.fill(HIST("ControlHistos/hTrackPt"), mftTrack.pt());
+          registry.fill(HIST("ControlHistos/hTrackEta"), mftTrack.eta());
+          registry.fill(HIST("ControlHistos/hTrackPhi"), mftTrack.phi());
+          if (mftTrack.sign() > 0) {
+            registry.fill(HIST("ControlHistos/hTrackEtaPos"), mftTrack.eta());
+            registry.fill(HIST("ControlHistos/hTrackPhiPos"), mftTrack.phi());
           }
-
-          // Get propagated MFT tracks (two-track case)
-          auto mftPropTrack1 = bcGroup.second.trackParams[0];
-          auto mftPropTrack2 = bcGroup.second.trackParams[1];
-
-          mftPropTrack1.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
-          mftPropTrack2.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
-
-          // Fill control histos for the propagated tracks
-          for (int i = 0; i < 2; i++) {
-            auto mftPropTrack = bcGroup.second.trackParams[i];
-            registry.fill(HIST("PropControlHistos/hTrackPt"), mftPropTrack.getPt());
-            registry.fill(HIST("PropControlHistos/hTrackEta"), mftPropTrack.getEta());
-            registry.fill(HIST("PropControlHistos/hTrackPhi"), mftPropTrack.getPhi()); // getCharge() is below
+          if (mftTrack.sign() < 0) {
+            registry.fill(HIST("ControlHistos/hTrackEtaNeg"), mftTrack.eta());
+            registry.fill(HIST("ControlHistos/hTrackPhiNeg"), mftTrack.phi());
           }
-
-          // Make a rho candidate ( using propagated tracks )
-          const float mPion = 0.13957; // GeV/c2
-          if (mftPropTrack1.getCharge() + mftPropTrack2.getCharge() != 0)
-            continue; // Skip if total charge is not 0 ; if using non propagated tracks use sign() instead of getCharge()
-          if (mftPropTrack1.getCharge() > 0 && mftPropTrack2.getCharge() < 0) {
-            registry.fill(HIST("PropControlHistos/hTrackEta2D"), mftPropTrack1.getEta(), mftPropTrack2.getEta());
-            registry.fill(HIST("PropControlHistos/hTrackPhi2D"), mftPropTrack1.getPhi(), mftPropTrack2.getPhi());
-          }
-          if (mftPropTrack1.getCharge() < 0 && mftPropTrack2.getCharge() > 0) {
-            registry.fill(HIST("PropControlHistos/hTrackEta2D"), mftPropTrack2.getEta(), mftPropTrack1.getEta());
-            registry.fill(HIST("PropControlHistos/hTrackPhi2D"), mftPropTrack2.getPhi(), mftPropTrack1.getPhi());
-          }
-
-          TLorentzVector pi1LV;
-          TLorentzVector pi2LV;
-          pi1LV.SetPtEtaPhiM(mftPropTrack1.getPt(), mftPropTrack1.getEta(), mftPropTrack1.getPhi(), mPion); // if using non propagated tracks use pt(),eta(),phi() instead
-          pi2LV.SetPtEtaPhiM(mftPropTrack2.getPt(), mftPropTrack2.getEta(), mftPropTrack2.getPhi(), mPion); // if using non propagated tracks use pt(),eta(),phi() instead
-          TLorentzVector rhoLV = pi1LV + pi2LV;
-          // Fill histos
-          registry.fill(HIST("hMassRhoRec"), rhoLV.M());
-          registry.fill(HIST("hPtRhoRec"), rhoLV.Pt());
-          registry.fill(HIST("hMassPtRhoRec"), rhoLV.M(), rhoLV.Pt());
-          registry.fill(HIST("hTimeFT0C"), bcGroup.second.timeFT0C);
         }
 
-        if (bcGroup.second.timeFT0C != defaultBcTrack.timeFT0C && std::abs(bcGroup.second.timeFT0C) < 1 && std::abs(bcGroup.second.timeFT0A) > 5 && bcGroup.second.tracks.size() == 4) { // 4 tracks events
-          // Get tracks
-          auto mftTrack1 = bcGroup.second.tracks[0].mfttrack();
-          auto mftTrack2 = bcGroup.second.tracks[1].mfttrack();
-          auto mftTrack3 = bcGroup.second.tracks[2].mfttrack();
-          auto mftTrack4 = bcGroup.second.tracks[3].mfttrack();
-          // Get propagated MFT tracks (four-track case)
-          auto mftPropTrack1 = bcGroup.second.trackParams[0];
-          auto mftPropTrack2 = bcGroup.second.trackParams[1];
-          auto mftPropTrack3 = bcGroup.second.trackParams[2];
-          auto mftPropTrack4 = bcGroup.second.trackParams[3];
-          mftPropTrack1.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
-          mftPropTrack2.propagateToZhelix(bcGroup.second.ZposFT0, Bz);
-          mftPropTrack3.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
-          mftPropTrack4.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
-          // Make a rho candidate
-          const float mPion = 0.13957; // GeV/c2
-          TLorentzVector pi1LV;
-          TLorentzVector pi2LV;
-          TLorentzVector pi3LV;
-          TLorentzVector pi4LV;
-          pi1LV.SetPtEtaPhiM(mftPropTrack1.getPt(), mftPropTrack1.getEta(), mftPropTrack1.getPhi(), mPion);
-          pi2LV.SetPtEtaPhiM(mftPropTrack2.getPt(), mftPropTrack2.getEta(), mftPropTrack2.getPhi(), mPion);
-          pi3LV.SetPtEtaPhiM(mftPropTrack3.getPt(), mftPropTrack3.getEta(), mftPropTrack3.getPhi(), mPion);
-          pi4LV.SetPtEtaPhiM(mftPropTrack4.getPt(), mftPropTrack4.getEta(), mftPropTrack4.getPhi(), mPion);
-          TLorentzVector rhoLV = pi1LV + pi2LV + pi3LV + pi4LV;
-          // Fill histos
-          registry.fill(HIST("hChargeDistribution4Tracks"), mftTrack1.sign() + mftTrack2.sign() + mftTrack3.sign() + mftTrack4.sign());
-          if (mftTrack1.sign() + mftTrack2.sign() + mftTrack3.sign() + mftTrack4.sign() != 0)
-            continue; // Skip if total charge is not 0
-          registry.fill(HIST("hMassRhoRec4"), rhoLV.M());
-          registry.fill(HIST("hPtRhoRec4"), rhoLV.Pt());
-          registry.fill(HIST("hMassPtRhoRec4"), rhoLV.M(), rhoLV.Pt());
-          registry.fill(HIST("hTimeFT0C4"), bcGroup.second.timeFT0C);
+        // Get propagated MFT tracks (two-track case)
+        auto mftPropTrack1 = bcGroup.second.trackParams[0];
+        auto mftPropTrack2 = bcGroup.second.trackParams[1];
+
+        mftPropTrack1.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
+        mftPropTrack2.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
+
+        // Fill control histos for the propagated tracks
+        for (int i = 0; i < 2; i++) {
+          auto mftPropTrack = bcGroup.second.trackParams[i];
+          registry.fill(HIST("PropControlHistos/hTrackPt"), mftPropTrack.getPt());
+          registry.fill(HIST("PropControlHistos/hTrackEta"), mftPropTrack.getEta());
+          registry.fill(HIST("PropControlHistos/hTrackPhi"), mftPropTrack.getPhi()); // getCharge() is below
         }
 
-        if (bcGroup.second.timeFT0C != defaultBcTrack.timeFT0C && std::abs(bcGroup.second.timeFT0C) < 1 && std::abs(bcGroup.second.timeFT0A) > 5 && bcGroup.second.tracks.size() == 2) { // electron mass hypothesis
-          // Get tracks
-          auto mftTrack1 = bcGroup.second.tracks[0].mfttrack();
-          auto mftTrack2 = bcGroup.second.tracks[1].mfttrack();
-          // Get propagated MFT tracks (two-track case)
-          auto mftPropTrack1 = bcGroup.second.trackParams[0];
-          auto mftPropTrack2 = bcGroup.second.trackParams[1];
-
-          mftPropTrack1.propagateToZhelix(bcGroup.second.ZposFT0, Bz);
-          mftPropTrack2.propagateToZhelix(bcGroup.second.ZposFT0, Bz);
-
-          // Make a rho candidate
-          const float mElectron = 0.000511; // GeV/c2
-          if (mftTrack1.sign() + mftTrack2.sign() != 0)
-            continue; // Skip if total charge is not 0
-          TLorentzVector el1LV;
-          TLorentzVector el2LV;
-          el1LV.SetPtEtaPhiM(mftPropTrack1.getPt(), mftPropTrack1.getEta(), mftPropTrack1.getPhi(), mElectron);
-          el2LV.SetPtEtaPhiM(mftPropTrack2.getPt(), mftPropTrack2.getEta(), mftPropTrack2.getPhi(), mElectron);
-          TLorentzVector rhoLV = el1LV + el2LV;
-          // Fill histos
-          registry.fill(HIST("hMassPtRhoRecElectrons"), rhoLV.M(), rhoLV.Pt());
+        // Make a rho candidate ( using propagated tracks )
+        if (mftPropTrack1.getCharge() + mftPropTrack2.getCharge() != 0)
+          continue; // Skip if total charge is not 0 ; if using non propagated tracks use sign() instead of getCharge()
+        if (mftPropTrack1.getCharge() > 0 && mftPropTrack2.getCharge() < 0) {
+          registry.fill(HIST("PropControlHistos/hTrackEta2D"), mftPropTrack1.getEta(), mftPropTrack2.getEta());
+          registry.fill(HIST("PropControlHistos/hTrackPhi2D"), mftPropTrack1.getPhi(), mftPropTrack2.getPhi());
         }
+        if (mftPropTrack1.getCharge() < 0 && mftPropTrack2.getCharge() > 0) {
+          registry.fill(HIST("PropControlHistos/hTrackEta2D"), mftPropTrack2.getEta(), mftPropTrack1.getEta());
+          registry.fill(HIST("PropControlHistos/hTrackPhi2D"), mftPropTrack2.getPhi(), mftPropTrack1.getPhi());
+        }
+
+        TLorentzVector pi1LV;
+        TLorentzVector pi2LV;
+        pi1LV.SetPtEtaPhiM(mftPropTrack1.getPt(), mftPropTrack1.getEta(), mftPropTrack1.getPhi(), o2::constants::physics::MassPionCharged); // if using non propagated tracks use pt(),eta(),phi() instead
+        pi2LV.SetPtEtaPhiM(mftPropTrack2.getPt(), mftPropTrack2.getEta(), mftPropTrack2.getPhi(), o2::constants::physics::MassPionCharged); // if using non propagated tracks use pt(),eta(),phi() instead
+        TLorentzVector rhoLV = pi1LV + pi2LV;
+        // Fill histos
+        registry.fill(HIST("hMassRhoRec"), rhoLV.M());
+        registry.fill(HIST("hPtRhoRec"), rhoLV.Pt());
+        registry.fill(HIST("hMassPtRhoRec"), rhoLV.M(), rhoLV.Pt());
+        registry.fill(HIST("hTimeFT0C"), bcGroup.second.timeFT0C);
+        registry.fill(HIST("hFT0CSignalsPerBC"), bcGroup.second.nChannelsFT0C);
+      }
+
+      if (bcGroup.second.timeFT0C != defaultBcTrack.timeFT0C && std::abs(bcGroup.second.timeFT0C) < 1 && std::abs(bcGroup.second.timeFT0A) > 5 && bcGroup.second.tracks.size() == 4) { // 4 tracks events
+        // Get tracks
+        auto mftTrack1 = bcGroup.second.tracks[0].mfttrack();
+        auto mftTrack2 = bcGroup.second.tracks[1].mfttrack();
+        auto mftTrack3 = bcGroup.second.tracks[2].mfttrack();
+        auto mftTrack4 = bcGroup.second.tracks[3].mfttrack();
+        // Get propagated MFT tracks (four-track case)
+        auto mftPropTrack1 = bcGroup.second.trackParams[0];
+        auto mftPropTrack2 = bcGroup.second.trackParams[1];
+        auto mftPropTrack3 = bcGroup.second.trackParams[2];
+        auto mftPropTrack4 = bcGroup.second.trackParams[3];
+        mftPropTrack1.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
+        mftPropTrack2.propagateToZhelix(bcGroup.second.ZposFT0, Bz);
+        mftPropTrack3.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
+        mftPropTrack4.propagateToZhelix(bcGroup.second.ZposFT0, Bz); // track parameters propagation to the z position given by FT0
+        // Make a rho candidate
+        TLorentzVector pi1LV;
+        TLorentzVector pi2LV;
+        TLorentzVector pi3LV;
+        TLorentzVector pi4LV;
+        pi1LV.SetPtEtaPhiM(mftPropTrack1.getPt(), mftPropTrack1.getEta(), mftPropTrack1.getPhi(), o2::constants::physics::MassPionCharged);
+        pi2LV.SetPtEtaPhiM(mftPropTrack2.getPt(), mftPropTrack2.getEta(), mftPropTrack2.getPhi(), o2::constants::physics::MassPionCharged);
+        pi3LV.SetPtEtaPhiM(mftPropTrack3.getPt(), mftPropTrack3.getEta(), mftPropTrack3.getPhi(), o2::constants::physics::MassPionCharged);
+        pi4LV.SetPtEtaPhiM(mftPropTrack4.getPt(), mftPropTrack4.getEta(), mftPropTrack4.getPhi(), o2::constants::physics::MassPionCharged);
+        TLorentzVector rhoLV = pi1LV + pi2LV + pi3LV + pi4LV;
+        // Fill histos
+        registry.fill(HIST("hChargeDistribution4Tracks"), mftTrack1.sign() + mftTrack2.sign() + mftTrack3.sign() + mftTrack4.sign());
+        if (mftTrack1.sign() + mftTrack2.sign() + mftTrack3.sign() + mftTrack4.sign() != 0)
+          continue; // Skip if total charge is not 0
+        registry.fill(HIST("hMassRhoRec4"), rhoLV.M());
+        registry.fill(HIST("hPtRhoRec4"), rhoLV.Pt());
+        registry.fill(HIST("hMassPtRhoRec4"), rhoLV.M(), rhoLV.Pt());
+        registry.fill(HIST("hTimeFT0C4"), bcGroup.second.timeFT0C);
+      }
+
+      if (bcGroup.second.timeFT0C != defaultBcTrack.timeFT0C && std::abs(bcGroup.second.timeFT0C) < 1 && std::abs(bcGroup.second.timeFT0A) > 5 && bcGroup.second.tracks.size() == 2) { // electron mass hypothesis
+        // Get tracks
+        auto mftTrack1 = bcGroup.second.tracks[0].mfttrack();
+        auto mftTrack2 = bcGroup.second.tracks[1].mfttrack();
+        // Get propagated MFT tracks (two-track case)
+        auto mftPropTrack1 = bcGroup.second.trackParams[0];
+        auto mftPropTrack2 = bcGroup.second.trackParams[1];
+
+        mftPropTrack1.propagateToZhelix(bcGroup.second.ZposFT0, Bz);
+        mftPropTrack2.propagateToZhelix(bcGroup.second.ZposFT0, Bz);
+
+        // Make a rho candidate
+        if (mftTrack1.sign() + mftTrack2.sign() != 0)
+          continue; // Skip if total charge is not 0
+        TLorentzVector el1LV;
+        TLorentzVector el2LV;
+        el1LV.SetPtEtaPhiM(mftPropTrack1.getPt(), mftPropTrack1.getEta(), mftPropTrack1.getPhi(), o2::constants::physics::MassElectron);
+        el2LV.SetPtEtaPhiM(mftPropTrack2.getPt(), mftPropTrack2.getEta(), mftPropTrack2.getPhi(), o2::constants::physics::MassElectron);
+        TLorentzVector rhoLV = el1LV + el2LV;
+        // Fill histos
+        registry.fill(HIST("hMassPtRhoRecElectrons"), rhoLV.M(), rhoLV.Pt());
       }
     }
   }
