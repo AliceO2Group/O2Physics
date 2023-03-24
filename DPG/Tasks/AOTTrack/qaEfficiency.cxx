@@ -1135,7 +1135,7 @@ struct QaEfficiency {
     if (!isPdgSelected<charge, id>(mcParticle)) { // Selecting PDG code
       return;
     }
-    histos.fill(HIST("MC/particleSelection"), 7 + id);
+    histos.fill(HIST("MC/particleSelection"), 6 + id);
 
     h->fill(HIST(hPGenerated[histogramIndex]), mcParticle.p());
     h->fill(HIST(hPtGenerated[histogramIndex]), mcParticle.pt());
@@ -1366,7 +1366,7 @@ struct QaEfficiency {
       histos.fill(countingHisto, 2); // Tracks with particles (i.e. no fakes)
       const auto mcParticle = track.mcParticle();
       if (!isInAcceptance(mcParticle, countingHisto, 2)) {
-        // 2: pt cut 3: eta cut 4: phi cut 5: y cut
+        // 3: pt cut 4: eta cut 5: phi cut 6: y cut
         return false;
       }
 
