@@ -35,11 +35,11 @@ struct JetMatchingHF {
   using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
   using HfCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>;
   using McParticles = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
-  using DetectorLevelJets = soa::Join<aod::MCDetectorLevelD0Jets, aod::MCDetectorLevelD0JetConstituents>;
-  using ParticleLevelJets = soa::Join<aod::MCParticleLevelD0Jets, aod::MCParticleLevelD0JetConstituents>;
+  using DetectorLevelJets = soa::Join<aod::D0MCDJets, aod::D0MCDJetConstituents>;
+  using ParticleLevelJets = soa::Join<aod::D0MCPJets, aod::D0MCPJetConstituents>;
 
-  Produces<aod::MatchedMCParticleDetectorLevelD0Jets> jetsPartToDetMatching;
-  Produces<aod::MatchedMCDetectorParticleLevelD0Jets> jetsDetToPartMatching;
+  Produces<aod::NewMatchedD0MCDJets> jetsPartToDetMatching;
+  Produces<aod::NewMatchedD0MCPJets> jetsDetToPartMatching;
 
   Preslice<ParticleLevelJets> ParticleLevelJetsPerMcCollision = aod::jet::mcCollisionId;
 
@@ -62,7 +62,7 @@ struct JetMatchingHF {
       const auto& cands = jet.hfcandidates_as<HfCandidates>();
       int matchedIdx = -1;
       if ((cands.front().flagMcMatchRec() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) == 0) {
-        jetsDetToPartMatching(matchedIdx);
+        jetsDetToPartMatching(matchedIdx, -1);
         continue;
       }
       for (const auto& cand : cands) {
@@ -92,7 +92,7 @@ struct JetMatchingHF {
           }
         }
       }
-      jetsDetToPartMatching(matchedIdx);
+      jetsDetToPartMatching(matchedIdx, -1);
     }
 
     // match MC to rec
@@ -138,7 +138,7 @@ struct JetMatchingHF {
           }
         }
       }
-      jetsPartToDetMatching(matchedIdx);
+      jetsPartToDetMatching(matchedIdx, -1);
     }
   }
 };
