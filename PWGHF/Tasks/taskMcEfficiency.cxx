@@ -25,7 +25,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-//using namespace o2::aod::hf_cand_2prong;
+// using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 struct HfTaskMcEfficiency {
@@ -64,12 +64,16 @@ struct HfTaskMcEfficiency {
 
   HistogramRegistry registry{"registry"};
 
-  bool isThereD0 = (std::find(pdgCodes.value.begin(), pdgCodes.value.end(), pdg::kD0) != pdgCodes.value.end());
-  bool isThereD0Bar = (std::find(pdgCodes.value.begin(), pdgCodes.value.end(), pdg::kD0Bar) != pdgCodes.value.end());
-  bool isThereLc = (std::find(pdgCodes.value.begin(), pdgCodes.value.end(), pdg::kLambdaCPlus) != pdgCodes.value.end());
+  bool isThereD0 = false;
+  bool isThereD0Bar = false;
+  bool isThereLc = false;
 
   void init(o2::framework::InitContext&)
   {
+    isThereD0 = (std::find(pdgCodes.value.begin(), pdgCodes.value.end(), pdg::kD0) != pdgCodes.value.end());
+    isThereD0Bar = (std::find(pdgCodes.value.begin(), pdgCodes.value.end(), pdg::kD0Bar) != pdgCodes.value.end());
+    isThereLc = (std::find(pdgCodes.value.begin(), pdgCodes.value.end(), pdg::kLambdaCPlus) != pdgCodes.value.end());
+
     auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, axisPdg, axisCPA, {2, -0.5, 1.5, "collision matched"}}, kHFNSteps});
     hCandidates->GetAxis(0)->SetTitle("p_{T} (GeV/c)");
     hCandidates->GetAxis(1)->SetTitle("m_{inv}");
@@ -126,8 +130,8 @@ struct HfTaskMcEfficiency {
         bool isHypoMass1SelStep = false;
         bool isHypoMass2SelStep = false;
         if (pdgCode == pdg::kLambdaCPlus) {
-          isHypoMass1SelStep = candidate.isSelLcToPKPi();  /// from candidate selector!
-          isHypoMass2SelStep = candidate.isSelLcToPiKP();  /// from candidate selector!
+          isHypoMass1SelStep = candidate.isSelLcToPKPi(); /// from candidate selector!
+          isHypoMass2SelStep = candidate.isSelLcToPiKP(); /// from candidate selector!
         }
         bool collisionMatched = false;
         if constexpr (mc) { /// info MC used
@@ -136,19 +140,19 @@ struct HfTaskMcEfficiency {
           if (pdgCode == pdg::kLambdaCPlus) {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg, trackThird}, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
           }
-          
+
           if (indexRec < 0) {
             continue;
           }
 
           if (pdgCode == pdg::kLambdaCPlus) {
             auto daughter = trackPos.mcParticle();
-            if (std::abs( daughter.pdgCode() ) == kProton ) {
+            if (std::abs(daughter.pdgCode()) == kProton) {
               isHypoMass1TrackStep = true;
               isHypoMass1SelStep = true;
               isHypoMass2TrackStep = false;
               isHypoMass2SelStep = false;
-            } else if (std::abs( daughter.pdgCode() ) == kPiPlus) {
+            } else if (std::abs(daughter.pdgCode()) == kPiPlus) {
               isHypoMass1TrackStep = false;
               isHypoMass1SelStep = false;
               isHypoMass2TrackStep = true;
@@ -165,7 +169,7 @@ struct HfTaskMcEfficiency {
         float massHypo2 = -1;
         float cpa = candidate.cpa();
         float pt = candidate.pt();
-        //bool selected = false;
+        // bool selected = false;
 
         /// all candidates
         if (isHypoMass1TrackStep) {
@@ -219,7 +223,7 @@ struct HfTaskMcEfficiency {
         duplicates[hash]++;
 
       } /// end loop on pdg codes
-    } /// end loop over candidates
+    }   /// end loop over candidates
 
     auto hDuplicateCount = registry.get<TH1>(HIST("hDuplicateCount"));
     for (const auto& i : duplicates) {
@@ -367,13 +371,13 @@ struct HfTaskMcEfficiency {
         }
         /// check if we end-up with the correct final state using MC info
         int8_t sign = 0;
-        if(std::abs(mcParticle.pdgCode()) == pdg::kD0 && (isThereD0 || isThereD0Bar) && !RecoDecay::isMatchedMCGen(mcParticles, mcParticle, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign) ) {
+        if (std::abs(mcParticle.pdgCode()) == pdg::kD0 && (isThereD0 || isThereD0Bar) && !RecoDecay::isMatchedMCGen(mcParticles, mcParticle, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign)) {
           /// check if we have D0(bar) → π± K∓
           continue;
         }
         hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, pdgCode, 1.0, true);
 
-        if (std::abs(mcParticle.y()) < 0.5 ) {
+        if (std::abs(mcParticle.y()) < 0.5) {
           hCandidates->Fill(kHFStepMcInRapidity, mcParticle.pt(), mass, pdgCode, 1.0, true);
         }
 
@@ -438,7 +442,8 @@ struct HfTaskMcEfficiency {
     }
   }
 
-  void processMcD0(soa::Join<aod::HfCand2Prong, aod::HfSelD0>& candidates, TracksWithSelectionMC& tracks, aod::McParticles& mcParticles, aod::McCollisionLabels& colls) {
+  void processMcD0(soa::Join<aod::HfCand2Prong, aod::HfSelD0>& candidates, TracksWithSelectionMC& tracks, aod::McParticles& mcParticles, aod::McCollisionLabels& colls)
+  {
     candidate2ProngMcLoop(candidates, tracks, mcParticles, colls);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcD0, "Process MC for D0 signal", true);
@@ -495,7 +500,7 @@ struct HfTaskMcEfficiency {
         ////////////////////////////////////
         ///   Step kHFStepMcInRapidity   ///
         ////////////////////////////////////
-        if (std::abs(mcParticle.y()) < 0.5 ) {
+        if (std::abs(mcParticle.y()) < 0.5) {
           hCandidates->Fill(kHFStepMcInRapidity, mcParticle.pt(), mass, pdgCode, 1.0, true);
         }
 
@@ -513,7 +518,7 @@ struct HfTaskMcEfficiency {
           /// this excludes both resonant and direct channels
           continue;
         }
-        if(nDaughters == 3) {
+        if (nDaughters == 3) {
           prong2Id = mcParticle.daughtersIds()[2];
           if (prong2Id < 0) {
             /// this excludes the direct channel
@@ -534,10 +539,10 @@ struct HfTaskMcEfficiency {
         bool isDirect = false;
         bool isResonanceFound = false;
         int resoId = -1;
-        //std::array<int, 2> resoProngsId = {-1, -1};
+        // std::array<int, 2> resoProngsId = {-1, -1};
         int otherDaughterId = -1;
         if (isThereLc) {
-          if(nDaughters == 3) {
+          if (nDaughters == 3) {
             // direct channel: Λc± → p± K∓ π±
             isDirect = true;
             for (const auto& daughter : daughters) {
@@ -547,23 +552,23 @@ struct HfTaskMcEfficiency {
             }
           } else {
             // this means resonant channels (i.e. 2 prongs)
-            
-            //bool isResonanceFound = false;
-            //int resoId = -1;
-            //int otherDaughterId = -1;
+
+            // bool isResonanceFound = false;
+            // int resoId = -1;
+            // int otherDaughterId = -1;
             std::vector<int> arrDaughIndex;
-            std::vector<int> arrPDGDaugh;
+            std::array<int, 2> arrPDGDaugh;
             RecoDecay::getDaughters(mcParticle, &arrDaughIndex, array{0}, 1); /// get indices of Lc daughters (resonant channels)
             if (arrDaughIndex.size() != 2) {
               continue;
             }
-            
+
             // resonant channel Λc± → p± K* (kProton, 313)
             if (!isResonanceFound) {
               for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) { /// loop of Lc daughters (resonant channel)
                 auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
                 arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
-                if(arrPDGDaugh[jProng] == 313) {
+                if (arrPDGDaugh[jProng] == 313) {
                   /// this is the K*
                   resoId = arrDaughIndex[jProng];
                 } else if (arrPDGDaugh[jProng] == kProton) {
@@ -574,7 +579,7 @@ struct HfTaskMcEfficiency {
                   /// let's move directly to the next case
                   break;
                 }
-                if(resoId > 0 && otherDaughterId > 0) {
+                if (resoId > 0 && otherDaughterId > 0) {
                   /// we found the Λc± → p± K* resonant channel!
                   isResonanceFound = true;
                 }
@@ -586,7 +591,7 @@ struct HfTaskMcEfficiency {
               for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) { /// loop of Lc daughters (resonant channel)
                 auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
                 arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
-                if(arrPDGDaugh[jProng] == 2224) {
+                if (arrPDGDaugh[jProng] == 2224) {
                   /// this is the Δ(1232)±±
                   resoId = arrDaughIndex[jProng];
                 } else if (arrPDGDaugh[jProng] == kKPlus) {
@@ -597,7 +602,7 @@ struct HfTaskMcEfficiency {
                   /// let's move directly to the next case
                   break;
                 }
-                if(resoId > 0 && otherDaughterId > 0) {
+                if (resoId > 0 && otherDaughterId > 0) {
                   /// we found the Λc± → Δ(1232)±± K∓ resonant channel!
                   isResonanceFound = true;
                 }
@@ -609,7 +614,7 @@ struct HfTaskMcEfficiency {
               for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) { /// loop of Lc daughters (resonant channel)
                 auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
                 arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
-                if(arrPDGDaugh[jProng] == 3124) {
+                if (arrPDGDaugh[jProng] == 3124) {
                   /// this is the Λ(1520)
                   resoId = arrDaughIndex[jProng];
                 } else if (arrPDGDaugh[jProng] == kPiPlus) {
@@ -620,19 +625,19 @@ struct HfTaskMcEfficiency {
                   /// let's move directly to the next case
                   break;
                 }
-                if(resoId > 0 && otherDaughterId > 0) {
+                if (resoId > 0 && otherDaughterId > 0) {
                   /// we found the Λ(1520) π± resonant channel!
                   isResonanceFound = true;
                 }
               } /// end loop of Lc daughters (resonant channel)
             }
-            if(!isResonanceFound) {
+            if (!isResonanceFound) {
               continue;
             }
 
             /// check if the prong of resonance daughter are in acceptance
             auto resoProngs = mcParticles.rawIteratorAt(resoId).daughters_as<aod::McParticles>();
-            if(resoProngs.size() != 2) {
+            if (resoProngs.size() != 2) {
               continue;
             }
             for (const auto& resoProng : resoProngs) {
@@ -675,14 +680,14 @@ struct HfTaskMcEfficiency {
             hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, pdgCode, 1.0, true);
           } else {
             LOGP(debug, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
-            //for (const auto& daughter : daughters) {
-            //  LOGP(debug, "   MC: pt={} eta={}", daughter.pt(), daughter.eta());
-            //}
+            // for (const auto& daughter : daughters) {
+            //   LOGP(debug, "   MC: pt={} eta={}", daughter.pt(), daughter.eta());
+            // }
           }
 
           /// +++ direct channel +++
           if (isDirect) {
-            
+
             for (const auto& daughter : daughters) {
               //////////////////////////////
               ///   Step kTrackableAll   ///
@@ -711,7 +716,7 @@ struct HfTaskMcEfficiency {
           }
           /// +++ resonant channel +++
           else if (isResonanceFound) {
-            
+
             /// +++ resonance daughters +++
             auto resoProngs = mcParticles.rawIteratorAt(resoId).daughters_as<aod::McParticles>();
             for (const auto& resoProng : resoProngs) {
@@ -777,21 +782,21 @@ struct HfTaskMcEfficiency {
         } /// end "if(selected[...])"
 
       } /// end loop over MC particles
-    } /// end loop over PDG codes
+    }   /// end loop over PDG codes
 
   } /// end candidate3ProngMcLoop
 
-  void processDataLc(soa::Join<aod::HfCand3Prong, aod::HfSelLc>& candidates, TracksWithSelection& tracks) {
+  void processDataLc(soa::Join<aod::HfCand3Prong, aod::HfSelLc>& candidates, TracksWithSelection& tracks)
+  {
     candidate3ProngLoop<false>(candidates, tracks, tracks);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processDataLc, "Process Lc data (no MC information needed)", false);
 
-  void processMcLc(soa::Join<aod::HfCand3Prong, aod::HfSelLc>& candidates, TracksWithSelectionMC& tracks, aod::McParticles& mcParticles, aod::McCollisionLabels& colls) {
+  void processMcLc(soa::Join<aod::HfCand3Prong, aod::HfSelLc>& candidates, TracksWithSelectionMC& tracks, aod::McParticles& mcParticles, aod::McCollisionLabels& colls)
+  {
     candidate3ProngMcLoop(candidates, tracks, mcParticles, colls);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcLc, "Process MC for Lc signal", false);
-
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
