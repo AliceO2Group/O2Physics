@@ -25,6 +25,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/ASoA.h"
 #include "Framework/DataTypes.h"
+#include "Framework/HistogramRegistry.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/AnalysisCut.h"
@@ -56,10 +57,12 @@ namespace o2::aod
 
 namespace emanalysisflags
 {
+DECLARE_SOA_COLUMN(IsMCEventSelected, isMCEventSelected, int);
 DECLARE_SOA_COLUMN(IsEventSelected, isEventSelected, int);
 DECLARE_SOA_COLUMN(IsBarrelSelected, isBarrelSelected, int);
 } // namespace emanalysisflags
 
+DECLARE_SOA_TABLE(EventMCCuts, "AOD", "EVENTMCCUTS", emanalysisflags::IsMCEventSelected);
 DECLARE_SOA_TABLE(EventCuts, "AOD", "EVENTCUTS", emanalysisflags::IsEventSelected);
 DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "BARRELTRACKCUTS", emanalysisflags::IsBarrelSelected);
 } // namespace o2::aod
@@ -67,13 +70,14 @@ DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "BARRELTRACKCUTS", emanalysisflags::Is
 // No skimming: works for events and single tracks
 using MyEventsNoSkimmed = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 using MyEventsSelectedNoSkimmed = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::EventCuts>;
-using MyBarrelTracksNoSkimmed = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+using MyMCEventsSelectedNoSkimmed = soa::Join<aod::McCollisions, aod::EventMCCuts>;
+using MyBarrelTracksNoSkimmed = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
                                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                           aod::pidTPCFullKa, aod::pidTPCFullPr,
                                           aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                           aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                           aod::McTrackLabels>;
-using MyBarrelTracksSelectedNoSkimmed = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+using MyBarrelTracksSelectedNoSkimmed = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
                                                   aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                                   aod::pidTPCFullKa, aod::pidTPCFullPr,
                                                   aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
@@ -82,22 +86,20 @@ using MyBarrelTracksSelectedNoSkimmed = soa::Join<aod::Tracks, aod::TracksExtra,
 
 constexpr static uint32_t gkEventFillMapNoSkimmed = VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkMCEventFillMapNoSkimmed = VarManager::ObjTypes::CollisionMC;
-constexpr static uint32_t gkTrackFillMapNoSkimmed = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMapNoSkimmed = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkParticleMCFillMapNoSkimmed = VarManager::ObjTypes::ParticleMC;
 
 // Skimmed data: works up to dielectron efficiency
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedMCEventLabels>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::ReducedMCEventLabels>;
-using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
-// using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
-using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelLabels>;
-// using MyBarrelTracksSelectedWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelLabels>;
+using MyMCEventsSelected = soa::Join<aod::ReducedMCEvents, aod::EventMCCuts>;
+using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
+using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelLabels>;
 
 //
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkMCEventFillMap = VarManager::ObjTypes::ReducedEventMC;
-constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
-// constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
+constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
@@ -106,7 +108,7 @@ void SetBinsLinear(std::vector<double>& fBins, const double min, const double ma
 struct AnalysisEventSelection {
 
   Produces<aod::EventCuts> eventSel;
-  OutputObj<THashList> fOutputList{"output"};
+  OutputObj<THashList> fOutputList{"QA"};
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
 
@@ -190,12 +192,7 @@ struct AnalysisEventSelection {
 struct AnalysisEventQa {
 
   Filter filterEventSelected = aod::emanalysisflags::isEventSelected == 1;
-  OutputObj<THashList> fOutputList{"output"};
-  THashList* fMainList;
-  TH1D* fNbRecCollisionPerMCCollision;
-  TProfile* fNbmctrack;
-  TH1D* fNbMcEvent;
-  TH1D* fNbRecEvent;
+  HistogramRegistry registry{"HistoAnalysisEventQa", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
@@ -203,18 +200,10 @@ struct AnalysisEventQa {
     VarManager::SetUseVars(AnalysisCut::fgUsedVars);
     VarManager::SetDefaultVarNames();
 
-    fMainList = new THashList;
-    fMainList->SetOwner(kTRUE);
-    fMainList->SetName("OAnalysisEventQA");
-    fNbRecCollisionPerMCCollision = new TH1D("MCEvRecEv", "", 20, 0., 20.);
-    fNbmctrack = new TProfile("mctrack", "", 20, 0., 20.);
-    fNbMcEvent = new TH1D("MCEvent", "", 1, 0., 1.);
-    fNbRecEvent = new TH1D("RecEvent", "", 1, 0., 1.);
-    fMainList->Add(fNbRecCollisionPerMCCollision);
-    fMainList->Add(fNbmctrack);
-    fMainList->Add(fNbMcEvent);
-    fMainList->Add(fNbRecEvent);
-    fOutputList.setObject(fMainList);
+    registry.add("MCEvRecEv", "", HistType::kTH1D, {{20, 0., 20.}}, true);
+    registry.add("mctrack", "", HistType::kTProfile, {{20, 0., 20.}}, true);
+    registry.add("MCEvent", "", HistType::kTH1D, {{1, 0., 1.}}, true);
+    registry.add("RecEvent", "", HistType::kTH1D, {{1, 0., 1.}}, true);
   }
 
   Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
@@ -241,7 +230,7 @@ struct AnalysisEventQa {
       if (!eventFilter)
         continue;
       fEvCounters++;
-      fNbRecEvent->Fill(0.5);
+      registry.fill(HIST("RecEvent"), 0.5);
 
       Int_t midrap = 0;
       Int_t globalindexmc = -1;
@@ -270,7 +259,7 @@ struct AnalysisEventQa {
         fMCEventLabels[globalindexmc] = fMCCounters;
         fMCEventNbReco[globalindexmc] = 1;
         fMCEventNbmctrack[globalindexmc] = midrap;
-        fNbMcEvent->Fill(0.5);
+        registry.fill(HIST("MCEvent"), 0.5);
         fMCCounters++;
       } else {
         fMCEventNbReco[globalindexmc] = fMCEventNbReco.find(globalindexmc)->second + 1;
@@ -279,11 +268,11 @@ struct AnalysisEventQa {
     } // end loop over events
 
     for (const auto& [mcEv, NbRecEv] : fMCEventNbReco) {
-      fNbRecCollisionPerMCCollision->Fill(fMCEventNbReco.find(mcEv)->second);
+      registry.fill(HIST("MCEvRecEv"), fMCEventNbReco.find(mcEv)->second);
     }
 
     for (const auto& [mcEv, NbRecEv] : fMCEventNbmctrack) {
-      fNbmctrack->Fill(fMCEventNbReco.find(mcEv)->second, fMCEventNbmctrack.find(mcEv)->second);
+      registry.fill(HIST("mctrack"), fMCEventNbReco.find(mcEv)->second, fMCEventNbmctrack.find(mcEv)->second);
     }
   }
 
@@ -320,58 +309,124 @@ struct AnalysisEventQa {
     // do nothing
   }
 
-  PROCESS_SWITCH(AnalysisEventQa, processNoSkimmed, "Run event selection without skimming", false);
-  PROCESS_SWITCH(AnalysisEventQa, processSkimmed, "Run event selection on DQ skimmed events", false);
+  PROCESS_SWITCH(AnalysisEventQa, processNoSkimmed, "Run event QA without skimming", false);
+  PROCESS_SWITCH(AnalysisEventQa, processSkimmed, "Run event QA on DQ skimmed events", false);
   PROCESS_SWITCH(AnalysisEventQa, processDummy, "Dummy process function", false);
   PROCESS_SWITCH(AnalysisEventQa, processDummyNoSkimmed, "Dummy process function", false);
+};
+
+struct AnalysisMCEvent {
+
+  Produces<aod::EventMCCuts> eventMCSel;
+
+  void init(o2::framework::InitContext&)
+  {
+
+    VarManager::SetUseVars(AnalysisCut::fgUsedVars);
+    VarManager::SetDefaultVarNames();
+  }
+
+  template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, typename TEvents, typename TEventsMC>
+  void runSelection(TEvents const& events, TEventsMC const& eventsMC)
+  {
+
+    uint8_t eventFilter = 0;
+    Int_t globalindex = -1;
+
+    for (auto& eventMC : eventsMC) {
+      bool pass = false;
+      globalindex = eventMC.globalIndex();
+
+      for (auto& event : events) {
+        Int_t globalindexmc = -1;
+        eventFilter = uint32_t(event.isEventSelected());
+        if (!eventFilter)
+          continue;
+
+        // skimmed data
+        if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
+          auto mcEvent = event.reducedMCevent();
+          globalindexmc = mcEvent.globalIndex();
+        }
+        // Not skimmed data
+        if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
+          if (!event.has_mcCollision()) {
+            continue;
+          }
+          auto mcEvent = event.mcCollision();
+          globalindexmc = mcEvent.globalIndex();
+        }
+        if (globalindexmc == globalindex) {
+          pass = true;
+        }
+      }
+      if (pass) {
+        eventMCSel(1);
+      } else {
+        eventMCSel(0);
+      }
+    }
+  }
+
+  void processSkimmed(MyEventsSelected const& events, ReducedMCEvents const& eventsMC)
+  {
+    runSelection<gkEventFillMap, gkMCEventFillMap>(events, eventsMC);
+  }
+
+  void processNoSkimmed(MyEventsSelectedNoSkimmed const& events, aod::McCollisions const& eventsMC)
+  {
+    runSelection<gkEventFillMapNoSkimmed, gkMCEventFillMapNoSkimmed>(events, eventsMC);
+  }
+
+  void processDummy(MyEvents&)
+  {
+    // do nothing
+  }
+
+  void processDummyNoSkimmed(MyEventsNoSkimmed&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(AnalysisMCEvent, processNoSkimmed, "Run MC event selection without skimming", false);
+  PROCESS_SWITCH(AnalysisMCEvent, processSkimmed, "Run MC event selection on DQ skimmed events", false);
+  PROCESS_SWITCH(AnalysisMCEvent, processDummy, "Dummy process function", false);
+  PROCESS_SWITCH(AnalysisMCEvent, processDummyNoSkimmed, "Dummy process function", false);
 };
 
 struct AnalysisTrackSelection {
 
   Produces<aod::BarrelTrackCuts> trackSel;
   Filter filterEventSelected = aod::emanalysisflags::isEventSelected == 1;
+  Filter filterMCEventSelected = aod::emanalysisflags::isMCEventSelected == 1;
 
   // configurables
-  // Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandardNoINT7", "Event selection"};
   Configurable<std::string> fConfigCuts{"cfgTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMCSignals{"cfgTrackMCSignals", "", "Comma separated list of MC signals"};
 
   // 3D histos for efficiency
-  Configurable<bool> fConfigUsePtVec{"cfgUsePtVecEff", true, "If true, non-linear pt bins predefined"};
-  Configurable<double> fConfigMinPt{"cfgMinPtEff", 0., "min Pt in 3D histos"};
-  Configurable<double> fConfigMaxPt{"cfgMaxPtEff", 10., "max Pt in 3D histos"};
-  Configurable<int> fConfigStepPt{"cfgStepPtEff", 1, "Nb of steps in pt in 3D histos"};
-  Configurable<double> fConfigMinEta{"cfgMinEtaEff", -0.8, "min Eta in 3D histos"};
-  Configurable<double> fConfigMaxEta{"cfgMaxEtaEff", 0.8, "max Eta in 3D histos"};
-  Configurable<int> fConfigStepEta{"cfgStepEtaEff", 16, "Nb of steps in Eta in 3D histos"};
-  Configurable<double> fConfigMinPhi{"cfgMinPhiEff", 0., "min Phi in 3D histos"};
-  Configurable<double> fConfigMaxPhi{"cfgMaxPhiEff", 6.3, "max Phi in 3D histos"};
-  Configurable<int> fConfigStepPhi{"cfgStepPhiEff", 63, "Nb of steps in Phi in 3D histos"};
-
+  Configurable<bool> fConfigUsePtVec{"cfgUsePtVecEff", true, "If true, non-linear pt bins but vector pt bins"};
+  ConfigurableAxis ptBinsVec{"ptBinsVec", {0., 0., 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.155, 0.16, 0.165, 0.17, 0.175, 0.18, 0.185, 0.19, 0.195, 0.20, 0.205, 0.21, 0.215, 0.22, 0.225, 0.23, 0.235, 0.24, 0.245, 0.25, 0.255, 0.26, 0.265, 0.27, 0.275, 0.28, 0.285, 0.29, 0.295, 0.30, 0.32, 0.34, 0.36, 0.38, 0.40, 0.43, 0.46, 0.49, 0.52, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.90, 1.00, 1.10, 1.20, 1.40, 1.60, 1.80, 2.00, 2.40, 2.80, 3.20, 3.70, 4.50, 6.00, 8.00, 10.}, "Pt binning vector"};
+  ConfigurableAxis ptBins{"ptBins", {10, 0.f, 10.f}, "Pt binning"};
+  ConfigurableAxis etaBins{"etaBins", {16, -0.8f, 0.8f}, "Eta binning"};
+  ConfigurableAxis phiBins{"phiBins", {63, -0.f, 6.3f}, "Phi binning"};
   Configurable<bool> fConfigRecWithMC{"cfgEffRecWithMCVars", false, "If true, fill also 3D histograms at reconstructed level with mc variables"};
 
   // Resolution histos
   Configurable<bool> fConfigResolutionOn{"cfgResolution", false, "If true, fill resolution histograms"};
   Configurable<bool> fConfigUsePtVecRes{"cfgUsePtVecRes", true, "If true, non-linear pt bins predefined in res histos"};
-  Configurable<double> fConfigMinPtRes{"cfgMinPtRes", 0., "min Pt in res histos"};
-  Configurable<double> fConfigMaxPtRes{"cfgMaxPtRes", 20., "max Pt in res histos"};
-  Configurable<int> fConfigStepPtRes{"cfgStepPtRes", 1, "Nb of steps in pt in res histos"};
-  Configurable<int> fConfigStepDeltaPt{"cfgStepDeltaPtRes", 1, "Nb of steps in delta pt in res histos"};
-  Configurable<double> fConfigMinDeltaEta{"cfgMinDeltaEtaRes", -0.5, "min delta Eta in res histos"};
-  Configurable<double> fConfigMaxDeltaEta{"cfgMaxDeltaEtaRes", 0.5, "max delta Eta in res histos"};
-  Configurable<int> fConfigStepDeltaEta{"cfgStepDeltaEtaRes", 500, "Nb of steps in detla Eta in res histos"};
-  Configurable<double> fConfigMinDeltaPhi{"cfgMinDeltaPhiRes", -0.5, "min delta Phi in res histos"};
-  Configurable<double> fConfigMaxDeltaPhi{"cfgMaxDeltaPhiRes", 0.5, "max delta Phi in res histos"};
-  Configurable<int> fConfigStepDeltaPhi{"cfgStepDeltaPhiRes", 500, "Nb of steps in delta Phi in res histos"};
+  ConfigurableAxis ptResBinsVec{"ptResBinsVec", {0., 0., 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.155, 0.16, 0.165, 0.17, 0.175, 0.18, 0.185, 0.19, 0.195, 0.20, 0.205, 0.21, 0.215, 0.22, 0.225, 0.23, 0.235, 0.24, 0.245, 0.25, 0.255, 0.26, 0.265, 0.27, 0.275, 0.28, 0.285, 0.29, 0.295, 0.30, 0.32, 0.34, 0.36, 0.38, 0.40, 0.43, 0.46, 0.49, 0.52, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.90, 1.00, 1.10, 1.20, 1.40, 1.60, 1.80, 2.00, 2.40, 2.80, 3.20, 3.70, 4.50, 6.00, 8.00, 10., 12.0, 14., 16., 18., 20.}, "Pt binning vector for resolution"};
+  ConfigurableAxis ptResBins{"ptResBins", {20, 0.f, 20.f}, "Pt binning for resolution"};
+  ConfigurableAxis deltaptResBins{"deltaptResBins", {500, -0.5f, 0.5f}, "DeltaPt binning for resolution"};
+  ConfigurableAxis deltaetaResBins{"deltaetaResBins", {500, -0.5f, 0.5f}, "DeltaEta binning for resolution"};
+  ConfigurableAxis deltaphiResBins{"deltaphiResBins", {500, -0.5f, 0.5f}, "DeltaPhi binning for resolution"};
 
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
 
   // output lists
-  OutputObj<THashList> fOutputList{"output"};
-  THashList* fMainList;             // Main list
-  THashList* fSingleElectronList;   // 3D histos for MC and reconstructed signals
-  THashList* fResolutionList;       // Resolution histograms
-  THashList* fQASingleElectronList; // QA in case on with histo manager outputs
+  OutputObj<THashList> fOutputQA{"SingleElectronQA"};
+  HistogramRegistry registry{"HistoAnalysisTrackSelection", {}, OutputObjHandlingPolicy::AnalysisObject};
+  THashList* fQASingleElectronList; // QA in case on with histo from manager outputs
 
   // Cuts and signals
   // AnalysisCompositeCut* fEventCut; // Taken from event selection part
@@ -381,25 +436,17 @@ struct AnalysisTrackSelection {
   MCSignal* fMCSignalRes;                       // signal for res
 
   // 3D histos
-  std::vector<TH3D*> fHistGenPosPart;
-  std::vector<TH3D*> fHistGenNegPart;
-  std::vector<TH3D*> fHistGenSmearedPosPart;
-  std::vector<TH3D*> fHistGenSmearedNegPart;
-  std::vector<TH3D*> fHistRecPosPart;
-  std::vector<TH3D*> fHistRecNegPart;
-  std::vector<TH3D*> fHistRecPosPartMC;
-  std::vector<TH3D*> fHistRecNegPartMC;
-  // Binning
-  std::vector<double> fPtBins;
-  std::vector<double> fEtaBins;
-  std::vector<double> fPhiBins;
+  std::vector<std::shared_ptr<TH3>> fHistGenPosPart;
+  std::vector<std::shared_ptr<TH3>> fHistGenNegPart;
+  std::vector<std::shared_ptr<TH3>> fHistGenSmearedPosPart;
+  std::vector<std::shared_ptr<TH3>> fHistGenSmearedNegPart;
+  std::vector<std::shared_ptr<TH3>> fHistRecPosPart;
+  std::vector<std::shared_ptr<TH3>> fHistRecNegPart;
+  std::vector<std::shared_ptr<TH3>> fHistRecPosPartMC;
+  std::vector<std::shared_ptr<TH3>> fHistRecNegPartMC;
 
   // Res histos
-  std::vector<TH2D*> fHistRes;
-  // Binning
-  std::vector<double> fPtResBins;
-  std::vector<double> fDeltaEtaBins;
-  std::vector<double> fDeltaPhiBins;
+  std::vector<std::shared_ptr<TH2>> fHistRes;
 
   // QA
   HistogramManager* fHistManQA;                            // histo manager
@@ -410,35 +457,15 @@ struct AnalysisTrackSelection {
   void init(o2::framework::InitContext&)
   {
 
-    // Create list output
-    fMainList = new THashList;
-    fMainList->SetOwner(kTRUE);
-    fMainList->SetName("trackselection");
+    // Create list output for QA
+    fQASingleElectronList = new THashList;
+    fQASingleElectronList->SetOwner(kTRUE);
+    fQASingleElectronList->SetName("SEQA");
 
-    // Create list output for 3D eta,phi,pt
-    fSingleElectronList = new THashList;
-    fSingleElectronList->SetOwner(kTRUE);
-    fSingleElectronList->SetName("SingleElectron");
-
-    // Binning 3D histos
-    if (fConfigUsePtVec) {
-      const Int_t Npt = 68;
-      Double_t pte[Npt] = {0.00, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.155, 0.16, 0.165, 0.17, 0.175, 0.18, 0.185, 0.19, 0.195, 0.20, 0.205, 0.21, 0.215, 0.22, 0.225, 0.23, 0.235, 0.24, 0.245, 0.25, 0.255, 0.26, 0.265, 0.27, 0.275, 0.28, 0.285, 0.29, 0.295, 0.30, 0.32, 0.34, 0.36, 0.38, 0.40, 0.43, 0.46, 0.49, 0.52, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.90, 1.00, 1.10, 1.20, 1.40, 1.60, 1.80, 2.00, 2.40, 2.80, 3.20, 3.70, 4.50, 6.00, 8.00, 10.};
-      std::vector<double> v_pte(pte, std::end(pte));
-      fPtBins = v_pte;
-    } else {
-      SetBinsLinear(fPtBins, fConfigMinPt, fConfigMaxPt, fConfigStepPt);
-    }
-    SetBinsLinear(fEtaBins, fConfigMinEta, fConfigMaxEta, fConfigStepEta);
-    SetBinsLinear(fPhiBins, fConfigMinPhi, fConfigMaxPhi, fConfigStepPhi);
-    const int fNptBins = fPtBins.size() - 1;
-    const int fNetaBins = fEtaBins.size() - 1;
-    const int fNphiBins = fPhiBins.size() - 1;
-
-    // Event cut: taken from event selection part
-    // fEventCut = new AnalysisCompositeCut(true);
-    // TString eventCutStr = fConfigEventCuts.value;
-    // fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    // Binning 3D histos for single electron efficiency
+    AxisSpec axisEta{etaBins, "#it{#eta}_{e}"};
+    AxisSpec axisPhi{phiBins, "#it{#varphi}_{e} (rad)"};
+    AxisSpec axisPt{ptBins, "#it{p}_{T,e} (GeV/#it{c})"};
 
     // List of track cuts
     TString cutNamesStr = fConfigCuts.value;
@@ -465,144 +492,86 @@ struct AnalysisTrackSelection {
       }
     }
 
-    // Configure 3D histograms
-    // Create List with generated particles
-    TList* Generated = new TList();
-    Generated->SetOwner();
-    Generated->SetName("Generated");
+    // Efficiency histograms
+    // Generated histograms
+    // Generated true
     for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
-      TH3D* th3_tmp_pos = new TH3D(Form("Ngen_Pos_%s", fMCSignals.at(i).GetName()), ";p_{T};#eta;#varphi", fNptBins, fPtBins.data(), fNetaBins, fEtaBins.data(), fNphiBins, fPhiBins.data());
-      th3_tmp_pos->Sumw2();
-      fHistGenPosPart.push_back(th3_tmp_pos);
-      Generated->Add(th3_tmp_pos);
-      TH3D* th3_tmp_neg = new TH3D(Form("Ngen_Neg_%s", fMCSignals.at(i).GetName()), ";p_{T};#eta;#varphi", fNptBins, fPtBins.data(), fNetaBins, fEtaBins.data(), fNphiBins, fPhiBins.data());
-      th3_tmp_neg->Sumw2();
-      fHistGenNegPart.push_back(th3_tmp_neg);
-      Generated->Add(th3_tmp_neg);
-    }
-    // Create List with generated+smeared particles
-    TList* GeneratedSmeared = new TList();
-    GeneratedSmeared->SetName("GeneratedSmeared");
-    GeneratedSmeared->SetOwner();
-    for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
-      TH3D* th3_tmp_pos = new TH3D(Form("Ngen_Pos_%s", fMCSignals.at(i).GetName()), ";p_{T};#eta;#varphi", fNptBins, fPtBins.data(), fNetaBins, fEtaBins.data(), fNphiBins, fPhiBins.data());
-      th3_tmp_pos->Sumw2();
-      fHistGenSmearedPosPart.push_back(th3_tmp_pos);
-      GeneratedSmeared->Add(th3_tmp_pos);
-      TH3D* th3_tmp_neg = new TH3D(Form("Ngen_Neg_%s", fMCSignals.at(i).GetName()), ";p_{T};#eta;#varphi", fNptBins, fPtBins.data(), fNetaBins, fEtaBins.data(), fNphiBins, fPhiBins.data());
-      th3_tmp_neg->Sumw2();
-      fHistGenSmearedNegPart.push_back(th3_tmp_neg);
-      GeneratedSmeared->Add(th3_tmp_neg);
-    }
-
-    fSingleElectronList->Add(Generated);
-    fSingleElectronList->Add(GeneratedSmeared);
-
-    // For every cutsetting one list and every MCsignal 2 histograms with pos and neg charge
-    for (unsigned int list_i = 0; list_i < fTrackCuts.size(); ++list_i) {
-      TList* list = new TList();
-      list->SetName(fTrackCuts.at(list_i).GetName());
-      list->SetOwner();
-
-      for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
-        TH3D* th3_tmp_pos = new TH3D(Form("Nrec_Pos_%s", fMCSignals.at(i).GetName()), ";p_{T};#eta;#varphi", fNptBins, fPtBins.data(), fNetaBins, fEtaBins.data(), fNphiBins, fPhiBins.data());
-        th3_tmp_pos->Sumw2();
-        th3_tmp_pos->SetDirectory(0x0);
-        fHistRecPosPart.push_back(th3_tmp_pos);
-        list->Add(th3_tmp_pos);
-        TH3D* th3_tmp_neg = new TH3D(Form("Nrec_Neg_%s", fMCSignals.at(i).GetName()), ";p_{T};#eta;#varphi", fNptBins, fPtBins.data(), fNetaBins, fEtaBins.data(), fNphiBins, fPhiBins.data());
-        th3_tmp_neg->Sumw2();
-        th3_tmp_neg->SetDirectory(0x0);
-        fHistRecNegPart.push_back(th3_tmp_neg);
-        list->Add(th3_tmp_neg);
+      if (!fConfigUsePtVec) {
+        fHistGenPosPart.push_back(registry.add<TH3>(Form("SingleElectron/Generated/Ngen_Pos_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
+        fHistGenNegPart.push_back(registry.add<TH3>(Form("SingleElectron/Generated/Ngen_Neg_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
+      } else {
+        fHistGenPosPart.push_back(registry.add<TH3>(Form("SingleElectron/Generated/Ngen_Pos_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
+        fHistGenNegPart.push_back(registry.add<TH3>(Form("SingleElectron/Generated/Ngen_Neg_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
       }
-      fSingleElectronList->Add(list);
     }
-    // For every cutsetting one list and every MCsignal 2 histograms with pos and neg charge, filled with mc variables
+
+    // Generated smeared
+    for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
+      if (!fConfigUsePtVec) {
+        fHistGenSmearedPosPart.push_back(registry.add<TH3>(Form("SingleElectron/GeneratedSmeared/Ngen_Pos_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
+        fHistGenSmearedNegPart.push_back(registry.add<TH3>(Form("SingleElectron/GeneratedSmeared/Ngen_Neg_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
+      } else {
+        fHistGenSmearedPosPart.push_back(registry.add<TH3>(Form("SingleElectron/GeneratedSmeared/Ngen_Pos_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
+        fHistGenSmearedNegPart.push_back(registry.add<TH3>(Form("SingleElectron/GeneratedSmeared/Ngen_Neg_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
+      }
+    }
+
+    // Reconstruction level: for every cutsetting one list and every MCsignal 2 histograms with pos and neg charge
+    for (unsigned int list_i = 0; list_i < fTrackCuts.size(); ++list_i) {
+      for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
+
+        if (!fConfigUsePtVec) {
+          fHistRecPosPart.push_back(registry.add<TH3>(Form("SingleElectron/%s/Nrec_Pos_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
+          fHistRecNegPart.push_back(registry.add<TH3>(Form("SingleElectron/%s/Nrec_Neg_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
+        } else {
+          fHistRecPosPart.push_back(registry.add<TH3>(Form("SingleElectron/%s/Nrec_Pos_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
+          fHistRecNegPart.push_back(registry.add<TH3>(Form("SingleElectron/%s/Nrec_Neg_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
+        }
+      }
+    }
+
+    // Reconstruction level: for every cutsetting one list and every MCsignal 2 histograms with pos and neg charge, filled with mc variables
     if (fConfigRecWithMC) {
       for (unsigned int list_i = 0; list_i < fTrackCuts.size(); ++list_i) {
-        TList* list = new TList();
-        list->SetName(Form("%s_MCVars", fTrackCuts.at(list_i).GetName()));
-        list->SetOwner();
-
         for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
-          TH3D* th3_tmp_pos = new TH3D(Form("Nrec_Pos_%s", fMCSignals.at(i).GetName()), ";p_{T};#eta;#varphi", fNptBins, fPtBins.data(), fNetaBins, fEtaBins.data(), fNphiBins, fPhiBins.data());
-          th3_tmp_pos->Sumw2();
-          th3_tmp_pos->SetDirectory(0x0);
-          fHistRecPosPartMC.push_back(th3_tmp_pos);
-          list->Add(th3_tmp_pos);
-          TH3D* th3_tmp_neg = new TH3D(Form("Nrec_Neg_%s", fMCSignals.at(i).GetName()), ";p_{T};#eta;#varphi", fNptBins, fPtBins.data(), fNetaBins, fEtaBins.data(), fNphiBins, fPhiBins.data());
-          th3_tmp_neg->Sumw2();
-          th3_tmp_neg->SetDirectory(0x0);
-          fHistRecNegPartMC.push_back(th3_tmp_neg);
-          list->Add(th3_tmp_neg);
+
+          if (!fConfigUsePtVec) {
+            fHistRecPosPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
+            fHistRecNegPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
+          } else {
+            fHistRecPosPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
+            fHistRecNegPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
+          }
         }
-        fSingleElectronList->Add(list);
       }
     }
-    fMainList->Add(fSingleElectronList);
 
     // Resolution histogramms
     if (fConfigResolutionOn) {
 
-      // Binning 3D histos
-      if (fConfigUsePtVecRes) {
-        const Int_t Npt = 73;
-        Double_t pte[Npt] = {0.00, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.155, 0.16, 0.165, 0.17, 0.175, 0.18, 0.185, 0.19, 0.195, 0.20, 0.205, 0.21, 0.215, 0.22, 0.225, 0.23, 0.235, 0.24, 0.245, 0.25, 0.255, 0.26, 0.265, 0.27, 0.275, 0.28, 0.285, 0.29, 0.295, 0.30, 0.32, 0.34, 0.36, 0.38, 0.40, 0.43, 0.46, 0.49, 0.52, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.90, 1.00, 1.10, 1.20, 1.40, 1.60, 1.80, 2.00, 2.40, 2.80, 3.20, 3.70, 4.50, 6.00, 8.00, 10., 12.0, 14., 16., 18., 20.};
-        std::vector<double> v_pte(pte, std::end(pte));
-        fPtResBins = v_pte;
+      // Binning for resolution
+      AxisSpec axisPtRes{ptResBins, "#it{p}^{gen}_{T,e} (GeV/#it{c})"};
+      AxisSpec axisDeltaptRes{deltaptResBins, "(p^{gen}_{T} - p^{rec}_{T}) / p^{gen}_{T} (GeV/c)"};
+      AxisSpec axisDeltaetaRes{deltaetaResBins, "#eta^{gen} - #eta^{rec}"};
+      AxisSpec axisDeltaphiRes{deltaphiResBins, "#varphi^{gen} - #varphi^{rec} (rad)"};
+
+      // Create the histos
+      if (!fConfigUsePtVecRes) {
+        fHistRes.push_back(registry.add<TH2>("Resolution/PtGen_DeltaPtOverPtGen", "", HistType::kTH2D, {axisPtRes, axisDeltaptRes}, true));
+        fHistRes.push_back(registry.add<TH2>("Resolution/PtGen_DeltaEta", "", HistType::kTH2D, {axisPtRes, axisDeltaetaRes}, true));
+        fHistRes.push_back(registry.add<TH2>("Resolution/PtGen_DeltaPhi_Ele", "", HistType::kTH2D, {axisPtRes, axisDeltaphiRes}, true));
+        fHistRes.push_back(registry.add<TH2>("Resolution/PtGen_DeltaPhi_Pos", "", HistType::kTH2D, {axisPtRes, axisDeltaphiRes}, true));
       } else {
-        SetBinsLinear(fPtResBins, fConfigMinPtRes, fConfigMaxPtRes, fConfigStepPtRes);
+        fHistRes.push_back(registry.add<TH2>("Resolution/PtGen_DeltaPtOverPtGen", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,e} (GeV/#it{c})"}, axisDeltaptRes}, true));
+        fHistRes.push_back(registry.add<TH2>("Resolution/PtGen_DeltaEta", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,e} (GeV/#it{c})"}, axisDeltaetaRes}, true));
+        fHistRes.push_back(registry.add<TH2>("Resolution/PtGen_DeltaPhi_Ele", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,e} (GeV/#it{c})"}, axisDeltaphiRes}, true));
+        fHistRes.push_back(registry.add<TH2>("Resolution/PtGen_DeltaPhi_Pos", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,e} (GeV/#it{c})"}, axisDeltaphiRes}, true));
       }
-      SetBinsLinear(fDeltaEtaBins, fConfigMinDeltaEta, fConfigMaxDeltaEta, fConfigStepDeltaEta);
-      SetBinsLinear(fDeltaPhiBins, fConfigMinDeltaPhi, fConfigMaxDeltaPhi, fConfigStepDeltaPhi);
-      const int fNptresBins = fPtResBins.size() - 1;
-      const int fNDeltaetaBins = fDeltaEtaBins.size() - 1;
-      const int fNDeltaphiBins = fDeltaPhiBins.size() - 1;
-
-      fResolutionList = new THashList;
-      fResolutionList->SetOwner(kTRUE);
-      fResolutionList->SetName("Resolution");
-
-      TH2D* thPtGen_DeltaPtOverPtGen = new TH2D("PtGen_DeltaPtOverPtGen", "", fNptresBins, fPtResBins.data(), fConfigStepDeltaPt, -1., +1.);
-      TH2D* thPtGen_DeltaEta = new TH2D("PtGen_DeltaEta", "", fNptresBins, fPtResBins.data(), fNDeltaetaBins, fDeltaEtaBins.data());
-      TH2D* thPtGen_DeltaPhi_Ele = new TH2D("PtGen_DeltaPhi_Ele", "", fNptresBins, fPtResBins.data(), fNDeltaphiBins, fDeltaPhiBins.data());
-      TH2D* thPtGen_DeltaPhi_Pos = new TH2D("PtGen_DeltaPhi_Pos", "", fNptresBins, fPtResBins.data(), fNDeltaphiBins, fDeltaPhiBins.data());
-
-      thPtGen_DeltaPtOverPtGen->Sumw2();
-      thPtGen_DeltaEta->Sumw2();
-      thPtGen_DeltaPhi_Ele->Sumw2();
-      thPtGen_DeltaPhi_Pos->Sumw2();
-
-      thPtGen_DeltaPtOverPtGen->GetXaxis()->SetTitle("p^{gen}_{T} (GeV/c)");
-      thPtGen_DeltaPtOverPtGen->GetYaxis()->SetTitle("(p^{gen}_{T} - p^{rec}_{T}) / p^{gen}_{T} (GeV/c)");
-      thPtGen_DeltaEta->GetXaxis()->SetTitle("p^{gen}_{T} (GeV/c)");
-      thPtGen_DeltaEta->GetYaxis()->SetTitle("#eta^{gen} - #eta^{rec}");
-      thPtGen_DeltaPhi_Ele->GetXaxis()->SetTitle("p^{gen}_{T} (GeV/c)");
-      thPtGen_DeltaPhi_Ele->GetYaxis()->SetTitle("#varphi^{gen} - #varphi^{rec} (rad)");
-      thPtGen_DeltaPhi_Pos->GetXaxis()->SetTitle("p^{gen}_{T} (GeV/c)");
-      thPtGen_DeltaPhi_Pos->GetYaxis()->SetTitle("#varphi^{gen} - #varphi^{rec} (rad)");
-
-      fHistRes.push_back(thPtGen_DeltaPtOverPtGen);
-      fHistRes.push_back(thPtGen_DeltaEta);
-      fHistRes.push_back(thPtGen_DeltaPhi_Ele);
-      fHistRes.push_back(thPtGen_DeltaPhi_Pos);
-
-      fResolutionList->Add(thPtGen_DeltaPtOverPtGen);
-      fResolutionList->Add(thPtGen_DeltaEta);
-      fResolutionList->Add(thPtGen_DeltaPhi_Ele);
-      fResolutionList->Add(thPtGen_DeltaPhi_Pos);
-
-      fMainList->Add(fResolutionList);
     }
 
     // Configure QA histogram classes
     if (fConfigQA) {
-      // Create list output for QA
-      fQASingleElectronList = new THashList;
-      fQASingleElectronList->SetOwner(kTRUE);
-      fQASingleElectronList->SetName("SingleElectronQA");
-      TString histClassesQA = "";
+      TString histClassesQA = "TrackBarrel_BeforeCuts;";
       for (auto& cut : fTrackCuts) {
 
         // All reconstructed leptons
@@ -635,9 +604,8 @@ struct AnalysisTrackSelection {
       DefineHistograms(fHistManQA, histClassesQA.Data()); // define all histograms
       VarManager::SetUseVars(fHistManQA->GetUsedVars());  // provide the list of required variables so that VarManager knows what to fill
       fQASingleElectronList = fHistManQA->GetMainHistogramList();
-      fMainList->Add(fQASingleElectronList);
     }
-    fOutputList.setObject(fMainList);
+    fOutputQA.setObject(fQASingleElectronList);
   }
 
   Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
@@ -647,10 +615,11 @@ struct AnalysisTrackSelection {
   Preslice<MyBarrelTracksNoSkimmed> perCollisionTracks = aod::track::collisionId;
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TEvents, typename TTracks, typename TEventsMC, typename TTracksMC>
-  void runSelection(TEvents const& events, TTracks const& tracks, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  void runSelection(TEvents const& events, TTracks const& tracks, TEventsMC const& eventsMC, TTracksMC const& tracksMC, bool write)
   {
 
     uint8_t eventFilter = 0;
+    bool pass = true;
     std::map<uint64_t, int> fMCEventLabels;
     int fCounters = 0; //! [0] - particle counter, [1] - event counter
 
@@ -661,8 +630,9 @@ struct AnalysisTrackSelection {
       VarManager::FillEvent<TEventFillMap>(event);
       // if(!fEventCut->IsSelected(VarManager::fgValues)) continue;
       eventFilter = uint32_t(event.isEventSelected());
-      if (!eventFilter)
-        continue;
+      if (!eventFilter) {
+        pass = false;
+      }
       if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
         VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
       }
@@ -672,62 +642,81 @@ struct AnalysisTrackSelection {
 
       // Look if we did not already saw the collision and fill the denominator of the single electron efficiency
       Int_t globalindexmc = -1;
-      if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
-        auto mcEvent = event.reducedMCevent();
-        globalindexmc = mcEvent.globalIndex();
-      }
-      if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
-        auto mcEvent = event.mcCollision();
-        globalindexmc = mcEvent.globalIndex();
-      }
-      if (!(fMCEventLabels.find(globalindexmc) != fMCEventLabels.end())) {
-        fMCEventLabels[globalindexmc] = fCounters;
-        fCounters++;
-        // skimmed data
-        if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
-          auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
-          groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-          runMCGenTrack(groupedMCTracks);
+      if (pass) {
+        if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
+          auto mcEvent = event.reducedMCevent();
+          globalindexmc = mcEvent.globalIndex();
         }
-        // Not skimmed data
-        if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
-          auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
-          groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-          runMCGenTrack(groupedMCTracks);
+        if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
+          auto mcEvent = event.mcCollision();
+          globalindexmc = mcEvent.globalIndex();
+        }
+        if (!(fMCEventLabels.find(globalindexmc) != fMCEventLabels.end())) {
+          fMCEventLabels[globalindexmc] = fCounters;
+          fCounters++;
+          // skimmed data
+          if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
+            auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
+            groupedMCTracks.bindInternalIndicesTo(&tracksMC);
+            runMCGenTrack(groupedMCTracks);
+          }
+          // Not skimmed data
+          if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+            auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
+            groupedMCTracks.bindInternalIndicesTo(&tracksMC);
+            runMCGenTrack(groupedMCTracks);
+          }
         }
       }
 
       // Loop over reconstructed tracks belonging to the event and fill the numerator of the efficiency as well as the resolution map
       if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
         auto groupedTracks = tracks.sliceBy(perReducedEventTracks, event.globalIndex());
-        runRecTrack<gkTrackFillMap>(groupedTracks, tracksMC);
+        runRecTrack<gkTrackFillMap>(groupedTracks, tracksMC, pass, write);
       }
       if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
         auto groupedTracks = tracks.sliceBy(perCollisionTracks, event.globalIndex());
-        runRecTrack<gkTrackFillMapNoSkimmed>(groupedTracks, tracksMC);
+        runRecTrack<gkTrackFillMapNoSkimmed>(groupedTracks, tracksMC, pass, write);
       }
     } // end loop over events
+  }
+
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TEvent, typename TTracks, typename TTracksMC>
+  void runDataFill(TEvent const& event, TTracks const& tracks, TTracksMC const& tracksMC, bool write)
+  {
+
+    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+    VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
+
+    runRecTrack<TTrackFillMap>(tracks, tracksMC, true, write);
+  }
+
+  template <uint32_t TEventMCFillMap, uint32_t TTrackMCFillMap, typename TEventsMC, typename TTracksMC>
+  void runMCFill(TEventsMC const& eventMC, TTracksMC const& tracksMC)
+  {
+    runMCGenTrack(tracksMC);
+  }
+
+  template <uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TTracks, typename TTracksMC>
+  void runDataSelection(TTracks const& tracks, TTracksMC const& tracksMC)
+  {
+
+    runRecTrack<TTrackFillMap>(tracks, tracksMC, false, true);
   }
 
   template <typename TTracksMC>
   void runMCGenTrack(TTracksMC const& groupedMCTracks)
   {
 
-    // loop over mc stack and fill histograms for pure MC truth signals
-    // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
-    // auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
     for (auto& mctrack : groupedMCTracks) {
-      VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
-      // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
-      // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
-      // TODO:  Use the mcReducedFlags to select signals
+      VarManager::FillTrackMC(groupedMCTracks, mctrack);
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if ((*sig).CheckSignal(true, groupedMCTracks, mctrack)) {
           if (mctrack.pdgCode() > 0) {
-            dynamic_cast<TH3D*>(fHistGenNegPart.at(isig))->Fill(mctrack.pt(), mctrack.eta(), mctrack.phi());
+            fHistGenNegPart[isig]->Fill(mctrack.pt(), mctrack.eta(), mctrack.phi());
           } else {
-            dynamic_cast<TH3D*>(fHistGenPosPart.at(isig))->Fill(mctrack.pt(), mctrack.eta(), mctrack.phi());
+            fHistGenPosPart[isig]->Fill(mctrack.pt(), mctrack.eta(), mctrack.phi());
           }
           if (fConfigQA)
             fHistManQA->FillHistClass(Form("MCTruthGen_%s", (*sig).GetName()), VarManager::fgValues);
@@ -737,11 +726,12 @@ struct AnalysisTrackSelection {
   }
 
   template <uint32_t TTrackFillMap, typename TTracks, typename TTracksMC>
-  void runRecTrack(TTracks const& groupedTracks, TTracksMC const& tracksMC)
+  void runRecTrack(TTracks const& groupedTracks, TTracksMC const& tracksMC, bool pass, bool write)
   {
 
     uint32_t filterMap = 0;
     trackSel.reserve(groupedTracks.size());
+
     for (auto& track : groupedTracks) {
       filterMap = 0;
 
@@ -749,14 +739,19 @@ struct AnalysisTrackSelection {
 
       // compute MC matched quantities
       if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
-        VarManager::FillTrack<gkParticleMCFillMap>(track.reducedMCTrack());
+        VarManager::FillTrackMC(tracksMC, track.reducedMCTrack());
       }
       if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
         // If no MC particle is found, skip the track
         if (track.has_mcParticle()) {
           auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
-          VarManager::FillTrack<gkParticleMCFillMapNoSkimmed>(mctrack);
+          VarManager::FillTrackMC(tracksMC, mctrack);
         }
+      }
+
+      // no track cut
+      if (fConfigQA && pass) {
+        fHistManQA->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
       }
 
       // compute track selection and publish the bit map
@@ -764,13 +759,14 @@ struct AnalysisTrackSelection {
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
           filterMap |= (uint32_t(1) << i);
-          if (fConfigQA) {
+          if (fConfigQA && pass) {
             fHistManQA->FillHistClass(fHistNamesRecoQA[i].Data(), VarManager::fgValues);
           }
         }
       }
-      trackSel(static_cast<int>(filterMap));
-      if (!filterMap) {
+      if (write)
+        trackSel(static_cast<int>(filterMap));
+      if (!filterMap || !pass) {
         continue;
       }
 
@@ -802,9 +798,9 @@ struct AnalysisTrackSelection {
         for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
           if (filterMap & (uint8_t(1) << j)) {
             if (track.sign() < 0) {
-              dynamic_cast<TH3D*>(fHistRecNegPart.at(j * fMCSignals.size() + i))->Fill(track.pt(), track.eta(), track.phi());
+              fHistRecNegPart[j * fMCSignals.size() + i]->Fill(track.pt(), track.eta(), track.phi());
             } else {
-              dynamic_cast<TH3D*>(fHistRecPosPart.at(j * fMCSignals.size() + i))->Fill(track.pt(), track.eta(), track.phi());
+              fHistRecPosPart[j * fMCSignals.size() + i]->Fill(track.pt(), track.eta(), track.phi());
             }
 
             if (fConfigRecWithMC) {
@@ -829,9 +825,9 @@ struct AnalysisTrackSelection {
               }
 
               if (track.sign() < 0) {
-                dynamic_cast<TH3D*>(fHistRecNegPartMC.at(j * fMCSignals.size() + i))->Fill(mcpt, mceta, mcphi);
+                fHistRecNegPartMC[j * fMCSignals.size() + i]->Fill(mcpt, mceta, mcphi);
               } else {
-                dynamic_cast<TH3D*>(fHistRecPosPartMC.at(j * fMCSignals.size() + i))->Fill(mcpt, mceta, mcphi);
+                fHistRecPosPartMC[j * fMCSignals.size() + i]->Fill(mcpt, mceta, mcphi);
               }
             }
 
@@ -863,12 +859,12 @@ struct AnalysisTrackSelection {
                 deltaptoverpt = (mcpt - track.pt()) / mcpt;
               Double_t deltaeta = mceta - track.eta();
               Double_t deltaphi = mcphi - track.phi();
-              dynamic_cast<TH2D*>(fHistRes.at(0))->Fill(mcpt, deltaptoverpt);
-              dynamic_cast<TH2D*>(fHistRes.at(1))->Fill(mcpt, deltaeta);
+              fHistRes[0]->Fill(mcpt, deltaptoverpt);
+              fHistRes[1]->Fill(mcpt, deltaeta);
               if (mcpdg < 0) {
-                dynamic_cast<TH2D*>(fHistRes.at(2))->Fill(mcpt, deltaphi);
+                fHistRes[2]->Fill(mcpt, deltaphi);
               } else {
-                dynamic_cast<TH2D*>(fHistRes.at(3))->Fill(mcpt, deltaphi);
+                fHistRes[3]->Fill(mcpt, deltaphi);
               }
             }
             if (fConfigQA)
@@ -881,12 +877,36 @@ struct AnalysisTrackSelection {
 
   void processSkimmed(soa::Filtered<MyEventsSelected> const& events, MyBarrelTracks const& tracks, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
-    runSelection<gkEventFillMap, gkMCEventFillMap, gkTrackFillMap, gkParticleMCFillMap>(events, tracks, eventsMC, tracksMC);
+    runSelection<gkEventFillMap, gkMCEventFillMap, gkTrackFillMap, gkParticleMCFillMap>(events, tracks, eventsMC, tracksMC, true);
   }
 
-  void processNoSkimmed(soa::Filtered<MyEventsSelectedNoSkimmed> const& events, MyBarrelTracksNoSkimmed const& tracks, aod::McCollisions const& eventsMC, aod::McParticles_001 const& tracksMC)
+  void processDataSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, MyBarrelTracks const& tracks, ReducedMCTracks const& tracksMC)
   {
-    runSelection<gkEventFillMapNoSkimmed, gkMCEventFillMapNoSkimmed, gkTrackFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(events, tracks, eventsMC, tracksMC);
+    runDataFill<gkEventFillMap, gkTrackFillMap, gkParticleMCFillMap>(event, tracks, tracksMC, true);
+  }
+
+  void processMCSkimmed(soa::Filtered<MyMCEventsSelected> const& eventsMC, ReducedMCTracks const& tracksMC)
+  {
+    for (auto& eventMC : eventsMC) {
+      auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, eventMC.globalIndex());
+      groupedMCTracks.bindInternalIndicesTo(&tracksMC);
+      runMCFill<gkMCEventFillMap, gkParticleMCFillMap>(eventMC, groupedMCTracks);
+    }
+  }
+
+  void processDataSelectionNoSkimmed(MyBarrelTracksNoSkimmed const& tracks, aod::McParticles_001 const& tracksMC)
+  {
+    runDataSelection<gkTrackFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(tracks, tracksMC);
+  }
+
+  void processMCNoSkimmed(soa::Filtered<MyMCEventsSelectedNoSkimmed>::iterator const& eventMC, aod::McParticles_001 const& tracksMC)
+  {
+    runMCFill<gkMCEventFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(eventMC, tracksMC);
+  }
+
+  void processDataNoSkimmed(soa::Filtered<MyEventsSelectedNoSkimmed>::iterator const& event, MyBarrelTracksNoSkimmed const& tracks, aod::McParticles_001 const& tracksMC)
+  {
+    runDataFill<gkEventFillMapNoSkimmed, gkTrackFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(event, tracks, tracksMC, false);
   }
 
   void processDummy(MyEvents&)
@@ -899,19 +919,27 @@ struct AnalysisTrackSelection {
     // do nothing
   }
 
-  PROCESS_SWITCH(AnalysisTrackSelection, processNoSkimmed, "Run barrel track selection without skimming", false);
-  PROCESS_SWITCH(AnalysisTrackSelection, processSkimmed, "Run barrel track selection on DQ skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processDataSelectionNoSkimmed, "Run barrel track selection without skimming", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processMCNoSkimmed, "Run the barrel MC track filling without skimming", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processDataNoSkimmed, "Run the barrel data track filling without skimming", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processSkimmed, "Run the data and mc barrel data track selection and filling on DQ skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processDataSkimmed, "Run the barrel data track selection and filling on DQ skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processMCSkimmed, "Run the barrel mc track filling on DQ skimmed tracks", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy process function", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummyNoSkimmed, "Dummy process function", false);
 };
 
 struct AnalysisSameEventPairing {
 
-  // Produces<aod::Dileptons> dileptonList;
-
   // Filter based on previous components in the task
   Filter filterEventSelected = aod::emanalysisflags::isEventSelected == 1;
+  Filter filterMCEventSelected = aod::emanalysisflags::isMCEventSelected == 1;
   Filter filterBarrelTrackSelected = aod::emanalysisflags::isBarrelSelected > 0;
+  // Filter filterMCTrackSelected = nabs(o2::aod::mcparticle::pdgCode) == 11;
+
+  // Partition
+  // Partition<ReducedMCTracks> mcSkimmedElectrons = nabs(o2::aod::mcparticle::pdgCode) == 11;
+  // Partition<aod::McParticles_001> mcNotSkimmedElectrons = nabs(o2::aod::mcparticle::pdgCode) == 11;
 
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMCSignals{"cfgBarrelMCSignals", "", "Comma separated list of MC signals"};
@@ -919,68 +947,35 @@ struct AnalysisSameEventPairing {
   Configurable<double> fConfigMaxPt{"cfgMaxPtFidCut", 10., "Fiducial max Pt for MC signal"};
   Configurable<double> fConfigMinEta{"cfgMinEtaFidCut", -0.8, "Fiducial min eta for MC signal"};
   Configurable<double> fConfigMaxEta{"cfgMaxEtaFidCut", 0.8, "Fiducial max eta for MC signal"};
-  Configurable<bool> fConfigFlatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
   Configurable<bool> fConfigRecWithMC{"cfgEffRecWithMCVars", false, "If true, fill also 3D histograms at reconstructed level with mc variables"};
   Configurable<bool> fConfigFillLS{"cfgEffFillLS", false, "If true, fill LS histograms"};
-
-  // TODO: here we specify signals, however signal decisions are precomputed and stored in mcReducedFlags
-  // TODO: The tasks based on skimmed MC could/should rely ideally just on these flags
-  // TODO:   special AnalysisCuts to be prepared in this direction
-  // TODO: cuts on the MC truth information to be added if needed
+  Configurable<bool> fConfigIsPrimary{"cfgIsPrimary", false, "If true, fill only with primary particles"};
 
   // 2D histos: mee and ptee
-  Configurable<double> fConfigMinPtee{"cfgMinPtee", 0., "min Ptee in 2D histos"};
-  Configurable<double> fConfigMaxPtee{"cfgMaxPtee", 10., "max Ptee in 2D histos"};
-  Configurable<int> fConfigStepPtee{"cfgStepPtee", 100, "Nb of steps in ptee in 2D histos"};
-  Configurable<double> fConfigMinMee{"cfgMinMee", 0., "min Mee in 2D histos"};
-  Configurable<double> fConfigMaxMee{"cfgMaxMee", 3.5, "max Mee in 2D histos"};
-  Configurable<int> fConfigStepMee{"cfgStepMee", 600, "Nb of steps in Mee in 2D histos"};
+  ConfigurableAxis pteeBins{"pteeBins", {100, 0.f, 10.f}, "Ptee binning"};
+  ConfigurableAxis meeBins{"meeBins", {600, 0.f, 3.5f}, "Mee binning"};
 
   // output lists
-  OutputObj<THashList> fOutputList{"output"};
-  THashList* fMainList;   // Main list
-  THashList* fPairList;   // 2D histos for MC and reconstructed signals
-  THashList* fQAPairList; // QA in case on with histo manager outputs
+  HistogramRegistry registry{"HistoSameEventSelection", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Cuts and signals
-  // AnalysisCompositeCut* fEventCut; // Taken from event selection part
-  std::vector<AnalysisCompositeCut> fTrackCuts; // list of track cuts
+  std::vector<AnalysisCompositeCut> fTrackCuts; // list of track cuts to init properly the histos
   std::vector<MCSignal> fMCSignals;             // list of signals with one prong to be checked: ULS 2D histos
 
   // 2D histo vectors
-  std::vector<TH2D*> fHistGenPair;
-  std::vector<TH2D*> fHistGenSmearedPair;
-  std::vector<TH2D*> fHistRecPair;
-  std::vector<TH2D*> fHistRecPairMC;
-  // Binning
-  std::vector<double> fPteeBins;
-  std::vector<double> fMeeBins;
+  std::vector<std::shared_ptr<TH2>> fHistGenPair;
+  std::vector<std::shared_ptr<TH2>> fHistGenSmearedPair;
+  std::vector<std::shared_ptr<TH2>> fHistRecPair;
+  std::vector<std::shared_ptr<TH2>> fHistRecPairMC;
 
   // QA: to be defined
 
   void init(o2::framework::InitContext& context)
   {
 
-    // Create list output
-    fMainList = new THashList;
-    fMainList->SetOwner(kTRUE);
-    fMainList->SetName("pairselection");
-
-    // Create list output for 3D eta,phi,pt
-    fPairList = new THashList;
-    fPairList->SetOwner(kTRUE);
-    fPairList->SetName("Dielectron");
-
     // Binning 2D histos
-    SetBinsLinear(fPteeBins, fConfigMinPtee, fConfigMaxPtee, fConfigStepPtee);
-    SetBinsLinear(fMeeBins, fConfigMinMee, fConfigMaxMee, fConfigStepMee);
-    const int fNpteeBins = fPteeBins.size() - 1;
-    const int fNmeeBins = fMeeBins.size() - 1;
-
-    // Event cut: taken from event selection part
-    // fEventCut = new AnalysisCompositeCut(true);
-    // TString eventCutStr = fConfigEventCuts.value;
-    // fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    AxisSpec axisPtee{pteeBins, "#it{p}_{T,ee} (GeV/#it{c})"};
+    AxisSpec axisMee{meeBins, "#it{m}_{ee} (GeV/#it{c}^{2})"};
 
     // List of track cuts
     TString cutNamesStr = fConfigTrackCuts.value;
@@ -1007,96 +1002,50 @@ struct AnalysisSameEventPairing {
     }
 
     // Configure 2D histograms
-    // Create List with generated particles
-    TList* Generated = new TList();
-    Generated->SetOwner();
-    Generated->SetName("Generated");
+    // Generated particles
     for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
-      TH2D* th2_tmp = new TH2D(Form("Ngen_Pair_ULS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
-      th2_tmp->Sumw2();
-      fHistGenPair.push_back(th2_tmp);
-      Generated->Add(th2_tmp);
+      fHistGenPair.push_back(registry.add<TH2>(Form("Dielectron/Generated/Ngen_Pair_ULS_%s", fMCSignals.at(i).GetName()), "", HistType::kTH2D, {axisMee, axisPtee}, true));
       if (fConfigFillLS) {
-        TH2D* th3_tmp = new TH2D(Form("Ngen_Pair_LS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
-        th3_tmp->Sumw2();
-        fHistGenPair.push_back(th3_tmp);
-        Generated->Add(th3_tmp);
+        fHistGenPair.push_back(registry.add<TH2>(Form("Dielectron/Generated/Ngen_Pair_LS_%s", fMCSignals.at(i).GetName()), "", HistType::kTH2D, {axisMee, axisPtee}, true));
       }
     }
 
-    // Create List with generated+smeared particles
-    TList* GeneratedSmeared = new TList();
-    GeneratedSmeared->SetName("GeneratedSmeared");
-    GeneratedSmeared->SetOwner();
+    // Generated+smeared particles
     for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
-      TH2D* th2_tmp = new TH2D(Form("NgenSmeared_Pair_ULS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
-      th2_tmp->Sumw2();
-      fHistGenSmearedPair.push_back(th2_tmp);
-      GeneratedSmeared->Add(th2_tmp);
+      fHistGenSmearedPair.push_back(registry.add<TH2>(Form("Dielectron/GeneratedSmeared/NgenSmeared_Pair_ULS_%s", fMCSignals.at(i).GetName()), "", HistType::kTH2D, {axisMee, axisPtee}, true));
       if (fConfigFillLS) {
-        TH2D* th3_tmp = new TH2D(Form("NgenSmeared_Pair_LS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
-        th3_tmp->Sumw2();
-        fHistGenSmearedPair.push_back(th3_tmp);
-        GeneratedSmeared->Add(th3_tmp);
+        fHistGenSmearedPair.push_back(registry.add<TH2>(Form("Dielectron/GeneratedSmeared/NgenSmeared_Pair_LS_%s", fMCSignals.at(i).GetName()), "", HistType::kTH2D, {axisMee, axisPtee}, true));
       }
     }
-
-    fPairList->Add(Generated);
-    fPairList->Add(GeneratedSmeared);
 
     // Rec with reconstructed variables
     for (unsigned int list_i = 0; list_i < fTrackCuts.size(); ++list_i) {
-      TList* list = new TList();
-      list->SetName(fTrackCuts.at(list_i).GetName());
-      list->SetOwner();
-
       for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
-        TH2D* th2_tmp = new TH2D(Form("Nrec_Pair_ULS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
-        th2_tmp->Sumw2();
-        th2_tmp->SetDirectory(0x0);
-        fHistRecPair.push_back(th2_tmp);
-        list->Add(th2_tmp);
+        fHistRecPair.push_back(registry.add<TH2>(Form("Dielectron/%s/Nrec_Pair_ULS_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH2D, {axisMee, axisPtee}, true));
         if (fConfigFillLS) {
-          TH2D* th3_tmp = new TH2D(Form("Nrec_Pair_LS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
-          th3_tmp->Sumw2();
-          th3_tmp->SetDirectory(0x0);
-          fHistRecPair.push_back(th3_tmp);
-          list->Add(th3_tmp);
+          fHistRecPair.push_back(registry.add<TH2>(Form("Dielectron/%s/Nrec_Pair_LS_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH2D, {axisMee, axisPtee}, true));
         }
       }
-      fPairList->Add(list);
     }
 
     // Rec with MC variables
     if (fConfigRecWithMC) {
       for (unsigned int list_i = 0; list_i < fTrackCuts.size(); ++list_i) {
-        TList* list = new TList();
-        list->SetName(Form("%s_MCVars", fTrackCuts.at(list_i).GetName()));
-        list->SetOwner();
-
         for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
-          TH2D* th2_tmp = new TH2D(Form("Nrec_Pair_ULS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
-          th2_tmp->Sumw2();
-          th2_tmp->SetDirectory(0x0);
-          fHistRecPairMC.push_back(th2_tmp);
-          list->Add(th2_tmp);
+          fHistRecPairMC.push_back(registry.add<TH2>(Form("Dielectron/%s_MCVars/Nrec_Pair_ULS_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH2D, {axisMee, axisPtee}, true));
           if (fConfigFillLS) {
-            TH2D* th3_tmp = new TH2D(Form("Nrec_Pair_LS_%s", fMCSignals.at(i).GetName()), ";m_{ee};p_{T,ee}", fNmeeBins, fMeeBins.data(), fNpteeBins, fPteeBins.data());
-            th3_tmp->Sumw2();
-            th3_tmp->SetDirectory(0x0);
-            fHistRecPairMC.push_back(th3_tmp);
-            list->Add(th3_tmp);
+            fHistRecPairMC.push_back(registry.add<TH2>(Form("Dielectron/%s_MCVars/Nrec_Pair_LS_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH2D, {axisMee, axisPtee}, true));
           }
         }
-        fPairList->Add(list);
       }
     }
-    fMainList->Add(fPairList);
-    fOutputList.setObject(fMainList);
   }
 
   Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
   Preslice<MyBarrelTracks> perReducedEventTracks = aod::reducedtrack::reducedeventId;
+
+  Preslice<aod::McParticles_001> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<MyBarrelTracksNoSkimmed> perCollisionTracks = aod::track::collisionId;
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTracks, typename TEventsMC, typename TTracksMC>
   void runPairing(TEvents const& events, TTracks const& tracks, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
@@ -1107,10 +1056,6 @@ struct AnalysisSameEventPairing {
 
     for (auto& event : events) {
 
-      if (!event.isEventSelected()) {
-        return;
-      }
-
       VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
       VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
       // fill event information which might be needed in histograms that combine track and event properties
@@ -1118,11 +1063,18 @@ struct AnalysisSameEventPairing {
       if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
         VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
       }
+      if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
+        VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
+      }
 
       // Look if we did not already saw the collision and fill the denominator of the single electron efficiency
       Int_t globalindexmc = -1;
       if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
         auto mcEvent = event.reducedMCevent();
+        globalindexmc = mcEvent.globalIndex();
+      }
+      if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
+        auto mcEvent = event.mcCollision();
         globalindexmc = mcEvent.globalIndex();
       }
       if (!(fMCEventLabels.find(globalindexmc) != fMCEventLabels.end())) {
@@ -1134,20 +1086,44 @@ struct AnalysisSameEventPairing {
           groupedMCTracks.bindInternalIndicesTo(&tracksMC);
           runMCGenPair(groupedMCTracks);
         }
+        // Not skimmed data
+        if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+          auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
+          groupedMCTracks.bindInternalIndicesTo(&tracksMC);
+          runMCGenPair(groupedMCTracks);
+        }
       }
-
-      // auto groupedTrackspos = posTracks->sliceByCached(aod::reducedtrack::reducedeventId, event.globalIndex());
-      // groupedTrackspos.bindInternalIndicesTo(&tracks);
-      // auto groupedTracksneg = negTracks->sliceByCached(aod::reducedtrack::reducedeventId, event.globalIndex());
-      // groupedTracksneg.bindInternalIndicesTo(&tracks);
 
       if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
         auto groupedTracks = tracks.sliceBy(perReducedEventTracks, event.globalIndex());
         groupedTracks.bindInternalIndicesTo(&tracks);
         runRecPair<TTrackFillMap>(groupedTracks, tracksMC);
       }
+      if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+        auto groupedTracks = tracks.sliceBy(perCollisionTracks, event.globalIndex());
+        runRecPair<TTrackFillMap>(groupedTracks, tracksMC);
+      }
     } // end loop over reconstructed event
   }   // end loop pairing function
+
+  template <uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEventMC, typename TTracksMC>
+  void runMCPairing(TEventMC const& eventMC, TTracksMC const& tracksMC)
+  {
+
+    runMCGenPair(tracksMC);
+
+  } // end loop pairing function
+
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TTracksMC>
+  void runDataPairing(TEvent const& event, TTracks const& tracks, TTracksMC const& tracksMC)
+  {
+
+    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+    // fill event information which might be needed in histograms that combine track and event properties
+    VarManager::FillEvent<TEventFillMap>(event);
+    runRecPair<TTrackFillMap>(tracks, tracksMC);
+
+  } // end loop pairing function
 
   template <typename TTracksMC>
   void runMCGenPair(TTracksMC const& groupedMCTracks)
@@ -1160,6 +1136,12 @@ struct AnalysisSameEventPairing {
 
       if ((abs(t1.pdgCode()) != 11) || (abs(t2.pdgCode()) != 11))
         continue;
+      // if (!t1.producedByGenerator() || !t2.producedByGenerator())
+      //   continue;
+      if (fConfigIsPrimary) {
+        if (!t1.isPhysicalPrimary() || !t2.isPhysicalPrimary())
+          continue;
+      }
       if (!fConfigFillLS && (t1.pdgCode() * t2.pdgCode() > 0))
         continue; // ULS only
 
@@ -1184,12 +1166,12 @@ struct AnalysisSameEventPairing {
           // not smeared after fiducial cuts
           if (genfidcut) {
             if (!fConfigFillLS) {
-              dynamic_cast<TH2D*>(fHistGenPair.at(isig))->Fill(mass, pairpt);
+              fHistGenPair[isig]->Fill(mass, pairpt);
             } else {
               if (t1.pdgCode() * t2.pdgCode() < 0) {
-                dynamic_cast<TH2D*>(fHistGenPair.at(isig * 2))->Fill(mass, pairpt);
+                fHistGenPair[isig * 2]->Fill(mass, pairpt);
               } else {
-                dynamic_cast<TH2D*>(fHistGenPair.at(isig * 2 + 1))->Fill(mass, pairpt);
+                fHistGenPair[isig * 2 + 1]->Fill(mass, pairpt);
               }
             }
           }
@@ -1198,6 +1180,7 @@ struct AnalysisSameEventPairing {
       }
     } // end of true pairing loop
   }   // end runMCGen
+
   template <uint32_t TTrackFillMap, typename TTracks, typename TTracksMC>
   void runRecPair(TTracks const& tracks, TTracksMC const& tracksMC)
   {
@@ -1207,9 +1190,6 @@ struct AnalysisSameEventPairing {
 
     // Loop over two track combinations
     uint8_t twoTrackFilter = 0;
-    // uint32_t dileptonFilterMap = 0;
-    // uint32_t dileptonMcDecision = 0;
-    // dileptonList.reserve(1);
 
     for (auto& [t1, t2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
       // for (auto& [t1, t2] : combinations(tracks, tracks)) {
@@ -1242,16 +1222,30 @@ struct AnalysisSameEventPairing {
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
 
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) { // for skimmed DQ model
+          if (fConfigIsPrimary) {
+            if (!t1.reducedMCTrack().isPhysicalPrimary() || !t2.reducedMCTrack().isPhysicalPrimary())
+              continue;
+          }
           if ((*sig).CheckSignal(true, tracksMC, t1.reducedMCTrack(), t2.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
 
-      } // end of loop MC signals
+        if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+          if (t1.has_mcParticle() && t2.has_mcParticle()) {
+            auto mct1 = t1.template mcParticle_as<aod::McParticles_001>();
+            auto mct2 = t2.template mcParticle_as<aod::McParticles_001>();
+            if (fConfigIsPrimary) {
+              if (!mct1.isPhysicalPrimary() || !mct2.isPhysicalPrimary())
+                continue;
+            }
+            if ((*sig).CheckSignal(true, tracksMC, mct1, mct2)) {
+              mcDecision |= (uint32_t(1) << isig);
+            }
+          }
+        }
 
-      // dileptonFilterMap = twoTrackFilter;
-      // dileptonMcDecision = mcDecision;
-      // dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
+      } // end of loop MC signals
 
       for (unsigned int i = 0; i < fMCSignals.size(); i++) {
         if (!(mcDecision & (uint32_t(1) << i))) {
@@ -1261,12 +1255,12 @@ struct AnalysisSameEventPairing {
           for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
             if (twoTrackFilter & (uint8_t(1) << j)) {
               if (!fConfigFillLS) {
-                dynamic_cast<TH2D*>(fHistRecPair.at(j * fMCSignals.size() + i))->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
+                fHistRecPair[j * fMCSignals.size() + i]->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
               } else {
                 if (uls) {
-                  dynamic_cast<TH2D*>(fHistRecPair.at(j * (2 * fMCSignals.size()) + 2 * i))->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
+                  fHistRecPair[j * (2 * fMCSignals.size()) + 2 * i]->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
                 } else {
-                  dynamic_cast<TH2D*>(fHistRecPair.at(j * (2 * fMCSignals.size()) + 2 * i + 1))->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
+                  fHistRecPair[j * (2 * fMCSignals.size()) + 2 * i + 1]->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
                 }
               }
             }
@@ -1290,16 +1284,32 @@ struct AnalysisSameEventPairing {
             if ((mctrack1.eta() > fConfigMaxEta) || (mctrack2.eta() > fConfigMaxEta) || (mctrack1.eta() < fConfigMinEta) || (mctrack2.eta() < fConfigMinEta) || (mctrack1.pt() > fConfigMaxPt) || (mctrack2.pt() > fConfigMaxPt) || (mctrack1.pt() < fConfigMinPt) || (mctrack2.pt() < fConfigMinPt))
               genfidcut = kFALSE;
           }
+          if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+            if (t1.has_mcParticle() && t2.has_mcParticle()) {
+              auto mctrack1 = t1.template mcParticle_as<aod::McParticles_001>();
+              auto mctrack2 = t2.template mcParticle_as<aod::McParticles_001>();
+              TLorentzVector Lvec2, Lvec1;
+              Lvec1.SetPtEtaPhiM(mctrack1.pt(), mctrack1.eta(), mctrack1.phi(), masse);
+              Lvec2.SetPtEtaPhiM(mctrack2.pt(), mctrack2.eta(), mctrack2.phi(), masse);
+              TLorentzVector LvecM = Lvec1 + Lvec2;
+              mass = LvecM.M();
+              pairpt = LvecM.Pt();
+              if ((mctrack1.eta() > fConfigMaxEta) || (mctrack2.eta() > fConfigMaxEta) || (mctrack1.eta() < fConfigMinEta) || (mctrack2.eta() < fConfigMinEta) || (mctrack1.pt() > fConfigMaxPt) || (mctrack2.pt() > fConfigMaxPt) || (mctrack1.pt() < fConfigMinPt) || (mctrack2.pt() < fConfigMinPt))
+                genfidcut = kFALSE;
+            } else {
+              genfidcut = kFALSE;
+            }
+          }
           if (genfidcut) {
             for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
               if (twoTrackFilter & (uint8_t(1) << j)) {
                 if (!fConfigFillLS) {
-                  dynamic_cast<TH2D*>(fHistRecPairMC.at(j * fMCSignals.size() + i))->Fill(mass, pairpt);
+                  fHistRecPairMC[j * fMCSignals.size() + i]->Fill(mass, pairpt);
                 } else {
                   if (uls) {
-                    dynamic_cast<TH2D*>(fHistRecPairMC.at(j * (2 * fMCSignals.size()) + 2 * i))->Fill(mass, pairpt);
+                    fHistRecPairMC[j * (2 * fMCSignals.size()) + 2 * i]->Fill(mass, pairpt);
                   } else {
-                    dynamic_cast<TH2D*>(fHistRecPairMC.at(j * (2 * fMCSignals.size()) + 2 * i + 1))->Fill(mass, pairpt);
+                    fHistRecPairMC[j * (2 * fMCSignals.size()) + 2 * i + 1]->Fill(mass, pairpt);
                   }
                 }
               }
@@ -1317,6 +1327,35 @@ struct AnalysisSameEventPairing {
     runPairing<gkEventFillMap, gkMCEventFillMap, gkTrackFillMap>(events, tracks, eventsMC, tracksMC);
   }
 
+  void processDataToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
+                              soa::Filtered<MyBarrelTracksSelected> const& tracks,
+                              ReducedMCTracks const& tracksMC)
+  {
+    runDataPairing<gkEventFillMap, gkTrackFillMap>(event, tracks, tracksMC);
+  }
+
+  void processMCToEESkimmed(soa::Filtered<MyMCEventsSelected> const& eventsMC,
+                            ReducedMCTracks const& tracksMC)
+  {
+    for (auto& eventMC : eventsMC) {
+      auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, eventMC.globalIndex());
+      groupedMCTracks.bindInternalIndicesTo(&tracksMC);
+      runMCPairing<gkMCEventFillMap, gkTrackFillMap>(eventMC, groupedMCTracks);
+    }
+  }
+
+  void processDataToEENoSkimmed(soa::Filtered<MyEventsSelectedNoSkimmed>::iterator const& event,
+                                soa::Filtered<MyBarrelTracksSelectedNoSkimmed> const& tracks,
+                                aod::McParticles_001 const& tracksMC)
+  {
+    runDataPairing<gkEventFillMapNoSkimmed, gkTrackFillMapNoSkimmed>(event, tracks, tracksMC);
+  }
+
+  void processMCToEENoSkimmed(soa::Filtered<MyMCEventsSelectedNoSkimmed>::iterator const& eventMC, aod::McParticles_001 const& tracksMC)
+  {
+    runMCPairing<gkMCEventFillMapNoSkimmed, gkTrackFillMapNoSkimmed>(eventMC, tracksMC);
+  }
+
   void processDummy(MyEvents&)
   {
     // do nothing
@@ -1327,7 +1366,11 @@ struct AnalysisSameEventPairing {
     // do nothing
   }
 
-  PROCESS_SWITCH(AnalysisSameEventPairing, processToEESkimmed, "Run barrel barrel pairing on DQ skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processToEESkimmed, "Run the data and mc barrel barrel pairing on DQ skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDataToEESkimmed, "Run the data barrel barrel pairing on DQ skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processMCToEESkimmed, "Run the MC barrel barrel pairing on DQ skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDataToEENoSkimmed, "Run the data for the barrel pairing on not skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processMCToEENoSkimmed, "Run the MC for the barrel pairing on not skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy process function", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummyNoSkimmed, "Dummy process function", false);
 };
@@ -1337,6 +1380,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<AnalysisEventSelection>(cfgc),
     adaptAnalysisTask<AnalysisEventQa>(cfgc),
+    adaptAnalysisTask<AnalysisMCEvent>(cfgc),
     adaptAnalysisTask<AnalysisTrackSelection>(cfgc),
     adaptAnalysisTask<AnalysisSameEventPairing>(cfgc)};
 }
@@ -1355,12 +1399,12 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
 
     // NOTE: The level of detail for histogramming can be controlled via configurables
     if (classStr.Contains("Event")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "trigger,cent,mc");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "trigger,mc");
     }
 
     if (classStr.Contains("Track")) {
       if (classStr.Contains("Barrel")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid,mc");
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "kine,its,tpcpid,dca,tofpid,mc");
       }
     }
 
@@ -1383,12 +1427,3 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     }
   }
 } // end loop over histogram classes
-
-void SetBinsLinear(std::vector<double>& fBins, const double min, const double max, const unsigned int steps)
-{
-  fBins.clear();
-  const double stepSize = (max - min) / steps;
-  for (unsigned int i = 0; i < steps + 1; ++i) {
-    fBins.push_back(i * stepSize + min);
-  }
-}

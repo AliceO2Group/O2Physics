@@ -127,6 +127,14 @@ struct tofOfflineCalib {
       evTimeT0AC = collision.t0AC() * 1000.f;
       evTimeT0ACErr = collision.t0resolution() * 1000.f;
     }
+    float evTimeT0A = 0.f;
+    if (collision.t0ACorrectedValid()) {
+      evTimeT0A = collision.t0ACorrected() * 1000.f;
+    }
+    float evTimeT0C = 0.f;
+    if (collision.t0CCorrectedValid()) {
+      evTimeT0C = collision.t0CCorrected() * 1000.f;
+    }
 
     if (lastRun != collision.bc().runNumber()) {
       lastRun = collision.bc().runNumber();
@@ -140,7 +148,11 @@ struct tofOfflineCalib {
       deltaVsPHighChi2 = histos.add<TH2>(Form("Run%i/deltaVsPHighChi2", lastRun), "High Chi2", kTH2F, {pTAxis, doubleDeltaAxis});
     }
 
+    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
     constexpr auto responsePi = ResponseImplementation<PID::Pion>();
+    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
+    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
 
     int8_t lastTRDLayer = -1;
     for (auto& track1 : tracks) {
@@ -148,9 +160,9 @@ struct tofOfflineCalib {
         continue;
       }
       // Selecting good reference
-      const float& texp1 = responsePi.GetExpectedSignal(track1);
-      const float& delta1 = track1.tofSignal() - texp1;
-      if (track1.p() < pRefMin || track1.p() > pRefMax || track1.tofChi2() > maxTOFChi2 || fabs(delta1) > deltatTh) {
+      const float& texp1Pi = responsePi.GetExpectedSignal(track1);
+      const float& delta1Pi = track1.tofSignal() - texp1Pi;
+      if (track1.p() < pRefMin || track1.p() > pRefMax || track1.tofChi2() > maxTOFChi2 || fabs(delta1Pi) > deltatTh) {
         continue;
       }
       for (auto& track2 : tracks) {
@@ -160,25 +172,29 @@ struct tofOfflineCalib {
         if (track1.globalIndex() == track2.globalIndex()) { // Skipping the same track
           continue;
         }
-        const float& texp2 = responsePi.GetExpectedSignal(track2);
-        const float& delta2 = track2.tofSignal() - texp2;
+        const float& texp2El = responseEl.GetExpectedSignal(track2);
+        const float& texp2Mu = responseMu.GetExpectedSignal(track2);
+        const float& texp2Pi = responsePi.GetExpectedSignal(track2);
+        const float& texp2Ka = responseKa.GetExpectedSignal(track2);
+        const float& texp2Pr = responsePr.GetExpectedSignal(track2);
+        const float& delta2Pi = track2.tofSignal() - texp2Pi;
         if (track2.tofChi2() < maxTOFChi2) {
-          deltaVsP->Fill(track2.p(), delta2 - delta1);
+          deltaVsP->Fill(track2.p(), delta2Pi - delta1Pi);
         } else if (track2.tofChi2() > maxTOFChi2) {
-          deltaVsPHighChi2->Fill(track2.p(), delta2 - delta1);
+          deltaVsPHighChi2->Fill(track2.p(), delta2Pi - delta1Pi);
         }
         if (track2.p() > pRefMin && track2.p() < pRefMax) {
           if (track1.hasTRD()) {
             if (track2.tofChi2() < maxTOFChi2) {
-              hGoodRefWithTRD->Fill(delta2 - delta1);
+              hGoodRefWithTRD->Fill(delta2Pi - delta1Pi);
             } else if (track2.tofChi2() > maxTOFChi2 + 2) {
-              hBadRefWithTRD->Fill(delta2 - delta1);
+              hBadRefWithTRD->Fill(delta2Pi - delta1Pi);
             }
           } else {
             if (track2.tofChi2() < maxTOFChi2) {
-              hGood->Fill(delta2 - delta1);
+              hGood->Fill(delta2Pi - delta1Pi);
             } else if (track2.tofChi2() > maxTOFChi2 + 2) {
-              hBad->Fill(delta2 - delta1);
+              hBad->Fill(delta2Pi - delta1Pi);
             }
           }
         }
@@ -204,20 +220,29 @@ struct tofOfflineCalib {
                  track1.eta() - track2.eta(),
                  track2.phi(),
                  track1.phi() - track2.phi(),
-                 delta2,
-                 delta2 - delta1,
+                 track2.tofSignal() - texp2El,
+                 track2.tofSignal() - texp2Mu,
+                 delta2Pi,
+                 track2.tofSignal() - texp2Ka,
+                 track2.tofSignal() - texp2Pr,
+                 delta2Pi - delta1Pi,
                  track2.length(),
                  track2.tofChi2(),
                  track2.tpcSignal(),
                  track2.tofSignal(),
                  track2.evTimeTOF(),
                  track2.evTimeTOFErr(),
+                 track2.evTimeTOFMult(),
+                 evTimeT0A,
+                 evTimeT0C,
                  evTimeT0AC,
                  evTimeT0ACErr,
+                 collision.collisionTime(),
+                 collision.collisionTimeRes(),
                  track2.tofFlags(),
                  lastTRDLayer);
 
-        // float doubleDelta = delta2 - delta1;
+        // float doubleDelta = delta2Pi - delta1Pi;
 
         // if (fabs(doubleDelta) < 3000) // Good electrons
         //   tout->Fill();

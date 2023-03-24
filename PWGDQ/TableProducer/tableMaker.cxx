@@ -184,6 +184,8 @@ struct TableMaker {
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                              context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                              context.mOptions.get<bool>("processMuonOnly") || context.mOptions.get<bool>("processMuonOnlyWithCent") ||
+                             context.mOptions.get<bool>("processMuonOnlyWithMults") || context.mOptions.get<bool>("processMuonOnlyWithCentAndMults") ||
+                             context.mOptions.get<bool>("processMuonOnlyWithCovAndCent") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithFilter") ||
                              context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") || context.mOptions.get<bool>("processAmbiguousMuonOnly"));
 
@@ -342,6 +344,14 @@ struct TableMaker {
                     collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
                     collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
                     collision.centFT0C());
+    } else if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0) {
+      eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
+                    collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
+                    collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
+                    -1);
+    } else if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
+      eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, collision.centFT0C());
     } else {
       eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
     }
@@ -757,6 +767,27 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithCent, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
 
+  // Produce muon tables only, with multiplicity ---------------------------------------------------------------------------------------------
+  void processMuonOnlyWithMults(MyEventsWithMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                soa::Filtered<MyMuons> const& tracksMuon)
+  {
+    fullSkimming<gkEventFillMapWithMult, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
+  }
+
+  // Produce muon tables only, with centrality and multiplicity --------------------------------------------------------------------------------
+  void processMuonOnlyWithCentAndMults(MyEventsWithCentAndMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                       soa::Filtered<MyMuons> const& tracksMuon)
+  {
+    fullSkimming<gkEventFillMapWithCentAndMults, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
+  }
+
+  // Produce muon tables only, with centrality and muon cov matrix -------------------------------------------------------------------------------------------------
+  void processMuonOnlyWithCovAndCent(MyEventsWithCent::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                     soa::Filtered<MyMuonsWithCov> const& tracksMuon)
+  {
+    fullSkimming<gkEventFillMapWithCent, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
+  }
+
   // Produce muon tables only, with muon cov matrix --------------------------------------------------------------------------------------------
   void processMuonOnlyWithCov(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                               soa::Filtered<MyMuonsWithCov> const& tracksMuon)
@@ -879,6 +910,9 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCov, "Build barrel-only DQ skimmed data model, w/ track cov matrix", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnly, "Build barrel-only DQ skimmed data model, w/o centrality", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCent, "Build muon-only DQ skimmed data model, w/ centrality", false);
+  PROCESS_SWITCH(TableMaker, processMuonOnlyWithMults, "Build muon-only DQ skimmed data model, w/ multiplicity", false);
+  PROCESS_SWITCH(TableMaker, processMuonOnlyWithCentAndMults, "Build muon-only DQ skimmed data model, w/ centrality and multiplicities", false);
+  PROCESS_SWITCH(TableMaker, processMuonOnlyWithCovAndCent, "Build muon-only DQ skimmed data model, w/ centrality and muon cov matrix", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCov, "Build muon-only DQ skimmed data model, w/ muon cov matrix", false);
   PROCESS_SWITCH(TableMaker, processMuonOnly, "Build muon-only DQ skimmed data model", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithFilter, "Build muon-only DQ skimmed data model, w/ event filter", false);

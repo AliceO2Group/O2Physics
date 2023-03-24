@@ -35,7 +35,7 @@ struct HfTaskMcEfficiency {
   ConfigurableAxis axisPt{"axisPt", {10, 0, 10}, "pT axis"};
   ConfigurableAxis axisMass{"axisMass", {120, 1.5848, 2.1848}, "m_inv axis"};
   ConfigurableAxis axisPdg{"axisPdg", {VARIABLE_WIDTH, -421.5, 0, 421.5}, "PDG code axis"};
-  ConfigurableAxis axisCPA{"axisCPA", {100, 0.9, 1.0001}, "Cosine of pointing angle axis"};
+  ConfigurableAxis axisCPA{"axisCPA", {102, -1.02, 1.02}, "Cosine of pointing angle axis"};
   Configurable<std::vector<int>> pdgCodes{"pdgCodes", {pdg::kD0Bar, pdg::kD0}, "PDG codes to process"};
 
   Configurable<float> mcAcceptancePt{"mcAcceptancePt", 0.1, "MC Acceptance: lower pt limit"};
@@ -60,8 +60,6 @@ struct HfTaskMcEfficiency {
 
   using TracksWithSelection = soa::Join<aod::Tracks, aod::TrackSelection>;
   using TracksWithSelectionMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>;
-
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   HistogramRegistry registry{"registry"};
 
@@ -111,13 +109,15 @@ struct HfTaskMcEfficiency {
         LOGP(fatal, "Not implemented for PDG {}", pdgCode);
       }
 
-      for (const auto& candidate : selectedD0Candidates) {
+      int nTracked = 0;
+      int nSelected = 0;
+      for (const auto& candidate : candidates) {
         if (!(candidate.hfflag() & decayType)) {
           continue;
         }
 
-        auto trackPos = candidate.prong0_as<TracksType>();
-        auto trackNeg = candidate.prong1_as<TracksType>();
+        auto trackPos = candidate.template prong0_as<TracksType>();
+        auto trackNeg = candidate.template prong1_as<TracksType>();
 
         bool collisionMatched = false;
         if constexpr (mc) {
@@ -126,7 +126,7 @@ struct HfTaskMcEfficiency {
             continue;
           }
 
-          collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRec).mcCollisionId();
+          collisionMatched = candidate.template collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRec).mcCollisionId();
         }
 
         float mass = -1;
@@ -144,6 +144,7 @@ struct HfTaskMcEfficiency {
 
         // all candidates
         hCandidates->Fill(kHFStepTracked, pt, mass, pdgCode, cpa, collisionMatched);
+        ++nTracked;
 
         // check if prongs have passed track cuts
         if (checkTrack(trackPos) && checkTrack(trackNeg)) {
@@ -156,6 +157,7 @@ struct HfTaskMcEfficiency {
 
         // selected candidates
         hCandidates->Fill(kHFStepTrackedSelected, pt, mass, pdgCode, cpa, collisionMatched);
+        ++nSelected;
 
         // duplicates
         int64_t hash = 0;
@@ -169,6 +171,8 @@ struct HfTaskMcEfficiency {
         }
         duplicates[hash]++;
       }
+
+      LOGP(debug, "PDG code: {}: Tracked: {} | Selected: {}", pdgCode, nTracked, nSelected);
     }
 
     auto hDuplicateCount = registry.get<TH1>(HIST("hDuplicateCount"));
