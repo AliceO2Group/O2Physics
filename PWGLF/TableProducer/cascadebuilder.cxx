@@ -67,36 +67,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-namespace o2::aod
-{
-namespace casctag
-{
-DECLARE_SOA_COLUMN(IsInteresting, isInteresting, bool); //! will this be built or not?
-
-// MC association bools
-DECLARE_SOA_COLUMN(IsTrueXiMinus, isTrueXiMinus, bool);       //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueXiPlus, isTrueXiPlus, bool);         //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueOmegaMinus, isTrueOmegaMinus, bool); //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueOmegaPlus, isTrueOmegaPlus, bool);   //! PDG checked correctly in MC
-
-// dE/dx compatibility bools
-DECLARE_SOA_COLUMN(IsXiMinusCandidate, isXiMinusCandidate, bool);       //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsXiPlusCandidate, isXiPlusCandidate, bool);         //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsOmegaMinusCandidate, isOmegaMinusCandidate, bool); //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsOmegaPlusCandidate, isOmegaPlusCandidate, bool);   //! compatible with dE/dx hypotheses
-}
-DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
-                  casctag::IsInteresting,
-                  casctag::IsTrueXiMinus,
-                  casctag::IsTrueXiPlus,
-                  casctag::IsTrueOmegaMinus,
-                  casctag::IsTrueOmegaPlus,
-                  casctag::IsXiMinusCandidate,
-                  casctag::IsXiPlusCandidate,
-                  casctag::IsOmegaMinusCandidate,
-                  casctag::IsOmegaPlusCandidate);
-} // namespace o2::aod
-
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
