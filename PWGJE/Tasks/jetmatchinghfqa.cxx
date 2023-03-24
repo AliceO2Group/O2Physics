@@ -27,8 +27,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetMatchingHFQA {
-  using DetectorLevelJets = soa::Join<aod::MCDetectorLevelD0Jets, aod::MCDetectorLevelD0JetConstituents, aod::MatchedMCDetectorParticleLevelD0Jets>;
-  using ParticleLevelJets = soa::Join<aod::MCParticleLevelD0Jets, aod::MCParticleLevelD0JetConstituents, aod::MatchedMCParticleDetectorLevelD0Jets>;
+  using DetectorLevelJets = soa::Join<aod::D0MCDJets, aod::D0MCDJetConstituents, aod::NewMatchedD0MCDJets>;
+  using ParticleLevelJets = soa::Join<aod::D0MCPJets, aod::D0MCPJetConstituents, aod::NewMatchedD0MCPJets>;
 
   OutputObj<TH2F> hJetPt{"h_jet_pt"};
   OutputObj<TH2F> hJetDetaDphi{"h_jet_deta_dphi"};
@@ -61,10 +61,10 @@ struct JetMatchingHFQA {
                DetectorLevelJets const& djets, ParticleLevelJets const& pjets)
   {
     for (const auto& djet : djets) {
-      if (djet.has_matchedJet() && djet.matchedJetId() >= 0) {
-        const auto& pjet = djet.matchedJet_as<ParticleLevelJets>();
+      if (djet.has_matchedJetCand() && djet.matchedJetCandId() >= 0) {
+        const auto& pjet = djet.matchedJetCand_as<ParticleLevelJets>();
         LOGF(info, "djet %d (pt of %g GeV/c) is matched to %d (pt of %g GeV/c)",
-             djet.globalIndex(), djet.pt(), djet.matchedJetId(), pjet.pt());
+             djet.globalIndex(), djet.pt(), djet.matchedJetCandId(), pjet.pt());
         hJetPt->Fill(pjet.pt(), djet.pt());
         hJetDetPt->Fill(djet.pt());
         hJetDetPhi->Fill(djet.phi());
@@ -81,10 +81,10 @@ struct JetMatchingHFQA {
   {
     LOGF(info, "analysing MC collision %d", collision.globalIndex());
     for (const auto& pjet : pjets) {
-      if (pjet.has_matchedJet() && pjet.matchedJetId() >= 0) {
-        const auto& djet = pjet.matchedJet_as<DetectorLevelJets>();
+      if (pjet.has_matchedJetCand() && pjet.matchedJetCandId() >= 0) {
+        const auto& djet = pjet.matchedJetCand_as<DetectorLevelJets>();
         LOGF(info, "pjet %d (pt of %g GeV/c) is matched to %d (pt of %g GeV/c)",
-             pjet.globalIndex(), pjet.pt(), pjet.matchedJetId(), djet.pt());
+             pjet.globalIndex(), pjet.pt(), pjet.matchedJetCandId(), djet.pt());
         hJetGenPt->Fill(pjet.pt());
         hJetGenPhi->Fill(pjet.phi());
         hJetGenEta->Fill(pjet.eta());
