@@ -92,7 +92,7 @@ struct cascadeBuilder {
   Produces<aod::CascCovs> casccovs; // if requested by someone
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", true, "Autodetect requested topo sels"};
+  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
 
   // Configurables related to table creation
   Configurable<int> createCascCovMats{"createCascCovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
@@ -109,8 +109,8 @@ struct cascadeBuilder {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
-  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
-  Configurable<int> useMatCorrTypeCasc{"useMatCorrTypeCasc", 0, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> useMatCorrTypeCasc{"useMatCorrTypeCasc", 2, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
   Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
 
