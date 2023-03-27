@@ -400,6 +400,9 @@ struct MixedEventsPartitionedTracks {
 };
 
 struct MixedEventsLambdaBinning {
+  SliceCache cache;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+
   ConfigurableAxis axisVertex{"axisVertex", {14, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0.0, 2.750, 5.250, 7.750, 12.750, 17.750, 22.750, 27.750, 32.750, 37.750, 42.750, 47.750, 52.750, 57.750, 62.750, 67.750, 72.750, 77.750, 82.750, 87.750, 92.750, 97.750, 250.1}, "multiplicity axis for histograms"};
 
@@ -408,8 +411,8 @@ struct MixedEventsLambdaBinning {
     LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
 
     auto getTracksSize =
-      [&tracks](aod::Collision const& col) {
-        auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
+      [&tracks, this](aod::Collision const& col) {
+        auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
         return associatedTracks.size();
       };
 
