@@ -182,6 +182,8 @@ struct AddAmbiguousTrackInfo {
 };
 
 struct ProducePCMPhoton {
+  SliceCache cache;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Produces<o2::aod::V0Gammas> v0gamma;
 
   float alphav0(const array<float, 3>& ppos, const array<float, 3>& pneg)
@@ -417,8 +419,8 @@ struct ProducePCMPhoton {
 
     // printf("number of collisions = %ld , negTracks = %ld, posTracks = %ld\n", collisions.size(), negTracks.size(), posTracks.size());
     for (auto& collision : collisions) {
-      auto groupEle = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());
-      auto groupPos = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      auto groupEle = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto groupPos = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       // printf("collision.globalIndex() = %d , negTracks = %ld , posTracks = %ld\n", collision.globalIndex(), groupEle.size(), groupPos.size());
       registry.fill(HIST("hEventCounter"), 1);
 
