@@ -41,6 +41,8 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, a
 using FullTrackExt = FullTracksExt::iterator;
 
 struct createPCM {
+  SliceCache cache;
+  Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
   Produces<aod::StoredV0Datas> v0data;
 
   // Basic checks
@@ -247,8 +249,8 @@ struct createPCM {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex());
-      auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex());
+      auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       // LOGF(info, "collision.globalIndex() = %ld , negTracks_coll1 = %ld , posTracks_coll1 = %ld , negTracks_coll2 = %ld , posTracks_coll2 = %ld , negTracks_coll3 = %ld , posTracks_coll3 = %ld",
       // collision.globalIndex(), negTracks_coll1.size(), posTracks_coll1.size() , negTracks_coll2.size(), posTracks_coll2.size() , negTracks_coll3.size(), posTracks_coll3.size() );
 
