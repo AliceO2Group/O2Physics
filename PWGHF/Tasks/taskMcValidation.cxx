@@ -349,6 +349,9 @@ struct HfTaskMcValidationGen {
 ///   - Gen-Rec Level Momentum Difference per component;
 ///   - Gen-Rec Level Difference for secondary Vertex coordinates and decay length;
 struct HfTaskMcValidationRec {
+  SliceCache cache;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+
   Configurable<bool> checkAmbiguousTracksWithHfEventsOnly{"checkAmbiguousTracksWithHfEventsOnly", false, "Activate checks for ambiguous tracks only for events with HF signals (including decay channels of interest)"};
 
   std::array<std::shared_ptr<TH1>, nCharmHadrons> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
@@ -469,9 +472,9 @@ struct HfTaskMcValidationRec {
       registry.fill(HIST("histZvtxReco"), collision.posZ());
       auto deltaZ = collision.posZ() - mcCollision.posZ();
       registry.fill(HIST("histDeltaZvtx"), collision.numContrib(), deltaZ);
-      auto tracksGlobalWoDCAColl1 = tracksFilteredGlobalTrackWoDCA->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      auto tracksGlobalWoDCAColl1 = tracksFilteredGlobalTrackWoDCA->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       registry.fill(HIST("histNtracks"), tracksGlobalWoDCAColl1.size());
-      auto tracksColl1 = tracksInAcc->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      auto tracksColl1 = tracksInAcc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       int nContributors = 0, nGoodContributors = 0;
       for (auto& track : tracksColl1) {
         if (!track.isPVContributor()) {
@@ -504,7 +507,7 @@ struct HfTaskMcValidationRec {
               }
             }
           }
-          auto tracksColl2 = tracksInAcc->sliceByCached(aod::track::collisionId, collision2.globalIndex());
+          auto tracksColl2 = tracksInAcc->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
           for (auto& trackColl2 : tracksColl2) {
             if (trackColl2.has_mcParticle() && trackColl2.isPVContributor()) {
               auto particleColl2 = trackColl2.mcParticle();
