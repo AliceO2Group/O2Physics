@@ -33,6 +33,8 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 struct femtoWorldDebugV0 {
+  SliceCache cache;
+  Preslice<aod::FemtoWorldParticles> perCol = aod::femtoworldparticle::femtoWorldCollisionId;
 
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 3122, "Particle 1 - PDG code"};
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 338, "Particle 1 - Selection bit from cutCulator"};
@@ -78,7 +80,7 @@ struct femtoWorldDebugV0 {
   /// Porduce QA plots for V0 selection in FemtoWorld framework
   void process(o2::aod::FemtoWorldCollision& col, FemtoFullParticles& parts)
   {
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
 
     eventHisto.fillQA(col);
 
