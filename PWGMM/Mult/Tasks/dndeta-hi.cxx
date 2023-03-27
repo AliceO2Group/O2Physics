@@ -139,6 +139,10 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
   TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
 
 struct MultiplicityCounter {
+  SliceCache cache;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+  Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
+
   Service<O2DatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
@@ -473,7 +477,6 @@ struct MultiplicityCounter {
   expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
   Partition<Particles> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
   Partition<aod::Tracks> tSample = nabs(aod::track::eta) < estimatorEta;
-  Preslice<FiTracks> perCol = aod::track::collisionId;
   Partition<soa::Filtered<LabeledTracksEx>> lsample = nabs(aod::track::eta) < estimatorEta;
 
   void processMCCounting(
@@ -541,8 +544,8 @@ struct MultiplicityCounter {
 
       registry.fill(HIST("Tracks/ProcessMCCounting/hreczvtx"), Double_t(kINEL), Double_t(kMBAND), z);
       auto mcCollision = collision.mcCollision();
-      auto particles = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
-      auto tracks = lsample->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      auto particles = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      auto tracks = lsample->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       tracks.bindExternalIndices(&mcParticles);
 
       usedTracksIds.clear();
@@ -634,7 +637,7 @@ struct MultiplicityCounter {
     o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
     Particles const& mcParticles, FiTracks const& tracks)
   {
-    auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+    auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto genz = mcCollision.posZ();
     registry.fill(HIST("Tracks/ProcesGen/hgenzvtx"), Double_t(kINEL), genz);
     for (auto& particle : perCollisionMCSample) {
