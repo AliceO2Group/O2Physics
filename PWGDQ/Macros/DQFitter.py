@@ -3,6 +3,7 @@
 \author Victor Valencia <valencia@subatech.in2p3.fr>, subatech
 """
 from os.path import exists
+from plot_library import DoResidualPlot
 
 import ROOT
 from ROOT import (
@@ -195,36 +196,13 @@ class DQFitter:
         fRooPlot.GetYaxis().SetTitleOffset(1.4)
         fRooPlot.Draw()
 
-        # Ratio plot
-        rooHistRatio = fRooPlot.residHist()
-        rooPlotRatio = self.fRooMass.frame(ROOT.RooFit.Title("Residual Distribution"))
-        rooPlotRatio.addPlotable(rooHistRatio, "P")
-        canvasRatio = TCanvas(
-            "ratio_plot_{}".format(trialName),
-            "ratio_plot_{}".format(trialName),
-            600,
-            600,
-        )
-        canvasRatio.SetLeftMargin(0.15)
-        rooPlotRatio.GetYaxis().SetTitleOffset(1.4)
-        rooPlotRatio.Draw()
-
-        # Pull plot
-        rooHistPull = fRooPlot.pullHist()
-        rooPlotPull = self.fRooMass.frame(ROOT.RooFit.Title("Pull Distribution"))
-        rooPlotPull.addPlotable(rooHistPull, "P")
-        canvasPull = TCanvas(
-            "pull_plot_{}".format(trialName), "pull_plot_{}".format(trialName), 600, 600
-        )
-        canvasPull.SetLeftMargin(0.15)
-        rooPlotPull.GetYaxis().SetTitleOffset(1.4)
-        rooPlotPull.Draw()
+        # Residual plot
+        canvasResidual = DoResidualPlot(fRooPlot, self.fRooMass, trialName)
 
         # Save results
         self.fFileOut.cd()
         canvasFit.Write()
-        canvasRatio.Write()
-        canvasPull.Write()
+        canvasResidual.Write()
         histResults.Write()
 
     def MultiTrial(self):
