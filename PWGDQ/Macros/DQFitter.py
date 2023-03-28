@@ -19,7 +19,7 @@ from ROOT import (
     gROOT,
 )
 
-# pylint: disable=too-many-branches, no-member
+# pylint: overgeneral-exceptions=builtins.BaseException, builtins.Exception
 
 
 class DQFitter:

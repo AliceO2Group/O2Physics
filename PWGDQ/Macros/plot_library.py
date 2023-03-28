@@ -5,7 +5,7 @@ import os
 
 import ROOT
 
-# pylint: disable=too-many-branches, no-member
+# pylint: overgeneral-exceptions=builtins.BaseException, builtins.Exception
 
 def SetLatex(latex):
     latex.SetTextSize(0.035)
