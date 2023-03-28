@@ -3,7 +3,7 @@
 \author Victor Valencia <valencia@subatech.in2p3.fr>, subatech
 """
 from os.path import exists
-from plot_library import DoResidualPlot
+from plot_library import DoResidualPlot, DoPullPlot
 
 import ROOT
 from ROOT import (
@@ -199,10 +199,14 @@ class DQFitter:
         # Residual plot
         canvasResidual = DoResidualPlot(fRooPlot, self.fRooMass, trialName)
 
+        # Pull plot
+        canvasPull = DoPullPlot(fRooPlot, self.fRooMass, trialName)
+
         # Save results
         self.fFileOut.cd()
         canvasFit.Write()
         canvasResidual.Write()
+        canvasPull.Write()
         histResults.Write()
 
     def MultiTrial(self):
