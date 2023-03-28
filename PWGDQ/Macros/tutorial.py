@@ -45,8 +45,9 @@ def GenerateTutorialSample():
     funcMassSig.SetParameter(2, 0.07)
 
     histMass = TH1F("histMass", "histMass", 100, 2.0, 5.0)
-    histMass.FillRandom("funcMassBkg", int(nEvents - (nEvents * SigOverBkg)))
-    histMass.FillRandom("funcMassSig", int(nEvents * SigOverBkg))
+    histMass.FillRandom("funcMassBkg", int(nEvents - (nEvents * SigOverBkg1)))
+    histMass.FillRandom("funcMassSig1", int(nEvents * SigOverBkg1))
+    histMass.FillRandom("funcMassSig2", int(nEvents * SigOverBkg2))
     histMass.Write()
 
     m = array("f", [0.0])
