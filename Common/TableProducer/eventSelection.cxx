@@ -54,6 +54,7 @@ struct BcSelectionTask {
     aod::FT0s const&,
     aod::FDDs const&)
   {
+    bcsel.reserve(bcs.size());
 
     for (auto& bc : bcs) {
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
@@ -190,6 +191,8 @@ struct BcSelectionTask {
                    aod::FT0s const&,
                    aod::FDDs const&)
   {
+    bcsel.reserve(bcs.size());
+
     // map from GlobalBC to BcId needed to find triggerBc
     std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
     for (auto& bc : bcs) {
@@ -343,6 +346,11 @@ struct EventSelectionTask {
 
     histos.add("hColCounterAll", "", kTH1F, {{1, 0., 1.}});
     histos.add("hColCounterAcc", "", kTH1F, {{1, 0., 1.}});
+  }
+
+  void process(aod::Collisions const& collisions)
+  {
+    evsel.reserve(collisions.size());
   }
 
   void processRun2(aod::Collision const& col, BCsWithBcSels const& bcs, aod::Tracks const& tracks)
