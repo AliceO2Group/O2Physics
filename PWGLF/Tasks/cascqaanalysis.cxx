@@ -79,6 +79,9 @@ DECLARE_SOA_COLUMN(BachNTPCClusters, bachntpcscls, float);
 DECLARE_SOA_COLUMN(PosHasTOF, poshastof, float);
 DECLARE_SOA_COLUMN(NegHasTOF, neghastof, float);
 DECLARE_SOA_COLUMN(BachHasTOF, bachhastof, float);
+DECLARE_SOA_COLUMN(PosPt, pospt, float);
+DECLARE_SOA_COLUMN(NegPt, negpt, float);
+DECLARE_SOA_COLUMN(BachPt, bachpt, float);
 
 } // namespace mycascades
 
@@ -92,7 +95,9 @@ DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
                   mycascades::NTOFSigmaNegPr, mycascades::NTOFSigmaPosPr, mycascades::NTOFSigmaNegPi,
                   mycascades::NTOFSigmaPosPi, mycascades::NTOFSigmaBachPi, mycascades::NTOFSigmaBachKa,
                   mycascades::PosNTPCClusters, mycascades::NegNTPCClusters, mycascades::BachNTPCClusters,
-                  mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF);
+                  mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF,
+		  mycascades::PosPt, mycascades::NegPt, mycascades::BachPt
+);
 
 } // namespace o2::aod
 
@@ -191,7 +196,8 @@ struct cascqaanalysis {
                      ctauXi, ctauOmega, negdau.tpcNSigmaPr(), posdau.tpcNSigmaPr(), negdau.tpcNSigmaPi(), posdau.tpcNSigmaPi(), bachelor.tpcNSigmaPi(), bachelor.tpcNSigmaKa(),
                      negdau.tofNSigmaPr(), posdau.tofNSigmaPr(), negdau.tofNSigmaPi(), posdau.tofNSigmaPi(), bachelor.tofNSigmaPi(), bachelor.tofNSigmaKa(),
                      posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
-                     posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF());
+                     posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF(),
+                     posdau.pt(), negdau.pt(), bachelor.pt());
         }
       }
     }
