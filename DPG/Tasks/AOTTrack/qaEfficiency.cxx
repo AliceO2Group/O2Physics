@@ -19,7 +19,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/StaticFor.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/Track.h"
@@ -32,7 +31,6 @@
 #include "TPDGCode.h"
 #include "TEfficiency.h"
 #include "THashList.h"
-#include <TDatabasePDG.h>
 
 using namespace o2::framework;
 
@@ -87,8 +85,6 @@ struct QaEfficiency {
   Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
   Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum value of the DCA z"};
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
-
-  Service<O2DatabasePDG> pdg;
 
   OutputObj<THashList> listEfficiencyMC{"EfficiencyMC"};
   OutputObj<THashList> listEfficiencyData{"EfficiencyData"};
@@ -976,13 +972,12 @@ struct QaEfficiency {
     static_assert(charge == 0 || charge == 1);
     static_assert(id > 0 || id < nSpecies);
 
-    int sign = -1.0;
-    TParticlePDG* pdgparticle = pdg->GetParticle(mcParticle.pdgCode());
-    if (pdgparticle != nullptr) {
-      sign = (pdgparticle->Charge() > 0) ? 0.0 : ((pdgparticle->Charge() < 0) ? 1.0 : -1.0);
+    // Selecting a specific PDG
+    if constexpr (charge == 0) {
+      return mcParticle.pdgCode() == PDGs[id];
+    } else {
+      return mcParticle.pdgCode() == -PDGs[id];
     }
-
-    return std::abs(mcParticle.pdgCode()) == PDGs[id] && sign == charge;
   }
 
   template <int charge, o2::track::PID::ID id, typename trackType>
