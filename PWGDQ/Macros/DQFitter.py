@@ -1,5 +1,6 @@
 """
 \author Luca Micheletti <luca.micheletti@cern.ch>, CERN
+\author Victor Valencia <valencia@subatech.in2p3.fr>, subatech
 """
 from os.path import exists
 
