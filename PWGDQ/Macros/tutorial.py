@@ -10,6 +10,8 @@ from os import path
 from DQFitter import DQFitter
 from ROOT import TF1, TH1F, TFile, TTree, gRandom
 
+# pylint: disable=too-many-branches, no-member
+
 
 def GenerateTutorialSample():
     """

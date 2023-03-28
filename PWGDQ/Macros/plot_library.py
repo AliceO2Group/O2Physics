@@ -5,6 +5,8 @@ import os
 
 import ROOT
 
+# pylint: disable=too-many-branches, no-member
+
 def SetLatex(latex):
     latex.SetTextSize(0.035)
     latex.SetNDC()
