@@ -5,6 +5,7 @@
 from os.path import exists
 from plot_library import DoResidualPlot, DoPullPlot, DoCorrMatPlot, DoPropagandaPlot, LoadStyle
 
+import ROOT
 from ROOT import (
     TH1F,
     RooArgSet,
