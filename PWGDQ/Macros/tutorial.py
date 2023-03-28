@@ -8,7 +8,13 @@ from os import path
 from array import array
 
 from DQFitter import DQFitter
-from ROOT import TF1, TH1F, TFile, TTree, gRandom
+from ROOT import (
+    TF1,
+    TH1F,
+    TFile,
+    TTree,
+    gRandom
+)
 
 
 def GenerateTutorialSample():

@@ -3,9 +3,8 @@
 \author Victor Valencia <valencia@subatech.in2p3.fr>, subatech
 """
 from os.path import exists
-from plot_library import DoRatioPlot, DoResidualPlot, DoPullPlot, DoCorrMatPlot, DoPropagandaPlot, LoadStyle
+from plot_library import DoResidualPlot, DoPullPlot, DoCorrMatPlot, DoPropagandaPlot, LoadStyle
 
-import ROOT
 from ROOT import (
     TH1F,
     RooArgSet,

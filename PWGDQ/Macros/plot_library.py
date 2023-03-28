@@ -1,12 +1,10 @@
-import array as arr
-import numpy as np
 import os
-import sys
-import argparse
-import ROOT
 from os import path
-from ROOT import TCanvas, TLatex, TF1, TFile, TPaveText, TMath, TH1F, TString, TLegend, TRatioPlot, TGaxis
-from ROOT import gROOT, gBenchmark, gPad, gStyle, kTRUE, kFALSE
+from ROOT import (
+    TCanvas,
+    TLatex,
+    gStyle
+)
 
 def SetLatex(latex):
     latex.SetTextSize(0.035)
@@ -34,25 +32,6 @@ def LoadStyle():
     gStyle.SetLabelSize(0.045,"Y")
     gStyle.SetTitleOffset(1.2,"X")
     gStyle.SetTitleOffset(1.35,"Y")
-
-def DoRatioPlot(pdf, data, hist, var, trialName):
-    LoadStyle()
-    pt_modelobs = pdf.getObservables(data)
-    pt_modelPars = pdf.getParameters(pt_modelobs)
-    tf1FromPdf = pdf.asTF(pt_modelobs, pt_modelPars, var)
-    canvasRatio = TCanvas("ratio_plot_{}".format(trialName), "ratio_plot_{}".format(trialName))
-    #histClone = hist.Clone("histClone")
-    hist.Scale(1. / hist.Integral(), "width")
-    hist.Divide(tf1FromPdf)
-    hist.Draw("E0")
-    #tf1FromPdf.Draw()
-    #ratioPlot = TRatioPlot(hist1, hist2)
-    #ratioPlot.Draw()
-    #ratioPlot.GetLowerRefYaxis().SetRangeUser(0.,2.)
-    #ratioPlot.GetLowerRefYaxis().SetLabelSize(0.025)
-    canvasRatio.Update()
-    canvasRatio.Draw()
-    return canvasRatio
 
 def DoResidualPlot(rooPlot, rooVar, trialName):
     rooHistResidual = rooPlot.residHist()
