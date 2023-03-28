@@ -5,8 +5,6 @@ import os
 
 import ROOT
 
-# pylint: overgeneral-exceptions=builtins.BaseException, builtins.Exception
-
 def SetLatex(latex):
     latex.SetTextSize(0.035)
     latex.SetNDC()

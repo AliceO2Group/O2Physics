@@ -19,8 +19,6 @@ from ROOT import (
     gROOT,
 )
 
-# pylint: overgeneral-exceptions=builtins.BaseException, builtins.Exception
-
 
 class DQFitter:
     def __init__(self, fInName, fInputName, fOutPath, fMinDataRange, fMaxDataRange):
