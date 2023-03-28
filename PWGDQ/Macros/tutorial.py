@@ -15,6 +15,8 @@ def GenerateTutorialSample():
     """
     nEvents = 100000
     SigOverBkg = 0.1
+    SigOverBkg1 = 0.03
+    SigOverBkg2 = SigOverBkg1 / 10.
     fOut = TFile("tutorial.root", "RECREATE")
 
     funcMassBkg = TF1("funcMassBkg", "expo", 0.0, 5.0)
