@@ -64,12 +64,13 @@ def DoCorrMatPlot(rooFitRes, trialName):
     return canvasCorrMat
 
 def DoPropagandaPlot(rooDs, pdf, rooPlot, pdfDict, histName, trialName, path, extraText):
+    LoadStyle()
     rooDs.plotOn(rooPlot, ROOT.RooFit.Name("Data"), ROOT.RooFit.MarkerStyle(20), ROOT.RooFit.MarkerSize(0.5))
     pdf.plotOn(rooPlot, ROOT.RooFit.Name("Fit"), ROOT.RooFit.LineColor(ROOT.kRed+1), ROOT.RooFit.LineWidth(2))
     for i in range(0, len(pdfDict["pdf"])):
         if not pdfDict["pdfName"][i] == "SUM":
             pdf.plotOn(rooPlot, ROOT.RooFit.Components("{}Pdf".format(pdfDict["pdfName"][i])), ROOT.RooFit.Name(pdfDict["pdfNameForLegend"][i]), ROOT.RooFit.LineColor(pdfDict["pdfColor"][i]), ROOT.RooFit.LineStyle(pdfDict["pdfStyle"][i]), ROOT.RooFit.LineWidth(2))
-            rooPlot.SetAxisRange(0, 1.7 * rooPlot.GetMaximum(), "Y")
+    rooPlot.SetAxisRange(0, 1.7 * rooPlot.GetMaximum(), "Y")
     legend = ROOT.TLegend(0.65, 0.93-0.05*(len(pdfDict["pdf"])+1), 0.85, 0.93, " ", "brNDC")
     legend.SetBorderSize(0)
     legend.SetFillColor(10)

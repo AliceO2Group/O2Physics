@@ -4,6 +4,8 @@
 import argparse
 import json
 from array import array
+import os
+from os import path
 
 from DQFitter import DQFitter
 from ROOT import TF1, TH1F, TFile, TTree, gRandom
@@ -13,7 +15,7 @@ def GenerateTutorialSample():
     """
     This method create the sample for the tutorial
     """
-    nEvents = 100000
+    nEvents = 1000000
     SigOverBkg1 = 0.03
     SigOverBkg2 = SigOverBkg1 / 10.
     fOut = TFile("tutorial.root", "RECREATE")
@@ -28,7 +30,7 @@ def GenerateTutorialSample():
     funcMassSig1.SetParameter(2, 0.07)
     funcMassSig1.SetParameter(3, 1.0)
     funcMassSig1.SetParameter(4, 3.1)
-    funcMassSig1.SetParameter(5, 0.10)
+    funcMassSig1.SetParameter(5, 0.09)
 
     funcMassSig2 = TF1("funcMassSig2", "gaus(0) + gaus(3)", 2.0, 5.0)
     funcMassSig2.SetParameter(0, 1.0)
@@ -36,7 +38,7 @@ def GenerateTutorialSample():
     funcMassSig2.SetParameter(2, 1.05 * 0.07)
     funcMassSig2.SetParameter(3, 1.0)
     funcMassSig2.SetParameter(4, 3.686)
-    funcMassSig2.SetParameter(5, 1.05 * 0.10)
+    funcMassSig2.SetParameter(5, 1.05 * 0.09)
 
     histMass = TH1F("histMass", "histMass", 100, 2.0, 5.0)
     histMass.FillRandom("funcMassBkg", int(nEvents - (nEvents * SigOverBkg1)))
@@ -83,6 +85,8 @@ def main():
         GenerateTutorialSample()
 
     if args.run_fit:
+        if not path.isdir(inputCfg["output"]["output_file_name"]):
+            os.system("mkdir -p %s" % (inputCfg["output"]["output_file_name"]))
         dqFitter = DQFitter(
             inputCfg["input"]["input_file_name"], inputCfg["input"]["input_name"], inputCfg["output"]["output_file_name"], 2, 5
         )
