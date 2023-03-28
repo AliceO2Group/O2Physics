@@ -20,12 +20,14 @@ from ROOT import (
 
 
 class DQFitter:
-    def __init__(self, fInName, fInputName):
+    def __init__(self, fInName, fInputName, fOutPath, fMinDataRange, fMaxDataRange):
         if not exists(fInName):
             print("The input file does not exist, exit...")
             exit()
         self.fPdfDict = {}
-        self.fFileOut = TFile("FitResults.root", "RECREATE")
+        self.fOutPath = fOutPath
+        self.fFileOut = TFile("{}{}.root".format(fOutPath, fInputName), "RECREATE")
+        self.fInputName = fInputName
         self.fFileIn = TFile.Open(fInName)
         self.fInput = self.fFileIn.Get(fInputName)
         self.fRooWorkspace = RooWorkspace("w", "workspace")
@@ -33,7 +35,7 @@ class DQFitter:
         self.fFitRangeMin = []
         self.fFitRangeMax = []
         self.fTrialName = ""
-        self.fRooMass = RooRealVar("m", "#it{M} (GeV/#it{c}^{2})", 2, 5)
+        self.fRooMass = RooRealVar("m", "#it{M} (GeV/#it{c}^{2})", fMinDataRange, fMaxDataRange)
 
     def SetFitConfig(self, pdfDict):
         """

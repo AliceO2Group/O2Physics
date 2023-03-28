@@ -84,7 +84,7 @@ def main():
 
     if args.run_fit:
         dqFitter = DQFitter(
-            inputCfg["input"]["input_file_name"], inputCfg["input"]["input_name"]
+            inputCfg["input"]["input_file_name"], inputCfg["input"]["input_name"], inputCfg["output"]["output_file_name"], 2, 5
         )
         dqFitter.SetFitConfig(inputCfg["input"]["pdf_dictionary"])
         dqFitter.MultiTrial()
