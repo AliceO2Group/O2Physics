@@ -3,7 +3,7 @@
 \author Victor Valencia <valencia@subatech.in2p3.fr>, subatech
 """
 from os.path import exists
-from plot_library import DoResidualPlot, DoPullPlot
+from plot_library import DoResidualPlot, DoPullPlot, DoCorrMatPlot, DoPropagandaPlot
 
 import ROOT
 from ROOT import (
@@ -202,11 +202,19 @@ class DQFitter:
         # Pull plot
         canvasPull = DoPullPlot(fRooPlot, self.fRooMass, trialName)
 
+        # Correlation matrix plot
+        canvasCorrMat = DoCorrMatPlot(rooFitRes, trialName)
+
+        # Propaganda plot
+        if self.fPdfDict["doPropagandaPlot"]:
+            DoPropagandaPlot(rooDs, pdf, fRooPlotCopy, self.fPdfDict, self.fInputName, trialName, self.fOutPath, extraText)
+
         # Save results
         self.fFileOut.cd()
         canvasFit.Write()
         canvasResidual.Write()
         canvasPull.Write()
+        canvasCorrMat.Write()
         histResults.Write()
 
     def MultiTrial(self):
