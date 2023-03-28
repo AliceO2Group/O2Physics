@@ -50,41 +50,51 @@ class DQFitter:
             self.fTrialName = self.fTrialName + pdf + "_"
 
         for i in range(0, len(self.fPdfDict["pdf"])):
+            if not self.fPdfDict["pdf"][i] == "SUM":
+                gROOT.ProcessLineSync(
+                    ".x fit_library/{}Pdf.cxx+".format(self.fPdfDict["pdf"][i])
+                )
+
+        for i in range(0, len(self.fPdfDict["pdf"])):
             parVal = self.fPdfDict["parVal"][i]
             parLimMin = self.fPdfDict["parLimMin"][i]
             parLimMax = self.fPdfDict["parLimMax"][i]
             parName = self.fPdfDict["parName"][i]
 
             if not self.fPdfDict["pdf"][i] == "SUM":
-                gROOT.ProcessLineSync(
-                    ".x fit_library/{}Pdf.cxx+".format(self.fPdfDict["pdf"][i])
-                )
-                nameFunc = self.fPdfDict["pdf"][i]
-                nameFunc += "Pdf::{}Pdf(m[2,5]".format(self.fPdfDict["pdf"][i])
-                pdfList.append(self.fPdfDict["pdf"][i])
-
                 for j in range(0, len(parVal)):
-                    nameFunc += ",{}[{},{},{}]".format(
-                        parName[j], parVal[j], parLimMin[j], parLimMax[j]
-                    )
-                    self.fParNames.append(parName[j])
+                    if ("sum" in parName[j]) or ("prod" in parName[j]):
+                        self.fRooWorkspace.factory("{}".format(parName[j]))
+                        r1 = parName[j].find("::") + 2
+                        r2 = parName[j].find("(", r1)
+                        parName[j] = parName[j][r1:r2]
+                        if (parLimMin == parLimMax):
+                            self.fRooWorkspace.factory("{}[{}]".format(parName[j], parVal[j]))
+                    else:
+                        if (parLimMin == parLimMax):
+                            self.fRooWorkspace.factory("{}[{}]".format(parName[j], parVal[j]))
+                        else:
+                            self.fRooWorkspace.factory("{}[{},{},{}]".format(parName[j], parVal[j], parLimMin[j], parLimMax[j]))
+                        self.fParNames.append(parName[j])
+                nameFunc = self.fPdfDict["pdf"][i]
+                nameFunc += "Pdf::{}Pdf(m[{},{}]".format(self.fPdfDict["pdfName"][i],self.fPdfDict["fitRangeMin"][0],self.fPdfDict["fitRangeMax"][0])
+                pdfList.append(self.fPdfDict["pdfName"][i])
+                for j in range(0, len(parVal)):
+                    nameFunc += ",{}".format(parName[j])
                 nameFunc += ")"
-                print(nameFunc)
                 self.fRooWorkspace.factory(nameFunc)
             else:
                 nameFunc = self.fPdfDict["pdf"][i]
                 nameFunc += "::sum("
-
                 for j in range(0, len(pdfList)):
-                    nameFunc += "{}[{},{},{}]*{}Pdf".format(
-                        parName[j], parVal[j], parLimMin[j], parLimMax[j], pdfList[j]
-                    )
+                    nameFunc += "{}[{},{},{}]*{}Pdf".format(parName[j], parVal[j], parLimMin[j], parLimMax[j], pdfList[j])
                     self.fParNames.append(parName[j])
                     if not j == len(pdfList) - 1:
                         nameFunc += ","
                 nameFunc += ")"
-                print(nameFunc)
                 self.fRooWorkspace.factory(nameFunc)
+
+
 
     def FitInvMassSpectrum(self, fitRangeMin, fitRangeMax):
         """
