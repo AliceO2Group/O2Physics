@@ -19,6 +19,8 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "TRandom.h"
 
 using namespace o2;
@@ -35,6 +37,9 @@ namespace mycascades
 {
 
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_COLUMN(CollisionZ, zcoll, float);
+DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
+DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);
 DECLARE_SOA_COLUMN(Sign, sign, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(RapXi, rapxi, float);
@@ -86,7 +91,7 @@ DECLARE_SOA_COLUMN(BachPt, bachpt, float);
 } // namespace mycascades
 
 DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
-                  mycascades::CollisionId, mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega, mycascades::Eta, mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
+                  mycascades::CollisionId, mycascades::CollisionZ, mycascades::MultFT0M, mycascades::MultFV0A, mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega, mycascades::Eta, mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
                   mycascades::CascCosPA, mycascades::V0CosPA, mycascades::DCAPosToPV, mycascades::DCANegToPV,
                   mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::PosEta, mycascades::NegEta,
                   mycascades::BachEta, mycascades::PosITSHits, mycascades::NegITSHits, mycascades::BachITSHits,
@@ -111,6 +116,9 @@ struct cascqaanalysis {
   void init(InitContext const&)
   {
     registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{1, 0.f, 1.f}}});
+    registry.add("hZCollision", "hZCollision", {HistType::kTH1F, {{200, -20.f, 20.f}}});
+    registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
+    registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
   }
 
   // Event selection criteria
@@ -135,7 +143,7 @@ struct cascqaanalysis {
   Filter preFilter =
     nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > dcabachtopv&& aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, DauTracks const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, DauTracks const& tracks)
   {
     // Event selection
     if (sel8 && !collision.sel8()) {
@@ -146,6 +154,10 @@ struct cascqaanalysis {
     }
 
     registry.fill(HIST("hNEvents"), 0.5);
+    registry.fill(HIST("hZCollision"), collision.posZ());
+    registry.fill(HIST("hCentFT0M"), collision.centFT0M());
+    registry.fill(HIST("hCentFV0A"), collision.centFV0A());
+
     float lEventScale = scalefactor;
 
     for (auto& casc : Cascades) { // loop over Cascades
@@ -188,7 +200,7 @@ struct cascqaanalysis {
 
         // Fill table
         if (fRand->Rndm() < lEventScale) {
-          mycascades(casc.globalIndex(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
+          mycascades(casc.globalIndex(), collision.posZ(), collision.centFT0M(),  collision.centFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
                      casc.mXi(), casc.mOmega(), casc.mLambda(), casc.cascradius(), casc.v0radius(),
                      casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                      casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(), casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
