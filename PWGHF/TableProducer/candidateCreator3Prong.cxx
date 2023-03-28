@@ -118,12 +118,12 @@ struct HfCandidateCreator3Prong {
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
-      auto collision = track0.collision();
+      auto collision = rowTrackIndexProng3.collision();
 
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
-      auto bc = track0.collision().bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
         initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);

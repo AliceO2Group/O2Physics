@@ -148,6 +148,10 @@ struct BCRangeSelector {
     std::sort(bcRanges.begin(), bcRanges.end(), [](const std::pair<uint64_t, uint64_t>& a, const std::pair<uint64_t, uint64_t>& b) {
       return a.first < b.first;
     });
+    if (bcRanges.empty()) {
+      LOGF(error, "No BCs selected! This should not happen! Adding a bogus BC range to avoid crashes.");
+      bcRanges.push_back(std::make_pair(0, 0));
+    }
     std::vector<std::pair<uint64_t, uint64_t>> bcRangesMerged(1, bcRanges[0]);
     for (uint64_t iR{1}; iR < bcRanges.size(); ++iR) {
       if (bcRangesMerged.back().second >= bcRanges[iR].first) {
@@ -214,6 +218,7 @@ struct BCRangeSelector {
       res.emplace_back(IR1, IR2);
       tags(first, second);
     }
+
     // make res an output
     pc.outputs().snapshot({"PPF", "IFRAMES", 0, Lifetime::Timeframe}, res);
 

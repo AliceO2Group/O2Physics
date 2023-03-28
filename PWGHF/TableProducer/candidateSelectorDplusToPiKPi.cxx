@@ -32,6 +32,8 @@ struct HfCandidateSelectorDplusToPiKPi {
 
   Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
+  // PID option
+  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
@@ -103,6 +105,30 @@ struct HfCandidateSelectorDplusToPiKPi {
     return true;
   }
 
+  /// Apply PID selection
+  /// \param pidTrackPos1Pion is the PID status of trackPos1 (prong0 of D candidate)
+  /// \param pidTrackNegKaon is the PID status of trackNeg (prong1 of D candidate)
+  /// \param pidTrackPos2Pion is the PID status of trackPos2 (prong2 of D candidate)
+  /// \return true if prongs pass all selections
+  template <typename T = int>
+  bool selectionPID(const T& pidTrackPos1Pion, const T& pidTrackNegKaon, const T& pidTrackPos2Pion)
+  {
+    if (!acceptPIDNotApplicable &&
+        (pidTrackPos1Pion != TrackSelectorPID::Status::PIDAccepted ||
+         pidTrackNegKaon != TrackSelectorPID::Status::PIDAccepted ||
+         pidTrackPos2Pion != TrackSelectorPID::Status::PIDAccepted)) {
+      return false;
+    }
+    if (acceptPIDNotApplicable &&
+        (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
+         pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
+         pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected)) {
+      return false;
+    }
+
+    return true;
+  }
+
   void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
@@ -148,13 +174,11 @@ struct HfCandidateSelectorDplusToPiKPi {
       SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoTopol);
 
       // track-level PID selection
-      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos1);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
-      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
+      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos1);
+      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackNeg);
+      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos2);
 
-      if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
-          pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-          pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) { // exclude D±
+      if (!selectionPID(pidTrackPos1Pion, pidTrackNegKaon, pidTrackPos2Pion)) { // exclude D±
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         continue;
       }

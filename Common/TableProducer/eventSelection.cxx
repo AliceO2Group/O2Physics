@@ -34,7 +34,7 @@ struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to -294 for apass2/apass3 in LHC22o-t"};
+  Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to 294 for apass2/apass3 in LHC22o-t"};
 
   void init(InitContext&)
   {
@@ -54,6 +54,7 @@ struct BcSelectionTask {
     aod::FT0s const&,
     aod::FDDs const&)
   {
+    bcsel.reserve(bcs.size());
 
     for (auto& bc : bcs) {
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
@@ -190,6 +191,8 @@ struct BcSelectionTask {
                    aod::FT0s const&,
                    aod::FDDs const&)
   {
+    bcsel.reserve(bcs.size());
+
     // map from GlobalBC to BcId needed to find triggerBc
     std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
     for (auto& bc : bcs) {
@@ -198,7 +201,7 @@ struct BcSelectionTask {
     int triggerBcShift = confTriggerBcShift;
     if (confTriggerBcShift == 999) {
       int run = bcs.iteratorAt(0).runNumber();
-      triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734) ? 0 : -294;
+      triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734) ? 0 : 294;
     }
 
     for (auto bc : bcs) {
@@ -343,6 +346,11 @@ struct EventSelectionTask {
 
     histos.add("hColCounterAll", "", kTH1F, {{1, 0., 1.}});
     histos.add("hColCounterAcc", "", kTH1F, {{1, 0., 1.}});
+  }
+
+  void process(aod::Collisions const& collisions)
+  {
+    evsel.reserve(collisions.size());
   }
 
   void processRun2(aod::Collision const& col, BCsWithBcSels const& bcs, aod::Tracks const& tracks)

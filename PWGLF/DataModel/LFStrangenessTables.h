@@ -230,6 +230,43 @@ DECLARE_SOA_TABLE(V0DataLink, "AOD", "V0DATALINK", //! Joinable table with V0s w
 using V0sLinked = soa::Join<V0s, V0DataLink>;
 using V0Linked = V0sLinked::iterator;
 
+// helper for building
+namespace v0tag
+{
+// Global bool
+DECLARE_SOA_COLUMN(IsInteresting, isInteresting, bool); //! will this be built or not?
+
+// MC association bools
+DECLARE_SOA_COLUMN(IsTrueGamma, isTrueGamma, bool);                     //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueK0Short, isTrueK0Short, bool);                 //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueLambda, isTrueLambda, bool);                   //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueAntiLambda, isTrueAntiLambda, bool);           //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueHypertriton, isTrueHypertriton, bool);         //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueAntiHypertriton, isTrueAntiHypertriton, bool); //! PDG checked correctly in MC
+
+// dE/dx compatibility bools
+DECLARE_SOA_COLUMN(IsGammaCandidate, isGammaCandidate, bool);                     //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsK0ShortCandidate, isK0ShortCandidate, bool);                 //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsLambdaCandidate, isLambdaCandidate, bool);                   //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsAntiLambdaCandidate, isAntiLambdaCandidate, bool);           //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsHypertritonCandidate, isHypertritonCandidate, bool);         //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsAntiHypertritonCandidate, isAntiHypertritonCandidate, bool); //! compatible with dE/dx hypotheses
+} // namespace v0tag
+DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
+                  v0tag::IsInteresting,
+                  v0tag::IsTrueGamma,
+                  v0tag::IsTrueK0Short,
+                  v0tag::IsTrueLambda,
+                  v0tag::IsTrueAntiLambda,
+                  v0tag::IsTrueHypertriton,
+                  v0tag::IsTrueAntiHypertriton,
+                  v0tag::IsGammaCandidate,
+                  v0tag::IsK0ShortCandidate,
+                  v0tag::IsLambdaCandidate,
+                  v0tag::IsAntiLambdaCandidate,
+                  v0tag::IsHypertritonCandidate,
+                  v0tag::IsAntiHypertritonCandidate);
+
 namespace cascdata
 {
 // Necessary for full filtering functionality
@@ -359,6 +396,33 @@ DECLARE_SOA_EXTENDED_TABLE_USER(CascDataExt, CascDataOrigin, "CascDATAEXT", //!
                                 cascdataext::Px, cascdataext::Py, cascdataext::Pz);
 
 using CascDataFull = CascDataExt;
+
+namespace casctag
+{
+DECLARE_SOA_COLUMN(IsInteresting, isInteresting, bool); //! will this be built or not?
+
+// MC association bools
+DECLARE_SOA_COLUMN(IsTrueXiMinus, isTrueXiMinus, bool);       //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueXiPlus, isTrueXiPlus, bool);         //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueOmegaMinus, isTrueOmegaMinus, bool); //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueOmegaPlus, isTrueOmegaPlus, bool);   //! PDG checked correctly in MC
+
+// dE/dx compatibility bools
+DECLARE_SOA_COLUMN(IsXiMinusCandidate, isXiMinusCandidate, bool);       //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsXiPlusCandidate, isXiPlusCandidate, bool);         //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsOmegaMinusCandidate, isOmegaMinusCandidate, bool); //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsOmegaPlusCandidate, isOmegaPlusCandidate, bool);   //! compatible with dE/dx hypotheses
+} // namespace casctag
+DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
+                  casctag::IsInteresting,
+                  casctag::IsTrueXiMinus,
+                  casctag::IsTrueXiPlus,
+                  casctag::IsTrueOmegaMinus,
+                  casctag::IsTrueOmegaPlus,
+                  casctag::IsXiMinusCandidate,
+                  casctag::IsXiPlusCandidate,
+                  casctag::IsOmegaMinusCandidate,
+                  casctag::IsOmegaPlusCandidate);
 
 //Definition of labels for V0s
 namespace mcv0label
