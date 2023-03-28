@@ -2,7 +2,6 @@
 \author Luca Micheletti <luca.micheletti@cern.ch>, CERN
 """
 import os
-from os import path
 
 import ROOT
 from ROOT import (

@@ -104,7 +104,6 @@ class DQFitter:
         self.fRooWorkspace.Print()
         pdf = self.fRooWorkspace.pdf("sum")
         self.fRooMass.setRange("range", fitRangeMin, fitRangeMax)
-        fRooPlot = self.fRooMass.frame(ROOT.RooFit.Title(trialName))
         if "TTree" in self.fInput.ClassName():
             print("Perform unbinned fit")
             rooDs = RooDataSet(
@@ -121,7 +120,11 @@ class DQFitter:
                 RooArgSet(self.fRooMass),
                 ROOT.RooFit.Import(self.fInput),
             )
-        pdf.fitTo(rooDs)
+        rooFitRes = ROOT.RooFitResult(pdf.fitTo(rooDs, ROOT.RooFit.Save(True)))
+        fRooPlot = self.fRooMass.frame(ROOT.RooFit.Title(trialName))
+        fRooPlotCopy = self.fRooMass.frame(ROOT.RooFit.Title(trialName))
+        rooDs.plotOn(fRooPlot, ROOT.RooFit.MarkerStyle(20), ROOT.RooFit.MarkerSize(0.6), ROOT.RooFit.Range(fitRangeMin, fitRangeMax))
+        pdf.plotOn(fRooPlot, ROOT.RooFit.LineColor(ROOT.kRed+1), ROOT.RooFit.LineWidth(2), ROOT.RooFit.Range(fitRangeMin, fitRangeMax))
 
         index = 1
         histResults = TH1F(
@@ -137,9 +140,51 @@ class DQFitter:
             histResults.SetBinContent(index, self.fRooWorkspace.var(parName).getError())
             index += 1
 
-        rooDs.plotOn(fRooPlot)
-        pdf.plotOn(fRooPlot)
-        pdf.paramOn(fRooPlot, ROOT.RooFit.Layout(0.55))
+        for i in range(0, len(self.fPdfDict["pdf"])):
+            if not self.fPdfDict["pdfName"][i] == "SUM":
+                pdf.plotOn(fRooPlot, ROOT.RooFit.Components("{}Pdf".format(self.fPdfDict["pdfName"][i])), ROOT.RooFit.LineColor(self.fPdfDict["pdfColor"][i]), ROOT.RooFit.LineStyle(self.fPdfDict["pdfStyle"][i]), ROOT.RooFit.LineWidth(2), ROOT.RooFit.Range(fitRangeMin, fitRangeMax))
+
+        extraText = []
+        paveText = ROOT.TPaveText(0.60, 0.45, 0.99, 0.94, "brNDC")
+        paveText.SetTextFont(42)
+        paveText.SetTextSize(0.025)
+        paveText.SetFillColor(ROOT.kWhite)
+        for parName in self.fParNames:
+            paveText.AddText("{} = {:.4f} #pm {:.4f}".format(parName, self.fRooWorkspace.var(parName).getVal(), self.fRooWorkspace.var(parName).getError()))
+            if self.fPdfDict["parForPropagandaPlot"].count(parName) > 0:
+                text = self.fPdfDict["parNameForPropagandaPlot"][self.fPdfDict["parForPropagandaPlot"].index(parName)]
+                if "sig" in parName:
+                    extraText.append("{} = {:.0f} #pm {:.0f}".format(text, self.fRooWorkspace.var(parName).getVal(), self.fRooWorkspace.var(parName).getError()))
+                else:
+                    extraText.append("{} = {:.3f} #pm {:.3f}".format(text, self.fRooWorkspace.var(parName).getVal(), self.fRooWorkspace.var(parName).getError()))
+            for i in range(0, len(self.fPdfDict["pdfName"])):
+                if self.fPdfDict["pdfName"][i] in parName:
+                    (paveText.GetListOfLines().Last()).SetTextColor(self.fPdfDict["pdfColor"][i])
+
+        nPars = rooFitRes.floatParsFinal().getSize()
+        if "TTree" in self.fInput.ClassName():
+            # Convert RooDataSet into RooDataHist to extract the Chi2 value
+            rooDh = RooDataHist("rooDh", "binned version of rooDs", RooArgSet(self.fRooMass), rooDs)
+            chi2 = ROOT.RooChi2Var("chi2", "chi2", pdf, rooDh)
+            nbinsperGev = rooDh.numEntries() / (self.fPdfDict["fitRangeMax"][0] - self.fPdfDict["fitRangeMin"][0])
+            nBins = (fitRangeMax - fitRangeMin) * nbinsperGev
+            ndof = nBins - nPars
+            reduced_chi2 = chi2.getVal() / ndof
+            paveText.AddText("#bf{#chi^{2}/dof = %3.2f}" % (reduced_chi2))
+            extraText.append("#chi^{2}/dof = %3.2f" % reduced_chi2)
+        else:
+            # To Do : Find a way to get the number of bins differently. The following is a temparary solution.
+            # WARNING : The largest fit range has to come first in the config file otherwise it does not work
+            chi2 = ROOT.RooChi2Var("chi2", "chi2", pdf, rooDs)
+            nbinsperGev = rooDs.numEntries() / (self.fPdfDict["fitRangeMax"][0] - self.fPdfDict["fitRangeMin"][0])
+            nBins = (fitRangeMax - fitRangeMin) * nbinsperGev
+            ndof = nBins - nPars
+            reduced_chi2 = chi2.getVal() / ndof
+            paveText.AddText("n Par = %3.2f" % (nPars))
+            paveText.AddText("n Bins = %3.2f" % (nBins))
+            paveText.AddText("#bf{#chi^{2}/dof = %3.2f}" % reduced_chi2)
+            fRooPlot.addObject(paveText)
+            extraText.append("#chi^{2}/dof = %3.2f" % reduced_chi2)
 
         # Fit plot
         canvasFit = TCanvas(
