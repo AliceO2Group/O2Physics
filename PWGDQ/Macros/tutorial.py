@@ -56,10 +56,13 @@ def GenerateTutorialSample():
 
     for iEvent in range(0, nEvents):
         seed = gRandom.Rndm()
-        if seed > SigOverBkg:
+        if seed > SigOverBkg1:
             m[0] = funcMassBkg.GetRandom()
         else:
-            m[0] = funcMassSig.GetRandom()
+            if seed > SigOverBkg2:
+                m[0] = funcMassSig1.GetRandom()
+            else:
+                m[0] = funcMassSig2.GetRandom()
         tree.Fill()
     tree.Write()
 
