@@ -19,16 +19,32 @@ def GenerateTutorialSample():
     SigOverBkg2 = SigOverBkg1 / 10.
     fOut = TFile("tutorial.root", "RECREATE")
 
-    funcMassBkg = TF1("funcMassBkg", "expo", 0.0, 5.0)
+    funcMassBkg = TF1("funcMassBkg", "expo", 2.0, 5.0)
     funcMassBkg.SetParameter(0, 0.00)
     funcMassBkg.SetParameter(1, -0.5)
 
-    funcMassSig = TF1("funcMassSig", "gaus", 0.0, 5.0)
+    funcMassSig1 = TF1("funcMassSig1", "gaus(0) + gaus(3)", 2.0, 5.0)
+    funcMassSig.SetParameter(0, 1.0)
+    funcMassSig.SetParameter(1, 3.1)
+    funcMassSig.SetParameter(2, 0.07)
+    funcMassSig.SetParameter(3, 1.0)
+    funcMassSig.SetParameter(4, 3.1)
+    funcMassSig.SetParameter(5, 0.10)
+
+    funcMassSig2 = TF1("funcMassSig2", "gaus(0) + gaus(3)", 2.0, 5.0)
+    funcMassSig.SetParameter(0, 1.0)
+    funcMassSig.SetParameter(1, 3.686)
+    funcMassSig.SetParameter(2, 1.05 * 0.07)
+    funcMassSig.SetParameter(3, 1.0)
+    funcMassSig.SetParameter(4, 3.686)
+    funcMassSig.SetParameter(5, 1.05 * 0.10)
+
+    funcMassSig = TF1("funcMassSig", "gaus", 2.0, 5.0)
     funcMassSig.SetParameter(0, 1.0)
     funcMassSig.SetParameter(1, 3.1)
     funcMassSig.SetParameter(2, 0.07)
 
-    histMass = TH1F("histMass", "histMass", 100, 0.0, 5.0)
+    histMass = TH1F("histMass", "histMass", 100, 2.0, 5.0)
     histMass.FillRandom("funcMassBkg", int(nEvents - (nEvents * SigOverBkg)))
     histMass.FillRandom("funcMassSig", int(nEvents * SigOverBkg))
     histMass.Write()
