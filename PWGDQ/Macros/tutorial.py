@@ -14,7 +14,6 @@ def GenerateTutorialSample():
     This method create the sample for the tutorial
     """
     nEvents = 100000
-    SigOverBkg = 0.1
     SigOverBkg1 = 0.03
     SigOverBkg2 = SigOverBkg1 / 10.
     fOut = TFile("tutorial.root", "RECREATE")
@@ -24,25 +23,20 @@ def GenerateTutorialSample():
     funcMassBkg.SetParameter(1, -0.5)
 
     funcMassSig1 = TF1("funcMassSig1", "gaus(0) + gaus(3)", 2.0, 5.0)
-    funcMassSig.SetParameter(0, 1.0)
-    funcMassSig.SetParameter(1, 3.1)
-    funcMassSig.SetParameter(2, 0.07)
-    funcMassSig.SetParameter(3, 1.0)
-    funcMassSig.SetParameter(4, 3.1)
-    funcMassSig.SetParameter(5, 0.10)
+    funcMassSig1.SetParameter(0, 1.0)
+    funcMassSig1.SetParameter(1, 3.1)
+    funcMassSig1.SetParameter(2, 0.07)
+    funcMassSig1.SetParameter(3, 1.0)
+    funcMassSig1.SetParameter(4, 3.1)
+    funcMassSig1.SetParameter(5, 0.10)
 
     funcMassSig2 = TF1("funcMassSig2", "gaus(0) + gaus(3)", 2.0, 5.0)
-    funcMassSig.SetParameter(0, 1.0)
-    funcMassSig.SetParameter(1, 3.686)
-    funcMassSig.SetParameter(2, 1.05 * 0.07)
-    funcMassSig.SetParameter(3, 1.0)
-    funcMassSig.SetParameter(4, 3.686)
-    funcMassSig.SetParameter(5, 1.05 * 0.10)
-
-    funcMassSig = TF1("funcMassSig", "gaus", 2.0, 5.0)
-    funcMassSig.SetParameter(0, 1.0)
-    funcMassSig.SetParameter(1, 3.1)
-    funcMassSig.SetParameter(2, 0.07)
+    funcMassSig2.SetParameter(0, 1.0)
+    funcMassSig2.SetParameter(1, 3.686)
+    funcMassSig2.SetParameter(2, 1.05 * 0.07)
+    funcMassSig2.SetParameter(3, 1.0)
+    funcMassSig2.SetParameter(4, 3.686)
+    funcMassSig2.SetParameter(5, 1.05 * 0.10)
 
     histMass = TH1F("histMass", "histMass", 100, 2.0, 5.0)
     histMass.FillRandom("funcMassBkg", int(nEvents - (nEvents * SigOverBkg1)))
