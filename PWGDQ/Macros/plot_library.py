@@ -4,11 +4,6 @@
 import os
 
 import ROOT
-from ROOT import (
-    TCanvas,
-    TLatex,
-    gStyle
-)
 
 def SetLatex(latex):
     latex.SetTextSize(0.035)
@@ -25,23 +20,23 @@ def SetLegend(legend):
     legend.SetTextSize(0.03)
 
 def LoadStyle():
-    gStyle.SetPadLeftMargin(0.15)
-    gStyle.SetPadBottomMargin(0.15)
-    gStyle.SetPadTopMargin(0.05)
-    gStyle.SetPadRightMargin(0.05)
-    gStyle.SetEndErrorSize(0.0)
-    gStyle.SetTitleSize(0.05,"X")
-    gStyle.SetTitleSize(0.045,"Y")
-    gStyle.SetLabelSize(0.045,"X")
-    gStyle.SetLabelSize(0.045,"Y")
-    gStyle.SetTitleOffset(1.2,"X")
-    gStyle.SetTitleOffset(1.35,"Y")
+    ROOT.gStyle.SetPadLeftMargin(0.15)
+    ROOT.gStyle.SetPadBottomMargin(0.15)
+    ROOT.gStyle.SetPadTopMargin(0.05)
+    ROOT.gStyle.SetPadRightMargin(0.05)
+    ROOT.gStyle.SetEndErrorSize(0.0)
+    ROOT.gStyle.SetTitleSize(0.05,"X")
+    ROOT.gStyle.SetTitleSize(0.045,"Y")
+    ROOT.gStyle.SetLabelSize(0.045,"X")
+    ROOT.gStyle.SetLabelSize(0.045,"Y")
+    ROOT.gStyle.SetTitleOffset(1.2,"X")
+    ROOT.gStyle.SetTitleOffset(1.35,"Y")
 
 def DoResidualPlot(rooPlot, rooVar, trialName):
     rooHistResidual = rooPlot.residHist()
     rooPlotResidual = rooVar.frame(ROOT.RooFit.Title("Residual Distribution"))
     rooPlotResidual.addPlotable(rooHistResidual,"P")
-    canvasResidual = TCanvas("residual_plot_{}".format(trialName), "residual_plot_{}".format(trialName), 600, 600)
+    canvasResidual = ROOT.TCanvas("residual_plot_{}".format(trialName), "residual_plot_{}".format(trialName), 600, 600)
     canvasResidual.SetLeftMargin(0.15)
     rooPlotResidual.GetYaxis().SetTitleOffset(1.4)
     rooPlotResidual.Draw()
@@ -51,7 +46,7 @@ def DoPullPlot(rooPlot, rooVar, trialName):
     rooHistPull = rooPlot.pullHist()
     rooPlotPull = rooVar.frame(ROOT.RooFit.Title("Pull Distribution"))
     rooPlotPull.addPlotable(rooHistPull,"P")
-    canvasPull = TCanvas("pull_plot_{}".format(trialName), "pull_plot_{}".format(trialName), 600, 600)
+    canvasPull = ROOT.TCanvas("pull_plot_{}".format(trialName), "pull_plot_{}".format(trialName), 600, 600)
     canvasPull.SetLeftMargin(0.15)
     rooPlotPull.GetYaxis().SetTitleOffset(1.4)
     rooPlotPull.Draw()
@@ -59,7 +54,7 @@ def DoPullPlot(rooPlot, rooVar, trialName):
 
 def DoCorrMatPlot(rooFitRes, trialName):
     histCorrMat = rooFitRes.correlationHist("hist_corr_mat_{}".format(trialName))
-    canvasCorrMat = TCanvas("corr_mat_{}".format(trialName), "corr_mat_{}".format(trialName), 600, 600)
+    canvasCorrMat = ROOT.TCanvas("corr_mat_{}".format(trialName), "corr_mat_{}".format(trialName), 600, 600)
     histCorrMat.Draw("COLZ")
     return canvasCorrMat
 
@@ -85,20 +80,20 @@ def DoPropagandaPlot(rooDs, pdf, rooPlot, pdfDict, histName, trialName, path, ex
         if not pdfDict["pdfName"][i] == "SUM":
             legend.AddEntry(rooPlot.findObject(pdfDict["pdfNameForLegend"][i]), pdfDict["pdfNameForLegend"][i], "L")
     rooPlot.SetTitle("")
-    canvasALICE = TCanvas("ALICE_{}_{}".format(histName, trialName), "ALICE_{}_{}".format(histName, trialName), 800, 600)
+    canvasALICE = ROOT.TCanvas("ALICE_{}_{}".format(histName, trialName), "ALICE_{}_{}".format(histName, trialName), 800, 600)
     canvasALICE.Update()
     canvasALICE.SetLeftMargin(0.15)
     rooPlot.Draw()
     legend.Draw("same")
 
-    letexTitle = TLatex()
+    letexTitle = ROOT.TLatex()
     letexTitle.SetTextSize(0.045)
     letexTitle.SetNDC()
     letexTitle.SetTextFont(42)
     for i in range(0, len(pdfDict["textForPropagandaPlot"])):
         letexTitle.DrawLatex(pdfDict["textForPropagandaPlot"][i][0], pdfDict["textForPropagandaPlot"][i][1], pdfDict["textForPropagandaPlot"][i][2])
 
-    letexExtraText = TLatex()
+    letexExtraText = ROOT.TLatex()
     letexExtraText.SetTextSize(0.04)
     letexExtraText.SetTextColor(ROOT.kGray+3)
     letexExtraText.SetNDC()
