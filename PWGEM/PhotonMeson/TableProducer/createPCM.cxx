@@ -170,16 +170,6 @@ struct createPCM {
   template <typename TCollision, typename TTrack>
   void fillV0Table(TCollision const& collision, TTrack const& ele, TTrack const& pos)
   {
-    o2::vertexing::DCAFitterN<2> fitter;
-    fitter.setPropagateToPCA(true);
-    fitter.setMaxR(200.);
-    fitter.setMinParamChange(1e-3);
-    fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
-    fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(true);
-    fitter.setBz(d_bz); // in kG
-
     array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
     array<float, 3> svpos = {0.}; // secondary vertex position
     array<float, 3> pvec0 = {0.};
