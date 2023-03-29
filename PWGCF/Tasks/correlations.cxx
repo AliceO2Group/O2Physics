@@ -454,7 +454,7 @@ struct CorrelationTask {
   {
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<derivedCollisions, derivedTracks, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple}; // -1 is the number of the bin to skip
+    SameKindPair<derivedCollisions, derivedTracks, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
@@ -640,7 +640,7 @@ struct CorrelationTask {
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     BinningTypeMCDerived configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     auto tuple = std::make_tuple(mcParticles);
-    SameKindPair<soa::Filtered<aod::CFMcCollisions>, soa::Filtered<aod::CFMcParticles>, BinningTypeMCDerived> pairs{configurableBinning, cfgNoMixedEvents, -1, mcCollisions, tuple}; // -1 is the number of the bin to skip
+    SameKindPair<soa::Filtered<aod::CFMcCollisions>, soa::Filtered<aod::CFMcParticles>, BinningTypeMCDerived> pairs{configurableBinning, cfgNoMixedEvents, -1, mcCollisions, tuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
