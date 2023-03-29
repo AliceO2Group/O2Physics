@@ -574,6 +574,7 @@ struct ProducePCMPhoton {
 };
 
 struct PhotonPairing {
+  SliceCache cache;
 
   // Basic checks
   HistogramRegistry registry{
@@ -658,7 +659,7 @@ struct PhotonPairing {
   using MyCollision = MyCollisions::iterator;
   Filter collisionFilter = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
   using MyFilteredCollisions = soa::Filtered<MyCollisions>;
-  SameKindPair<MyFilteredCollisions, aod::V0Gammas, BinningType> pair{colBinning, ndepth, -1}; // indicates that ndepth events should be mixed and under/overflow (-1) to be ignored
+  SameKindPair<MyFilteredCollisions, aod::V0Gammas, BinningType> pair{colBinning, ndepth, -1, &cache}; // indicates that ndepth events should be mixed and under/overflow (-1) to be ignored
   void processMixed(MyFilteredCollisions const& collisions, aod::V0Gammas const& PCMPhotons, MyTracks const&)
   {
     for (auto& [coll1, gammas_coll1, coll2, gammas_coll2] : pair) {
