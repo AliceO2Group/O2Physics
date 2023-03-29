@@ -66,10 +66,10 @@ float getBinCenter(uint8_t bin, double max)
 }
 
 struct NucleusCandidate {
-  NucleusCandidate(int aIndex, float aPt, float aEta, uint8_t aITSclsMap, uint8_t aTPCnCls, int8_t aDCAxy, int8_t aDCAz, uint16_t aFlags, uint8_t aTPCnsigma, uint8_t aTOFnsigma, uint8_t aTOFmass) : index(aIndex), pt(aPt), eta(aEta), ITSclsMap(aITSclsMap), TPCnCls(aTPCnCls), DCAxy(aDCAxy), DCAz(aDCAz), flags(aFlags), TPCnsigma(aTPCnsigma), TOFnsigma(aTOFnsigma), TOFmass(aTOFmass)
+  NucleusCandidate(int idx, float aPt, float aEta, uint8_t aITSclsMap, uint8_t aTPCnCls, int8_t aDCAxy, int8_t aDCAz, uint16_t aFlags, uint8_t aTPCnsigma, uint8_t aTOFnsigma, uint8_t aTOFmass) : globalIndex(idx), pt(aPt), eta(aEta), ITSclsMap(aITSclsMap), TPCnCls(aTPCnCls), DCAxy(aDCAxy), DCAz(aDCAz), flags(aFlags), TPCnsigma(aTPCnsigma), TOFnsigma(aTOFnsigma), TOFmass(aTOFmass)
   {
   }
-  int index;
+  int globalIndex;
   float pt;
   float eta;
   uint8_t ITSclsMap;
@@ -122,7 +122,7 @@ constexpr double BinnedVariablesDefaultMax[5][1]{
   {5.08}};
 // constexpr bool storeTreesDefault[4]{false, false, false, false};
 constexpr int species{4};
-// constexpr int codes[4]{1000010020, 1000010030, 1000020030, 1000020040};
+constexpr int codes[4]{1000010020, 1000010030, 1000020030, 1000020040};
 constexpr float charges[4]{1.f, 1.f, 2.f, 2.f};
 constexpr float masses[4]{MassDeuteron, MassTriton, MassHelium3, MassAlpha};
 static const std::vector<std::string> matter{"M", "A"};
@@ -139,6 +139,8 @@ static const std::vector<std::string> chargeLabelNames{"Positive", "Negative"};
 float pidCuts[2][4][2];
 std::shared_ptr<TH3> hNsigma[2][4][2];
 std::shared_ptr<TH3> hTOFmass[4][2];
+std::shared_ptr<TH2> hGenNuclei[4][2];
+std::shared_ptr<TH3> hMomRes[4][2];
 std::shared_ptr<TH3> hDCAxy[2][4][2];
 
 std::vector<NucleusCandidate> candidates;
@@ -158,6 +160,10 @@ DECLARE_SOA_COLUMN(Flags, flags, uint16_t);
 DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, uint8_t);
 DECLARE_SOA_COLUMN(TOFnsigma, tofnsigma, uint8_t);
 DECLARE_SOA_COLUMN(TOFmass, tofmass, uint8_t);
+DECLARE_SOA_COLUMN(gPt, genPt, float);
+DECLARE_SOA_COLUMN(gEta, genEta, float);
+DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
+
 } // namespace NucleiTableNS
 DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::Pt,
@@ -170,6 +176,22 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::TPCnsigma,
                   NucleiTableNS::TOFnsigma,
                   NucleiTableNS::TOFmass)
+
+DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
+                  NucleiTableNS::Pt,
+                  NucleiTableNS::Eta,
+                  NucleiTableNS::ITSclsMap,
+                  NucleiTableNS::TPCnCls,
+                  NucleiTableNS::DCAxy,
+                  NucleiTableNS::DCAz,
+                  NucleiTableNS::Flags,
+                  NucleiTableNS::TPCnsigma,
+                  NucleiTableNS::TOFnsigma,
+                  NucleiTableNS::TOFmass,
+                  NucleiTableNS::gPt,
+                  NucleiTableNS::gEta,
+                  NucleiTableNS::PDGcode)
+
 } // namespace o2::aod
 
 struct NucleiSpectraTask {
@@ -178,10 +200,16 @@ struct NucleiSpectraTask {
     kTriton = BIT(1),
     kHe3 = BIT(2),
     kHe4 = BIT(3),
-    kHasTOF = BIT(4)
+    kHasTOF = BIT(4),
+    kIsReconstructed = BIT(5),
+    kIsAmbiguous = BIT(6),       /// just a placeholder now
+    kIsPhysicalPrimary = BIT(8), /// MC flags starting from the second half of the short
+    kIsSecondaryFromMaterial = BIT(9),
+    kIsSecondaryFromWeakDecay = BIT(10)
   };
 
   Produces<o2::aod::NucleiTable> nucleiTable;
+  Produces<o2::aod::NucleiTableMC> nucleiTableMC;
 
   Configurable<std::string> cfgCentralityEstimator{"cfgCentralityEstimator", "V0A", "Centrality estimator name"};
   Configurable<float> cfgCMrapidity{"cfgCMrapidity", 0.f, "Rapidity of the center of mass (only for p-Pb)"};
@@ -227,6 +255,7 @@ struct NucleiSpectraTask {
     const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)cfgCentralityEstimator)};
     const AxisSpec nSigmaAxes[2]{{cfgNsigmaTPCbins, "n#sigma_{TPC}"}, {cfgNsigmaTOFbins, "n#sigma_{TOF}"}};
     const AxisSpec tofMassAxis{cfgTOFmassBins, "TOF mass - PDG mass"};
+    const AxisSpec ptResAxis{{200, -1, 1}, "#Delta#it{p}_{T}/#it{p}_{T}"};
 
     const AxisSpec ptAxes[4]{
       {cfgPtBinsDeuterons, "#it{p}_{T} (GeV/#it{c})"},
@@ -248,6 +277,8 @@ struct NucleiSpectraTask {
           nuclei::hDCAxy[iPID][iS][iC] = spectra.add<TH3>(fmt::format("hDCAxy{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCAxy {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], dcaAxes[iS]});
         }
         nuclei::hTOFmass[iS][iC] = spectra.add<TH3>(fmt::format("h{}TOFmass{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("TOF mass - {}  PDG mass", nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], tofMassAxis});
+        nuclei::hMomRes[iS][iC] = spectra.add<TH3>(fmt::format("h{}MomRes{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Momentum resolution {}", nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], ptResAxis});
+        nuclei::hGenNuclei[iS][iC] = spectra.add<TH2>(fmt::format("h{}Gen{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Generated {}", nuclei::names[iS]).data(), HistType::kTH2D, {centAxis, ptAxes[iS]});
       }
     }
 
@@ -320,7 +351,7 @@ struct NucleiSpectraTask {
             }
           }
         }
-        uint16_t flag{0u};
+        uint16_t flag{kIsReconstructed};
         if (cfgTreeConfig->get(iS, 0u) && selectedTPC) {
           int8_t massTOF{0u};
           if (cfgTreeConfig->get(iS, 1u) && !selectedTOF) {
@@ -354,6 +385,57 @@ struct NucleiSpectraTask {
   void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
     fillDataInfo(collision, tracks);
+    std::vector<bool> isReconstructed(particlesMC.size(), false);
+    for (auto& c : nuclei::candidates) {
+      auto label = trackLabelsMC.iteratorAt(c.globalIndex);
+      if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
+        continue;
+      }
+      auto particle = particlesMC.iteratorAt(label.mcParticleId());
+      isReconstructed[particle.globalIndex()] = true;
+      if (particle.isPhysicalPrimary()) {
+        c.flags |= kIsPhysicalPrimary;
+      } else if (particle.has_mothers()) {
+        c.flags |= kIsSecondaryFromWeakDecay;
+      } else {
+        c.flags |= kIsSecondaryFromMaterial;
+      }
+
+      nucleiTableMC(c.pt, c.eta, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFnsigma, c.TOFmass, particle.pt(), particle.eta(), particle.pdgCode());
+      for (int iS{0}; iS < nuclei::species; ++iS) {
+        if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
+          nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt), 1. - std::abs(c.pt) / particle.pt());
+          break;
+        }
+      }
+    }
+
+    int index{0};
+    for (auto& particle : particlesMC) {
+      int pdg{std::abs(particle.pdgCode())};
+      for (int iS{0}; iS < nuclei::species; ++iS) {
+        if (pdg != nuclei::codes[iS]) {
+          continue;
+        }
+        uint16_t flags{0u};
+        if (particle.isPhysicalPrimary()) {
+          flags |= kIsPhysicalPrimary;
+          if (particle.y() > cfgCutRapidityMin && particle.y() < cfgCutRapidityMax) {
+            nuclei::hGenNuclei[iS][particle.pdgCode() < 0]->Fill(1., particle.pt());
+          }
+        } else if (particle.has_mothers()) {
+          flags |= kIsSecondaryFromWeakDecay;
+        } else {
+          flags |= kIsSecondaryFromMaterial;
+        }
+
+        if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
+          nucleiTableMC(0, 0, 0, 0, 0, 0, flags, 0, 0, 0, particle.pt(), particle.eta(), particle.pdgCode());
+        }
+        index++;
+        break;
+      }
+    }
   }
   PROCESS_SWITCH(NucleiSpectraTask, processMC, "MC analysis", false);
 };
