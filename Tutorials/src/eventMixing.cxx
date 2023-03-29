@@ -36,11 +36,12 @@ DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
 } // namespace o2::aod
 
 struct MixedEvents {
+  SliceCache cache;
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
   BinningType binningOnPositions{{xBins, yBins}, true};                                    // true is for 'ignore overflows' (true by default)
-  SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
@@ -66,6 +67,7 @@ struct MixedEvents {
 };
 
 struct MixedEventsInsideProcess {
+  SliceCache cache;
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
@@ -76,7 +78,7 @@ struct MixedEventsInsideProcess {
     LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
 
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1, collisions, tracksTuple}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+    SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1, collisions, tracksTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
@@ -98,6 +100,7 @@ struct MixedEventsInsideProcess {
 };
 
 struct MixedEventsFilteredTracks {
+  SliceCache cache;
   Filter trackFilter = aod::track::eta < 1.0f;
   using myTracks = soa::Filtered<aod::Tracks>;
 
@@ -105,7 +108,7 @@ struct MixedEventsFilteredTracks {
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
   BinningType binningOnPositions{{xBins, yBins}, true};                                 // true is for 'ignore overflows' (true by default)
-  SameKindPair<aod::Collisions, myTracks, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  SameKindPair<aod::Collisions, myTracks, BinningType> pair{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, myTracks const& tracks)
   {
@@ -131,12 +134,13 @@ struct MixedEventsFilteredTracks {
 };
 
 struct MixedEventsJoinedCollisions {
+  SliceCache cache;
   using aodCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
   BinningType binningOnPositions{{xBins, yBins}, true};                                  // true is for 'ignore overflows' (true by default)
-  SameKindPair<aodCollisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  SameKindPair<aodCollisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aodCollisions& collisions, aod::Tracks const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -162,12 +166,13 @@ struct MixedEventsJoinedCollisions {
 };
 
 struct MixedEventsDynamicColumns {
+  SliceCache cache;
   using aodCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   std::vector<double> zBins{7, -7, 7};
   std::vector<double> multBins{VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
   BinningType corrBinning{{zBins, multBins}, true};                               // true is for 'ignore overflows' (true by default)
-  SameKindPair<aodCollisions, aod::Tracks, BinningType> pair{corrBinning, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  SameKindPair<aodCollisions, aod::Tracks, BinningType> pair{corrBinning, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aodCollisions& collisions, aod::Tracks const& tracks)
   {
@@ -193,11 +198,12 @@ struct MixedEventsDynamicColumns {
 };
 
 struct MixedEventsVariousKinds {
+  SliceCache cache;
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
   BinningType binningOnPositions{{xBins, yBins}, true};                                      // true is for 'ignore overflows' (true by default)
-  Pair<aod::Collisions, aod::Tracks, aod::V0s, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  Pair<aod::Collisions, aod::Tracks, aod::V0s, BinningType> pair{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, aod::Tracks const& tracks, aod::V0s const& v0s)
   {
@@ -225,12 +231,13 @@ struct MixedEventsVariousKinds {
 };
 
 struct MixedEventsTriple {
+  SliceCache cache;
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   std::vector<double> zBins{7, -7, 7};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY, aod::collision::PosZ>;
   BinningType binningOnPositions{{xBins, yBins, zBins}, true};                                 // true is for 'ignore overflows' (true by default)
-  SameKindTriple<aod::Collisions, aod::Tracks, BinningType> triple{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  SameKindTriple<aod::Collisions, aod::Tracks, BinningType> triple{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
@@ -256,12 +263,13 @@ struct MixedEventsTriple {
 };
 
 struct MixedEventsTripleVariousKinds {
+  SliceCache cache;
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   std::vector<double> zBins{7, -7, 7};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY, aod::collision::PosZ>;
   BinningType binningOnPositions{{xBins, yBins, zBins}, true};                                                // true is for 'ignore overflows' (true by default)
-  Triple<aod::Collisions, aod::Tracks, aod::V0s, aod::Tracks, BinningType> triple{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  Triple<aod::Collisions, aod::Tracks, aod::V0s, aod::Tracks, BinningType> triple{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, aod::Tracks const& tracks, aod::V0s const& v0s)
   {
@@ -328,9 +336,10 @@ struct HashTask {
 };
 
 struct MixedEventsWithHashTask {
+  SliceCache cache;
   using myCollisions = soa::Join<aod::Hashes, aod::Collisions>;
   NoBinningPolicy<aod::hash::Bin> hashBin;
-  SameKindPair<myCollisions, aod::Tracks, NoBinningPolicy<aod::hash::Bin>> pair{hashBin, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  SameKindPair<myCollisions, aod::Tracks, NoBinningPolicy<aod::hash::Bin>> pair{hashBin, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(myCollisions& collisions, aod::Tracks& tracks)
   {
@@ -356,6 +365,7 @@ struct MixedEventsWithHashTask {
 };
 
 struct MixedEventsPartitionedTracks {
+  SliceCache cache;
   Filter trackFilter = (aod::track::x > -0.8f) && (aod::track::x < 0.8f) && (aod::track::y > 1.0f);
   using myTracks = soa::Filtered<aod::Tracks>;
 
@@ -366,7 +376,7 @@ struct MixedEventsPartitionedTracks {
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
   BinningType binningOnPositions{{xBins, yBins}, true};                                 // true is for 'ignore overflows' (true by default)
-  SameKindPair<aod::Collisions, myTracks, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  SameKindPair<aod::Collisions, myTracks, BinningType> pair{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, myTracks const& tracks)
   {
@@ -420,7 +430,7 @@ struct MixedEventsLambdaBinning {
     BinningType binningWithLambda{{getTracksSize}, {axisVertex, axisMultiplicity}, true};
 
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningWithLambda, 5, -1, collisions, tracksTuple}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+    SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningWithLambda, 5, -1, collisions, tracksTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
