@@ -321,7 +321,7 @@ struct lambda1520analysis {
     LOGF(debug, "Event Mixing Started");
     auto tracksTuple = std::make_tuple(resotracks);
     BinningTypeVetZTPCtemp colBinning{{CfgVtxBins, CfgMultBins}, true};
-    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVetZTPCtemp> pairs{colBinning, cfgNoMixedEvents, -1, collisions, tracksTuple}; // -1 is the number of the bin to skip
+    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVetZTPCtemp> pairs{colBinning, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
