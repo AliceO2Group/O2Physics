@@ -65,6 +65,23 @@ float getBinCenter(uint8_t bin, double max)
   }
 }
 
+struct NucleusCandidate {
+  NucleusCandidate(int aIndex, float aPt, float aEta, uint8_t aITSclsMap, uint8_t aTPCnCls, int8_t aDCAxy, int8_t aDCAz, uint16_t aFlags, uint8_t aTPCnsigma, uint8_t aTOFnsigma, uint8_t aTOFmass) : index(aIndex), pt(aPt), eta(aEta), ITSclsMap(aITSclsMap), TPCnCls(aTPCnCls), DCAxy(aDCAxy), DCAz(aDCAz), flags(aFlags), TPCnsigma(aTPCnsigma), TOFnsigma(aTOFnsigma), TOFmass(aTOFmass)
+  {
+  }
+  int index;
+  float pt;
+  float eta;
+  uint8_t ITSclsMap;
+  uint8_t TPCnCls;
+  int8_t DCAxy;
+  int8_t DCAz;
+  uint16_t flags;
+  uint8_t TPCnsigma;
+  uint8_t TOFnsigma;
+  uint8_t TOFmass;
+};
+
 namespace nuclei
 {
 constexpr double bbMomScalingDefault[4][2]{
@@ -123,6 +140,8 @@ float pidCuts[2][4][2];
 std::shared_ptr<TH3> hNsigma[2][4][2];
 std::shared_ptr<TH3> hTOFmass[4][2];
 std::shared_ptr<TH3> hDCAxy[2][4][2];
+
+std::vector<NucleusCandidate> candidates;
 } // namespace nuclei
 
 namespace o2::aod
@@ -151,7 +170,7 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::TPCnsigma,
                   NucleiTableNS::TOFnsigma,
                   NucleiTableNS::TOFmass)
-} //namespace o2::aod
+} // namespace o2::aod
 
 struct NucleiSpectraTask {
   enum {
@@ -197,7 +216,7 @@ struct NucleiSpectraTask {
   ConfigurableAxis cfgTOFmassBins{"cfgTOFmassBins", {200, -5., 5.}, "TOF mass binning"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackWoDCAInFilter());
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTOFbeta, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -240,8 +259,9 @@ struct NucleiSpectraTask {
     }
   }
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
+  void fillDataInfo(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
   {
+    nuclei::candidates.clear();
     // collision process loop
     if (!collision.sel8()) {
       return;
@@ -316,11 +336,26 @@ struct NucleiSpectraTask {
           int8_t nsigmaTPC = getBinnedValue(nSigma[0][iS], cfgBinnedVariables->get(2u, 1u));
           int8_t nsigmaTOF = getBinnedValue(nSigma[1][iS], cfgBinnedVariables->get(3u, 1u));
 
-          nucleiTable(track.sign() * track.pt() * nuclei::charges[iS], track.eta(), track.itsClusterMap(), track.tpcNClsFound(), dcaxy, dcaz, flag, nsigmaTPC, nsigmaTOF, massTOF);
+          nuclei::candidates.emplace_back(track.globalIndex(), track.sign() * track.pt() * nuclei::charges[iS], track.eta(), track.itsClusterMap(), track.tpcNClsFound(), dcaxy, dcaz, flag, nsigmaTPC, nsigmaTOF, massTOF);
         }
       }
     } // end loop over tracks
   }
+
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
+  {
+    fillDataInfo(collision, tracks);
+    for (auto& c : nuclei::candidates) {
+      nucleiTable(c.pt, c.eta, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFnsigma, c.TOFmass);
+    }
+  }
+  PROCESS_SWITCH(NucleiSpectraTask, processData, "Data analysis", true);
+
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  {
+    fillDataInfo(collision, tracks);
+  }
+  PROCESS_SWITCH(NucleiSpectraTask, processMC, "MC analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
