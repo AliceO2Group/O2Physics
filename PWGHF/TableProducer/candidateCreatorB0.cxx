@@ -24,6 +24,7 @@
 #include "ReconstructionDataFormats/V0.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -52,7 +53,7 @@ struct HfCandidateCreatorB0 {
   Produces<aod::HfCandB0Config> rowCandidateConfig;
 
   // vertexing
-  Configurable<double> bz{"bz", 5., "magnetic field"};
+  // Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
@@ -69,11 +70,24 @@ struct HfCandidateCreatorB0 {
   Configurable<int> selectionFlagD{"selectionFlagD", 1, "Selection Flag for D"};
   // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
   bool isHfCandB0ConfigFilled = false;
+  // magnetic field setting from CCDB
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber;
 
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massD = RecoDecay::getMassPDG(pdg::Code::kDMinus);
   double massB0 = RecoDecay::getMassPDG(pdg::Code::kB0);
   double massDPi{0.};
+  double bz{0.};
 
   using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
 
@@ -90,6 +104,18 @@ struct HfCandidateCreatorB0 {
   OutputObj<TH1F> hMassB0ToDPi{TH1F("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
+
+  void init(InitContext const&)
+  {
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>(ccdbPathGeo);
+    }
+    runNumber = 0;
+  }
 
   /// Single-track cuts for pions on dcaXY
   /// \param track is a track
@@ -114,7 +140,8 @@ struct HfCandidateCreatorB0 {
   void process(aod::Collisions const& collisions,
                CandsDFiltered const& candsD,
                aod::TrackAssoc const& trackIndices,
-               TracksWithSel const&)
+               TracksWithSel const&,
+               aod::BCsWithTimestamps const&)
   {
     // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
     if (!isHfCandB0ConfigFilled) {
@@ -124,7 +151,7 @@ struct HfCandidateCreatorB0 {
     }
     // Initialise fitter for B vertex (2-prong vertex filter)
     o2::vertexing::DCAFitterN<2> df2;
-    df2.setBz(bz);
+    // df2.setBz(bz);
     df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxR);
     df2.setMaxDZIni(maxDZIni);
@@ -135,7 +162,7 @@ struct HfCandidateCreatorB0 {
 
     // Initial fitter to redo D-vertex to get extrapolated daughter tracks (3-prong vertex filter)
     o2::vertexing::DCAFitterN<3> df3;
-    df3.setBz(bz);
+    // df3.setBz(bz);
     df3.setPropagateToPCA(propagateToPCA);
     df3.setMaxR(maxR);
     df3.setMaxDZIni(maxDZIni);
@@ -154,6 +181,19 @@ struct HfCandidateCreatorB0 {
         LOG(debug) << ncol << " collisions parsed";
       }
       ncol++;
+
+      /// Set the magnetic field from ccdb.
+      /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
+      /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      if (runNumber != bc.runNumber()) {
+        LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
+        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+        bz = o2::base::Propagator::Instance()->getNominalBz();
+        LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+      }
+      df2.setBz(bz);
+      df3.setBz(bz);
 
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
