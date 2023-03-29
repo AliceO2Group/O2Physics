@@ -175,9 +175,9 @@ struct HfCandidateCreatorB0 {
         std::array<float, 3> pVec1 = {track1.px(), track1.py(), track1.pz()};
         std::array<float, 3> pVec2 = {track2.px(), track2.py(), track2.pz()};
 
-        auto dca0 = o2::dataformats::DCA(track0.dcaXY(), track0.dcaZ());
-        auto dca1 = o2::dataformats::DCA(track1.dcaXY(), track1.dcaZ());
-        auto dca2 = o2::dataformats::DCA(track2.dcaXY(), track2.dcaZ());
+        auto dca0 = o2::dataformats::DCA(track0.dcaXY(), track0.dcaZ(), track0.cYY(), track0.cZY(), track0.cZZ());
+        auto dca1 = o2::dataformats::DCA(track1.dcaXY(), track1.dcaZ(), track1.cYY(), track1.cZY(), track1.cZZ());
+        auto dca2 = o2::dataformats::DCA(track2.dcaXY(), track2.dcaZ(), track2.cYY(), track2.cZY(), track2.cZZ());
 
         // repropagate tracks to this collision if needed
         if (track0.collisionId() != thisCollId) {
