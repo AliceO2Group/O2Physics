@@ -160,7 +160,7 @@ struct CFTutorialTask5 {
   {
     auto tracksTuple = std::make_tuple(tracks);
     BinningType colBinning{{ConfVtxBins, ConfMultBins}, true};
-    SameKindPair<MyFilteredCollisions, MyFilteredTracks, BinningType> pair{colBinning, 5, -1, colls, tracksTuple};
+    SameKindPair<MyFilteredCollisions, MyFilteredTracks, BinningType> pair{colBinning, 5, -1, colls, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       Partition<MyFilteredTracks> groupPositive = aod::track::signed1Pt > ConfChargeCut;
       groupPositive.bindTable(tracks1);
