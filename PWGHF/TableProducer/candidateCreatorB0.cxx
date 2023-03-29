@@ -77,11 +77,7 @@ struct HfCandidateCreatorB0 {
 
   using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
 
-  Filter filterSelectTracks = (!usePionIsGlobalTrackWoDCA) || ((usePionIsGlobalTrackWoDCA) && requireGlobalTrackWoDCAInFilter());
   Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagD);
-
-  using TracksWithSelFiltered = soa::Filtered<TracksWithSel>;
-
   using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   Preslice<CandsDFiltered> candsDPerCollision = aod::track_association::collisionId;
 
@@ -118,8 +114,7 @@ struct HfCandidateCreatorB0 {
   void process(aod::Collisions const& collisions,
                CandsDFiltered const& candsD,
                aod::TrackAssoc const& trackIndices,
-               TracksWithSel const&,
-               TracksWithSelFiltered const&)
+               TracksWithSel const&)
   {
     // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
     if (!isHfCandB0ConfigFilled) {
@@ -156,7 +151,7 @@ struct HfCandidateCreatorB0 {
       auto covMatrixPV = primaryVertex.getCov();
 
       if (ncol % 10000 == 0) {
-        LOG(info) << ncol << " collisions parsed";
+        LOG(debug) << ncol << " collisions parsed";
       }
       ncol++;
 
@@ -176,16 +171,13 @@ struct HfCandidateCreatorB0 {
         auto trackParCov1 = getTrackParCov(track1);
         auto trackParCov2 = getTrackParCov(track2);
 
-        std::array<float, 3> pVec0; // = {track0.px(), track0.py(), track0.pz()};
-        std::array<float, 3> pVec1; // = {track1.px(), track1.py(), track1.pz()};
-        std::array<float, 3> pVec2; // = {track2.px(), track2.py(), track2.pz()};
+        std::array<float, 3> pVec0 = {track0.px(), track0.py(), track0.pz()};
+        std::array<float, 3> pVec1 = {track1.px(), track1.py(), track1.pz()};
+        std::array<float, 3> pVec2 = {track2.px(), track2.py(), track2.pz()};
 
-        o2::dataformats::DCA dca0;
-        // dca0.set(track0.dcaXY(), track0.dcaZ());
-        o2::dataformats::DCA dca1;
-        // dca1.set(track1.dcaXY(), track1.dcaZ());
-        o2::dataformats::DCA dca2;
-        // dca2.set(track2.dcaXY(), track2.dcaZ());
+        auto dca0 = o2::dataformats::DCA(track0.dcaXY(), track0.dcaZ());
+        auto dca1 = o2::dataformats::DCA(track1.dcaXY(), track1.dcaZ());
+        auto dca2 = o2::dataformats::DCA(track2.dcaXY(), track2.dcaZ());
 
         // repropagate tracks to this collision if needed
         if (track0.collisionId() != thisCollId) {
@@ -213,9 +205,9 @@ struct HfCandidateCreatorB0 {
         trackParCov2.propagateTo(secondaryVertexD[0], bz);
 
         // update pVec of tracks
-        getPxPyPz(trackParCov0, pVec0); // FIXME: or df3.getTrack(0).getPxPyPzGlo(pVec0) ?
-        getPxPyPz(trackParCov1, pVec1);
-        getPxPyPz(trackParCov2, pVec2);
+        df3.getTrack(0).getPxPyPzGlo(pVec0);
+        df3.getTrack(1).getPxPyPzGlo(pVec1);
+        df3.getTrack(2).getPxPyPzGlo(pVec2);
 
         // D∓ → π∓ K± π∓
         array<float, 3> pVecPiK = RecoDecay::pVec(pVec0, pVec1);
@@ -232,7 +224,12 @@ struct HfCandidateCreatorB0 {
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
         for (const auto& trackId : trackIdsThisCollision) { // start loop over track indices associated to this collision
-          auto trackPion = trackId.track_as<TracksWithSelFiltered>();
+          auto trackPion = trackId.track_as<TracksWithSel>();
+
+          // check isGlobalTrackWoDCA status for pions if wanted
+          if (usePionIsGlobalTrackWoDCA && !trackPion.isGlobalTrackWoDCA()) {
+            continue;
+          }
 
           // minimum pT selection
           if (trackPion.pt() < ptPionMin || !isSelectedTrackDCA(trackPion)) {
@@ -293,7 +290,7 @@ struct HfCandidateCreatorB0 {
           int hfFlag = BIT(hf_cand_b0::DecayType::B0ToDPi);
 
           // fill the candidate table for the B0 here:
-          rowCandidateBase(collision.globalIndex(),
+          rowCandidateBase(thisCollId,
                            collision.posX(), collision.posY(), collision.posZ(),
                            secondaryVertexB0[0], secondaryVertexB0[1], secondaryVertexB0[2],
                            errorDecayLength, errorDecayLengthXY,
