@@ -101,7 +101,8 @@ class VarManager : public TObject
     Pair = BIT(18), // TODO: check whether we really need the Pair member here
     AmbiTrack = BIT(19),
     AmbiMuon = BIT(20),
-    DalitzBits = BIT(21)
+    DalitzBits = BIT(21),
+    TrackTPCPID = BIT(22)
   };
 
   enum PairCandidateType {
@@ -1081,6 +1082,12 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTRDsignal] = track.trdSignal();
       values[kTOFbeta] = track.beta();
     }
+  }
+  if constexpr ((fillMap & TrackTPCPID) > 0) {
+    values[kTPCnSigmaEl] = track.tpcNSigmaEl();
+    values[kTPCnSigmaPi] = track.tpcNSigmaPi();
+    values[kTPCnSigmaKa] = track.tpcNSigmaKa();
+    values[kTPCnSigmaPr] = track.tpcNSigmaPr();
   }
   if constexpr ((fillMap & TrackPIDExtra) > 0) {
     values[kTPCnSigmaMu] = track.tpcNSigmaMu();
