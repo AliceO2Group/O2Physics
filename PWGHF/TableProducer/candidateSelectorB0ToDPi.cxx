@@ -67,34 +67,51 @@ struct HfCandidateSelectorB0ToDPi {
   bool selectionFlagDAndUsePidInSync = true;
   // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
   int mySelectionFlagD = -1;
+  // QA switch
+  Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
 
   using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
 
-  /*
+  HistogramRegistry registry{"registry"};
+
+  void init(InitContext const& initContext) {
+    if (activateQA) {
+      constexpr int kNBinsSelections = 1 + SelectionStep::NSelectionSteps;
+      std::string labels[kNBinsSelections];
+      labels[0] = "No selection";
+      labels[1 + SelectionStep::RecoSkims] = "Skims selection";
+      labels[1 + SelectionStep::RecoTopol] = "Skims & Topological selections";
+      labels[1 + SelectionStep::RecoPID] = "Skims & Topological & PID selections";
+      static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
+      registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+      for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
+        registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+      }
+    }
+
     // FIXME: will be uncommented once https://alice.its.cern.ch/jira/browse/O2-3582 is solved
-    void init(InitContext const& initContext) {
-      int selectionFlagD = -1;
-      auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-      for (DeviceSpec const& device : workflows.devices) {
-        if (device.name.compare("hf-candidate-creator-b0") == 0) {
-          for (auto const& option : device.options) {
-            if (option.name.compare("selectionFlagD") == 0) {
-              selectionFlagD = option.defaultValue.get<int>();
-              LOGF(info, "selectionFlagD = %d", selectionFlagD);
-            }
+    /*int selectionFlagD = -1;
+    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (DeviceSpec const& device : workflows.devices) {
+      if (device.name.compare("hf-candidate-creator-b0") == 0) {
+        for (auto const& option : device.options) {
+          if (option.name.compare("selectionFlagD") == 0) {
+            selectionFlagD = option.defaultValue.get<int>();
+            LOGF(info, "selectionFlagD = %d", selectionFlagD);
           }
         }
       }
+    }
 
-      if (usePid && !TESTBIT(selectionFlagD, SelectionStep::RecoPID)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "PID selections required on B0 daughters (usePid=true) but no PID selections on D candidates were required a priori (selectionFlagD<7). Set selectionFlagD=7 in hf-candidate-creator-b0";
-      }
-      if (!usePid && TESTBIT(selectionFlagD, SelectionStep::RecoPID)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "No PID selections required on B0 daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD=7). Set selectionFlagD<7 in hf-candidate-creator-b0";
-      }
+    if (usePid && !TESTBIT(selectionFlagD, SelectionStep::RecoPID)) {
+      selectionFlagDAndUsePidInSync = false;
+      LOG(warning) << "PID selections required on B0 daughters (usePid=true) but no PID selections on D candidates were required a priori (selectionFlagD<7). Set selectionFlagD=7 in hf-candidate-creator-b0";
+    }
+    if (!usePid && TESTBIT(selectionFlagD, SelectionStep::RecoPID)) {
+      selectionFlagDAndUsePidInSync = false;
+      LOG(warning) << "No PID selections required on B0 daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD=7). Set selectionFlagD<7 in hf-candidate-creator-b0";
     }*/
+  }
 
   /// Apply topological cuts as defined in SelectorCuts.h
   /// \param hfCandB0 is the B0 candidate
@@ -216,13 +233,21 @@ struct HfCandidateSelectorB0ToDPi {
     selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
 
     for (const auto& hfCandB0 : hfCandsB0) {
+      auto ptCandB0 = hfCandB0.pt();
+
       // check if flagged as B0 → D π
       if (!TESTBIT(hfCandB0.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         hfSelB0ToDPiCandidate(statusB0ToDPi);
+        if (activateQA) {
+          registry.fill(HIST("hSelections"), 0, ptCandB0);
+        }
         // LOGF(info, "B0 candidate selection failed at hfflag check");
         continue;
       }
-      SETBIT(statusB0ToDPi, aod::SelectionStep::RecoSkims); // RecoSkims = 0 --> statusB0ToDPi = 1
+      SETBIT(statusB0ToDPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusB0ToDPi = 1
+      if (activateQA) {
+        registry.fill(HIST("hSelections"), 1 + SelectionStep::RecoSkims, ptCandB0);
+      }
 
       auto candD = hfCandB0.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
       auto trackPi = hfCandB0.prong1_as<TracksPIDWithSel>();
@@ -233,7 +258,10 @@ struct HfCandidateSelectorB0ToDPi {
         // LOGF(info, "B0 candidate selection failed at topology selection");
         continue;
       }
-      SETBIT(statusB0ToDPi, aod::SelectionStep::RecoTopol); // RecoTopol = 1 --> statusB0ToDPi = 3
+      SETBIT(statusB0ToDPi, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusB0ToDPi = 3
+      if (activateQA) {
+        registry.fill(HIST("hSelections"), 1 + SelectionStep::RecoTopol, ptCandB0);
+      }
 
       // checking if selectionFlagD and usePid are in sync
       if (!selectionFlagDAndUsePidInSync) {
@@ -248,7 +276,10 @@ struct HfCandidateSelectorB0ToDPi {
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           continue;
         }
-        SETBIT(statusB0ToDPi, aod::SelectionStep::RecoPID); // RecoPID = 2 --> statusB0ToDPi = 7
+        SETBIT(statusB0ToDPi, SelectionStep::RecoPID); // RecoPID = 2 --> statusB0ToDPi = 7
+        if (activateQA) {
+        registry.fill(HIST("hSelections"), 1 + SelectionStep::RecoPID, ptCandB0);
+        }
       }
 
       hfSelB0ToDPiCandidate(statusB0ToDPi);
