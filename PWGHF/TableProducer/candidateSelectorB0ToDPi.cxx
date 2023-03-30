@@ -86,7 +86,7 @@ struct HfCandidateSelectorB0ToDPi {
       selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
       selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     }
-    
+
     if (activateQA) {
       constexpr int kNBinsSelections = 1 + SelectionStep::NSelectionSteps;
       std::string labels[kNBinsSelections];
