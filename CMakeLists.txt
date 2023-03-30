@@ -80,7 +80,6 @@ add_subdirectory(PWGJE)
 add_subdirectory(PWGLF)
 add_subdirectory(PWGMM)
 add_subdirectory(PWGUD)
-add_subdirectory(work)
 
 add_subdirectory(Tools)
 add_subdirectory(Tutorials)

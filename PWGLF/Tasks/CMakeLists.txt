@@ -105,3 +105,8 @@ o2physics_add_dpl_workflow(lambda1520analysis
                     SOURCES lambda1520analysis.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hv0corelation
+                    SOURCES hv0corelation.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
