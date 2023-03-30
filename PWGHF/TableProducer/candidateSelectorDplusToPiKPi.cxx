@@ -53,7 +53,8 @@ struct HfCandidateSelectorDplusToPiKPi {
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const&) {
+  void init(InitContext const&)
+  {
     selectorPion.setPDG(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);

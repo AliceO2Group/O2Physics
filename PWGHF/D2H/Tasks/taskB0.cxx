@@ -123,7 +123,8 @@ struct HfTaskB0 {
   /// \param ptProng is the pT of B0 prong
   /// \return true if prong is in geometrical acceptance
   template <typename T = float>
-  bool isProngInAcceptance(const T& etaProng, const T& ptProng) {
+  bool isProngInAcceptance(const T& etaProng, const T& ptProng)
+  {
     if (etaProng > etaMaxAcceptance || ptProng < ptMinAcceptance) {
       return false;
     }
@@ -237,9 +238,9 @@ struct HfTaskB0 {
           continue;
         }
 
-        std::array<float,2> ptProngs;
-        std::array<float,2> yProngs;
-        std::array<float,2> etaProngs;
+        std::array<float, 2> ptProngs;
+        std::array<float, 2> yProngs;
+        std::array<float, 2> etaProngs;
         int counter = 0;
         for (auto const& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();

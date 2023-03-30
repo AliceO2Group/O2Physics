@@ -76,7 +76,8 @@ struct HfCandidateSelectorB0ToDPi {
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const& initContext) {
+  void init(InitContext const& initContext)
+  {
     if (usePid) {
       selectorPion.setPDG(kPiPlus);
       selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
@@ -86,7 +87,7 @@ struct HfCandidateSelectorB0ToDPi {
       selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
       selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     }
-    
+
     if (activateQA) {
       constexpr int kNBinsSelections = 1 + SelectionStep::NSelectionSteps;
       std::string labels[kNBinsSelections];
@@ -281,7 +282,7 @@ struct HfCandidateSelectorB0ToDPi {
         }
         SETBIT(statusB0ToDPi, SelectionStep::RecoPID); // RecoPID = 2 --> statusB0ToDPi = 7
         if (activateQA) {
-        registry.fill(HIST("hSelections"), 1 + SelectionStep::RecoPID, ptCandB0);
+          registry.fill(HIST("hSelections"), 1 + SelectionStep::RecoPID, ptCandB0);
         }
       }
 
