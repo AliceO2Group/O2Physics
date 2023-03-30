@@ -199,17 +199,17 @@ struct PCMQC {
     for (auto& collision : collisions) {
       registry.fill(HIST("hCollisionCounter"), 1.0); // all
       if (!collision.sel8()) {
-        return;
+        continue;
       }
       registry.fill(HIST("hCollisionCounter"), 2.0); // FT0VX i.e. FT0and
 
       if (collision.numContrib() < 0.5) {
-        return;
+        continue;
       }
       registry.fill(HIST("hCollisionCounter"), 3.0); // Ncontrib > 0
 
       if (abs(collision.posZ()) > 10.0) {
-        return;
+        continue;
       }
       registry.fill(HIST("hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
       auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
