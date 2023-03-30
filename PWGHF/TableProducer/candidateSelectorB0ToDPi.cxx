@@ -70,11 +70,23 @@ struct HfCandidateSelectorB0ToDPi {
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
 
+  TrackSelectorPID selectorPion;
+
   using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const& initContext) {
+    if (usePid) {
+      selectorPion.setPDG(kPiPlus);
+      selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+      selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+      selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+      selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+      selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+      selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    }
+    
     if (activateQA) {
       constexpr int kNBinsSelections = 1 + SelectionStep::NSelectionSteps;
       std::string labels[kNBinsSelections];
@@ -221,14 +233,6 @@ struct HfCandidateSelectorB0ToDPi {
         LOG(warning) << "No PID selections required on B0 daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD=7). Set selectionFlagD<7 in hf-candidate-creator-b0";
       }
     }
-
-    TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
 
     for (const auto& hfCandB0 : hfCandsB0) {
       int statusB0ToDPi = 0;

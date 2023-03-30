@@ -48,9 +48,24 @@ struct HfCandidateSelectorDplusToPiKPi {
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
 
+  TrackSelectorPID selectorPion;
+  TrackSelectorPID selectorKaon;
+
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&) {
+    selectorPion.setPDG(kPiPlus);
+    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+
+    selectorKaon.setPDG(kKPlus);
+    selectorKaon.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorKaon.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorKaon.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorKaon.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+
     if (activateQA) {
       constexpr int kNBinsSelections = 1 + aod::SelectionStep::NSelectionSteps;
       std::string labels[kNBinsSelections];
@@ -65,6 +80,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       }
     }
   }
+
   /*
   /// Selection on goodness of daughter tracks
   /// \note should be applied at candidate selection
@@ -150,15 +166,6 @@ struct HfCandidateSelectorDplusToPiKPi {
 
   void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
   {
-    TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-
-    TrackSelectorPID selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus);
-
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {
 
