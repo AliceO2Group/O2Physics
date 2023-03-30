@@ -123,10 +123,10 @@ struct femtoDreamPairTaskTrackTrack {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    //trackHistoPartOne.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins, ConfIsMC);
-    //if (!ConfIsSame) {
-    //  trackHistoPartTwo.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins, ConfIsMC);
-    //}
+    trackHistoPartOne.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins, ConfIsMC);
+    if (!ConfIsSame) {
+      trackHistoPartTwo.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins, ConfIsMC);
+    }
 
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     MixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
@@ -160,9 +160,10 @@ struct femtoDreamPairTaskTrackTrack {
   //template <bool isMC, typename CollisionType, typename PartType>
   //void doSameEvent(CollisionType const& col, PartType const& parts)
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType const& groupPartsOne, PartitionType const& groupPartsTwo, PartType parts, float magFieldTesla, int multCol)
+  void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol)
   {
     
+    LOGF(info, "ALIVE 2");
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
       if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
@@ -178,8 +179,17 @@ struct femtoDreamPairTaskTrackTrack {
                              cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
-      //trackHistoPartOne.fillQA<isMC>(part);
+      LOGF(info, "ALIVE 2 --");
+      LOGF(info, "pT: %f", part.pt());
+      //LOGF(info, "MC Label %i", part.femtoDreamMCParticleId());
+
+      if constexpr(isMC){
+        LOGF(info, "pT MC: %f", (part.femtoDreamMCParticle()).pt());
+        LOGF(info, "has MC %i", part.has_femtoDreamMCParticle());
+      } 
+      trackHistoPartOne.fillQA<isMC>(part);
     }
+    LOGF(info, "ALIVE 3");
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
         if (part.p() > cfgCutTable->get("PartTwo", "MaxP") || part.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
@@ -195,11 +205,11 @@ struct femtoDreamPairTaskTrackTrack {
                                cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;
         }
-        //trackHistoPartTwo.fillQA<isMC>(part);
+        trackHistoPartTwo.fillQA<isMC>(part);
       }
     }
     /// Now build the combinations
-    for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
+    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
       if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.p() > cfgCutTable->get("PartTwo", "MaxP") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
         continue;
       }
@@ -222,18 +232,22 @@ struct femtoDreamPairTaskTrackTrack {
         continue;
       }
 
+      LOGF(info, "ALIVE 4");
       if (ConfIsCPR) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
           continue;
         }
       }
 
+      LOGF(info, "ALIVE 5");
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
 
+      LOGF(info, "ALIVE 6");
       sameEventCont.setPair<isMC>(p1, p2, multCol);
+      LOGF(info, "ALIVE 7");
     }
   }
 
@@ -247,11 +261,11 @@ struct femtoDreamPairTaskTrackTrack {
 
     fillCollision(col);
 
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto thegroupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto thegroupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     
     //doSameEvent<false>(col.multNtr(), col.magField(), parts, groupPartsOne, groupPartsTwo);
-    doSameEvent<true>(groupPartsOne, groupPartsTwo, parts, col.magField(), col.multNtr());
+    doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEvent, "Enable processing same event", true);
   
@@ -260,13 +274,14 @@ struct femtoDreamPairTaskTrackTrack {
                           o2::aod::FemtoDreamMCParticles&)
   {
     fillCollision(col);
+    LOGF(info, "ALIVE 1");
 
-    auto groupPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-    auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto thegroupPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto thegroupPartsTwo = partsTwoMC->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     
-    doSameEvent<true>(groupPartsOne, groupPartsTwo, parts, col.magField(), col.multNtr());
+    doSameEvent<true>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr());
   }
-  PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEventMC, "Enable processing same event for Monte Carlo", true);
+  PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEventMC, "Enable processing same event for Monte Carlo", false);
   
 
   /// This function processes the mixed event
@@ -363,7 +378,7 @@ struct femtoDreamPairTaskTrackTrack {
       doMixedEvent<true>(groupPartsOne, groupPartsTwo, parts, magFieldTesla1, multCol);
     }
   }
-  PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processMixedEventMC, "Enable processing mixed events MC", true);
+  PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processMixedEventMC, "Enable processing mixed events MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

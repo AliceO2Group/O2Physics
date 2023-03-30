@@ -218,9 +218,18 @@ struct femtoDreamProducerReducedTask {
       outputPartsMC(outputCollision.lastIndex(), particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
       //outputPartsMCLabels(particleMC.globalIndex());
       outputPartsMCLabels(outputPartsMC.lastIndex());
+      
+      LOGF(info, "--> pT MC : %f", particleMC.pt());
+      LOGF(info, "--> pdgCode : %i", pdgCode);
+      LOGF(info, "--> Origin : %i", particleOrigin);
+      LOGF(info, "--> particleMC last index : %i", outputPartsMC.lastIndex());
+
     } else {
-      outputPartsMC(outputCollision.lastIndex(), -999, -999, -999, -999, -999);
+      //outputPartsMC(outputCollision.lastIndex(), -999, -999, -999, -999, -999);
+      outputPartsMC(outputCollision.lastIndex(), aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake, 0, 0., 0., 0.);
       outputPartsMCLabels(outputPartsMC.lastIndex());
+      LOGF(info, "--> NO MC PARTICLE AVAILABLE");
+      LOGF(info, "--> particleMC last index : %i", outputPartsMC.lastIndex());
       //outputPartsMCLabels(-1);
     }
   }
@@ -286,6 +295,8 @@ struct femtoDreamProducerReducedTask {
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
                   track.dcaXY(), childIDs, 0, 0);
 
+      LOGF(info, "----- NEW PARTICLE ----");
+      LOGF(info, "pT : %f", track.pt());
       if constexpr (isMC) {
         fillMCParticle(track);
       }
