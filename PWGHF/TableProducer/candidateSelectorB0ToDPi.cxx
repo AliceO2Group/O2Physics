@@ -222,8 +222,6 @@ struct HfCandidateSelectorB0ToDPi {
       }
     }
 
-    int statusB0ToDPi = 0;
-
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
@@ -233,6 +231,7 @@ struct HfCandidateSelectorB0ToDPi {
     selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
 
     for (const auto& hfCandB0 : hfCandsB0) {
+      int statusB0ToDPi = 0;
       auto ptCandB0 = hfCandB0.pt();
 
       // check if flagged as B0 → D π
