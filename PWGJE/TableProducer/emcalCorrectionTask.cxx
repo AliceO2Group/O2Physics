@@ -69,6 +69,7 @@ struct EmcalCorrectionTask {
   Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.4f, "Max matching distance track-cluster"};
   Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
   Configurable<std::string> nonlinearityFunction{"nonlinearityFunction", "DATA_TestbeamFinal", "Nonlinearity correction at cluster level"};
+  Configurable<bool> disableNonLin{"disableNonLin", false, "Disable NonLin correction if set to true"};
   Configurable<bool> hasShaperCorrection{"hasShaperCorrection", true, "Apply correction for shaper saturation"};
   Configurable<float> logWeight{"logWeight", 4.5, "logarithmic weight for the cluster center of gravity calculation"};
   Configurable<float> exoticCellFraction{"exoticCellFraction", 0.97, "Good cell if fraction < 1-ecross/ecell"};
@@ -422,10 +423,12 @@ struct EmcalCorrectionTask {
 
       // Correct for nonlinear behaviour
       float nonlinCorrEnergy = cluster.E();
-      try {
-        nonlinCorrEnergy = mNonlinearityHandler.getCorrectedClusterEnergy(cluster);
-      } catch (o2::emcal::NonlinearityHandler::UninitException& e) {
-        LOG(error) << e.what();
+      if (!disableNonLin) {
+        try {
+          nonlinCorrEnergy = mNonlinearityHandler.getCorrectedClusterEnergy(cluster);
+        } catch (o2::emcal::NonlinearityHandler::UninitException& e) {
+          LOG(error) << e.what();
+        }
       }
 
       // save to table
