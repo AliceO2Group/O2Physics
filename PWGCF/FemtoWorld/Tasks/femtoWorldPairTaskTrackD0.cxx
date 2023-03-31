@@ -150,8 +150,7 @@ struct femtoWorldPairTaskTrackD0 {
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   HistogramRegistry registry{"registry",
-                             {
-                              {"hInvMassD0", ";#it{M}(K^{-}#pi^{+}) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {{300, 1.75, 2.05}}}},
+                             {{"hInvMassD0", ";#it{M}(K^{-}#pi^{+}) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {{300, 1.75, 2.05}}}},
                               {"hInvMassD0bar", ";#it{M}(#pi^{-}K^{+}) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {{300, 1.75, 2.05}}}},
                               {"hPtD0", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 15.}}}},
                               {"hPtD0bar", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 15.}}}},
@@ -174,9 +173,7 @@ struct femtoWorldPairTaskTrackD0 {
                               {"hMassD0check", ";#it{M}(K#pi) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {{300, 1.75, 2.05}}}},
                               {"hPtD0check", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 15.}}}},
                               {"hMassD0barcheck", ";#it{M}(K#pi) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {{300, 1.75, 2.05}}}},
-                              {"hPtD0barcheck", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 15.}}}}
-                             }
-                           };
+                              {"hPtD0barcheck", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 15.}}}}}};
 
   // PID for protons
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
@@ -300,7 +297,7 @@ struct femtoWorldPairTaskTrackD0 {
     auto groupPartsD0D0barDaugh = partsD0D0barDaughters->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
 
     for (auto& d0d0bar : groupPartsD0D0bar) {
-      if(d0d0bar.flagD0() == 1){
+      if (d0d0bar.flagD0() == 1) {
         registry.fill(HIST("hInvMassD0"), d0d0bar.mass());
         registry.fill(HIST("hMomentumD0"), d0d0bar.p());
         registry.fill(HIST("hPtD0"), d0d0bar.pt());
@@ -308,7 +305,7 @@ struct femtoWorldPairTaskTrackD0 {
         registry.fill(HIST("hEtaD0"), d0d0bar.eta());
         registry.fill(HIST("hDecayLengthD0"), d0d0bar.decayLength());
       }
-      if(d0d0bar.flagD0bar() == 1){
+      if (d0d0bar.flagD0bar() == 1) {
         registry.fill(HIST("hInvMassD0bar"), d0d0bar.mass());
         registry.fill(HIST("hMomentumD0bar"), d0d0bar.p());
         registry.fill(HIST("hPtD0bar"), d0d0bar.pt());
@@ -318,8 +315,8 @@ struct femtoWorldPairTaskTrackD0 {
       }
     }
 
-    for(auto& daughD0D0bar : groupPartsD0D0barDaugh){
-      if(daughD0D0bar.flagD0() == 1){
+    for (auto& daughD0D0bar : groupPartsD0D0barDaugh) {
+      if (daughD0D0bar.flagD0() == 1) {
         registry.fill(HIST("hMomentumDaughters"), daughD0D0bar.p());
         registry.fill(HIST("hPtDaughters"), daughD0D0bar.pt());
         registry.fill(HIST("hSignDaughters"), daughD0D0bar.sign());
@@ -328,7 +325,7 @@ struct femtoWorldPairTaskTrackD0 {
         registry.fill(HIST("hDCAxyDaughters"), daughD0D0bar.dcaXY());
         registry.fill(HIST("hDCAzDaughters"), daughD0D0bar.dcaZ());
       }
-      if(daughD0D0bar.flagD0bar() == 1){
+      if (daughD0D0bar.flagD0bar() == 1) {
         registry.fill(HIST("hMomentumDaughters"), daughD0D0bar.p());
         registry.fill(HIST("hPtDaughters"), daughD0D0bar.pt());
         registry.fill(HIST("hSignDaughters"), daughD0D0bar.sign());
