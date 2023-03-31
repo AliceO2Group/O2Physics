@@ -243,14 +243,14 @@ struct HfCandidateSelectorB0ToDPi {
       if (!TESTBIT(hfCandB0.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         hfSelB0ToDPiCandidate(statusB0ToDPi);
         if (activateQA) {
-          registry.fill(HIST("hSelections"), 0, ptCandB0);
+          registry.fill(HIST("hSelections"), 1, ptCandB0);
         }
         // LOGF(info, "B0 candidate selection failed at hfflag check");
         continue;
       }
       SETBIT(statusB0ToDPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusB0ToDPi = 1
       if (activateQA) {
-        registry.fill(HIST("hSelections"), 1 + SelectionStep::RecoSkims, ptCandB0);
+        registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandB0);
       }
 
       auto candD = hfCandB0.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
@@ -264,7 +264,7 @@ struct HfCandidateSelectorB0ToDPi {
       }
       SETBIT(statusB0ToDPi, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusB0ToDPi = 3
       if (activateQA) {
-        registry.fill(HIST("hSelections"), 1 + SelectionStep::RecoTopol, ptCandB0);
+        registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoTopol, ptCandB0);
       }
 
       // checking if selectionFlagD and usePid are in sync
@@ -282,7 +282,7 @@ struct HfCandidateSelectorB0ToDPi {
         }
         SETBIT(statusB0ToDPi, SelectionStep::RecoPID); // RecoPID = 2 --> statusB0ToDPi = 7
         if (activateQA) {
-          registry.fill(HIST("hSelections"), 1 + SelectionStep::RecoPID, ptCandB0);
+          registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoPID, ptCandB0);
         }
       }
 
