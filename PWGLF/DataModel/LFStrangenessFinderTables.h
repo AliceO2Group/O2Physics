@@ -11,7 +11,7 @@
 //
 // This file defines the auxiliary tables to be used in the v0 and cascade
 // finders. These are cross-check tasks that are not meant to do final analyses
-// as finding will be extremely slow and complex at the AO2D level. 
+// as finding will be extremely slow and complex at the AO2D level.
 
 #ifndef O2_ANALYSIS_STRANGENESSFINDERTABLES_H_
 #define O2_ANALYSIS_STRANGENESSFINDERTABLES_H_
@@ -27,7 +27,7 @@ namespace o2::aod
 namespace vFinderTrack
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Track");
-DECLARE_SOA_COLUMN(IsPositive, isPositive, bool); // is positively charged
+DECLARE_SOA_COLUMN(IsPositive, isPositive, bool);     // is positively charged
 DECLARE_SOA_COLUMN(CompatiblePi, compatiblePi, bool); // compatible with pion hypothesis
 DECLARE_SOA_COLUMN(CompatibleKa, compatibleKa, bool); // compatible with kaon hypothesis
 DECLARE_SOA_COLUMN(CompatiblePr, compatiblePr, bool); // compatible with proton hypothesis
@@ -83,7 +83,5 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_TABLE(CascGoodAntiLambdas, "AOD", "CASCGOODALAM", o2::soa::Index<>, cascgoodantilambdas::GoodAntiLambdaId, cascgoodantilambdas::CollisionId);
 
 } // namespace o2::aod
-
-
 
 #endif // O2_ANALYSIS_STRANGENESSFINDERTABLES_H_
