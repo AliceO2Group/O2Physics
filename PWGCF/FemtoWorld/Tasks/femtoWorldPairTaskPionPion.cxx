@@ -48,7 +48,7 @@ struct femtoWorldPairTaskPionPion {
 
   Configurable<float> ConfNsigmaTPCPion{"ConfNsigmaTPCPion", 3.0, "TPC Pion Sigma for momentum < 0.5"};
   Configurable<float> ConfNsigmaCombinedPion{"ConfNsigmaCombinedPion", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > 0.5"};
-  
+
   // Configurables for cuts
   // First particle
   Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.14, "Lower limit for Pt for the first particle"};
@@ -68,8 +68,8 @@ struct femtoWorldPairTaskPionPion {
   Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the second particle"};
   Configurable<float> cfgDcaXYPart2{"cfgDcaXYPart2", 2.4, "Value for DCA_XY for the second particle"};
   Configurable<float> cfgDcaZPart2{"cfgDcaZPart2", 3.2, "Value for DCA_Z for the second particle"};
-  Configurable<int> cfgTpcClPart2{"cfgTpcClPart2", 88, "Number of tpc clasters for the second particle"};             // min number of found TPC clusters
-  
+  Configurable<int> cfgTpcClPart2{"cfgTpcClPart2", 88, "Number of tpc clasters for the second particle"}; // min number of found TPC clusters
+
   Configurable<int> cfgTpcCrosRoPart2{"cfgTpcCrosRoPart2", 70, "Number of tpc crossed rows for the second particle"}; // min number of crossed rows
   Configurable<float> cfgChi2TpcPart2{"cfgChi2TpcPart2", 4.0, "Chi2 / cluster for the TPC track segment for the second particle"};
   Configurable<float> cfgChi2ItsPart2{"cfgChi2ItsPart2", 36.0, "Chi2 / cluster for the ITS track segment for the second particle"};
@@ -189,7 +189,7 @@ struct femtoWorldPairTaskPionPion {
   }
 
   // PID
-  //femtoWorldPairTaskTrackPhi.cxx
+  // femtoWorldPairTaskTrackPhi.cxx
   bool IsPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
   {
     //|nsigma_TPC| < 3 for p < 0.5 GeV/c
@@ -215,7 +215,6 @@ struct femtoWorldPairTaskPionPion {
     }
     return false;
   }
-  
 
   /// This function processes the same event and takes care of all the histogramming
   /// \todo the trivial loops over the tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
@@ -327,4 +326,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   };
   return workflow;
 }
-
