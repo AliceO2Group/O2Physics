@@ -9,8 +9,14 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Core)
-#add_subdirectory(DataModel)
+o2physics_add_library(PWGEMPhotonMesonCore
+               SOURCES  V0PhotonCut.cxx
+                        CutsLibrary.cxx
+                        HistogramsLibrary.cxx
+               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
-add_subdirectory(Tasks)
-add_subdirectory(TableProducer)
+o2physics_target_root_dictionary(PWGEMPhotonMesonCore
+              HEADERS   V0PhotonCut.h
+                        CutsLibrary.h
+                        HistogramsLibrary.h
+              LINKDEF PWGEMPhotonMesonCoreLinkDef.h)
