@@ -39,6 +39,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessFinderTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -61,37 +62,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 using namespace ROOT::Math;
-
-namespace o2::aod
-{
-
-namespace cascgoodpostracks
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(GoodPosTrack, goodPosTrack, int, Tracks, "_GoodPos");
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
-} // namespace cascgoodpostracks
-DECLARE_SOA_TABLE(CascGoodPosTracks, "AOD", "CASCGOODPTRACKS", o2::soa::Index<>, cascgoodpostracks::GoodPosTrackId, cascgoodpostracks::CollisionId, cascgoodpostracks::DCAXY);
-namespace cascgoodnegtracks
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(GoodNegTrack, goodNegTrack, int, Tracks, "_GoodNeg");
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
-} // namespace cascgoodnegtracks
-DECLARE_SOA_TABLE(CascGoodNegTracks, "AOD", "CASCGOODNTRACKS", o2::soa::Index<>, cascgoodnegtracks::GoodNegTrackId, cascgoodnegtracks::CollisionId, cascgoodnegtracks::DCAXY);
-namespace cascgoodlambdas
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(GoodLambda, goodLambda, int, V0Datas, "_GoodLambda");
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-} // namespace cascgoodlambdas
-DECLARE_SOA_TABLE(CascGoodLambdas, "AOD", "CASCGOODLAM", o2::soa::Index<>, cascgoodlambdas::GoodLambdaId, cascgoodlambdas::CollisionId);
-namespace cascgoodantilambdas
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(GoodAntiLambda, goodAntiLambda, int, V0Datas, "_GoodAntiLambda");
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-} // namespace cascgoodantilambdas
-DECLARE_SOA_TABLE(CascGoodAntiLambdas, "AOD", "CASCGOODALAM", o2::soa::Index<>, cascgoodantilambdas::GoodAntiLambdaId, cascgoodantilambdas::CollisionId);
-} // namespace o2::aod
 
 struct cascadeprefilter {
   Configurable<float> dcabachtopv{"dcabachtopv", .1, "DCA Bach To PV"};
