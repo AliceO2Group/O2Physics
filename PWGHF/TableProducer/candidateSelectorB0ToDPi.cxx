@@ -63,12 +63,12 @@ struct HfCandidateSelectorB0ToDPi {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_b0_to_d_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B0 candidate selection per pT bin"};
+  // QA switch
+  Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // check if selectionFlagD (defined in candidateCreatorB0.cxx) and usePid configurables are in sync
   bool selectionFlagDAndUsePidInSync = true;
   // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
   int mySelectionFlagD = -1;
-  // QA switch
-  Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
 
   TrackSelectorPID selectorPion;
 

@@ -125,10 +125,7 @@ struct HfTaskB0 {
   template <typename T = float>
   bool isProngInAcceptance(const T& etaProng, const T& ptProng)
   {
-    if (etaProng > etaMaxAcceptance || ptProng < ptMinAcceptance) {
-      return false;
-    }
-    return true;
+    return std::abs(etaProng) <= etaMaxAcceptance && ptProng >= ptMinAcceptance;
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, TracksWithSel const&)
