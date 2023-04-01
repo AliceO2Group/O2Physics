@@ -46,4 +46,3 @@ o2physics_add_dpl_workflow(emcal-correction-task
                     SOURCES emcalCorrectionTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::EMCALBase O2::EMCALReconstruction
                     COMPONENT_NAME Analysis)
-
