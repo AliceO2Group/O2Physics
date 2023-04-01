@@ -204,7 +204,7 @@ struct HfCandidateCreatorToXiPi {
       double pseudorapPiFromCas = trackXiDauCharged.eta();
 
       // pion <- casc track to be processed with DCAfitter
-      auto trackParVarXiDauCharged = getTrackParCov(trackXiDauCharged);
+      auto trackParCovXiDauCharged = getTrackParCov(trackXiDauCharged);
 
       // info from LF table
       std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
@@ -233,7 +233,7 @@ struct HfCandidateCreatorToXiPi {
       std::array<float, 3> pVecPionFromCasc = {casc.pxbach(), casc.pybach(), casc.pzbach()};
 
       // create cascade track
-      //auto trackCasc = o2::dataformats::V0(vertexCasc, pVecCasc, covVtxCasc, trackV0, trackParVarXiDauCharged, {0, 0}, {0, 0});
+      //auto trackCasc = o2::dataformats::V0(vertexCasc, pVecCasc, covVtxCasc, trackV0, trackParCovXiDauCharged, {0, 0}, {0, 0});
 
       auto trackCascCopy = trackCasc;
 
@@ -292,11 +292,21 @@ struct HfCandidateCreatorToXiPi {
         // create omegac track
         //auto trackOmegac = o2::dataformats::V0(coordVtxOmegac, pVecOmegac, covVtxOmegac, trackCasc, trackParVarPi, {0, 0}, {0, 0});
 
+        // DCAxy (computed with propagateToDCABxByBz method)
+        double dcaxyV0Dau0 = trackV0Dau0.dcaXY();
+        double dcaxyV0Dau1 = trackV0Dau1.dcaXY();
+        double dcaxyPiFromCasc = trackXiDauCharged.dcaXY();
+
+        // DCAz (computed with propagateToDCABxByBz method)
+        double dcazV0Dau0 = trackV0Dau0.dcaZ();
+        double dcazV0Dau1 = trackV0Dau1.dcaZ();
+        double dcazPiFromCasc = trackXiDauCharged.dcaZ();
+
         // primary vertex of the collision
         auto primaryVertex = getPrimaryVertex(collision); // get the associated covariance matrix with auto covMatrixPV = primaryVertex.getCov();
         std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
 
-        if(doPvRefit){  // if I asked for PV refit in trackIndexSkimCreator.cxx
+        if(doPvRefit && ((trackPion.pvRefitSigmaX2() != 1e10f) || (trackPion.pvRefitSigmaY2() != 1e10f) || (trackPion.pvRefitSigmaZ2() != 1e10f))){  // if I asked for PV refit in trackIndexSkimCreator.cxx
           pvCoord[0] = trackPion.pvRefitX();
           pvCoord[1] = trackPion.pvRefitY();
           pvCoord[2] = trackPion.pvRefitZ();
@@ -306,6 +316,19 @@ struct HfCandidateCreatorToXiPi {
           primaryVertex.setY(trackPion.pvRefitY());
           primaryVertex.setZ(trackPion.pvRefitZ());
           primaryVertex.setCov(trackPion.pvRefitSigmaX2(), trackPion.pvRefitSigmaXY(), trackPion.pvRefitSigmaY2(), trackPion.pvRefitSigmaXZ(), trackPion.pvRefitSigmaYZ(), trackPion.pvRefitSigmaZ2());
+        
+          o2::dataformats::DCA impactParameterV0Dau0;
+          o2::dataformats::DCA impactParameterV0Dau1;
+          o2::dataformats::DCA impactParameterPiFromCasc ;
+          o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0Dau0, 2.f, matCorr, &impactParameterV0Dau0); 
+          o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0Dau1, 2.f, matCorr, &impactParameterV0Dau1); 
+          o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovXiDauCharged, 2.f, matCorr, &impactParameterPiFromCasc); 
+          dcaxyV0Dau0 = impactParameterV0Dau0.getY();
+          dcaxyV0Dau1 = impactParameterV0Dau1.getY();
+          dcaxyPiFromCasc = impactParameterPiFromCasc.getY();
+          dcazV0Dau0 = impactParameterV0Dau0.getZ();
+          dcazV0Dau1 = impactParameterV0Dau1.getZ();
+          dcazPiFromCasc = impactParameterPiFromCasc.getZ();    
         }
 
         // impact parameters
@@ -317,16 +340,6 @@ struct HfCandidateCreatorToXiPi {
         o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParVarPiCopy, 2.f, matCorr, &impactParameterPrimaryPi); 
         o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackV0Copy, 2.f, matCorr, &impactParameterV0); 
         o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackOmegac, 2.f, matCorr, &impactParameterOmegac);
-
-        // DCAxy (computed with propagateToDCABxByBz method)
-        double dcaxyV0Dau0 = trackV0Dau0.dcaXY();
-        double dcaxyV0Dau1 = trackV0Dau1.dcaXY();
-        double dcaxyPiFromCasc = trackXiDauCharged.dcaXY();
-
-        // DCAz (computed with propagateToDCABxByBz method)
-        double dcazV0Dau0 = trackV0Dau0.dcaZ();
-        double dcazV0Dau1 = trackV0Dau1.dcaZ();
-        double dcazPiFromCasc = trackXiDauCharged.dcaZ();
 
         // invariant mass under the hypothesis of particles ID corresponding to the decay chain
         double mLambda = v0Element.mLambda();         // from LF table, V0 mass under lambda hypothesis
