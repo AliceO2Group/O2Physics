@@ -161,6 +161,42 @@ struct cascpostprocessing {
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
 
+    TString CutLabel[25] = {"All", "MassWin", "y", "EtaDau", "DCADauToPV", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "ctau", "CompDecayMass"};
+    TString CutLabelSummary[25] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegtopv", "dcabachtopv", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "proplifetime", "rejcomp", "ptthrtof"};
+
+    registry.add("hCandidate", "hCandidate", HistType::kTH1F, {{25, -0.5, 24.5}});
+    for (Int_t n = 1; n<= registry.get<TH1>(HIST("hCandidate"))->GetNbinsX(); n++) {
+      registry.get<TH1>(HIST("hCandidate"))->GetXaxis()->SetBinLabel(n, CutLabel[n-1]);
+    }
+
+    registry.add("CascadeSelectionSummary", "CascadeSelectionSummary", HistType::kTH1F, {{25, -0.5, 24.5}});
+    for (Int_t n = 1; n<= registry.get<TH1>(HIST("CascadeSelectionSummary"))->GetNbinsX(); n++) {
+      registry.get<TH1>(HIST("CascadeSelectionSummary"))->GetXaxis()->SetBinLabel(n, CutLabelSummary[n-1]);
+    }
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(1, masswin);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(2, rap);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(3, etadau);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(4, dcapostopv);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(5, dcanegtopv);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(6, dcabachtopv);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(7, casccospa);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(8, v0cospa);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(9, dcacascdau);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(10, dcav0dau);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(11, cascradius);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(12, v0radius);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(13, dcav0topv);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(14, lambdamasswin);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(15, nsigmatpcPr);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(16, nsigmatpcPi);
+    if (hastof)    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(17, nsigmatofPr);
+    if (hastof)    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(18, nsigmatofPi);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(19, nsigmatpcKa);
+    if (hastof)    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(20, nsigmatofKa);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(21, proplifetime);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(22, rejcomp);
+    if (hastof)    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(23, ptthrtof);
+
     registry.add("hPt", "hPt", {HistType::kTH1F, {ptAxis}});
     registry.add("hCascMinusInvMassvsPt", "hCascMinusInvMassvsPt", HistType::kTH2F, {ptAxis, massAxis});
     registry.add("hCascPlusInvMassvsPt", "hCascPlusInvMassvsPt", HistType::kTH2F, {ptAxis, massAxis});
@@ -222,8 +258,12 @@ struct cascpostprocessing {
     float ctau = 0;
     float rapidity = 0;
     bool isCandidate = 0;
+    int counter = -1;
 
     for (auto& candidate : mycascades) {
+
+      counter = -1;
+      registry.fill(HIST("hCandidate"), ++counter);
 
       // To have trace of how it was before selections
       if (candidate.sign() < 0) {
@@ -235,78 +275,112 @@ struct cascpostprocessing {
         registry.fill(HIST("hOmegaPlusInvMassvsPt_BefSels"), candidate.pt(), candidate.massomega());
       }
 
+      if (isXi){
+        if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) > masswin)
+          continue;
+	registry.fill(HIST("hCandidate"), ++counter);
+	if (TMath::Abs(candidate.rapxi()) > rap)
+          continue;
+	registry.fill(HIST("hCandidate"), ++counter);
+      } else {
+        if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) > masswin)
+          continue;
+	registry.fill(HIST("hCandidate"), ++counter);
+	if (TMath::Abs(candidate.rapomega()) > rap)
+          continue;
+	registry.fill(HIST("hCandidate"), ++counter);
+      }
+
       // Apply selections
       if (TMath::Abs(candidate.poseta()) > etadau || TMath::Abs(candidate.negeta()) > etadau || TMath::Abs(candidate.bacheta()) > etadau)
         continue;
+      registry.fill(HIST("hCandidate"), ++counter);
       if (TMath::Abs(candidate.dcanegtopv()) < dcanegtopv || TMath::Abs(candidate.dcapostopv()) < dcapostopv || TMath::Abs(candidate.dcabachtopv()) < dcabachtopv)
         continue;
+      registry.fill(HIST("hCandidate"), ++counter);
       if (candidate.casccospa() < casccospa)
         continue;
+      registry.fill(HIST("hCandidate"), ++counter);
       if (candidate.v0cospa() < v0cospa)
         continue;
+      registry.fill(HIST("hCandidate"), ++counter);
       if (candidate.dcacascdaughters() > dcacascdau)
         continue;
+      registry.fill(HIST("hCandidate"), ++counter);
       if (candidate.dcav0daughters() > dcav0dau)
         continue;
+      registry.fill(HIST("hCandidate"), ++counter);
       if (candidate.cascradius() < cascradius)
         continue;
+      registry.fill(HIST("hCandidate"), ++counter);
       if (candidate.v0radius() < v0radius)
         continue;
+      registry.fill(HIST("hCandidate"), ++counter);
       if (TMath::Abs(candidate.dcav0topv()) < dcav0topv)
         continue;
+      registry.fill(HIST("hCandidate"), ++counter);
       if (TMath::Abs(candidate.masslambdadau() - RecoDecay::getMassPDG(3122)) > lambdamasswin)
         continue;
-
+      registry.fill(HIST("hCandidate"), ++counter);
       if (candidate.sign() < 0) {
         if (TMath::Abs(candidate.ntpcsigmapospr()) > nsigmatpcPr)
           continue;
+	registry.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(candidate.ntpcsigmanegpi()) > nsigmatpcPi)
           continue;
+	registry.fill(HIST("hCandidate"), ++counter);
       } else if (candidate.sign() > 0) {
         if (TMath::Abs(candidate.ntpcsigmanegpr()) > nsigmatpcPr)
           continue;
+	registry.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(candidate.ntpcsigmapospi()) > nsigmatpcPi)
           continue;
+	registry.fill(HIST("hCandidate"), ++counter);
       }
       // TOF required only if hastof is set to one. In this case, daughter tracks with pt > threshold should have a hit in the tof
       if (hastof){
 	if (candidate.sign() < 0){
 	  if (TMath::Abs(candidate.ntofsigmapospr()) > nsigmatofPr && candidate.pospt() > ptthrtof && candidate.poshastof()) continue;
+	  registry.fill(HIST("hCandidate"), ++counter);
 	  if (TMath::Abs(candidate.ntofsigmanegpi()) > nsigmatofPi && candidate.negpt() > ptthrtof && candidate.neghastof()) continue;
+	  registry.fill(HIST("hCandidate"), ++counter);
 	}
 	else if (candidate.sign() > 0){
 	  if (TMath::Abs(candidate.ntofsigmanegpr()) > nsigmatofPr && candidate.negpt() > ptthrtof && candidate.neghastof()) continue;
+	  registry.fill(HIST("hCandidate"), ++counter);
 	  if (TMath::Abs(candidate.ntofsigmapospi()) > nsigmatofPi && candidate.pospt() > ptthrtof && candidate.poshastof()) continue;
+	  registry.fill(HIST("hCandidate"), ++counter);
 	}
+      } else {
+	counter += 2;
       }
-
       if (isXi) {
         if (TMath::Abs(candidate.ntpcsigmabachpi()) > nsigmatpcPi)
           continue;
+	registry.fill(HIST("hCandidate"), ++counter);
 	if (hastof && TMath::Abs(candidate.ntofsigmabachpi()) > nsigmatofPi && candidate.bachpt() > ptthrtof && candidate.bachhastof()) continue;
-        if (TMath::Abs(candidate.rapxi()) > rap)
-          continue;
+	registry.fill(HIST("hCandidate"), ++counter);
         if (candidate.ctauxi() > proplifetime * ctauxiPDG)
           continue;
-        if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) > masswin)
-          continue;
+	registry.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) < rejcomp)
           continue;
+	registry.fill(HIST("hCandidate"), ++counter);
         rapidity = candidate.rapxi();
         ctau = candidate.ctauxi();
         invmass = candidate.massxi();
       } else {
         if (TMath::Abs(candidate.ntpcsigmabachka()) > nsigmatpcKa)
           continue;
+	registry.fill(HIST("hCandidate"), ++counter);
 	if (hastof && TMath::Abs(candidate.ntofsigmabachka()) > nsigmatofKa && candidate.bachpt() > ptthrtof && candidate.bachhastof()) continue;
-        if (TMath::Abs(candidate.rapxi()) > rap)
-          continue;
+	registry.fill(HIST("hCandidate"), ++counter);
         if (candidate.ctauomega() > proplifetime * ctauomegaPDG)
           continue;
-        if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) > masswin)
-          continue;
+	registry.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) < rejcomp)
           continue;
+	registry.fill(HIST("hCandidate"), ++counter);
         rapidity = candidate.rapomega();
         ctau = candidate.ctauomega();
         invmass = candidate.massomega();
