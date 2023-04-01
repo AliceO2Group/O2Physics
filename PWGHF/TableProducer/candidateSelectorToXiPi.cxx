@@ -104,7 +104,7 @@ struct HfCandidateSelectorToXiPi {
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- Omegac"};
 
-  using MyTrackInfo = aod::BigTracksPIDExtended; // removed aod::TrackSelection
+  using MyTrackInfo = aod::BigTracksPIDExtended;
 
   OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
@@ -138,8 +138,6 @@ struct HfCandidateSelectorToXiPi {
     double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
     double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);
 
-    //int collIdCasc = -999;
-    //int collIdPrimaryPi = -999;
     int collId = -999;
 
     // looping over omegac candidates
@@ -408,17 +406,6 @@ struct HfCandidateSelectorToXiPi {
           hNEventsSaved->Fill(0.5);
           collId = trackPiFromCasc.collisionId();
         }
-        /*if (trackPiFromCasc.collisionId() != collIdCasc) {
-          hNEventsSaved->Fill(0.5);
-          collIdCasc = trackPiFromCasc.collisionId();
-        }
-        if (trackPiFromOmeg.collisionId() != collIdPrimaryPi) {
-          hNEventsSaved->Fill(1.5);
-          collIdPrimaryPi = trackPiFromOmeg.collisionId();
-        }
-        if (trackPiFromOmeg.collisionId() != trackPiFromCasc.collisionId()) {
-          hNEventsSaved->Fill(2.5);
-        }*/
       }
     }
   }

@@ -1393,6 +1393,9 @@ namespace hf_cand_toxipi
 {
 // Data processing results:
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_COLUMN(XPv, xPv, float);
+DECLARE_SOA_COLUMN(YPv, yPv, float);
+DECLARE_SOA_COLUMN(ZPv, zPv, float);
 DECLARE_SOA_COLUMN(XDecayVtxOmegac, xDecayVtxOmegac, float);
 DECLARE_SOA_COLUMN(YDecayVtxOmegac, yDecayVtxOmegac, float);
 DECLARE_SOA_COLUMN(ZDecayVtxOmegac, zDecayVtxOmegac, float);
@@ -1503,7 +1506,7 @@ enum DecayType { DecayToXiPi = 0,
 // declare dedicated Omegac and Xic to Xi Pi candidate table
 DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   o2::soa::Index<>,
-                  hf_cand_toxipi::CollisionId, collision::PosX, collision::PosY, collision::PosZ,
+                  hf_cand_toxipi::CollisionId, hf_cand_toxipi::XPv, hf_cand_toxipi::YPv, hf_cand_toxipi::ZPv,
                   hf_cand_toxipi::XDecayVtxOmegac, hf_cand_toxipi::YDecayVtxOmegac, hf_cand_toxipi::ZDecayVtxOmegac,
                   hf_cand_toxipi::XDecayVtxCascade, hf_cand_toxipi::YDecayVtxCascade, hf_cand_toxipi::ZDecayVtxCascade,
                   hf_cand_toxipi::XDecayVtxV0, hf_cand_toxipi::YDecayVtxV0, hf_cand_toxipi::ZDecayVtxV0,

@@ -386,7 +386,7 @@ struct HfCandidateCreatorToXiPi {
 
         // fill the table
         rowCandidate(collision.globalIndex(),
-                     collision.posX(), collision.posY(), collision.posZ(),
+                     pvCoord[0], pvCoord[1], pvCoord[2],
                      vertexOmegacFromFitter[0], vertexOmegacFromFitter[1], vertexOmegacFromFitter[2],
                      vertexCasc[0], vertexCasc[1], vertexCasc[2],
                      vertexV0[0], vertexV0[1], vertexV0[2],
