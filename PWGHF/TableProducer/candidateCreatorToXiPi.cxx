@@ -162,7 +162,7 @@ struct HfCandidateCreatorToXiPi {
       auto trackV0Dau1 = v0Element.negTrack_as<MyTracks>(); // pion <- V0 track (negative track) from MyTracks table
 
       // check that particles come from the same collision
-      if (rejDiffCollTrack) { // check to be further processed when the problem of ambiguous tracks will be solved
+      if (rejDiffCollTrack) { 
         if (trackV0Dau0.collisionId() != trackV0Dau1.collisionId()) {
           continue;
         }
@@ -211,13 +211,12 @@ struct HfCandidateCreatorToXiPi {
       std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
       const std::array<float, 6> covVtxCasc = {casc.positionCovMat()[0], casc.positionCovMat()[1], casc.positionCovMat()[2], casc.positionCovMat()[3], casc.positionCovMat()[4], casc.positionCovMat()[5]};
       
-      // begin new
       std::array<float,21> covCasc = {0.};
       for (int i = 0; i < 6; i++) {
         covCasc[MomInd[i]] = casc.momentumCovMat()[i];
         covCasc[i] = casc.positionCovMat()[i];
       }
-      // create cascade track (the charge in the constructor is a signed value, not an abs)
+      // create cascade track
       o2::track::TrackParCov trackCasc;
       if(trackXiDauCharged.sign() > 0) {
         trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, 1, true);
@@ -227,13 +226,9 @@ struct HfCandidateCreatorToXiPi {
         continue;
       }
       trackCasc.setAbsCharge(1);
-      trackCasc.setPID(o2::track::PID::XiMinus); // see AliceO2/DataFormats/Reconstruction/src/TrackParametrizationWithError.cxx 
-      // end new
+      trackCasc.setPID(o2::track::PID::XiMinus); 
 
       std::array<float, 3> pVecPionFromCasc = {casc.pxbach(), casc.pybach(), casc.pzbach()};
-
-      // create cascade track
-      //auto trackCasc = o2::dataformats::V0(vertexCasc, pVecCasc, covVtxCasc, trackV0, trackParCovXiDauCharged, {0, 0}, {0, 0});
 
       auto trackCascCopy = trackCasc;
 
@@ -284,13 +279,9 @@ struct HfCandidateCreatorToXiPi {
         std::array<float, 3> coordVtxOmegac = df.getPCACandidatePos();
         std::array<float, 6> covVtxOmegac = df.calcPCACovMatrixFlat();
 
-        // begin new
+        // create omegac track
         o2::track::TrackParCov trackOmegac = df.createParentTrackParCov();
         trackOmegac.setAbsCharge(0);
-        // end new
-
-        // create omegac track
-        //auto trackOmegac = o2::dataformats::V0(coordVtxOmegac, pVecOmegac, covVtxOmegac, trackCasc, trackParVarPi, {0, 0}, {0, 0});
 
         // DCAxy (computed with propagateToDCABxByBz method)
         double dcaxyV0Dau0 = trackV0Dau0.dcaXY();
@@ -350,16 +341,13 @@ struct HfCandidateCreatorToXiPi {
 
         // computing cosPA
         double cpaV0 = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
-        //double cpaOmegac = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, coordVtxOmegac, pVecOmegac);
         double cpaOmegac = RecoDecay::cpa(pvCoord, coordVtxOmegac, pVecOmegac);
         double cpaCasc = RecoDecay::cpa(coordVtxOmegac, vertexCasc, pVecCasc);
         double cpaxyV0 = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
-        //double cpaxyOmegac = RecoDecay::cpaXY(std::array{collision.posX(), collision.posY(), collision.posZ()}, coordVtxOmegac, pVecOmegac);
         double cpaxyOmegac = RecoDecay::cpaXY(pvCoord, coordVtxOmegac, pVecOmegac);
         double cpaxyCasc = RecoDecay::cpaXY(coordVtxOmegac, vertexCasc, pVecCasc);
 
         // computing decay length and ctau
-        //double decLenOmegac = RecoDecay::distance(std::array{collision.posX(), collision.posY(), collision.posZ()}, coordVtxOmegac);
         double decLenOmegac = RecoDecay::distance(pvCoord, coordVtxOmegac);
         double decLenCascade = RecoDecay::distance(coordVtxOmegac, vertexCasc);
         double decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
