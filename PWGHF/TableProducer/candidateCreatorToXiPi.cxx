@@ -51,7 +51,7 @@ using namespace o2::aod::hf_cand_toxipi;
 struct HfCandidateCreatorToXiPi {
   Produces<aod::HfCandToXiPi> rowCandidate;
 
-  Configurable<bool> doPvRefit{"doPvRefit", false, "set to true if you do PV refit in trackIndexSkimsCreator.cxx"};
+  Configurable<bool> doPvRefit{"doPvRefit", false, "set to true if you do PV refit in trackIndexSkimCreator.cxx"};
 
   Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
@@ -238,7 +238,7 @@ struct HfCandidateCreatorToXiPi {
 
         auto trackPion = trackIndexPion.track_as<MyTracks>();
 
-        if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion.collisionId())) { // check to be further processed when the problem of ambiguous tracks will be solved
+        if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion.collisionId())) {
           continue;
         }
 
