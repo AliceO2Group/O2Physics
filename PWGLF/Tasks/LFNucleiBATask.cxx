@@ -1048,10 +1048,12 @@ struct LFNucleiBATask {
         }
       }
 
-      // Tracks histos fill
-      histos.fill(HIST("tracks/h1Eta"), track.eta());
-      histos.fill(HIST("tracks/h1VarPhi"), track.phi());
-      histos.fill(HIST("tracks/h2EtaVsPhi"), track.eta(), track.phi());
+      if (enableDebug) {
+        // Tracks histos fill
+        histos.fill(HIST("tracks/h1Eta"), track.eta());
+        histos.fill(HIST("tracks/h1VarPhi"), track.phi());
+        histos.fill(HIST("tracks/h2EtaVsPhi"), track.eta(), track.phi());
+      }
 
       histos.fill(HIST("tracks/h2pVsTPCmomentum"), track.tpcInnerParam(), track.p());
       //  TPC
