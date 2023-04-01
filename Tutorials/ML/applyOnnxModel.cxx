@@ -17,13 +17,11 @@
 /// \brief  Showcase application of an ONNX model in O2Physics
 ///
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Logger.h"
 #include "CCDB/CcdbApi.h"
 #include "Tools/ML/model.h"
-#include "TRandom3.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -32,39 +30,27 @@ using namespace o2::ml;
 
 struct applyModel {
 
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
-  Configurable<bool> useLocalFile{"useLocalFile", true, "If true: Uses network from modelPathLocally; else: Load from CCDB to modelPathLocally"};
-  Configurable<std::string> modelPathLocally{"modelPathLocally", "network.onnx", "(std::string) Path to the local .onnx file"};
-  Configurable<std::string> modelPathCCDB{"modelPathCCDB", "Analysis/PID/TPC/ML", "Model-path on CCDB"};
+  Configurable<std::string> modelPathLocally{"modelPath", "test_net.onnx", "(std::string) Path to the local .onnx file"};
   Configurable<bool> enableOptimizations{"enableOptimizations", true, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
 
   OnnxModel network;
-  std::map<std::string, std::string> metadata;
-  o2::ccdb::CcdbApi ccdbApi;
 
   void init(InitContext const&)
   {
-    if (useLocalFile) {
-      network.initModel(modelPathLocally.value, enableOptimizations.value);
-    } else {
-      ccdbApi.init(url);
-      bool retrieveSuccess = ccdbApi.retrieveBlob(modelPathCCDB.value, ".", metadata, 1, false, modelPathLocally.value); // see the ccdb api header "O2/CCDB/include/CCDB/CcdbApi.h"; Fetching an arbitrary network for showcasing now
-      if (retrieveSuccess) {
-        network.initModel(modelPathLocally.value, enableOptimizations.value); // initializes the model, prints out shape of the input and output already
-      }
-    }
+    network.initModel(modelPathLocally.value, enableOptimizations.value);
   }
 
-  void process(aod::Tracks const&)
+  void process()
   {
-    std::vector<float> modelInput = std::vector<float>(network.getNumInputNodes() * 10, 0.); // Use an input of size 100 * (number of model inputs)
-    TRandom3* fRndm = new TRandom3(0);
-    for (int i = 0; i < network.getNumInputNodes() * 10; i++) {
-      modelInput[i] = fRndm->Rndm();
-    }
-    float* modelOutput = network.evalModel(modelInput); // evaluate
-    for (int i = 0; i < 10; i++) {
-      LOG(info) << "Input: [" << modelInput[i * 6] << "," << modelInput[i * 6 + 1] << "," << modelInput[i * 6 + 2] << "," << modelInput[i * 6 + 3] << "," << modelInput[i * 6 + 4] << "," << modelInput[i * 6 + 5] << "] -> Output: " << modelOutput[i];
+    // This is our input data from the tutorial
+    std::vector<float> modelInput = std::vector<float>{0.5, 3.1415926536, 0., 0.001, -3.};
+
+    // Here we evaluate the model
+    float* modelOutput = network.evalModel(modelInput);
+
+    // And now we print the output
+    for (int i = 0; i < 5; i++) {
+      LOG(info) << "Input: " << modelInput[i] << ", Output: " << modelOutput[i];
     }
   }
 };
