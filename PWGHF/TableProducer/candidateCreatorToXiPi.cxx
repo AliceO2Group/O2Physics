@@ -209,8 +209,6 @@ struct HfCandidateCreatorToXiPi {
       // info from LF table
       std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
       std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
-      const std::array<float, 6> covVtxCasc = {casc.positionCovMat()[0], casc.positionCovMat()[1], casc.positionCovMat()[2], casc.positionCovMat()[3], casc.positionCovMat()[4], casc.positionCovMat()[5]};
-      
       std::array<float,21> covCasc = {0.};
       for (int i = 0; i < 6; i++) {
         covCasc[MomInd[i]] = casc.momentumCovMat()[i];
@@ -381,7 +379,7 @@ struct HfCandidateCreatorToXiPi {
                      trackXiDauCharged.sign(),
                      chi2PCAOmegac, covVtxOmegac[0], covVtxOmegac[1], covVtxOmegac[2], covVtxOmegac[3], covVtxOmegac[4], covVtxOmegac[5],
                      covV0[0], covV0[1], covV0[2], covV0[3], covV0[4], covV0[5],
-                     covVtxCasc[0], covVtxCasc[1], covVtxCasc[2], covVtxCasc[3], covVtxCasc[4], covVtxCasc[5],
+                     covCasc[0], covCasc[1], covCasc[2], covCasc[3], covCasc[4], covCasc[5],
                      pVecOmegac[0], pVecOmegac[1], pVecOmegac[2],
                      pVecCasc[0], pVecCasc[1], pVecCasc[2],
                      pVecPionFromOmegac[0], pVecPionFromOmegac[1], pVecPionFromOmegac[2],
