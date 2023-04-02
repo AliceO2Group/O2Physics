@@ -258,36 +258,36 @@ struct createPCM {
       initCCDB(bc);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
 
-      //LOGF(info,"%d tracks in collision %d", trackIdsThisCollision.size(), collision.globalIndex());
+      // LOGF(info,"%d tracks in collision %d", trackIdsThisCollision.size(), collision.globalIndex());
       for (auto& [eleId, posId] : combinations(CombinationsStrictlyUpperIndexPolicy(trackIdsThisCollision, trackIdsThisCollision))) {
-          auto ele = eleId.track_as<FullTracksExt>();
-          auto pos = posId.track_as<FullTracksExt>();
-          //LOGF(info,"eleId = %d , posId = %d", ele.globalIndex(), pos.globalIndex());
+        auto ele = eleId.track_as<FullTracksExt>();
+        auto pos = posId.track_as<FullTracksExt>();
+        // LOGF(info,"eleId = %d , posId = %d", ele.globalIndex(), pos.globalIndex());
 
-          if(ele.sign() * pos.sign() > 0) {//reject same sign combination
-              continue;
-          }
-          if((abs(ele.dcaXY()) < dcamin || dcamax < abs(ele.dcaXY())) || (abs(pos.dcaXY()) < dcamin || dcamax < abs(pos.dcaXY())) ){
-              continue;
-          }
-          if(ele.tpcNClsCrossedRows() < mincrossedrows || pos.tpcNClsCrossedRows() < mincrossedrows){
-              continue;
-          }
-          if(ele.tpcChi2NCl() > maxchi2tpc || pos.tpcChi2NCl() > maxchi2tpc){
-              continue;
-          }
-          if(abs(ele.eta()) > maxeta || abs(pos.eta()) > maxeta){
-              continue;
-          }
-          if(ele.pt() < minpt || pos.pt() < minpt){
-              continue;
-          }
+        if (ele.sign() * pos.sign() > 0) { // reject same sign combination
+          continue;
+        }
+        if ((abs(ele.dcaXY()) < dcamin || dcamax < abs(ele.dcaXY())) || (abs(pos.dcaXY()) < dcamin || dcamax < abs(pos.dcaXY()))) {
+          continue;
+        }
+        if (ele.tpcNClsCrossedRows() < mincrossedrows || pos.tpcNClsCrossedRows() < mincrossedrows) {
+          continue;
+        }
+        if (ele.tpcChi2NCl() > maxchi2tpc || pos.tpcChi2NCl() > maxchi2tpc) {
+          continue;
+        }
+        if (abs(ele.eta()) > maxeta || abs(pos.eta()) > maxeta) {
+          continue;
+        }
+        if (ele.pt() < minpt || pos.pt() < minpt) {
+          continue;
+        }
 
-          if(ele.sign() < 0){
-              fillV0Table(collision, ele, pos);
-          } else {
-              fillV0Table(collision, pos, ele);
-          }
+        if (ele.sign() < 0) {
+          fillV0Table(collision, ele, pos);
+        } else {
+          fillV0Table(collision, pos, ele);
+        }
       }
     } // end of collision loop
   }   // end of process
