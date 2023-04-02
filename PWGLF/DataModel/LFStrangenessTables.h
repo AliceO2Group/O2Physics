@@ -103,7 +103,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(PsiPair, psipair, //! psi pair angle
                              return std::asin(clipToPM1(argsin));
                            });
 
-//calculate the fraction of the pos/neg momentum of the V0 momentum
+// calculate the fraction of the pos/neg momentum of the V0 momentum
 DECLARE_SOA_DYNAMIC_COLUMN(PFracPos, pfracpos,
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) {
                              float ppos = RecoDecay::sqrtSumOfSquares(pxpos, pypos, pzpos);
@@ -271,6 +271,7 @@ namespace cascdata
 {
 // Necessary for full filtering functionality
 DECLARE_SOA_INDEX_COLUMN(V0, v0);                                   //!
+DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);                         //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, ""); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
 // General cascade properties: position, momentum
@@ -338,6 +339,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(YOmega, yOmega, //!
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::y(array{Px, Py, Pz}, o2::constants::physics::MassOmegaMinus); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //!
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::eta(array{Px, Py, Pz}); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! cascade phi
+                           [](float Px, float Py) -> float { return RecoDecay::phi(Px, Py); });
 } // namespace cascdata
 
 namespace cascdataext
@@ -356,8 +359,8 @@ DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //!
                               float, 1.f * aod::cascdata::pzpos + 1.f * aod::cascdata::pzneg + 1.f * aod::cascdata::pzbach);
 } // namespace cascdataext
 
-DECLARE_SOA_TABLE(CascData, "AOD", "CASCDATA", //!
-                  o2::soa::Index<>, cascdata::V0Id, cascdata::BachelorId, cascdata::CollisionId,
+DECLARE_SOA_TABLE(StoredCascDatas, "AOD", "CASCDATA", //!
+                  o2::soa::Index<>, cascdata::V0Id, cascdata::CascadeId, cascdata::BachelorId, cascdata::CollisionId,
 
                   cascdata::Sign,
                   cascdata::X, cascdata::Y, cascdata::Z,
@@ -383,19 +386,33 @@ DECLARE_SOA_TABLE(CascData, "AOD", "CASCDATA", //!
                   // Longitudinal
                   cascdata::YXi<cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
                   cascdata::YOmega<cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
-                  cascdata::Eta<cascdataext::Px, cascdataext::Py, cascdataext::Pz>);
+                  cascdata::Eta<cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
+                  cascdata::Phi<cascdataext::Px, cascdataext::Py>);
 
 DECLARE_SOA_TABLE_FULL(CascCovs, "CascCovs", "AOD", "CASCCOVS", //!
                        cascdata::PositionCovMat, cascdata::MomentumCovMat);
 
-using CascDataOrigin = CascData;
-
 // extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(CascDataExt, CascDataOrigin, "CascDATAEXT", //!
+DECLARE_SOA_EXTENDED_TABLE_USER(CascDatas, StoredCascDatas, "CascDATAEXT", //!
                                 cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda,
                                 cascdataext::Px, cascdataext::Py, cascdataext::Pz);
 
-using CascDataFull = CascDataExt;
+using CascData = CascDatas::iterator;
+
+// For compatibility with previous table declarations
+using CascDataFull = CascDatas;
+using CascDataExt = CascDatas;
+
+namespace cascdata
+{
+DECLARE_SOA_INDEX_COLUMN(CascData, cascData); //! Index to CascData entry
+}
+
+DECLARE_SOA_TABLE(CascDataLink, "AOD", "CASCDATALINK", //! Joinable table with Cascades which links to CascData which is not produced for all entries
+                  cascdata::CascDataId);
+
+using CascadesLinked = soa::Join<Cascades, CascDataLink>;
+using CascadeLinked = CascadesLinked::iterator;
 
 namespace casctag
 {
@@ -424,7 +441,7 @@ DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
                   casctag::IsOmegaMinusCandidate,
                   casctag::IsOmegaPlusCandidate);
 
-//Definition of labels for V0s
+// Definition of labels for V0s
 namespace mcv0label
 {
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
@@ -434,7 +451,7 @@ DECLARE_SOA_TABLE(McV0Labels, "AOD", "MCV0LABEL", //! Table joinable to V0data c
                   mcv0label::McParticleId);
 using McV0Label = McV0Labels::iterator;
 
-//Definition of labels for cascades
+// Definition of labels for cascades
 namespace mccasclabel
 {
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
