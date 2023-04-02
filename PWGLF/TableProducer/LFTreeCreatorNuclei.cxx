@@ -134,6 +134,7 @@ struct LfTreeCreatorNuclei {
         track.eta(),
         track.phi(),
         track.sign(),
+        track.itsNCls(),
         track.tpcNClsCrossedRows(),
         track.tpcCrossedRowsOverFindableCls(),
         track.tpcNClsFound(),
