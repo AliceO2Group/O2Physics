@@ -32,8 +32,9 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -311,17 +312,17 @@ struct Pi0EtaToGammaGammaMC {
         }
         int pdg = mctrack.pdgCode();
 
-        if (abs(pdg) == 22 && mctrack.producedByGenerator()) {
+        if (abs(pdg) == 22 && IsPhysicalPrimary(mctrack, mcparticles)) {
           registry.fill(HIST("Generated/hPt_Gamma"), mctrack.pt());
           registry.fill(HIST("Generated/hY_Gamma"), mctrack.y());
           registry.fill(HIST("Generated/hPhi_Gamma"), mctrack.phi());
         }
-        if (abs(pdg) == 111 && mctrack.producedByGenerator()) {
+        if (abs(pdg) == 111 && IsPhysicalPrimary(mctrack, mcparticles)) {
           registry.fill(HIST("Generated/hPt_Pi0"), mctrack.pt());
           registry.fill(HIST("Generated/hY_Pi0"), mctrack.y());
           registry.fill(HIST("Generated/hPhi_Pi0"), mctrack.phi());
         }
-        if (abs(pdg) == 221 && mctrack.producedByGenerator()) {
+        if (abs(pdg) == 221 && IsPhysicalPrimary(mctrack, mcparticles)) {
           registry.fill(HIST("Generated/hPt_Eta"), mctrack.pt());
           registry.fill(HIST("Generated/hY_Eta"), mctrack.y());
           registry.fill(HIST("Generated/hPhi_Eta"), mctrack.phi());
