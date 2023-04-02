@@ -113,7 +113,7 @@ struct hstrangecorrelationfilter {
       if (track.eta() > triggerEtaMax || track.eta() < triggerEtaMin) {
         continue;
       }
-      //	if (track.sign()= 1 ) {continue;}
+      // if (track.sign()= 1 ) {continue;}
       if (track.pt() > triggerPtCutMax || track.pt() < triggerPtCutMin) {
         continue;
       }
