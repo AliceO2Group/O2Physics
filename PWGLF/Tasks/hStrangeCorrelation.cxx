@@ -114,7 +114,7 @@ struct correlateSameEvents {
   }
 
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision,
-               aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks, 
+               aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
                aod::V0Datas const&, aod::CascDatas const&, TracksComplete const&)
   {
     // ________________________________________________
@@ -224,7 +224,7 @@ struct correlateMixedEvents {
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0A>;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
   BinningType colBinning{{ConfVtxBins, ConfMultBins}, true};
-  Pair<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>, aod::TriggerTracks, aod::AssocV0s, BinningType> pairV0s{colBinning, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  Pair<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>, aod::TriggerTracks, aod::AssocV0s, BinningType> pairV0s{colBinning, 5, -1};           // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
   Pair<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>, aod::TriggerTracks, aod::AssocCascades, BinningType> pairCascades{colBinning, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   /// Function to aid in calculating delta-phi
@@ -277,18 +277,18 @@ struct correlateMixedEvents {
     histos.add("mixedFullHadronOmegaPlus", "mixedFullHadronOmegaPlus", kTH2F, {axisPhi, axisEta});
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults> const& collisions, 
-               aod::TriggerTracks const& triggerTracks, aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, 
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults> const& collisions,
+               aod::TriggerTracks const& triggerTracks, aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades,
                aod::V0Datas const& V0s, aod::CascDatas const& Cascades, TracksComplete const&)
   {
-    //LOGF(info, "Input data Collisions %d, Tracks %d V0s %d Cascades %d", collisions.size(), triggerTracks.size(), associatedV0s.size(), associatedCascades.size());
-    // ________________________________________________
-    // Mixed event loop for associated = V0s
+    // LOGF(info, "Input data Collisions %d, Tracks %d V0s %d Cascades %d", collisions.size(), triggerTracks.size(), associatedV0s.size(), associatedCascades.size());
+    //  ________________________________________________
+    //  Mixed event loop for associated = V0s
     for (auto& [c1, tracks1, c2, tracks2] : pairV0s) {
-      //LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
+      // LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
       for (auto& [t1, t2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        //LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.collisionId(), t2.collisionId(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
-        // De-reference
+        // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.collisionId(), t2.collisionId(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
+        //  De-reference
         auto triggerTrack = t1.track_as<TracksComplete>();
         auto assocTrack = t2.v0Data();
         // do correlations
@@ -309,10 +309,10 @@ struct correlateMixedEvents {
     // ________________________________________________
     // Mixed event loop for associated = Cascades
     for (auto& [c1, tracks1, c2, tracks2] : pairCascades) {
-      //LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
+      // LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
       for (auto& [t1, t2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        //LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.collisionId(), t2.collisionId(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
-        // De-reference
+        // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.collisionId(), t2.collisionId(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
+        //  De-reference
         auto triggerTrack = t1.track_as<TracksComplete>();
         auto assocTrack = t2.cascData();
         // Correlate
