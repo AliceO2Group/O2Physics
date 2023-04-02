@@ -1002,7 +1002,7 @@ struct cascadeLinkBuilder {
     for (int ii = 0; ii < casctable.size(); ii++)
       lIndices[ii] = -1;
     for (auto& cascdata : cascdatatable) {
-      lIndices[cascdata.v0Id()] = cascdata.globalIndex();
+      lIndices[cascdata.cascadeId()] = cascdata.globalIndex();
     }
     for (int ii = 0; ii < casctable.size(); ii++) {
       cascdataLink(lIndices[ii]);
