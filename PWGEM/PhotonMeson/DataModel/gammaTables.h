@@ -71,7 +71,6 @@ using EMReducedMCEventLabel = EMReducedMCEventLabels::iterator;
 namespace emmcparticle
 {
 DECLARE_SOA_INDEX_COLUMN(EMReducedMCEvent, emreducedmcevent);                             //!
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);                                       //!
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother0, mother0, int, "EMMCParticles_Mother0");       //! Track index of the first mother
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother1, mother1, int, "EMMCParticles_Mother1");       //! Track index of the last mother
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "EMMCParticles_Daughter0"); //! Track index of the first daughter
@@ -99,7 +98,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
 // NOTE: This table is nearly identical to the one from Framework (except that it points to the event ID, not the BC id)
 //       This table contains all MC truth tracks (both barrel and muon)
 DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
-                       o2::soa::Index<>, emmcparticle::EMReducedMCEventId, mcparticle::McCollisionId,
+                       o2::soa::Index<>, emmcparticle::EMReducedMCEventId,
                        mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                        emmcparticle::MothersIds, emmcparticle::DaughtersIdSlice,
                        mcparticle::Weight,
