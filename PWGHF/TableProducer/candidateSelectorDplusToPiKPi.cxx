@@ -175,13 +175,13 @@ struct HfCandidateSelectorDplusToPiKPi {
       if (!TESTBIT(candidate.hfflag(), DecayType::DplusToPiKPi)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         if (activateQA) {
-          registry.fill(HIST("hSelections"), 0, ptCand);
+          registry.fill(HIST("hSelections"), 1, ptCand);
         }
         continue;
       }
       SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoSkims);
       if (activateQA) {
-        registry.fill(HIST("hSelections"), 1 + aod::SelectionStep::RecoSkims, ptCand);
+        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoSkims, ptCand);
       }
 
       auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
@@ -205,7 +205,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       }
       SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoTopol);
       if (activateQA) {
-        registry.fill(HIST("hSelections"), 1 + aod::SelectionStep::RecoTopol, ptCand);
+        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoTopol, ptCand);
       }
 
       // track-level PID selection
@@ -219,7 +219,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       }
       SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoPID);
       if (activateQA) {
-        registry.fill(HIST("hSelections"), 1 + aod::SelectionStep::RecoPID, ptCand);
+        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoPID, ptCand);
       }
 
       hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
