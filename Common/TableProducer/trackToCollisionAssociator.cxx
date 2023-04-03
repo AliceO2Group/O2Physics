@@ -38,7 +38,7 @@ struct TrackToCollisionAssociation {
   Configurable<bool> usePVAssociation{"usePVAssociation", true, "if the track is a PV contributor, use the collision time for it"};
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
 
-  Filter trackFilter = (applyIsGlobalTrackWoDCA == false) || requireGlobalTrackWoDCAInFilter();
+  Filter trackFilter = (applyIsGlobalTrackWoDCA.node() == false) || requireGlobalTrackWoDCAInFilter();
   using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   using TracksWithSelFilter = soa::Filtered<TracksWithSel>;
 
