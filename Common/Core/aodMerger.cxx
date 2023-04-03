@@ -25,43 +25,7 @@
 #include <TMap.h>
 #include <TLeaf.h>
 
-const char* removeVersionSuffix(const char* treeName)
-{
-  // remove version suffix, e.g. O2v0_001 becomes O2v0
-  static TString tmp;
-  tmp = treeName;
-  if (tmp.First("_") >= 0) {
-    tmp.Remove(tmp.First("_"));
-  }
-  return tmp;
-}
-
-const char* getTableName(const char* branchName, const char* treeName)
-{
-  // Syntax for branchName:
-  //   fIndex<Table>[_<Suffix>]
-  //   fIndexArray<Table>[_<Suffix>]
-  //   fIndexSlice<Table>[_<Suffix>]
-  // if <Table> is empty it is a self index and treeName is used as table name
-  static TString tableName;
-  tableName = branchName;
-  if (tableName.BeginsWith("fIndexArray") || tableName.BeginsWith("fIndexSlice")) {
-    tableName.Remove(0, 11);
-  } else {
-    tableName.Remove(0, 6);
-  }
-  if (tableName.First("_") >= 0) {
-    tableName.Remove(tableName.First("_"));
-  }
-  if (tableName.Length() == 0) {
-    return removeVersionSuffix(treeName);
-  }
-  tableName.Remove(tableName.Length() - 1); // remove s
-  tableName.ToLower();
-  tableName = "O2" + tableName;
-  // printf("%s --> %s\n", branchName, tableName.Data());
-  return tableName;
-}
+#include "aodMerger.h"
 
 // AOD merger with correct index rewriting
 // No need to know the datamodel because the branch names follow a canonical standard (identified by fIndex)
@@ -234,7 +198,6 @@ int main(int argc, char* argv[])
 
       for (auto key2 : *treeList) {
         auto treeName = ((TObjString*)key2)->GetString().Data();
-        printf("    Processing tree %s\n", treeName);
         bool found = (std::find(foundTrees.begin(), foundTrees.end(), treeName) != foundTrees.end());
         if (found == true) {
           printf("    ***WARNING*** Tree %s was already merged (even if we purged duplicated trees before, so this should not happen), skipping\n", treeName);
@@ -244,7 +207,7 @@ int main(int argc, char* argv[])
 
         auto inputTree = (TTree*)inputFile->Get(Form("%s/%s", dfName, treeName));
         bool fastCopy = (inputTree->GetTotBytes() > 10000000); // Only do this for large enough trees to avoid that baskets are too small
-        printf("    Tree %s has %lld entries with total size %lld (fast copy: %d)\n", treeName, inputTree->GetEntries(), inputTree->GetTotBytes(), fastCopy);
+        printf("    Processing tree %s with %lld entries with total size %lld (fast copy: %d)\n", treeName, inputTree->GetEntries(), inputTree->GetTotBytes(), fastCopy);
 
         bool alreadyCopied = false;
         if (trees.count(treeName) == 0) {
@@ -253,7 +216,7 @@ int main(int argc, char* argv[])
             exitCode = 3;
           }
 
-          // Connect trees but do not copy entries (using the clone function)
+          // Connect trees but do not copy entries (using the clone function) unless fast copy is on
           // NOTE Basket size etc. are copied in CloneTree()
           if (!outputDir) {
             outputDir = outputFile->mkdir(dfName);
