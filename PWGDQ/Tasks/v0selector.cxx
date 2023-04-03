@@ -168,8 +168,9 @@ struct v0selector {
       // }
 
       // printf("V0.collisionId = %d , collision.globalIndex = %d\n",V0.collisionId(),collision.globalIndex());
-      registry.fill(HIST("hV0Candidate"), 1);
-
+      if (fillhisto) {
+        registry.fill(HIST("hV0Candidate"), 1);
+      }
       if (fabs(V0.posTrack_as<FullTracksExt>().eta()) > 0.9) {
         continue;
       }
@@ -238,8 +239,9 @@ struct v0selector {
       if (V0radius < v0Rmin || v0Rmax < V0radius) {
         continue;
       }
-      registry.fill(HIST("hV0Candidate"), 2);
-
+      if (fillhisto) {
+        registry.fill(HIST("hV0Candidate"), 2);
+      }
       float mGamma = V0.mGamma();
       float mK0S = V0.mK0Short();
       float mLambda = V0.mLambda();
@@ -273,7 +275,9 @@ struct v0selector {
         if (mGamma < v0max_mee && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && psipair < maxpsipair) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kGamma);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kGamma);
-          registry.fill(HIST("hGammaRxy"), V0.x(), V0.y());
+          if (fillhisto) {
+            registry.fill(HIST("hGammaRxy"), V0.x(), V0.y());
+          }
         }
       } else if (v0id == kK0S) { // K0S-> pi pi
         if (fillhisto) {
