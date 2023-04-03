@@ -35,7 +35,7 @@ namespace tofskims
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);              //! Index to the collision
 DECLARE_SOA_COLUMN(P, p, float);                             //! Momentum of the track
-DECLARE_SOA_COLUMN(Pt, pt, float);                           //! Pt of the track
+DECLARE_SOA_COLUMN(PtSigned, ptSigned, float);               //! Pt (signed) of the track
 DECLARE_SOA_COLUMN(DeltaP, deltaP, float);                   //! Momentum difference with respect to the reference track
 DECLARE_SOA_COLUMN(DeltaPt, deltaPt, float);                 //! Transverse momentum difference with respect to the reference track
 DECLARE_SOA_COLUMN(Eta, eta, float);                         //! Eta of the track
@@ -76,7 +76,7 @@ DECLARE_SOA_TABLE(SkimmedTOF, "AOD", "SKIMMEDTOF", //! Table of the skimmed TOF 
                   o2::soa::Index<>,
                   tofskims::CollisionId,
                   tofskims::P,
-                  tofskims::Pt,
+                  tofskims::PtSigned,
                   tofskims::Eta,
                   tofskims::Phi,
                   tofskims::PIDForTracking,
