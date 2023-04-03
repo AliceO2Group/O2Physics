@@ -93,7 +93,7 @@ struct jetFilter {
   // declare filters on tracks
   // Filter collisionFilter = nabs(aod::collision::posZ) < cfgVertexCut;
 
-  Filter jetRadiusSelection = o2::aod::jet::r == std::round(cfgJetR * 100);
+  Filter jetRadiusSelection = o2::aod::jet::r == nround(cfgJetR.node() * 100.0f);
   using filteredJets = o2::soa::Filtered<o2::aod::Jets>;
 
   void
