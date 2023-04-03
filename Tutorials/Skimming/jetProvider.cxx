@@ -36,9 +36,8 @@ struct JetProviderTask {
   Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
   Filter jetCuts = aod::jet::pt > jetPtMin;
 
-  void process(soa::Filtered<aod::Jets>::iterator const& jet,
+  void process(soa::Filtered<soa::Join<aod::Jets, aod::JetConstituents>>::iterator const& jet,
                aod::Tracks const& tracks,
-               aod::JetTrackConstituents const& constituents,
                aod::JetConstituentsSub const& constituentsSub)
   {
     outputJets(jet.pt(), jet.eta(), jet.phi(), jet.energy(), jet.mass(), jet.area());
@@ -49,9 +48,8 @@ struct JetProviderTask {
           outputConstituents(outputJets.lastIndex(), constituent.pt(), constituent.eta(), constituent.phi());
         }
       } else {
-        outputConstituents.reserve(constituents.size());
-        for (const auto& constituentIndex : constituents) {
-          auto constituent = constituentIndex.track();
+        outputConstituents.reserve(jet.tracks().size());
+        for (const auto& constituent : jet.tracks_as<aod::Tracks>()) {
           outputConstituents(outputJets.lastIndex(), constituent.pt(), constituent.eta(), constituent.phi());
         }
       }
