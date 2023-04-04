@@ -191,6 +191,9 @@ struct qaMatchEff {
     if (makethn)
       histos.add("data/thnsforfrac", "Sparse histo for imp. par. fraction analysis - data", kTHnSparseF, {thnd0Axis, thnPtAxis, thnPhiAxis, thnEtaAxis, thnTypeAxis, thnLabelSignAxis, thnSpecAxis});
 
+    /// control plots
+    histos.add("data/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
+
     //
     // tpc request and tpc+its request for all, positive and negative charges vs
     // pt, phi, eta (18 histos tot)
@@ -239,6 +242,9 @@ struct qaMatchEff {
     // thnsparse for fractions
     if (makethn)
       histos.add("MC/thnsforfrac", "Sparse histo for imp. par. fraction analysis - MC", kTHnSparseF, {thnd0Axis, thnPtAxis, thnPhiAxis, thnEtaAxis, thnTypeAxis, thnLabelSignAxis, thnSpecAxis});
+
+    /// control plots
+    histos.add("MC/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
 
     //
     // all, positive, negative
@@ -546,6 +552,32 @@ struct qaMatchEff {
             histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpcits"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_tpcits"))->Fill(track.eta());
+          }
+
+          /// control plot: correlation # ITS its vs ITS layer
+          int itsNhits = 0;
+          for (unsigned int i = 0; i < 7; i++) {
+            if (track.itsClusterMap() & (1 << i)) {
+              itsNhits += 1;
+            }
+          }
+          bool trkHasITS = false;
+          for (unsigned int i = 0; i < 7; i++) {
+            if (track.itsClusterMap() & (1 << i)) {
+              trkHasITS = true;
+              if (IS_MC) {
+                histos.fill(HIST("MC/itsHitsMatched"), i, itsNhits);
+              } else {
+                histos.fill(HIST("data/itsHitsMatched"), i, itsNhits);
+              }
+            }
+          }
+          if (!trkHasITS) {
+            if (IS_MC) {
+              histos.fill(HIST("MC/itsHitsMatched"), -1, itsNhits);
+            } else {
+              histos.fill(HIST("data/itsHitsMatched"), -1, itsNhits);
+            }
           }
         } //  end if ITS
       }   //  end if TPC

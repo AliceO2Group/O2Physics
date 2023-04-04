@@ -22,6 +22,7 @@
 
 #include <string>
 #include <array>
+#include <set>
 
 namespace pidml_pt_cuts
 {

@@ -45,6 +45,93 @@ DECLARE_SOA_TABLE(EMReducedEvents, "AOD", "EMREDUCEDEVENT", //!   Main event inf
                   emreducedevent::NgammaPCM, emreducedevent::NgammaPHOS, emreducedevent::NgammaEMC);
 using EMReducedEvent = EMReducedEvents::iterator;
 
+namespace emreducedmcevent
+{
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //!
+DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);          //!
+DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);          //!
+DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);          //!
+} // namespace emreducedmcevent
+DECLARE_SOA_TABLE(EMReducedMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
+                  o2::soa::Index<>, emreducedmcevent::McCollisionId,
+                  mccollision::GeneratorsID, emreducedmcevent::MCPosX, emreducedmcevent::MCPosY, emreducedmcevent::MCPosZ,
+                  mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
+using EMReducedMCEvent = EMReducedMCEvents::iterator;
+
+namespace emmceventlabel
+{
+DECLARE_SOA_INDEX_COLUMN(EMReducedMCEvent, emreducedmcevent); //! MC collision
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);                 //! Bit mask to indicate collision mismatches (bit ON means mismatch). Bit 15: indicates negative label
+} // namespace emmceventlabel
+
+DECLARE_SOA_TABLE(EMReducedMCEventLabels, "AOD", "EMMCEVENTLABEL", //! Table joined to the EMReducedEvents table containing the MC index
+                  emmceventlabel::EMReducedMCEventId, emmceventlabel::McMask);
+using EMReducedMCEventLabel = EMReducedMCEventLabels::iterator;
+
+namespace emmcparticle
+{
+DECLARE_SOA_INDEX_COLUMN(EMReducedMCEvent, emreducedmcevent);                             //!
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);                                       //!
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother0, mother0, int, "EMMCParticles_Mother0");       //! Track index of the first mother
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother1, mother1, int, "EMMCParticles_Mother1");       //! Track index of the last mother
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "EMMCParticles_Daughter0"); //! Track index of the first daughter
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter1, daughter1, int, "EMMCParticles_Daughter1"); //! Track index of the last daughter
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);                                    //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
+DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);                                //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                        //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                                                      //!
+DECLARE_SOA_COLUMN(Phi, phi, float);                                                      //!
+DECLARE_SOA_COLUMN(E, e, float);                                                          //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
+                           [](float pt, float eta, float e) -> float {
+                             float pz = pt * std::sinh(eta);
+                             if ((e - pz) > static_cast<float>(1e-7)) {
+                               return 0.5f * std::log((e + pz) / (e - pz));
+                             } else {
+                               return -999.0f;
+                             }
+                           });
+} // namespace emmcparticle
+// NOTE: This table is nearly identical to the one from Framework (except that it points to the event ID, not the BC id)
+//       This table contains all MC truth tracks (both barrel and muon)
+DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
+                       o2::soa::Index<>, emmcparticle::EMReducedMCEventId, mcparticle::McCollisionId,
+                       mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
+                       emmcparticle::MothersIds, emmcparticle::DaughtersIdSlice,
+                       mcparticle::Weight,
+                       emmcparticle::Pt, emmcparticle::Eta, emmcparticle::Phi, emmcparticle::E,
+                       mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
+
+                       // dynamic column
+                       emmcparticle::Px<emmcparticle::Pt, emmcparticle::Phi>,
+                       emmcparticle::Py<emmcparticle::Pt, emmcparticle::Phi>,
+                       emmcparticle::Pz<emmcparticle::Pt, emmcparticle::Eta>,
+                       emmcparticle::P<emmcparticle::Pt, emmcparticle::Eta>,
+                       emmcparticle::Y<emmcparticle::Pt, emmcparticle::Eta, emmcparticle::E>,
+                       mcparticle::ProducedByGenerator<mcparticle::Flags>,
+                       mcparticle::FromBackgroundEvent<mcparticle::Flags>,
+                       mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
+                       mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
+                       mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
+
+using EMMCParticle = EMMCParticles::iterator;
+
+namespace emmcparticlelabel
+{
+DECLARE_SOA_INDEX_COLUMN(EMMCParticle, emmcparticle); //!
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
+} // namespace emmcparticlelabel
+
+// NOTE: MC labels. This table has one entry for each reconstructed track (joinable with the track tables)
+DECLARE_SOA_TABLE(EMMCParticleLabels, "AOD", "EMMCPARLABEL", //!
+                  emmcparticlelabel::EMMCParticleId, emmcparticlelabel::McMask);
+
+using EMMCParticleLabel = EMMCParticleLabels::iterator;
+
 namespace v0leg
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);   //!
@@ -132,34 +219,12 @@ DECLARE_SOA_TABLE(V0Photons, "AOD", "V0PHOTON", //!
 // iterators
 using V0Photon = V0Photons::iterator;
 
-// namespace gammatrackreco
-//{
-// DECLARE_SOA_COLUMN(Eta, eta, float);                                                     //! Pseudorapidity
-// DECLARE_SOA_COLUMN(P, p, float);                                                         //! Total momentum in GeV/c
-// DECLARE_SOA_COLUMN(Phi, phi, float);                                                     //! Azimuthal angle
-// DECLARE_SOA_COLUMN(Pt, pt, float);                                                       //! Transversal momentum in GeV/c
-// DECLARE_SOA_COLUMN(PositivelyCharged, positivelyCharged, bool);                          //! True for positively charged track
-// DECLARE_SOA_COLUMN(TpcCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float); //! Ratio  crossed rows over findable clusters
-// DECLARE_SOA_COLUMN(TpcFoundOverFindableCls, tpcFoundOverFindableCls, float);             //! Ratio of found over findable clusters
-// DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, float);                       //! Number of crossed TPC Rows
-//
-// } // namespace gammatrackreco
-//
-// DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
-//                   o2::soa::Index<>,
-//                   v0data::V0Id,
-//                   track::DcaXY,
-//                   gammatrackreco::Eta,
-//                   gammatrackreco::P,
-//                   gammatrackreco::Phi,
-//                   gammatrackreco::Pt,
-//                   gammatrackreco::PositivelyCharged,
-//                   gammatrackreco::TpcCrossedRowsOverFindableCls,
-//                   gammatrackreco::TpcFoundOverFindableCls,
-//                   gammatrackreco::TpcNClsCrossedRows,
-//                   pidtpc::TPCNSigmaEl,
-//                   pidtpc::TPCNSigmaPi,
-//                   track::TPCSignal);
+namespace v0photonflag // flag to distinguish 1 track belongs to 1 V0 or 2 (or more) V0s in a collision.
+{
+DECLARE_SOA_COLUMN(IsCloser, isCloser, bool); //! true if 2 legs of this v0 do not belong to other V0s in a collision or PCA between 2 legs is closer.
+} // namespace v0photonflag
+DECLARE_SOA_TABLE(V0PhotonFlags, "AOD", "V0PHOTONFLAG", v0photonflag::IsCloser);
+using V0PhotonFlag = V0PhotonFlags::iterator;
 
 namespace MCTracksTrue
 {
@@ -274,11 +339,11 @@ DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! numbe
 
 namespace emccluster
 {
-DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                                                                        //! cluster core energy (GeV)
-DECLARE_SOA_COLUMN(Time, time, float);                                                                                    //! cluster time (ns)
-DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                                                                             //! flag to mark cluster as exotic
-DECLARE_SOA_COLUMN(Definition, definition, int);                                                                          //! cluster definition, see EMCALClusterDefinition.h
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float eta, float m) -> float { return sqrt(e * e - m * m) / cosh(eta); }); //! cluster pt, mass to be given as argument when getter is called!
+DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                                                                            //! cluster core energy (GeV)
+DECLARE_SOA_COLUMN(Time, time, float);                                                                                        //! cluster time (ns)
+DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                                                                                 //! flag to mark cluster as exotic
+DECLARE_SOA_COLUMN(Definition, definition, int);                                                                              //! cluster definition, see EMCALClusterDefinition.h
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float eta, float m = 0) -> float { return sqrt(e * e - m * m) / cosh(eta); }); //! cluster pt, mass to be given as argument when getter is called!
 // DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! transverse momentum of a photon candidate
 //                               (emccluster::energy * 2.f) / (nexp(emccluster::eta) + nexp(emccluster::eta * -1.f)));
 } // namespace emccluster
@@ -299,10 +364,10 @@ DECLARE_SOA_COLUMN(Z, z, float);                                                
 // DECLARE_SOA_COLUMN(TrackPhi, trackphi, float);                                      //! phi of the matched track
 // DECLARE_SOA_COLUMN(TrackP, trackp, float);                                          //! momentum of the matched track
 // DECLARE_SOA_COLUMN(TrackPt, trackpt, float);                                        //! pt of the matched track
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float e, float x, float y, float z, float m) -> float { return x / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
-DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float e, float x, float y, float z, float m) -> float { return y / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float e, float x, float y, float z, float m) -> float { return z / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float x, float y, float z, float m) -> float { return RecoDecay::sqrtSumOfSquares(x, y) / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float e, float x, float y, float z, float m = 0) -> float { return x / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float e, float x, float y, float z, float m = 0) -> float { return y / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float e, float x, float y, float z, float m = 0) -> float { return z / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float x, float y, float z, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(x, y) / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float x, float y, float z) -> float { return RecoDecay::eta(array{x, y, z}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float x, float y) -> float { return RecoDecay::phi(x, y); });
 } // namespace phoscluster
