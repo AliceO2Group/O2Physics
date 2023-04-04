@@ -37,6 +37,9 @@ struct HfTaskB0 {
   Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
 
+  float etaMaxAcceptance = 0.8;
+  float ptMinAcceptance = 0.1;
+
   using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0);
@@ -65,6 +68,8 @@ struct HfTaskB0 {
 
     registry.add("hEtaGen", "MC particles (generated);B^{0} candidate #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hYGen", "MC particles (generated);B^{0} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hEtaGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);B^{0} candidate #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);B^{0} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtProng0Gen", "MC particles (generated);prong 0 (D^{#minus}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtProng1Gen", "MC particles (generated);prong 1 (#pi^{-}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hYProng0Gen", "MC particles (generated);prong 0 (D^{#minus}) #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -110,6 +115,17 @@ struct HfTaskB0 {
     registry.add("hPtRecBg", "B0 candidates (unmatched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hPtGenSig", "B0 candidates (gen+rec);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 10.}}});
     registry.add("hPtGen", "MC particles (generated);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
+    registry.add("hPtGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
+  }
+
+  /// Selection of B0 daughter in geometrical acceptance
+  /// \param etaProng is the pseudorapidity of B0 prong
+  /// \param ptProng is the pT of B0 prong
+  /// \return true if prong is in geometrical acceptance
+  template <typename T = float>
+  bool isProngInAcceptance(const T& etaProng, const T& ptProng)
+  {
+    return std::abs(etaProng) <= etaMaxAcceptance && ptProng >= ptMinAcceptance;
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, TracksWithSel const&)
@@ -219,7 +235,9 @@ struct HfTaskB0 {
           continue;
         }
 
-        float ptProngs[2], yProngs[2], etaProngs[2];
+        std::array<float, 2> ptProngs;
+        std::array<float, 2> yProngs;
+        std::array<float, 2> etaProngs;
         int counter = 0;
         for (auto const& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
@@ -241,6 +259,14 @@ struct HfTaskB0 {
         registry.fill(HIST("hPtGen"), ptParticle);
         registry.fill(HIST("hYGen"), yParticle, ptParticle);
         registry.fill(HIST("hEtaGen"), particle.eta(), ptParticle);
+
+        // reject B0 daughters that are not in geometrical acceptance
+        if (!isProngInAcceptance(etaProngs[0], ptProngs[0]) || !isProngInAcceptance(etaProngs[1], ptProngs[1])) {
+          continue;
+        }
+        registry.fill(HIST("hPtGenWithProngsInAcceptance"), ptParticle);
+        registry.fill(HIST("hYGenWithProngsInAcceptance"), yParticle, ptParticle);
+        registry.fill(HIST("hEtaGenWithProngsInAcceptance"), particle.eta(), ptParticle);
       }
     } // gen
   }   // process

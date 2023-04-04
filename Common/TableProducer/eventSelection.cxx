@@ -23,7 +23,7 @@ using namespace o2::framework;
 #include "CommonConstants/LHCConstants.h"
 #include "Framework/HistogramRegistry.h"
 #include "DataFormatsFT0/Digit.h"
-#include "TH1F.h"
+#include "TH1D.h"
 using namespace evsel;
 
 using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
@@ -43,7 +43,7 @@ struct BcSelectionTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    histos.add("hCounterTVX", "", kTH1F, {{1, 0., 1.}});
+    histos.add("hCounterTVX", "", kTH1D, {{1, 0., 1.}});
   }
 
   void processRun2(
@@ -344,8 +344,8 @@ struct EventSelectionTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    histos.add("hColCounterAll", "", kTH1F, {{1, 0., 1.}});
-    histos.add("hColCounterAcc", "", kTH1F, {{1, 0., 1.}});
+    histos.add("hColCounterAll", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hColCounterAcc", "", kTH1D, {{1, 0., 1.}});
   }
 
   void process(aod::Collisions const& collisions)

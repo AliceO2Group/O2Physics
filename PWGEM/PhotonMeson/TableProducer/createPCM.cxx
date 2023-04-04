@@ -22,6 +22,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/CollisionAssociation.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
@@ -65,7 +66,7 @@ struct createPCM {
 
   Configurable<float> minv0cospa{"minv0cospa", 0.95, "minimum V0 CosPA"};
   Configurable<float> maxdcav0dau{"maxdcav0dau", 2.0, "max DCA between V0 Daughters"};
-  Configurable<float> v0Rmin{"v0Rmin", 1.0, "v0Rmin"};
+  Configurable<float> v0Rmin{"v0Rmin", 0.0, "v0Rmin"};
   Configurable<float> v0Rmax{"v0Rmax", 180.0, "v0Rmax"};
   Configurable<float> dcamin{"dcamin", 0.1, "dcamin"};
   Configurable<float> dcamax{"dcamax", 1e+10, "dcamax"};
@@ -170,16 +171,6 @@ struct createPCM {
   template <typename TCollision, typename TTrack>
   void fillV0Table(TCollision const& collision, TTrack const& ele, TTrack const& pos)
   {
-    o2::vertexing::DCAFitterN<2> fitter;
-    fitter.setPropagateToPCA(true);
-    fitter.setMaxR(200.);
-    fitter.setMinParamChange(1e-3);
-    fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
-    fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(true);
-    fitter.setBz(d_bz); // in kG
-
     array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
     array<float, 3> svpos = {0.}; // secondary vertex position
     array<float, 3> pvec0 = {0.};
@@ -239,7 +230,7 @@ struct createPCM {
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
 
-  void process(MyFilteredTracks& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
+  void processSA(MyFilteredTracks const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
@@ -249,20 +240,58 @@ struct createPCM {
 
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex());
       auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex());
-      // LOGF(info, "collision.globalIndex() = %ld , negTracks_coll1 = %ld , posTracks_coll1 = %ld , negTracks_coll2 = %ld , posTracks_coll2 = %ld , negTracks_coll3 = %ld , posTracks_coll3 = %ld",
-      // collision.globalIndex(), negTracks_coll1.size(), posTracks_coll1.size() , negTracks_coll2.size(), posTracks_coll2.size() , negTracks_coll3.size(), posTracks_coll3.size() );
-
-      // Partition<MyFilteredTracks> groupPos = o2::aod::track::signed1Pt > 0.f && nabs(o2::aod::track::collisionId - collision.globalIndex()) < 1.5f;
-      // Partition<MyFilteredTracks> groupEle = o2::aod::track::signed1Pt < 0.f && nabs(o2::aod::track::collisionId - collision.globalIndex()) < 1.5f;
-      // groupPos.bindTable(tracks); //bindTable is too slow
-      // groupEle.bindTable(tracks); //bindTable is too slow
-      // LOGF(info, "collision.globalIndex() = %ld , negTracks = %ld , posTracks = %ld", collision.globalIndex(), groupEle.size(), groupPos.size());
 
       for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
         fillV0Table(collision, ele, pos);
       }
     } // end of collision loop
   }   // end of process
+  PROCESS_SWITCH(createPCM, processSA, "create V0s with stand-alone way", true);
+
+  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
+  void processTrkCollAsso(aod::TrackAssoc const& trackIndices, FullTracksExt const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
+  {
+    for (auto& collision : collisions) {
+      registry.fill(HIST("hEventCounter"), 1);
+
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+
+      // LOGF(info,"%d tracks in collision %d", trackIdsThisCollision.size(), collision.globalIndex());
+      for (auto& [eleId, posId] : combinations(CombinationsStrictlyUpperIndexPolicy(trackIdsThisCollision, trackIdsThisCollision))) {
+        auto ele = eleId.track_as<FullTracksExt>();
+        auto pos = posId.track_as<FullTracksExt>();
+        // LOGF(info,"eleId = %d , posId = %d", ele.globalIndex(), pos.globalIndex());
+
+        if (ele.sign() * pos.sign() > 0) { // reject same sign combination
+          continue;
+        }
+        if ((abs(ele.dcaXY()) < dcamin || dcamax < abs(ele.dcaXY())) || (abs(pos.dcaXY()) < dcamin || dcamax < abs(pos.dcaXY()))) {
+          continue;
+        }
+        if (ele.tpcNClsCrossedRows() < mincrossedrows || pos.tpcNClsCrossedRows() < mincrossedrows) {
+          continue;
+        }
+        if (ele.tpcChi2NCl() > maxchi2tpc || pos.tpcChi2NCl() > maxchi2tpc) {
+          continue;
+        }
+        if (abs(ele.eta()) > maxeta || abs(pos.eta()) > maxeta) {
+          continue;
+        }
+        if (ele.pt() < minpt || pos.pt() < minpt) {
+          continue;
+        }
+
+        if (ele.sign() < 0) {
+          fillV0Table(collision, ele, pos);
+        } else {
+          fillV0Table(collision, pos, ele);
+        }
+      }
+    } // end of collision loop
+  }   // end of process
+  PROCESS_SWITCH(createPCM, processTrkCollAsso, "create V0s with track-to-collision associator", false);
 };
 
 // Extends the v0data table with expression columns

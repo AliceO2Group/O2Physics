@@ -243,8 +243,10 @@ int main(int argc, char* argv[])
         foundTrees.push_back(treeName);
 
         auto inputTree = (TTree*)inputFile->Get(Form("%s/%s", dfName, treeName));
-        printf("    Tree %s has %lld entries\n", treeName, inputTree->GetEntries());
+        bool fastCopy = (inputTree->GetTotBytes() > 10000000); // Only do this for large enough trees to avoid that baskets are too small
+        printf("    Tree %s has %lld entries with total size %lld (fast copy: %d)\n", treeName, inputTree->GetEntries(), inputTree->GetTotBytes(), fastCopy);
 
+        bool alreadyCopied = false;
         if (trees.count(treeName) == 0) {
           if (mergedDFs > 1) {
             printf("    *** FATAL ***: The tree %s was not in the previous dataframe(s)\n", treeName);
@@ -259,7 +261,9 @@ int main(int argc, char* argv[])
             printf("Writing to output folder %s\n", dfName);
           }
           outputDir->cd();
-          auto outputTree = inputTree->CloneTree(0);
+          auto outputTree = inputTree->CloneTree(-1, (fastCopy) ? "fast" : "");
+          currentDirSize += outputTree->GetTotBytes();
+          alreadyCopied = true;
           outputTree->SetAutoFlush(0);
           trees[treeName] = outputTree;
         } else {
@@ -321,30 +325,39 @@ int main(int argc, char* argv[])
           }
         }
 
-        auto entries = inputTree->GetEntries();
-        int minIndexOffset = unassignedIndexOffset[treeName];
-        auto newMinIndexOffset = minIndexOffset;
-        for (int i = 0; i < entries; i++) {
-          for (auto& index : indexList) {
-            *(index.first) = 0; // Any positive number will do, in any case it will not be filled in the output. Otherwise the previous entry is used and manipulated in the following.
-          }
-          inputTree->GetEntry(i);
-          // shift index columns by offset
-          for (const auto& idx : indexList) {
-            // if negative, the index is unassigned. In this case, the different unassigned blocks have to get unique negative IDs
-            if (*(idx.first) < 0) {
-              *(idx.first) += minIndexOffset;
-              newMinIndexOffset = std::min(newMinIndexOffset, *(idx.first));
-            } else {
-              *(idx.first) += idx.second;
+        if (indexList.size() > 0) {
+          auto entries = inputTree->GetEntries();
+          int minIndexOffset = unassignedIndexOffset[treeName];
+          auto newMinIndexOffset = minIndexOffset;
+          for (int i = 0; i < entries; i++) {
+            for (auto& index : indexList) {
+              *(index.first) = 0; // Any positive number will do, in any case it will not be filled in the output. Otherwise the previous entry is used and manipulated in the following.
+            }
+            inputTree->GetEntry(i);
+            // shift index columns by offset
+            for (const auto& idx : indexList) {
+              // if negative, the index is unassigned. In this case, the different unassigned blocks have to get unique negative IDs
+              if (*(idx.first) < 0) {
+                *(idx.first) += minIndexOffset;
+                newMinIndexOffset = std::min(newMinIndexOffset, *(idx.first));
+              } else {
+                *(idx.first) += idx.second;
+              }
+            }
+            if (!alreadyCopied) {
+              int nbytes = outputTree->Fill();
+              if (nbytes > 0) {
+                currentDirSize += nbytes;
+              }
             }
           }
-          int nbytes = outputTree->Fill();
+          unassignedIndexOffset[treeName] = newMinIndexOffset;
+        } else if (!alreadyCopied) {
+          auto nbytes = outputTree->CopyEntries(inputTree, -1, (fastCopy) ? "fast" : "");
           if (nbytes > 0) {
             currentDirSize += nbytes;
           }
         }
-        unassignedIndexOffset[treeName] = newMinIndexOffset;
 
         delete inputTree;
 
