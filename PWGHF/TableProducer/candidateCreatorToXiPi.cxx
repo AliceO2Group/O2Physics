@@ -281,14 +281,14 @@ struct HfCandidateCreatorToXiPi {
           trackOmegac.setAbsCharge(0);
 
           // DCAxy (computed with propagateToDCABxByBz method)
-          double dcaxyV0Dau0 = trackV0Dau0.dcaXY();
-          double dcaxyV0Dau1 = trackV0Dau1.dcaXY();
-          double dcaxyPiFromCasc = trackXiDauCharged.dcaXY();
+          float dcaxyV0Dau0 = trackV0Dau0.dcaXY();
+          float dcaxyV0Dau1 = trackV0Dau1.dcaXY();
+          float dcaxyPiFromCasc = trackXiDauCharged.dcaXY();
 
           // DCAz (computed with propagateToDCABxByBz method)
-          double dcazV0Dau0 = trackV0Dau0.dcaZ();
-          double dcazV0Dau1 = trackV0Dau1.dcaZ();
-          double dcazPiFromCasc = trackXiDauCharged.dcaZ();
+          float dcazV0Dau0 = trackV0Dau0.dcaZ();
+          float dcazV0Dau1 = trackV0Dau1.dcaZ();
+          float dcazPiFromCasc = trackXiDauCharged.dcaZ();
 
           // primary vertex of the collision
           auto primaryVertex = getPrimaryVertex(collision); // get the associated covariance matrix with auto covMatrixPV = primaryVertex.getCov();
@@ -359,9 +359,9 @@ struct HfCandidateCreatorToXiPi {
           double pseudorapV0 = RecoDecay::eta(pVecV0);
 
           // DCA between daughters
-          double dcaCascDau = casc.dcacascdaughters();
-          double dcaV0Dau = casc.dcaV0daughters();
-          double dcaOmegacDau = std::sqrt(df.getChi2AtPCACandidate());
+          float dcaCascDau = casc.dcacascdaughters();
+          float dcaV0Dau = casc.dcaV0daughters();
+          float dcaOmegacDau = std::sqrt(df.getChi2AtPCACandidate());
 
           // set hfFlag
           int hfFlag = 1 << DecayType::DecayToXiPi;

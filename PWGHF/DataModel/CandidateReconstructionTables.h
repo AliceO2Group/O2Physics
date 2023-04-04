@@ -1481,15 +1481,15 @@ DECLARE_SOA_COLUMN(EtaPiFromOme, etaPiFromOme, double);
 DECLARE_SOA_COLUMN(EtaOmegac, etaOmegac, double);
 DECLARE_SOA_COLUMN(EtaCascade, etaCascade, double);
 DECLARE_SOA_COLUMN(EtaV0, etaV0, double);
-DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0dau0, double);
-DECLARE_SOA_COLUMN(DcaXYToPvV0Dau1, dcaXYToPvV0dau1, double);
-DECLARE_SOA_COLUMN(DcaXYToPvCascDau, dcaXYToPvCascdau, double);
-DECLARE_SOA_COLUMN(DcaZToPvV0Dau0, dcaZToPvV0dau0, double);
-DECLARE_SOA_COLUMN(DcaZToPvV0Dau1, dcaZToPvV0dau1, double);
-DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascdau, double);
-DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, double);
-DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, double);
-DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, double);
+DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0dau0, float);
+DECLARE_SOA_COLUMN(DcaXYToPvV0Dau1, dcaXYToPvV0dau1, float);
+DECLARE_SOA_COLUMN(DcaXYToPvCascDau, dcaXYToPvCascdau, float);
+DECLARE_SOA_COLUMN(DcaZToPvV0Dau0, dcaZToPvV0dau0, float);
+DECLARE_SOA_COLUMN(DcaZToPvV0Dau1, dcaZToPvV0dau1, float);
+DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascdau, float);
+DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
+DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
+DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, float);
 
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
