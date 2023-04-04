@@ -83,10 +83,10 @@ struct HfCandidateCreatorToXiPi {
   using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>;
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
-    
+
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4);
-  
+
   Preslice<MyTracks> tracksPerCollision = aod::track::collisionId;                                  // needed for PV refit
   Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
   Preslice<MyCascTable> cascadesPerCollision = aod::cascdata::collisionId;
@@ -329,7 +329,7 @@ struct HfCandidateCreatorToXiPi {
           o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackOmegac, 2.f, matCorr, &impactParameterOmegac);
 
           // invariant mass under the hypothesis of particles ID corresponding to the decay chain
-          double mLambda = casc.mLambda();         // from LF table, V0 mass under lambda hypothesis
+          double mLambda = casc.mLambda(); // from LF table, V0 mass under lambda hypothesis
           double mCasc = casc.mXi();
           const std::array<double, 2> arrMassOmegac = {massXiFromPDG, massPionFromPDG};
           double mOmegac = RecoDecay::m(std::array{pVecCascAsD, pVecPionFromOmegac}, arrMassOmegac);
