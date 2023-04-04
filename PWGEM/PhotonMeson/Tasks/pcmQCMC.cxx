@@ -33,8 +33,9 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -148,6 +149,18 @@ struct PCMQCMC {
       registry.add(Form("%sV0/hKFChi2vsR_recalc", pairtype[i].Data()), "recalc. KF conversion point in XY;R_{xy} (cm);KF chi2/NDF", HistType::kTH2F, {{250, 0.0f, 250.0f}, {5000, 0.f, 5000.0f}});
       registry.add(Form("%sV0/hKFChi2vsZ_recalc", pairtype[i].Data()), "recalc. KF conversion point in Z;Z (cm);KF chi2/NDF", HistType::kTH2F, {{500, -250.0f, 250.0f}, {5000, 0.f, 5000.0f}});
     }
+
+    const float rxy[] = {0, 6, 10, 20, 30, 40, 50, 60, 70, 80, 90};
+    registry.add("Generated/hCollisionCounter", "Collision counter", HistType::kTH1F, {{5, 0.5f, 5.5f}});
+    registry.add("Generated/hGammaRxy", "conversion point in XY MC;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{2000, -100.0f, 100.0f}, {2000, -100.0f, 100.0f}});
+    registry.add("Generated/hGammaRZ", "conversion point in RZ MC;V_{z} (cm);R_{xy} (cm)", HistType::kTH2F, {{5000, -250.0f, 250.0f}, {1000, 0.f, 100.0f}});
+
+    const int n = sizeof(rxy) / sizeof(rxy[0]);
+    for (int i = 0; i < n - 1; i++) {
+      float rmin = rxy[i];
+      float rmax = rxy[i + 1];
+      registry.add(Form("Generated/hConvPhi_Rxy%d_%dcm", static_cast<int>(rmin), static_cast<int>(rmax)), Form("conversion point of #varphi MC in %d < R_{xy} < %d cm;#varphi (rad.);N_{e}", static_cast<int>(rmin), static_cast<int>(rmax)), HistType::kTH1F, {{360, 0.0f, TMath::TwoPi()}});
+    }
   }
 
   void init(InitContext& context)
@@ -243,7 +256,6 @@ struct PCMQCMC {
   Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
 
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
-  // void processPCMPCM(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, MyFilteredV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles)
   void processQCMC(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, MyFilteredV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles)
   {
     for (auto& collision : collisions) {
@@ -302,12 +314,81 @@ struct PCMQCMC {
     }   // end of collision loop
   }     // end of process
 
+  Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
+  void processGen(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
+  {
+    // loop over mc stack and fill histograms for pure MC truth signals
+    // all MC tracks which belong to the MC event corresponding to the current reconstructed event
+
+    for (auto& collision : collisions) {
+      registry.fill(HIST("Generated/hCollisionCounter"), 1.0); // all
+      if (!collision.sel8()) {
+        continue;
+      }
+      registry.fill(HIST("Generated/hCollisionCounter"), 2.0); // FT0VX i.e. FT0and
+
+      if (collision.numContrib() < 0.5) {
+        continue;
+      }
+      registry.fill(HIST("Generated/hCollisionCounter"), 3.0); // Ncontrib > 0
+
+      if (abs(collision.posZ()) > 10.0) {
+        continue;
+      }
+      registry.fill(HIST("Generated/hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
+      auto mccollision = collision.emreducedmcevent();
+
+      auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
+      for (auto& mctrack : mctracks_coll) {
+
+        if (IsEleFromPC(mctrack, mcparticles) > 0) {
+          float rxy = sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2));
+          registry.fill(HIST("Generated/hGammaRZ"), mctrack.vz(), rxy);
+
+          if (abs(mctrack.eta()) > 0.9)
+            continue;
+          registry.fill(HIST("Generated/hGammaRxy"), mctrack.vx(), mctrack.vy());
+          if (rxy < 6) {
+            registry.fill(HIST("Generated/hConvPhi_Rxy0_6cm"), mctrack.phi());
+          } else if (rxy < 10) {
+            registry.fill(HIST("Generated/hConvPhi_Rxy6_10cm"), mctrack.phi());
+
+          } else if (rxy < 20) {
+            registry.fill(HIST("Generated/hConvPhi_Rxy10_20cm"), mctrack.phi());
+
+          } else if (rxy < 30) {
+            registry.fill(HIST("Generated/hConvPhi_Rxy20_30cm"), mctrack.phi());
+
+          } else if (rxy < 40) {
+            registry.fill(HIST("Generated/hConvPhi_Rxy30_40cm"), mctrack.phi());
+
+          } else if (rxy < 50) {
+            registry.fill(HIST("Generated/hConvPhi_Rxy40_50cm"), mctrack.phi());
+
+          } else if (rxy < 60) {
+            registry.fill(HIST("Generated/hConvPhi_Rxy50_60cm"), mctrack.phi());
+
+          } else if (rxy < 70) {
+            registry.fill(HIST("Generated/hConvPhi_Rxy60_70cm"), mctrack.phi());
+
+          } else if (rxy < 80) {
+            registry.fill(HIST("Generated/hConvPhi_Rxy70_80cm"), mctrack.phi());
+
+          } else if (rxy < 90) {
+            registry.fill(HIST("Generated/hConvPhi_Rxy80_90cm"), mctrack.phi());
+          }
+        }
+      }
+    }
+  }
+
   void processDummy(aod::EMReducedEvents::iterator const& collision)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(PCMQCMC, processQCMC, "run PCM QC in MC", true);
+  PROCESS_SWITCH(PCMQCMC, processGen, "run generated information", false);
   PROCESS_SWITCH(PCMQCMC, processDummy, "Dummy function", false);
 };
 
