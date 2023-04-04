@@ -97,19 +97,17 @@ struct cascademcfinder {
             for (auto const& v0 : v0s) {
               if (v0.mcParticleId() == daughter.globalIndex()) {
                 trackIndexV0 = v0.globalIndex();
+                break;
               }
             }
-            if (trackIndexBachelor >= 0)
-              break; // both found, stop
           }          // end lambda search
           if (TMath::Abs(daughter.pdgCode()) == 211 || TMath::Abs(daughter.pdgCode()) == 321) {
             for (auto const& track : trackList) {
               if (track.mcParticleId() == daughter.globalIndex()) {
                 trackIndexBachelor = track.globalIndex();
+                break;
               }
             }
-            if (trackIndexV0 >= 0)
-              break; // both found, stop
           }          // end bachelor search
         }
       }

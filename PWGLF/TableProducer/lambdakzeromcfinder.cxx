@@ -73,6 +73,8 @@ struct lambdakzeromcfinder {
   Configurable<bool> findK0Short{"findK0Short", true, "findK0Short"};
   Configurable<bool> findLambda{"findLambda", true, "findLambda"};
   Configurable<bool> findAntiLambda{"findAntiLambda", true, "findAntiLambda"};
+  Configurable<bool> findHyperTriton{"findHyperTriton", false, "findHyperTriton"};
+  Configurable<bool> findAntiHyperTriton{"findAntiHyperTriton", false, "findAntiHyperTriton"};
 
   void init(InitContext& context)
   {
@@ -134,6 +136,12 @@ struct lambdakzeromcfinder {
         PopulateV0s(mcParticle, tracks, bestCollisionIndex);
       }
       if (mcParticle.pdgCode() == -3122 && findAntiLambda) {
+        PopulateV0s(mcParticle, tracks, bestCollisionIndex);
+      }
+      if (mcParticle.pdgCode() == 1010010030 && findHyperTriton) {
+        PopulateV0s(mcParticle, tracks, bestCollisionIndex);
+      }
+      if (mcParticle.pdgCode() ==-1010010030 && findAntiHyperTriton) {
         PopulateV0s(mcParticle, tracks, bestCollisionIndex);
       }
     }
