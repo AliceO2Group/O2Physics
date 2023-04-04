@@ -488,7 +488,6 @@ struct NucleiHistTask {
         if (track.hasTOF()) {
           spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * track.sign(), track.beta());
         }
-
       }
 
       //**************   check offline-trigger (skimming) condidition Triton   *******************
@@ -542,7 +541,6 @@ struct NucleiHistTask {
         if (track.hasTOF()) {
           spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * track.sign(), track.beta());
         }
-
       }
 
       //**************   check offline-trigger (skimming) condidition Helium-3   *******************
@@ -595,9 +593,8 @@ struct NucleiHistTask {
         if (track.hasTOF()) {
           spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0 * track.sign(), track.beta());
         }
-
       }
-      
+
       //**************   check offline-trigger (skimming) condidition Helium-4   *******************
 
       if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh) {
@@ -648,7 +645,6 @@ struct NucleiHistTask {
         if (track.hasTOF()) {
           spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0 * track.sign(), track.beta());
         }
-
       }
 
     } // end loop over tracks
