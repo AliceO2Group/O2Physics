@@ -141,7 +141,7 @@ struct lambdakzeromcfinder {
       if (mcParticle.pdgCode() == 1010010030 && findHyperTriton) {
         PopulateV0s(mcParticle, tracks, bestCollisionIndex);
       }
-      if (mcParticle.pdgCode() ==-1010010030 && findAntiHyperTriton) {
+      if (mcParticle.pdgCode() == -1010010030 && findAntiHyperTriton) {
         PopulateV0s(mcParticle, tracks, bestCollisionIndex);
       }
     }

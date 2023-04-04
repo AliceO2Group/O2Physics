@@ -100,7 +100,7 @@ struct cascademcfinder {
                 break;
               }
             }
-          }          // end lambda search
+          } // end lambda search
           if (TMath::Abs(daughter.pdgCode()) == 211 || TMath::Abs(daughter.pdgCode()) == 321) {
             for (auto const& track : trackList) {
               if (track.mcParticleId() == daughter.globalIndex()) {
@@ -108,7 +108,7 @@ struct cascademcfinder {
                 break;
               }
             }
-          }          // end bachelor search
+          } // end bachelor search
         }
       }
     }
