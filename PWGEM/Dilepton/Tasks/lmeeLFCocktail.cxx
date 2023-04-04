@@ -12,7 +12,6 @@
 //
 // Analysis task for lmee light flavour cocktail
 
-
 #include "Framework/Task.h"
 #include "SimulationDataFormat/MCTrack.h"
 #include <vector>
@@ -33,7 +32,7 @@
 using namespace o2::framework;
 using namespace ROOT::Math;
 
-struct eeTTree{
+struct eeTTree {
   float fd1DCA;
   float fd2DCA;
   float fpairDCA;
@@ -82,12 +81,11 @@ struct eeTTree{
   float fwMultpT2;
   float fwMultmT2;
   bool fpass;
-  float feeorigrap; //only in histogram, not in tree?
-  float feerap; //only in histogram, not in tree?
+  float feeorigrap; // only in histogram, not in tree?
+  float feerap;     // only in histogram, not in tree?
 };
 
-struct lmeelfcocktail
-{
+struct lmeelfcocktail {
   OutputObj<TTree> tree{"eeTTree"};
 
   HistogramRegistry registry{"registry", {}};
@@ -159,14 +157,15 @@ struct lmeelfcocktail
   Configurable<std::string> fConfigPhotonPtDirName{"cfgPhotonPtDirName", "7TeV_Comb", "directory name for photon pT parametrization"};
   Configurable<std::string> fConfigPhotonPtFuncName{"cfgPhotonPtFuncName", "111_pt", "function name for photon pT parametrization"};
 
-  ConfigurableAxis fConfigPtBins{"cfgPtBins", {VARIABLE_WIDTH,0., 0.5, 1, 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.}, "pT bins"};
-  ConfigurableAxis fConfigMBins{"cfgMBins", {VARIABLE_WIDTH,0., 0.08, 0.14, 0.2, 1.1, 2.7, 2.8, 3.2, 5.0}, "mee bins"};
-  ConfigurableAxis fConfigDCABins{"cfgDCABins", {VARIABLE_WIDTH,0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "DCA bins"};
+  ConfigurableAxis fConfigPtBins{"cfgPtBins", {VARIABLE_WIDTH, 0., 0.5, 1, 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.}, "pT bins"};
+  ConfigurableAxis fConfigMBins{"cfgMBins", {VARIABLE_WIDTH, 0., 0.08, 0.14, 0.2, 1.1, 2.7, 2.8, 3.2, 5.0}, "mee bins"};
+  ConfigurableAxis fConfigDCABins{"cfgDCABins", {VARIABLE_WIDTH, 0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "DCA bins"};
 
   Configurable<std::vector<double>> fConfigDCATemplateEdges{"cfgDCATemplateEdges", {0., .3, .4, .6, 1., 2.}, "DCA template edges"};
 
-  void init(o2::framework::InitContext& ic) {
-    if (fConfigWriteTTree){
+  void init(o2::framework::InitContext& ic)
+  {
+    if (fConfigWriteTTree) {
       SetTree();
     }
     SetHistograms();
@@ -174,7 +173,7 @@ struct lmeelfcocktail
     nbDCAtemplate = DCATemplateEdges.size();
     DCATemplateEdges.push_back(10000000.);
 
-    if (TString(fConfigEffFileName).BeginsWith("alien://") || TString(fConfigResFileName).BeginsWith("alien://") || TString(fConfigDCAFileName).BeginsWith("alien://") || TString(fConfigMultFileName).BeginsWith("alien://") || TString(fConfigPhotonPtFileName).BeginsWith("alien://")){
+    if (TString(fConfigEffFileName).BeginsWith("alien://") || TString(fConfigResFileName).BeginsWith("alien://") || TString(fConfigDCAFileName).BeginsWith("alien://") || TString(fConfigMultFileName).BeginsWith("alien://") || TString(fConfigPhotonPtFileName).BeginsWith("alien://")) {
       LOGP(info, "Connecting to grid via TGrid");
       TGrid::Connect("alien://");
     }
@@ -190,8 +189,9 @@ struct lmeelfcocktail
     fillKrollWada();
   }
 
-  void run(o2::framework::ProcessingContext& pc){
-    //get the tracks
+  void run(o2::framework::ProcessingContext& pc)
+  {
+    // get the tracks
     auto mctracks = pc.inputs().get<std::vector<o2::MCTrack>>("mctracks");
     registry.fill(HIST("NEvents"), 0.5);
 
@@ -203,14 +203,14 @@ struct lmeelfcocktail
 
     int trackID = -1;
     //  Loop over all MC particle
-    for (auto &mctrack : mctracks) {
+    for (auto& mctrack : mctracks) {
       trackID++;
       if (o2::mcgenstatus::getHepMCStatusCode(mctrack.getStatusCode()) != 1)
         continue;
       if (abs(mctrack.GetPdgCode()) == 11) {
         // get the electron
         //---------------
-        if (fConfigDoPairing){
+        if (fConfigDoPairing) {
           // LS and ULS spectra
           PxPyPzEVector e, dielectron;
           Char_t ech, dielectron_ch;
@@ -238,7 +238,7 @@ struct lmeelfcocktail
             if (dielectron_ch == 0)
               registry.fill(HIST("ULS_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
             if (dielectron_ch > 0)
-              registry.fill(HIST("LSpp_orig"), dielectron.M(), dielectron.Pt(),dielectron_weight);
+              registry.fill(HIST("LSpp_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
             if (dielectron_ch < 0)
               registry.fill(HIST("LSmm_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
             if (e.Pt() > fConfigMinPt && eBuff.at(jj).Pt() > fConfigMinPt && e.Pt() < fConfigMaxPt && eBuff.at(jj).Pt() < fConfigMaxPt && TMath::Abs(e.Eta()) < fConfigMaxEta && TMath::Abs(eBuff.at(jj).Eta()) < fConfigMaxEta && e.Vect().Unit().Dot(eBuff.at(jj).Vect().Unit()) < TMath::Cos(fConfigMinOpAng)) {
@@ -260,8 +260,8 @@ struct lmeelfcocktail
         if (!(mctrack.getMotherTrackId() > -1))
           continue; // has no mother
 
-        auto const &mother = mctracks[mctrack.getMotherTrackId()];
-  
+        auto const& mother = mctracks[mctrack.getMotherTrackId()];
+
         if (mother.getMotherTrackId() > -1)
           continue; // mother is not primary
 
@@ -271,22 +271,22 @@ struct lmeelfcocktail
         // skip for the moment other particles rather than pi0, eta, etaprime,
         // omega, rho, phi.
         switch (mother.GetPdgCode()) {
-        case 111:
-          break;
-        case 221:
-          break;
-        case 331:
-          break;
-        case 113:
-          break;
-        case 223:
-          break;
-        case 333:
-          break;
-        case 443:
-          break;
-        default:
-          continue;
+          case 111:
+            break;
+          case 221:
+            break;
+          case 331:
+            break;
+          case 113:
+            break;
+          case 223:
+            break;
+          case 333:
+            break;
+          case 443:
+            break;
+          default:
+            continue;
         }
 
         // Not sure about this cut. From GammaConv group. Harmless a priori.
@@ -294,7 +294,7 @@ struct lmeelfcocktail
           continue;
 
         // ???? this applied only to first daughter!
-        Double_t yPre = (mctrack.GetEnergy() + mctrack.Pz())/(mctrack.GetEnergy() - mctrack.Pz());
+        Double_t yPre = (mctrack.GetEnergy() + mctrack.Pz()) / (mctrack.GetEnergy() - mctrack.Pz());
         Double_t y = 0.5 * TMath::Log(yPre);
         if (fConfigDoRapidityCut) { // Apply rapidity cut on mother consistent with GammaConv group. (??? but it is not applied on mother?)
           if (yPre <= 0.)
@@ -306,7 +306,7 @@ struct lmeelfcocktail
             continue;
         }
 
-        treeWords.fdectyp = mother.getLastDaughterTrackId() -mother.getFirstDaughterTrackId() + 1; // fdectyp: decay type (based on number of daughters).
+        treeWords.fdectyp = mother.getLastDaughterTrackId() - mother.getFirstDaughterTrackId() + 1; // fdectyp: decay type (based on number of daughters).
         if (treeWords.fdectyp > 4)
           continue; // exclude five or more particles decay
 
@@ -316,7 +316,7 @@ struct lmeelfcocktail
         if (!(mctrack2.getMotherTrackId() == mctrack.getMotherTrackId()))
           continue; // no matching second electron
         if (!(mctrack.getSecondMotherTrackId() == -1))
-          continue; //second daughter has more than one mother
+          continue; // second daughter has more than one mother
         if (!(abs(mctrack2.GetPdgCode()) == 11))
           continue; // not an electron
 
@@ -331,10 +331,8 @@ struct lmeelfcocktail
 
         // get info of the other particles in the decay:
         treeWords.fdau3pdg = 0;
-        for (Int_t jj = mother.getFirstDaughterTrackId(); jj <= mother.getLastDaughterTrackId(); jj++)
-        {
-          if (jj == trackID || jj == trackID + 1)
-          {
+        for (Int_t jj = mother.getFirstDaughterTrackId(); jj <= mother.getLastDaughterTrackId(); jj++) {
+          if (jj == trackID || jj == trackID + 1) {
             continue; // first or second electron
           }
           auto mctrack3 = mctracks[jj];
@@ -347,45 +345,45 @@ struct lmeelfcocktail
           hindex[jj] = -1;
         }
         switch (mother.GetPdgCode()) {
-        case 111:
-          hindex[0] = 0;
-          break;
-        case 221:
-          hindex[0] = 1;
-          break;
-        case 331:
-          hindex[0] = 2;
-          if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 22)
-            hindex[1] = 3;
-          if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 223)
-            hindex[1] = 4;
-          break;
-        case 113:
-          hindex[0] = 5;
-          break;
-        case 223:
-          hindex[0] = 6;
-          if (treeWords.fdectyp == 2)
-            hindex[1] = 7;
-          if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 111)
-            hindex[1] = 8;
-          break;
-        case 333:
-          hindex[0] = 9;
-          if (treeWords.fdectyp == 2)
-            hindex[1] = 10;
-          if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 221)
-            hindex[1] = 11;
-          if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 111)
-            hindex[1] = 12;
-          break;
-        case 443:
-          hindex[0] = 13;
-          if (treeWords.fdectyp == 2)
-            hindex[1] = 14;
-          if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 22)
-            hindex[1] = 15;
-          break;
+          case 111:
+            hindex[0] = 0;
+            break;
+          case 221:
+            hindex[0] = 1;
+            break;
+          case 331:
+            hindex[0] = 2;
+            if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 22)
+              hindex[1] = 3;
+            if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 223)
+              hindex[1] = 4;
+            break;
+          case 113:
+            hindex[0] = 5;
+            break;
+          case 223:
+            hindex[0] = 6;
+            if (treeWords.fdectyp == 2)
+              hindex[1] = 7;
+            if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 111)
+              hindex[1] = 8;
+            break;
+          case 333:
+            hindex[0] = 9;
+            if (treeWords.fdectyp == 2)
+              hindex[1] = 10;
+            if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 221)
+              hindex[1] = 11;
+            if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 111)
+              hindex[1] = 12;
+            break;
+          case 443:
+            hindex[0] = 13;
+            if (treeWords.fdectyp == 2)
+              hindex[1] = 14;
+            if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 22)
+              hindex[1] = 15;
+            break;
         }
 
         hindex[2] = nInputParticles;
@@ -490,7 +488,7 @@ struct lmeelfcocktail
         int iwbin = fhwMultpT->FindBin(treeWords.fmotherpt);
         treeWords.fwMultpT = fhwMultpT->GetBinContent(iwbin);   // pT weight
         treeWords.fwMultpT2 = fhwMultpT2->GetBinContent(iwbin); // pT weight
-        double min_mT = fhwMultmT->GetBinLowEdge(1); // consider as minimum valid mT value the edge of the weight histo.
+        double min_mT = fhwMultmT->GetBinLowEdge(1);            // consider as minimum valid mT value the edge of the weight histo.
         if (treeWords.fmothermt > min_mT) {
           iwbin = fhwMultmT->FindBin(treeWords.fmothermt);
           treeWords.fwMultmT = fhwMultmT->GetBinContent(iwbin);   // mT weight
@@ -518,7 +516,7 @@ struct lmeelfcocktail
         }
 
         // fill the histograms
-        if (treeWords.fdectyp<4){ // why here <4 and before <5 ???
+        if (treeWords.fdectyp < 4) {         // why here <4 and before <5 ???
           for (Int_t jj = 0; jj < 3; jj++) { // fill the different hindex -> particles
             if (hindex[jj] > -1) {
               fmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.fweight);
@@ -567,7 +565,7 @@ struct lmeelfcocktail
           Bool_t SetDecay;
           SetDecay = VPHgen.SetDecay(beam, 2, decaymasses);
           if (SetDecay == 0)
-            LOGP(error,"Decay not permitted by kinematics");
+            LOGP(error, "Decay not permitted by kinematics");
           Double_t VPHweight = VPHgen.Generate();
           // get electrons from the decay
           TLorentzVector *decay1, *decay2;
@@ -685,8 +683,6 @@ struct lmeelfcocktail
     eweightBuff.clear();
   }
 
-
-
   Double_t PhiV(PxPyPzEVector e1, PxPyPzEVector e2)
   {
     Double_t outPhiV;
@@ -714,7 +710,7 @@ struct lmeelfcocktail
 
     registry.add<TH1>("NEvents", "NEvents", HistType::kTH1F, {{1, 0, 1}}, false);
 
-    if (fConfigDoPairing){
+    if (fConfigDoPairing) {
       registry.add<TH2>("ULS", "ULS", HistType::kTH2F, {mAxis, ptAxis}, true);
       registry.add<TH2>("LSpp", "LSpp", HistType::kTH2F, {mAxis, ptAxis}, true);
       registry.add<TH2>("LSmm", "LSmm", HistType::kTH2F, {mAxis, ptAxis}, true);
@@ -760,57 +756,58 @@ struct lmeelfcocktail
     fpteevsmee_orig_wALT.push_back(registry.add<TH2>("pteevsmee_orig_wALT", "pteevsmee_orig_wALT", HistType::kTH2F, {mAxis, ptAxis}, true));
   }
 
-  void SetTree(){
-    tree.setObject(new TTree("eeTTree","eeTTree"));
+  void SetTree()
+  {
+    tree.setObject(new TTree("eeTTree", "eeTTree"));
 
-    tree->Branch("fd1DCA",&treeWords.fd1DCA,"fd1DCA/F");
-    tree->Branch("fd2DCA",&treeWords.fd2DCA,"fd2DCA/F");
-    tree->Branch("fpairDCA",&treeWords.fpairDCA,"fpairDCA/F");
-    tree->Branch("fd1origpt",&treeWords.fd1origpt,"fd1origpt/F");
-    tree->Branch("fd1origp",&treeWords.fd1origp,"fd1origp/F");
-    tree->Branch("fd1origeta",&treeWords.fd1origeta,"fd1origeta/F");
-    tree->Branch("fd1origphi",&treeWords.fd1origphi,"fd1origphi/F");
-    tree->Branch("fd2origpt",&treeWords.fd2origpt,"fd2origpt/F");
-    tree->Branch("fd2origp",&treeWords.fd2origp,"fd2origp/F");
-    tree->Branch("fd2origeta",&treeWords.fd2origeta,"fd2origeta/F");
-    tree->Branch("fd2origphi",&treeWords.fd2origphi,"fd2origphi/F");
-    tree->Branch("fd1pt",&treeWords.fd1pt,"fd1pt/F");
-    tree->Branch("fd1p",&treeWords.fd1p,"fd1p/F");
-    tree->Branch("fd1eta",&treeWords.fd1eta,"fd1eta/F");
-    tree->Branch("fd1phi",&treeWords.fd1phi,"fd1phi/F");
-    tree->Branch("fd2pt",&treeWords.fd2pt,"fd2pt/F");
-    tree->Branch("fd2p",&treeWords.fd2p,"fd2p/F");
-    tree->Branch("fd2eta",&treeWords.fd2eta,"fd2eta/F");
-    tree->Branch("fd2phi",&treeWords.fd2phi,"fd2phi/F");
-    tree->Branch("feeorigpt",&treeWords.feeorigpt,"feeorigpt/F");
-    tree->Branch("feeorigp",&treeWords.feeorigp,"feeorigp/F");
-    tree->Branch("feeorigm",&treeWords.feeorigm,"feeorigm/F");
-    tree->Branch("feeorigeta",&treeWords.feeorigeta,"feeorigeta/F");
-    tree->Branch("feeorigphi",&treeWords.feeorigphi,"feeorigphi/F");
-    tree->Branch("feeorigphiv",&treeWords.feeorigphiv,"feeorigphiv/F");
-    tree->Branch("feept",&treeWords.feept,"feept/F");
-    tree->Branch("feemt",&treeWords.feemt,"feemt/F");
-    tree->Branch("feep",&treeWords.feep,"feep/F");
-    tree->Branch("feem",&treeWords.feem,"feem/F");
-    tree->Branch("feeeta",&treeWords.feeeta,"feeeta/F");
-    tree->Branch("feephi",&treeWords.feephi,"feephi/F");
-    tree->Branch("feephiv",&treeWords.feephiv,"feephiv/F");
-    tree->Branch("fmotherpt",&treeWords.fmotherpt,"fmotherpt/F");
-    tree->Branch("fmothermt",&treeWords.fmothermt,"fmothermt/F");
-    tree->Branch("fmotherp",&treeWords.fmotherp,"fmotherp/F");
-    tree->Branch("fmotherm",&treeWords.fmotherm,"fmotherm/F");
-    tree->Branch("fmothereta",&treeWords.fmothereta,"fmothereta/F");
-    tree->Branch("fmotherphi",&treeWords.fmotherphi,"fmotherphi/F");
-    tree->Branch("fID",&treeWords.fID,"fID/I");
-    tree->Branch("fdectyp",&treeWords.fdectyp,"fdectyp/I");
-    tree->Branch("fdau3pdg",&treeWords.fdau3pdg,"fdau3pdg/I");
-    tree->Branch("fweight",&treeWords.fweight,"fweight/F");
-    tree->Branch("fwEffpT",&treeWords.fwEffpT,"fwEffpT/F");
-    tree->Branch("fwMultpT",&treeWords.fwMultpT,"fwMultpT/F");
-    tree->Branch("fwMultmT",&treeWords.fwMultmT,"fwMultmT/F");
-    tree->Branch("fwMultpT2",&treeWords.fwMultpT2,"fwMultpT2/F");
-    tree->Branch("fwMultmT2",&treeWords.fwMultmT2,"fwMultmT2/F");
-    tree->Branch("fpass",&treeWords.fpass,"fpass/B");
+    tree->Branch("fd1DCA", &treeWords.fd1DCA, "fd1DCA/F");
+    tree->Branch("fd2DCA", &treeWords.fd2DCA, "fd2DCA/F");
+    tree->Branch("fpairDCA", &treeWords.fpairDCA, "fpairDCA/F");
+    tree->Branch("fd1origpt", &treeWords.fd1origpt, "fd1origpt/F");
+    tree->Branch("fd1origp", &treeWords.fd1origp, "fd1origp/F");
+    tree->Branch("fd1origeta", &treeWords.fd1origeta, "fd1origeta/F");
+    tree->Branch("fd1origphi", &treeWords.fd1origphi, "fd1origphi/F");
+    tree->Branch("fd2origpt", &treeWords.fd2origpt, "fd2origpt/F");
+    tree->Branch("fd2origp", &treeWords.fd2origp, "fd2origp/F");
+    tree->Branch("fd2origeta", &treeWords.fd2origeta, "fd2origeta/F");
+    tree->Branch("fd2origphi", &treeWords.fd2origphi, "fd2origphi/F");
+    tree->Branch("fd1pt", &treeWords.fd1pt, "fd1pt/F");
+    tree->Branch("fd1p", &treeWords.fd1p, "fd1p/F");
+    tree->Branch("fd1eta", &treeWords.fd1eta, "fd1eta/F");
+    tree->Branch("fd1phi", &treeWords.fd1phi, "fd1phi/F");
+    tree->Branch("fd2pt", &treeWords.fd2pt, "fd2pt/F");
+    tree->Branch("fd2p", &treeWords.fd2p, "fd2p/F");
+    tree->Branch("fd2eta", &treeWords.fd2eta, "fd2eta/F");
+    tree->Branch("fd2phi", &treeWords.fd2phi, "fd2phi/F");
+    tree->Branch("feeorigpt", &treeWords.feeorigpt, "feeorigpt/F");
+    tree->Branch("feeorigp", &treeWords.feeorigp, "feeorigp/F");
+    tree->Branch("feeorigm", &treeWords.feeorigm, "feeorigm/F");
+    tree->Branch("feeorigeta", &treeWords.feeorigeta, "feeorigeta/F");
+    tree->Branch("feeorigphi", &treeWords.feeorigphi, "feeorigphi/F");
+    tree->Branch("feeorigphiv", &treeWords.feeorigphiv, "feeorigphiv/F");
+    tree->Branch("feept", &treeWords.feept, "feept/F");
+    tree->Branch("feemt", &treeWords.feemt, "feemt/F");
+    tree->Branch("feep", &treeWords.feep, "feep/F");
+    tree->Branch("feem", &treeWords.feem, "feem/F");
+    tree->Branch("feeeta", &treeWords.feeeta, "feeeta/F");
+    tree->Branch("feephi", &treeWords.feephi, "feephi/F");
+    tree->Branch("feephiv", &treeWords.feephiv, "feephiv/F");
+    tree->Branch("fmotherpt", &treeWords.fmotherpt, "fmotherpt/F");
+    tree->Branch("fmothermt", &treeWords.fmothermt, "fmothermt/F");
+    tree->Branch("fmotherp", &treeWords.fmotherp, "fmotherp/F");
+    tree->Branch("fmotherm", &treeWords.fmotherm, "fmotherm/F");
+    tree->Branch("fmothereta", &treeWords.fmothereta, "fmothereta/F");
+    tree->Branch("fmotherphi", &treeWords.fmotherphi, "fmotherphi/F");
+    tree->Branch("fID", &treeWords.fID, "fID/I");
+    tree->Branch("fdectyp", &treeWords.fdectyp, "fdectyp/I");
+    tree->Branch("fdau3pdg", &treeWords.fdau3pdg, "fdau3pdg/I");
+    tree->Branch("fweight", &treeWords.fweight, "fweight/F");
+    tree->Branch("fwEffpT", &treeWords.fwEffpT, "fwEffpT/F");
+    tree->Branch("fwMultpT", &treeWords.fwMultpT, "fwMultpT/F");
+    tree->Branch("fwMultmT", &treeWords.fwMultmT, "fwMultmT/F");
+    tree->Branch("fwMultpT2", &treeWords.fwMultpT2, "fwMultpT2/F");
+    tree->Branch("fwMultmT2", &treeWords.fwMultmT2, "fwMultmT2/F");
+    tree->Branch("fpass", &treeWords.fpass, "fpass/B");
   }
 
   PxPyPzEVector ApplyResolution(PxPyPzEVector vec, Char_t ch = 0, Int_t Run = 2)
@@ -1098,9 +1095,6 @@ struct lmeelfcocktail
     }
   }
 };
-
-
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
