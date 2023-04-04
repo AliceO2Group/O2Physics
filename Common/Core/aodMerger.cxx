@@ -431,19 +431,19 @@ int main(int argc, char* argv[])
   if (exitCode != 0) {
     printf("Removing incomplete output file %s.\n", outputFile->GetName());
     gSystem->Unlink(outputFile->GetName());
-  }
+  } else {
+    printf("AOD merger finished. Size overview follows:\n");
 
-  printf("AOD merger finished. Size overview follows:\n");
-
-  uint64_t totalCompressed = 0;
-  uint64_t totalUncompressed = 0;
-  for (auto const& tree : sizeCompressed) {
-    totalCompressed += tree.second;
-    totalUncompressed += sizeUncompressed[tree.first];
-  }
-  if (totalCompressed > 0 && totalUncompressed > 0) {
+    uint64_t totalCompressed = 0;
+    uint64_t totalUncompressed = 0;
     for (auto const& tree : sizeCompressed) {
-      printf("  Tree %20s | Compressed: %12lu (%2.0f%%) | Uncompressed: %12lu (%2.0f%%)\n", tree.first.c_str(), tree.second, 100.0 * tree.second / totalCompressed, sizeUncompressed[tree.first], 100.0 * sizeUncompressed[tree.first] / totalUncompressed);
+      totalCompressed += tree.second;
+      totalUncompressed += sizeUncompressed[tree.first];
+    }
+    if (totalCompressed > 0 && totalUncompressed > 0) {
+      for (auto const& tree : sizeCompressed) {
+        printf("  Tree %20s | Compressed: %12lu (%2.0f%%) | Uncompressed: %12lu (%2.0f%%)\n", tree.first.c_str(), tree.second, 100.0 * tree.second / totalCompressed, sizeUncompressed[tree.first], 100.0 * sizeUncompressed[tree.first] / totalUncompressed);
+      }
     }
   }
   printf("\n");
