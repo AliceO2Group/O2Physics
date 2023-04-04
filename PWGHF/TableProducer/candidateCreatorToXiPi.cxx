@@ -81,7 +81,7 @@ struct HfCandidateCreatorToXiPi {
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
   using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
-  using MyCascTable = soa::Join<aod::CascDataExt, aod::CascCovs>;
+  using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>;
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
     
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
@@ -104,9 +104,9 @@ struct HfCandidateCreatorToXiPi {
 
   void process(SelectedCollisions const& collisions,
                aod::BCsWithTimestamps const& bcWithTimeStamps,
-               MyCascTable const& cascades,
                MyTracks const& tracks,
                FilteredHfTrackAssocSel const& trackIndices,
+               MyCascTable const& cascades,
                MyV0Table const&,
                aod::V0sLinked const&)
   {
