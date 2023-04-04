@@ -19,6 +19,8 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "TRandom.h"
 
 using namespace o2;
@@ -35,10 +37,14 @@ namespace mycascades
 {
 
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_COLUMN(CollisionZ, zcoll, float);
+DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
+DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);
 DECLARE_SOA_COLUMN(Sign, sign, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(RapXi, rapxi, float);
 DECLARE_SOA_COLUMN(RapOmega, rapomega, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(MassXi, massxi, float);
 DECLARE_SOA_COLUMN(MassOmega, massomega, float);
 DECLARE_SOA_COLUMN(MassLambdaDau, masslambdadau, float);
@@ -58,10 +64,8 @@ DECLARE_SOA_COLUMN(BachEta, bacheta, float);
 DECLARE_SOA_COLUMN(PosITSHits, positshits, float);
 DECLARE_SOA_COLUMN(NegITSHits, negitshits, float);
 DECLARE_SOA_COLUMN(BachITSHits, bachitshits, float);
-DECLARE_SOA_COLUMN(CtauXiMinus, ctauximinus, float);
-DECLARE_SOA_COLUMN(CtauXiPlus, ctauxiplus, float);
-DECLARE_SOA_COLUMN(CtauOmegaMinus, ctauomegaminus, float);
-DECLARE_SOA_COLUMN(CtauOmegaPlus, ctauomegaplus, float);
+DECLARE_SOA_COLUMN(CtauXi, ctauxi, float);
+DECLARE_SOA_COLUMN(CtauOmega, ctauomega, float);
 DECLARE_SOA_COLUMN(NTPCSigmaNegPr, ntpcsigmanegpr, float);
 DECLARE_SOA_COLUMN(NTPCSigmaPosPr, ntpcsigmapospr, float);
 DECLARE_SOA_COLUMN(NTPCSigmaNegPi, ntpcsigmanegpi, float);
@@ -80,21 +84,24 @@ DECLARE_SOA_COLUMN(BachNTPCClusters, bachntpcscls, float);
 DECLARE_SOA_COLUMN(PosHasTOF, poshastof, float);
 DECLARE_SOA_COLUMN(NegHasTOF, neghastof, float);
 DECLARE_SOA_COLUMN(BachHasTOF, bachhastof, float);
+DECLARE_SOA_COLUMN(PosPt, pospt, float);
+DECLARE_SOA_COLUMN(NegPt, negpt, float);
+DECLARE_SOA_COLUMN(BachPt, bachpt, float);
 
 } // namespace mycascades
 
 DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
-                  mycascades::CollisionId, mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega,
-                  mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
+                  mycascades::CollisionId, mycascades::CollisionZ, mycascades::MultFT0M, mycascades::MultFV0A, mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega, mycascades::Eta, mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
                   mycascades::CascCosPA, mycascades::V0CosPA, mycascades::DCAPosToPV, mycascades::DCANegToPV,
                   mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::PosEta, mycascades::NegEta,
                   mycascades::BachEta, mycascades::PosITSHits, mycascades::NegITSHits, mycascades::BachITSHits,
-                  mycascades::CtauXiMinus, mycascades::CtauXiPlus, mycascades::CtauOmegaMinus, mycascades::CtauOmegaPlus,
+                  mycascades::CtauXi, mycascades::CtauOmega,
                   mycascades::NTPCSigmaNegPr, mycascades::NTPCSigmaPosPr, mycascades::NTPCSigmaNegPi, mycascades::NTPCSigmaPosPi, mycascades::NTPCSigmaBachPi, mycascades::NTPCSigmaBachKa,
                   mycascades::NTOFSigmaNegPr, mycascades::NTOFSigmaPosPr, mycascades::NTOFSigmaNegPi,
                   mycascades::NTOFSigmaPosPi, mycascades::NTOFSigmaBachPi, mycascades::NTOFSigmaBachKa,
                   mycascades::PosNTPCClusters, mycascades::NegNTPCClusters, mycascades::BachNTPCClusters,
-                  mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF);
+                  mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF,
+                  mycascades::PosPt, mycascades::NegPt, mycascades::BachPt);
 
 } // namespace o2::aod
 
@@ -108,6 +115,9 @@ struct cascqaanalysis {
   void init(InitContext const&)
   {
     registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{1, 0.f, 1.f}}});
+    registry.add("hZCollision", "hZCollision", {HistType::kTH1F, {{200, -20.f, 20.f}}});
+    registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
+    registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
   }
 
   // Event selection criteria
@@ -132,7 +142,7 @@ struct cascqaanalysis {
   Filter preFilter =
     nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > dcabachtopv&& aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, DauTracks const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, DauTracks const& tracks)
   {
     // Event selection
     if (sel8 && !collision.sel8()) {
@@ -143,6 +153,10 @@ struct cascqaanalysis {
     }
 
     registry.fill(HIST("hNEvents"), 0.5);
+    registry.fill(HIST("hZCollision"), collision.posZ());
+    registry.fill(HIST("hCentFT0M"), collision.centFT0M());
+    registry.fill(HIST("hCentFV0A"), collision.centFV0A());
+
     float lEventScale = scalefactor;
 
     for (auto& casc : Cascades) { // loop over Cascades
@@ -161,10 +175,8 @@ struct cascqaanalysis {
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       //
-      float ctauXiMinus = RecoDecay::getMassPDG(3312) * cascpos / (cascptotmom + 1e-13);
-      float ctauXiPlus = RecoDecay::getMassPDG(-3312) * cascpos / (cascptotmom + 1e-13);
-      float ctauOmegaMinus = RecoDecay::getMassPDG(3334) * cascpos / (cascptotmom + 1e-13);
-      float ctauOmegaPlus = RecoDecay::getMassPDG(-3334) * cascpos / (cascptotmom + 1e-13);
+      float ctauXi = RecoDecay::getMassPDG(3312) * cascpos / (cascptotmom + 1e-13);
+      float ctauOmega = RecoDecay::getMassPDG(3334) * cascpos / (cascptotmom + 1e-13);
 
       // ITS N hits
       int posITSNhits = 0, negITSNhits = 0, bachITSNhits = 0;
@@ -187,16 +199,16 @@ struct cascqaanalysis {
 
         // Fill table
         if (fRand->Rndm() < lEventScale) {
-          mycascades(casc.globalIndex(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(),
+          mycascades(casc.globalIndex(), collision.posZ(), collision.centFT0M(), collision.centFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
                      casc.mXi(), casc.mOmega(), casc.mLambda(), casc.cascradius(), casc.v0radius(),
                      casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                      casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(), casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
                      posdau.eta(), negdau.eta(), bachelor.eta(), posITSNhits, negITSNhits, bachITSNhits,
-                     ctauXiMinus, ctauXiPlus, ctauOmegaMinus, ctauOmegaPlus,
-                     negdau.tpcNSigmaPr(), posdau.tpcNSigmaPr(), negdau.tpcNSigmaPi(), posdau.tpcNSigmaPi(), bachelor.tpcNSigmaPi(), bachelor.tpcNSigmaKa(),
+                     ctauXi, ctauOmega, negdau.tpcNSigmaPr(), posdau.tpcNSigmaPr(), negdau.tpcNSigmaPi(), posdau.tpcNSigmaPi(), bachelor.tpcNSigmaPi(), bachelor.tpcNSigmaKa(),
                      negdau.tofNSigmaPr(), posdau.tofNSigmaPr(), negdau.tofNSigmaPi(), posdau.tofNSigmaPi(), bachelor.tofNSigmaPi(), bachelor.tofNSigmaKa(),
                      posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
-                     posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF());
+                     posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF(),
+                     posdau.pt(), negdau.pt(), bachelor.pt());
         }
       }
     }
@@ -221,10 +233,8 @@ struct myCascades {
     registry.add("hDCABachToPV", "hDCABachToPV", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
     registry.add("hDCACascDaughters", "hDCACascDaughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
     registry.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
-    registry.add("hCtauXiMinus", "hCtauXiMinus", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
-    registry.add("hCtauXiPlus", "hCtauXiPlus", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
-    registry.add("hCtauOmegaMinus", "hCtauOmegaMinus", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
-    registry.add("hCtauOmegaPlus", "hCtauOmegaPlus", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
+    registry.add("hCtauXi", "hCtauXi", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
+    registry.add("hCtauOmega", "hCtauOmega", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
     registry.add("hTPCNSigmaPosPi", "hTPCNSigmaPosPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
     registry.add("hTPCNSigmaNegPi", "hTPCNSigmaNegPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
     registry.add("hTPCNSigmaPosPr", "hTPCNSigmaPosPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
@@ -256,10 +266,8 @@ struct myCascades {
       registry.fill(HIST("hDCABachToPV"), candidate.dcabachtopv());
       registry.fill(HIST("hDCACascDaughters"), candidate.dcacascdaughters());
       registry.fill(HIST("hDCAV0Daughters"), candidate.dcav0daughters());
-      registry.fill(HIST("hCtauXiMinus"), candidate.ctauximinus());
-      registry.fill(HIST("hCtauXiPlus"), candidate.ctauxiplus());
-      registry.fill(HIST("hCtauOmegaMinus"), candidate.ctauomegaminus());
-      registry.fill(HIST("hCtauOmegaPlus"), candidate.ctauomegaplus());
+      registry.fill(HIST("hCtauXi"), candidate.ctauxi());
+      registry.fill(HIST("hCtauOmega"), candidate.ctauomega());
       registry.fill(HIST("hTPCNSigmaPosPi"), candidate.ntpcsigmapospi());
       registry.fill(HIST("hTPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
       registry.fill(HIST("hTPCNSigmaPosPr"), candidate.ntpcsigmapospr());

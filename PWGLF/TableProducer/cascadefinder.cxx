@@ -133,7 +133,7 @@ struct cascadeprefilter {
 };
 
 struct cascadefinder {
-  Produces<aod::CascData> cascdata;
+  Produces<aod::StoredCascDatas> cascdata;
 
   OutputObj<TH1F> hCandPerEvent{TH1F("hCandPerEvent", "", 100, 0, 100)};
 
@@ -251,7 +251,7 @@ struct cascadefinder {
 
             lNCand++;
             // If we got here, it means this is a good candidate!
-            cascdata(v0.globalIndex(), v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
+            cascdata(v0.globalIndex(), -1, v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
                      -1, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
                      pvecpos[0], pvecpos[1], pvecpos[2],
                      pvecneg[0], pvecneg[1], pvecneg[2],
@@ -334,7 +334,7 @@ struct cascadefinder {
 
             lNCand++;
             // If we got here, it means this is a good candidate!
-            cascdata(v0.globalIndex(), v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
+            cascdata(v0.globalIndex(), -1, v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
                      +1, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
                      pvecpos[0], pvecpos[1], pvecpos[2],
                      pvecneg[0], pvecneg[1], pvecneg[2],
@@ -416,7 +416,7 @@ struct cascadefinderQA {
 
 /// Extends the cascdata table with expression columns
 struct cascadeinitializer {
-  Spawns<aod::CascDataExt> cascdataext;
+  Spawns<aod::CascData> cascdataext;
   void init(InitContext const&) {}
 };
 

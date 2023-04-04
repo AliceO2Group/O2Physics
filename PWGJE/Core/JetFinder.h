@@ -31,6 +31,12 @@
 #include "fastjet/tools/Subtractor.hh"
 #include "fastjet/contrib/ConstituentSubtractor.hh"
 
+enum class JetType {
+  full = 0,
+  charged = 1,
+  neutral = 2,
+};
+
 class JetFinder
 {
 
@@ -82,6 +88,7 @@ class JetFinder
   float constSubRMax;
 
   bool isReclustering;
+  bool isTriggering;
 
   fastjet::JetAlgorithm algorithm;
   fastjet::RecombinationScheme recombScheme;
@@ -129,6 +136,7 @@ class JetFinder
                                                                                                                  constSubAlpha(1.0),
                                                                                                                  constSubRMax(0.6),
                                                                                                                  isReclustering(false),
+                                                                                                                 isTriggering(false),
                                                                                                                  algorithm(fastjet::antikt_algorithm),
                                                                                                                  recombScheme(fastjet::E_scheme),
                                                                                                                  strategy(fastjet::Best),
@@ -170,17 +178,5 @@ class JetFinder
 
   ClassDefNV(JetFinder, 1);
 };
-
-// does this belong here?
-template <typename T>
-void fillConstituents(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999, double mass = JetFinder::mPion)
-{
-  // auto energy = std::sqrt(constituent.p() * constituent.p() + JetFinder::mPion * JetFinder::mPion);
-  auto p = std::sqrt((constituent.px() * constituent.px()) + (constituent.py() * constituent.py()) + (constituent.pz() * constituent.pz()));
-  auto energy = std::sqrt((p * p) + (mass * mass));
-  constituents.emplace_back(constituent.px(), constituent.py(), constituent.pz(), energy);
-  if (index != -99999)
-    constituents.back().set_user_index(index); // can the index of a track be -99999?
-}
 
 #endif // PWGJE_CORE_JETFINDER_H_

@@ -88,7 +88,7 @@ using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 // Builder task: rebuilds multi-strange candidates
 struct cascadeBuilder {
-  Produces<aod::CascData> cascdata;
+  Produces<aod::StoredCascDatas> cascdata;
   Produces<aod::CascCovs> casccovs; // if requested by someone
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -665,6 +665,7 @@ struct cascadeBuilder {
         continue; // doesn't pass cascade selections
 
       cascdata(cascadecandidate.v0Id,
+               cascade.globalIndex(),
                cascadecandidate.bachelorId,
                cascade.collisionId(),
                cascadecandidate.charge,
@@ -984,8 +985,29 @@ struct cascadePreselector {
 
 /// Extends the cascdata table with expression columns
 struct cascadeInitializer {
-  Spawns<aod::CascDataExt> cascdataext;
+  Spawns<aod::CascData> cascdataext;
   void init(InitContext const&) {}
+};
+
+struct cascadeLinkBuilder {
+  Produces<aod::CascDataLink> cascdataLink;
+
+  void init(InitContext const&) {}
+
+  // build Cascade -> CascData link table
+  void process(aod::Cascades const& casctable, aod::CascDatas const& cascdatatable)
+  {
+    std::vector<int> lIndices;
+    lIndices.reserve(casctable.size());
+    for (int ii = 0; ii < casctable.size(); ii++)
+      lIndices[ii] = -1;
+    for (auto& cascdata : cascdatatable) {
+      lIndices[cascdata.cascadeId()] = cascdata.globalIndex();
+    }
+    for (int ii = 0; ii < casctable.size(); ii++) {
+      cascdataLink(lIndices[ii]);
+    }
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -993,5 +1015,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<cascadeBuilder>(cfgc),
     adaptAnalysisTask<cascadePreselector>(cfgc),
-    adaptAnalysisTask<cascadeInitializer>(cfgc)};
+    adaptAnalysisTask<cascadeInitializer>(cfgc),
+    adaptAnalysisTask<cascadeLinkBuilder>(cfgc)};
 }

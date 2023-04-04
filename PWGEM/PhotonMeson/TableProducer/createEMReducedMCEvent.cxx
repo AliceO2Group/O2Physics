@@ -23,6 +23,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -98,7 +99,7 @@ struct createEMReducedMCEvent {
 
       // make an entry for this MC event only if it was not already added to the table
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
-        mcevents(mcCollision.generatorsID(), mcCollision.globalIndex(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter());
+        mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter());
         fEventLabels[mcCollision.globalIndex()] = fCounters[1];
         fCounters[1]++;
       }
@@ -110,22 +111,22 @@ struct createEMReducedMCEvent {
 
       for (auto& mctrack : groupedMcTracks) {
         if (mctrack.pt() < 1e-2 || abs(mctrack.y()) > 1.5 || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > 500) { // if pT < 10 MeV/c, don't store. Anyway, we don't care such low pT particles.
+                                                                                                                                                   // if (mctrack.pt() < 1e-2 || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > 500) { // if pT < 10 MeV/c, don't store. Anyway, we don't care such low pT particles.
           continue;
         }
 
         int pdg = mctrack.pdgCode();
         if (
-          // abs(pdg) != 11 //electron // don't store all electron. This causes never-ending processing.
-          //&&
-          abs(pdg) != 22 // photon
+          abs(pdg) != 11                                               // electron
+          && (abs(pdg) != 22 || !IsPhysicalPrimary(mctrack, mcTracks)) // photon
           // light mesons
-          && (abs(pdg) != 111 || !mctrack.producedByGenerator()) // pi0
-          && (abs(pdg) != 113 || !mctrack.producedByGenerator()) // rho(770)
-          && (abs(pdg) != 211 || !mctrack.producedByGenerator()) // changed pion
-          && (abs(pdg) != 221 || !mctrack.producedByGenerator()) // eta
-          && (abs(pdg) != 223 || !mctrack.producedByGenerator()) // omega(782)
-          && (abs(pdg) != 331 || !mctrack.producedByGenerator()) // eta'(958)
-          && (abs(pdg) != 333 || !mctrack.producedByGenerator()) // phi(1020)
+          && (abs(pdg) != 111 || !IsPhysicalPrimary(mctrack, mcTracks)) // pi0
+          && (abs(pdg) != 113 || !IsPhysicalPrimary(mctrack, mcTracks)) // rho(770)
+          && (abs(pdg) != 211 || !IsPhysicalPrimary(mctrack, mcTracks)) // changed pion
+          && (abs(pdg) != 221 || !IsPhysicalPrimary(mctrack, mcTracks)) // eta
+          && (abs(pdg) != 223 || !IsPhysicalPrimary(mctrack, mcTracks)) // omega(782)
+          && (abs(pdg) != 331 || !IsPhysicalPrimary(mctrack, mcTracks)) // eta'(958)
+          && (abs(pdg) != 333 || !IsPhysicalPrimary(mctrack, mcTracks)) // phi(1020)
         ) {
           continue;
         }
@@ -207,7 +208,7 @@ struct createEMReducedMCEvent {
         daughterRange[1] = daughters[daughters.size() - 1];
       }
 
-      emmcparticles(fEventIdx.find(oldLabel)->second, mctrack.mcCollisionId(), mctrack.pdgCode(), mctrack.statusCode(), mctrack.flags(),
+      emmcparticles(fEventIdx.find(oldLabel)->second, mctrack.pdgCode(), mctrack.statusCode(), mctrack.flags(),
                     mothers, daughterRange,
                     mctrack.weight(), mctrack.pt(), mctrack.eta(), mctrack.phi(), mctrack.e(),
                     mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt());

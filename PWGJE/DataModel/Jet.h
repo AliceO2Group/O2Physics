@@ -20,13 +20,13 @@
 /// \author Nima Zardoshti
 /// \author Raymond Ehlers
 
-#ifndef O2_ANALYSIS_DATAMODEL_JET_H
-#define O2_ANALYSIS_DATAMODEL_JET_H
+#ifndef PWGJE_DATAMODEL_JET_H_
+#define PWGJE_DATAMODEL_JET_H_
 
+#include <cmath>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include <cmath>
 
 // Defines the jet table definition
 #define JET_TABLE_DEF(_collision_name_, _jet_type_, _name_, _description_) \
@@ -229,15 +229,63 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 
 // Defining the tables via the macors.
 // The using statements are kept separate for visbility.
-// Data jets
+
+// Data jets charged
 JET_TABLE_DEF(Collision, Jet, jet, "JET");
 using Jet = Jets::iterator;
 using MatchedJet = MatchedJets::iterator;
-JET_CONSTITUENTS_TABLE_DEF(Jet, jet, "JET", Track);
-using JetTrackConstituent = JetTrackConstituents::iterator;
-using JetClusterConstituent = JetClusterConstituents::iterator;
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(Jet, jet, "JET", Track, HfCand2Prong);
+using JetConstituent = JetConstituents::iterator;
 JET_CONSTITUENTS_SUB_TABLE_DEF(Jet, jet, "JET");
 using JetConstituentSub = JetConstituentsSub::iterator;
+
+// Data jets full
+JET_TABLE_DEF(Collision, FullJet, fulljet, "JETF");
+using FullJet = FullJets::iterator;
+using MatchedFullJet = MatchedFullJets::iterator;
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(FullJet, fulljet, "JETF", Track, HfCand2Prong);
+using FullJetConstituent = FullJetConstituents::iterator;
+JET_CONSTITUENTS_SUB_TABLE_DEF(FullJet, fulljet, "JETF");
+using FullJetConstituentSub = FullJetConstituentsSub::iterator;
+
+// Data jets neutral
+JET_TABLE_DEF(Collision, NeutralJet, neutraljet, "JETN");
+using NeutralJet = NeutralJets::iterator;
+using MatchedNeutralJet = MatchedNeutralJets::iterator;
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(NeutralJet, neutraljet, "JETN", Track, HfCand2Prong);
+using NeutralJetConstituent = NeutralJetConstituents::iterator;
+JET_CONSTITUENTS_SUB_TABLE_DEF(NeutralJet, neutraljet, "JETN");
+using NeutralJetConstituentSub = NeutralJetConstituentsSub::iterator;
+
+// MC Detector Level charged Jets
+// NOTE: The same condition as describe for particle leve jets also applies here
+//       to subtracted constituents.
+
+JET_TABLE_DEF(Collision, MCDetectorLevelJet, mcdetectorleveljet, "JETMCDET");
+using MCDetectorLevelJet = MCDetectorLevelJets::iterator;
+using MatchedMCDetectorLevelJet = MatchedMCDetectorLevelJets::iterator;
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCDetectorLevelJet, mcdetectorleveljet, "MCD", Track, HfCand2Prong);
+using MCDetectorLevelJetConstituent = MCDetectorLevelJetConstituents::iterator;
+JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelJet, mcdetectorleveljet, "MCD");
+using MCDetectorLevelJetConstituentSub = MCDetectorLevelJetConstituentsSub::iterator;
+
+// MC Detector Level full Jets
+JET_TABLE_DEF(Collision, MCDetectorLevelFullJet, mcdetectorlevelfulljet, "JETFMCDET");
+using MCDetectorLevelFullJet = MCDetectorLevelFullJets::iterator;
+using MatchedMCDetectorLevelFullJet = MatchedMCDetectorLevelFullJets::iterator;
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCDetectorLevelFullJet, mcdetectorlevelfulljet, "MCDF", Track, HfCand2Prong);
+using MCDetectorLevelFullJetConstituent = MCDetectorLevelFullJetConstituents::iterator;
+JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelFullJet, mcdetectorlevelfulljet, "MCDF");
+using MCDetectorLevelFullJetConstituentSub = MCDetectorLevelFullJetConstituentsSub::iterator;
+
+// MC Detector Level neutral Jets
+JET_TABLE_DEF(Collision, MCDetectorLevelNeutralJet, mcdetectorlevelneutraljet, "JETNMCDET");
+using MCDetectorLevelNeutralJet = MCDetectorLevelNeutralJets::iterator;
+using MatchedMCDetectorLevelNeutralJet = MatchedMCDetectorLevelNeutralJets::iterator;
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCDetectorLevelNeutralJet, mcdetectorlevelneutraljet, "MCDN", Track, HfCand2Prong);
+using MCDetectorLevelNeutralJetConstituent = MCDetectorLevelNeutralJetConstituents::iterator;
+JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelNeutralJet, mcdetectorlevelneutraljet, "MCDN");
+using MCDetectorLevelNeutralJetConstituentSub = MCDetectorLevelNeutralJetConstituentsSub::iterator;
 
 // MC Particle Level Jets
 // NOTE: Cluster constituents aren't really meaningful for particle level.
@@ -247,75 +295,42 @@ using JetConstituentSub = JetConstituentsSub::iterator;
 //       it causes no harm. Perhaps better would be making this std::optional,
 //       but for now, we keep it simple.
 // NOTE: The same condition applies to subtracted constituents.
+// MC Particle Level charged Jets
 JET_TABLE_DEF(McCollision, MCParticleLevelJet, mcparticleleveljet, "JETMCPART");
 using MCParticleLevelJet = MCParticleLevelJets::iterator;
 using MatchedMCParticleLevelJet = MatchedMCParticleLevelJets::iterator;
-JET_CONSTITUENTS_TABLE_DEF(MCParticleLevelJet, mcparticleleveljet, "MCP", McParticle);
-using MCParticleLevelJetTrackConstituent = MCParticleLevelJetTrackConstituents::iterator;
-using MCParticleLevelJetClusterConstituent = MCParticleLevelJetClusterConstituents::iterator;
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCParticleLevelJet, mcparticleleveljet, "MCP", McParticle, McParticles);
+using MCParticleLevelJetConstituent = MCParticleLevelJetConstituents::iterator;
 JET_CONSTITUENTS_SUB_TABLE_DEF(MCParticleLevelJet, mcparticleleveljet, "MCP");
 using MCParticleLevelJetConstituentSub = MCParticleLevelJetConstituentsSub::iterator;
 
-// MC Detector Level Jets
-// NOTE: The same condition as describe for particle leve jets also applies here
-//       to subtracted constituents.
-JET_TABLE_DEF(Collision, MCDetectorLevelJet, mcdetectorleveljet, "JETMCDET");
-using MCDetectorLevelJet = MCDetectorLevelJets::iterator;
-using MatchedMCDetectorLevelJet = MatchedMCDetectorLevelJets::iterator;
-JET_CONSTITUENTS_TABLE_DEF(MCDetectorLevelJet, mcdetectorleveljet, "MCD", Track);
-using MCDetectorLevelJetTrackConstituent = MCDetectorLevelJetTrackConstituents::iterator;
-using MCDetectorLevelJetClusterConstituent = MCDetectorLevelJetClusterConstituents::iterator;
-JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelJet, mcdetectorleveljet, "MCD");
-using MCDetectorLevelJetConstituentSub = MCDetectorLevelJetConstituentsSub::iterator;
+// MC Particle Level full
+JET_TABLE_DEF(McCollision, MCParticleLevelFullJet, mcparticlelevelfulljet, "JETFMCPART");
+using MCParticleLevelFullJet = MCParticleLevelFullJets::iterator;
+using MatchedMCParticleLevelFullJet = MatchedMCParticleLevelFullJets::iterator;
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCParticleLevelFullJet, mcparticlelevelfulljet, "MCPF", McParticle, McParticles);
+using MCParticleLevelFullJetConstituent = MCParticleLevelFullJetConstituents::iterator;
+JET_CONSTITUENTS_SUB_TABLE_DEF(MCParticleLevelFullJet, mcparticlelevelfulljet, "MCPF");
+using MCParticleLevelFullJetConstituentSub = MCParticleLevelFullJetConstituentsSub::iterator;
+
+// MC Particle Level neutral Jets
+JET_TABLE_DEF(McCollision, MCParticleLevelNeutralJet, mcparticlelevelneutraljet, "JETNMCPART");
+using MCParticleLevelNeutralJet = MCParticleLevelNeutralJets::iterator;
+using MatchedMCParticleLevelNeutralJet = MatchedMCParticleLevelNeutralJets::iterator;
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCParticleLevelNeutralJet, mcparticlelevelneutraljet, "MCPN", McParticle, McParticles);
+using MCParticleLevelNeutralJetConstituent = MCParticleLevelNeutralJetConstituents::iterator;
+JET_CONSTITUENTS_SUB_TABLE_DEF(MCParticleLevelNeutralJet, mcparticlelevelneutraljet, "MCPN");
+using MCParticleLevelNeutralJetConstituentSub = MCParticleLevelNeutralJetConstituentsSub::iterator;
 
 // Hybrid intermediate
 JET_TABLE_DEF(Collision, HybridIntermediateJet, hybridintermediatejet, "JETHYBINT");
 using HybridIntermediateJet = HybridIntermediateJets::iterator;
 using MatchedHybridIntermediateJet = MatchedHybridIntermediateJets::iterator;
-JET_CONSTITUENTS_TABLE_DEF(HybridIntermediateJet, hybridintermediate, "HYBINT", Track);
-using HybridIntermediateJetTrackConstituent = HybridIntermediateJetTrackConstituents::iterator;
-using HybridIntermediateJetClusterConstituent = HybridIntermediateJetClusterConstituents::iterator;
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(HybridIntermediateJet, hybridintermediate, "HYBINT", Track, HfCand2Prong);
+using HybridIntermediateJetConstituent = HybridIntermediateJetConstituents::iterator;
 JET_CONSTITUENTS_SUB_TABLE_DEF(HybridIntermediateJet, hybridintermediate, "HYBINT");
 using HybridIntermediateJetConstituentSub = HybridIntermediateJetConstituentsSub::iterator;
 
-// HF jets
-JET_TABLE_DEF(Collision, HFJet, hfjet, "HFJET");
-using HFJet = HFJets::iterator;
-using MatchedHFJet = MatchedHFJets::iterator;
-JET_CONSTITUENTS_ARRAY_TABLE_DEF(HFJet, hfjet, "HFJET", Track, HfCand2Prong);
-using HFJetConstituent = HFJetConstituents::iterator;
-JET_CONSTITUENTS_SUB_TABLE_DEF(HFJet, hfjet, "HFJET");
-using HFJetConstituentSub = HFJetConstituentsSub::iterator;
-
-// HF jets (MC particle level)
-JET_TABLE_DEF(McCollision, MCParticleLevelHFJet, mcparticlelevelhfjet, "HFJETMCP");
-using MCParticleLevelHFJet = MCParticleLevelHFJets::iterator;
-using MatchedMCParticleLevelHFJet = MatchedMCParticleLevelHFJets::iterator;
-JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCParticleLevelHFJet, mcparticlelevelhfjet, "HFMCP", McParticle, McParticles);
-using MCParticleLevelHFJetConstituent = MCParticleLevelHFJetConstituents::iterator;
-JET_CONSTITUENTS_SUB_TABLE_DEF(MCParticleLevelHFJet, mcparticlelevelhfjet, "HFMCP");
-using MCParticleLevelHFJetConstituentSub = MCParticleLevelHFJetConstituentsSub::iterator;
-
-// HF jets (MC detector level)
-JET_TABLE_DEF(Collision, MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFJETMCD");
-using MCDetectorLevelHFJet = MCDetectorLevelHFJets::iterator;
-using MatchedMCDetectorLevelHFJet = MatchedMCDetectorLevelHFJets::iterator;
-JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD", Track, HfCand2Prong);
-using MCDetectorLevelHFJetConstituent = MCDetectorLevelHFJetConstituents::iterator;
-JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD");
-using MCDetectorLevelHFJetConstituentSub = MCDetectorLevelHFJetConstituentsSub::iterator;
-
-namespace mcdetectorlevelhfjetmatching2
-{
-DECLARE_SOA_INDEX_COLUMN(MCDetectorLevelHFJet, matchedJet);
-}
-namespace mcparticlelevelhfjetmatching2
-{
-DECLARE_SOA_INDEX_COLUMN(MCParticleLevelHFJet, matchedJet);
-}
-DECLARE_SOA_TABLE(MatchedMCParticleDetectorLevelHFJets, "AOD", "HFJETMCPDMATCH", mcdetectorlevelhfjetmatching2::MCDetectorLevelHFJetId);
-DECLARE_SOA_TABLE(MatchedMCDetectorParticleLevelHFJets, "AOD", "HFJETMCDPMATCH", mcparticlelevelhfjetmatching2::MCParticleLevelHFJetId);
-
 } // namespace o2::aod
 
-#endif
+#endif // PWGJE_DATAMODEL_JET_H_
