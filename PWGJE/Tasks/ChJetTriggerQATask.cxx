@@ -173,7 +173,7 @@ struct ChJetTriggerQATask {
   Filter trackFilter = (nabs(aod::track::eta) < cfgTPCVolume) && (aod::track::phi > cfgTrackPhiMinCut) && (aod::track::phi < cfgTrackPhiMaxCut) && (aod::track::pt > cfgJetPtMin);
 
   // declare filters on jets
-  Filter jetRadiusSelection = o2::aod::jet::r == std::round(cfgJetR * 100);
+  Filter jetRadiusSelection = o2::aod::jet::r == nround(cfgJetR.node() * 100.0f);
 
   using filteredJets = o2::soa::Filtered<o2::aod::Jets>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra,

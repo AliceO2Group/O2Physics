@@ -843,8 +843,8 @@ auto cosPiKPhiRestFrame(const T& candidate, int option)
 
   ROOT::Math::PxPyPzMVector vecPi(momPi[0], momPi[1], momPi[2], RecoDecay::getMassPDG(kPiPlus));
   ROOT::Math::PxPyPzMVector vecK1(momK1[0], momK1[1], momK1[2], RecoDecay::getMassPDG(kKPlus));
-  auto momPhi = RecoDecay::pVec(momK1, momK2);
-  ROOT::Math::PxPyPzMVector vecPhi(momPhi[0], momPhi[1], momPhi[2], RecoDecay::getMassPDG(pdg::Code::kPhi));
+  ROOT::Math::PxPyPzMVector vecK2(momK2[0], momK2[1], momK2[2], RecoDecay::getMassPDG(kKPlus));
+  ROOT::Math::PxPyPzMVector vecPhi = vecK1 + vecK2;
 
   ROOT::Math::Boost boostToPhiRestFrame(vecPhi.BoostToCM());
   auto momPiPhiRestFrame = boostToPhiRestFrame(vecPi).Vect();
