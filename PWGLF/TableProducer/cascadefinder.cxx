@@ -39,6 +39,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessFinderTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -61,37 +62,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 using namespace ROOT::Math;
-
-namespace o2::aod
-{
-
-namespace cascgoodpostracks
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(GoodPosTrack, goodPosTrack, int, Tracks, "_GoodPos");
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
-} // namespace cascgoodpostracks
-DECLARE_SOA_TABLE(CascGoodPosTracks, "AOD", "CASCGOODPTRACKS", o2::soa::Index<>, cascgoodpostracks::GoodPosTrackId, cascgoodpostracks::CollisionId, cascgoodpostracks::DCAXY);
-namespace cascgoodnegtracks
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(GoodNegTrack, goodNegTrack, int, Tracks, "_GoodNeg");
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
-} // namespace cascgoodnegtracks
-DECLARE_SOA_TABLE(CascGoodNegTracks, "AOD", "CASCGOODNTRACKS", o2::soa::Index<>, cascgoodnegtracks::GoodNegTrackId, cascgoodnegtracks::CollisionId, cascgoodnegtracks::DCAXY);
-namespace cascgoodlambdas
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(GoodLambda, goodLambda, int, V0Datas, "_GoodLambda");
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-} // namespace cascgoodlambdas
-DECLARE_SOA_TABLE(CascGoodLambdas, "AOD", "CASCGOODLAM", o2::soa::Index<>, cascgoodlambdas::GoodLambdaId, cascgoodlambdas::CollisionId);
-namespace cascgoodantilambdas
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(GoodAntiLambda, goodAntiLambda, int, V0Datas, "_GoodAntiLambda");
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-} // namespace cascgoodantilambdas
-DECLARE_SOA_TABLE(CascGoodAntiLambdas, "AOD", "CASCGOODALAM", o2::soa::Index<>, cascgoodantilambdas::GoodAntiLambdaId, cascgoodantilambdas::CollisionId);
-} // namespace o2::aod
 
 struct cascadeprefilter {
   Configurable<float> dcabachtopv{"dcabachtopv", .1, "DCA Bach To PV"};
@@ -163,7 +133,7 @@ struct cascadeprefilter {
 };
 
 struct cascadefinder {
-  Produces<aod::CascData> cascdata;
+  Produces<aod::StoredCascDatas> cascdata;
 
   OutputObj<TH1F> hCandPerEvent{TH1F("hCandPerEvent", "", 100, 0, 100)};
 
@@ -281,7 +251,7 @@ struct cascadefinder {
 
             lNCand++;
             // If we got here, it means this is a good candidate!
-            cascdata(v0.globalIndex(), v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
+            cascdata(v0.globalIndex(), -1, v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
                      -1, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
                      pvecpos[0], pvecpos[1], pvecpos[2],
                      pvecneg[0], pvecneg[1], pvecneg[2],
@@ -364,7 +334,7 @@ struct cascadefinder {
 
             lNCand++;
             // If we got here, it means this is a good candidate!
-            cascdata(v0.globalIndex(), v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
+            cascdata(v0.globalIndex(), -1, v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
                      +1, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
                      pvecpos[0], pvecpos[1], pvecpos[2],
                      pvecneg[0], pvecneg[1], pvecneg[2],
@@ -446,7 +416,7 @@ struct cascadefinderQA {
 
 /// Extends the cascdata table with expression columns
 struct cascadeinitializer {
-  Spawns<aod::CascDataExt> cascdataext;
+  Spawns<aod::CascData> cascdataext;
   void init(InitContext const&) {}
 };
 

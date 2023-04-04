@@ -50,8 +50,8 @@ struct JetTriggerQA {
     kNTriggers
   };
 
-  Preslice<aod::JetTrackConstituents> perJetTrackConstituents = o2::aod::jetconstituents::jetId;
-  Preslice<aod::JetClusterConstituents> perJetClusterConstituents = o2::aod::jetconstituents::jetId;
+  // Preslice<aod::JetTrackConstituents> perJetTrackConstituents = o2::aod::jetconstituents::jetId;
+  // Preslice<aod::JetClusterConstituents> perJetClusterConstituents = o2::aod::jetconstituents::jetId;
 
   HistogramRegistry registry{"registry"};
 
@@ -265,7 +265,8 @@ struct JetTriggerQA {
     return dphi;
   }
 
-  Bool_t isJetInEmcal(aod::Jet const& jet)
+  template <typename T>
+  Bool_t isJetInEmcal(T const& jet)
   {
     double emcalEtaMin = -0.7, emcalEtaMax = 0.7, emcalPhiMin = 1.40, emcalPhiMax = 3.26; // Phi: 80 - 187 deg
     double R = jet.r() * 1e-2;                                                            // Jet R is saved as round(100*R)
@@ -283,7 +284,8 @@ struct JetTriggerQA {
     return false;
   }
 
-  void check_maxJetPt(aod::Jet jet, std::vector<aod::Jet>& vecMaxJet)
+  template <typename T, typename U>
+  void check_maxJetPt(T const jet, U& vecMaxJet)
   {
     for (unsigned int i = 0; i < vecMaxJet.size(); i++) {
       auto maxJet = vecMaxJet[i];
@@ -310,9 +312,7 @@ struct JetTriggerQA {
   }
 
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::FullJetFilters>::iterator const& collision,
-               aod::Jets const& jets,
-               aod::JetTrackConstituents const& jetTrackConstituents,
-               aod::JetClusterConstituents const& jetClusterConstituents,
+               soa::Join<aod::FullJets, aod::FullJetConstituents> const& jets,
                aod::Tracks const& tracks,
                selectedClusters const& clusters)
   {
@@ -404,8 +404,8 @@ struct JetTriggerQA {
 
     double maxClusterObservableEMCAL = -1., maxClusterObservableDCAL = -1.;
     selectedClusters::iterator maxClusterEMCAL, maxClusterDCAL;
-    std::vector<aod::Jet> vecMaxJet;
-    std::vector<aod::Jet> vecMaxJetNoFiducial;
+    std::vector<soa::Join<aod::FullJets, aod::FullJetConstituents>::iterator> vecMaxJet;
+    std::vector<soa::Join<aod::FullJets, aod::FullJetConstituents>::iterator> vecMaxJetNoFiducial;
 
     for (const auto& jet : jets) {
       double jetPt = jet.pt(), jetR = jet.r() * 1e-2;
@@ -420,15 +420,16 @@ struct JetTriggerQA {
 
       // Slice JetTrackConstituents table to obtain a list of trackId belonging to this jet only (and the same for clusters)
       // This gives us access to all jet substructure information
-      auto tracksInJet = jetTrackConstituents.sliceBy(perJetTrackConstituents, jet.globalIndex());
-      for (const auto& trackList : tracksInJet) {
-        auto trackPt = trackList.track().pt();
-        auto chargeFrag = trackList.track().px() * jet.px() + trackList.track().py() * jet.py() + trackList.track().pz() * jet.pz();
+      // auto tracksInJet = jetTrackConstituents.sliceBy(perJetTrackConstituents, jet.globalIndex());
+      // for (const auto& trackList : tracksInJet) {
+      for (auto& track : jet.tracks_as<aod::Tracks>()) {
+        auto trackPt = track.pt();
+        auto chargeFrag = track.px() * jet.px() + track.py() * jet.py() + track.pz() * jet.pz();
         chargeFrag /= (jet.p() * jet.p());
         auto z = trackPt / jetPt;
-        auto dphi = jet.phi() - trackList.track().phi();
+        auto dphi = jet.phi() - track.phi();
         dphi = check_dphi(dphi);
-        auto dR = TMath::Sqrt(dphi * dphi + TMath::Power(jet.eta() - trackList.track().eta(), 2));
+        auto dR = TMath::Sqrt(dphi * dphi + TMath::Power(jet.eta() - track.eta(), 2));
         zTheta += z * dR / jetR;
         zSqTheta += z * z * dR / jetR;
         zThetaSq += z * dR * dR / (jetR * jetR);
@@ -441,14 +442,15 @@ struct JetTriggerQA {
         }
       } // for tracks in jet
 
-      auto clustersInJet = jetClusterConstituents.sliceBy(perJetClusterConstituents, jet.globalIndex());
-      for (const auto& clusterList : clustersInJet) {
-        auto clusterPt = clusterList.cluster().energy() / std::cosh(clusterList.cluster().eta());
-        neutralEnergyFraction += clusterList.cluster().energy();
+      // auto clustersInJet = jetClusterConstituents.sliceBy(perJetClusterConstituents, jet.globalIndex());
+      // for (const auto& clusterList : clustersInJet) {
+      for (auto& cluster : jet.tracks_as<selectedClusters>()) {
+        auto clusterPt = cluster.energy() / std::cosh(cluster.eta());
+        neutralEnergyFraction += cluster.energy();
         auto z = clusterPt / jetPt;
-        auto dphi = jet.phi() - clusterList.cluster().phi();
+        auto dphi = jet.phi() - cluster.phi();
         dphi = check_dphi(dphi);
-        auto dR = TMath::Sqrt(dphi * dphi + TMath::Power(jet.eta() - clusterList.cluster().eta(), 2));
+        auto dR = TMath::Sqrt(dphi * dphi + TMath::Power(jet.eta() - cluster.eta(), 2));
         zTheta += z * dR / jetR;
         zSqTheta += z * z * dR / jetR;
         zThetaSq += z * dR * dR / (jetR * jetR);

@@ -239,6 +239,7 @@ struct NucleiSpectraTask {
   ConfigurableAxis cfgPtBinsAlpha{"cfgPtBinsAlpha", {100, 0., 10.}, "Pt binning for Alpha"};
 
   ConfigurableAxis cfgCentralityBins{"cfgCentralityBins", {100, 0., 100.}, "Centrality binning"};
+  ConfigurableAxis cfgMomResBins{"cfgMomResBins", {200, -1., 1.}, "Momentum resolution binning"};
   ConfigurableAxis cfgNsigmaTPCbins{"cfgNsigmaTPCbins", {100, -5., 5.}, "nsigma_TPC binning"};
   ConfigurableAxis cfgNsigmaTOFbins{"cfgNsigmaTOFbins", {100, -5., 5.}, "nsigma_TOF binning"};
   ConfigurableAxis cfgTOFmassBins{"cfgTOFmassBins", {200, -5., 5.}, "TOF mass binning"};
@@ -255,7 +256,7 @@ struct NucleiSpectraTask {
     const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)cfgCentralityEstimator)};
     const AxisSpec nSigmaAxes[2]{{cfgNsigmaTPCbins, "n#sigma_{TPC}"}, {cfgNsigmaTOFbins, "n#sigma_{TOF}"}};
     const AxisSpec tofMassAxis{cfgTOFmassBins, "TOF mass - PDG mass"};
-    const AxisSpec ptResAxis{{200, -1, 1}, "#Delta#it{p}_{T}/#it{p}_{T}"};
+    const AxisSpec ptResAxis{cfgMomResBins, "#Delta#it{p}_{T}/#it{p}_{T}"};
 
     const AxisSpec ptAxes[4]{
       {cfgPtBinsDeuterons, "#it{p}_{T} (GeV/#it{c})"},

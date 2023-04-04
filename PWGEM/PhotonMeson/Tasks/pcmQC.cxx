@@ -16,6 +16,8 @@
 
 #include <array>
 #include "TString.h"
+#include "THashList.h"
+#include "TDirectory.h"
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
 #include "Math/LorentzRotation.h"
@@ -35,8 +37,12 @@
 #include "Common/Core/RecoDecay.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
+#include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
 
 using namespace o2;
+using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -85,110 +91,112 @@ using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF, aod::V0
 using MyV0Photon = MyV0Photons::iterator;
 
 struct PCMQC {
-  HistogramRegistry registry{
-    "PCMQC",
-    {
-      {"hCollisionCounter", "hCollisionCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
-    },
-  };
+
+  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of v0 photon cuts"};
+
+  std::vector<V0PhotonCut> fPCMCuts;
+
+  OutputObj<THashList> fOutputEvent{"Event"};
+  OutputObj<THashList> fOutputTrack{"Track"};
+  OutputObj<THashList> fOutputV0{"V0"};
+  THashList* fMainList = new THashList();
+
+  // static constexpr std::string_view ambtracktypes[2] = {"NonAmb", "Amb"};
   void addhistograms()
   {
-    const TString tracktype[2] = {"NonAmb", "Amb"};
-    const TString pairtype[2] = {"NonAmb", "Amb"};
+    fMainList->SetOwner(true);
+    fMainList->SetName("fMainList");
+
+    // create sub lists first.
+    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Event");
+    THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
+    o2::aod::emphotonhistograms::DefineHistograms(list_ev, "Event");
+
+    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Track");
+    THashList* list_tr = reinterpret_cast<THashList*>(fMainList->FindObject("Track"));
+
+    o2::aod::emphotonhistograms::AddHistClass(fMainList, "V0");
+    THashList* list_v0 = reinterpret_cast<THashList*>(fMainList->FindObject("V0"));
+
+    for (const auto& cut : fPCMCuts) {
+      const char* cutname = cut.GetName();
+      o2::aod::emphotonhistograms::AddHistClass(list_tr, cutname);
+      o2::aod::emphotonhistograms::AddHistClass(list_v0, cutname);
+    }
 
     // for single tracks
-    for (int i = 0; i < 2; i++) {
-      // registry.add(Form("%sTrack/hNbc", tracktype[i].Data()), "number of bcs", HistType::kTH1F, {{101, -0.5, 100.5}});
-      // registry.add(Form("%sTrack/hNcoll", tracktype[i].Data()), "number of collisions", HistType::kTH1F, {{101, -0.5, 100.5}});
-      registry.add(Form("%sTrack/hPt", tracktype[i].Data()), "pT", HistType::kTH1F, {{1000, 0.0f, 10}});
-      registry.add(Form("%sTrack/hEtaPhi", tracktype[i].Data()), "#eta vs. #varphi", HistType::kTH2F, {{180, 0, TMath::TwoPi()}, {40, -2.0f, 2.0f}});
-      registry.add(Form("%sTrack/hEtaPhiPosDaughter", tracktype[i].Data()), "#eta vs. #varphi positive daughter;", HistType::kTH2F, {{40, -2.0f, 2.0f}, {180, 0, TMath::TwoPi()}});
-      registry.add(Form("%sTrack/hEtaPhiNegDaughter", tracktype[i].Data()), "#eta vs. #varphi negative daughter;", HistType::kTH2F, {{40, -2.0f, 2.0f}, {180, 0, TMath::TwoPi()}});
-      registry.add(Form("%sTrack/hDCAxyz", tracktype[i].Data()), "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -5.0f, 5.0f}});
-      registry.add(Form("%sTrack/hNclsTPC", tracktype[i].Data()), "number of TPC clusters", HistType::kTH1F, {{161, -0.5, 160.5}});
-      registry.add(Form("%sTrack/hNcrTPC", tracktype[i].Data()), "number of TPC crossed rows", HistType::kTH1F, {{161, -0.5, 160.5}});
-      registry.add(Form("%sTrack/hChi2TPC", tracktype[i].Data()), "chi2/number of TPC clusters", HistType::kTH1F, {{100, 0, 10}});
-      registry.add(Form("%sTrack/hTPCdEdx", tracktype[i].Data()), "TPC dE/dx", HistType::kTH2F, {{1000, 0, 10}, {200, 0, 200}});
-      registry.add(Form("%sTrack/hTPCNsigmaEl", tracktype[i].Data()), "TPC n sigma el", HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}});
-      registry.add(Form("%sTrack/hTPCNsigmaPi", tracktype[i].Data()), "TPC n sigma pi", HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}});
-      registry.add(Form("%sTrack/hTPCNcr2Nf", tracktype[i].Data()), "TPC Ncr/Nfindable", HistType::kTH1F, {{200, 0, 2}});
-      registry.add(Form("%sTrack/hNclsITS", tracktype[i].Data()), "number of ITS clusters", HistType::kTH1F, {{8, -0.5, 7.5}});
-      registry.add(Form("%sTrack/hChi2ITS", tracktype[i].Data()), "chi2/number of ITS clusters", HistType::kTH1F, {{36, 0, 36}});
-      registry.add(Form("%sTrack/hDCAxyPosToPV", pairtype[i].Data()), "hDCAxyPosToPV;DCA_{xy} (cm);", HistType::kTH1F, {{100, -5.0f, 5.0f}});
-      registry.add(Form("%sTrack/hDCAxyNegToPV", pairtype[i].Data()), "hDCAxyNegToPV;DCA_{xy} (cm);", HistType::kTH1F, {{100, -5.0f, 5.0f}});
-      registry.add(Form("%sTrack/hDCAzPosToPV", pairtype[i].Data()), "hDCAzPosToPV;DCA_{z} (cm);", HistType::kTH1F, {{100, -5.0f, 5.0f}});
-      registry.add(Form("%sTrack/hDCAzNegToPV", pairtype[i].Data()), "hDCAzNegToPV;DCA_{z} (cm);", HistType::kTH1F, {{100, -5.0f, 5.0f}});
+    for (auto& cut : fPCMCuts) {
+      std::string_view cutname = cut.GetName();
+      THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("Track")->FindObject(cutname.data()));
+      o2::aod::emphotonhistograms::DefineHistograms(list, "Track");
     }
 
     // for V0s
-    for (int i = 0; i < 2; i++) {
-      registry.add(Form("%sV0/hNgamma", pairtype[i].Data()), "Number of #photon candidates;Number of #gamma candidates", HistType::kTH1F, {{101, -0.5f, 100.5}});
-      registry.add(Form("%sV0/hPt", pairtype[i].Data()), "pT;p_{T} (GeV/c)", HistType::kTH1F, {{1000, 0.0f, 10}});
-      registry.add(Form("%sV0/hEtaPhi", pairtype[i].Data()), "#eta vs. #varphi;#varphi (rad.);#eta", HistType::kTH2F, {{180, 0, TMath::TwoPi()}, {40, -2.0f, 2.0f}});
-      registry.add(Form("%sV0/hRadius", pairtype[i].Data()), "V0Radius; radius in Z (cm);radius in XY (cm)", HistType::kTH2F, {{500, -250, 250}, {500, 0.0f, 250.0f}});
-      registry.add(Form("%sV0/hRadius_recalc", pairtype[i].Data()), "V0Radius; radius in Z (cm);radius in XY (cm)", HistType::kTH2F, {{500, -250, 250}, {500, 0.0f, 250.0f}});
-      registry.add(Form("%sV0/hCosPA", pairtype[i].Data()), "V0CosPA;cosine pointing angle", HistType::kTH1F, {{200, 0.8f, 1.0f}});
-      registry.add(Form("%sV0/hPCA", pairtype[i].Data()), "distance between 2 legs; PCA (cm)", HistType::kTH1F, {{100, 0.0f, 10.0f}});
-      registry.add(Form("%sV0/hAPplot", pairtype[i].Data()), "AP plot;#alpha;q_{T} (GeV/c)", HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
-      registry.add(Form("%sV0/hGammaPsiPair", pairtype[i].Data()), "#psi_{pair} for photon conversion;#psi_{pair} (rad.);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{160, 0.0, TMath::PiOver2()}, {100, 0.0f, 0.1f}});
-      registry.add(Form("%sV0/hMassGamma", pairtype[i].Data()), "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{2000, 0.0f, 200.0f}, {100, 0.0f, 0.1f}});
-      registry.add(Form("%sV0/hMassGamma_recalc", pairtype[i].Data()), "recalc. KF hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", HistType::kTH2F, {{2000, 0.0f, 200.0f}, {100, 0.0f, 0.1f}});
-      registry.add(Form("%sV0/hGammaRxy", pairtype[i].Data()), "conversion point in XY;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{1000, -250.0f, 250.0f}, {1000, -250.0f, 250.0f}});
-      registry.add(Form("%sV0/hGammaRxy_recalc", pairtype[i].Data()), "recalc. KF conversion point in XY;V_{x} (cm);V_{y} (cm)", HistType::kTH2F, {{1000, -250.0f, 250.0f}, {1000, -250.0f, 250.0f}});
-      registry.add(Form("%sV0/hKFChi2vsR_recalc", pairtype[i].Data()), "recalc. KF conversion point in XY;R_{xy} (cm);KF chi2/NDF", HistType::kTH2F, {{250, 0.0f, 250.0f}, {5000, 0.f, 5000.0f}});
-      registry.add(Form("%sV0/hKFChi2vsZ_recalc", pairtype[i].Data()), "recalc. KF conversion point in Z;Z (cm);KF chi2/NDF", HistType::kTH2F, {{500, -250.0f, 250.0f}, {5000, 0.f, 5000.0f}});
+    for (auto& cut : fPCMCuts) {
+      std::string_view cutname = cut.GetName();
+      THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("V0")->FindObject(cutname.data()));
+      o2::aod::emphotonhistograms::DefineHistograms(list, "V0");
     }
+  }
+
+  void DefineCuts()
+  {
+    TString cutNamesStr = fConfigPCMCuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        const char* cutname = objArray->At(icut)->GetName();
+        LOGF(info, "add cut : %s", cutname);
+        fPCMCuts.push_back(*pcmcuts::GetCut(cutname));
+      }
+    }
+    LOGF(info, "Number of PCM cuts = %d", fPCMCuts.size());
   }
 
   void init(InitContext& context)
   {
-    addhistograms();
+    DefineCuts();
+    addhistograms(); // please call this after DefinCuts();
+
+    fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
+    fOutputTrack.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Track")));
+    fOutputV0.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("V0")));
   }
 
-  template <int mode, typename T>
-  void fillHistosLeg(const T& leg)
+  template <typename T>
+  void fillHistosLeg(const T& leg, const char* cutname)
   {
-    static constexpr std::string_view typenames[] = {"NonAmb", "Amb"};
-    registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hPt"), leg.pt());
-    registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hEtaPhi"), leg.phi(), leg.eta());
-    registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hDCAxyz"), leg.dcaXY(), leg.dcaZ());
-    registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hNclsTPC"), leg.tpcNClsFound());
-    registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hNclsITS"), leg.itsNCls());
-    registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hNcrTPC"), leg.tpcNClsCrossedRows());
-    registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hTPCNcr2Nf"), leg.tpcCrossedRowsOverFindableCls());
-    registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hChi2TPC"), leg.tpcChi2NCl());
-    registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hChi2ITS"), leg.itsChi2NCl());
-    registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hTPCdEdx"), leg.tpcInnerParam(), leg.tpcSignal());
-    registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hTPCNsigmaEl"), leg.tpcInnerParam(), leg.tpcNSigmaEl());
-    registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hTPCNsigmaPi"), leg.tpcInnerParam(), leg.tpcNSigmaPi());
-
-    if (leg.sign() > 0) {
-      registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hDCAxyPosToPV"), leg.dcaXY());
-      registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hDCAzPosToPV"), leg.dcaZ());
-    } else {
-      registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hDCAxyNegToPV"), leg.dcaXY());
-      registry.fill(HIST(typenames[mode]) + HIST("Track/") + HIST("hDCAzNegToPV"), leg.dcaZ());
-    }
+    reinterpret_cast<TH1F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hPt"))->Fill(leg.pt());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hEtaPhi"))->Fill(leg.phi(), leg.eta());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hDCAxyz"))->Fill(leg.dcaXY(), leg.dcaZ());
+    reinterpret_cast<TH1F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hNclsTPC"))->Fill(leg.tpcNClsFound());
+    reinterpret_cast<TH1F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hNclsITS"))->Fill(leg.itsNCls());
+    reinterpret_cast<TH1F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hNcrTPC"))->Fill(leg.tpcNClsCrossedRows());
+    reinterpret_cast<TH1F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hTPCNcr2Nf"))->Fill(leg.tpcCrossedRowsOverFindableCls());
+    reinterpret_cast<TH1F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hChi2TPC"))->Fill(leg.tpcChi2NCl());
+    reinterpret_cast<TH1F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hChi2ITS"))->Fill(leg.itsChi2NCl());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hTPCdEdx"))->Fill(leg.tpcInnerParam(), leg.tpcSignal());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hTPCNsigmaEl"))->Fill(leg.tpcInnerParam(), leg.tpcNSigmaEl());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hTPCNsigmaPi"))->Fill(leg.tpcInnerParam(), leg.tpcNSigmaPi());
   }
 
-  template <int mode, typename T>
-  void fillHistosV0(const T& v0)
+  template <typename T>
+  void fillHistosV0(const T& v0, const char* cutname)
   {
-    static constexpr std::string_view typenames[] = {"NonAmb", "Amb"};
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hPt"), v0.pt());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hEtaPhi"), v0.phi(), v0.eta());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hRadius"), v0.vz(), v0.v0radius());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hRadius_recalc"), v0.recalculatedVtxZ(), v0.recalculatedVtxR());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hCosPA"), v0.cospa());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hPCA"), v0.pca());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hAPplot"), v0.alpha(), v0.qtarm());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hMassGamma"), v0.v0radius(), v0.mGamma());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hMassGamma_recalc"), v0.recalculatedVtxR(), v0.mGamma());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hGammaPsiPair"), v0.psipair(), v0.mGamma());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hGammaRxy"), v0.vx(), v0.vy());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hGammaRxy_recalc"), v0.recalculatedVtxX(), v0.recalculatedVtxY());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hKFChi2vsR_recalc"), v0.recalculatedVtxR(), v0.chiSquareNDF());
-    registry.fill(HIST(typenames[mode]) + HIST("V0/") + HIST("hKFChi2vsZ_recalc"), v0.recalculatedVtxZ(), v0.chiSquareNDF());
+    reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hPt"))->Fill(v0.pt());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hEtaPhi"))->Fill(v0.phi(), v0.eta());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hRadius"))->Fill(v0.vz(), v0.v0radius());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hRadius_recalc"))->Fill(v0.recalculatedVtxZ(), v0.recalculatedVtxR());
+    reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hCosPA"))->Fill(v0.cospa());
+    reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hPCA"))->Fill(v0.pca());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hAPplot"))->Fill(v0.alpha(), v0.qtarm());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hMassGamma"))->Fill(v0.v0radius(), v0.mGamma());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hMassGamma_recalc"))->Fill(v0.recalculatedVtxR(), v0.mGamma());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hGammaPsiPair"))->Fill(v0.psipair(), v0.mGamma());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hGammaRxy"))->Fill(v0.vx(), v0.vy());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hGammaRxy_recalc"))->Fill(v0.recalculatedVtxX(), v0.recalculatedVtxY());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hKFChi2vsR_recalc"))->Fill(v0.recalculatedVtxR(), v0.chiSquareNDF());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hKFChi2vsZ_recalc"))->Fill(v0.recalculatedVtxZ(), v0.chiSquareNDF());
   }
 
   Filter v0filter = o2::aod::v0photonflag::isCloser == true;
@@ -197,53 +205,42 @@ struct PCMQC {
   void processQC(aod::EMReducedEvents const& collisions, MyFilteredV0Photons const& v0photons, aod::V0Legs const& v0legs)
   {
     for (auto& collision : collisions) {
-      registry.fill(HIST("hCollisionCounter"), 1.0); // all
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(1.0);
       if (!collision.sel8()) {
         continue;
       }
-      registry.fill(HIST("hCollisionCounter"), 2.0); // FT0VX i.e. FT0and
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(2.0);
 
       if (collision.numContrib() < 0.5) {
         continue;
       }
-      registry.fill(HIST("hCollisionCounter"), 3.0); // Ncontrib > 0
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(3.0);
 
       if (abs(collision.posZ()) > 10.0) {
         continue;
       }
-      registry.fill(HIST("hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
-      auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
 
-      int ng_nonamb = 0;
-      int ng_amb = 0;
+      auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
       for (auto& g : V0Photons_coll) {
         auto pos = g.posTrack_as<aod::V0Legs>();
         auto ele = g.negTrack_as<aod::V0Legs>();
-        registry.fill(HIST("NonAmbTrack/hEtaPhiPosDaughter"), pos.eta(), pos.phi());
-        registry.fill(HIST("NonAmbTrack/hEtaPhiNegDaughter"), ele.eta(), ele.phi());
 
-        if (ele.isAmbTrack() || pos.isAmbTrack()) {
-          fillHistosV0<1>(g);
-          ng_amb++;
-        } else {
-          fillHistosV0<0>(g);
-          ng_nonamb++;
-        }
-        for (auto& leg : {pos, ele}) {
-          if (leg.isAmbTrack())
-            fillHistosLeg<1>(leg);
-          else
-            fillHistosLeg<0>(leg);
-        }
+        for (const auto& cut : fPCMCuts) {
+          if (cut.IsSelected(g)) {
+            fillHistosV0(g, cut.GetName());
+            for (auto& leg : {pos, ele}) {
+              fillHistosLeg(leg, cut.GetName());
+            }
+          }
+        } // end of cut loop
+      }   // end of v0 loop
+    }     // end of collision loop
+  }       // end of process
 
-      } // end of v0 loop
-    }   // end of collision loop
-  }     // end of processS
-
-  void processDummy(aod::EMReducedEvents::iterator const& collision)
-  {
-    // do nothing
-  }
+  void processDummy(aod::EMReducedEvents::iterator const& collision) {}
 
   PROCESS_SWITCH(PCMQC, processQC, "run PCM QC", true);
   PROCESS_SWITCH(PCMQC, processDummy, "Dummy function", false);
