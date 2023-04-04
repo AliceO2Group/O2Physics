@@ -116,7 +116,8 @@ struct lmeelfcocktail
   TH1F** fh_DCAtemplates;
 
   Configurable<int> fCollisionSystem{"cfgCollisionSystem", 200, "set the collision system"};
-  Configurable<bool> fConfigWriteTTree{"cfgWriteTTree", false, "whether tree output should be written"};
+  Configurable<bool> fConfigWriteTTree{"cfgWriteTTree", false, "write tree output"};
+  Configurable<bool> fConfigDoPairing{"cfgDoPairing", true, "do like and unlike sign pairing"};
   Configurable<float> fConfigMaxEta{"cfgMaxEta", 0.8, "maxium |eta|"};
   Configurable<float> fConfigMinPt{"cfgMinPt", 0.2, "minium pT"};
   Configurable<float> fConfigMaxPt{"cfgMaxPt", 8.0, "maximum pT"};
@@ -206,47 +207,48 @@ struct lmeelfcocktail
       trackID++;
       if (o2::mcgenstatus::getHepMCStatusCode(mctrack.getStatusCode()) != 1)
         continue;
-      // LS and ULS spectra
-      //---------------
       if (abs(mctrack.GetPdgCode()) == 11) {
         // get the electron
         //---------------
-        PxPyPzEVector e, dielectron;
-        Char_t ech, dielectron_ch;
-        Double_t eweight, dielectron_weight;
-        e.SetPxPyPzE(mctrack.Px(), mctrack.Py(), mctrack.Pz(),
-                     mctrack.GetEnergy());
-        if (mctrack.GetPdgCode() > 0) {
-          ech = 1.;
-        } else {
-          ech = -1.;
-        };
-        eweight = mctrack.getWeight();
-        // put in the buffer
-        //-----------------
-        eBuff.push_back(e);
-        echBuff.push_back(ech);
-        eweightBuff.push_back(eweight);
-        // loop the buffer and pair
-        //------------------------
-        for (Int_t jj = eBuff.size() - 2; jj >= 0; jj--) {
-          dielectron = eBuff.at(jj) + e;
-          dielectron_ch = (echBuff.at(jj) + ech) / 2;
-          dielectron_weight = eweightBuff.at(jj) * eweight;
+        if (fConfigDoPairing){
+          // LS and ULS spectra
+          PxPyPzEVector e, dielectron;
+          Char_t ech, dielectron_ch;
+          Double_t eweight, dielectron_weight;
+          e.SetPxPyPzE(mctrack.Px(), mctrack.Py(), mctrack.Pz(),
+                       mctrack.GetEnergy());
+          if (mctrack.GetPdgCode() > 0) {
+            ech = 1.;
+          } else {
+            ech = -1.;
+          };
+          eweight = mctrack.getWeight();
+          // put in the buffer
+          //-----------------
+          eBuff.push_back(e);
+          echBuff.push_back(ech);
+          eweightBuff.push_back(eweight);
+          // loop the buffer and pair
+          //------------------------
+          for (Int_t jj = eBuff.size() - 2; jj >= 0; jj--) {
+            dielectron = eBuff.at(jj) + e;
+            dielectron_ch = (echBuff.at(jj) + ech) / 2;
+            dielectron_weight = eweightBuff.at(jj) * eweight;
 
-          if (dielectron_ch == 0)
-            registry.fill(HIST("ULS_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
-          if (dielectron_ch > 0)
-            registry.fill(HIST("LSpp_orig"), dielectron.M(), dielectron.Pt(),dielectron_weight);
-          if (dielectron_ch < 0)
-            registry.fill(HIST("LSmm_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
-          if (e.Pt() > fConfigMinPt && eBuff.at(jj).Pt() > fConfigMinPt && e.Pt() < fConfigMaxPt && eBuff.at(jj).Pt() < fConfigMaxPt && TMath::Abs(e.Eta()) < fConfigMaxEta && TMath::Abs(eBuff.at(jj).Eta()) < fConfigMaxEta && e.Vect().Unit().Dot(eBuff.at(jj).Vect().Unit()) < TMath::Cos(fConfigMinOpAng)) {
             if (dielectron_ch == 0)
-              registry.fill(HIST("ULS"), dielectron.M(), dielectron.Pt(), dielectron_weight);
+              registry.fill(HIST("ULS_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
             if (dielectron_ch > 0)
-              registry.fill(HIST("LSpp"), dielectron.M(), dielectron.Pt(), dielectron_weight);
+              registry.fill(HIST("LSpp_orig"), dielectron.M(), dielectron.Pt(),dielectron_weight);
             if (dielectron_ch < 0)
-              registry.fill(HIST("LSmm"), dielectron.M(), dielectron.Pt(), dielectron_weight);
+              registry.fill(HIST("LSmm_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
+            if (e.Pt() > fConfigMinPt && eBuff.at(jj).Pt() > fConfigMinPt && e.Pt() < fConfigMaxPt && eBuff.at(jj).Pt() < fConfigMaxPt && TMath::Abs(e.Eta()) < fConfigMaxEta && TMath::Abs(eBuff.at(jj).Eta()) < fConfigMaxEta && e.Vect().Unit().Dot(eBuff.at(jj).Vect().Unit()) < TMath::Cos(fConfigMinOpAng)) {
+              if (dielectron_ch == 0)
+                registry.fill(HIST("ULS"), dielectron.M(), dielectron.Pt(), dielectron_weight);
+              if (dielectron_ch > 0)
+                registry.fill(HIST("LSpp"), dielectron.M(), dielectron.Pt(), dielectron_weight);
+              if (dielectron_ch < 0)
+                registry.fill(HIST("LSmm"), dielectron.M(), dielectron.Pt(), dielectron_weight);
+            }
           }
         }
 
@@ -712,13 +714,15 @@ struct lmeelfcocktail
 
     registry.add<TH1>("NEvents", "NEvents", HistType::kTH1F, {{1, 0, 1}}, false);
 
-    registry.add<TH2>("ULS", "ULS", HistType::kTH2F, {mAxis, ptAxis}, true);
-    registry.add<TH2>("LSpp", "LSpp", HistType::kTH2F, {mAxis, ptAxis}, true);
-    registry.add<TH2>("LSmm", "LSmm", HistType::kTH2F, {mAxis, ptAxis}, true);
+    if (fConfigDoPairing){
+      registry.add<TH2>("ULS", "ULS", HistType::kTH2F, {mAxis, ptAxis}, true);
+      registry.add<TH2>("LSpp", "LSpp", HistType::kTH2F, {mAxis, ptAxis}, true);
+      registry.add<TH2>("LSmm", "LSmm", HistType::kTH2F, {mAxis, ptAxis}, true);
 
-    registry.add<TH2>("ULS_orig", "ULS_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
-    registry.add<TH2>("LSpp_orig", "LSpp_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
-    registry.add<TH2>("LSmm_orig", "LSmm_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
+      registry.add<TH2>("ULS_orig", "ULS_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
+      registry.add<TH2>("LSpp_orig", "LSpp_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
+      registry.add<TH2>("LSmm_orig", "LSmm_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
+    }
 
     registry.add<TH2>("DCAeevsmee", "DCAeevsmee", HistType::kTH2F, {{fConfigMBins, "#it{m}_{ee} (GeV/c^{2})"}, {fConfigDCABins, "DCA_{xy}^{ee} (cm)"}}, true);
     registry.add<TH2>("DCAeevsptee", "DCAeevsptee", HistType::kTH2F, {{fConfigPtBins, "#it{p}_{T,ee} (GeV/c)"}, {fConfigDCABins, "DCA_{xy}^{ee} (cm)"}}, true);
