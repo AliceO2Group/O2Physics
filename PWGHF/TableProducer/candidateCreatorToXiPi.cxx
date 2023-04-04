@@ -78,15 +78,15 @@ struct HfCandidateCreatorToXiPi {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
 
+  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
+  using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   using MyCascTable = soa::Join<aod::CascDataExt, aod::CascCovs>;
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
     
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
-  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4);
-  using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
-
+  
   Preslice<MyTracks> tracksPerCollision = aod::track::collisionId;                                  // needed for PV refit
   Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
   Preslice<MyCascTable> cascadesPerCollision = aod::cascdata::collisionId;
@@ -107,7 +107,6 @@ struct HfCandidateCreatorToXiPi {
                MyCascTable const& cascades,
                MyTracks const& tracks,
                FilteredHfTrackAssocSel const& trackIndices,
-               // aod::HfPvRefitTrack const&,
                MyV0Table const&,
                aod::V0sLinked const&)
   {
@@ -180,8 +179,8 @@ struct HfCandidateCreatorToXiPi {
         auto trackParCovV0Dau1 = getTrackParCov(trackV0Dau1);
 
         // info from LF table
-        std::array<float, 3> pVecV0 = {v0Element.px(), v0Element.py(), v0Element.pz()}; // pVec stands for vector containing the 3-momentum components
-        std::array<float, 3> vertexV0 = {v0Element.x(), v0Element.y(), v0Element.z()};
+        std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()}; // pVec stands for vector containing the 3-momentum components
+        std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
         std::array<float, 21> covV0 = {0.};
         constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
         for (int i = 0; i < 6; i++) {
@@ -330,8 +329,7 @@ struct HfCandidateCreatorToXiPi {
           o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackOmegac, 2.f, matCorr, &impactParameterOmegac);
 
           // invariant mass under the hypothesis of particles ID corresponding to the decay chain
-          double mLambda = v0Element.mLambda();         // from LF table, V0 mass under lambda hypothesis
-          double mAntiLambda = v0Element.mAntiLambda(); // from LF table, V0 mass under anti-lambda hypothesis
+          double mLambda = casc.mLambda();         // from LF table, V0 mass under lambda hypothesis
           double mCasc = casc.mXi();
           const std::array<double, 2> arrMassOmegac = {massXiFromPDG, massPionFromPDG};
           double mOmegac = RecoDecay::m(std::array{pVecCascAsD, pVecPionFromOmegac}, arrMassOmegac);
@@ -393,7 +391,7 @@ struct HfCandidateCreatorToXiPi {
                        v0Element.globalIndex(), v0Element.posTrackId(), v0Element.negTrackId(),
                        casc.globalIndex(), trackPion.globalIndex(), trackXiDauCharged.globalIndex(),
                        impactParameterOmegac.getY(), impactParameterOmegac.getZ(),
-                       mLambda, mAntiLambda, mCasc, mOmegac,
+                       mLambda, mCasc, mOmegac,
                        cpaV0, cpaOmegac, cpaCasc, cpaxyV0, cpaxyOmegac, cpaxyCasc,
                        ctOmegac, ctCascade, ctV0, ctXic,
                        pseudorapV0PosDau, pseudorapV0NegDau, pseudorapPiFromCas, pseudorapPiFromOme,

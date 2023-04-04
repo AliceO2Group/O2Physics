@@ -325,12 +325,7 @@ struct HfCandidateSelectorToXiPi {
       bool statusInvMassCascade = false;
       bool statusInvMassOmegac = false;
 
-      double invMassLambda = 0;
-      if (signDecay < 0) {
-        invMassLambda = candidate.invMassLambda();
-      } else if (signDecay > 0) {
-        invMassLambda = candidate.invMassAntiLambda();
-      }
+      double invMassLambda = candidate.invMassLambda();
       double invMassCascade = candidate.invMassCascade();
       double invMassOmegac = candidate.invMassOmegac();
 

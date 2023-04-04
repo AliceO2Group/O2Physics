@@ -1461,7 +1461,6 @@ DECLARE_SOA_INDEX_COLUMN_FULL(PrimaryPi, primaryPi, int, Tracks, "_primarypi");
 DECLARE_SOA_COLUMN(ImpactParOmegacXY, impactParOmegacXY, float);
 DECLARE_SOA_COLUMN(ImpactParOmegacZ, impactParOmegacZ, float);
 DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, double);
-DECLARE_SOA_COLUMN(InvMassAntiLambda, invMassAntiLambda, double);
 DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, double);
 DECLARE_SOA_COLUMN(InvMassOmegac, invMassOmegac, double);
 DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, double);
@@ -1527,7 +1526,7 @@ DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   hf_cand_toxipi::ErrImpactParCascXY, hf_cand_toxipi::ErrImpactParPrimaryPiXY, hf_cand_toxipi::ErrImpactParV0XY,
                   hf_cand_toxipi::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_toxipi::CascadeId, hf_cand_toxipi::PrimaryPiId, cascdata::BachelorId,
                   hf_cand_toxipi::ImpactParOmegacXY, hf_cand_toxipi::ImpactParOmegacZ,
-                  hf_cand_toxipi::InvMassLambda, hf_cand_toxipi::InvMassAntiLambda, hf_cand_toxipi::InvMassCascade, hf_cand_toxipi::InvMassOmegac,
+                  hf_cand_toxipi::InvMassLambda, hf_cand_toxipi::InvMassCascade, hf_cand_toxipi::InvMassOmegac,
                   hf_cand_toxipi::CosPAV0, hf_cand_toxipi::CosPAOmegac, hf_cand_toxipi::CosPACasc, hf_cand_toxipi::CosPAXYV0, hf_cand_toxipi::CosPAXYOmegac, hf_cand_toxipi::CosPAXYCasc,
                   hf_cand_toxipi::CTauOmegac, hf_cand_toxipi::CTauCascade, hf_cand_toxipi::CTauV0, hf_cand_toxipi::CTauXic,
                   hf_cand_toxipi::EtaV0PosDau, hf_cand_toxipi::EtaV0NegDau, hf_cand_toxipi::EtaPiFromCasc, hf_cand_toxipi::EtaPiFromOme,
