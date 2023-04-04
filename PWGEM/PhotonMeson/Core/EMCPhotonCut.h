@@ -13,8 +13,8 @@
 // Class for emcal photon selection
 //
 
-#ifndef PWGEM_PHOTONMESON_CORE_EMCalPHOTONCUT_H_
-#define PWGEM_PHOTONMESON_CORE_EMCalPHOTONCUT_H_
+#ifndef PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_
+#define PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_
 
 #include <set>
 #include <vector>
@@ -42,7 +42,7 @@ class EMCPhotonCut : public TNamed
     kNCuts
   };
 
-  static const std::string mCutNames[static_cast<int>(EMCPhotonCuts::kNCuts)];
+  static const char* mCutNames[static_cast<int>(EMCPhotonCuts::kNCuts)];
 
   // Temporary function to check if cluster passes selection criteria. To be replaced by framework filters.
   template <typename T>
@@ -130,4 +130,4 @@ class EMCPhotonCut : public TNamed
   ClassDef(EMCPhotonCut, 1);
 };
 
-#endif // PWGEM_PHOTONMESON_CORE_EMCalPHOTONCUT_H_
+#endif // PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_

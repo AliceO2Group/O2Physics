@@ -18,7 +18,7 @@
 
 ClassImp(EMCPhotonCut);
 
-const std::string EMCPhotonCut::mCutNames[static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts)] = {"Energy", "NCell", "M02", "Timing", "TrackMatching", "Exotic"};
+const char* EMCPhotonCut::mCutNames[static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts)] = {"Energy", "NCell", "M02", "Timing", "TrackMatching", "Exotic"};
 
 void EMCPhotonCut::SetMinE(float min)
 {
