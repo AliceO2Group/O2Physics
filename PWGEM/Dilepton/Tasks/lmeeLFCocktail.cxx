@@ -101,20 +101,14 @@ struct lmeelfcocktail
   Configurable<std::string> fConfigPhotonPtDirName{"cfgPhotonPtDirName", "7TeV_Comb", "directory name for photon pT parametrization"};
   Configurable<std::string> fConfigPhotonPtFuncName{"cfgPhotonPtFuncName", "111_pt", "function name for photon pT parametrization"};
 
-  Configurable<std::string> fConfigKineFileName{"cfgKineFileName", "", "o2sim_Kine.root file name (without '_Kine.root')"};
-
-  ConfigurableAxis fConfigPtBins{"cfgPtBins", {0., 0.5, 1, 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.}, "pT bins"};
-  ConfigurableAxis fConfigMBins{"cfgMBins", {0., 0.08, 0.14, 0.2, 1.1, 2.7, 2.8, 3.2, 5.0}, "mee bins"};
-  ConfigurableAxis fConfigDCABins{"cfgDCABins", {0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "DCA bins"};
+  ConfigurableAxis fConfigPtBins{"cfgPtBins", {VARIABLE_WIDTH,0., 0.5, 1, 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.}, "pT bins"};
+  ConfigurableAxis fConfigMBins{"cfgMBins", {VARIABLE_WIDTH,0., 0.08, 0.14, 0.2, 1.1, 2.7, 2.8, 3.2, 5.0}, "mee bins"};
+  ConfigurableAxis fConfigDCABins{"cfgDCABins", {VARIABLE_WIDTH,0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "DCA bins"};
 
   Configurable<std::vector<double>> fConfigDCATemplateEdges{"cfgDCATemplateEdges", {0., .3, .4, .6, 1., 2.}, "DCA template edges"};
 
-
-  OutputObj<TH1F> testHist{TH1F("testHist", "testHist", 1, 0., 1.)};
-
   void init(o2::framework::InitContext& ic) {
     SetHistograms();
-    /*
     DCATemplateEdges = fConfigDCATemplateEdges;
     nbDCAtemplate = DCATemplateEdges.size();
     DCATemplateEdges.push_back(10000000.);
@@ -133,16 +127,12 @@ struct lmeelfcocktail
     GetMultHisto(TString(fConfigMultFileName), TString(fConfigMultHistPtName), TString(fConfigMultHistPt2Name), TString(fConfigMultHistMtName), TString(fConfigMultHistMt2Name));
     GetPhotonPtParametrization(TString(fConfigPhotonPtFileName), TString(fConfigPhotonPtDirName), TString(fConfigPhotonPtFuncName));
     fillKrollWada();
-    */
   }
 
   void run(o2::framework::ProcessingContext& pc){
     //get the tracks
     auto mctracks = pc.inputs().get<std::vector<o2::MCTrack>>("mctracks");
-    LOGP(info, "============================================ mctracks.size() = {}",mctracks.size());
     registry.fill(HIST("NEvents"), 0.5);
-    testHist->Fill(0.5);
-    /*
     double fwEffpT, fd1origpt, fd1origp, fd1origeta, fd1origphi, fd2origpt,
         fd2origp, fd2origeta, fd2origphi, feeorigpt, feeorigp, feeorigm,
         feeorigeta, feeorigrap, feeorigphi, feeorigphiv, fpairDCA, fd1DCA, fd2DCA, fd1pt,
@@ -163,7 +153,8 @@ struct lmeelfcocktail
     //  Loop over all MC particle
     for (auto &mctrack : mctracks) {
       trackID++;
-
+      if (o2::mcgenstatus::getHepMCStatusCode(mctrack.getStatusCode()) != 1)
+        continue;
       // LS and ULS spectra
       //---------------
       if (abs(mctrack.GetPdgCode()) == 11) {
@@ -482,33 +473,35 @@ struct lmeelfcocktail
         }
 
         // fill the histograms
-        for (Int_t jj = 0; jj < 3; jj++) { // fill the different hindex -> particles
-          if (hindex[jj] > -1) {
-            fmee_orig[hindex[jj]]->Fill(feeorigm, fweight);
-            if (fConfigALTweight == 1 || fConfigALTweight == 11) {
-              fmotherpT_orig[hindex[jj]]->Fill(fmothermt, fweight);
-            } else if (fConfigALTweight == 2 || fConfigALTweight == 22 || fConfigALTweight == 0) {
-              fmotherpT_orig[hindex[jj]]->Fill(fmotherpt, fweight);
-            }
-            fpteevsmee_orig[hindex[jj]]->Fill(feeorigm, feept, fweight);
-            fphi_orig[hindex[jj]]->Fill(feeorigphi, fweight);
-            frap_orig[hindex[jj]]->Fill(feeorigrap, fweight);
-            fmee_orig_wALT[hindex[jj]]->Fill(feeorigm, fweight * fwALT);
-            fpteevsmee_orig_wALT[hindex[jj]]->Fill(feeorigm, feept, fweight * fwALT);
-            if (fConfigALTweight == 1 || fConfigALTweight == 11) {
-              fmotherpT_orig_wALT[hindex[jj]]->Fill(fmothermt, fweight * fwALT);
-            } else if (fConfigALTweight == 2 || fConfigALTweight == 22 || fConfigALTweight == 0) {
-              fmotherpT_orig_wALT[hindex[jj]]->Fill(fmotherpt, fweight * fwALT);
-            }
-            if (fpass) {
-              fmee[hindex[jj]]->Fill(feem, fweight);
-              fpteevsmee[hindex[jj]]->Fill(feem, feept, fweight);
-              fphi[hindex[jj]]->Fill(feephi, fweight);
-              frap[hindex[jj]]->Fill(feerap, fweight);
-              registry.fill(HIST("DCAeevsmee"), feem, fpairDCA, fweight);
-              registry.fill(HIST("DCAeevsptee"), feept, fpairDCA, fweight);
-              fmee_wALT[hindex[jj]]->Fill(feem, fweight * fwALT);
-              fpteevsmee_wALT[hindex[jj]]->Fill(feem, feept, fweight * fwALT);
+        if (fdectyp<4){ // why here <4 and before <5 ???
+          for (Int_t jj = 0; jj < 3; jj++) { // fill the different hindex -> particles
+            if (hindex[jj] > -1) {
+              fmee_orig[hindex[jj]]->Fill(feeorigm, fweight);
+              if (fConfigALTweight == 1 || fConfigALTweight == 11) {
+                fmotherpT_orig[hindex[jj]]->Fill(fmothermt, fweight);
+              } else if (fConfigALTweight == 2 || fConfigALTweight == 22 || fConfigALTweight == 0) {
+                fmotherpT_orig[hindex[jj]]->Fill(fmotherpt, fweight);
+              }
+              fpteevsmee_orig[hindex[jj]]->Fill(feeorigm, feept, fweight);
+              fphi_orig[hindex[jj]]->Fill(feeorigphi, fweight);
+              frap_orig[hindex[jj]]->Fill(feeorigrap, fweight);
+              fmee_orig_wALT[hindex[jj]]->Fill(feeorigm, fweight * fwALT);
+              fpteevsmee_orig_wALT[hindex[jj]]->Fill(feeorigm, feept, fweight * fwALT);
+              if (fConfigALTweight == 1 || fConfigALTweight == 11) {
+                fmotherpT_orig_wALT[hindex[jj]]->Fill(fmothermt, fweight * fwALT);
+              } else if (fConfigALTweight == 2 || fConfigALTweight == 22 || fConfigALTweight == 0) {
+                fmotherpT_orig_wALT[hindex[jj]]->Fill(fmotherpt, fweight * fwALT);
+              }
+              if (fpass) {
+                fmee[hindex[jj]]->Fill(feem, fweight);
+                fpteevsmee[hindex[jj]]->Fill(feem, feept, fweight);
+                fphi[hindex[jj]]->Fill(feephi, fweight);
+                frap[hindex[jj]]->Fill(feerap, fweight);
+                registry.fill(HIST("DCAeevsmee"), feem, fpairDCA, fweight);
+                registry.fill(HIST("DCAeevsptee"), feept, fpairDCA, fweight);
+                fmee_wALT[hindex[jj]]->Fill(feem, fweight * fwALT);
+                fpteevsmee_wALT[hindex[jj]]->Fill(feem, feept, fweight * fwALT);
+              }
             }
           }
         }
@@ -600,7 +593,7 @@ struct lmeelfcocktail
           feep = ee.P();
           feem = ee.M();
           feeeta = ee.Eta();
-          feerap = e.Rapidity();
+          feerap = ee.Rapidity();
           feephi = ee.Phi();
           feephiv = PhiV(dau1, dau2);
           fmotherpt = beam.Pt();
@@ -653,7 +646,6 @@ struct lmeelfcocktail
     eBuff.clear();
     echBuff.clear();
     eweightBuff.clear();
-    */
   }
 
 
@@ -823,7 +815,7 @@ struct lmeelfcocktail
   void GetEffHisto(TString filename, TString histname)
   {
     // get efficiency histo
-    LOGP(detail, "Set Efficiency histo");
+    LOGP(info, "Set Efficiency histo");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     // Get Efficiency weight file:
@@ -845,7 +837,7 @@ struct lmeelfcocktail
   void GetResHisto(TString filename, TString ptHistName, TString etaHistName, TString phiPosHistName, TString phiNegHistName)
   {
     // get resolutoin histo
-    LOGP(detail, "Set Resolution histo");
+    LOGP(info, "Set Resolution histo");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     // Get Resolution map
@@ -891,7 +883,7 @@ struct lmeelfcocktail
   void GetResHisto(TString filename, TString pHistName)
   {
     // get resolutoin histo
-    LOGP(detail, "Set Resolution histo\n");
+    LOGP(info, "Set Resolution histo");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     // Get Resolution map
@@ -916,7 +908,7 @@ struct lmeelfcocktail
   void GetDCATemplates(TString filename, TString histname)
   {
     // get dca tamplates
-    LOGP(detail, "Set DCA templates");
+    LOGP(info, "Set DCA templates");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     // Get  file:
@@ -939,7 +931,7 @@ struct lmeelfcocktail
   void GetMultHisto(TString filename, TString histnamept, TString histnamept2, TString histnamemt, TString histnamemt2)
   {
     // get multiplicity weights
-    LOGP(detail, "Set Multiplicity weight files");
+    LOGP(info, "Set Multiplicity weight files");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
@@ -976,7 +968,7 @@ struct lmeelfcocktail
 
   void GetPhotonPtParametrization(TString filename, TString dirname, TString funcname)
   {
-    LOGP(detail, "Set photon parametrization");
+    LOGP(info, "Set photon parametrization");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
