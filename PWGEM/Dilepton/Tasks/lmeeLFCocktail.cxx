@@ -12,13 +12,13 @@
 //
 // Analysis task for lmee light flavour cocktail
 
-#include "Framework/Task.h"
-#include "SimulationDataFormat/MCTrack.h"
 #include <vector>
+#include "Framework/Task.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
+#include "SimulationDataFormat/MCTrack.h"
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
 #include "TFile.h"
@@ -221,7 +221,7 @@ struct lmeelfcocktail {
             ech = 1.;
           } else {
             ech = -1.;
-          };
+          }
           eweight = mctrack.getWeight();
           // put in the buffer
           //-----------------
