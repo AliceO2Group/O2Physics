@@ -35,6 +35,7 @@ int main(int argc, char* argv[])
   std::string outputFileName("AO2D.root");
   long maxDirSize = 100000000;
   bool skipNonExistingFiles = false;
+  int verbosity = 2;
   int exitCode = 0; // 0: success, >0: failure
 
   int option_index = 0;
@@ -43,7 +44,8 @@ int main(int argc, char* argv[])
     {"output", required_argument, nullptr, 1},
     {"max-size", required_argument, nullptr, 2},
     {"skip-non-existing-files", no_argument, nullptr, 3},
-    {"help", no_argument, nullptr, 4},
+    {"verbosity", required_argument, nullptr, 4},
+    {"help", no_argument, nullptr, 5},
     {nullptr, 0, nullptr, 0}};
 
   while (true) {
@@ -59,11 +61,14 @@ int main(int argc, char* argv[])
     } else if (c == 3) {
       skipNonExistingFiles = true;
     } else if (c == 4) {
+      verbosity = atoi(optarg);
+    } else if (c == 5) {
       printf("AO2D merging tool. Options: \n");
       printf("  --input <inputfile.txt>      Contains path to files to be merged. Default: %s\n", inputCollection.c_str());
       printf("  --output <outputfile.root>   Target output ROOT file. Default: %s\n", outputFileName.c_str());
       printf("  --max-size <size in Bytes>   Target directory size. Default: %ld. Set to 0 if file is not self-contained.\n", maxDirSize);
       printf("  --skip-non-existing-files    Flag to allow skipping of non-existing files in the input list.\n");
+      printf("  --verbosity <flag>           Verbosity of output (default: %d).\n", verbosity);
       return -1;
     } else {
       return -2;
@@ -79,6 +84,8 @@ int main(int argc, char* argv[])
   }
 
   std::map<std::string, TTree*> trees;
+  std::map<std::string, uint64_t> sizeCompressed;
+  std::map<std::string, uint64_t> sizeUncompressed;
   std::map<std::string, int> offsets;
   std::map<std::string, int> unassignedIndexOffset;
 
@@ -165,7 +172,9 @@ int main(int argc, char* argv[])
 
       auto dfName = ((TObjString*)key1)->GetString().Data();
 
-      printf("  Processing folder %s\n", dfName);
+      if (verbosity > 0) {
+        printf("  Processing folder %s\n", dfName);
+      }
       ++mergedDFs;
       ++totalMergedDFs;
       auto folder = (TDirectoryFile*)inputFile->Get(dfName);
@@ -207,7 +216,9 @@ int main(int argc, char* argv[])
 
         auto inputTree = (TTree*)inputFile->Get(Form("%s/%s", dfName, treeName));
         bool fastCopy = (inputTree->GetTotBytes() > 10000000); // Only do this for large enough trees to avoid that baskets are too small
-        printf("    Processing tree %s with %lld entries with total size %lld (fast copy: %d)\n", treeName, inputTree->GetEntries(), inputTree->GetTotBytes(), fastCopy);
+        if (verbosity > 1) {
+          printf("    Processing tree %s with %lld entries with total size %lld (fast copy: %d)\n", treeName, inputTree->GetEntries(), inputTree->GetTotBytes(), fastCopy);
+        }
 
         bool alreadyCopied = false;
         if (trees.count(treeName) == 0) {
@@ -221,7 +232,9 @@ int main(int argc, char* argv[])
           if (!outputDir) {
             outputDir = outputFile->mkdir(dfName);
             currentDirSize = 0;
-            printf("Writing to output folder %s\n", dfName);
+            if (verbosity > 0) {
+              printf("Writing to output folder %s\n", dfName);
+            }
           }
           outputDir->cd();
           auto outputTree = inputTree->CloneTree(-1, (fastCopy) ? "fast" : "");
@@ -257,7 +270,9 @@ int main(int argc, char* argv[])
             char* buffer = new char[maximum * typeSize];
             memset(buffer, 0, maximum * typeSize);
             vlaPointers.push_back(buffer);
-            printf("      Allocated VLA buffer of length %d with %d bytes each for branch name %s\n", maximum, typeSize, br->GetName());
+            if (verbosity > 2) {
+              printf("      Allocated VLA buffer of length %d with %d bytes each for branch name %s\n", maximum, typeSize, br->GetName());
+            }
             inputTree->SetBranchAddress(br->GetName(), buffer);
             outputTree->SetBranchAddress(br->GetName(), buffer);
 
@@ -368,11 +383,18 @@ int main(int argc, char* argv[])
       }
 
       if (currentDirSize > maxDirSize) {
-        printf("Maximum size reached: %ld. Closing folder %s.\n", currentDirSize, dfName);
+        if (verbosity > 0) {
+          printf("Maximum size reached: %ld. Closing folder %s.\n", currentDirSize, dfName);
+        }
         for (auto const& tree : trees) {
           // printf("Writing %s\n", tree.first.c_str());
           outputDir->cd();
           tree.second->Write();
+
+          // stats
+          sizeCompressed[tree.first] += tree.second->GetZipBytes();
+          sizeUncompressed[tree.first] += tree.second->GetTotBytes();
+
           delete tree.second;
         }
         outputDir = nullptr;
@@ -389,6 +411,14 @@ int main(int argc, char* argv[])
     parentFiles->Write("parentFiles", TObject::kSingleKey);
   }
 
+  for (auto const& tree : trees) {
+    outputDir->cd();
+    tree.second->Write();
+    // stats
+    sizeCompressed[tree.first] += tree.second->GetZipBytes();
+    sizeUncompressed[tree.first] += tree.second->GetTotBytes();
+  }
+
   outputFile->Write();
   outputFile->Close();
 
@@ -403,7 +433,20 @@ int main(int argc, char* argv[])
     gSystem->Unlink(outputFile->GetName());
   }
 
-  printf("AOD merger finished.\n");
+  printf("AOD merger finished. Size overview follows:\n");
+
+  uint64_t totalCompressed = 0;
+  uint64_t totalUncompressed = 0;
+  for (auto const& tree : sizeCompressed) {
+    totalCompressed += tree.second;
+    totalUncompressed += sizeUncompressed[tree.first];
+  }
+  if (totalCompressed > 0 && totalUncompressed > 0) {
+    for (auto const& tree : sizeCompressed) {
+      printf("  Tree %20s | Compressed: %12lu (%2.0f%%) | Uncompressed: %12lu (%2.0f%%)\n", tree.first.c_str(), tree.second, 100.0 * tree.second / totalCompressed, sizeUncompressed[tree.first], 100.0 * sizeUncompressed[tree.first] / totalUncompressed);
+    }
+  }
+  printf("\n");
 
   return exitCode;
 }
