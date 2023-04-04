@@ -250,7 +250,7 @@ struct HfCandidateCreatorToXiPi {
             continue;
           }
 
-          // pseudirapidity
+          // pseudorapidity
           double pseudorapPiFromOme = trackPion.eta();
 
           // primary pion track to be processed with DCAFitter
