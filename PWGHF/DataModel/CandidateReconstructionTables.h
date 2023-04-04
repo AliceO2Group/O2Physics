@@ -1394,6 +1394,9 @@ namespace hf_cand_toxipi
 {
 // Data processing results:
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_COLUMN(XPv, xPv, float);
+DECLARE_SOA_COLUMN(YPv, yPv, float);
+DECLARE_SOA_COLUMN(ZPv, zPv, float);
 DECLARE_SOA_COLUMN(XDecayVtxOmegac, xDecayVtxOmegac, float);
 DECLARE_SOA_COLUMN(YDecayVtxOmegac, yDecayVtxOmegac, float);
 DECLARE_SOA_COLUMN(ZDecayVtxOmegac, zDecayVtxOmegac, float);
@@ -1459,7 +1462,6 @@ DECLARE_SOA_INDEX_COLUMN_FULL(PrimaryPi, primaryPi, int, Tracks, "_primarypi");
 DECLARE_SOA_COLUMN(ImpactParOmegacXY, impactParOmegacXY, float);
 DECLARE_SOA_COLUMN(ImpactParOmegacZ, impactParOmegacZ, float);
 DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, double);
-DECLARE_SOA_COLUMN(InvMassAntiLambda, invMassAntiLambda, double);
 DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, double);
 DECLARE_SOA_COLUMN(InvMassOmegac, invMassOmegac, double);
 DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, double);
@@ -1479,13 +1481,15 @@ DECLARE_SOA_COLUMN(EtaPiFromOme, etaPiFromOme, double);
 DECLARE_SOA_COLUMN(EtaOmegac, etaOmegac, double);
 DECLARE_SOA_COLUMN(EtaCascade, etaCascade, double);
 DECLARE_SOA_COLUMN(EtaV0, etaV0, double);
-DECLARE_SOA_COLUMN(DcaXYToPVPrimaryPi, dcaXYToPVPrimaryPi, double);
-DECLARE_SOA_COLUMN(DcaXYToPVV0Dau0, dcaXYToPVV0dau0, double);
-DECLARE_SOA_COLUMN(DcaXYToPVV0Dau1, dcaXYToPVV0dau1, double);
-DECLARE_SOA_COLUMN(DcaXYToPVCascDau, dcaXYToPVCascdau, double);
-DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, double);
-DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, double);
-DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, double);
+DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0Dau0, float);
+DECLARE_SOA_COLUMN(DcaXYToPvV0Dau1, dcaXYToPvV0Dau1, float);
+DECLARE_SOA_COLUMN(DcaXYToPvCascDau, dcaXYToPvCascDau, float);
+DECLARE_SOA_COLUMN(DcaZToPvV0Dau0, dcaZToPvV0Dau0, float);
+DECLARE_SOA_COLUMN(DcaZToPvV0Dau1, dcaZToPvV0Dau1, float);
+DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascDau, float);
+DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
+DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
+DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, float);
 
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
@@ -1502,7 +1506,7 @@ enum DecayType { DecayToXiPi = 0,
 // declare dedicated Omegac and Xic to Xi Pi candidate table
 DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   o2::soa::Index<>,
-                  hf_cand_toxipi::CollisionId, collision::PosX, collision::PosY, collision::PosZ,
+                  hf_cand_toxipi::CollisionId, hf_cand_toxipi::XPv, hf_cand_toxipi::YPv, hf_cand_toxipi::ZPv,
                   hf_cand_toxipi::XDecayVtxOmegac, hf_cand_toxipi::YDecayVtxOmegac, hf_cand_toxipi::ZDecayVtxOmegac,
                   hf_cand_toxipi::XDecayVtxCascade, hf_cand_toxipi::YDecayVtxCascade, hf_cand_toxipi::ZDecayVtxCascade,
                   hf_cand_toxipi::XDecayVtxV0, hf_cand_toxipi::YDecayVtxV0, hf_cand_toxipi::ZDecayVtxV0,
@@ -1523,12 +1527,13 @@ DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   hf_cand_toxipi::ErrImpactParCascXY, hf_cand_toxipi::ErrImpactParPrimaryPiXY, hf_cand_toxipi::ErrImpactParV0XY,
                   hf_cand_toxipi::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_toxipi::CascadeId, hf_cand_toxipi::PrimaryPiId, cascdata::BachelorId,
                   hf_cand_toxipi::ImpactParOmegacXY, hf_cand_toxipi::ImpactParOmegacZ,
-                  hf_cand_toxipi::InvMassLambda, hf_cand_toxipi::InvMassAntiLambda, hf_cand_toxipi::InvMassCascade, hf_cand_toxipi::InvMassOmegac,
+                  hf_cand_toxipi::InvMassLambda, hf_cand_toxipi::InvMassCascade, hf_cand_toxipi::InvMassOmegac,
                   hf_cand_toxipi::CosPAV0, hf_cand_toxipi::CosPAOmegac, hf_cand_toxipi::CosPACasc, hf_cand_toxipi::CosPAXYV0, hf_cand_toxipi::CosPAXYOmegac, hf_cand_toxipi::CosPAXYCasc,
                   hf_cand_toxipi::CTauOmegac, hf_cand_toxipi::CTauCascade, hf_cand_toxipi::CTauV0, hf_cand_toxipi::CTauXic,
                   hf_cand_toxipi::EtaV0PosDau, hf_cand_toxipi::EtaV0NegDau, hf_cand_toxipi::EtaPiFromCasc, hf_cand_toxipi::EtaPiFromOme,
                   hf_cand_toxipi::EtaOmegac, hf_cand_toxipi::EtaCascade, hf_cand_toxipi::EtaV0,
-                  hf_cand_toxipi::DcaXYToPVPrimaryPi, hf_cand_toxipi::DcaXYToPVV0Dau0, hf_cand_toxipi::DcaXYToPVV0Dau1, hf_cand_toxipi::DcaXYToPVCascDau,
+                  hf_cand_toxipi::DcaXYToPvV0Dau0, hf_cand_toxipi::DcaXYToPvV0Dau1, hf_cand_toxipi::DcaXYToPvCascDau,
+                  hf_cand_toxipi::DcaZToPvV0Dau0, hf_cand_toxipi::DcaZToPvV0Dau1, hf_cand_toxipi::DcaZToPvCascDau,
                   hf_cand_toxipi::DcaCascDau, hf_cand_toxipi::DcaV0Dau, hf_cand_toxipi::DcaOmegacDau, hf_track_index::HFflag);
 
 // table with results of reconstruction level MC matching
