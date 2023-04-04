@@ -14,26 +14,18 @@
 //
 
 #include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonConstants/GeomConstants.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "Math/MatrixFunctions.h"
 #include "Math/SMatrix.h"
 
-#include "DetectorsBase/Propagator.h"
 #include "Field/MagneticField.h"
 #include "TGeoGlobalMagField.h"
 
@@ -59,30 +51,18 @@ using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
 
 using namespace o2;
 using namespace o2::framework;
-// using namespace o2::framework::expressions;
-
-struct MultiCollisionAssociation {
-  Produces<aod::MatchedMulti> mm;
-  struct {
-    std::vector<int> colids;
-  } filler;
-  void process(aod::BCs::iterator const& bc, soa::SmallGroups<aod::Collisions> const& collisions)
-  {
-    filler.colids.clear();
-    for (auto const& collision : collisions) {
-      filler.colids.emplace_back(collision.globalIndex());
-    }
-    mm(bc.globalIndex(), filler.colids);
-  }
-};
+using namespace o2::aod::track;
 
 struct AmbiguousTrackPropagation {
-  Produces<aod::BestCollisions> tracksBestCollisions;
+  //  Produces<aod::BestCollisions> tracksBestCollisions;
   Produces<aod::BestCollisionsFwd> fwdtracksBestCollisions;
+  Produces<aod::ReassignedTracksCore> tracksReassignedCore;
+  Produces<aod::ReassignedTracksExtra> tracksReassignedExtra;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int runNumber = -1;
-  float Bz = 0; // Magnetic field for MFT
+  float Bz = 0;                                         // Magnetic field for MFT
+  static constexpr double centerMFT[3] = {0, 0, -61.4}; // Field at center of MFT
 
   o2::base::Propagator::MatCorrType matCorr =
     o2::base::Propagator::MatCorrType::USEMatCorrNONE;
@@ -94,23 +74,19 @@ struct AmbiguousTrackPropagation {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
 
-  using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedMulti>;
+  Configurable<bool> produceExtra{"produceExtra", false, "Produce table with refitted track parameters"};
+
+  using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
 
   void init(o2::framework::InitContext& initContext)
   {
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(geoPath);
-    }
   }
 
   void initCCDB(ExtBCs::iterator const& bc)
   {
-    LOG(info) << "INITIALIZING CCDB";
-
     if (runNumber == bc.runNumber()) {
       return;
     }
@@ -121,13 +97,25 @@ struct AmbiguousTrackPropagation {
     o2::base::Propagator::initFieldFromGRP(grpmag);
     runNumber = bc.runNumber();
 
-    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-    double centerMFT[3] = {0, 0, -61.4}; // Field at center of MFT
-    Bz = field->getBz(centerMFT);
-    LOG(info) << "The field at the center of the MFT is Bz = " << Bz;
+    if (doprocessMFT) {
+      o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+      Bz = field->getBz(centerMFT);
+      LOG(info) << "The field at the center of the MFT is Bz = " << Bz;
+    }
   }
 
-  void processCentral(soa::Join<aod::Tracks, aod::TracksExtra> const&,
+  static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
+    TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
+    TrackSelectionFlags::kITSHits;
+
+  static constexpr TrackSelectionFlags::flagtype trackSelectionTPC =
+    TrackSelectionFlags::kTPCNCls |
+    TrackSelectionFlags::kTPCCrossedRowsOverNCls |
+    TrackSelectionFlags::kTPCChi2NDF;
+
+  using ExTracksSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
+
+  void processCentral(ExTracksSel const&,
                       aod::Collisions const&, ExtBCs const& bcs,
                       aod::AmbiguousTracks const& atracks)
   {
@@ -139,16 +127,22 @@ struct AmbiguousTrackPropagation {
     gpu::gpustd::array<float, 2> dcaInfo;
     float bestDCA[2];
     o2::track::TrackParametrization<float> bestTrackPar;
-
     for (auto& atrack : atracks) {
       dcaInfo[0] = 999; // DCAxy
       dcaInfo[1] = 999; // DCAz
       bestDCA[0] = 999;
       bestDCA[1] = 999;
 
-      auto track = atrack.track_as<soa::Join<aod::Tracks, aod::TracksExtra>>();
+      auto track = atrack.track_as<ExTracksSel>();
       auto bestCol = track.has_collision() ? track.collisionId() : -1;
-
+      if ((track.trackCutFlag() & trackSelectionITS) != trackSelectionITS) {
+        continue;
+      }
+      if ((track.detectorMap() & (uint8_t)o2::aod::track::TPC) == (uint8_t)o2::aod::track::TPC) {
+        if ((track.trackCutFlag() & trackSelectionTPC) != trackSelectionTPC) {
+          continue;
+        }
+      }
       // Only re-propagate tracks which have passed the innermost wall of the
       // TPC (e.g. skipping loopers etc).
       auto trackPar = getTrackPar(track);
@@ -161,7 +155,7 @@ struct AmbiguousTrackPropagation {
           auto collisions = bc.collisions();
           for (auto const& collision : collisions) {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
-            if ((dcaInfo[0] < bestDCA[0]) && (dcaInfo[1] < bestDCA[1])) {
+            if ((std::abs(dcaInfo[0]) < std::abs(bestDCA[0])) && (std::abs(dcaInfo[1]) < std::abs(bestDCA[1]))) {
               bestCol = collision.globalIndex();
               bestDCA[0] = dcaInfo[0];
               bestDCA[1] = dcaInfo[1];
@@ -170,14 +164,16 @@ struct AmbiguousTrackPropagation {
           }
         }
       }
-      tracksBestCollisions(
-        bestCol, bestDCA[0], bestDCA[1], bestTrackPar.getX(), bestTrackPar.getAlpha(),
-        bestTrackPar.getY(), bestTrackPar.getZ(), bestTrackPar.getSnp(),
-        bestTrackPar.getTgl(), bestTrackPar.getQ2Pt(), bestTrackPar.getPt(),
-        bestTrackPar.getP(), bestTrackPar.getEta(), bestTrackPar.getPhi());
+      tracksReassignedCore(bestCol, track.globalIndex(), bestDCA[0], bestDCA[1]);
+      if (produceExtra) {
+        tracksReassignedExtra(bestTrackPar.getX(), bestTrackPar.getAlpha(),
+                              bestTrackPar.getY(), bestTrackPar.getZ(), bestTrackPar.getSnp(),
+                              bestTrackPar.getTgl(), bestTrackPar.getQ2Pt(), bestTrackPar.getPt(),
+                              bestTrackPar.getP(), bestTrackPar.getEta(), bestTrackPar.getPhi());
+      }
     }
   }
-  PROCESS_SWITCH(AmbiguousTrackPropagation, processCentral, "Fill BestCollisions for central ambiguous tracks", true);
+  PROCESS_SWITCH(AmbiguousTrackPropagation, processCentral, "Fill ReassignedTracks for central ambiguous tracks", true);
 
   void processMFT(aod::MFTTracks const&,
                   aod::Collisions const&, ExtBCs const& bcs,
@@ -248,7 +244,6 @@ struct AmbiguousTrackPropagation {
 //****************************************************************************************
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc),
-                        adaptAnalysisTask<MultiCollisionAssociation>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc)};
   return workflow;
 }

@@ -25,6 +25,7 @@ find_library(KFPARTICLE_LIBPATH "KFParticle"
 
 mark_as_advanced(KFPARTICLE_LIBPATH)
 
+include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(KFParticle DEFAULT_MSG
                                   KFPARTICLE_LIBPATH KFPARTICLE_INCLUDE_DIR)
 

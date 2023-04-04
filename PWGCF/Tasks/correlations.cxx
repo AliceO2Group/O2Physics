@@ -13,7 +13,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include <CCDB/BasicCCDBManager.h>
-#include "Framework/GroupSlicer.h"
 #include "Framework/StepTHn.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -26,6 +25,7 @@
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 
 #include <TH1F.h>
 #include <cmath>
@@ -128,8 +128,9 @@ struct CorrelationTask {
     registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
 
-    const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
-    registry.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+    const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
+    registry.add("eventcount_same", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+    registry.add("eventcount_mixed", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
 
     mPairCuts.SetHistogramRegistry(&registry);
 
@@ -177,8 +178,10 @@ struct CorrelationTask {
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     static o2::parameters::GRPObject* grpo = nullptr;
+    // static o2::parameters::GRPMagField* grpo = nullptr;
     if (grpo == nullptr) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      // grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
       if (grpo == nullptr) {
         LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
         return 0;
@@ -368,7 +371,7 @@ struct CorrelationTask {
     if (fillCollisionAOD(same, collision, multiplicity) == false) {
       return;
     }
-    registry.fill(HIST("eventcount"), -2);
+    registry.fill(HIST("eventcount_same"), -2);
     fillQA(collision, multiplicity, tracks);
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks, tracks, multiplicity, collision.posZ(), getMagneticField(bc.timestamp()), 1.0f);
   }
@@ -377,14 +380,18 @@ struct CorrelationTask {
   void processSameDerived(derivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
     if (cfgVerbosity > 0) {
-      LOGF(info, "processSameDerived: Tracks for collision: %d | Vertex: %.1f | V0M: %.1f", tracks.size(), collision.posZ(), collision.multiplicity());
+      LOGF(info, "processSameDerived: Tracks for collision: %d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks.size(), collision.posZ(), collision.multiplicity());
     }
     loadEfficiency(collision.timestamp());
 
     const auto multiplicity = collision.multiplicity();
-    const int field = getMagneticField(collision.timestamp());
+    int field = 0;
+    if (cfgTwoTrackCut > 0) {
+      field = getMagneticField(collision.timestamp());
+    }
 
-    registry.fill(HIST("eventcount"), -2);
+    int bin = configurableBinningDerived.getBin({collision.posZ(), collision.multiplicity()});
+    registry.fill(HIST("eventcount_same"), bin);
     fillQA(collision, multiplicity, tracks);
 
     same->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
@@ -429,7 +436,7 @@ struct CorrelationTask {
         continue;
       }
 
-      registry.fill(HIST("eventcount"), bin);
+      registry.fill(HIST("eventcount_mixed"), bin);
 
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
 
@@ -441,18 +448,21 @@ struct CorrelationTask {
   PROCESS_SWITCH(CorrelationTask, processMixedAOD, "Process mixed events on AOD", false);
 
   using BinningTypeDerived = ColumnBinningPolicy<aod::collision::PosZ, aod::cfcollision::Multiplicity>;
+  BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
   void processMixedDerived(derivedCollisions& collisions, derivedTracks const& tracks)
   {
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
-    BinningTypeDerived configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<derivedCollisions, derivedTracks, BinningTypeDerived> pairs{configurableBinning, cfgNoMixedEvents, -1, collisions, tracksTuple}; // -1 is the number of the bin to skip
+    SameKindPair<derivedCollisions, derivedTracks, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple}; // -1 is the number of the bin to skip
 
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
-      int bin = configurableBinning.getBin({collision1.posZ(), collision1.multiplicity()});
+      int bin = configurableBinningDerived.getBin({collision1.posZ(), collision1.multiplicity()});
       float eventWeight = 1.0f / it.currentWindowNeighbours();
-      auto field = getMagneticField(collision1.timestamp());
+      int field = 0;
+      if (cfgTwoTrackCut > 0) {
+        field = getMagneticField(collision1.timestamp());
+      }
 
       if (cfgVerbosity > 0) {
         LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
@@ -461,12 +471,12 @@ struct CorrelationTask {
       if (it.isNewWindow()) {
         loadEfficiency(collision1.timestamp());
 
-        registry.fill(HIST("eventcount"), bin);
         mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepReconstructed);
       }
 
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
+      registry.fill(HIST("eventcount_mixed"), bin);
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
 
       if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {

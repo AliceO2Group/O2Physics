@@ -78,8 +78,17 @@ function(o2physics_add_library baseTargetName)
   o2physics_name_target(${baseTargetName} NAME targetName)
   set(target ${targetName})
 
+  # If -DSTANDALONE_EXECUTABLES is passed to cmake,
+  # we only build object libraries so that each executable
+  # is fully selfcontained for what concerns O2Physics
+  # code and can be deployed with a simple cp, reusing
+  # a compatible O2 environment
+  if (STANDALONE_EXECUTABLES)
+    add_library(${target} OBJECT ${A_SOURCES})
+  else()
+    add_library(${target} ${A_SOURCES})
+  endif()
   # define the target and its O2Physics:: alias
-  add_library(${target} ${A_SOURCES})
   add_library(O2Physics::${baseTargetName} ALIAS ${target})
 
   # set the export name so that packages using O2Physics can reference the target as
@@ -130,6 +139,11 @@ function(o2physics_add_library baseTargetName)
     target_include_directories(
       ${target}
       PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>)
+
+    # add top level directory so e.g. the #include "Common/Core/xxx.h" will work
+    target_include_directories(
+      ${target}
+      PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>)
   endif()
 
   # set the private include directories if available
@@ -183,5 +197,11 @@ function(o2physics_add_library baseTargetName)
     install(FILES ${CMAKE_CURRENT_LIST_DIR}/${A_INSTALL_HEADERS}
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   endif()
+
+  # Link subdirectories
+  install(
+    SCRIPT ${CMAKE_SOURCE_DIR}/cmake/O2PhysicsLinkAllSubDirs.cmake
+    CODE " o2physics_link_all_subdirs(${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}) "
+  )
 
 endfunction()

@@ -8,26 +8,27 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_TRIGGER_H_
-#define O2_ANALYSIS_TRIGGER_H_
+#ifndef EVENTFILTERING_FILTERTABLES_H_
+#define EVENTFILTERING_FILTERTABLES_H_
 
 #include <array>
+#include <unordered_map>
+#include <string>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {
 namespace filtering
 {
-DECLARE_SOA_COLUMN(H2, hasH2, bool);   //!
-DECLARE_SOA_COLUMN(H3, hasH3, bool);   //!
-DECLARE_SOA_COLUMN(He3, hasHe3, bool); //!
-DECLARE_SOA_COLUMN(He4, hasHe4, bool); //!
+DECLARE_SOA_COLUMN(H2, hasH2, bool); //!
+DECLARE_SOA_COLUMN(H3, hasH3, bool); //!
+DECLARE_SOA_COLUMN(He, hasHe, bool); //!
 
 // diffraction
-DECLARE_SOA_COLUMN(TwoPi, has2pi, bool);  //! Double Gap events, DG, 2 pion
-DECLARE_SOA_COLUMN(FourPi, has4pi, bool); //! 4 pion
-DECLARE_SOA_COLUMN(TwoK, has2K, bool);    //! 2 K
-DECLARE_SOA_COLUMN(FourK, has4K, bool);   //! 4 K
+DECLARE_SOA_COLUMN(UDdiff, hasDiff, bool); //! Double Gap events, DG
+
+DECLARE_SOA_COLUMN(UDdiffBC, hasDiffBC, bool); //! diffractive BC
 
 // Dileptons & Quarkonia
 DECLARE_SOA_COLUMN(SingleE, hasSingleE, bool);           //! single electron trigger
@@ -46,6 +47,8 @@ DECLARE_SOA_COLUMN(HfFemto3P, hasHfFemto3P, bool);               //! 3-prong cha
 DECLARE_SOA_COLUMN(HfDoubleCharm2P, hasHfDoubleCharm2P, bool);   //! at least two 2-prong charm-hadron candidates
 DECLARE_SOA_COLUMN(HfDoubleCharm3P, hasHfDoubleCharm3P, bool);   //! at least two 3-prong charm-hadron candidates
 DECLARE_SOA_COLUMN(HfDoubleCharmMix, hasHfDoubleCharmMix, bool); //! at least one 2-prong and one 3-prong charm-hadron candidates
+DECLARE_SOA_COLUMN(HfSoftGamma2P, hasHfSoftGamma2P, bool);       //! soft gamma with 2-prong charm hadron
+DECLARE_SOA_COLUMN(HfSoftGamma3P, hasHfSoftGamma3P, bool);       //! soft gamma with 3-prong charm hadron
 
 // CF two body triggers
 DECLARE_SOA_COLUMN(PD, hasPD, bool); //! has d-p pair
@@ -58,8 +61,16 @@ DECLARE_SOA_COLUMN(PLL, hasPLL, bool); //! has p-L-L triplet
 DECLARE_SOA_COLUMN(LLL, hasLLL, bool); //! has L-L-L tripletD
 
 // jets
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(JetChHighPt, hasJetChHighPt, bool); //! high-pT charged jet
+
+// full jets
+DECLARE_SOA_COLUMN(EMCALReadout, hasEMCALinReadout, bool);       //! EMCAL readout
+DECLARE_SOA_COLUMN(JetFullHighPt, hasJetFullHighPt, bool);       //! high-pT full jet
+DECLARE_SOA_COLUMN(JetNeutralHighPt, hasJetNeutralHighPt, bool); //! high-pT neutral jet
+DECLARE_SOA_COLUMN(GammaHighPtEMCAL, hasGammaHighPtEMCAL, bool); //! Photon trigger in EMCAL, high threshold
+DECLARE_SOA_COLUMN(GammaHighPtDCAL, hasGammaHighPtDCAL, bool);   //! Photon trigger in DCAL, high threshold
+DECLARE_SOA_COLUMN(GammaLowPtEMCAL, hasGammaLowPtEMCAL, bool);   //! Photon trigger in EMCAL, low threshold
+DECLARE_SOA_COLUMN(GammaLowPtDCAL, hasGammaLowPtDCAL, bool);     //! Photon trigger in DCAL, low threshold
 
 // strangeness (lf)
 DECLARE_SOA_COLUMN(Omega, hasOmega, bool);             //! at leat 1 Omega
@@ -68,45 +79,57 @@ DECLARE_SOA_COLUMN(DoubleXi, hasDoubleXi, bool);       //! at least 2 Xi
 DECLARE_SOA_COLUMN(TripleXi, hasTripleXi, bool);       //! at least 3 Xi
 DECLARE_SOA_COLUMN(QuadrupleXi, hasQuadrupleXi, bool); //! at least 4 Xi
 DECLARE_SOA_COLUMN(SingleXiYN, hasSingleXiYN, bool);   //! at least 1 Xi with R > 24.39 cm (YN interactions)
-// multiplicity
-DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool);                 //! high trk muliplicity
-DECLARE_SOA_COLUMN(HighFddFt0cMftFv0Mult, hasHighFddFt0cMftFv0Mult, bool); //! high FDD MFT FT0 FV0 multiplicity
-DECLARE_SOA_COLUMN(HighFddMftFv0Mult, hasHighFddMftFv0Mult, bool);         //! high FDD MFT FV0 multiplicity
-DECLARE_SOA_COLUMN(HighFv0MftMult, hasHighFv0MftMult, bool);               //! high MFT FV0 multiplicity
-DECLARE_SOA_COLUMN(HighMultFv0, hasHighMultFv0, bool);                     //! high FV0 muliplicity
-DECLARE_SOA_COLUMN(HighMftMult, hasHighMftMult, bool);                     //! high MFT multiplicity
-DECLARE_SOA_COLUMN(HighFv0Flat, hasHighFv0Flat, bool);                     //! isotropic event FV0
-DECLARE_SOA_COLUMN(HighMftTrkFlat, hasHighMftTrkFlat, bool);               //! isotropic event MFT
-DECLARE_SOA_COLUMN(HighMftFv0TrkFlat, hasHighMftFv0TrkFlat, bool);         //! isotropic event MFT FV0 trk
-DECLARE_SOA_COLUMN(HighMftFv0Flat, hasHighMftFv0Flat, bool);               //! isotropic event MFT FV0
-DECLARE_SOA_COLUMN(HighMftFt0aMult, hasHighMftFt0aMult, bool);             //! high MFT T0A multiplicit
-DECLARE_SOA_COLUMN(HighFt0Mult, hasHighFt0Mult, bool);                     //! high FT0 multiplicity
-DECLARE_SOA_COLUMN(HighFt0Flat, hasHighFt0Flat, bool);                     //! isotropic event FT0
-DECLARE_SOA_COLUMN(HighMftFt0aFlat, hasHighMftFt0aFlat, bool);             //! isotropic event MFT FT0A
-DECLARE_SOA_COLUMN(HighFt0cFv0Mult, hasHighFt0cFv0Mult, bool);             //! high FT0C FV0 multiplicity
-DECLARE_SOA_COLUMN(HighFt0cFv0Flat, hasHighFt0cFv0Flat, bool);             //! isotropic event FT0C FV0
-DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool);               //! event contains leading track
 
+// multiplicity
+DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool);     //! high trk muliplicity
+DECLARE_SOA_COLUMN(HighMultFv0, hasHighMultFv0, bool);         //! high FV0 muliplicity
+DECLARE_SOA_COLUMN(HighFv0Flat, hasHighFv0Flat, bool);         //! isotropic event FV0
+DECLARE_SOA_COLUMN(HighFt0Mult, hasHighFt0Mult, bool);         //! high FT0 multiplicity
+DECLARE_SOA_COLUMN(HighFt0Flat, hasHighFt0Flat, bool);         //! isotropic event FT0
+DECLARE_SOA_COLUMN(HighFt0cFv0Mult, hasHighFt0cFv0Mult, bool); //! high FT0C FV0 multiplicity
+DECLARE_SOA_COLUMN(HighFt0cFv0Flat, hasHighFt0cFv0Flat, bool); //! isotropic event FT0C FV0
+DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool);   //! event contains leading track
+
+// photons
+DECLARE_SOA_COLUMN(PHOSPhoton, hasPHOSPhoton, bool);     //! PHOS single photons
+DECLARE_SOA_COLUMN(PHOSElectron, hasPHOSElectron, bool); //! PHOS single electron
+DECLARE_SOA_COLUMN(PHOSPair, hasPHOSpair, bool);         //! PHOS photon pair
+DECLARE_SOA_COLUMN(PHOSnbar, hasPHOSnbar, bool);         //! PHOS antineutrons
 } // namespace filtering
 
 namespace decision
 {
 
-DECLARE_SOA_COLUMN(BCId, hasBCId, int);                     //! Bunch crossing Id
-DECLARE_SOA_COLUMN(CollisionTime, hasCollisionTime, float); //! Collision time
-DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, bool);    //! CEFP decision
+DECLARE_SOA_COLUMN(BCId, bcIndex, uint64_t);                   //! Bunch crossing Id
+DECLARE_SOA_COLUMN(GlobalBCId, globalBC, uint64_t);            //! Global Bunch crossing Id
+DECLARE_SOA_COLUMN(EvSelBC, evSelBC, uint64_t);                //! Global Bunch crossing Id
+DECLARE_SOA_COLUMN(CollisionTime, collisionTime, float);       //! Collision time
+DECLARE_SOA_COLUMN(CollisionTimeRes, collisionTimeRes, float); //! Collision time resolution
+DECLARE_SOA_COLUMN(CefpTriggered, cefpTriggered, uint64_t);    //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(CefpSelected, cefpSelected, uint64_t);      //! CEFP decision
 
 } // namespace decision
 
+namespace bcrange
+{
+DECLARE_SOA_COLUMN(BCstart, hasBCstart, uint64_t); //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(BCend, hasBCend, uint64_t);     //! CEFP bcrange
+
+} // namespace bcrange
+
 // nuclei
 DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!
-                  filtering::H2, filtering::H3, filtering::He3, filtering::He4);
+                  filtering::H2, filtering::H3, filtering::He);
 using NucleiFilter = NucleiFilters::iterator;
 
 // diffraction
-DECLARE_SOA_TABLE(DiffractionFilters, "AOD", "DiffFilters", //! Diffraction filters
-                  filtering::TwoPi, filtering::FourPi, filtering::TwoK, filtering::FourK);
+DECLARE_SOA_TABLE(DiffractionFilters, "AOD", "DiffFilters", //! Diffraction filters (Collisions)
+                  filtering::UDdiff);
 using DiffractionFilter = DiffractionFilters::iterator;
+
+DECLARE_SOA_TABLE(DiffractionBCFilters, "AOD", "DiffBCFilters", //! Diffraction filters (BCs)
+                  filtering::UDdiffBC);
+using DiffractionBCFilter = DiffractionBCFilters::iterator;
 
 // Dileptons & Quarkonia
 DECLARE_SOA_TABLE(DqFilters, "AOD", "DqFilters", //!
@@ -115,25 +138,24 @@ using DqFilter = DqFilters::iterator;
 
 // heavy flavours
 DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
-                  filtering::HfHighPt2P, filtering::HfHighPt3P, filtering::HfBeauty3P, filtering::HfBeauty4P, filtering::HfFemto2P, filtering::HfFemto3P, filtering::HfDoubleCharm2P, filtering::HfDoubleCharm3P, filtering::HfDoubleCharmMix);
+                  filtering::HfHighPt2P, filtering::HfHighPt3P, filtering::HfBeauty3P, filtering::HfBeauty4P, filtering::HfFemto2P, filtering::HfFemto3P, filtering::HfDoubleCharm2P, filtering::HfDoubleCharm3P, filtering::HfDoubleCharmMix, filtering::HfSoftGamma2P, filtering::HfSoftGamma3P);
 
 using HfFilter = HfFilters::iterator;
 
-// correlations
-DECLARE_SOA_TABLE(CFFiltersTwoN, "AOD", "CFFiltersTwoN", //!
-                  filtering::PD, filtering::LD);
-using CFFilterTwoN = CFFiltersTwoN::iterator;
-
 DECLARE_SOA_TABLE(CFFilters, "AOD", "CFFilters", //!
-                  filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL);
+                  filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL, filtering::PD, filtering::LD);
 using CfFilter = CFFilters::iterator;
 
 // jets
 DECLARE_SOA_TABLE(JetFilters, "AOD", "JetFilters", //!
-                  filtering::CollisionId,
                   filtering::JetChHighPt);
 
 using JetFilter = JetFilters::iterator;
+
+DECLARE_SOA_TABLE(FullJetFilters, "AOD", "FullJetFilters", //!
+                  filtering::EMCALReadout, filtering::JetFullHighPt, filtering::JetNeutralHighPt, filtering::GammaHighPtEMCAL, filtering::GammaHighPtDCAL, filtering::GammaLowPtEMCAL, filtering::GammaLowPtDCAL);
+
+using FullJetFilter = FullJetFilters::iterator;
 
 // strangeness (lf)
 DECLARE_SOA_TABLE(StrangenessFilters, "AOD", "LFStrgFilters", //!
@@ -143,21 +165,32 @@ using StrangenessFilter = StrangenessFilters::iterator;
 
 // multiplicity
 DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
-                  filtering::HighTrackMult, filtering::HighFddFt0cMftFv0Mult, filtering::HighFddMftFv0Mult, filtering::HighFv0MftMult, filtering::HighMultFv0, filtering::HighMftMult, filtering::HighFv0Flat, filtering::HighMftTrkFlat, filtering::HighMftFv0TrkFlat, filtering::HighMftFv0Flat, filtering::HighMftFt0aMult, filtering::HighFt0Mult, filtering::HighFt0Flat, filtering::HighMftFt0aFlat, filtering::HighFt0cFv0Mult, filtering::HighFt0cFv0Flat, filtering::LeadingPtTrack);
+                  filtering::HighTrackMult, filtering::HighMultFv0, filtering::HighFv0Flat, filtering::HighFt0Mult, filtering::HighFt0Flat, filtering::HighFt0cFv0Mult, filtering::HighFt0cFv0Flat, filtering::LeadingPtTrack);
 
 using MultFilter = MultFilters::iterator;
 
+// photons
+DECLARE_SOA_TABLE(PhotFilters, "AOD", "PhotFilters", //!
+                  filtering::PHOSPhoton, filtering::PHOSElectron, filtering::PHOSPair, filtering::PHOSnbar);
+
+using PhotFilter = PhotFilters::iterator;
+
 // cefp decision
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
-                  decision::BCId, decision::CollisionTime, decision::CefpSelected);
+                  decision::BCId, decision::GlobalBCId, decision::EvSelBC, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered, decision::CefpSelected);
 using CefpDecision = CefpDecisions::iterator;
 
+// cefp decision
+DECLARE_SOA_TABLE(BCRanges, "AOD", "BCRanges", //!
+                  bcrange::BCstart, bcrange::BCend);
+using BCRange = BCRanges::iterator;
+
 /// List of the available filters, the description of their tables and the name of the tasks
-constexpr int NumberOfFilters{9};
-constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFiltersTwoN", "CFFilters", "JetFilters", "StrangenessFilters", "MultFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFiltersTwoN", "CFFilters", "JetFilters", "LFStrgFilters", "MultFilters"};
-constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp", "o2-analysis-hf-filter", "o2-analysis-cf-twobodyfemto-filter", "o2-analysis-cf-threebodyfemto-filter", "o2-analysis-je-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter"};
-constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, CFFiltersTwoN, JetFilters, StrangenessFilters, MultFilters> FiltersPack;
+constexpr int NumberOfFilters{10};
+constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotFilters"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotFilters"};
+constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-filter"};
+constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 
 template <typename T, typename C>
@@ -192,4 +225,4 @@ unsigned int NumberOfColumns()
 
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_TRIGGER_H_
+#endif // EVENTFILTERING_FILTERTABLES_H_

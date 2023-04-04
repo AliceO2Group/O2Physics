@@ -33,6 +33,8 @@ struct CentralityTable {
   Produces<aod::CentRun2CL1s> centRun2CL1;
   Produces<aod::CentFV0As> centFV0A;
   Produces<aod::CentFT0Ms> centFT0M;
+  Produces<aod::CentFT0As> centFT0A;
+  Produces<aod::CentFT0Cs> centFT0C;
   Produces<aod::CentFDDMs> centFDDM;
   Produces<aod::CentNTPVs> centNTPV;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -44,11 +46,14 @@ struct CentralityTable {
   Configurable<int> estRun2CL1{"estRun2CL1", -1, {"Produces Run2 centrality percentiles using CL1 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estFV0A{"estFV0A", -1, {"Produces centrality percentiles using FV0A multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estFT0M{"estFT0M", -1, {"Produces centrality percentiles using FT0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estFT0A{"estFT0A", -1, {"Produces centrality percentiles using FT0A multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estFT0C{"estFT0C", -1, {"Produces centrality percentiles using FT0C multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estFDDM{"estFDDM", -1, {"Produces centrality percentiles using FDD multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estNTPV{"estNTPV", -1, {"Produces centrality percentiles using number of tracks contributing to the PV. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
   Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
   Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
+  Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
 
   int mRunNumber;
   struct tagRun2V0MCalibration {
@@ -97,6 +102,8 @@ struct CentralityTable {
   };
   calibrationInfo FV0AInfo = calibrationInfo("FV0");
   calibrationInfo FT0MInfo = calibrationInfo("FT0");
+  calibrationInfo FT0AInfo = calibrationInfo("FT0A");
+  calibrationInfo FT0CInfo = calibrationInfo("FT0C");
   calibrationInfo FDDMInfo = calibrationInfo("FDD");
   calibrationInfo NTPVInfo = calibrationInfo("NTracksPV");
 
@@ -111,8 +118,8 @@ struct CentralityTable {
 
     /* Checking the tables which are requested in the workflow and enabling them */
     auto& workflows = context.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      for (auto input : device.inputs) {
+    for (DeviceSpec const& device : workflows.devices) {
+      for (auto const& input : device.inputs) {
         auto enable = [&input](const std::string detector, Configurable<int>& flag) {
           const std::string table = "Cent" + detector + "s";
           if (input.matcher.binding == table) {
@@ -134,6 +141,8 @@ struct CentralityTable {
         enable("Run2CL1", estRun2CL1);
         enable("FV0A", estFV0A);
         enable("FT0M", estFT0M);
+        enable("FT0A", estFT0A);
+        enable("FT0C", estFT0C);
         enable("FDDM", estFDDM);
         enable("NTPV", estNTPV);
       }
@@ -141,6 +150,7 @@ struct CentralityTable {
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
     mRunNumber = 0;
   }
 
@@ -234,7 +244,12 @@ struct CentralityTable {
           mRunNumber = bc.runNumber();
         }
       } else {
-        LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        if (!doNotCrashOnNull) { // default behaviour: crash
+          LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        } else { // only if asked: continue filling with non-valid values (105)
+          LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
+          mRunNumber = bc.runNumber();
+        }
       }
     }
 
@@ -311,6 +326,8 @@ struct CentralityTable {
 
       FV0AInfo.mCalibrationStored = false;
       FT0MInfo.mCalibrationStored = false;
+      FT0AInfo.mCalibrationStored = false;
+      FT0CInfo.mCalibrationStored = false;
       FDDMInfo.mCalibrationStored = false;
       NTPVInfo.mCalibrationStored = false;
       if (callst != nullptr) {
@@ -339,6 +356,12 @@ struct CentralityTable {
         if (estFT0M == 1) {
           getccdb(FT0MInfo, genName);
         }
+        if (estFT0A == 1) {
+          getccdb(FT0AInfo, genName);
+        }
+        if (estFT0C == 1) {
+          getccdb(FT0CInfo, genName);
+        }
         if (estFDDM == 1) {
           getccdb(FDDMInfo, genName);
         }
@@ -347,7 +370,12 @@ struct CentralityTable {
         }
         mRunNumber = bc.runNumber();
       } else {
-        LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        if (!doNotCrashOnNull) { // default behaviour: crash
+          LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        } else { // only if asked: continue filling with non-valid values (105)
+          LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
+          mRunNumber = bc.runNumber();
+        }
       }
     }
 
@@ -374,6 +402,12 @@ struct CentralityTable {
     }
     if (estFT0M == 1) {
       populateTable(centFT0M, FT0MInfo, collision.multZeqFT0A() + collision.multZeqFT0C());
+    }
+    if (estFT0A == 1) {
+      populateTable(centFT0A, FT0AInfo, collision.multZeqFT0A());
+    }
+    if (estFT0C == 1) {
+      populateTable(centFT0C, FT0CInfo, collision.multZeqFT0C());
     }
     if (estFDDM == 1) {
       populateTable(centFDDM, FDDMInfo, collision.multZeqFDDA() + collision.multZeqFDDC());

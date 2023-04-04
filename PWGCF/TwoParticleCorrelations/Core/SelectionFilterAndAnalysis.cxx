@@ -60,7 +60,7 @@ TString SelectionFilterAndAnalysis::printOptionalMasks() const
       str += ", ";
     }
     first = false;
-    str += TString::Format("0x%016lx", option);
+    str += TString::Format("0x%016lx", u_long(option));
   }
   str += ")";
   return str;

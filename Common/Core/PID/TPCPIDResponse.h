@@ -14,8 +14,8 @@
 /// \author Christian Sonnabend
 /// \brief
 
-#ifndef O2_PID_TPC_RESPONSE_H_
-#define O2_PID_TPC_RESPONSE_H_
+#ifndef COMMON_CORE_PID_TPCPIDRESPONSE_H_
+#define COMMON_CORE_PID_TPCPIDRESPONSE_H_
 
 #include <array>
 #include <vector>
@@ -106,7 +106,7 @@ inline float Response::GetExpectedSignal(const TrackType& track, const o2::track
   if (!track.hasTPC()) {
     return -999.f;
   }
-  const float bethe = mMIP * o2::tpc::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
+  const float bethe = mMIP * o2::tpc::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mChargeFactor);
   return bethe >= 0.f ? bethe : -999.f;
 }
 
@@ -119,7 +119,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
   }
   float resolution = 0.;
   if (mUseDefaultResolutionParam) {
-    const float reso = track.tpcSignal() * mResolutionParamsDefault[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / (float)track.tpcNClsFound()) : 1.f);
+    const float reso = GetExpectedSignal(track, id) * mResolutionParamsDefault[0] * (static_cast<float>(track.tpcNClsFound()) > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / static_cast<float>(track.tpcNClsFound())) : 1.f);
     reso >= 0.f ? resolution = reso : resolution = -999.f;
   } else {
 
@@ -127,7 +127,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
-    const double dEdx = o2::tpc::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
+    const double dEdx = o2::tpc::BetheBlochAleph(static_cast<float>(bg), mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mChargeFactor);
     const double relReso = GetRelativeResolutiondEdx(p, mass, o2::track::pid_constants::sCharges[id], mResolutionParams[3]);
 
     const std::vector<double> values{1.f / dEdx, track.tgl(), std::sqrt(ncl), relReso, track.signed1Pt(), collision.multTPC() / mMultNormalization};
@@ -182,17 +182,17 @@ inline float Response::GetRelativeResolutiondEdx(const float p, const float mass
 inline void Response::PrintAll() const
 {
   LOGP(info, "==== TPC PID response parameters: ====");
-  for (int i = 0; i < int(mBetheBlochParams.size()); i++) {
+  for (int i = 0; i < static_cast<int>(mBetheBlochParams.size()); i++) {
     LOGP(info, "BB param [{}] = {}", i, mBetheBlochParams[i]);
   }
   LOGP(info, "use default resolution parametrization = {}", mUseDefaultResolutionParam);
   if (mUseDefaultResolutionParam) {
     LOGP(info, "Default Resolution parametrization: ");
-    for (int i = 0; i < int(mResolutionParamsDefault.size()); i++) {
+    for (int i = 0; i < static_cast<int>(mResolutionParamsDefault.size()); i++) {
       LOGP(info, "Resolution param [{}] = {}", i, mResolutionParamsDefault[i]);
     }
   } else {
-    for (int i = 0; i < int(mResolutionParams.size()); i++) {
+    for (int i = 0; i < static_cast<int>(mResolutionParams.size()); i++) {
       LOGP(info, "Resolution param [{}] = {}", i, mResolutionParams[i]);
     }
   }
@@ -204,4 +204,4 @@ inline void Response::PrintAll() const
 
 } // namespace o2::pid::tpc
 
-#endif // O2_FRAMEWORK_PIDRESPONSE_H_
+#endif // COMMON_CORE_PID_TPCPIDRESPONSE_H_

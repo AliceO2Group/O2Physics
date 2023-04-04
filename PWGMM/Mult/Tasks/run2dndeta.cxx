@@ -14,6 +14,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RuntimeError.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
 #include "ReconstructionDataFormats/GlobalTrackID.h"
@@ -31,7 +32,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct PseudorapidityDensity {
-  Service<TDatabasePDG> pdg;
+  Service<O2DatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};

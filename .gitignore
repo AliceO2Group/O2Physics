@@ -4,3 +4,6 @@ CMakeFiles/
 build
 compile_commands.json
 .DS_Store
+megalinter-reports/
+.mypy_cache/
+github_conf/

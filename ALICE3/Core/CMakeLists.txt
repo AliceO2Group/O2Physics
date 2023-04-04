@@ -10,6 +10,7 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_library(ALICE3Core
+	       SOURCES TOFResoALICE3.cxx
                PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(ALICE3Core

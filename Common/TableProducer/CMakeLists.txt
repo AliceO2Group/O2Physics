@@ -18,6 +18,7 @@ o2physics_add_dpl_workflow(trackextension
                                           O2::ReconstructionDataFormats
                                           O2::DetectorsBase
                                           O2::DetectorsCommonDataFormats
+                                          O2Physics::DataModel
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(trackselection
@@ -60,6 +61,11 @@ o2physics_add_dpl_workflow(track-propagation
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(track-propagation-tester
+                    SOURCES trackPropagationTester.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::trackSelectionRequest
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(mc-converter
                     SOURCES mcConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework
@@ -70,9 +76,14 @@ o2physics_add_dpl_workflow(fdd-converter
                     PUBLIC_LINK_LIBRARIES O2::Framework
                 COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(collision-converter
+                    SOURCES collisionConverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework
+                COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(calo-clusters
                     SOURCES caloClusterProducer.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsPHOS O2::PHOSBase O2::PHOSReconstruction
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsPHOS O2::PHOSBase O2::PHOSReconstruction O2Physics::DataModel
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(fwdtrackextension
@@ -82,4 +93,9 @@ o2physics_add_dpl_workflow(fwdtrackextension
                                           O2::ReconstructionDataFormats
                                           O2::DetectorsBase
                                           O2::DetectorsCommonDataFormats
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(track-to-collision-associator
+                    SOURCES trackToCollisionAssociator.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

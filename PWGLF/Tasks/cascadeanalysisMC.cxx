@@ -198,17 +198,21 @@ struct cascadeAnalysisMC {
   }
 
   // Selection criteria
-  Configurable<double> v0cospa{"v0cospa", 0.95, "V0 CosPA"};       // double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<double> casccospa{"casccospa", 0.95, "Casc CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> dcav0dau{"dcav0dau", 2.0, "DCA V0 Daughters"};
-  Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA Casc Daughters"};
-  Configurable<float> dcanegtopv{"dcanegtopv", .05, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", .05, "DCA Pos To PV"};
-  Configurable<float> dcabachtopv{"dcabachtopv", .05, "DCA Bach To PV"};
-  Configurable<float> dcav0topv{"dcav0topv", .05, "DCA V0 To PV"};
-  Configurable<float> v0radius{"v0radius", 0.9, "v0radius"};
-  Configurable<float> cascradius{"cascradius", 0.5, "cascradius"};
-  Configurable<float> v0masswindow{"v0masswindow", 0.008, "v0masswindow"};
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  // Selection criteria - compatible with core wagon autodetect
+  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.95, "v0setting_cospa"};
+  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1.0, "v0setting_dcav0dau"};
+  Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "v0setting_dcapostopv"};
+  Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "v0setting_dcanegtopv"};
+  Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "v0setting_radius"};
+  Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"};
+  Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "cascadesetting_dcacascdau"};
+  Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.1, "cascadesetting_dcabachtopv"};
+  Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.5, "cascadesetting_cascradius"};
+  Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"};
+  Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"};
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   Configurable<int> tpcClusters{"tpcClusters", 70, "minimum number of TPC clusters requirement"};
@@ -227,7 +231,7 @@ struct cascadeAnalysisMC {
   Configurable<bool> doCentralityStudy{"doCentralityStudy", false, "do centrality percentile selection (yes/no)"};
 
   Filter preFilter =
-    nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > dcabachtopv&& aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
+    nabs(aod::cascdata::dcapostopv) > v0setting_dcapostopv&& nabs(aod::cascdata::dcanegtopv) > v0setting_dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv&& aod::cascdata::dcaV0daughters < v0setting_dcav0dau&& aod::cascdata::dcacascdaughters < cascadesetting_dcacascdau;
 
   template <class TCascTracksTo, typename TCascade>
   int checkCascadeTPCPID(TCascade& lCascade)
@@ -282,7 +286,6 @@ struct cascadeAnalysisMC {
       if (TMath::Abs(cascmc.pdgCode()) == 3312 || TMath::Abs(cascmc.pdgCode()) == 3334)
         lPDG = cascmc.pdgCode();
     }
-
     auto v0 = casc.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
       return; //skip those cascades for which V0 doesn't exist
@@ -344,12 +347,12 @@ struct cascadeAnalysisMC {
     bool lCompatiblePID_Xi = (lPIDvalue >> 0 & 1);
     bool lCompatiblePID_Om = (lPIDvalue >> 1 & 1);
 
-    if (casc.v0radius() > v0radius &&
-        casc.cascradius() > cascradius &&
-        casc.v0cosPA(pvx, pvy, pvz) > v0cospa &&
-        casc.casccosPA(pvx, pvy, pvz) > casccospa &&
-        casc.dcav0topv(pvx, pvy, pvz) > dcav0topv &&
-        TMath::Abs(casc.mLambda() - 1.115683) < v0masswindow) {
+    if (casc.v0radius() > v0setting_radius &&
+        casc.cascradius() > cascadesetting_cascradius &&
+        casc.v0cosPA(pvx, pvy, pvz) > v0setting_cospa &&
+        casc.casccosPA(pvx, pvy, pvz) > cascadesetting_cospa &&
+        casc.dcav0topv(pvx, pvy, pvz) > cascadesetting_mindcav0topv &&
+        TMath::Abs(casc.mLambda() - 1.115683) < cascadesetting_v0masswindow) {
       registry.fill(HIST("hCandidateCounter"), 3.5); //pass cascade selections
       if (casc.sign() < 0) {                         // FIXME: could be done better...
         if (TMath::Abs(casc.yXi()) < 0.5 && lCompatiblePID_Xi && ((!assocMC) || (lPDG == 3312))) {

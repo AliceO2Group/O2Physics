@@ -20,6 +20,8 @@
 #include "SkimmingConfigurableCuts.h"
 #include "SelectionFilterAndAnalysis.h"
 
+#undef INCORPORATEBAYESIANPID
+
 namespace o2
 {
 namespace analysis
@@ -35,6 +37,7 @@ class PIDSelectionConfigurable
   friend class PIDSelectionFilterAndAnalysis;
 
  public:
+#ifdef INCORPORATEBAYESIANPID
   PIDSelectionConfigurable(std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
                            std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "",
                            std::string pidbayel = "", std::string pidbaymu = "", std::string pidbaypi = "", std::string pidbayka = "", std::string pidbaypr = "")
@@ -44,6 +47,24 @@ class PIDSelectionConfigurable
   PIDSelectionConfigurable(std::vector<std::string> pidtpcel, std::vector<std::string> pidtpcmu, std::vector<std::string> pidtpcpi, std::vector<std::string> pidtpcka, std::vector<std::string> pidtpcpr,
                            std::vector<std::string> pidtofel, std::vector<std::string> pidtofmu, std::vector<std::string> pidtofpi, std::vector<std::string> pidtofka, std::vector<std::string> pidtofpr,
                            std::vector<std::string> pidbayel, std::vector<std::string> pidbaymu, std::vector<std::string> pidbaypi, std::vector<std::string> pidbayka, std::vector<std::string> pidbaypr);
+#else
+  PIDSelectionConfigurable(std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
+                           std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "")
+    : mPidTpcSel_el{pidtpcel},
+      mPidTpcSel_mu{pidtpcmu},
+      mPidTpcSel_pi{pidtpcpi},
+      mPidTpcSel_ka{pidtpcka},
+      mPidTpcSel_pr{pidtpcpr},
+      mPidTofSel_el{pidtofel},
+      mPidTofSel_mu{pidtofmu},
+      mPidTofSel_pi{pidtofpi},
+      mPidTofSel_ka{pidtofka},
+      mPidTofSel_pr{pidtofpr}
+  {
+  }
+  PIDSelectionConfigurable(std::vector<std::string> pidtpcel, std::vector<std::string> pidtpcmu, std::vector<std::string> pidtpcpi, std::vector<std::string> pidtpcka, std::vector<std::string> pidtpcpr,
+                           std::vector<std::string> pidtofel, std::vector<std::string> pidtofmu, std::vector<std::string> pidtofpi, std::vector<std::string> pidtofka, std::vector<std::string> pidtofpr);
+#endif
 
  private:
   std::string mPidTpcSel_el = "";
@@ -152,11 +173,13 @@ inline uint64_t PIDSelectionFilterAndAnalysis::Filter(TrackToFilter const& track
   filterBrickValue(mCloseNsigmasTOF[kPion], track.tofNSigmaPi());
   filterBrickValue(mCloseNsigmasTOF[kKaon], track.tofNSigmaKa());
   filterBrickValue(mCloseNsigmasTOF[kProton], track.tofNSigmaPr());
+#ifdef INCORPORATEBAYESIANPID
   filterBrickValue(mBayesProbability[kElectron], track.bayesEl());
   filterBrickValue(mBayesProbability[kMuon], track.bayesMu());
   filterBrickValue(mBayesProbability[kPion], track.bayesPi());
   filterBrickValue(mBayesProbability[kKaon], track.bayesKa());
   filterBrickValue(mBayesProbability[kProton], track.bayesPr());
+#endif
 
   mSelectedMask = selectedMask;
   return mSelectedMask;

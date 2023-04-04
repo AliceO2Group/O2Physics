@@ -48,8 +48,7 @@
 #include "TLorentzVector.h"
 #include "ReconstructionDataFormats/BCRange.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "EventFiltering/PWGUD/DGHelpers.h"
-#include "PWGUD/Core/DGMCHelpers.h"
+#include "PWGUD/Core/UDHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -62,7 +61,7 @@ struct DiffMCQA {
 
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
-  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   Configurable<bool> withAmbTrackAnalysis{"ambiguousTracks", false, "with ambiguous tracks analysis"};
   Configurable<bool> withAmbFwdTrackAnalysis{"ambiguousFwdTracks", false, "with ambiguous forward tracks analysis"};
   Configurable<bool> doCleanFITBC{"doCleanFITBC", false, "Require cleanFIT in compatible BCs"};
@@ -170,7 +169,7 @@ struct DiffMCQA {
   using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
-  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TOFSignal>;
+  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal>;
   using FWs = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
   using ATs = aod::AmbiguousTracks;
   using AFTs = aod::AmbiguousFwdTracks;
@@ -199,7 +198,7 @@ struct DiffMCQA {
       // This is used to efficiently check whether a given BC is contained in one of these ranges
       abcrs.reset();
       LOGF(info, "<DiffMCQA> size of ambiguous tracks table %i", ambtracks.size());
-      for (auto ambtrack : ambtracks) {
+      for (auto const& ambtrack : ambtracks) {
         auto bcfirst = ambtrack.bc().rawIteratorAt(0);
         auto bclast = ambtrack.bc().rawIteratorAt(ambtrack.bc().size() - 1);
         abcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
@@ -216,7 +215,7 @@ struct DiffMCQA {
       // make sorted list of BC ranges which are associated with an ambiguous FwdTrack.
       afbcrs.reset();
       LOGF(info, "<DiffMCQA> size of ambiguous fwd tracks table %i", ambfwdtracks.size());
-      for (auto ambfwdtrack : ambfwdtracks) {
+      for (auto const& ambfwdtrack : ambfwdtracks) {
         auto bcfirst = ambfwdtrack.bc().rawIteratorAt(0);
         auto bclast = ambfwdtrack.bc().rawIteratorAt(ambfwdtrack.bc().size() - 1);
         afbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
@@ -229,11 +228,11 @@ struct DiffMCQA {
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   void process(CC const& collision, BCs const& bct0s,
-               TCs& tracks, FWs& fwdtracks, ATs& ambtracks, AFTs& ambfwdtracks,
-               aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
+               TCs const& tracks, FWs const& fwdtracks, ATs const& ambtracks, AFTs const& ambfwdtracks,
+               aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds,
                aod::Zdcs& zdcs, aod::Calos& calos,
-               aod::V0s& v0s, aod::Cascades& cascades,
-               aod::McCollisions& McCols, aod::McParticles const& McParts)
+               aod::V0s const& v0s, aod::Cascades const& cascades,
+               aod::McCollisions const& McCols, aod::McParticles const& McParts)
   {
     bool isDGcandidate = true;
 
@@ -244,8 +243,8 @@ struct DiffMCQA {
     if (collision.has_mcCollision()) {
       auto MCCol = collision.mcCollision();
       auto MCPartSlice = McParts.sliceBy(perMcCollision, MCCol.globalIndex());
-      isPythiaDiff = isPythiaCDE(MCPartSlice);
-      isGraniittiDiff = isGraniittiCDE(MCPartSlice);
+      isPythiaDiff = udhelpers::isPythiaCDE(MCPartSlice);
+      isGraniittiDiff = udhelpers::isGraniittiCDE(MCPartSlice);
     }
 
     // global tracks
@@ -278,10 +277,10 @@ struct DiffMCQA {
 
     // test influence of BCrange width
     for (int NDtcoll = 0; NDtcoll < 10; NDtcoll++) {
-      auto bcSlice = MCcompatibleBCs(collision, NDtcoll, bct0s, 0);
+      auto bcSlice = udhelpers::MCcompatibleBCs(collision, NDtcoll, bct0s, 0);
       isDGcandidate = true;
       for (auto& bc : bcSlice) {
-        isDGcandidate &= cleanFIT(bc, diffCuts.FITAmpLimits());
+        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
       }
       if (isPythiaDiff) {
         registry.get<TH2>(HIST("cleanFITDiff1"))->Fill(NDtcoll, isDGcandidate * 1.);
@@ -294,7 +293,7 @@ struct DiffMCQA {
 
     // number of vertex tracks with TOF hit
     float rgtrwTOF = 0.;
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       // update eta vs pt and dEdx histograms histogram
       if (isPythiaDiff) {
         registry.get<TH2>(HIST("etaptDiff1"))->Fill(track.eta(), track.pt());
@@ -355,18 +354,18 @@ struct DiffMCQA {
     isDGcandidate = true;
 
     // get BCrange to test for FIT signals
-    auto bcSlice = MCcompatibleBCs(collision, diffCuts.NDtcoll(), bct0s, diffCuts.minNBCs());
+    auto bcSlice = udhelpers::MCcompatibleBCs(collision, diffCuts.NDtcoll(), bct0s, diffCuts.minNBCs());
 
     // no FIT signal in bcSlice / collision
     if (doCleanFITBC) {
-      for (auto& bc : bcSlice) {
-        if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
+      for (auto const& bc : bcSlice) {
+        if (!udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits())) {
           isDGcandidate = false;
           break;
         }
       }
     } else {
-      if (!cleanFITCollision(collision, diffCuts.FITAmpLimits())) {
+      if (!udhelpers::cleanFITCollision(collision, diffCuts.FITAmpLimits())) {
         isDGcandidate = false;
       }
     }
@@ -380,8 +379,8 @@ struct DiffMCQA {
 
     // no Zdc signal in bcSlice
     std::vector<float> lims(10, 0.);
-    for (auto& bc : bcSlice) {
-      if (!cleanZDC(bc, zdcs, lims)) {
+    for (auto const& bc : bcSlice) {
+      if (!udhelpers::cleanZDC(bc, zdcs, lims)) {
         isDGcandidate = false;
         break;
       }
@@ -395,8 +394,8 @@ struct DiffMCQA {
     }
 
     // no Calo signal in bcSlice
-    for (auto& bc : bcSlice) {
-      if (!cleanCalo(bc, calos, lims)) {
+    for (auto const& bc : bcSlice) {
+      if (!udhelpers::cleanCalo(bc, calos, lims)) {
         isDGcandidate = false;
         break;
       }
@@ -442,7 +441,7 @@ struct DiffMCQA {
     // no global tracks which are no vtx tracks
     bool globalAndVtx = isDGcandidate;
     bool vtxAndGlobal = isDGcandidate;
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       if (track.isGlobalTrack() && !track.isPVContributor()) {
         globalAndVtx = false;
       }
@@ -467,7 +466,7 @@ struct DiffMCQA {
 
     // check a given bc for possible ambiguous Tracks
     auto noAmbTracks = isDGcandidate;
-    for (auto& bc : bcSlice) {
+    for (auto const& bc : bcSlice) {
       if (abcrs.isInRange(bc.globalIndex())) {
         noAmbTracks = false;
         break;
@@ -483,7 +482,7 @@ struct DiffMCQA {
 
     // check a given bc for possible ambiguous FwdTracks
     auto noAmbFwdTracks = isDGcandidate;
-    for (auto& bc : bcSlice) {
+    for (auto const& bc : bcSlice) {
       if (afbcrs.isInRange(bc.globalIndex())) {
         noAmbFwdTracks = false;
         break;

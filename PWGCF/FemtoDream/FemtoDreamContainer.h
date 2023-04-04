@@ -14,8 +14,11 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Valentina Mantovani Sarti, valentina.mantovani-sarti@tum.de
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
+
+#include <vector>
+#include <string>
 
 #include "Framework/HistogramRegistry.h"
 #include "FemtoDreamMath.h"
@@ -137,4 +140,4 @@ class FemtoDreamContainer
 
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_

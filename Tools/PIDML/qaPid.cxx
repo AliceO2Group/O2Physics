@@ -326,7 +326,7 @@ struct EvaluatePid {
   void pidSimple(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
   {
     /*
-    Simsplest possibile PID, accept particle when:
+    Simplest possible PID, accept particle when:
     TPCSignal < X if p < Value or
     sqrt(TPCSignal^2 + TOFSignal^2) < X if p > Value
     */
@@ -500,7 +500,7 @@ struct EvaluatePid {
   }
 
   Configurable<float> nsigmacut{"nsigmacut", 2.5, "Value of the NSigma cut"};
-  Configurable<int> strategy{"strategy", 1, "1-PID with Nsigma method, 2-PID with NSigma and condition for minimal Nsigma value for particle, 3-Exlcusive condition for NSigma, 4-Bayesian PID"};
+  Configurable<int> strategy{"strategy", 1, "1-PID with Nsigma method, 2-PID with NSigma and condition for minimal Nsigma value for particle, 3-Exclusive condition for NSigma, 4-Bayesian PID"};
 
   Filter trackFilter = requireGlobalTrackInFilter();
   using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu, aod::pidBayes>>;

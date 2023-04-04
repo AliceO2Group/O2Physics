@@ -15,6 +15,7 @@ o2physics_add_library(TwoPartCorrCore
                                TrackSelectionFilterAndAnalysis.cxx
                                PIDSelectionFilterAndAnalysis.cxx
                                EventSelectionFilterAndAnalysis.cxx
+                               FilterAndAnalysisFramework.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(TwoPartCorrCore
@@ -23,4 +24,5 @@ o2physics_target_root_dictionary(TwoPartCorrCore
                                          TrackSelectionFilterAndAnalysis.h
                                          PIDSelectionFilterAndAnalysis.h
                                          EventSelectionFilterAndAnalysis.h
+                                         FilterAndAnalysisFramework.h
                                  LINKDEF TwoPartCorrLinkDef.h)

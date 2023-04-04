@@ -47,7 +47,7 @@ class GFWCumulant
   bool fInitialized; // Arrays are initialized
   void CreateComplexVectorArray(int N = 1, int P = 1, int Pt = 1);
   void CreateComplexVectorArrayVarPower(int N = 1, vector<int> Pvec = {1}, int Pt = 1);
-  int PW(int ind) { return fPowVec.at(ind); }; // No checks to speed up, be carefull!!!
+  int PW(int ind) { return fPowVec.at(ind); }; // No checks to speed up, be careful!!!
   void DestroyComplexVectorArray();
   bool IsPtBinFilled(int ptb)
   {

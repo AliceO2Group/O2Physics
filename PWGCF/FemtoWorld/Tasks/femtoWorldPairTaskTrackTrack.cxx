@@ -189,26 +189,42 @@ struct femtoWorldPairTaskTrackTrack {
   }
 
   // PID
-  bool IsKaonTPCdEdxNSigma(float mom, float nsigmaK) // true if accepted, false if rejected
+  bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
-    if (mom < 0.4 && TMath::Abs(nsigmaK) < 2.0)
-      return true;
-    if (mom >= 0.4 && mom < 0.5 && TMath::Abs(nsigmaK) < 1.0)
-      return true;
-    if (mom > 0.5 && TMath::Abs(nsigmaK) < 3.0)
-      return true;
+    bool fNsigmaTPCTOF = true;
+    double fNsigma = 3;
+    double fNsigma2 = 3;
+    if (fNsigmaTPCTOF) {
+      if (mom > 0.5) {
+        //        if (TMath::Hypot( nsigmaTOFP, nsigmaTPCP )/TMath::Sqrt(2) < 3.0)
+        if (mom < 2.0) {
+          if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma)
+            return true;
+        } else if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma2)
+          return true;
+      } else {
+        if (TMath::Abs(nsigmaTPCK) < fNsigma)
+          return true;
+      }
+    } else {
 
-    return false;
-  }
-
-  bool IsKaonTOFNSigma(float mom, float nsigmaK) // true if accepted, false if rejected
-  {
-    if (mom >= 0.45 && mom < 0.8 && TMath::Abs(nsigmaK) < 2.0)
-      return true;
-    if (mom >= 0.8 && mom < 1.0 && TMath::Abs(nsigmaK) < 1.5)
-      return true;
-    if (mom > 1.0 && TMath::Abs(nsigmaK) < 1.0)
-      return true;
+      if (mom < 0.4) {
+        if (nsigmaTOFK < -999.) {
+          if (TMath::Abs(nsigmaTPCK) < 2.0)
+            return true;
+        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          return true;
+      } else if (mom >= 0.4 && mom <= 0.6) {
+        if (nsigmaTOFK < -999.) {
+          if (TMath::Abs(nsigmaTPCK) < 2.0)
+            return true;
+        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          return true;
+      } else if (nsigmaTOFK < -999.) {
+        return false;
+      } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+        return true;
+    }
     return false;
   }
 
@@ -231,15 +247,8 @@ struct femtoWorldPairTaskTrackTrack {
     MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
-      if ((part.p() > (float)0.45)) {
-        if (!((IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())) && (IsKaonTOFNSigma(part.p(), part.tofNSigmaKaon())))) {
-          continue;
-        }
-
-      } else if ((part.p() <= (float)0.45)) {
-        if (!(IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon()))) {
-          continue;
-        }
+      if (!(IsKaonNSigma(part.p(), part.tpcNSigmaKa(), part.tofNSigmaKa()))) {
+        continue;
       }
       trackHistoPartOne.fillQA(part);
     }
@@ -249,15 +258,8 @@ struct femtoWorldPairTaskTrackTrack {
     }
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
-        if ((part.p() > (float)0.45)) {
-          if (!((IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())) && (IsKaonTOFNSigma(part.p(), part.tofNSigmaKaon())))) {
-            continue;
-          }
-
-        } else if ((part.p() <= (float)0.45)) {
-          if (!(IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon()))) {
-            continue;
-          }
+        if (!(IsKaonNSigma(part.p(), part.tpcNSigmaKa(), part.tofNSigmaKa()))) {
+          continue;
         }
         trackHistoPartTwo.fillQA(part);
       }
@@ -268,25 +270,11 @@ struct femtoWorldPairTaskTrackTrack {
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
-      if ((p1.p() > (float)0.45)) {
-        if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKaon())))) {
-          continue;
-        }
-
-      } else if ((p1.p() <= (float)0.45)) {
-        if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon()))) {
-          continue;
-        }
+      if (!(IsKaonNSigma(p1.p(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
+        continue;
       }
-      if ((p2.p() > (float)0.45)) {
-        if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKaon())))) {
-          continue;
-        }
-
-      } else if ((p2.p() <= (float)0.45)) {
-        if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon()))) {
-          continue;
-        }
+      if (!(IsKaonNSigma(p2.p(), p2.tpcNSigmaKa(), p2.tofNSigmaKa()))) {
+        continue;
       }
       if (ConfIsCPR) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
@@ -327,25 +315,12 @@ struct femtoWorldPairTaskTrackTrack {
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if ((p1.p() > (float)0.45)) {
-          if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKaon())))) {
-            continue;
-          }
-        } else if ((p1.p() <= (float)0.45)) {
-          if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon()))) {
-            continue;
-          }
+        if (!(IsKaonNSigma(p1.p(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
+          continue;
         }
-        if ((p2.p() > (float)0.45)) {
-          if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKaon())))) {
-            continue;
-          }
-        } else if ((p2.p() <= (float)0.45)) {
-          if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon()))) {
-            continue;
-          }
+        if (!(IsKaonNSigma(p2.p(), p2.tpcNSigmaKa(), p2.tofNSigmaKa()))) {
+          continue;
         }
-
         if (ConfIsCPR) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1)) {
             continue;

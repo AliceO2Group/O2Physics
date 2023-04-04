@@ -8,7 +8,7 @@ _________________
 _______________
 # Prerequisites
 ## How to install O2Physics Framework?
-1. Build prerequisities for your operating system, configure aliBuild (but don't build packages!) - [here](https://alice-doc.github.io/alice-analysis-tutorial/building/custom.html).<br>
+1. Build prerequisites for your operating system, configure aliBuild (but don't build packages!) - [here](https://alice-doc.github.io/alice-analysis-tutorial/building/custom.html).<br>
 2. Get a GRID certificate - [here](https://alice-doc.github.io/alice-analysis-tutorial/start/cert.html) <br>
 3. Follow instructions on [ALICE O2 documentation](https://aliceo2group.github.io/analysis-framework/docs/gettingstarted/installing.html) - Prepare your source code, check prerequisites, build and rebuild and check if everything works! <br>
 
@@ -29,7 +29,7 @@ _________
 This tutorial is made and tested for pilot-beam data (reconstruction pass4). You can download the reference `AO2D.root` file from [here](https://alimonitor.cern.ch/catalogue/index.jsp?path=%2Falice%2Fdata%2F2021%2FOCT%2F505669%2Fapass4%2FAOD#/alice/data/2021/OCT/505669/apass4/AOD/006). We use file `006`. Be aware that due to the file size (around 400 MB), it could take a while.
 
 <!-- markdown-link-check-disable-next-line -->
-A lot of Run 2 data converted into the Run 3 format can be found [here](https://alimonitor.cern.ch/trains/train.jsp?train_id=132). A detailed description of how to download converted Run 2 data is reported in the [offifial documentation](https://aliceo2group.github.io/analysis-framework/docs/download/)
+A lot of Run 2 data converted into the Run 3 format can be found [here](https://alimonitor.cern.ch/trains/train.jsp?train_id=132). A detailed description of how to download converted Run 2 data is reported in the [official documentation](https://aliceo2group.github.io/analysis-framework/docs/download/)
 
 In summary, to download a bunch of data, do the following: <br>
 1. scroll all the way down, choose the train number you are interested in and click on run number. <br>
@@ -59,7 +59,7 @@ In addition, the task can also have an `init` funcion, which is used to initiali
 
 In the same source file where the `struct` is defined, one has to add a `defineDataProcessing` method, which is necessary to include the task to the workflow, assigning it a specific name.
 
-The task must be added to the `CMakeLists.txt` file in the same directory. For our tutorial, the first task has name `cf-tutorial-0` and it is defined in the source file `CFTutorialTask0.cxx`. The corresponfing lines in the `CMakeLists.txt` file are:
+The task must be added to the `CMakeLists.txt` file in the same directory. For our tutorial, the first task has name `cf-tutorial-0` and it is defined in the source file `CFTutorialTask0.cxx`. The corresponding lines in the `CMakeLists.txt` file are:
 
 ```
 o2physics_add_dpl_workflow(cf-tutorial-0
@@ -268,7 +268,7 @@ using MyTracks = soa::Join<aod::FullTracks,
  ```
 The data model provides some predifined joins, suche as `FullTracks = soa::Join<Tracks, TracksExtra>`. The complete list of predefined joins can be found in [ALICE O2 documentation - The Data Model, Joins and iterators](https://aliceo2group.github.io/analysis-framework/docs/datamodel/joinsAndIterators.html).
 
-Joined tables can be normally used as agruments of process.
+Joined tables can be normally used as arguments of process.
 
 ```c
  // CFTutorialTask1.cxx version
@@ -455,7 +455,7 @@ Event and track selections in FemtoDream are handled by [FemtoDreamCollisionSele
 
 Once elements are filtered, all the not relevant information is **permanently lost**. For example, information about the number of TPC clusters, $\chi^{2}$, etc. will not be available for skimmed data. However, the information about which selections are passed is encoded in a **bitmap**. Let's clarify with an example.
 
-In FemtoDream, for each track three possible selections for pseudorapidity $\eta$ are available: {0.9, 0.8, 0.7}. The corrisponding code is the [following](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamProducerTask.cxx#L116):
+In FemtoDream, for each track three possible selections for pseudorapidity $\eta$ are available: {0.9, 0.8, 0.7}. The corresponding code is the [following](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamProducerTask.cxx#L116):
 
 ```c
 Configurable<std::vector<float>> ConfTrkEta{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kEtaMax, "ConfTrk"), std::vector<float>{0.8f, 0.7f, 0.9f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kEtaMax, "Track selection: ")};
@@ -475,7 +475,7 @@ To see whether a track satisfies the requirement $|\eta| < 0.8$, it is necessary
 
 Working with skimmed data, you can chose the selection criteria by providing the correct bitmask.
 
-**IMPORTANT**: you can only choose the selection used in the skimming process. Reffering to the previous example, you cannot select tracks with $\eta < 1$, because it does not have a corresponding bit in the bitmap.
+**IMPORTANT**: you can only choose the selection used in the skimming process. Referring to the previous example, you cannot select tracks with $\eta < 1$, because it does not have a corresponding bit in the bitmap.
 
 The bitmask corresponding the the wished selection is obtained using [femtoDreamCutCulator](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamCutCulator.cxx). You need the `dpl-config.json` file with the configurations used for the data skimming. You need to use the command
 
@@ -583,7 +583,7 @@ Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partTyp
 
 ```
 
-The two partitions are used to evaluate same-event and mixed-event $k^{*}$ distributions, as explaind in the section [Combining elements of different partitions](#combining-elements-of-different-partitions). They are evaluated using a helper class (a container):
+The two partitions are used to evaluate same-event and mixed-event $k^{*}$ distributions, as explained in the section [Combining elements of different partitions](#combining-elements-of-different-partitions). They are evaluated using a helper class (a container):
 
 ```c
 FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;

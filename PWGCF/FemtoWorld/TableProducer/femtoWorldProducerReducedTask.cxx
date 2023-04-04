@@ -165,7 +165,7 @@ struct femtoWorldProducerReducedTask {
       mult = 0.5 * (col.multFV0M());
     }
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
-    // If the basic selection is NOT fullfilled:
+    // If the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {

@@ -13,6 +13,7 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
+#include <CCDB/BasicCCDBManager.h>
 #include "FemtoDreamCollisionSelection.h"
 #include "FemtoDreamTrackSelection.h"
 #include "FemtoDreamV0Selection.h"
@@ -33,7 +34,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
-#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -91,13 +91,14 @@ struct femtoDreamProducerTaskV0Only {
 
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
+  Configurable<bool> ConfUseTPCmult{"ConfUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
   Configurable<bool> ConfStoreV0{"ConfStoreV0", true, "True: store V0 table"};
-  // just sanity check to make sure in case there are problems in convertion or MC production it does not affect results
+  // just sanity check to make sure in case there are problems in conversion or MC production it does not affect results
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   FemtoDreamV0Selection v0Cuts;
   /// \todo Labeled array (see Track-Track task)
@@ -178,7 +179,7 @@ struct femtoDreamProducerTaskV0Only {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
   }
 
@@ -228,28 +229,36 @@ struct femtoDreamProducerTaskV0Only {
       mRunNumber = bc.runNumber();
     }
 
+    const auto vtxZ = col.posZ();
+    const auto spher = colCuts.computeSphericity(col, tracks);
+
+    int mult = 0;
+    int multNtr = 0;
+    if (ConfIsRun3) {
+      mult = col.multFV0M();
+      multNtr = col.multNTracksPV();
+    } else {
+      mult = 0.5 * (col.multFV0M()); /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
+      multNtr = col.multTracklets();
+    }
+    if (ConfUseTPCmult) {
+      multNtr = col.multTPC();
+    }
+
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
-    // If the basic selection is NOT fullfilled:
+    // If the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), mMagField);
+        outputCollision(vtxZ, mult, multNtr, spher, mMagField);
       }
       return;
     }
 
-    const auto vtxZ = col.posZ();
-    const auto mult = col.multFV0M();
-    const auto spher = colCuts.computeSphericity(col, tracks);
     colCuts.fillQA(col);
-
     // now the table is filled
-    if (ConfIsRun3) {
-      outputCollision(vtxZ, col.multFT0M(), spher, mMagField);
-    } else {
-      outputCollision(vtxZ, mult, spher, mMagField);
-    }
+    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index

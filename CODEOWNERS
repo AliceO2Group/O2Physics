@@ -12,33 +12,34 @@
 # @alibuild has to be in each line to allow self approval of PRs
 
 * @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk
-/Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen
+/Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
 /ALICE3 @alibuild @njacazio @ginnocen @vkucera
 /DPG @alibuild @chiarazampolli @noferini
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
 /DPG/Tasks/AOTTrack @alibuild @mfaggin @njacazio
-/EventFiltering @alibuild @mpuccio
-/EventFiltering/PWGHF @alibuild @fgrosa @vkucera
-/EventFiltering/PWGUD @alibuild @pbuehler
-/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi
-/EventFiltering/PWGCF @alibuild @lauraser
-/EventFiltering/PWGMM @alibuild @aortizve
-/EventFiltering/PWGJE @alibuild @fkrizek
+/EventFiltering @alibuild @mpuccio @strogolo
+/EventFiltering/PWGHF @alibuild @fgrosa @vkucera @mpuccio @strogolo
+/EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @strogolo
+/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi @ChiaraDeMartin95 @strogolo
+/EventFiltering/PWGCF @alibuild @lauraser @mpuccio @strogolo
+/EventFiltering/PWGMM @alibuild @aortizve @mpuccio @strogolo
+/EventFiltering/PWGJE @alibuild @fkrizek @mpuccio @strogolo
 /PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
 /PWGDQ @alibuild @iarsene @dsekihat @feisenhu
 /PWGEM @alibuild @mikesas @rbailhac @feisenhu
-/PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye
+/PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky
-/PWGHF @alibuild @ginnocen @vkucera @fcolamar @cterrevo
-/PWGHF/D2H @alibuild @ginnocen @vkucera @fcolamar @cterrevo @xinyepeng @lvermunt
-/PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @cterrevo @mmazzilli
-/PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @cterrevo @nzardosh @rvertesi
-/PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @cterrevo @NicoleBastid @mvolkl
-/PWGLF @alibuild @lramona @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio
+/PWGHF @alibuild @ginnocen @vkucera @fcolamar
+/PWGHF/D2H @alibuild @ginnocen @vkucera @fcolamar @xinyepeng @lvermunt
+/PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @mmazzilli
+/PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @nzardosh @rvertesi
+/PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @NicoleBastid @mvolkl
+/PWGLF @alibuild @lramona @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio @ChiaraDeMartin95 @skundu692
 /PWGMM @alibuild @aalkin
 /PWGMM/Lumi @alibuild @aalkin
 /PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
 /PWGMM/UE @alibuild @aalkin @aortizve
 /PWGUD @alibuild @pbuehler
+/PWGJE @alibuild @lhavener @maoyx @nzardosh @ddobrigk @mfasDa
 /Tools/PIDML @alibuild @saganatt

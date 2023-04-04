@@ -231,7 +231,7 @@ struct PidONNXModel {
       auto outputTensors = mSession->Run(mInputNames, inputTensors, mOutputNames);
 
       // Double-check the dimensions of the output tensors
-      // The number of output tensors is equal to the number of output nodes specifed in the Run() call
+      // The number of output tensors is equal to the number of output nodes specified in the Run() call
       assert(outputTensors.size() == mOutputNames.size() && outputTensors[0].IsTensor());
       LOG(debug) << "output tensor shape: " << printShape(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
 
