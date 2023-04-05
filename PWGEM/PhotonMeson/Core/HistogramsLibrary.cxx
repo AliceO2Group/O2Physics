@@ -36,8 +36,8 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
 {
   if (TString(histClass) == "Event") {
     list->Add(new TH1F("hCollisionCounter", "hCollisionCounter", 5, 0.5f, 5.5f));
-    list->Add(new TH1F("hZvtx_before", "vertex z; Zvtx (cm)", 1000, -50, +50));
-    list->Add(new TH1F("hZvtx_after", "vertex z; Zvtx (cm)", 1000, -50, +50));
+    list->Add(new TH1F("hZvtx_before", "vertex z; Zvtx (cm)", 100, -50, +50));
+    list->Add(new TH1F("hZvtx_after", "vertex z; Zvtx (cm)", 100, -50, +50));
   }
   if (TString(histClass) == "Track") {
     list->Add(new TH1F("hPt", "pT", 1000, 0.0f, 10));
@@ -62,12 +62,12 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hPCA", "distance between 2 legs; PCA (cm)", 100, 0.0f, 10.0f));
     list->Add(new TH2F("hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", 200, -1.0f, +1.0f, 250, 0.0f, 0.25f));
     list->Add(new TH2F("hGammaPsiPair", "#psi_{pair} for photon conversion;#psi_{pair} (rad.);m_{ee} (GeV/c^{2})", 300, -TMath::PiOver2(), TMath::PiOver2(), 100, 0.0f, 0.1f));
-    list->Add(new TH2F("hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 2000, 0.0f, 200.0f, 100, 0.0f, 0.1f));
-    list->Add(new TH2F("hMassGamma_recalc", "recalc. KF hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 2000, 0.0f, 200.0f, 100, 0.0f, 0.1f));
-    list->Add(new TH2F("hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", 1000, -250.0f, 250.0f, 1000, -250.0f, 250.0f));
-    list->Add(new TH2F("hGammaRxy_recalc", "recalc. KF conversion point in XY;V_{x} (cm);V_{y} (cm)", 1000, -250.0f, 250.0f, 1000, -250.0f, 250.0f));
-    list->Add(new TH2F("hKFChi2vsR_recalc", "recalc. KF conversion point in XY;R_{xy} (cm);KF chi2/NDF", 250, 0.0f, 250.0f, 5000, 0.f, 5000.0f));
-    list->Add(new TH2F("hKFChi2vsZ_recalc", "recalc. KF conversion point in Z;Z (cm);KF chi2/NDF", 500, -250.0f, 250.0f, 5000, 0.f, 5000.0f));
+    list->Add(new TH2F("hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGamma_recalc", "recalc. KF hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
+    list->Add(new TH2F("hGammaRxy_recalc", "recalc. KF conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
+    list->Add(new TH2F("hKFChi2vsR_recalc", "recalc. KF conversion point in XY;R_{xy} (cm);KF chi2/NDF", 250, 0.0f, 250.0f, 500, 0.f, 5000.0f));
+    list->Add(new TH2F("hKFChi2vsZ_recalc", "recalc. KF conversion point in Z;Z (cm);KF chi2/NDF", 500, -250.0f, 250.0f, 500, 0.f, 5000.0f));
   }
 }
 void o2::aod::emphotonhistograms::AddHistClass(THashList* list, const char* histClass)
