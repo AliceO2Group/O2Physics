@@ -447,17 +447,27 @@ namespace mcv0label
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
 } // namespace mcv0label
 
-DECLARE_SOA_TABLE(McV0Labels, "AOD", "MCV0LABEL", //! Table joinable to V0data containing the MC labels
+DECLARE_SOA_TABLE(McV0Labels, "AOD", "MCV0LABEL", //! Table joinable with V0Data containing the MC labels
                   mcv0label::McParticleId);
 using McV0Label = McV0Labels::iterator;
+
+// Definition of labels for V0s // Full table, joinable with V0 (CAUTION: NOT WITH V0DATA)
+namespace mcfullv0label
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
+} // namespace mcfullv0label
+
+DECLARE_SOA_TABLE(McFullV0Labels, "AOD", "MCFULLV0LABEL", //! Table joinable with V0
+                  mcfullv0label::McParticleId);
+using McFullV0Label = McFullV0Labels::iterator;
 
 // Definition of labels for cascades
 namespace mccasclabel
 {
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Cascade
 } // namespace mccasclabel
 
-DECLARE_SOA_TABLE(McCascLabels, "AOD", "MCCASCLABEL", //! Table joinable to V0data containing the MC labels
+DECLARE_SOA_TABLE(McCascLabels, "AOD", "MCCASCLABEL", //! Table joinable with CascData containing the MC labels
                   mccasclabel::McParticleId);
 using McCascLabel = McCascLabels::iterator;
 
