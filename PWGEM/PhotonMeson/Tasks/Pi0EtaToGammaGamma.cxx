@@ -14,6 +14,8 @@
 // This code loops over v0 photons and makes pairs for neutral mesons analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <cstring>
+
 #include "TString.h"
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
@@ -34,6 +36,10 @@
 #include "Common/Core/RecoDecay.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
+#include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -109,6 +115,21 @@ struct Pi0EtaToGammaGamma {
 
   Configurable<bool> useRotation{"useRotation", 0, "use rotation method for EMC-EMC background estimation"};
   Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
+  Configurable<std::string> fConfigEMCCuts{"fConfigEMCCuts", "custom,standard", "Comma separated list of EMCal photon cuts"};
+
+  // Configurable for EMCal cuts
+  Configurable<float> EMC_minTime{"EMC_minTime", -20., "Minimum cluster time for EMCal time cut"};
+  Configurable<float> EMC_maxTime{"EMC_maxTime", +25., "Maximum cluster time for EMCal time cut"};
+  Configurable<float> EMC_minM02{"EMC_minM02", 0.1, "Minimum M02 for EMCal M02 cut"};
+  Configurable<float> EMC_maxM02{"EMC_maxM02", 0.7, "Maximum M02 for EMCal M02 cut"};
+  Configurable<float> EMC_minE{"EMC_minE", 0.7, "Minimum cluster energy for EMCal energy cut"};
+  Configurable<int> EMC_minNCell{"EMC_minNCell", 1, "Minimum number of cells per cluster for EMCal NCell cut"};
+  Configurable<std::vector<float>> EMC_TM_Eta{"EMC_TM_Eta", {0.01f, 4.07f, -2.5f}, "|eta| <= [0]+(pT+[1])^[2] for EMCal track matching"};
+  Configurable<std::vector<float>> EMC_TM_Phi{"EMC_TM_Phi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
+  Configurable<float> EMC_Eoverp{"EMC_Eoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
+  Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
+
+  std::vector<EMCPhotonCut> fEMCCuts;
 
   void init(InitContext& context)
   {
@@ -126,6 +147,45 @@ struct Pi0EtaToGammaGamma {
       registry.add(Form("%s/h2MggPt_Mixed", pairnames[i].data()), "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}}, true);
     }
     registry.add("EMCEMC/h2MggPt_Rotated", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/#it{c}^{2});p_{T,#gamma#gamma} (GeV/#it{c})", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}}, true);
+  }
+
+  void DefineCuts()
+  {
+    const float a = EMC_TM_Eta->at(0);
+    const float b = EMC_TM_Eta->at(1);
+    const float c = EMC_TM_Eta->at(2);
+
+    const float d = EMC_TM_Phi->at(0);
+    const float e = EMC_TM_Phi->at(1);
+    const float f = EMC_TM_Phi->at(2);
+    TString cutNamesStr = fConfigEMCCuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        const char* cutname = objArray->At(icut)->GetName();
+        LOGF(info, "add cut : %s", cutname);
+        if (std::strcmp(cutname, "custom") == 0) {
+          EMCPhotonCut custom_cut = EMCPhotonCut(cutname, cutname);
+          custom_cut.SetMinE(EMC_minE);
+          custom_cut.SetMinNCell(EMC_minNCell);
+          custom_cut.SetM02Range(EMC_minM02, EMC_maxM02);
+          custom_cut.SetTimeRange(EMC_minTime, EMC_maxTime);
+
+          custom_cut.SetTrackMatchingEta([&a, &b, &c](float pT) {
+            return a + pow(pT + b, c);
+          });
+          custom_cut.SetTrackMatchingPhi([&d, &e, &f](float pT) {
+            return d + pow(pT + e, f);
+          });
+          custom_cut.SetMinEoverP(EMC_Eoverp);
+          custom_cut.SetUseExoticCut(EMC_UseExoticCut);
+          fEMCCuts.push_back(custom_cut);
+        } else {
+          fEMCCuts.push_back(*aod::emccuts::GetCut(cutname));
+        }
+      }
+    }
+    LOGF(info, "Number of EMCal cuts = %d", fEMCCuts.size());
   }
 
   Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
