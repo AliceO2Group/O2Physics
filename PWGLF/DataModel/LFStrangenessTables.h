@@ -276,8 +276,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, ""); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
 // General cascade properties: position, momentum
 DECLARE_SOA_COLUMN(Sign, sign, int);         //!
-DECLARE_SOA_COLUMN(MXi, mXi, float);     //!
-DECLARE_SOA_COLUMN(MOmega, mOmega, float);     //!
+DECLARE_SOA_COLUMN(MXi, mXi, float);         //!
+DECLARE_SOA_COLUMN(MOmega, mOmega, float);   //!
 DECLARE_SOA_COLUMN(PxPos, pxpos, float);     //!
 DECLARE_SOA_COLUMN(PyPos, pypos, float);     //!
 DECLARE_SOA_COLUMN(PzPos, pzpos, float);     //!
@@ -287,9 +287,9 @@ DECLARE_SOA_COLUMN(PzNeg, pzneg, float);     //!
 DECLARE_SOA_COLUMN(PxBach, pxbach, float);   //!
 DECLARE_SOA_COLUMN(PyBach, pybach, float);   //!
 DECLARE_SOA_COLUMN(PzBach, pzbach, float);   //!
-DECLARE_SOA_COLUMN(Px, px, float);         //! cascade momentum X
-DECLARE_SOA_COLUMN(Py, py, float);         //! cascade momentum Y
-DECLARE_SOA_COLUMN(Pz, pz, float);         //! cascade momentum Z
+DECLARE_SOA_COLUMN(Px, px, float);           //! cascade momentum X
+DECLARE_SOA_COLUMN(Py, py, float);           //! cascade momentum Y
+DECLARE_SOA_COLUMN(Pz, pz, float);           //! cascade momentum Z
 DECLARE_SOA_COLUMN(X, x, float);             //!
 DECLARE_SOA_COLUMN(Y, y, float);             //!
 DECLARE_SOA_COLUMN(Z, z, float);             //!
@@ -312,7 +312,7 @@ DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance mat
 // Saved from strangeness tracking
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float); //!
 DECLARE_SOA_COLUMN(TopologyChi2, topologyChi2, float); //!
-DECLARE_SOA_COLUMN(ItsClsSize, itsCluSize, int); //!
+DECLARE_SOA_COLUMN(ItsClsSize, itsCluSize, int);       //!
 
 // Derived expressions
 // Momenta
@@ -502,7 +502,7 @@ DECLARE_SOA_TABLE(McCascLabels, "AOD", "MCCASCLABEL", //! Table joinable with Ca
                   mccasclabel::McParticleId);
 using McCascLabel = McCascLabels::iterator;
 
-//Definition of labels for tracked cascades
+// Definition of labels for tracked cascades
 namespace mctracasclabel
 {
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
