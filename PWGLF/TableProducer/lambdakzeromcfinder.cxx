@@ -89,7 +89,7 @@ struct lambdakzeromcfinder {
   {
     int trackIndex1 = -1;
     int trackIndex2 = -1;
-    if (mcParticle.template has_daughters()) {
+    if (mcParticle.has_daughters()) {
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
       if (daughters.size() == 2) {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
