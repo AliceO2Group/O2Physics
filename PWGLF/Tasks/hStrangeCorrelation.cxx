@@ -287,9 +287,9 @@ struct correlateMixedEvents {
     //  Mixed event loop for associated = V0s
     for (auto& [c1, tracks1, c2, tracks2] : pairV0s) {
       // LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
-      if (c1.globalIndex()==c2.globalIndex()){
-    // Skip same collisions
-          continue;
+      if (c1.globalIndex() == c2.globalIndex()) {
+        // Skip same collisions
+        continue;
       }
       for (auto& [t1, t2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.collisionId(), t2.collisionId(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
@@ -315,9 +315,9 @@ struct correlateMixedEvents {
     // Mixed event loop for associated = Cascades
     for (auto& [c1, tracks1, c2, tracks2] : pairCascades) {
       // LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
-      if (c1.globalIndex()==c2.globalIndex()){
-    // Skip same collisions
-          continue;
+      if (c1.globalIndex() == c2.globalIndex()) {
+        // Skip same collisions
+        continue;
       }
       for (auto& [t1, t2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.collisionId(), t2.collisionId(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
