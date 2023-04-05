@@ -93,13 +93,13 @@ struct correlateSameEvents {
     histos.add("correlationPhiHadronOmegaPlus", "correlationPhiHadronOmegaPlus", kTH1F, {axisPhi});
 
     // full correlation functions
-    histos.add("correlationFullHadronK0Short", "correlationFullHadronK0Short", kTH3F, {axisPhi, axisDeltaEta,axisPt});
-    histos.add("correlationFullHadronLambda", "correlationFullHadronLambda", kTH3F, {axisPhi, axisDeltaEta,axisPt});
-    histos.add("correlationFullHadronAntiLambda", "correlationFullHadronAntiLambda", kTH3F, {axisPhi, axisDeltaEta,axisPt});
-    histos.add("correlationFullHadronXiMinus", "correlationFullHadronXiMinus", kTH3F, {axisPhi, axisDeltaEta,axisPt});
-    histos.add("correlationFullHadronXiPlus", "correlationFullHadronXiPlus", kTH3F, {axisPhi, axisDeltaEta,axisPt});
-    histos.add("correlationFullHadronOmegaMinus", "correlationFullHadronOmegaMinus", kTH3F, {axisPhi, axisDeltaEta,axisPt});
-    histos.add("correlationFullHadronOmegaPlus", "correlationFullHadronOmegaPlus", kTH3F, {axisPhi, axisDeltaEta,axisPt});
+    histos.add("correlationFullHadronK0Short", "correlationFullHadronK0Short", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("correlationFullHadronLambda", "correlationFullHadronLambda", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("correlationFullHadronAntiLambda", "correlationFullHadronAntiLambda", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("correlationFullHadronXiMinus", "correlationFullHadronXiMinus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("correlationFullHadronXiPlus", "correlationFullHadronXiPlus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("correlationFullHadronOmegaMinus", "correlationFullHadronOmegaMinus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("correlationFullHadronOmegaPlus", "correlationFullHadronOmegaPlus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
 
     // Some QA plots
     histos.add("h2dMassK0Short", "h2dMassK0Short", kTH2F, {axisPt, axisK0ShortMass});
@@ -269,13 +269,13 @@ struct correlateMixedEvents {
     histos.add("deltaEtaDistribution", "deltaEtaDistribution", kTH1F, {axisEta});
 
     // full correlation functions
-    histos.add("mixedFullHadronK0Short", "mixedFullHadronK0Short", kTH3F, {axisPhi, axisDeltaEta,axisPt});
-    histos.add("mixedFullHadronLambda", "mixedFullHadronLambda", kTH3F, {axisPhi, axisDeltaEta,axisPt});
-    histos.add("mixedFullHadronAntiLambda", "mixedFullHadronAntiLambda", kTH3F, {axisPhi, axisDeltaEta,axisPt});
-    histos.add("mixedFullHadronXiMinus", "mixedFullHadronXiMinus", kTH3F, {axisPhi, axisDeltaEta,axisPt});
-    histos.add("mixedFullHadronXiPlus", "mixedFullHadronXiPlus", kTH3F, {axisPhi, axisDeltaEta,axisPt});
-    histos.add("mixedFullHadronOmegaMinus", "mixedFullHadronOmegaMinus", kTH3F, {axisPhi, axisDeltaEta,axisPt});
-    histos.add("mixedFullHadronOmegaPlus", "mixedFullHadronOmegaPlus", kTH3F, {axisPhi, axisDeltaEta,axisPt});
+    histos.add("mixedFullHadronK0Short", "mixedFullHadronK0Short", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("mixedFullHadronLambda", "mixedFullHadronLambda", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("mixedFullHadronAntiLambda", "mixedFullHadronAntiLambda", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("mixedFullHadronXiMinus", "mixedFullHadronXiMinus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("mixedFullHadronXiPlus", "mixedFullHadronXiPlus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("mixedFullHadronOmegaMinus", "mixedFullHadronOmegaMinus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("mixedFullHadronOmegaPlus", "mixedFullHadronOmegaPlus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
   }
 
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults> const& collisions,
