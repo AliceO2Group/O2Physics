@@ -96,14 +96,14 @@ struct lambdakzeromcfinder {
           for (auto const& track : trackList) {
             if (track.mcParticleId() == daughter.globalIndex()) {
               // determine which charge this particle has
-              if( track.sign() > 0 ){ 
-                trackIndexPositive = track.globalIndex(); 
-                if( trackIndexNegative >= 0 ) 
-                  break; 
-              }else{
-                trackIndexNegative = track.globalIndex(); 
-                if( trackIndexPositive >= 0 ) 
-                  break; 
+              if (track.sign() > 0) {
+                trackIndexPositive = track.globalIndex();
+                if (trackIndexNegative >= 0)
+                  break;
+              } else {
+                trackIndexNegative = track.globalIndex();
+                if (trackIndexPositive >= 0)
+                  break;
               }
             }
           }
