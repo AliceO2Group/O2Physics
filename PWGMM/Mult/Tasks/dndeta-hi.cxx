@@ -140,7 +140,6 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
 
 struct MultiplicityCounter {
   SliceCache cache;
-  Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
 
   Service<O2DatabasePDG> pdg;
