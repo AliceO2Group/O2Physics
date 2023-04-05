@@ -270,7 +270,7 @@ struct NucleiHistTask {
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   Configurable<float> maxDCA_XY{"maxDCA_XY", 0.5f, "max DCA to vertex xy"};
   Configurable<float> maxDCA_Z{"maxDCA_Z", 2.0f, "max DCA to vertex z"};
-  
+
   Configurable<bool> enable_PVcontributor_global{"enable_PVcontributor_global", true, "is PV contributor (global)"};
   Configurable<bool> enable_PVcontributor_proton{"enable_PVcontributor_proton", true, "is PV contributor (global)"};
   Configurable<bool> enable_PVcontributor_antiproton{"enable_PVcontributor_antiproton", true, "is PV contributor (global)"};
@@ -400,11 +400,11 @@ struct NucleiHistTask {
       //**************   check offline-trigger (skimming) condidition Proton   *******************
 
       if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh) {
-        
+
         if (enable_PVcontributor_proton && !(track.isPVContributor())) {
           continue;
         }
-        
+
         if (track.sign() > 0) {
           keepEvent_p = kTRUE;
 
@@ -426,7 +426,7 @@ struct NucleiHistTask {
             proton_erg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPr());
           }
         }
-        
+
         if (enable_PVcontributor_antiproton && !(track.isPVContributor())) {
           continue;
         }
@@ -462,7 +462,7 @@ struct NucleiHistTask {
       //**************   check offline-trigger (skimming) condidition Deuteron   *******************
 
       if (nSigmaDeut > nsigmacutLow && nSigmaDeut < nsigmacutHigh) {
-        
+
         if (enable_PVcontributor_deuteron && !(track.isPVContributor())) {
           continue;
         }
@@ -488,7 +488,7 @@ struct NucleiHistTask {
             deuteron_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
           }
         }
-        
+
         if (enable_PVcontributor_antideuteron && !(track.isPVContributor())) {
           continue;
         }
@@ -523,7 +523,7 @@ struct NucleiHistTask {
       //**************   check offline-trigger (skimming) condidition Triton   *******************
 
       if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh) {
-        
+
         if (enable_PVcontributor_triton && !(track.isPVContributor())) {
           continue;
         }
@@ -549,7 +549,7 @@ struct NucleiHistTask {
             triton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaTr());
           }
         }
-        
+
         if (enable_PVcontributor_antitriton && !(track.isPVContributor())) {
           continue;
         }
@@ -584,7 +584,7 @@ struct NucleiHistTask {
       //**************   check offline-trigger (skimming) condidition Helium-3   *******************
 
       if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) {
-      
+
         if (enable_PVcontributor_Helium3 && !(track.isPVContributor())) {
           continue;
         }
@@ -610,7 +610,7 @@ struct NucleiHistTask {
             Helium3_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
           }
         }
-        
+
         if (enable_PVcontributor_antiHelium3 && !(track.isPVContributor())) {
           continue;
         }
@@ -644,7 +644,7 @@ struct NucleiHistTask {
       //**************   check offline-trigger (skimming) condidition Helium-4   *******************
 
       if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh) {
-      
+
         if (enable_PVcontributor_Helium4 && !(track.isPVContributor())) {
           continue;
         }
@@ -670,7 +670,7 @@ struct NucleiHistTask {
             Helium4_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaAl());
           }
         }
-        
+
         if (enable_PVcontributor_antiHelium4 && !(track.isPVContributor())) {
           continue;
         }
