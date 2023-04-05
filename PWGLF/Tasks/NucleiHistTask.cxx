@@ -510,7 +510,7 @@ struct NucleiHistTask {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
-            triton_reg.fill(HIST("histTOFm2"), track.tpcInnerPara(), TOFmass2);
+            triton_reg.fill(HIST("histTOFm2"), track.tpcInnerParam(), TOFmass2);
             triton_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             triton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaTr());
           }
