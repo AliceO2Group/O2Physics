@@ -55,3 +55,50 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
   LOGF(info, Form("Did not find cut %s", cutName));
   return nullptr;
 }
+
+// PHOSPhotonCut* o2::aod::phoscuts::GetCut(const char* cutName)
+// {
+// }
+
+EMCPhotonCut* o2::aod::emccuts::GetCut(const char* cutName)
+{
+  EMCPhotonCut* cut = new EMCPhotonCut(cutName, cutName);
+  std::string nameStr = cutName;
+
+  if (!nameStr.compare("standard")) {
+    cut->SetMinE(0.7f);
+    cut->SetMinNCell(1);
+    cut->SetM02Range(0.1f, 0.7f);
+    cut->SetTimeRange(-20.f, 25.f);
+
+    cut->SetTrackMatchingEta([](float pT) {
+      return 0.01f + pow(pT + 4.07f, -2.5f);
+    });
+    cut->SetTrackMatchingPhi([](float pT) {
+      return 0.015f + pow(pT + 3.65f, -2.f);
+    });
+    cut->SetMinEoverP(1.75f);
+    cut->SetUseExoticCut(true);
+    return cut;
+  }
+  if (!nameStr.compare("nocut")) {
+    cut->SetMinE(0.f);
+    cut->SetMinNCell(1);
+    cut->SetM02Range(0.0f, 1000.f);
+    cut->SetTimeRange(-500.f, 500.f);
+
+    cut->SetTrackMatchingEta([](float pT) {
+      return -1.f;
+    });
+    cut->SetTrackMatchingPhi([](float pT) {
+      return -1.f;
+    });
+    cut->SetMinEoverP(0.f);
+    cut->SetUseExoticCut(false);
+    return cut;
+  }
+
+  delete cut;
+  LOGF(info, Form("Did not find cut %s", cutName));
+  return nullptr;
+}
