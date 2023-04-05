@@ -175,7 +175,7 @@ struct cascadeBuilder {
     float v0dcadau;
     float v0dcapostopv;
     float v0dcanegtopv;
-    float mXi; 
+    float mXi;
     float mOmega;
   } cascadecandidate;
 
@@ -737,7 +737,7 @@ struct cascadeBuilder {
       if (!validCascadeCandidate)
         continue; // doesn't pass cascade selections
 
-      //fill regular table (no strangeness tracking)
+      // fill regular table (no strangeness tracking)
       cascdata(cascadecandidate.v0Id,
                cascade.globalIndex(),
                cascadecandidate.bachelorId,
@@ -784,42 +784,43 @@ struct cascadeBuilder {
       // check if cascade is tracked - sliceBy is our friend!
       const uint64_t cascIdx = cascade.globalIndex();
       auto trackedCascadesSliced = trackedCascades.sliceBy(perCascade, cascIdx);
-      if( trackedCascadesSliced.size() > 0 ) {
+      if (trackedCascadesSliced.size() > 0) {
         auto trackedCascade = trackedCascadesSliced.begin(); // first and only element
 
         // cascade track exists in AO2D, prefer information from that source!
         statisticsRegistry.cascstats[kCascTracked]++; // bookkeep how many we tracked overall
 
         // Initialize trackParCov
-        if ( !trackedCascade.has_track() ) continue; // safety (should be fine but depends on future stratrack dev)
+        if (!trackedCascade.has_track())
+          continue; // safety (should be fine but depends on future stratrack dev)
         // Track casting to <TTracksTo>
         auto cascadeTrack = trackedCascade.template track_as<TTrackTo>();
         auto cascadeTrackPar = getTrackPar(cascadeTrack);
         auto const& collision = cascade.collision();
         gpu::gpustd::array<float, 2> dcaInfo;
-        lCascadeTrack.setPID(o2::track::PID::XiMinus);       // FIXME: not OK for omegas
+        lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, cascadeTrackPar, 2.f, matCorrCascade, &dcaInfo);
         // Override cascDCAxy with the strangeness-tracked information
-        cascadecandidate.cascDCAxy = dcaInfo[0];   
-        
+        cascadecandidate.cascDCAxy = dcaInfo[0];
+
         std::array<float, 3> cascadeMomentumVector;
         cascadeTrackPar.getPxPyPzGlo(cascadeMomentumVector);
 
         trackedcascdata(cascadecandidate.v0Id,
-               cascade.globalIndex(),
-               cascadecandidate.bachelorId,
-               cascade.collisionId(),
-               cascadecandidate.charge, trackedCascade.xiMass(), trackedCascade.omegaMass(), // <--- stratrack masses
-               trackedCascade.decayX(), trackedCascade.decayY(), trackedCascade.decayZ(), // <--- stratrack position
-               cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
-               cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
-               cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
-               cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
-               cascadeMomentumVector[0], cascadeMomentumVector[1], cascadeMomentumVector[2], // <--- stratrack momentum
-               cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
-               cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
-               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, // <--- stratrack (cascDCAxy)
-               trackedCascade.matchingChi2(), trackedCascade.topologyChi2(), trackedCascade.itsClsSize()); // <--- stratrack fit info
+                        cascade.globalIndex(),
+                        cascadecandidate.bachelorId,
+                        cascade.collisionId(),
+                        cascadecandidate.charge, trackedCascade.xiMass(), trackedCascade.omegaMass(), // <--- stratrack masses
+                        trackedCascade.decayX(), trackedCascade.decayY(), trackedCascade.decayZ(),    // <--- stratrack position
+                        cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
+                        cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
+                        cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
+                        cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
+                        cascadeMomentumVector[0], cascadeMomentumVector[1], cascadeMomentumVector[2], // <--- stratrack momentum
+                        cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
+                        cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
+                        cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy,                                     // <--- stratrack (cascDCAxy)
+                        trackedCascade.matchingChi2(), trackedCascade.topologyChi2(), trackedCascade.itsClsSize()); // <--- stratrack fit info
       }
     }
     // En masse filling at end of process call
