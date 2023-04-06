@@ -42,6 +42,8 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, a
 using FullTrackExt = FullTracksExt::iterator;
 
 struct createPCM {
+  SliceCache cache;
+  Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
   Produces<aod::StoredV0Datas> v0data;
 
   // Basic checks
@@ -238,8 +240,8 @@ struct createPCM {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex());
-      auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex());
+      auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
 
       for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
         fillV0Table(collision, ele, pos);

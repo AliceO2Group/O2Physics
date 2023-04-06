@@ -327,6 +327,7 @@ struct BcSelectionTask {
 };
 
 struct EventSelectionTask {
+  SliceCache cache;
   Produces<aod::EvSels> evsel;
   Configurable<std::string> syst{"syst", "PbPb", "pp, pPb, Pbp, PbPb, XeXe"}; // TODO determine from AOD metadata or from CCDB
   Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
@@ -396,7 +397,7 @@ struct EventSelectionTask {
     float multV0C012 = bc.multRingV0C()[0] + bc.multRingV0C()[1] + bc.multRingV0C()[2];
 
     // applying selections depending on the number of tracklets
-    auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex());
+    auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
     int nTkl = trackletsGrouped.size();
 
     uint32_t spdClusters = bc.spdClusters();
