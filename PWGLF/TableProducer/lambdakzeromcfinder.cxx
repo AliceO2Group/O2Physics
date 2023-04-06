@@ -87,8 +87,8 @@ struct lambdakzeromcfinder {
   template <typename TmcParticle, typename TTrackList>
   void PopulateV0s(TmcParticle const& mcParticle, TTrackList const& trackList, int bestCollisionIndex)
   {
-    int trackIndex1 = -1;
-    int trackIndex2 = -1;
+    int trackIndexPositive = -1;
+    int trackIndexNegative = -1;
     if (mcParticle.has_daughters()) {
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
       if (daughters.size() == 2) {
