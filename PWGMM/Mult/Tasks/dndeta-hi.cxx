@@ -139,6 +139,9 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
   TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
 
 struct MultiplicityCounter {
+  SliceCache cache;
+  Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
+
   Service<O2DatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
@@ -259,8 +262,8 @@ struct MultiplicityCounter {
     for (auto& collision : collisions) {
       registry.fill(HIST("Events/Selection"), 1.);
       auto z = collision.posZ();
-      auto permfttracks = tSample2->sliceByCached(aod::fwdtrack::collisionId, collision.globalIndex());
-      auto pertracks = tSample3->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      auto permfttracks = tSample2->sliceByCached(aod::fwdtrack::collisionId, collision.globalIndex(), cache);
+      auto pertracks = tSample3->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
       if (!useEvSel || collision.sel8()) { // event selection cut
         if (std::abs(z) < 10) {            // z-vtx cut
@@ -512,8 +515,8 @@ struct MultiplicityCounter {
 
       registry.fill(HIST("Tracks/ProcessMCCounting/hreczvtx"), Double_t(kINEL), Double_t(kMBAND), z);
       auto mcCollision = collision.mcCollision();
-      auto particles = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
-      auto tracks = lsample->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      auto particles = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      auto tracks = lsample->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       tracks.bindExternalIndices(&mcParticles);
       auto permcmfttracks = mfttracks.sliceBy(mcmfttracks_slice, collision.globalIndex());
 
@@ -614,7 +617,7 @@ struct MultiplicityCounter {
     o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
     Particles const& mcParticles, FiTracks const& tracks)
   {
-    auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+    auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto genz = mcCollision.posZ();
     registry.fill(HIST("Tracks/ProcessGen/hgenzvtx"), Double_t(kINEL), genz);
     for (auto& particle : perCollisionMCSample) {

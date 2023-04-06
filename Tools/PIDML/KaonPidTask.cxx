@@ -43,6 +43,9 @@ using MyTrack = MyTracks::iterator;
 } // namespace o2::aod
 
 struct KaonPidTask {
+  SliceCache cache;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+
   std::shared_ptr<PidONNXModel> pidModel; // creates a shared pointer to a new instance 'pidmodel'.
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -92,8 +95,8 @@ struct KaonPidTask {
 
   void process(MyFilteredCollision const& coll, o2::aod::MyTracks const& tracks)
   {
-    auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex());
-    auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex());
+    auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
+    auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     for (auto track : groupPositive) {
       histos.fill(HIST("hChargePos"), track.sign());
       if (pidModel.get()->applyModelBoolean(track)) {

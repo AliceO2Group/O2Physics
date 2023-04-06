@@ -68,6 +68,7 @@ using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoDream;
 
 struct CFFilterTwoN {
+  SliceCache cache;
 
   Produces<aod::CFFiltersTwoN> tags;
 
@@ -137,6 +138,8 @@ struct CFFilterTwoN {
                                                   ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0);
   Partition<o2::aod::FemtoDreamParticles> partAntiL = (o2::aod::femtodreamparticle::partType == V0) &&
                                                       ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0);
+
+  Preslice<o2::aod::FemtoDreamParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryQA{"registryQA", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -259,12 +262,12 @@ struct CFFilterTwoN {
   void process(o2::aod::FemtoDreamCollision& col, o2::aod::FemtoDreamParticles& partsFemto)
   {
     // get partitions of all paritcles and antiparticles
-    auto partsPD = partPD->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-    auto partsAntiPD = partAntiPD->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto partsPD = partPD->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    auto partsAntiPD = partAntiPD->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
 
     // get partions of V0s
-    auto partsL = partL->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-    auto partsAntiL = partAntiL->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto partsL = partL->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    auto partsAntiL = partAntiL->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
 
     // magnetic field is need for close pair rejection
     auto magneticField = col.magField();

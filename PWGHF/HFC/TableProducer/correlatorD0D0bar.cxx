@@ -67,6 +67,8 @@ const double ptDAxisMax = 36.;
 using MCParticlesPlus = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
 
 struct HfCorrelatorD0D0bar {
+  SliceCache cache;
+  Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
   Produces<aod::DDbarPair> entryD0D0barPair;
   Produces<aod::DDbarRecoInfo> entryD0D0barRecoInfo;
 
@@ -150,7 +152,7 @@ struct HfCorrelatorD0D0bar {
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
 
-    auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+    auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
     for (auto& candidate1 : selectedD0CandidatesGrouped) {
       if (yCandMax >= 0. && std::abs(yD0(candidate1)) > yCandMax) {
@@ -259,7 +261,7 @@ struct HfCorrelatorD0D0bar {
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
 
-    auto selectedD0CandidatesGroupedMC = selectedD0candidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+    auto selectedD0CandidatesGroupedMC = selectedD0candidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
     // MC reco level
     bool flagD0Signal = false;
