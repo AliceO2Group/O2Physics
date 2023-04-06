@@ -1953,7 +1953,7 @@ struct LFNucleiBATask {
 
           if ((track.beta() * track.beta()) < 1.) {
             gamma = 1.f / TMath::Sqrt(1.f - (track.beta() * track.beta()));
-            massTOF = track.p() * TMath::Sqrt(1.f / (track.beta() * track.beta()) - 1.f);
+            massTOF = track.tpcInnerParam() * TMath::Sqrt(1.f / (track.beta() * track.beta()) - 1.f);
             histos.fill(HIST("tracks/h2TPCsignVsBetaGamma"), (track.beta() * gamma) / (1.f * track.sign()), track.tpcSignal());
           } else {
             massTOF = -99.f;
