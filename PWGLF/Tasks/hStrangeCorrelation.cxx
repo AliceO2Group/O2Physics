@@ -77,7 +77,7 @@ struct correlateSameEvents {
     const AxisSpec axisPhi{nBinsPhi, -0.5 * M_PI, 1.5 * M_PI, "#phi"};
     const AxisSpec axisEta{nBinsEta, -0.8, +0.8, "#eta"};
     const AxisSpec axisDeltaEta{nBinsDeltaEta, -1.6, 1.6, "#Delta#eta"};
-    const AxisSpec axisPt{100, 0, 10, "#it{p}_{T} (GeV/c)"};
+    const AxisSpec axisPt{10, 0, 5, "#it{p}_{T} (GeV/c)"};
     const AxisSpec axisK0ShortMass{nBinsMass, 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
     const AxisSpec axisLambdaMass{nBinsMass, 1.01f, 1.21f, "Inv. Mass (GeV/c^{2})"};
     const AxisSpec axisXiMass{nBinsMass, 1.22f, 1.42f, "Inv. Mass (GeV/c^{2})"};
@@ -93,13 +93,13 @@ struct correlateSameEvents {
     histos.add("correlationPhiHadronOmegaPlus", "correlationPhiHadronOmegaPlus", kTH1F, {axisPhi});
 
     // full correlation functions
-    histos.add("correlationFullHadronK0Short", "correlationFullHadronK0Short", kTH2F, {axisPhi, axisDeltaEta});
-    histos.add("correlationFullHadronLambda", "correlationFullHadronLambda", kTH2F, {axisPhi, axisDeltaEta});
-    histos.add("correlationFullHadronAntiLambda", "correlationFullHadronAntiLambda", kTH2F, {axisPhi, axisDeltaEta});
-    histos.add("correlationFullHadronXiMinus", "correlationFullHadronXiMinus", kTH2F, {axisPhi, axisDeltaEta});
-    histos.add("correlationFullHadronXiPlus", "correlationFullHadronXiPlus", kTH2F, {axisPhi, axisDeltaEta});
-    histos.add("correlationFullHadronOmegaMinus", "correlationFullHadronOmegaMinus", kTH2F, {axisPhi, axisDeltaEta});
-    histos.add("correlationFullHadronOmegaPlus", "correlationFullHadronOmegaPlus", kTH2F, {axisPhi, axisDeltaEta});
+    histos.add("correlationFullHadronK0Short", "correlationFullHadronK0Short", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("correlationFullHadronLambda", "correlationFullHadronLambda", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("correlationFullHadronAntiLambda", "correlationFullHadronAntiLambda", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("correlationFullHadronXiMinus", "correlationFullHadronXiMinus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("correlationFullHadronXiPlus", "correlationFullHadronXiPlus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("correlationFullHadronOmegaMinus", "correlationFullHadronOmegaMinus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("correlationFullHadronOmegaPlus", "correlationFullHadronOmegaPlus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
 
     // Some QA plots
     histos.add("h2dMassK0Short", "h2dMassK0Short", kTH2F, {axisPt, axisK0ShortMass});
@@ -262,19 +262,20 @@ struct correlateMixedEvents {
     const AxisSpec axisPhi{nBinsPhi, -0.5 * M_PI, 1.5 * M_PI, "#phi"};
     const AxisSpec axisEta{nBinsEta, -1, 1, "#eta"};
     const AxisSpec axisDeltaEta{nBinsDeltaEta, -2, 2, "#Delta#eta"};
+    const AxisSpec axisPt{10, 0, 5, "#it{p}_{T} (GeV/c)"};
 
     // correlation histograms in phi alone (warning: not mixed-event-corrected)
     histos.add("deltaPhiDistribution", "deltaPhiDistribution", kTH1F, {axisPhi});
     histos.add("deltaEtaDistribution", "deltaEtaDistribution", kTH1F, {axisEta});
 
     // full correlation functions
-    histos.add("mixedFullHadronK0Short", "mixedFullHadronK0Short", kTH2F, {axisPhi, axisEta});
-    histos.add("mixedFullHadronLambda", "mixedFullHadronLambda", kTH2F, {axisPhi, axisEta});
-    histos.add("mixedFullHadronAntiLambda", "mixedFullHadronAntiLambda", kTH2F, {axisPhi, axisEta});
-    histos.add("mixedFullHadronXiMinus", "mixedFullHadronXiMinus", kTH2F, {axisPhi, axisEta});
-    histos.add("mixedFullHadronXiPlus", "mixedFullHadronXiPlus", kTH2F, {axisPhi, axisEta});
-    histos.add("mixedFullHadronOmegaMinus", "mixedFullHadronOmegaMinus", kTH2F, {axisPhi, axisEta});
-    histos.add("mixedFullHadronOmegaPlus", "mixedFullHadronOmegaPlus", kTH2F, {axisPhi, axisEta});
+    histos.add("mixedFullHadronK0Short", "mixedFullHadronK0Short", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("mixedFullHadronLambda", "mixedFullHadronLambda", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("mixedFullHadronAntiLambda", "mixedFullHadronAntiLambda", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("mixedFullHadronXiMinus", "mixedFullHadronXiMinus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("mixedFullHadronXiPlus", "mixedFullHadronXiPlus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("mixedFullHadronOmegaMinus", "mixedFullHadronOmegaMinus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
+    histos.add("mixedFullHadronOmegaPlus", "mixedFullHadronOmegaPlus", kTH3F, {axisPhi, axisDeltaEta, axisPt});
   }
 
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults> const& collisions,
@@ -286,6 +287,10 @@ struct correlateMixedEvents {
     //  Mixed event loop for associated = V0s
     for (auto& [c1, tracks1, c2, tracks2] : pairV0s) {
       // LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
+      if (c1.globalIndex() == c2.globalIndex()) {
+        // Skip same collisions
+        continue;
+      }
       for (auto& [t1, t2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.collisionId(), t2.collisionId(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
         //  De-reference
@@ -310,6 +315,10 @@ struct correlateMixedEvents {
     // Mixed event loop for associated = Cascades
     for (auto& [c1, tracks1, c2, tracks2] : pairCascades) {
       // LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
+      if (c1.globalIndex() == c2.globalIndex()) {
+        // Skip same collisions
+        continue;
+      }
       for (auto& [t1, t2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.collisionId(), t2.collisionId(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
         //  De-reference

@@ -87,8 +87,8 @@ struct hstrangecorrelationfilter {
      {"hMassAntiLambda", "hMassAntiLambda", {HistType::kTH1F, {{200, 1.0f, 1.550f}}}},
      {"hMassXiMinus", "hMassXiMinus", {HistType::kTH1F, {{200, 1.0f, 1.550f}}}},
      {"hMassXiPlus", "hMassXiPlus", {HistType::kTH1F, {{200, 1.0f, 1.550f}}}},
-     {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH1F, {{200, 1.0f, 1.550f}}}},
-     {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH1F, {{200, 1.016f, 1.216f}}}}}};
+     {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH1F, {{200, 1.57f, 1.77f}}}},
+     {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH1F, {{200, 1.57f, 1.77f}}}}}};
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
   Produces<aod::TriggerTracks> triggerTrack;
