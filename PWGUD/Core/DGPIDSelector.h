@@ -107,15 +107,17 @@ struct DGPIDCuts {
 struct DGAnaparHolder {
  public:
   // constructor
-  DGAnaparHolder(int nCombine = 2, float maxDCAxy = 100., float maxDCAz = 100,
+  DGAnaparHolder(int MinNTracks = 0, int MaxNTracks = 10000, float minrgtrwTOF = 0.,
+                 float maxDCAxy = 100., float maxDCAz = 100,
                  int dBCMin = 0, int dBCMax = 0,
-                 float minptsys = 0.0, float maxptsys = 100.0,
                  float minpt = 0.0, float maxpt = 100.0,
                  float mineta = -2.0, float maxeta = 2.0,
                  float minalpha = 0.0, float maxalpha = 3.2,
-                 std::vector<int> netCharges = {-2, -1, 0, 1, 2},
-                 std::vector<float> DGPIDs = {211, 211},
-                 std::vector<float> DGPIDCutValues = {}) : mNCombine{nCombine}, mdBCMin{dBCMin}, mdBCMax{dBCMax}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mMinpt{minpt}, mMaxpt{maxpt}, mMineta{mineta}, mMaxeta{maxeta}, mMinptsys{minptsys}, mMaxptsys{maxptsys}, mMinAlpha{minalpha}, mMaxAlpha{maxalpha}, mNetCharges{netCharges}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
+                 float minptsys = 0.0, float maxptsys = 100.0,
+                 int nCombine = 2,
+                 std::vector<int> netCharges = {0},
+                 std::vector<int> DGPIDs = {211, 211},
+                 std::vector<float> DGPIDCutValues = {}) : mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinRgtrwTOF{minrgtrwTOF}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mdBCMin{dBCMin}, mdBCMax{dBCMax}, mMinpt{minpt}, mMaxpt{maxpt}, mMineta{mineta}, mMaxeta{maxeta}, mMinAlpha{minalpha}, mMaxAlpha{maxalpha}, mMinptsys{minptsys}, mMaxptsys{maxptsys}, mNCombine{nCombine}, mNetCharges{netCharges}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
   {
     if (mdBCMin < -16) {
       mdBCMin = -16;
@@ -127,69 +129,60 @@ struct DGAnaparHolder {
     } else if (mdBCMax > 15) {
       mdBCMax = 15;
     }
-
     makeUniquePermutations();
   }
   ~DGAnaparHolder();
 
-  // getter
+  // helper
   void Print();
-  int nCombine() const { return mNCombine; }
+
+  // getter
+  int minNTracks() const { return mMinNTracks; }
+  int maxNTracks() const { return mMaxNTracks; }
+  float minRgtrwTOF() const { return mMinRgtrwTOF; }
+  float maxDCAxy() const { return mMaxDCAxy; }
+  float maxDCAz() const { return mMaxDCAz; }
   int dBCMin() const { return mdBCMin; }
   int dBCMax() const { return mdBCMax; }
-  float maxDCAxy() { return mMaxDCAxy; }
-  float maxDCAz() { return mMaxDCAz; }
-  float minptsys() { return mMinptsys; }
-  float maxptsys() { return mMaxptsys; }
-  float minpt() { return mMinpt; }
-  float maxpt() { return mMaxpt; }
-  float mineta() { return mMineta; }
-  float maxeta() { return mMaxeta; }
-  float minAlpha() { return mMinAlpha; }
-  float maxAlpha() { return mMaxAlpha; }
-  std::vector<int> netCharges() { return mNetCharges; }
-  std::vector<float> PIDs() { return mDGPIDs; }
+  float minpt() const { return mMinpt; }
+  float maxpt() const { return mMaxpt; }
+  float mineta() const { return mMineta; }
+  float maxeta() const { return mMaxeta; }
+  float minAlpha() const { return mMinAlpha; }
+  float maxAlpha() const { return mMaxAlpha; }
+  float minptsys() const { return mMinptsys; }
+  float maxptsys() const { return mMaxptsys; }
+  int nCombine() const { return mNCombine; }
+  std::vector<int> netCharges() const { return mNetCharges; }
+  std::vector<int> PIDs() const { return mDGPIDs; }
   DGPIDCuts PIDCuts();
   std::vector<int> uniquePermutations();
 
  private:
   // helper functions
-  void permutations(std::vector<uint>& ref, int n0, int np, std::vector<std::vector<uint>>& perms);
-  int permutations(int n0, std::vector<std::vector<uint>>& perms);
+  void permutations(std::vector<int>& ref, int n0, int np, std::vector<std::vector<int>>& perms);
+  int permutations(int n0, std::vector<std::vector<int>>& perms);
   void makeUniquePermutations();
 
-  // number of tracks to combine
-  int mNCombine;
-
-  // BBFlags
-  int mdBCMin;
-  int mdBCMax;
-
-  // dca of tracks
+  // arguments
+  int mMinNTracks;
+  int mMaxNTracks;
+  float mMinRgtrwTOF;
   float mMaxDCAxy;
   float mMaxDCAz;
-
-  // pt-range of tracks
+  int mdBCMin;
+  int mdBCMax;
   float mMinpt;
   float mMaxpt;
-
-  // eta range of tracks
   float mMineta;
   float mMaxeta;
-
-  // pt-range of system
-  float mMinptsys;
-  float mMaxptsys;
-
-  // alpha-range when 2 tracks
   float mMinAlpha;
   float mMaxAlpha;
-
-  // net charge of all tracks
+  float mMinptsys;
+  float mMaxptsys;
+  int mNCombine;
   std::vector<int> mNetCharges;
-
-  // PID information
-  std::vector<float> mDGPIDs;
+  std::vector<int> mDGPIDs;
   std::vector<float> mDGPIDCutValues;
 
   // unique permutations
@@ -204,7 +197,7 @@ struct DGParticle {
  public:
   DGParticle();
   template <typename TTrack>
-  DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, TTrack const& tracks, std::vector<uint> comb)
+  DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, TTrack const& tracks, std::vector<int> comb)
   {
     // compute invariant mass
     TLorentzVector lvtmp;
@@ -227,7 +220,7 @@ struct DGParticle {
 
   // getter
   void Print();
-  std::vector<uint> trkinds() { return mtrkinds; }
+  std::vector<int> trkinds() { return mtrkinds; }
   float M() { return mIVM.M(); }
   float Perp() { return mIVM.Perp(); }
 
@@ -236,7 +229,7 @@ struct DGParticle {
   TLorentzVector mIVM;
 
   // indices of tracks included
-  std::vector<uint> mtrkinds;
+  std::vector<int> mtrkinds;
 
   // ClassDefNV(DGParticle, 1);
 };
@@ -254,14 +247,13 @@ struct DGPIDSelector {
   // getters
   void Print();
   template <typename TTrack>
-  bool isGoodCombination(std::vector<uint> comb, TTrack const& tracks)
+  bool isGoodCombination(std::vector<int> comb, TTrack const& tracks)
   {
     // compute net charge of track combination
     int netCharge = 0.;
     for (auto const& ind : comb) {
       netCharge += (tracks.begin() + ind).sign();
     }
-    LOGF(debug, "Net charge %i", netCharge);
 
     // is this in the list of accepted net charges?
     auto netCharges = mAnaPars.netCharges();
@@ -309,19 +301,16 @@ struct DGPIDSelector {
     for (auto pidcut : pidcuts) {
 
       // skip cut if it does not apply to this track
-      LOGF(debug, "nPart %i %i, Type %i Apply %i", pidcut.nPart(), cnt, pidcut.cutType(), pidcut.cutApply());
       if (pidcut.nPart() != cnt || pidcut.cutApply() <= 0) {
         continue;
       }
 
       // check pt for pid cut
-      LOGF(debug, "pT %f %f %f", track.pt(), pidcut.cutPtMin(), pidcut.cutPtMax());
       if (track.pt() < pidcut.cutPtMin() || track.pt() > pidcut.cutPtMax()) {
         continue;
       }
 
       // is detector information required
-      LOGF(debug, "TPC %i TOF %i", track.hasTPC(), track.hasTOF());
       if (pidcut.cutApply() == 2) {
         if (pidcut.cutDetector() == 1 && !track.hasTPC()) {
           return false;
@@ -332,7 +321,6 @@ struct DGPIDSelector {
       }
 
       // get detector value
-      LOGF(debug, "cutPID %i", pidcut.cutPID());
       float detValue = 0.;
       if (pidcut.cutDetector() == 1) {
         if (!track.hasTPC()) {
@@ -386,6 +374,7 @@ struct DGPIDSelector {
     for (auto comb : combs) {
       // is combination compatible with netCharge requirements?
       if (!isGoodCombination(comb, tracks)) {
+        LOGF(info, "Not a good combination");
         continue;
       }
       // is tracks compatible with PID requirements?
@@ -463,10 +452,10 @@ struct DGPIDSelector {
   TDatabasePDG* fPDG;
 
   // helper functions for computeIVMs
-  void combinations(int n0, std::vector<uint>& pool, int np, std::vector<uint>& inds, int n,
-                    std::vector<std::vector<uint>>& combs);
-  int combinations(int n0, int np, std::vector<std::vector<uint>>& combs);
-  std::vector<std::vector<uint>> combinations(int nPool);
+  void combinations(int n0, std::vector<int>& pool, int np, std::vector<int>& inds, int n,
+                    std::vector<std::vector<int>>& combs);
+  int combinations(int n0, int np, std::vector<std::vector<int>>& combs);
+  std::vector<std::vector<int>> combinations(int nPool);
 
   // ClassDefNV(DGPIDSelector, 1);
 };

@@ -260,6 +260,7 @@ struct DGCandAnalyzer {
 
     // find track combinations which are compatible with PID cuts
     auto nIVMs = pidsel.computeIVMs(PVContributors);
+    LOGF(info, "Number of IVMs %d", nIVMs);
 
     // update candCase histogram
     if (nIVMs > 0) {
