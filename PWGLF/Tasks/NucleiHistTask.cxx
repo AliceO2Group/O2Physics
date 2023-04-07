@@ -252,6 +252,8 @@ struct NucleiHistTask {
 
   Configurable<float> yMin{"yMin", -0.5, "Maximum rapidity"};
   Configurable<float> yMax{"yMax", 0.5, "Minimum rapidity"};
+  Configurable<float> pTmin{"pTmin", 0.1f, "min pT"};
+  Configurable<float> pTmax{"pTmax", 1e+10f, "max pT"};
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
@@ -269,8 +271,17 @@ struct NucleiHistTask {
   Configurable<float> maxDCA_XY{"maxDCA_XY", 0.5f, "max DCA to vertex xy"};
   Configurable<float> maxDCA_Z{"maxDCA_Z", 2.0f, "max DCA to vertex z"};
 
-  Configurable<float> pTmin{"pTmin", 0.1f, "min pT"};
-  Configurable<float> pTmax{"pTmax", 1e+10f, "max pT"};
+  Configurable<bool> enable_PVcontributor_global{"enable_PVcontributor_global", true, "is PV contributor (global)"};
+  Configurable<bool> enable_PVcontributor_proton{"enable_PVcontributor_proton", true, "is PV contributor (global)"};
+  Configurable<bool> enable_PVcontributor_antiproton{"enable_PVcontributor_antiproton", true, "is PV contributor (global)"};
+  Configurable<bool> enable_PVcontributor_deuteron{"enable_PVcontributor_deuteron", true, "is PV contributor (global)"};
+  Configurable<bool> enable_PVcontributor_antideuteron{"enable_PVcontributor_antideuteron", true, "is PV contributor (global)"};
+  Configurable<bool> enable_PVcontributor_triton{"enable_PVcontributor_triton", true, "is PV contributor (global)"};
+  Configurable<bool> enable_PVcontributor_antitriton{"enable_PVcontributor_antitriton", true, "is PV contributor (global)"};
+  Configurable<bool> enable_PVcontributor_Helium3{"enable_PVcontributor_Helium3", true, "is PV contributor (global)"};
+  Configurable<bool> enable_PVcontributor_antiHelium3{"enable_PVcontributor_antiHelium3", true, "is PV contributor (global)"};
+  Configurable<bool> enable_PVcontributor_Helium4{"enable_PVcontributor_Helium4", true, "is PV contributor (global)"};
+  Configurable<bool> enable_PVcontributor_antiHelium4{"enable_PVcontributor_antiHelium4", true, "is PV contributor (global)"};
 
   template <typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& event, const TracksType& tracks)
@@ -299,7 +310,10 @@ struct NucleiHistTask {
       float Chi2perClusterTPC = track.tpcChi2NCl();
       float Chi2perClusterITS = track.itsChi2NCl();
 
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNCls()) < minReqClusterITS || !(track.isPVContributor())) {
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNCls()) < minReqClusterITS) {
+        continue;
+      }
+      if (enable_PVcontributor_global && !(track.isPVContributor())) {
         continue;
       }
 
@@ -363,7 +377,7 @@ struct NucleiHistTask {
 
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
-          spectra.fill(HIST("histTOFm2"), track.tpcInnerParam(), TOFmass2);
+          spectra.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
         }
       }
 
@@ -379,13 +393,17 @@ struct NucleiHistTask {
 
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
-          spectra.fill(HIST("histTOFm2"), track.tpcInnerParam(), TOFmass2);
+          spectra.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
         }
       }
 
       //**************   check offline-trigger (skimming) condidition Proton   *******************
 
       if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh) {
+
+        if (enable_PVcontributor_proton && !(track.isPVContributor())) {
+          continue;
+        }
 
         if (track.sign() > 0) {
           keepEvent_p = kTRUE;
@@ -403,10 +421,14 @@ struct NucleiHistTask {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
-            proton_erg.fill(HIST("histTOFm2"), track.tpcInnerParam(), TOFmass2);
+            proton_erg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             proton_erg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             proton_erg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPr());
           }
+        }
+
+        if (enable_PVcontributor_antiproton && !(track.isPVContributor())) {
+          continue;
         }
 
         if (track.sign() < 0) {
@@ -425,7 +447,7 @@ struct NucleiHistTask {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
-            aproton_erg.fill(HIST("histTOFm2"), track.tpcInnerParam(), TOFmass2);
+            aproton_erg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             aproton_erg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             aproton_erg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPr());
           }
@@ -440,6 +462,10 @@ struct NucleiHistTask {
       //**************   check offline-trigger (skimming) condidition Deuteron   *******************
 
       if (nSigmaDeut > nsigmacutLow && nSigmaDeut < nsigmacutHigh) {
+
+        if (enable_PVcontributor_deuteron && !(track.isPVContributor())) {
+          continue;
+        }
 
         if (track.sign() > 0) {
           keepEvent_d = kTRUE;
@@ -457,10 +483,14 @@ struct NucleiHistTask {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
-            deuteron_reg.fill(HIST("histTOFm2"), track.tpcInnerParam(), TOFmass2);
+            deuteron_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             deuteron_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             deuteron_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
           }
+        }
+
+        if (enable_PVcontributor_antideuteron && !(track.isPVContributor())) {
+          continue;
         }
 
         if (track.sign() < 0) {
@@ -479,7 +509,7 @@ struct NucleiHistTask {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
-            adeuteron_reg.fill(HIST("histTOFm2"), track.tpcInnerParam(), TOFmass2);
+            adeuteron_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             adeuteron_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             adeuteron_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
           }
@@ -493,6 +523,10 @@ struct NucleiHistTask {
       //**************   check offline-trigger (skimming) condidition Triton   *******************
 
       if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh) {
+
+        if (enable_PVcontributor_triton && !(track.isPVContributor())) {
+          continue;
+        }
 
         if (track.sign() > 0) {
           keepEvent_t = kTRUE;
@@ -510,10 +544,14 @@ struct NucleiHistTask {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
-            triton_reg.fill(HIST("histTOFm2"), track.tpcInnerParam(), TOFmass2);
+            triton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             triton_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             triton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaTr());
           }
+        }
+
+        if (enable_PVcontributor_antitriton && !(track.isPVContributor())) {
+          continue;
         }
 
         if (track.sign() < 0) {
@@ -532,7 +570,7 @@ struct NucleiHistTask {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
-            atriton_reg.fill(HIST("histTOFm2"), track.tpcInnerParam(), TOFmass2);
+            atriton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             atriton_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             atriton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaTr());
           }
@@ -546,6 +584,10 @@ struct NucleiHistTask {
       //**************   check offline-trigger (skimming) condidition Helium-3   *******************
 
       if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) {
+
+        if (enable_PVcontributor_Helium3 && !(track.isPVContributor())) {
+          continue;
+        }
 
         if (track.sign() > 0) {
           keepEvent_He3 = kTRUE;
@@ -563,10 +605,14 @@ struct NucleiHistTask {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
-            Helium3_reg.fill(HIST("histTOFm2"), track.tpcInnerParam() * 2.0, TOFmass2);
+            Helium3_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             Helium3_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0, beta);
             Helium3_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
           }
+        }
+
+        if (enable_PVcontributor_antiHelium3 && !(track.isPVContributor())) {
+          continue;
         }
 
         if (track.sign() < 0) {
@@ -584,7 +630,7 @@ struct NucleiHistTask {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
-            aHelium3_reg.fill(HIST("histTOFm2"), track.tpcInnerParam() * 2.0, TOFmass2);
+            aHelium3_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             aHelium3_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0, beta);
             aHelium3_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
           }
@@ -598,6 +644,10 @@ struct NucleiHistTask {
       //**************   check offline-trigger (skimming) condidition Helium-4   *******************
 
       if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh) {
+
+        if (enable_PVcontributor_Helium4 && !(track.isPVContributor())) {
+          continue;
+        }
 
         if (track.sign() > 0) {
           keepEvent_He4 = kTRUE;
@@ -615,10 +665,14 @@ struct NucleiHistTask {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
-            Helium4_reg.fill(HIST("histTOFm2"), track.tpcInnerParam() * 2.0, TOFmass2);
+            Helium4_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             Helium4_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0, beta);
             Helium4_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaAl());
           }
+        }
+
+        if (enable_PVcontributor_antiHelium4 && !(track.isPVContributor())) {
+          continue;
         }
 
         if (track.sign() < 0) {
@@ -636,7 +690,7 @@ struct NucleiHistTask {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
-            aHelium4_reg.fill(HIST("histTOFm2"), track.tpcInnerParam() * 2.0, TOFmass2);
+            aHelium4_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             aHelium4_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0, beta);
             aHelium4_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaAl());
           }
