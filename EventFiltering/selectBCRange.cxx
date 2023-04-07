@@ -173,7 +173,7 @@ struct BCRangeSelector {
       nBCselected += range.second - range.first + 1;
     }
     int nToBeAdded = std::ceil((bcs.size() - nBCselected) * fillFac);
-    int nToBeAddedPerRange = std::ceil(float(nToBeAdded) / bcRanges.size());
+    int nToBeAddedPerRange = std::ceil(static_cast<float>(nToBeAdded) / bcRanges.size());
     LOGF(debug, "Extending ranges by %d BCs (%d per selected range)", nToBeAdded, nToBeAddedPerRange);
 
     InteractionRecord IR1, IR2;
