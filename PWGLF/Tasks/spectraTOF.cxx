@@ -1078,7 +1078,12 @@ struct tofSpectra {
   {
     // LOGF(info, "Enter processMC!");
     for (auto& track : tracks) {
-      if(!track.has_collision()){ //++++++++
+      if(!track.has_collision()){
+        if (track.sign() > 0) {
+          histos.fill(HIST("MC/no_collision/pos"), track.pt());
+        } else {
+          histos.fill(HIST("MC/no_collision/neg"), track.pt());
+        }
         continue;
       }
       if (!passesCutWoDCA(track)) {
