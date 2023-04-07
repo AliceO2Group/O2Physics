@@ -24,6 +24,8 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetMinNCrossedRowsTPC(30);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
+    cut->SetMinCosPA(0.998);
+    cut->SetMaxPCA(0.5);
 
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetRxyKFRange(1, 90);
@@ -42,6 +44,15 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetMaxMeePsiPairDep([](float psipair) { return psipair < 0.4 ? 0.06 : 0.015; });
     return cut;
   }
+  if (!nameStr.compare("wwire")) { // conversion only on tungstate wire
+    cut->SetPtRange(0.01f, 1e10f);
+    cut->SetEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(20);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
+    cut->SetMaxChi2PerClusterTPC(4.0);
+    cut->SetOnWwireIB(true);
+    return cut;
+  }
   if (!nameStr.compare("nocut")) {
     cut->SetPtRange(0.01f, 1e10f);
     cut->SetEtaRange(-0.9, +0.9);
@@ -56,9 +67,28 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
   return nullptr;
 }
 
-// PHOSPhotonCut* o2::aod::phoscuts::GetCut(const char* cutName)
-// {
-// }
+PHOSPhotonCut* o2::aod::phoscuts::GetCut(const char* cutName)
+{
+  PHOSPhotonCut* cut = new PHOSPhotonCut(cutName, cutName);
+  std::string nameStr = cutName;
+
+  if (!nameStr.compare("test01")) {
+    cut->SetEnergyRange(0.1f, 1e10f);
+    return cut;
+  }
+  if (!nameStr.compare("test02")) {
+    cut->SetEnergyRange(0.2f, 1e10f);
+    return cut;
+  }
+  if (!nameStr.compare("test03")) {
+    cut->SetEnergyRange(0.3f, 1e10f);
+    return cut;
+  }
+
+  delete cut;
+  LOGF(info, Form("Did not find cut %s", cutName));
+  return nullptr;
+}
 
 EMCPhotonCut* o2::aod::emccuts::GetCut(const char* cutName)
 {

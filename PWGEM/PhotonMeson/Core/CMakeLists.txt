@@ -11,6 +11,7 @@
 
 o2physics_add_library(PWGEMPhotonMesonCore
                SOURCES  V0PhotonCut.cxx
+                        PHOSPhotonCut.cxx
                         EMCPhotonCut.cxx
                         CutsLibrary.cxx
                         HistogramsLibrary.cxx
@@ -18,6 +19,7 @@ o2physics_add_library(PWGEMPhotonMesonCore
 
 o2physics_target_root_dictionary(PWGEMPhotonMesonCore
               HEADERS   V0PhotonCut.h
+                        PHOSPhotonCut.h
                         EMCPhotonCut.h
                         CutsLibrary.h
                         HistogramsLibrary.h

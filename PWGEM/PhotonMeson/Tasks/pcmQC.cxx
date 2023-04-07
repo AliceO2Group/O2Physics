@@ -187,7 +187,7 @@ struct PCMQC {
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hEtaPhi"))->Fill(v0.phi(), v0.eta());
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hRadius"))->Fill(v0.vz(), v0.v0radius());
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hRadius_recalc"))->Fill(v0.recalculatedVtxZ(), v0.recalculatedVtxR());
-    reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hCosPA"))->Fill(v0.cospa());
+    reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hCosPA"))->Fill(abs(v0.cospa()));
     reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hPCA"))->Fill(v0.pca());
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hAPplot"))->Fill(v0.alpha(), v0.qtarm());
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hMassGamma"))->Fill(v0.v0radius(), v0.mGamma());
@@ -224,21 +224,23 @@ struct PCMQC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
 
       auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
-      for (auto& g : V0Photons_coll) {
-        auto pos = g.posTrack_as<aod::V0Legs>();
-        auto ele = g.negTrack_as<aod::V0Legs>();
-
-        for (const auto& cut : fPCMCuts) {
-          if (cut.IsSelected(g)) {
+      for (const auto& cut : fPCMCuts) {
+        int ng = 0;
+        for (auto& g : V0Photons_coll) {
+          auto pos = g.posTrack_as<aod::V0Legs>();
+          auto ele = g.negTrack_as<aod::V0Legs>();
+          if (cut.IsSelected<aod::V0Legs>(g)) {
             fillHistosV0(g, cut.GetName());
+            ng++;
             for (auto& leg : {pos, ele}) {
               fillHistosLeg(leg, cut.GetName());
             }
           }
-        } // end of cut loop
-      }   // end of v0 loop
-    }     // end of collision loop
-  }       // end of process
+        } // end of v0 loop
+        reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hNgamma"))->Fill(ng);
+      } // end of cut loop
+    }   // end of collision loop
+  }     // end of process
 
   void processDummy(aod::EMReducedEvents::iterator const& collision) {}
 

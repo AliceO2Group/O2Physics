@@ -22,7 +22,7 @@ namespace o2::aod
 {
 namespace emphotonhistograms
 {
-void DefineHistograms(THashList* list, const char* histClass);
+void DefineHistograms(THashList* list, const char* histClass, const char* subGroup = "");
 void AddHistClass(THashList* list, const char* histClass);
 } // namespace emphotonhistograms
 } // namespace o2::aod
