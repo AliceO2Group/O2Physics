@@ -87,27 +87,31 @@ struct lambdakzeromcfinder {
   template <typename TmcParticle, typename TTrackList>
   void PopulateV0s(TmcParticle const& mcParticle, TTrackList const& trackList, int bestCollisionIndex)
   {
-    int trackIndex1 = -1;
-    int trackIndex2 = -1;
+    int trackIndexPositive = -1;
+    int trackIndexNegative = -1;
     if (mcParticle.has_daughters()) {
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
       if (daughters.size() == 2) {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
           for (auto const& track : trackList) {
             if (track.mcParticleId() == daughter.globalIndex()) {
-              if (trackIndex1 <= 0)
-                trackIndex1 = track.globalIndex();
-              if (trackIndex1 >= 0) {
-                trackIndex2 = track.globalIndex();
-                break; // stop looking, both found
+              // determine which charge this particle has
+              if (track.sign() > 0) {
+                trackIndexPositive = track.globalIndex();
+                if (trackIndexNegative >= 0)
+                  break;
+              } else {
+                trackIndexNegative = track.globalIndex();
+                if (trackIndexPositive >= 0)
+                  break;
               }
             }
           }
         }
       }
     }
-    if (trackIndex1 >= 0 && trackIndex2 >= 0) {
-      v0(bestCollisionIndex, trackIndex1, trackIndex2);
+    if (trackIndexPositive >= 0 && trackIndexNegative >= 0) {
+      v0(bestCollisionIndex, trackIndexPositive, trackIndexNegative);
       fullv0labels(mcParticle.globalIndex());
     }
   }
