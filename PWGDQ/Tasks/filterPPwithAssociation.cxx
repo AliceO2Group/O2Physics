@@ -933,9 +933,9 @@ struct DQMuonsSelection {
       isMuonReassigned[muon.globalIndex()] = -1;
       if (vtxList.size() > 1) {
         registry.fill(HIST("Association/AssociationTrackStatus"), 3); // track is still ambiguous
-  for (auto& vtx : vtxList){
+        for (auto& vtx : vtxList) {
           muonAssoc(vtx, muon.globalIndex(), fSelectedMuons[muon.globalIndex()]); // writes in the table (collId, fwdtrackId, filterMap)
-  }
+        }
       } else if (vtxList.size() == 0) {
         registry.fill(HIST("Association/AssociationTrackStatus"), 4); // track is now orphan
       } else {
