@@ -17,7 +17,7 @@
 /ALICE3 @alibuild @njacazio @ginnocen @vkucera
 /DPG @alibuild @chiarazampolli @noferini
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
-/DPG/Tasks/AOTTrack @alibuild @mfaggin @njacazio
+/DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio
 /EventFiltering @alibuild @mpuccio @strogolo
 /EventFiltering/PWGHF @alibuild @fgrosa @vkucera @mpuccio @strogolo
 /EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @strogolo
@@ -29,13 +29,13 @@
 /PWGDQ @alibuild @iarsene @dsekihat @feisenhu
 /PWGEM @alibuild @mikesas @rbailhac @feisenhu
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
-/PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky
+/PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern
 /PWGHF @alibuild @ginnocen @vkucera @fcolamar
 /PWGHF/D2H @alibuild @ginnocen @vkucera @fcolamar @xinyepeng @lvermunt
 /PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @mmazzilli
 /PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @nzardosh @rvertesi
 /PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @NicoleBastid @mvolkl
-/PWGLF @alibuild @lramona @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio
+/PWGLF @alibuild @lramona @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio @ChiaraDeMartin95 @skundu692
 /PWGMM @alibuild @aalkin
 /PWGMM/Lumi @alibuild @aalkin
 /PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
@@ -43,3 +43,11 @@
 /PWGUD @alibuild @pbuehler
 /PWGJE @alibuild @lhavener @maoyx @nzardosh @ddobrigk @mfasDa
 /Tools/PIDML @alibuild @saganatt
+/Tutorials/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochu
+/Tutorials/PWGDQ @alibuild @iarsene @dsekihat @feisenhu
+/Tutorials/PWGEM @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
+/Tutorials/PWGHF @alibuild @ginnocen @vkucera @fcolamar
+/Tutorials/PWGJE @alibuild @lhavener @maoyx @nzardosh @ddobrigk @mfasDa
+/Tutorials/PWGLF @alibuild @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio @ChiaraDeMartin95 @skundu692
+/Tutorials/PWGMM @alibuild @aalkin
+/Tutorials/PWGUD @alibuild @pbuehler

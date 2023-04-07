@@ -41,6 +41,9 @@ using MyTrack = MyTracks::iterator;
 } // namespace o2::aod
 
 struct CFTutorialTask5 {
+  SliceCache cache;
+  Preslice<o2::aod::MyTracks> perCol = aod::track::collisionId;
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Defining configurables
@@ -93,8 +96,8 @@ struct CFTutorialTask5 {
 
   void processSame(MyFilteredCollision const& coll, MyFilteredTracks const& tracks)
   {
-    auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex());
-    auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex());
+    auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
+    auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     histos.fill(HIST("hZvtx"), coll.posZ());
 
     for (auto track : groupPositive) {
@@ -133,8 +136,8 @@ struct CFTutorialTask5 {
   {
     BinningType colBinning{{ConfVtxBins, ConfMultBins}, true};
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, colls, colls)) {
-      auto groupPositive = positive->sliceByCached(aod::track::collisionId, collision1.globalIndex());
-      auto groupNegative = negative->sliceByCached(aod::track::collisionId, collision2.globalIndex());
+      auto groupPositive = positive->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+      auto groupNegative = negative->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
 
       for (auto& [pos, neg] : combinations(soa::CombinationsFullIndexPolicy(groupPositive, groupNegative))) {
         if (fabs(pos.tpcNSigmaPi()) > 3 or fabs(neg.tpcNSigmaPi()) > 3) {
@@ -157,7 +160,7 @@ struct CFTutorialTask5 {
   {
     auto tracksTuple = std::make_tuple(tracks);
     BinningType colBinning{{ConfVtxBins, ConfMultBins}, true};
-    SameKindPair<MyFilteredCollisions, MyFilteredTracks, BinningType> pair{colBinning, 5, -1, colls, tracksTuple};
+    SameKindPair<MyFilteredCollisions, MyFilteredTracks, BinningType> pair{colBinning, 5, -1, colls, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       Partition<MyFilteredTracks> groupPositive = aod::track::signed1Pt > ConfChargeCut;
       groupPositive.bindTable(tracks1);

@@ -53,6 +53,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 struct resonanceqa {
+  SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -242,7 +243,7 @@ struct resonanceqa {
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0.0, 2.750, 5.250, 7.750, 12.750, 17.750, 22.750, 27.750, 32.750, 37.750, 42.750, 47.750, 52.750, 57.750, 62.750, 67.750, 72.750, 77.750, 82.750, 87.750, 92.750, 97.750, 250.1}, "multiplicity axis for histograms"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
   BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default)
-  SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1};
+  SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, &cache};
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
     if (!collision.sel8()) {

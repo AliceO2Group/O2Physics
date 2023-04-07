@@ -150,3 +150,8 @@ o2physics_add_dpl_workflow(cascpostprocessing
                     SOURCES cascpostprocessing.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hstrangecorrelation
+                    SOURCES hStrangeCorrelation.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

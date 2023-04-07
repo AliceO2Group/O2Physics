@@ -88,11 +88,11 @@ using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 // Builder task: rebuilds multi-strange candidates
 struct cascadeBuilder {
-  Produces<aod::CascData> cascdata;
+  Produces<aod::StoredCascDatas> cascdata;
   Produces<aod::CascCovs> casccovs; // if requested by someone
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", true, "Autodetect requested topo sels"};
+  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
 
   // Configurables related to table creation
   Configurable<int> createCascCovMats{"createCascCovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
@@ -109,8 +109,8 @@ struct cascadeBuilder {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
-  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
-  Configurable<int> useMatCorrTypeCasc{"useMatCorrTypeCasc", 0, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> useMatCorrTypeCasc{"useMatCorrTypeCasc", 2, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
   Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
 
@@ -665,6 +665,7 @@ struct cascadeBuilder {
         continue; // doesn't pass cascade selections
 
       cascdata(cascadecandidate.v0Id,
+               cascade.globalIndex(),
                cascadecandidate.bachelorId,
                cascade.collisionId(),
                cascadecandidate.charge,
@@ -984,8 +985,29 @@ struct cascadePreselector {
 
 /// Extends the cascdata table with expression columns
 struct cascadeInitializer {
-  Spawns<aod::CascDataExt> cascdataext;
+  Spawns<aod::CascData> cascdataext;
   void init(InitContext const&) {}
+};
+
+struct cascadeLinkBuilder {
+  Produces<aod::CascDataLink> cascdataLink;
+
+  void init(InitContext const&) {}
+
+  // build Cascade -> CascData link table
+  void process(aod::Cascades const& casctable, aod::CascDatas const& cascdatatable)
+  {
+    std::vector<int> lIndices;
+    lIndices.reserve(casctable.size());
+    for (int ii = 0; ii < casctable.size(); ii++)
+      lIndices[ii] = -1;
+    for (auto& cascdata : cascdatatable) {
+      lIndices[cascdata.cascadeId()] = cascdata.globalIndex();
+    }
+    for (int ii = 0; ii < casctable.size(); ii++) {
+      cascdataLink(lIndices[ii]);
+    }
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -993,5 +1015,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<cascadeBuilder>(cfgc),
     adaptAnalysisTask<cascadePreselector>(cfgc),
-    adaptAnalysisTask<cascadeInitializer>(cfgc)};
+    adaptAnalysisTask<cascadeInitializer>(cfgc),
+    adaptAnalysisTask<cascadeLinkBuilder>(cfgc)};
 }

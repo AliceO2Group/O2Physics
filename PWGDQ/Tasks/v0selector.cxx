@@ -48,12 +48,9 @@ using std::array;
 
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
                                 aod::pidTPCFullEl, aod::pidTPCFullPi,
-                                aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                aod::pidTOFFullEl, aod::pidTOFFullPi,
-                                aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+                                aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
 struct v0selector {
-
   enum { // Reconstructed V0
     kUndef = -1,
     kGamma = 0,
@@ -121,31 +118,6 @@ struct v0selector {
     return kUndef;
   }
 
-  // Basic checks
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-      {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.5f, 2.5f}}}},
-      {"hMassGamma", "hMassGamma", {HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.0f, 0.1f}}}},
-      {"hGammaRxy", "hGammaRxy", {HistType::kTH2F, {{1800, -90.0f, 90.0f}, {1800, -90.0f, 90.0f}}}},
-      {"hMassK0S", "hMassK0S", {HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.45, 0.55}}}},
-      {"hMassLambda", "hMassLambda", {HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.05, 1.15f}}}},
-      {"hMassAntiLambda", "hAntiMassLambda", {HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.05, 1.15f}}}},
-      {"hV0Pt", "pT", {HistType::kTH1F, {{100, 0.0f, 10}}}},
-      {"hV0EtaPhi", "#eta vs. #varphi", {HistType::kTH2F, {{63, 0, 6.3}, {20, -1.0f, 1.0f}}}},
-      {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f}}}},
-      {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{50, 0.95f, 1.0f}}}},
-      {"hDCAxyPosToPV", "hDCAxyPosToPV", {HistType::kTH1F, {{1000, -5.0f, 5.0f}}}},
-      {"hDCAxyNegToPV", "hDCAxyNegToPV", {HistType::kTH1F, {{1000, -5.0f, 5.0f}}}},
-      {"hDCAzPosToPV", "hDCAzPosToPV", {HistType::kTH1F, {{1000, -5.0f, 5.0f}}}},
-      {"hDCAzNegToPV", "hDCAzNegToPV", {HistType::kTH1F, {{1000, -5.0f, 5.0f}}}},
-      {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
-      {"hV0APplot", "hV0APplot", {HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}}}},
-      {"hV0Psi", "hV0Psi", {HistType::kTH2F, {{100, 0, TMath::PiOver2()}, {100, 0, 0.1}}}},
-    },
-  };
-
   // Configurables
   Configurable<float> v0max_mee{"v0max_mee", 0.1, "max mee for photon"};
   Configurable<float> maxpsipair{"maxpsipair", 1.6, "max psi_pair for photon"};
@@ -157,11 +129,34 @@ struct v0selector {
   Configurable<float> dcamax{"dcamax", 1e+10, "dcamax"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
+  Configurable<bool> fillhisto{"fillhisto", false, "flag to fill histograms"};
+
+  HistogramRegistry registry{"registry"};
+  void init(o2::framework::InitContext& context)
+  {
+    if (fillhisto) {
+      registry.add("hV0Candidate", "hV0Candidate", HistType::kTH1F, {{2, 0.5f, 2.5f}});
+      registry.add("hMassGamma", "hMassGamma", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.0f, 0.1f}});
+      registry.add("hGammaRxy", "hGammaRxy", HistType::kTH2F, {{1800, -90.0f, 90.0f}, {1800, -90.0f, 90.0f}});
+      registry.add("hMassK0S", "hMassK0S", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.45, 0.55}});
+      registry.add("hMassLambda", "hMassLambda", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.05, 1.15f}});
+      registry.add("hMassAntiLambda", "hAntiMassLambda", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.05, 1.15f}});
+      registry.add("hV0Pt", "pT", HistType::kTH1F, {{100, 0.0f, 10}});
+      registry.add("hV0EtaPhi", "#eta vs. #varphi", HistType::kTH2F, {{63, 0, 6.3}, {20, -1.0f, 1.0f}});
+      registry.add("hV0Radius", "hV0Radius", HistType::kTH1F, {{1000, 0.0f, 100.0f}});
+      registry.add("hV0CosPA", "hV0CosPA", HistType::kTH1F, {{50, 0.95f, 1.0f}});
+      registry.add("hDCAxyPosToPV", "hDCAxyPosToPV", HistType::kTH1F, {{1000, -5.0f, 5.0f}});
+      registry.add("hDCAxyNegToPV", "hDCAxyNegToPV", HistType::kTH1F, {{1000, -5.0f, 5.0f}});
+      registry.add("hDCAzPosToPV", "hDCAzPosToPV", HistType::kTH1F, {{1000, -5.0f, 5.0f}});
+      registry.add("hDCAzNegToPV", "hDCAzNegToPV", HistType::kTH1F, {{1000, -5.0f, 5.0f}});
+      registry.add("hDCAV0Dau", "hDCAV0Dau", HistType::kTH1F, {{1000, 0.0f, 10.0f}});
+      registry.add("hV0APplot", "hV0APplot", HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
+      registry.add("hV0Psi", "hV0Psi", HistType::kTH2F, {{100, 0, TMath::PiOver2()}, {100, 0, 0.1}});
+    }
+  }
 
   void process(aod::V0Datas const& V0s, FullTracksExt const& tracks, aod::Collisions const&)
   {
-    registry.fill(HIST("hEventCounter"), 0.5);
-
     std::map<int, uint8_t> pidmap;
 
     for (auto& V0 : V0s) {
@@ -173,8 +168,9 @@ struct v0selector {
       // }
 
       // printf("V0.collisionId = %d , collision.globalIndex = %d\n",V0.collisionId(),collision.globalIndex());
-      registry.fill(HIST("hV0Candidate"), 1);
-
+      if (fillhisto) {
+        registry.fill(HIST("hV0Candidate"), 1);
+      }
       if (fabs(V0.posTrack_as<FullTracksExt>().eta()) > 0.9) {
         continue;
       }
@@ -243,25 +239,27 @@ struct v0selector {
       if (V0radius < v0Rmin || v0Rmax < V0radius) {
         continue;
       }
-      registry.fill(HIST("hV0Candidate"), 2);
-
+      if (fillhisto) {
+        registry.fill(HIST("hV0Candidate"), 2);
+      }
       float mGamma = V0.mGamma();
       float mK0S = V0.mK0Short();
       float mLambda = V0.mLambda();
       float mAntiLambda = V0.mAntiLambda();
       float psipair = V0.psipair();
 
-      registry.fill(HIST("hV0Pt"), V0.pt());
-      registry.fill(HIST("hV0EtaPhi"), V0.phi(), V0.eta());
-      registry.fill(HIST("hDCAxyPosToPV"), V0.posTrack_as<FullTracksExt>().dcaXY());
-      registry.fill(HIST("hDCAxyNegToPV"), V0.negTrack_as<FullTracksExt>().dcaXY());
-      registry.fill(HIST("hDCAzPosToPV"), V0.posTrack_as<FullTracksExt>().dcaZ());
-      registry.fill(HIST("hDCAzNegToPV"), V0.negTrack_as<FullTracksExt>().dcaZ());
-      registry.fill(HIST("hV0APplot"), V0.alpha(), V0.qtarm());
-
-      registry.fill(HIST("hV0Radius"), V0radius);
-      registry.fill(HIST("hV0CosPA"), V0CosinePA);
-      registry.fill(HIST("hDCAV0Dau"), V0dca);
+      if (fillhisto) {
+        registry.fill(HIST("hV0Pt"), V0.pt());
+        registry.fill(HIST("hV0EtaPhi"), V0.phi(), V0.eta());
+        registry.fill(HIST("hDCAxyPosToPV"), V0.posTrack_as<FullTracksExt>().dcaXY());
+        registry.fill(HIST("hDCAxyNegToPV"), V0.negTrack_as<FullTracksExt>().dcaXY());
+        registry.fill(HIST("hDCAzPosToPV"), V0.posTrack_as<FullTracksExt>().dcaZ());
+        registry.fill(HIST("hDCAzNegToPV"), V0.negTrack_as<FullTracksExt>().dcaZ());
+        registry.fill(HIST("hV0APplot"), V0.alpha(), V0.qtarm());
+        registry.fill(HIST("hV0Radius"), V0radius);
+        registry.fill(HIST("hV0CosPA"), V0CosinePA);
+        registry.fill(HIST("hDCAV0Dau"), V0dca);
+      }
 
       int v0id = checkV0(V0.alpha(), V0.qtarm());
       if (v0id < 0) {
@@ -270,27 +268,37 @@ struct v0selector {
       }
 
       if (v0id == kGamma) { // photon conversion
-        registry.fill(HIST("hMassGamma"), V0radius, mGamma);
-        registry.fill(HIST("hV0Psi"), psipair, mGamma);
+        if (fillhisto) {
+          registry.fill(HIST("hMassGamma"), V0radius, mGamma);
+          registry.fill(HIST("hV0Psi"), psipair, mGamma);
+        }
         if (mGamma < v0max_mee && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && psipair < maxpsipair) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kGamma);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kGamma);
-          registry.fill(HIST("hGammaRxy"), V0.x(), V0.y());
+          if (fillhisto) {
+            registry.fill(HIST("hGammaRxy"), V0.x(), V0.y());
+          }
         }
       } else if (v0id == kK0S) { // K0S-> pi pi
-        registry.fill(HIST("hMassK0S"), V0radius, mK0S);
+        if (fillhisto) {
+          registry.fill(HIST("hMassK0S"), V0radius, mK0S);
+        }
         if ((0.48 < mK0S && mK0S < 0.51) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kK0S);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kK0S);
         }
       } else if (v0id == kLambda) { // L->p + pi-
-        registry.fill(HIST("hMassLambda"), V0radius, mLambda);
+        if (fillhisto) {
+          registry.fill(HIST("hMassLambda"), V0radius, mLambda);
+        }
         if (v0id == kLambda && (1.110 < mLambda && mLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kLambda);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kLambda);
         }
       } else if (v0id == kAntiLambda) { // Lbar -> pbar + pi+
-        registry.fill(HIST("hMassAntiLambda"), V0radius, mAntiLambda);
+        if (fillhisto) {
+          registry.fill(HIST("hMassAntiLambda"), V0radius, mAntiLambda);
+        }
         if ((1.110 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kAntiLambda);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kAntiLambda);
@@ -316,45 +324,46 @@ struct trackPIDQA {
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
 
-  // Basic checks
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
-      {"hTrackPt_all", "pT", {HistType::kTH1F, {{100, 0.0, 10}}}},
-      {"hTrackEtaPhi_all", "#eta vs. #varphi", {HistType::kTH2F, {{63, 0, 6.3}, {20, -1.0f, 1.0f}}}},
-      {"h2TPCdEdx_Pin_all", "TPC dEdx vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}}}},
-      {"h2TOFbeta_Pin_all", "TOF #beta vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}}}},
+  HistogramRegistry registry{"registry"};
+  void init(o2::framework::InitContext& context)
+  {
+    bool enableBarrelHistos = context.mOptions.get<bool>("processQA");
+    if (enableBarrelHistos) {
+      registry.add("hEventCounter", "hEventCounter", HistType::kTH1F, {{5, 0.5f, 5.5f}});
+      registry.add("hTrackPt_all", "pT", HistType::kTH1F, {{100, 0.0, 10}});
+      registry.add("hTrackEtaPhi_all", "#eta vs. #varphi", HistType::kTH2F, {{63, 0, 6.3}, {20, -1.0f, 1.0f}});
+      registry.add("h2TPCdEdx_Pin_all", "TPC dEdx vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}});
+      registry.add("h2TOFbeta_Pin_all", "TOF #beta vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}});
 
-      {"hTrackPt", "pT", {HistType::kTH1F, {{100, 0.0, 10}}}},
-      {"hTrackEtaPhi", "#eta vs. #varphi", {HistType::kTH2F, {{63, 0, 6.3}, {20, -1.0f, 1.0f}}}},
+      registry.add("hTrackPt", "pT", HistType::kTH1F, {{100, 0.0, 10}});
+      registry.add("hTrackEtaPhi", "#eta vs. #varphi", HistType::kTH2F, {{63, 0, 6.3}, {20, -1.0f, 1.0f}});
 
-      {"h2TPCdEdx_Pin", "TPC dEdx vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}}}},
-      {"h2TPCdEdx_Pin_El", "TPC dEdx vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}}}},
-      {"h2TPCdEdx_Pin_Pi", "TPC dEdx vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}}}},
-      {"h2TPCdEdx_Pin_Ka", "TPC dEdx vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}}}},
-      {"h2TPCdEdx_Pin_Pr", "TPC dEdx vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}}}},
+      registry.add("h2TPCdEdx_Pin", "TPC dEdx vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}});
+      registry.add("h2TPCdEdx_Pin_El", "TPC dEdx vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}});
+      registry.add("h2TPCdEdx_Pin_Pi", "TPC dEdx vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}});
+      registry.add("h2TPCdEdx_Pin_Ka", "TPC dEdx vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}});
+      registry.add("h2TPCdEdx_Pin_Pr", "TPC dEdx vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}});
 
-      {"h2TPCnSigma_Pin_El", "TPC n#sigma_{e} vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}}}},
-      {"h2TPCnSigma_Pin_Pi", "TPC n#sigma_{#pi} vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}}}},
-      {"h2TPCnSigma_Pin_Ka", "TPC n#sigma_{K} vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}}}},
-      {"h2TPCnSigma_Pin_Pr", "TPC n#sigma_{p} vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}}}},
+      registry.add("h2TPCnSigma_Pin_El", "TPC n#sigma_{e} vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}});
+      registry.add("h2TPCnSigma_Pin_Pi", "TPC n#sigma_{#pi} vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}});
+      registry.add("h2TPCnSigma_Pin_Ka", "TPC n#sigma_{K} vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}});
+      registry.add("h2TPCnSigma_Pin_Pr", "TPC n#sigma_{p} vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}});
 
-      {"h2TOFbeta_Pin", "TOF #beta vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}}}},
-      {"h2TOFbeta_Pin_El", "TOF #beta vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}}}},
-      {"h2TOFbeta_Pin_Pi", "TOF #beta vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}}}},
-      {"h2TOFbeta_Pin_Ka", "TOF #beta vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}}}},
-      {"h2TOFbeta_Pin_Pr", "TOF #beta vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}}}},
+      registry.add("h2TOFbeta_Pin", "TOF #beta vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}});
+      registry.add("h2TOFbeta_Pin_El", "TOF #beta vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}});
+      registry.add("h2TOFbeta_Pin_Pi", "TOF #beta vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}});
+      registry.add("h2TOFbeta_Pin_Ka", "TOF #beta vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}});
+      registry.add("h2TOFbeta_Pin_Pr", "TOF #beta vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}});
 
-      {"h2TOFnSigma_Pin_El", "TOF n#sigma_{e} vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}}}},
-      {"h2TOFnSigma_Pin_Pi", "TOF n#sigma_{#pi} vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}}}},
-      {"h2TOFnSigma_Pin_Ka", "TOF n#sigma_{K} vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}}}},
-      {"h2TOFnSigma_Pin_Pr", "TOF n#sigma_{p} vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}}}},
+      registry.add("h2TOFnSigma_Pin_El", "TOF n#sigma_{e} vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}});
+      registry.add("h2TOFnSigma_Pin_Pi", "TOF n#sigma_{#pi} vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}});
+      registry.add("h2TOFnSigma_Pin_Ka", "TOF n#sigma_{K} vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}});
+      registry.add("h2TOFnSigma_Pin_Pr", "TOF n#sigma_{p} vs. p_{in}", HistType::kTH2F, {{1000, 0.0, 10}, {200, -10, +10}});
+    }
+  }
 
-    },
-  };
-
-  void processQA(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<FullTracksExt, aod::V0Bits> const& tracks)
+  void processQA(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+                 soa::Join<FullTracksExt, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::V0Bits> const& tracks)
   {
     registry.fill(HIST("hEventCounter"), 1.0); // all
 

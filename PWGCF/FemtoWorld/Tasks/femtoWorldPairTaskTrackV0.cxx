@@ -49,6 +49,8 @@ static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 } // namespace
 
 struct femtoWorldPairTaskTrackV0 {
+  SliceCache cache;
+  Preslice<aod::FemtoWorldParticles> perCol = aod::femtoworldparticle::femtoWorldCollisionId;
 
   /// Particle selection part
 
@@ -129,8 +131,8 @@ struct femtoWorldPairTaskTrackV0 {
   {
     const auto& magFieldTesla = col.magField();
 
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
     const int multCol = col.multV0M();
     eventHisto.fillQA(col);
     /// Histogramming same event
@@ -180,8 +182,8 @@ struct femtoWorldPairTaskTrackV0 {
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
-      auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex());
-      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex());
+      auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
