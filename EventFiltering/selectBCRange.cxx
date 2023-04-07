@@ -119,7 +119,7 @@ struct BCRangeSelector {
         auto localIter = bcIter;
         while (localIter.globalIndex() > 0) {
           --localIter;
-          if (localIter.globalBC() >= minBC.toLong()) {
+          if (localIter.globalBC() >= static_cast<uint64_t>(minBC.toLong())) {
             minBCId = localIter.globalIndex();
           } else {
             break;
@@ -128,7 +128,7 @@ struct BCRangeSelector {
         localIter = bcIter;
         while (localIter.globalIndex() < bcs.size() - 1) {
           ++localIter;
-          if (localIter.globalBC() <= maxBC.toLong()) {
+          if (localIter.globalBC() <= static_cast<uint64_t>(maxBC.toLong())) {
             maxBCId = localIter.globalIndex();
           } else {
             break;
@@ -197,7 +197,7 @@ struct BCRangeSelector {
       uint64_t second{bcs.iteratorAt(bcRanges[iR].second).globalBC()};
       IR2.setFromLong(second);
       for (int i{0}; i < nToBeAddedPerRange && nToBeAdded > 0; ++i) {
-        if (bcRanges[iR].second < bcs.size() - 1) {
+        if (bcRanges[iR].second < static_cast<uint64_t>(bcs.size() - 1)) {
           second = bcs.iteratorAt(bcRanges[iR].second + 1).globalBC();
           IR1.setFromLong(second);
           if (IR1.differenceInBC(IR2) > o2::constants::lhc::LHCMaxBunches) { // protection against change of orbit in the DataFrame
