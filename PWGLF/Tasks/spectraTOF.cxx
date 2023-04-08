@@ -279,7 +279,6 @@ struct tofSpectra {
       histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
       histos.add("MC/no_collision/pos", "No collision pos track", kTH1D, {ptAxis});
       histos.add("MC/no_collision/neg", "No collision neg track", kTH1D, {ptAxis});
-
     }
 
     for (int i = 0; i < NpCharge; i++) {
@@ -989,7 +988,6 @@ struct tofSpectra {
         histos.fill(HIST(hpt_numtof_prm[i]), track.pt());
       }
     }
-    
   }
 
   template <std::size_t i, typename ParticleType>
@@ -1078,7 +1076,7 @@ struct tofSpectra {
   {
     // LOGF(info, "Enter processMC!");
     for (auto& track : tracks) {
-      if(!track.has_collision()){
+      if (!track.has_collision()) {
         if (track.sign() > 0) {
           histos.fill(HIST("MC/no_collision/pos"), track.pt());
         } else {
