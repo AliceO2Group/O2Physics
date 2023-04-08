@@ -173,15 +173,15 @@ struct correlateSameEvents {
       // Correlate
       if (assocTrackRef.compatibleK0Short()) {
         histos.fill(HIST("correlationPhiHadronK0Short"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()));
-        histos.fill(HIST("correlationFullHadronK0Short"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta());
+        histos.fill(HIST("correlationFullHadronK0Short"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta(), assocTrack.pt());
       }
       if (assocTrackRef.compatibleLambda()) {
         histos.fill(HIST("correlationPhiHadronLambda"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()));
-        histos.fill(HIST("correlationFullHadronLambda"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta());
+        histos.fill(HIST("correlationFullHadronLambda"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta(), assocTrack.pt());
       }
       if (assocTrackRef.compatibleAntiLambda()) {
         histos.fill(HIST("correlationPhiHadronAntiLambda"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()));
-        histos.fill(HIST("correlationFullHadronAntiLambda"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta());
+        histos.fill(HIST("correlationFullHadronAntiLambda"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta(), assocTrack.pt());
       }
     }
 
@@ -194,19 +194,19 @@ struct correlateSameEvents {
       // Correlate
       if (assocTrackRef.compatibleXiMinus()) {
         histos.fill(HIST("correlationPhiHadronXiMinus"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()));
-        histos.fill(HIST("correlationFullHadronXiMinus"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta());
+        histos.fill(HIST("correlationFullHadronXiMinus"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta(), assocTrack.pt());
       }
       if (assocTrackRef.compatibleXiPlus()) {
         histos.fill(HIST("correlationPhiHadronXiPlus"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()));
-        histos.fill(HIST("correlationFullHadronXiPlus"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta());
+        histos.fill(HIST("correlationFullHadronXiPlus"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta(), assocTrack.pt());
       }
       if (assocTrackRef.compatibleOmegaMinus()) {
         histos.fill(HIST("correlationPhiHadronOmegaMinus"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()));
-        histos.fill(HIST("correlationFullHadronOmegaMinus"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta());
+        histos.fill(HIST("correlationFullHadronOmegaMinus"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta(), assocTrack.pt());
       }
       if (assocTrackRef.compatibleOmegaPlus()) {
         histos.fill(HIST("correlationPhiHadronOmegaPlus"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()));
-        histos.fill(HIST("correlationFullHadronOmegaPlus"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta());
+        histos.fill(HIST("correlationFullHadronOmegaPlus"), ComputeDeltaPhi(triggerTrack.phi(), assocTrack.phi()), triggerTrack.eta() - assocTrack.eta(), assocTrack.pt());
       }
     }
   }
