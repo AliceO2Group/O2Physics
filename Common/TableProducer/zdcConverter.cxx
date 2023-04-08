@@ -48,51 +48,51 @@ struct zdcConverter {
       std::vector<uint8_t> zdcChannelsE, zdcChannelsT;
 
       // Tie variables in such that they get read correctly later
-      zdcEnergy.emplace_back(energyZEM1); 
+      zdcEnergy.emplace_back(energyZEM1);
       zdcChannelsE.emplace_back(IdZEM1);
       zdcAmplitudes.emplace_back(energyZEM1); // WARNING: DUMMY VALUE
       zdcTime.emplace_back(timeZEM1);
       zdcChannelsT.emplace_back(IdZEM1);
 
-      zdcEnergy.emplace_back(energyZEM2); 
+      zdcEnergy.emplace_back(energyZEM2);
       zdcChannelsE.emplace_back(IdZEM2);
       zdcAmplitudes.emplace_back(energyZEM2); // WARNING: DUMMY VALUE
       zdcTime.emplace_back(timeZEM2);
       zdcChannelsT.emplace_back(IdZEM2);
 
-      zdcEnergy.emplace_back(energyCommonZNA); 
+      zdcEnergy.emplace_back(energyCommonZNA);
       zdcChannelsE.emplace_back(IdZNAC);
       zdcAmplitudes.emplace_back(energyCommonZNA); // WARNING: DUMMY VALUE
       zdcTime.emplace_back(timeZNA);
       zdcChannelsT.emplace_back(IdZNAC);
 
-      zdcEnergy.emplace_back(energyCommonZNC); 
+      zdcEnergy.emplace_back(energyCommonZNC);
       zdcChannelsE.emplace_back(IdZNCC);
       zdcAmplitudes.emplace_back(energyCommonZNC); // WARNING: DUMMY VALUE
       zdcTime.emplace_back(timeZNC);
       zdcChannelsT.emplace_back(IdZNCC);
 
-      zdcEnergy.emplace_back(energyCommonZPA); 
+      zdcEnergy.emplace_back(energyCommonZPA);
       zdcChannelsE.emplace_back(IdZPAC);
       zdcAmplitudes.emplace_back(energyCommonZPA); // WARNING: DUMMY VALUE
       zdcTime.emplace_back(timeZPA);
       zdcChannelsT.emplace_back(IdZPAC);
 
-      zdcEnergy.emplace_back(energyCommonZPC); 
+      zdcEnergy.emplace_back(energyCommonZPC);
       zdcChannelsE.emplace_back(IdZPCC);
       zdcAmplitudes.emplace_back(energyCommonZPC); // WARNING: DUMMY VALUE
       zdcTime.emplace_back(timeZPC);
       zdcChannelsT.emplace_back(IdZPCC);
 
-      for(uint64_t ic = 0; ic < 4; ic++){ 
-        zdcEnergy.emplace_back(energySectorZNA[ic]); 
-        zdcChannelsE.emplace_back(IdZNA1+ic);
-        zdcEnergy.emplace_back(energySectorZNC[ic]); 
-        zdcChannelsE.emplace_back(IdZNC1+ic);
-        zdcEnergy.emplace_back(energySectorZPA[ic]); 
-        zdcChannelsE.emplace_back(IdZPA1+ic);
-        zdcEnergy.emplace_back(energySectorZPC[ic]); 
-        zdcChannelsE.emplace_back(IdZPC1+ic);
+      for (uint64_t ic = 0; ic < 4; ic++) {
+        zdcEnergy.emplace_back(energySectorZNA[ic]);
+        zdcChannelsE.emplace_back(IdZNA1 + ic);
+        zdcEnergy.emplace_back(energySectorZNC[ic]);
+        zdcChannelsE.emplace_back(IdZNC1 + ic);
+        zdcEnergy.emplace_back(energySectorZPA[ic]);
+        zdcChannelsE.emplace_back(IdZPA1 + ic);
+        zdcEnergy.emplace_back(energySectorZPC[ic]);
+        zdcChannelsE.emplace_back(IdZPC1 + ic);
       }
 
       Zdcs_001(bc,
