@@ -74,6 +74,11 @@ struct BCRangeSelector {
     if (cols.size() != fdecs.size()) {
       throw std::runtime_error("Collision table and CefpDecision do not have the same number of rows! ");
     }
+    if (cols.size() == 0) {
+      LOGF(warning, "No collisions found!");
+      pc.outputs().snapshot({"PPF", "IFRAMES", 0, Lifetime::Timeframe}, res);
+      return;
+    }
 
     // 1. loop over collisions
     auto filt = fdecs.begin();
@@ -149,7 +154,7 @@ struct BCRangeSelector {
       return a.first < b.first;
     });
     if (bcRanges.empty()) {
-      LOGF(error, "No BCs selected! This should not happen! Adding a bogus BC range to avoid crashes.");
+      LOGF(warning, "No BCs selected! This should not happen! Adding a bogus BC range to avoid crashes.");
       bcRanges.push_back(std::make_pair(0, 0));
     }
     std::vector<std::pair<uint64_t, uint64_t>> bcRangesMerged(1, bcRanges[0]);
