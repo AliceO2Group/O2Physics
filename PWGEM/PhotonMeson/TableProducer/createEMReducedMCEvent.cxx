@@ -56,6 +56,8 @@ struct createEMReducedMCEvent {
 
   Preslice<aod::McParticles_001> perMcCollision = aod::mcparticle::mcCollisionId;
   Preslice<aod::V0Photons> perCollision_pcm = aod::v0photon::collisionId;
+  Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
+  Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
   using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::McCollisionLabels>;
 
@@ -72,6 +74,9 @@ struct createEMReducedMCEvent {
 
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
+      int ng_pcm = 0;
+      int ng_phos = 0;
+      int ng_emc = 0;
 
       // TODO: investigate the collisions without corresponding mcCollision
       if (!collision.has_mcCollision()) {
@@ -82,6 +87,27 @@ struct createEMReducedMCEvent {
       auto mcCollision = collision.mcCollision();
       // auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
+      if constexpr (static_cast<bool>(system & kPCM)) {
+        auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
+        ng_pcm = v0photons_coll.size();
+      }
+      if constexpr (static_cast<bool>(system & kPHOS)) {
+        auto phos_coll = phosclusters.sliceBy(perCollision_phos, collision.globalIndex());
+        ng_phos = phos_coll.size();
+      }
+      if constexpr (static_cast<bool>(system & kEMC)) {
+        auto emc_coll = emcclusters.sliceBy(perCollision_emc, collision.globalIndex());
+        ng_emc = emc_coll.size();
+      }
+
+      bool is_phoscpv_readout = false;
+      bool is_emc_readout = false;
+      // bool is_phoscpv_readout = static_cast<bool>(collision.bc().triggerMask() & 0x4); // trigger mask = 4
+      // bool is_emc_readout = static_cast<bool>(collision.bc().triggerMask() & 0x10); // trigger mask = 16
+      // if(collision.bc().triggerMask() > 0){
+      //   LOGF(info, "trigger mask = %d , is_phoscpv_readout = %d , is_emc_readout = %d", collision.bc().triggerMask(), is_phoscpv_readout, is_emc_readout);
+      // }
+
       uint64_t tag = 0;
       // store event selection decisions
       for (int i = 0; i < kNsel; i++) {
@@ -90,12 +116,13 @@ struct createEMReducedMCEvent {
         }
       }
 
-      events(collision.globalIndex(), tag, collision.bc().runNumber(), collision.sel8(),
+      events(collision.globalIndex(), tag, collision.bc().runNumber(), collision.bc().triggerMask(), collision.sel8(),
+             is_phoscpv_readout, is_emc_readout,
              collision.posX(), collision.posY(), collision.posZ(),
              collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes(),
              collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
              collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1(),
-             0, 0, 0);
+             ng_pcm, ng_phos, ng_emc);
 
       // make an entry for this MC event only if it was not already added to the table
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {

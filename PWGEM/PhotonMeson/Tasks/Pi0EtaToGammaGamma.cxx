@@ -15,6 +15,7 @@
 //    Please write to: daiki.sekihata@cern.ch
 
 #include <cstring>
+#include <iterator>
 
 #include "TString.h"
 #include "Math/Vector4D.h"
@@ -37,63 +38,16 @@
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
 
 using namespace o2;
+using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-
-// namespace o2::aod
-//{
-// namespace v0photonflag // flag to distinguish 1 track belongs to 1 V0 or 2 (or more) V0s in a collision.
-//{
-// DECLARE_SOA_COLUMN(IsCloser, isCloser, bool); //! true if 2 legs of this v0 do not belong to other V0s in a collision or PCA between 2 legs is closer.
-// } // namespace v0photonflag
-// DECLARE_SOA_TABLE(V0PhotonFlags, "AOD", "V0PHOTONFLAG", v0photonflag::IsCloser);
-// using V0PhotonFlag = V0PhotonFlags::iterator;
-// } // namespace o2::aod
-//
-// struct LabelUniqueV0 {
-//   Produces<aod::V0PhotonFlags> v0flags;
-//
-//   Preslice<aod::V0Photons> perCollision = aod::v0photon::collisionId;
-//   void process(aod::EMReducedEvents::iterator const& collision, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs)
-//   {
-//     auto v0photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
-//
-//     for (auto& g1 : v0photons_coll) {
-//       auto pos1 = g1.posTrack_as<aod::V0Legs>();
-//       auto ele1 = g1.negTrack_as<aod::V0Legs>();
-//       bool flag = true;
-//
-//       int posid1 = pos1.trackId(); // unique index to point o2::track
-//       int eleid1 = ele1.trackId(); // unique index to point o2::track
-//       float pca1 = g1.pca();
-//
-//       for (auto& g2 : v0photons_coll) {
-//         if (g2.index() == g1.index()) {
-//           continue;
-//         }
-//
-//         auto pos2 = g2.posTrack_as<aod::V0Legs>();
-//         auto ele2 = g2.negTrack_as<aod::V0Legs>();
-//         int posid2 = pos2.trackId(); // unique index to point o2::track
-//         int eleid2 = ele2.trackId(); // unique index to point o2::track
-//         float pca2 = g2.pca();
-//
-//         if ((posid2 == posid1 || eleid2 == eleid1) && pca1 > pca2) {
-//           // LOGF(info, "g1 id = %d , g2 id = %d , posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f", g1.index(), g2.index(), posid1, eleid1, posid2, eleid2, pca1, pca2);
-//           flag = false;
-//           break;
-//         }
-//       }
-//       v0flags(flag);
-//     }
-//   }
-// };
 
 using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF, aod::V0PhotonFlags>;
 using MyV0Photon = MyV0Photons::iterator;
@@ -108,10 +62,9 @@ struct Pi0EtaToGammaGamma {
     kPHOSEMC = 5,
   };
 
-  Filter collisionFilter = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
-  using MyFilteredCollisions = soa::Filtered<aod::EMReducedEvents>;
-
   HistogramRegistry registry{"Pi0EtaToGammaGamma"};
+  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
+  Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
 
   Configurable<bool> useRotation{"useRotation", 0, "use rotation method for EMC-EMC background estimation"};
   Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
@@ -129,16 +82,113 @@ struct Pi0EtaToGammaGamma {
   Configurable<float> EMC_Eoverp{"EMC_Eoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
   Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
 
+  OutputObj<THashList> fOutputEvent{"Event"};
+  OutputObj<THashList> fOutputPair{"Pair"}; // 2-photon pair
+  THashList* fMainList = new THashList();
+
+  std::vector<V0PhotonCut> fPCMCuts;
+  std::vector<PHOSPhotonCut> fPHOSCuts;
   std::vector<EMCPhotonCut> fEMCCuts;
 
+  std::vector<std::string> fPairNames;
   void init(InitContext& context)
   {
+    if (context.mOptions.get<bool>("processPCMPCM")) {
+      fPairNames.push_back("PCMPCM");
+    }
+    if (context.mOptions.get<bool>("processPHOSPHOS")) {
+      fPairNames.push_back("PHOSPHOS");
+    }
+    if (context.mOptions.get<bool>("processEMCEMC")) {
+      fPairNames.push_back("EMCEMC");
+    }
+    if (context.mOptions.get<bool>("processPCMPHOS")) {
+      fPairNames.push_back("PCMPHOS");
+    }
+    if (context.mOptions.get<bool>("processPCMEMC")) {
+      fPairNames.push_back("PCMEMC");
+    }
+    if (context.mOptions.get<bool>("processPHOSEMC")) {
+      fPairNames.push_back("PHOSEMC");
+    }
+
+    DefinePCMCuts();
+    DefinePHOSCuts();
+    DefineEMCCuts();
     addhistograms();
+
+    fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
+    fOutputPair.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Pair")));
+  }
+
+  Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
+  Filter collisionFilter_subsys = (o2::aod::emreducedevent::ngpcm >= 2) || (o2::aod::emreducedevent::ngphos >= 2) || (o2::aod::emreducedevent::ngemc >= 2) || (o2::aod::emreducedevent::ngpcm >= 1 && o2::aod::emreducedevent::ngphos >= 1) || (o2::aod::emreducedevent::ngpcm >= 1 && o2::aod::emreducedevent::ngemc >= 1) || (o2::aod::emreducedevent::ngphos >= 1 && o2::aod::emreducedevent::ngemc >= 1);
+
+  using MyFilteredCollisions = soa::Filtered<aod::EMReducedEvents>;
+
+  template <typename TCuts1, typename TCuts2>
+  void add_pair_histograms(THashList* list_pair, const std::string pairname, TCuts1 const& cuts1, TCuts2 const& cuts2)
+  {
+    for (auto& cut1 : cuts1) {
+      for (auto& cut2 : cuts2) {
+        std::string cutname1 = cut1.GetName();
+        std::string cutname2 = cut2.GetName();
+
+        if ((pairname == "PCMPCM" || pairname == "PHOSPHOS" || pairname == "EMCEMC") && (cutname1 != cutname2))
+          continue;
+
+        THashList* list_pair_subsys = reinterpret_cast<THashList*>(list_pair->FindObject(pairname.data()));
+        std::string pair_cut_name = cutname1 + "_" + cutname2;
+        o2::aod::emphotonhistograms::AddHistClass(list_pair_subsys, pair_cut_name.data());
+        THashList* list_pair_subsys_cut = reinterpret_cast<THashList*>(list_pair_subsys->FindObject(pair_cut_name.data()));
+        o2::aod::emphotonhistograms::DefineHistograms(list_pair_subsys_cut, "gammagamma_mass_pt");
+      } // end of cut2 loop
+    }   // end of cut1 loop
   }
 
   static constexpr std::string_view pairnames[6] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PHOSEMC"};
   void addhistograms()
   {
+    fMainList->SetOwner(true);
+    fMainList->SetName("fMainList");
+
+    // create sub lists first.
+    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Event");
+    THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
+
+    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Pair");
+    THashList* list_pair = reinterpret_cast<THashList*>(fMainList->FindObject("Pair"));
+
+    for (auto& pairname : fPairNames) {
+      LOGF(info, "Enabled pairs = %s", pairname.data());
+
+      o2::aod::emphotonhistograms::AddHistClass(list_ev, pairname.data());
+      THashList* list_ev_pair = reinterpret_cast<THashList*>(list_ev->FindObject(pairname.data()));
+      o2::aod::emphotonhistograms::DefineHistograms(list_ev_pair, "Event");
+
+      o2::aod::emphotonhistograms::AddHistClass(list_pair, pairname.data());
+
+      if (pairname == "PCMPCM") {
+        add_pair_histograms(list_pair, pairname, fPCMCuts, fPCMCuts);
+      }
+      if (pairname == "PHOSPHOS") {
+        add_pair_histograms(list_pair, pairname, fPHOSCuts, fPHOSCuts);
+      }
+      if (pairname == "EMCEMC") {
+        add_pair_histograms(list_pair, pairname, fEMCCuts, fEMCCuts);
+      }
+      if (pairname == "PCMPHOS") {
+        add_pair_histograms(list_pair, pairname, fPCMCuts, fPHOSCuts);
+      }
+      if (pairname == "PCMEMC") {
+        add_pair_histograms(list_pair, pairname, fPCMCuts, fEMCCuts);
+      }
+      if (pairname == "PHOSEMC") {
+        add_pair_histograms(list_pair, pairname, fPHOSCuts, fEMCCuts);
+      }
+
+    } // end of pair name loop
+
     for (int i = 0; i < 6; i++) {
       registry.add(Form("%s/hCollisionCounter", pairnames[i].data()), "Collision counter", HistType::kTH1F, {{5, 0.5f, 5.5f}});
       registry.add(Form("%s/hNgamma1", pairnames[i].data()), "Number of #gamma1 candidates per collision", HistType::kTH1F, {{101, -0.5f, 100.5f}});
@@ -149,7 +199,34 @@ struct Pi0EtaToGammaGamma {
     registry.add("EMCEMC/h2MggPt_Rotated", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/#it{c}^{2});p_{T,#gamma#gamma} (GeV/#it{c})", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}}, true);
   }
 
-  void DefineCuts()
+  void DefinePCMCuts()
+  {
+    TString cutNamesStr = fConfigPCMCuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        const char* cutname = objArray->At(icut)->GetName();
+        LOGF(info, "add cut : %s", cutname);
+        fPCMCuts.push_back(*pcmcuts::GetCut(cutname));
+      }
+    }
+    LOGF(info, "Number of PCM cuts = %d", fPCMCuts.size());
+  }
+  void DefinePHOSCuts()
+  {
+    TString cutNamesStr = fConfigPHOSCuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        const char* cutname = objArray->At(icut)->GetName();
+        LOGF(info, "add cut : %s", cutname);
+        fPHOSCuts.push_back(*phoscuts::GetCut(cutname));
+      }
+    }
+    LOGF(info, "Number of PHOS cuts = %d", fPHOSCuts.size());
+  }
+
+  void DefineEMCCuts()
   {
     const float a = EMC_TM_Eta->at(0);
     const float b = EMC_TM_Eta->at(1);
@@ -158,6 +235,8 @@ struct Pi0EtaToGammaGamma {
     const float d = EMC_TM_Phi->at(0);
     const float e = EMC_TM_Phi->at(1);
     const float f = EMC_TM_Phi->at(2);
+    LOGF(info, "EMCal track matching parameters : a = %f, b = %f, c = %f, d = %f, e = %f, f = %f", a, b, c, d, e, f);
+
     TString cutNamesStr = fConfigEMCCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
@@ -165,21 +244,22 @@ struct Pi0EtaToGammaGamma {
         const char* cutname = objArray->At(icut)->GetName();
         LOGF(info, "add cut : %s", cutname);
         if (std::strcmp(cutname, "custom") == 0) {
-          EMCPhotonCut custom_cut = EMCPhotonCut(cutname, cutname);
-          custom_cut.SetMinE(EMC_minE);
-          custom_cut.SetMinNCell(EMC_minNCell);
-          custom_cut.SetM02Range(EMC_minM02, EMC_maxM02);
-          custom_cut.SetTimeRange(EMC_minTime, EMC_maxTime);
+          EMCPhotonCut* custom_cut = new EMCPhotonCut(cutname, cutname);
+          custom_cut->SetMinE(EMC_minE);
+          custom_cut->SetMinNCell(EMC_minNCell);
+          custom_cut->SetM02Range(EMC_minM02, EMC_maxM02);
+          custom_cut->SetTimeRange(EMC_minTime, EMC_maxTime);
 
-          custom_cut.SetTrackMatchingEta([&a, &b, &c](float pT) {
+          custom_cut->SetTrackMatchingEta([&a, &b, &c](float pT) {
             return a + pow(pT + b, c);
           });
-          custom_cut.SetTrackMatchingPhi([&d, &e, &f](float pT) {
+          custom_cut->SetTrackMatchingPhi([&d, &e, &f](float pT) {
             return d + pow(pT + e, f);
           });
-          custom_cut.SetMinEoverP(EMC_Eoverp);
-          custom_cut.SetUseExoticCut(EMC_UseExoticCut);
-          fEMCCuts.push_back(custom_cut);
+
+          custom_cut->SetMinEoverP(EMC_Eoverp);
+          custom_cut->SetUseExoticCut(EMC_UseExoticCut);
+          fEMCCuts.push_back(*custom_cut);
         } else {
           fEMCCuts.push_back(*aod::emccuts::GetCut(cutname));
         }
@@ -192,55 +272,79 @@ struct Pi0EtaToGammaGamma {
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
-  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2>
-  void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2)
+  template <PairType pairtype, typename TG1, typename TG2, typename TCut1, typename TCut2>
+  bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const& cut2)
   {
-    constexpr int itmp = pairtype;
+    bool is_g1_passed = false;
+    bool is_g2_passed = false;
+    if constexpr (pairtype == PairType::kPCMPCM) {
+      is_g1_passed = cut1.template IsSelected<aod::V0Legs>(g1);
+      is_g2_passed = cut2.template IsSelected<aod::V0Legs>(g2);
+    } else if constexpr (pairtype == PairType::kPHOSPHOS) {
+      is_g1_passed = cut1.template IsSelected(g1);
+      is_g2_passed = cut2.template IsSelected(g2);
+    } else if constexpr (pairtype == PairType::kPCMPHOS) {
+      is_g1_passed = cut1.template IsSelected<aod::V0Legs>(g1);
+      is_g2_passed = cut2.template IsSelected(g2);
+    } else {
+      return true;
+    }
+    return (is_g1_passed & is_g2_passed);
+  }
+
+  // include fPCMCuts as an argument TCuts1, TCuts2 in template function
+  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TLegs>
+  void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TLegs const& legs)
+  {
     for (auto& collision : collisions) {
-      registry.fill(HIST(pairnames[itmp]) + HIST("/hCollisionCounter"), 1.0); // all
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hZvtx_before"))->Fill(collision.posZ());
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(1.0); // all
       if (!collision.sel8()) {
         continue;
       }
-      registry.fill(HIST(pairnames[itmp]) + HIST("/hCollisionCounter"), 2.0); // FT0VX i.e. FT0and
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(2.0); // FT0VX i.e. FT0and
 
       if (collision.numContrib() < 0.5) {
         continue;
       }
-      registry.fill(HIST(pairnames[itmp]) + HIST("/hCollisionCounter"), 3.0); // Ncontrib > 0
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(3.0); // Ncontrib > 0
 
       if (abs(collision.posZ()) > 10.0) {
         continue;
       }
-      registry.fill(HIST(pairnames[itmp]) + HIST("/hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hZvtx_after"))->Fill(collision.posZ());
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
 
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.collisionId());
       auto photons2_coll = photons2.sliceBy(perCollision2, collision.collisionId());
 
-      registry.fill(HIST(pairnames[itmp]) + HIST("/hNgamma1"), photons1_coll.size());
-      registry.fill(HIST(pairnames[itmp]) + HIST("/hNgamma2"), photons2_coll.size());
-      // LOGF(info, "Number of photon candidates in a collision: %d", photons1_coll.size());
-
-      if (pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) {
-        for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_coll, photons2_coll))) {
-
-          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          registry.fill(HIST(pairnames[itmp]) + HIST("/h2MggPt_Same"), v12.M(), v12.Pt());
-
-        } // end of combination
-
-      } else {
-        for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_coll, photons2_coll))) {
-
-          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          registry.fill(HIST(pairnames[itmp]) + HIST("/h2MggPt_Same"), v12.M(), v12.Pt());
-
-        } // end of combination
+      if constexpr (pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) {
+        for (auto& cut : cuts1) {
+          for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_coll, photons2_coll))) {
+            if (!IsSelectedPair<pairtype>(g1, g2, cut, cut)) {
+              continue;
+            }
+            ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+            ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+            ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+            reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
+          }    // end of combination
+        }      // end of cut loop
+      } else { // different subsystem pairs
+        for (auto& cut1 : cuts1) {
+          for (auto& cut2 : cuts2) {
+            for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_coll, photons2_coll))) {
+              if (IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
+                continue;
+              }
+              ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+              ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+              ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
+            } // end of combination
+          }   // end of cut2 loop
+        }     // end of cut1 loop
       }
-
     } // end of collision loop
   }
 
@@ -286,27 +390,66 @@ struct Pi0EtaToGammaGamma {
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
   BinningType colBinning{{ConfVtxBins}, true};
 
-  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2>
-  void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2)
+  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TLegs>
+  void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TLegs const& legs)
   {
-    constexpr int itmp = pairtype;
     // LOGF(info, "Number of collisions after filtering: %d", collisions.size());
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) {
-      // LOGF(info, "Mixed event collisionId: (%d, %d)", collision1.collisionId(), collision2.collisionId());
+    int nev = 0; // event counter for collision1
+    int index_coll1 = -999;
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 1e+3, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
+
+      if (nev > ndepth) {
+        continue;
+      }
+
+      if (index_coll1 != collision1.collisionId()) {
+        index_coll1 = collision1.collisionId();
+        nev = 0; // reset event counter for mixing, when collision index of collision1 changes.
+      }
+
+      if (pairtype == PairType::kPCMPCM && (collision1.ngpcm() < 2 || collision2.ngpcm() < 2)) {
+        continue;
+      } else if (pairtype == PairType::kPHOSPHOS && (collision1.ngphos() < 2 || collision2.ngphos() < 2)) {
+        continue;
+      } else if (pairtype == PairType::kEMCEMC && (collision1.ngemc() < 2 || collision2.ngemc() < 2)) {
+        continue;
+      } else if (pairtype == PairType::kPCMPHOS && ((collision1.ngpcm() < 1 || collision1.ngphos() < 1) || (collision2.ngpcm() < 1 || collision2.ngphos() < 1))) {
+        continue;
+      } else if (pairtype == PairType::kPCMEMC && ((collision1.ngpcm() < 1 || collision1.ngemc() < 1) || (collision2.ngpcm() < 1 || collision2.ngemc() < 1))) {
+        continue;
+      } else if (pairtype == PairType::kPHOSEMC && ((collision1.ngphos() < 1 || collision1.ngemc() < 1) || (collision2.ngphos() < 1 || collision2.ngemc() < 1))) {
+        continue;
+      }
+
+      // LOGF(info, "Mixed event collisionId: (%d, %d) , counter = %d, ngpcm: (%d, %d), ngphos: (%d, %d), ngemc: (%d, %d)",
+      //     collision1.collisionId(), collision2.collisionId(), nev, collision1.ngpcm(), collision2.ngpcm(), collision1.ngphos(), collision2.ngphos(), collision1.ngemc(), collision2.ngemc());
+
       auto photons_coll1 = photons1.sliceBy(perCollision1, collision1.collisionId());
       auto photons_coll2 = photons2.sliceBy(perCollision2, collision2.collisionId());
-      // LOGF(info, "collision1: posZ = %f, numContrib = %d , sel8 = %d, ngpcm = %d , ngphos = %d , ngemc = %d", collision1.posZ(), collision1.numContrib(), collision1.sel8(), collision1.ngpcm(), collision1.ngphos(), collision1.ngemc());
+      // LOGF(info, "collision1: posZ = %f, numContrib = %d , sel8 = %d | collision2: posZ = %f, numContrib = %d , sel8 = %d",
+      //     collision1.posZ(), collision1.numContrib(), collision1.sel8(), collision2.posZ(), collision2.numContrib(), collision2.sel8());
 
-      for (auto& [g1, g2] : combinations(soa::CombinationsFullIndexPolicy(photons_coll1, photons_coll2))) {
-        // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.collisionId(), g2.collisionId());
+      for (auto& cut1 : cuts1) {
+        for (auto& cut2 : cuts2) {
+          for (auto& [g1, g2] : combinations(soa::CombinationsFullIndexPolicy(photons_coll1, photons_coll2))) {
+            // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.collisionId(), g2.collisionId());
 
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-        registry.fill(HIST(pairnames[itmp]) + HIST("/h2MggPt_Mixed"), v12.M(), v12.Pt());
+            if ((pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) && (TString(cut1.GetName()) != TString(cut2.GetName()))) {
+              continue;
+            }
+            if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
+              continue;
+            }
 
-      } // end of different photon combinations
+            ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+            ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+            ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+            reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Mixed"))->Fill(v12.M(), v12.Pt());
 
+          } // end of different photon combinations
+        }   // end of cut2 loop
+      }     // end of cut1 loop
+      nev++;
     } // end of different collision combinations
   }
 
@@ -371,16 +514,16 @@ struct Pi0EtaToGammaGamma {
   Filter v0filter = o2::aod::v0photonflag::isCloser == true;
   using MyFilteredV0Photons = soa::Filtered<MyV0Photons>;
 
-  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyFilteredV0Photons const& v0photons)
+  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyFilteredV0Photons const& v0photons, aod::V0Legs const& legs)
   {
-    SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision, perCollision);
-    MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision);
+    SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision, perCollision, fPCMCuts, fPCMCuts, legs);
+    MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision, fPCMCuts, fPCMCuts, legs);
   }
 
   void processPHOSPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters)
   {
-    SameEventPairing<PairType::kPHOSPHOS>(collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos);
-    MixedEventPairing<PairType::kPHOSPHOS>(filtered_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos);
+    SameEventPairing<PairType::kPHOSPHOS>(collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, nullptr);
+    MixedEventPairing<PairType::kPHOSPHOS>(filtered_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, nullptr);
   }
 
   void processEMCEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::SkimEMCClusters const& emcclusters)
@@ -388,27 +531,27 @@ struct Pi0EtaToGammaGamma {
     if (useRotation) {
       SameEventPairingWithRotation(collisions, emcclusters);
     } else {
-      SameEventPairing<PairType::kEMCEMC>(collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc);
+      SameEventPairing<PairType::kEMCEMC>(collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fEMCCuts, fEMCCuts, nullptr);
     }
-    MixedEventPairing<PairType::kEMCEMC>(filtered_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc);
+    MixedEventPairing<PairType::kEMCEMC>(filtered_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fEMCCuts, fEMCCuts, nullptr);
   }
 
-  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyFilteredV0Photons const& v0photons, aod::PHOSClusters const& phosclusters)
+  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyFilteredV0Photons const& v0photons, aod::PHOSClusters const& phosclusters, aod::V0Legs const& legs)
   {
-    SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision, perCollision_phos);
-    MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision, perCollision_phos);
+    SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision, perCollision_phos, fPCMCuts, fPHOSCuts, legs);
+    MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision, perCollision_phos, fPCMCuts, fPHOSCuts, legs);
   }
 
-  void processPCMEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyFilteredV0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters)
+  void processPCMEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyFilteredV0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters, aod::V0Legs const& legs)
   {
-    SameEventPairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision, perCollision_emc);
-    MixedEventPairing<PairType::kPCMEMC>(filtered_collisions, v0photons, emcclusters, perCollision, perCollision_emc);
+    SameEventPairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision, perCollision_emc, fPCMCuts, fEMCCuts, legs);
+    MixedEventPairing<PairType::kPCMEMC>(filtered_collisions, v0photons, emcclusters, perCollision, perCollision_emc, fPCMCuts, fEMCCuts, legs);
   }
 
   void processPHOSEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
   {
-    SameEventPairing<PairType::kPHOSEMC>(collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc);
-    MixedEventPairing<PairType::kPHOSEMC>(filtered_collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc);
+    SameEventPairing<PairType::kPHOSEMC>(collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc, fPHOSCuts, fEMCCuts, nullptr);
+    MixedEventPairing<PairType::kPHOSEMC>(filtered_collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc, fPHOSCuts, fEMCCuts, nullptr);
   }
 
   void processDummy(aod::EMReducedEvents::iterator const& collision)
