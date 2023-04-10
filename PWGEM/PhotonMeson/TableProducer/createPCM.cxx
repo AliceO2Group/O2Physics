@@ -67,7 +67,7 @@ struct createPCM {
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
   Configurable<float> minv0cospa{"minv0cospa", 0.95, "minimum V0 CosPA"};
-  Configurable<float> maxdcav0dau{"maxdcav0dau", 2.0, "max DCA between V0 Daughters"};
+  Configurable<float> maxdcav0dau{"maxdcav0dau", 1.5, "max DCA between V0 Daughters"};
   Configurable<float> v0Rmin{"v0Rmin", 0.0, "v0Rmin"};
   Configurable<float> v0Rmax{"v0Rmax", 180.0, "v0Rmax"};
   Configurable<float> dcamin{"dcamin", 0.1, "dcamin"};
