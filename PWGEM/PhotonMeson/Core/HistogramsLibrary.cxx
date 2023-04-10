@@ -73,11 +73,11 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
 
   if (TString(histClass) == "gammagamma_mass_pt") {
     // LOGF(info, "Add 2 photon histograms");
-    list->Add(new TH2F("hMggPt_Same", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", 400, 0, 0.8, 400, 0.0f, 40));
-    list->Add(new TH2F("hMggPt_Mixed", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", 400, 0, 0.8, 400, 0.0f, 40));
+    list->Add(new TH2F("hMggPt_Same", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", 400, 0, 0.8, 400, 0.0f, 40));
+    list->Add(new TH2F("hMggPt_Mixed", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", 400, 0, 0.8, 400, 0.0f, 40));
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
-    // registry.add("EMCEMC/h2MggPt_Rotated", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/#it{c}^{2});p_{T,#gamma#gamma} (GeV/#it{c})", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}}, true);
+    // registry.add("EMCEMC/h2MggPt_Rotated", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/#it{c}^{2});p_{T,#gamma#gamma} (GeV/#it{c})", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}}, true);
   }
 
   if (TString(histClass) == "Generated") {
@@ -102,6 +102,16 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     // if (TString(subGroup) == "Pi0Eta") {
     // }
   }
+
+  if (TString(histClass) == "tagged_photon") {
+    list->Add(new TH2F("hMggPt_Same", "m_{ee#gamma} vs. p_{T,ee};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c)", 200, 0, 0.4, 100, 0.0f, 10));
+    list->Add(new TH2F("hMggPt_Mixed", "m_{ee#gamma} vs. p_{T,ee};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c)", 200, 0, 0.4, 100, 0.0f, 10));
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
+  }
+
+
+
 }
 void o2::aod::emphotonhistograms::AddHistClass(THashList* list, const char* histClass)
 {
