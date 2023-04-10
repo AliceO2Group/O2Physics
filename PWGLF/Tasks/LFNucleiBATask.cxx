@@ -1508,7 +1508,7 @@ struct LFNucleiBATask {
                 histos.fill(HIST("tracks/evtime/ft0tof/proton/h3ProtonNSigmaTPCvsNSigmaTOFvsPt"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
               if (enableDe)
                 histos.fill(HIST("tracks/evtime/ft0tof/deuteron/h3DeuteronNSigmaTPCvsNSigmaTOFvsPt"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
-              if (enableDebug && (track.beta() < betaCut)) {
+              if (enableDebug && (track.beta() > betaCut)) {
                 if (enablePr)
                   histos.fill(HIST("debug/evtime/ft0tof/proton/h2ProtonVspTNSigmaTPC_BetaCut"), track.pt(), track.tpcNSigmaPr());
                 if (enableDe)
@@ -1540,7 +1540,7 @@ struct LFNucleiBATask {
                 histos.fill(HIST("tracks/evtime/ft0/proton/h3ProtonNSigmaTPCvsNSigmaTOFvsPt"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
               if (enableDe)
                 histos.fill(HIST("tracks/evtime/ft0/deuteron/h3DeuteronNSigmaTPCvsNSigmaTOFvsPt"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
-              if (enableDebug && (track.beta() < betaCut)) {
+              if (enableDebug && (track.beta() > betaCut)) {
                 if (enablePr)
                   histos.fill(HIST("debug/evtime/ft0/proton/h2ProtonVspTNSigmaTPC_BetaCut"), track.pt(), track.tpcNSigmaPr());
                 if (enableDe)
@@ -1573,7 +1573,7 @@ struct LFNucleiBATask {
                 histos.fill(HIST("tracks/evtime/tof/proton/h3ProtonNSigmaTPCvsNSigmaTOFvsPt"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
               if (enableDe)
                 histos.fill(HIST("tracks/evtime/tof/deuteron/h3DeuteronNSigmaTPCvsNSigmaTOFvsPt"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
-              if (enableDebug && (track.beta() < betaCut)) {
+              if (enableDebug && (track.beta() > betaCut)) {
                 if (enablePr)
                   histos.fill(HIST("debug/evtime/tof/proton/h2ProtonVspTNSigmaTPC_BetaCut"), track.pt(), track.tpcNSigmaPr());
                 if (enableDe)
@@ -1607,7 +1607,7 @@ struct LFNucleiBATask {
                 histos.fill(HIST("tracks/evtime/fill/proton/h3ProtonNSigmaTPCvsNSigmaTOFvsPt"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
               if (enableDe)
                 histos.fill(HIST("tracks/evtime/fill/deuteron/h3DeuteronNSigmaTPCvsNSigmaTOFvsPt"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
-              if (enableDebug && (track.beta() < betaCut)) {
+              if (enableDebug && (track.beta() > betaCut)) {
                 if (enablePr)
                   histos.fill(HIST("debug/evtime/fill/proton/h2ProtonVspTNSigmaTPC_BetaCut"), track.pt(), track.tpcNSigmaPr());
                 if (enableDe)
@@ -1694,7 +1694,7 @@ struct LFNucleiBATask {
                 histos.fill(HIST("tracks/evtime/ft0tof/proton/h3antiProtonNSigmaTPCvsNSigmaTOFvsPt"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
               if (enableDe)
                 histos.fill(HIST("tracks/evtime/ft0tof/deuteron/h3antiDeuteronNSigmaTPCvsNSigmaTOFvsPt"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
-              if (enableDebug && (track.beta() < betaCut)) {
+              if (enableDebug && (track.beta() > betaCut)) {
                 if (enablePr)
                   histos.fill(HIST("debug/evtime/ft0tof/proton/h2antiProtonVspTNSigmaTPC_BetaCut"), track.pt(), track.tpcNSigmaPr());
                 if (enableDe)
@@ -2032,7 +2032,7 @@ struct LFNucleiBATask {
               if (track.sign() > 0) {
                 histos.fill(HIST("tracks/proton/h2TOFmassProtonVsPt"), massTOF, track.pt());
                 histos.fill(HIST("tracks/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - fMassProton * fMassProton, track.pt());
-                if (enableBetaCut && (track.beta() < betaCut)) {
+                if (enableBetaCut && (track.beta() > betaCut)) {
                   histos.fill(HIST("tracks/proton/h2TOFmassProtonVsPt_BetaCut"), massTOF, track.pt());
                   histos.fill(HIST("tracks/proton/h2TOFmass2ProtonVsPt_BetaCut"), massTOF * massTOF - fMassProton * fMassProton, track.pt());
                 }
@@ -2061,7 +2061,7 @@ struct LFNucleiBATask {
                   histos.fill(HIST("tracks/eff/hPtantiPrTOF"), track.pt());
                 histos.fill(HIST("tracks/proton/h2TOFmassantiProtonVsPt"), massTOF, track.pt());
                 histos.fill(HIST("tracks/proton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - fMassProton * fMassProton, track.pt());
-                if (enableBetaCut && (track.beta() < betaCut)) {
+                if (enableBetaCut && (track.beta() > betaCut)) {
                   histos.fill(HIST("tracks/proton/h2TOFmassantiProtonVsPt_BetaCut"), massTOF, track.pt());
                   histos.fill(HIST("tracks/proton/h2TOFmass2antiProtonVsPt_BetaCut"), massTOF * massTOF - fMassProton * fMassProton, track.pt());
                 }
@@ -2096,7 +2096,7 @@ struct LFNucleiBATask {
                   histos.fill(HIST("tracks/eff/hPtDeTOF"), track.pt());
                 histos.fill(HIST("tracks/deuteron/h2TOFmassDeuteronVsPt"), massTOF, track.pt());
                 histos.fill(HIST("tracks/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - fMassDeuteron * fMassDeuteron, track.pt());
-                if (enableBetaCut && (track.beta() < betaCut)) {
+                if (enableBetaCut && (track.beta() > betaCut)) {
                   histos.fill(HIST("tracks/deuteron/h2TOFmassDeuteronVsPt_BetaCut"), massTOF, track.pt());
                   histos.fill(HIST("tracks/deuteron/h2TOFmass2DeuteronVsPt_BetaCut"), massTOF * massTOF - fMassDeuteron * fMassDeuteron, track.pt());
                 }
@@ -2126,7 +2126,7 @@ struct LFNucleiBATask {
                   histos.fill(HIST("tracks/eff/hPtantiDeTOF"), track.pt());
                 histos.fill(HIST("tracks/deuteron/h2TOFmassantiDeuteronVsPt"), massTOF, track.pt());
                 histos.fill(HIST("tracks/deuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - fMassDeuteron * fMassDeuteron, track.pt());
-                if (enableBetaCut && (track.beta() < betaCut)) {
+                if (enableBetaCut && (track.beta() > betaCut)) {
                   histos.fill(HIST("tracks/deuteron/h2TOFmassantiDeuteronVsPt_BetaCut"), massTOF, track.pt());
                   histos.fill(HIST("tracks/deuteron/h2TOFmass2antiDeuteronVsPt_BetaCut"), massTOF * massTOF - fMassDeuteron * fMassDeuteron, track.pt());
                 }
@@ -2162,7 +2162,7 @@ struct LFNucleiBATask {
                   histos.fill(HIST("tracks/eff/hPtTrTOF"), track.pt());
                 histos.fill(HIST("tracks/triton/h2TOFmassTritonVsPt"), massTOF, track.pt());
                 histos.fill(HIST("tracks/triton/h2TOFmass2TritonVsPt"), massTOF * massTOF - fMassTriton * fMassTriton, track.pt());
-                if (enableBetaCut && (track.beta() < betaCut)) {
+                if (enableBetaCut && (track.beta() > betaCut)) {
                   histos.fill(HIST("tracks/triton/h2TOFmassTritonVsPt_BetaCut"), massTOF, track.pt());
                   histos.fill(HIST("tracks/triton/h2TOFmass2TritonVsPt_BetaCut"), massTOF * massTOF - fMassTriton * fMassTriton, track.pt());
                 }
@@ -2174,7 +2174,7 @@ struct LFNucleiBATask {
                   histos.fill(HIST("tracks/eff/hPtantiTrTOF"), track.pt());
                 histos.fill(HIST("tracks/triton/h2TOFmassantiTritonVsPt"), massTOF, track.pt());
                 histos.fill(HIST("tracks/triton/h2TOFmass2antiTritonVsPt"), massTOF * massTOF - fMassTriton * fMassTriton, track.pt());
-                if (enableBetaCut && (track.beta() < betaCut)) {
+                if (enableBetaCut && (track.beta() > betaCut)) {
                   histos.fill(HIST("tracks/triton/h2TOFmassantiTritonVsPt_BetaCut"), massTOF, track.pt());
                   histos.fill(HIST("tracks/triton/h2TOFmass2antiTritonVsPt_BetaCut"), massTOF * massTOF - fMassTriton * fMassTriton, track.pt());
                 }
@@ -2192,7 +2192,7 @@ struct LFNucleiBATask {
                   histos.fill(HIST("tracks/eff/hPtHeTOF"), track.pt());
                 histos.fill(HIST("tracks/helium/h2TOFmassHeliumVsPt"), massTOF, track.pt());
                 histos.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt"), massTOF * massTOF - fMassHelium * fMassHelium, track.pt());
-                if (enableBetaCut && (track.beta() < betaCut)) {
+                if (enableBetaCut && (track.beta() > betaCut)) {
                   histos.fill(HIST("tracks/helium/h2TOFmassHeliumVsPt_BetaCut"), massTOF, track.pt());
                   histos.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt_BetaCut"), massTOF * massTOF - fMassHelium * fMassHelium, track.pt());
                 }
@@ -2206,7 +2206,7 @@ struct LFNucleiBATask {
                   histos.fill(HIST("tracks/eff/hPtantiHeTOF"), track.pt());
                 histos.fill(HIST("tracks/helium/h2TOFmassantiHeliumVsPt"), massTOF, track.pt());
                 histos.fill(HIST("tracks/helium/h2TOFmass2antiHeliumVsPt"), massTOF * massTOF - fMassHelium * fMassHelium, track.pt());
-                if (enableBetaCut && (track.beta() < betaCut)) {
+                if (enableBetaCut && (track.beta() > betaCut)) {
                   histos.fill(HIST("tracks/helium/h2TOFmassantiHeliumVsPt_BetaCut"), massTOF, track.pt());
                   histos.fill(HIST("tracks/helium/h2TOFmass2antiHeliumVsPt_BetaCut"), massTOF * massTOF - fMassHelium * fMassHelium, track.pt());
                 }
