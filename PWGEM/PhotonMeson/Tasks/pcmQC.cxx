@@ -48,46 +48,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 
-struct LabelUniqueV0 {
-  Produces<aod::V0PhotonFlags> v0flags;
-
-  Preslice<aod::V0Photons> perCollision = aod::v0photon::collisionId;
-  void process(aod::EMReducedEvents::iterator const& collision, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs)
-  {
-    auto v0photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
-
-    for (auto& g1 : v0photons_coll) {
-      auto pos1 = g1.posTrack_as<aod::V0Legs>();
-      auto ele1 = g1.negTrack_as<aod::V0Legs>();
-      bool flag = true;
-
-      int posid1 = pos1.trackId(); // unique index to point o2::track
-      int eleid1 = ele1.trackId(); // unique index to point o2::track
-      float pca1 = g1.pca();
-
-      for (auto& g2 : v0photons_coll) {
-        if (g2.index() == g1.index()) {
-          continue;
-        }
-
-        auto pos2 = g2.posTrack_as<aod::V0Legs>();
-        auto ele2 = g2.negTrack_as<aod::V0Legs>();
-        int posid2 = pos2.trackId(); // unique index to point o2::track
-        int eleid2 = ele2.trackId(); // unique index to point o2::track
-        float pca2 = g2.pca();
-
-        if ((posid2 == posid1 || eleid2 == eleid1) && pca1 > pca2) {
-          // LOGF(info, "g1 id = %d , g2 id = %d , posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f", g1.index(), g2.index(), posid1, eleid1, posid2, eleid2, pca1, pca2);
-          flag = false;
-          break;
-        }
-      }
-      v0flags(flag);
-    }
-  }
-};
-
-using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF, aod::V0PhotonFlags>;
+using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct PCMQC {
@@ -199,10 +160,8 @@ struct PCMQC {
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hKFChi2vsZ_recalc"))->Fill(v0.recalculatedVtxZ(), v0.chiSquareNDF());
   }
 
-  Filter v0filter = o2::aod::v0photonflag::isCloser == true;
-  using MyFilteredV0Photons = soa::Filtered<MyV0Photons>;
   Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
-  void processQC(aod::EMReducedEvents const& collisions, MyFilteredV0Photons const& v0photons, aod::V0Legs const& v0legs)
+  void processQC(aod::EMReducedEvents const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& v0legs)
   {
     for (auto& collision : collisions) {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
@@ -251,6 +210,5 @@ struct PCMQC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<LabelUniqueV0>(cfgc, TaskName{"label-unique-v0"}),
     adaptAnalysisTask<PCMQC>(cfgc, TaskName{"pcm-qc"})};
 }
