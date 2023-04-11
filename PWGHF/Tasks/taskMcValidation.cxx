@@ -494,7 +494,7 @@ struct HfTaskMcValidationRec {
         }
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
         histTracks->Fill(origin, track.pt());
-        bool isAmbiguous = (track.compatibleCollIds().size() != 1); 
+        bool isAmbiguous = (track.compatibleCollIds().size() != 1);
         if (isAmbiguous) {
           registry.fill(HIST("histAmbiguousTrackNumCollisions"), track.compatibleCollIds().size());
           histAmbiguousTracks->Fill(origin, track.pt());
