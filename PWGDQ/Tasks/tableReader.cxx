@@ -106,6 +106,7 @@ constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMu
 constexpr static int pairTypeEE = VarManager::kDecayToEE;
 constexpr static int pairTypeMuMu = VarManager::kDecayToMuMu;
 constexpr static int pairTypeEMu = VarManager::kElectronMuon;
+constexpr static int pairTypePiPi = VarManager::kDecayToPiPi;
 
 // Global function used to define needed histogram classes
 void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar); // defines histograms for all tasks
@@ -779,7 +780,7 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedWithCov") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
+    if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedWithCov") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmed") || context.mOptions.get<bool>("processDecayToPiPiSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
       TString cutNames = fConfigTrackCuts.value;
       if (!cutNames.IsNull()) { // if track cuts
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
@@ -935,7 +936,7 @@ struct AnalysisSameEventPairing {
       dimuonAllList.reserve(1);
     }
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
-      if constexpr (TPairType == VarManager::kDecayToEE) {
+      if constexpr (TPairType == VarManager::kDecayToEE || TPairType == VarManager::kDecayToPiPi) {
         twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
       }
       if constexpr (TPairType == VarManager::kDecayToMuMu) {
@@ -956,6 +957,10 @@ struct AnalysisSameEventPairing {
         if constexpr (eventHasQvector) {
           VarManager::FillPairVn<TPairType>(t1, t2);
         }
+      }
+
+      if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventVtxCov)) {
+        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
       }
 
       // TODO: provide the type of pair to the dilepton table (e.g. ee, mumu, emu...)
@@ -1013,7 +1018,7 @@ struct AnalysisSameEventPairing {
     }   // end loop over pairs
   }
 
-  void processDecayToEESkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
+  void processDecayToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
@@ -1076,6 +1081,13 @@ struct AnalysisSameEventPairing {
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
     runSameEventPairing<VarManager::kElectronMuon, gkEventFillMap, gkTrackFillMap>(event, tracks, muons);
   }
+  void processDecayToPiPiSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
+  {
+    // Reset the fValues array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
+    runSameEventPairing<VarManager::kDecayToPiPi, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
+  }
   void processAllSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     // Reset the fValues array
@@ -1100,6 +1112,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processVnDecayToEESkimmed, "Run electron-electron pairing, with skimmed tracks for vn", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processVnDecayToMuMuSkimmed, "Run muon-muon pairing, with skimmed tracks for vn", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processElectronMuonSkimmed, "Run electron-muon pairing, with skimmed tracks/muons", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToPiPiSkimmed, "Run pion-pion pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processAllSkimmed, "Run all types of pairing, with skimmed tracks/muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
 };
