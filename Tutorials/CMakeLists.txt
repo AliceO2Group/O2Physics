@@ -232,3 +232,8 @@ o2physics_add_dpl_workflow(strangeness-step1
                   SOURCES PWGLF/strangeness_step1.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(strangeness-step2
+                  SOURCES PWGLF/strangeness_step2.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
