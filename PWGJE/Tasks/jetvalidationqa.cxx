@@ -10,8 +10,8 @@
 // or submit itself to any jurisdiction.
 ///
 //  \author
-//	Johanna Lömker
-//	\since Dec 2022
+//  Johanna Lömker
+//  \since Dec 2022
 // The goal would be to set up the jet, track and event/collision QA's for the validation framework
 // Staring with the hybrid tracks
 
