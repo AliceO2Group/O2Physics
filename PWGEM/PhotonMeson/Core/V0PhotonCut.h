@@ -148,7 +148,7 @@ class V0PhotonCut : public TNamed
   template <typename T>
   bool IsSelectedV0(T const& v0, const V0PhotonCuts& cut) const
   {
-    const float margin = 0.5; // cm
+    const float margin = 1.0; // cm
     switch (cut) {
       case V0PhotonCuts::kMee:
         return v0.mGamma() <= ((mMaxMeePsiPairDep) ? mMaxMeePsiPairDep(abs(v0.psipair())) : mMaxMee);

@@ -49,7 +49,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF, aod::V0PhotonFlags>;
+using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct Pi0EtaToGammaGamma {
@@ -334,7 +334,7 @@ struct Pi0EtaToGammaGamma {
         for (auto& cut1 : cuts1) {
           for (auto& cut2 : cuts2) {
             for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_coll, photons2_coll))) {
-              if (IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
+              if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
                 continue;
               }
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
@@ -511,10 +511,7 @@ struct Pi0EtaToGammaGamma {
     }
   }
 
-  Filter v0filter = o2::aod::v0photonflag::isCloser == true;
-  using MyFilteredV0Photons = soa::Filtered<MyV0Photons>;
-
-  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyFilteredV0Photons const& v0photons, aod::V0Legs const& legs)
+  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
   {
     SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision, perCollision, fPCMCuts, fPCMCuts, legs);
     MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision, fPCMCuts, fPCMCuts, legs);
@@ -536,13 +533,13 @@ struct Pi0EtaToGammaGamma {
     MixedEventPairing<PairType::kEMCEMC>(filtered_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fEMCCuts, fEMCCuts, nullptr);
   }
 
-  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyFilteredV0Photons const& v0photons, aod::PHOSClusters const& phosclusters, aod::V0Legs const& legs)
+  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::PHOSClusters const& phosclusters, aod::V0Legs const& legs)
   {
     SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision, perCollision_phos, fPCMCuts, fPHOSCuts, legs);
     MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision, perCollision_phos, fPCMCuts, fPHOSCuts, legs);
   }
 
-  void processPCMEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyFilteredV0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters, aod::V0Legs const& legs)
+  void processPCMEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters, aod::V0Legs const& legs)
   {
     SameEventPairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision, perCollision_emc, fPCMCuts, fEMCCuts, legs);
     MixedEventPairing<PairType::kPCMEMC>(filtered_collisions, v0photons, emcclusters, perCollision, perCollision_emc, fPCMCuts, fEMCCuts, legs);
@@ -571,6 +568,5 @@ struct Pi0EtaToGammaGamma {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    //    adaptAnalysisTask<LabelUniqueV0>(cfgc, TaskName{"label-unique-v0"}),
     adaptAnalysisTask<Pi0EtaToGammaGamma>(cfgc, TaskName{"pi0eta-to-gammagamma"})};
 }

@@ -391,9 +391,7 @@ struct EmcalCorrectionTask {
     // to build the clusters.
     mAnalysisClusters.clear();
     mClusterFactories.reset();
-    mClusterFactories.setClustersContainer(*emcalClusters);
-    mClusterFactories.setCellsContainer(cellsBC);
-    mClusterFactories.setCellsIndicesContainer(*emcalClustersInputIndices);
+    mClusterFactories.setContainer(*emcalClusters, cellsBC, *emcalClustersInputIndices);
 
     LOG(debug) << "Cluster factory set up.";
     // Convert to analysis clusters.
