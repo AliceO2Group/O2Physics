@@ -159,6 +159,11 @@ struct TrackPropagation {
     o2::dataformats::DCA dcaInfoCov;
     o2::dataformats::VertexBase vtx;
 
+    tracksParPropagated.reserve(tracks.size());
+    tracksParExtensionPropagated.reserve(tracks.size());
+    tracksParCovPropagated.reserve(tracks.size());
+    tracksParCovExtensionPropagated.reserve(tracks.size());
+
     for (auto& track : tracks) {
       dcaInfoCov.set(999, 999, 999, 999, 999);
       auto trackParCov = getTrackParCov(track);

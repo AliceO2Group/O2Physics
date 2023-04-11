@@ -50,6 +50,7 @@ using namespace o2::dataformats;
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 struct qaEventTrack {
+  SliceCache cache;
 
   // general steering settings
   Configurable<bool> isRun3{"isRun3", false, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
@@ -596,8 +597,8 @@ struct qaEventTrack {
       return;
     }
 
-    auto tracksIU = tracksIUFiltered->sliceByCached(aod::track::collisionId, collision.globalIndex());
-    auto tracksDCA = tracksFilteredCorrIU->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto tracksIU = tracksIUFiltered->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksDCA = tracksFilteredCorrIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     // LOG(info) << "===> tracksIU.size()=" << tracksIU.size() << "===> tracksDCA.size()" << tracksDCA.size();
 
     uint64_t trackIndex = 0;

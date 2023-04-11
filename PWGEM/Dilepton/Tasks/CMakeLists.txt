@@ -20,10 +20,10 @@ o2physics_add_dpl_workflow(v0-gamma-qa
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lmee-lf-cocktail
-                    SOURCES lmeeLFCocktail.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+o2physics_add_executable(lmee-lf-cocktail
+                  SOURCES lmeeLFCocktail.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2::SimulationDataFormat
+                  COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mc-templates
                     SOURCES MCtemplates.cxx

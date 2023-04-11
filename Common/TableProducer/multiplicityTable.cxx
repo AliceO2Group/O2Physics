@@ -22,10 +22,11 @@ using namespace o2::framework;
 #include "iostream"
 
 struct MultiplicityTableTaskIndexed {
+  SliceCache cache;
   Produces<aod::Mults> mult;
   Produces<aod::MultZeqs> multzeq;
 
-  //For vertex-Z corrections in calibration
+  // For vertex-Z corrections in calibration
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Partition<soa::Join<aod::Tracks, aod::TracksExtra>> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
@@ -33,7 +34,7 @@ struct MultiplicityTableTaskIndexed {
   Partition<soa::Join<aod::Tracks, aod::TracksExtra>> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Partition<soa::Join<aod::Tracks, aod::TracksExtra>> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
 
-  //Configurable
+  // Configurable
   Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
 
   int mRunNumber;
@@ -68,7 +69,7 @@ struct MultiplicityTableTaskIndexed {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false); //don't fatal, please - exception is caught explicitly (as it should)
+    ccdb->setFatalWhenNull(false); // don't fatal, please - exception is caught explicitly (as it should)
   }
 
   void processRun2(aod::Run2MatchedSparse::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra, aod::BCs const&, aod::Zdcs const&, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::FT0s const& ft0s)
@@ -82,8 +83,8 @@ struct MultiplicityTableTaskIndexed {
     float multZNA = 0.f;
     float multZNC = 0.f;
 
-    auto trackletsGrouped = run2tracklets->sliceByCached(aod::track::collisionId, collision.globalIndex());
-    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto trackletsGrouped = run2tracklets->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     int multTracklets = trackletsGrouped.size();
     int multTPC = tracksGrouped.size();
     int multNContribs = 0;
@@ -138,9 +139,9 @@ struct MultiplicityTableTaskIndexed {
     float multZeqFDDC = 0.f;
     float multZeqNContribs = 0.f;
 
-    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
-    auto pvContribsGrouped = pvContribTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());
-    auto pvContribsEta1Grouped = pvContribTracksEta1->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto pvContribsGrouped = pvContribTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto pvContribsEta1Grouped = pvContribTracksEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     int multTPC = tracksGrouped.size();
     int multNContribs = pvContribsGrouped.size();
     int multNContribsEta1 = pvContribsEta1Grouped.size();
@@ -149,7 +150,7 @@ struct MultiplicityTableTaskIndexed {
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
     if (doVertexZeq > 0) {
       if (bc.runNumber() != mRunNumber) {
-        mRunNumber = bc.runNumber(); //mark this run as at least tried
+        mRunNumber = bc.runNumber(); // mark this run as at least tried
         lCalibObjects = ccdb->getForTimeStamp<TList>("Centrality/Calibration", bc.timestamp());
         if (lCalibObjects) {
           hVtxZFV0A = (TProfile*)lCalibObjects->FindObject("hVtxZFV0A");
@@ -159,7 +160,7 @@ struct MultiplicityTableTaskIndexed {
           hVtxZFDDC = (TProfile*)lCalibObjects->FindObject("hVtxZFDDC");
           hVtxZNTracks = (TProfile*)lCalibObjects->FindObject("hVtxZNTracksPV");
           lCalibLoaded = true;
-          //Capture error
+          // Capture error
           if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
             LOGF(error, "Problem loading CCDB objects! Please check");
             lCalibLoaded = false;

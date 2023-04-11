@@ -17,5 +17,6 @@ o2physics_add_library(PWGJECore
 o2physics_target_root_dictionary(PWGJECore
               HEADERS JetFinder.h
                       JetUtilities.h
+                      FastJetUtilities.h
               LINKDEF PWGJECoreLinkDef.h)
 endif()

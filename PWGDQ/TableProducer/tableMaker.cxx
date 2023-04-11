@@ -61,6 +61,9 @@ using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::T
                                            aod::pidTPCFullKa, aod::pidTPCFullPr,
                                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::V0Bits>;
+using MyBarrelTracksWithV0BitsForMaps = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA,
+                                                  aod::pidTPCFullEl, aod::pidTPCFullPi,
+                                                  aod::pidTPCFullKa, aod::pidTPCFullPr, aod::V0Bits>;
 using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
                                                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                                aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -90,6 +93,7 @@ constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes:
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMap | VarManager::ObjTypes::TrackV0Bits;
+constexpr static uint32_t gkTrackFillMapWithV0BitsForMaps = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackV0Bits | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackTPCPID;
 constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
@@ -133,6 +137,7 @@ struct TableMaker {
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
   Configurable<std::string> fConfigRunPeriods{"cfgRunPeriods", "LHC22f", "run periods for used data"};
+  Configurable<bool> fConfigIsOnlyforMaps{"cfgIsforMaps", false, "If true, run for postcalibration maps only"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
@@ -179,8 +184,8 @@ struct TableMaker {
                                context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCovAndEventFilter") ||
-                               context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") ||
-                               context.mOptions.get<bool>("processAmbiguousBarrelOnly"));
+                               context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") || context.mOptions.get<bool>("processBarrelOnlyWithV0Bits") ||
+                               context.mOptions.get<bool>("processBarrelOnlyWithV0BitsAndMaps") || context.mOptions.get<bool>("processAmbiguousBarrelOnly"));
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                              context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                              context.mOptions.get<bool>("processMuonOnly") || context.mOptions.get<bool>("processMuonOnlyWithCent") ||
@@ -204,6 +209,11 @@ struct TableMaker {
             histClasses += Form("Ambiguous_TrackBarrel_%s;", cut.GetName());
           }
         }
+      }
+      if (fConfigIsOnlyforMaps) {
+        histClasses += "TrackBarrel_PostCalibElectron;";
+        histClasses += "TrackBarrel_PostCalibPion;";
+        histClasses += "TrackBarrel_PostCalibProton;";
       }
     }
     if (enableMuonHistos) {
@@ -424,6 +434,20 @@ struct TableMaker {
               (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
             }
           }
+          if (fConfigIsOnlyforMaps) {
+            if (trackFilteringTag & (uint64_t(1) << 2)) { // for electron
+              fHistMan->FillHistClass("TrackBarrel_PostCalibElectron", VarManager::fgValues);
+            }
+            if (trackFilteringTag & (uint64_t(1) << 3)) { // for pion
+              fHistMan->FillHistClass("TrackBarrel_PostCalibPion", VarManager::fgValues);
+            }
+            if ((static_cast<bool>(trackFilteringTag & (uint64_t(1) << 4)) * (track.sign()) > 0)) { // for proton from Lambda
+              fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
+            }
+            if ((static_cast<bool>(trackFilteringTag & (uint64_t(1) << 5)) * (track.sign()) < 0)) { // for proton from AntiLambda
+              fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
+            }
+          }
         }
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
           trackFilteringTag |= (uint64_t(track.dalitzBits()) << 7); // BIT7-14: Dalitz
@@ -446,14 +470,16 @@ struct TableMaker {
                          track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
         }
         // NOTE: If the TPC postcalibration is switched on, then we write the postcalibrated n-sigma values directly in the skimmed data
-        float nSigmaEl = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
-        float nSigmaPi = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
-        float nSigmaPr = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
-        trackBarrelPID(track.tpcSignal(),
-                       nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, track.tpcNSigmaKa(), nSigmaPr,
-                       track.beta(),
-                       track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                       track.trdSignal());
+        if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackPID)) {
+          float nSigmaEl = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
+          float nSigmaPi = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
+          float nSigmaPr = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
+          trackBarrelPID(track.tpcSignal(),
+                         nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, track.tpcNSigmaKa(), nSigmaPr,
+                         track.beta(),
+                         track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                         track.trdSignal());
+        }
       }
     } // end if constexpr (TTrackFillMap)
 
@@ -583,6 +609,19 @@ struct TableMaker {
         fHistMan->AddHistClass(classStr.Data());
       }
 
+      // fill the THn histograms
+      if (fConfigIsOnlyforMaps) {
+        if (classStr.Contains("PostCalibElectron")) {
+          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", "postcalib_electron");
+        }
+        if (classStr.Contains("PostCalibPion")) {
+          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", "postcalib_pion");
+        }
+        if (classStr.Contains("PostCalibProton")) {
+          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", "postcalib_proton");
+        }
+      }
+
       TString histEventName = fConfigAddEventHistogram.value;
       if (classStr.Contains("Event")) {
         if (fConfigQA) {
@@ -686,6 +725,13 @@ struct TableMaker {
                                    soa::Filtered<MyBarrelTracksWithV0Bits> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithV0Bits, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+  }
+
+  // Produce barrel only tables, with V0Bits and produce maps ------------------------------------------------------------------------------
+  void processBarrelOnlyWithV0BitsAndMaps(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                          soa::Filtered<MyBarrelTracksWithV0BitsForMaps> const& tracksBarrel)
+  {
+    fullSkimming<gkEventFillMap, gkTrackFillMapWithV0BitsForMaps, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
   // Produce barrel only tables, with DalitzBits ------------------------------------------------------------------------------------------------
@@ -901,6 +947,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processFullWithCent, "Build full DQ skimmed data model, w/ centrality", false);
   PROCESS_SWITCH(TableMaker, processFullWithCentAndMults, "Build full DQ skimmed data model, w/ centrality and multiplicities", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0Bits, "Build full DQ skimmed data model, w/o centrality, w/ V0Bits", false);
+  PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0BitsAndMaps, "Build full DQ skimmed data model, w/o multiplicity, w/ V0Bits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithDalitzBits, "Build barrel-only DQ skimmed data model, w/o centrality, w/ DalitzBits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithEventFilter, "Build full DQ skimmed data model, w/o centrality, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithMults, "Build barrel-only DQ skimmed data model, w/ multiplicity", false);
