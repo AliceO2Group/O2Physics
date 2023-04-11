@@ -514,7 +514,7 @@ struct HfTaskMcValidationRec {
             histOriginTracks[index + 1]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
           } else { // if the default associated collision is not the good one, check if the tracks is ambiguous
             if (isAmbiguous) {
-              for (auto& collIdx : track.compatibleCollIds()) {
+              for (auto const& collIdx : track.compatibleCollIds()) {
                 auto ambCollision = collisions.rawIteratorAt(collIdx);
 
                 if (ambCollision.has_mcCollision() && ambCollision.mcCollisionId() == particle.mcCollisionId()) {
