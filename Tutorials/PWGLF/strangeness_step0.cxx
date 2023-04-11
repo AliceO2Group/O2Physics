@@ -53,5 +53,5 @@ struct strangeness_tutorial {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<strangeness_tutorial>(cfgc, TaskName{"strangeness-step0"})};
+    adaptAnalysisTask<strangeness_tutorial>(cfgc)};
 }
