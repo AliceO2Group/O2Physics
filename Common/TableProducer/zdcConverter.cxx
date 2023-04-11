@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// ZDC converter to new format 
+// ZDC converter to new format
 // to be used with Run 2 converted data and older AO2Ds
 
 #include "Framework/runDataProcessing.h"
