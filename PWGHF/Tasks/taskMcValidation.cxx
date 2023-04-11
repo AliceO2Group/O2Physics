@@ -494,16 +494,19 @@ struct HfTaskMcValidationRec {
         }
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
         histTracks->Fill(origin, track.pt());
-        bool isAmbiguous = (track.compatibleCollIds().size() != 1);
+        bool isAmbiguous = (track.compatibleCollIds().size() != 1); 
         if (isAmbiguous) {
           registry.fill(HIST("histAmbiguousTrackNumCollisions"), track.compatibleCollIds().size());
           histAmbiguousTracks->Fill(origin, track.pt());
           std::vector<double> ambCollPosZ{};
-          for (auto& collIdx : track.compatibleCollIds()) {
+          for (auto const& collIdx : track.compatibleCollIds()) {
             auto ambCollision = collisions.rawIteratorAt(collIdx);
             ambCollPosZ.push_back(ambCollision.posZ());
           }
-          registry.fill(HIST("histAmbiguousTrackZvtxRMS"), computeRMS(ambCollPosZ));
+          // here we are only interested to tracks associated to multiple vertices
+          if (ambCollPosZ.size() > 0) {
+            registry.fill(HIST("histAmbiguousTrackZvtxRMS"), computeRMS(ambCollPosZ));
+          }
         }
         float deltaZ = -999.f;
         if (index) {
@@ -522,12 +525,13 @@ struct HfTaskMcValidationRec {
                   break;
                 }
               }
-            } else if (track.isPVContributor()) {
-              if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
-                histContributors->Fill(0);
-              } else {
-                histContributors->Fill(1);
-              }
+            }
+          }
+          if (track.isPVContributor()) {
+            if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
+              histContributors->Fill(0);
+            } else {
+              histContributors->Fill(1);
             }
           }
         }
