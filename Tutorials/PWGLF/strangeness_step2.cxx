@@ -53,9 +53,9 @@ struct strangeness_tutorial {
      {"hMassK0Short", "hMassK0Short", {HistType::kTH1F, {{200, 0.45f, 0.55f}}}},
      {"hMassK0ShortSelected", "hMassK0ShortSelected", {HistType::kTH1F, {{200, 0.45f, 0.55f}}}},
      {"hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}}},
-       {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}}},
-	 {"hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}}},
-	 {"hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}}}
+     {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}}},
+     {"hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}}},
+     {"hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}}}
 
     }};
 
@@ -79,16 +79,18 @@ struct strangeness_tutorial {
         continue;
       if (v0.v0radius() < v0setting_radius)
         continue;
-      if (TMath::Abs(posdau.tpcNSigmaPi()) > NSigmaTPCPion) continue;
-      if (TMath::Abs(negdau.tpcNSigmaPi()) > NSigmaTPCPion) continue;
+      if (TMath::Abs(posdau.tpcNSigmaPi()) > NSigmaTPCPion)
+        continue;
+      if (TMath::Abs(negdau.tpcNSigmaPi()) > NSigmaTPCPion)
+        continue;
 
       registry.fill(HIST("hMassK0ShortSelected"), v0.mK0Short());
       registry.fill(HIST("hDCAV0Daughters"), v0.dcaV0daughters());
       registry.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
 
-      if (0.45 < v0.mK0Short()< 0.55) {
-	registry.fill(HIST("hNSigmaPosPionFromK0s"), posdau.tpcNSigmaPi(), posdau.tpcInnerParam());
-	registry.fill(HIST("hNSigmaNegPionFromK0s"), negdau.tpcNSigmaPi(), negdau.tpcInnerParam());
+      if (0.45 < v0.mK0Short() < 0.55) {
+        registry.fill(HIST("hNSigmaPosPionFromK0s"), posdau.tpcNSigmaPi(), posdau.tpcInnerParam());
+        registry.fill(HIST("hNSigmaNegPionFromK0s"), negdau.tpcNSigmaPi(), negdau.tpcInnerParam());
       }
     }
   }
