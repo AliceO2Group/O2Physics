@@ -376,8 +376,9 @@ bool TrackSmearer::smearTrack(Track& track, bool atDCA)
 
 #if 0
   auto lutEntry = getLUTEntry(track.PID, 0., 0., track.Eta, track.PT);
-  if (!lutEntry) return;
-  
+  if (!lutEntry)
+    return;
+
   O2Track o2track;
   TrackUtils::convertTrackToO2Track(track, o2track, atDCA);
   smearTrack(o2track, lutEntry);
