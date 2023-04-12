@@ -42,7 +42,7 @@
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
 
-#include "ALICE3/Core/DelphesO2Smearer.h"
+#include "onTheFlyTracker.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -157,7 +157,7 @@ struct OnTheFlyTracker {
     // First we compute the number of charged particles in the event
     dNdEta = 0.f;
     for (const auto& mcParticle : mcParticles) {
-      if (TMath::Abs(mcParticle.eta()) > multEtaRange) {
+      if (std::abs(mcParticle.eta()) > multEtaRange) {
         continue;
       }
       if (mcParticle.has_daughters()) {

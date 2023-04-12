@@ -14,6 +14,9 @@
 /// @email: preghenella@bo.infn.it
 ///
 
+#ifndef ALICE3_TABLEPRODUCER_ONTHEFLYTRACKER_H_
+#define ALICE3_TABLEPRODUCER_ONTHEFLYTRACKER_H_
+
 #include "TRandom.h"
 #include <map>
 
@@ -44,15 +47,15 @@ struct map_t {
     float width = (max - min) / nbins;
     int bin;
     if (log)
-      bin = (int)((log10(val) - min) / width);
+      bin = static_cast<int>((log10(val) - min) / width);
     else
-      bin = (int)((val - min) / width);
+      bin = static_cast<int>((val - min) / width);
     if (bin < 0)
       return 0;
     if (bin > nbins - 1)
       return nbins - 1;
     return bin;
-  };
+  }
   void print() { printf("nbins = %d, min = %f, max = %f, log = %s \n", nbins, min, max, log ? "on" : "off"); };
 };
 
@@ -68,7 +71,7 @@ struct lutHeader_t {
   bool check_version()
   {
     return (version == LUTCOVM_VERSION);
-  };
+  }
   void print()
   {
     printf(" version: %d \n", version);
@@ -82,7 +85,7 @@ struct lutHeader_t {
     etamap.print();
     printf("   ptmap: ");
     ptmap.print();
-  };
+  }
 };
 
 struct lutEntry_t {
@@ -184,9 +187,9 @@ class TrackSmearer
     lutFile.close();
     return true;
   }
-  void useEfficiency(bool val) { mUseEfficiency = val; };
-  void setWhatEfficiency(int val) { mWhatEfficiency = val; };
-  lutHeader_t* getLUTHeader(int pdg) { return mLUTHeader[getIndexPDG(pdg)]; };
+  void useEfficiency(bool val) { mUseEfficiency = val; }
+  void setWhatEfficiency(int val) { mWhatEfficiency = val; }
+  lutHeader_t* getLUTHeader(int pdg) { return mLUTHeader[getIndexPDG(pdg)]; }
   lutEntry_t* getLUTEntry(int pdg, float nch, float radius, float eta, float pt)
   {
     auto ipdg = getIndexPDG(pdg);
@@ -271,10 +274,10 @@ class TrackSmearer
         return 7; // Helium3
       default:
         return 2; // Default: pion
-    };
-  };
+    }
+  }
 
-  void setdNdEta(float val) { mdNdEta = val; };
+  void setdNdEta(float val) { mdNdEta = val; }
 
  protected:
   static constexpr unsigned int nLUTs = 8; // Number of LUT available
@@ -284,3 +287,5 @@ class TrackSmearer
   int mWhatEfficiency = 1;
   float mdNdEta = 1600.;
 };
+
+#endif // ALICE3_TABLEPRODUCER_ONTHEFLYTRACKER_H_
