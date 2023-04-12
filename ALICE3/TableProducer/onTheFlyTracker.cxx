@@ -41,9 +41,9 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
-#include <utility>
 
 #include "onTheFlyTracker.h"
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;

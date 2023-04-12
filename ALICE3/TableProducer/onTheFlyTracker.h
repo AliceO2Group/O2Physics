@@ -57,9 +57,11 @@ struct map_t {
     float width = (max - min) / nbins;
     int bin;
     if (log)
-      bin = (int)((log10(val) - min) / width);
+      bin = static_cast<int>((log10(val) - min) / width); // Changed due to MegaLinter error.
+    // bin = (int)((log10(val) - min) / width); // Original line.
     else
-      bin = (int)((val - min) / width);
+      bin = static_cast<int>((val - min) / width); // Changed due to MegaLinter error.
+    // bin = (int)((val - min) / width); // Original line.
     if (bin < 0)
       return 0;
     if (bin > nbins - 1)
