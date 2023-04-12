@@ -36,7 +36,7 @@
 /// @author: Roberto Preghenella
 /// @email: preghenella@bo.infn.it
 
-// #pragma once
+// #pragma // once
 #define LUTCOVM_VERSION 20210801
 
 struct map_t {
