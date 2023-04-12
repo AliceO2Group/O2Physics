@@ -110,23 +110,18 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
   }
 
-  if (TString(histClass) == "gammagamma_hbt") {
-    list->Add(new TH2F("hQinvKt_Same", "q_{inv} vs. k_{T};q_{inv} (GeV/c);k_{T} (GeV/c)", 400, 0, +0.4, 100, 0.0f, 1.0));
-    list->Add(new TH2F("hQinvKt_Mixed", "q_{inv} vs. k_{T};q_{inv} (GeV/c);k_{T} (GeV/c)", 400, 0, +0.4, 100, 0.0f, 1.0));
-    list->Add(new TH2F("hQlongKt_Same", "q_{long} vs. k_{T};q_{long} (GeV/c);k_{T} (GeV/c)", 800, -0.4, +0.4, 100, 0.0f, 1.0));
-    list->Add(new TH2F("hQlongKt_Mixed", "q_{long} vs. k_{T};q_{long} (GeV/c);k_{T} (GeV/c)", 800, -0.4, +0.4, 100, 0.0f, 1.0));
-    list->Add(new TH2F("hQoutKt_Same", "q_{out} vs. k_{T};q_{out} (GeV/c);k_{T} (GeV/c)", 800, -0.4, +0.4, 100, 0.0f, 1.0));
-    list->Add(new TH2F("hQoutKt_Mixed", "q_{out} vs. k_{T};q_{out} (GeV/c);k_{T} (GeV/c)", 800, -0.4, +0.4, 100, 0.0f, 1.0));
-    list->Add(new TH2F("hQsideKt_Same", "q_{side} vs. k_{T};q_{side} (GeV/c);k_{T} (GeV/c)", 800, -0.4, +0.4, 100, 0.0f, 1.0));
-    list->Add(new TH2F("hQsideKt_Mixed", "q_{side} vs. k_{T};q_{side} (GeV/c);k_{T} (GeV/c)", 800, -0.4, +0.4, 100, 0.0f, 1.0));
-    reinterpret_cast<TH2F*>(list->FindObject("hQinvKt_Same"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hQinvKt_Mixed"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hQlongKt_Same"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hQlongKt_Mixed"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hQoutKt_Same"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hQoutKt_Mixed"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hQsideKt_Same"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hQsideKt_Mixed"))->Sumw2();
+  if (TString(histClass) == "photon_hbt") {
+    const int ndim = 5; // qinv, qlong, qout, qside, kt
+    const int nbins[ndim] = {40, 80, 80, 80, 20};
+    const double xmin[ndim] = {0.0, -0.4, -0.4, -0.4, 0.0};
+    const double xmax[ndim] = {0.4, +0.4, +0.4, +0.4, 1.0};
+
+    THnSparseF* hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;q_{inv} (GeV/c);q_{long} (GeV/c);q_{out} (GeV/c);q_{side} (GeV/c);k_{T} (GeV/c)", ndim, nbins, xmin, xmax);
+    THnSparseF* hs_q_mix = new THnSparseF("hs_q_mix", "hs_q_mix;q_{inv} (GeV/c);q_{long} (GeV/c);q_{out} (GeV/c);q_{side} (GeV/c);k_{T} (GeV/c)", ndim, nbins, xmin, xmax);
+    hs_q_same->Sumw2();
+    hs_q_mix->Sumw2();
+    list->Add(hs_q_same);
+    list->Add(hs_q_mix);
   }
 }
 void o2::aod::emphotonhistograms::AddHistClass(THashList* list, const char* histClass)

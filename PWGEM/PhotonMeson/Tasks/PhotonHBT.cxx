@@ -107,7 +107,7 @@ struct PhotonHBT {
         std::string pair_cut_name = cutname1 + "_" + cutname2;
         o2::aod::emphotonhistograms::AddHistClass(list_pair_subsys, pair_cut_name.data());
         THashList* list_pair_subsys_cut = reinterpret_cast<THashList*>(list_pair_subsys->FindObject(pair_cut_name.data()));
-        o2::aod::emphotonhistograms::DefineHistograms(list_pair_subsys_cut, "gammagamma_hbt");
+        o2::aod::emphotonhistograms::DefineHistograms(list_pair_subsys_cut, "photon_hbt");
       } // end of cut2 loop
     }   // end of cut1 loop
   }
@@ -240,10 +240,8 @@ struct PhotonHBT {
             float qout = q_3d.Dot(uv_out);
             float qlong = q_3d.Dot(uv_long);
             float qside = q_3d.Dot(uv_side);
-            reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hQinvKt_Same"))->Fill(qinv, kt);
-            reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hQlongKt_Same"))->Fill(qlong, kt);
-            reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hQoutKt_Same"))->Fill(qout, kt);
-            reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hQsideKt_Same"))->Fill(qside, kt);
+            double values[5] = {qinv, qlong, qout, qside, kt};
+            reinterpret_cast<THnSparseF*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hs_q_same"))->Fill(values);
           }    // end of combination
         }      // end of cut loop
       } else { // different subsystem pairs
@@ -266,10 +264,8 @@ struct PhotonHBT {
               float qout = q_3d.Dot(uv_out);
               float qlong = q_3d.Dot(uv_long);
               float qside = q_3d.Dot(uv_side);
-              reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hQinvKt_Same"))->Fill(qinv, kt);
-              reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hQlongKt_Same"))->Fill(qlong, kt);
-              reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hQoutKt_Same"))->Fill(qout, kt);
-              reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hQsideKt_Same"))->Fill(qside, kt);
+              double values[5] = {qinv, qlong, qout, qside, kt};
+              reinterpret_cast<THnSparseF*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hs_q_same"))->Fill(values);
             } // end of combination
           }   // end of cut2 loop
         }     // end of cut1 loop
@@ -339,11 +335,9 @@ struct PhotonHBT {
             float qout = q_3d.Dot(uv_out);
             float qlong = q_3d.Dot(uv_long);
             float qside = q_3d.Dot(uv_side);
+            double values[5] = {qinv, qlong, qout, qside, kt};
+            reinterpret_cast<THnSparseF*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hs_q_mix"))->Fill(values);
 
-            reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hQinvKt_Mixed"))->Fill(qinv, kt);
-            reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hQlongKt_Mixed"))->Fill(qlong, kt);
-            reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hQoutKt_Mixed"))->Fill(qout, kt);
-            reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hQsideKt_Mixed"))->Fill(qside, kt);
           } // end of different photon combinations
         }   // end of cut2 loop
       }     // end of cut1 loop
