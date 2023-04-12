@@ -10,6 +10,12 @@
 // or submit itself to any jurisdiction.
 
 ///
+/// @file onTheFlyTracker.h
+/// @brief Porting to O2Physics of DelphesO2 code
+///        Relevant sources:
+///                 DelphesO2/src/TrackSmearer.cc https://github.com/AliceO2Group/DelphesO2/blob/master/src/TrackSmearer.cc
+///                 DelphesO2/src/TrackSmearer.hh https://github.com/AliceO2Group/DelphesO2/blob/master/src/TrackSmearer.hh
+///                 DelphesO2/src/lutCovm.hh https://github.com/AliceO2Group/DelphesO2/blob/master/src/lutCovm.hh
 /// @author: Roberto Preghenella
 /// @email: preghenella@bo.infn.it
 ///
@@ -56,7 +62,7 @@ struct map_t {
       return nbins - 1;
     return bin;
   }
-  void print() { printf("nbins = %d, min = %f, max = %f, log = %s \n", nbins, min, max, log ? "on" : "off"); };
+  void print() { printf("nbins = %d, min = %f, max = %f, log = %s \n", nbins, min, max, log ? "on" : "off"); }
 };
 
 struct lutHeader_t {
