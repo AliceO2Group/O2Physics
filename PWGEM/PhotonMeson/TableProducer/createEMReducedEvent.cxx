@@ -44,8 +44,7 @@ struct createEMReducedEvent {
   Configurable<int> minN_PHOS{"minN_PHOS", 0, "Minimum number of clusters for PHOS. Events are saved if either minimum number condition is met"};
   Configurable<int> minN_EMC{"minN_EMC", 0, "Minimum number of clusters for EMCal. Events are saved if either minimum number condition is met"};
 
-  HistogramRegistry registry{
-    "registry"};
+  HistogramRegistry registry{"registry"};
 
   Preslice<aod::V0Photons> perCollision_pcm = aod::v0photon::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
@@ -69,6 +68,8 @@ struct createEMReducedEvent {
   {
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
+
+      // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
       int ng_pcm = 0;
       int ng_phos = 0;
@@ -106,6 +107,14 @@ struct createEMReducedEvent {
         registry.fill(HIST("hEventCounter"), 6);
       }
 
+      bool is_phoscpv_readout = false;
+      bool is_emc_readout = false;
+      // bool is_phoscpv_readout = static_cast<bool>(collision.bc().triggerMask() & 0x4); // trigger mask = 4
+      // bool is_emc_readout     = static_cast<bool>(collision.bc().triggerMask() & 0x10); // trigger mask = 16
+      // if(collision.bc().triggerMask() > 0){
+      //   LOGF(info, "trigger mask = %d , is_phoscpv_readout = %d , is_emc_readout = %d , ng_phos = %d , ng_emc = %d", collision.bc().triggerMask(), is_phoscpv_readout, is_emc_readout, ng_phos, ng_emc);
+      // }
+
       uint64_t tag = 0;
       // store event selection decisions
       for (int i = 0; i < kNsel; i++) {
@@ -113,7 +122,8 @@ struct createEMReducedEvent {
           tag |= (uint64_t(1) << i);
         }
       }
-      event(collision.globalIndex(), tag, collision.bc().runNumber(), collision.sel8(),
+      event(collision.globalIndex(), tag, collision.bc().runNumber(), collision.bc().triggerMask(), collision.sel8(),
+            is_phoscpv_readout, is_emc_readout,
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes(),
             collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),

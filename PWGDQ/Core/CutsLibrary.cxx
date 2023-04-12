@@ -1359,6 +1359,43 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  // Event cuts based on centrality
+  if (!nameStr.compare("eventStandardNoINT7Cent090")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kCentFT0C, 0.0, 90.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardNoINT7Cent7090")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kCentFT0C, 70.0, 90.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardNoINT7Cent5070")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kCentFT0C, 50.0, 70.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardNoINT7Cent3050")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kCentFT0C, 30.0, 50.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardNoINT7Cent1030")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kCentFT0C, 10.0, 30.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardNoINT7Cent010")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kCentFT0C, 0.0, 10.0);
+    return cut;
+  }
+
   // ---------------------------------------------------
   // Barrel track kine cuts
   if (!nameStr.compare("negTrack")) {

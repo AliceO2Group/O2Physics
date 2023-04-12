@@ -276,6 +276,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, ""); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
 // General cascade properties: position, momentum
 DECLARE_SOA_COLUMN(Sign, sign, int);         //!
+DECLARE_SOA_COLUMN(MXi, mXi, float);         //!
+DECLARE_SOA_COLUMN(MOmega, mOmega, float);   //!
 DECLARE_SOA_COLUMN(PxPos, pxpos, float);     //!
 DECLARE_SOA_COLUMN(PyPos, pypos, float);     //!
 DECLARE_SOA_COLUMN(PzPos, pzpos, float);     //!
@@ -285,6 +287,9 @@ DECLARE_SOA_COLUMN(PzNeg, pzneg, float);     //!
 DECLARE_SOA_COLUMN(PxBach, pxbach, float);   //!
 DECLARE_SOA_COLUMN(PyBach, pybach, float);   //!
 DECLARE_SOA_COLUMN(PzBach, pzbach, float);   //!
+DECLARE_SOA_COLUMN(Px, px, float);           //! cascade momentum X
+DECLARE_SOA_COLUMN(Py, py, float);           //! cascade momentum Y
+DECLARE_SOA_COLUMN(Pz, pz, float);           //! cascade momentum Z
 DECLARE_SOA_COLUMN(X, x, float);             //!
 DECLARE_SOA_COLUMN(Y, y, float);             //!
 DECLARE_SOA_COLUMN(Z, z, float);             //!
@@ -303,6 +308,11 @@ DECLARE_SOA_COLUMN(DCACascToPV, dcacasctopv, float);           //!
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
+
+// Saved from strangeness tracking
+DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float); //!
+DECLARE_SOA_COLUMN(TopologyChi2, topologyChi2, float); //!
+DECLARE_SOA_COLUMN(ItsClsSize, itsCluSize, int);       //!
 
 // Derived expressions
 // Momenta
@@ -328,11 +338,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(MLambda, mLambda, //!
                            [](int charge, float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}}, charge < 0 ? array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged} : array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton}); });
 // Calculated on the fly with mass assumption + dynamic tables
 
-DECLARE_SOA_DYNAMIC_COLUMN(MXi, mXi, //!
-                           [](float pxbach, float pybach, float pzbach, float PxLambda, float PyLambda, float PzLambda) -> float { return RecoDecay::m(array{array{pxbach, pybach, pzbach}, array{PxLambda, PyLambda, PzLambda}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda}); });
-DECLARE_SOA_DYNAMIC_COLUMN(MOmega, mOmega, //!
-                           [](float pxbach, float pybach, float pzbach, float PxLambda, float PyLambda, float PzLambda) -> float { return RecoDecay::m(array{array{pxbach, pybach, pzbach}, array{PxLambda, PyLambda, PzLambda}}, array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassLambda}); });
-
 DECLARE_SOA_DYNAMIC_COLUMN(YXi, yXi, //!
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::y(array{Px, Py, Pz}, o2::constants::physics::MassXiMinus); });
 DECLARE_SOA_DYNAMIC_COLUMN(YOmega, yOmega, //!
@@ -351,53 +356,79 @@ DECLARE_SOA_EXPRESSION_COLUMN(PyLambda, pylambda, //!
                               float, 1.f * aod::cascdata::pypos + 1.f * aod::cascdata::pyneg);
 DECLARE_SOA_EXPRESSION_COLUMN(PzLambda, pzlambda, //!
                               float, 1.f * aod::cascdata::pzpos + 1.f * aod::cascdata::pzneg);
-DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //!
-                              float, 1.f * aod::cascdata::pxpos + 1.f * aod::cascdata::pxneg + 1.f * aod::cascdata::pxbach);
-DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //!
-                              float, 1.f * aod::cascdata::pypos + 1.f * aod::cascdata::pyneg + 1.f * aod::cascdata::pybach);
-DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //!
-                              float, 1.f * aod::cascdata::pzpos + 1.f * aod::cascdata::pzneg + 1.f * aod::cascdata::pzbach);
 } // namespace cascdataext
 
 DECLARE_SOA_TABLE(StoredCascDatas, "AOD", "CASCDATA", //!
                   o2::soa::Index<>, cascdata::V0Id, cascdata::CascadeId, cascdata::BachelorId, cascdata::CollisionId,
-
-                  cascdata::Sign,
+                  cascdata::Sign, cascdata::MXi, cascdata::MOmega,
                   cascdata::X, cascdata::Y, cascdata::Z,
                   cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda,
                   cascdata::PxPos, cascdata::PyPos, cascdata::PzPos,
                   cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg,
                   cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
+                  cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
                   cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCACascToPV,
 
                   // Dynamic columns
-                  cascdata::Pt<cascdataext::Px, cascdataext::Py>,
+                  cascdata::Pt<cascdata::Px, cascdata::Py>,
                   cascdata::V0Radius<cascdata::Xlambda, cascdata::Ylambda>,
                   cascdata::CascRadius<cascdata::X, cascdata::Y>,
                   cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
-                  cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
+                  cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
 
                   // Invariant masses
                   cascdata::MLambda<cascdata::Sign, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
-                  cascdata::MXi<cascdata::PxBach, cascdata::PyBach, cascdata::PzBach, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
-                  cascdata::MOmega<cascdata::PxBach, cascdata::PyBach, cascdata::PzBach, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
+
                   // Longitudinal
-                  cascdata::YXi<cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
-                  cascdata::YOmega<cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
-                  cascdata::Eta<cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
-                  cascdata::Phi<cascdataext::Px, cascdataext::Py>);
+                  cascdata::YXi<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::Eta<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::Phi<cascdata::Px, cascdata::Py>);
+
+DECLARE_SOA_TABLE(StoredTraCascDatas, "AOD", "TRACASCDATA", //!
+                  o2::soa::Index<>, cascdata::V0Id, cascdata::CascadeId, cascdata::BachelorId, cascdata::CollisionId,
+                  cascdata::Sign, cascdata::MXi, cascdata::MOmega,
+                  cascdata::X, cascdata::Y, cascdata::Z,
+                  cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda,
+                  cascdata::PxPos, cascdata::PyPos, cascdata::PzPos,
+                  cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg,
+                  cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
+                  cascdata::Px, cascdata::Py, cascdata::Pz,
+                  cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
+                  cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCACascToPV,
+                  cascdata::MatchingChi2, cascdata::TopologyChi2, cascdata::ItsClsSize,
+
+                  // Dynamic columns
+                  cascdata::Pt<cascdata::Px, cascdata::Py>,
+                  cascdata::V0Radius<cascdata::Xlambda, cascdata::Ylambda>,
+                  cascdata::CascRadius<cascdata::X, cascdata::Y>,
+                  cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
+                  cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
+
+                  // Invariant masses
+                  cascdata::MLambda<cascdata::Sign, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
+
+                  // Longitudinal
+                  cascdata::YXi<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::Eta<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::Phi<cascdata::Px, cascdata::Py>);
 
 DECLARE_SOA_TABLE_FULL(CascCovs, "CascCovs", "AOD", "CASCCOVS", //!
                        cascdata::PositionCovMat, cascdata::MomentumCovMat);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(CascDatas, StoredCascDatas, "CascDATAEXT", //!
-                                cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda,
-                                cascdataext::Px, cascdataext::Py, cascdataext::Pz);
+                                cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda);
+// extended table with expression columns that can be used as arguments of dynamic columns
+DECLARE_SOA_EXTENDED_TABLE_USER(TraCascDatas, StoredTraCascDatas, "TraCascDATAEXT", //!
+                                cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda);
 
 using CascData = CascDatas::iterator;
+using TraCascData = TraCascDatas::iterator;
 
 // For compatibility with previous table declarations
 using CascDataFull = CascDatas;
@@ -470,6 +501,16 @@ DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Cascade
 DECLARE_SOA_TABLE(McCascLabels, "AOD", "MCCASCLABEL", //! Table joinable with CascData containing the MC labels
                   mccasclabel::McParticleId);
 using McCascLabel = McCascLabels::iterator;
+
+// Definition of labels for tracked cascades
+namespace mctracasclabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
+} // namespace mctracasclabel
+
+DECLARE_SOA_TABLE(McTraCascLabels, "AOD", "MCTRACASCLABEL", //! Table joinable to cascdata containing the MC labels
+                  mctracasclabel::McParticleId);
+using McTraCascLabel = McTraCascLabels::iterator;
 
 } // namespace o2::aod
 

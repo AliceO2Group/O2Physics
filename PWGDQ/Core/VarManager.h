@@ -725,6 +725,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kBC] = event.globalBC();
     values[kTimestamp] = event.timestamp();
     values[kCentVZERO] = event.centRun2V0M();
+    values[kCentFT0C] = event.centFT0C();
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.triggerAlias() & (uint32_t(1) << kINT7)) > 0;
     }
