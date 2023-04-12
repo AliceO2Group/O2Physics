@@ -37,7 +37,6 @@ struct firsto2physics {
 
   void process(aod::Collision const&, aod::Tracks const&)
   {
-
   }
 };
 
