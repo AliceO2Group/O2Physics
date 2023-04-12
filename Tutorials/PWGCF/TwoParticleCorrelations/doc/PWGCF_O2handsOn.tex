@@ -1,0 +1,1128 @@
+\documentclass[14pt,aspectratio=169,t]{beamer}
+
+\mode<presentation> {
+%\usetheme{Hannover}
+
+%\usecolortheme{albatross}
+%\usecolortheme{beaver}
+%\usecolortheme{beetle}
+%\usecolortheme{crane}
+%\usecolortheme{dolphin}
+%\usecolortheme{dove}
+%\usecolortheme{fly}
+%\usecolortheme{lily}
+%\usecolortheme{orchid}
+\usecolortheme{rose}
+%\usecolortheme{seagull}
+%\usecolortheme{seahorse}
+%\usecolortheme{whale}
+%\usecolortheme{wolverine}
+
+% To remove the footer line in all slides uncomment this line
+%\setbeamertemplate{footline} 
+
+% To replace the footer line in all
+% slides with a simple slide count uncomment this line
+\setbeamertemplate{footline}[page number] 
+\setbeamertemplate{section in toc}[ball numbered] 
+
+% To remove the navigation symbols
+%from the bottom of all slides uncomment this line
+\setbeamertemplate{navigation symbols}{} 
+\usefonttheme{professionalfonts}
+
+
+\setbeamertemplate{itemize items}[square] % if you want a square
+\setbeamertemplate{itemize subitem}[circle] % if you wnat a circle
+\setbeamertemplate{itemize subsubitem}[triangle] % if you want a triangle
+}
+
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{slashed}
+
+\usepackage{graphicx} % Allows including images
+\usepackage{booktabs} % Allows \toprule, \midrule and \bottomrule in tables
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{pgfplots}
+\usepgfplotslibrary{dateplot}
+\pgfplotsset{compat=1.15}
+\usepackage{xspace}
+
+\usepackage{tikz}
+%\usepackage{soul}
+\usepackage[normalem]{ulem}
+
+\usepackage[overlay,absolute]{textpos}
+\setlength{\TPHorizModule}{1cm}
+\setlength{\TPVertModule}{1cm}
+\textblockorigin{10mm}{10mm}
+
+
+\makeatletter
+\def\beamer@andinst{\quad}
+\def\beamer@and{\\[1em]}
+\makeatother
+
+
+\definecolor{carmine}{rgb}{0.59, 0.0, 0.09}
+
+
+\title{\texorpdfstring{O2 Analysis tutorial\\Second edition\\
+        PWGCF O2 hands-on\\-- O2 and O2Physics frameworks --}{}}
+\date{April 27, 2023}
+
+\graphicspath{
+  {./IMAGES/}
+  {/localthree/victor/CERNBOX/TWO_PARTICLE_CORRELATIONS/ANALYSISRESULTS/}
+  {/localthree/victor/CERNBOX/TWO_PARTICLE_CORRELATIONS/ANALYSISRESULTS/AA_YEARLYANALYSIS/2020ANALYSIS/}
+  {/localthree/victor/CERNBOX/TWO_PARTICLE_CORRELATIONS/ANALYSISRESULTS/AA_YEARLYANALYSIS/2021ANALYSIS/}
+  {/localthree/victor/DOCUMENTS/PHD/THESIS/Figures/}
+  {/localthree/victor/DOCUMENTS/PHD/REFERENCES/}
+  {/localtwo/victor/PROJECTS/PAPERS/}
+  {/localtwo/victor/PROJECTS/BALANCEFUNCTIONS/STARCODE/IMAGES/}
+  {/localtwo/victor/PROJECTS/DUKEQCD/TESTSOSG/}
+  {/localtwo/victor/PROJECTS/DUKEQCD/TESTSOSG/NOTEBOOKS/}
+  {/localtwo/victor/PROJECTS/PAPERS/ALICEREVIEWPAPER/NOTEBOOKS/}
+  {/localthree/victor/DOCUMENTS/POSTDOC/WSU/PWGCF/O2MC_CHALLENGE/IMAGES/}
+  {/localthree/victor/DOCUMENTS/POSTDOC/WSU/FOLLOWUP/IMAGES/}
+}
+
+%\AtBeginSection[]
+%{
+%\begin{frame}
+%\frametitle{Contents}
+%\tableofcontents[currentsection]
+%\end{frame}
+%}
+
+% to insert the section title slide
+\AtBeginSection[]{
+  \begin{frame}
+  \vfill
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+    \usebeamerfont{title}\insertsectionhead\par%
+  \end{beamercolorbox}
+  \vfill
+  \end{frame}
+}
+
+
+%remove the icon
+\setbeamertemplate{bibliography item}{}
+
+%remove line breaks
+\setbeamertemplate{bibliography entry title}{}
+\setbeamertemplate{bibliography entry location}{}
+\setbeamertemplate{bibliography entry note}{}
+
+\begin{document}
+\setbeamercolor{postit}{fg=black,bg=yellow}
+
+\begin{frame}
+    \begin{textblock}{14}(0.0,1.0)
+        \titlepage
+    \end{textblock}
+    
+    % the logos
+    \begin{textblock}{14}(0.0,6.0)
+        \centering
+        Víctor González
+    \end{textblock}
+    \begin{textblock}{12}(0.0,-0.7)
+        \includegraphics[width=6cm]{LOGO-WSU-wsu_primary_horz_color}
+    \end{textblock}
+    \begin{textblock}{10}(11.3,-0.8)
+        \includegraphics[width=1.5cm]{O2_logo_S_130822}
+    \end{textblock}
+    \begin{textblock}{10}(13.3,-0.8)
+        \includegraphics[width=1.5cm]{LOGO-ALICE-2012-Jul-04-4_Color_Logo_CB}
+    \end{textblock}
+\end{frame}
+
+\begin{frame}
+  \frametitle{O2 and O2Physics frameworks}
+  \begin{itemize}
+    \item Main goals
+    \begin{itemize}
+      \item Not learning everything about O2 and O2Physics
+      \item Get a taste of O2 and O2Physics
+      \item Build and run your first O2Physics analysis task
+      \item Learn why you do what you will do
+      \item Learn where you will find documentation
+      \item Learn where you will find help
+      \item Learn where you will be able to continue learning
+      \item Have fun
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{O2 and O2Physics at a glance. The analysis task}
+  \vspace{-0.1in}
+  {\tiny \color{blue}
+  \begin{verbatim}
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+
+using namespace o2;
+using namespace o2::framework;
+
+struct firsto2physics {
+  void init(InitContext&) {
+  }
+
+  void process(aod::Collisions const&, aod::Tracks const&) {
+    LOGF(info, "Hello word");
+  }
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
+  return WorkflowSpec{adaptAnalysisTask<firsto2physics>(cfgc)};
+}
+  \end{verbatim}
+  }
+  \vspace{-0.25in}
+  {\tiny \color{black}
+  \begin{verbatim}
+[O2Physics/latest] ~/SANDBOX $> o2-analysis-cf-firsto2physics --aod-file AO2D_MCPbPb_T233_R244983.root > execution.log    
+  \end{verbatim}}
+  \vspace{-0.25in}
+  {\tiny \color{red}
+  \begin{verbatim}
+  \end{verbatim}}
+  
+  \begin{textblock}{6}(7.0,0.0)
+    {\tiny\color{blue}
+    \begin{verbatim}
+
+o2physics_add_dpl_workflow(firsto2physics
+                    SOURCES firsto2physics.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework 
+                                          O2Physics::AnalysisCore
+                                          O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
+    }
+    \end{verbatim}}
+  \end{textblock}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Where everything begins. AOD tables}
+  \begin{textblock}{4}(0.5,-0.2)
+    \begin{figure}
+    \centering
+      \includegraphics[scale=0.40,keepaspectratio=true,clip=true,trim=10pt 0pt 30pt 8pt]
+      {HANDSON/DataFrames}
+    \end{figure}
+  \end{textblock}
+  \begin{textblock}{4}(5.5,-0.2)
+    \begin{figure}
+    \centering
+      \includegraphics[scale=0.40,keepaspectratio=true,clip=true,trim=8pt 0pt 14pt 195pt]
+      {HANDSON/Tables}
+    \end{figure}
+  \end{textblock}
+  \begin{textblock}{4}(10.5,-1.2)
+    \begin{figure}
+    \centering
+      \includegraphics[scale=0.40,keepaspectratio=true,clip=true,trim=12pt 4pt 30pt 310pt]
+      {HANDSON/CollisionsTable}
+    \end{figure}
+  \end{textblock}
+  \begin{textblock}{4}(10.5,3.5)
+    \begin{figure}
+    \centering
+      \includegraphics[scale=0.40,keepaspectratio=true,clip=true,trim=15pt 2pt 25pt 24pt]
+      {HANDSON/TracksTable}
+    \end{figure}
+  \end{textblock}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Where everything is documented}
+  \framesubtitle{\href{https://aliceo2group.github.io/analysis-framework/docs/}{https://aliceo2group.github.io/analysis-framework/docs/}}
+  \begin{textblock}{15}(0.0,0.3)
+    \begin{figure}
+    \centering
+      \includegraphics[scale=0.20,keepaspectratio=true,clip=true,trim=3pt 4pt 10pt 4pt]
+      {HANDSON/O2DocumentationMain}
+    \end{figure}
+  \end{textblock}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Where everything is documented. Collisions table}
+  \begin{textblock}{15}(0.0,-0.3)
+    \begin{figure}
+    \centering
+      \includegraphics[scale=0.23,keepaspectratio=true,clip=true,trim=3pt 4pt 10pt 4pt]
+      {HANDSON/O2DocumentationCollisionsTable}
+    \end{figure}
+  \end{textblock}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Where everything is documented. Tracks table}
+  \begin{textblock}{15}(0.0,-0.3)
+    \begin{figure}
+    \centering
+      \includegraphics[scale=0.23,keepaspectratio=true,clip=true,trim=3pt 30pt 10pt 4pt]
+      {HANDSON/O2DocumentationTracksTable}
+    \end{figure}
+  \end{textblock}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Where actually everything is done}
+  \begin{textblock}{2.5}(0.0,-0.0)
+    \begin{center}
+      {\small \color{blue}O2 tree}
+    \end{center}
+    \vspace{-0.3in}
+    \begin{figure}
+    \centering
+      \includegraphics[scale=0.23,keepaspectratio=true,clip=true,trim=13pt 0pt 1pt 0pt]
+      {HANDSON/O2Tree}
+    \end{figure}
+  \end{textblock}
+  \begin{textblock}{2.8}(2.5,-0.0)
+    \begin{center}
+      {\small \color{blue}O2Physics tree}
+    \end{center}
+    \vspace{-0.3in}
+    \begin{figure}
+    \centering
+      \includegraphics[scale=0.23,keepaspectratio=true,clip=true,trim=10pt 0pt 1pt 8pt]
+      {HANDSON/O2PhysicsTree}
+    \end{figure}
+  \end{textblock}
+  \begin{textblock}{2.8}(6.0,-0.0)
+    \begin{center}
+      {\small \color{blue}Data model}
+    \end{center}
+    \vspace{-0.5in}
+    \begin{figure}
+    \centering
+      \includegraphics[scale=0.23,keepaspectratio=true,clip=true,trim=0pt 0pt 1pt 8pt]
+      {HANDSON/O2DataModel}
+    \end{figure}
+  \end{textblock}
+  \begin{textblock}{2.8}(10.5,-0.0)
+    \begin{center}
+      {\small \color{blue}PWGCF tasks}
+    \end{center}
+    \vspace{-0.5in}
+    \begin{figure}
+    \centering
+      \includegraphics[scale=0.23,keepaspectratio=true,clip=true,trim=0pt 0pt 0pt 8pt]
+      {HANDSON/PWGCFTasks}
+    \end{figure}
+  \end{textblock}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Where actually everything is done. Collisions table}
+  {\tiny\color{red}
+  \begin{verbatim}
+namespace collision
+{
+DECLARE_SOA_INDEX_COLUMN(BC, bc);                              //! Most probably BC to where this collision has occured
+DECLARE_SOA_COLUMN(PosX, posX, float);                         //! X Vertex position in cm
+DECLARE_SOA_COLUMN(PosY, posY, float);                         //! Y Vertex position in cm
+DECLARE_SOA_COLUMN(PosZ, posZ, float);                         //! Z Vertex position in cm
+DECLARE_SOA_COLUMN(CovXX, covXX, float);                       //! Vertex covariance matrix
+DECLARE_SOA_COLUMN(CovXY, covXY, float);                       //! Vertex covariance matrix
+DECLARE_SOA_COLUMN(CovXZ, covXZ, float);                       //! Vertex covariance matrix
+DECLARE_SOA_COLUMN(CovYY, covYY, float);                       //! Vertex covariance matrix
+DECLARE_SOA_COLUMN(CovYZ, covYZ, float);                       //! Vertex covariance matrix
+DECLARE_SOA_COLUMN(CovZZ, covZZ, float);                       //! Vertex covariance matrix
+DECLARE_SOA_COLUMN(Flags, flags, uint16_t);                    //! Run 2: see CollisionFlagsRun2 | Run 3: see Vertex::Flags
+DECLARE_SOA_COLUMN(Chi2, chi2, float);                         //! Chi2 of vertex fit
+DECLARE_SOA_COLUMN(NumContrib, numContrib, uint16_t);          //! Number of tracks used for the vertex
+DECLARE_SOA_COLUMN(CollisionTime, collisionTime, float);       //! Collision time in ns relative to BC stored in bc()
+DECLARE_SOA_COLUMN(CollisionTimeRes, collisionTimeRes, float); //! Resolution of collision time
+} // namespace collision
+
+DECLARE_SOA_TABLE(Collisions, "AOD", "COLLISION", //! Time and vertex information of collision
+                  o2::soa::Index<>, collision::BCId,
+                  collision::PosX, collision::PosY, collision::PosZ,
+                  collision::CovXX, collision::CovXY, collision::CovXZ, collision::CovYY, collision::CovYZ, collision::CovZZ,
+                  collision::Flags, collision::Chi2, collision::NumContrib,
+                  collision::CollisionTime, collision::CollisionTimeRes);
+
+using Collision = Collisions::iterator;
+    
+  \end{verbatim}}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Where actually everything is done. Tracks table (I)}
+  \vspace{-0.05in}
+  {\tiny\color{red}
+  \begin{verbatim}
+namespace track
+{
+// TRACKPAR TABLE definition
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);    //! Collision to which this track belongs
+DECLARE_SOA_COLUMN(TrackType, trackType, uint8_t); //! Type of track. See enum TrackTypeEnum
+DECLARE_SOA_COLUMN(X, x, float);                   //!
+DECLARE_SOA_COLUMN(Alpha, alpha, float);           //!
+DECLARE_SOA_COLUMN(Y, y, float);                   //!
+DECLARE_SOA_COLUMN(Z, z, float);                   //!
+DECLARE_SOA_COLUMN(Snp, snp, float);               //!
+DECLARE_SOA_COLUMN(Tgl, tgl, float);               //!
+DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float);   //! (sign of charge)/Pt in c/GeV. Use pt() and sign() instead
+DECLARE_SOA_EXPRESSION_COLUMN(Phi, phi, float,     //! Phi of the track, in radians within [0, 2pi)
+........
+DECLARE_SOA_EXPRESSION_COLUMN(Eta, eta, float, //! Pseudorapidity
+........
+DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! Transverse momentum of the track in GeV/c
+........
+DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign, //! Charge: positive: 1, negative: -1
+........
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! Momentum in x-direction in GeV/c
+........
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! Momentum in y-direction in GeV/c
+........
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! Momentum in z-direction in GeV/c
+........
+DECLARE_SOA_EXPRESSION_COLUMN(P, p, float, //! Momentum in Gev/c
+........
+} // namespace track
+
+  \end{verbatim}}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Where actually everything is done. Tracks table (II)}
+  {\tiny\color{red}
+  \begin{verbatim}
+DECLARE_SOA_TABLE_FULL(StoredTracks, "Tracks", "AOD", "TRACK", //! On disk version of the Track table
+                       o2::soa::Index<>, track::CollisionId, track::TrackType,
+                       track::X, track::Alpha,
+                       track::Y, track::Z, track::Snp, track::Tgl,
+                       track::Signed1Pt,
+                       track::Px<track::Signed1Pt, track::Snp, track::Alpha>,
+                       track::Py<track::Signed1Pt, track::Snp, track::Alpha>,
+                       track::Pz<track::Signed1Pt, track::Tgl>,
+                       track::Sign<track::Signed1Pt>);
+
+DECLARE_SOA_EXTENDED_TABLE(Tracks, StoredTracks, "TRACK", //! Basic track properties
+                           aod::track::Pt,
+                           aod::track::P,
+                           aod::track::Eta,
+                           aod::track::Phi);
+
+using Track = Tracks::iterator;
+  \end{verbatim}}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Tables}
+  -- {\color{blue} Collected data are stored in memory as tables}\par
+  -- {\color{blue} They are written once and read many times}\par
+  -- {\color{blue} Most efficient memory layout}\par
+  -- {\color{blue} Never copied}\par
+  \vspace{0.2in}
+  -- {\color{blue} Different table operations: \verb!blue!, \textit{grouping}, ...}\par
+  -- {\color{blue} Different ways to subscribe to a table}
+  \begin{itemize}
+    \item The whole table: {\color{blue}\verb|Collisions|}, {\color{blue}\verb|Tracks|}
+    \item Row level ({\color{blue}\verb|iterator|}): {\color{blue}\verb|Collision|}, {\color{blue}\verb|Track|}
+  \end{itemize}  
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Your first O2Physics analysis task}
+  \vspace{-0.2in}
+  {\scriptsize \color{blue}
+  \begin{verbatim}
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+
+using namespace o2;
+using namespace o2::framework;
+
+struct firsto2physics {
+  void init(InitContext&) {
+  }
+
+  void process(aod::Collisions const&, aod::Tracks const&) {
+    LOGF(info, "Hello word");
+  }
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
+  return WorkflowSpec{adaptAnalysisTask<firsto2physics>(cfgc)};
+}
+  \end{verbatim}
+  }
+  \vspace{-0.3in}
+  What about configure the task and how to produce/store the results
+\end{frame}
+
+\section{Let's start doing things}
+
+\begin{frame}[fragile]
+  \frametitle{Configuring your task}
+  \vspace{-0.0in}
+  {\scriptsize \color{blue}
+  \begin{verbatim}
+struct firsto2physics {
+  Configurable<float> cfgZVtxCut = {"zvtxcut", 7.0, "Vertex z cut. Default 7 cm"};
+  Configurable<float> cfgPtCutMin = {"minpt", 0.2, "Minimum accepted track pT. Default 0.2 GeV"};
+  Configurable<float> cfgPtCutMax = {"maxpt", 5.0, "Maximum accepted track pT. Default 5.0 GeV"};
+  Configurable<float> cfgEtaCut = {"etacut", 0.8, "Eta cut. Default 0.8"};
+
+  void init(InitContext&)
+  {
+  }
+  ...................
+  \end{verbatim}}
+  \vspace{-0.3in}
+  \begin{itemize}
+    \small
+    \item Full set of different configurables (documentation and tutorials)
+    \item Accessible from
+    \begin{itemize}
+      \item Command line (\verb|--zvtxcut|)
+      \item \verb|.json| configuration file
+      \item hyperloop
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Building and registering your task outputs}
+  \vspace{-0.0in}
+  {\tiny \color{blue}
+  \begin{verbatim}
+  ...................
+  Configurable<float> cfgEtaCut = {"etacut", 0.8, "Eta cut. Default 0.8"};
+
+  HistogramRegistry registry{"MyFirstO2TaskResults", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  void init(InitContext&)
+  {
+    registry.add("before/reco/zvtx", "vtx_{#it{z}}", kTH1F, {{300, -15.0, 15.0, "vtx_{#it{z}} (cm)"}});
+    registry.add("before/reco/multiplicity", "V0M multiplicity class", kTH1F, {{100, 0.0, 100.0, "V0M multiplicity (%)"}});
+    registry.add("before/reco/pt", "Charged particles #it{p}_{T}", kTH1F, {{150, 0.0, 15.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registry.add("before/reco/eta", "Charged particles #eta", kTH1F, {{400, -2.0, 2.0, "#eta"}});
+    registry.add("before/reco/phi", "Charged particles #varphi", kTH1F, {{360, 0.0, constants::math::TwoPI, "#varphi"}});
+
+    registry.addClone("before/reco/", "after/reco/");
+    registry.get<TH1>(HIST("after/reco/zvtx"))->GetXaxis()->SetRangeUser(-cfgZVtxCut, cfgZVtxCut);
+    registry.get<TH1>(HIST("after/reco/pt"))->GetXaxis()->SetRangeUser(cfgPtCutMin, cfgPtCutMax);
+    registry.get<TH1>(HIST("after/reco/eta"))->GetXaxis()->SetRangeUser(-cfgEtaCut, cfgEtaCut);
+  }
+  ...................
+  \end{verbatim}}
+  \vspace{-0.3in}
+  \begin{itemize}
+    \small
+    \item \verb|HistogramRegistry| is the most convenient and versatile way
+    \item There are others (documentation and tutorials)
+  \end{itemize}
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+  \frametitle{Selecting collisions and tracks}
+  \framesubtitle{Place holders for the time being}
+  {\scriptsize\color{blue}
+  \begin{verbatim}
+template <typename CollisionInstance>
+bool isCollisionAccepted(CollisionInstance const& col)
+{
+  bool accepted = true;
+
+  return accepted;
+}
+
+template <typename TrackInstance>
+bool isTrackAccepted(TrackInstance const& track)
+{
+  bool accepted = true;
+
+  return accepted;
+}
+
+  \end{verbatim}}
+  \vspace{-0.5in}
+  \begin{itemize}
+    \small
+    \item Templated for versatility and not repeated code
+    \item Only handle what is given and not something else
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Start receiving data and filling output results}
+  {\tiny\color{blue}
+  \vspace{-0.25in}
+  \begin{verbatim}
+using CollisionInstance = soa::Join<aod::Collisions, aod::CentV0Ms>::iterator;
+
+void process(CollisionInstance const& collision, aod::Tracks const& tracks)
+{
+  registry.fill(HIST("before/reco/zvtx"), collision.posZ());
+  registry.fill(HIST("before/reco/multiplicity"), collision.centV0M());
+
+  if (isCollisionAccepted(collision)) {
+
+    registry.fill(HIST("after/reco/zvtx"), collision.posZ());
+    registry.fill(HIST("after/reco/multiplicity"), collision.centV0M());
+
+    for (auto const& track : tracks) {
+      registry.fill(HIST("before/reco/pt"), track.pt());
+      registry.fill(HIST("before/reco/eta"), track.eta());
+      registry.fill(HIST("before/reco/phi"), track.phi());
+
+      if (isTrackAccepted(track)) {
+        registry.fill(HIST("after/reco/pt"), track.pt());
+        registry.fill(HIST("after/reco/eta"), track.eta());
+        registry.fill(HIST("after/reco/phi"), track.phi());
+      }
+    }
+  }
+}
+  \end{verbatim}}
+  \vspace{-0.4in}
+  \begin{itemize}
+    \small
+    \item Table operations: \verb|Join| and \textit{grouping}
+    \item Subscribe to one collision$+$multiplicity information and to associated tracks
+  \end{itemize}
+\end{frame}
+
+\section{Time to compile it\\Time to run it\\So how was it?}
+
+\begin{frame}[fragile]
+  \frametitle{Why it failed}
+  \small
+  {\tiny\color{red}
+  \vspace{-0.2in}
+  \begin{verbatim}
+[24744:internal-dpl-aod-reader]: [12:08:46][ERROR] Exception caught: 
+ Couldn't get TTree "DF_2449832441401065001/O2centv0m" from "AO2D_MCPbPb_T233_R244983.root". 
+Please check 
+ https://aliceo2group.github.io/analysis-framework/docs/troubleshooting/treenotfound.html 
+ for more information. 
+  \end{verbatim}}
+  \vspace{-0.2in}
+  Subscribed to \texttt{centrality} table whose producer task was not invoked
+  {\tiny\color{black}
+  \vspace{-0.1in}
+  \begin{verbatim}
+    o2-analysis-cf-firsto2physics --aod-file AO2D_MCPbPb_T233_R244983.root | o2-analysis-centrality-table > execution.log
+  \end{verbatim}}
+  {\tiny\color{red}
+  \vspace{-0.4in}
+  \begin{verbatim}
+[26737:internal-dpl-aod-reader]: [12:58:57][ERROR] Exception caught: 
+ Couldn't get TTree "DF_2449832441401065001/O2mult" from "AO2D_MCPbPb_T233_R244983.root"
+  \end{verbatim}}
+  \vspace{-0.2in}
+  \texttt{centrality} task needs \texttt{multiplicity} table whose producer was not invoked
+  {\tiny\color{black}
+  \vspace{-0.1in}
+  \begin{verbatim}
+    o2-analysis-cf-firsto2physics --aod-file AO2D_MCPbPb_T233_R244983.root |  
+      o2-analysis-centrality-table | 
+      o2-analysis-multiplicity-table > execution.log
+  \end{verbatim}}
+  {\tiny\color{red}
+  \vspace{-0.4in}
+  \begin{verbatim}
+[29393:internal-dpl-aod-reader]: [13:15:15][ERROR] Exception caught: 
+ Couldn't get TTree "DF_2449832441401065001/O2timestamps" from "AO2D_MCPbPb_T233_R244983.root"
+  \end{verbatim}}
+  \vspace{-0.2in}
+  \texttt{multiplicity} task needs \texttt{timestamp} table whose producer was not invoked
+  {\tiny\color{black}
+  \vspace{-0.1in}
+  \begin{verbatim}
+    o2-analysis-cf-firsto2physics --aod-file AO2D_MCPbPb_T233_R244983.root |  
+     o2-analysis-centrality-table | 
+     o2-analysis-multiplicity-table | 
+     o2-analysis-timestamp  > execution.log
+  \end{verbatim}}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{The configuration file}
+  \framesubtitle{Use as source \texttt{dpl-config.json} and rename it}
+  \begin{textblock}{6}(0.0,0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": {
+        "time-limit": "0",
+        "orbit-offset-enumeration": "0",
+        "orbit-multiplier-enumeration": "0",
+        "start-value-enumeration": "0",
+        "end-value-enumeration": "-1",
+        "step-value-enumeration": "1",
+        "aod-file": "AO2D_MCPbPb_T233_R244983.root"
+    },
+    "internal-dpl-aod-index-builder": "",
+    "internal-dpl-aod-spawner": "",
+    "timestamp-task": {
+        "verbose": "false",
+        "rct-path": "RCT\/RunInformation",
+        "start-orbit-path": "GRP\/StartOrbit",
+        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
+        "isRun2MC": "false"
+    },
+    \end{verbatim}}
+  \end{textblock}
+  \begin{textblock}{6}(7.0,0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+    "multiplicity-table": {
+        "processRun2": "true",
+        "processRun3": "false"
+    },
+    "centrality-table": {
+        "estV0M": "-1",
+        "estRun2SPDtks": "-1",
+        "estRun2SPDcls": "-1",
+        "estRun2CL0": "-1",
+        "estRun2CL1": "-1"
+    },
+    "firsto2physics": {
+        "zvtxcut": "7",
+        "minpt": "0.200000003",
+        "maxpt": "5",
+        "etacut": "0.800000012"
+    },
+    "internal-dpl-aod-global-analysis-file-sink": "",
+    "internal-dpl-aod-writer": ""
+}
+    \end{verbatim}}
+  \end{textblock}
+  \begin{textblock}{6}(0.0,5.5)
+    {\tiny\color{black}
+    \vspace{-0.0in}
+    \begin{verbatim}
+      o2-analysis-cf-firsto2physics --configuration json://handsonconfig.json |  
+        o2-analysis-centrality-table --configuration json://handsonconfig.json | 
+        o2-analysis-multiplicity-table --configuration json://handsonconfig.json | 
+        o2-analysis-timestamp  --configuration json://handsonconfig.json > execution.log
+    \end{verbatim}}
+  \end{textblock}
+\end{frame}
+
+\section{Have a look at your results}
+
+\begin{frame}[fragile]
+  \frametitle{Let's prepare for generator level analysis}
+  \framesubtitle{Output, and collisions and particle selections (place holders for the time being)}
+  {\tiny\color{blue}
+  \begin{verbatim}
+  void init(InitContext&)
+  {
+    ................
+    registry.addClone("before/reco/", "before/gen/");
+    registry.addClone("after/reco/", "after/gen/");
+  }
+
+  template <typename CollisionInstance>
+  bool isGenCollisionAccepted(CollisionInstance const& col)
+  {
+    bool accepted = true;
+
+    return accepted;
+  }
+
+  template <typename ParticleInstance>
+  bool isParticleAccepted(ParticleInstance const& particle)
+  {
+    bool accepted = true;
+
+    return accepted;
+  }
+  \end{verbatim}}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Subscribing to generator level tables}
+  \framesubtitle{Signature of \texttt{process} subscribed to \texttt{Collisions}$+$\texttt{CentV0Ms} and \texttt{Tracks}}
+  \vspace{-0.0in}
+  \small
+  {\scriptsize\color{blue}
+  \begin{verbatim}
+void process(CollisionInstance const& collision, aod::Tracks const& tracks)
+{
+  ..........
+}
+  \end{verbatim}}
+  \vspace{-0.2in}
+  Keep signature, change name, and incorporate \texttt{PROCESS\_SWITCH} mechanism
+  {\scriptsize\color{blue}
+  \begin{verbatim}
+void processReco(CollisionInstance const& collision, aod::Tracks const& tracks)
+{
+  ..........
+}
+PROCESS_SWITCH(firsto2physics, processReco, "Process reconstructed collisions and tracks", true);
+  \end{verbatim}}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Start receiving/processing generator level data}
+  {\tiny\color{blue}
+  \vspace{-0.0in}
+  \begin{verbatim}
+  void processGen(aod::McCollision const& gencollision, aod::McParticles const& particles)
+  {
+    registry.fill(HIST("before/gen/zvtx"), gencollision.posZ());
+
+    if (isGenCollisionAccepted(gencollision)) {
+
+      registry.fill(HIST("after/gen/zvtx"), gencollision.posZ());
+
+      for (auto const& particle : particles) {
+        registry.fill(HIST("before/gen/pt"), particle.pt());
+        registry.fill(HIST("before/gen/eta"), particle.eta());
+        registry.fill(HIST("before/gen/phi"), particle.phi());
+
+        if (isParticleAccepted(particle)) {
+          registry.fill(HIST("after/gen/pt"), particle.pt());
+          registry.fill(HIST("after/gen/eta"), particle.eta());
+          registry.fill(HIST("after/gen/phi"), particle.phi());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(firsto2physics, processGen, "Process reconstructed collisions and tracks", false);
+  \end{verbatim}}
+  \vspace{-0.3in}
+  \begin{itemize}
+    \small
+    \item Default is just reconstructed level
+  \end{itemize}
+\end{frame}
+
+\section{Time to compile it\\Time to run it\\Time to have a look at the results}
+
+\begin{frame}[fragile]
+  \frametitle{Revisiting the configuration file}
+  \framesubtitle{First have a look at \texttt{dpl-config.json}}
+  \begin{textblock}{6}(0.0,0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": {
+        "time-limit": "0",
+        "orbit-offset-enumeration": "0",
+        "orbit-multiplier-enumeration": "0",
+        "start-value-enumeration": "0",
+        "end-value-enumeration": "-1",
+        "step-value-enumeration": "1",
+        "aod-file": "AO2D_MCPbPb_T233_R244983.root"
+    },
+    "internal-dpl-aod-spawner": "",
+    "internal-dpl-aod-index-builder": "",
+    "timestamp-task": {
+        "verbose": "false",
+        "rct-path": "RCT\/RunInformation",
+        "start-orbit-path": "GRP\/StartOrbit",
+        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
+        "isRun2MC": "true"
+    },
+    \end{verbatim}}
+  \end{textblock}
+  \begin{textblock}{6}(7.0,0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+    "multiplicity-table": {
+        "processRun2": "true",
+        "processRun3": "false"
+    },
+    "centrality-table": {
+        "estV0M": "-1",
+        "estRun2SPDtks": "-1",
+        "estRun2SPDcls": "-1",
+        "estRun2CL0": "-1",
+        "estRun2CL1": "-1"
+    },
+    "firsto2physics": {
+        "zvtxcut": "7",
+        "minpt": "0.200000003",
+        "maxpt": "5",
+        "etacut": "0.800000012",
+        "processReco": "true",
+        "processGen": "false"
+    },
+    "internal-dpl-aod-global-analysis-file-sink": "",
+    "internal-dpl-aod-writer": ""
+}
+    \end{verbatim}}
+  \end{textblock}
+  \begin{textblock}{14}(0.0,6.2)
+    \begin{itemize}
+      \small
+      \item Incorporate the two new {\color{blue}\texttt{process...}} lines into your configuration file
+      \item Change {\color{blue} \verb|"processGen": "true"|}, run and have a look at the results
+    \end{itemize}
+
+  \end{textblock}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Detector level handling. Tracks particle labels}
+  \vspace{0.1in}
+  -- {\color{blue} The treatment of MC detector level must be the same as the treatment of reconstructed data}
+  \begin{itemize}
+    \small
+    \item But bad tracks (with negative labels) shall be discarded
+  \end{itemize}
+  \vspace{0.1in}
+  -- {\color{blue} \verb|McTrackLabel| table needs to be joined to the  \verb|Tracks| table}\par
+  \vspace{0.1in}
+  -- {\color{blue} Different signature}
+  \begin{itemize}
+    \small
+    \item Repeat \verb|processReco| with different signature
+    \item Exploit the \verb|template| mechanism
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Generic unified reconstructed data processing}
+  {\tiny\color{blue}
+  \vspace{-0.1in}
+  \begin{verbatim}
+  template <typename CollisionInstance, typename TracksListInstance>
+  void processReconstructed(CollisionInstance const& collision, TracksListInstance const& tracks)
+  {
+    registry.fill(HIST("before/reco/zvtx"), collision.posZ());
+    registry.fill(HIST("before/reco/multiplicity"), collision.centV0M());
+
+    if (isCollisionAccepted(collision)) {
+
+      registry.fill(HIST("after/reco/zvtx"), collision.posZ());
+      registry.fill(HIST("after/reco/multiplicity"), collision.centV0M());
+
+      for (auto const& track : tracks) {
+        registry.fill(HIST("before/reco/pt"), track.pt());
+        registry.fill(HIST("before/reco/eta"), track.eta());
+        registry.fill(HIST("before/reco/phi"), track.phi());
+
+        if (isTrackAccepted(track)) {
+          registry.fill(HIST("after/reco/pt"), track.pt());
+          registry.fill(HIST("after/reco/eta"), track.eta());
+          registry.fill(HIST("after/reco/phi"), track.phi());
+        }
+      }
+    }
+  }
+  \end{verbatim}}
+  \vspace{-0.3in}
+  \begin{itemize}
+    \small
+    \item No subscriptions here (only in \verb|process...|)
+    \item Generic collision table/s and generic tracks tables
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Expand process switching options. Check for labels}
+  {\tiny\color{blue}
+  \vspace{-0.1in}
+  \begin{verbatim}
+  using CollisionInstance = soa::Join<aod::Collisions, aod::CentV0Ms>::iterator;
+
+  void processRecoData(CollisionInstance const& collision, aod::Tracks const& tracks)
+  {
+    processReconstructed(collision, tracks);
+  }
+  PROCESS_SWITCH(firsto2physics, processRecoData, "Process data reconstructed collisions and tracks", true);
+
+  void processDetectorLevel(CollisionInstance const& collision, soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks)
+  {
+    processReconstructed(collision, tracks);
+  }
+  PROCESS_SWITCH(firsto2physics, processDetectorLevel, "Process MC detector level collisions and tracks", false);
+  \end{verbatim}}
+  {\tiny\color{blue}
+  \vspace{-0.4in}
+  \begin{verbatim}
+  template <typename TrackInstance>
+  bool isTrackAccepted(TrackInstance const& track)
+  {
+    if (track.mcParticleId() < 0) {
+      return false;
+    }
+    bool accepted = true;
+
+    return accepted;
+  }
+  \end{verbatim}}
+  \vspace{-0.4in}
+  \begin{itemize}
+    \small
+    \item It does not compile!
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Help the compiler!}
+  -- {\color{blue} Identify the code sections which apply to certain tables}\par
+  -- {\color{blue} In this case even the associated particle can be recovered}\par
+  {\tiny\color{blue}
+  \vspace{-0.0in}
+  \begin{verbatim}
+  template <typename TrackInstance>
+  bool isTrackAccepted(TrackInstance const& track)
+  {
+    if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackInstance::all_columns>) {
+      if (track.mcParticleId() < 0) {
+        return false;
+      }
+      auto particle = track.mcParticle();
+    }
+    bool accepted = true;
+
+    return accepted;
+  }
+  \end{verbatim}}
+  \vspace{-0.2in}
+  -- {\color{blue} But the \verb|McParticles| table needs to be subscribed}\par
+  {\tiny\color{blue}
+  \vspace{-0.0in}
+  \begin{verbatim}
+  void processDetectorLevel(CollisionInstance const& collision, 
+                            soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, 
+                            aod::McParticles const&)
+  {
+    processReconstructed(collision, tracks);
+  }
+  PROCESS_SWITCH(firsto2physics, processDetectorLevel, "Process MC detector level collisions and tracks", false);
+  \end{verbatim}}
+\end{frame}
+
+\section{Time to compile again\\Time to run}
+
+\begin{frame}[fragile]
+  \frametitle{Revisiting the configuration file}
+  \framesubtitle{First have a look at \texttt{dpl-config.json}}
+  \begin{textblock}{6}(0.0,0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": {
+        "time-limit": "0",
+        "orbit-offset-enumeration": "0",
+        "orbit-multiplier-enumeration": "0",
+        "start-value-enumeration": "0",
+        "end-value-enumeration": "-1",
+        "step-value-enumeration": "1",
+        "aod-file": "AO2D_MCPbPb_T233_R244983.root"
+    },
+    "internal-dpl-aod-spawner": "",
+    "internal-dpl-aod-index-builder": "",
+    "timestamp-task": {
+        "verbose": "false",
+        "rct-path": "RCT\/RunInformation",
+        "start-orbit-path": "GRP\/StartOrbit",
+        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
+        "isRun2MC": "true"
+    },
+    \end{verbatim}}
+  \end{textblock}
+  \begin{textblock}{6}(7.0,0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+    "multiplicity-table": {
+        "processRun2": "true",
+        "processRun3": "false"
+    },
+    "centrality-table": {
+        "estV0M": "-1",
+        "estRun2SPDtks": "-1",
+        "estRun2SPDcls": "-1",
+        "estRun2CL0": "-1",
+        "estRun2CL1": "-1"
+    },
+    "firsto2physics": {
+        "zvtxcut": "7",
+        "minpt": "0.200000003",
+        "maxpt": "5",
+        "etacut": "0.800000012",
+        "processRecoData": "true",
+        "processDetectorLevel": "false",
+        "processGen": "false"
+    },
+    "internal-dpl-aod-global-analysis-file-sink": "",
+    "internal-dpl-aod-writer": ""
+}    \end{verbatim}}
+  \end{textblock}
+  \begin{textblock}{14}(0.0,6.2)
+    \begin{itemize}
+      \small
+      \item Incorporate the two new {\color{blue}\texttt{process...}} lines into your configuration file
+      \item Set {\scriptsize\color{blue} \verb|"processRecoData": "false"|, \verb|"processDetectorLevel": "true"|, \verb|"processGen": "true"|}
+    \end{itemize}
+  \end{textblock}
+\end{frame}
+
+\section{Homework\\Incorporate event selection\\Incorporate track selection}
+
+\begin{frame}
+  \frametitle{How to keep learning}
+  \small
+  -- {\color{blue} O2 documentation}\par
+  \begin{itemize}
+    \vspace{-0.1in}
+    \item \href{https://aliceo2group.github.io/analysis-framework/}{https://aliceo2group.github.io/analysis-framework/}
+  \end{itemize}
+  -- {\color{blue} O2Physics tutorials} 
+  \begin{itemize}
+    \vspace{-0.1in}
+    \item \href{https://aliceo2group.github.io/analysis-framework/docs/tutorials/}{https://aliceo2group.github.io/analysis-framework/docs/tutorials/}
+    \vspace{-0.1in}
+    \item \texttt{alice/O2Physics/Tutorials}
+  \end{itemize}
+  -- {\color{blue} Your colleagues O2Physics tasks} 
+  \begin{itemize}
+    \vspace{-0.1in}
+    \item \texttt{alice/O2Physics/PWG...}
+  \end{itemize}
+  -- {\color{blue} O2 Analysis mattermost channel}\par
+  \begin{itemize}
+    \vspace{-0.1in}
+    \item \href{https://mattermost.web.cern.ch/alice/channels/o2-analysis}{https://mattermost.web.cern.ch/alice/channels/o2-analysis}
+  \end{itemize}
+  -- {\color{blue} Hyperloop Operation mattermost channel}\par
+  \begin{itemize}
+    \vspace{-0.1in}
+    \item \href{https://mattermost.web.cern.ch/alice/channels/o2-hyperloop-operation}{https://mattermost.web.cern.ch/alice/channels/o2-hyperloop-operation}
+  \end{itemize}
+
+   
+\end{frame}
+
+\end{document}
+

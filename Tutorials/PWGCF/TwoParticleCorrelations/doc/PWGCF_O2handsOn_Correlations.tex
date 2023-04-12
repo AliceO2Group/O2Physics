@@ -1,0 +1,701 @@
+\documentclass[14pt,aspectratio=169,t]{beamer}
+
+\mode<presentation> {
+%\usetheme{Hannover}
+
+%\usecolortheme{albatross}
+%\usecolortheme{beaver}
+%\usecolortheme{beetle}
+%\usecolortheme{crane}
+%\usecolortheme{dolphin}
+%\usecolortheme{dove}
+%\usecolortheme{fly}
+%\usecolortheme{lily}
+%\usecolortheme{orchid}
+\usecolortheme{rose}
+%\usecolortheme{seagull}
+%\usecolortheme{seahorse}
+%\usecolortheme{whale}
+%\usecolortheme{wolverine}
+
+% To remove the footer line in all slides uncomment this line
+%\setbeamertemplate{footline} 
+
+% To replace the footer line in all
+% slides with a simple slide count uncomment this line
+\setbeamertemplate{footline}[page number] 
+\setbeamertemplate{section in toc}[ball numbered] 
+
+% To remove the navigation symbols
+%from the bottom of all slides uncomment this line
+\setbeamertemplate{navigation symbols}{} 
+\usefonttheme{professionalfonts}
+
+
+\setbeamertemplate{itemize items}[square] % if you want a square
+\setbeamertemplate{itemize subitem}[circle] % if you wnat a circle
+\setbeamertemplate{itemize subsubitem}[triangle] % if you want a triangle
+}
+
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{slashed}
+
+\usepackage{graphicx} % Allows including images
+\usepackage{booktabs} % Allows \toprule, \midrule and \bottomrule in tables
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{pgfplots}
+\usepgfplotslibrary{dateplot}
+\pgfplotsset{compat=1.15}
+\usepackage{xspace}
+
+\usepackage{tikz}
+%\usepackage{soul}
+\usepackage[normalem]{ulem}
+
+\usepackage[overlay,absolute]{textpos}
+\setlength{\TPHorizModule}{1cm}
+\setlength{\TPVertModule}{1cm}
+\textblockorigin{10mm}{10mm}
+
+
+\makeatletter
+\def\beamer@andinst{\quad}
+\def\beamer@and{\\[1em]}
+\makeatother
+
+
+\definecolor{carmine}{rgb}{0.59, 0.0, 0.09}
+
+
+\title{\texorpdfstring{O2 Analysis tutorial\\Second edition\\
+        PWGCF O2 hands-on\\-- Correlations analysis framework --}{}}
+\date{April 27, 2023}
+
+\graphicspath{
+  {./IMAGES/}
+  {/localthree/victor/CERNBOX/TWO_PARTICLE_CORRELATIONS/ANALYSISRESULTS/}
+  {/localthree/victor/CERNBOX/TWO_PARTICLE_CORRELATIONS/ANALYSISRESULTS/AA_YEARLYANALYSIS/2020ANALYSIS/}
+  {/localthree/victor/CERNBOX/TWO_PARTICLE_CORRELATIONS/ANALYSISRESULTS/AA_YEARLYANALYSIS/2021ANALYSIS/}
+  {/localthree/victor/DOCUMENTS/PHD/THESIS/Figures/}
+  {/localthree/victor/DOCUMENTS/PHD/REFERENCES/}
+  {/localtwo/victor/PROJECTS/PAPERS/}
+  {/localtwo/victor/PROJECTS/BALANCEFUNCTIONS/STARCODE/IMAGES/}
+  {/localtwo/victor/PROJECTS/DUKEQCD/TESTSOSG/}
+  {/localtwo/victor/PROJECTS/DUKEQCD/TESTSOSG/NOTEBOOKS/}
+  {/localtwo/victor/PROJECTS/PAPERS/ALICEREVIEWPAPER/NOTEBOOKS/}
+  {/localthree/victor/DOCUMENTS/POSTDOC/WSU/PWGCF/O2MC_CHALLENGE/IMAGES/}
+  {/localthree/victor/DOCUMENTS/POSTDOC/WSU/FOLLOWUP/IMAGES/}
+}
+
+%\AtBeginSection[]
+%{
+%\begin{frame}
+%\frametitle{Contents}
+%\tableofcontents[currentsection]
+%\end{frame}
+%}
+
+% to insert the section title slide
+\AtBeginSection[]{
+  \begin{frame}
+  \vfill
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+    \usebeamerfont{title}\insertsectionhead\par%
+  \end{beamercolorbox}
+  \vfill
+  \end{frame}
+}
+
+%remove the icon
+\setbeamertemplate{bibliography item}{}
+
+%remove line breaks
+\setbeamertemplate{bibliography entry title}{}
+\setbeamertemplate{bibliography entry location}{}
+\setbeamertemplate{bibliography entry note}{}
+
+\begin{document}
+\setbeamercolor{postit}{fg=black,bg=yellow}
+
+\begin{frame}
+    \begin{textblock}{14}(0.0,1.0)
+        \titlepage
+    \end{textblock}
+    
+    % the logos
+    \begin{textblock}{14}(0.0,4.8)
+        \centering
+        {\color{blue}\small (Jan Fiete's seminal \texttt{AliAnalysisTaskPhiCorrelations})}\\
+        \vspace{0.3in}Víctor González
+    \end{textblock}
+    \begin{textblock}{12}(0.0,-0.7)
+        \includegraphics[width=6cm]{LOGO-WSU-wsu_primary_horz_color}
+    \end{textblock}
+    \begin{textblock}{10}(11.3,-0.8)
+        \includegraphics[width=1.5cm]{O2_logo_S_130822}
+    \end{textblock}
+    \begin{textblock}{10}(13.3,-0.8)
+        \includegraphics[width=1.5cm]{LOGO-ALICE-2012-Jul-04-4_Color_Logo_CB}
+    \end{textblock}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Correlations containers}
+  -- {\color{blue}Reconstructed step based multidimensional histograms}
+  \begin{itemize}
+    \item Each configured reconstruction step its own histograms set 
+    \item Single particle magnitudes
+    \item Two-particle magnitudes
+  \end{itemize}
+  \vspace{0.1in}
+  -- {\color{blue}$p_{\rm T}$ differential analysis}\par
+  \vspace{0.1in}
+  -- {\color{blue}Trigger -- associated analysis}\par
+  \vspace{0.1in}
+  -- {\color{blue}Reconstruction step efficiency extraction}\par
+  \vspace{0.1in}
+  -- {\color{blue}Check} {\small \verb|alice/O2Physics/PWGCF/Core/CorrelationContainer.h|}\par
+  \vspace{0.1in}
+  {\small\color{blue}
+  \begin{verbatim}
+      #include "PWGCF/Core/CorrelationContainer.h"
+  \end{verbatim}}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Mixed events support}
+  -- {\color{blue} There are many options.} Check 
+  \begin{itemize}
+    \small
+    \item \texttt{O2Physics/Tutorials/src/eventMixing.cxx} and 
+    \item \texttt{O2Physics/Tutorials/src/eventMixingValidation.cxx}
+  \end{itemize}
+  \vspace{0.1in}
+  -- {\color{blue}All of them allow to classify the objects to mix}
+  \vspace{-0.1in}
+  {\scriptsize\color{blue}
+  \begin{verbatim}
+  // define our collision classes
+  std::vector<double> 
+    vtxBinsEdges{VARIABLE_WIDTH, -7.0f, -5.0f, -3.0f, -1.0f, 1.0f, 3.0f, 5.0f, 7.0f};
+  std::vector<double> 
+    multBinsEdges{VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0, 100.1f};
+  // define the mixing binding to our collision classes
+  ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M> 
+    bindingOnVtxAndMult{{vtxBinsEdges, multBinsEdges}, true}; 
+        // true is for 'ignore overflows' (true by default)
+  // define the pairing we expect
+  SameKindPair<soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>, 
+               soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>, 
+               ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>> 
+    pair{bindingOnVtxAndMult, 5, -1}; 
+        // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  \end{verbatim}}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Processing mixed events}  
+  \vspace{-0.1in}
+  {\scriptsize\color{blue}
+  \begin{verbatim}
+// filter out non interesting
+Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgZVtxCut;
+Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && 
+                      (aod::track::pt > cfgPtCutMin) && 
+                      (aod::track::pt < cfgPtCutMax) &&
+                      (requireGlobalTrackInFilter() || 
+                      (aod::track::isGlobalTrackSDD == (uint8_t) true));
+
+
+void processMixed(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>> const& 
+                        collisions,
+                  soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& 
+                        tracks)
+{
+  for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+    ..................................  
+    ..................................
+  }
+}
+PROCESS_SWITCH(firstcorrelations, processMixed, "Process mixed events", true);
+
+
+  \end{verbatim}}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Pair cuts}
+  \framesubtitle{Functions which cut on particle pairs (decays, conversions, pair proximity)}
+  -- {\color{blue} Currently support $\gamma$, ${\rm K}^{0}$, $\Lambda$, $\phi$ and $\rho$}\par
+  \vspace{0.1in}
+  -- {\color{blue} Own set of control histograms in a passed \texttt{HistogramRegistry}}\par
+  \vspace{0.1in}
+  -- {\color{blue} Fully configurable}\par
+  \vspace{0.1in}
+  -- {\color{blue}Check} {\small \texttt{alice/O2Physics/PWGCF/Core/PairCuts.h}}\par
+  \vspace{0.1in}
+  {\small\color{blue}
+  \begin{verbatim}
+        #include "PWGCF/Core/PairCuts.h"
+  \end{verbatim}}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Your first O2Physics correlations analysis task}
+  \vspace{-0.1in}
+  {\scriptsize \color{blue}
+  \begin{verbatim}
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+
+using namespace o2;
+using namespace o2::framework;
+
+struct firstcorrelations {
+  void init(InitContext&)
+  {
+  }
+
+  void process(aod::Collisions const&, aod::Tracks const&)
+  {
+    LOGF(info, "Hello word");
+  }
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<firstcorrelations>(cfgc)};
+}
+  \end{verbatim}
+  }
+\end{frame}
+
+\section{Let's start doing things}
+
+\begin{frame}[fragile]
+  \frametitle{Configuring your task}
+  \vspace{-0.15in}
+  {\tiny\color{blue}
+  \begin{verbatim}
+static constexpr float cfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
+
+struct firstcorrelations {
+  Configurable<float> cfgZVtxCut = {"zvtxcut", 7.0, "Vertex z cut. Default 7 cm"};
+  Configurable<float> cfgPtCutMin = {"minpt", 0.2, "Minimum accepted track pT. Default 0.2 GeV"};
+  Configurable<float> cfgPtCutMax = {"maxpt", 5.0, "Maximum accepted track pT. Default 5.0 GeV"};
+  Configurable<float> cfgEtaCut = {"etacut", 0.8, "Eta cut. Default 0.8"};
+
+  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", 
+                                               {cfgPairCutDefaults[0], 
+                                                5, 
+                                                {"Photon", "K0", "Lambda", "Phi", "Rho"}}, 
+                                                "Pair cuts on various particles"};
+
+  ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -constants::math::PIHalf, constants::math::PIHalf * 3}, 
+                                "delta phi axis for histograms"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
+  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, 
+                                 "pt trigger axis for histograms"};
+  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, 
+                               "pt associated axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, 
+                                    "multiplicity / centrality axis for histograms"};
+  ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
+  ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
+  ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", 
+                                    {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 
+                                    2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, 
+                                    "pt axis for efficiency histograms"};
+  void init(InitContext&)
+  \end{verbatim}}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Track your headers and usings and move forward}
+  \vspace{-0.15in}
+  {\scriptsize\color{blue}
+  \begin{verbatim}
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "CommonConstants/MathConstants.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
+#include "PWGCF/Core/CorrelationContainer.h"
+#include "PWGCF/Core/PairCuts.h"
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+  \end{verbatim}}
+  \vspace{-0.2in}
+  \begin{itemize}
+    \small
+    \item Compile, run, execute and have a look at the `dpl-config.json`
+  \end{itemize}
+  {\tiny \color{black}
+  \vspace{-0.1in}
+  \begin{verbatim}
+        o2-analysis-cf-firstcorrelations --aod-file AO2D_MCPbPb_T233_R244983.root > execution.log
+  \end{verbatim}}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{The configuration file}
+  \framesubtitle{Use as source \texttt{dpl-config.json} and rename it}
+  \begin{textblock}{6}(0.0,0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+{
+    ..............................
+    "firstcorrelations": {
+        "zvtxcut": "7",
+        "minpt": "0.200000003",
+        "maxpt": "5",
+        "etacut": "0.800000012",
+        "cfgPairCut": {
+            "labels_rows": "",
+            "labels_cols": [
+                "Photon",
+                "K0",
+                "Lambda",
+                "Phi",
+                "Rho"
+            ],
+            "values": [
+                [
+                    "-1",
+                    "-1",
+                    "-1",
+                    "-1",
+                    "-1"
+                ]
+            ]
+        },
+    ..............................
+}    
+    \end{verbatim}}
+  \end{textblock}
+  \begin{textblock}{6}(7.0,-0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+    \end{verbatim}}
+  \end{textblock}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Building and registering your task outputs and objects}
+  \begin{textblock}{16}(-0.4,-0.3)
+    {\tiny \color{blue}
+    \begin{verbatim}
+OutputObj<CorrelationContainer> same{"sameEvent"};
+OutputObj<CorrelationContainer> mixed{"mixedEvent"};
+HistogramRegistry registry{"registry"};
+PairCuts mPairCuts;
+bool doPairCuts = false;
+
+void init(InitContext&)
+{
+  registry.add("yields", "centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "centrality"}, 
+                                                                       {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
+  registry.add("etaphi", "centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "centrality"}, 
+                                                                        {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
+  const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
+  registry.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+  mPairCuts.SetHistogramRegistry(&registry);
+  if (cfgPairCut->get("Photon") > 0 || cfgPairCut->get("K0") > 0 || cfgPairCut->get("Lambda") > 0 || 
+      cfgPairCut->get("Phi") > 0 || cfgPairCut->get("Rho") > 0) {
+    mPairCuts.SetPairCut(PairCuts::Photon, cfgPairCut->get("Photon"));
+    mPairCuts.SetPairCut(PairCuts::K0, cfgPairCut->get("K0"));
+    mPairCuts.SetPairCut(PairCuts::Lambda, cfgPairCut->get("Lambda"));
+    mPairCuts.SetPairCut(PairCuts::Phi, cfgPairCut->get("Phi"));
+    mPairCuts.SetPairCut(PairCuts::Rho, cfgPairCut->get("Rho"));
+    doPairCuts = true;
+  }
+  std::vector<AxisSpec> axisList = {{axisDeltaEta, "#Delta#eta"}, {axisPtAssoc, "p_{T} (GeV/c)"}, {axisPtTrigger, "p_{T} (GeV/c)"},
+                                    {axisMultiplicity, "multiplicity / centrality"}, {axisDeltaPhi, "#Delta#varphi (rad)"},
+                                    {axisVertex, "z-vtx (cm)"}, {axisEtaEfficiency, "#eta"}, {axisPtEfficiency, "p_{T} (GeV/c)"},
+                                      {axisVertexEfficiency, "z-vtx (cm)"}};
+  same.setObject(new CorrelationContainer("sameEvent", "sameEvent", axisList));
+  mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", axisList));
+}
+    \end{verbatim}}
+  \end{textblock}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Put in place collisions classification}
+  
+  \vspace{-0.0in}
+  {\tiny\color{blue}
+  \begin{verbatim}
+std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -7.0f, -5.0f, -3.0f, -1.0f, 1.0f, 3.0f, 5.0f, 7.0f};
+std::vector<double> multBinsEdges{VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0, 100.1f};
+ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M> 
+  bindingOnVtxAndMult{{vtxBinsEdges, multBinsEdges}, true}; // true is for 'ignore overflows' (true by default)
+SameKindPair<soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>, 
+              soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>, 
+              ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>> 
+  pair{bindingOnVtxAndMult, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+
+  \end{verbatim}}
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+  \frametitle{Tracks and collisions selection and subscription}
+  \vspace{-0.1in}
+  {\tiny\color{blue}
+  \begin{verbatim}
+Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgZVtxCut;
+Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) &&
+                      (requireGlobalTrackInFilter() || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+
+
+void processSame(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>::iterator const& collision, 
+                 soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
+{
+}
+PROCESS_SWITCH(firstcorrelations, processSame, "Process same event", true);
+
+void processMixed(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>& collisions, 
+                  soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
+{
+}
+PROCESS_SWITCH(firstcorrelations, processMixed, "Process mixed events", true);
+  \end{verbatim}}
+  \vspace{-0.2in}
+  \begin{itemize}
+    \small
+    \item Compile, run, execute and have a look at the `dpl-config.json`
+  \end{itemize}
+  \vspace{-0.4in}
+  \begin{textblock}{16}(1.5,5.2)
+    {\tiny \color{black}
+    \vspace{-0.1in}
+    \begin{verbatim}
+o2-analysis-cf-firstcorrelations --configuration json://handsonconfig.json |  
+  o2-analysis-centrality-table --configuration json://hdsonconfig.json | 
+  o2-analysis-multiplicity-table --configuration json://handsonconfig.json | 
+  o2-analysis-timestamp  --configuration json://handsonconfig.json | 
+  o2-analysis-trackselection  --configuration json://handsonconfig.json | 
+  o2-analysis-trackextension  --configuration json://handsonconfig.json | 
+  o2-analysis-event-selection  --configuration json://handsonconfig.json > execution.log
+    \end{verbatim}}
+  \end{textblock}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{The configuration file}
+  \framesubtitle{Get input from \texttt{dpl-config.json}}
+  \begin{textblock}{6}(0.5,0.4)
+    {\scriptsize\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+{
+    .................
+    "firstcorrelations": {
+       .................
+       "processSame": "true",
+       "processMixed": "true"
+    },
+    .................
+}    
+    \end{verbatim}}
+  \end{textblock}
+  \begin{textblock}{6}(7.0,0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+    \end{verbatim}}
+  \end{textblock}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Do the processing (I)}
+  \begin{textblock}{6}(0.0,0.0)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+  template <typename TCollision, typename TTracks>
+  void fillQA(TCollision collision, float centrality, TTracks tracks)
+  {
+    for (auto& track1 : tracks) {
+      registry.fill(HIST("yields"), centrality, track1.pt(), track1.eta());
+      registry.fill(HIST("etaphi"), centrality, track1.eta(), track1.phi());
+    }
+  }
+
+  template <typename TTarget, typename TCollision>
+  bool fillCollision(TTarget target, TCollision collision, float centrality)
+  {
+    target->fillEvent(centrality, CorrelationContainer::kCFStepAll);
+
+    if (!collision.alias()[kINT7] || !collision.sel7()) {
+      return false;
+    }
+
+    target->fillEvent(centrality, CorrelationContainer::kCFStepReconstructed);
+
+    return true;
+  }
+    \end{verbatim}}
+  \end{textblock}
+  \begin{textblock}{6}(7.0,0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+    \end{verbatim}}
+  \end{textblock}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Do the processing (II)}
+  \begin{textblock}{6}(0.0,0.0)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+  template <typename TTarget, typename TTracks>
+  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float centrality, float posZ)
+  {
+    for (auto& track1 : tracks1) {
+      target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, track1.pt(), centrality, posZ, 1.0);
+
+      for (auto& track2 : tracks2) {
+        if (track1 == track2) {
+          continue;
+        }
+        if (doPairCuts && mPairCuts.conversionCuts(track1, track2)) {
+          continue;
+        }
+        float deltaPhi = track1.phi() - track2.phi();
+        if (deltaPhi > 1.5f * PI) {
+          deltaPhi -= TwoPI;
+        }
+        if (deltaPhi < -PIHalf) {
+          deltaPhi += TwoPI;
+        }
+
+        target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                    track1.eta() - track2.eta(), track2.pt(), track1.pt(), centrality, deltaPhi, posZ,
+                                    1.0);
+      }
+    }
+  }
+    \end{verbatim}}
+  \end{textblock}
+  \begin{textblock}{6}(7.0,0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+    \end{verbatim}}
+  \end{textblock}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Process same events}
+  \begin{textblock}{6}(0.0,0.4)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+  void processSame(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>::iterator const& collision, 
+                   soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
+  {
+    const auto centrality = collision.centV0M();
+
+    if (fillCollision(same, collision, centrality) == false) {
+      return;
+    }
+    registry.fill(HIST("eventcount"), -2);
+    fillQA(collision, centrality, tracks);
+    fillCorrelations(same, tracks, tracks, centrality, collision.posZ());
+  }
+    \end{verbatim}}
+  \end{textblock}
+  \begin{textblock}{6}(7.0,0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+    \end{verbatim}}
+  \end{textblock}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Process mixed events}
+  \begin{textblock}{6}(0.0,0.4)
+    {\tiny\color{blue}
+    \vspace{-0.2in}
+    \begin{verbatim}
+  void processMixed(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>& collisions,
+                    soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
+  {
+    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+
+      if (fillCollision(mixed, collision1, collision1.centRun2V0M()) == false) {
+        continue;
+      }
+      registry.fill(HIST("eventcount"), 1);
+
+      fillCorrelations(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ());
+    }
+  }
+    \end{verbatim}}
+  \end{textblock}
+  \begin{textblock}{6}(7.0,0.2)
+    {\tiny\color{blue}
+    \vspace{-0.0in}
+    \begin{verbatim}
+    \end{verbatim}}
+  \end{textblock}
+\end{frame}
+
+\begin{frame}
+  \frametitle{How to keep learning}
+  \small
+  -- {\color{blue} O2 documentation}\par
+  \begin{itemize}
+    \vspace{-0.1in}
+    \item \href{https://aliceo2group.github.io/analysis-framework/}{https://aliceo2group.github.io/analysis-framework/}
+  \end{itemize}
+  -- {\color{blue} O2Physics tutorials} 
+  \begin{itemize}
+    \vspace{-0.1in}
+    \item \href{https://aliceo2group.github.io/analysis-framework/docs/tutorials/}{https://aliceo2group.github.io/analysis-framework/docs/tutorials/}
+    \vspace{-0.1in}
+    \item \texttt{alice/O2Physics/Tutorials}
+  \end{itemize}
+  -- {\color{blue} Your colleagues O2Physics tasks} 
+  \begin{itemize}
+    \vspace{-0.1in}
+    \item \texttt{alice/O2Physics/PWG...}
+  \end{itemize}
+  -- {\color{blue} O2 Analysis mattermost channel}\par
+  \begin{itemize}
+    \vspace{-0.1in}
+    \item \href{https://mattermost.web.cern.ch/alice/channels/o2-analysis}{https://mattermost.web.cern.ch/alice/channels/o2-analysis}
+  \end{itemize}
+  -- {\color{blue} Hyperloop Operation mattermost channel}\par
+  \begin{itemize}
+    \vspace{-0.1in}
+    \item \href{https://mattermost.web.cern.ch/alice/channels/o2-hyperloop-operation}{https://mattermost.web.cern.ch/alice/channels/o2-hyperloop-operation}
+  \end{itemize}
+\end{frame}
+\end{document}
+
