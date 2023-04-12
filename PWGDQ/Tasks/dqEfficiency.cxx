@@ -536,13 +536,13 @@ struct AnalysisSameEventPairing {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    if(fCorrFullGeo){
-    	if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      		ccdb->get<TGeoManager>(geoPath);
-    	}
-    }else{
-	    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-	    VarManager::SetupMatLUTFwdDCAFitter(lut);
+    if (fCorrFullGeo) {
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
+      }
+    } else {
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+      VarManager::SetupMatLUTFwdDCAFitter(lut);
     }
 
     bool enableBarrelHistos = context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed");
