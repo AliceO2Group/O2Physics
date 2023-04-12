@@ -32,6 +32,7 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/Core/FastJetUtilities.h"
 
 #include "../filterTables.h"
 
@@ -39,7 +40,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
-using filteredJets = o2::soa::Filtered<o2::aod::Jets>;
+using filteredJets = o2::soa::Filtered<o2::aod::FullJets>;
 
 struct fullJetFilter {
   enum {

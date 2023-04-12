@@ -20,15 +20,15 @@
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetHF.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetMatchingHFQA {
-  using DetectorLevelJets = soa::Join<aod::MCDetectorLevelHFJets, aod::MCDetectorLevelHFJetConstituents, aod::MatchedMCDetectorParticleLevelHFJets>;
-  using ParticleLevelJets = soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents, aod::MatchedMCParticleDetectorLevelHFJets>;
+  using DetectorLevelJets = soa::Join<aod::MCDetectorLevelD0Jets, aod::MCDetectorLevelD0JetConstituents, aod::MatchedMCDetectorParticleLevelD0Jets>;
+  using ParticleLevelJets = soa::Join<aod::MCParticleLevelD0Jets, aod::MCParticleLevelD0JetConstituents, aod::MatchedMCParticleDetectorLevelD0Jets>;
 
   OutputObj<TH2F> hJetPt{"h_jet_pt"};
   OutputObj<TH2F> hJetDetaDphi{"h_jet_deta_dphi"};

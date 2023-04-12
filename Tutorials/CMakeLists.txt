@@ -12,6 +12,7 @@
 add_subdirectory(Skimming)
 add_subdirectory(OpenData)
 add_subdirectory(ML)
+add_subdirectory(PWGEM)
 
 o2physics_add_dpl_workflow(histogram-track-selection
                     SOURCES src/histogramTrackSelection.cxx
@@ -221,4 +222,19 @@ o2physics_add_dpl_workflow(preprocess
 o2physics_add_dpl_workflow(consume
                   SOURCES src/consume.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(strangeness-step0
+                  SOURCES PWGLF/strangeness_step0.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(strangeness-step1
+                  SOURCES PWGLF/strangeness_step1.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(strangeness-step2
+                  SOURCES PWGLF/strangeness_step2.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)

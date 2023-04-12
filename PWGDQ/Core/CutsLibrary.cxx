@@ -234,6 +234,23 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("PIDefficiency_wPID")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQuality"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    cut->AddCut(GetAnalysisCut("pidcalib_ele"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("PIDefficiency_woPID")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQuality"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    cut->AddCut(GetAnalysisCut("pidcalib_ele"));
+    return cut;
+  }
+
   if (!nameStr.compare("highPtHadron")) {
     cut->AddCut(GetAnalysisCut("highPtHadron"));
     return cut;
@@ -1339,6 +1356,43 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("int7vtxZ5")) {
     cut->AddCut(VarManager::kVtxZ, -5.0, 5.0);
     cut->AddCut(VarManager::kIsINT7, 0.5, 1.5);
+    return cut;
+  }
+
+  // Event cuts based on centrality
+  if (!nameStr.compare("eventStandardNoINT7Cent090")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kCentFT0C, 0.0, 90.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardNoINT7Cent7090")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kCentFT0C, 70.0, 90.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardNoINT7Cent5070")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kCentFT0C, 50.0, 70.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardNoINT7Cent3050")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kCentFT0C, 30.0, 50.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardNoINT7Cent1030")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kCentFT0C, 10.0, 30.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardNoINT7Cent010")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kCentFT0C, 0.0, 10.0);
     return cut;
   }
 

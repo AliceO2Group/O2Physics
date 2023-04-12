@@ -29,7 +29,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_2prong;
 
-//#define MY_DEBUG
+// #define MY_DEBUG
 
 #ifdef MY_DEBUG
 using MyBigTracks = aod::BigTracksMC;
@@ -144,7 +144,7 @@ struct HfCandidateCreatorCascade {
       const auto& trackV0DaughPos = v0.posTrack_as<MyBigTracks>();
       const auto& trackV0DaughNeg = v0.negTrack_as<MyBigTracks>();
 
-      auto collision = bach.collision();
+      auto collision = casc.collision();
 
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,

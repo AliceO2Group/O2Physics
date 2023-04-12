@@ -25,6 +25,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct DiffQA {
+  SliceCache cache;
+  Preslice<aod::Zdcs> perBCzdc = aod::zdc::bcId;
+  Preslice<aod::Calos> perBCcalo = aod::calo::bcId;
 
   // constants
   static const int nBCpOrbit = 3564;
@@ -280,7 +283,7 @@ struct DiffQA {
     // no Zdc signal in bcSlice
     std::vector<float> lims(10, 0.);
     for (auto const& bc : bcSlice) {
-      if (!udhelpers::cleanZDC(bc, zdcs, lims)) {
+      if (!udhelpers::cleanZDC(bc, zdcs, lims, cache)) {
         isDGcandidate = false;
         break;
       }
@@ -289,7 +292,7 @@ struct DiffQA {
 
     // no Calo signal in bcSlice
     for (auto const& bc : bcSlice) {
-      if (!udhelpers::cleanCalo(bc, calos, lims)) {
+      if (!udhelpers::cleanCalo(bc, calos, lims, cache)) {
         isDGcandidate = false;
         break;
       }

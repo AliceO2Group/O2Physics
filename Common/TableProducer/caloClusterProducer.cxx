@@ -100,7 +100,7 @@ struct caloClusterProducerTask {
 
     int64_t timestamp = 0;
     if (bcs.begin() != bcs.end()) {
-      bcs.begin().timestamp(); // timestamp for CCDB object retrieval
+      timestamp = bcs.begin().timestamp(); // timestamp for CCDB object retrieval
     }
     std::map<int64_t, int> bcMap;
     int bcId = 0;
@@ -166,6 +166,10 @@ struct caloClusterProducerTask {
     for (auto& c : cells) {
       if (c.caloType() != kPHOS) // PHOS
         continue;
+      // Fix for bug in trigger digits
+      if ((c.cellType() == phos::TRU2x2 || c.cellType() == phos::TRU4x4) && c.cellNumber() == 0) {
+        continue;
+      }
       if (phosCellTRs.size() == 0) { // first cell, first TrigRec
         ir.setFromLong(c.bc_as<aod::BCsWithTimestamps>().globalBC());
         phosCellTRs.emplace_back(ir, 0, 0); // BC,first cell, ncells
@@ -398,7 +402,7 @@ struct caloClusterProducerTask {
 
     int64_t timestamp = 0;
     if (bcs.begin() != bcs.end()) {
-      bcs.begin().timestamp(); // timestamp for CCDB object retrieval
+      timestamp = bcs.begin().timestamp(); // timestamp for CCDB object retrieval
     }
     std::map<int64_t, int> bcMap;
     int bcId = 0;
@@ -463,6 +467,10 @@ struct caloClusterProducerTask {
     for (auto& c : cells) {
       if (c.caloType() != kPHOS) // PHOS
         continue;
+      // Fix for bug in trigger digits
+      if ((c.cellType() == phos::TRU2x2 || c.cellType() == phos::TRU4x4) && c.cellNumber() == 0) {
+        continue;
+      }
       if (phosCellTRs.size() == 0) { // first cell, first TrigRec
         ir.setFromLong(c.bc_as<aod::BCsWithTimestamps>().globalBC());
         phosCellTRs.emplace_back(ir, 0, 0); // BC,first cell, ncells

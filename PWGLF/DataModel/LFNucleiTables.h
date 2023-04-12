@@ -90,6 +90,7 @@ DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);
 DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);
 DECLARE_SOA_COLUMN(Beta, beta, float);
 // TPC and ITS QA
+DECLARE_SOA_COLUMN(ITSNCls, itsNCls, int16_t);
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int16_t);
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int16_t);
@@ -135,6 +136,7 @@ DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   full::Eta,
                   full::Phi,
                   full::Sign,
+                  full::ITSNCls,
                   full::TPCNClsCrossedRows,
                   full::TPCCrossedRowsOverFindableCls,
                   full::TPCNClsFound,

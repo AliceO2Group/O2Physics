@@ -151,7 +151,7 @@ struct tofSkimsTableCreator {
       }
       tableRow(trk.collisionId(),
                trk.p(),
-               trk.pt(),
+               trk.pt() * trk.sign(),
                trk.eta(),
                trk.phi(),
                trk.pidForTracking(),
