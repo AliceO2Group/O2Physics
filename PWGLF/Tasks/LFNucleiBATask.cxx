@@ -182,9 +182,9 @@ struct LFNucleiBATask {
         histos.add<TH1>("tracks/eff/hPtantiPrTOF", "Track #it{p}_{T} (#bar{p}); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
       }
       if (enableDe) {
-        histos.add<TH1>("tracks/eff/hPtDe", "Track #it{p}_{T} (p); #it{d}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
+        histos.add<TH1>("tracks/eff/hPtDe", "Track #it{p}_{T} (d); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
         histos.add<TH1>("tracks/eff/hPtantiDe", "Track #it{p}_{T} (#bar{d}); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
-        histos.add<TH1>("tracks/eff/hPtDeTOF", "Track #it{p}_{T} (p); #it{d}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
+        histos.add<TH1>("tracks/eff/hPtDeTOF", "Track #it{p}_{T} (d); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
         histos.add<TH1>("tracks/eff/hPtantiDeTOF", "Track #it{p}_{T} (#bar{d}); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
       }
       if (enableTr) {
