@@ -166,7 +166,7 @@ class TrackSmearer
 
   bool smearTrack(O2Track& o2track, lutEntry_t* lutEntry);
   bool smearTrack(O2Track& o2track, int pid, float nch);
-  bool smearTrack(Track& track, bool atDCA = true);
+  // bool smearTrack(Track& track, bool atDCA = true); // Only in DelphesO2
 
   int getIndexPDG(int pdg)
   {
@@ -363,30 +363,30 @@ bool TrackSmearer::smearTrack(O2Track& o2track, int pid, float nch)
 }
 
 /*****************************************************************/
+// Only in DelphesO2
+// bool TrackSmearer::smearTrack(Track& track, bool atDCA)
+// {
 
-bool TrackSmearer::smearTrack(Track& track, bool atDCA)
-{
+//   O2Track o2track;
+//   TrackUtils::convertTrackToO2Track(track, o2track, atDCA);
+//   int pdg = track.PID;
+//   float nch = mdNdEta; // use locally stored dNch/deta for the time being
+//   if (!smearTrack(o2track, pdg, nch))
+//     return false;
+//   TrackUtils::convertO2TrackToTrack(o2track, track, atDCA);
+//   return true;
 
-  O2Track o2track;
-  TrackUtils::convertTrackToO2Track(track, o2track, atDCA);
-  int pdg = track.PID;
-  float nch = mdNdEta; // use locally stored dNch/deta for the time being
-  if (!smearTrack(o2track, pdg, nch))
-    return false;
-  TrackUtils::convertO2TrackToTrack(o2track, track, atDCA);
-  return true;
+// #if 0
+//   auto lutEntry = getLUTEntry(track.PID, 0., 0., track.Eta, track.PT);
+//   if (!lutEntry)
+//     return;
 
-#if 0
-  auto lutEntry = getLUTEntry(track.PID, 0., 0., track.Eta, track.PT);
-  if (!lutEntry)
-    return;
-
-  O2Track o2track;
-  TrackUtils::convertTrackToO2Track(track, o2track, atDCA);
-  smearTrack(o2track, lutEntry);
-  TrackUtils::convertO2TrackToTrack(o2track, track, atDCA);
-#endif
-}
+//   O2Track o2track;
+//   TrackUtils::convertTrackToO2Track(track, o2track, atDCA);
+//   smearTrack(o2track, lutEntry);
+//   TrackUtils::convertO2TrackToTrack(o2track, track, atDCA);
+// #endif
+// }
 
 /*****************************************************************/
 
