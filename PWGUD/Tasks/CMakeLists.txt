@@ -39,21 +39,6 @@ o2physics_add_dpl_workflow(dgcand-analyzer
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::UDGoodRunSelector O2Physics::DGPIDSelector O2Physics::UDFSParser
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(udtutorial-01
-                           SOURCES UDTutorial_01.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(udtutorial-02a
-                           SOURCES UDTutorial_02a.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(udtutorial-02b
-                           SOURCES UDTutorial_02b.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
-                           COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(upccand-analyzer
                            SOURCES UPCCandidateAnalyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
