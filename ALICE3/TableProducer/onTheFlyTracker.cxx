@@ -23,6 +23,8 @@
 /// \author Roberto Preghenella preghenella@bo.infn.it
 ///
 
+#include <utility>
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -43,7 +45,6 @@
 #include "CommonConstants/GeomConstants.h"
 
 #include "onTheFlyTracker.h"
-#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
