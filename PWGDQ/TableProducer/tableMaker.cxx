@@ -37,6 +37,16 @@
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
+#include "DataFormatsGlobalTracking/RecoContainerCreateTracksVariadic.h"
+#include "DetectorsVertexing/VertexTrackMatcher.h"
+#include "ReconstructionDataFormats/PrimaryVertex.h"
+#include "ReconstructionDataFormats/VtxTrackIndex.h"
+#include "ReconstructionDataFormats/VtxTrackRef.h"
+#include "DataFormatsITSMFT/ROFRecord.h"
+#include "CommonDataFormat/InteractionRecord.h"
+#include "DetectorsVertexing/PVertexerParams.h"
+#include "MathUtils/Primitive2D.h"
+#include "DataFormatsGlobalTracking/RecoContainer.h"
 
 using std::cout;
 using std::endl;
@@ -76,6 +86,7 @@ using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>
 using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::FwdTracksDCA>;
+using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
 
 namespace o2::aod
 {
