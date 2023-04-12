@@ -110,9 +110,6 @@ struct jetTrackCollisionQa {
   // add another process for MC studies !
   void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Jets, aod::JetConstituents> const& jets, TracksJE const& tracks)
   {
-    if (collision.posZ() > 10) {
-      return;
-    }
     mHistManager.fill(HIST("collisionVtxZ"), collision.posZ());
 
     double leadingJetPt = -1;
@@ -134,9 +131,6 @@ struct jetTrackCollisionQa {
       double leadingConstTrackEta = -1;
       // access jet constituents as tracks
       for (auto& jct : j.tracks_as<TracksJE>()) {
-        if (!validationTracks.IsSelected(jct)) {
-          continue;
-        } // check if this is really a global track - maybe adding hists for rejected tracks ?
         mHistManager.fill(HIST("jetConstTrackPt"), jct.pt());
         mHistManager.fill(HIST("jetConstTrackPhi"), jct.phi());
         mHistManager.fill(HIST("jetConstTrackEta"), jct.eta());
