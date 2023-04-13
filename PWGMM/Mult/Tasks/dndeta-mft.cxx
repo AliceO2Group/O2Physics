@@ -61,6 +61,11 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
 using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
 struct PseudorapidityDensityMFT {
+  SliceCache cache;
+  Preslice<aod::MFTTracks> perCol = o2::aod::fwdtrack::collisionId;
+  Preslice<aod::McParticles> perMcCol = aod::mcparticle::mcCollisionId;
+  Preslice<aod::Tracks> perColCentral = aod::track::collisionId;
+
   Service<O2DatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
@@ -266,7 +271,7 @@ struct PseudorapidityDensityMFT {
     if (!useEvSel || (useEvSel && collision.sel8())) {
       registry.fill(HIST("EventSelection"), 2.);
       auto z = collision.posZ();
-      auto perCollisionSample = sample->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex());
+      auto perCollisionSample = sample->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
       auto Ntrk = perCollisionSample.size() + atracks.size();
 
       registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z);
@@ -342,7 +347,7 @@ struct PseudorapidityDensityMFT {
     if (!useEvSel || (useEvSel && collision.sel8())) {
       registry.fill(HIST("EventSelection"), 2.);
       auto z = collision.posZ();
-      auto perCollisionSample = sample->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex());
+      auto perCollisionSample = sample->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
       auto Ntrk = perCollisionSample.size() + atracks.size();
       float weight = 1.;
       weight = histoReweight->GetBinContent(histoReweight->FindBin(z));
@@ -393,7 +398,7 @@ struct PseudorapidityDensityMFT {
     if (!useEvSel || collision.sel8()) {
       auto z = collision.posZ();
       registry.fill(HIST("Events/Centrality/Selection"), 2., c);
-      auto perCollisionSample = sample->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex());
+      auto perCollisionSample = sample->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
       auto Ntrk = perCollisionSample.size() + atracks.size();
 
       registry.fill(HIST("Events/Centrality/NtrkZvtx"), Ntrk, z, c);
@@ -443,8 +448,6 @@ struct PseudorapidityDensityMFT {
   Partition<Particles> mcSample = (aod::mcparticle::eta < -2.8f) && (aod::mcparticle::eta > -3.2f);
   Partition<Particles> mcSampleCentral = nabs(aod::mcparticle::eta) < estimatorEta;
 
-  Preslice<FiCentralTracks> perColCentral = aod::track::collisionId;
-
   void processGen(aod::McCollisions::iterator const& mcCollision,
                   o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
                   Particles const& particles,
@@ -453,7 +456,7 @@ struct PseudorapidityDensityMFT {
   {
     registry.fill(HIST("EventEfficiency"), 1.);
 
-    auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+    auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nCharged = 0;
     for (auto& particle : perCollisionMCSample) {
       auto charge = 0.;
@@ -469,7 +472,7 @@ struct PseudorapidityDensityMFT {
     registry.fill(HIST("EventsNtrkZvtxGen_t"), nCharged, mcCollision.posZ());
 
     //--------for INEL>0
-    auto perCollisionMCSampleCentral = mcSampleCentral->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+    auto perCollisionMCSampleCentral = mcSampleCentral->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nChargedCentral = 0;
     for (auto& particle : perCollisionMCSampleCentral) {
       auto charge = 0.;
@@ -498,7 +501,7 @@ struct PseudorapidityDensityMFT {
       registry.fill(HIST("EventEfficiency"), 3.);
       if (!useEvSel || (useEvSel && collision.sel8())) {
         atLeastOne = true;
-        auto perCollisionSample = sample->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex());
+        auto perCollisionSample = sample->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
 
         registry.fill(HIST("EventEfficiency"), 4.);
 
