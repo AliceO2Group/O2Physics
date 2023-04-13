@@ -134,6 +134,7 @@ struct LfTreeCreatorNuclei {
         track.p(),
         track.eta(),
         track.phi(),
+        track.isPVContributor(),
         track.sign(),
         track.itsNCls(),
         track.tpcNClsCrossedRows(),
