@@ -110,7 +110,7 @@ std::string UDFSParser::patternString(int ibeam)
 }
 
 // -----------------------------------------------------------------------------
-void UDFSParser::print()
+void UDFSParser::Print()
 {
   LOGF(info, "Number of colliding BCs: %d", fP2BCsBB.size());
   LOGF(info, "  P2BC, BucketA, BucketC");

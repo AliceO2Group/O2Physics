@@ -40,6 +40,7 @@ struct tofSkimsTableCreator {
   using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::FT0sCorrected>;
 
   // Tables to be produced
+  Produces<o2::aod::SkimmedTOFColl> tableColRow;
   Produces<o2::aod::SkimmedTOF> tableRow;
 
   // Configurables
@@ -98,6 +99,40 @@ struct tofSkimsTableCreator {
       evTimeT0AC = collision.t0AC() * 1000.f;
       evTimeT0ACErr = collision.t0resolution() * 1000.f;
     }
+    float evTimeT0A = 0.f;
+    if (collision.t0ACorrectedValid()) {
+      evTimeT0A = collision.t0ACorrected() * 1000.f;
+    }
+    float evTimeT0C = 0.f;
+    if (collision.t0CCorrectedValid()) {
+      evTimeT0C = collision.t0CCorrected() * 1000.f;
+    }
+    float evTimeTOF = 0.f;
+    float evTimeTOFErr = 0.f;
+    int evTimeTOFMult = 0.f;
+    uint8_t tofFlags = 0;
+    for (auto const& trk : tracks) {
+      if (!trk.hasTOF()) {
+        continue;
+      }
+      evTimeTOF = trk.evTimeTOF();
+      evTimeTOFErr = trk.evTimeTOFErr();
+      evTimeTOFMult = trk.evTimeTOFMult();
+      tofFlags = trk.tofFlags();
+      break;
+    }
+
+    tableColRow(collision.globalIndex(),
+                evTimeTOF,
+                evTimeTOFErr,
+                evTimeTOFMult,
+                evTimeT0A,
+                evTimeT0C,
+                evTimeT0AC,
+                evTimeT0ACErr,
+                collision.collisionTime(),
+                collision.collisionTimeRes(),
+                tofFlags);
 
     int8_t lastTRDLayer = -1;
     for (auto const& trk : tracks) {
@@ -116,7 +151,7 @@ struct tofSkimsTableCreator {
       }
       tableRow(trk.collisionId(),
                trk.p(),
-               trk.pt(),
+               trk.pt() * trk.sign(),
                trk.eta(),
                trk.phi(),
                trk.pidForTracking(),

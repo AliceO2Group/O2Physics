@@ -52,9 +52,16 @@ struct HfCandidateSelectorToXiPi {
   Configurable<double> etaTrackMax{"etaTrackMax", 0.8, "Max absolute value of eta"};
   Configurable<double> ptPiFromCascMin{"ptPiFromCascMin", 0.15, "Min pT pi <- casc"};
   Configurable<double> ptPiFromOmeMin{"ptPiFromOmeMin", 0.2, "Min pT pi <- omegac"};
-  Configurable<double> dcaXYPriPiMin{"dcaXYPriPiMin", 0., "Min dcaxy primary pi track to PV"};
-  Configurable<double> dcaXYPriPiMax{"dcaXYPriPiMax", 10., "Max dcaxy primary pi track to PV"};
-  Configurable<double> impactParameterZPriPiMax{"impactParameterZPriPiMax", 10., "Max impact parameter primary pi track to PV in Z direction"};
+
+  Configurable<double> impactParameterXYPriPiMin{"impactParameterXYPriPiMin", 0., "Min dcaxy primary pi track to PV"};
+  Configurable<double> impactParameterXYPriPiMax{"impactParameterXYPriPiMax", 10., "Max dcaxy primary pi track to PV"};
+  Configurable<double> impactParameterZPriPiMin{"impactParameterZPriPiMin", 0., "Min dcaz primary pi track to PV"};
+  Configurable<double> impactParameterZPriPiMax{"impactParameterZPriPiMax", 10., "Max dcaz primary pi track to PV"};
+
+  Configurable<double> impactParameterXYCascMin{"impactParameterXYCascMin", 0., "Min dcaxy cascade track to PV"};
+  Configurable<double> impactParameterXYCascMax{"impactParameterXYCascMax", 10., "Max dcaxy cascade track to PV"};
+  Configurable<double> impactParameterZCascMin{"impactParameterZCascMin", 0., "Min dcaz cascade track to PV"};
+  Configurable<double> impactParameterZCascMax{"impactParameterZCascMax", 10., "Max dcaz cascade track to PV"};
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
@@ -97,7 +104,7 @@ struct HfCandidateSelectorToXiPi {
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- Omegac"};
 
-  using MyTrackInfo = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
+  using MyTrackInfo = aod::BigTracksPIDExtended;
 
   OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
@@ -131,8 +138,7 @@ struct HfCandidateSelectorToXiPi {
     double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
     double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);
 
-    int collIdCasc = -999;
-    int collIdPrimaryPi = -999;
+    int collId = -999;
 
     // looping over omegac candidates
     for (auto const& candidate : candidates) {
@@ -201,11 +207,19 @@ struct HfCandidateSelectorToXiPi {
         resultSelections = false;
       }
 
-      // cut on primary pion dcaXY and impact parameter
-      if ((candidate.dcaXYToPVPrimaryPi() < dcaXYPriPiMin) || (candidate.dcaXYToPVPrimaryPi() > dcaXYPriPiMax)) {
+      // cut on primary pion dcaXY and dcaZ
+      if ((candidate.impactParPrimaryPiXY() < impactParameterXYPriPiMin) || (candidate.impactParPrimaryPiXY() > impactParameterXYPriPiMax)) {
         resultSelections = false;
       }
-      if (candidate.impactParPrimaryPiZ() > impactParameterZPriPiMax) {
+      if ((candidate.impactParPrimaryPiZ() < impactParameterZPriPiMin) || (candidate.impactParPrimaryPiZ() > impactParameterZPriPiMax)) {
+        resultSelections = false;
+      }
+
+      // cut on cascade dcaXY and dcaZ
+      if ((candidate.impactParCascXY() < impactParameterXYCascMin) || (candidate.impactParCascXY() > impactParameterXYCascMax)) {
+        resultSelections = false;
+      }
+      if ((candidate.impactParCascZ() < impactParameterZCascMin) || (candidate.impactParCascZ() > impactParameterZCascMax)) {
         resultSelections = false;
       }
 
@@ -275,10 +289,10 @@ struct HfCandidateSelectorToXiPi {
         pidPiFromCasc = selectorPion.getStatusTrackPIDTPC(trackPiFromCasc);
         pidPiFromOme = selectorPion.getStatusTrackPIDTPC(trackPiFromOmeg);
       } else if (usePidTpcTofCombined) {
-        pidProton = selectorProton.getStatusTrackPIDAll(trackPrFromLam);
-        pidPiFromLam = selectorPion.getStatusTrackPIDAll(trackPiFromLam);
-        pidPiFromCasc = selectorPion.getStatusTrackPIDAll(trackPiFromCasc);
-        pidPiFromOme = selectorPion.getStatusTrackPIDAll(trackPiFromOmeg);
+        pidProton = selectorProton.getStatusTrackPIDTpcAndTof(trackPrFromLam);
+        pidPiFromLam = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromLam);
+        pidPiFromCasc = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromCasc);
+        pidPiFromOme = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromOmeg);
       }
 
       bool statusPidLambda = false;
@@ -311,12 +325,7 @@ struct HfCandidateSelectorToXiPi {
       bool statusInvMassCascade = false;
       bool statusInvMassOmegac = false;
 
-      double invMassLambda = 0;
-      if (signDecay < 0) {
-        invMassLambda = candidate.invMassLambda();
-      } else if (signDecay > 0) {
-        invMassLambda = candidate.invMassAntiLambda();
-      }
+      double invMassLambda = candidate.invMassLambda();
       double invMassCascade = candidate.invMassCascade();
       double invMassOmegac = candidate.invMassOmegac();
 
@@ -388,16 +397,9 @@ struct HfCandidateSelectorToXiPi {
         hCTauOmegac->Fill(candidate.ctauOmegac());
         hCTauXic->Fill(candidate.ctauXic());
 
-        if (trackPiFromCasc.collisionId() != collIdCasc) {
+        if (candidate.collisionId() != collId) {
           hNEventsSaved->Fill(0.5);
-          collIdCasc = trackPiFromCasc.collisionId();
-        }
-        if (trackPiFromOmeg.collisionId() != collIdPrimaryPi) {
-          hNEventsSaved->Fill(1.5);
-          collIdPrimaryPi = trackPiFromOmeg.collisionId();
-        }
-        if (trackPiFromOmeg.collisionId() != trackPiFromCasc.collisionId()) {
-          hNEventsSaved->Fill(2.5);
+          collId = trackPiFromCasc.collisionId();
         }
       }
     }

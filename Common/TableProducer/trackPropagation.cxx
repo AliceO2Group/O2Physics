@@ -27,7 +27,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
 
@@ -51,10 +50,12 @@ struct TrackPropagation {
   Produces<aod::TracksCovExtension> tracksParCovExtensionPropagated;
 
   Produces<aod::TracksDCA> tracksDCA;
+  Produces<aod::TracksDCACov> tracksDCACov;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   bool fillTracksDCA = false;
+  bool fillTracksDCACov = false;
   int runNumber = -1;
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
@@ -82,6 +83,9 @@ struct TrackPropagation {
       for (auto const& input : device.inputs) {
         if (input.matcher.binding == "TracksDCA") {
           fillTracksDCA = true;
+        }
+        if (input.matcher.binding == "TracksDCACov") {
+          fillTracksDCACov = true;
         }
       }
     }
@@ -155,6 +159,11 @@ struct TrackPropagation {
     o2::dataformats::DCA dcaInfoCov;
     o2::dataformats::VertexBase vtx;
 
+    tracksParPropagated.reserve(tracks.size());
+    tracksParExtensionPropagated.reserve(tracks.size());
+    tracksParCovPropagated.reserve(tracks.size());
+    tracksParCovExtensionPropagated.reserve(tracks.size());
+
     for (auto& track : tracks) {
       dcaInfoCov.set(999, 999, 999, 999, 999);
       auto trackParCov = getTrackParCov(track);
@@ -176,6 +185,9 @@ struct TrackPropagation {
       FillTracksPar(track, trackType, trackParCov);
       if (fillTracksDCA) {
         tracksDCA(dcaInfoCov.getY(), dcaInfoCov.getZ());
+      }
+      if (fillTracksDCACov) {
+        tracksDCACov(dcaInfoCov.getSigmaY2(), dcaInfoCov.getSigmaZ2());
       }
       // TODO do we keep the rho as 0? Also the sigma's are duplicated information
       tracksParCovPropagated(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),

@@ -63,6 +63,9 @@ auto massPi = RecoDecay::getMassPDG(kPiPlus);
 auto massK = RecoDecay::getMassPDG(kKPlus);
 
 struct HfCorrelatorD0Hadrons {
+  SliceCache cache;
+  Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
+
   Produces<aod::DHadronPair> entryD0HadronPair;
   Produces<aod::DHadronRecoInfo> entryD0HadronRecoInfo;
 
@@ -163,7 +166,7 @@ struct HfCorrelatorD0Hadrons {
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
 
-    auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+    auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
     for (auto const& candidate1 : selectedD0CandidatesGrouped) {
       if (yCandMax >= 0. && std::abs(yD0(candidate1)) > yCandMax) {
@@ -291,7 +294,7 @@ struct HfCorrelatorD0Hadrons {
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
 
-    auto selectedD0CandidatesGroupedMC = selectedD0candidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+    auto selectedD0CandidatesGroupedMC = selectedD0candidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     // MC reco level
     bool flagD0 = false;
     bool flagD0bar = false;

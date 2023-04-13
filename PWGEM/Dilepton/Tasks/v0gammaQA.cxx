@@ -29,7 +29,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -182,6 +182,8 @@ struct AddAmbiguousTrackInfo {
 };
 
 struct ProducePCMPhoton {
+  SliceCache cache;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Produces<o2::aod::V0Gammas> v0gamma;
 
   float alphav0(const array<float, 3>& ppos, const array<float, 3>& pneg)
@@ -417,8 +419,8 @@ struct ProducePCMPhoton {
 
     // printf("number of collisions = %ld , negTracks = %ld, posTracks = %ld\n", collisions.size(), negTracks.size(), posTracks.size());
     for (auto& collision : collisions) {
-      auto groupEle = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());
-      auto groupPos = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      auto groupEle = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto groupPos = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       // printf("collision.globalIndex() = %d , negTracks = %ld , posTracks = %ld\n", collision.globalIndex(), groupEle.size(), groupPos.size());
       registry.fill(HIST("hEventCounter"), 1);
 
@@ -572,6 +574,7 @@ struct ProducePCMPhoton {
 };
 
 struct PhotonPairing {
+  SliceCache cache;
 
   // Basic checks
   HistogramRegistry registry{
@@ -656,7 +659,7 @@ struct PhotonPairing {
   using MyCollision = MyCollisions::iterator;
   Filter collisionFilter = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
   using MyFilteredCollisions = soa::Filtered<MyCollisions>;
-  SameKindPair<MyFilteredCollisions, aod::V0Gammas, BinningType> pair{colBinning, ndepth, -1}; // indicates that ndepth events should be mixed and under/overflow (-1) to be ignored
+  SameKindPair<MyFilteredCollisions, aod::V0Gammas, BinningType> pair{colBinning, ndepth, -1, &cache}; // indicates that ndepth events should be mixed and under/overflow (-1) to be ignored
   void processMixed(MyFilteredCollisions const& collisions, aod::V0Gammas const& PCMPhotons, MyTracks const&)
   {
     for (auto& [coll1, gammas_coll1, coll2, gammas_coll2] : pair) {

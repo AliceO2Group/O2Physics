@@ -41,6 +41,7 @@ static const float cutsTable[1][nCuts] = {{4.05f, 0.75f, 3.5f, 3.5f, 100.f}};
 } // namespace
 
 struct femtoDreamDebugTrack {
+  SliceCache cache;
 
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nCuts, cutNames}, "Particle selections"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
@@ -53,6 +54,7 @@ struct femtoDreamDebugTrack {
   using FemtoFullParticles = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
 
   Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+  Preslice<aod::FemtoDreamParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
@@ -106,7 +108,7 @@ struct femtoDreamDebugTrack {
   /// Porduce QA plots for sigle track selection in FemtoDream framework
   void process(o2::aod::FemtoDreamCollision& col, FemtoFullParticles& parts)
   {
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
 
     eventHisto.fillQA(col);
 

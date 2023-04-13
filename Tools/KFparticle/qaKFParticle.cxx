@@ -791,10 +791,10 @@ struct qaKFParticle {
       float TOFnSigmaNegKa = 0;
       int source = 0;
 
-      int pidKaonTr1 = selectorKaon.getStatusTrackPIDAll(track1);
-      int pidKaonTr2 = selectorKaon.getStatusTrackPIDAll(track2);
-      int pidPionTr1 = selectorPion.getStatusTrackPIDAll(track1);
-      int pidPionTr2 = selectorPion.getStatusTrackPIDAll(track2);
+      int pidKaonTr1 = selectorKaon.getStatusTrackPIDTpcOrTof(track1);
+      int pidKaonTr2 = selectorKaon.getStatusTrackPIDTpcOrTof(track2);
+      int pidPionTr1 = selectorPion.getStatusTrackPIDTpcOrTof(track1);
+      int pidPionTr2 = selectorPion.getStatusTrackPIDTpcOrTof(track2);
 
       if (track1.isPVContributor() || track2.isPVContributor()) {
         PVContributor = 1;
@@ -1120,10 +1120,10 @@ struct qaKFParticle {
       float TOFnSigmaPosKa = 0;
       float TOFnSigmaNegKa = 0;
 
-      int pidKaonTr1 = selectorKaon.getStatusTrackPIDAll(track1);
-      int pidKaonTr2 = selectorKaon.getStatusTrackPIDAll(track2);
-      int pidPionTr1 = selectorPion.getStatusTrackPIDAll(track1);
-      int pidPionTr2 = selectorPion.getStatusTrackPIDAll(track2);
+      int pidKaonTr1 = selectorKaon.getStatusTrackPIDTpcOrTof(track1);
+      int pidKaonTr2 = selectorKaon.getStatusTrackPIDTpcOrTof(track2);
+      int pidPionTr1 = selectorPion.getStatusTrackPIDTpcOrTof(track1);
+      int pidPionTr2 = selectorPion.getStatusTrackPIDTpcOrTof(track2);
 
       if (track1.isPVContributor() || track2.isPVContributor()) {
         PVContributor = 1;

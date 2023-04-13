@@ -13,6 +13,7 @@
 /// \author
 /// \since
 
+#include <Framework/SliceCache.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -26,6 +27,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 struct MixedEventsEmptyTables {
+  SliceCache cache;
   // Dummy filter to enforce empty tables
   Filter trackFilter = (aod::track::x > -0.8f) && (aod::track::x < -0.8f);
   using myTracks = soa::Filtered<aod::Tracks>;
@@ -34,7 +36,7 @@ struct MixedEventsEmptyTables {
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
   BinningType binningOnPositions{{xBins, yBins}, true};                                 // true is for 'ignore overflows' (true by default)
-  SameKindPair<aod::Collisions, myTracks, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  SameKindPair<aod::Collisions, myTracks, BinningType> pair{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, myTracks const& tracks)
   {
@@ -60,11 +62,12 @@ struct MixedEventsEmptyTables {
 };
 
 struct MixedEventsJoinedTracks {
+  SliceCache cache;
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
   BinningType binningOnPositions{{xBins, yBins}, true};                                        // true is for 'ignore overflows' (true by default)
-  SameKindPair<aod::Collisions, aod::FullTracks, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  SameKindPair<aod::Collisions, aod::FullTracks, BinningType> pair{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, aod::FullTracks const& tracks)
   {
@@ -119,6 +122,7 @@ struct MixedEventsJoinedTracks {
 //};
 
 struct MixedEventsCounters {
+  SliceCache cache;
   // This task shows how to extract variables needed for weighted correlations.
   // NOTE: The same number of currentWindowNeighbours is returned for all kinds of block combinations.
   // Strictly upper: the first collision will is paired with exactly currentWindowNeighbours other collisions.
@@ -131,7 +135,7 @@ struct MixedEventsCounters {
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
   BinningType binningOnPositions{{xBins, yBins}, true};
   // true is for 'ignore overflows' (true by default)
-  SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under / overflow(-1) to be ignored
+  SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under / overflow(-1) to be ignored
 
   void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {

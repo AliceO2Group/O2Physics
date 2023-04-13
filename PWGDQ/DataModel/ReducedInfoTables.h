@@ -350,9 +350,11 @@ DECLARE_SOA_COLUMN(McMask2, mcMask2, uint16_t); //! MC mask of the MCLabel of th
 
 DECLARE_SOA_COLUMN(Chi2MatchMCHMID1, chi2MatchMCHMID1, float); //! MCH-MID Match Chi2 for MUONStandalone tracks
 DECLARE_SOA_COLUMN(Chi2MatchMCHMFT1, chi2MatchMCHMFT1, float); //! MCH-MFT Match Chi2 for GlobalMuonTracks
+DECLARE_SOA_COLUMN(Chi21, chi21, float);                       //! Chi2 for Muon Tracks
 
 DECLARE_SOA_COLUMN(Chi2MatchMCHMID2, chi2MatchMCHMID2, float); //! MCH-MID Match Chi2 for MUONStandalone tracks
 DECLARE_SOA_COLUMN(Chi2MatchMCHMFT2, chi2MatchMCHMFT2, float); //! MCH-MFT Match Chi2 for GlobalMuonTracks
+DECLARE_SOA_COLUMN(Chi22, chi22, float);                       //! Chi2 for Muon Tracks
 
 DECLARE_SOA_COLUMN(PtMC1, ptMC1, float);   //! MC Pt of the first prong
 DECLARE_SOA_COLUMN(EtaMC1, etaMC1, float); //! MC Eta of the first prong
@@ -450,6 +452,7 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   dilepton_track_index::McMask1, dilepton_track_index::McMask2,
                   dilepton_track_index::Chi2MatchMCHMID1, dilepton_track_index::Chi2MatchMCHMID2,
                   dilepton_track_index::Chi2MatchMCHMFT1, dilepton_track_index::Chi2MatchMCHMFT2,
+                  dilepton_track_index::Chi21, dilepton_track_index::Chi22,
                   dilepton_track_index::PtMC1, dilepton_track_index::EtaMC1, dilepton_track_index::PhiMC1, dilepton_track_index::EMC1,
                   dilepton_track_index::PtMC2, dilepton_track_index::EtaMC2, dilepton_track_index::PhiMC2, dilepton_track_index::EMC2,
                   dilepton_track_index::Vx1, dilepton_track_index::Vy1, dilepton_track_index::Vz1, dilepton_track_index::Vt1,

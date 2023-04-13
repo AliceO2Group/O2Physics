@@ -11,6 +11,11 @@
 
 add_subdirectory(QC)
 
+o2physics_add_dpl_workflow(hypertriton-reco-task
+                    SOURCES hyperRecoTask.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hyperon-reco-test
                     SOURCES hyperon-reco-test.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -139,4 +144,14 @@ o2physics_add_dpl_workflow(cascqaanalysis
 o2physics_add_dpl_workflow(nuclei-hist
                     SOURCES NucleiHistTask.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascpostprocessing
+                    SOURCES cascpostprocessing.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hstrangecorrelation
+                    SOURCES hStrangeCorrelation.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

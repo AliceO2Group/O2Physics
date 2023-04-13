@@ -64,8 +64,13 @@ DECLARE_SOA_COLUMN(LLL, hasLLL, bool); //! has L-L-L tripletD
 DECLARE_SOA_COLUMN(JetChHighPt, hasJetChHighPt, bool); //! high-pT charged jet
 
 // full jets
-DECLARE_SOA_COLUMN(JetFullHighPt, hasJetFullHighPt, bool); //! high-pT full jet
-DECLARE_SOA_COLUMN(GammaHighPt, hasGammaHighPt, bool);     //! high-pT photon
+DECLARE_SOA_COLUMN(EMCALReadout, hasEMCALinReadout, bool);       //! EMCAL readout
+DECLARE_SOA_COLUMN(JetFullHighPt, hasJetFullHighPt, bool);       //! high-pT full jet
+DECLARE_SOA_COLUMN(JetNeutralHighPt, hasJetNeutralHighPt, bool); //! high-pT neutral jet
+DECLARE_SOA_COLUMN(GammaHighPtEMCAL, hasGammaHighPtEMCAL, bool); //! Photon trigger in EMCAL, high threshold
+DECLARE_SOA_COLUMN(GammaHighPtDCAL, hasGammaHighPtDCAL, bool);   //! Photon trigger in DCAL, high threshold
+DECLARE_SOA_COLUMN(GammaLowPtEMCAL, hasGammaLowPtEMCAL, bool);   //! Photon trigger in EMCAL, low threshold
+DECLARE_SOA_COLUMN(GammaLowPtDCAL, hasGammaLowPtDCAL, bool);     //! Photon trigger in DCAL, low threshold
 
 // strangeness (lf)
 DECLARE_SOA_COLUMN(Omega, hasOmega, bool);             //! at leat 1 Omega
@@ -95,12 +100,13 @@ DECLARE_SOA_COLUMN(PHOSnbar, hasPHOSnbar, bool);         //! PHOS antineutrons
 namespace decision
 {
 
-DECLARE_SOA_COLUMN(BCId, hasBCId, int);                           //! Bunch crossing Id
-DECLARE_SOA_COLUMN(GlobalBCId, hasGlobalBCId, int);               //! Global Bunch crossing Id
-DECLARE_SOA_COLUMN(CollisionTime, hasCollisionTime, float);       //! Collision time
-DECLARE_SOA_COLUMN(CollisionTimeRes, hasCollisionTimeRes, float); //! Collision time resolution
-DECLARE_SOA_COLUMN(CefpTriggered, hasCefpTriggered, uint64_t);    //! CEFP triggers before downscalings
-DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, uint64_t);      //! CEFP decision
+DECLARE_SOA_COLUMN(BCId, bcIndex, uint64_t);                   //! Bunch crossing Id
+DECLARE_SOA_COLUMN(GlobalBCId, globalBC, uint64_t);            //! Global Bunch crossing Id
+DECLARE_SOA_COLUMN(EvSelBC, evSelBC, uint64_t);                //! Global Bunch crossing Id
+DECLARE_SOA_COLUMN(CollisionTime, collisionTime, float);       //! Collision time
+DECLARE_SOA_COLUMN(CollisionTimeRes, collisionTimeRes, float); //! Collision time resolution
+DECLARE_SOA_COLUMN(CefpTriggered, cefpTriggered, uint64_t);    //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(CefpSelected, cefpSelected, uint64_t);      //! CEFP decision
 
 } // namespace decision
 
@@ -147,7 +153,7 @@ DECLARE_SOA_TABLE(JetFilters, "AOD", "JetFilters", //!
 using JetFilter = JetFilters::iterator;
 
 DECLARE_SOA_TABLE(FullJetFilters, "AOD", "FullJetFilters", //!
-                  filtering::JetFullHighPt, filtering::GammaHighPt);
+                  filtering::EMCALReadout, filtering::JetFullHighPt, filtering::JetNeutralHighPt, filtering::GammaHighPtEMCAL, filtering::GammaHighPtDCAL, filtering::GammaLowPtEMCAL, filtering::GammaLowPtDCAL);
 
 using FullJetFilter = FullJetFilters::iterator;
 
@@ -164,14 +170,14 @@ DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
 using MultFilter = MultFilters::iterator;
 
 // photons
-DECLARE_SOA_TABLE(PhotFilters, "AOD", "PhotonFilters", //!
+DECLARE_SOA_TABLE(PhotFilters, "AOD", "PhotFilters", //!
                   filtering::PHOSPhoton, filtering::PHOSElectron, filtering::PHOSPair, filtering::PHOSnbar);
 
 using PhotFilter = PhotFilters::iterator;
 
 // cefp decision
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
-                  decision::BCId, decision::GlobalBCId, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered, decision::CefpSelected);
+                  decision::BCId, decision::GlobalBCId, decision::EvSelBC, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered, decision::CefpSelected);
 using CefpDecision = CefpDecisions::iterator;
 
 // cefp decision

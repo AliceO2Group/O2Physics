@@ -35,8 +35,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0RecalculationAndKF>;
-using V0DaughterTracksWithMC = soa::Join<aod::V0DaughterTracks, aod::MCParticleIndex>;
+using V0DatasAdditional = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF>;
+using V0LegsWithMC = soa::Join<aod::V0Legs, aod::MCParticleIndex>;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 struct GammaConversions {
@@ -54,8 +54,8 @@ struct GammaConversions {
   Configurable<float> fTrackPtMin{"fTrackPtMin", 0.04, "minimum daughter track pt"};
   Configurable<float> fPIDnSigmaElectronMin{"fPIDnSigmaElectronMin", -3., "minimum sigma electron PID for V0 daughter tracks. Set 0 to disable."};
   Configurable<float> fPIDnSigmaElectronMax{"fPIDnSigmaElectronMax", 3., "maximum sigma electron PID for V0 daughter tracks"};
-  Configurable<float> fPIDPionRejectionPMin{"fPIDPionRejectionPMin", 0.4, "minimum track momentum to apply any pion rejection"};                              // case 7:  // 0.4 GeV
-  Configurable<float> fPIDPionRejectionPBoarder{"fPIDPionRejectionPBoarder", 8., "border between low and high momentum pion rejection"};                      // case 7:  // 8. GeV
+  Configurable<float> fPIDPionRejectionPMin{"fPIDPionRejectionPMin", 0.4, "minimum track momentum to apply any pion rejection"};                                // case 7:  // 0.4 GeV
+  Configurable<float> fPIDPionRejectionPBoarder{"fPIDPionRejectionPBoarder", 8., "border between low and high momentum pion rejection"};                        // case 7:  // 8. GeV
   Configurable<float> fPIDnSigmaAbovePionLineLowPMin{"fPIDnSigmaAbovePionLineLowPMin", -10., "minimum sigma to be over the pion line for low momentum tracks"}; // case 4: 3.0sigma, 1.0 sigma at high momentum
   Configurable<float> fPIDnSigmaAbovePionLineHighPMin{"fPIDnSigmaAbovePionLineHighPMin", -10., "minimum sigma to be over the pion line for high momentum tracks"};
   Configurable<float> fMinTPCFoundOverFindableCls{"fMinTPCNClsFoundOverFindable", 0.3, "minimum ratio found tpc clusters over findable"}; // case 9:  // 0.6
@@ -159,7 +159,8 @@ struct GammaConversions {
     std::vector<MyHistogramSpec> lV0HistoDefinitions_recalculated{
       {"hConvPointR_recalc", "hConvPointR_recalc;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_r}}},
       {"hConvPointZ_recalc", "hConvPointZ_recalc;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_xyz}}},
-    };
+      {"hKFParticleChi2DividedByNDF", "hKFParticleChi2DividedByNDF;chi2;counts", {HistType::kTH1F, {gAxis_chi2}}}};
+
     // PDG code of all particles to analyize the purity. Only for MC and only for Rec
     std::vector<MyHistogramSpec> lMcPDGCode{
       {"hPDGCode", "hPDGCode;PDG code;counts", {HistType::kTH1F, {{6000, -3000.0f, 3000.0f}}}}, // first only cover useful range. Otherwise histogram will get rediculously large
@@ -294,20 +295,21 @@ struct GammaConversions {
   }
 
   template <typename TV0, typename TTRACKS>
-  bool processV0(TV0 const& theV0, const float& theV0CosinePA, TTRACKS const& theTwoV0Daughters)
+  bool processV0(TV0 const& theV0, const float& theV0CosinePA, TTRACKS const& ele, TTRACKS const& pos)
   {
     auto fillReconstructedInfoHistogramsI = [&](int theBeforeAfter) {
       fillReconstructedInfoHistograms(
         theBeforeAfter,
         theV0,
-        theTwoV0Daughters,
+        // theTwoV0Daughters,
+        ele, pos,
         theV0CosinePA);
     };
 
     fillReconstructedInfoHistogramsI(kBeforeRecCuts);
 
     // apply track cuts and photon cuts
-    if (!(v0PassesTrackCuts(theTwoV0Daughters) &&
+    if (!(v0PassesTrackCuts(ele, pos) &&
           v0PassesPhotonCuts(theV0, theV0CosinePA))) {
       return false;
     }
@@ -520,7 +522,7 @@ struct GammaConversions {
     fillTH1(theContainer, "hPhiRes", theV0.phi() - theMcPhoton.phi());
     fillTH2(theContainer, "hConvPointXYResVsXY", lConvPointTrue.Perp(), theV0.v0radius() - lConvPointTrue.Perp());
     fillTH2(theContainer, "hConvPointXYResVsXY_recalc", lConvPointTrue.Perp(), lConvPointRecalc.Perp() - lConvPointTrue.Perp());
-    fillTH2(theContainer, "hConvPointZResVsZ", theMcPhoton.conversionZ(), theV0.z() - theMcPhoton.conversionZ());
+    fillTH2(theContainer, "hConvPointZResVsZ", theMcPhoton.conversionZ(), theV0.vz() - theMcPhoton.conversionZ());
     fillTH2(theContainer, "hConvPointZResVsZ_recalc", theMcPhoton.conversionZ(), theV0.recalculatedVtxZ() - theMcPhoton.conversionZ());
   }
 
@@ -576,14 +578,14 @@ struct GammaConversions {
   }
 
   template <typename TTRACKS>
-  void fillV0MCDaughterParticlesArrays(TTRACKS lTwoV0Daughters,
+  void fillV0MCDaughterParticlesArrays(TTRACKS ele, TTRACKS pos,
                                        int PDGCode[],
                                        float McParticleMomentum[],
                                        bool& sameMother)
   {
-    if ((lTwoV0Daughters.iteratorAt(0).has_v0DaughterMcParticle()) && (lTwoV0Daughters.iteratorAt(1).has_v0DaughterMcParticle())) {
-      auto MCDaughterParticleOne = lTwoV0Daughters.iteratorAt(0).v0DaughterMcParticle();
-      auto MCDaughterParticleTwo = lTwoV0Daughters.iteratorAt(1).v0DaughterMcParticle();
+    if ((ele.has_v0DaughterMcParticle()) && (pos.has_v0DaughterMcParticle())) {
+      auto MCDaughterParticleOne = ele.v0DaughterMcParticle();
+      auto MCDaughterParticleTwo = pos.v0DaughterMcParticle();
       PDGCode[0] = MCDaughterParticleOne.pdgCode();
       PDGCode[1] = MCDaughterParticleTwo.pdgCode();
       McParticleMomentum[0] = MCDaughterParticleOne.px();
@@ -606,33 +608,35 @@ struct GammaConversions {
     }
   }
 
-  Preslice<aod::V0DaughterTracks> perV0 = aod::v0data::v0Id;
-
-  void processRec(aod::Collisions::iterator const& theCollision,
+  Preslice<aod::V0Photons> perCollision = aod::v0photon::collisionId;
+  void processRec(aod::EMReducedEvents::iterator const& theCollision,
                   V0DatasAdditional const& theV0s,
-                  aod::V0DaughterTracks const& theAllTracks)
+                  aod::V0Legs const& theAllTracks)
   {
     fillTH1(fMyRegistry.mCollision.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
             "hCollisionZ",
             theCollision.posZ());
 
-    for (auto& lV0 : theV0s) {
+    auto theV0s_per_coll = theV0s.sliceBy(perCollision, theCollision.collisionId());
+    for (auto& lV0 : theV0s_per_coll) {
 
-      auto lTwoV0Daughters = theAllTracks.sliceBy(perV0, lV0.v0Id());
-      float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
+      float lV0CosinePA = lV0.cospa();
 
-      if (!processV0(lV0, lV0CosinePA, lTwoV0Daughters)) {
+      auto pos = lV0.posTrack_as<aod::V0Legs>();
+      auto ele = lV0.negTrack_as<aod::V0Legs>();
+
+      if (!processV0(lV0, lV0CosinePA, ele, pos)) {
         continue;
       }
     }
   }
   PROCESS_SWITCH(GammaConversions, processRec, "process reconstructed info", true);
 
-  Preslice<aod::McGammasTrue> gperV0 = aod::v0data::v0Id;
+  Preslice<aod::McGammasTrue> gperV0 = aod::gammamctrue::v0photonId;
 
-  void processMc(aod::Collisions::iterator const& theCollision,
+  void processMc(aod::EMReducedEvents::iterator const& theCollision,
                  V0DatasAdditional const& theV0s,
-                 V0DaughterTracksWithMC const& theAllTracks,
+                 V0LegsWithMC const& theAllTracks,
                  aod::V0DaughterMcParticles const& TheAllTracksMC,
                  aod::McGammasTrue const& theV0sTrue)
   {
@@ -640,18 +644,20 @@ struct GammaConversions {
             "hCollisionZ",
             theCollision.posZ());
 
+    auto theV0s_per_coll = theV0s.sliceBy(perCollision, theCollision.collisionId());
     for (auto& lV0 : theV0s) {
 
-      auto lTwoV0Daughters = theAllTracks.sliceBy(perV0, lV0.v0Id());
-      float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
+      float lV0CosinePA = lV0.cospa();
+      auto pos = lV0.posTrack_as<V0LegsWithMC>();
+      auto ele = lV0.negTrack_as<V0LegsWithMC>();
 
       // check if V0 passes rec cuts and fill beforeRecCuts,afterRecCuts [kRec]
-      bool lV0PassesRecCuts = processV0(lV0, lV0CosinePA, lTwoV0Daughters);
+      bool lV0PassesRecCuts = processV0(lV0, lV0CosinePA, ele, pos);
 
       int PDGCode[2];              // Pos, then Neg
       float McParticleMomentum[6]; // Mc momentum of the two daughter tracks, 0-2 = one 3-5 = two, no need to check the charges
       bool sameMother;
-      fillV0MCDaughterParticlesArrays(lTwoV0Daughters, PDGCode, McParticleMomentum, sameMother); // pointers are passed so they can be later on used here
+      fillV0MCDaughterParticlesArrays(ele, pos, PDGCode, McParticleMomentum, sameMother); // pointers are passed so they can be later on used here
 
       // this process function has to exist seperatly because it is only for MC Rec
       processPDGHistos(PDGCode,
@@ -660,7 +666,7 @@ struct GammaConversions {
                        lV0PassesRecCuts);
 
       // check if it comes from a true photon (lMcPhotonForThisV0AsTable is a table that might be empty)
-      auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(gperV0, lV0.v0Id());
+      auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(gperV0, lV0.globalIndex());
       processMcPhoton(lMcPhotonForThisV0AsTable,
                       lV0,
                       lV0CosinePA,
@@ -709,22 +715,16 @@ struct GammaConversions {
   }
 
   template <typename TTRACKS>
-  void fillTrackHistograms(mapStringHistPtr& theContainer, TTRACKS const& theTwoV0Daughters)
+  void fillTrackHistograms(mapStringHistPtr& theContainer, TTRACKS const& theTrack)
   {
-    auto fillTrackHistogramsI = [&](auto const& theTrack) {
-      fillTH1(theContainer, "hTrackEta", theTrack.eta());
-      fillTH1(theContainer, "hTrackPhi", theTrack.phi());
-      fillTH1(theContainer, "hTrackPt", theTrack.pt());
-      fillTH1(theContainer, "hTPCFoundOverFindableCls", theTrack.tpcFoundOverFindableCls());
-      fillTH1(theContainer, "hTPCCrossedRowsOverFindableCls", theTrack.tpcCrossedRowsOverFindableCls());
-      fillTH2(theContainer, "hTPCdEdxSigEl", theTrack.p(), theTrack.tpcNSigmaEl());
-      fillTH2(theContainer, "hTPCdEdxSigPi", theTrack.p(), theTrack.tpcNSigmaPi());
-      fillTH2(theContainer, "hTPCdEdx", theTrack.p(), theTrack.tpcSignal());
-    };
-
-    for (auto& lTrack : theTwoV0Daughters) {
-      fillTrackHistogramsI(lTrack);
-    }
+    fillTH1(theContainer, "hTrackEta", theTrack.eta());
+    fillTH1(theContainer, "hTrackPhi", theTrack.phi());
+    fillTH1(theContainer, "hTrackPt", theTrack.pt());
+    fillTH1(theContainer, "hTPCFoundOverFindableCls", theTrack.tpcFoundOverFindableCls());
+    fillTH1(theContainer, "hTPCCrossedRowsOverFindableCls", theTrack.tpcCrossedRowsOverFindableCls());
+    fillTH2(theContainer, "hTPCdEdxSigEl", theTrack.p(), theTrack.tpcNSigmaEl());
+    fillTH2(theContainer, "hTPCdEdxSigPi", theTrack.p(), theTrack.tpcNSigmaPi());
+    fillTH2(theContainer, "hTPCdEdx", theTrack.p(), theTrack.tpcSignal());
   }
 
   template <typename TV0>
@@ -734,15 +734,15 @@ struct GammaConversions {
     fillTH1(theContainer, "hPhi", theV0.phi());
     fillTH1(theContainer, "hPt", theV0.pt());
     fillTH1(theContainer, "hConvPointR", theV0.v0radius());
-    fillTH1(theContainer, "hConvPointZ", theV0.z());
+    fillTH1(theContainer, "hConvPointZ", theV0.vz());
     fillTH1(theContainer, "hCosPAngle", theV0CosinePA);
     fillTH2(theContainer, "hArmenteros", theV0.alpha(), theV0.qtarm());
     fillTH2(theContainer, "hinvestigationOfQtCut", theV0.qtarm(), theV0.pt());
     fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
     fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.recalculatedVtxZ());
     fillTH2(theContainer, "hXVsY", theV0.recalculatedVtxX(), theV0.recalculatedVtxY());
-    fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py()), theV0.pfracpos());
-    fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py()), theV0.pfracneg());
+    fillTH2(theContainer, "hpeDivpGamma", theV0.p(), theV0.ppos() / theV0.p());
+    fillTH2(theContainer, "hpeDivpGamma", theV0.p(), theV0.pneg() / theV0.p());
   }
 
   // This is simular to fillV0Histograms, but since the recalculatedR/Z only occur in Rec and MCVal a separate fill function is needed
@@ -751,6 +751,7 @@ struct GammaConversions {
   {
     fillTH1(theContainer, "hConvPointR_recalc", theV0.recalculatedVtxR());
     fillTH1(theContainer, "hConvPointZ_recalc", theV0.recalculatedVtxZ());
+    fillTH1(theContainer, "hKFParticleChi2DividedByNDF", theV0.chiSquareNDF());
   }
 
   // SFS todo: combine fillV0Histograms and fillV0HistogramsMcGamma
@@ -799,14 +800,15 @@ struct GammaConversions {
   }
 
   template <typename TTRACKS>
-  bool v0PassesTrackCuts(TTRACKS const& theTwoV0Daughters)
+  bool v0PassesTrackCuts(TTRACKS const& ele, TTRACKS const& pos)
   {
-    for (auto& lTrack : theTwoV0Daughters) {
-      if (!trackPassesCuts(lTrack)) {
-        return kFALSE;
-      }
-    }
-    return true;
+    bool pass_ele = trackPassesCuts(ele);
+    bool pass_pos = trackPassesCuts(pos);
+
+    if (pass_ele && pass_pos)
+      return true;
+    else
+      return false;
   }
 
   template <typename TV0>
@@ -832,7 +834,7 @@ struct GammaConversions {
       return kFALSE;
     }
 
-    if (TMath::Abs(theV0.z()) > fLineCutZ0 + theV0.recalculatedVtxR() * fLineCutZRSlope) { // as long as z recalculation is not fixed use this
+    if (TMath::Abs(theV0.vz()) > fLineCutZ0 + theV0.recalculatedVtxR() * fLineCutZRSlope) { // as long as z recalculation is not fixed use this
       fillV0SelectionHisto(ePhotonCuts::kRZLine);
       return kFALSE;
     }
@@ -840,13 +842,17 @@ struct GammaConversions {
   }
 
   template <typename TV0, typename TTRACKS>
-  void fillReconstructedInfoHistograms(int theBefAftRec, TV0 const& theV0, TTRACKS const& theTwoV0Daughters, float const& theV0CosinePA)
+  void fillReconstructedInfoHistograms(int theBefAftRec, TV0 const& theV0, TTRACKS const& ele, TTRACKS const& pos, float const& theV0CosinePA)
   {
     fillV0SelectionHisto(!theBefAftRec ? ePhotonCuts::kV0In : ePhotonCuts::kV0Out);
 
     fillTrackHistograms(
       fMyRegistry.mTrack.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
-      theTwoV0Daughters);
+      ele);
+
+    fillTrackHistograms(
+      fMyRegistry.mTrack.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
+      pos);
 
     fillV0Histograms(
       fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
@@ -888,7 +894,7 @@ struct GammaConversions {
           fillV0SelectionHisto(ePhotonCuts::kPionRejLowMom);
           return kFALSE;
         }
-      // High Pt Pion rej
+        // High Pt Pion rej
       } else {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
           fillV0SelectionHisto(ePhotonCuts::kPionRejHighMom);
