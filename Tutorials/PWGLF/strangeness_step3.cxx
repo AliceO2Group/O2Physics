@@ -12,7 +12,7 @@
 /// \brief this is a starting point for the Strangeness tutorial
 /// \author
 /// \since 12/05/2023
-/// \file strangeness_step2.cxx
+/// \file strangeness_step3.cxx
 ///
 
 #include "Framework/runDataProcessing.h"
@@ -31,6 +31,8 @@ using namespace o2::framework::expressions;
 // Apply selections on topological variables of V0s
 // STEP 2
 // Apply PID selections on V0 daughter tracks
+// STEP 3
+// Check the MC information of the V0s and verify with the PID information of daughter tracks
 
 struct strangeness_tutorial {
 
@@ -55,7 +57,10 @@ struct strangeness_tutorial {
                               {"hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}}},
                               {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}}},
                               {"hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}}},
-                              {"hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}}}}};
+                              {"hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}}},
+                              {"hMassK0ShortTruePions", "hMassK0ShortTruePions", {HistType::kTH1F, {{200, 0.45f, 0.55f}}}},
+                              {"hMassK0ShortMCTrue", "hMassK0ShortMCTrue", {HistType::kTH1F, {{200, 0.45f, 0.55f}}}},
+                              {"hPtK0ShortTrue", "hPtK0ShortTrue", {HistType::kTH1F, {{ptAxis}}}}}};
 
   // Defining filters for events (event selection)
   // Processed events will be already fulfulling the event selection requirements
@@ -68,14 +73,20 @@ struct strangeness_tutorial {
   // Defining the type of the daughter tracks
   using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi>;
 
+  // Defining the type of the daughter tracks with MC matching
+  using DaughterTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
+
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                soa::Filtered<aod::V0Datas> const& V0s,
-               DaughterTracks const&)
+               DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
+               aod::McParticles const& mcParticles,
+               soa::Join<DaughterTracks, aod::McTrackLabels> const&,
+               soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& mcV0s)
   {
     // Fill the event counter
     registry.fill(HIST("hVertexZ"), collision.posZ());
 
-    for (const auto& v0 : V0s) {
+    for (auto& v0 : V0s) {
 
       const auto& posDaughterTrack = v0.posTrack_as<DaughterTracks>();
       const auto& negDaughterTrack = v0.negTrack_as<DaughterTracks>();
@@ -101,6 +112,35 @@ struct strangeness_tutorial {
       if (0.45 > v0.mK0Short() && v0.mK0Short() < 0.55) {
         registry.fill(HIST("hNSigmaPosPionFromK0s"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
         registry.fill(HIST("hNSigmaNegPionFromK0s"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
+      }
+
+      // Checking that the daughter tracks are true pions in the MC
+      const auto& posDaughterTrackMC = v0.posTrack_as<DaughterTracksMC>();
+      const auto& negDaughterTrackMC = v0.negTrack_as<DaughterTracksMC>();
+
+      if (posDaughterTrackMC.has_mcParticle() && negDaughterTrackMC.has_mcParticle()) { // Checking that the daughter tracks come from particles and are not fake
+        const auto& posParticle = posDaughterTrackMC.mcParticle();
+        const auto& negParticle = negDaughterTrackMC.mcParticle();
+        if (posParticle.pdgCode() == 211 && negParticle.pdgCode() == -211) { // Checking that the daughter tracks are true pions
+          registry.fill(HIST("hMassK0ShortTruePions"), v0.mK0Short());
+        }
+      }
+    }
+
+    // Looping over the V0s with the MC info attached
+    for (const auto& mcv0 : mcV0s) {
+      // Checking that the V0 is a true K0s in the MC
+      if (mcv0.has_mcParticle()) {
+        auto v0mcparticle = mcv0.mcParticle();
+        if (v0mcparticle.pdgCode() == 310) {
+          registry.fill(HIST("hMassK0ShortMCTrue"), mcv0.mK0Short());
+        }
+      }
+    }
+
+    for (const auto& mcParticle : mcParticles) {
+      if (mcParticle.pdgCode() == 310) {
+        registry.fill(HIST("hPtK0ShortTrue"), mcParticle.pt());
       }
     }
   }
