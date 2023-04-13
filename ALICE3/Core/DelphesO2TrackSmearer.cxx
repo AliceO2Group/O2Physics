@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// @file onTheFlyTracker.h
+/// @file DelphesO2TrackSmearer.cxx
 /// @brief Porting to O2Physics of DelphesO2 code.
 ///        Minimal changes have been made to the original code for adaptation purposes, formatting and commented parts have been considered.
 ///        Relevant sources:

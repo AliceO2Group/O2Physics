@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// @file onTheFlyTracker.h
+/// @file DelphesO2TrackSmearer.h
 /// @brief Porting to O2Physics of DelphesO2 code.
 ///        Minimal changes have been made to the original code for adaptation purposes, formatting and commented parts have been considered.
 ///        Relevant sources:
@@ -207,5 +207,7 @@ class TrackSmearer
 } // namespace o2
 
 // #endif /** _DelphesO2_TrackSmearer_h_ **/
+
+using o2::delphes::DelphesO2TrackSmearer = o2::delphes::TrackSmearer;
 
 #endif // ALICE3_CORE_DELPHESO2TRACKSMEARER_H_
