@@ -24,10 +24,12 @@
 #ifndef ALICE3_CORE_DELPHESO2TRACKSMEARER_H_
 #define ALICE3_CORE_DELPHESO2TRACKSMEARER_H_
 
-#include "TRandom.h"
 #include <map>
 #include <iostream>
 #include <fstream>
+
+#include "TRandom.h"
+#include "ReconstructionDataFormats/Track.h"
 
 ///////////////////////////////
 /// DelphesO2/src/lutCovm.hh //
