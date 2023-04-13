@@ -89,59 +89,63 @@ struct correlateStrangeness {
     return lReturnVal;
   }
 
-  template <typename TTrigger, typename TAssoc>
-  void fillCorrelationsV0(TTrigger& triggers, TAssoc& assocs, bool mixing){
+  void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing){
     for (auto& triggerTrack : triggers) {
-      auto trigg = triggerTrack.template track_as<TracksComplete>();
+      auto trigg = triggerTrack.track_as<TracksComplete>();
       histos.fill(HIST("triggerV0"), trigg.pt());
       for (auto& assocCandidate : assocs){
         auto assoc = assocCandidate.v0Data();
 
         //---] removing autocorrelations [---
-        auto postrack = assoc.template posTrack_as<TracksComplete>();
-        auto negtrack = assoc.template negTrack_as<TracksComplete>();
+        auto postrack = assoc.posTrack_as<TracksComplete>();
+        auto negtrack = assoc.negTrack_as<TracksComplete>();
         if (trigg.globalIndex() == postrack.globalIndex()) continue;
         if (trigg.globalIndex() == negtrack.globalIndex()) continue;
         //TODO: add histogram checking how many pairs are rejected (should be small!)
 
+        float deltaphi = ComputeDeltaPhi(trigg.phi(), assoc.phi());
+        float deltaeta = trigg.eta() - assoc.eta(); 
+        float ptassoc = assoc.pt(); 
         static_for<0, 2>([&](auto i) {
           constexpr int index = i.value;
           if( assocCandidate.compatible(index) && !mixing)
-            histos.fill(HIST(v0names[index]),ComputeDeltaPhi(trigg.phi(), assoc.phi()), trigg.eta() - assoc.eta(),assoc.pt());  
+            histos.fill(HIST("sameEvent/Hadron") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc);  
           if( assocCandidate.compatible(index) && mixing)
-            histos.fill(HIST(v0names[index]),ComputeDeltaPhi(trigg.phi(), assoc.phi()), trigg.eta() - assoc.eta(),assoc.pt());  
+            histos.fill(HIST("mixedEvent/Hadron") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc);  
         });
       }
     }
   }
 
-  template <typename TTrigger, typename TAssoc>
-  void fillCorrelationsCascade(TTrigger& triggers, TAssoc& assocs, bool mixing){
+  void fillCorrelationsCascade(aod::TriggerTracks const& triggers, aod::AssocCascades const& assocs, bool mixing){
     for (auto& triggerTrack : triggers) {
-      auto trigg = triggerTrack.template track_as<TracksComplete>();
+      auto trigg = triggerTrack.track_as<TracksComplete>();
       if(!mixing)histos.fill(HIST("triggerCas"), trigg.pt());
       for (auto& assocCandidate : assocs){
         auto assoc = assocCandidate.cascData();
 
         //---] removing autocorrelations [---
-        auto v0index = assoc.template v0_as<o2::aod::V0sLinked>();
+        auto v0index = assoc.v0_as<o2::aod::V0sLinked>();
         if (!(v0index.has_v0Data()))
           continue; // this should not happen - included for safety
         auto assocV0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
-        auto postrack = assocV0.template posTrack_as<TracksComplete>();
-        auto negtrack = assocV0.template negTrack_as<TracksComplete>();
-        auto bachtrack = assoc.template bachelor_as<TracksComplete>();
+        auto postrack = assocV0.posTrack_as<TracksComplete>();
+        auto negtrack = assocV0.negTrack_as<TracksComplete>();
+        auto bachtrack = assoc.bachelor_as<TracksComplete>();
         if (trigg.globalIndex() == postrack.globalIndex()) continue;
         if (trigg.globalIndex() == negtrack.globalIndex()) continue;
         if (trigg.globalIndex() == bachtrack.globalIndex()) continue;
         //TODO: add histogram checking how many pairs are rejected (should be small!)
 
+        float deltaphi = ComputeDeltaPhi(trigg.phi(), assoc.phi());
+        float deltaeta = trigg.eta() - assoc.eta(); 
+        float ptassoc = assoc.pt(); 
         static_for<0, 3>([&](auto i) {
           constexpr int index = i.value;
           if( assocCandidate.compatible(index) && !mixing)
-            histos.fill(HIST(cascadenames[index]),ComputeDeltaPhi(trigg.phi(), assoc.phi()), trigg.eta() - assoc.eta(),assoc.pt());  
+            histos.fill(HIST("sameEvent/Hadron") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc);
           if( assocCandidate.compatible(index) && mixing)
-            histos.fill(HIST(cascadenames[index]),ComputeDeltaPhi(trigg.phi(), assoc.phi()), trigg.eta() - assoc.eta(),assoc.pt());  
+            histos.fill(HIST("mixedEvent/Hadron") + HIST(cascadenames[index]),deltaphi, deltaeta, ptassoc);
         });
       }
     }
