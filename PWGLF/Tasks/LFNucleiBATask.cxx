@@ -98,6 +98,8 @@ struct LFNucleiBATask {
   Configurable<bool> enablePtSpectra{"enablePtSpectra", false, "Flag to enable histograms for efficiency debug."};
 
   Configurable<int> useHasTRDConfig{"useHasTRDConfig", 0, "No selections on TRD (0); With TRD (1); Without TRD (2)"};
+  Configurable<int> massTOFConfig{"massTOFConfig", 0, "Estimate massTOF using beta with (0) TPC momentum (1) TOF expected momentum"};
+  Configurable<int> tritonSelConfig{"tritonSelConfig", 0, "Select tritons using (0) 3Sigma TPC triton (1) additional 3sigma TPC pi,K,p veto cut"};
 
   Configurable<int> nITSLayer{"nITSLayer", 0, "ITS Layer (0-6)"};
   Configurable<bool> usenITSLayer{"usenITSLayer", false, "Flag to enable ITS layer hit"};
@@ -180,9 +182,9 @@ struct LFNucleiBATask {
         histos.add<TH1>("tracks/eff/hPtantiPrTOF", "Track #it{p}_{T} (#bar{p}); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
       }
       if (enableDe) {
-        histos.add<TH1>("tracks/eff/hPtDe", "Track #it{p}_{T} (p); #it{d}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
+        histos.add<TH1>("tracks/eff/hPtDe", "Track #it{p}_{T} (d); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
         histos.add<TH1>("tracks/eff/hPtantiDe", "Track #it{p}_{T} (#bar{d}); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
-        histos.add<TH1>("tracks/eff/hPtDeTOF", "Track #it{p}_{T} (p); #it{d}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
+        histos.add<TH1>("tracks/eff/hPtDeTOF", "Track #it{p}_{T} (d); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
         histos.add<TH1>("tracks/eff/hPtantiDeTOF", "Track #it{p}_{T} (#bar{d}); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{400, 0., 8.}});
       }
       if (enableTr) {
@@ -1076,6 +1078,7 @@ struct LFNucleiBATask {
     }
 
     float gamma = 0., massTOF = 0.;
+    bool isTriton = kFALSE;
 
     // Event histos fill
     histos.fill(HIST("event/h1VtxZ"), event.posZ());
@@ -1096,6 +1099,15 @@ struct LFNucleiBATask {
         continue;
       if (track.tpcNClsFound() < cfgCutTPCClusters)
         continue;
+
+      switch (tritonSelConfig) {
+        case 0:
+          isTriton = std::abs(track.tpcNSigmaTr()) < nsigmaTPCTr;
+          break;
+        case 1:
+          isTriton = (std::abs(track.tpcNSigmaTr()) < nsigmaTPCTr) && (std::abs(track.tpcNSigmaPr()) > 3) && (std::abs(track.tpcNSigmaKa()) > 5) && (std::abs(track.tpcNSigmaPi()) > 5);
+          break;
+      }
 
       // Tracks DCA histos fill
       if (makeDCABeforeCutPlots) {
@@ -1130,7 +1142,7 @@ struct LFNucleiBATask {
           }
         }
         if (enableTr) {
-          if (std::abs(track.tpcNSigmaTr()) < nsigmaTPCTr) {
+          if (isTriton) {
             if (track.sign() > 0) {
               histos.fill(HIST("tracks/triton/dca/before/hDCAxyVsPtTriton"), track.pt(), track.dcaXY());
               histos.fill(HIST("tracks/triton/dca/before/hDCAzVsPtTriton"), track.pt(), track.dcaZ());
@@ -1209,7 +1221,7 @@ struct LFNucleiBATask {
           }
         }
         if (enableTr) {
-          if (std::abs(track.tpcNSigmaTr()) < nsigmaTPCTr) {
+          if (isTriton) {
             if (track.sign() > 0) {
               histos.fill(HIST("tracks/triton/dca/after/hDCAxyVsPtTriton"), track.pt(), track.dcaXY());
               histos.fill(HIST("tracks/triton/dca/after/hDCAzVsPtTriton"), track.pt(), track.dcaZ());
@@ -1861,7 +1873,7 @@ struct LFNucleiBATask {
 
       if (enableTr) {
         // if ((((!enableStrongCut) && (std::abs(track.tpcNSigmaTr()) < nsigmaTPCTr)) || ((enableStrongCut) && (std::abs(track.tpcNSigmaPr()) >= nsigmaTPCStrongCut))) && (TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton))) < yCut)) {
-        if ((std::abs(track.tpcNSigmaTr()) < nsigmaTPCTr) && (TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton))) < yCut)) {
+        if ((isTriton) && (TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton))) < yCut)) {
           if (track.sign() > 0) {
             if (enablePtSpectra)
               histos.fill(HIST("tracks/eff/hPtTr"), track.pt());
@@ -1929,6 +1941,8 @@ struct LFNucleiBATask {
       if (doTOFplots) {
         if (track.hasTOF()) {
           histos.fill(HIST("tracks/h2TOFbetaVsP_debug"), track.p() / (1.f * track.sign()), track.beta());
+          if (enableBetaCut && (track.beta() > betaCut))
+            histos.fill(HIST("tracks/h2TOFbetaVsP_BetaCut"), track.p() / (1.f * track.sign()), track.beta());
           switch (useHasTRDConfig) {
             case 0:
               histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
@@ -1960,9 +1974,9 @@ struct LFNucleiBATask {
               histos.fill(HIST("tracks/deuteron/h2antiDeuteronTOFbetaVsP"), track.p(), track.beta());
           }
           if (enableTr) {
-            if (std::abs(track.tpcNSigmaTr()) < nsigmaTPCTr && track.sign() > 0)
+            if (isTriton && track.sign() > 0)
               histos.fill(HIST("tracks/triton/h2TritonTOFbetaVsP"), track.p(), track.beta());
-            if (std::abs(track.tpcNSigmaTr()) < nsigmaTPCTr && track.sign() < 0)
+            if (isTriton && track.sign() < 0)
               histos.fill(HIST("tracks/triton/h2antiTritonTOFbetaVsP"), track.p(), track.beta());
           }
           if (enableHe) {
@@ -2005,7 +2019,15 @@ struct LFNucleiBATask {
 
           if ((track.beta() * track.beta()) < 1.) {
             gamma = 1.f / TMath::Sqrt(1.f - (track.beta() * track.beta()));
-            massTOF = track.tpcInnerParam() * TMath::Sqrt(1.f / (track.beta() * track.beta()) - 1.f);
+
+            switch (massTOFConfig) {
+              case 0:
+                massTOF = track.tpcInnerParam() * TMath::Sqrt(1.f / (track.beta() * track.beta()) - 1.f);
+                break;
+              case 1:
+                massTOF = track.tofExpMom() * TMath::Sqrt(1.f / (track.beta() * track.beta()) - 1.f);
+                break;
+            }
             histos.fill(HIST("tracks/h2TPCsignVsBetaGamma"), (track.beta() * gamma) / (1.f * track.sign()), track.tpcSignal());
           } else {
             massTOF = -99.f;
@@ -2156,7 +2178,7 @@ struct LFNucleiBATask {
 
           if (enableTr) {
             // if ((((!enableStrongCut) && (std::abs(track.tpcNSigmaTr()) < nsigmaTPCTr)) || ((enableStrongCut) && (std::abs(track.tpcNSigmaPr()) >= nsigmaTPCStrongCut))) && (TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton))) < yCut)) {
-            if ((std::abs(track.tpcNSigmaTr()) < nsigmaTPCTr) && (TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton))) < yCut)) {
+            if ((isTriton) && (TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton))) < yCut)) {
               if (track.sign() > 0) {
                 if (enablePtSpectra)
                   histos.fill(HIST("tracks/eff/hPtTrTOF"), track.pt());

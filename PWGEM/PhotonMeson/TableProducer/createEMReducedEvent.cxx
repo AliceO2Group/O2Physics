@@ -70,6 +70,8 @@ struct createEMReducedEvent {
       registry.fill(HIST("hEventCounter"), 1);
 
       // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      bool is_phoscpv_readout = true;
+      bool is_emc_readout = collision.alias()[kTVXinEMC];
 
       int ng_pcm = 0;
       int ng_phos = 0;
@@ -106,14 +108,6 @@ struct createEMReducedEvent {
       if (collision.sel8()) {
         registry.fill(HIST("hEventCounter"), 6);
       }
-
-      bool is_phoscpv_readout = false;
-      bool is_emc_readout = false;
-      // bool is_phoscpv_readout = static_cast<bool>(collision.bc().triggerMask() & 0x4); // trigger mask = 4
-      // bool is_emc_readout     = static_cast<bool>(collision.bc().triggerMask() & 0x10); // trigger mask = 16
-      // if(collision.bc().triggerMask() > 0){
-      //   LOGF(info, "trigger mask = %d , is_phoscpv_readout = %d , is_emc_readout = %d , ng_phos = %d , ng_emc = %d", collision.bc().triggerMask(), is_phoscpv_readout, is_emc_readout, ng_phos, ng_emc);
-      // }
 
       uint64_t tag = 0;
       // store event selection decisions
