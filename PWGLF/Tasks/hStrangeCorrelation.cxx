@@ -52,13 +52,13 @@ struct correlateStrangeness {
 
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
 
-  //collision slicing for mixed events
+  // collision slicing for mixed events
   Preslice<aod::TriggerTracks> collisionSliceTracks = aod::triggerTracks::collisionId;
   Preslice<aod::AssocV0s> collisionSliceV0s = aod::assocV0s::collisionId;
   Preslice<aod::AssocCascades> collisionSliceCascades = aod::assocCascades::collisionId;
 
-  static constexpr std::string_view v0names[]={"K0Short","Lambda","AntiLambda"};
-  static constexpr std::string_view cascadenames[]={"XiMinus","XiPlus","OmegaMinus","OmegaPlus"};
+  static constexpr std::string_view v0names[] = {"K0Short", "Lambda", "AntiLambda"};
+  static constexpr std::string_view cascadenames[] = {"XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
 
   /// Function to aid in calculating delta-phi
   /// \param phi1 first phi value
@@ -89,63 +89,71 @@ struct correlateStrangeness {
     return lReturnVal;
   }
 
-  void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing){
+  void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing)
+  {
     for (auto& triggerTrack : triggers) {
       auto trigg = triggerTrack.track_as<TracksComplete>();
       histos.fill(HIST("triggerV0"), trigg.pt());
-      for (auto& assocCandidate : assocs){
+      for (auto& assocCandidate : assocs) {
         auto assoc = assocCandidate.v0Data();
 
         //---] removing autocorrelations [---
         auto postrack = assoc.posTrack_as<TracksComplete>();
         auto negtrack = assoc.negTrack_as<TracksComplete>();
-        if (trigg.globalIndex() == postrack.globalIndex()) continue;
-        if (trigg.globalIndex() == negtrack.globalIndex()) continue;
-        //TODO: add histogram checking how many pairs are rejected (should be small!)
+        if (trigg.globalIndex() == postrack.globalIndex())
+          continue;
+        if (trigg.globalIndex() == negtrack.globalIndex())
+          continue;
+        // TODO: add histogram checking how many pairs are rejected (should be small!)
 
         float deltaphi = ComputeDeltaPhi(trigg.phi(), assoc.phi());
-        float deltaeta = trigg.eta() - assoc.eta(); 
-        float ptassoc = assoc.pt(); 
+        float deltaeta = trigg.eta() - assoc.eta();
+        float ptassoc = assoc.pt();
         static_for<0, 2>([&](auto i) {
           constexpr int index = i.value;
-          if( assocCandidate.compatible(index) && !mixing)
-            histos.fill(HIST("sameEvent/Hadron") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc);  
-          if( assocCandidate.compatible(index) && mixing)
-            histos.fill(HIST("mixedEvent/Hadron") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc);  
+          if (assocCandidate.compatible(index) && !mixing)
+            histos.fill(HIST("sameEvent/Hadron") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc);
+          if (assocCandidate.compatible(index) && mixing)
+            histos.fill(HIST("mixedEvent/Hadron") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc);
         });
       }
     }
   }
 
-  void fillCorrelationsCascade(aod::TriggerTracks const& triggers, aod::AssocCascades const& assocs, bool mixing){
+  void fillCorrelationsCascade(aod::TriggerTracks const& triggers, aod::AssocCascades const& assocs, bool mixing)
+  {
     for (auto& triggerTrack : triggers) {
       auto trigg = triggerTrack.track_as<TracksComplete>();
-      if(!mixing)histos.fill(HIST("triggerCas"), trigg.pt());
-      for (auto& assocCandidate : assocs){
+      if (!mixing)
+        histos.fill(HIST("triggerCas"), trigg.pt());
+      for (auto& assocCandidate : assocs) {
         auto assoc = assocCandidate.cascData();
 
         //---] removing autocorrelations [---
         auto v0index = assoc.v0_as<o2::aod::V0sLinked>();
         if (!(v0index.has_v0Data()))
-          continue; // this should not happen - included for safety
+          continue;                      // this should not happen - included for safety
         auto assocV0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
         auto postrack = assocV0.posTrack_as<TracksComplete>();
         auto negtrack = assocV0.negTrack_as<TracksComplete>();
         auto bachtrack = assoc.bachelor_as<TracksComplete>();
-        if (trigg.globalIndex() == postrack.globalIndex()) continue;
-        if (trigg.globalIndex() == negtrack.globalIndex()) continue;
-        if (trigg.globalIndex() == bachtrack.globalIndex()) continue;
-        //TODO: add histogram checking how many pairs are rejected (should be small!)
+        if (trigg.globalIndex() == postrack.globalIndex())
+          continue;
+        if (trigg.globalIndex() == negtrack.globalIndex())
+          continue;
+        if (trigg.globalIndex() == bachtrack.globalIndex())
+          continue;
+        // TODO: add histogram checking how many pairs are rejected (should be small!)
 
         float deltaphi = ComputeDeltaPhi(trigg.phi(), assoc.phi());
-        float deltaeta = trigg.eta() - assoc.eta(); 
-        float ptassoc = assoc.pt(); 
+        float deltaeta = trigg.eta() - assoc.eta();
+        float ptassoc = assoc.pt();
         static_for<0, 3>([&](auto i) {
           constexpr int index = i.value;
-          if( assocCandidate.compatible(index) && !mixing)
+          if (assocCandidate.compatible(index) && !mixing)
             histos.fill(HIST("sameEvent/Hadron") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc);
-          if( assocCandidate.compatible(index) && mixing)
-            histos.fill(HIST("mixedEvent/Hadron") + HIST(cascadenames[index]),deltaphi, deltaeta, ptassoc);
+          if (assocCandidate.compatible(index) && mixing)
+            histos.fill(HIST("mixedEvent/Hadron") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc);
         });
       }
     }
@@ -174,7 +182,7 @@ struct correlateStrangeness {
     histos.add("sameEvent/HadronOmegaMinus", "HadronOmegaMinus", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
     histos.add("sameEvent/HadronOmegaPlus", "HadronOmegaPlus", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
 
-    // mixed-event correlation functions 
+    // mixed-event correlation functions
     histos.addClone("sameEvent/", "mixedEvent");
 
     // Some QA plots
@@ -191,8 +199,8 @@ struct correlateStrangeness {
   }
 
   void processSameEvent(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision,
-               aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
-               aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
+                        aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
+                        aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
   {
     // ________________________________________________
     // Perform basic event selection
@@ -209,8 +217,8 @@ struct correlateStrangeness {
       histos.fill(HIST("hV0Eta"), v0Data.eta());
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
-        if( v0.compatible(index) )
-          histos.fill(HIST("h2dMass") + HIST(v0names[index]),v0Data.pt(), v0Data.m(index));  
+        if (v0.compatible(index))
+          histos.fill(HIST("h2dMass") + HIST(v0names[index]), v0Data.pt(), v0Data.m(index));
       });
     }
     for (auto const& casc : associatedCascades) {
@@ -218,8 +226,8 @@ struct correlateStrangeness {
       histos.fill(HIST("hCascEta"), cascData.eta());
       static_for<0, 3>([&](auto i) {
         constexpr int index = i.value;
-        if( casc.compatible(index) )
-          histos.fill(HIST("h2dMass") + HIST(cascadenames[index]),cascData.pt(), cascData.m(index));  
+        if (casc.compatible(index))
+          histos.fill(HIST("h2dMass") + HIST(cascadenames[index]), cascData.pt(), cascData.m(index));
       });
     }
     for (auto const& triggerTrack : triggerTracks) {
@@ -229,17 +237,17 @@ struct correlateStrangeness {
 
     // ________________________________________________
     // Do hadron - V0 correlations
-    fillCorrelationsV0( triggerTracks, associatedV0s, false );
+    fillCorrelationsV0(triggerTracks, associatedV0s, false);
 
     // ________________________________________________
     // Do hadron - cascade correlations
-    fillCorrelationsCascade( triggerTracks, associatedCascades, false );
+    fillCorrelationsCascade(triggerTracks, associatedCascades, false);
   }
   PROCESS_SWITCH(correlateStrangeness, processSameEvent, "Process same events", true);
 
   void processMixedEvent(soa::Join<aod::Collisions, aod::EvSels, aod::Mults> const& collisions,
-               aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
-               aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
+                         aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
+                         aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
   {
 
     BinningType colBinning{{ConfVtxBins, ConfMultBins}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
@@ -247,9 +255,9 @@ struct correlateStrangeness {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, collisions, collisions)) {
       // ________________________________________________
       // Perform basic event selection on both collisions
-      if (!collision1.sel8() || !collision2.sel8()) 
+      if (!collision1.sel8() || !collision2.sel8())
         continue;
-      if (TMath::Abs(collision1.posZ()) > zVertexCut && TMath::Abs(collision2.posZ()) > zVertexCut) 
+      if (TMath::Abs(collision1.posZ()) > zVertexCut && TMath::Abs(collision2.posZ()) > zVertexCut)
         continue;
 
       // ________________________________________________
@@ -260,11 +268,11 @@ struct correlateStrangeness {
 
       // ________________________________________________
       // Do hadron - V0 correlations
-      fillCorrelationsV0( slicedTriggerTracks, slicedAssocV0s, true );
+      fillCorrelationsV0(slicedTriggerTracks, slicedAssocV0s, true);
 
       // ________________________________________________
       // Do hadron - cascade correlations
-      fillCorrelationsCascade( slicedTriggerTracks, slicedAssocCascades, true );
+      fillCorrelationsCascade(slicedTriggerTracks, slicedAssocCascades, true);
     }
   }
   PROCESS_SWITCH(correlateStrangeness, processMixedEvent, "Process mixed events", true);
