@@ -65,11 +65,11 @@ struct correlateStrangeness {
   /// \param phi2 second phi value
   Double_t ComputeDeltaPhi(Double_t phi1, Double_t phi2)
   {
-    Double_t deltaPhi = phi1-phi2;
+    Double_t deltaPhi = phi1 - phi2;
     if (deltaPhi < -TMath::Pi() / 2.) {
       deltaPhi += 2. * TMath::Pi();
     }
-    if(deltaPhi> 3*TMath::Pi() / 2.){
+    if (deltaPhi > 3 * TMath::Pi() / 2.) {
       deltaPhi -= 2. * TMath::Pi();
     }
     return deltaPhi;
