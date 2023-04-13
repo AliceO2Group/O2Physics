@@ -44,8 +44,7 @@ struct createEMReducedEvent {
   Configurable<int> minN_PHOS{"minN_PHOS", 0, "Minimum number of clusters for PHOS. Events are saved if either minimum number condition is met"};
   Configurable<int> minN_EMC{"minN_EMC", 0, "Minimum number of clusters for EMCal. Events are saved if either minimum number condition is met"};
 
-  HistogramRegistry registry{
-    "registry"};
+  HistogramRegistry registry{"registry"};
 
   Preslice<aod::V0Photons> perCollision_pcm = aod::v0photon::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
@@ -69,6 +68,10 @@ struct createEMReducedEvent {
   {
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
+
+      // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      bool is_phoscpv_readout = true;
+      bool is_emc_readout = collision.alias()[kTVXinEMC];
 
       int ng_pcm = 0;
       int ng_phos = 0;
@@ -113,7 +116,8 @@ struct createEMReducedEvent {
           tag |= (uint64_t(1) << i);
         }
       }
-      event(collision.globalIndex(), tag, collision.bc().runNumber(), collision.sel8(),
+      event(collision.globalIndex(), tag, collision.bc().runNumber(), collision.bc().triggerMask(), collision.sel8(),
+            is_phoscpv_readout, is_emc_readout,
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes(),
             collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),

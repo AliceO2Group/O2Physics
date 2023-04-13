@@ -248,6 +248,9 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
 /// Track selection
 struct HfTrackIndexSkimCreatorTagSelTracks {
+  SliceCache cache;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+
   Produces<aod::HfSelTrack> rowSelectedTrack;
   Produces<aod::HfPvRefitTrack> tabPvRefitTrack;
 
@@ -811,7 +814,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
           std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov = {};
 
           /// contributors for the current collision
-          auto pvContrCollision = pvContributors->sliceByCached(aod::track::collisionId, thisCollId);
+          auto pvContrCollision = pvContributors->sliceByCached(aod::track::collisionId, thisCollId, cache);
           for (auto contributor : pvContrCollision) {
             vecPvContributorGlobId.push_back(contributor.globalIndex());
             vecPvContributorTrackParCov.push_back(getTrackParCov(contributor));

@@ -42,6 +42,8 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, a
 using FullTrackExt = FullTracksExt::iterator;
 
 struct createPCM {
+  SliceCache cache;
+  Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
   Produces<aod::StoredV0Datas> v0data;
 
   // Basic checks
@@ -65,7 +67,7 @@ struct createPCM {
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
   Configurable<float> minv0cospa{"minv0cospa", 0.95, "minimum V0 CosPA"};
-  Configurable<float> maxdcav0dau{"maxdcav0dau", 2.0, "max DCA between V0 Daughters"};
+  Configurable<float> maxdcav0dau{"maxdcav0dau", 1.5, "max DCA between V0 Daughters"};
   Configurable<float> v0Rmin{"v0Rmin", 0.0, "v0Rmin"};
   Configurable<float> v0Rmax{"v0Rmax", 180.0, "v0Rmax"};
   Configurable<float> dcamin{"dcamin", 0.1, "dcamin"};
@@ -74,6 +76,7 @@ struct createPCM {
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance for single track"};
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
+  Configurable<bool> useTPConly{"useTPConly", false, "Use truly TPC only tracks for V0 finder"};
 
   int mRunNumber;
   float d_bz;
@@ -176,13 +179,6 @@ struct createPCM {
     array<float, 3> pvec0 = {0.};
     array<float, 3> pvec1 = {0.};
 
-    if (ele.tpcNClsCrossedRows() < mincrossedrows) {
-      return;
-    }
-    if (pos.tpcNClsCrossedRows() < mincrossedrows) {
-      return;
-    }
-
     auto pTrack = getTrackParCov(pos); // positive
     auto nTrack = getTrackParCov(ele); // negative
 
@@ -238,10 +234,26 @@ struct createPCM {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex());
-      auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex());
+      auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
 
       for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
+        if (ele.tpcNClsCrossedRows() < mincrossedrows) {
+          continue;
+        }
+        if (pos.tpcNClsCrossedRows() < mincrossedrows) {
+          continue;
+        }
+
+        if (useTPConly) {
+          if ((ele.hasITS() || ele.hasTOF() || ele.hasTRD())) {
+            continue;
+          }
+          if ((pos.hasITS() || pos.hasTOF() || pos.hasTRD())) {
+            continue;
+          }
+        }
+
         fillV0Table(collision, ele, pos);
       }
     } // end of collision loop
@@ -281,6 +293,15 @@ struct createPCM {
         }
         if (ele.pt() < minpt || pos.pt() < minpt) {
           continue;
+        }
+
+        if (useTPConly) {
+          if ((ele.hasITS() || ele.hasTOF() || ele.hasTRD())) {
+            continue;
+          }
+          if ((pos.hasITS() || pos.hasTOF() || pos.hasTRD())) {
+            continue;
+          }
         }
 
         if (ele.sign() < 0) {

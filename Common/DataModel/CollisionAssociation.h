@@ -22,13 +22,17 @@ namespace o2::aod
 
 namespace track_association
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Collision index
-DECLARE_SOA_INDEX_COLUMN(Track, track);         //! Track index
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                      //! Collision index
+DECLARE_SOA_INDEX_COLUMN(Track, track);                              //! Track index
+DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, compatibleColl);           //! Array of collision indices
 } // namespace track_association
 
 DECLARE_SOA_TABLE(TrackAssoc, "AOD", "TRACKASSOC", //! Table for track-to-collision association for e.g. HF vertex finding - tracks can appear for several collisions
                   track_association::CollisionId,
                   track_association::TrackId);
+
+DECLARE_SOA_TABLE(TrackCompColls, "AOD", "TRACKCOMPCOLLS", //! Table with vectors of collision indices stored per track
+                  track_association::CollisionIds);
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_COLLISIONASSOCIATION_H_
