@@ -145,6 +145,10 @@ struct AmbiguousTrackPropagation {
       // TPC (e.g. skipping loopers etc).
       auto trackPar = getTrackPar(track);
       if (track.x() < o2::constants::geom::XTPCInnerRef + 0.1) {
+        auto ids = track.compatibleCollIds();
+        if (ids.empty() || (ids.size() == 1 && bestCol == ids[0])) {
+          continue;
+        }
         auto compatibleColls = track.compatibleColl();
         for (auto& collision : compatibleColls) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
