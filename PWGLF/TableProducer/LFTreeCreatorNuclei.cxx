@@ -124,6 +124,7 @@ struct LfTreeCreatorNuclei {
         track.hasTOF(),
         track.hasTRD(),
         track.tpcInnerParam(),
+        track.tofExpMom(),
         track.tpcSignal(),
         track.beta(),
         track.px(),
