@@ -34,7 +34,7 @@
 // #include <iostream>
 // #include <fstream>
 
-#include "DelphesO2Smearer.h"
+#include "ALICE3/Core/DelphesO2TrackSmearer.h"
 
 namespace o2
 {
