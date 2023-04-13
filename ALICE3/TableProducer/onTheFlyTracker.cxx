@@ -45,7 +45,7 @@
 #include "CommonConstants/GeomConstants.h"
 #include "TableHelper.h"
 
-#include "onTheFlyTracker.h"
+#include "ALICE3/Core/DelphesO2TrackSmearer.h"
 
 using namespace o2;
 using namespace o2::framework;
