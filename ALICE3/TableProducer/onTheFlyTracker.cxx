@@ -77,7 +77,7 @@ struct OnTheFlyTracker {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // Track smearer
-  o2::delphes::TrackSmearer mSmearer;
+  o2::delphes::DelphesO2TrackSmearer mSmearer;
 
   void init(o2::framework::InitContext& initContext)
   {
