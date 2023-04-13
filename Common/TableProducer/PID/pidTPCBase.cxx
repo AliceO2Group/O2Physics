@@ -23,10 +23,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Track.h"
-
-// O2Physics includes
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "TableHelper.h"
 #include "pidTPCBase.h"
@@ -38,12 +34,10 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 
 struct PidMultiplicity {
+  SliceCache cache;
   Produces<aod::PIDMults> mult;
 
-  // For vertex-Z corrections in calibration
-  Partition<soa::Join<aod::Tracks, aod::TracksExtra>> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
   bool enableTable = false;
-
   void init(InitContext& initContext)
   {
     LOG(info) << "Initializing PID Mult Task";
@@ -52,16 +46,34 @@ struct PidMultiplicity {
     if (enableTable) {
       LOG(info) << "Table TPC PID Multiplicity enabled!";
     }
+    if (doprocessStandard == true && doprocessIU == true) {
+      LOG(fatal) << "Both processStandard and processIU are enabled, pick one!";
+    }
   }
 
-  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra)
+  using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
+  Partition<TrksIU> tracksWithTPCIU = (aod::track::tpcNClsFindable > (uint8_t)0);
+  void processIU(aod::Collision const& collision, TrksIU const& tracksExtra)
   {
     if (!enableTable) {
       return;
     }
-    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto tracksGrouped = tracksWithTPCIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     mult(tracksGrouped.size());
   }
+  PROCESS_SWITCH(PidMultiplicity, processIU, "Process with IU tracks, faster but works on Run3 only", false);
+
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
+  Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  void processStandard(aod::Collision const& collision, Trks const& tracksExtra)
+  {
+    if (!enableTable) {
+      return;
+    }
+    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    mult(tracksGrouped.size());
+  }
+  PROCESS_SWITCH(PidMultiplicity, processStandard, "Process with tracks, needs propagated tracks", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

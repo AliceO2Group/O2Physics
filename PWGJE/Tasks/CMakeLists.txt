@@ -9,6 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+
 o2physics_add_dpl_workflow(emc-cellmonitor
                     SOURCES emccellmonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
@@ -19,6 +20,10 @@ o2physics_add_dpl_workflow(emc-clustermonitor
                     COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(emc-eventselection-qa
                     SOURCES emceventselectionqa.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(emc-tmmonitor
+                    SOURCES emctmmonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -45,6 +50,10 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-hf-output
                         SOURCES jetsubstructurehfoutput.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-validation-qa
+                        SOURCES jetvalidationqa.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
 endif()

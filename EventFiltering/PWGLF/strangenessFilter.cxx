@@ -40,6 +40,7 @@ struct strangenessFilter {
 
   // Recall the output table
   Produces<aod::StrangenessFilters> strgtable;
+  TrackSelection mTrackSelector;
 
   // Define a histograms and registries
   HistogramRegistry QAHistos{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
@@ -50,9 +51,6 @@ struct strangenessFilter {
   OutputObj<TH1F> hCandidate{TH1F("hCandidate", "; Candidate pass selection; Number of events", 30, 0., 30.)};
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Xi events with pT_h higher than thrd; hadrons with p_{T}>bincenter (GeV/c); Number of events", 11, 0., 11.)};
   OutputObj<TH1F> hhXiPairsvsPt{TH1F("hhXiPairsvsPt", "pt distributions of Xi in events with a trigger particle; #it{p}_{T} (GeV/c); Number of Xi", 100, 0., 10.)};
-
-  // our track selection
-  TrackSelection myTrackSelection();
 
   // Selection criteria for cascades
   Configurable<bool> doextraQA{"doextraQA", 1, "do extra QA"};
@@ -95,6 +93,21 @@ struct strangenessFilter {
 
   void init(o2::framework::InitContext&)
   {
+    mTrackSelector.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+    mTrackSelector.SetPtRange(hMinPt, 1e10f);
+    mTrackSelector.SetEtaRange(-hEta, hEta);
+    mTrackSelector.SetRequireITSRefit(true);
+    mTrackSelector.SetRequireTPCRefit(true);
+    mTrackSelector.SetRequireGoldenChi2(false);
+    mTrackSelector.SetMinNCrossedRowsTPC(70);
+    mTrackSelector.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
+    mTrackSelector.SetMaxChi2PerClusterTPC(4.f);
+    mTrackSelector.SetRequireHitsInITSLayers(1, {0, 1, 2}); // one hit in any of the first three layers of IB
+    mTrackSelector.SetMaxChi2PerClusterITS(36.f);
+    // mTrackSelector.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
+    mTrackSelector.SetMaxDcaXY(1.f);
+    mTrackSelector.SetMaxDcaZ(2.f);
+
     hProcessedEvents->GetXaxis()->SetBinLabel(1, "Events processed");
     hProcessedEvents->GetXaxis()->SetBinLabel(2, "Events w/ high-#it{p}_{T} hadron");
     hProcessedEvents->GetXaxis()->SetBinLabel(3, "#Omega");
@@ -414,7 +427,7 @@ struct strangenessFilter {
     // High-pT hadron + Xi trigger definition
     if (xicounter > 0) {
       for (auto track : tracks) { // start loop over tracks
-        if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
+        if (isTrackFilter && !mTrackSelector.IsSelected(track)) {
           continue;
         }
         triggcounter++;
@@ -704,7 +717,7 @@ struct strangenessFilter {
 
         // Plot for estimates
         for (auto track : tracks) { // start loop over tracks
-          if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
+          if (isTrackFilter && !mTrackSelector.IsSelected(track)) {
             continue;
           }
           triggcounterForEstimates++;
@@ -777,7 +790,7 @@ struct strangenessFilter {
 
     // QA tracks
     for (auto track : tracks) { // start loop over tracks
-      if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
+      if (isTrackFilter && !mTrackSelector.IsSelected(track)) {
         continue;
       }
       triggcounterAllEv++;
@@ -811,7 +824,7 @@ struct strangenessFilter {
     // High-pT hadron + Xi trigger definition
     if (xicounter > 0) {
       for (auto track : tracks) { // start loop over tracks
-        if (isTrackFilter && !myTrackSelection().IsSelected(track)) {
+        if (isTrackFilter && !mTrackSelector.IsSelected(track)) {
           continue;
         }
         triggcounter++;
@@ -879,27 +892,6 @@ struct strangenessFilter {
   //
   PROCESS_SWITCH(strangenessFilter, processRun3, "Process Run3", true);
 };
-
-TrackSelection strangenessFilter::myTrackSelection()
-{
-  TrackSelection selectedTracks;
-  selectedTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
-  selectedTracks.SetPtRange(hMinPt, 1e10f);
-  selectedTracks.SetEtaRange(-hEta, hEta);
-  selectedTracks.SetRequireITSRefit(true);
-  selectedTracks.SetRequireTPCRefit(true);
-  selectedTracks.SetRequireGoldenChi2(false);
-  selectedTracks.SetMinNCrossedRowsTPC(70);
-  selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
-  selectedTracks.SetMaxChi2PerClusterTPC(4.f);
-  selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2}); // one hit in any of the first three layers of IB
-  selectedTracks.SetMaxChi2PerClusterITS(36.f);
-  // selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
-  selectedTracks.SetMaxDcaXY(1.f);
-  selectedTracks.SetMaxDcaZ(2.f);
-
-  return selectedTracks;
-}
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

@@ -80,49 +80,56 @@ struct Alice3SingleParticle {
     histos.add("event/VtxY", "Vertex Y", kTH1D, {axisVy});
     histos.add("event/VtxZ", "Vertex Z", kTH1D, {axisVz});
 
-    histos.add("particle/PDGs", "Particle PDGs", kTH2F, {axisPDGs, axisCharge});
+    histos.add("particle/PDGs", "Particle PDGs", kTH2D, {axisPDGs, axisCharge});
+    histos.add("particle/PDGsPrimaries", "Particle PDGs of Primaries", kTH2D, {axisPDGs, axisCharge});
+    histos.add("particle/PDGsSecondaries", "Particle PDGs of Secondaries", kTH2D, {axisPDGs, axisCharge});
     histos.add("particle/Pt", "Particle Pt " + tit, kTH1D, {axisPt});
+    histos.add("particle/P", "Particle P " + tit, kTH1D, {axisP});
     histos.add("particle/primariesPt", "Particle Pt (primary) " + tit, kTH1D, {axisPt});
+    histos.add("particle/primariesP", "Particle P (primary) " + tit, kTH1D, {axisP});
     histos.add("particle/secondariesPt", "Particle Pt (secondary) " + tit, kTH1D, {axisPt});
+    histos.add("particle/secondariesP", "Particle P (secondary) " + tit, kTH1D, {axisP});
     histos.add("particle/prodVx", "Particle Prod. Vertex X " + tit, kTH1D, {axisProdx});
     histos.add("particle/prodVy", "Particle Prod. Vertex Y " + tit, kTH1D, {axisPrody});
     histos.add("particle/prodVz", "Particle Prod. Vertex Z " + tit, kTH1D, {axisProdz});
     histos.add("particle/prodRadius", "Particle Prod. Vertex Radius " + tit, kTH1D, {axisProdRadius});
-    histos.add("particle/prodVxVsPt", "Particle Prod. Vertex X " + tit, kTH2F, {axisPt, axisProdx});
-    histos.add("particle/prodVyVsPt", "Particle Prod. Vertex Y " + tit, kTH2F, {axisPt, axisPrody});
-    histos.add("particle/prodVzVsPt", "Particle Prod. Vertex Z " + tit, kTH2F, {axisPt, axisProdz});
-    histos.add("particle/prodRadiusVsPt", "Particle Prod. Vertex Radius " + tit, kTH2F, {axisPt, axisProdRadius});
-    histos.add("particle/prodRadius3DVsPt", "Particle Prod. Vertex Radius XYZ " + tit, kTH2F, {axisPt, axisProdRadius});
+    histos.add("particle/prodVxVsPt", "Particle Prod. Vertex X " + tit, kTH2D, {axisPt, axisProdx});
+    histos.add("particle/prodVyVsPt", "Particle Prod. Vertex Y " + tit, kTH2D, {axisPt, axisPrody});
+    histos.add("particle/prodVzVsPt", "Particle Prod. Vertex Z " + tit, kTH2D, {axisPt, axisProdz});
+    histos.add("particle/prodRadiusVsPt", "Particle Prod. Vertex Radius " + tit, kTH2D, {axisPt, axisProdRadius});
+    histos.add("particle/prodRadius3DVsPt", "Particle Prod. Vertex Radius XYZ " + tit, kTH2D, {axisPt, axisProdRadius});
     histos.add("particle/Eta", "Particle Eta " + tit, kTH1D, {axisEta});
     histos.add("particle/primariesEta", "Particle Eta (primary) " + tit, kTH1D, {axisEta});
     histos.add("particle/secondariesEta", "Particle Eta (secondary) " + tit, kTH1D, {axisEta});
     histos.add("particle/Y", "Particle Y " + tit, kTH1D, {axisY});
-    histos.add("particle/EvsPz", "Particle E vs Pz " + tit, kTH2F, {axisE, axisPz});
-    histos.add("particle/YvzPz", "Particle Y vs Pz " + tit, kTH2F, {axisY, axisPz});
-    histos.add("particle/EtavzPz", "Particle Eta vs Pz " + tit, kTH2F, {axisEta, axisPz});
-    histos.add("particle/PtvzPz", "Particle Pt vs Pz " + tit, kTH2F, {axisPt, axisPz});
-    histos.add("particle/PvzPz", "Particle P vs Pz " + tit, kTH2F, {axisP, axisPz});
+    histos.add("particle/EvsPz", "Particle E vs Pz " + tit, kTH2D, {axisE, axisPz});
+    histos.add("particle/YvzPz", "Particle Y vs Pz " + tit, kTH2D, {axisY, axisPz});
+    histos.add("particle/EtavzPz", "Particle Eta vs Pz " + tit, kTH2D, {axisEta, axisPz});
+    histos.add("particle/PtvzPz", "Particle Pt vs Pz " + tit, kTH2D, {axisPt, axisPz});
+    histos.add("particle/PvzPz", "Particle P vs Pz " + tit, kTH2D, {axisP, axisPz});
     histos.add("particle/Px", "Particle Px " + tit, kTH1D, {axisPx});
     histos.add("particle/Py", "Particle Py " + tit, kTH1D, {axisPy});
     histos.add("particle/Pz", "Particle Pz " + tit, kTH1D, {axisPz});
-    if (!IsStable) {
-      histos.add("particle/daughters/PDGs", "Daughters PDGs " + tit, kTH2F, {axisPDGs, axisCharge});
-      histos.add("particle/daughters/prodVx", "Daughters Prod. Vertex X " + tit, kTH1D, {axisProdx});
-      histos.add("particle/daughters/prodVy", "Daughters Prod. Vertex Y " + tit, kTH1D, {axisPrody});
-      histos.add("particle/daughters/prodVz", "Daughters Prod. Vertex Z " + tit, kTH1D, {axisProdz});
-    }
+    histos.add("particle/daughters/PDGs", "Daughters PDGs " + tit, kTH2D, {axisPDGs, axisCharge});
+    histos.add("particle/daughters/PDGsPrimaries", "Daughters PDGs Primaries of " + tit, kTH2D, {axisPDGs, axisCharge});
+    histos.add("particle/daughters/PDGsSecondaries", "Daughters PDGs Secondaries of " + tit, kTH2D, {axisPDGs, axisCharge});
+    histos.add("particle/daughters/prodVx", "Daughters Prod. Vertex X " + tit, kTH1D, {axisProdx});
+    histos.add("particle/daughters/prodVy", "Daughters Prod. Vertex Y " + tit, kTH1D, {axisPrody});
+    histos.add("particle/daughters/prodVz", "Daughters Prod. Vertex Z " + tit, kTH1D, {axisProdz});
+    histos.add("particle/daughters/prodRadiusVsPt", "Daughters Prod. Vertex Radius " + tit, kTH2D, {axisPt, axisProdRadius});
+    histos.add("particle/daughters/prodRadius3DVsPt", "Daughters Prod. Vertex Radius XYZ " + tit, kTH2D, {axisPt, axisProdRadius});
 
-    histos.add("track/PDGs", "Track PDGs", kTH2F, {axisPDGs, axisCharge});
+    histos.add("track/PDGs", "Track PDGs", kTH2D, {axisPDGs, axisCharge});
     histos.add("track/withoutParticle", "Tracks without particles", kTH1D, {axisPt});
-    histos.add("track/tofPDGs", "Track wTOF PDGs", kTH2F, {axisPDGs, axisCharge});
+    histos.add("track/tofPDGs", "Track wTOF PDGs", kTH2D, {axisPDGs, axisCharge});
     histos.add("track/Pt", "Track Pt " + tit, kTH1D, {axisPt});
     histos.add("track/primariesPt", "Track Pt (primary) " + tit, kTH1D, {axisPt});
     histos.add("track/secondariesPt", "Track Pt (secondary) " + tit, kTH1D, {axisPt});
     histos.add("track/Eta", "Track Eta " + tit, kTH1D, {axisEta});
     histos.add("track/primariesEta", "Track Eta (primary) " + tit, kTH1D, {axisEta});
     histos.add("track/secondariesEta", "Track Eta (secondary) " + tit, kTH1D, {axisEta});
-    histos.add("track/primaries", "Source for primaries " + tit, kTH2F, {axisPDGs, axisCharge});
-    histos.add("track/secondaries", "Source for secondaries " + tit, kTH2F, {axisPDGs, axisCharge});
+    histos.add("track/primaries", "Source for primaries " + tit, kTH2D, {axisPDGs, axisCharge});
+    histos.add("track/secondaries", "Source for secondaries " + tit, kTH2D, {axisPDGs, axisCharge});
   }
 
   template <typename ParticleType>
@@ -152,7 +159,14 @@ struct Alice3SingleParticle {
     }
     std::vector<int64_t> ParticlesOfInterest;
     for (const auto& mcParticle : mcParticles) {
-      histos.get<TH2>(HIST("particle/PDGs"))->Fill(getPdgCodeString(mcParticle), getCharge(mcParticle), 1.f);
+      const auto& pdgString = getPdgCodeString(mcParticle);
+      const auto& pdgCharge = getCharge(mcParticle);
+      histos.get<TH2>(HIST("particle/PDGs"))->Fill(pdgString, pdgCharge, 1.f);
+      if (mcParticle.isPhysicalPrimary()) {
+        histos.get<TH2>(HIST("particle/PDGsPrimaries"))->Fill(pdgString, pdgCharge, 1.f);
+      } else {
+        histos.get<TH2>(HIST("particle/PDGsSecondaries"))->Fill(pdgString, pdgCharge, 1.f);
+      }
       if (mcParticle.pdgCode() != PDG) {
         continue;
       }
@@ -160,12 +174,15 @@ struct Alice3SingleParticle {
         continue;
       }
       histos.fill(HIST("particle/Pt"), mcParticle.pt());
+      histos.fill(HIST("particle/P"), mcParticle.p());
       histos.fill(HIST("particle/Eta"), mcParticle.eta());
       if (mcParticle.isPhysicalPrimary()) {
         histos.fill(HIST("particle/primariesPt"), mcParticle.pt());
+        histos.fill(HIST("particle/primariesP"), mcParticle.p());
         histos.fill(HIST("particle/primariesEta"), mcParticle.eta());
       } else {
         histos.fill(HIST("particle/secondariesPt"), mcParticle.pt());
+        histos.fill(HIST("particle/secondariesP"), mcParticle.p());
         histos.fill(HIST("particle/secondariesEta"), mcParticle.eta());
       }
       histos.fill(HIST("particle/EvsPz"), mcParticle.e(), mcParticle.pz());
@@ -180,13 +197,24 @@ struct Alice3SingleParticle {
       histos.fill(HIST("particle/prodVx"), mcParticle.vx());
       histos.fill(HIST("particle/prodVy"), mcParticle.vy());
       histos.fill(HIST("particle/prodVz"), mcParticle.vz());
-      if (!IsStable && mcParticle.has_daughters()) {
+      if (mcParticle.has_daughters()) {
         auto daughters = mcParticle.daughters_as<aod::McParticles>();
         for (const auto& daughter : daughters) {
-          histos.get<TH2>(HIST("particle/daughters/PDGs"))->Fill(getPdgCodeString(daughter), getCharge(daughter), 1.f);
+          const auto& pdgStringDau = getPdgCodeString(daughter);
+          const auto& pdgChargeDau = getCharge(daughter);
+
+          histos.get<TH2>(HIST("particle/daughters/PDGs"))->Fill(pdgStringDau, pdgChargeDau, 1.f);
+          if (mcParticle.isPhysicalPrimary()) {
+            histos.get<TH2>(HIST("particle/daughters/PDGsPrimaries"))->Fill(pdgStringDau, pdgChargeDau, 1.f);
+          } else {
+            histos.get<TH2>(HIST("particle/daughters/PDGsSecondaries"))->Fill(pdgStringDau, pdgChargeDau, 1.f);
+          }
+
           histos.fill(HIST("particle/daughters/prodVx"), daughter.vx());
           histos.fill(HIST("particle/daughters/prodVy"), daughter.vy());
           histos.fill(HIST("particle/daughters/prodVz"), daughter.vz());
+          histos.fill(HIST("particle/daughters/prodRadiusVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy()));
+          histos.fill(HIST("particle/daughters/prodRadius3DVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy() + mcParticle.vz() * mcParticle.vz()));
         }
       }
 

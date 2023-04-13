@@ -14,8 +14,8 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#ifndef O2_ANALYSIS_TRACKSELECTORPID_H_
-#define O2_ANALYSIS_TRACKSELECTORPID_H_
+#ifndef COMMON_CORE_TRACKSELECTORPID_H_
+#define COMMON_CORE_TRACKSELECTORPID_H_
 
 #include <TPDGCode.h>
 
@@ -94,7 +94,7 @@ class TrackSelectorPID
     mNSigmaTPCMax = nsMax;
   }
 
-  /// Set TPC nσ range in which a track should be conditionally accepted if combined with TOF.
+  /// Set TPC nσ range in which a track should be conditionally accepted if combined with TOF. Set to 0 to disable.
   void setRangeNSigmaTPCCondTOF(float nsMin, float nsMax)
   {
     mNSigmaTPCMinCondTOF = nsMin;
@@ -196,7 +196,7 @@ class TrackSelectorPID
     mNSigmaTOFMax = nsMax;
   }
 
-  /// Set TOF nσ range in which a track should be conditionally accepted if combined with TPC.
+  /// Set TOF nσ range in which a track should be conditionally accepted if combined with TPC. Set to 0 to disable.
   void setRangeNSigmaTOFCondTPC(float nsMin, float nsMax)
   {
     mNSigmaTOFMinCondTPC = nsMin;
@@ -432,17 +432,51 @@ class TrackSelectorPID
 
   // Combined selection (TPC + TOF)
 
-  /// Returns status of combined PID (TPC + TOF) selection for a given track.
+  /// Returns status of combined PID (TPC or TOF) selection for a given track.
   /// \param track  track
-  /// \return status of combined PID (TPC + TOF) (see TrackSelectorPID::Status)
+  /// \return status of combined PID (TPC or TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  int getStatusTrackPIDAll(const T& track)
+  int getStatusTrackPIDTpcOrTof(const T& track)
   {
     int statusTPC = getStatusTrackPIDTPC(track);
     int statusTOF = getStatusTrackPIDTOF(track);
 
     if (statusTPC == Status::PIDAccepted || statusTOF == Status::PIDAccepted) {
-      return Status::PIDAccepted; // what if we have Accepted for one and Rejected for the other?
+      return Status::PIDAccepted;
+    }
+    if (statusTPC == Status::PIDConditional && statusTOF == Status::PIDConditional) {
+      return Status::PIDAccepted;
+    }
+    if (statusTPC == Status::PIDRejected || statusTOF == Status::PIDRejected) {
+      return Status::PIDRejected;
+    }
+    return Status::PIDNotApplicable; // (NotApplicable for one detector) and (NotApplicable or Conditional for the other)
+  }
+
+  /// Returns status of combined PID (TPC and TOF) selection for a given track when both detectors are applicable. Returns status of single PID otherwise.
+  /// \param track  track
+  /// \return status of combined PID (TPC and TOF) (see TrackSelectorPID::Status)
+  template <typename T>
+  int getStatusTrackPIDTpcAndTof(const T& track)
+  {
+
+    int statusTPC = Status::PIDNotApplicable;
+    if (track.hasTPC()) {
+      statusTPC = getStatusTrackPIDTPC(track);
+    }
+    int statusTOF = Status::PIDNotApplicable;
+    if (track.hasTOF()) {
+      statusTOF = getStatusTrackPIDTOF(track);
+    }
+
+    if (statusTPC == Status::PIDAccepted && statusTOF == Status::PIDAccepted) {
+      return Status::PIDAccepted;
+    }
+    if (statusTPC == Status::PIDAccepted && (statusTOF == Status::PIDNotApplicable || statusTOF == Status::PIDConditional)) {
+      return Status::PIDAccepted;
+    }
+    if ((statusTPC == Status::PIDNotApplicable || statusTPC == Status::PIDConditional) && statusTOF == Status::PIDAccepted) {
+      return Status::PIDAccepted;
     }
     if (statusTPC == Status::PIDConditional && statusTOF == Status::PIDConditional) {
       return Status::PIDAccepted;
@@ -625,24 +659,24 @@ class TrackSelectorPID
   float mPtTPCMax = 100.;              ///< maximum pT for TPC PID [GeV/c]
   float mNSigmaTPCMin = -3.;           ///< minimum number of TPC σ
   float mNSigmaTPCMax = 3.;            ///< maximum number of TPC σ
-  float mNSigmaTPCMinCondTOF = -1000.; ///< minimum number of TPC σ if combined with TOF
-  float mNSigmaTPCMaxCondTOF = 1000.;  ///< maximum number of TPC σ if combined with TOF
+  float mNSigmaTPCMinCondTOF = 0.;     ///< minimum number of TPC σ if combined with TOF
+  float mNSigmaTPCMaxCondTOF = 0.;     ///< maximum number of TPC σ if combined with TOF
 
   // TOF
   float mPtTOFMin = 0.;                ///< minimum pT for TOF PID [GeV/c]
   float mPtTOFMax = 100.;              ///< maximum pT for TOF PID [GeV/c]
   float mNSigmaTOFMin = -3.;           ///< minimum number of TOF σ
   float mNSigmaTOFMax = 3.;            ///< maximum number of TOF σ
-  float mNSigmaTOFMinCondTPC = -1000.; ///< minimum number of TOF σ if combined with TPC
-  float mNSigmaTOFMaxCondTPC = 1000.;  ///< maximum number of TOF σ if combined with TPC
+  float mNSigmaTOFMinCondTPC = 0.;     ///< minimum number of TOF σ if combined with TPC
+  float mNSigmaTOFMaxCondTPC = 0.;     ///< maximum number of TOF σ if combined with TPC
 
   // RICH
   float mPtRICHMin = 0.;                ///< minimum pT for RICH PID [GeV/c]
   float mPtRICHMax = 100.;              ///< maximum pT for RICH PID [GeV/c]
   float mNSigmaRICHMin = -3.;           ///< minimum number of RICH σ
   float mNSigmaRICHMax = 3.;            ///< maximum number of RICH σ
-  float mNSigmaRICHMinCondTOF = -1000.; ///< minimum number of RICH σ if combined with TOF
-  float mNSigmaRICHMaxCondTOF = 1000.;  ///< maximum number of RICH σ if combined with TOF
+  float mNSigmaRICHMinCondTOF = 0.;     ///< minimum number of RICH σ if combined with TOF
+  float mNSigmaRICHMaxCondTOF = 0.;     ///< maximum number of RICH σ if combined with TOF
 
   // Bayesian
   float mPtBayesMin = 0.;    ///< minimum pT for Bayesian PID [GeV/c]
@@ -650,4 +684,4 @@ class TrackSelectorPID
   float mProbBayesMin = -1.; ///< minium Bayesian probability [%]
 };
 
-#endif // O2_ANALYSIS_TRACKSELECTORPID_H_
+#endif // COMMON_CORE_TRACKSELECTORPID_H_

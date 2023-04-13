@@ -87,14 +87,17 @@ DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);
 DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);
+DECLARE_SOA_COLUMN(TOFExpMom, tofExpMom, float);
 DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);
 DECLARE_SOA_COLUMN(Beta, beta, float);
 // TPC and ITS QA
+DECLARE_SOA_COLUMN(ITSNCls, itsNCls, int16_t);
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int16_t);
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int16_t);
 DECLARE_SOA_COLUMN(TPCChi2Ncl, tpcChi2NCl, float);
 DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);
+DECLARE_SOA_COLUMN(ITSClusterMap, itsClusterMap, uint8_t);
 // For MC
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
@@ -124,6 +127,7 @@ DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   full::HasTOF,
                   full::HasTRD,
                   full::TPCInnerParam,
+                  full::TOFExpMom,
                   full::TPCSignal,
                   full::Beta,
                   full::Px,
@@ -134,11 +138,13 @@ DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   full::Eta,
                   full::Phi,
                   full::Sign,
+                  full::ITSNCls,
                   full::TPCNClsCrossedRows,
                   full::TPCCrossedRowsOverFindableCls,
                   full::TPCNClsFound,
                   full::TPCChi2Ncl,
                   full::ITSChi2NCl,
+                  full::ITSClusterMap,
                   full::Rapidity<full::P, full::Pz>);
 DECLARE_SOA_TABLE(LfCandNucleusMC, "AOD", "LFNUCLMC",
                   mcparticle::PdgCode,

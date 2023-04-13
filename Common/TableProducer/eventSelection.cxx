@@ -23,7 +23,7 @@ using namespace o2::framework;
 #include "CommonConstants/LHCConstants.h"
 #include "Framework/HistogramRegistry.h"
 #include "DataFormatsFT0/Digit.h"
-#include "TH1F.h"
+#include "TH1D.h"
 using namespace evsel;
 
 using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
@@ -34,6 +34,7 @@ struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to 294 for apass2/apass3 in LHC22o-t"};
 
   void init(InitContext&)
   {
@@ -42,7 +43,7 @@ struct BcSelectionTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    histos.add("hCounterTVX", "", kTH1F, {{1, 0., 1.}});
+    histos.add("hCounterTVX", "", kTH1D, {{1, 0., 1.}});
   }
 
   void processRun2(
@@ -53,6 +54,7 @@ struct BcSelectionTask {
     aod::FT0s const&,
     aod::FDDs const&)
   {
+    bcsel.reserve(bcs.size());
 
     for (auto& bc : bcs) {
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
@@ -189,13 +191,32 @@ struct BcSelectionTask {
                    aod::FT0s const&,
                    aod::FDDs const&)
   {
+    bcsel.reserve(bcs.size());
+
+    // map from GlobalBC to BcId needed to find triggerBc
+    std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
+    for (auto& bc : bcs) {
+      mapGlobalBCtoBcId[bc.globalBC()] = bc.globalIndex();
+    }
+    int triggerBcShift = confTriggerBcShift;
+    if (confTriggerBcShift == 999) {
+      int run = bcs.iteratorAt(0).runNumber();
+      triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734) ? 0 : 294;
+    }
+
     for (auto bc : bcs) {
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
       TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
       int32_t alias[kNaliases] = {0};
-      uint64_t triggerMask = bc.triggerMask();
-      for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
-        alias[al.first] |= (triggerMask & al.second) > 0;
+
+      // workaround for pp2022 apass2-apass3 (trigger info is shifted by -294 bcs)
+      int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
+      if (triggerBcId) {
+        auto triggerBc = bcs.iteratorAt(triggerBcId);
+        uint64_t triggerMask = triggerBc.triggerMask();
+        for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
+          alias[al.first] |= (triggerMask & al.second) > 0;
+        }
       }
       alias[kALL] = 1;
 
@@ -306,6 +327,7 @@ struct BcSelectionTask {
 };
 
 struct EventSelectionTask {
+  SliceCache cache;
   Produces<aod::EvSels> evsel;
   Configurable<std::string> syst{"syst", "PbPb", "pp, pPb, Pbp, PbPb, XeXe"}; // TODO determine from AOD metadata or from CCDB
   Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
@@ -323,8 +345,13 @@ struct EventSelectionTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    histos.add("hColCounterAll", "", kTH1F, {{1, 0., 1.}});
-    histos.add("hColCounterAcc", "", kTH1F, {{1, 0., 1.}});
+    histos.add("hColCounterAll", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hColCounterAcc", "", kTH1D, {{1, 0., 1.}});
+  }
+
+  void process(aod::Collisions const& collisions)
+  {
+    evsel.reserve(collisions.size());
   }
 
   void processRun2(aod::Collision const& col, BCsWithBcSels const& bcs, aod::Tracks const& tracks)
@@ -370,7 +397,7 @@ struct EventSelectionTask {
     float multV0C012 = bc.multRingV0C()[0] + bc.multRingV0C()[1] + bc.multRingV0C()[2];
 
     // applying selections depending on the number of tracklets
-    auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex());
+    auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
     int nTkl = trackletsGrouped.size();
 
     uint32_t spdClusters = bc.spdClusters();
@@ -416,7 +443,7 @@ struct EventSelectionTask {
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
-  void processRun3(aod::Collision const& col, aod::FullTracks const& tracks, BCsWithBcSels const& bcs)
+  void processRun3(aod::Collision const& col, soa::Join<aod::TracksIU, aod::TracksExtra> const& tracks, BCsWithBcSels const& bcs)
   {
     // count tracks of different types
     int nITStracks = 0;

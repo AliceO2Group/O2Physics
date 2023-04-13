@@ -204,11 +204,11 @@ struct HfCandidateSelectorXicToPKPi {
         pidXicToPiKP = 1;
       } else {
         // track-level PID selection
-        auto pidTrackPos1Proton = selectorProton.getStatusTrackPIDAll(trackPos1);
-        auto pidTrackPos2Proton = selectorProton.getStatusTrackPIDAll(trackPos2);
-        auto pidTrackPos1Pion = selectorPion.getStatusTrackPIDAll(trackPos1);
-        auto pidTrackPos2Pion = selectorPion.getStatusTrackPIDAll(trackPos2);
-        auto pidTrackNegKaon = selectorKaon.getStatusTrackPIDAll(trackNeg);
+        auto pidTrackPos1Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos1);
+        auto pidTrackPos2Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos2);
+        auto pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos1);
+        auto pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
+        auto pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
 
         if (pidTrackPos1Proton == TrackSelectorPID::Status::PIDAccepted &&
             pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&

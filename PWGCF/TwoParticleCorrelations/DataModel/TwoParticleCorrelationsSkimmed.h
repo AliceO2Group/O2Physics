@@ -68,13 +68,19 @@ DECLARE_SOA_COLUMN(CFPidFlags, pidflags, uint64_t);         //! The PID skimming
 DECLARE_SOA_COLUMN(Pt, pt, float);                      //! The track transverse momentum
 DECLARE_SOA_COLUMN(Eta, eta, float);                    //! The track pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float);                    //! The track azimuthal angle
+DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,                  //! Charge: positive: 1, negative: -1
+                           [](uint64_t mask) -> int8_t { return ((mask & 0x1L) == 0x1L) ? 1 : ((mask & 0x2L) == 0x2L) ? -1
+                                                                                                                      : 0; });
+
 } // namespace cfskim
 DECLARE_SOA_TABLE(CFTracks, "AOD", "CFTRACK", //! The reconstructed tracks filtered table
+                  o2::soa::Index<>,
                   cfskim::CFCollisionId,
                   cfskim::CFTrackFlags,
                   cfskim::Pt,
                   cfskim::Eta,
-                  cfskim::Phi);
+                  cfskim::Phi,
+                  cfskim::Sign<cfskim::CFTrackFlags>);
 using CFTrack = CFTracks::iterator;
 DECLARE_SOA_TABLE(CFTrackMasks, "AOD", "CFTRACKMASK", //! The reconstructed tracks filtered table
                   cfskim::CFTrackFlags);

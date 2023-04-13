@@ -363,7 +363,8 @@ struct DGBCCandProducer {
                     track.tofNSigmaPi(),
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
-    outputTracksExtra(track.itsClusterMap(),
+    outputTracksExtra(track.tpcInnerParam(),
+                      track.itsClusterMap(),
                       track.tpcNClsFindable(),
                       track.tpcNClsFindableMinusFound(),
                       track.tpcNClsFindableMinusCrossedRows(),

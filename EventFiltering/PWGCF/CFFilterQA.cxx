@@ -1152,8 +1152,6 @@ struct CFFilterQA {
 
     if (isSelectedEvent(col)) {
 
-      outputCollision(col.posZ(), col.multFV0M(), col.multNTracksPV(), -2, -2);
-
       registry.fill(HIST("EventCuts/fMultiplicityAfter"), col.multNTracksPV());
       registry.fill(HIST("EventCuts/fZvtxAfter"), col.posZ());
 
@@ -1614,107 +1612,108 @@ struct CFFilterQA {
         }
       }
 
-    } // if(isSelectedEvent)
-    //
-    // create tags for three body triggers
-    if (lowQ3Triplets[CFTrigger::kPPP] > 0) {
-      keepEvent3N[CFTrigger::kPPP] = true;
-      registry.fill(HIST("fProcessedEvents"), 2);
-      registry.fill(HIST("ppp/fMultiplicity"), col.multNTracksPV());
-      registry.fill(HIST("ppp/fZvtx"), col.posZ());
-    }
-    if (lowQ3Triplets[CFTrigger::kPPL] > 0) {
-      keepEvent3N[CFTrigger::kPPL] = true;
-      registry.fill(HIST("fProcessedEvents"), 3);
-      registry.fill(HIST("ppl/fMultiplicity"), col.multNTracksPV());
-      registry.fill(HIST("ppl/fZvtx"), col.posZ());
-    }
-    if (lowQ3Triplets[CFTrigger::kPLL] > 0) {
-      keepEvent3N[CFTrigger::kPLL] = true;
-      registry.fill(HIST("fProcessedEvents"), 4);
-      registry.fill(HIST("pll/fMultiplicity"), col.multNTracksPV());
-      registry.fill(HIST("pll/fZvtx"), col.posZ());
-    }
-    if (lowQ3Triplets[CFTrigger::kLLL] > 0) {
-      keepEvent3N[CFTrigger::kLLL] = true;
-      registry.fill(HIST("fProcessedEvents"), 5);
-      registry.fill(HIST("lll/fMultiplicity"), col.multNTracksPV());
-      registry.fill(HIST("lll/fZvtx"), col.posZ());
-    }
-    // create tags for two body triggers
-    if (lowKstarPairs[CFTrigger::kPP] > 0) {
-      keepEvent2N[CFTrigger::kPP] = true;
-      registry.fill(HIST("fProcessedEvents"), 6);
-      registry.fill(HIST("pp/fMultiplicity"), col.multNTracksPV());
-      registry.fill(HIST("pp/fZvtx"), col.posZ());
-    }
-    if (lowKstarPairs[CFTrigger::kPL] > 0) {
-      keepEvent2N[CFTrigger::kPL] = true;
-      registry.fill(HIST("fProcessedEvents"), 7);
-      registry.fill(HIST("pl/fMultiplicity"), col.multNTracksPV());
-      registry.fill(HIST("pl/fZvtx"), col.posZ());
-    }
-
-    if (ConfKeepAllSelectedParticles.value ||
-        keepEvent3N[CFTrigger::kPPP] || keepEvent3N[CFTrigger::kPPL] || keepEvent3N[CFTrigger::kPLL] || keepEvent3N[CFTrigger::kLLL] ||
-        keepEvent2N[CFTrigger::kPP] || keepEvent2N[CFTrigger::kPL]) {
-
-      registry.fill(HIST("fProcessedEvents"), 1);
-
-      for (auto proton : protons) {
-        outputParts(outputCollision.lastIndex(),
-                    proton.pt(),
-                    proton.eta(),
-                    proton.phi(),
-                    aod::femtodreamparticle::ParticleType::kTrack,
-                    static_cast<uint32_t>(ConfCutBitPart.value), // cutbit for particle
-                    static_cast<uint32_t>(ConfPidBitProton.value),
-                    0.f,
-                    childIDs,
-                    0.f,
-                    0.f);
+      // create tags for three body triggers
+      if (lowQ3Triplets[CFTrigger::kPPP] > 0) {
+        keepEvent3N[CFTrigger::kPPP] = true;
+        registry.fill(HIST("fProcessedEvents"), 2);
+        registry.fill(HIST("ppp/fMultiplicity"), col.multNTracksPV());
+        registry.fill(HIST("ppp/fZvtx"), col.posZ());
+      }
+      if (lowQ3Triplets[CFTrigger::kPPL] > 0) {
+        keepEvent3N[CFTrigger::kPPL] = true;
+        registry.fill(HIST("fProcessedEvents"), 3);
+        registry.fill(HIST("ppl/fMultiplicity"), col.multNTracksPV());
+        registry.fill(HIST("ppl/fZvtx"), col.posZ());
+      }
+      if (lowQ3Triplets[CFTrigger::kPLL] > 0) {
+        keepEvent3N[CFTrigger::kPLL] = true;
+        registry.fill(HIST("fProcessedEvents"), 4);
+        registry.fill(HIST("pll/fMultiplicity"), col.multNTracksPV());
+        registry.fill(HIST("pll/fZvtx"), col.posZ());
+      }
+      if (lowQ3Triplets[CFTrigger::kLLL] > 0) {
+        keepEvent3N[CFTrigger::kLLL] = true;
+        registry.fill(HIST("fProcessedEvents"), 5);
+        registry.fill(HIST("lll/fMultiplicity"), col.multNTracksPV());
+        registry.fill(HIST("lll/fZvtx"), col.posZ());
+      }
+      // create tags for two body triggers
+      if (lowKstarPairs[CFTrigger::kPP] > 0) {
+        keepEvent2N[CFTrigger::kPP] = true;
+        registry.fill(HIST("fProcessedEvents"), 6);
+        registry.fill(HIST("pp/fMultiplicity"), col.multNTracksPV());
+        registry.fill(HIST("pp/fZvtx"), col.posZ());
+      }
+      if (lowKstarPairs[CFTrigger::kPL] > 0) {
+        keepEvent2N[CFTrigger::kPL] = true;
+        registry.fill(HIST("fProcessedEvents"), 7);
+        registry.fill(HIST("pl/fMultiplicity"), col.multNTracksPV());
+        registry.fill(HIST("pl/fZvtx"), col.posZ());
       }
 
-      for (auto antiproton : antiprotons) {
-        outputParts(outputCollision.lastIndex(),
-                    antiproton.pt(),
-                    antiproton.eta(),
-                    antiproton.phi(),
-                    aod::femtodreamparticle::ParticleType::kTrack,
-                    static_cast<uint32_t>(ConfCutBitAntiPart.value), // cutbit for antiparticle
-                    static_cast<uint32_t>(ConfPidBitProton.value),
-                    0.f,
-                    childIDs,
-                    0.f,
-                    0.f);
-      }
+      if (ConfKeepAllSelectedParticles.value ||
+          keepEvent3N[CFTrigger::kPPP] || keepEvent3N[CFTrigger::kPPL] || keepEvent3N[CFTrigger::kPLL] || keepEvent3N[CFTrigger::kLLL] ||
+          keepEvent2N[CFTrigger::kPP] || keepEvent2N[CFTrigger::kPL]) {
 
-      for (auto lambda : lambdas) {
-        outputParts(outputCollision.lastIndex(),
-                    lambda.pt(),
-                    lambda.eta(),
-                    lambda.phi(),
-                    aod::femtodreamparticle::ParticleType::kV0,
-                    static_cast<uint32_t>(ConfCutBitV0.value),
-                    static_cast<uint32_t>(ConfPidBitV0.value),
-                    0.f,
-                    childIDs,
-                    0.f,
-                    0.f);
-      }
+        outputCollision(col.posZ(), col.multFV0M(), col.multNTracksPV(), -2, -2);
 
-      for (auto antilambda : antilambdas) {
-        outputParts(outputCollision.lastIndex(),
-                    antilambda.pt(),
-                    antilambda.eta(),
-                    antilambda.phi(),
-                    aod::femtodreamparticle::ParticleType::kV0,
-                    static_cast<uint32_t>(ConfCutBitAntiV0.value),
-                    static_cast<uint32_t>(ConfPidBitV0.value),
-                    0.f,
-                    childIDs,
-                    0.f,
-                    0.f);
+        registry.fill(HIST("fProcessedEvents"), 1);
+
+        for (auto proton : protons) {
+          outputParts(outputCollision.lastIndex(),
+                      proton.pt(),
+                      proton.eta(),
+                      proton.phi(),
+                      aod::femtodreamparticle::ParticleType::kTrack,
+                      static_cast<uint32_t>(ConfCutBitPart.value), // cutbit for particle
+                      static_cast<uint32_t>(ConfPidBitProton.value),
+                      0.f,
+                      childIDs,
+                      0.f,
+                      0.f);
+        }
+
+        for (auto antiproton : antiprotons) {
+          outputParts(outputCollision.lastIndex(),
+                      antiproton.pt(),
+                      antiproton.eta(),
+                      antiproton.phi(),
+                      aod::femtodreamparticle::ParticleType::kTrack,
+                      static_cast<uint32_t>(ConfCutBitAntiPart.value), // cutbit for antiparticle
+                      static_cast<uint32_t>(ConfPidBitProton.value),
+                      0.f,
+                      childIDs,
+                      0.f,
+                      0.f);
+        }
+
+        for (auto lambda : lambdas) {
+          outputParts(outputCollision.lastIndex(),
+                      lambda.pt(),
+                      lambda.eta(),
+                      lambda.phi(),
+                      aod::femtodreamparticle::ParticleType::kV0,
+                      static_cast<uint32_t>(ConfCutBitV0.value),
+                      static_cast<uint32_t>(ConfPidBitV0.value),
+                      0.f,
+                      childIDs,
+                      0.f,
+                      0.f);
+        }
+
+        for (auto antilambda : antilambdas) {
+          outputParts(outputCollision.lastIndex(),
+                      antilambda.pt(),
+                      antilambda.eta(),
+                      antilambda.phi(),
+                      aod::femtodreamparticle::ParticleType::kV0,
+                      static_cast<uint32_t>(ConfCutBitAntiV0.value),
+                      static_cast<uint32_t>(ConfPidBitV0.value),
+                      0.f,
+                      childIDs,
+                      0.f,
+                      0.f);
+        }
       }
     }
   }

@@ -13,10 +13,12 @@
 // Analysis task for lmee light flavour cocktail
 
 #include <vector>
+#include "Framework/Task.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
+#include "SimulationDataFormat/MCTrack.h"
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
 #include "TFile.h"
@@ -24,77 +26,71 @@
 #include "TRandom.h"
 #include "TDatabasePDG.h"
 #include "TGenPhaseSpace.h"
+#include "TGrid.h"
+#include "TTree.h"
 
-using namespace o2;
 using namespace o2::framework;
 using namespace ROOT::Math;
 
-namespace o2::aod
-{
-namespace eeTable
-{
-DECLARE_SOA_COLUMN(fd1DCA, d1DCA, float);
-DECLARE_SOA_COLUMN(fd2DCA, d2DCA, float);
-DECLARE_SOA_COLUMN(fpairDCA, pairDCA, float);
-DECLARE_SOA_COLUMN(fd1origpt, d1origpt, float);
-DECLARE_SOA_COLUMN(fd1origp, d1origp, float);
-DECLARE_SOA_COLUMN(fd1origeta, d1origega, float);
-DECLARE_SOA_COLUMN(fd1origphi, d1origphi, float);
-DECLARE_SOA_COLUMN(fd2origpt, d2origpt, float);
-DECLARE_SOA_COLUMN(fd2origp, d2origp, float);
-DECLARE_SOA_COLUMN(fd2origeta, d2origeta, float);
-DECLARE_SOA_COLUMN(fd2origphi, d2origphi, float);
-DECLARE_SOA_COLUMN(fd1pt, d1pt, float);
-DECLARE_SOA_COLUMN(fd1p, d1p, float);
-DECLARE_SOA_COLUMN(fd1eta, d1eta, float);
-DECLARE_SOA_COLUMN(fd1phi, d1phi, float);
-DECLARE_SOA_COLUMN(fd2pt, d2pt, float);
-DECLARE_SOA_COLUMN(fd2p, d2p, float);
-DECLARE_SOA_COLUMN(fd2eta, d2eta, float);
-DECLARE_SOA_COLUMN(fd2phi, d2phi, float);
-DECLARE_SOA_COLUMN(feeorigpt, eeorigpt, float);
-DECLARE_SOA_COLUMN(feeorigp, eeorigp, float);
-DECLARE_SOA_COLUMN(feeorigm, eeorigm, float);
-DECLARE_SOA_COLUMN(feeorigeta, eeorigeta, float);
-DECLARE_SOA_COLUMN(feeorigphi, eeorigphi, float);
-DECLARE_SOA_COLUMN(feeorigphiv, eeorigphiv, float);
-DECLARE_SOA_COLUMN(feept, eept, float);
-DECLARE_SOA_COLUMN(feemt, eemt, float);
-DECLARE_SOA_COLUMN(feep, eep, float);
-DECLARE_SOA_COLUMN(feem, eem, float);
-DECLARE_SOA_COLUMN(feeeta, eeeta, float);
-DECLARE_SOA_COLUMN(feephi, eephi, float);
-DECLARE_SOA_COLUMN(feephiv, eephiv, float);
-DECLARE_SOA_COLUMN(fmotherpt, motherpt, float);
-DECLARE_SOA_COLUMN(fmothermt, mothermt, float);
-DECLARE_SOA_COLUMN(fmotherp, motherp, float);
-DECLARE_SOA_COLUMN(fmotherm, motherm, float);
-DECLARE_SOA_COLUMN(fmothereta, mothereta, float);
-DECLARE_SOA_COLUMN(fmotherphi, motherphi, float);
-DECLARE_SOA_COLUMN(fID, ID, int);
-DECLARE_SOA_COLUMN(fdectyp, dectyp, uint);
-DECLARE_SOA_COLUMN(fdau3pdg, dau3pdg, int);
-DECLARE_SOA_COLUMN(fweight, weight, double);
-DECLARE_SOA_COLUMN(fwEffpT, wEffpT, double);
-DECLARE_SOA_COLUMN(fwMultpT, wMultpT, double);
-DECLARE_SOA_COLUMN(fwMultmT, wMultmT, double);
-DECLARE_SOA_COLUMN(fwMultpT2, wMultpT2, double);
-DECLARE_SOA_COLUMN(fwMultmT2, wMultmT2, double);
-DECLARE_SOA_COLUMN(fpass, pass, bool);
-
-} // namespace eeTable
-DECLARE_SOA_TABLE(eeTTree, "AOD", "EETTREE",
-                  eeTable::fd1DCA, eeTable::fd2DCA, eeTable::fpairDCA, eeTable::fd1origpt, eeTable::fd1origp, eeTable::fd1origeta, eeTable::fd1origphi, eeTable::fd2origpt, eeTable::fd2origp, eeTable::fd2origeta, eeTable::fd2origphi, eeTable::fd1pt, eeTable::fd1p, eeTable::fd1eta, eeTable::fd1phi, eeTable::fd2pt, eeTable::fd2p, eeTable::fd2eta, eeTable::fd2phi, eeTable::feeorigpt, eeTable::feeorigp, eeTable::feeorigm, eeTable::feeorigeta, eeTable::feeorigphi, eeTable::feeorigphiv, eeTable::feept, eeTable::feemt, eeTable::feep, eeTable::feem, eeTable::feeeta, eeTable::feephi, eeTable::feephiv, eeTable::fmotherpt, eeTable::fmothermt, eeTable::fmotherp, eeTable::fmotherm, eeTable::fmothereta, eeTable::fmotherphi, eeTable::fID, eeTable::fdectyp, eeTable::fdau3pdg, eeTable::fweight, eeTable::fwEffpT, eeTable::fwMultpT, eeTable::fwMultmT, eeTable::fwMultpT2, eeTable::fwMultmT2, eeTable::fpass);
-
-} // namespace o2::aod
+struct eeTTree {
+  float fd1DCA;
+  float fd2DCA;
+  float fpairDCA;
+  float fd1origpt;
+  float fd1origp;
+  float fd1origeta;
+  float fd1origphi;
+  float fd2origpt;
+  float fd2origp;
+  float fd2origeta;
+  float fd2origphi;
+  float fd1pt;
+  float fd1p;
+  float fd1eta;
+  float fd1phi;
+  float fd2pt;
+  float fd2p;
+  float fd2eta;
+  float fd2phi;
+  float feeorigpt;
+  float feeorigp;
+  float feeorigm;
+  float feeorigeta;
+  float feeorigphi;
+  float feeorigphiv;
+  float feept;
+  float feemt;
+  float feep;
+  float feem;
+  float feeeta;
+  float feephi;
+  float feephiv;
+  float fmotherpt;
+  float fmothermt;
+  float fmotherp;
+  float fmotherm;
+  float fmothereta;
+  float fmotherphi;
+  int fID;
+  int fdectyp;
+  int fdau3pdg;
+  float fweight;
+  float fwEffpT;
+  float fwMultpT;
+  float fwMultmT;
+  float fwMultpT2;
+  float fwMultmT2;
+  bool fpass;
+  float feeorigrap; // only in histogram, not in tree?
+  float feerap;     // only in histogram, not in tree?
+};
 
 struct lmeelfcocktail {
+  OutputObj<TTree> tree{"eeTTree"};
 
-  Produces<aod::eeTTree> tree;
   HistogramRegistry registry{"registry", {}};
   Int_t nInputParticles = 17;
   std::vector<TString> fParticleListNames = {"Pi0", "Eta", "EtaP", "EtaP_dalitz_photon", "EtaP_dalitz_omega", "Rho", "Omega", "Omega_2body", "Omega_dalitz", "Phi", "Phi_2body", "Phi_dalitz_eta", "Phi_dalitz_pi0", "Jpsi", "Jpsi_2body", "Jpsi_radiative", "Virtual_Photon"};
-  // std::vector<Int_t> fParticleList = {111, 221, 331, 223331, 2233331, 113, 223, 2223, 3223, 333, 2333, 2213333, 1113333, 443,2443,223443,000};
   TH1F* fhwEffpT;
   TH1F* fhwMultpT;
   TH1F* fhwMultmT;
@@ -111,12 +107,15 @@ struct lmeelfcocktail {
   std::vector<std::shared_ptr<TH1>> fmee_orig, fmotherpT_orig, fphi_orig, frap_orig, fmee_orig_wALT, fmotherpT_orig_wALT, fmee, fphi, frap, fmee_wALT;
   std::vector<std::shared_ptr<TH2>> fpteevsmee_wALT, fpteevsmee_orig_wALT, fpteevsmee_orig, fpteevsmee;
 
+  eeTTree treeWords;
+
   std::vector<double> DCATemplateEdges;
   int nbDCAtemplate;
   TH1F** fh_DCAtemplates;
 
   Configurable<int> fCollisionSystem{"cfgCollisionSystem", 200, "set the collision system"};
-  Configurable<bool> fConfigWriteTTree{"cfgWriteTTree", false, "whether tree output should be written"};
+  Configurable<bool> fConfigWriteTTree{"cfgWriteTTree", false, "write tree output"};
+  Configurable<bool> fConfigDoPairing{"cfgDoPairing", true, "do like and unlike sign pairing"};
   Configurable<float> fConfigMaxEta{"cfgMaxEta", 0.8, "maxium |eta|"};
   Configurable<float> fConfigMinPt{"cfgMinPt", 0.2, "minium pT"};
   Configurable<float> fConfigMaxPt{"cfgMaxPt", 8.0, "maximum pT"};
@@ -129,7 +128,6 @@ struct lmeelfcocktail {
   Configurable<int> fConfigResolType{"cfgResolType", 2, "set resolution type"};
   Configurable<int> fConfigALTweight{"cfgALTweight", 1, "set alternative weighting type"};
   Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
-  // Configurable<bool> fConfigResFileLocal{"cfgResFileLocal", false, "..."};
   Configurable<std::string> fConfigEffFileName{"cfgEffFileName", "", "name of efficiency file"};
   Configurable<float> fConfigMinOpAng{"cfgMinOpAng", 0.050, "minimum opening angle"};
   Configurable<bool> fConfigDoRapidityCut{"cfgDoRapidityCut", false, "apply rapidity cut"};
@@ -159,22 +157,26 @@ struct lmeelfcocktail {
   Configurable<std::string> fConfigPhotonPtDirName{"cfgPhotonPtDirName", "7TeV_Comb", "directory name for photon pT parametrization"};
   Configurable<std::string> fConfigPhotonPtFuncName{"cfgPhotonPtFuncName", "111_pt", "function name for photon pT parametrization"};
 
-  ConfigurableAxis fConfigPtBins{"cfgPtBins", {0., 0.5, 1, 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.}, "pT bins"};
-  ConfigurableAxis fConfigMBins{"cfgMBins", {0., 0.08, 0.14, 0.2, 1.1, 2.7, 2.8, 3.2, 5.0}, "mee bins"};
-  ConfigurableAxis fConfigDCABins{"cfgDCABins", {0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "DCA bins"};
+  ConfigurableAxis fConfigPtBins{"cfgPtBins", {VARIABLE_WIDTH, 0., 0.5, 1, 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.}, "pT bins"};
+  ConfigurableAxis fConfigMBins{"cfgMBins", {VARIABLE_WIDTH, 0., 0.08, 0.14, 0.2, 1.1, 2.7, 2.8, 3.2, 5.0}, "mee bins"};
+  ConfigurableAxis fConfigDCABins{"cfgDCABins", {VARIABLE_WIDTH, 0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "DCA bins"};
 
   Configurable<std::vector<double>> fConfigDCATemplateEdges{"cfgDCATemplateEdges", {0., .3, .4, .6, 1., 2.}, "DCA template edges"};
 
-  Preslice<aod::McParticles> perCollision = aod::mcparticle::mcCollisionId;
-
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& ic)
   {
-
+    if (fConfigWriteTTree) {
+      SetTree();
+    }
+    SetHistograms();
     DCATemplateEdges = fConfigDCATemplateEdges;
     nbDCAtemplate = DCATemplateEdges.size();
     DCATemplateEdges.push_back(10000000.);
 
-    SetHistograms();
+    if (TString(fConfigEffFileName).BeginsWith("alien://") || TString(fConfigResFileName).BeginsWith("alien://") || TString(fConfigDCAFileName).BeginsWith("alien://") || TString(fConfigMultFileName).BeginsWith("alien://") || TString(fConfigPhotonPtFileName).BeginsWith("alien://")) {
+      LOGP(info, "Connecting to grid via TGrid");
+      TGrid::Connect("alien://");
+    }
     GetEffHisto(TString(fConfigEffFileName), TString(fConfigEffHistName));
     if (fConfigResolType == 1) {
       GetResHisto(TString(fConfigResFileName), TString(fConfigResPHistName));
@@ -187,380 +189,498 @@ struct lmeelfcocktail {
     fillKrollWada();
   }
 
-  void processCocktail(aod::McCollision const&, aod::McParticles const& mcParticles)
+  void run(o2::framework::ProcessingContext& pc)
   {
+    // get the tracks
+    auto mctracks = pc.inputs().get<std::vector<o2::MCTrack>>("mctracks");
+    registry.fill(HIST("NEvents"), 0.5);
 
-    double fwEffpT, fd1origpt, fd1origp, fd1origeta, fd1origphi, fd2origpt, fd2origp, fd2origeta, fd2origphi, feeorigpt, feeorigp, feeorigm, feeorigeta, feeorigphi, feeorigphiv, fpairDCA, fd1DCA = 0., fd2DCA = 0., fd1pt, fd1p, fd1eta, fd1phi, fd2pt, fd2p, fd2eta, fd2phi, feept, feemt, feep, feem, feeeta, feephi, feephiv, fmotherpt, fmothermt, fmotherp, fmotherm, fmothereta, fmotherphi, fID, fweight, fwMultpT, fwMultpT2, fwMultmT, fwMultmT2;
-    bool fpass;
+    std::vector<PxPyPzEVector> eBuff;
+    std::vector<Char_t> echBuff;
+    std::vector<Double_t> eweightBuff;
 
-    Partition<aod::McParticles> Mothers = ((aod::mcparticle::pdgCode == 111) || (aod::mcparticle::pdgCode == 221) || (aod::mcparticle::pdgCode == 331) || (aod::mcparticle::pdgCode == 113) || (aod::mcparticle::pdgCode == 223) || (aod::mcparticle::pdgCode == 333) || (aod::mcparticle::pdgCode == 443));
-    Mothers.bindTable(mcParticles);
-    for (auto& mother : Mothers) {
+    bool skipNext = false;
 
-      if (!mother.has_daughters())
+    int trackID = -1;
+    //  Loop over all MC particle
+    for (auto& mctrack : mctracks) {
+      trackID++;
+      if (o2::mcgenstatus::getHepMCStatusCode(mctrack.getStatusCode()) != 1)
         continue;
-      if (mother.has_mothers())
-        continue;
+      if (abs(mctrack.GetPdgCode()) == 11) {
+        // get the electron
+        //---------------
+        if (fConfigDoPairing) {
+          // LS and ULS spectra
+          PxPyPzEVector e, dielectron;
+          Char_t ech, dielectron_ch;
+          Double_t eweight, dielectron_weight;
+          e.SetPxPyPzE(mctrack.Px(), mctrack.Py(), mctrack.Pz(),
+                       mctrack.GetEnergy());
+          if (mctrack.GetPdgCode() > 0) {
+            ech = 1.;
+          } else {
+            ech = -1.;
+          }
+          eweight = mctrack.getWeight();
+          // put in the buffer
+          //-----------------
+          eBuff.push_back(e);
+          echBuff.push_back(ech);
+          eweightBuff.push_back(eweight);
+          // loop the buffer and pair
+          //------------------------
+          for (Int_t jj = eBuff.size() - 2; jj >= 0; jj--) {
+            dielectron = eBuff.at(jj) + e;
+            dielectron_ch = (echBuff.at(jj) + ech) / 2;
+            dielectron_weight = eweightBuff.at(jj) * eweight;
 
-      int fdectyp = 0;
-      int fdau3pdg = 0;
-      bool has_e = false;
-      bool has_p = false;
-      PxPyPzEVector dau1, dau2, ee, ee_orig;
-
-      for (auto& d : mother.daughters_as<aod::McParticles>()) {
-        fdectyp++;
-        if (d.pdgCode() == 11) {
-          has_e = true;
-          dau1.SetPxPyPzE(d.px(), d.py(), d.pz(), d.e());
-          fweight = d.weight(); // get particle weight from generator
-        } else if (d.pdgCode() == -11) {
-          has_p = true;
-          dau2.SetPxPyPzE(d.px(), d.py(), d.pz(), d.e());
-        } else {
-          fdau3pdg = d.pdgCode();
-        }
-      }
-      if ((!has_e) || (!has_p))
-        continue;
-
-      if (fdectyp > 4)
-        continue; // here dectype==4 is included, but when filling histograms it is excluded?
-
-      // Not sure about this cut. From GammaConv group. Harmless a priori.
-      if (!(fabs(dau1.E() - dau1.Pz()) > 0.))
-        continue; // taken from Run2 version. Does this make sense?
-
-      // taken from Run2 version. why rap cut is applied only to dau1 and not dau2?
-      Double_t yPre = (dau1.E() + dau1.Pz()) / (dau1.E() - dau1.Pz());
-      Double_t y = 0.5 * TMath::Log(yPre);
-      if (fConfigDoRapidityCut) { // Apply rapidity cut on mother consistent with GammaConv group.
-        if (yPre <= 0.)
-          continue;
-        if (TMath::Abs(y) > fConfigRapidityCut)
-          continue;
-      } else {
-        if (yPre == 0.)
-          continue;
-      }
-
-      // create dielectron before resolution effects:
-      ee = dau1 + dau2;
-      ee_orig = ee;
-
-      // get index for histograms
-      Int_t hindex[3];
-      for (Int_t jj = 0; jj < 3; jj++) {
-        hindex[jj] = -1;
-      }
-      switch (mother.pdgCode()) {
-        case 111:
-          hindex[0] = 0;
-          break;
-        case 221:
-          hindex[0] = 1;
-          break;
-        case 331:
-          hindex[0] = 2;
-          if (fdectyp == 3 && fdau3pdg == 22)
-            hindex[1] = 3;
-          if (fdectyp == 3 && fdau3pdg == 223)
-            hindex[1] = 4;
-          break;
-        case 113:
-          hindex[0] = 5;
-          break;
-        case 223:
-          hindex[0] = 6;
-          if (fdectyp == 2)
-            hindex[1] = 7;
-          if (fdectyp == 3 && fdau3pdg == 111)
-            hindex[1] = 8;
-          break;
-        case 333:
-          hindex[0] = 9;
-          if (fdectyp == 2)
-            hindex[1] = 10;
-          if (fdectyp == 3 && fdau3pdg == 221)
-            hindex[1] = 11;
-          if (fdectyp == 3 && fdau3pdg == 111)
-            hindex[1] = 12;
-          break;
-        case 443:
-          hindex[0] = 13;
-          if (fdectyp == 2)
-            hindex[1] = 14;
-          if (fdectyp == 3 && fdau3pdg == 22)
-            hindex[1] = 15;
-          break;
-      }
-
-      hindex[2] = nInputParticles;
-
-      if (hindex[0] < 0) {
-        LOGP(info, "Error LMeeCocktail hindex[0]<0");
-        continue;
-      }
-
-      // Fill tree words before resolution/acceptance
-      fd1origpt = dau1.Pt();
-      fd1origp = dau1.P();
-      fd1origeta = dau1.Eta();
-      fd1origphi = dau1.Phi();
-      fd2origpt = dau2.Pt();
-      fd2origp = dau2.P();
-      fd2origeta = dau2.Eta();
-      fd2origphi = dau2.Phi();
-      feeorigpt = ee.Pt();
-      feeorigp = ee.P();
-      feeorigm = ee.M();
-      feeorigeta = ee.Eta();
-      feeorigphi = ee.Phi();
-      feeorigphiv = PhiV(dau1, dau2);
-
-      // get the efficiency weight
-      Int_t effbin = fhwEffpT->FindBin(dau1.Pt());
-      fwEffpT = fhwEffpT->GetBinContent(effbin);
-      effbin = fhwEffpT->FindBin(dau2.Pt());
-      fwEffpT = fwEffpT * fhwEffpT->GetBinContent(effbin);
-
-      // Resolution and acceptance
-      dau1 = ApplyResolution(dau1, -1, fConfigResolType);
-      dau2 = ApplyResolution(dau2, 1, fConfigResolType);
-      fpass = true;
-      if (dau1.Pt() < fConfigMinPt || dau2.Pt() < fConfigMinPt)
-        fpass = false; // leg pT cut
-      if (dau1.Pt() > fConfigMaxPt || dau2.Pt() > fConfigMaxPt)
-        fpass = false; // leg pT cut
-      if (dau1.Vect().Unit().Dot(dau2.Vect().Unit()) > TMath::Cos(fConfigMinOpAng))
-        fpass = false; // opening angle cut
-      if (TMath::Abs(dau1.Eta()) > fConfigMaxEta || TMath::Abs(dau2.Eta()) > fConfigMaxEta)
-        fpass = false;
-
-      // get the pair DCA (based in smeared pT)
-      for (int jj = 0; jj < nbDCAtemplate; jj++) { // loop over DCA templates
-        if (dau1.Pt() >= DCATemplateEdges[jj] && dau1.Pt() < DCATemplateEdges[jj + 1]) {
-          fd1DCA = fh_DCAtemplates[jj]->GetRandom();
-        }
-        if (dau2.Pt() >= DCATemplateEdges[jj] && dau2.Pt() < DCATemplateEdges[jj + 1]) {
-          fd2DCA = fh_DCAtemplates[jj]->GetRandom();
-        }
-      }
-      fpairDCA = sqrt((pow(fd1DCA, 2) + pow(fd2DCA, 2)) / 2);
-
-      // Fill tree words after resolution/acceptance
-      ee = dau1 + dau2;
-      fd1pt = dau1.Pt();
-      fd1p = dau1.P();
-      fd1eta = dau1.Eta();
-      fd1phi = dau1.Phi();
-      fd2pt = dau2.Pt();
-      fd2p = dau2.P();
-      fd2eta = dau2.Eta();
-      fd2phi = dau2.Phi();
-      feept = ee.Pt();
-      feemt = ee.Mt();
-      feep = ee.P();
-      feem = ee.M();
-      feeeta = ee.Eta();
-      feephi = ee.Phi();
-      feephiv = PhiV(dau1, dau2);
-      fmotherpt = mother.pt();
-      fmotherm = sqrt(pow(mother.e(), 2) + pow(mother.p(), 2)); // run2: GetCalcMass() ??
-      fmothermt = sqrt(pow(fmotherm, 2) + pow(fmotherpt, 2));
-      fmotherp = mother.p();
-      fmothereta = mother.eta();
-      fmotherphi = mother.phi();
-      fID = mother.pdgCode();
-
-      // get multiplicity based weight:
-      int iwbin = fhwMultpT->FindBin(fmotherpt);
-      fwMultpT = fhwMultpT->GetBinContent(iwbin);   // pT weight
-      fwMultpT2 = fhwMultpT2->GetBinContent(iwbin); // pT weight
-      double min_mT = fhwMultmT->GetBinLowEdge(1);  // consider as minimum valid mT value the edge of the weight histo.
-      if (fmothermt > min_mT) {
-        iwbin = fhwMultmT->FindBin(fmothermt);
-        fwMultmT = fhwMultmT->GetBinContent(iwbin);   // mT weight
-        fwMultmT2 = fhwMultmT2->GetBinContent(iwbin); // mT weight
-      } else {
-        LOGP(error, "Generated particle with mT < Pion mass cannot be weighted");
-        fwMultmT = 0.;
-        fwMultmT2 = 0.;
-      }
-
-      // Which ALT weight to use?:
-      Double_t fwALT = fwEffpT; // by default use pt efficiency weight
-      if (fConfigALTweight == 1)
-        fwALT = fwMultmT; // mT multiplicity weight
-      if (fConfigALTweight == 11)
-        fwALT = fwMultmT2; // mT multiplicity weight, higher mult
-      if (fConfigALTweight == 2)
-        fwALT = fwMultpT; // pT multiplicity weight
-      if (fConfigALTweight == 22)
-        fwALT = fwMultpT2; // pT multiplicity weight, higher mult
-
-      // fill the tree
-      if (fConfigWriteTTree) {
-        tree(fd1DCA, fd2DCA, fpairDCA, fd1origpt, fd1origp, fd1origeta, fd1origphi, fd2origpt, fd2origp, fd2origeta, fd2origphi, fd1pt, fd1p, fd1eta, fd1phi, fd2pt, fd2p, fd2eta, fd2phi, feeorigpt, feeorigp, feeorigm, feeorigeta, feeorigphi, feeorigphiv, feept, feemt, feep, feem, feeeta, feephi, feephiv, fmotherpt, fmothermt, fmotherp, fmotherm, fmothereta, fmotherphi, fID, fdectyp, fdau3pdg, fweight, fwEffpT, fwMultpT, fwMultmT, fwMultpT2, fwMultmT2, fpass);
-      }
-
-      // fill the histograms
-      if (fdectyp < 4) {                   // skip for the moment 4-particle decays
-        for (Int_t jj = 0; jj < 3; jj++) { // fill the different hindex -> particles
-          if (hindex[jj] > -1) {
-            fmee_orig[hindex[jj]]->Fill(ee_orig.M(), fweight);
-            if (fConfigALTweight == 1 || fConfigALTweight == 11) {
-              fmotherpT_orig[hindex[jj]]->Fill(fmothermt, fweight);
-            } else if (fConfigALTweight == 2 || fConfigALTweight == 22 || fConfigALTweight == 0) {
-              fmotherpT_orig[hindex[jj]]->Fill(fmotherpt, fweight);
-            }
-            fpteevsmee_orig[hindex[jj]]->Fill(ee_orig.M(), ee.Pt(), fweight);
-            fphi_orig[hindex[jj]]->Fill(ee_orig.Phi(), fweight);
-            frap_orig[hindex[jj]]->Fill(ee_orig.Rapidity(), fweight);
-            fmee_orig_wALT[hindex[jj]]->Fill(ee_orig.M(), fweight * fwALT);
-            fpteevsmee_orig_wALT[hindex[jj]]->Fill(ee_orig.M(), ee.Pt(), fweight * fwALT);
-            if (fConfigALTweight == 1 || fConfigALTweight == 11) {
-              fmotherpT_orig_wALT[hindex[jj]]->Fill(fmothermt, fweight * fwALT);
-            } else if (fConfigALTweight == 2 || fConfigALTweight == 22 || fConfigALTweight == 0) {
-              fmotherpT_orig_wALT[hindex[jj]]->Fill(fmotherpt, fweight * fwALT);
-            }
-            if (fpass) {
-              fmee[hindex[jj]]->Fill(ee.M(), fweight);
-              fpteevsmee[hindex[jj]]->Fill(ee.M(), ee.Pt(), fweight);
-              fphi[hindex[jj]]->Fill(ee.Phi(), fweight);
-              frap[hindex[jj]]->Fill(ee.Rapidity(), fweight);
-              registry.fill(HIST("DCAeevsmee"), ee.M(), fpairDCA, fweight);
-              registry.fill(HIST("DCAeevsptee"), ee.Pt(), fpairDCA, fweight);
-              fmee_wALT[hindex[jj]]->Fill(ee.M(), fweight * fwALT);
-              fpteevsmee_wALT[hindex[jj]]->Fill(ee.M(), ee.Pt(), fweight * fwALT);
+            if (dielectron_ch == 0)
+              registry.fill(HIST("ULS_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
+            if (dielectron_ch > 0)
+              registry.fill(HIST("LSpp_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
+            if (dielectron_ch < 0)
+              registry.fill(HIST("LSmm_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
+            if (e.Pt() > fConfigMinPt && eBuff.at(jj).Pt() > fConfigMinPt && e.Pt() < fConfigMaxPt && eBuff.at(jj).Pt() < fConfigMaxPt && TMath::Abs(e.Eta()) < fConfigMaxEta && TMath::Abs(eBuff.at(jj).Eta()) < fConfigMaxEta && e.Vect().Unit().Dot(eBuff.at(jj).Vect().Unit()) < TMath::Cos(fConfigMinOpAng)) {
+              if (dielectron_ch == 0)
+                registry.fill(HIST("ULS"), dielectron.M(), dielectron.Pt(), dielectron_weight);
+              if (dielectron_ch > 0)
+                registry.fill(HIST("LSpp"), dielectron.M(), dielectron.Pt(), dielectron_weight);
+              if (dielectron_ch < 0)
+                registry.fill(HIST("LSmm"), dielectron.M(), dielectron.Pt(), dielectron_weight);
             }
           }
         }
-      }
 
-      // Virtual photon generation
-      //-------------------------
-      // We will generate one virtual photon per histogrammed pion
-      if (mother.pdgCode() == 111) {
-        // get mass and pt from histos and flat eta and phi
-        Double_t VPHpT = ffVPHpT->GetRandom();
-        Double_t VPHmass = fhKW->GetRandom();
-        Double_t VPHeta = -1. + gRandom->Rndm() * 2.;
-        Double_t VPHphi = 2.0 * TMath::ACos(-1.) * gRandom->Rndm();
-        TLorentzVector beam;
-        beam.SetPtEtaPhiM(VPHpT, VPHeta, VPHphi, VPHmass);
-        Double_t decaymasses[2] = {(TDatabasePDG::Instance()->GetParticle(11))->Mass(), (TDatabasePDG::Instance()->GetParticle(11))->Mass()};
-        TGenPhaseSpace VPHgen;
-        Bool_t SetDecay;
-        SetDecay = VPHgen.SetDecay(beam, 2, decaymasses);
-        if (SetDecay == 0) {
-          LOGP(error, "decay not permitted by kinematics");
+        if (skipNext) {
+          skipNext = false;
+          continue; // skip if marked as second electron
         }
-        Double_t VPHweight = VPHgen.Generate();
-        // get electrons from the decay
-        TLorentzVector *decay1, *decay2;
-        decay1 = VPHgen.GetDecay(0);
-        decay2 = VPHgen.GetDecay(1);
-        dau1.SetPxPyPzE(decay1->Px(), decay1->Py(), decay1->Pz(), decay1->E());
-        dau2.SetPxPyPzE(decay2->Px(), decay2->Py(), decay2->Pz(), decay2->E());
+
+        if (!(mctrack.getMotherTrackId() > -1))
+          continue; // has no mother
+
+        auto const& mother = mctracks[mctrack.getMotherTrackId()];
+
+        if (mother.getMotherTrackId() > -1)
+          continue; // mother is not primary
+
+        if (mctrack.getSecondMotherTrackId() - mctrack.getMotherTrackId() > 0)
+          continue; // more than one mother
+
+        // skip for the moment other particles rather than pi0, eta, etaprime,
+        // omega, rho, phi.
+        switch (mother.GetPdgCode()) {
+          case 111:
+            break;
+          case 221:
+            break;
+          case 331:
+            break;
+          case 113:
+            break;
+          case 223:
+            break;
+          case 333:
+            break;
+          case 443:
+            break;
+          default:
+            continue;
+        }
+
+        // Not sure about this cut. From GammaConv group. Harmless a priori.
+        if (!(fabs(mctrack.GetEnergy() - mctrack.Pz()) > 0.))
+          continue;
+
+        // ???? this applied only to first daughter!
+        Double_t yPre = (mctrack.GetEnergy() + mctrack.Pz()) / (mctrack.GetEnergy() - mctrack.Pz());
+        Double_t y = 0.5 * TMath::Log(yPre);
+        if (fConfigDoRapidityCut) { // Apply rapidity cut on mother consistent with GammaConv group. (??? but it is not applied on mother?)
+          if (yPre <= 0.)
+            continue;
+          if (TMath::Abs(y) > fConfigRapidityCut)
+            continue;
+        } else {
+          if (yPre == 0.)
+            continue;
+        }
+
+        treeWords.fdectyp = mother.getLastDaughterTrackId() - mother.getFirstDaughterTrackId() + 1; // fdectyp: decay type (based on number of daughters).
+        if (treeWords.fdectyp > 4)
+          continue; // exclude five or more particles decay
+
+        if (trackID == mctracks.size())
+          continue; // no particle left in the list
+        auto mctrack2 = mctracks[trackID + 1];
+        if (!(mctrack2.getMotherTrackId() == mctrack.getMotherTrackId()))
+          continue; // no matching second electron
+        if (!(mctrack.getSecondMotherTrackId() == -1))
+          continue; // second daughter has more than one mother
+        if (!(abs(mctrack2.GetPdgCode()) == 11))
+          continue; // not an electron
+
+        skipNext = true; // is matching electron --> next particle in list will be skipped
+
+        PxPyPzEVector dau1, dau2, ee;
+        dau1.SetPxPyPzE(mctrack.Px(), mctrack.Py(), mctrack.Pz(), mctrack.GetEnergy());
+        dau2.SetPxPyPzE(mctrack2.Px(), mctrack2.Py(), mctrack2.Pz(), mctrack2.GetEnergy());
 
         // create dielectron before resolution effects:
         ee = dau1 + dau2;
-        ee_orig = ee;
+
+        // get info of the other particles in the decay:
+        treeWords.fdau3pdg = 0;
+        for (Int_t jj = mother.getFirstDaughterTrackId(); jj <= mother.getLastDaughterTrackId(); jj++) {
+          if (jj == trackID || jj == trackID + 1) {
+            continue; // first or second electron
+          }
+          auto mctrack3 = mctracks[jj];
+          treeWords.fdau3pdg = abs(mctrack3.GetPdgCode());
+        }
 
         // get index for histograms
-        hindex[0] = nInputParticles - 1;
-        hindex[1] = -1;
-        hindex[2] = -1;
+        Int_t hindex[3];
+        for (Int_t jj = 0; jj < 3; jj++) {
+          hindex[jj] = -1;
+        }
+        switch (mother.GetPdgCode()) {
+          case 111:
+            hindex[0] = 0;
+            break;
+          case 221:
+            hindex[0] = 1;
+            break;
+          case 331:
+            hindex[0] = 2;
+            if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 22)
+              hindex[1] = 3;
+            if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 223)
+              hindex[1] = 4;
+            break;
+          case 113:
+            hindex[0] = 5;
+            break;
+          case 223:
+            hindex[0] = 6;
+            if (treeWords.fdectyp == 2)
+              hindex[1] = 7;
+            if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 111)
+              hindex[1] = 8;
+            break;
+          case 333:
+            hindex[0] = 9;
+            if (treeWords.fdectyp == 2)
+              hindex[1] = 10;
+            if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 221)
+              hindex[1] = 11;
+            if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 111)
+              hindex[1] = 12;
+            break;
+          case 443:
+            hindex[0] = 13;
+            if (treeWords.fdectyp == 2)
+              hindex[1] = 14;
+            if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 22)
+              hindex[1] = 15;
+            break;
+        }
+
+        hindex[2] = nInputParticles;
+
+        if (hindex[0] < 0) {
+          LOGP(error, "hindex[0]<0");
+          continue;
+        }
 
         // Fill tree words before resolution/acceptance
-        fd1origpt = dau1.Pt();
-        fd1origp = dau1.P();
-        fd1origeta = dau1.Eta();
-        fd1origphi = dau1.Phi();
-        fd2origpt = dau2.Pt();
-        fd2origp = dau2.P();
-        fd2origeta = dau2.Eta();
-        fd2origphi = dau2.Phi();
-        feeorigpt = ee.Pt();
-        feeorigp = ee.P();
-        feeorigm = ee.M();
-        feeorigeta = ee.Eta();
-        feeorigphi = ee.Phi();
-        feeorigphiv = PhiV(dau1, dau2);
+        treeWords.fd1origpt = dau1.Pt();
+        treeWords.fd1origp = dau1.P();
+        treeWords.fd1origeta = dau1.Eta();
+        treeWords.fd1origphi = dau1.Phi();
+        treeWords.fd2origpt = dau2.Pt();
+        treeWords.fd2origp = dau2.P();
+        treeWords.fd2origeta = dau2.Eta();
+        treeWords.fd2origphi = dau2.Phi();
+        treeWords.feeorigpt = ee.Pt();
+        treeWords.feeorigp = ee.P();
+        treeWords.feeorigm = ee.M();
+        treeWords.feeorigeta = ee.Eta();
+        treeWords.feeorigrap = ee.Rapidity();
+        treeWords.feeorigphi = ee.Phi();
+        if (mctrack.GetPdgCode() > 0) {
+          treeWords.feeorigphiv = PhiV(dau1, dau2);
+        } else {
+          treeWords.feeorigphiv = PhiV(dau2, dau1);
+        }
 
         // get the efficiency weight
-        Int_t effbin = fhwEffpT->FindBin(dau1.Pt());
-        fwEffpT = fhwEffpT->GetBinContent(effbin);
-        effbin = fhwEffpT->FindBin(dau2.Pt());
-        fwEffpT = fwEffpT * fhwEffpT->GetBinContent(effbin);
+        Int_t effbin = fhwEffpT->FindBin(treeWords.fd1origpt);
+        treeWords.fwEffpT = fhwEffpT->GetBinContent(effbin);
+        effbin = fhwEffpT->FindBin(treeWords.fd2origpt);
+        treeWords.fwEffpT = treeWords.fwEffpT * fhwEffpT->GetBinContent(effbin);
 
         // Resolution and acceptance
         //-------------------------
-        dau1 = ApplyResolution(dau1, 1, fConfigResolType);
-        dau2 = ApplyResolution(dau2, -1, fConfigResolType);
-        fpass = true;
+        if (mctrack.GetPdgCode() > 0) {
+          dau1 = ApplyResolution(dau1, -1, fConfigResolType);
+        } else {
+          dau1 = ApplyResolution(dau1, 1, fConfigResolType);
+        }
+        if (mctrack2.GetPdgCode() > 0) {
+          dau2 = ApplyResolution(dau2, -1, fConfigResolType);
+        } else {
+          dau2 = ApplyResolution(dau2, 1, fConfigResolType);
+        }
+        treeWords.fpass = true;
         if (dau1.Pt() < fConfigMinPt || dau2.Pt() < fConfigMinPt)
-          fpass = false; // leg pT cut
+          treeWords.fpass = false; // leg pT cut
         if (dau1.Pt() > fConfigMaxPt || dau2.Pt() > fConfigMaxPt)
-          fpass = false; // leg pT cut
+          treeWords.fpass = false; // leg pT cut
         if (dau1.Vect().Unit().Dot(dau2.Vect().Unit()) > TMath::Cos(fConfigMinOpAng))
-          fpass = false; // opening angle cut
+          treeWords.fpass = false; // opening angle cut
         if (TMath::Abs(dau1.Eta()) > fConfigMaxEta || TMath::Abs(dau2.Eta()) > fConfigMaxEta)
-          fpass = false;
+          treeWords.fpass = false;
 
-        fpairDCA = 10000.; // ??
+        // get the pair DCA (based in smeared pT)
+        for (int jj = 0; jj < nbDCAtemplate; jj++) { // loop over DCA templates
+          if (dau1.Pt() >= DCATemplateEdges[jj] && dau1.Pt() < DCATemplateEdges[jj + 1]) {
+            treeWords.fd1DCA = fh_DCAtemplates[jj]->GetRandom();
+          }
+          if (dau2.Pt() >= DCATemplateEdges[jj] && dau2.Pt() < DCATemplateEdges[jj + 1]) {
+            treeWords.fd2DCA = fh_DCAtemplates[jj]->GetRandom();
+          }
+        }
+        treeWords.fpairDCA = sqrt((pow(treeWords.fd1DCA, 2) + pow(treeWords.fd2DCA, 2)) / 2);
 
         // Fill tree words after resolution/acceptance
         ee = dau1 + dau2;
-        fd1pt = dau1.Pt();
-        fd1p = dau1.P();
-        fd1eta = dau1.Eta();
-        fd1phi = dau1.Phi();
-        fd2pt = dau2.Pt();
-        fd2p = dau2.P();
-        fd2eta = dau2.Eta();
-        fd2phi = dau2.Phi();
-        feept = ee.Pt();
-        feemt = ee.Mt();
-        feep = ee.P();
-        feem = ee.M();
-        feeeta = ee.Eta();
-        feephi = ee.Phi();
-        feephiv = PhiV(dau1, dau2);
-        fmotherpt = beam.Pt();
-        fmothermt = sqrt(pow(beam.M(), 2) + pow(beam.Pt(), 2));
-        fmotherp = beam.P();
-        fmotherm = beam.M();
-        fmothereta = beam.Eta();
-        fmotherphi = beam.Phi();
-        fID = 0; // set ID to Zero for VPH
-        fweight = VPHweight;
-        // get multiplicity based weight:
-        fwMultmT = 1; // no weight for photons so far
+        treeWords.fd1pt = dau1.Pt();
+        treeWords.fd1p = dau1.P();
+        treeWords.fd1eta = dau1.Eta();
+        treeWords.fd1phi = dau1.Phi();
+        treeWords.fd2pt = dau2.Pt();
+        treeWords.fd2p = dau2.P();
+        treeWords.fd2eta = dau2.Eta();
+        treeWords.fd2phi = dau2.Phi();
+        treeWords.feept = ee.Pt();
+        treeWords.feemt = ee.Mt();
+        treeWords.feep = ee.P();
+        treeWords.feem = ee.M();
+        treeWords.feeeta = ee.Eta();
+        treeWords.feerap = ee.Rapidity();
+        treeWords.feephi = ee.Phi();
+        if (mctrack.GetPdgCode() > 0) {
+          treeWords.feephiv = PhiV(dau1, dau2);
+        } else {
+          treeWords.feephiv = PhiV(dau2, dau1);
+        }
+        treeWords.fmotherpt = mother.GetPt();
+        treeWords.fmotherm = sqrt(pow(mother.GetEnergy(), 2) + pow(mother.GetP(), 2));
+        treeWords.fmothermt = sqrt(pow(treeWords.fmotherm, 2) + pow(treeWords.fmotherpt, 2));
+        treeWords.fmotherp = mother.GetP();
+        treeWords.fmothereta = mother.GetEta();
+        treeWords.fmotherphi = mother.GetPhi();
+        treeWords.fID = mother.GetPdgCode();
+        treeWords.fweight = mctrack.getWeight(); // get particle weight from generator
 
-        // Fill the tree
-        if (fConfigWriteTTree) { // many parameters not set for photons: d1DCA,fd2DCA, fdectyp,fdau3pdg,fwMultpT,fwMultpT2,fwMultmT2
-          tree(fd1DCA, fd2DCA, fpairDCA, fd1origpt, fd1origp, fd1origeta, fd1origphi, fd2origpt, fd2origp, fd2origeta, fd2origphi, fd1pt, fd1p, fd1eta, fd1phi, fd2pt, fd2p, fd2eta, fd2phi, feeorigpt, feeorigp, feeorigm, feeorigeta, feeorigphi, feeorigphiv, feept, feemt, feep, feem, feeeta, feephi, feephiv, fmotherpt, fmothermt, fmotherp, fmotherm, fmothereta, fmotherphi, fID, fdectyp, fdau3pdg, fweight, fwEffpT, fwMultpT, fwMultmT, fwMultpT2, fwMultmT2, fpass);
+        // get multiplicity based weight:
+        int iwbin = fhwMultpT->FindBin(treeWords.fmotherpt);
+        treeWords.fwMultpT = fhwMultpT->GetBinContent(iwbin);   // pT weight
+        treeWords.fwMultpT2 = fhwMultpT2->GetBinContent(iwbin); // pT weight
+        double min_mT = fhwMultmT->GetBinLowEdge(1);            // consider as minimum valid mT value the edge of the weight histo.
+        if (treeWords.fmothermt > min_mT) {
+          iwbin = fhwMultmT->FindBin(treeWords.fmothermt);
+          treeWords.fwMultmT = fhwMultmT->GetBinContent(iwbin);   // mT weight
+          treeWords.fwMultmT2 = fhwMultmT2->GetBinContent(iwbin); // mT weight
+        } else {
+          LOGP(error, "Generated particle with mT < Pion mass cannot be weighted");
+          treeWords.fwMultmT = 0.;
+          treeWords.fwMultmT2 = 0.;
         }
 
-        // Fill the histograms
-        for (Int_t jj = 0; jj < 3; jj++) { // fill the different hindex -> particles
-          if (hindex[jj] > -1) {
-            fmee_orig[hindex[jj]]->Fill(ee_orig.M(), VPHweight);
-            fpteevsmee_orig[hindex[jj]]->Fill(ee_orig.M(), ee.Pt(), VPHweight);
-            fphi_orig[hindex[jj]]->Fill(ee_orig.Phi(), VPHweight);
-            frap_orig[hindex[jj]]->Fill(ee_orig.Rapidity(), VPHweight);
-            if (fpass) {
-              fmee[hindex[jj]]->Fill(ee.M(), VPHweight);
-              fpteevsmee[hindex[jj]]->Fill(ee.M(), ee.Pt(), VPHweight);
-              fphi[hindex[jj]]->Fill(ee.Phi(), VPHweight);
-              frap[hindex[jj]]->Fill(ee.Rapidity(), VPHweight);
+        // Which ALT weight to use?:
+        Double_t fwALT = treeWords.fwEffpT; // by default use pt efficiency weight
+        if (fConfigALTweight == 1)
+          fwALT = treeWords.fwMultmT; // mT multiplicity weight
+        if (fConfigALTweight == 11)
+          fwALT = treeWords.fwMultmT2; // mT multiplicity weight, higher mult
+        if (fConfigALTweight == 2)
+          fwALT = treeWords.fwMultpT; // pT multiplicity weight
+        if (fConfigALTweight == 22)
+          fwALT = treeWords.fwMultpT2; // pT multiplicity weight, higher mult
+
+        // fill the tree
+        if (fConfigWriteTTree) {
+          tree->Fill();
+        }
+
+        // fill the histograms
+        if (treeWords.fdectyp < 4) {         // why here <4 and before <5 ???
+          for (Int_t jj = 0; jj < 3; jj++) { // fill the different hindex -> particles
+            if (hindex[jj] > -1) {
+              fmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.fweight);
+              if (fConfigALTweight == 1 || fConfigALTweight == 11) {
+                fmotherpT_orig[hindex[jj]]->Fill(treeWords.fmothermt, treeWords.fweight);
+              } else if (fConfigALTweight == 2 || fConfigALTweight == 22 || fConfigALTweight == 0) {
+                fmotherpT_orig[hindex[jj]]->Fill(treeWords.fmotherpt, treeWords.fweight);
+              }
+              fpteevsmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.feept, treeWords.fweight);
+              fphi_orig[hindex[jj]]->Fill(treeWords.feeorigphi, treeWords.fweight);
+              frap_orig[hindex[jj]]->Fill(treeWords.feeorigrap, treeWords.fweight);
+              fmee_orig_wALT[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.fweight * fwALT);
+              fpteevsmee_orig_wALT[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.feept, treeWords.fweight * fwALT);
+              if (fConfigALTweight == 1 || fConfigALTweight == 11) {
+                fmotherpT_orig_wALT[hindex[jj]]->Fill(treeWords.fmothermt, treeWords.fweight * fwALT);
+              } else if (fConfigALTweight == 2 || fConfigALTweight == 22 || fConfigALTweight == 0) {
+                fmotherpT_orig_wALT[hindex[jj]]->Fill(treeWords.fmotherpt, treeWords.fweight * fwALT);
+              }
+              if (treeWords.fpass) {
+                fmee[hindex[jj]]->Fill(treeWords.feem, treeWords.fweight);
+                fpteevsmee[hindex[jj]]->Fill(treeWords.feem, treeWords.feept, treeWords.fweight);
+                fphi[hindex[jj]]->Fill(treeWords.feephi, treeWords.fweight);
+                frap[hindex[jj]]->Fill(treeWords.feerap, treeWords.fweight);
+                registry.fill(HIST("DCAeevsmee"), treeWords.feem, treeWords.fpairDCA, treeWords.fweight);
+                registry.fill(HIST("DCAeevsptee"), treeWords.feept, treeWords.fpairDCA, treeWords.fweight);
+                fmee_wALT[hindex[jj]]->Fill(treeWords.feem, treeWords.fweight * fwALT);
+                fpteevsmee_wALT[hindex[jj]]->Fill(treeWords.feem, treeWords.feept, treeWords.fweight * fwALT);
+              }
             }
           }
         }
-      }
-    }
+
+        // Virtual photon generation
+        //-------------------------
+        // We will generate one virtual photon per histogrammed pion
+        if (mother.GetPdgCode() == 111) {
+          // get mass and pt from histos and flat eta and phi
+          Double_t VPHpT = ffVPHpT->GetRandom();
+          Double_t VPHmass = fhKW->GetRandom();
+          Double_t VPHeta = -1. + gRandom->Rndm() * 2.;
+          Double_t VPHphi = 2.0 * TMath::ACos(-1.) * gRandom->Rndm();
+          TLorentzVector beam;
+          beam.SetPtEtaPhiM(VPHpT, VPHeta, VPHphi, VPHmass);
+          Double_t decaymasses[2] = {(TDatabasePDG::Instance()->GetParticle(11))->Mass(), (TDatabasePDG::Instance()->GetParticle(11))->Mass()};
+          TGenPhaseSpace VPHgen;
+          Bool_t SetDecay;
+          SetDecay = VPHgen.SetDecay(beam, 2, decaymasses);
+          if (SetDecay == 0)
+            LOGP(error, "Decay not permitted by kinematics");
+          Double_t VPHweight = VPHgen.Generate();
+          // get electrons from the decay
+          TLorentzVector *decay1, *decay2;
+          decay1 = VPHgen.GetDecay(0);
+          decay2 = VPHgen.GetDecay(1);
+          dau1.SetPxPyPzE(decay1->Px(), decay1->Py(), decay1->Pz(), decay1->E());
+          dau2.SetPxPyPzE(decay2->Px(), decay2->Py(), decay2->Pz(), decay2->E());
+
+          // create dielectron before resolution effects:
+          ee = dau1 + dau2;
+
+          // get index for histograms
+          hindex[0] = nInputParticles - 1;
+          hindex[1] = -1;
+          hindex[2] = -1;
+
+          // Fill tree words before resolution/acceptance
+          treeWords.fd1origpt = dau1.Pt();
+          treeWords.fd1origp = dau1.P();
+          treeWords.fd1origeta = dau1.Eta();
+          treeWords.fd1origphi = dau1.Phi();
+          treeWords.fd2origpt = dau2.Pt();
+          treeWords.fd2origp = dau2.P();
+          treeWords.fd2origeta = dau2.Eta();
+          treeWords.fd2origphi = dau2.Phi();
+          treeWords.feeorigpt = ee.Pt();
+          treeWords.feeorigp = ee.P();
+          treeWords.feeorigm = ee.M();
+          treeWords.feeorigeta = ee.Eta();
+          treeWords.feeorigrap = ee.Rapidity();
+          treeWords.feeorigphi = ee.Phi();
+          treeWords.feeorigphiv = PhiV(dau1, dau2);
+
+          // get the efficiency weight
+          Int_t effbin = fhwEffpT->FindBin(treeWords.fd1origpt);
+          treeWords.fwEffpT = fhwEffpT->GetBinContent(effbin);
+          effbin = fhwEffpT->FindBin(treeWords.fd2origpt);
+          treeWords.fwEffpT = treeWords.fwEffpT * fhwEffpT->GetBinContent(effbin);
+
+          // Resolution and acceptance
+          //-------------------------
+          dau1 = ApplyResolution(dau1, 1, fConfigResolType);
+          dau2 = ApplyResolution(dau2, -1, fConfigResolType);
+          treeWords.fpass = true;
+          if (dau1.Pt() < fConfigMinPt || dau2.Pt() < fConfigMinPt)
+            treeWords.fpass = false; // leg pT cut
+          if (dau1.Pt() > fConfigMaxPt || dau2.Pt() > fConfigMaxPt)
+            treeWords.fpass = false; // leg pT cut
+          if (dau1.Vect().Unit().Dot(dau2.Vect().Unit()) > TMath::Cos(fConfigMinOpAng))
+            treeWords.fpass = false; // opening angle cut
+          if (TMath::Abs(dau1.Eta()) > fConfigMaxEta || TMath::Abs(dau2.Eta()) > fConfigMaxEta)
+            treeWords.fpass = false;
+
+          treeWords.fpairDCA = 10000.; // ??
+
+          // Fill tree words after resolution/acceptance
+          ee = dau1 + dau2;
+          treeWords.fd1pt = dau1.Pt();
+          treeWords.fd1p = dau1.P();
+          treeWords.fd1eta = dau1.Eta();
+          treeWords.fd1phi = dau1.Phi();
+          treeWords.fd2pt = dau2.Pt();
+          treeWords.fd2p = dau2.P();
+          treeWords.fd2eta = dau2.Eta();
+          treeWords.fd2phi = dau2.Phi();
+          treeWords.feept = ee.Pt();
+          treeWords.feemt = ee.Mt();
+          treeWords.feep = ee.P();
+          treeWords.feem = ee.M();
+          treeWords.feeeta = ee.Eta();
+          treeWords.feerap = ee.Rapidity();
+          treeWords.feephi = ee.Phi();
+          treeWords.feephiv = PhiV(dau1, dau2);
+          treeWords.fmotherpt = beam.Pt();
+          treeWords.fmothermt = sqrt(pow(beam.M(), 2) + pow(beam.Pt(), 2));
+          treeWords.fmotherp = beam.P();
+          treeWords.fmotherm = beam.M();
+          treeWords.fmothereta = beam.Eta();
+          treeWords.fmotherphi = beam.Phi();
+          treeWords.fID = 0; // set ID to Zero for VPH
+          treeWords.fweight = VPHweight;
+          // get multiplicity based weight:
+          treeWords.fwMultmT = 1; // no weight for photons so far
+
+          // Fill the tree
+          if (fConfigWriteTTree) { // many parameters not set for photons: d1DCA,fd2DCA, fdectyp,fdau3pdg,fwMultpT,fwMultpT2,fwMultmT2
+            tree->Fill();
+          }
+
+          // Fill the histograms
+          for (Int_t jj = 0; jj < 3; jj++) { // fill the different hindex -> particles
+            if (hindex[jj] > -1) {
+              fmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, VPHweight);
+              fpteevsmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.feept, VPHweight);
+              fphi_orig[hindex[jj]]->Fill(treeWords.feeorigphi, VPHweight);
+              frap_orig[hindex[jj]]->Fill(treeWords.feeorigrap, VPHweight);
+              if (treeWords.fpass) {
+                fmee[hindex[jj]]->Fill(treeWords.feem, VPHweight);
+                fpteevsmee[hindex[jj]]->Fill(treeWords.feem, treeWords.feept, VPHweight);
+                fphi[hindex[jj]]->Fill(treeWords.feephi, VPHweight);
+                frap[hindex[jj]]->Fill(treeWords.feerap, VPHweight);
+              }
+            }
+          }
+
+        } // mother.pdgCode()==111
+
+      } // abs(pdgCode())==11
+
+    } // loop over mctracks
+
+    // Clear buffers
+    eBuff.clear();
+    echBuff.clear();
+    eweightBuff.clear();
   }
 
   Double_t PhiV(PxPyPzEVector e1, PxPyPzEVector e2)
@@ -590,13 +710,15 @@ struct lmeelfcocktail {
 
     registry.add<TH1>("NEvents", "NEvents", HistType::kTH1F, {{1, 0, 1}}, false);
 
-    registry.add<TH2>("ULS", "ULS", HistType::kTH2F, {mAxis, ptAxis}, true);
-    registry.add<TH2>("LSpp", "LSpp", HistType::kTH2F, {mAxis, ptAxis}, true);
-    registry.add<TH2>("LSmm", "LSmm", HistType::kTH2F, {mAxis, ptAxis}, true);
+    if (fConfigDoPairing) {
+      registry.add<TH2>("ULS", "ULS", HistType::kTH2F, {mAxis, ptAxis}, true);
+      registry.add<TH2>("LSpp", "LSpp", HistType::kTH2F, {mAxis, ptAxis}, true);
+      registry.add<TH2>("LSmm", "LSmm", HistType::kTH2F, {mAxis, ptAxis}, true);
 
-    registry.add<TH2>("ULS_orig", "ULS_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
-    registry.add<TH2>("LSpp_orig", "LSpp_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
-    registry.add<TH2>("LSmm_orig", "LSmm_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
+      registry.add<TH2>("ULS_orig", "ULS_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
+      registry.add<TH2>("LSpp_orig", "LSpp_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
+      registry.add<TH2>("LSmm_orig", "LSmm_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
+    }
 
     registry.add<TH2>("DCAeevsmee", "DCAeevsmee", HistType::kTH2F, {{fConfigMBins, "#it{m}_{ee} (GeV/c^{2})"}, {fConfigDCABins, "DCA_{xy}^{ee} (cm)"}}, true);
     registry.add<TH2>("DCAeevsptee", "DCAeevsptee", HistType::kTH2F, {{fConfigPtBins, "#it{p}_{T,ee} (GeV/c)"}, {fConfigDCABins, "DCA_{xy}^{ee} (cm)"}}, true);
@@ -632,6 +754,60 @@ struct lmeelfcocktail {
     fmotherpT_orig_wALT.push_back(registry.add<TH1>("motherpT_orig_wALT", "motherpT_orig_wALT", HistType::kTH1F, {ptAxis}, true));
     fpteevsmee_wALT.push_back(registry.add<TH2>("pteevsmee_wALT", "pteevsmee_wALT", HistType::kTH2F, {mAxis, ptAxis}, true));
     fpteevsmee_orig_wALT.push_back(registry.add<TH2>("pteevsmee_orig_wALT", "pteevsmee_orig_wALT", HistType::kTH2F, {mAxis, ptAxis}, true));
+  }
+
+  void SetTree()
+  {
+    tree.setObject(new TTree("eeTTree", "eeTTree"));
+
+    tree->Branch("fd1DCA", &treeWords.fd1DCA, "fd1DCA/F");
+    tree->Branch("fd2DCA", &treeWords.fd2DCA, "fd2DCA/F");
+    tree->Branch("fpairDCA", &treeWords.fpairDCA, "fpairDCA/F");
+    tree->Branch("fd1origpt", &treeWords.fd1origpt, "fd1origpt/F");
+    tree->Branch("fd1origp", &treeWords.fd1origp, "fd1origp/F");
+    tree->Branch("fd1origeta", &treeWords.fd1origeta, "fd1origeta/F");
+    tree->Branch("fd1origphi", &treeWords.fd1origphi, "fd1origphi/F");
+    tree->Branch("fd2origpt", &treeWords.fd2origpt, "fd2origpt/F");
+    tree->Branch("fd2origp", &treeWords.fd2origp, "fd2origp/F");
+    tree->Branch("fd2origeta", &treeWords.fd2origeta, "fd2origeta/F");
+    tree->Branch("fd2origphi", &treeWords.fd2origphi, "fd2origphi/F");
+    tree->Branch("fd1pt", &treeWords.fd1pt, "fd1pt/F");
+    tree->Branch("fd1p", &treeWords.fd1p, "fd1p/F");
+    tree->Branch("fd1eta", &treeWords.fd1eta, "fd1eta/F");
+    tree->Branch("fd1phi", &treeWords.fd1phi, "fd1phi/F");
+    tree->Branch("fd2pt", &treeWords.fd2pt, "fd2pt/F");
+    tree->Branch("fd2p", &treeWords.fd2p, "fd2p/F");
+    tree->Branch("fd2eta", &treeWords.fd2eta, "fd2eta/F");
+    tree->Branch("fd2phi", &treeWords.fd2phi, "fd2phi/F");
+    tree->Branch("feeorigpt", &treeWords.feeorigpt, "feeorigpt/F");
+    tree->Branch("feeorigp", &treeWords.feeorigp, "feeorigp/F");
+    tree->Branch("feeorigm", &treeWords.feeorigm, "feeorigm/F");
+    tree->Branch("feeorigeta", &treeWords.feeorigeta, "feeorigeta/F");
+    tree->Branch("feeorigphi", &treeWords.feeorigphi, "feeorigphi/F");
+    tree->Branch("feeorigphiv", &treeWords.feeorigphiv, "feeorigphiv/F");
+    tree->Branch("feept", &treeWords.feept, "feept/F");
+    tree->Branch("feemt", &treeWords.feemt, "feemt/F");
+    tree->Branch("feep", &treeWords.feep, "feep/F");
+    tree->Branch("feem", &treeWords.feem, "feem/F");
+    tree->Branch("feeeta", &treeWords.feeeta, "feeeta/F");
+    tree->Branch("feephi", &treeWords.feephi, "feephi/F");
+    tree->Branch("feephiv", &treeWords.feephiv, "feephiv/F");
+    tree->Branch("fmotherpt", &treeWords.fmotherpt, "fmotherpt/F");
+    tree->Branch("fmothermt", &treeWords.fmothermt, "fmothermt/F");
+    tree->Branch("fmotherp", &treeWords.fmotherp, "fmotherp/F");
+    tree->Branch("fmotherm", &treeWords.fmotherm, "fmotherm/F");
+    tree->Branch("fmothereta", &treeWords.fmothereta, "fmothereta/F");
+    tree->Branch("fmotherphi", &treeWords.fmotherphi, "fmotherphi/F");
+    tree->Branch("fID", &treeWords.fID, "fID/I");
+    tree->Branch("fdectyp", &treeWords.fdectyp, "fdectyp/I");
+    tree->Branch("fdau3pdg", &treeWords.fdau3pdg, "fdau3pdg/I");
+    tree->Branch("fweight", &treeWords.fweight, "fweight/F");
+    tree->Branch("fwEffpT", &treeWords.fwEffpT, "fwEffpT/F");
+    tree->Branch("fwMultpT", &treeWords.fwMultpT, "fwMultpT/F");
+    tree->Branch("fwMultmT", &treeWords.fwMultmT, "fwMultmT/F");
+    tree->Branch("fwMultpT2", &treeWords.fwMultpT2, "fwMultpT2/F");
+    tree->Branch("fwMultmT2", &treeWords.fwMultmT2, "fwMultmT2/F");
+    tree->Branch("fpass", &treeWords.fpass, "fpass/B");
   }
 
   PxPyPzEVector ApplyResolution(PxPyPzEVector vec, Char_t ch = 0, Int_t Run = 2)
@@ -728,13 +904,9 @@ struct lmeelfcocktail {
   void GetEffHisto(TString filename, TString histname)
   {
     // get efficiency histo
-    LOGP(detail, "Set Efficiency histo");
+    LOGP(info, "Set Efficiency histo");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
-    // Get Efficiency
-    if (fFileName.Contains("alien")) { // TODO
-      LOGP(error, "Copying from alien not yet implemented");
-    }
     // Get Efficiency weight file:
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
     if (!fFile) {
@@ -754,14 +926,10 @@ struct lmeelfcocktail {
   void GetResHisto(TString filename, TString ptHistName, TString etaHistName, TString phiPosHistName, TString phiNegHistName)
   {
     // get resolutoin histo
-    LOGP(detail, "Set Resolution histo");
+    LOGP(info, "Set Resolution histo");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     // Get Resolution map
-    if (fFileName.Contains("alien")) { // TODO
-      LOGP(error, "Copying from alien not yet implemented");
-    }
-    // Get file:
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
     if (!fFile) {
       LOGP(error, "Could not open Resolution file {}", fFileNameLocal.Data());
@@ -804,14 +972,10 @@ struct lmeelfcocktail {
   void GetResHisto(TString filename, TString pHistName)
   {
     // get resolutoin histo
-    LOGP(detail, "Set Resolution histo\n");
+    LOGP(info, "Set Resolution histo");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
     // Get Resolution map
-    if (fFileName.Contains("alien")) { // TODO
-      LOGP(error, "copying from alien not yet implemented");
-    }
-    // Get file:
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
     if (!fFile) {
       LOGP(error, "Could not open Resolution file {}", fFileNameLocal.Data());
@@ -833,12 +997,9 @@ struct lmeelfcocktail {
   void GetDCATemplates(TString filename, TString histname)
   {
     // get dca tamplates
-    LOGP(detail, "Set DCA templates");
+    LOGP(info, "Set DCA templates");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
-    if (fFileName.Contains("alien")) { // TODO
-      LOGP(error, "copying from alien not yet implemented");
-    }
     // Get  file:
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
     if (!fFile) {
@@ -859,13 +1020,9 @@ struct lmeelfcocktail {
   void GetMultHisto(TString filename, TString histnamept, TString histnamept2, TString histnamemt, TString histnamemt2)
   {
     // get multiplicity weights
-    LOGP(detail, "Set Multiplicity weight files");
+    LOGP(info, "Set Multiplicity weight files");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
-    if (fFileName.Contains("alien")) { // TODO
-      LOGP(error, "copying from alien not yet implemented");
-    }
-    // Get  file:
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
     if (!fFile) {
       LOGP(error, "Could not open Multiplicity weight file {}", fFileNameLocal.Data());
@@ -900,13 +1057,9 @@ struct lmeelfcocktail {
 
   void GetPhotonPtParametrization(TString filename, TString dirname, TString funcname)
   {
-    LOGP(detail, "Set photon parametrization");
+    LOGP(info, "Set photon parametrization");
     TString fFileName = filename;
     TString fFileNameLocal = filename;
-    if (fFileName.Contains("alien")) { // TODO
-      LOGP(error, "copying from alien not yet implemented");
-    }
-    // Get file:
     TFile* fFile = TFile::Open(fFileNameLocal.Data());
     if (!fFile) {
       LOGP(error, "Could not open photon parametrization from file {}", fFileNameLocal.Data());
@@ -941,60 +1094,15 @@ struct lmeelfcocktail {
       fhKW->AddBinContent(ibin, 2. * (1. / 137.03599911) / 3. / 3.14159265359 / KWmass * sqrt(1. - 4. * emass * emass / KWmass / KWmass) * (1. + 2. * emass * emass / KWmass / KWmass));
     }
   }
-
-  // ULS and LS spectra
-  Partition<aod::McParticles> Electrons = (aod::mcparticle::pdgCode == 11) && (aod::mcparticle::statusCode == 1);
-  Partition<aod::McParticles> Positrons = (aod::mcparticle::pdgCode == -11) && (aod::mcparticle::statusCode == 1);
-
-  void processPairing(aod::McCollision const& collision, aod::McParticles const& mcParticles)
-  {
-
-    registry.fill(HIST("NEvents"), 0.5);
-
-    auto const electronsGrouped = Electrons->sliceBy(perCollision, collision.globalIndex());
-    auto const positronsGrouped = Positrons->sliceBy(perCollision, collision.globalIndex());
-
-    // ULS spectrum
-    for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsFullIndexPolicy(electronsGrouped, positronsGrouped))) {
-      PxPyPzEVector p1, p2, dielectron;
-      p1.SetPxPyPzE(particle1.px(), particle1.py(), particle1.pz(), particle1.e());
-      p2.SetPxPyPzE(particle2.px(), particle2.py(), particle2.pz(), particle2.e());
-      dielectron = p1 + p2;
-      registry.fill(HIST("ULS_orig"), dielectron.M(), dielectron.Pt(), particle1.weight() * particle2.weight());
-      if (p1.Pt() > fConfigMinPt && p2.Pt() > fConfigMinPt && p1.Pt() < fConfigMaxPt && p2.Pt() < fConfigMaxPt && TMath::Abs(p1.Eta()) < fConfigMaxEta && TMath::Abs(p2.Eta()) < fConfigMaxEta && p1.Vect().Unit().Dot(p2.Vect().Unit()) < TMath::Cos(fConfigMinOpAng)) {
-        registry.fill(HIST("ULS"), dielectron.M(), dielectron.Pt(), particle1.weight() * particle2.weight());
-      }
-    }
-
-    // LS spectra
-    for (auto& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
-      PxPyPzEVector p1, p2, dielectron;
-      p1.SetPxPyPzE(particle1.px(), particle1.py(), particle1.pz(), particle1.e());
-      p2.SetPxPyPzE(particle2.px(), particle2.py(), particle2.pz(), particle2.e());
-      dielectron = p1 + p2;
-      registry.fill(HIST("LSmm_orig"), dielectron.M(), dielectron.Pt(), particle1.weight() * particle2.weight());
-      if (p1.Pt() > fConfigMinPt && p2.Pt() > fConfigMinPt && p1.Pt() < fConfigMaxPt && p2.Pt() < fConfigMaxPt && TMath::Abs(p1.Eta()) < fConfigMaxEta && TMath::Abs(p2.Eta()) < fConfigMaxEta && p1.Vect().Unit().Dot(p2.Vect().Unit()) < TMath::Cos(fConfigMinOpAng)) {
-        registry.fill(HIST("LSmm"), dielectron.M(), dielectron.Pt(), particle1.weight() * particle2.weight());
-      }
-    }
-    for (auto& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
-      PxPyPzEVector p1, p2, dielectron;
-      p1.SetPxPyPzE(particle1.px(), particle1.py(), particle1.pz(), particle1.e());
-      p2.SetPxPyPzE(particle2.px(), particle2.py(), particle2.pz(), particle2.e());
-      dielectron = p1 + p2;
-      registry.fill(HIST("LSpp_orig"), dielectron.M(), dielectron.Pt(), particle1.weight() * particle2.weight());
-      if (p1.Pt() > fConfigMinPt && p2.Pt() > fConfigMinPt && p1.Pt() < fConfigMaxPt && p2.Pt() < fConfigMaxPt && TMath::Abs(p1.Eta()) < fConfigMaxEta && TMath::Abs(p2.Eta()) < fConfigMaxEta && p1.Vect().Unit().Dot(p2.Vect().Unit()) < TMath::Cos(fConfigMinOpAng)) {
-        registry.fill(HIST("LSpp"), dielectron.M(), dielectron.Pt(), particle1.weight() * particle2.weight());
-      }
-    }
-  }
-
-  PROCESS_SWITCH(lmeelfcocktail, processPairing, "Process pairing", true);
-  PROCESS_SWITCH(lmeelfcocktail, processCocktail, "Process cocktail", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<lmeelfcocktail>(cfgc, TaskName{"em-lmee-lf-cocktail"})};
+  WorkflowSpec specs;
+  std::vector<InputSpec> inputs;
+  inputs.emplace_back("mctracks", "MC", "MCTRACKS", 0., Lifetime::Timeframe);
+  DataProcessorSpec dSpec = adaptAnalysisTask<lmeelfcocktail>(cfgc, TaskName{"em-lmee-lf-cocktail"});
+  dSpec.inputs = inputs;
+  specs.emplace_back(dSpec);
+  return specs;
 }

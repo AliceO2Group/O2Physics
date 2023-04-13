@@ -49,25 +49,6 @@ DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int); //!
 DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
                   hf_sel_track::IsSelProng);
 
-namespace hf_track_association
-{
-
-enum TrackTypes { Regular = 0,
-                  Ambiguous,
-                  PVContributor };
-
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);   //! Collision index
-DECLARE_SOA_INDEX_COLUMN(Track, track);           //! Track index
-DECLARE_SOA_COLUMN(TrackType, trackType, int8_t); //! Track type
-} // namespace hf_track_association
-
-DECLARE_SOA_TABLE(HfTrackAssoc, "AOD", "HFTRACKASSOC", //! Table for track-to-collision association for HF vertex finding - tracks can appear for several collisions
-                  hf_track_association::CollisionId,
-                  hf_track_association::TrackId);
-
-DECLARE_SOA_TABLE(HfTrackAssocExtra, "AOD", "HFTRACKASSOCEX", //!
-                  hf_track_association::TrackType);
-
 namespace hf_pv_refit_track
 {
 DECLARE_SOA_COLUMN(PvRefitX, pvRefitX, float);             //!
@@ -108,6 +89,7 @@ using BigTracksPIDExtended = soa::Join<BigTracksPID, aod::TracksDCA>;
 
 namespace hf_track_index
 {
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //! Collision index
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0"); //! Index to first prong
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //! Index to second prong
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, Tracks, "_2"); //! Index to third prong
@@ -125,28 +107,52 @@ DECLARE_SOA_COLUMN(FlagDsToKKPi, flagDsToKKPi, uint8_t);         //!
 DECLARE_SOA_COLUMN(FlagXicToPKPi, flagXicToPKPi, uint8_t);       //!
 } // namespace hf_track_index
 
-DECLARE_SOA_TABLE(Hf2Prongs, "AOD", "HF2PRONG", //! Table for HF 2 prong candidates
+DECLARE_SOA_TABLE(Hf2Prongs_000, "AOD", "HF2PRONG", //! Table for HF 2 prong candidates (Run 2 converted format)
                   o2::soa::Index<>,
-                  hf_track_association::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id,
                   hf_track_index::HFflag);
+
+DECLARE_SOA_TABLE_VERSIONED(Hf2Prongs_001, "AOD", "HF2PRONG", 1, //! Table for HF 2 prong candidates (Run 3 format)
+                            o2::soa::Index<>,
+                            hf_track_index::CollisionId,
+                            hf_track_index::Prong0Id,
+                            hf_track_index::Prong1Id,
+                            hf_track_index::HFflag);
+
+using Hf2Prongs = Hf2Prongs_001;
 using Hf2Prong = Hf2Prongs::iterator;
 
-DECLARE_SOA_TABLE(HfCascades, "AOD", "HFCASCADE", //! Table for HF candidates with a V0
+DECLARE_SOA_TABLE(HfCascades_000, "AOD", "HFCASCADE", //! Table for HF candidates with a V0 (Run 2 converted format)
                   o2::soa::Index<>,
-                  hf_track_association::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::V0Id);
+
+DECLARE_SOA_TABLE_VERSIONED(HfCascades_001, "AOD", "HFCASCADE", 1, //! Table for HF candidates with a V0 (Run 3 format)
+                            o2::soa::Index<>,
+                            hf_track_index::CollisionId,
+                            hf_track_index::Prong0Id,
+                            hf_track_index::V0Id);
+
+using HfCascades = HfCascades_001;
 using HfCascade = HfCascades::iterator;
 
-DECLARE_SOA_TABLE(Hf3Prongs, "AOD", "HF3PRONG", //! Table for HF 3 prong candidates
+DECLARE_SOA_TABLE(Hf3Prongs_000, "AOD", "HF3PRONG", //! Table for HF 3 prong candidates (Run 2 converted format)
                   o2::soa::Index<>,
-                  hf_track_association::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id,
                   hf_track_index::Prong2Id,
                   hf_track_index::HFflag);
+
+DECLARE_SOA_TABLE_VERSIONED(Hf3Prongs_001, "AOD", "HF3PRONG", 1, //! Table for HF 3 prong candidates (Run 3 format)
+                            o2::soa::Index<>,
+                            hf_track_index::CollisionId,
+                            hf_track_index::Prong0Id,
+                            hf_track_index::Prong1Id,
+                            hf_track_index::Prong2Id,
+                            hf_track_index::HFflag);
+
+using Hf3Prongs = Hf3Prongs_001;
 using Hf3Prong = Hf3Prongs::iterator;
 
 DECLARE_SOA_TABLE(HfCascLf2Prongs, "AOD", "HFCASCLF2PRONG", //! Table for HF 2 prong candidates with a Cascade
@@ -529,6 +535,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtV0Neg, ptV0Neg, //!
                            [](float px, float py) { return RecoDecay::pt(px, py); });
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
+DECLARE_SOA_COLUMN(V0X, v0x, float);
+DECLARE_SOA_COLUMN(V0Y, v0y, float);
+DECLARE_SOA_COLUMN(V0Z, v0z, float);
 
 template <typename T>
 auto invMassLcToK0sP(const T& candidate)
@@ -555,7 +564,7 @@ DECLARE_SOA_TABLE(HfCandCascBase, "AOD", "HFCANDCASCBASE", //!
                   hf_track_index::Prong0Id,
                   hf_track_index::V0Id, // V0 index
                   // V0
-                  v0data::X, v0data::Y, v0data::Z,
+                  hf_cand_casc::V0X, hf_cand_casc::V0Y, hf_cand_casc::V0Z,
                   v0data::PosTrackId, v0data::NegTrackId, // indices of V0 tracks in FullTracks table
                   v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
                   v0data::DCAV0Daughters,
@@ -586,8 +595,8 @@ DECLARE_SOA_TABLE(HfCandCascBase, "AOD", "HFCANDCASCBASE", //!
                   // dynamic columns from V0
                   hf_cand_casc::PtV0Pos<v0data::PxPos, v0data::PyPos>, // pT of positive V0 daughter
                   hf_cand_casc::PtV0Neg<v0data::PxNeg, v0data::PyNeg>, // pT of negative V0 daughter
-                  v0data::V0Radius<v0data::X, v0data::Y>,
-                  v0data::V0CosPA<v0data::X, v0data::Y, v0data::Z, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, collision::PosX, collision::PosY, collision::PosZ>,
+                  v0data::V0Radius<hf_cand_casc::V0X, hf_cand_casc::V0Y>,
+                  v0data::V0CosPA<hf_cand_casc::V0X, hf_cand_casc::V0Y, hf_cand_casc::V0Z, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, collision::PosX, collision::PosY, collision::PosZ>,
                   v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                   v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                   v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
@@ -659,6 +668,7 @@ DECLARE_SOA_TABLE(HfCandBplusBase, "AOD", "HFCANDBPLUSBASE",
                   // general columns
                   HFCAND_COLUMNS,
                   // 2-prong specific columns
+                  o2::soa::Index<>,
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
@@ -833,8 +843,8 @@ auto cosPiKPhiRestFrame(const T& candidate, int option)
 
   ROOT::Math::PxPyPzMVector vecPi(momPi[0], momPi[1], momPi[2], RecoDecay::getMassPDG(kPiPlus));
   ROOT::Math::PxPyPzMVector vecK1(momK1[0], momK1[1], momK1[2], RecoDecay::getMassPDG(kKPlus));
-  auto momPhi = RecoDecay::pVec(momK1, momK2);
-  ROOT::Math::PxPyPzMVector vecPhi(momPhi[0], momPhi[1], momPhi[2], RecoDecay::getMassPDG(pdg::Code::kPhi));
+  ROOT::Math::PxPyPzMVector vecK2(momK2[0], momK2[1], momK2[2], RecoDecay::getMassPDG(kKPlus));
+  ROOT::Math::PxPyPzMVector vecPhi = vecK1 + vecK2;
 
   ROOT::Math::Boost boostToPhiRestFrame(vecPhi.BoostToCM());
   auto momPiPhiRestFrame = boostToPhiRestFrame(vecPi).Vect();
@@ -1252,6 +1262,25 @@ DECLARE_SOA_TABLE(DHadronRecoInfo, "AOD", "DHADRONRECOINFO",
                   aod::hf_correlation_d0_hadron::MDbar,
                   aod::hf_correlation_d0_hadron::SignalStatus);
 
+// definition of columns and tables for Ds-Hadron correlation pairs
+namespace hf_correlation_ds_hadron
+{
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);        //! DeltaPhi between Ds and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);        //! DeltaEta between Ds and Hadrons
+DECLARE_SOA_COLUMN(PtD, ptD, float);                  //! Transverse momentum of Ds
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);        //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MD, mD, float);                    //! Invariant mass of Ds
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, bool); //! Used in MC-Rec, Ds Signal
+} // namespace hf_correlation_ds_hadron
+DECLARE_SOA_TABLE(DsHadronPair, "AOD", "DSHPAIR", //! Ds-Hadrons pairs Informations
+                  aod::hf_correlation_ds_hadron::DeltaPhi,
+                  aod::hf_correlation_ds_hadron::DeltaEta,
+                  aod::hf_correlation_ds_hadron::PtD,
+                  aod::hf_correlation_ds_hadron::PtHadron);
+DECLARE_SOA_TABLE(DsHadronRecoInfo, "AOD", "DSHRECOINFO", //! Ds-Hadrons pairs Reconstructed Informations
+                  aod::hf_correlation_ds_hadron::MD,
+                  aod::hf_correlation_ds_hadron::SignalStatus);
+
 // definition of columns and tables for Dplus-Hadron correlation pairs
 namespace hf_correlation_dplus_hadron
 {
@@ -1365,6 +1394,9 @@ namespace hf_cand_toxipi
 {
 // Data processing results:
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_COLUMN(XPv, xPv, float);
+DECLARE_SOA_COLUMN(YPv, yPv, float);
+DECLARE_SOA_COLUMN(ZPv, zPv, float);
 DECLARE_SOA_COLUMN(XDecayVtxOmegac, xDecayVtxOmegac, float);
 DECLARE_SOA_COLUMN(YDecayVtxOmegac, yDecayVtxOmegac, float);
 DECLARE_SOA_COLUMN(ZDecayVtxOmegac, zDecayVtxOmegac, float);
@@ -1430,7 +1462,6 @@ DECLARE_SOA_INDEX_COLUMN_FULL(PrimaryPi, primaryPi, int, Tracks, "_primarypi");
 DECLARE_SOA_COLUMN(ImpactParOmegacXY, impactParOmegacXY, float);
 DECLARE_SOA_COLUMN(ImpactParOmegacZ, impactParOmegacZ, float);
 DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, double);
-DECLARE_SOA_COLUMN(InvMassAntiLambda, invMassAntiLambda, double);
 DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, double);
 DECLARE_SOA_COLUMN(InvMassOmegac, invMassOmegac, double);
 DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, double);
@@ -1450,13 +1481,15 @@ DECLARE_SOA_COLUMN(EtaPiFromOme, etaPiFromOme, double);
 DECLARE_SOA_COLUMN(EtaOmegac, etaOmegac, double);
 DECLARE_SOA_COLUMN(EtaCascade, etaCascade, double);
 DECLARE_SOA_COLUMN(EtaV0, etaV0, double);
-DECLARE_SOA_COLUMN(DcaXYToPVPrimaryPi, dcaXYToPVPrimaryPi, double);
-DECLARE_SOA_COLUMN(DcaXYToPVV0Dau0, dcaXYToPVV0dau0, double);
-DECLARE_SOA_COLUMN(DcaXYToPVV0Dau1, dcaXYToPVV0dau1, double);
-DECLARE_SOA_COLUMN(DcaXYToPVCascDau, dcaXYToPVCascdau, double);
-DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, double);
-DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, double);
-DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, double);
+DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0Dau0, float);
+DECLARE_SOA_COLUMN(DcaXYToPvV0Dau1, dcaXYToPvV0Dau1, float);
+DECLARE_SOA_COLUMN(DcaXYToPvCascDau, dcaXYToPvCascDau, float);
+DECLARE_SOA_COLUMN(DcaZToPvV0Dau0, dcaZToPvV0Dau0, float);
+DECLARE_SOA_COLUMN(DcaZToPvV0Dau1, dcaZToPvV0Dau1, float);
+DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascDau, float);
+DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
+DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
+DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, float);
 
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
@@ -1473,7 +1506,7 @@ enum DecayType { DecayToXiPi = 0,
 // declare dedicated Omegac and Xic to Xi Pi candidate table
 DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   o2::soa::Index<>,
-                  hf_cand_toxipi::CollisionId, collision::PosX, collision::PosY, collision::PosZ,
+                  hf_cand_toxipi::CollisionId, hf_cand_toxipi::XPv, hf_cand_toxipi::YPv, hf_cand_toxipi::ZPv,
                   hf_cand_toxipi::XDecayVtxOmegac, hf_cand_toxipi::YDecayVtxOmegac, hf_cand_toxipi::ZDecayVtxOmegac,
                   hf_cand_toxipi::XDecayVtxCascade, hf_cand_toxipi::YDecayVtxCascade, hf_cand_toxipi::ZDecayVtxCascade,
                   hf_cand_toxipi::XDecayVtxV0, hf_cand_toxipi::YDecayVtxV0, hf_cand_toxipi::ZDecayVtxV0,
@@ -1494,12 +1527,13 @@ DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   hf_cand_toxipi::ErrImpactParCascXY, hf_cand_toxipi::ErrImpactParPrimaryPiXY, hf_cand_toxipi::ErrImpactParV0XY,
                   hf_cand_toxipi::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_toxipi::CascadeId, hf_cand_toxipi::PrimaryPiId, cascdata::BachelorId,
                   hf_cand_toxipi::ImpactParOmegacXY, hf_cand_toxipi::ImpactParOmegacZ,
-                  hf_cand_toxipi::InvMassLambda, hf_cand_toxipi::InvMassAntiLambda, hf_cand_toxipi::InvMassCascade, hf_cand_toxipi::InvMassOmegac,
+                  hf_cand_toxipi::InvMassLambda, hf_cand_toxipi::InvMassCascade, hf_cand_toxipi::InvMassOmegac,
                   hf_cand_toxipi::CosPAV0, hf_cand_toxipi::CosPAOmegac, hf_cand_toxipi::CosPACasc, hf_cand_toxipi::CosPAXYV0, hf_cand_toxipi::CosPAXYOmegac, hf_cand_toxipi::CosPAXYCasc,
                   hf_cand_toxipi::CTauOmegac, hf_cand_toxipi::CTauCascade, hf_cand_toxipi::CTauV0, hf_cand_toxipi::CTauXic,
                   hf_cand_toxipi::EtaV0PosDau, hf_cand_toxipi::EtaV0NegDau, hf_cand_toxipi::EtaPiFromCasc, hf_cand_toxipi::EtaPiFromOme,
                   hf_cand_toxipi::EtaOmegac, hf_cand_toxipi::EtaCascade, hf_cand_toxipi::EtaV0,
-                  hf_cand_toxipi::DcaXYToPVPrimaryPi, hf_cand_toxipi::DcaXYToPVV0Dau0, hf_cand_toxipi::DcaXYToPVV0Dau1, hf_cand_toxipi::DcaXYToPVCascDau,
+                  hf_cand_toxipi::DcaXYToPvV0Dau0, hf_cand_toxipi::DcaXYToPvV0Dau1, hf_cand_toxipi::DcaXYToPvCascDau,
+                  hf_cand_toxipi::DcaZToPvV0Dau0, hf_cand_toxipi::DcaZToPvV0Dau1, hf_cand_toxipi::DcaZToPvCascDau,
                   hf_cand_toxipi::DcaCascDau, hf_cand_toxipi::DcaV0Dau, hf_cand_toxipi::DcaOmegacDau, hf_track_index::HFflag);
 
 // table with results of reconstruction level MC matching

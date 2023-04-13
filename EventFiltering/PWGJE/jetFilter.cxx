@@ -28,6 +28,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/Jet.h"
 
@@ -54,16 +55,10 @@ struct jetFilter {
 
   Produces<aod::JetFilters> tags;
 
-  // acceptance cuts
-  Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0,
-                                   "Accepted z-vertex range"};
-
-  Configurable<float> cfgTPCVolume{"cfgTPCVolume", 0.9,
-                                   "Full eta range"}; // eta range of TPC
   Configurable<float> cfgJetR{"cfgJetR", 0.6,
                               "jet resolution parameter"}; // jet cone radius
   Configurable<float> cfgJetPtMin{
-    "cfgJetPtMin", 0.05,
+    "cfgJetPtMin", 0.1,
     "minimum jet pT constituent cut"}; // minimum jet constituent pT
 
   HistogramRegistry spectra{
@@ -73,26 +68,11 @@ struct jetFilter {
     true,
     true};
 
-  std::vector<fastjet::PseudoJet> jetConstituents;
-  std::vector<fastjet::PseudoJet> jetReclustered;
-  JetFinder jetReclusterer;
-
   void init(o2::framework::InitContext&)
   {
 
     spectra.add("fCollZpos", "collision z position", HistType::kTH1F,
                 {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
-    spectra.add(
-      "ptphiGoodTracks", "ptphiGoodTracks", HistType::kTH2F,
-      {{100, 0., +100., "#it{p}_{T} (GeV)"}, {60, 0, TMath::TwoPi()}});
-    spectra.add(
-      "ptphiRejectedTracks", "ptphiRejectedTracks", HistType::kTH2F,
-      {{100, 0., +100., "#it{p}_{T} (GeV)"}, {60, 0, TMath::TwoPi()}});
-    spectra.add("ptetaGoodTracks", "ptetaGoodTracks", HistType::kTH2F,
-                {{100, 0., +100., "#it{p}_{T} (GeV)"}, {36, -0.9, 0.9}});
-    spectra.add("ptetaRejectedTracks", "ptetaRejectedTracks", HistType::kTH2F,
-                {{100, 0., +100., "#it{p}_{T} (GeV)"}, {36, -0.9, 0.9}});
-
     spectra.add("ptphiJetChSelected",
                 "pT of selected high pT charged jets vs phi", HistType::kTH2F,
                 {{150, 0., +150., "charged jet #it{p}_{T} (GeV/#it{c})"},
@@ -100,7 +80,7 @@ struct jetFilter {
     spectra.add("ptetaJetChSelected",
                 "pT of selected high pT charged jets vs eta", HistType::kTH2F,
                 {{150, 0., +150., "charged jet #it{p}_{T} (GeV/#it{c})"},
-                 {36, -0.9, 0.9}});
+                 {40, -1.0, 1.0}});
 
     auto scalers{std::get<std::shared_ptr<TH1>>(spectra.add(
       "fProcessedEvents", ";;Number of filtered events", HistType::kTH1F,
@@ -108,73 +88,33 @@ struct jetFilter {
     for (uint32_t iS{1}; iS <= highPtObjectsNames.size(); ++iS) {
       scalers->GetXaxis()->SetBinLabel(iS, highPtObjectsNames[iS - 1].data());
     }
-
-    jetReclusterer.isReclustering = true;
-    jetReclusterer.algorithm = fastjet::JetAlgorithm::antikt_algorithm;
-    jetReclusterer.jetR = cfgJetR;
-    jetReclusterer.jetEtaMin = -2 * cfgTPCVolume;
-    jetReclusterer.jetEtaMax = 2 * cfgTPCVolume;
   }
 
   // declare filters on tracks
   // Filter collisionFilter = nabs(aod::collision::posZ) < cfgVertexCut;
 
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra,
-                                    aod::TracksDCA, aod::TrackSelection>;
+  Filter jetRadiusSelection = o2::aod::jet::r == nround(cfgJetR.node() * 100.0f);
+  using filteredJets = o2::soa::Filtered<o2::aod::Jets>;
 
   void
-    process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-            TrackCandidates const& tracks)
+    process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, filteredJets const& jets)
   {
     // collision process loop
     bool keepEvent[kHighPtObjects]{false};
     //
     spectra.fill(HIST("fCollZpos"), collision.posZ());
 
-    jetConstituents.clear();
-    jetReclustered.clear();
-
-    for (auto& trk : tracks) {
-      if (!trk.isQualityTrack()) {
-        spectra.fill(HIST("ptphiRejectedTracks"), trk.pt(), trk.phi());
-        spectra.fill(HIST("ptetaRejectedTracks"), trk.pt(), trk.eta());
-        continue;
-      }
-      if (fabs(trk.eta()) < cfgTPCVolume) {
-        spectra.fill(HIST("ptphiGoodTracks"), trk.pt(), trk.phi());
-        spectra.fill(HIST("ptetaGoodTracks"), trk.pt(), trk.eta());
-
-        if (trk.pt() > cfgJetPtMin) { // jet constituents
-          fillConstituents(trk,
-                           jetConstituents); // ./PWGJE/Core/JetFinder.h
-                                             // recombination scheme is assumed
-                                             // to be Escheme with pion mass
-        }
-      }
-    }
-
-    // Reconstruct jet from tracks
-    fastjet::ClusterSequenceArea clusterSeq(
-      jetReclusterer.findJets(jetConstituents, jetReclustered));
-    jetReclustered = sorted_by_pt(jetReclustered);
-
     // Check whether there is a high pT charged jet
-    for (auto& jet : jetReclustered) { // start loop over charged jets
-      if (fabs(jet.eta()) < 2 * cfgTPCVolume) {
-        if (jet.perp() >= selectionJetChHighPt) {
-          spectra.fill(HIST("ptphiJetChSelected"), jet.perp(),
-                       jet.phi()); // charged jet pT vs phi
-          spectra.fill(HIST("ptetaJetChSelected"), jet.perp(),
-                       jet.eta()); // charged jet pT vs eta
-          keepEvent[kJetChHighPt] = true;
-          break;
-        }
+    for (const auto& jet : jets) {
+      if (jet.pt() >= selectionJetChHighPt) {
+        spectra.fill(HIST("ptphiJetChSelected"), jet.pt(),
+                     jet.phi()); // charged jet pT vs phi
+        spectra.fill(HIST("ptetaJetChSelected"), jet.pt(),
+                     jet.eta()); // charged jet pT vs eta
+        keepEvent[kJetChHighPt] = true;
+        break;
       }
     }
-
-    // count events which passed the selections
-    if (fabs(collision.posZ()) > cfgVertexCut)
-      keepEvent[kJetChHighPt] = false;
 
     for (int iDecision{0}; iDecision < kHighPtObjects; ++iDecision) {
       if (keepEvent[iDecision]) {
