@@ -479,6 +479,18 @@ class VarManager : public TObject
     fgFitterTwoProngFwd.setUseAbsDCA(useAbsDCA);
     fgUsedKF = false;
   }
+  // Use MatLayerCylSet to correct MCS in fwdtrack propagation
+  static void SetupMatLUTFwdDCAFitter(o2::base::MatLayerCylSet* m)
+  {
+    fgFitterTwoProngFwd.setTGeoMat(false);
+    fgFitterTwoProngFwd.setMatLUT(m);
+  }
+  // Use GeometryManager to correct MCS in fwdtrack propagation
+  static void SetupTGeoFwdDCAFitter()
+  {
+    fgFitterTwoProngFwd.setTGeoMat(true);
+  }
+
   static auto getEventPlane(int harm, float qnxa, float qnya)
   {
     // Compute event plane angle from qn vector components for the sub-event A
