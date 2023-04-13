@@ -549,7 +549,7 @@ struct LFNucleiBATask {
       histos.add<TH2>("tracks/h2TPCsignVsBetaGamma", "TPC <-dE/dX> vs #beta#gamma/Z; Signed #beta#gamma; TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{600, -6.f, 6.f}, {dedxAxis}});
       histos.add<TH2>("tracks/h2TOFbetaVsP", "TOF #beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta", HistType::kTH2F, {{500, -5.f, 5.f}, {betaAxis}});
       histos.add<TH2>("tracks/h2TOFbetaVsP_debug", "TOF #beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta", HistType::kTH2F, {{500, -5.f, 5.f}, {betaAxis}});
-      histos.add<TH2>("tracks/h2withTPCProtonCutTOFbetaVsP", "TOF #beta (with N#sigma_{TPC}(p))} cut) vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta (with N#sigma_{TPC}(p))} cut)", HistType::kTH2F, {{500, -5.f, 5.f}, {betaAxis}});
+      histos.add<TH2>("tracks/h2withTPCProtonCutTOFbetaVsP", "TOF #beta (with N#sigma_{TPC}(p)) cut) vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta (with N#sigma_{TPC}(p)) cut)", HistType::kTH2F, {{500, -5.f, 5.f}, {betaAxis}});
       if (enableBetaCut)
         histos.add<TH2>("tracks/h2TOFbetaVsP_BetaCut", "TOF #beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta", HistType::kTH2F, {{500, -5.f, 5.f}, {betaAxis}});
     }
