@@ -43,6 +43,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
+#include "TableHelper.h"
 
 #include "onTheFlyTracker.h"
 
@@ -76,19 +77,12 @@ struct OnTheFlyTracker {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // Track smearer
-  TrackSmearer mSmearer;
+  o2::delphes::TrackSmearer mSmearer;
 
   void init(o2::framework::InitContext& initContext)
   {
     // Checking if the tables are requested in the workflow and enabling them
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec const& device : workflows.devices) {
-      for (auto const& input : device.inputs) {
-        if (input.matcher.binding == "TracksDCA") {
-          fillTracksDCA = true;
-        }
-      }
-    }
+    fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
 
     if (enableLUT) {
       std::map<int, const char*> mapPdgLut;
