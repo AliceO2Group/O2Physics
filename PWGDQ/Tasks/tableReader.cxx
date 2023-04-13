@@ -959,10 +959,6 @@ struct AnalysisSameEventPairing {
         }
       }
 
-      if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventVtxCov)) {
-        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
-      }
-
       // TODO: provide the type of pair to the dilepton table (e.g. ee, mumu, emu...)
       dileptonFilterMap = twoTrackFilter;
 
