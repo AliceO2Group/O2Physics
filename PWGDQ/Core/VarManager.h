@@ -107,8 +107,9 @@ class VarManager : public TObject
 
   enum PairCandidateType {
     // TODO: need to agree on a scheme to incorporate all various hypotheses (e.g. e - mu, jpsi - K+, Jpsi - pipi,...)
-    kDecayToEE = 0,  // e.g. J/psi        -> e+ e-
-    kDecayToMuMu,    // e.g. J/psi        -> mu+ mu-
+    kDecayToEE = 0, // e.g. J/psi        -> e+ e-
+    kDecayToMuMu,   // e.g. J/psi        -> mu+ mu-
+    kDecayToPiPi,
     kElectronMuon,   // e.g. Electron - muon correlations
     kBcToThreeMuons, // e.g. Bc           -> mu+ mu- mu+
     kBtoJpsiEEK,     // e.g. B+           -> e+ e- K+
@@ -705,11 +706,11 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kCentVZERO] = event.centRun2V0M();
   }
 
-  if constexpr ((fillMap & CollisionCent) > 0) {
+  if constexpr ((fillMap & CollisionCent) > 0 || (fillMap & ReducedEventExtended) > 0) {
     values[kCentFT0C] = event.centFT0C();
   }
 
-  if constexpr ((fillMap & CollisionMult) > 0) {
+  if constexpr ((fillMap & CollisionMult) > 0 || (fillMap & ReducedEventExtended) > 0) {
     values[kMultTPC] = event.multTPC();
     values[kMultFV0A] = event.multFV0A();
     values[kMultFV0C] = event.multFV0C();
@@ -1186,6 +1187,11 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     m2 = MassMuon;
   }
 
+  if constexpr (pairType == kDecayToPiPi) {
+    m1 = MassPionCharged;
+    m2 = MassPionCharged;
+  }
+
   if constexpr (pairType == kElectronMuon) {
     m2 = MassMuon;
   }
@@ -1359,6 +1365,11 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     m2 = MassMuon;
   }
 
+  if constexpr (pairType == kDecayToPiPi) {
+    m1 = MassPionCharged;
+    m2 = MassPionCharged;
+  }
+
   if constexpr (pairType == kElectronMuon) {
     m2 = MassMuon;
   }
@@ -1385,6 +1396,11 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
   if (pairType == kDecayToMuMu) {
     m1 = MassMuon;
     m2 = MassMuon;
+  }
+
+  if (pairType == kDecayToPiPi) {
+    m1 = MassPionCharged;
+    m2 = MassPionCharged;
   }
 
   if (pairType == kElectronMuon) {
@@ -1821,6 +1837,11 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   if constexpr (pairType == kDecayToMuMu) {
     m1 = MassMuon;
     m2 = MassMuon;
+  }
+
+  if constexpr (pairType == kDecayToPiPi) {
+    m1 = MassPionCharged;
+    m2 = MassPionCharged;
   }
 
   if constexpr (pairType == kElectronMuon) {

@@ -256,8 +256,9 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("lowMultTrackCut")) {
+  if (!nameStr.compare("coherentRho0")) {
     cut->AddCut(GetAnalysisCut("lowMultTrackCut"));
+    cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
     return cut;
   }
 
@@ -1212,6 +1213,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairCoherentRho0")) {
+    cut->AddCut(GetAnalysisCut("pairPtLow1"));
+    return cut;
+  }
+
   // -------------------------------------------------------------------------------------------------
   //
   // Below are a list of single electron single muon and in order or optimize the trigger
@@ -1930,6 +1936,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pionPIDnsigma")) {
+    cut->AddCut(VarManager::kTPCnSigmaPi, -3.0, 3.0);
+    return cut;
+  }
+
   if (!nameStr.compare("tpc_pion_rejection")) {
     TF1* f1maxPi = new TF1("f1maxPi", "[0]+[1]*x", 0, 10);
     f1maxPi->SetParameters(85, -50);
@@ -2229,6 +2240,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairPtLow2")) {
     cut->AddCut(VarManager::kPt, 5.0, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairPtLow3")) {
+    cut->AddCut(VarManager::kPt, 0, 0.15);
     return cut;
   }
 
