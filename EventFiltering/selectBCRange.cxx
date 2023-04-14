@@ -92,8 +92,8 @@ struct BCRangeSelector {
       return;
     }
 
-    float fractionSelected = float(nSelected) / nColl;
-    int nMB = std::min(int(fillFac * nColl) - nSelected, nColl - 1);
+    float fractionSelected{static_cast<float>(nSelected) / nColl};
+    int nMB{std::min(static_cast<int>(fillFac * nColl) - nSelected, nColl - 1)};
     LOGF(info, "Selected %d collisions (%.2f%%) and %d MB events", nSelected, fractionSelected * 100, nMB);
     int maxCollisionId = std::max(nMB, firstSelectedCollision);
     int minCollisionId = (maxCollisionId == nMB) ? 0 : firstSelectedCollision - nMB;
