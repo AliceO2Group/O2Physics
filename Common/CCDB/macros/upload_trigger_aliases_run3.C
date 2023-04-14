@@ -25,6 +25,7 @@ void createDefaultAliases(map<int, TString>& mAliases)
 {
   mAliases[kTVXinTRD] = "minbias_TVX";
   mAliases[kTVXinEMC] = "minbias_TVX_L0";
+  mAliases[kTVXinPHOS] = "minbias_TVX_L0";
 }
 
 void upload_trigger_aliases_run3()
@@ -52,7 +53,7 @@ void upload_trigger_aliases_run3()
     runs.push_back(r);
   }
 
-  if (1) {
+  if (0) {
     ULong64_t sor = 1543767116001;
     ULong64_t eor = 1669611662530;
     TriggerAliases* aliases = new TriggerAliases();
@@ -101,6 +102,9 @@ void upload_trigger_aliases_run3()
             continue;
           }
           if (aliasId == kTVXinEMC && cl.cluster->name != "emc") { // workaround for configs with ambiguous class names
+            continue;
+          }
+          if (aliasId == kTVXinPHOS && cl.cluster->name != "phscpv") { // workaround for configs with ambiguous class names
             continue;
           }
           aliases->AddClassIdToAlias(aliasId, classId);
