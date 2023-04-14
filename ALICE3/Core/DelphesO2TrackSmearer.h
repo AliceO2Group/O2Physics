@@ -210,6 +210,8 @@ class TrackSmearer
 
 // #endif /** _DelphesO2_TrackSmearer_h_ **/
 
-using o2::delphes::DelphesO2TrackSmearer = o2::delphes::TrackSmearer;
-
+namespace o2::delphes
+{
+using DelphesO2TrackSmearer = TrackSmearer;
+}
 #endif // ALICE3_CORE_DELPHESO2TRACKSMEARER_H_
