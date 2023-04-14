@@ -69,4 +69,4 @@ class TriggerAliases
   ClassDefNV(TriggerAliases, 7)
 };
 
-#endif  // COMMON_CCDB_TRIGGERALIASES_H_
+#endif // COMMON_CCDB_TRIGGERALIASES_H_
