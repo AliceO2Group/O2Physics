@@ -17,12 +17,12 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "DetectorsVertexing/DCAFitterN.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
-#include "PWGHF/Core/HFSelectorCuts.h"
+#include "PWGHF/Core/SelectorCuts.h"
 
 #include <algorithm>
 
@@ -49,11 +49,11 @@ DECLARE_SOA_TABLE(HFSelTrack, "AOD", "HFSELTRACK", //!
                   hf_seltrack::PzProng);
 
 using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra, HFSelTrack>;
-using BigTracksExtended = soa::Join<BigTracks, aod::TracksExtended>;
+using BigTracksDCA = soa::Join<BigTracks, aod::TracksDCA>;
 using BigTracksPID = soa::Join<BigTracks,
                                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using BigTracksPIDExtended = soa::Join<BigTracksPID, aod::TracksExtended>;
+using BigTracksPIDExtended = soa::Join<BigTracksPID, aod::TracksDCA>;
 
 namespace hf_track_index
 {
@@ -79,7 +79,7 @@ static const double massK = RecoDecay::getMassPDG(kKPlus);
 static const auto arrMassPiK = std::array{massPi, massK};
 static const auto arrMassKPi = std::array{massK, massPi};
 
-using TracksAll = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended>;
+using TracksAll = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA>;
 
 /// Track selection
 struct HfTagSelTracks {
@@ -163,7 +163,7 @@ struct HfTrackIndexSkimsCreator {
 
   Filter filterSelectTracks = aod::hf_seltrack::isSelProng > 0;
 
-  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::HFSelTrack>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::HFSelTrack>>;
 
   void process(
     aod::Collision const& collision,
@@ -208,8 +208,8 @@ struct HfTrackIndexSkimsCreator {
         //   std::array{trackPos1.pxProng(), trackPos1.pyProng(), trackPos1.pzProng()},
         //   std::array{trackNeg1.pxProng(), trackNeg1.pyProng(), trackNeg1.pzProng()}};
 
-        // auto pT = RecoDecay::Pt(arrMom[0], arrMom[1]);
-        // auto massPiK = RecoDecay::M2(arrMom, arrMassPiK);
+        // auto pT = RecoDecay::pt(arrMom[0], arrMom[1]);
+        // auto massPiK = RecoDecay::m2(arrMom, arrMassPiK);
 
         // secondary vertex reconstruction and further 2-prong selections
         if (df2.process(trackParVarPos1, trackParVarNeg1) > 0) {
@@ -222,10 +222,10 @@ struct HfTrackIndexSkimsCreator {
           df2.getTrack(0).getPxPyPzGlo(pvec0);
           df2.getTrack(1).getPxPyPzGlo(pvec1);
 
-          // auto pVecCand = RecoDecay::PVec(pvec0, pvec1);
-          // auto pTCand = RecoDecay::Pt(pVecCand);
+          // auto pVecCand = RecoDecay::pVec(pvec0, pvec1);
+          // auto pTCand = RecoDecay::pt(pVecCand);
           //  2-prong selections after secondary vertex
-          // auto cpa = RecoDecay::CPA(primaryVertex, secondaryVertex, pVecCand);
+          // auto cpa = RecoDecay::cpa(primaryVertex, secondaryVertex, pVecCand);
           std::array<std::array<float, 3>, 2> arrMom = {pvec0, pvec1};
 
           // fill table row
@@ -236,7 +236,7 @@ struct HfTrackIndexSkimsCreator {
           registry.fill(HIST("hVtx2ProngX"), secondaryVertex[0]);
           registry.fill(HIST("hVtx2ProngY"), secondaryVertex[1]);
           registry.fill(HIST("hVtx2ProngZ"), secondaryVertex[2]);
-          auto mass2Prong = RecoDecay::M(arrMom, arrMassPiK);
+          auto mass2Prong = RecoDecay::m(arrMom, arrMassPiK);
           registry.fill(HIST("hmassD0ToPiK"), mass2Prong);
         }
       }
@@ -265,17 +265,17 @@ DECLARE_SOA_COLUMN(PxProng0, pxProng0, float); //!
 DECLARE_SOA_COLUMN(PyProng0, pyProng0, float); //!
 DECLARE_SOA_COLUMN(PzProng0, pzProng0, float); //!
 DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0, //!
-                           [](float px, float py) -> float { return RecoDecay::Pt(px, py); });
+                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_COLUMN(PxProng1, pxProng1, float); //!
 DECLARE_SOA_COLUMN(PyProng1, pyProng1, float); //!
 DECLARE_SOA_COLUMN(PzProng1, pzProng1, float); //!
 DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //!
-                           [](float px, float py) -> float { return RecoDecay::Pt(px, py); });
+                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 // candidate properties
 DECLARE_SOA_DYNAMIC_COLUMN(DecayLength, decayLength, //!
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS) -> float { return RecoDecay::distance(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
-                           [](float px, float py) -> float { return RecoDecay::Pt(px, py); });
+                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //!
                               float, 1.f * pxProng0 + 1.f * pxProng1);
 DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //!
@@ -283,9 +283,9 @@ DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //!
 DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //!
                               float, 1.f * pzProng0 + 1.f * pzProng1);
 DECLARE_SOA_DYNAMIC_COLUMN(M, m, //!
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) -> float { return RecoDecay::M(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) -> float { return RecoDecay::m(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(CPA, cpa, //!
-                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::CPA(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}, array{px, py, pz}); });
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::cpa(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}, array{px, py, pz}); });
 
 template <typename T>
 auto InvMassD0(const T& candidate)
@@ -294,7 +294,7 @@ auto InvMassD0(const T& candidate)
 }
 
 template <typename T>
-auto InvMassD0bar(const T& candidate)
+auto invMassD0bar(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
@@ -391,8 +391,8 @@ struct HfCandidateCreator2Prong {
       // fill histograms
       // calculate invariant masses
       auto arrayMomenta = std::array{pvec0, pvec1};
-      massPiK = RecoDecay::M(arrayMomenta, arrMassPiK);
-      massKPi = RecoDecay::M(arrayMomenta, arrMassKPi);
+      massPiK = RecoDecay::m(arrayMomenta, arrMassPiK);
+      massKPi = RecoDecay::m(arrayMomenta, arrMassKPi);
       hMass->Fill(massPiK);
       // hMass->Fill(massKPi);
     }
@@ -469,7 +469,7 @@ struct HfCandidateSelectorD0 {
         return false;
       }
     } else {
-      if (std::abs(InvMassD0bar(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > massWindow) {
+      if (std::abs(invMassD0bar(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > massWindow) {
         return false;
       }
     }
@@ -512,10 +512,10 @@ struct HfCandidateSelectorD0 {
       }
 
       // track-level PID selection
-      int pidTrackPosKaon = selectorKaon.getStatusTrackPIDAll(trackPos);
-      int pidTrackPosPion = selectorPion.getStatusTrackPIDAll(trackPos);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDAll(trackNeg);
-      int pidTrackNegPion = selectorPion.getStatusTrackPIDAll(trackNeg);
+      int pidTrackPosKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos);
+      int pidTrackPosPion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos);
+      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
+      int pidTrackNegPion = selectorPion.getStatusTrackPIDTpcOrTof(trackNeg);
 
       int pidD0 = -1;
       int pidD0bar = -1;
@@ -587,7 +587,7 @@ struct HfTaskD0 {
         registry.fill(HIST("hMass"), InvMassD0(candidate));
       }
       if (candidate.isSelD0bar() >= flagSelCandD0bar) {
-        registry.fill(HIST("hMass"), InvMassD0bar(candidate));
+        registry.fill(HIST("hMass"), invMassD0bar(candidate));
       }
       registry.fill(HIST("hPTCand"), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
