@@ -676,18 +676,12 @@ struct qaMatchEff {
       // all tracks, no conditions
       if (track.hasITS() && isTrackSelectedITSCuts(track)) {
         if constexpr (IS_MC) {
-          if (track.signed1Pt() > 0)
-            histos.get<TH1>(HIST("MC/qopthist_its"))->Fill(1. / trackPt);
-          if (track.signed1Pt() < 0)
-            histos.get<TH1>(HIST("MC/qopthist_its"))->Fill(-1. / trackPt);
+          histos.get<TH1>(HIST("MC/qopthist_its"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("MC/pthist_its"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_its"))->Fill(track.phi());
           histos.get<TH1>(HIST("MC/etahist_its"))->Fill(track.eta());
         } else {
-          if (track.signed1Pt() > 0)
-            histos.get<TH1>(HIST("data/qopthist_its"))->Fill(1. / trackPt);
-          if (track.signed1Pt() < 0)
-            histos.get<TH1>(HIST("data/qopthist_its"))->Fill(-1. / trackPt);
+          histos.get<TH1>(HIST("data/qopthist_its"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("data/pthist_its"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_its"))->Fill(track.phi());
           histos.get<TH1>(HIST("data/etahist_its"))->Fill(track.eta());
@@ -695,36 +689,24 @@ struct qaMatchEff {
       }
       if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
         if constexpr (IS_MC) {
-          if (track.signed1Pt() > 0)
-            histos.get<TH1>(HIST("MC/qopthist_tpc"))->Fill(1. / trackPt);
-          if (track.signed1Pt() < 0)
-            histos.get<TH1>(HIST("MC/qopthist_tpc"))->Fill(-1. / trackPt);
+          histos.get<TH1>(HIST("MC/qopthist_tpc"))->Fill(-track.signed1Pt());
           histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(track.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc"))->Fill(track.eta());
         } else {
-          if (track.signed1Pt() > 0)
-            histos.get<TH1>(HIST("data/qopthist_tpc"))->Fill(1. / trackPt);
-          if (track.signed1Pt() < 0)
-            histos.get<TH1>(HIST("data/qopthist_tpc"))->Fill(-1. / trackPt);
+          histos.get<TH1>(HIST("data/qopthist_tpc"))->Fill(-track.signed1Pt());
           histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpc"))->Fill(track.phi());
           histos.get<TH1>(HIST("data/etahist_tpc"))->Fill(track.eta());
         }
         if (track.hasITS() && isTrackSelectedITSCuts(track)) {
           if constexpr (IS_MC) {
-            if (track.signed1Pt() > 0)
-              histos.get<TH1>(HIST("MC/qopthist_tpcits"))->Fill(1. / trackPt);
-            if (track.signed1Pt() < 0)
-              histos.get<TH1>(HIST("MC/qopthist_tpcits"))->Fill(-1. / trackPt);
+            histos.get<TH1>(HIST("MC/qopthist_tpcits"))->Fill(-track.signed1Pt());
             histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(track.eta());
           } else {
-            if (track.signed1Pt() > 0)
-              histos.get<TH1>(HIST("data/qopthist_tpcits"))->Fill(1. / trackPt);
-            if (track.signed1Pt() < 0)
-              histos.get<TH1>(HIST("data/qopthist_tpcits"))->Fill(-1. / trackPt);
+            histos.get<TH1>(HIST("data/qopthist_tpcits"))->Fill(-track.signed1Pt());
             histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpcits"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_tpcits"))->Fill(track.eta());
@@ -876,27 +858,18 @@ struct qaMatchEff {
         // only primaries
         if (mcpart.isPhysicalPrimary()) {
           if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-            if (track.signed1Pt() > 0)
-              histos.get<TH1>(HIST("MC/qopthist_its_prim"))->Fill(1. / trackPt);
-            if (track.signed1Pt() < 0)
-              histos.get<TH1>(HIST("MC/qopthist_its_prim"))->Fill(-1. / trackPt);
+            histos.get<TH1>(HIST("MC/qopthist_its_prim"))->Fill(-track.signed1Pt());
             histos.get<TH1>(HIST("MC/pthist_its_prim"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_its_prim"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_its_prim"))->Fill(track.eta());
           } //  end if ITS
           if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
-            if (track.signed1Pt() > 0)
-              histos.get<TH1>(HIST("MC/qopthist_tpc_prim"))->Fill(1. / trackPt);
-            if (track.signed1Pt() < 0)
-              histos.get<TH1>(HIST("MC/qopthist_tpc_prim"))->Fill(-1. / trackPt);
+            histos.get<TH1>(HIST("MC/qopthist_tpc_prim"))->Fill(-track.signed1Pt());
             histos.get<TH1>(HIST("MC/pthist_tpc_prim"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpc_prim"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_tpc_prim"))->Fill(track.eta());
             if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-              if (track.signed1Pt() > 0)
-                histos.get<TH1>(HIST("MC/qopthist_tpcits_prim"))->Fill(1. / trackPt);
-              if (track.signed1Pt() < 0)
-                histos.get<TH1>(HIST("MC/qopthist_tpcits_prim"))->Fill(-1. / trackPt);
+              histos.get<TH1>(HIST("MC/qopthist_tpcits_prim"))->Fill(-track.signed1Pt());
               histos.get<TH1>(HIST("MC/pthist_tpcits_prim"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_prim"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_prim"))->Fill(track.eta());
@@ -907,27 +880,18 @@ struct qaMatchEff {
           //
           // only secondaries from decay
           if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-            if (track.signed1Pt() > 0)
-              histos.get<TH1>(HIST("MC/qopthist_its_secd"))->Fill(1. / trackPt);
-            if (track.signed1Pt() < 0)
-              histos.get<TH1>(HIST("MC/qopthist_its_secd"))->Fill(-1. / trackPt);
+            histos.get<TH1>(HIST("MC/qopthist_its_secd"))->Fill(-track.signed1Pt());
             histos.get<TH1>(HIST("MC/pthist_its_secd"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_its_secd"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_its_secd"))->Fill(track.eta());
           } //  end if ITS
           if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
-            if (track.signed1Pt() > 0)
-              histos.get<TH1>(HIST("MC/qopthist_tpc_secd"))->Fill(1. / trackPt);
-            if (track.signed1Pt() < 0)
-              histos.get<TH1>(HIST("MC/qopthist_tpc_secd"))->Fill(-1. / trackPt);
+            histos.get<TH1>(HIST("MC/qopthist_tpc_secd"))->Fill(-track.signed1Pt());
             histos.get<TH1>(HIST("MC/pthist_tpc_secd"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpc_secd"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_tpc_secd"))->Fill(track.eta());
             if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-              if (track.signed1Pt() > 0)
-                histos.get<TH1>(HIST("MC/qopthist_tpcits_secd"))->Fill(1. / trackPt);
-              if (track.signed1Pt() < 0)
-                histos.get<TH1>(HIST("MC/qopthist_tpcits_secd"))->Fill(-1. / trackPt);
+              histos.get<TH1>(HIST("MC/qopthist_tpcits_secd"))->Fill(-track.signed1Pt());
               histos.get<TH1>(HIST("MC/pthist_tpcits_secd"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_secd"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_secd"))->Fill(track.eta());
@@ -938,27 +902,18 @@ struct qaMatchEff {
           //
           // only secondaries from material
           if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-            if (track.signed1Pt() > 0)
-              histos.get<TH1>(HIST("MC/qopthist_its_secm"))->Fill(1. / trackPt);
-            if (track.signed1Pt() < 0)
-              histos.get<TH1>(HIST("MC/qopthist_its_secm"))->Fill(-1. / trackPt);
+            histos.get<TH1>(HIST("MC/qopthist_its_secm"))->Fill(-track.signed1Pt());
             histos.get<TH1>(HIST("MC/pthist_its_secm"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_its_secm"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_its_secm"))->Fill(track.eta());
           } //  end if ITS
           if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
-            if (track.signed1Pt() > 0)
-              histos.get<TH1>(HIST("MC/qopthist_tpc_secm"))->Fill(1. / trackPt);
-            if (track.signed1Pt() < 0)
-              histos.get<TH1>(HIST("MC/qopthist_tpc_secm"))->Fill(-1. / trackPt);
+            histos.get<TH1>(HIST("MC/qopthist_tpc_secm"))->Fill(-track.signed1Pt());
             histos.get<TH1>(HIST("MC/pthist_tpc_secm"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpc_secm"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_tpc_secm"))->Fill(track.eta());
             if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-              if (track.signed1Pt() > 0)
-                histos.get<TH1>(HIST("MC/qopthist_tpcits_secm"))->Fill(1. / trackPt);
-              if (track.signed1Pt() < 0)
-                histos.get<TH1>(HIST("MC/qopthist_tpcits_secm"))->Fill(-1. / trackPt);
+              histos.get<TH1>(HIST("MC/qopthist_tpcits_secm"))->Fill(-track.signed1Pt());
               histos.get<TH1>(HIST("MC/pthist_tpcits_secm"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_secm"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_secm"))->Fill(track.eta());
