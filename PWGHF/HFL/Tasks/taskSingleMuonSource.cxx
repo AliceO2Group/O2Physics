@@ -72,7 +72,7 @@ struct HfTaskMuonSourceMc {
       "Hadron",
       "Unidentified"};
 
-    AxisSpec axisDCA{500, 0., 5., "DCA (cm)"};
+    AxisSpec axisDCA{5000, 0., 5., "DCA (cm)"};
     AxisSpec axisChi2{500, 0., 100., "#chi^{2} of MCH-MFT matching"};
     AxisSpec axisPt{200, 0., 100., "#it{p}_{T,reco} (GeV/#it{c})"};
 

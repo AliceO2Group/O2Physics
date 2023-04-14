@@ -256,8 +256,9 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("lowMultTrackCut")) {
+  if (!nameStr.compare("coherentRho0")) {
     cut->AddCut(GetAnalysisCut("lowMultTrackCut"));
+    cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
     return cut;
   }
 
@@ -753,6 +754,24 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("lmee_eNSigmaRun3_strongPID_looseDCAxy_pt04")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine_pt04"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCAxy"));
+
+    AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_tight"));
+
+    AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_tight"));
+
+    AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    cut_pid_OR->AddCut(cut_tpc_nSigma);
+    cut_pid_OR->AddCut(cut_tof_nSigma);
+    cut->AddCut(cut_pid_OR);
+    return cut;
+  }
+
   if (!nameStr.compare("lmee_eNSigmaRun3_tight_pt04")) {
     cut->AddCut(GetAnalysisCut("lmeeStandardKine_pt04"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
@@ -1191,6 +1210,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("pairJpsiLowPt2")) {
     cut->AddCut(GetAnalysisCut("pairJpsi"));
     cut->AddCut(GetAnalysisCut("pairPtLow2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairCoherentRho0")) {
+    cut->AddCut(GetAnalysisCut("pairPtLow1"));
     return cut;
   }
 
@@ -1912,6 +1936,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pionPIDnsigma")) {
+    cut->AddCut(VarManager::kTPCnSigmaPi, -3.0, 3.0);
+    return cut;
+  }
+
   if (!nameStr.compare("tpc_pion_rejection")) {
     TF1* f1maxPi = new TF1("f1maxPi", "[0]+[1]*x", 0, 10);
     f1maxPi->SetParameters(85, -50);
@@ -2211,6 +2240,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairPtLow2")) {
     cut->AddCut(VarManager::kPt, 5.0, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairPtLow3")) {
+    cut->AddCut(VarManager::kPt, 0, 0.15);
     return cut;
   }
 

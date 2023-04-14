@@ -354,9 +354,15 @@ struct MultiplicityCounter {
         if constexpr (hasCentrality) {
           registry.fill(HIST("Tracks/Centrality/EtaZvtx"), otrack.eta(), z, c);
           registry.fill(HIST("Tracks/Centrality/PhiEta"), otrack.phi(), otrack.eta(), c);
+          registry.fill(HIST("Tracks/Centrality/Control/PtEta"), otrack.pt(), otrack.eta(), c);
+          registry.fill(HIST("Tracks/Centrality/Control/DCAXYPt"), otrack.pt(), track.bestDCAXY(), c);
+          registry.fill(HIST("Tracks/Centrality/Control/DCAZPt"), otrack.pt(), track.bestDCAZ(), c);
         } else {
           registry.fill(HIST("Tracks/EtaZvtx"), otrack.eta(), z);
           registry.fill(HIST("Tracks/PhiEta"), otrack.phi(), otrack.eta());
+          registry.fill(HIST("Tracks/Control/PtEta"), otrack.pt(), otrack.eta());
+          registry.fill(HIST("Tracks/Control/DCAXYPt"), otrack.pt(), track.bestDCAXY());
+          registry.fill(HIST("Tracks/Control/DCAZPt"), otrack.pt(), track.bestDCAZ());
         }
         if (!otrack.has_collision()) {
           if constexpr (hasCentrality) {

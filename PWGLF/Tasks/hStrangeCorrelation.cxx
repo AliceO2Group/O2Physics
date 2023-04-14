@@ -167,13 +167,6 @@ struct correlateStrangeness {
 
     // mixed-event correlation functions
     histos.addClone("sameEvent/", "mixedEvent/");
-    // histos.add("mixedEvent/HadronK0Short", "HadronK0Short", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
-    // histos.add("mixedEvent/HadronLambda", "HadronLambda", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
-    // histos.add("mixedEvent/HadronAntiLambda", "HadronAntiLambda", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
-    // histos.add("mixedEvent/HadronXiMinus", "HadronXiMinus", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
-    // histos.add("mixedEvent/HadronXiPlus", "HadronXiPlus", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
-    // histos.add("mixedEvent/HadronOmegaMinus", "HadronOmegaMinus", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
-    // histos.add("mixedEvent/HadronOmegaPlus", "HadronOmegaPlus", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
 
     // Some QA plots
     histos.add("h2dMassK0Short", "h2dMassK0Short", kTH2F, {axisPtFine, axisK0ShortMass});
