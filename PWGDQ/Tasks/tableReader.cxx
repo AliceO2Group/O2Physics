@@ -106,7 +106,6 @@ constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMu
 constexpr static int pairTypeEE = VarManager::kDecayToEE;
 constexpr static int pairTypeMuMu = VarManager::kDecayToMuMu;
 constexpr static int pairTypeEMu = VarManager::kElectronMuon;
-constexpr static int pairTypePiPi = VarManager::kDecayToPiPi;
 
 // Global function used to define needed histogram classes
 void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar); // defines histograms for all tasks
