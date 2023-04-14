@@ -1154,7 +1154,7 @@ auto dRX(const T& candidate, int numPi)
   double deltaEta = etaJpsi - etaPi;
   double deltaPhi = RecoDecay::constrainAngle(phiJpsi - phiPi, -o2::constants::math::PI);
 
-  return std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
+  return RecoDecay::sqrtSumOfSquares(deltaEta, deltaPhi);
 }
 
 /// Difference in pT between the two pions
