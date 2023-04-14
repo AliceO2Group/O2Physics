@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef TriggerAliases_H
-#define TriggerAliases_H
+#ifndef COMMON_CCDB_TRIGGERALIASES_H_
+#define COMMON_CCDB_TRIGGERALIASES_H_
 
 #include <cstdint>
 #include <map>
@@ -69,4 +69,4 @@ class TriggerAliases
   ClassDefNV(TriggerAliases, 7)
 };
 
-#endif
+#endif  // COMMON_CCDB_TRIGGERALIASES_H_
