@@ -39,10 +39,11 @@ void checkBCRange(const char* filename = "AO2D.root")
     }
 
     // Get the branches we need from the trees
-    ULong64_t bcstart, bcend, globalBCId, cefpSelected = 0;
+    ULong64_t bcstart, bcend, globalBCId, evSelBC, cefpSelected = 0;
     treeRanges->SetBranchAddress("fBCstart", &bcstart);
     treeRanges->SetBranchAddress("fBCend", &bcend);
     treeDecision->SetBranchAddress("fGlobalBCId", &globalBCId);
+    treeDecision->SetBranchAddress("fEvSelBC", &evSelBC);
     treeDecision->SetBranchAddress("fCefpSelected", &cefpSelected);
 
     std::vector<InteractionRecord> bcids;
@@ -55,6 +56,10 @@ void checkBCRange(const char* filename = "AO2D.root")
       InteractionRecord ir;
       ir.setFromLong(globalBCId);
       bcids.push_back(ir);
+      if (globalBCId != evSelBC) {
+        ir.setFromLong(evSelBC);
+        bcids.push_back(ir);
+      }
     }
     std::vector<bool> found(bcids.size(), false);
 
@@ -118,8 +123,9 @@ void checkBCRange(const char* filename, const char* rangeFileName)
       continue;
     }
     // Get the branches we need from the trees
-    ULong64_t globalBCId, cefpSelected = 0;
+    ULong64_t globalBCId, evSelBC, cefpSelected = 0;
     treeDecision->SetBranchAddress("fGlobalBCId", &globalBCId);
+    treeDecision->SetBranchAddress("fEvSelBC", &evSelBC);
     treeDecision->SetBranchAddress("fCefpSelected", &cefpSelected);
 
     // Loop over the entries in the decision tree and check if the BC range is valid
@@ -131,6 +137,10 @@ void checkBCRange(const char* filename, const char* rangeFileName)
       InteractionRecord ir;
       ir.setFromLong(globalBCId);
       bcids.push_back(ir);
+      if (globalBCId != evSelBC) {
+        ir.setFromLong(evSelBC);
+        bcids.push_back(ir);
+      }
     }
   }
 

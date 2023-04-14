@@ -11,8 +11,11 @@
 ///
 /// \brief This task pre-filters tracks, V0s and cascades to do h-strangeness
 ///        correlations with an analysis task.
-/// \author Kai Cui
-/// \since
+///
+/// \author Kai Cui (kaicui@mails.ccnu.edu.cn)
+/// \author Lucia Anna Tarasovicova (lucia.anna.husova@cern.ch)
+/// \author David Dobrigkeit Chinellato (david.dobrigkeit.chinellato@cern.ch)
+/// \author Zhongbao Yin (Zhong-Bao.Yin@cern.ch)
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"

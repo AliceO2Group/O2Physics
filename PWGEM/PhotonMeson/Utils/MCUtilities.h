@@ -66,5 +66,41 @@ int IsEleFromPC(T const& mctrack, TMCs const& mcTracks)
   return -1;
 }
 //_______________________________________________________________________
+template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
+int FindCommonMotherFrom2Prongs(TMCParticle1 const& p1, TMCParticle2 const& p2, const int expected_pdg1, const int expected_pdg2, const int expected_mother_pdg, TMCParticles const& mcparticles)
+{
+  if (p1.globalIndex() == p2.globalIndex())
+    return -1; // mc particle p1 and p2 is identical. reject.
+
+  if (p1.pdgCode() != expected_pdg1)
+    return -1;
+  if (p2.pdgCode() != expected_pdg2)
+    return -1;
+
+  if (!p1.has_mothers())
+    return -1;
+  if (!p2.has_mothers())
+    return -1;
+
+  // LOGF(info,"original motherid1 = %d , motherid2 = %d", p1.mothersIds()[0], p2.mothersIds()[0]);
+
+  int motherid1 = p1.mothersIds()[0];
+  auto mother1 = mcparticles.iteratorAt(motherid1);
+  int mother1_pdg = mother1.pdgCode();
+
+  int motherid2 = p2.mothersIds()[0];
+  auto mother2 = mcparticles.iteratorAt(motherid2);
+  int mother2_pdg = mother2.pdgCode();
+
+  // LOGF(info,"motherid1 = %d , motherid2 = %d", motherid1, motherid2);
+
+  if (motherid1 != motherid2)
+    return -1;
+  if (mother1_pdg != mother2_pdg)
+    return -1;
+  if (mother1_pdg != expected_mother_pdg)
+    return -1;
+  return motherid1;
+}
 //_______________________________________________________________________
 #endif // PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_
