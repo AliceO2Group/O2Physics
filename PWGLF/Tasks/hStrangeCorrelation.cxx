@@ -79,7 +79,6 @@ struct correlateStrangeness {
   {
     for (auto& triggerTrack : triggers) {
       auto trigg = triggerTrack.track_as<TracksComplete>();
-      histos.fill(HIST("triggerV0"), trigg.pt());
       for (auto& assocCandidate : assocs) {
         auto assoc = assocCandidate.v0Data();
 
@@ -110,8 +109,6 @@ struct correlateStrangeness {
   {
     for (auto& triggerTrack : triggers) {
       auto trigg = triggerTrack.track_as<TracksComplete>();
-      if (!mixing)
-        histos.fill(HIST("triggerCas"), trigg.pt());
       for (auto& assocCandidate : assocs) {
         auto assoc = assocCandidate.cascData();
 
@@ -169,7 +166,7 @@ struct correlateStrangeness {
     histos.add("sameEvent/HadronOmegaPlus", "HadronOmegaPlus", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
 
     // mixed-event correlation functions
-    histos.addClone("sameEvent/", "mixedEvent");
+    histos.addClone("sameEvent/", "mixedEvent/");
 
     // Some QA plots
     histos.add("h2dMassK0Short", "h2dMassK0Short", kTH2F, {axisPtFine, axisK0ShortMass});
@@ -179,9 +176,9 @@ struct correlateStrangeness {
     histos.add("h2dMassXiPlus", "h2dMassXiPlus", kTH2F, {axisPtFine, axisXiMass});
     histos.add("h2dMassOmegaMinus", "h2dMassOmegaMinus", kTH2F, {axisPtFine, axisOmegaMass});
     histos.add("h2dMassOmegaPlus", "h2dMassOmegaPlus", kTH2F, {axisPtFine, axisOmegaMass});
-    histos.add("hTrackEta", "hTrackEta", kTH1F, {axisEta});
-    histos.add("hV0Eta", "hV0Eta", kTH1F, {axisEta});
-    histos.add("hCascEta", "hCascEta", kTH1F, {axisEta});
+    histos.add("hTrackEtaVsPt", "hTrackEtaVsPt", kTH2F, {axisPt, axisEta});
+    histos.add("hV0EtaVsPt", "hV0EtaVsPt", kTH2F, {axisPt, axisEta});
+    histos.add("hCascEtaVsPt", "hCascEtaVsPt", kTH2F, {axisPt, axisEta});
   }
 
   void processSameEvent(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision,
@@ -200,7 +197,7 @@ struct correlateStrangeness {
     // Do basic QA
     for (auto const& v0 : associatedV0s) {
       auto v0Data = v0.v0Data();
-      histos.fill(HIST("hV0Eta"), v0Data.eta());
+      histos.fill(HIST("hV0EtaVsPt"), v0Data.pt(), v0Data.eta());
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
         if (v0.compatible(index))
@@ -209,7 +206,7 @@ struct correlateStrangeness {
     }
     for (auto const& casc : associatedCascades) {
       auto cascData = casc.cascData();
-      histos.fill(HIST("hCascEta"), cascData.eta());
+      histos.fill(HIST("hCascEtaVsPt"), cascData.pt(), cascData.eta());
       static_for<0, 3>([&](auto i) {
         constexpr int index = i.value;
         if (casc.compatible(index))
@@ -218,7 +215,7 @@ struct correlateStrangeness {
     }
     for (auto const& triggerTrack : triggerTracks) {
       auto track = triggerTrack.track_as<TracksComplete>();
-      histos.fill(HIST("hTrackEta"), track.eta());
+      histos.fill(HIST("hTrackEtaVsPt"), track.pt(), track.eta());
     }
 
     // ________________________________________________
