@@ -166,7 +166,8 @@ struct tpcPidFull {
           headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, ccdbTimestamp.value);
           if (retrieveSuccess) {
             network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
-            network.evalModel(std::vector<float>(network.getNumInputNodes(), 1.)); /// Init the model evaluations
+            std::vector<float> dummyInput(network.getNumInputNodes(), 1.);
+            network.evalModel(dummyInput); /// Init the model evaluations
           } else {
             LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
           }
@@ -177,7 +178,8 @@ struct tpcPidFull {
           }
           LOG(info) << "Using local file [" << networkPathLocally.value << "] for the TPC PID response correction.";
           network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value);
-          network.evalModel(std::vector<float>(network.getNumInputNodes(), 1.)); // This is an initialisation and might reduce the overhead of the model
+          std::vector<float> dummyInput(network.getNumInputNodes(), 1.);
+          network.evalModel(dummyInput); // This is an initialisation and might reduce the overhead of the model
         }
       } else {
         return;
@@ -220,7 +222,8 @@ struct tpcPidFull {
           headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, bc.timestamp());
           if (retrieveSuccess) {
             network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
-            network.evalModel(std::vector<float>(network.getNumInputNodes(), 1.));
+            std::vector<float> dummyInput(network.getNumInputNodes(), 1.);
+            network.evalModel(dummyInput);
           } else {
             LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
           }

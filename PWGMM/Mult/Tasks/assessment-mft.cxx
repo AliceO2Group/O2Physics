@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+// \file   assessment-mft.cxx
+// \author Sarah Herrmann <sarah.herrmann@cern.ch>
+//
+// \brief This code loops over MFT tracks and fills basic histograms
+//        close to the QC ones
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
@@ -24,9 +30,12 @@ struct AssessmentMFT {
     "registry",
     {
 
-      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {35, -4.5, -1.}}}}, //
-      {"TracksTime", "; time; #count", {HistType::kTH1D, {{6000000, 0, 60000}}}},                            //
-    }                                                                                                        //
+      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {100, -8, 8}}}},  //
+      {"TracksChi2Eta", "; #chi^{2}; #it{#eta}; tracks", {HistType::kTH2F, {{600, 0, 20}, {100, -8, 8}}}}, //
+      {"TracksChi2", "; #chi^{2}; tracks", {HistType::kTH1F, {{600, 0, 20}}}},                             //
+      {"TracksNclustersEta", "; nClusters; #eta; tracks", {HistType::kTH2F, {{7, 4, 10}, {100, -8, 8}}}},  //
+      {"TracksTime", "; time; #count", {HistType::kTH1D, {{6000000, 0, 60000}}}},                          //
+    }                                                                                                      //
   };
 
   void process(aod::Collisions::iterator const& collision, aod::MFTTracks const& tracks, aod::BCs const& bcs)
@@ -36,15 +45,17 @@ struct AssessmentMFT {
       o2::math_utils::bringTo02Pi(phi);
       registry.fill(HIST("TracksPhiEta"), phi, track.eta());
 
+      registry.fill(HIST("TracksChi2Eta"), track.chi2(), track.eta());
+      registry.fill(HIST("TracksChi2"), track.chi2());
+      registry.fill(HIST("TracksNclustersEta"), track.nClusters(), track.eta());
+
       auto collisionBCID = collision.bcId();
       auto collisionBC = (bcs.iteratorAt(collisionBCID)).globalBC();
-      //printf("collisionBC %d\n", collisionBC);
+
       double seconds = (collisionBC * o2::constants::lhc::LHCBunchSpacingNS + track.trackTime()) / 1e9;
-      //this is in s
-      //printf("seconds  %f\n", seconds);
+      // this is in s
       registry.fill(HIST("TracksTime"), seconds);
     }
-    //printf("minTrackTime = %f, maxTrackTime = %f\n", minTrackTime, maxTrackTime);
   }
 };
 

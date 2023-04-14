@@ -30,4 +30,9 @@ o2physics_target_root_dictionary(AnalysisCore
 o2physics_add_executable(merger
               COMPONENT_NAME aod
               SOURCES aodMerger.cxx
-              PUBLIC_LINK_LIBRARIES ROOT::Hist ROOT::Core ROOT::Net)
+              PUBLIC_LINK_LIBRARIES ROOT::Core ROOT::Net)
+
+o2physics_add_executable(thinner
+              COMPONENT_NAME aod
+              SOURCES aodThinner.cxx
+              PUBLIC_LINK_LIBRARIES ROOT::Core ROOT::Net)

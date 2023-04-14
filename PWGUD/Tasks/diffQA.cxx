@@ -25,6 +25,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct DiffQA {
+  SliceCache cache;
+  Preslice<aod::Zdcs> perBCzdc = aod::zdc::bcId;
+  Preslice<aod::Calos> perBCcalo = aod::calo::bcId;
 
   // constants
   static const int nBCpOrbit = 3564;
@@ -280,7 +283,7 @@ struct DiffQA {
     // no Zdc signal in bcSlice
     std::vector<float> lims(10, 0.);
     for (auto const& bc : bcSlice) {
-      if (!udhelpers::cleanZDC(bc, zdcs, lims)) {
+      if (!udhelpers::cleanZDC(bc, zdcs, lims, cache)) {
         isDGcandidate = false;
         break;
       }
@@ -289,7 +292,7 @@ struct DiffQA {
 
     // no Calo signal in bcSlice
     for (auto const& bc : bcSlice) {
-      if (!udhelpers::cleanCalo(bc, calos, lims)) {
+      if (!udhelpers::cleanCalo(bc, calos, lims, cache)) {
         isDGcandidate = false;
         break;
       }
@@ -448,6 +451,7 @@ struct DiffQA {
   PROCESS_SWITCH(DiffQA, processMain, "Process Main", true);
 
   // ...............................................................................................................
+  // Distribution of number of PV contributors for all collisions and those with empty FT0
   void processFewProng(CC const& collision, BCs const& bct0s,
                        aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
@@ -468,6 +472,7 @@ struct DiffQA {
   PROCESS_SWITCH(DiffQA, processFewProng, "Process FewProng", true);
 
   // ...............................................................................................................
+  // Fraction of collisions with empty FIT as function of NDtcoll
   void processCleanFIT1(CC const& collision, BCs const& bct0s,
                         aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
@@ -548,9 +553,12 @@ struct DiffQA {
   PROCESS_SWITCH(DiffQA, processCleanFIT2, "Process CleanFitTest2", true);
 
   // ...............................................................................................................
-  void processFV0(aod::FV0As const& fv0s, aod::BCs const&)
+  void processFV0(aod::FV0As const& fv0s, BCs const&)
   {
-    LOGF(debug, "<FV0Signals> %d", fv0s.size());
+    LOGF(info, "<FV0Signals> %d", fv0s.size());
+    if (fv0s.size() <= 0) {
+      return;
+    }
 
     int64_t lastBCwFV0 = fv0s.begin().bc_as<BCs>().globalBC();
     auto lastOrbit = lastBCwFV0 / nBCpOrbit;
@@ -774,7 +782,7 @@ struct DiffQA {
   PROCESS_SWITCH(DiffQA, processFT0, "Process FT0", true);
 
   // ...............................................................................................................
-  void processFDD(aod::FDDs const& fdds, aod::BCs const&)
+  void processFDD(aod::FDDs const& fdds, BCs const&)
   {
     LOGF(debug, "<FDDSignals> %d", fdds.size());
 
@@ -839,6 +847,32 @@ struct DiffQA {
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(21., (zdc.energySectorZPC())[3]);
   };
   PROCESS_SWITCH(DiffQA, processZDC, "Process ZDC", true);
+
+  // ...............................................................................................................
+  void processTest(CCs const& collisions, BCs const& bcs)
+  {
+    uint64_t bc1, bc2, bc3;
+    for (auto col : collisions) {
+      bc1 = -1;
+      bc2 = -2;
+      bc3 = -3;
+      if (col.has_foundBC()) {
+        auto bc = col.foundBC_as<BCs>();
+        bc1 = bc.globalBC();
+      }
+      if (col.has_bc()) {
+        auto bc = col.bc_as<BCs>();
+        bc2 = bc.globalBC();
+      }
+      auto bc = bcs.rawIteratorAt(col.globalIndex());
+      bc3 = bc.globalBC();
+
+      if (bc1 != bc2 || bc1 != bc3) {
+        LOGF(info, "BC missmatch: %d %d %d", bc1, bc2, bc3);
+      }
+    }
+  };
+  PROCESS_SWITCH(DiffQA, processTest, "Process test", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

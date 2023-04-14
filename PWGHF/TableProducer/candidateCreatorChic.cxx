@@ -48,6 +48,8 @@ struct HfCandidateCreatorChic {
   // vertexing
   Configurable<double> bz{"bz", 20., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
@@ -88,7 +90,8 @@ struct HfCandidateCreatorChic {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(true);
+    df2.setUseAbsDCA(useAbsDCA);
+    df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // loop over Jpsi candidates
     for (auto& jpsiCand : jpsiCands) {
@@ -138,7 +141,7 @@ struct HfCandidateCreatorChic {
           continue;
         }
 
-        array<float, 3> pvecGamma{(float)ecal.px(), (float)ecal.py(), (float)ecal.pz()};
+        array<float, 3> pvecGamma{static_cast<float>(ecal.px()), static_cast<float>(ecal.py()), static_cast<float>(ecal.pz())};
 
         // get track impact parameters
         // This modifies track momenta!
@@ -243,7 +246,7 @@ struct HfCandidateCreatorChicMc {
           hMassEMatched->Fill(sqrt(candidate.prong1().px() * candidate.prong1().px() + candidate.prong1().py() * candidate.prong1().py() + candidate.prong1().pz() * candidate.prong1().pz()));
           if (particleMother.has_daughters()) {
             std::vector<int> arrAllDaughtersIndex;
-            RecoDecay::getDaughters(particleMother, &arrAllDaughtersIndex, array{(int)(kGamma), (int)(pdg::Code::kJPsi)}, 1);
+            RecoDecay::getDaughters(particleMother, &arrAllDaughtersIndex, array{static_cast<int>(kGamma), static_cast<int>(pdg::Code::kJPsi)}, 1);
             if (arrAllDaughtersIndex.size() == 2) {
               flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
               hMassChicToJpsiToMuMuGammaMatched->Fill(invMassChicToJpsiGamma(candidate));
@@ -266,10 +269,10 @@ struct HfCandidateCreatorChicMc {
       channel = 0;
 
       // chi_c → J/ψ gamma
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kChiC1, array{(int)(pdg::Code::kJPsi), (int)(kGamma)}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kChiC1, array{static_cast<int>(pdg::Code::kJPsi), static_cast<int>(kGamma)}, true)) {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
-        RecoDecay::getDaughters(particle, &arrDaughter, array{(int)(pdg::Code::kJPsi)}, 1);
+        RecoDecay::getDaughters(particle, &arrDaughter, array{static_cast<int>(pdg::Code::kJPsi)}, 1);
         auto jpsiCandMC = particlesMC.rawIteratorAt(arrDaughter[0]);
         if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdg::Code::kJPsi, array{+kElectron, -kElectron}, true)) {
           flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToEEGamma;

@@ -54,7 +54,7 @@ struct tofPidBeta {
   }
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
-  tof::Beta<Trks::iterator> responseBeta;
+  o2::pid::tof::Beta<Trks::iterator> responseBeta;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
   void process(Trks const& tracks)

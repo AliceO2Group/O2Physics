@@ -213,6 +213,7 @@ DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
                   pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr);
 
 DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
+                  track::TPCInnerParam,
                   track::ITSClusterMap,
                   track::TPCNClsFindable,
                   track::TPCNClsFindableMinusFound,
@@ -322,6 +323,19 @@ DECLARE_SOA_TABLE(UDMcFwdTrackLabels, "AOD", "UDMCFWDTRLABEL",
                   udmcfwdtracklabel::McMask);
 
 using UDMcFwdTrackLabel = UDMcFwdTrackLabels::iterator;
+
+namespace udzdc
+{
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t); //! Global BC
+} // namespace udzdc
+
+DECLARE_SOA_TABLE(UDZdcs, "AOD", "UDZDC", //! ZDC information
+                  udzdc::GlobalBC, zdc::EnergyZEM1, zdc::EnergyZEM2,
+                  zdc::EnergyCommonZNA, zdc::EnergyCommonZNC, zdc::EnergyCommonZPA, zdc::EnergyCommonZPC,
+                  zdc::EnergySectorZNA, zdc::EnergySectorZNC, zdc::EnergySectorZPA, zdc::EnergySectorZPC,
+                  zdc::TimeZEM1, zdc::TimeZEM2, zdc::TimeZNA, zdc::TimeZNC, zdc::TimeZPA, zdc::TimeZPC);
+
+using UDZdc = UDZdcs::iterator;
 
 } // namespace o2::aod
 

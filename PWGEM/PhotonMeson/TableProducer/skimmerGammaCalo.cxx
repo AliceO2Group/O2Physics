@@ -114,6 +114,12 @@ struct skimmerGammaCalo {
     }
   }
   PROCESS_SWITCH(skimmerGammaCalo, processRec, "process only reconstructed info", true);
+
+  void processDummy(aod::Collision const& collision)
+  {
+    // do nothing
+  }
+  PROCESS_SWITCH(skimmerGammaCalo, processDummy, "Dummy function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -198,4 +198,10 @@ function(o2physics_add_library baseTargetName)
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   endif()
 
+  # Link subdirectories
+  install(
+    SCRIPT ${CMAKE_SOURCE_DIR}/cmake/O2PhysicsLinkAllSubDirs.cmake
+    CODE " o2physics_link_all_subdirs(${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}) "
+  )
+
 endfunction()

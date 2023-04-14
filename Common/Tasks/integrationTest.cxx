@@ -209,6 +209,8 @@ struct integrationTest {
   {
     Int_t lHasITS = 0, lHasTPC = 0, lHasTRD = 0, lHasTOF = 0;
     for (auto& track : tracks) {
+      if (!track.isPVContributor())
+        continue;
       if (track.hasITS())
         lHasITS++;
       if (track.hasTPC())

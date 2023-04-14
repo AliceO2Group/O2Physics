@@ -56,6 +56,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     }
     if (subGroupStr.Contains("vtxpp")) {
       hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
+      hm->AddHistogram(histClass, "VtxNContribReal", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontribReal);
     }
     if (subGroupStr.Contains("vtxPbPb")) {
       hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 20000.0, VarManager::kVtxNcontrib);
@@ -144,14 +145,28 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
   if (groupStr.Contains("track")) {
     hm->AddHistogram(histClass, "Pt", "p_{T} distribution", false, 2000, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Eta", "#eta distribution", false, 500, -5.0, 5.0, VarManager::kEta);
-    hm->AddHistogram(histClass, "Phi", "#varphi distribution", false, 500, -6.3, 6.3, VarManager::kPhi);
+    hm->AddHistogram(histClass, "Phi", "#varphi distribution", false, 500, -2. * TMath::Pi(), 2. * TMath::Pi(), VarManager::kPhi);
 
     if (subGroupStr.Contains("kine")) {
-      hm->AddHistogram(histClass, "Phi_Eta", "#phi vs #eta distribution", false, 200, -5.0, 5.0, VarManager::kEta, 200, -6.3, 6.3, VarManager::kPhi);
+      hm->AddHistogram(histClass, "Phi_Eta", "#phi vs #eta distribution", false, 200, -5.0, 5.0, VarManager::kEta, 200, -2. * TMath::Pi(), 2. * TMath::Pi(), VarManager::kPhi);
       hm->AddHistogram(histClass, "Eta_Pt", "", false, 20, -1.0, 1.0, VarManager::kEta, 100, 0.0, 20.0, VarManager::kPt);
+      hm->AddHistogram(histClass, "Eta_VtxZ", "", false, 100, -1.0, 1.0, VarManager::kEta, 300, -15.0, 15.0, VarManager::kVtxZ);
       hm->AddHistogram(histClass, "Px", "p_{x} distribution", false, 200, 0.0, 20.0, VarManager::kPx);
       hm->AddHistogram(histClass, "Py", "p_{y} distribution", false, 200, 0.0, 20.0, VarManager::kPy);
       hm->AddHistogram(histClass, "Pz", "p_{z} distribution", false, 200, 0.0, 20.0, VarManager::kPz);
+      hm->AddHistogram(histClass, "InvPt", "1/p_{T} distribution", false, 1500, 0.0, 15.0, VarManager::kInvPt);
+    }
+    if (subGroupStr.Contains("time")) {
+      hm->AddHistogram(histClass, "TrackTime", "", false, 800, -10000.0, 10000.0, VarManager::kTrackTime);
+      hm->AddHistogram(histClass, "TrackTimeRes", "", false, 400, 0.0, 1000.0, VarManager::kTrackTimeRes);
+      hm->AddHistogram(histClass, "TrackTimeResRelative", "", false, 100, 0.0, 100.0, VarManager::kTrackTimeResRelative);
+      hm->AddHistogram(histClass, "TOFExpMom", "", false, 100, 0.0, 10.0, VarManager::kTOFExpMom);
+    }
+    if (subGroupStr.Contains("map")) {
+      hm->AddHistogram(histClass, "HasITSandTPC", "", false, 2, -0.5, 1.5, VarManager::kHasITS, 2, -0.5, 1.5, VarManager::kHasTPC);
+      hm->AddHistogram(histClass, "HasITSandTOF", "", false, 2, -0.5, 1.5, VarManager::kHasITS, 2, -0.5, 1.5, VarManager::kHasTOF);
+      hm->AddHistogram(histClass, "HasITSandTRD", "", false, 2, -0.5, 1.5, VarManager::kHasITS, 2, -0.5, 1.5, VarManager::kHasTRD);
+      hm->AddHistogram(histClass, "HasTPCandTOF", "", false, 2, -0.5, 1.5, VarManager::kHasTPC, 2, -0.5, 1.5, VarManager::kHasTOF);
     }
     if (subGroupStr.Contains("its")) {
       hm->AddHistogram(histClass, "ITSncls", "Number of cluster in ITS", false, 8, -0.5, 7.5, VarManager::kITSncls);
@@ -250,8 +265,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       for (int i = 0; i <= kTPCnsigmaNbins; ++i)
         tpcNsigmaBinLims[i] = -7.0 + 0.2 * i;
 
-      const int kPinEleNbins = 10;
-      double pinEleBinLims[kPinEleNbins + 1] = {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0, 4.0, 6.0};
+      const int kPinEleNbins = 15;
+      double pinEleBinLims[kPinEleNbins + 1] = {0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10.0, 15.0};
 
       const int kEtaNbins = 9;
       double etaBinLimsI[kEtaNbins + 1] = {-0.9, -0.7, -0.5, -0.3, -0.1, 0.1, 0.3, 0.5, 0.7, 0.9};
@@ -269,15 +284,21 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
 
       if (subGroupStr.Contains("electron")) {
         int varsPIDnSigEle[kNvarsPID] = {VarManager::kTPCnSigmaEl, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
+        int varsPIDnSigEle_Corr[kNvarsPID] = {VarManager::kTPCnSigmaEl_Corr, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
         hm->AddHistogram(histClass, "nSigmaTPCelectron", "TPC n_{#sigma}(e) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigEle, nSigBinLimits);
+        hm->AddHistogram(histClass, "nSigmaTPCelectron_Corr", "TPC n_{#sigma}^{Corr}(e) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigEle_Corr, nSigBinLimits);
       }
       if (subGroupStr.Contains("pion")) {
         int varsPIDnSigPion[kNvarsPID] = {VarManager::kTPCnSigmaPi, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
+        int varsPIDnSigPion_Corr[kNvarsPID] = {VarManager::kTPCnSigmaPi_Corr, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
         hm->AddHistogram(histClass, "nSigmaTPCpion", "TPC n_{#sigma}(pion) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigPion, nSigBinLimits);
+        hm->AddHistogram(histClass, "nSigmaTPCpion_Corr", "TPC n_{#sigma}^{Corr}(pion) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigPion_Corr, nSigBinLimits);
       }
       if (subGroupStr.Contains("proton")) {
         int varsPIDnSigProton[kNvarsPID] = {VarManager::kTPCnSigmaPr, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
+        int varsPIDnSigProton_Corr[kNvarsPID] = {VarManager::kTPCnSigmaPr_Corr, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
         hm->AddHistogram(histClass, "nSigmaTPCproton", "TPC n_{#sigma}(proton) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigProton, nSigBinLimits);
+        hm->AddHistogram(histClass, "nSigmaTPCproton_Corr", "TPC n_{#sigma}^{Corr}(proton) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigProton_Corr, nSigBinLimits);
       }
     }
     if (subGroupStr.Contains("tofpid")) {
@@ -313,6 +334,14 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "TOFnSigPr_pIN", "TOF n-#sigma(p) vs pIN", false, 100, 0.0, 10.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTOFnSigmaPr);
       }
     }
+    if (subGroupStr.Contains("runbyrun")) {
+      hm->AddHistogram(histClass, "TPCncls_run", "Number of cluster in TPC vs RunNumber", false, (VarManager::GetNRuns() > 0 ? VarManager::GetNRuns() : 1), -0.5, -0.5 + VarManager::GetNRuns(), VarManager::kRunIndex,
+                       160, -0.5, 159.5, VarManager::kTPCncls, 10, 0., 1., VarManager::kNothing, VarManager::GetRunStr().Data());
+      hm->AddHistogram(histClass, "TPCdEdx_run", "TPCdEdx vs RunNumber", false, (VarManager::GetNRuns() > 0 ? VarManager::GetNRuns() : 1), -0.5, -0.5 + VarManager::GetNRuns(), VarManager::kRunIndex,
+                       300, 0., 300., VarManager::kTPCsignal, 10, 0., 1., VarManager::kNothing, VarManager::GetRunStr().Data());
+      hm->AddHistogram(histClass, "TPCchi2_run", "TPCchi2 vs RunNumber", false, (VarManager::GetNRuns() > 0 ? VarManager::GetNRuns() : 1), -0.5, -0.5 + VarManager::GetNRuns(), VarManager::kRunIndex,
+                       100, 0., 10., VarManager::kTPCchi2, 10, 0., 1., VarManager::kNothing, VarManager::GetRunStr().Data());
+    }
     if (subGroupStr.Contains("dca")) {
       hm->AddHistogram(histClass, "DCAxy", "DCA_{xy}", false, 400, -2.0, 2.0, VarManager::kTrackDCAxy);
       hm->AddHistogram(histClass, "DCAz", "DCA_{z}", false, 800, -4.0, 4.0, VarManager::kTrackDCAz);
@@ -325,8 +354,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("dca_fine")) { // Fine binning
         hm->AddHistogram(histClass, "DCAxy_fine", "DCA_{xy}", false, 1000, -0.5, 0.5, VarManager::kTrackDCAxy);
         hm->AddHistogram(histClass, "DCAz_fine", "DCA_{z}", false, 1000, -0.5, 0.5, VarManager::kTrackDCAz);
-        hm->AddHistogram(histClass, "Pt_DCAxy_fine", "p_{T} vs DCA_{xy}", false, 200, 0.0, 20.0, VarManager::kPt, 1000, -0.5, 0.5, VarManager::kTrackDCAxy);
-        hm->AddHistogram(histClass, "Pt_DCAz_fine", "p_{T} vs DCA_{z}", false, 200, 0.0, 20.0, VarManager::kPt, 1000, -0.5, 0.5, VarManager::kTrackDCAz);
+        hm->AddHistogram(histClass, "IsSPDfirst_Pt_DCAxy_fine", "IsSPDfirst vs p_{T} vs DCA_{xy}", false, 200, 0.0, 20.0, VarManager::kPt, 1000, -0.5, 0.5, VarManager::kTrackDCAxy, 2, -0.5, 1.5, VarManager::kIsSPDfirst);
+        hm->AddHistogram(histClass, "IsSPDfirst_Pt_DCAz_fine", "IsSPDfirst vs p_{T} vs DCA_{z}", false, 200, 0.0, 20.0, VarManager::kPt, 1000, -0.5, 0.5, VarManager::kTrackDCAz, 2, -0.5, 1.5, VarManager::kIsSPDfirst);
       }
     }
     if (subGroupStr.Contains("muon")) {
@@ -343,11 +372,13 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "MuonCTglTgl", "", false, 100, -1.0, 1.0, VarManager::kMuonCTglTgl);
       hm->AddHistogram(histClass, "MuonC1Pt21Pt2", "", false, 100, -1.0, 1.0, VarManager::kMuonC1Pt21Pt2);
       hm->AddHistogram(histClass, "MCHBitMap_vs_pt", "MCH vs pt", false, 1025, 0.0, 1025.0, VarManager::kMCHBitMap, 400, 0, 100, VarManager::kPt);
+      hm->AddHistogram(histClass, "MuonTime", "", false, 100, -1.0, 1.0, VarManager::kMuonTime);
+      hm->AddHistogram(histClass, "MuonTimeRes", "", false, 100, -1.0, 1.0, VarManager::kMuonTimeRes);
     }
     if (subGroupStr.Contains("mc")) {
       hm->AddHistogram(histClass, "Pt_vs_PtMC", "pT vs MC pT", false, 50, 0.0, 10.0, VarManager::kPt, 50, 0.0, 10.0, VarManager::kMCPt);
       hm->AddHistogram(histClass, "Eta_vs_EtaMC", "#eta vs MC #eta", false, 50, -1.0, 1.0, VarManager::kEta, 50, -1.0, 1.0, VarManager::kMCEta);
-      hm->AddHistogram(histClass, "Phi_vs_PhiMC", "#varphi vs MC #varphi", false, 50, 0.0, 6.3, VarManager::kPhi, 50, 0.0, 6.3, VarManager::kMCPhi);
+      hm->AddHistogram(histClass, "Phi_vs_PhiMC", "#varphi vs MC #varphi", false, 50, 0.0, 2. * TMath::Pi(), VarManager::kPhi, 50, 0.0, 2. * TMath::Pi(), VarManager::kMCPhi);
       hm->AddHistogram(histClass, "TrackPDGcode", "PDG code of track", false, 10001, -5000, 5000, VarManager::kMCPdgCode);
       hm->AddHistogram(histClass, "MotherPDGcode", "PDG code of mother", false, 10001, -5000, 5000, VarManager::kMCMotherPdgCode);
     }
@@ -356,7 +387,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Mass_Pt", "", false, 500, 0.0, 5.0, VarManager::kMass, 200, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 5.0, VarManager::kMass);
     hm->AddHistogram(histClass, "Eta_Pt", "", false, 40, -2.0, 2.0, VarManager::kEta, 200, 0.0, 20.0, VarManager::kPt);
-    hm->AddHistogram(histClass, "Phi_Eta", "#phi vs #eta distribution", false, 200, -5.0, 5.0, VarManager::kEta, 200, -6.3, 6.3, VarManager::kPhi);
+    hm->AddHistogram(histClass, "Phi_Eta", "#phi vs #eta distribution", false, 200, -5.0, 5.0, VarManager::kEta, 200, -2. * TMath::Pi(), 2. * TMath::Pi(), VarManager::kPhi);
   }
   if (groupStr.Contains("mctruth")) {
     hm->AddHistogram(histClass, "PtMC", "MC pT", false, 200, 0.0, 20.0, VarManager::kMCPt);
@@ -374,19 +405,36 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Mass_VtxZ", "", true, 30, -15.0, 15.0, VarManager::kVtxZ, 500, 0.0, 5.0, VarManager::kMass);
       hm->AddHistogram(histClass, "cosThetaHE", "", false, 100, -1., 1., VarManager::kCosThetaHE);
       if (subGroupStr.Contains("dalitz")) {
-        hm->AddHistogram(histClass, "MassLow", "", false, 500, 0.0, 0.5, VarManager::kMass);
+        hm->AddHistogram(histClass, "MassLow", "", false, 500, 0.0, 0.05, VarManager::kMass);
         hm->AddHistogram(histClass, "PsiPair", "", false, 200, -1.5, 1.5, VarManager::kPsiPair);
         hm->AddHistogram(histClass, "PsiPair_DeltaPhi", "", false, 100, -0.5, 0.5, VarManager::kDeltaPhiPair, 100, -1.5, 1.5, VarManager::kPsiPair);
       }
       if (subGroupStr.Contains("vertexing")) {
+        hm->AddHistogram(histClass, "UsedKF", "", false, 2, -0.5, 1.5, VarManager::kUsedKF);
         hm->AddHistogram(histClass, "Lxy", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxy);
         hm->AddHistogram(histClass, "Lxyz", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyz);
-        hm->AddHistogram(histClass, "Tauxy", "", false, 100, 0, 0.01, VarManager::kVertexingTauxy);
+        hm->AddHistogram(histClass, "Tauxy", "", false, 200, -0.01, 0.01, VarManager::kVertexingTauxy);
         hm->AddHistogram(histClass, "LxyErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyErr);
         hm->AddHistogram(histClass, "LxyzErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyzErr);
         hm->AddHistogram(histClass, "TauxyErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingTauxyErr);
         hm->AddHistogram(histClass, "VtxingProcCode", "", false, 10, 0.0, 10.0, VarManager::kVertexingProcCode);
         hm->AddHistogram(histClass, "VtxingChi2PCA", "", false, 100, 0.0, 10.0, VarManager::kVertexingChi2PCA);
+        hm->AddHistogram(histClass, "KFMass", "", false, 500, 0.0, 5.0, VarManager::kKFMass);
+        hm->AddHistogram(histClass, "LxyOverDLxy", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyOverErr);
+        hm->AddHistogram(histClass, "LzOverDLz", "", false, 100, 0.0, 10.0, VarManager::kVertexingLzOverErr);
+        hm->AddHistogram(histClass, "LxyzOverDLxyz", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyzOverErr);
+        hm->AddHistogram(histClass, "KFTrack0DCAxyz", "", false, 400, -2.0, 2.0, VarManager::kKFTrack0DCAxyz);
+        hm->AddHistogram(histClass, "KFTrack1DCAxyz", "", false, 400, -2.0, 2.0, VarManager::kKFTrack1DCAxyz);
+        hm->AddHistogram(histClass, "KFTracksDCAxyzMax", "", false, 400, -2.0, 2.0, VarManager::kKFTracksDCAxyzMax);
+        hm->AddHistogram(histClass, "KFDCAxyzBetweenProngs", "", false, 400, -2.0, 2.0, VarManager::kKFDCAxyzBetweenProngs);
+        hm->AddHistogram(histClass, "KFTrack0DCAxy", "", false, 400, -2.0, 2.0, VarManager::kKFTrack0DCAxy);
+        hm->AddHistogram(histClass, "KFTrack1DCAxy", "", false, 400, -2.0, 2.0, VarManager::kKFTrack1DCAxy);
+        hm->AddHistogram(histClass, "KFTracksDCAxyMax", "", false, 400, -2.0, 2.0, VarManager::kKFTracksDCAxyMax);
+        hm->AddHistogram(histClass, "KFDCAxyBetweenProngs", "", false, 400, -2.0, 2.0, VarManager::kKFDCAxyBetweenProngs);
+        hm->AddHistogram(histClass, "KFChi2OverNDFGeo", "", false, 150, -5, 10, VarManager::kKFChi2OverNDFGeo);
+        hm->AddHistogram(histClass, "Mass_DCAxyzTwoProngs", "", false, 500, 0.0, 5.0, VarManager::kMass, 400, -2.0, 2.0, VarManager::kKFDCAxyzBetweenProngs);
+        hm->AddHistogram(histClass, "Mass_DCAxyTwoProngs", "", false, 500, 0.0, 5.0, VarManager::kMass, 400, -2.0, 2.0, VarManager::kKFDCAxyBetweenProngs);
+        hm->AddHistogram(histClass, "Mass_KFChi2OverNDFGeo", "", false, 500, 0.0, 5.0, VarManager::kMass, 150, -5, 10, VarManager::kKFChi2OverNDFGeo);
       }
       if (subGroupStr.Contains("flow")) {
         hm->AddHistogram(histClass, "Mass_u2q2", "u_{2}Q_{2}^{A} vs m", true, 125, 0.0, 5.0, VarManager::kMass, 100, -1.0, 1.0, VarManager::kU2Q2);
@@ -398,6 +446,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("lmee")) {
         hm->AddHistogram(histClass, "Mass_Pt_PhiV", "", false, 20, 0.0, 0.2, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt, 100, 0.0, TMath::Pi(), VarManager::kPairPhiv);
         hm->AddHistogram(histClass, "Mass_QuadDCAsigXY", "", false, 50, 0.0, 5.0, VarManager::kMass, 50, 0.0, 20.0, VarManager::kQuadDCAsigXY);
+        hm->AddHistogram(histClass, "Mass_QuadDCAsigZ", "", false, 50, 0.0, 5.0, VarManager::kMass, 50, 0.0, 20.0, VarManager::kQuadDCAsigZ);
         hm->AddHistogram(histClass, "Mass_QuadDCAsigXYZ", "", false, 50, 0.0, 5.0, VarManager::kMass, 50, 0.0, 20.0, VarManager::kQuadDCAsigXYZ);
         hm->AddHistogram(histClass, "Mass_Pt_QuadDCAsigXYZ", "", false, 500, 0.0, 5.0, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt, 50, 0.0, 20.0, VarManager::kQuadDCAsigXYZ);
       }

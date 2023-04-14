@@ -5,6 +5,8 @@ name: MegaLinter
 
 'on': [pull_request_target]
 
+permissions: {}
+
 env:
   # Apply linter fixes configuration
   APPLY_FIXES: all
