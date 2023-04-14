@@ -34,8 +34,9 @@ struct BCRangeSelector {
   // buffer for task output
   Produces<aod::BCRanges> tags;
 
-  template<typename T>
-  IRFrame getIRFrame(T& collision) {
+  template <typename T>
+  IRFrame getIRFrame(T& collision)
+  {
     auto collBC = collision.bc().globalBC();
     auto evSelBC = collision.has_foundBC() ? collision.foundBC().globalBC() : collBC;
     int deltaBC = std::ceil(collision.collisionTimeRes() * nTimeRes / constants::lhc::LHCBunchSpacingNS);
