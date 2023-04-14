@@ -13,7 +13,6 @@
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks - pions
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
-/// \author Alicja Płachta, WUT Warsaw
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
