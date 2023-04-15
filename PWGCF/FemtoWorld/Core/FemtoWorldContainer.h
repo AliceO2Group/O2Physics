@@ -22,8 +22,6 @@
 #include <string>
 #include "Framework/HistogramRegistry.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldMath.h"
-#include <vector>
-#include <string>
 
 #include "Math/Vector4D.h"
 #include "TMath.h"
