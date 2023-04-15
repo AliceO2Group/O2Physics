@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <CCDB/BasicCCDBManager.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/HistogramRegistry.h"
 
