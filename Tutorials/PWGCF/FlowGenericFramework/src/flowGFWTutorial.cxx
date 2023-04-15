@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <cmath>
 #include <CCDB/BasicCCDBManager.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -24,7 +25,6 @@
 #include "GFWPowerArray.h"
 #include "GFW.h"
 #include "GFWCumulant.h"
-#include <cmath>
 #include "TList.h"
 #include <TProfile.h>
 #include <TRandom3.h>
