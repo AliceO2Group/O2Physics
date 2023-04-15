@@ -24,10 +24,10 @@
 #include "GFWPowerArray.h"
 #include "GFW.h"
 #include "GFWCumulant.h"
+#include <cmath>
 #include "TList.h"
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
