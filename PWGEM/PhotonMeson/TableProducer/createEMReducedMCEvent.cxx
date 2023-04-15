@@ -86,7 +86,7 @@ struct createEMReducedMCEvent {
 
       auto mcCollision = collision.mcCollision();
       // auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-      bool is_phoscpv_readout = true;
+      bool is_phoscpv_readout = collision.alias()[kTVXinPHOS];
       bool is_emc_readout = collision.alias()[kTVXinEMC];
 
       if constexpr (static_cast<bool>(system & kPCM)) {

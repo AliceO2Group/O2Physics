@@ -127,6 +127,14 @@ struct Pi0EtaToGammaGammaMC {
   {
     constexpr int itmp = pairtype;
     for (auto& collision : collisions) {
+
+      if ((pairtype == kPHOSPHOS || pairtype == kPCMPHOS) && !collision.isPHOSCPVreadout()) {
+        continue;
+      }
+      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && !collision.isEMCreadout()) {
+        continue;
+      }
+
       registry.fill(HIST(pairnames[itmp]) + HIST("/hCollisionCounter"), 1.0); // all
       if (!collision.sel8()) {
         continue;
