@@ -1,3 +1,14 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
 /*
 Author: Vytautas Vislavicius
 Extention of Generic Flow (https://arxiv.org/abs/1312.3572 by A. Bilandzic et al.)
@@ -10,6 +21,7 @@ If used, modified, or distributed, please aknowledge the author of this code.
 #include "GFWCumulant.h"
 #include "GFWPowerArray.h"
 #include <vector>
+#include <string>
 #include <utility>
 #include <algorithm>
 #include <complex>
@@ -31,7 +43,7 @@ class GFW
     {
       return EtaMin < a.EtaMin;
     };
-    void PrintStructure() { printf("%s: eta [%f.. %f].", rName.c_str(), EtaMin, EtaMax); };
+    void PrintStructure() { printf("%s: eta [%f.. %f].", rName.c_str(), EtaMin, EtaMax); }
   };
   struct CorrConfig {
     vector<vector<int>> Regs{};
@@ -52,7 +64,7 @@ class GFW
   int CreateRegions();
   void Fill(double eta, int ptin, double phi, double weight, int mask, double secondWeight = -1);
   void Clear();
-  GFWCumulant GetCumulant(int index) { return fCumulants.at(index); };
+  GFWCumulant GetCumulant(int index) { return fCumulants.at(index); }
   CorrConfig GetCorrelatorConfig(string config, string head = "", bool ptdif = false);
   complex<double> Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero);
   void InitializePowerArrays();
@@ -63,8 +75,8 @@ class GFW
   complex<double> TwoRec(int n1, int n2, int p1, int p2, int ptbin, GFWCumulant*, GFWCumulant*, GFWCumulant*);
   complex<double> RecursiveCorr(GFWCumulant* qpoi, GFWCumulant* qref, GFWCumulant* qol, int ptbin, vector<int>& hars, vector<int>& pows); // POI, Ref. flow, overlapping region
   complex<double> RecursiveCorr(GFWCumulant* qpoi, GFWCumulant* qref, GFWCumulant* qol, int ptbin, vector<int>& hars);                    // POI, Ref. flow, overlapping region
-  void AddRegion(Region inreg) { fRegions.push_back(inreg); };
-  Region GetRegion(int index) { return fRegions.at(index); };
+  void AddRegion(Region inreg) { fRegions.push_back(inreg); }
+  Region GetRegion(int index) { return fRegions.at(index); }
   int FindRegionByName(string refName);
   vector<pair<int, vector<int>>> GetHarmonicsSingleConfig(const CorrConfig&);
   // Calculating functions:

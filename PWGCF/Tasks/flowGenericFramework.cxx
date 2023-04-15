@@ -57,7 +57,7 @@ struct GenericFramework {
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
   struct Config {
@@ -152,7 +152,7 @@ struct GenericFramework {
       val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
       if (TMath::Abs(val) < 1)
         fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
-    };
+    }
     return;
   }
 
@@ -201,9 +201,9 @@ struct GenericFramework {
 
       fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 3);
     }
-    for (unsigned long int l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
+    for (unsigned int64_t l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       FillFC(corrconfigs.at(l_ind), centrality, l_Random);
-    };
+    }
   }
 };
 

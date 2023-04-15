@@ -1,3 +1,14 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
 /*
 Author: Vytautas Vislavicius
 Extention of Generic Flow (https://arxiv.org/abs/1312.3572 by A. Bilandzic et al.)
@@ -13,9 +24,9 @@ GFWCumulant::GFWCumulant() : fQvector(0),
                              fPow(1),
                              fPt(1),
                              fFilledPts(0),
-                             fInitialized(false){};
+                             fInitialized(false){}
 
-GFWCumulant::~GFWCumulant(){};
+GFWCumulant::~GFWCumulant(){}
 void GFWCumulant::FillArray(int ptin, double phi, double weight, double SecondWeight)
 {
   if (!fInitialized)
@@ -40,8 +51,8 @@ void GFWCumulant::FillArray(int ptin, double phi, double weight, double SecondWe
       double qsin = lPrefactor * lSin;
       double qcos = lPrefactor * lCos;
       fQvector[ptin][lN][lPow] += complex<double>(qcos, qsin);
-    };
-  };
+    }
+  }
   Inc();
 };
 void GFWCumulant::ResetQs()
@@ -53,9 +64,9 @@ void GFWCumulant::ResetQs()
     for (int lN = 0; lN < fN; lN++) {
       for (int lPow = 0; lPow < PW(lN); lPow++) {
         fQvector[i][lN][lPow] = fNullQ;
-      };
-    };
-  };
+      }
+    }
+  }
   fNEntries = 0;
 };
 void GFWCumulant::DestroyComplexVectorArray()
@@ -65,11 +76,11 @@ void GFWCumulant::DestroyComplexVectorArray()
   for (int l_n = 0; l_n < fN; l_n++) {
     for (int i = 0; i < fPt; i++) {
       delete[] fQvector[i][l_n];
-    };
-  };
+    }
+  }
   for (int i = 0; i < fPt; i++) {
     delete[] fQvector[i];
-  };
+  }
   delete[] fQvector;
   delete[] fFilledPts;
   fInitialized = false;
@@ -95,12 +106,12 @@ void GFWCumulant::CreateComplexVectorArrayVarPower(int N, vector<int> PowVec, in
   fQvector = new complex<double>**[fPt];
   for (int i = 0; i < fPt; i++) {
     fQvector[i] = new complex<double>*[fN];
-  };
+  }
   for (int l_n = 0; l_n < fN; l_n++) {
     for (int i = 0; i < fPt; i++) {
       fQvector[i][l_n] = new complex<double>[PW(l_n)];
-    };
-  };
+    }
+  }
   ResetQs();
   fInitialized = true;
 };
@@ -123,6 +134,6 @@ bool GFWCumulant::IsPtBinFilled(int ptb)
       ptb = 0;
     else if (ptb >= fPt)
       return false; // This is in case we are differential and going out of range for whatever reason.
-  };
+  }
   return fFilledPts[ptb];
 }

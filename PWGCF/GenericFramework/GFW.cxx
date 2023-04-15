@@ -1,3 +1,14 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
 /*
 Author: Vytautas Vislavicius
 Extention of Generic Flow (https://arxiv.org/abs/1312.3572 by A. Bilandzic et al.)
@@ -7,7 +18,7 @@ If used, modified, or distributed, please aknowledge the author of this code.
 */
 
 #include "GFW.h"
-GFW::GFW() : fInitialized(false){};
+GFW::GFW() : fInitialized(false){}
 
 GFW::~GFW()
 {
@@ -19,15 +30,15 @@ void GFW::AddRegion(string refName, double lEtaMin, double lEtaMax, int lNpT, in
   if (lNpT < 1) {
     printf("Number of pT bins cannot be less than 1! Not adding anything.\n");
     return;
-  };
+  }
   if (lEtaMin >= lEtaMax) {
     printf("Eta min. cannot be more than eta max! Not adding...\n");
     return;
-  };
+  }
   if (refName == "") {
     printf("Region must have a name!\n");
     return;
-  };
+  }
   Region lOneRegion;
   lOneRegion.Nhar = 0;            // Empty for now
   lOneRegion.powsDefined = false; // If vector with powers defined, set this to zero
@@ -42,7 +53,7 @@ void GFW::AddRegion(string refName, double lEtaMin, double lEtaMax, int lNpT, in
 void GFW::AddRegion(string refName, vector<int> lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
 {
   AddRegion(refName, lEtaMin, lEtaMax, lNpT, BitMask);
-  (fRegions.end() - 1)->Nhar = (int)lNparVec.size();
+  (fRegions.end() - 1)->Nhar = static_cast<int>(lNparVec.size());
   (fRegions.end() - 1)->NparVec = lNparVec;
   (fRegions.end() - 1)->powsDefined = true;
 };
@@ -69,14 +80,14 @@ int GFW::CreateRegions()
   if (fRegions.size() < 1) {
     printf("No regions set. Skipping...\n");
     return 0;
-  };
+  }
   int nRegions = 0;
   for (auto pItr = fRegions.begin(); pItr != fRegions.end(); pItr++) {
     GFWCumulant* lCumulant = new GFWCumulant();
     lCumulant->CreateComplexVectorArrayVarPower(pItr->Nhar, pItr->NparVec, pItr->NpT);
     fCumulants.push_back(*lCumulant);
     ++nRegions;
-  };
+  }
   if (nRegions)
     fInitialized = true;
   return nRegions;
@@ -84,10 +95,10 @@ int GFW::CreateRegions()
 void GFW::Fill(double eta, int ptin, double phi, double weight, int mask, double SecondWeight)
 {
   // if(!fInitialized) return;
-  for (int i = 0; i < (int)fRegions.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(fRegions.size()); ++i) {
     if (fRegions.at(i).EtaMin < eta && fRegions.at(i).EtaMax > eta && (fRegions.at(i).BitMask & mask))
       fCumulants.at(i).FillArray(ptin, phi, weight, SecondWeight);
-  };
+  }
 };
 complex<double> GFW::TwoRec(int n1, int n2, int p1, int p2, int ptbin, GFWCumulant* r1, GFWCumulant* r2, GFWCumulant* r3)
 {
@@ -100,7 +111,7 @@ complex<double> GFW::TwoRec(int n1, int n2, int p1, int p2, int ptbin, GFWCumula
 complex<double> GFW::RecursiveCorr(GFWCumulant* qpoi, GFWCumulant* qref, GFWCumulant* qol, int ptbin, vector<int>& hars)
 {
   vector<int> pows;
-  for (int i = 0; i < (int)hars.size(); i++)
+  for (int i = 0; i < static_cast<int>(hars.size()); i++)
     pows.push_back(1);
   return RecursiveCorr(qpoi, qref, qol, ptbin, hars, pows);
 };
@@ -120,7 +131,7 @@ complex<double> GFW::RecursiveCorr(GFWCumulant* qpoi, GFWCumulant* qref, GFWCumu
   pows.erase(pows.end() - 1);
   complex<double> formula = RecursiveCorr(qpoi, qref, qol, ptbin, hars, pows) * qref->Vec(harlast, powlast);
   int lDegeneracy = 1;
-  int harSize = (int)hars.size();
+  int harSize = static_cast<int>(hars.size());
   for (int i = harSize - 1; i >= 0; i--) {
     // checking if current configuration is a permutation of the next one.
     // Need to have more than 2 harmonics though, otherwise it doesn't make sense.
@@ -128,7 +139,7 @@ complex<double> GFW::RecursiveCorr(GFWCumulant* qpoi, GFWCumulant* qref, GFWCumu
       if (hars.at(i) == hars.at(i - 1) && pows.at(i) == pows.at(i - 1)) { // if it is a permutation, then increase degeneracy and continue;
         lDegeneracy++;
         continue;
-      };
+      }
     }
     hars.at(i) += harlast;
     pows.at(i) += powlast;
@@ -136,11 +147,11 @@ complex<double> GFW::RecursiveCorr(GFWCumulant* qpoi, GFWCumulant* qref, GFWCumu
     if (lDegeneracy > 1) {
       subtractVal *= lDegeneracy;
       lDegeneracy = 1;
-    };
+    }
     formula -= subtractVal;
     hars.at(i) -= harlast;
     pows.at(i) -= powlast;
-  };
+  }
   hars.push_back(harlast);
   pows.push_back(powlast);
   return formula;
@@ -174,7 +185,7 @@ GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif)
   if (!s_tokenize(config, ts, szend, "{")) {
     printf("Could not find any harmonics!\n");
     return ReturnConfig;
-  };
+  }
   szend = 0;
   int counter = 0;
   while (s_tokenize(config, ts, szend, "{")) {
@@ -189,7 +200,7 @@ GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif)
       if (!s_contains(ts, ")")) {
         printf("Missing \")\" in the configurator. Returning...\n");
         return ReturnConfig;
-      };
+      }
       sz2 = s_index(ts, "(");
       sz1 = sz2 + 1;
       s_tokenize(ts, ts2, sz1, ")");
@@ -200,7 +211,7 @@ GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif)
       sz2 = s_index(config, "(");
       sz1 = s_index(config, ")");
       config.erase(sz2, sz1 - sz2 + 1);
-    };
+    }
     ReturnConfig.ptInd.push_back(ptbin);
     sz1 = 0;
     // Fetch regions
@@ -216,19 +227,19 @@ GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif)
       if (ind < 0) {
         printf("Could not find region named %s!\n", ts2.c_str());
         break;
-      };
+      }
       if (!isOverlap)
         ReturnConfig.Regs.at(counter - 1).push_back(ind);
       else
-        ReturnConfig.Overlap.at((int)ReturnConfig.Overlap.size() - 1) = ind;
-    };
+        ReturnConfig.Overlap.at(static_cast<int>(ReturnConfig.Overlap.size()) - 1) = ind;
+    }
     string harstr;
     s_tokenize(config, harstr, szend, "}");
     int dummys = 0;
     // Fetch harmonics
     while (s_tokenize(harstr, ts, dummys, " "))
       ReturnConfig.Hars.at(counter - 1).push_back(stoi(ts));
-  };
+  }
   ReturnConfig.Head = head;
   ReturnConfig.pTDif = ptdif;
   // ReturnConfig.pTbin = ptbin;
@@ -250,7 +261,7 @@ complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZer
     return complex<double>(0, 0); // Check if we have any regions at all
   complex<double> retval(1, 0);
   int ptInd;
-  for (int i = 0; i < (int)corconf.Regs.size(); i++) { // looping over all regions
+  for (int i = 0; i < static_cast<int>(corconf.Regs.size()); i++) { // looping over all regions
     if (corconf.Regs.at(i).size() == 0)
       return complex<double>(0, 0); // again, if no regions in the current subevent, then quit immediatelly
     ptInd = corconf.ptInd.at(i);    // for i=0 (potentially, POI)
@@ -279,9 +290,11 @@ complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZer
       qovl = &fCumulants.at(ovl);
     else if (ref == poi)
       qovl = qref; // If ref and poi are the same, then the same is for overlap. Only, when OL not explicitly defined
-    if (SetHarmsToZero)
-      for (int j = 0; j < (int)corconf.Hars.at(i).size(); j++)
+    if (SetHarmsToZero){
+      for (int j = 0; j < static_cast<int>(corconf.Hars.at(i).size()); j++){
         corconf.Hars.at(i).at(j) = 0;
+      }
+    }
     retval *= RecursiveCorr(qpoi, qref, qovl, ptInd, corconf.Hars.at(i));
   }
   return retval;
@@ -289,12 +302,13 @@ complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZer
 vector<pair<int, vector<int>>> GFW::GetHarmonicsSingleConfig(const CorrConfig& incfg)
 {
   vector<pair<int, vector<int>>> retPair;
-  for (int iR = 0; iR < (int)incfg.Regs.size(); iR++) {
-    if ((int)incfg.Regs[iR].size() > 1) {
+  for (int iR = 0; iR < static_cast<int>(incfg.Regs.size()); iR++) {
+    if (static_cast<int>(incfg.Regs[iR].size()) > 1) {
       retPair.push_back(make_pair(incfg.Regs[iR][0], vector<int>{incfg.Hars[iR][0]})); // If we have a PoI, then it comes with the first harmonic
       retPair.push_back(make_pair(incfg.Regs[iR][1], incfg.Hars[iR]));                 // Then the second is ref. with full harmonics
-    } else
+    } else {
       retPair.push_back(make_pair(incfg.Regs[iR][0], incfg.Hars[iR])); // Otherwise, it's only ref with all harmonics
+    }
     if (incfg.Overlap[iR] > -1)
       retPair.push_back(make_pair(incfg.Overlap[iR], incfg.Hars[iR])); // if overlap provided, then also fetch its harmonics
   }
@@ -302,18 +316,18 @@ vector<pair<int, vector<int>>> GFW::GetHarmonicsSingleConfig(const CorrConfig& i
 };
 void GFW::InitializePowerArrays()
 {
-  vector<vector<vector<int>>> harSets((int)fRegions.size());
+  vector<vector<vector<int>>> harSets(static_cast<int>(fRegions.size()));
   for (const CorrConfig& lConf : fListOfCFGs) {
     auto HarPerReg = GetHarmonicsSingleConfig(lConf);
     for (auto oneHar : HarPerReg)
       harSets[oneHar.first].push_back(oneHar.second);
-  };
+  }
   // Now, loop through all combinations of different harmonics for each region and calculate power arrays
-  for (int i = 0; i < (int)harSets.size(); i++) {
+  for (int i = 0; i < static_cast<int>(harSets.size()); i++) {
     if (fRegions[i].powsDefined)
       continue; // Only do if powers have not been externally defined
     vector<int> powerArray = GFWPowerArray::GetPowerArray(harSets[i]);
-    fRegions[i].Nhar = (int)powerArray.size();
+    fRegions[i].Nhar = static_cast<int>(powerArray.size());
     fRegions[i].NparVec = powerArray;
     fRegions[i].powsDefined = true;
   }
@@ -325,7 +339,7 @@ complex<double> GFW::Calculate(int poi, vector<int> hars)
 };
 int GFW::FindRegionByName(string refName)
 {
-  for (int i = 0; i < (int)fRegions.size(); i++)
+  for (int i = 0; i < static_cast<int>(fRegions.size()); i++)
     if (fRegions.at(i).rName == refName)
       return i;
   return -1;
@@ -352,15 +366,15 @@ void GFW::s_replace_all(string& instr, const string& pattern1, const string& pat
   while (lpos > -1) {
     s_replace(instr, pattern1, pattern2, lpos);
     lpos = s_index(instr, pattern1, lpos);
-  };
+  }
 };
 bool GFW::s_tokenize(string& instr, string& subs, int& spos, const string& delim)
 {
-  if (spos < 0 || spos >= (int)instr.size()) {
+  if (spos < 0 || spos >= static_cast<int>(instr.size())) {
     spos = -1;
     subs = "";
     return false;
-  };
+  }
   int lpos = s_index(instr, delim, spos);
   if (lpos < 0)
     lpos = instr.size();

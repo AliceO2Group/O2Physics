@@ -1,3 +1,14 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
 #include "GFWPowerArray.h"
 int GFWPowerArray::getHighestHarmonic(const HarSet& inhar)
 {
@@ -30,8 +41,8 @@ void GFWPowerArray::FlushVectorToMaster(HarSet& masterVector, HarSet& comVec, co
     int absVal = abs(val);
     if (masterVector.at(absVal) < nPartLoc) {
       masterVector.at(absVal) = nPartLoc;
-    };
-  };
+    }
+  }
 };
 void GFWPowerArray::RecursiveFunction(HarSet& masterVector, HarSet hars, int offset, const int& MaxPower)
 {
@@ -43,7 +54,7 @@ void GFWPowerArray::RecursiveFunction(HarSet& masterVector, HarSet hars, int off
 };
 void GFWPowerArray::PrintVector(const HarSet& singleSet)
 {
-  int vcSize = (int)singleSet.size();
+  int vcSize = static_cast<int>(singleSet.size());
   if (!vcSize)
     printf("Vector is empty!\n");
   printf("{%i", singleSet[0]);
@@ -59,16 +70,16 @@ HarSet GFWPowerArray::GetPowerArray(vector<HarSet> inHarmonics)
   for (HarSet singleSet : inHarmonics) {
     int harSum = getHighestHarmonic(singleSet);
     MaxHar = harSum > MaxHar ? harSum : MaxHar;
-  };
+  }
   // Make a vector with MaxHar+1 entries (entry 0 for sum=0)
   HarSet retVec = HarSet(MaxHar + 1);
   // Then loop over all combinations and calculate max powers
   for (HarSet singleSet : inHarmonics) {
-    int lNPart = (int)singleSet.size(); // Total number of particles correlated
+    int lNPart = static_cast<int>(singleSet.size()); // Total number of particles correlated
     RecursiveFunction(retVec, singleSet, 0, lNPart);
     // Harmonic sum = 0 is a special case. In principle all 0 cases with non-zero harmonics are captured by the function above, but to calculate normalization, we set all harmonics to 0. This means that sum=0 power is the max number of harmonics/particles being correlated
     nMaxPart = (lNPart > nMaxPart) ? lNPart : nMaxPart;
-  };
+  }
   // Override the sum=0 power with the number of correlated particles
   if (retVec[0] < nMaxPart)
     retVec[0] = nMaxPart;

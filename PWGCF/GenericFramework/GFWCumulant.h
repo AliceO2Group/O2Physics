@@ -1,3 +1,14 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
 /*
 Author: Vytautas Vislavicius
 Extention of Generic Flow (https://arxiv.org/abs/1312.3572 by A. Bilandzic et al.)
@@ -5,8 +16,8 @@ A part of <GFW.cxx/h>
 A container to store Q vectors for one subevent with an extra layer to recursively calculate particle correlations.
 If used, modified, or distributed, please aknowledge the author of this code.
 */
-#ifndef ALIGFWCUMULANT__H
-#define ALIGFWCUMULANT__H
+#ifndef PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_
+#define PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_
 #include <cmath>
 #include <complex>
 #include <vector>
@@ -27,8 +38,8 @@ class GFWCumulant
     DestroyComplexVectorArray();
     fUsed = infl;
   };
-  void Inc() { fNEntries++; };
-  int GetN() { return fNEntries; };
+  void Inc() { fNEntries++; }
+  int GetN() { return fNEntries; }
   bool IsPtBinFilled(int ptb);
   void CreateComplexVectorArray(int N = 1, int P = 1, int Pt = 1);
   void CreateComplexVectorArrayVarPower(int N = 1, vector<int> Pvec = {1}, int Pt = 1);
@@ -49,4 +60,4 @@ class GFWCumulant
   complex<double> fNullQ = 0;
 };
 
-#endif
+#endif  // PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_
