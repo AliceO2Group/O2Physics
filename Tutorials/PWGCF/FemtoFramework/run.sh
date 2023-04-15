@@ -22,12 +22,12 @@
 ConfigFile="${1:-run-config.json}"
 
 # pass the same options to all workflows
-Options="-b --configuration json://${ConfigFile}"
+Options=("-b" "--configuration" "json://${ConfigFile}")
 
-o2-analysis-timestamp ${Options} |
-    o2-analysis-event-selection ${Options} |
-    o2-analysis-multiplicity-table ${Options} |
-    o2-analysis-track-propagation ${Options} |
-    o2-analysis-pid-tpc-base ${Options} |
-    o2-analysis-pid-tpc ${Options} |
-    o2-analysistutorial-cf-femtodream-tutorial-0 ${Options}
+o2-analysis-timestamp "${Options[@]}" |
+        o2-analysis-event-selection "${Options[@]}" |
+        o2-analysis-multiplicity-table "${Options[@]}" |
+        o2-analysis-track-propagation "${Options[@]}" |
+        o2-analysis-pid-tpc-base "${Options[@]}" |
+        o2-analysis-pid-tpc "${Options[@]}" |
+        o2-analysistutorial-cf-femtodream-tutorial-0 "${Options[@]}"

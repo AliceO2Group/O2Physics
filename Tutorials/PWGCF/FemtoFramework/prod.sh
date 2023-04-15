@@ -22,20 +22,17 @@
 ConfigFile="${1:-prod-config.json}"
 
 # pass the same options to all workflows
-Options="-b --configuration json://${ConfigFile}"
+Options=("-b" "--configuration" "json://${ConfigFile}")
 
-# additional optioni for derived data
-Derived="--aod-writer-resfile FemtoAO2D --aod-writer-keep AOD/FEMTODREAMPARTS/0,AOD/FEMTODREAMCOLS/0,AOD/FEMTODEBUGPARTS/0"
-
-o2-analysis-timestamp ${Options} |
-        o2-analysis-event-selection ${Options} |
-        o2-analysis-multiplicity-table ${Options} |
-        o2-analysis-track-propagation ${Options} |
-        o2-analysis-pid-tpc-base ${Options} |
-        o2-analysis-pid-tpc ${Options} |
-        o2-analysis-pid-tof-base ${Options} |
-        o2-analysis-pid-tof ${Options} |
-        o2-analysis-lf-lambdakzerobuilder ${Options} |
-        o2-analysis-cf-femtodream-producer ${Options} ${Derived}
+o2-analysis-timestamp "${Options[@]}" |
+        o2-analysis-event-selection "${Options[@]}" |
+        o2-analysis-multiplicity-table "${Options[@]}" |
+        o2-analysis-track-propagation "${Options[@]}" |
+        o2-analysis-pid-tpc-base "${Options[@]}" |
+        o2-analysis-pid-tpc "${Options[@]}" |
+        o2-analysis-pid-tof-base "${Options[@]}" |
+        o2-analysis-pid-tof "${Options[@]}" |
+        o2-analysis-lf-lambdakzerobuilder "${Options[@]}" |
+        o2-analysis-cf-femtodream-producer "${Options[@]}" --aod-writer-resfile FemtoAO2D --aod-writer-keep AOD/FEMTODREAMPARTS/0,AOD/FEMTODREAMCOLS/0,AOD/FEMTODEBUGPARTS/0
 
 exit 0
