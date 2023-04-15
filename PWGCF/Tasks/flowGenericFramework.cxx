@@ -201,7 +201,7 @@ struct GenericFramework {
 
       fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 3);
     }
-    for (unsigned int64_t l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
+    for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       FillFC(corrconfigs.at(l_ind), centrality, l_Random);
     }
   }
