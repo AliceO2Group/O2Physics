@@ -13,8 +13,9 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class GFW + ;
+#pragma link C++ class GFWPowerArray + ;
 #pragma link C++ class GFWCumulant + ;
+#pragma link C++ class GFW + ;
 #pragma link C++ class ProfileSubset + ;
 #pragma link C++ class FlowContainer + ;
 #pragma link C++ class GFWWeights + ;

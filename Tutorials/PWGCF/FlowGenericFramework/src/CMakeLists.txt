@@ -9,5 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(src)
-
+o2physics_add_dpl_workflow(flow-gfw-tutorial
+                    SOURCES flowGFWTutorial.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
+                    COMPONENT_NAME Analysis)
