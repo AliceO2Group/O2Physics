@@ -14,12 +14,12 @@
 // Class to handle analysis variables
 //
 
+#ifndef PWGDQ_CORE_VARMANAGER_H_
+#define PWGDQ_CORE_VARMANAGER_H_
+
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
-
-#ifndef PWGDQ_CORE_VARMANAGER_H_
-#define PWGDQ_CORE_VARMANAGER_H_
 
 #include <vector>
 #include <map>
