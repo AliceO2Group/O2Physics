@@ -32,4 +32,4 @@ class GFWPowerArray
   static void RecursiveFunction(HarSet& masterVector, HarSet hars, int offset, const int& MaxPower);
   static void PrintVector(const HarSet& singleSet);
 };
-#endif  // PWGCF_GENERICFRAMEWORK_GFWPOWERARRAY_H_
+#endif // PWGCF_GENERICFRAMEWORK_GFWPOWERARRAY_H_

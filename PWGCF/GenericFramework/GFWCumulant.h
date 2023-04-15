@@ -60,4 +60,4 @@ class GFWCumulant
   complex<double> fNullQ = 0;
 };
 
-#endif  // PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_
+#endif // PWGCF_GENERICFRAMEWORK_GFWCUMULANT_H_

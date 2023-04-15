@@ -24,9 +24,9 @@ GFWCumulant::GFWCumulant() : fQvector(0),
                              fPow(1),
                              fPt(1),
                              fFilledPts(0),
-                             fInitialized(false){}
+                             fInitialized(false) {}
 
-GFWCumulant::~GFWCumulant(){}
+GFWCumulant::~GFWCumulant() {}
 void GFWCumulant::FillArray(int ptin, double phi, double weight, double SecondWeight)
 {
   if (!fInitialized)

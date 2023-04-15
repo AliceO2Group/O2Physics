@@ -18,7 +18,7 @@ If used, modified, or distributed, please aknowledge the author of this code.
 */
 
 #include "GFW.h"
-GFW::GFW() : fInitialized(false){}
+GFW::GFW() : fInitialized(false) {}
 
 GFW::~GFW()
 {
@@ -290,8 +290,8 @@ complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZer
       qovl = &fCumulants.at(ovl);
     else if (ref == poi)
       qovl = qref; // If ref and poi are the same, then the same is for overlap. Only, when OL not explicitly defined
-    if (SetHarmsToZero){
-      for (int j = 0; j < static_cast<int>(corconf.Hars.at(i).size()); j++){
+    if (SetHarmsToZero) {
+      for (int j = 0; j < static_cast<int>(corconf.Hars.at(i).size()); j++) {
         corconf.Hars.at(i).at(j) = 0;
       }
     }

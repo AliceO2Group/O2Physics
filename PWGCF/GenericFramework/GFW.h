@@ -16,8 +16,8 @@ Class steers the initialization and calculation of n-particle correlations. Uses
 Latest version includes the calculation of any number of gaps and any combination of harmonics (including eg symmetric cumulants, etc.)
 If used, modified, or distributed, please aknowledge the author of this code.
 */
-#ifndef GFW__H
-#define GFW__H
+#ifndef PWGCF_GENERICFRAMEWORK_GFW_H_
+#define PWGCF_GENERICFRAMEWORK_GFW_H_
 #include "GFWCumulant.h"
 #include "GFWPowerArray.h"
 #include <vector>
@@ -89,4 +89,4 @@ class GFW
   void s_replace_all(string& instr, const string& pattern1, const string& pattern2);
   bool s_tokenize(string& instr, string& substr, int& spos, const string& delim);
 };
-#endif
+#endif // PWGCF_GENERICFRAMEWORK_GFW_H_
