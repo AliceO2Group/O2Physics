@@ -292,13 +292,13 @@ struct PhotonHBT {
     int index_coll1 = -999;
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 1e+3, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
 
-      if (nev > ndepth) {
-        continue;
-      }
-
       if (index_coll1 != collision1.collisionId()) {
         index_coll1 = collision1.collisionId();
         nev = 0; // reset event counter for mixing, when collision index of collision1 changes.
+      }
+
+      if (nev > ndepth) {
+        continue;
       }
 
       if (pairtype == PairType::kPCMPCM && (collision1.ngpcm() < 2 || collision2.ngpcm() < 2)) {
