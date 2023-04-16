@@ -22,7 +22,7 @@ using namespace o2::framework;
 struct myExampleTask {
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  
+
   void init(InitContext const&)
   {
     // define axes you want to use
@@ -43,6 +43,5 @@ struct myExampleTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<myExampleTask>(cfgc)
-  };
+    adaptAnalysisTask<myExampleTask>(cfgc)};
 }
