@@ -76,5 +76,5 @@ o2physics_add_dpl_workflow(task-mc-efficiency
 
 o2physics_add_dpl_workflow(task-mini
                     SOURCES taskMini.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing O2::DCAFitter O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
