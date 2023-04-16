@@ -169,6 +169,10 @@ struct HfTrackIndexSkimsCreator {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
 
+  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::HFSelTrack>>;
+
+  Filter filterSelectTracks = aod::hf_seltrack::isSelProng > 0;
+
   HistogramRegistry registry{
     "registry",
     {// 2-prong histograms
@@ -176,10 +180,6 @@ struct HfTrackIndexSkimsCreator {
      {"hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}}},
      {"hmassD0ToPiK", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
-
-  Filter filterSelectTracks = aod::hf_seltrack::isSelProng > 0;
-
-  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::HFSelTrack>>;
 
   void process(
     aod::Collision const& collision,
@@ -355,10 +355,10 @@ struct HfCandidateCreator2Prong {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
 
-  OutputObj<TH1F> hMass{TH1F("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-
   double massPiK{0.};
   double massKPi{0.};
+
+  OutputObj<TH1F> hMass{TH1F("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
 
   void process(aod::Collisions const& collisions,
                aod::HfTrackIndexProng2 const& rowsTrackIndexProng2,
@@ -577,12 +577,14 @@ struct HfCandidateSelectorD0 {
 
 /// D0 analysis task
 struct HfTaskD0 {
+  Configurable<int> flagSelCandD0{"flagSelCandD0", 1, "Selection flag for D0"};
+  Configurable<int> flagSelCandD0bar{"flagSelCandD0bar", 1, "Selection flag for D0 bar"};
+
+  Partition<soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= flagSelCandD0 || aod::hf_selcandidate_d0::isSelD0bar >= flagSelCandD0bar;
+
   HistogramRegistry registry{
     "registry",
     {}};
-
-  Configurable<int> flagSelCandD0{"flagSelCandD0", 1, "Selection flag for D0"};
-  Configurable<int> flagSelCandD0bar{"flagSelCandD0bar", 1, "Selection flag for D0 bar"};
 
   void init(o2::framework::InitContext&)
   {
@@ -593,8 +595,6 @@ struct HfTaskD0 {
     registry.add("hMass", strTitle + ";" + "inv. mass (#pi K) (GeV/#it{c}^{2})" + ";" + strEntries, {HistType::kTH1F, {{500, 0., 5.}}});
     registry.add("hCPA", strTitle + ";" + "cosine of pointing angle" + ";" + strPT + ";" + strEntries, {HistType::kTH2F, {{110, -1.1, 1.1}, {100, 0., 10.}}});
   }
-
-  Partition<soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= flagSelCandD0 || aod::hf_selcandidate_d0::isSelD0bar >= flagSelCandD0bar;
 
   void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>& candidates)
   {
