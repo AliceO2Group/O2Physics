@@ -230,17 +230,23 @@ struct Pi0EtaToGammaGammaMC {
 
   Configurable<float> maxYgen{"maxYgen", 0.9, "maximum rapidity for generated particles"};
 
-  Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  Preslice<soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>> rec_perMcCollision = aod::emmceventlabel::emreducedmceventId;
+  // Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
+  // Preslice<soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>> rec_perMcCollision = aod::emmceventlabel::emreducedmceventId;
   void processGen(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
     for (auto& mccollision : mccollisions) {
-      auto collision_per_mccoll = collisions.sliceBy(rec_perMcCollision, mccollision.globalIndex());
-      int nrec_per_mc = collision_per_mccoll.size();
-      registry.fill(HIST("Generated/hRecCollision"), nrec_per_mc);
+      int nrec = 0;
+      // auto collision_per_mccoll = collisions.sliceBy(rec_perMcCollision, mccollision.globalIndex());
+      // int nrec_per_mc = collision_per_mccoll.size();
+      for (auto& collision : collisions) {
+        if (mccollision.globalIndex() == collision.emreducedmceventId()) {
+          nrec++;
+        }
+      }
+      registry.fill(HIST("Generated/hRecCollision"), nrec);
     }
 
     for (auto& collision : collisions) {
@@ -261,8 +267,14 @@ struct Pi0EtaToGammaGammaMC {
       registry.fill(HIST("Generated/hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
       auto mccollision = collision.emreducedmcevent();
 
-      auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
-      for (auto& mctrack : mctracks_coll) {
+      // auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
+      // for (auto& mctrack : mctracks_coll) {
+      for (auto& mctrack : mcparticles) {
+
+        if (mctrack.emreducedmceventId() != mccollision.globalIndex()) {
+          continue;
+        }
+
         if (abs(mctrack.y()) > maxYgen) {
           continue;
         }

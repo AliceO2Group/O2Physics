@@ -166,45 +166,7 @@ struct PCMQCMC {
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hKFChi2vsZ_recalc"))->Fill(v0.recalculatedVtxZ(), v0.chiSquareNDF());
   }
 
-  template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
-  int FindCommonMotherFrom2Prongs(TMCParticle1 const& p1, TMCParticle2 const& p2, const int expected_pdg1, const int expected_pdg2, const int expected_mother_pdg, TMCParticles const& mcparticles)
-  {
-    if (p1.globalIndex() == p2.globalIndex())
-      return -1; // mc particle p1 and p2 is identical. reject.
-
-    if (p1.pdgCode() != expected_pdg1)
-      return -1;
-    if (p2.pdgCode() != expected_pdg2)
-      return -1;
-
-    if (!p1.has_mothers())
-      return -1;
-    if (!p2.has_mothers())
-      return -1;
-
-    // LOGF(info,"original motherid1 = %d , motherid2 = %d", p1.mothersIds()[0], p2.mothersIds()[0]);
-
-    int motherid1 = p1.mothersIds()[0];
-    auto mother1 = mcparticles.iteratorAt(motherid1);
-    int mother1_pdg = mother1.pdgCode();
-
-    int motherid2 = p2.mothersIds()[0];
-    auto mother2 = mcparticles.iteratorAt(motherid2);
-    int mother2_pdg = mother2.pdgCode();
-
-    // LOGF(info,"motherid1 = %d , motherid2 = %d", motherid1, motherid2);
-
-    if (motherid1 != motherid2)
-      return -1;
-    if (mother1_pdg != mother2_pdg)
-      return -1;
-    if (mother1_pdg != expected_mother_pdg)
-      return -1;
-    return motherid1;
-  }
-
   Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
-
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
   void processQCMC(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles)
   {
@@ -258,16 +220,18 @@ struct PCMQCMC {
     }   // end of collision loop
   }     // end of process
 
-  Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  void processGen(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
+  // Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId; //this is guilty. 1 MC collision is reconstructed several times. soa::SmallGroups does not help somehow.
+  void processGen(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
     for (auto& collision : collisions) {
       auto mccollision = collision.emreducedmcevent();
+      // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
+
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.mcPosZ());
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
       if (!collision.sel8()) {
         continue;
       }
@@ -282,10 +246,17 @@ struct PCMQCMC {
         continue;
       }
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.mcPosZ());
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
 
-      auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
-      for (auto& mctrack : mctracks_coll) {
+      // auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
+      // for (auto& mctrack : mctracks_coll) {
+      for (auto& mctrack : mcparticles) {
+
+        if (mctrack.emreducedmceventId() != mccollision.globalIndex()) {
+          continue;
+        }
+
+        // LOGF(info, "mctrack.emreducedmceventId() = %d", mctrack.emreducedmceventId());
 
         if (IsEleFromPC(mctrack, mcparticles) > 0) {
           float rxy = sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2));
@@ -326,9 +297,9 @@ struct PCMQCMC {
     // do nothing
   }
 
-  PROCESS_SWITCH(PCMQCMC, processQCMC, "run PCM QC in MC", true);
+  PROCESS_SWITCH(PCMQCMC, processQCMC, "run PCM QC in MC", false);
   PROCESS_SWITCH(PCMQCMC, processGen, "run generated information", false);
-  PROCESS_SWITCH(PCMQCMC, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(PCMQCMC, processDummy, "Dummy function", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

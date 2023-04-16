@@ -51,13 +51,13 @@ using EMReducedEvent = EMReducedEvents::iterator;
 namespace emreducedmcevent
 {
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //!
-DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);          //!
-DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);          //!
-DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);          //!
+DECLARE_SOA_COLUMN(PosX, posX, float);              //!
+DECLARE_SOA_COLUMN(PosY, posY, float);              //!
+DECLARE_SOA_COLUMN(PosZ, posZ, float);              //!
 } // namespace emreducedmcevent
 DECLARE_SOA_TABLE(EMReducedMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
-                  o2::soa::Index<>, emreducedmcevent::McCollisionId,
-                  mccollision::GeneratorsID, emreducedmcevent::MCPosX, emreducedmcevent::MCPosY, emreducedmcevent::MCPosZ,
+                  o2::soa::Index<>, mccollision::GeneratorsID,
+                  emreducedmcevent::PosX, emreducedmcevent::PosY, emreducedmcevent::PosZ,
                   mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
 using EMReducedMCEvent = EMReducedMCEvents::iterator;
 
