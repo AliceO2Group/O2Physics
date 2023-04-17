@@ -18,42 +18,33 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
+#include "Common/DataModel/Multiplicity.h"
 #include "CommonUtils/NameConf.h"
 
 #include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisDataModel.h"
 
 #include "DetectorsVertexing/PVertexer.h"
-
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/PrimaryVertex.h"
 #include "ReconstructionDataFormats/Vertex.h"
 
+#include "DataFormatsFDD/Digit.h"
+#include "DataFormatsFIT/Triggers.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
-
 #include "CommonConstants/GeomConstants.h"
-
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
-
 #include "DataFormatsCalibration/MeanVertexObject.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "DataFormatsFDD/Digit.h"
-#include "DataFormatsFIT/Triggers.h"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
