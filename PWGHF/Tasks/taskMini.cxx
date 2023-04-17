@@ -81,8 +81,6 @@ static const double massK = RecoDecay::getMassPDG(kKPlus);
 static const auto arrMassPiK = std::array{massPi, massK};
 static const auto arrMassKPi = std::array{massK, massPi};
 
-using TracksAll = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA>;
-
 /// Track selection
 struct HfTagSelTracks {
   Produces<aod::HfSelTrack> rowSelectedTrack;
@@ -91,6 +89,8 @@ struct HfTagSelTracks {
   Configurable<double> ptTrackMin{"ptTrackMin", -1., "min. track pT for 2 prong candidate"};
   Configurable<double> etaTrackMax{"etaTrackMax", 4., "max. pseudorapidity for 2 prong candidate"};
   Configurable<double> dcaTrackMin{"dcaTrackMin", 0.0025, "min. DCA for 2 prong candidate"};
+
+  using TracksAll = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA>;
 
   HistogramRegistry registry{
     "registry",
@@ -225,33 +225,34 @@ struct HfTrackIndexSkimsCreator {
         // auto massPiK = RecoDecay::m2(arrMom, arrMassPiK);
 
         // secondary vertex reconstruction and further 2-prong selections
-        if (df2.process(trackParVarPos1, trackParVarNeg1) > 0) {
-          // auto primaryVertex = std::array{collision.posX(), collision.posY(), collision.posZ()};
-          //  get secondary vertex
-          const auto& secondaryVertex = df2.getPCACandidate();
-          // get track momenta
-          array<float, 3> pVec0;
-          array<float, 3> pVec1;
-          df2.getTrack(0).getPxPyPzGlo(pVec0);
-          df2.getTrack(1).getPxPyPzGlo(pVec1);
-
-          // auto pVecCand = RecoDecay::pVec(pVec0, pVec1);
-          // auto ptCand = RecoDecay::pt(pVecCand);
-          //  2-prong selections after secondary vertex
-          // auto cpa = RecoDecay::cpa(primaryVertex, secondaryVertex, pVecCand);
-          std::array<std::array<float, 3>, 2> arrMom = {pVec0, pVec1};
-
-          // fill table row
-          rowTrackIndexProng2(trackPos1.globalIndex(),
-                              trackNeg1.globalIndex());
-
-          // fill histograms
-          registry.fill(HIST("hVtx2ProngX"), secondaryVertex[0]);
-          registry.fill(HIST("hVtx2ProngY"), secondaryVertex[1]);
-          registry.fill(HIST("hVtx2ProngZ"), secondaryVertex[2]);
-          auto mass2Prong = RecoDecay::m(arrMom, arrMassPiK);
-          registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
+        if (df2.process(trackParVarPos1, trackParVarNeg1) == 0) {
+          continue;
         }
+        // auto primaryVertex = std::array{collision.posX(), collision.posY(), collision.posZ()};
+        //  get secondary vertex
+        const auto& secondaryVertex = df2.getPCACandidate();
+        // get track momenta
+        array<float, 3> pVec0;
+        array<float, 3> pVec1;
+        df2.getTrack(0).getPxPyPzGlo(pVec0);
+        df2.getTrack(1).getPxPyPzGlo(pVec1);
+
+        // auto pVecCand = RecoDecay::pVec(pVec0, pVec1);
+        // auto ptCand = RecoDecay::pt(pVecCand);
+        //  2-prong selections after secondary vertex
+        // auto cpa = RecoDecay::cpa(primaryVertex, secondaryVertex, pVecCand);
+        std::array<std::array<float, 3>, 2> arrMom = {pVec0, pVec1};
+
+        // fill table row
+        rowTrackIndexProng2(trackPos1.globalIndex(),
+                            trackNeg1.globalIndex());
+
+        // fill histograms
+        registry.fill(HIST("hVtx2ProngX"), secondaryVertex[0]);
+        registry.fill(HIST("hVtx2ProngY"), secondaryVertex[1]);
+        registry.fill(HIST("hVtx2ProngZ"), secondaryVertex[2]);
+        auto mass2Prong = RecoDecay::m(arrMom, arrMassPiK);
+        registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
       }
     }
   }
@@ -421,7 +422,7 @@ struct HfCandidateCreator2Prong {
 };
 
 /// Helper extension task
-/// Extends the base table with expression columns.
+/// Extends the base table with expression columns (see the HfCandProng2Ext table).
 struct HfCandidateCreator2ProngExpressions {
   Spawns<aod::HfCandProng2Ext> rowCandidateProng2;
   void init(InitContext const&) {}
