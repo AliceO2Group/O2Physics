@@ -58,13 +58,13 @@ DECLARE_SOA_COLUMN(PzProng, pzProng, float);     //!
 } // namespace hf_seltrack
 
 // Track selection table
-DECLARE_SOA_TABLE(HFSelTrack, "AOD", "HFSELTRACK", //!
+DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
                   hf_seltrack::IsSelProng,
                   hf_seltrack::PxProng,
                   hf_seltrack::PyProng,
                   hf_seltrack::PzProng);
 
-using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra, HFSelTrack>;
+using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra, HfSelTrack>;
 using BigTracksDCA = soa::Join<BigTracks, aod::TracksDCA>;
 using BigTracksPID = soa::Join<BigTracks,
                                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -99,10 +99,10 @@ using TracksAll = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::
 
 /// Track selection
 struct HfTagSelTracks {
-  Produces<aod::HFSelTrack> rowSelectedTrack;
+  Produces<aod::HfSelTrack> rowSelectedTrack;
 
   // 2-prong cuts
-  Configurable<double> pTTrackMin{"pTTrackMin", -1., "min. track pT for 2 prong candidate"};
+  Configurable<double> ptTrackMin{"ptTrackMin", -1., "min. track pT for 2 prong candidate"};
   Configurable<double> etaTrackMax{"etaTrackMax", 4., "max. pseudorapidity for 2 prong candidate"};
   Configurable<double> dcaTrackMin{"dcaTrackMin", 0.0025, "min. DCA for 2 prong candidate"};
 
@@ -111,7 +111,7 @@ struct HfTagSelTracks {
     {{"hPtNoCuts", "all tracks;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
      // 2-prong histograms
      {"hPtCuts2Prong", "tracks selected for 2-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hDCAToPrimXYVsPtCuts2Prong", "tracks selected for 2-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{100, 0., 10.}, {400, -2., 2.}}}},
+     {"hPtVsDcaXYToPvCuts2Prong", "tracks selected for 2-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{100, 0., 10.}, {400, -2., 2.}}}},
      {"hEtaCuts2Prong", "tracks selected for 2-prong vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(1.2 * etaTrackMax * 100), -1.2 * etaTrackMax, 1.2 * etaTrackMax}}}}}};
 
   void process(aod::Collisions const& collisions,
@@ -121,32 +121,32 @@ struct HfTagSelTracks {
 
       bool statusProng = true;
 
-      auto trackPt = track.pt();
-      auto trackEta = track.eta();
+      auto ptTrack = track.pt();
+      auto etaTrack = track.eta();
 
-      registry.fill(HIST("hPtNoCuts"), trackPt);
+      registry.fill(HIST("hPtNoCuts"), ptTrack);
 
       // pT cut
-      if (trackPt < pTTrackMin) {
+      if (ptTrack < ptTrackMin) {
         statusProng = false;
       }
 
       // eta cut
-      if (statusProng > 0 && std::abs(trackEta) > etaTrackMax) {
+      if (statusProng && std::abs(etaTrack) > etaTrackMax) {
         statusProng = false;
       }
 
       // DCA cut
       auto dcaXY = track.dcaXY();
-      if (statusProng > 0 && std::abs(dcaXY) < dcaTrackMin) {
+      if (statusProng && std::abs(dcaXY) < dcaTrackMin) {
         statusProng = false;
       }
 
       // fill histograms
       if (statusProng) {
-        registry.fill(HIST("hPtCuts2Prong"), trackPt);
-        registry.fill(HIST("hEtaCuts2Prong"), trackEta);
-        registry.fill(HIST("hDCAToPrimXYVsPtCuts2Prong"), trackPt, dcaXY);
+        registry.fill(HIST("hPtCuts2Prong"), ptTrack);
+        registry.fill(HIST("hEtaCuts2Prong"), etaTrack);
+        registry.fill(HIST("hPtVsDcaXYToPvCuts2Prong"), ptTrack, dcaXY);
       }
 
       // fill table row
@@ -169,9 +169,9 @@ struct HfTrackIndexSkimsCreator {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
 
-  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::HFSelTrack>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::HfSelTrack>>;
 
-  Filter filterSelectTracks = aod::hf_seltrack::isSelProng > 0;
+  Filter filterSelectTracks = aod::hf_seltrack::isSelProng == true;
 
   HistogramRegistry registry{
     "registry",
@@ -179,7 +179,7 @@ struct HfTrackIndexSkimsCreator {
      {"hVtx2ProngX", "2-prong candidates;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}}},
-     {"hmassD0ToPiK", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
+     {"hMassD0ToPiK", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
 
   void process(
     aod::Collision const& collision,
@@ -233,16 +233,16 @@ struct HfTrackIndexSkimsCreator {
           //  get secondary vertex
           const auto& secondaryVertex = df2.getPCACandidate();
           // get track momenta
-          array<float, 3> pvec0;
-          array<float, 3> pvec1;
-          df2.getTrack(0).getPxPyPzGlo(pvec0);
-          df2.getTrack(1).getPxPyPzGlo(pvec1);
+          array<float, 3> pVec0;
+          array<float, 3> pVec1;
+          df2.getTrack(0).getPxPyPzGlo(pVec0);
+          df2.getTrack(1).getPxPyPzGlo(pVec1);
 
-          // auto pVecCand = RecoDecay::pVec(pvec0, pvec1);
+          // auto pVecCand = RecoDecay::pVec(pVec0, pVec1);
           // auto ptCand = RecoDecay::pt(pVecCand);
           //  2-prong selections after secondary vertex
           // auto cpa = RecoDecay::cpa(primaryVertex, secondaryVertex, pVecCand);
-          std::array<std::array<float, 3>, 2> arrMom = {pvec0, pvec1};
+          std::array<std::array<float, 3>, 2> arrMom = {pVec0, pVec1};
 
           // fill table row
           rowTrackIndexProng2(trackPos1.globalIndex(),
@@ -253,7 +253,7 @@ struct HfTrackIndexSkimsCreator {
           registry.fill(HIST("hVtx2ProngY"), secondaryVertex[1]);
           registry.fill(HIST("hVtx2ProngZ"), secondaryVertex[2]);
           auto mass2Prong = RecoDecay::m(arrMom, arrMassPiK);
-          registry.fill(HIST("hmassD0ToPiK"), mass2Prong);
+          registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
         }
       }
     }
@@ -391,22 +391,22 @@ struct HfCandidateCreator2Prong {
       auto trackParVar1 = df.getTrack(1);
 
       // get track momenta
-      array<float, 3> pvec0;
-      array<float, 3> pvec1;
-      trackParVar0.getPxPyPzGlo(pvec0);
-      trackParVar1.getPxPyPzGlo(pvec1);
+      array<float, 3> pVec0;
+      array<float, 3> pVec1;
+      trackParVar0.getPxPyPzGlo(pVec0);
+      trackParVar1.getPxPyPzGlo(pVec1);
 
       // fill candidate table rows
       rowCandidateBase(collision.globalIndex(),
                        collision.posX(), collision.posY(), collision.posZ(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
-                       pvec0[0], pvec0[1], pvec0[2],
-                       pvec1[0], pvec1[1], pvec1[2],
+                       pVec0[0], pVec0[1], pVec0[2],
+                       pVec1[0], pVec1[1], pVec1[2],
                        rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id());
 
       // fill histograms
       // calculate invariant masses
-      auto arrayMomenta = std::array{pvec0, pvec1};
+      auto arrayMomenta = std::array{pVec0, pVec1};
       massPiK = RecoDecay::m(arrayMomenta, arrMassPiK);
       massKPi = RecoDecay::m(arrayMomenta, arrMassKPi);
       hMass->Fill(massPiK);
@@ -429,12 +429,12 @@ namespace o2::aod
 namespace hf_selcandidate_d0
 {
 // Candidate selection columns
-DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);       //!
-DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int); //!
+DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);       //! selection flag for D0
+DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int); //! selection flag for D0 bar
 } // namespace hf_selcandidate_d0
 
 // Candidate selection table
-DECLARE_SOA_TABLE(HfSelCandidateD0, "AOD", "HFSELCANDD0", //!
+DECLARE_SOA_TABLE(HfSelCandidateD0, "AOD", "HFSELCANDD0", //! table with selection flags
                   hf_selcandidate_d0::IsSelD0,
                   hf_selcandidate_d0::IsSelD0bar);
 } // namespace o2::aod
@@ -591,9 +591,9 @@ struct HfTaskD0 {
     const TString strTitle = "D^{0} candidates";
     const TString strPT = "#it{p}_{T} (GeV/#it{c})";
     const TString strEntries = "entries";
-    registry.add("hPTCand", strTitle + ";" + strPT + ";" + strEntries, {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add("hPtCand", strTitle + ";" + strPT + ";" + strEntries, {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("hMass", strTitle + ";" + "inv. mass (#pi K) (GeV/#it{c}^{2})" + ";" + strEntries, {HistType::kTH1F, {{500, 0., 5.}}});
-    registry.add("hCPA", strTitle + ";" + "cosine of pointing angle" + ";" + strPT + ";" + strEntries, {HistType::kTH2F, {{110, -1.1, 1.1}, {100, 0., 10.}}});
+    registry.add("hCpaVsPtCand", strTitle + ";" + "cosine of pointing angle" + ";" + strPT + ";" + strEntries, {HistType::kTH2F, {{110, -1.1, 1.1}, {100, 0., 10.}}});
   }
 
   void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>& candidates)
@@ -605,8 +605,8 @@ struct HfTaskD0 {
       if (candidate.isSelD0bar() >= flagSelCandD0bar) {
         registry.fill(HIST("hMass"), invMassD0bar(candidate));
       }
-      registry.fill(HIST("hPTCand"), candidate.pt());
-      registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
+      registry.fill(HIST("hPtCand"), candidate.pt());
+      registry.fill(HIST("hCpaVsPtCand"), candidate.cpa(), candidate.pt());
     }
   }
 };
