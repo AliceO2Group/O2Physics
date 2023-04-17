@@ -21,6 +21,7 @@
 #include "Framework/Expressions.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Centrality.h"
 
 namespace o2::aod
 {
@@ -38,7 +39,8 @@ DECLARE_SOA_TABLE(FemtoWorldCollisions, "AOD", "FEMTOWORLDCOLS",
                   o2::aod::collision::PosZ,
                   femtoworldcollision::MultV0M,
                   femtoworldcollision::Sphericity,
-                  femtoworldcollision::MagField);
+                  femtoworldcollision::MagField,
+                  o2::aod::cent::CentRun2V0M);
 using FemtoWorldCollision = FemtoWorldCollisions::iterator;
 
 /// FemtoWorldTrack
@@ -51,13 +53,15 @@ enum ParticleType {
   kV0Child,         //! Child track of a V0
   kPhi,             // PhiCandidate type
   kPhiChild,        // PhiCandidate type
+  kD0D0bar,         //! D0/D0bar meson
+  kD0D0barChild,    //! Child track of a D0/D0bar meson
   kCascade,         //! Cascade
   kCascadeBachelor, //! Bachelor track of a cascade
   kNParticleTypes   //! Number of particle types
 
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Phi", "PhiChild", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Phi", "PhiChild", "D0D0bar", "D0D0barChild", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -75,6 +79,10 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                    //! p_T (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);                  //! Eta
 DECLARE_SOA_COLUMN(Phi, phi, float);                  //! Phi
 DECLARE_SOA_COLUMN(Mass, mass, float);                //! Mass of the particle
+DECLARE_SOA_COLUMN(MassD0, massD0, float);            //! Mass of the D0 meson
+DECLARE_SOA_COLUMN(MassD0bar, massD0bar, float);      //! Mass of the D0bar meson
+DECLARE_SOA_COLUMN(FlagD0, flagD0, uint8_t);          //! HF-Flag of the D0 meson
+DECLARE_SOA_COLUMN(FlagD0bar, flagD0bar, uint8_t);    //! HF-Flag of the D0bar meson
 DECLARE_SOA_COLUMN(PartType, partType, uint8_t);      //! Type of the particle, according to femtoworldparticle::ParticleType
 DECLARE_SOA_COLUMN(Cut, cut, cutContainerType);       //! Bit-wise container for the different selection criteria
 DECLARE_SOA_COLUMN(PIDCut, pidcut, cutContainerType); //! Bit-wise container for the different PID selection criteria \todo since bit-masking cannot be done yet with filters we use a second field for the PID
@@ -115,6 +123,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFind
                            });
 // DECLARE_SOA_COLUMN(TPCNSigmaStoreKa, tpcNSigmaStoreKa, binning::binned_t);
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);       //! DCA between daughters
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float); //! Decay length of the D0/D0bar meson
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse radius of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! X position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! Y position of the decay vertex
@@ -131,6 +140,10 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   femtoworldparticle::Phi,
                   track::P,
                   femtoworldparticle::Mass,
+                  femtoworldparticle::MassD0,
+                  femtoworldparticle::MassD0bar,
+                  femtoworldparticle::FlagD0,
+                  femtoworldparticle::FlagD0bar,
                   femtoworldparticle::PartType,
                   femtoworldparticle::Cut,
                   femtoworldparticle::PIDCut,
@@ -169,6 +182,7 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   pidtof_tiny::TOFNSigmaStorePr,
                   pidtof_tiny::TOFNSigmaStoreDe,
                   femtoworldparticle::DaughDCA,
+                  femtoworldparticle::DecayLength,
                   femtoworldparticle::TransRadius,
                   femtoworldparticle::DecayVtxX,
                   femtoworldparticle::DecayVtxY,

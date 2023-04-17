@@ -25,43 +25,7 @@
 #include <TMap.h>
 #include <TLeaf.h>
 
-const char* removeVersionSuffix(const char* treeName)
-{
-  // remove version suffix, e.g. O2v0_001 becomes O2v0
-  static TString tmp;
-  tmp = treeName;
-  if (tmp.First("_") >= 0) {
-    tmp.Remove(tmp.First("_"));
-  }
-  return tmp;
-}
-
-const char* getTableName(const char* branchName, const char* treeName)
-{
-  // Syntax for branchName:
-  //   fIndex<Table>[_<Suffix>]
-  //   fIndexArray<Table>[_<Suffix>]
-  //   fIndexSlice<Table>[_<Suffix>]
-  // if <Table> is empty it is a self index and treeName is used as table name
-  static TString tableName;
-  tableName = branchName;
-  if (tableName.BeginsWith("fIndexArray") || tableName.BeginsWith("fIndexSlice")) {
-    tableName.Remove(0, 11);
-  } else {
-    tableName.Remove(0, 6);
-  }
-  if (tableName.First("_") >= 0) {
-    tableName.Remove(tableName.First("_"));
-  }
-  if (tableName.Length() == 0) {
-    return removeVersionSuffix(treeName);
-  }
-  tableName.Remove(tableName.Length() - 1); // remove s
-  tableName.ToLower();
-  tableName = "O2" + tableName;
-  // printf("%s --> %s\n", branchName, tableName.Data());
-  return tableName;
-}
+#include "aodMerger.h"
 
 // AOD merger with correct index rewriting
 // No need to know the datamodel because the branch names follow a canonical standard (identified by fIndex)
@@ -71,6 +35,7 @@ int main(int argc, char* argv[])
   std::string outputFileName("AO2D.root");
   long maxDirSize = 100000000;
   bool skipNonExistingFiles = false;
+  int verbosity = 2;
   int exitCode = 0; // 0: success, >0: failure
 
   int option_index = 0;
@@ -79,7 +44,8 @@ int main(int argc, char* argv[])
     {"output", required_argument, nullptr, 1},
     {"max-size", required_argument, nullptr, 2},
     {"skip-non-existing-files", no_argument, nullptr, 3},
-    {"help", no_argument, nullptr, 4},
+    {"verbosity", required_argument, nullptr, 4},
+    {"help", no_argument, nullptr, 5},
     {nullptr, 0, nullptr, 0}};
 
   while (true) {
@@ -95,11 +61,14 @@ int main(int argc, char* argv[])
     } else if (c == 3) {
       skipNonExistingFiles = true;
     } else if (c == 4) {
+      verbosity = atoi(optarg);
+    } else if (c == 5) {
       printf("AO2D merging tool. Options: \n");
       printf("  --input <inputfile.txt>      Contains path to files to be merged. Default: %s\n", inputCollection.c_str());
       printf("  --output <outputfile.root>   Target output ROOT file. Default: %s\n", outputFileName.c_str());
       printf("  --max-size <size in Bytes>   Target directory size. Default: %ld. Set to 0 if file is not self-contained.\n", maxDirSize);
       printf("  --skip-non-existing-files    Flag to allow skipping of non-existing files in the input list.\n");
+      printf("  --verbosity <flag>           Verbosity of output (default: %d).\n", verbosity);
       return -1;
     } else {
       return -2;
@@ -115,6 +84,8 @@ int main(int argc, char* argv[])
   }
 
   std::map<std::string, TTree*> trees;
+  std::map<std::string, uint64_t> sizeCompressed;
+  std::map<std::string, uint64_t> sizeUncompressed;
   std::map<std::string, int> offsets;
   std::map<std::string, int> unassignedIndexOffset;
 
@@ -201,7 +172,9 @@ int main(int argc, char* argv[])
 
       auto dfName = ((TObjString*)key1)->GetString().Data();
 
-      printf("  Processing folder %s\n", dfName);
+      if (verbosity > 0) {
+        printf("  Processing folder %s\n", dfName);
+      }
       ++mergedDFs;
       ++totalMergedDFs;
       auto folder = (TDirectoryFile*)inputFile->Get(dfName);
@@ -234,7 +207,6 @@ int main(int argc, char* argv[])
 
       for (auto key2 : *treeList) {
         auto treeName = ((TObjString*)key2)->GetString().Data();
-        printf("    Processing tree %s\n", treeName);
         bool found = (std::find(foundTrees.begin(), foundTrees.end(), treeName) != foundTrees.end());
         if (found == true) {
           printf("    ***WARNING*** Tree %s was already merged (even if we purged duplicated trees before, so this should not happen), skipping\n", treeName);
@@ -243,23 +215,31 @@ int main(int argc, char* argv[])
         foundTrees.push_back(treeName);
 
         auto inputTree = (TTree*)inputFile->Get(Form("%s/%s", dfName, treeName));
-        printf("    Tree %s has %lld entries\n", treeName, inputTree->GetEntries());
+        bool fastCopy = (inputTree->GetTotBytes() > 10000000); // Only do this for large enough trees to avoid that baskets are too small
+        if (verbosity > 1) {
+          printf("    Processing tree %s with %lld entries with total size %lld (fast copy: %d)\n", treeName, inputTree->GetEntries(), inputTree->GetTotBytes(), fastCopy);
+        }
 
+        bool alreadyCopied = false;
         if (trees.count(treeName) == 0) {
           if (mergedDFs > 1) {
             printf("    *** FATAL ***: The tree %s was not in the previous dataframe(s)\n", treeName);
             exitCode = 3;
           }
 
-          // Connect trees but do not copy entries (using the clone function)
+          // Connect trees but do not copy entries (using the clone function) unless fast copy is on
           // NOTE Basket size etc. are copied in CloneTree()
           if (!outputDir) {
             outputDir = outputFile->mkdir(dfName);
             currentDirSize = 0;
-            printf("Writing to output folder %s\n", dfName);
+            if (verbosity > 0) {
+              printf("Writing to output folder %s\n", dfName);
+            }
           }
           outputDir->cd();
-          auto outputTree = inputTree->CloneTree(0);
+          auto outputTree = inputTree->CloneTree(-1, (fastCopy) ? "fast" : "");
+          currentDirSize += outputTree->GetTotBytes();
+          alreadyCopied = true;
           outputTree->SetAutoFlush(0);
           trees[treeName] = outputTree;
         } else {
@@ -290,7 +270,9 @@ int main(int argc, char* argv[])
             char* buffer = new char[maximum * typeSize];
             memset(buffer, 0, maximum * typeSize);
             vlaPointers.push_back(buffer);
-            printf("      Allocated VLA buffer of length %d with %d bytes each for branch name %s\n", maximum, typeSize, br->GetName());
+            if (verbosity > 2) {
+              printf("      Allocated VLA buffer of length %d with %d bytes each for branch name %s\n", maximum, typeSize, br->GetName());
+            }
             inputTree->SetBranchAddress(br->GetName(), buffer);
             outputTree->SetBranchAddress(br->GetName(), buffer);
 
@@ -321,30 +303,39 @@ int main(int argc, char* argv[])
           }
         }
 
-        auto entries = inputTree->GetEntries();
-        int minIndexOffset = unassignedIndexOffset[treeName];
-        auto newMinIndexOffset = minIndexOffset;
-        for (int i = 0; i < entries; i++) {
-          for (auto& index : indexList) {
-            *(index.first) = 0; // Any positive number will do, in any case it will not be filled in the output. Otherwise the previous entry is used and manipulated in the following.
-          }
-          inputTree->GetEntry(i);
-          // shift index columns by offset
-          for (const auto& idx : indexList) {
-            // if negative, the index is unassigned. In this case, the different unassigned blocks have to get unique negative IDs
-            if (*(idx.first) < 0) {
-              *(idx.first) += minIndexOffset;
-              newMinIndexOffset = std::min(newMinIndexOffset, *(idx.first));
-            } else {
-              *(idx.first) += idx.second;
+        if (indexList.size() > 0) {
+          auto entries = inputTree->GetEntries();
+          int minIndexOffset = unassignedIndexOffset[treeName];
+          auto newMinIndexOffset = minIndexOffset;
+          for (int i = 0; i < entries; i++) {
+            for (auto& index : indexList) {
+              *(index.first) = 0; // Any positive number will do, in any case it will not be filled in the output. Otherwise the previous entry is used and manipulated in the following.
+            }
+            inputTree->GetEntry(i);
+            // shift index columns by offset
+            for (const auto& idx : indexList) {
+              // if negative, the index is unassigned. In this case, the different unassigned blocks have to get unique negative IDs
+              if (*(idx.first) < 0) {
+                *(idx.first) += minIndexOffset;
+                newMinIndexOffset = std::min(newMinIndexOffset, *(idx.first));
+              } else {
+                *(idx.first) += idx.second;
+              }
+            }
+            if (!alreadyCopied) {
+              int nbytes = outputTree->Fill();
+              if (nbytes > 0) {
+                currentDirSize += nbytes;
+              }
             }
           }
-          int nbytes = outputTree->Fill();
+          unassignedIndexOffset[treeName] = newMinIndexOffset;
+        } else if (!alreadyCopied) {
+          auto nbytes = outputTree->CopyEntries(inputTree, -1, (fastCopy) ? "fast" : "");
           if (nbytes > 0) {
             currentDirSize += nbytes;
           }
         }
-        unassignedIndexOffset[treeName] = newMinIndexOffset;
 
         delete inputTree;
 
@@ -392,11 +383,18 @@ int main(int argc, char* argv[])
       }
 
       if (currentDirSize > maxDirSize) {
-        printf("Maximum size reached: %ld. Closing folder %s.\n", currentDirSize, dfName);
+        if (verbosity > 0) {
+          printf("Maximum size reached: %ld. Closing folder %s.\n", currentDirSize, dfName);
+        }
         for (auto const& tree : trees) {
           // printf("Writing %s\n", tree.first.c_str());
           outputDir->cd();
           tree.second->Write();
+
+          // stats
+          sizeCompressed[tree.first] += tree.second->GetZipBytes();
+          sizeUncompressed[tree.first] += tree.second->GetTotBytes();
+
           delete tree.second;
         }
         outputDir = nullptr;
@@ -413,6 +411,14 @@ int main(int argc, char* argv[])
     parentFiles->Write("parentFiles", TObject::kSingleKey);
   }
 
+  for (auto const& tree : trees) {
+    outputDir->cd();
+    tree.second->Write();
+    // stats
+    sizeCompressed[tree.first] += tree.second->GetZipBytes();
+    sizeUncompressed[tree.first] += tree.second->GetTotBytes();
+  }
+
   outputFile->Write();
   outputFile->Close();
 
@@ -425,9 +431,22 @@ int main(int argc, char* argv[])
   if (exitCode != 0) {
     printf("Removing incomplete output file %s.\n", outputFile->GetName());
     gSystem->Unlink(outputFile->GetName());
-  }
+  } else {
+    printf("AOD merger finished. Size overview follows:\n");
 
-  printf("AOD merger finished.\n");
+    uint64_t totalCompressed = 0;
+    uint64_t totalUncompressed = 0;
+    for (auto const& tree : sizeCompressed) {
+      totalCompressed += tree.second;
+      totalUncompressed += sizeUncompressed[tree.first];
+    }
+    if (totalCompressed > 0 && totalUncompressed > 0) {
+      for (auto const& tree : sizeCompressed) {
+        printf("  Tree %20s | Compressed: %12lu (%2.0f%%) | Uncompressed: %12lu (%2.0f%%)\n", tree.first.c_str(), tree.second, 100.0 * tree.second / totalCompressed, sizeUncompressed[tree.first], 100.0 * sizeUncompressed[tree.first] / totalUncompressed);
+      }
+    }
+  }
+  printf("\n");
 
   return exitCode;
 }

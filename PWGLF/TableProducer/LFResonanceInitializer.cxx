@@ -274,7 +274,7 @@ struct reso2initializer {
         mothers = getMothersIndeces(particle);
         motherPDGs = getMothersPDGCodes(particle);
       }
-      while (mothers.size() < 3) {
+      while (mothers.size() > 2) {
         mothers.pop_back();
         motherPDGs.pop_back();
       }
@@ -296,11 +296,88 @@ struct reso2initializer {
   template <typename V0Type>
   void fillMCV0(V0Type const& v0)
   {
-    // TODO: Update this to get the MC V0
-    reso2mcv0s(0,
-               0,
-               0,
-               0);
+    // ------ Temporal lambda function to prevent error in build
+    auto getMothersIndeces = [&](auto const& theMcParticle) {
+      std::vector<int> lMothersIndeces{};
+      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+        LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
+        lMothersIndeces.push_back(lMother.globalIndex());
+      }
+      return lMothersIndeces;
+    };
+    auto getMothersPDGCodes = [&](auto const& theMcParticle) {
+      std::vector<int> lMothersPDGs{};
+      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+        LOGF(debug, "   mother pdgcode lMother: %d", lMother.pdgCode());
+        lMothersPDGs.push_back(lMother.pdgCode());
+      }
+      return lMothersPDGs;
+    };
+    auto getDaughtersIndeces = [&](auto const& theMcParticle) {
+      std::vector<int> lDaughtersIndeces{};
+      for (auto& lDaughter : theMcParticle.template daughters_as<aod::McParticles>()) {
+        LOGF(debug, "   daughter index lDaughter: %d", lDaughter.globalIndex());
+        if (lDaughter.globalIndex() != 0) {
+          lDaughtersIndeces.push_back(lDaughter.globalIndex());
+        }
+      }
+      return lDaughtersIndeces;
+    };
+    auto getDaughtersPDGCodes = [&](auto const& theMcParticle) {
+      std::vector<int> lDaughtersPDGs{};
+      for (auto& lDaughter : theMcParticle.template daughters_as<aod::McParticles>()) {
+        LOGF(debug, "   daughter pdgcode lDaughter: %d", lDaughter.pdgCode());
+        if (lDaughter.globalIndex() != 0) {
+          lDaughtersPDGs.push_back(lDaughter.pdgCode());
+        }
+      }
+      return lDaughtersPDGs;
+    };
+    // ------
+    std::vector<int> mothers = {-1, -1};
+    std::vector<int> motherPDGs = {-1, -1};
+    std::vector<int> daughters = {-1, -1};
+    std::vector<int> daughterPDGs = {-1, -1};
+    if (v0.has_mcParticle()) {
+      auto v0mc = v0.mcParticle();
+      if (v0mc.has_mothers()) {
+        mothers = getMothersIndeces(v0mc);
+        motherPDGs = getMothersPDGCodes(v0mc);
+      }
+      while (mothers.size() > 2) {
+        mothers.pop_back();
+        motherPDGs.pop_back();
+      }
+      if (v0mc.has_daughters()) {
+        daughters = getDaughtersIndeces(v0mc);
+        daughterPDGs = getDaughtersPDGCodes(v0mc);
+      }
+      while (daughters.size() > 2) {
+        LOGF(info, "daughters.size() is larger than 2");
+        daughters.pop_back();
+        daughterPDGs.pop_back();
+      }
+      reso2mcv0s(v0mc.pdgCode(),
+                 mothers[0],
+                 motherPDGs[0],
+                 daughters[0],
+                 daughters[1],
+                 daughterPDGs[0],
+                 daughterPDGs[1],
+                 v0mc.isPhysicalPrimary(),
+                 v0mc.producedByGenerator());
+    } else {
+      LOGF(info, "no MC particle");
+      reso2mcv0s(0,
+                 mothers[0],
+                 motherPDGs[0],
+                 daughters[0],
+                 daughters[1],
+                 daughterPDGs[0],
+                 daughterPDGs[1],
+                 0,
+                 0);
+    }
   }
 
   void init(InitContext&)
@@ -402,9 +479,8 @@ struct reso2initializer {
   void processTrackV0MC(soa::Filtered<soa::Join<ResoEvents, aod::McCollisionLabels>>::iterator const& collision,
                         aod::McCollisions const& mcCols, soa::Filtered<ResoTracksMC> const& tracks,
                         ResoV0sMC const& V0s,
-                        soa::Filtered<aod::McParticles> const& mcParticles, aod::BCsWithTimestamps const& bcs)
+                        aod::McParticles const& mcParticles, aod::BCsWithTimestamps const& bcs)
   {
-    // TODO: this process is not working yet, need to investigate the issue. For now, we use the processTrackMC
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     if (!colCuts.isSelected(collision))
       return;

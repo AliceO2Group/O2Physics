@@ -115,9 +115,9 @@ class DGSelector
       if (track.isPVContributor()) {
 
         // PID
-        if (!udhelpers::hasGoodPID(diffCuts, track)) {
-          return 7;
-        }
+        // if (!udhelpers::hasGoodPID(diffCuts, track)) {
+        //   return 7;
+        // }
 
         // pt
         lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);

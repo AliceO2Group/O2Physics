@@ -58,12 +58,12 @@ struct phosCluQA {
       zAxis{56, -63., 63., "z", "z (cm)"},
       phiAxis{64, -72., 72., "x", "x (cm)"},
       modAxis{4, 1., 5., "module", "Module"};
-    mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
-    mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("bcAll", "Number of BC", o2HistType::kTH1F, {{4, 0.5, 4.5}});
     mHistManager.add("cpvBCAll", "Bunch crossing ID of event with CPV", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("cluBCAll", "Bunch crossing ID of event with PHOS", o2HistType::kTH1F, {bcAxis});
 
     mHistManager.add("cpvPhosEvents", "Number of common PHOS and CPV events", o2HistType::kTH2F, {{3, 0., 3.}, {100, 0., 100}});
+    mHistManager.add("cpvAmbPhosEvents", "Number of common PHOS and CPV events", o2HistType::kTH2F, {{3, 0., 3.}, {100, 0., 100}});
 
     mHistManager.add("CPVSp", "CPV spectrum", o2HistType::kTH2F, {{200, 0., 10000}, {3, 2., 5.}});
     mHistManager.add("CPVOcc", "CPV occupancy", o2HistType::kTH3F, {{128, -72., 72.}, {56, -63., 63.}, {3, 2., 5.}});
@@ -97,15 +97,37 @@ struct phosCluQA {
 
   /// \brief Process PHOS data
   void process(o2::aod::BCs const& bcs,
-               o2::aod::Collisions const&,
+               o2::aod::Collisions const& colls,
                o2::aod::CaloClusters const& clusters,
+               o2::aod::CaloAmbiguousClusters const& ambclusters,
                o2::aod::CPVClusters const& cpvs)
   {
+
+    // If several collisions appear in BC, choose one with largers number of contributors
+    std::map<int64_t, int> colMap;
+    for (auto cl : colls) {
+      auto colbc = colMap.find(cl.bc().globalBC());
+      if (colbc == colMap.end()) { // single collision per BC
+        colMap[cl.bc().globalBC()] = 1;
+      } else { // not unique collision per BC
+        colbc->second++;
+      }
+    }
     for (const auto& bc : bcs) {
       o2::InteractionRecord eventIR;
       eventIR.setFromLong(bc.globalBC());
-      mHistManager.fill(HIST("eventsAll"), 1);
-      mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
+      mHistManager.fill(HIST("bcAll"), 1);
+      auto colbc = colMap.find(bc.globalBC());
+
+      if (colbc == colMap.end()) { // no Collision
+        mHistManager.fill(HIST("bcAll"), 2);
+      } else {
+        if (colbc->second == 1) {
+          mHistManager.fill(HIST("bcAll"), 3);
+        } else {
+          mHistManager.fill(HIST("bcAll"), 4);
+        }
+      }
     }
 
     std::map<uint64_t, int> ncpvClu;
@@ -117,10 +139,11 @@ struct phosCluQA {
     }
     std::map<uint64_t, int> nphosClu;
     for (const auto& clu : clusters) {
-      if (clu.caloType() != 0) {
-        continue;
-      }
-      nphosClu[clu.bcId()]++;
+      nphosClu[clu.collision().bcId()]++;
+    }
+    std::map<uint64_t, int> nphosAmbClu;
+    for (const auto& clu : ambclusters) {
+      nphosAmbClu[clu.bcId()]++;
     }
     for (const auto& [bcid, n] : ncpvClu) {
       if (nphosClu.find(bcid) != nphosClu.end()) {
@@ -129,9 +152,23 @@ struct phosCluQA {
         mHistManager.fill(HIST("cpvPhosEvents"), 1., n);
       }
     }
+    for (const auto& [bcid, n] : ncpvClu) {
+      if (nphosAmbClu.find(bcid) != nphosAmbClu.end()) {
+        mHistManager.fill(HIST("cpvAmbPhosEvents"), 0., n);
+      } else {
+        mHistManager.fill(HIST("cpvAmbPhosEvents"), 1., n);
+      }
+    }
+
     for (const auto& [bcid, n] : nphosClu) {
       if (ncpvClu.find(bcid) == ncpvClu.end()) {
         mHistManager.fill(HIST("cpvPhosEvents"), 2., n);
+      }
+    }
+
+    for (const auto& [bcid, n] : nphosAmbClu) {
+      if (ncpvClu.find(bcid) == ncpvClu.end()) {
+        mHistManager.fill(HIST("cpvAmbPhosEvents"), 2., n);
       }
     }
 
@@ -148,13 +185,10 @@ struct phosCluQA {
       double dist = 9999.;
       double dphi = 0., dz = 0., eClose = 0;
       for (const auto& clu : clusters) {
-        if (clu.caloType() != 0) {
-          continue;
-        }
         if (clu.mod() != cpvclu.moduleNumber()) {
           continue;
         }
-        int bcPHOS = clu.bcId();
+        int bcPHOS = clu.collision().bcId();
         if (currentPHOSBc == 0) {
           currentPHOSBc = bcPHOS;
         }
@@ -226,11 +260,7 @@ struct phosCluQA {
     }
 
     for (const auto& clu : clusters) {
-      if (clu.caloType() != 0)
-        continue;
-      o2::InteractionRecord ir;
-      ir.setFromLong(clu.bc().globalBC());
-      mHistManager.fill(HIST("cluBCAll"), ir.bc);
+      mHistManager.fill(HIST("cluBCAll"), clu.collision().bc().globalBC());
 
       if (clu.mod() == 1) {
         mHistManager.fill(HIST("cluSpM1"), clu.e());
@@ -269,7 +299,7 @@ struct phosCluQA {
           m = sqrt(m);
         double pt = sqrt(pow(clu1.px() + clu2.px(), 2) +
                          pow(clu1.py() + clu2.py(), 2));
-        if (clu1.bc().globalBC() == clu2.bc().globalBC()) { // Real
+        if (clu1.collision() == clu2.collision()) { // Real
           if (clu1.mod() == 1 && clu2.mod() == 1) {
             mHistManager.fill(HIST("mggReM11"), m, pt);
           }

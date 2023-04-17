@@ -72,6 +72,7 @@ struct femtoDreamProducerReducedTask {
 
   // Event cuts
   FemtoDreamCollisionSelection colCuts;
+  Configurable<bool> ConfUseTPCmult{"ConfUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
@@ -189,21 +190,27 @@ struct femtoDreamProducerReducedTask {
 
     const auto vtxZ = col.posZ();
     const auto spher = colCuts.computeSphericity(col, tracks);
-    const auto multNtr = col.multNTracksPV();
-    /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
+
     int mult = 0;
+    int multNtr = 0;
     if (ConfIsRun3) {
       mult = col.multFV0M();
+      multNtr = col.multNTracksPV();
     } else {
-      mult = 0.5 * (col.multFV0M());
+      mult = 0.5 * (col.multFV0M()); /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
+      multNtr = col.multTracklets();
     }
+    if (ConfUseTPCmult) {
+      multNtr = col.multTPC();
+    }
+
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     // If the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
       }
       return;
     }

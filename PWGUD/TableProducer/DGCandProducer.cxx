@@ -10,41 +10,6 @@
 // or submit itself to any jurisdiction.
 //
 // \brief Saves relevant information of DG candidates
-//
-//     options:
-//           DiffCuts.mNDtcoll(4)
-//           DiffCuts.mMinNBCs(7)
-//           DiffCuts.mMinNTracks(0)
-//           DiffCuts.mMaxNTracks(10000)
-//           DiffCuts.mMinNetCharge(0)
-//           DiffCuts.mMaxNetCharge(0)
-//           DiffCuts.mPidHypo(211)
-//           DiffCuts.mMinPosz(-1000.)
-//           DiffCuts.mMaxPosz(1000.)
-//           DiffCuts.mMinPt(0.)
-//           DiffCuts.mMaxPt(1000.)
-//           DiffCuts.mMinEta(-1.)
-//           DiffCuts.mMaxEta(1.)
-//           DiffCuts.mMinIVM(0.)
-//           DiffCuts.mMaxIVM(1000.)
-//           DiffCuts.mMaxnSigmaTPC(1000.)
-//           DiffCuts.mMaxnSigmaTOF(1000.)
-//           DiffCutsX.mFITAmpLimits({0., 0., 0., 0., 0.})
-//
-//     usage: copts="--configuration json://DGCandProducerConfig.json --aod-writer-json DGCandProducerWriter.json -b"
-//
-//           o2-analysis-timestamp $copts |
-//           o2-analysis-track-propagation $copts |
-//           o2-analysis-multiplicity-table $copts |
-//           o2-analysis-ft0-corrected-table $copts |
-//           o2-analysis-event-selection $copts |
-//           o2-analysis-trackextension $copts |
-//           o2-analysis-trackselection $copts |
-//           o2-analysis-pid-tpc-full $copts |
-//           o2-analysis-pid-tof-base $copts |
-//           o2-analysis-pid-tof-full $copts |
-//           o2-analysis-ud-dgcand-producer $copts > DGCandProducer.log
-//
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  20.05.2022
 
@@ -86,6 +51,16 @@ struct DGCandProducer {
   Produces<aod::UDMcCollisions> outputMcCollisions;
   Produces<aod::UDMcParticles> outputMcParticles;
   Produces<aod::UDMcTrackLabels> outputMcTrackLabels;
+
+  // define histograms
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"pt1Vspt2", "#pt1Vspt2", {HistType::kTH2F, {{100, -3., 3.}, {100, -3., 3.0}}}},
+      {"TPCsignal1", "#TPCsignal1", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}}},
+      {"TPCsignal2", "#TPCsignal2", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}}},
+      {"sig1VsSig2TPC", "#sig1VsSig2TPC", {HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}}}},
+    }};
 
   // data inputs
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
@@ -225,7 +200,8 @@ struct DGCandProducer {
                     track.tofNSigmaPi(),
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
-    outputTracksExtra(track.itsClusterMap(),
+    outputTracksExtra(track.tpcInnerParam(),
+                      track.itsClusterMap(),
                       track.tpcNClsFindable(),
                       track.tpcNClsFindableMinusFound(),
                       track.tpcNClsFindableMinusCrossedRows(),
@@ -243,6 +219,8 @@ struct DGCandProducer {
                       track.detectorMap());
     outputTracksFlag(track.has_collision(),
                      track.isPVContributor());
+    LOGF(debug, "<DGCandProducer> %d %d  %d %f %f %f %f %f",
+         track.isPVContributor(), track.isQualityTrack(), track.isGlobalTrack(), track.px(), track.py(), track.pz(), track.pt(), track.p());
   }
 
   // this function properly updates UDMcCollisions and UDMcParticles and returns the value
@@ -310,18 +288,14 @@ struct DGCandProducer {
   }
 
   // process function for real data
-  void processData(CC const& collision,
-                   BCs const& bcs,
-                   TCs& tracks,
-                   FWs& fwdtracks,
-                   aod::Zdcs& zdcs,
-                   aod::FT0s& ft0s,
-                   aod::FV0As& fv0as,
-                   aod::FDDs& fdds)
+  void processData(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
+                   aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
-
     // nominal BC
-    auto bc = collision.bc_as<BCs>();
+    if (!collision.has_foundBC()) {
+      return;
+    }
+    auto bc = collision.foundBC_as<BCs>();
 
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
@@ -353,13 +327,37 @@ struct DGCandProducer {
 
       // update DGTracks tables
       for (auto& track : tracks) {
-        if (track.isPVContributor()) {
-          updateUDTrackTables(track, bc.globalBC());
+        updateUDTrackTables(track, bc.globalBC());
+      }
+
+      // produce TPC signal histograms for 2-track events
+      if (collision.numContrib() == 2) {
+        auto cnt = 0;
+        float pt1 = 0., pt2 = 0.;
+        float signalTPC1 = 0., signalTPC2 = 0.;
+        for (auto tr : tracks) {
+          if (tr.isPVContributor()) {
+            cnt++;
+            switch (cnt) {
+              case 1:
+                pt1 = tr.pt() * tr.sign();
+                signalTPC1 = tr.tpcSignal();
+                break;
+              case 2:
+                pt2 = tr.pt() * tr.sign();
+                signalTPC2 = tr.tpcSignal();
+            }
+            LOGF(debug, "track[%d] %d pT %f ITS %d TPC %d TRD %d TOF %d",
+                 cnt, tr.isGlobalTrack(), tr.pt(), tr.itsNCls(), tr.tpcNClsCrossedRows(), tr.hasTRD(), tr.hasTOF());
+          }
         }
+        registry.get<TH2>(HIST("pt1Vspt2"))->Fill(pt1, pt2);
+        registry.get<TH2>(HIST("TPCsignal1"))->Fill(pt1, signalTPC1);
+        registry.get<TH2>(HIST("TPCsignal2"))->Fill(pt2, signalTPC2);
+        registry.get<TH2>(HIST("sig1VsSig2TPC"))->Fill(signalTPC1, signalTPC2);
       }
     }
   }
-
   PROCESS_SWITCH(DGCandProducer, processData, "Process real data", false);
 
   Preslice<MCTCs> tracksPerCollision = aod::track::collisionId;
@@ -429,7 +427,7 @@ struct DGCandProducer {
 
       // save information of DG events
       if (isDGEvent == 0) {
-        LOGF(info, "  MC: good collision!");
+        LOGF(debug, "  MC: good collision!");
 
         // update UDMcCollisions and UDMcParticles if not already done
         if (!mcColIsSaved) {
@@ -447,24 +445,20 @@ struct DGCandProducer {
         // UDTracks, UDTrackCollisionID, UDTracksExtras, UDMcTrackLabels
         for (auto& track : collisionTracks) {
           // but save only the Primary Vertex tracks
-          if (track.isPVContributor()) {
-            updateUDTrackTables(track, bc.globalBC());
+          updateUDTrackTables(track, bc.globalBC());
 
-            // properly correct the index into the UDMcParticles tables with deltaIndex
-            auto newval = track.mcParticleId() < 0 ? track.mcParticleId() : track.mcParticleId() + deltaIndex;
-            // only associations with McParticles belonging to the actual McCollision are supported
-            if ((newval < nMcParts0) || (newval > outputMcParticles.lastIndex())) {
-              LOGF(info, "<ATTENTION> UDMcParticles index out of range %i (%i - %i)", newval, nMcParts0 + 1, outputMcParticles.lastIndex());
-              newval = -1;
-            }
-            outputMcTrackLabels(newval,
-                                track.mcMask());
+          // properly correct the index into the UDMcParticles tables with deltaIndex
+          auto newval = track.mcParticleId() < 0 ? track.mcParticleId() : track.mcParticleId() + deltaIndex;
+          // only associations with McParticles belonging to the actual McCollision are supported
+          if ((newval < nMcParts0) || (newval > outputMcParticles.lastIndex())) {
+            LOGF(info, "<ATTENTION> UDMcParticles index out of range %i (%i - %i)", newval, nMcParts0 + 1, outputMcParticles.lastIndex());
+            newval = -1;
           }
+          outputMcTrackLabels(newval, track.mcMask());
         }
       }
     }
   }
-
   PROCESS_SWITCH(DGCandProducer, processMc, "Process MC data", false);
 };
 

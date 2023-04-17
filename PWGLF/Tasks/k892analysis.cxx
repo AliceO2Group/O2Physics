@@ -33,6 +33,9 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 struct k892analysis {
+  SliceCache cache;
+  Preslice<aod::ResoTracks> perRCol = aod::resodaughter::resoCollisionId;
+
   framework::Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
@@ -169,7 +172,7 @@ struct k892analysis {
     for (auto& collision : collisions) {
       Partition<aod::ResoTracks> selectedTracks = (o2::aod::track::pt > static_cast<float_t>(cMinPtcut)) && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts
       selectedTracks.bindTable(resotracks);
-      auto colTracks = selectedTracks->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex());
+      auto colTracks = selectedTracks->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
       fillHistograms<false>(collision, colTracks);
     }
   }
@@ -182,7 +185,7 @@ struct k892analysis {
     for (auto& collision : collisions) {
       Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> selectedTracks = (o2::aod::track::pt > static_cast<float_t>(cMinPtcut)) && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts
       selectedTracks.bindTable(resotracks);
-      auto colTracks = selectedTracks->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex());
+      auto colTracks = selectedTracks->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
       fillHistograms<true>(collision, colTracks);
     }
 
@@ -218,7 +221,7 @@ struct k892analysis {
     LOGF(debug, "Event Mixing Started");
     auto tracksTuple = std::make_tuple(resotracks);
     BinningTypeVetZTPCtemp colBinning{{CfgVtxBins, CfgMultBins}, true};
-    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVetZTPCtemp> pairs{colBinning, 10, -1, collisions, tracksTuple}; // -1 is the number of the bin to skip
+    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVetZTPCtemp> pairs{colBinning, 10, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {

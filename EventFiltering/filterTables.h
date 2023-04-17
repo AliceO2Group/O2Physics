@@ -64,7 +64,13 @@ DECLARE_SOA_COLUMN(LLL, hasLLL, bool); //! has L-L-L tripletD
 DECLARE_SOA_COLUMN(JetChHighPt, hasJetChHighPt, bool); //! high-pT charged jet
 
 // full jets
-DECLARE_SOA_COLUMN(JetFullHighPt, hasJetFullHighPt, bool); //! high-pT full jet
+DECLARE_SOA_COLUMN(EMCALReadout, hasEMCALinReadout, bool);       //! EMCAL readout
+DECLARE_SOA_COLUMN(JetFullHighPt, hasJetFullHighPt, bool);       //! high-pT full jet
+DECLARE_SOA_COLUMN(JetNeutralHighPt, hasJetNeutralHighPt, bool); //! high-pT neutral jet
+DECLARE_SOA_COLUMN(GammaHighPtEMCAL, hasGammaHighPtEMCAL, bool); //! Photon trigger in EMCAL, high threshold
+DECLARE_SOA_COLUMN(GammaHighPtDCAL, hasGammaHighPtDCAL, bool);   //! Photon trigger in DCAL, high threshold
+DECLARE_SOA_COLUMN(GammaLowPtEMCAL, hasGammaLowPtEMCAL, bool);   //! Photon trigger in EMCAL, low threshold
+DECLARE_SOA_COLUMN(GammaLowPtDCAL, hasGammaLowPtDCAL, bool);     //! Photon trigger in DCAL, low threshold
 
 // strangeness (lf)
 DECLARE_SOA_COLUMN(Omega, hasOmega, bool);             //! at leat 1 Omega
@@ -94,14 +100,22 @@ DECLARE_SOA_COLUMN(PHOSnbar, hasPHOSnbar, bool);         //! PHOS antineutrons
 namespace decision
 {
 
-DECLARE_SOA_COLUMN(BCId, hasBCId, int);                           //! Bunch crossing Id
-DECLARE_SOA_COLUMN(GlobalBCId, hasGlobalBCId, int);               //! Global Bunch crossing Id
-DECLARE_SOA_COLUMN(CollisionTime, hasCollisionTime, float);       //! Collision time
-DECLARE_SOA_COLUMN(CollisionTimeRes, hasCollisionTimeRes, float); //! Collision time resolution
-DECLARE_SOA_COLUMN(CefpTriggered, hasCefpTriggered, uint64_t);    //! CEFP triggers before downscalings
-DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, uint64_t);      //! CEFP decision
+DECLARE_SOA_COLUMN(BCId, bcIndex, uint64_t);                   //! Bunch crossing Id
+DECLARE_SOA_COLUMN(GlobalBCId, globalBC, uint64_t);            //! Global Bunch crossing Id
+DECLARE_SOA_COLUMN(EvSelBC, evSelBC, uint64_t);                //! Global Bunch crossing Id
+DECLARE_SOA_COLUMN(CollisionTime, collisionTime, float);       //! Collision time
+DECLARE_SOA_COLUMN(CollisionTimeRes, collisionTimeRes, float); //! Collision time resolution
+DECLARE_SOA_COLUMN(CefpTriggered, cefpTriggered, uint64_t);    //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(CefpSelected, cefpSelected, uint64_t);      //! CEFP decision
 
 } // namespace decision
+
+namespace bcrange
+{
+DECLARE_SOA_COLUMN(BCstart, hasBCstart, uint64_t); //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(BCend, hasBCend, uint64_t);     //! CEFP bcrange
+
+} // namespace bcrange
 
 // nuclei
 DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!
@@ -128,13 +142,8 @@ DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
 
 using HfFilter = HfFilters::iterator;
 
-// correlations
-DECLARE_SOA_TABLE(CFFiltersTwoN, "AOD", "CFFiltersTwoN", //!
-                  filtering::PD, filtering::LD);
-using CFFilterTwoN = CFFiltersTwoN::iterator;
-
 DECLARE_SOA_TABLE(CFFilters, "AOD", "CFFilters", //!
-                  filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL);
+                  filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL, filtering::PD, filtering::LD);
 using CfFilter = CFFilters::iterator;
 
 // jets
@@ -144,7 +153,7 @@ DECLARE_SOA_TABLE(JetFilters, "AOD", "JetFilters", //!
 using JetFilter = JetFilters::iterator;
 
 DECLARE_SOA_TABLE(FullJetFilters, "AOD", "FullJetFilters", //!
-                  filtering::JetFullHighPt);
+                  filtering::EMCALReadout, filtering::JetFullHighPt, filtering::JetNeutralHighPt, filtering::GammaHighPtEMCAL, filtering::GammaHighPtDCAL, filtering::GammaLowPtEMCAL, filtering::GammaLowPtDCAL);
 
 using FullJetFilter = FullJetFilters::iterator;
 
@@ -161,22 +170,27 @@ DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
 using MultFilter = MultFilters::iterator;
 
 // photons
-DECLARE_SOA_TABLE(PhotFilters, "AOD", "PhotonFilters", //!
+DECLARE_SOA_TABLE(PhotFilters, "AOD", "PhotFilters", //!
                   filtering::PHOSPhoton, filtering::PHOSElectron, filtering::PHOSPair, filtering::PHOSnbar);
 
 using PhotFilter = PhotFilters::iterator;
 
 // cefp decision
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
-                  decision::BCId, decision::GlobalBCId, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered, decision::CefpSelected);
+                  decision::BCId, decision::GlobalBCId, decision::EvSelBC, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered, decision::CefpSelected);
 using CefpDecision = CefpDecisions::iterator;
 
+// cefp decision
+DECLARE_SOA_TABLE(BCRanges, "AOD", "BCRanges", //!
+                  bcrange::BCstart, bcrange::BCend);
+using BCRange = BCRanges::iterator;
+
 /// List of the available filters, the description of their tables and the name of the tasks
-constexpr int NumberOfFilters{11};
-constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFiltersTwoN", "CFFilters", "JetFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFiltersTwoN", "CFFilters", "JetFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotFilters"};
-constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp", "o2-analysis-hf-filter", "o2-analysis-cf-twobodyfemto-filter", "o2-analysis-cf-threebodyfemto-filter", "o2-analysis-je-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-phot-filter"};
-constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, CFFiltersTwoN, JetFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotFilters> FiltersPack;
+constexpr int NumberOfFilters{10};
+constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotFilters"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotFilters"};
+constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-filter"};
+constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 
 template <typename T, typename C>

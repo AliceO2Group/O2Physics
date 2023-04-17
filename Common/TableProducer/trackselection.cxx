@@ -99,6 +99,7 @@ struct TrackSelectionTask {
       }
     }
 
+    globalTracks.print();
     // Extra requirement on the ITS -> Run 2: asking for 1 hit SDD and no hit in SPD
     globalTracksSDD = getGlobalTrackSelectionSDD();
     globalTracksSDD.SetPtRange(ptMin, ptMax);
@@ -115,6 +116,11 @@ struct TrackSelectionTask {
 
   void process(soa::Join<aod::FullTracks, aod::TracksDCA> const& tracks)
   {
+    filterTable.reserve(tracks.size());
+    if (produceFBextendedTable) {
+      filterTableDetail.reserve(tracks.size());
+    }
+
     if (isRun3) {
       for (auto& track : tracks) {
         o2::aod::track::TrackSelectionFlags::flagtype trackflagGlob = globalTracks.IsSelectedMask(track);

@@ -59,7 +59,7 @@ class TrackSelection
 
   // Temporary function to check if track passes selection criteria. To be replaced by framework filters.
   template <typename T>
-  bool IsSelected(T const& track)
+  bool IsSelected(T const& track) const
   {
     if (!IsSelected(track, TrackCuts::kTrackType)) {
       return false;
@@ -111,7 +111,7 @@ class TrackSelection
 
   // Temporary function to check if track passes and return a flag. To be replaced by framework filters.
   template <typename T>
-  uint16_t IsSelectedMask(T const& track)
+  uint16_t IsSelectedMask(T const& track) const
   {
     uint16_t flag = 0;
 
@@ -142,7 +142,7 @@ class TrackSelection
 
   // Temporary function to check if track passes a given selection criteria. To be replaced by framework filters.
   template <typename T>
-  bool IsSelected(T const& track, const TrackCuts& cut)
+  bool IsSelected(T const& track, const TrackCuts& cut) const
   {
     const bool isRun2 = track.trackType() == o2::aod::track::Run2Track || track.trackType() == o2::aod::track::Run2Tracklet;
 
@@ -197,73 +197,32 @@ class TrackSelection
     }
   }
 
-  void SetTrackType(o2::aod::track::TrackTypeEnum trackType) { mTrackType = trackType; }
-  void SetPtRange(float minPt = 0.f, float maxPt = 1e10f)
-  {
-    mMinPt = minPt;
-    mMaxPt = maxPt;
-  }
-  void SetEtaRange(float minEta = -1e10f, float maxEta = 1e10f)
-  {
-    mMinEta = minEta;
-    mMaxEta = maxEta;
-  }
-  void SetRequireITSRefit(bool requireITSRefit = true)
-  {
-    mRequireITSRefit = requireITSRefit;
-  }
-  void SetRequireTPCRefit(bool requireTPCRefit = true)
-  {
-    mRequireTPCRefit = requireTPCRefit;
-  }
-  void SetRequireGoldenChi2(bool requireGoldenChi2 = true)
-  {
-    mRequireGoldenChi2 = requireGoldenChi2;
-  }
-  void SetMinNClustersTPC(int minNClustersTPC)
-  {
-    mMinNClustersTPC = minNClustersTPC;
-  }
-  void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC)
-  {
-    mMinNCrossedRowsTPC = minNCrossedRowsTPC;
-  }
-  void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC)
-  {
-    mMinNCrossedRowsOverFindableClustersTPC = minNCrossedRowsOverFindableClustersTPC;
-  }
-  void SetMinNClustersITS(int minNClustersITS)
-  {
-    mMinNClustersITS = minNClustersITS;
-  }
-  void SetMaxChi2PerClusterTPC(float maxChi2PerClusterTPC)
-  {
-    mMaxChi2PerClusterTPC = maxChi2PerClusterTPC;
-  }
-  void SetMaxChi2PerClusterITS(float maxChi2PerClusterITS)
-  {
-    mMaxChi2PerClusterITS = maxChi2PerClusterITS;
-  }
-  void SetMaxDcaXY(float maxDcaXY) { mMaxDcaXY = maxDcaXY; }
-  void SetMaxDcaZ(float maxDcaZ) { mMaxDcaZ = maxDcaZ; }
-
-  void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
-  {
-    mMaxDcaXYPtDep = ptDepCut;
-  }
-  void SetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
-  {
-    // layer 0 corresponds to the the innermost ITS layer
-    mRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));
-  }
-  void SetRequireNoHitsInITSLayers(std::set<uint8_t> excludedLayers)
-  {
-    mRequiredITSHits.push_back(std::make_pair(-1, excludedLayers));
-  }
+  // Setters
+  void SetTrackType(o2::aod::track::TrackTypeEnum trackType);
+  void SetPtRange(float minPt = 0.f, float maxPt = 1e10f);
+  void SetEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
+  void SetRequireITSRefit(bool requireITSRefit = true);
+  void SetRequireTPCRefit(bool requireTPCRefit = true);
+  void SetRequireGoldenChi2(bool requireGoldenChi2 = true);
+  void SetMinNClustersTPC(int minNClustersTPC);
+  void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC);
+  void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC);
+  void SetMinNClustersITS(int minNClustersITS);
+  void SetMaxChi2PerClusterTPC(float maxChi2PerClusterTPC);
+  void SetMaxChi2PerClusterITS(float maxChi2PerClusterITS);
+  void SetMaxDcaXY(float maxDcaXY);
+  void SetMaxDcaZ(float maxDcaZ);
+  void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
+  void SetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers);
+  void SetRequireNoHitsInITSLayers(std::set<uint8_t> excludedLayers);
+  /// @brief Reset ITS requirements
   void ResetITSRequirements() { mRequiredITSHits.clear(); }
 
+  /// @brief Print the track selection
+  void print() const;
+
  private:
-  bool FulfillsITSHitRequirements(uint8_t itsClusterMap);
+  bool FulfillsITSHitRequirements(uint8_t itsClusterMap) const;
 
   o2::aod::track::TrackTypeEnum mTrackType{o2::aod::track::TrackTypeEnum::Track};
 

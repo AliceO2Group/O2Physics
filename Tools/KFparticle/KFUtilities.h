@@ -27,9 +27,7 @@
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 
-#include "TVector3.h"
-#include <iostream>
-using namespace std;
+#include "Common/Core/RecoDecay.h"
 
 /// @brief Function to create a KFPVertex from the collision table in the AO2Ds.
 /// The Multiplicity table is required to set the number of real PV Contributors
@@ -50,15 +48,14 @@ KFPVertex createKFPVertexFromCollision(const T& collision)
   return kfpVertex;
 }
 
-/// @brief Function to create a KFPTrack from AO2D tracks. The Covariance matrix is needed.
-/// @tparam T
-/// @param track Track from aod::Tracks, aod::TracksExtra, aod::TracksCov
+/// @brief Function to create a KFPTrack from o2::track::TrackParametrizationWithError tracks. The Covariance matrix is needed.
+/// @param track Track from o2::track::TrackParametrizationWithError
 /// @return KFPTrack
-template <typename T>
-KFPTrack createKFPTrackFromTrack(const T& track)
+KFPTrack createKFPTrack(const o2::track::TrackParametrizationWithError<float>& trackparCov,
+                        int16_t trackSign,
+                        int16_t tpcNClsFound,
+                        float tpcChi2NCl)
 {
-  o2::track::TrackParametrizationWithError trackparCov;
-  trackparCov = getTrackParCov(track);
   array<float, 3> trkpos_par;
   array<float, 3> trkmom_par;
   array<float, 21> trk_cov;
@@ -74,9 +71,35 @@ KFPTrack createKFPTrackFromTrack(const T& track)
   KFPTrack kfpTrack;
   kfpTrack.SetParameters(trkpar_KF);
   kfpTrack.SetCovarianceMatrix(trkcov_KF);
-  kfpTrack.SetCharge(track.sign());
-  kfpTrack.SetNDF(track.tpcNClsFound() - 5);
-  kfpTrack.SetChi2(track.tpcChi2NCl() * track.tpcNClsFound());
+  kfpTrack.SetCharge(trackSign);
+  kfpTrack.SetNDF(tpcNClsFound - 5);
+  kfpTrack.SetChi2(tpcNClsFound * tpcChi2NCl);
+  return kfpTrack;
+}
+
+/// @brief Function to create a KFPTrack from AO2D tracks. The Covariance matrix is needed.
+/// @tparam T
+/// @param track Track from aod::Tracks, aod::TracksExtra, aod::TracksCov
+/// @return KFPTrack
+template <typename T>
+KFPTrack createKFPTrackFromTrack(const T& track)
+{
+  o2::track::TrackParametrizationWithError trackparCov;
+  trackparCov = getTrackParCov(track);
+
+  KFPTrack kfpTrack = createKFPTrack(trackparCov, track.sign(), track.tpcNClsFound(), track.tpcChi2NCl());
+  return kfpTrack;
+}
+
+/// @brief Function to create a KFPTrack from o2::track::TrackParametrizationWithError tracks. The Covariance matrix is needed.
+/// @param track Track from o2::track::TrackParametrizationWithError
+/// @return KFPTrack
+KFPTrack createKFPTrackFromTrackParCov(const o2::track::TrackParametrizationWithError<float>& trackparCov,
+                                       int16_t trackSign,
+                                       int16_t tpcNClsFound,
+                                       float tpcChi2NCl)
+{
+  KFPTrack kfpTrack = createKFPTrack(trackparCov, trackSign, tpcNClsFound, tpcChi2NCl);
   return kfpTrack;
 }
 
@@ -86,30 +109,22 @@ KFPTrack createKFPTrackFromTrack(const T& track)
 /// @return cpa
 float cpaFromKF(KFParticle kfp, KFParticle PV)
 {
-  float v[3];
-  v[0] = kfp.GetX() - PV.GetX();
-  v[1] = kfp.GetY() - PV.GetY();
-  v[2] = kfp.GetZ() - PV.GetZ();
+  float xVtxP, yVtxP, zVtxP, xVtxS, yVtxS, zVtxS, px, py, pz = 0.;
 
-  float p[3];
-  p[0] = kfp.GetPx();
-  p[1] = kfp.GetPy();
-  p[2] = kfp.GetPz();
+  xVtxP = PV.GetX();
+  yVtxP = PV.GetY();
+  zVtxP = PV.GetZ();
 
-  float ptimesv2 = (p[0] * p[0] + p[1] * p[1] + p[2] * p[2]) * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+  xVtxS = kfp.GetX();
+  yVtxS = kfp.GetY();
+  zVtxS = kfp.GetZ();
 
-  if (ptimesv2 <= 0) {
-    return 0.;
-  } else {
-    double cos = (v[0] * p[0] + v[1] * p[1] + v[2] * p[2]) / sqrt(ptimesv2);
-    if (cos > 1.0) {
-      cos = 1.0;
-    }
-    if (cos < -1.0) {
-      cos = -1.0;
-    }
-    return cos;
-  }
+  px = kfp.GetPx();
+  py = kfp.GetPy();
+  pz = kfp.GetPz();
+
+  float cpa = RecoDecay::cpa(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}, array{px, py, pz});
+  return cpa;
 }
 
 /// @brief Cosine of pointing angle in xy plane from KFParticles
@@ -118,28 +133,19 @@ float cpaFromKF(KFParticle kfp, KFParticle PV)
 /// @return cpa in xy
 float cpaXYFromKF(KFParticle kfp, KFParticle PV)
 {
-  float v[3];
-  v[0] = kfp.GetX() - PV.GetX();
-  v[1] = kfp.GetY() - PV.GetY();
+  float xVtxP, yVtxP, xVtxS, yVtxS, px, py = 0.;
 
-  float p[3];
-  p[0] = kfp.GetPx();
-  p[1] = kfp.GetPy();
+  xVtxP = PV.GetX();
+  yVtxP = PV.GetY();
 
-  float ptimesv2 = (p[0] * p[0] + p[1] * p[1]) * (v[0] * v[0] + v[1] * v[1]);
+  xVtxS = kfp.GetX();
+  yVtxS = kfp.GetY();
 
-  if (ptimesv2 <= 0) {
-    return 0.;
-  } else {
-    double cos = (v[0] * p[0] + v[1] * p[1]) / sqrt(ptimesv2);
-    if (cos > 1.0) {
-      cos = 1.0;
-    }
-    if (cos < -1.0) {
-      cos = -1.0;
-    }
-    return cos;
-  }
+  px = kfp.GetPx();
+  py = kfp.GetPy();
+
+  float cpaXY = RecoDecay::cpaXY(array{xVtxP, yVtxP}, array{xVtxS, yVtxS}, array{px, py});
+  return cpaXY;
 }
 
 /// @brief Cosine theta star KFParticles
@@ -151,31 +157,25 @@ float cpaXYFromKF(KFParticle kfp, KFParticle PV)
 /// @param kfpprong0 KFParticle Prong 0
 /// @param kfpprong1 KFParticele Prong 1
 /// @return cos theta star
-float cosThetaStarFromKF(int ip, int pdgvtx, int pdgprong0, int pdgprong1, KFParticle kfpvtx, KFParticle kfpprong0, KFParticle kfpprong1)
+float cosThetaStarFromKF(int ip, int pdgvtx, int pdgprong0, int pdgprong1, KFParticle kfpprong0, KFParticle kfpprong1)
 {
-  // p* = √[(M^2 - m1^2 - m2^2)^2 - 4 m1^2 m2^2]/2M
-  // Lorentz transformation of the longitudinal momentum of the prong into the detector frame:
-  // p_L,i = γ (p*_L,i + β E*_i)
-  // p*_L,i = p_L,i/γ - β E*_i
-  // cos(θ*_i) = (p_L,i/γ - β E*_i)/p*
-  float massvtx = TDatabasePDG::Instance()->GetParticle(pdgvtx)->Mass();
-  float massp[2];
-  massp[0] = TDatabasePDG::Instance()->GetParticle(pdgprong0)->Mass();
-  massp[1] = TDatabasePDG::Instance()->GetParticle(pdgprong1)->Mass();
-  float pStar = sqrt((massvtx * massvtx - massp[0] * massp[0] - massp[1] * massp[1]) * (massvtx * massvtx - massp[0] * massp[0] - massp[1] * massp[1]) - 4. * massp[0] * massp[0] * massp[1] * massp[1]) / (2. * massvtx);
-  float e = kfpvtx.GetE();
-  float beta = kfpvtx.GetP() / e;
-  float gamma = e / massvtx;
-  TVector3 mom;
-  TVector3 momTot(kfpvtx.GetPx(), kfpvtx.GetPy(), kfpvtx.GetPz());
-  if (ip == 0) {
-    mom.SetXYZ(kfpprong0.GetPx(), kfpprong0.GetPy(), kfpprong0.GetPz());
-  }
-  if (ip == 1) {
-    mom.SetXYZ(kfpprong1.GetPx(), kfpprong1.GetPy(), kfpprong1.GetPz());
-  }
-  float cts = ((mom.Dot(momTot) / momTot.Mag()) / gamma - beta * sqrt(pStar * pStar + massp[ip] * massp[ip])) / pStar;
-  return cts;
+  float px0, py0, pz0, px1, py1, pz1 = 0.;
+
+  px0 = kfpprong0.GetPx();
+  py0 = kfpprong0.GetPy();
+  pz0 = kfpprong0.GetPz();
+
+  px1 = kfpprong1.GetPx();
+  py1 = kfpprong1.GetPy();
+  pz1 = kfpprong1.GetPz();
+  array<double, 2> m = {0., 0.};
+  m[0] = TDatabasePDG::Instance()->GetParticle(pdgprong0)->Mass();
+  m[1] = TDatabasePDG::Instance()->GetParticle(pdgprong1)->Mass();
+  double mTot = TDatabasePDG::Instance()->GetParticle(pdgvtx)->Mass();
+  int iProng = ip;
+
+  float cosThetastar = RecoDecay::cosThetaStar(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m, mTot, iProng);
+  return cosThetastar;
 }
 
 /// Calculates impact parameter in the bending plane of the particle w.r.t. a point
@@ -186,16 +186,22 @@ float cosThetaStarFromKF(int ip, int pdgvtx, int pdgprong0, int pdgprong1, KFPar
 /// @return impact parameter
 float impParXYFromKF(KFParticle kfpParticle, KFParticle Vertex)
 {
-  TVector2 flightLineXY((Vertex.GetX() - kfpParticle.GetX()), (Vertex.GetY() - kfpParticle.GetY()));
-  TVector2 mom(kfpParticle.GetPx(), kfpParticle.GetPy());
-  TVector3 mom3(kfpParticle.GetPx(), kfpParticle.GetPy(), kfpParticle.GetPz());
-  float pt2 = mom.X() * mom.X() + mom.Y() * mom.Y();
-  float k = flightLineXY.X() * (mom.X() / pt2) + flightLineXY.Y() * (mom.Y() / pt2);
-  TVector2 d = flightLineXY - k * mom;
-  float absImpPar = sqrt(d.X() * d.X() + d.Y() * d.Y());
-  TVector3 flightLine((Vertex.GetX() - kfpParticle.GetX()), (Vertex.GetY() - kfpParticle.GetY()), (Vertex.GetZ() - kfpParticle.GetZ()));
-  TVector3 cross = mom3.Cross(flightLine);
-  return (cross.Z() > 0. ? absImpPar : -1. * absImpPar);
+  float xVtxP, yVtxP, zVtxP, xVtxS, yVtxS, zVtxS, px, py, pz = 0.;
+
+  xVtxP = Vertex.GetX();
+  yVtxP = Vertex.GetY();
+  zVtxP = Vertex.GetZ();
+
+  xVtxS = kfpParticle.GetX();
+  yVtxS = kfpParticle.GetY();
+  zVtxS = kfpParticle.GetZ();
+
+  px = kfpParticle.GetPx();
+  py = kfpParticle.GetPy();
+  pz = kfpParticle.GetPz();
+
+  float impParXY = RecoDecay::impParXY(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}, array{px, py, pz});
+  return impParXY;
 }
 
 /// @brief distance between production vertex and decay vertex normalised by the uncertainty

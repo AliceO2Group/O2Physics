@@ -56,6 +56,8 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -90,7 +92,8 @@ DECLARE_SOA_TABLE(HfCandChicFull, "AOD", "HFCANDChicFull",
                   full::Phi,
                   full::Y,
                   hf_cand_chic::JpsiToMuMuMass,
-                  full::MCflag);
+                  full::MCflag,
+                  full::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCandChicFullEvents, "AOD", "HFCANDChicFullE",
                   collision::BCId,
@@ -108,7 +111,8 @@ DECLARE_SOA_TABLE(HfCandChicFullParticles, "AOD", "HFCANDChicFullP",
                   full::Phi,
                   full::Y,
                   hf_cand_chic::JpsiToMuMuMass,
-                  full::MCflag);
+                  full::MCflag,
+                  full::OriginMcGen);
 
 } // namespace o2::aod
 
@@ -193,7 +197,8 @@ struct HfTreeCreatorChicToJpsiGamma {
             candidate.phi(),
             FunctionY,
             candidate.jpsiToMuMuMass(),
-            candidate.flagMcMatchRec());
+            candidate.flagMcMatchRec(),
+            candidate.originMcRec());
         }
       };
       fillTable(0, candidate.isSelChicToJpsiToMuMuGamma(), invMassChicToJpsiGamma(candidate), ctChic(candidate), yChic(candidate));
@@ -212,7 +217,8 @@ struct HfTreeCreatorChicToJpsiGamma {
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, massChic),
           0., // put here the jpsi mass
-          particle.flagMcMatchGen());
+          particle.flagMcMatchGen(),
+          particle.originMcGen());
       }
     }
   }

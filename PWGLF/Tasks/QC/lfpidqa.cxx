@@ -114,6 +114,11 @@ struct lfpidqa {
   Configurable<int> nBinsNSigma{"nBinsNSigma", 401, "Number of bins for the NSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.025f, "Minimum NSigma in range"};
   Configurable<float> maxNSigma{"maxNSigma", 10.025f, "Maximum NSigma in range"};
+  Configurable<bool> enableTrackCuts{"enableTrackCuts", false, "Flag to enable the custom selections for the QA plots"};
+  Configurable<float> minPTPC{"minPTPC", 0.f, "Minimum TPC Momentum for the QA plots"};
+  Configurable<float> maxPTPC{"maxPTPC", 0.f, "Maximum TPC Momentum for the QA plots"};
+  Configurable<float> minTPCdEdx{"minTPCdEdx", 0.f, "Minimum TPC dEdx for the QA plots"};
+  Configurable<float> maxTPCdEdx{"maxTPCdEdx", 0.f, "Maximum TPC dEdx for the QA plots"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext&)
@@ -154,6 +159,7 @@ struct lfpidqa {
   // Filter collisionEvSelFilter = ((o2::aod::evsel::Sel8 > 0));
   Filter collisionNumContribPV = (minPVcontrib <= o2::aod::collision::numContrib) && (o2::aod::collision::numContrib < maxPVcontrib);
   Filter trackFilter = (requireGlobalTrackInFilter());
+  Filter trackFilterCustom = (enableTrackCuts.node() == false) || ((o2::aod::track::tpcInnerParam > minPTPC) && (o2::aod::track::tpcInnerParam < maxPTPC) && (o2::aod::track::tpcSignal > minTPCdEdx) && (o2::aod::track::tpcSignal < maxTPCdEdx));
 
   template <int id, typename T>
   void fillStd(const T& track)

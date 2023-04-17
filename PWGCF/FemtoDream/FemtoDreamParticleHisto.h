@@ -38,7 +38,8 @@ class FemtoDreamParticleHisto
 
   /// Initialization of the QA histograms
   /// \param registry HistogramRegistry
-  void init(HistogramRegistry* registry)
+  template <typename T>
+  void init(HistogramRegistry* registry, T& tempFitVarpTBins, T& tempFitVarBins)
   {
     if (registry) {
       mHistogramRegistry = registry;
@@ -51,18 +52,29 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
       mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
 
-      /// Particle-type specific histograms
+      /// particle specific histogramms for the TempFitVar column in FemtoDreamParticles
+
+      std::string tempFitVarName;
+      std::string tempFitVarAxisTitle;
       if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
         /// Track histograms
-        mHistogramRegistry->add((folderName + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
+        tempFitVarName = "/hDCAxy";
+        tempFitVarAxisTitle = "DCA_{xy} (cm)";
       } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0) {
         /// V0 histograms
-        mHistogramRegistry->add((folderName + "/hCPA").c_str(), "; #it{p}_{T} (GeV/#it{c}); cos#alpha", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1}});
+        tempFitVarName = "/hCPA";
+        tempFitVarAxisTitle = "cos#alpha";
       } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
         /// Cascade histograms
+        tempFitVarName = "/hCPA";
+        tempFitVarAxisTitle = "cos#alpha";
       } else {
         LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
       }
+
+      framework::AxisSpec tempFitVarpTAxis = {tempFitVarpTBins, "#it{p}_{T} (GeV/#it{c})"}; // the pT binning may vary
+      framework::AxisSpec tempFitVarAxis = {tempFitVarBins, tempFitVarAxisTitle};
+      mHistogramRegistry->add((folderName + tempFitVarName).c_str(), ("; #it{p}_{T} (GeV/#it{c}); " + tempFitVarAxisTitle).c_str(), kTH2F, {{tempFitVarpTAxis}, {tempFitVarAxis}});
     }
   }
 

@@ -17,6 +17,14 @@ o2physics_target_root_dictionary(UDGoodRunSelector
                                  HEADERS UDGoodRunSelector.h
                                  LINKDEF UDGoodRunSelectorLinkDef.h)
 
+o2physics_add_library(UDFSParser
+                      SOURCES UDFSParser.cxx
+                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+
+o2physics_target_root_dictionary(UDFSParser
+                                 HEADERS UDFSParser.h
+                                 LINKDEF UDFSParserLinkDef.h)
+
 o2physics_add_library(DGCutparHolder
                       SOURCES DGCutparHolder.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)

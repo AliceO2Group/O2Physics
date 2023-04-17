@@ -50,7 +50,7 @@ struct cascadeLabelBuilder {
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build cascade labels
-  void process(aod::Collision const& collision, aod::CascDataExt const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const&)
+  void process(aod::Collision const& collision, aod::CascDataExt const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
   {
     for (auto& casc : casctable) {
       // Loop over those that actually have the corresponding V0 associated to them
@@ -63,9 +63,9 @@ struct cascadeLabelBuilder {
       int lLabel = -1;
 
       // Acquire all three daughter tracks, please
-      auto lBachTrack = casc.bachelor_as<LabeledTracks>();
-      auto lNegTrack = v0data.negTrack_as<LabeledTracks>();
-      auto lPosTrack = v0data.posTrack_as<LabeledTracks>();
+      auto lBachTrack = casc.bachelor_as<aod::McTrackLabels>();
+      auto lNegTrack = v0data.negTrack_as<aod::McTrackLabels>();
+      auto lPosTrack = v0data.posTrack_as<aod::McTrackLabels>();
 
       // Association check
       // There might be smarter ways of doing this in the future
