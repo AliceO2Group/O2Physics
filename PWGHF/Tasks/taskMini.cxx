@@ -16,29 +16,16 @@
 
 #include <algorithm>
 
-#include "CCDB/BasicCCDBManager.h" // for PV refit
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociation.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "DataFormatsParameters/GRPMagField.h" // for PV refit
-#include "DataFormatsParameters/GRPObject.h"   // for PV refit
 #include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/GeometryManager.h" // for PV refit
-#include "DetectorsBase/Propagator.h"      // for PV refit
-#include "DetectorsVertexing/PVertexer.h"  // for PV refit
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Vertex.h" // for PV refit
-#include "ReconstructionDataFormats/V0.h"
-
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
 
