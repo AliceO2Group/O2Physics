@@ -45,7 +45,6 @@
 #include "CCDB/CcdbApi.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 
-
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
