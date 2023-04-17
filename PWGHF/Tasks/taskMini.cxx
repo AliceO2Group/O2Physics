@@ -52,11 +52,10 @@ DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //! track selection table
                   hf_seltrack::PzProng);
 
 using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra, HfSelTrack>;
-using BigTracksDCA = soa::Join<BigTracks, aod::TracksDCA>;
-using BigTracksPID = soa::Join<BigTracks,
+using BigTracksPid = soa::Join<BigTracks,
                                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using BigTracksPIDExtended = soa::Join<BigTracksPID, aod::TracksDCA>;
+using BigTracksPidDca = soa::Join<BigTracksPid, aod::TracksDCA>;
 
 namespace hf_track_index
 {
@@ -498,7 +497,7 @@ struct HfCandidateSelectorD0 {
     return true;
   }
 
-  void process(aod::HfCandProng2 const& candidates, aod::BigTracksPIDExtended const&)
+  void process(aod::HfCandProng2 const& candidates, aod::BigTracksPidDca const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
@@ -514,8 +513,8 @@ struct HfCandidateSelectorD0 {
       int statusD0 = 0;
       int statusD0bar = 0;
 
-      auto trackPos = candidate.prong0_as<aod::BigTracksPIDExtended>(); // positive daughter
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPIDExtended>(); // negative daughter
+      auto trackPos = candidate.prong0_as<aod::BigTracksPidDca>(); // positive daughter
+      auto trackNeg = candidate.prong1_as<aod::BigTracksPidDca>(); // negative daughter
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
