@@ -21,7 +21,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetHF.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -35,11 +35,11 @@ struct JetMatchingHF {
   using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
   using HfCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>;
   using McParticles = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
-  using DetectorLevelJets = soa::Join<aod::MCDetectorLevelHFJets, aod::MCDetectorLevelHFJetConstituents>;
-  using ParticleLevelJets = soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents>;
+  using DetectorLevelJets = soa::Join<aod::MCDetectorLevelD0Jets, aod::MCDetectorLevelD0JetConstituents>;
+  using ParticleLevelJets = soa::Join<aod::MCParticleLevelD0Jets, aod::MCParticleLevelD0JetConstituents>;
 
-  Produces<aod::MatchedMCParticleDetectorLevelHFJets> jetsPartToDetMatching;
-  Produces<aod::MatchedMCDetectorParticleLevelHFJets> jetsDetToPartMatching;
+  Produces<aod::MatchedMCParticleDetectorLevelD0Jets> jetsPartToDetMatching;
+  Produces<aod::MatchedMCDetectorParticleLevelD0Jets> jetsDetToPartMatching;
 
   Preslice<ParticleLevelJets> ParticleLevelJetsPerMcCollision = aod::jet::mcCollisionId;
 

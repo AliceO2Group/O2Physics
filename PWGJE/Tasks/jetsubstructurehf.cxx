@@ -20,6 +20,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "TDatabasePDG.h"
 
 #include "Common/Core/TrackSelection.h"
@@ -30,40 +31,36 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetSubstructureHF.h"
+#include "PWGJE/DataModel/JetHF.h"
+#include "PWGJE/DataModel/JetSubstructure.h"
 #include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/Core/FastJetUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec hfjetsubstructureMode = {
-    "hfjetsubstructureMode",
-    VariantType::String,
-    "",
-    {"HF jet substrcture mode."},
-  };
-  workflowOptions.push_back(hfjetsubstructureMode);
-}
 
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
 template <typename SubstructureTable>
 struct JetSubstructureHFTask {
-  Produces<SubstructureTable> jetSubstructurehf;
+  Produces<SubstructureTable> jetSubstructurehfTable;
   OutputObj<TH1F> hZg{"h_jet_zg"};
   OutputObj<TH1F> hRg{"h_jet_rg"};
   OutputObj<TH1F> hNsd{"h_jet_nsd"};
 
-  Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT cut"};
+  // HF candidate level configurables
+  Configurable<std::string> candSpecie_s{"candSpecie_s", "D0", "options are D0, Lc, BPlus"};
+
+  // Jet level configurables
   Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
   Configurable<float> beta{"beta", 0.0, "soft drop beta"};
   Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
   Configurable<bool> doConstSub{"doConstSub", false, "do constituent subtraction"};
+
+  Service<O2DatabasePDG> pdg;
+  int candPDG;
 
   std::vector<fastjet::PseudoJet> jetConstituents;
   std::vector<fastjet::PseudoJet> jetReclustered;
@@ -79,221 +76,237 @@ struct JetSubstructureHFTask {
                             7, -0.5, 6.5));
     jetReclusterer.isReclustering = true;
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
+
+    auto candSpecie = static_cast<std::string>(candSpecie_s);
+    if (candSpecie == "D0") {
+      candPDG = static_cast<int>(pdg::Code::kD0);
+    }
+    if (candSpecie == "BPlus") {
+      candPDG = static_cast<int>(pdg::Code::kBPlus);
+    }
+    if (candSpecie == "Lc") {
+      candPDG = static_cast<int>(pdg::Code::kLambdaCPlus);
+    }
+    if (candSpecie == "JPsi") {
+      candPDG = static_cast<int>(pdg::Code::kJPsi);
+    }
   }
-  enum pdgCode { pdgD0 = 421 };
 
-  // Filter jetCuts = aod::jet::pt > f_jetPtMin;
-
-  void processData(soa::Join<aod::HFJets, aod::HFJetConstituents>::iterator const& jet, // add template back
-                   soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates,
-                   aod::Tracks const& tracks)
+  template <typename T>
+  void processConstituents(T const& jet)
   {
     jetConstituents.clear();
-    jetReclustered.clear();
-    // if (b_DoConstSub) {
-    // for (const auto& constituent : constituentsSub) {
-    //  fillConstituents(constituent, jetConstituents);
-    //  }
-    // } else {
-    //  for (auto& jetConstituentIndex : jet.trackIds()) {
-    //  auto jetConstituent = tracks.rawIteratorAt(jetConstituentIndex - tracks.offset());
-    for (auto& jetConstituent : jet.tracks_as<aod::Tracks>()) {
-      fillConstituents(jetConstituent, jetConstituents);
+    for (auto& jetConstituent : jet.template tracks_as<aod::Tracks>()) {
+      FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
     }
+  }
+
+  template <typename T>
+  void processGenLevel(T const& jet)
+  {
+    jetConstituents.clear();
+    for (auto& jetConstituent : jet.template tracks_as<aod::McParticles>()) {
+      FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), RecoDecay::getMassPDG(jetConstituent.pdgCode()));
+    }
+    for (auto& jetHFCandidate : jet.template hfcandidates_as<aod::McParticles>()) { // should only be one at the moment
+      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(jetHFCandidate.pdgCode()));
+    }
+    jetReclustering(jet);
+  }
+
+  template <typename T>
+  void jetReclustering(T const& jet)
+  {
+    jetReclustered.clear();
+    fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
+    jetReclustered = sorted_by_pt(jetReclustered);
+    fastjet::PseudoJet daughterSubJet = jetReclustered[0];
+    fastjet::PseudoJet parentSubJet1;
+    fastjet::PseudoJet parentSubJet2;
+    bool softDropped = false;
+    auto nsd = 0.0;
+    auto zg = -1.0;
+    auto rg = -1.0;
+    while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
+      if (parentSubJet1.perp() < parentSubJet2.perp()) {
+        std::swap(parentSubJet1, parentSubJet2);
+      }
+      auto z = parentSubJet2.perp() / (parentSubJet1.perp() + parentSubJet2.perp());
+      auto theta = parentSubJet1.delta_R(parentSubJet2);
+      if (z >= zCut * TMath::Power(theta / jetR, beta)) {
+        if (!softDropped) {
+          zg = z;
+          rg = theta;
+          hZg->Fill(zg);
+          hRg->Fill(rg);
+          softDropped = true;
+        }
+        nsd++;
+      }
+      bool isHFInSubjet1 = false;
+      for (auto& subjet1Constituent : parentSubJet1.constituents()) {
+        if (subjet1Constituent.template user_info<FastJetUtilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidateHF)) {
+          isHFInSubjet1 = true;
+          break;
+        }
+      }
+      if (isHFInSubjet1) {
+        daughterSubJet = parentSubJet1;
+      } else {
+        daughterSubJet = parentSubJet2;
+      }
+    }
+    hNsd->Fill(nsd);
+    jetSubstructurehfTable(jet.globalIndex(), zg, rg, nsd);
+  }
+
+  void processDummy(aod::Tracks const& track)
+  {
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processDummy, "Dummy process function turned on by default", true);
+
+  void processD0Data(soa::Join<aod::D0Jets, aod::D0JetConstituents>::iterator const& jet,
+                     soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates,
+                     aod::Tracks const& tracks)
+  {
+    processConstituents(jet);
     for (auto& jetHFCandidate : jet.hfcandidates_as<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>()) { // should only be one at the moment
-      fillConstituents(jetHFCandidate, jetConstituents, -1, RecoDecay::getMassPDG(pdgD0));
+      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candPDG));
     }
-    //}
-    fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
-    jetReclustered = sorted_by_pt(jetReclustered);
-    fastjet::PseudoJet daughterSubJet = jetReclustered[0];
-    fastjet::PseudoJet parentSubJet1;
-    fastjet::PseudoJet parentSubJet2;
-    bool softDropped = false;
-    auto nsd = 0.0;
-    auto zg = -1.0;
-    auto rg = -1.0;
-    while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
-      if (parentSubJet1.perp() < parentSubJet2.perp()) {
-        std::swap(parentSubJet1, parentSubJet2);
-      }
-      auto z = parentSubJet2.perp() / (parentSubJet1.perp() + parentSubJet2.perp());
-      auto theta = parentSubJet1.delta_R(parentSubJet2);
-      if (z >= zCut * TMath::Power(theta / jetR, beta)) {
-        if (!softDropped) {
-          zg = z;
-          rg = theta;
-          hZg->Fill(zg);
-          hRg->Fill(rg);
-          softDropped = true;
-        }
-        nsd++;
-      }
-      bool isHFInSubjet1 = false;
-      for (auto& subjet1Constituent : parentSubJet1.constituents()) {
-        if (subjet1Constituent.user_index() == -1) {
-          isHFInSubjet1 = true;
-          break;
-        }
-      }
-      if (isHFInSubjet1) {
-        daughterSubJet = parentSubJet1;
-      } else {
-        daughterSubJet = parentSubJet2;
-      }
-    }
-    hNsd->Fill(nsd);
-    jetSubstructurehf(jet.globalIndex(), zg, rg, nsd);
+    jetReclustering(jet);
   }
-  PROCESS_SWITCH(JetSubstructureHFTask, processData, "HF jet substructure on data", true);
+  PROCESS_SWITCH(JetSubstructureHFTask, processD0Data, "D0 jet substructure on data", false);
 
-  void processMCD(soa::Join<aod::MCDetectorLevelHFJets, aod::MCDetectorLevelHFJetConstituents>::iterator const& jet,
-                  soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates,
-                  // aod::JetConstituentsSub const& constituentsSub,
-                  aod::Tracks const& tracks)
+  void processD0MCD(soa::Join<aod::MCDetectorLevelD0Jets, aod::MCDetectorLevelD0JetConstituents>::iterator const& jet,
+                    soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates,
+                    aod::Tracks const& tracks)
   {
-    jetConstituents.clear();
-    jetReclustered.clear();
-    // if (b_DoConstSub) {
-    // for (const auto& constituent : constituentsSub) {
-    //  fillConstituents(constituent, jetConstituents);
-    //  }
-    // } else {
-    for (auto& jetConstituent : jet.tracks_as<aod::Tracks>()) {
-      fillConstituents(jetConstituent, jetConstituents);
-    }
+    processConstituents(jet);
     for (auto& jetHFCandidate : jet.hfcandidates_as<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>()) { // should only be one at the moment
-      fillConstituents(jetHFCandidate, jetConstituents, -1, RecoDecay::getMassPDG(pdgD0));
+      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candPDG));
     }
-    //}
-    fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
-    jetReclustered = sorted_by_pt(jetReclustered);
-    fastjet::PseudoJet daughterSubJet = jetReclustered[0];
-    fastjet::PseudoJet parentSubJet1;
-    fastjet::PseudoJet parentSubJet2;
-    bool softDropped = false;
-    auto nsd = 0.0;
-    auto zg = -1.0;
-    auto rg = -1.0;
-    while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
-      if (parentSubJet1.perp() < parentSubJet2.perp()) {
-        std::swap(parentSubJet1, parentSubJet2);
-      }
-      auto z = parentSubJet2.perp() / (parentSubJet1.perp() + parentSubJet2.perp());
-      auto theta = parentSubJet1.delta_R(parentSubJet2);
-      if (z >= zCut * TMath::Power(theta / jetR, beta)) {
-        if (!softDropped) {
-          zg = z;
-          rg = theta;
-          hZg->Fill(zg);
-          hRg->Fill(rg);
-          softDropped = true;
-        }
-        nsd++;
-      }
-      bool isHFInSubjet1 = false;
-      for (auto& subjet1Constituent : parentSubJet1.constituents()) {
-        if (subjet1Constituent.user_index() == -1) {
-          isHFInSubjet1 = true;
-          break;
-        }
-      }
-      if (isHFInSubjet1) {
-        daughterSubJet = parentSubJet1;
-      } else {
-        daughterSubJet = parentSubJet2;
-      }
-    }
-    hNsd->Fill(nsd);
-    jetSubstructurehf(jet.globalIndex(), zg, rg, nsd);
+    jetReclustering(jet);
   }
-  PROCESS_SWITCH(JetSubstructureHFTask, processMCD, "HF jet substructure on MC detector level", true);
+  PROCESS_SWITCH(JetSubstructureHFTask, processD0MCD, "D0 jet substructure on MC detector level", false);
 
-  void processMCP(soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents>::iterator const& jet,
-                  // aod::JetConstituentsSub const& constituentsSub,
-                  aod::McParticles const& particles)
+  void processD0MCP(soa::Join<aod::MCParticleLevelD0Jets, aod::MCParticleLevelD0JetConstituents>::iterator const& jet,
+                    aod::McParticles const& particles)
   {
-    jetConstituents.clear();
-    jetReclustered.clear();
-    // if (b_DoConstSub) {
-    // for (const auto& constituent : constituentsSub) {
-    //  fillConstituents(constituent, jetConstituents);
-    //  }
-    // } else {
-    for (auto& jetConstituent : jet.tracks_as<aod::McParticles>()) {
-      fillConstituents(jetConstituent, jetConstituents, -2, RecoDecay::getMassPDG(jetConstituent.pdgCode()));
-    }
-    for (auto& jetHFCandidate : jet.hfcandidates_as<aod::McParticles>()) { // should only be one at the moment
-      fillConstituents(jetHFCandidate, jetConstituents, -1, RecoDecay::getMassPDG(jetHFCandidate.pdgCode()));
-    }
-    //}
-    fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
-    jetReclustered = sorted_by_pt(jetReclustered);
-    fastjet::PseudoJet daughterSubJet = jetReclustered[0];
-    fastjet::PseudoJet parentSubJet1;
-    fastjet::PseudoJet parentSubJet2;
-    bool softDropped = false;
-    auto nsd = 0.0;
-    auto zg = -1.0;
-    auto rg = -1.0;
-    while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
-      if (parentSubJet1.perp() < parentSubJet2.perp()) {
-        std::swap(parentSubJet1, parentSubJet2);
-      }
-      auto z = parentSubJet2.perp() / (parentSubJet1.perp() + parentSubJet2.perp());
-      auto theta = parentSubJet1.delta_R(parentSubJet2);
-      if (z >= zCut * TMath::Power(theta / jetR, beta)) {
-        if (!softDropped) {
-          zg = z;
-          rg = theta;
-          hZg->Fill(zg);
-          hRg->Fill(rg);
-          softDropped = true;
-        }
-        nsd++;
-      }
-      bool isHFInSubjet1 = false;
-      for (auto& subjet1Constituent : parentSubJet1.constituents()) {
-        if (subjet1Constituent.user_index() == -1) {
-          isHFInSubjet1 = true;
-          break;
-        }
-      }
-      if (isHFInSubjet1) {
-        daughterSubJet = parentSubJet1;
-      } else {
-        daughterSubJet = parentSubJet2;
-      }
-    }
-    hNsd->Fill(nsd);
-    jetSubstructurehf(jet.globalIndex(), zg, rg, nsd);
+    processGenLevel(jet);
   }
-  PROCESS_SWITCH(JetSubstructureHFTask, processMCP, "HF jet substructure on MC particle level", true);
+  PROCESS_SWITCH(JetSubstructureHFTask, processD0MCP, "D0 jet substructure on MC particle level", false);
+
+  void processLcData(soa::Join<aod::LcJets, aod::LcJetConstituents>::iterator const& jet,
+                     soa::Join<aod::HfCand2Prong, aod::HfSelLc> const& candidates,
+                     aod::Tracks const& tracks)
+  {
+    processConstituents(jet);
+    for (auto& jetHFCandidate : jet.hfcandidates_as<soa::Join<aod::HfCand2Prong, aod::HfSelLc>>()) { // should only be one at the moment
+      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candPDG));
+    }
+    jetReclustering(jet);
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processLcData, "Lc jet substructure on data", false);
+
+  void processLcMCD(soa::Join<aod::MCDetectorLevelLcJets, aod::MCDetectorLevelLcJetConstituents>::iterator const& jet,
+                    soa::Join<aod::HfCand2Prong, aod::HfSelLc, aod::HfCand2ProngMcRec> const& candidates,
+                    aod::Tracks const& tracks)
+  {
+    processConstituents(jet);
+    for (auto& jetHFCandidate : jet.hfcandidates_as<soa::Join<aod::HfCand2Prong, aod::HfSelLc, aod::HfCand2ProngMcRec>>()) { // should only be one at the moment
+      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candPDG));
+    }
+    jetReclustering(jet);
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processLcMCD, "Lc jet substructure on MC detector level", false);
+
+  void processLcMCP(soa::Join<aod::MCParticleLevelLcJets, aod::MCParticleLevelLcJetConstituents>::iterator const& jet,
+                    aod::McParticles const& particles)
+  {
+    processGenLevel(jet);
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processLcMCP, "Lc jet substructure on MC particle level", false);
+
+  void processBPlusData(soa::Join<aod::BPlusJets, aod::BPlusJetConstituents>::iterator const& jet,
+                        soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const& candidates,
+                        aod::Tracks const& tracks)
+  {
+    processConstituents(jet);
+    for (auto& jetHFCandidate : jet.hfcandidates_as<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>>()) { // should only be one at the moment
+      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candPDG));
+    }
+    jetReclustering(jet);
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processBPlusData, "BPlus jet substructure on data", false);
+
+  void processBPlusMCD(soa::Join<aod::MCDetectorLevelBPlusJets, aod::MCDetectorLevelBPlusJetConstituents>::iterator const& jet,
+                       soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec> const& candidates,
+                       aod::Tracks const& tracks)
+  {
+    processConstituents(jet);
+    for (auto& jetHFCandidate : jet.hfcandidates_as<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>()) { // should only be one at the moment
+      FastJetUtilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candPDG));
+    }
+    jetReclustering(jet);
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processBPlusMCD, "BPlus jet substructure on MC detector level", false);
+
+  void processBPlusMCP(soa::Join<aod::MCParticleLevelBPlusJets, aod::MCParticleLevelBPlusJetConstituents>::iterator const& jet,
+                       aod::McParticles const& particles)
+  {
+    processGenLevel(jet);
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processBPlusMCP, "BPlus jet substructure on MC particle level", false);
 };
-using JetSubstructureHFDataLevel = JetSubstructureHFTask<o2::aod::JetSubtructureHFData>;
-using JetSubstructureHFMCParticleLevel = JetSubstructureHFTask<o2::aod::JetSubtructureHFMCGen>;
-using JetSubstructureHFMCDetectorLevel = JetSubstructureHFTask<o2::aod::JetSubtructureHFMCDet>;
+using JetSubstructureD0 = JetSubstructureHFTask<o2::aod::D0JetSubstructure>;
+using MCDetectorLevelJetSubstructureD0 = JetSubstructureHFTask<o2::aod::MCDetectorLevelD0JetSubstructure>;
+using MCParticleLevelJetSubstructureD0 = JetSubstructureHFTask<o2::aod::MCParticleLevelD0JetSubstructure>;
+using JetSubstructureLc = JetSubstructureHFTask<o2::aod::LcJetSubstructure>;
+using MCDetectorLevelJetSubstructureLc = JetSubstructureHFTask<o2::aod::MCDetectorLevelLcJetSubstructure>;
+using MCParticleLevelJetSubstructureLc = JetSubstructureHFTask<o2::aod::MCParticleLevelLcJetSubstructure>;
+using JetSubstructureBPlus = JetSubstructureHFTask<o2::aod::BPlusJetSubstructure>;
+using MCDetectorLevelJetSubstructureBPlus = JetSubstructureHFTask<o2::aod::MCDetectorLevelBPlusJetSubstructure>;
+using MCParticleLevelJetSubstructureBPlus = JetSubstructureHFTask<o2::aod::MCParticleLevelBPlusJetSubstructure>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
-  auto hfjetsubstructureMode = cfgc.options().get<std::string>("hfjetsubstructureMode");
+  tasks.emplace_back(adaptAnalysisTask<JetSubstructureD0>(cfgc,
+                                                          SetDefaultProcesses{},
+                                                          TaskName{"jet-substructure-D0-data"}));
 
-  if (hfjetsubstructureMode.find("data") != std::string::npos || hfjetsubstructureMode.empty())
-    tasks.emplace_back(adaptAnalysisTask<JetSubstructureHFDataLevel>(cfgc,
-                                                                     SetDefaultProcesses{{{"processData", true}, {"processMCP", false}, {"processMCD", false}}},
-                                                                     TaskName{"jet-substructure-hf-data"}));
+  tasks.emplace_back(adaptAnalysisTask<MCDetectorLevelJetSubstructureD0>(cfgc,
+                                                                         SetDefaultProcesses{},
+                                                                         TaskName{"jet-substructure-D0-mcd"}));
 
-  if (hfjetsubstructureMode.find("mcp") != std::string::npos || hfjetsubstructureMode.empty())
-    tasks.emplace_back(adaptAnalysisTask<JetSubstructureHFMCParticleLevel>(cfgc,
-                                                                           SetDefaultProcesses{{{"processData", false}, {"processMCP", true}, {"processMCD", false}}},
-                                                                           TaskName{"jet-substructure-hf-mcp"}));
+  tasks.emplace_back(adaptAnalysisTask<MCParticleLevelJetSubstructureD0>(cfgc,
+                                                                         SetDefaultProcesses{},
+                                                                         TaskName{"jet-substructure-D0-mcp"}));
 
-  if (hfjetsubstructureMode.find("mcd") != std::string::npos || hfjetsubstructureMode.empty())
-    tasks.emplace_back(adaptAnalysisTask<JetSubstructureHFMCDetectorLevel>(cfgc,
-                                                                           SetDefaultProcesses{{{"processData", false}, {"processMCP", false}, {"processMCD", true}}},
-                                                                           TaskName{"jet-substructure-hf-mcd"}));
+  tasks.emplace_back(adaptAnalysisTask<JetSubstructureLc>(cfgc,
+                                                          SetDefaultProcesses{},
+                                                          TaskName{"jet-substructure-Lc-data"}));
+
+  tasks.emplace_back(adaptAnalysisTask<MCDetectorLevelJetSubstructureLc>(cfgc,
+                                                                         SetDefaultProcesses{},
+                                                                         TaskName{"jet-substructure-Lc-mcd"}));
+
+  tasks.emplace_back(adaptAnalysisTask<MCParticleLevelJetSubstructureLc>(cfgc,
+                                                                         SetDefaultProcesses{},
+                                                                         TaskName{"jet-substructure-Lc-mcp"}));
+
+  tasks.emplace_back(adaptAnalysisTask<JetSubstructureBPlus>(cfgc,
+                                                             SetDefaultProcesses{},
+                                                             TaskName{"jet-substructure-BPlus-data"}));
+
+  tasks.emplace_back(adaptAnalysisTask<MCDetectorLevelJetSubstructureBPlus>(cfgc,
+                                                                            SetDefaultProcesses{},
+                                                                            TaskName{"jet-substructure-BPlus-mcd"}));
+
+  tasks.emplace_back(adaptAnalysisTask<MCParticleLevelJetSubstructureBPlus>(cfgc,
+                                                                            SetDefaultProcesses{},
+                                                                            TaskName{"jet-substructure-BPlus-mcp"}));
 
   return WorkflowSpec{tasks};
 }

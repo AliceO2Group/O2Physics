@@ -32,6 +32,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct PseudorapidityDensity {
+  SliceCache cache;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+  Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
+
   Service<O2DatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
@@ -111,12 +115,12 @@ struct PseudorapidityDensity {
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, Trks const& tracks)
   {
     registry.fill(HIST("EventSelection"), 1.);
-    if (doprocessGen) //we are sudying the MC, that needs correction
+    if (doprocessGen) // we are sudying the MC, that needs correction
     {
       if (!useEvSel || (useEvSel && collision.sel7())) {
 
         auto z = collision.posZ();
-        auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
+        auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
         double w = 1;
         if ((z > -12) && (z < 12)) {
           w = fRatio->Eval(z);
@@ -141,7 +145,7 @@ struct PseudorapidityDensity {
       if (!useEvSel || (useEvSel && collision.sel7())) {
         registry.fill(HIST("EventSelection"), 2.);
         auto z = collision.posZ();
-        auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
+        auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
         if (perCollisionSample.size() > 0) {
           registry.fill(HIST("EventSelection"), 3.);
         }
@@ -166,7 +170,7 @@ struct PseudorapidityDensity {
     if (!useEvSel || (useEvSel && collision.sel7())) {
       registry.fill(HIST("EventSelectionBin"), 2., p);
       auto z = collision.posZ();
-      auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       registry.fill(HIST("EventsNtrkZvtxBin"), perCollisionSample.size(), z, p);
       for (auto& track : tracks) {
         registry.fill(HIST("TracksEtaZvtxBin"), track.eta(), z, p);
@@ -185,7 +189,7 @@ struct PseudorapidityDensity {
 
   void processGen(aod::McCollisions::iterator const& mcCollision, soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, soa::Filtered<Particles> const& particles, soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>> const& /*tracks*/)
   {
-    auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+    auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nCharged = 0;
     for (auto& particle : perCollisionMCSample) {
       auto charge = 0;
@@ -210,7 +214,7 @@ struct PseudorapidityDensity {
       registry.fill(HIST("EventEfficiency"), 3.);
       if (!useEvSel || (useEvSel && collision.sel7())) {
         atLeastOne = true;
-        auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
+        auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
         registry.fill(HIST("EventEfficiency"), 4.);
         if (perCollisionSample.size() > 0) {
           atLeastOne_gt0 = true;

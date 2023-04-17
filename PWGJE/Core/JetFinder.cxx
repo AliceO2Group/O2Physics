@@ -19,10 +19,11 @@
 void JetFinder::setParams()
 {
 
-  if (!isReclustering) {
+  if (!isReclustering && !isTriggering) {
     jetEtaMin = etaMin + jetR; //in aliphysics this was (-etaMax + 0.95*jetR)
     jetEtaMax = etaMax - jetR;
-  } else {
+  }
+  if (isReclustering) {
     jetR = 5.0 * jetR;
   }
 

@@ -253,17 +253,20 @@ struct tofPid {
   }
   PROCESS_SWITCH(tofPid, processWSlice, "Process with track slices", true);
 
-  void processWoSlice(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
+  template <o2::track::PID::ID pid>
+  using ResponseImplementationIU = o2::pid::tof::ExpTimes<TrksIU::iterator, pid>;
+  void processWoSlice(TrksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
   {
-    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
-    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
-    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
-    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
-    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
-    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
-    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
-    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
+    constexpr auto responseEl = ResponseImplementationIU<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementationIU<PID::Muon>();
+    constexpr auto responsePi = ResponseImplementationIU<PID::Pion>();
+    constexpr auto responseKa = ResponseImplementationIU<PID::Kaon>();
+    constexpr auto responsePr = ResponseImplementationIU<PID::Proton>();
+    constexpr auto responseDe = ResponseImplementationIU<PID::Deuteron>();
+    constexpr auto responseTr = ResponseImplementationIU<PID::Triton>();
+    constexpr auto responseHe = ResponseImplementationIU<PID::Helium3>();
+    constexpr auto responseAl = ResponseImplementationIU<PID::Alpha>();
 
     auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
       if (flag.value != 1) {
@@ -346,7 +349,7 @@ struct tofPid {
       makeTable(pidAl, tablePIDAl, responseAl);
     }
   }
-  PROCESS_SWITCH(tofPid, processWoSlice, "Process without track slices", false);
+  PROCESS_SWITCH(tofPid, processWoSlice, "Process without track slices and on TrackIU (faster but only Run3)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -37,6 +37,8 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "Field/MagneticField.h"
 #include "TGeoGlobalMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsBase/GeometryManager.h"
 
 using std::cout;
 using std::endl;
@@ -488,6 +490,7 @@ struct AnalysisSameEventPairing {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   float mMagField = 0.0;
   o2::parameters::GRPMagField* grpmag = nullptr;
+  o2::base::MatLayerCylSet* lut = nullptr;
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
@@ -506,6 +509,9 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> fUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
   Configurable<bool> fPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
+  Configurable<bool> fCorrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   // TODO: here we specify signals, however signal decisions are precomputed and stored in mcReducedFlags
   // TODO: The tasks based on skimmed MC could/should rely ideally just on these flags
@@ -529,6 +535,16 @@ struct AnalysisSameEventPairing {
     ccdb->setURL(ccdburl.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+
+    if (fCorrFullGeo) {
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
+      }
+    } else {
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+      VarManager::SetupMatLUTFwdDCAFitter(lut);
+    }
+
     bool enableBarrelHistos = context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed");
     bool enableMuonHistos = context.mOptions.get<bool>("processDecayToMuMuSkimmed") || context.mOptions.get<bool>("processDecayToMuMuVertexingSkimmed");
     // bool enableBarrelMuonHistos = context.mOptions.get<bool>("processElectronMuonSkimmed");
@@ -764,7 +780,7 @@ struct AnalysisSameEventPairing {
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
       if constexpr ((TPairType == VarManager::kDecayToMuMu) && muonHasCov) {
         if (fConfigFlatTables.value) {
-          dimuonAllList(event.posX(), event.posY(), event.posZ(), event.reducedMCevent().mcPosX(), event.reducedMCevent().mcPosY(), event.reducedMCevent().mcPosZ(), VarManager::fgValues[VarManager::kMass], dileptonMcDecision, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], t1.pt(), t1.eta(), t1.phi(), t1.sign(), t2.pt(), t2.eta(), t2.phi(), t2.sign(), t1.mcMask(), t2.mcMask(), t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(), t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(), t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(), t1.reducedMCTrack().e(), t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(), t2.reducedMCTrack().e(), t1.reducedMCTrack().vx(), t1.reducedMCTrack().vy(), t1.reducedMCTrack().vz(), t1.reducedMCTrack().vt(), t2.reducedMCTrack().vx(), t2.reducedMCTrack().vy(), t2.reducedMCTrack().vz(), t2.reducedMCTrack().vt(), t1.isAmbiguous(), t2.isAmbiguous());
+          dimuonAllList(event.posX(), event.posY(), event.posZ(), event.reducedMCevent().mcPosX(), event.reducedMCevent().mcPosY(), event.reducedMCevent().mcPosZ(), VarManager::fgValues[VarManager::kMass], dileptonMcDecision, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], t1.pt(), t1.eta(), t1.phi(), t1.sign(), t2.pt(), t2.eta(), t2.phi(), t2.sign(), t1.mcMask(), t2.mcMask(), t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(), t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(), t1.chi2(), t2.chi2(), t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(), t1.reducedMCTrack().e(), t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(), t2.reducedMCTrack().e(), t1.reducedMCTrack().vx(), t1.reducedMCTrack().vy(), t1.reducedMCTrack().vz(), t1.reducedMCTrack().vt(), t2.reducedMCTrack().vx(), t2.reducedMCTrack().vy(), t2.reducedMCTrack().vz(), t2.reducedMCTrack().vt(), t1.isAmbiguous(), t2.isAmbiguous());
         }
       }
 
@@ -797,7 +813,7 @@ struct AnalysisSameEventPairing {
     // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
     // auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
     for (auto& mctrack : groupedMCTracks) {
-      VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
+      VarManager::FillTrackMC(groupedMCTracks, mctrack);
       // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
       // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
       // TODO:  Use the mcReducedFlags to select signals
@@ -1123,7 +1139,7 @@ struct AnalysisDileptonTrack {
     // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
     // auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
     for (auto& mctrack : groupedMCTracks) {
-      VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
+      VarManager::FillTrackMC(groupedMCTracks, mctrack);
       // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
       // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
       // TODO:  Use the mcReducedFlags to select signals
@@ -1149,7 +1165,7 @@ struct AnalysisDileptonTrack {
   }
   void processDielectronKaonSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
-    runDileptonTrack<VarManager::kBtoJpsiEEK, gkEventFillMapWithCov, gkMCEventFillMap, gkTrackFillMap>(event, tracks, dileptons, eventsMC, tracksMC);
+    runDileptonTrack<VarManager::kBtoJpsiEEK, gkEventFillMapWithCov, gkMCEventFillMap, gkTrackFillMapWithCov>(event, tracks, dileptons, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
     runMCGen(groupedMCTracks);

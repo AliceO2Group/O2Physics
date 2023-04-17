@@ -72,6 +72,7 @@ using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoDream;
 
 struct CFFilter {
+  SliceCache cache;
 
   Produces<aod::CFFilters> tags;
 
@@ -93,6 +94,8 @@ struct CFFilter {
   Partition<o2::aod::FemtoDreamParticles> partsLambda0Part = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0);
   Partition<o2::aod::FemtoDreamParticles> partsProton1Part = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0); // Consider later: && ((o2::aod::femtodreamparticle::pidcut & knSigmaProton) > kValue0);
   Partition<o2::aod::FemtoDreamParticles> partsLambda1Part = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0);
+
+  Preslice<o2::aod::FemtoDreamParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryQA{"registryQA", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -154,10 +157,10 @@ struct CFFilter {
 
   void process(o2::aod::FemtoDreamCollision& col, o2::aod::FemtoDreamParticles& partsFemto)
   {
-    auto partsProton0 = partsProton0Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-    auto partsLambda0 = partsLambda0Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-    auto partsProton1 = partsProton1Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-    auto partsLambda1 = partsLambda1Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto partsProton0 = partsProton0Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    auto partsLambda0 = partsLambda0Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    auto partsProton1 = partsProton1Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    auto partsLambda1 = partsLambda1Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
 
     auto magneticField = col.magField();
 
