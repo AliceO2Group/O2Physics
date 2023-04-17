@@ -25,3 +25,4 @@ o2physics_add_dpl_workflow(lumifddft0
                                    O2::DetectorsCommonDataFormats
                                    O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
+                    
