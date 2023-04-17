@@ -42,7 +42,8 @@ using FemtoWorldParticleMerged = FemtoWorldParticlesMerged::iterator;
 } // namespace o2::aod
 
 struct femtoWorldPairTaskPionPion {
-
+  SliceCache cache;
+  Preslice<aod::FemtoWorldParticlesMerged> perCol = aod::femtoworldparticle::femtoWorldCollisionId;
   /// Particle selection part
 
   Configurable<float> ConfNsigmaTPCPion{"ConfNsigmaTPCPion", 3.0, "TPC Pion Sigma for momentum < 0.5"};
@@ -220,10 +221,10 @@ struct femtoWorldPairTaskPionPion {
   void processSameEvent(o2::aod::FemtoWorldCollision& col,
                         o2::aod::FemtoWorldParticlesMerged& parts)
   {
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    auto groupPartsOneFailed = partsOneFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    auto groupPartsTwoFailed = partsTwoFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsOneFailed = partsOneFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwoFailed = partsTwoFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
 
     const auto& magFieldTesla = col.magField();
     const int multCol = col.multV0M();
