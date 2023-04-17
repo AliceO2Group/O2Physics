@@ -1,0 +1,38 @@
+---
+name: Code layout
+
+'on':
+  - pull_request_target
+
+permissions: {}
+
+jobs:
+  table-decls:
+    name: table declarations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          # We need the history of the dev branch all the way back to where the
+          # PR diverged. We're fetching everything here, as we don't know how
+          # many commits back that point is.
+          fetch-depth: 0
+
+      - name: Check that table declarations are all in DataModel subdirs
+        run: |
+          have_error=0
+          while IFS=: read -r file line column rest; do
+            printf '::error file=%s,line=%s,column=%s,title=%s::%s\n' \
+                   "$file" "$line" "$column" 'Stray table declaration' \
+                   'Found table declaration (DECLARE_*) outside DataModel subdirectory.'
+            have_error=1
+          done < <(git diff -z --diff-filter d --name-only --merge-base "$BASE_SHA" \
+                       -- '*.h' '*.cxx' ':^*/DataModel/*.h' |
+                     xargs -0 git grep --line-number --column '\bDECLARE_' --)
+          exit $have_error
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
