@@ -14,3 +14,20 @@ o2physics_add_dpl_workflow(fdd-qa
                            SOURCES qaFDD.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(fdd-trig
+                           SOURCES fddTrig.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(fdd-trig1
+                           SOURCES fddTrig1.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+
+o2physics_add_dpl_workflow(fdd-trig2
+                           SOURCES fddTrig2.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
