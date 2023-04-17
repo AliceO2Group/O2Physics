@@ -14,12 +14,12 @@
 // Class to handle analysis variables
 //
 
+#ifndef PWGDQ_CORE_VARMANAGER_H_
+#define PWGDQ_CORE_VARMANAGER_H_
+
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
-
-#ifndef PWGDQ_CORE_VARMANAGER_H_
-#define PWGDQ_CORE_VARMANAGER_H_
 
 #include <vector>
 #include <map>
@@ -1792,18 +1792,18 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
   }
 
   // Fill Qn vectors from generic flow framework for different eta gap A, B, C (n=2,3)
-  values[kQ2X0A] = compA2.Re() / normA;
-  values[kQ2Y0A] = compA2.Im() / normA;
-  values[kQ2X0B] = compB2.Re() / normB;
-  values[kQ2Y0B] = compB2.Im() / normB;
-  values[kQ2X0C] = compC2.Re() / normC;
-  values[kQ2Y0C] = compC2.Im() / normC;
-  values[kQ3X0A] = compA3.Re() / normA;
-  values[kQ3Y0A] = compA3.Im() / normA;
-  values[kQ3X0B] = compB3.Re() / normB;
-  values[kQ3Y0B] = compB3.Im() / normB;
-  values[kQ3X0C] = compC3.Re() / normC;
-  values[kQ3Y0C] = compC3.Im() / normC;
+  values[kQ2X0A] = compA2.real() / normA;
+  values[kQ2Y0A] = compA2.imag() / normA;
+  values[kQ2X0B] = compB2.real() / normB;
+  values[kQ2Y0B] = compB2.imag() / normB;
+  values[kQ2X0C] = compC2.real() / normC;
+  values[kQ2Y0C] = compC2.imag() / normC;
+  values[kQ3X0A] = compA3.real() / normA;
+  values[kQ3Y0A] = compA3.imag() / normA;
+  values[kQ3X0B] = compB3.real() / normB;
+  values[kQ3Y0B] = compB3.imag() / normB;
+  values[kQ3X0C] = compC3.real() / normC;
+  values[kQ3Y0C] = compC3.imag() / normC;
   values[kMultA] = normA;
   values[kMultB] = normB;
   values[kMultC] = normC;
