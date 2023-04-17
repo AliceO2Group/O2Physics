@@ -150,7 +150,7 @@ struct HfTagSelTracks {
 
 /// Track index skim creator
 /// Pre-selection of 2-prong secondary vertices
-struct HfTrackIndexSkimsCreator {
+struct HfTrackIndexSkimCreator {
   Produces<aod::HfTrackIndexProng2> rowTrackIndexProng2;
 
   // vertexing parameters
@@ -622,7 +622,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<HfTagSelTracks>(cfgc),
-    adaptAnalysisTask<HfTrackIndexSkimsCreator>(cfgc),
+    adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc),
     adaptAnalysisTask<HfCandidateCreator2Prong>(cfgc),
     adaptAnalysisTask<HfCandidateCreator2ProngExpressions>(cfgc),
     adaptAnalysisTask<HfCandidateSelectorD0>(cfgc),
