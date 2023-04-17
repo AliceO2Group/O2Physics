@@ -51,14 +51,14 @@ namespace o2::aod
 namespace hf_seltrack
 {
 // Track selection columns
-DECLARE_SOA_COLUMN(IsSelProng, isSelProng, bool); //!
-DECLARE_SOA_COLUMN(PxProng, pxProng, float);     //!
-DECLARE_SOA_COLUMN(PyProng, pyProng, float);     //!
-DECLARE_SOA_COLUMN(PzProng, pzProng, float);     //!
+DECLARE_SOA_COLUMN(IsSelProng, isSelProng, bool); //! prong selection flag
+DECLARE_SOA_COLUMN(PxProng, pxProng, float);      //! prong px
+DECLARE_SOA_COLUMN(PyProng, pyProng, float);      //! prong py
+DECLARE_SOA_COLUMN(PzProng, pzProng, float);      //! prong pz
 } // namespace hf_seltrack
 
 // Track selection table
-DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
+DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //! track selection table
                   hf_seltrack::IsSelProng,
                   hf_seltrack::PxProng,
                   hf_seltrack::PyProng,
@@ -74,12 +74,12 @@ using BigTracksPIDExtended = soa::Join<BigTracksPID, aod::TracksDCA>;
 namespace hf_track_index
 {
 // Track index skim columns
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0"); //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0"); //! prong 0
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //! prong 1
 } // namespace hf_track_index
 
 // Track index skim table
-DECLARE_SOA_TABLE(HfTrackIndexProng2, "AOD", "HFTRACKIDXP2", //!
+DECLARE_SOA_TABLE(HfTrackIndexProng2, "AOD", "HFTRACKIDXP2", //! table with prongs indices
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id);
 
@@ -108,11 +108,18 @@ struct HfTagSelTracks {
 
   HistogramRegistry registry{
     "registry",
-    {{"hPtNoCuts", "all tracks;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     // 2-prong histograms
-     {"hPtCuts2Prong", "tracks selected for 2-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hPtVsDcaXYToPvCuts2Prong", "tracks selected for 2-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{100, 0., 10.}, {400, -2., 2.}}}},
-     {"hEtaCuts2Prong", "tracks selected for 2-prong vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(1.2 * etaTrackMax * 100), -1.2 * etaTrackMax, 1.2 * etaTrackMax}}}}}};
+    {}};
+
+  void init(o2::framework::InitContext&)
+  {
+    const TString strTitle = "D^{0} candidates";
+    const TString strPt = "#it{p}_{T}^{track} (GeV/#it{c})";
+    const TString strEntries = "entries";
+    registry.add("hPtNoCuts", "all tracks;" + strPt + ";" + strEntries, {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add("hPtCuts2Prong", "tracks selected for 2-prong vertexing;" + strPt + ";" + strEntries, {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add("hPtVsDcaXYToPvCuts2Prong", "tracks selected for 2-prong vertexing;" + strPt + ";" + "DCAxy to prim. vtx. (cm)" + ";" + strEntries, {HistType::kTH2F, {{100, 0., 10.}, {400, -2., 2.}}});
+    registry.add("hEtaCuts2Prong", "tracks selected for 2-prong vertexing;#it{#eta};" + strEntries, {HistType::kTH1F, {{static_cast<int>(1.2 * etaTrackMax * 100), -1.2 * etaTrackMax, 1.2 * etaTrackMax}}});
+  }
 
   void process(aod::Collisions const& collisions,
                TracksAll const& tracks)
@@ -180,6 +187,10 @@ struct HfTrackIndexSkimsCreator {
      {"hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}}},
      {"hMassD0ToPiK", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
+
+  void init(o2::framework::InitContext&)
+  {
+  }
 
   void process(
     aod::Collision const& collision,
@@ -269,46 +280,54 @@ namespace hf_cand_prong2
 {
 // Candidate columns
 // collision properties
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! collisions
 // secondary vertex
-DECLARE_SOA_COLUMN(XSecondaryVertex, xSecondaryVertex, float); //!
-DECLARE_SOA_COLUMN(YSecondaryVertex, ySecondaryVertex, float); //!
-DECLARE_SOA_COLUMN(ZSecondaryVertex, zSecondaryVertex, float); //!
-DECLARE_SOA_DYNAMIC_COLUMN(RSecondaryVertex, rSecondaryVertex, //!
+DECLARE_SOA_COLUMN(XSecondaryVertex, xSecondaryVertex, float); //! x coordinate of the secondary vertex
+DECLARE_SOA_COLUMN(YSecondaryVertex, ySecondaryVertex, float); //! y coordinate of the secondary vertex
+DECLARE_SOA_COLUMN(ZSecondaryVertex, zSecondaryVertex, float); //! z coordinate of the secondary vertex
+DECLARE_SOA_DYNAMIC_COLUMN(RSecondaryVertex, rSecondaryVertex, //! radius of the secondary vertex
                            [](float xVtxS, float yVtxS) -> float { return RecoDecay::sqrtSumOfSquares(xVtxS, yVtxS); });
 // prong properties
-DECLARE_SOA_COLUMN(PxProng0, pxProng0, float); //!
-DECLARE_SOA_COLUMN(PyProng0, pyProng0, float); //!
-DECLARE_SOA_COLUMN(PzProng0, pzProng0, float); //!
-DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0, //!
+DECLARE_SOA_COLUMN(PxProng0, pxProng0, float); //! px of prong 0
+DECLARE_SOA_COLUMN(PyProng0, pyProng0, float); //! py of prong 0
+DECLARE_SOA_COLUMN(PzProng0, pzProng0, float); //! pz of prong 0
+DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0, //! pt of prong 0
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
-DECLARE_SOA_COLUMN(PxProng1, pxProng1, float); //!
-DECLARE_SOA_COLUMN(PyProng1, pyProng1, float); //!
-DECLARE_SOA_COLUMN(PzProng1, pzProng1, float); //!
-DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //!
+DECLARE_SOA_COLUMN(PxProng1, pxProng1, float); //! px of prong 1
+DECLARE_SOA_COLUMN(PyProng1, pyProng1, float); //! py of prong 1
+DECLARE_SOA_COLUMN(PzProng1, pzProng1, float); //! pz of prong 1
+DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //! pt of prong 1
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 // candidate properties
-DECLARE_SOA_DYNAMIC_COLUMN(DecayLength, decayLength, //!
+DECLARE_SOA_DYNAMIC_COLUMN(DecayLength, decayLength, //! decay length of candidate
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS) -> float { return RecoDecay::distance(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! pt of candidate
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
-DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //!
+DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //! px of candidate
                               float, 1.f * pxProng0 + 1.f * pxProng1);
-DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //!
+DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //! py of candidate
                               float, 1.f * pyProng0 + 1.f * pyProng1);
-DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //!
+DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! pz of candidate
                               float, 1.f * pzProng0 + 1.f * pzProng1);
-DECLARE_SOA_DYNAMIC_COLUMN(M, m, //!
+DECLARE_SOA_DYNAMIC_COLUMN(M, m, //! invariant mass of candidate
                            [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) -> float { return RecoDecay::m(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
-DECLARE_SOA_DYNAMIC_COLUMN(CPA, cpa, //!
+DECLARE_SOA_DYNAMIC_COLUMN(CPA, cpa, //! cosine of pointing angle of candidate
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::cpa(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}, array{px, py, pz}); });
 
+/// @brief Invariant mass of a D0 -> π K candidate
+/// @tparam T
+/// @param candidate
+/// @return invariant mass
 template <typename T>
 auto invMassD0(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus)});
 }
 
+/// @brief Invariant mass of a D0bar -> K π candidate
+/// @tparam T
+/// @param candidate
+/// @return invariant mass
 template <typename T>
 auto invMassD0bar(const T& candidate)
 {
@@ -317,7 +336,7 @@ auto invMassD0bar(const T& candidate)
 } // namespace hf_cand_prong2
 
 // Candidate table
-DECLARE_SOA_TABLE(HfCandProng2Base, "AOD", "HFCANDP2BASE", //!
+DECLARE_SOA_TABLE(HfCandProng2Base, "AOD", "HFCANDP2BASE", //! 2-prong candidate table
                   hf_cand_prong2::CollisionId,
                   collision::PosX, collision::PosY, collision::PosZ,
                   hf_cand_prong2::XSecondaryVertex, hf_cand_prong2::YSecondaryVertex, hf_cand_prong2::ZSecondaryVertex,
@@ -334,8 +353,8 @@ DECLARE_SOA_TABLE(HfCandProng2Base, "AOD", "HFCANDP2BASE", //!
                   hf_cand_prong2::CPA<collision::PosX, collision::PosY, collision::PosZ, hf_cand_prong2::XSecondaryVertex, hf_cand_prong2::YSecondaryVertex, hf_cand_prong2::ZSecondaryVertex, hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
                   hf_cand_prong2::Pt<hf_cand_prong2::Px, hf_cand_prong2::Py>);
 
-// extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(HfCandProng2Ext, HfCandProng2Base, "HFCANDP2EXT", //!
+// Extended table with expression columns that can be used as arguments of dynamic columns
+DECLARE_SOA_EXTENDED_TABLE_USER(HfCandProng2Ext, HfCandProng2Base, "HFCANDP2EXT", //! extension table for the 2-prong candidate table
                                 hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz);
 
 using HfCandProng2 = HfCandProng2Ext;
@@ -434,7 +453,7 @@ DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int); //! selection flag for D0 bar
 } // namespace hf_selcandidate_d0
 
 // Candidate selection table
-DECLARE_SOA_TABLE(HfSelCandidateD0, "AOD", "HFSELCANDD0", //! table with selection flags
+DECLARE_SOA_TABLE(HfSelCandidateD0, "AOD", "HFSELCANDD0", //! table with D0 selection flags
                   hf_selcandidate_d0::IsSelD0,
                   hf_selcandidate_d0::IsSelD0bar);
 } // namespace o2::aod
@@ -471,11 +490,11 @@ struct HfCandidateSelectorD0 {
   }
 
   /// Conjugate-dependent topological cuts
-  /// \param candidate is candidate
-  /// \param trackPion is the track with the pion hypothesis
-  /// \param trackKaon is the track with the kaon hypothesis
+  /// \param candidate candidate
+  /// \param trackPion the track with the pion hypothesis
+  /// \param trackKaon the track with the kaon hypothesis
   /// \note trackPion = positive and trackKaon = negative for D0 selection and inverse for D0bar
-  /// \return true if candidate passes all cuts for the given Conjugate
+  /// \return true if candidate passes all cuts for the given conjugate
   template <typename T1, typename T2>
   bool selectionTopolConjugate(const T1& candidate, const T2& trackPion, const T2& trackKaon)
   {
@@ -589,11 +608,11 @@ struct HfTaskD0 {
   void init(o2::framework::InitContext&)
   {
     const TString strTitle = "D^{0} candidates";
-    const TString strPT = "#it{p}_{T} (GeV/#it{c})";
+    const TString strPt = "#it{p}_{T} (GeV/#it{c})";
     const TString strEntries = "entries";
-    registry.add("hPtCand", strTitle + ";" + strPT + ";" + strEntries, {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add("hPtCand", strTitle + ";" + strPt + ";" + strEntries, {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("hMass", strTitle + ";" + "inv. mass (#pi K) (GeV/#it{c}^{2})" + ";" + strEntries, {HistType::kTH1F, {{500, 0., 5.}}});
-    registry.add("hCpaVsPtCand", strTitle + ";" + "cosine of pointing angle" + ";" + strPT + ";" + strEntries, {HistType::kTH2F, {{110, -1.1, 1.1}, {100, 0., 10.}}});
+    registry.add("hCpaVsPtCand", strTitle + ";" + "cosine of pointing angle" + ";" + strPt + ";" + strEntries, {HistType::kTH2F, {{110, -1.1, 1.1}, {100, 0., 10.}}});
   }
 
   void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>& candidates)
