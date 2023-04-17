@@ -119,6 +119,7 @@ struct filterf1proton {
   Configurable<double> cMaxMassF1{"cMaxMassF1", 1.80001, "Mass cut on F1 resonance"};
   Configurable<double> cMinF1Pt{"cMinF1Pt", 1.0, "Minimum pT cut on F1"};
   Configurable<double> cMinKaonPt{"cMinKaonPt", 0.3, "Minimum pT cut on Kaon daughter"};
+  Configurable<double> cMaxProtonPt{"cMaxProtonPt", 2.0, "Maximum pT cut on Proton"};
 
   // config Femto relative momentum
   Configurable<double> cMaxRelMom{"cMaxRelMom", 0.5, "Relative momentum cut"};
@@ -128,6 +129,7 @@ struct filterf1proton {
                                              {"hEventstat", "hEventstat", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
                                              {"hInvMassf1", "hInvMassf1", {HistType::kTH2F, {{400, 1.1f, 1.9f}, {100, 0.0f, 10.0f}}}},
                                              {"hInvMassf1Like", "hInvMassf1Like", {HistType::kTH2F, {{400, 1.1f, 1.9f}, {100, 0.0f, 10.0f}}}},
+                                             {"hInvMassf1kstar", "hInvMassf1kstar", {HistType::kTH3F, {{400, 1.1f, 1.9f}, {100, 0.0f, 10.0f}, {8, 0.0f, 0.8f}}}},
                                              {"hkstarDist", "hkstarDist", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
                                              {"hDCAxy", "hDCAxy", {HistType::kTH1F, {{100, -5.0f, 5.0f}}}},
                                              {"hDCAz", "hDCAz", {HistType::kTH1F, {{100, -5.0f, 5.0f}}}},
@@ -515,7 +517,7 @@ struct filterf1proton {
           }
         }
 
-        if ((track.sign() > 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaP[2])) || (track.sign() < 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaN[2]))) {
+        if ((track.pt() < cMaxProtonPt && track.sign() > 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaP[2])) || (track.pt() < cMaxProtonPt && track.sign() < 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaN[2]))) {
           ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPr);
           protons.push_back(temp);
           ProtonIndex.push_back(track.globalIndex());
@@ -607,6 +609,7 @@ struct filterf1proton {
                 qaRegistry.fill(HIST("hkstarDist"), kstar);
                 if (kstar > cMaxRelMom)
                   continue;
+                qaRegistry.fill(HIST("hInvMassf1kstar"), F1Vector.M(), F1Vector.Pt(), kstar);
                 keepEventF1Proton = true;
               }
             }
