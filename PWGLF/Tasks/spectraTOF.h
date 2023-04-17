@@ -16,6 +16,9 @@
 /// \brief  Header for the spectraTOF task for the analysis of the spectra with the TOF and TPC detectors.
 ///
 
+#ifndef PWGLF_TASKS_SPECTRATOF_H_
+#define PWGLF_TASKS_SPECTRATOF_H_
+
 // O2 includes
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
@@ -143,12 +146,24 @@ static constexpr std::string_view hdcaxyprm[NpCharge] = {"dcaxyprm/pos/el", "dca
                                                          "dcaxyprm/neg/el", "dcaxyprm/neg/mu", "dcaxyprm/neg/pi",
                                                          "dcaxyprm/neg/ka", "dcaxyprm/neg/pr", "dcaxyprm/neg/de",
                                                          "dcaxyprm/neg/tr", "dcaxyprm/neg/he", "dcaxyprm/neg/al"};
+static constexpr std::string_view hdcaxyprmgoodevs[NpCharge] = {"dcaxyprmgoodevs/pos/el", "dcaxyprmgoodevs/pos/mu", "dcaxyprmgoodevs/pos/pi",
+                                                                "dcaxyprmgoodevs/pos/ka", "dcaxyprmgoodevs/pos/pr", "dcaxyprmgoodevs/pos/de",
+                                                                "dcaxyprmgoodevs/pos/tr", "dcaxyprmgoodevs/pos/he", "dcaxyprmgoodevs/pos/al",
+                                                                "dcaxyprmgoodevs/neg/el", "dcaxyprmgoodevs/neg/mu", "dcaxyprmgoodevs/neg/pi",
+                                                                "dcaxyprmgoodevs/neg/ka", "dcaxyprmgoodevs/neg/pr", "dcaxyprmgoodevs/neg/de",
+                                                                "dcaxyprmgoodevs/neg/tr", "dcaxyprmgoodevs/neg/he", "dcaxyprmgoodevs/neg/al"};
 static constexpr std::string_view hdcazprm[NpCharge] = {"dcazprm/pos/el", "dcazprm/pos/mu", "dcazprm/pos/pi",
                                                         "dcazprm/pos/ka", "dcazprm/pos/pr", "dcazprm/pos/de",
                                                         "dcazprm/pos/tr", "dcazprm/pos/he", "dcazprm/pos/al",
                                                         "dcazprm/neg/el", "dcazprm/neg/mu", "dcazprm/neg/pi",
                                                         "dcazprm/neg/ka", "dcazprm/neg/pr", "dcazprm/neg/de",
                                                         "dcazprm/neg/tr", "dcazprm/neg/he", "dcazprm/neg/al"};
+static constexpr std::string_view hdcazprmgoodevs[NpCharge] = {"dcazprmgoodevs/pos/el", "dcazprmgoodevs/pos/mu", "dcazprmgoodevs/pos/pi",
+                                                               "dcazprmgoodevs/pos/ka", "dcazprmgoodevs/pos/pr", "dcazprmgoodevs/pos/de",
+                                                               "dcazprmgoodevs/pos/tr", "dcazprmgoodevs/pos/he", "dcazprmgoodevs/pos/al",
+                                                               "dcazprmgoodevs/neg/el", "dcazprmgoodevs/neg/mu", "dcazprmgoodevs/neg/pi",
+                                                               "dcazprmgoodevs/neg/ka", "dcazprmgoodevs/neg/pr", "dcazprmgoodevs/neg/de",
+                                                               "dcazprmgoodevs/neg/tr", "dcazprmgoodevs/neg/he", "dcazprmgoodevs/neg/al"};
 static constexpr std::string_view hdcaxystr[NpCharge] = {"dcaxystr/pos/el", "dcaxystr/pos/mu", "dcaxystr/pos/pi",
                                                          "dcaxystr/pos/ka", "dcaxystr/pos/pr", "dcaxystr/pos/de",
                                                          "dcaxystr/pos/tr", "dcaxystr/pos/he", "dcaxystr/pos/al",
@@ -173,3 +188,5 @@ static constexpr std::string_view hdcazmat[NpCharge] = {"dcazmat/pos/el", "dcazm
                                                         "dcazmat/neg/el", "dcazmat/neg/mu", "dcazmat/neg/pi",
                                                         "dcazmat/neg/ka", "dcazmat/neg/pr", "dcazmat/neg/de",
                                                         "dcazmat/neg/tr", "dcazmat/neg/he", "dcazmat/neg/al"};
+
+#endif

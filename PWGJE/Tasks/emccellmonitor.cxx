@@ -84,9 +84,11 @@ struct CellMonitor {
       rowAxis{24, -0.5, 23.5, "row", "Row"},
       bcAxis{3501, -0.5, 3500.5};
     mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
-    mHistManager.add("eventsSelected", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
+    mHistManager.add("eventsSelected", "Number of events (selected BCs)", o2HistType::kTH1F, {{1, 0.5, 1.5}});
+    mHistManager.add("eventsTriggered", "Number of triggered events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
     mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("eventBCTriggered", "Bunch crossing ID of event (triggered events)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("cellBCAll", "Bunch crossing ID of cell (all cells)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("cellBCSelected", "Bunch crossing ID of cell (selected cells)", o2HistType::kTH1F, {{bcAxis}});
     mHistManager.add("cellMasking", "Monitoring for masked cells", o2HistType::kTH1F, {cellAxis});
@@ -149,6 +151,11 @@ struct CellMonitor {
     }
     mHistManager.fill(HIST("eventsSelected"), 1);
     mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
+    if (cells.size()) {
+      // BC not necessarily triggered - determine trigger payload based presence of cell payload
+      mHistManager.fill(HIST("eventsTriggered"), 1);
+      mHistManager.fill(HIST("eventBCTriggered"), eventIR.bc);
+    }
     for (const auto& cell : cells) {
       // cells expected to be filtered -> only EMCAL cells
       // cell.cellNumber(),

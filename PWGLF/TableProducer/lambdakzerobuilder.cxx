@@ -67,45 +67,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-namespace o2::aod
-{
-namespace v0tag
-{
-// Global bool
-DECLARE_SOA_COLUMN(IsInteresting, isInteresting, bool); //! will this be built or not?
-
-// MC association bools
-DECLARE_SOA_COLUMN(IsTrueGamma, isTrueGamma, bool);                     //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueK0Short, isTrueK0Short, bool);                 //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueLambda, isTrueLambda, bool);                   //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueAntiLambda, isTrueAntiLambda, bool);           //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueHypertriton, isTrueHypertriton, bool);         //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueAntiHypertriton, isTrueAntiHypertriton, bool); //! PDG checked correctly in MC
-
-// dE/dx compatibility bools
-DECLARE_SOA_COLUMN(IsGammaCandidate, isGammaCandidate, bool);                     //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsK0ShortCandidate, isK0ShortCandidate, bool);                 //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsLambdaCandidate, isLambdaCandidate, bool);                   //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsAntiLambdaCandidate, isAntiLambdaCandidate, bool);           //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsHypertritonCandidate, isHypertritonCandidate, bool);         //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsAntiHypertritonCandidate, isAntiHypertritonCandidate, bool); //! compatible with dE/dx hypotheses
-}
-DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
-                  v0tag::IsInteresting,
-                  v0tag::IsTrueGamma,
-                  v0tag::IsTrueK0Short,
-                  v0tag::IsTrueLambda,
-                  v0tag::IsTrueAntiLambda,
-                  v0tag::IsTrueHypertriton,
-                  v0tag::IsTrueAntiHypertriton,
-                  v0tag::IsGammaCandidate,
-                  v0tag::IsK0ShortCandidate,
-                  v0tag::IsLambdaCandidate,
-                  v0tag::IsAntiLambdaCandidate,
-                  v0tag::IsHypertritonCandidate,
-                  v0tag::IsAntiHypertritonCandidate);
-} // namespace o2::aod
-
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
@@ -132,7 +93,7 @@ struct lambdakzeroBuilder {
   Configurable<int> createV0CovMats{"createV0CovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
 
   // use auto-detect configuration
-  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", true, "Autodetect requested topo sels"};
+  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
 
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
@@ -146,7 +107,7 @@ struct lambdakzeroBuilder {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
-  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
   Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
 
@@ -156,6 +117,15 @@ struct lambdakzeroBuilder {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+
+  // generate and fill extra QA histograms is requested
+  Configurable<bool> d_doQA{"d_doQA", false, "Do basic QA"};
+  Configurable<int> dQANBinsRadius{"dQANBinsRadius", 500, "Number of radius bins in QA histo"};
+  Configurable<int> dQANBinsPtCoarse{"dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
+  Configurable<int> dQANBinsMass{"dQANBinsMass", 400, "Number of mass bins for QA histograms"};
+  Configurable<float> dQAMaxPt{"dQAMaxPt", 5, "max pT in QA histo"};
+  Configurable<float> dQAK0ShortMassWindow{"dQAK0ShortMassWindow", 0.005, "K0 mass window for ITS cluster map QA"};
+  Configurable<float> dQALambdaMassWindow{"dQALambdaMassWindow", 0.005, "Lambda/AntiLambda mass window for ITS cluster map QA"};
 
   int mRunNumber;
   float d_bz;
@@ -244,6 +214,35 @@ struct lambdakzeroBuilder {
   void init(InitContext& context)
   {
     resetHistos();
+
+    // Optionally, add extra QA histograms to processing chain
+    if (d_doQA) {
+      // Basic histograms containing invariant masses of all built candidates
+      const AxisSpec axisVsPtCoarse{(int)dQANBinsPtCoarse, 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
+      const AxisSpec axisGammaMass{(int)dQANBinsMass, 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisK0ShortMass{(int)dQANBinsMass, 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisLambdaMass{(int)dQANBinsMass, 1.01f, 1.21f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisHypertritonMass{(int)dQANBinsMass, 2.900f, 3.300f, "Inv. Mass (GeV/c^{2})"};
+
+      registry.add("h2dGammaMass", "h2dGammaMass", kTH2F, {axisVsPtCoarse, axisGammaMass});
+      registry.add("h2dK0ShortMass", "h2dK0ShortMass", kTH2F, {axisVsPtCoarse, axisK0ShortMass});
+      registry.add("h2dLambdaMass", "h2dLambdaMass", kTH2F, {axisVsPtCoarse, axisLambdaMass});
+      registry.add("h2dAntiLambdaMass", "h2dAntiLambdaMass", kTH2F, {axisVsPtCoarse, axisLambdaMass});
+      registry.add("h2dHypertritonMass", "h2dHypertritonMass", kTH2F, {axisVsPtCoarse, axisHypertritonMass});
+      registry.add("h2dAntiHypertritonMass", "h2dAntiHypertritonMass", kTH2F, {axisVsPtCoarse, axisHypertritonMass});
+
+      // bit packed ITS cluster map
+      const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
+      const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
+
+      // Histogram to bookkeep cluster maps
+      registry.add("h2dITSCluMap_K0ShortPositive", "h2dITSCluMap_K0ShortPositive", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_K0ShortNegative", "h2dITSCluMap_K0ShortNegative", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_LambdaPositive", "h2dITSCluMap_LambdaPositive", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_LambdaNegative", "h2dITSCluMap_LambdaNegative", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_AntiLambdaPositive", "h2dITSCluMap_AntiLambdaPositive", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_AntiLambdaNegative", "h2dITSCluMap_AntiLambdaNegative", kTH2D, {axisITSCluMap, axisRadius});
+    }
 
     mRunNumber = 0;
     d_bz = 0;
@@ -541,6 +540,50 @@ struct lambdakzeroBuilder {
       if (negTrack.itsNCls() < 10)
         statisticsRegistry.negITSclu[negTrack.itsNCls()]++;
     }
+
+    if (d_doQA) {
+      // Calculate masses
+      auto lGammaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
+      auto lK0ShortMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+      auto lLambdaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+      auto lAntiLambdaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
+      auto lHypertritonMass = RecoDecay::m(array{array{2.0f * v0candidate.posP[0], 2.0f * v0candidate.posP[1], 2.0f * v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPionCharged});
+      auto lAntiHypertritonMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{2.0f * v0candidate.negP[0], 2.0f * v0candidate.negP[1], 2.0f * v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
+
+      auto lPt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
+      auto lPtHy = RecoDecay::sqrtSumOfSquares(2.0f * v0candidate.posP[0] + v0candidate.negP[0], 2.0f * v0candidate.posP[1] + v0candidate.negP[1]);
+      auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
+
+      // Fill basic mass histograms
+      // Note: all presel bools are true if unchecked
+      if (V0.isGammaCandidate() && V0.isTrueGamma())
+        registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
+      if (V0.isK0ShortCandidate() && V0.isTrueK0Short())
+        registry.fill(HIST("h2dK0ShortMass"), lPt, lK0ShortMass);
+      if (V0.isLambdaCandidate() && V0.isTrueLambda())
+        registry.fill(HIST("h2dLambdaMass"), lPt, lLambdaMass);
+      if (V0.isAntiLambdaCandidate() && V0.isTrueAntiLambda())
+        registry.fill(HIST("h2dAntiLambdaMass"), lPt, lAntiLambdaMass);
+      if (V0.isHypertritonCandidate() && V0.isTrueHypertriton())
+        registry.fill(HIST("h2dHypertritonMass"), lPtHy, lHypertritonMass);
+      if (V0.isAntiHypertritonCandidate() && V0.isTrueAntiHypertriton())
+        registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
+
+      // Fill ITS cluster maps with specific mass cuts
+      if (TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow && V0.isK0ShortCandidate() && V0.isTrueK0Short()) {
+        registry.fill(HIST("h2dITSCluMap_K0ShortPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_K0ShortNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+      }
+      if (TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow && V0.isLambdaCandidate() && V0.isTrueLambda()) {
+        registry.fill(HIST("h2dITSCluMap_LambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_LambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+      }
+      if (TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow && V0.isAntiLambdaCandidate() && V0.isTrueAntiLambda()) {
+        registry.fill(HIST("h2dITSCluMap_AntiLambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_AntiLambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+      }
+    }
+
     return true;
   }
 
@@ -657,8 +700,6 @@ struct lambdakzeroPreselector {
 
   // context-aware selections
   Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
-
-  void init(InitContext const&) {}
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality

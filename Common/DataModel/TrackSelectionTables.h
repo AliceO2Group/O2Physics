@@ -25,8 +25,10 @@ DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float); //! Impact parameter in Y of forwar
 namespace track
 {
 // Columns to store the DCA to the primary vertex
-DECLARE_SOA_COLUMN(DcaXY, dcaXY, float); //! Impact parameter in XY of the track to the primary vertex
-DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);   //! Impact parameter in Z of the track to the primary vertex
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);             //! Impact parameter in XY of the track to the primary vertex
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);               //! Impact parameter in Z of the track to the primary vertex
+DECLARE_SOA_COLUMN(SigmaDcaXY2, sigmaDcaXY2, float); //! Impact parameter sigma^2 in XY of the track to the primary vertex
+DECLARE_SOA_COLUMN(SigmaDcaZ2, sigmaDcaZ2, float);   //! Impact parameter sigma^2 in Z of the track to the primary vertex
 
 struct TrackSelectionFlags {
  public:
@@ -128,6 +130,9 @@ DECLARE_SOA_COLUMN(PassedITSHitsFB2, passedITSHitsFB2, bool);                   
 DECLARE_SOA_TABLE(TracksDCA, "AOD", "TRACKDCA", //! DCA information for the track
                   track::DcaXY,
                   track::DcaZ);
+DECLARE_SOA_TABLE(TracksDCACov, "AOD", "TRACKDCACOV",
+                  track::SigmaDcaXY2,
+                  track::SigmaDcaZ2); //! DCA cov. matrix information for the track
 
 DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on the track selection decision + split dynamic information
                   track::IsGlobalTrackSDD,

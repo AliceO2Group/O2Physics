@@ -40,9 +40,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-// For MC association in pre-selection
-using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
-
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct lambdakzeroLabelBuilder {
   Produces<aod::McV0Labels> v0labels; // MC labels for V0s
@@ -50,13 +47,13 @@ struct lambdakzeroLabelBuilder {
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build V0 labels
-  void process(aod::Collision const& collision, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const& particlesMC)
+  void process(aod::Collision const& collision, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const& particlesMC)
   {
     for (auto& v0 : v0table) {
       int lLabel = -1;
 
-      auto lNegTrack = v0.negTrack_as<LabeledTracks>();
-      auto lPosTrack = v0.posTrack_as<LabeledTracks>();
+      auto lNegTrack = v0.negTrack_as<aod::McTrackLabels>();
+      auto lPosTrack = v0.posTrack_as<aod::McTrackLabels>();
 
       // Association check
       // There might be smarter ways of doing this in the future

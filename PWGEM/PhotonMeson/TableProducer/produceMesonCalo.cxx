@@ -106,23 +106,23 @@ struct produceMesonCalo {
       float openingAngle = acos((cos(gamma0.phi() - gamma1.phi()) +
                                  sinh(gamma0.eta()) * sinh(gamma1.eta())) /
                                 (cosh(gamma0.eta()) * cosh(gamma1.eta())));
-      float E = gamma0.energy() + gamma1.energy();
-      float pt0 = gamma0.energy() / cosh(gamma0.eta());
-      float pt1 = gamma1.energy() / cosh(gamma1.eta());
+      float E = gamma0.e() + gamma1.e();
+      float pt0 = gamma0.e() / cosh(gamma0.eta());
+      float pt1 = gamma1.e() / cosh(gamma1.eta());
       float px =
         pt0 * cos(gamma0.phi()) + pt1 * cos(gamma1.phi());
       float py =
         pt0 * sin(gamma0.phi()) + pt1 * sin(gamma1.phi());
       float pz =
         pt0 * sinh(gamma0.eta()) + pt1 * sinh(gamma1.eta());
-      float alpha = (gamma0.energy() - gamma1.energy()) != 0.
-                      ? (gamma0.energy() - gamma1.energy()) / (gamma0.energy() + gamma1.energy())
+      float alpha = (gamma0.e() - gamma1.e()) != 0.
+                      ? (gamma0.e() - gamma1.e()) / (gamma0.e() + gamma1.e())
                       : 0.;
       float Pt = sqrt(pt0 * pt0 + pt1 * pt1 +
                       2. * pt0 * pt1 *
                         cos(gamma0.phi() - gamma1.phi()));
       float minv =
-        sqrt(2. * gamma0.energy() * gamma1.energy() * (1. - cos(openingAngle)));
+        sqrt(2. * gamma0.e() * gamma1.e() * (1. - cos(openingAngle)));
       float eta = asinh(pz / Pt);
       float phi = atan2(py, px);
       phi = (phi < 0) ? phi + 2. * M_PI : phi;

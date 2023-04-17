@@ -100,6 +100,7 @@ struct femtoDreamProducerTask {
 
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
+  Configurable<bool> ConfUseTPCmult{"ConfUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
@@ -353,14 +354,18 @@ struct femtoDreamProducerTask {
   {
 
     const auto vtxZ = col.posZ();
-    const auto multNtr = col.multNTracksPV();
     const auto spher = colCuts.computeSphericity(col, tracks);
-    /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
     int mult = 0;
+    int multNtr = 0;
     if (ConfIsRun3) {
       mult = col.multFV0M();
+      multNtr = col.multNTracksPV();
     } else {
-      mult = 0.5 * (col.multFV0M());
+      mult = 0.5 * (col.multFV0M()); /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
+      multNtr = col.multTracklets();
+    }
+    if (ConfUseTPCmult) {
+      multNtr = col.multTPC();
     }
 
     // check whether the basic event selection criteria are fulfilled

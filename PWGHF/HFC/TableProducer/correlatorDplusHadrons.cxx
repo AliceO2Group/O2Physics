@@ -58,6 +58,9 @@ using MCParticlesPlus3Prong = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen
 
 /// Dplus-Hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfCorrelatorDplusHadrons {
+  SliceCache cache;
+  Preslice<aod::HfCand3Prong> perCol = aod::hf_cand::collisionId;
+
   Produces<aod::DplusHadronPair> entryDplusHadronPair;
   Produces<aod::DplusHadronRecoInfo> entryDplusHadronRecoInfo;
 
@@ -139,7 +142,7 @@ struct HfCorrelatorDplusHadrons {
       }
       registry.fill(HIST("hMultiplicity"), nTracks);
 
-      auto selectedDPlusCandidatesGrouped = selectedDPlusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+      auto selectedDPlusCandidatesGrouped = selectedDPlusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
       for (auto& candidate1 : selectedDPlusCandidatesGrouped) {
         if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
@@ -221,7 +224,7 @@ struct HfCorrelatorDplusHadrons {
       }
       registry.fill(HIST("hMultiplicity"), nTracks);
 
-      auto selectedDPlusCandidatesGroupedMC = recoFlagDPlusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+      auto selectedDPlusCandidatesGroupedMC = recoFlagDPlusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       // MC reco level
       bool flagDplusSignal = false;
       for (auto& candidate1 : selectedDPlusCandidatesGroupedMC) {

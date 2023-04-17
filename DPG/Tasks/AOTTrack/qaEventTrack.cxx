@@ -50,6 +50,7 @@ using namespace o2::dataformats;
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 struct qaEventTrack {
+  SliceCache cache;
 
   // general steering settings
   Configurable<bool> isRun3{"isRun3", false, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
@@ -120,7 +121,7 @@ struct qaEventTrack {
       return;
     }
     const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
-    const AxisSpec axisInvPt{100, 0, 100, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
+    const AxisSpec axisInvPt{100, -10, 10, "1/#it{p}_{T}_{gen} [GeV/c]^{-1}"};
     const AxisSpec axisEta{180, -0.9, 0.9, "#it{#eta}"};
     const AxisSpec axisPhi{180, 0., 2 * M_PI, "#it{#varphi} [rad]"};
     const AxisSpec axisVertexNumContrib{200, 0, 200, "Number Of contributors to the PV"};
@@ -189,12 +190,17 @@ struct qaEventTrack {
     histos.add("Tracks/Kine/phivspt", "#varphi vs #it{p}_{T}", kTH2F, {axisPt, axisPhi});
     if (doprocessMC || doprocessRun2ConvertedMC) {
       histos.add<TH2>("Tracks/Kine/resoPt", "", kTH2D, {axisDeltaPt, axisPt});
+      histos.add<TH2>("Tracks/Kine/resoInvPtVsPt", "", kTH2D, {axisDeltaPt, axisPt})->GetXaxis()->SetTitle("1/#it{p}_{T}_{rec} - 1/#it{p}_{T}_{gen} [GeV/c]^{-1}");
       histos.add<TH2>("Tracks/Kine/resoInvPt", "", kTH2D, {axisDeltaPt, axisInvPt})->GetXaxis()->SetTitle("1/#it{p}_{T}_{rec} - 1/#it{p}_{T}_{gen} [GeV/c]^{-1}");
       histos.add<TH2>("Tracks/Kine/ptVsptmc", "", kTH2D, {axisPt, axisPt})->GetXaxis()->SetTitle("#it{p}_{T}_{gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/resoEta", "", kTH2D, {axisDeltaEta, axisEta})->GetYaxis()->SetTitle("#eta_{rec}");
       histos.add<TH2>("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, axisPhi})->GetYaxis()->SetTitle("#varphi_{rec}");
     }
-    histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution;#sigma{#it{p}}/#it{p}_{T};#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution;#sigma{#it{p}_{T}}/#it{p}_{T};#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaPlus", "relative #it{p}_{T} resolution positive #eta;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta>0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaMinus", "relative #it{p}_{T} resolution negative #eta;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta<0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaWithin04", "relative #it{p}_{T} resolution for |#eta| < 0.4;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta>0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaAbove04", "relative #it{p}_{T} resolution for |#eta| > 0.4;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta<0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
     histos.add("Tracks/Kine/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT#sigma{#it{p}}/#it{p}_{T}#GT;#it{p}_{T}", kTProfile, {{axisPt}});
 
     // count filtered tracks matched to a collision
@@ -320,6 +326,9 @@ struct qaEventTrack {
 
     // tracks vs tracks @ IU
     if (doprocessDataIU) {
+      // Events
+      histos.add("Events/nContribTracksIUWithTOFvsWithTRD", ";PV contrib. with TOF; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
+
       // Full distributions
       auto h1 = histos.add<TH1>("Tracks/IU/Pt", "IU: Pt", kTH1F, {axisPt});
       h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
@@ -521,9 +530,10 @@ struct qaEventTrack {
   PROCESS_SWITCH(qaEventTrack, processRun2ConvertedData, "process for run 2 converted data", false);
 
   // Process function for IU vs DCA track comparison
+  using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
   void processDataIU(CollisionTableData::iterator const& collision,
                      aod::FullTracks const& tracksUnfiltered,
-                     aod::TracksIU const& tracksIU)
+                     FullTracksIU const& tracksIU)
   {
     if (!isSelectedCollision<false>(collision)) {
       return;
@@ -532,6 +542,22 @@ struct qaEventTrack {
     if (tracksUnfiltered.size() != tracksIU.size()) {
       LOG(fatal) << "Tables are of different size!!!!!!!!! " << tracksUnfiltered.size() << " vs " << tracksIU.size();
     }
+
+    /// look for PV contributors and check correlation between TRD and TOF
+    /// to check if TRD time shift creates issues or not
+    int nPvContrWithTOF = 0;
+    int nPvContrWithTRD = 0;
+    for (const auto& trk : tracksIU) {
+      if (trk.isPVContributor()) {
+        if (trk.hasTOF()) {
+          nPvContrWithTOF++;
+        }
+        if (trk.hasTRD()) {
+          nPvContrWithTRD++;
+        }
+      }
+    }
+    histos.fill(HIST("Events/nContribTracksIUWithTOFvsWithTRD"), nPvContrWithTOF, nPvContrWithTRD);
 
     uint64_t trackIndex = 0;
     for (const auto& trk : tracksUnfiltered) {
@@ -571,8 +597,8 @@ struct qaEventTrack {
       return;
     }
 
-    auto tracksIU = tracksIUFiltered->sliceByCached(aod::track::collisionId, collision.globalIndex());
-    auto tracksDCA = tracksFilteredCorrIU->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto tracksIU = tracksIUFiltered->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksDCA = tracksFilteredCorrIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     // LOG(info) << "===> tracksIU.size()=" << tracksIU.size() << "===> tracksDCA.size()" << tracksDCA.size();
 
     uint64_t trackIndex = 0;
@@ -1070,6 +1096,22 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/Kine/phivspt"), track.pt(), track.phi());
     histos.fill(HIST("Tracks/Kine/relativeResoPt"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
     histos.fill(HIST("Tracks/Kine/relativeResoPtMean"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+    auto eta = track.eta();
+    if (eta > 0) { /// positive eta
+      histos.fill(HIST("Tracks/Kine/relativeResoPtEtaPlus"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      if (eta < 0.4) { /// |eta| < 0.4
+        histos.fill(HIST("Tracks/Kine/relativeResoPtEtaWithin04"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      } else { /// |eta| > 0.4
+        histos.fill(HIST("Tracks/Kine/relativeResoPtEtaAbove04"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      }
+    } else { /// negative eta
+      histos.fill(HIST("Tracks/Kine/relativeResoPtEtaMinus"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      if (eta > -0.4) { /// |eta| < 0.4
+        histos.fill(HIST("Tracks/Kine/relativeResoPtEtaWithin04"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      } else { /// |eta| > 0.4
+        histos.fill(HIST("Tracks/Kine/relativeResoPtEtaAbove04"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      }
+    }
 
     // fill track parameters
     histos.fill(HIST("Tracks/alpha"), track.alpha());
@@ -1127,6 +1169,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
         if (particle.pt() > 0.f) {
           histos.fill(HIST("Tracks/Kine/resoInvPt"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), 1.f / particle.pt());
         }
+        histos.fill(HIST("Tracks/Kine/resoInvPtVsPt"), track.signed1Pt() - 1.f / particle.pt(), particle.pt());
         histos.fill(HIST("Tracks/Kine/ptVsptmc"), particle.pt(), track.pt());
         histos.fill(HIST("Tracks/Kine/resoEta"), track.eta() - particle.eta(), track.eta());
         histos.fill(HIST("Tracks/Kine/resoPhi"), track.phi() - particle.phi(), track.phi());
