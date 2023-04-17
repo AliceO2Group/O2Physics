@@ -583,10 +583,10 @@ struct HfCandidateSelectorD0 {
 
 /// D0 analysis task
 struct HfTaskD0 {
-  Configurable<int> flagSelCandD0{"flagSelCandD0", 1, "Selection flag for D0"};
-  Configurable<int> flagSelCandD0bar{"flagSelCandD0bar", 1, "Selection flag for D0 bar"};
+  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection flag for D0"};
+  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection flag for D0 bar"};
 
-  Partition<soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= flagSelCandD0 || aod::hf_selcandidate_d0::isSelD0bar >= flagSelCandD0bar;
+  Partition<soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   HistogramRegistry registry{
     "registry",
@@ -605,10 +605,10 @@ struct HfTaskD0 {
   void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>& candidates)
   {
     for (auto const& candidate : selectedD0Candidates) {
-      if (candidate.isSelD0() >= flagSelCandD0) {
+      if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMass"), invMassD0(candidate));
       }
-      if (candidate.isSelD0bar() >= flagSelCandD0bar) {
+      if (candidate.isSelD0bar() >= selectionFlagD0bar) {
         registry.fill(HIST("hMass"), invMassD0bar(candidate));
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
