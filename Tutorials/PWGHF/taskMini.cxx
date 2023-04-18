@@ -83,8 +83,7 @@ struct HfTagSelTracks {
     registry.add("hEtaCuts2Prong", "tracks selected for 2-prong vertexing;#it{#eta};" + strEntries, {HistType::kTH1F, {{static_cast<int>(1.2 * etaTrackMax * 100), -1.2 * etaTrackMax, 1.2 * etaTrackMax}}});
   }
 
-  void process(aod::Collisions const& collisions,
-               TracksWithDca const& tracks)
+  void process(TracksWithDca const& tracks)
   {
     for (auto const& track : tracks) {
       bool statusProng = true;
@@ -170,10 +169,8 @@ struct HfTrackIndexSkimCreator {
   {
   }
 
-  void process(
-    aod::Collision const& collision,
-    aod::BCs const& bcs,
-    SelectedTracks const& tracks)
+  void process(aod::Collision const&,
+               SelectedTracks const& tracks)
   {
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df2;
@@ -185,42 +182,24 @@ struct HfTrackIndexSkimCreator {
     df2.setMinRelChi2Change(minRelChi2Change);
     df2.setUseAbsDCA(useAbsDCA);
 
-    // first loop over positive tracks
+    // loop over positive tracks
     for (auto const& trackPos1 : tracks) {
       if (trackPos1.signed1Pt() < 0) {
         continue;
       }
-      if (!trackPos1.isSelProng()) {
-        continue;
-      }
-
       auto trackParVarPos1 = getTrackParCov(trackPos1);
 
-      // first loop over negative tracks
+      // loop over negative tracks
       for (auto const& trackNeg1 : tracks) {
         if (trackNeg1.signed1Pt() > 0) {
           continue;
         }
-        if (!trackNeg1.isSelProng()) {
-          continue;
-        }
-
         auto trackParVarNeg1 = getTrackParCov(trackNeg1);
-
-        // 2-prong preselections
-
-        // auto arrMom = std::array{
-        //   std::array{trackPos1.pxProng(), trackPos1.pyProng(), trackPos1.pzProng()},
-        //   std::array{trackNeg1.pxProng(), trackNeg1.pyProng(), trackNeg1.pzProng()}};
-
-        // auto pT = RecoDecay::pt(arrMom[0], arrMom[1]);
-        // auto massPiK = RecoDecay::m2(arrMom, arrMassPiK);
 
         // secondary vertex reconstruction and further 2-prong selections
         if (df2.process(trackParVarPos1, trackParVarNeg1) == 0) {
           continue;
         }
-        // auto primaryVertex = std::array{collision.posX(), collision.posY(), collision.posZ()};
         //  get secondary vertex
         const auto& secondaryVertex = df2.getPCACandidate();
         // get track momenta
@@ -228,12 +207,6 @@ struct HfTrackIndexSkimCreator {
         array<float, 3> pVec1;
         df2.getTrack(0).getPxPyPzGlo(pVec0);
         df2.getTrack(1).getPxPyPzGlo(pVec1);
-
-        // auto pVecCand = RecoDecay::pVec(pVec0, pVec1);
-        // auto ptCand = RecoDecay::pt(pVecCand);
-        //  2-prong selections after secondary vertex
-        // auto cpa = RecoDecay::cpa(primaryVertex, secondaryVertex, pVecCand);
-        std::array<std::array<float, 3>, 2> arrMom = {pVec0, pVec1};
 
         // fill table row
         rowTrackIndexProng2(trackPos1.globalIndex(),
@@ -243,6 +216,7 @@ struct HfTrackIndexSkimCreator {
         registry.fill(HIST("hVtx2ProngX"), secondaryVertex[0]);
         registry.fill(HIST("hVtx2ProngY"), secondaryVertex[1]);
         registry.fill(HIST("hVtx2ProngZ"), secondaryVertex[2]);
+        std::array<std::array<float, 3>, 2> arrMom = {pVec0, pVec1};
         auto mass2Prong = RecoDecay::m(arrMom, arrMassPiK);
         registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
       }
@@ -361,9 +335,9 @@ struct HfCandidateCreator2Prong {
 
   OutputObj<TH1F> hMass{TH1F("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
 
-  void process(aod::Collisions const& collisions,
+  void process(aod::Collisions const&,
                aod::HfTrackIndexProng2 const& rowsTrackIndexProng2,
-               TracksWithCov const& tracks)
+               TracksWithCov const&)
   {
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df;
@@ -498,7 +472,8 @@ struct HfCandidateSelectorD0 {
     return true;
   }
 
-  void process(aod::HfCandProng2 const& candidates, TracksWithPid const&)
+  void process(aod::HfCandProng2 const& candidates,
+               TracksWithPid const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
@@ -603,7 +578,7 @@ struct HfTaskD0 {
     registry.add("hCpaVsPtCand", strTitle + ";" + "cosine of pointing angle" + ";" + strPt + ";" + strEntries, {HistType::kTH2F, {{110, -1.1, 1.1}, {100, 0., 10.}}});
   }
 
-  void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>& candidates)
+  void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0> const& candidates)
   {
     for (auto const& candidate : selectedD0Candidates) {
       if (candidate.isSelD0() >= selectionFlagD0) {
