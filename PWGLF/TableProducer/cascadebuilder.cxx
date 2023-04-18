@@ -117,6 +117,7 @@ struct cascadeBuilder {
   Configurable<bool> d_doStraTrackQA{"d_doStraTrackQA", false, "do strangeness tracking QA"};
   Configurable<bool> d_GenerateOnlyTrackedCascades{"d_GenerateOnlyTrackedCascades", false, "Skip cascades that aren't tracked"};
 
+
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
@@ -270,11 +271,11 @@ struct cascadeBuilder {
       registry.add("h2dITSCluMap_OmegaPlusNegative", "h2dITSCluMap_OmegaPlusNegative", kTH2D, {axisITSCluMap, axisRadius});
       registry.add("h2dITSCluMap_OmegaPlusBachelor", "h2dITSCluMap_OmegaPlusBachelor", kTH2D, {axisITSCluMap, axisRadius});
 
-      // if basic strangeness tracking QA is desired, do it here 
-      // convenience: equivalence between regular cascade and tracked cascade is easy to check here 
+      // if basic strangeness tracking QA is desired, do it here
+      // convenience: equivalence between regular cascade and tracked cascade is easy to check here
       //              -> completely automatic, easy comparison of 'trackable' candidates (<< all)ß
 
-      if(d_doStraTrackQA){
+      if (d_doStraTrackQA) {
         // Step 1: mass versus transverse momentum, original variety (given it was tracked)
         registry.add("h2dTrackableXiMinusMass", "h2dTrackableXiMinusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
         registry.add("h2dTrackableXiPlusMass", "h2dTrackableXiPlusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
@@ -826,7 +827,8 @@ struct cascadeBuilder {
       }
 
       float lPt = 0.0f;
-      if( d_doStraTrackQA ) { 
+
+      if (d_doStraTrackQA) {
         // Fill standard DCA histograms for all candidates (irrespectively of strangeness tracking)
         lPt = RecoDecay::sqrtSumOfSquares(cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0] + cascadecandidate.bachP[0], cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1] + cascadecandidate.bachP[1]);
         if (cascade.isXiMinusCandidate() && cascade.isTrueXiMinus())
@@ -855,10 +857,10 @@ struct cascadeBuilder {
         gpu::gpustd::array<float, 2> dcaInfo;
         lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, cascadeTrackPar, 2.f, matCorrCascade, &dcaInfo);
-        
-        if( d_doStraTrackQA ) { 
+
+        if (d_doStraTrackQA) {
           // do QA, compare with non-tracked
-              
+
           // Fill standard DCA histograms for all tracked candidates with ORIGINAL properties
           if (cascade.isXiMinusCandidate() && cascade.isTrueXiMinus())
             registry.fill(HIST("hDCATrackableCascadeToPVXiMinus"), lPt, cascadecandidate.cascDCAxy);
@@ -898,7 +900,7 @@ struct cascadeBuilder {
           if (cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus())
             registry.fill(HIST("h2dTrackedOmegaPlusMass"), lPt, trackedCascade.omegaMass());
         }
-        
+
         // Override cascDCAxy with the strangeness-tracked information
         cascadecandidate.cascDCAxy = dcaInfo[0];
 

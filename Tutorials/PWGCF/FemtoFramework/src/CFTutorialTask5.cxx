@@ -42,6 +42,8 @@ using MyTrack = MyTracks::iterator;
 } // namespace o2::aod
 
 struct CFTutorialTask5 {
+  SliceCache cache;
+  Preslice<o2::aod::MyTracks> perCol = o2::aod::track::collisionId;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Defining configurables
@@ -101,8 +103,8 @@ struct CFTutorialTask5 {
   // void processSame(MyFilteredCollision const& coll, MyFilteredTracks const& tracks)
   void process(MyFilteredCollision const& coll, MyFilteredTracks const& tracks)
   {
-    auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex());
-    auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex());
+    auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
+    auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     histos.fill(HIST("hZvtx"), coll.posZ());
 
     for (auto track : groupPositive) {
@@ -150,8 +152,8 @@ struct CFTutorialTask5 {
   // implement process mixing using the configurable axis
 
   // reuse code from processSame for mixing tracks
-  // auto groupPositive = positive->sliceByCached(aod::track::collisionId, collision1.globalIndex());
-  // auto groupNegative = negative->sliceByCached(aod::track::collisionId, collision2.globalIndex());
+  // auto groupPositive = positive->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+  // auto groupNegative = negative->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
   //
   // float kstar = 0.;
   // float mp = constants::physics::MassProton;
