@@ -29,7 +29,16 @@
 
 #include "PWGHF/Core/SelectorCuts.h"
 
+using namespace o2;
 using namespace o2::analysis;
+using namespace o2::aod;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
+static const double massPi = RecoDecay::getMassPDG(kPiPlus);
+static const double massK = RecoDecay::getMassPDG(kKPlus);
+static const auto arrMassPiK = std::array{massPi, massK};
+static const auto arrMassKPi = std::array{massK, massPi};
 
 // Skimming =====================================================================
 
@@ -51,6 +60,7 @@ DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //! track selection table
                   hf_seltrack::PyProng,
                   hf_seltrack::PzProng);
 
+// Definitions of frequently used joined tables
 using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra, HfSelTrack>;
 using BigTracksPid = soa::Join<BigTracks,
                                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -70,16 +80,6 @@ DECLARE_SOA_TABLE(HfTrackIndexProng2, "AOD", "HFTRACKIDXP2", //! table with pron
                   hf_track_index::Prong1Id);
 
 } // namespace o2::aod
-
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-using namespace o2::aod;
-
-static const double massPi = RecoDecay::getMassPDG(kPiPlus);
-static const double massK = RecoDecay::getMassPDG(kKPlus);
-static const auto arrMassPiK = std::array{massPi, massK};
-static const auto arrMassKPi = std::array{massK, massPi};
 
 /// Track selection
 struct HfTagSelTracks {
