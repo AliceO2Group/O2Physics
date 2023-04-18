@@ -60,13 +60,6 @@ DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //! track selection table
                   hf_seltrack::PyProng,
                   hf_seltrack::PzProng);
 
-// Definitions of frequently used joined tables
-using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra>;
-using BigTracksPid = soa::Join<BigTracks,
-                               aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                               aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using BigTracksPidDca = soa::Join<BigTracksPid, aod::TracksDCA>;
-
 namespace hf_track_index
 {
 // Track index skim columns
@@ -90,7 +83,7 @@ struct HfTagSelTracks {
   Configurable<double> etaTrackMax{"etaTrackMax", 4., "max. pseudorapidity for 2 prong candidate"};
   Configurable<double> dcaTrackMin{"dcaTrackMin", 0.0025, "min. DCA for 2 prong candidate"};
 
-  using TracksAll = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA>;
+  using TracksWithDca = soa::Join<aod::Tracks, aod::TracksDCA>;
 
   HistogramRegistry registry{
     "registry",
@@ -108,7 +101,7 @@ struct HfTagSelTracks {
   }
 
   void process(aod::Collisions const& collisions,
-               TracksAll const& tracks)
+               TracksWithDca const& tracks)
   {
     for (auto const& track : tracks) {
 
@@ -162,7 +155,7 @@ struct HfTrackIndexSkimCreator {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
 
-  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::HfSelTrack>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::HfSelTrack>>;
 
   Filter filterSelectTracks = aod::hf_seltrack::isSelProng == true;
 
@@ -364,11 +357,13 @@ struct HfCandidateCreator2Prong {
   double massPiK{0.};
   double massKPi{0.};
 
+  using TracksWithCov = soa::Join<Tracks, TracksCov>;
+
   OutputObj<TH1F> hMass{TH1F("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
 
   void process(aod::Collisions const& collisions,
                aod::HfTrackIndexProng2 const& rowsTrackIndexProng2,
-               aod::BigTracks const& tracks)
+               TracksWithCov const& tracks)
   {
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df;
@@ -382,8 +377,8 @@ struct HfCandidateCreator2Prong {
 
     // loop over pairs of track indices
     for (auto const& rowTrackIndexProng2 : rowsTrackIndexProng2) {
-      auto track0 = rowTrackIndexProng2.prong0_as<aod::BigTracks>();
-      auto track1 = rowTrackIndexProng2.prong1_as<aod::BigTracks>();
+      auto track0 = rowTrackIndexProng2.prong0_as<TracksWithCov>();
+      auto track1 = rowTrackIndexProng2.prong1_as<TracksWithCov>();
       auto trackParVarPos1 = getTrackParCov(track0);
       auto trackParVarNeg1 = getTrackParCov(track1);
       auto collision = track0.collision();
@@ -459,6 +454,10 @@ struct HfCandidateSelectorD0 {
   Configurable<double> cpaMin{"cpaMin", 0.98, "Min. cosine of pointing angle"};
   Configurable<double> massWindow{"massWindow", 0.4, "Half-width of the invariant-mass window"};
 
+  using TracksWithPid = soa::Join<Tracks,
+                               aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                               aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
@@ -498,7 +497,7 @@ struct HfCandidateSelectorD0 {
     return true;
   }
 
-  void process(aod::HfCandProng2 const& candidates, aod::BigTracksPidDca const&)
+  void process(aod::HfCandProng2 const& candidates, TracksWithPid const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
@@ -514,8 +513,8 @@ struct HfCandidateSelectorD0 {
       int statusD0 = 0;
       int statusD0bar = 0;
 
-      auto trackPos = candidate.prong0_as<aod::BigTracksPidDca>(); // positive daughter
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPidDca>(); // negative daughter
+      auto trackPos = candidate.prong0_as<TracksWithPid>(); // positive daughter
+      auto trackNeg = candidate.prong1_as<TracksWithPid>(); // negative daughter
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
