@@ -61,7 +61,7 @@ DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //! track selection table
                   hf_seltrack::PzProng);
 
 // Definitions of frequently used joined tables
-using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra, HfSelTrack>;
+using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra>;
 using BigTracksPid = soa::Join<BigTracks,
                                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
