@@ -35,12 +35,14 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+// Constants
 static const double massPi = RecoDecay::getMassPDG(kPiPlus);
 static const double massK = RecoDecay::getMassPDG(kKPlus);
 static const auto arrMassPiK = std::array{massPi, massK};
 static const auto arrMassKPi = std::array{massK, massPi};
 
-// Skimming =====================================================================
+
+// Track selection =====================================================================
 
 namespace o2::aod
 {
@@ -48,30 +50,11 @@ namespace hf_seltrack
 {
 // Track selection columns
 DECLARE_SOA_COLUMN(IsSelProng, isSelProng, bool); //! prong selection flag
-DECLARE_SOA_COLUMN(PxProng, pxProng, float);      //! prong px
-DECLARE_SOA_COLUMN(PyProng, pyProng, float);      //! prong py
-DECLARE_SOA_COLUMN(PzProng, pzProng, float);      //! prong pz
 } // namespace hf_seltrack
 
 // Track selection table
 DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //! track selection table
-                  hf_seltrack::IsSelProng,
-                  hf_seltrack::PxProng,
-                  hf_seltrack::PyProng,
-                  hf_seltrack::PzProng);
-
-namespace hf_track_index
-{
-// Track index skim columns
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0"); //! prong 0
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //! prong 1
-} // namespace hf_track_index
-
-// Track index skim table
-DECLARE_SOA_TABLE(HfTrackIndexProng2, "AOD", "HFTRACKIDXP2", //! table with prongs indices
-                  hf_track_index::Prong0Id,
-                  hf_track_index::Prong1Id);
-
+                  hf_seltrack::IsSelProng);
 } // namespace o2::aod
 
 /// Track selection
@@ -104,12 +87,9 @@ struct HfTagSelTracks {
                TracksWithDca const& tracks)
   {
     for (auto const& track : tracks) {
-
       bool statusProng = true;
 
       auto ptTrack = track.pt();
-      auto etaTrack = track.eta();
-
       registry.fill(HIST("hPtNoCuts"), ptTrack);
 
       // pT cut
@@ -118,6 +98,7 @@ struct HfTagSelTracks {
       }
 
       // eta cut
+      auto etaTrack = track.eta();
       if (statusProng && std::abs(etaTrack) > etaTrackMax) {
         statusProng = false;
       }
@@ -136,10 +117,28 @@ struct HfTagSelTracks {
       }
 
       // fill table row
-      rowSelectedTrack(statusProng, track.px(), track.py(), track.pz());
+      rowSelectedTrack(statusProng);
     }
   }
 };
+
+
+// Track index skimming =====================================================================
+
+namespace o2::aod
+{
+namespace hf_track_index
+{
+// Track index skim columns
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0"); //! prong 0
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //! prong 1
+} // namespace hf_track_index
+
+// Track index skim table
+DECLARE_SOA_TABLE(HfTrackIndexProng2, "AOD", "HFTRACKIDXP2", //! table with prongs indices
+                  hf_track_index::Prong0Id,
+                  hf_track_index::Prong1Id);
+} // namespace o2::aod
 
 /// Track index skim creator
 /// Pre-selection of 2-prong secondary vertices
@@ -250,6 +249,7 @@ struct HfTrackIndexSkimCreator {
     }
   }
 };
+
 
 // Candidate creation =====================================================================
 
@@ -423,6 +423,7 @@ struct HfCandidateCreator2ProngExpressions {
   void init(InitContext const&) {}
 };
 
+
 // Candidate selection =====================================================================
 
 namespace o2::aod
@@ -577,6 +578,7 @@ struct HfCandidateSelectorD0 {
     }
   }
 };
+
 
 // Analysis task =====================================================================
 
