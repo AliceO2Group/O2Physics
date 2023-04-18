@@ -115,6 +115,8 @@ struct cascadeBuilder {
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
   Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
   Configurable<bool> d_doStraTrackQA{"d_doStraTrackQA", false, "do strangeness tracking QA"};
+  Configurable<bool> d_GenerateOnlyTrackedCascades{"d_GenerateOnlyTrackedCascades", false, "Skip cascades that aren't tracked"};
+
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -133,6 +135,7 @@ struct cascadeBuilder {
   Configurable<float> dQAMaxDCA{"dQAMaxDCA", 1, "max DCAxy QA histo"};
   Configurable<float> dQAXiMassWindow{"dQAXiMassWindow", 0.005, "Xi mass window for ITS cluster map QA"};
   Configurable<float> dQAOmegaMassWindow{"dQAOmegaMassWindow", 0.005, "Omega mass window for ITS cluster map QA"};
+
 
   int mRunNumber;
   float d_bz;
@@ -243,7 +246,7 @@ struct cascadeBuilder {
       const AxisSpec axisVsPtCoarse{(int)dQANBinsPtCoarse, 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
       const AxisSpec axisXiMass{(int)dQANBinsMass, 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
       const AxisSpec axisOmegaMass{(int)dQANBinsMass, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisCascadeDCAtoPV{(int)dQANBinsDCAxy, -dQAMaxDCA, dQAMaxDCA, "DCA_{xy} (cm)"};
+      const AxisSpec axisCascadeDCAtoPV{(int)dQANBinsDCAxy, -dQAMaxDCA,dQAMaxDCA, "DCA_{xy} (cm)"};
 
       registry.add("h2dXiMinusMass", "h2dXiMinusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
       registry.add("h2dXiPlusMass", "h2dXiPlusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
@@ -766,6 +769,15 @@ struct cascadeBuilder {
     statisticsRegistry.eventCounter++;
 
     for (auto& cascade : cascades) {
+      // check if cascade is tracked - sliceBy is our friend!
+      const uint64_t cascIdx = cascade.globalIndex();
+      auto trackedCascadesSliced = trackedCascades.sliceBy(perCascade, cascIdx);
+
+      // if only tracked cascades are desired, skip this candidate before doing anything (speed)
+      if( trackedCascadesSliced.size() == 0 && d_GenerateOnlyTrackedCascades ){ 
+        continue; // wasn't tracked
+      }
+
       bool validCascadeCandidate = buildCascadeCandidate<TTrackTo>(cascade);
       if (!validCascadeCandidate)
         continue; // doesn't pass cascade selections
@@ -815,6 +827,7 @@ struct cascadeBuilder {
       }
 
       float lPt = 0.0f;
+
       if (d_doStraTrackQA) {
         // Fill standard DCA histograms for all candidates (irrespectively of strangeness tracking)
         lPt = RecoDecay::sqrtSumOfSquares(cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0] + cascadecandidate.bachP[0], cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1] + cascadecandidate.bachP[1]);
@@ -828,9 +841,6 @@ struct cascadeBuilder {
           registry.fill(HIST("hDCACascadeToPVOmegaPlus"), lPt, cascadecandidate.cascDCAxy);
       }
 
-      // check if cascade is tracked - sliceBy is our friend!
-      const uint64_t cascIdx = cascade.globalIndex();
-      auto trackedCascadesSliced = trackedCascades.sliceBy(perCascade, cascIdx);
       if (trackedCascadesSliced.size() > 0) {
         auto trackedCascade = trackedCascadesSliced.begin(); // first and only element
 
