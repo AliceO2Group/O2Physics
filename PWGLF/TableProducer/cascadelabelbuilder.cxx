@@ -109,7 +109,7 @@ struct cascadeLabelBuilder {
       // Loop over those that actually have the corresponding V0 associated to them
       auto v0 = casc.v0_as<o2::aod::V0sLinked>();
       if (!(v0.has_v0Data())) {
-        casclabels(-1);
+        tracasclabels(-1);
         continue; // skip those cascades for which V0 doesn't exist
       }
       auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
