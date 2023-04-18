@@ -70,7 +70,7 @@ struct createEMReducedEvent {
       registry.fill(HIST("hEventCounter"), 1);
 
       // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      bool is_phoscpv_readout = true;
+      bool is_phoscpv_readout = collision.alias()[kTVXinPHOS];
       bool is_emc_readout = collision.alias()[kTVXinEMC];
 
       int ng_pcm = 0;

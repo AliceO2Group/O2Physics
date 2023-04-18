@@ -51,13 +51,13 @@ using EMReducedEvent = EMReducedEvents::iterator;
 namespace emreducedmcevent
 {
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //!
-DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);          //!
-DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);          //!
-DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);          //!
+DECLARE_SOA_COLUMN(PosX, posX, float);              //!
+DECLARE_SOA_COLUMN(PosY, posY, float);              //!
+DECLARE_SOA_COLUMN(PosZ, posZ, float);              //!
 } // namespace emreducedmcevent
 DECLARE_SOA_TABLE(EMReducedMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
-                  o2::soa::Index<>, emreducedmcevent::McCollisionId,
-                  mccollision::GeneratorsID, emreducedmcevent::MCPosX, emreducedmcevent::MCPosY, emreducedmcevent::MCPosZ,
+                  o2::soa::Index<>, mccollision::GeneratorsID,
+                  emreducedmcevent::PosX, emreducedmcevent::PosY, emreducedmcevent::PosZ,
                   mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
 using EMReducedMCEvent = EMReducedMCEvents::iterator;
 
@@ -99,7 +99,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
                            });
 } // namespace emmcparticle
 // NOTE: This table is nearly identical to the one from Framework (except that it points to the event ID, not the BC id)
-//       This table contains all MC truth tracks (both barrel and muon)
+//       This table contains all MC truth tracks (both v0 and calos)
 DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
                        o2::soa::Index<>, emmcparticle::EMReducedMCEventId,
                        mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
