@@ -132,6 +132,22 @@ DECLARE_SOA_DYNAMIC_COLUMN(MHypertriton, mHypertriton, //! mass under hypertrito
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{2.0f * pxpos, 2.0f * pypos, 2.0f * pzpos}, array{pxneg, pyneg, pzneg}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPionCharged}); });
 DECLARE_SOA_DYNAMIC_COLUMN(MAntiHypertriton, mAntiHypertriton, //! mass under antihypertriton hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{2.0f * pxneg, 2.0f * pyneg, 2.0f * pzneg}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3}); });
+DECLARE_SOA_DYNAMIC_COLUMN(M, m, //! mass under a certain hypothesis (0:K0, 1:L, 2:Lbar, 3:gamma, 4:hyp, 5:ahyp)
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg, int value) -> float {
+                             if (value == 0)
+                               return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+                             if (value == 1)
+                               return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+                             if (value == 2)
+                               return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
+                             if (value == 3)
+                               return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}}, array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
+                             if (value == 4)
+                               return RecoDecay::m(array{array{2.0f * pxpos, 2.0f * pypos, 2.0f * pzpos}, array{pxneg, pyneg, pzneg}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPionCharged});
+                             if (value == 5)
+                               return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{2.0f * pxneg, 2.0f * pyneg, 2.0f * pzneg}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
+                             return 0.0f;
+                           });
 
 DECLARE_SOA_DYNAMIC_COLUMN(YK0Short, yK0Short, //! V0 y with K0short hypothesis
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::y(array{Px, Py, Pz}, o2::constants::physics::MassKaonNeutral); });
@@ -196,6 +212,7 @@ DECLARE_SOA_TABLE_FULL(StoredV0Datas, "V0Datas", "AOD", "V0DATA", //!
                        v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::MHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::MAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                       v0data::M<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
 
                        // Longitudinal
                        v0data::YK0Short<v0data::Px, v0data::Py, v0data::Pz>,
@@ -336,7 +353,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(DCAV0ToPV, dcav0topv, //!
 // Calculated on the fly with mass assumption + dynamic tables
 DECLARE_SOA_DYNAMIC_COLUMN(MLambda, mLambda, //!
                            [](int charge, float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}}, charge < 0 ? array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged} : array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton}); });
-// Calculated on the fly with mass assumption + dynamic tables
+DECLARE_SOA_DYNAMIC_COLUMN(M, m, //! mass under a certain hypothesis (0:K0, 1:L, 2:Lbar, 3:gamma, 4:hyp, 5:ahyp)
+                           [](float mXi, float mOmega, int value) -> float {
+                             if (value == 0 || value == 1)
+                               return mXi;
+                             if (value == 2 || value == 3)
+                               return mOmega;
+                             return 0.0f;
+                           });
 
 DECLARE_SOA_DYNAMIC_COLUMN(YXi, yXi, //!
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::y(array{Px, Py, Pz}, o2::constants::physics::MassXiMinus); });
@@ -380,6 +404,7 @@ DECLARE_SOA_TABLE(StoredCascDatas, "AOD", "CASCDATA", //!
 
                   // Invariant masses
                   cascdata::MLambda<cascdata::Sign, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
+                  cascdata::M<cascdata::MXi, cascdata::MOmega>,
 
                   // Longitudinal
                   cascdata::YXi<cascdata::Px, cascdata::Py, cascdata::Pz>,

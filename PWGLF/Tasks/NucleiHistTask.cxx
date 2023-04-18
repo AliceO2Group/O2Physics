@@ -64,6 +64,7 @@ struct NucleiHistTask {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec centAxis = {centBinning, "V0M (%)"};
     AxisSpec centralityAxis = {100, 0.0, 100.0, "VT0C (%)"};
+    AxisSpec centralityAxis_extended = {105, 0.0, 105.0, "VT0C (%)"};
 
     // QA histograms
     spectra.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
@@ -78,6 +79,7 @@ struct NucleiHistTask {
     spectra.add("histNClusterITS", "Number of Clusters in ITS vs Pt", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     spectra.add("histChi2TPC", "chi^2 TPC vs Pt", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     spectra.add("histChi2ITS", "chi^2 ITS vs Pt", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
+    spectra.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
 
     // histograms for Proton
     proton_erg.add("histKeepEventData", "skimming histogram (p)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -270,6 +272,7 @@ struct NucleiHistTask {
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   Configurable<float> maxDCA_XY{"maxDCA_XY", 0.5f, "max DCA to vertex xy"};
   Configurable<float> maxDCA_Z{"maxDCA_Z", 2.0f, "max DCA to vertex z"};
+  Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to require in TRD for track selection. -1 does not require any TRD cluster"};
 
   Configurable<bool> enable_PVcontributor_global{"enable_PVcontributor_global", true, "is PV contributor (global)"};
   Configurable<bool> enable_PVcontributor_proton{"enable_PVcontributor_proton", true, "is PV contributor (global)"};
@@ -375,6 +378,19 @@ struct NucleiHistTask {
         //  fill TOF m^2 histogram
         if (track.hasTOF()) {
 
+          if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+            int lastLayer = 0;
+            for (int l = 7; l >= 0; l--) {
+              if (track.trdPattern() & (1 << l)) {
+                lastLayer = l;
+                break;
+              }
+            }
+            if (lastLayer < lastRequiredTrdCluster) {
+              continue;
+            }
+          }
+
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
           spectra.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
@@ -390,6 +406,19 @@ struct NucleiHistTask {
 
         // fill TOF m^2 histogram
         if (track.hasTOF()) {
+
+          if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+            int lastLayer = 0;
+            for (int l = 7; l >= 0; l--) {
+              if (track.trdPattern() & (1 << l)) {
+                lastLayer = l;
+                break;
+              }
+            }
+            if (lastLayer < lastRequiredTrdCluster) {
+              continue;
+            }
+          }
 
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
@@ -418,6 +447,19 @@ struct NucleiHistTask {
 
           if (track.hasTOF()) {
 
+            if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+              int lastLayer = 0;
+              for (int l = 7; l >= 0; l--) {
+                if (track.trdPattern() & (1 << l)) {
+                  lastLayer = l;
+                  break;
+                }
+              }
+              if (lastLayer < lastRequiredTrdCluster) {
+                continue;
+              }
+            }
+
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
@@ -444,6 +486,19 @@ struct NucleiHistTask {
 
           if (track.hasTOF()) {
 
+            if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+              int lastLayer = 0;
+              for (int l = 7; l >= 0; l--) {
+                if (track.trdPattern() & (1 << l)) {
+                  lastLayer = l;
+                  break;
+                }
+              }
+              if (lastLayer < lastRequiredTrdCluster) {
+                continue;
+              }
+            }
+
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
@@ -454,6 +509,20 @@ struct NucleiHistTask {
         }
 
         if (track.hasTOF()) {
+
+          if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+            int lastLayer = 0;
+            for (int l = 7; l >= 0; l--) {
+              if (track.trdPattern() & (1 << l)) {
+                lastLayer = l;
+                break;
+              }
+            }
+            if (lastLayer < lastRequiredTrdCluster) {
+              continue;
+            }
+          }
+
           spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * track.sign(), track.beta());
         }
 
@@ -479,6 +548,19 @@ struct NucleiHistTask {
           deuteron_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
 
           if (track.hasTOF()) {
+
+            if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+              int lastLayer = 0;
+              for (int l = 7; l >= 0; l--) {
+                if (track.trdPattern() & (1 << l)) {
+                  lastLayer = l;
+                  break;
+                }
+              }
+              if (lastLayer < lastRequiredTrdCluster) {
+                continue;
+              }
+            }
 
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
@@ -506,6 +588,19 @@ struct NucleiHistTask {
 
           if (track.hasTOF()) {
 
+            if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+              int lastLayer = 0;
+              for (int l = 7; l >= 0; l--) {
+                if (track.trdPattern() & (1 << l)) {
+                  lastLayer = l;
+                  break;
+                }
+              }
+              if (lastLayer < lastRequiredTrdCluster) {
+                continue;
+              }
+            }
+
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
@@ -516,6 +611,20 @@ struct NucleiHistTask {
         }
 
         if (track.hasTOF()) {
+
+          if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+            int lastLayer = 0;
+            for (int l = 7; l >= 0; l--) {
+              if (track.trdPattern() & (1 << l)) {
+                lastLayer = l;
+                break;
+              }
+            }
+            if (lastLayer < lastRequiredTrdCluster) {
+              continue;
+            }
+          }
+
           spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * track.sign(), track.beta());
         }
       }
@@ -540,6 +649,19 @@ struct NucleiHistTask {
           triton_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
 
           if (track.hasTOF()) {
+
+            if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+              int lastLayer = 0;
+              for (int l = 7; l >= 0; l--) {
+                if (track.trdPattern() & (1 << l)) {
+                  lastLayer = l;
+                  break;
+                }
+              }
+              if (lastLayer < lastRequiredTrdCluster) {
+                continue;
+              }
+            }
 
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
@@ -567,6 +689,19 @@ struct NucleiHistTask {
 
           if (track.hasTOF()) {
 
+            if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+              int lastLayer = 0;
+              for (int l = 7; l >= 0; l--) {
+                if (track.trdPattern() & (1 << l)) {
+                  lastLayer = l;
+                  break;
+                }
+              }
+              if (lastLayer < lastRequiredTrdCluster) {
+                continue;
+              }
+            }
+
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
@@ -577,6 +712,20 @@ struct NucleiHistTask {
         }
 
         if (track.hasTOF()) {
+
+          if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+            int lastLayer = 0;
+            for (int l = 7; l >= 0; l--) {
+              if (track.trdPattern() & (1 << l)) {
+                lastLayer = l;
+                break;
+              }
+            }
+            if (lastLayer < lastRequiredTrdCluster) {
+              continue;
+            }
+          }
+
           spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * track.sign(), track.beta());
         }
       }
@@ -601,6 +750,19 @@ struct NucleiHistTask {
           Helium3_reg.fill(HIST("histChi2ITS"), track.pt() * 2.0, track.itsChi2NCl());
 
           if (track.hasTOF()) {
+
+            if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+              int lastLayer = 0;
+              for (int l = 7; l >= 0; l--) {
+                if (track.trdPattern() & (1 << l)) {
+                  lastLayer = l;
+                  break;
+                }
+              }
+              if (lastLayer < lastRequiredTrdCluster) {
+                continue;
+              }
+            }
 
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
@@ -627,6 +789,19 @@ struct NucleiHistTask {
 
           if (track.hasTOF()) {
 
+            if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+              int lastLayer = 0;
+              for (int l = 7; l >= 0; l--) {
+                if (track.trdPattern() & (1 << l)) {
+                  lastLayer = l;
+                  break;
+                }
+              }
+              if (lastLayer < lastRequiredTrdCluster) {
+                continue;
+              }
+            }
+
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
@@ -637,6 +812,20 @@ struct NucleiHistTask {
         }
 
         if (track.hasTOF()) {
+
+          if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+            int lastLayer = 0;
+            for (int l = 7; l >= 0; l--) {
+              if (track.trdPattern() & (1 << l)) {
+                lastLayer = l;
+                break;
+              }
+            }
+            if (lastLayer < lastRequiredTrdCluster) {
+              continue;
+            }
+          }
+
           spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0 * track.sign(), track.beta());
         }
       }
@@ -661,6 +850,19 @@ struct NucleiHistTask {
           Helium4_reg.fill(HIST("histChi2ITS"), track.pt() * 2.0, track.itsChi2NCl());
 
           if (track.hasTOF()) {
+
+            if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+              int lastLayer = 0;
+              for (int l = 7; l >= 0; l--) {
+                if (track.trdPattern() & (1 << l)) {
+                  lastLayer = l;
+                  break;
+                }
+              }
+              if (lastLayer < lastRequiredTrdCluster) {
+                continue;
+              }
+            }
 
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
@@ -687,6 +889,19 @@ struct NucleiHistTask {
 
           if (track.hasTOF()) {
 
+            if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+              int lastLayer = 0;
+              for (int l = 7; l >= 0; l--) {
+                if (track.trdPattern() & (1 << l)) {
+                  lastLayer = l;
+                  break;
+                }
+              }
+              if (lastLayer < lastRequiredTrdCluster) {
+                continue;
+              }
+            }
+
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
 
@@ -697,6 +912,20 @@ struct NucleiHistTask {
         }
 
         if (track.hasTOF()) {
+
+          if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+            int lastLayer = 0;
+            for (int l = 7; l >= 0; l--) {
+              if (track.trdPattern() & (1 << l)) {
+                lastLayer = l;
+                break;
+              }
+            }
+            if (lastLayer < lastRequiredTrdCluster) {
+              continue;
+            }
+          }
+
           spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0 * track.sign(), track.beta());
         }
       }
@@ -722,6 +951,8 @@ struct NucleiHistTask {
   void fillCentHistorgrams(const CollisionType& event, const TracksType& tracks)
   {
 
+    spectra.fill(HIST("histCentrality"), event.centFT0C());
+
     for (auto track : tracks) { // start loop over tracks
 
       float TPCnumberClsFound = track.tpcNClsFound();
@@ -731,7 +962,11 @@ struct NucleiHistTask {
       float Chi2perClusterITS = track.itsChi2NCl();
 
       // track cuts
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNCls()) < minReqClusterITS || !(track.isPVContributor())) {
+      if (enable_PVcontributor_global && !(track.isPVContributor())) {
+        continue;
+      }
+
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNCls()) < minReqClusterITS) {
         continue;
       }
 
@@ -760,44 +995,72 @@ struct NucleiHistTask {
       if (track.sign() > 0) {
 
         proton_erg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), track.tpcNSigmaPr(), event.centFT0C());
-        proton_erg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaPr(), event.centFT0C());
         deuteron_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), track.tpcNSigmaDe(), event.centFT0C());
-        deuteron_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaDe(), event.centFT0C());
         triton_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), track.tpcNSigmaTr(), event.centFT0C());
-        triton_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaTr(), event.centFT0C());
         Helium3_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, track.tpcNSigmaHe(), event.centFT0C());
-        Helium3_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaHe(), event.centFT0C());
         Helium4_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, track.tpcNSigmaAl(), event.centFT0C());
+
+        if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+          int lastLayer = 0;
+          for (int l = 7; l >= 0; l--) {
+            if (track.trdPattern() & (1 << l)) {
+              lastLayer = l;
+              break;
+            }
+          }
+          if (lastLayer < lastRequiredTrdCluster) {
+            continue;
+          }
+        }
+
+        proton_erg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaPr(), event.centFT0C());
+        deuteron_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaDe(), event.centFT0C());
+        triton_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaTr(), event.centFT0C());
+        Helium3_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaHe(), event.centFT0C());
         Helium4_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaAl(), event.centFT0C());
 
         if (track.hasTOF()) {
-          proton_erg.fill(HIST("histTofm2_cent"), track.tpcInnerParam(), track.mass() * track.mass(), event.centFT0C());
-          deuteron_reg.fill(HIST("histTofm2_cent"), track.tpcInnerParam(), track.mass() * track.mass(), event.centFT0C());
-          triton_reg.fill(HIST("histTofm2_cent"), track.tpcInnerParam(), track.mass() * track.mass(), event.centFT0C());
-          Helium3_reg.fill(HIST("histTofm2_cent"), track.tpcInnerParam() * 2.0, track.mass() * track.mass(), event.centFT0C());
-          Helium4_reg.fill(HIST("histTofm2_cent"), track.tpcInnerParam() * 2.0, track.mass() * track.mass(), event.centFT0C());
+          proton_erg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
+          deuteron_reg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
+          triton_reg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
+          Helium3_reg.fill(HIST("histTofm2_cent"), track.pt() * 2.0, track.mass() * track.mass(), event.centFT0C());
+          Helium4_reg.fill(HIST("histTofm2_cent"), track.pt() * 2.0, track.mass() * track.mass(), event.centFT0C());
         }
       }
 
       if (track.sign() < 0) {
 
         aproton_erg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), track.tpcNSigmaPr(), event.centFT0C());
-        aproton_erg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaPr(), event.centFT0C());
         adeuteron_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), track.tpcNSigmaDe(), event.centFT0C());
-        adeuteron_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaDe(), event.centFT0C());
         atriton_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), track.tpcNSigmaTr(), event.centFT0C());
-        atriton_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaTr(), event.centFT0C());
         aHelium3_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, track.tpcNSigmaHe(), event.centFT0C());
-        aHelium3_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaHe(), event.centFT0C());
         aHelium4_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, track.tpcNSigmaAl(), event.centFT0C());
+
+        if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+          int lastLayer = 0;
+          for (int l = 7; l >= 0; l--) {
+            if (track.trdPattern() & (1 << l)) {
+              lastLayer = l;
+              break;
+            }
+          }
+          if (lastLayer < lastRequiredTrdCluster) {
+            continue;
+          }
+        }
+
+        aproton_erg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaPr(), event.centFT0C());
+        adeuteron_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaDe(), event.centFT0C());
+        atriton_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaTr(), event.centFT0C());
+        aHelium3_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaHe(), event.centFT0C());
         aHelium4_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaAl(), event.centFT0C());
 
         if (track.hasTOF()) {
-          aproton_erg.fill(HIST("histTofm2_cent"), track.tpcInnerParam(), track.mass() * track.mass(), event.centFT0C());
-          adeuteron_reg.fill(HIST("histTofm2_cent"), track.tpcInnerParam(), track.mass() * track.mass(), event.centFT0C());
-          atriton_reg.fill(HIST("histTofm2_cent"), track.tpcInnerParam(), track.mass() * track.mass(), event.centFT0C());
-          aHelium3_reg.fill(HIST("histTofm2_cent"), track.tpcInnerParam() * 2.0, track.mass() * track.mass(), event.centFT0C());
-          aHelium4_reg.fill(HIST("histTofm2_cent"), track.tpcInnerParam() * 2.0, track.mass() * track.mass(), event.centFT0C());
+          aproton_erg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
+          adeuteron_reg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
+          atriton_reg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
+          aHelium3_reg.fill(HIST("histTofm2_cent"), track.pt() * 2.0, track.mass() * track.mass(), event.centFT0C());
+          aHelium4_reg.fill(HIST("histTofm2_cent"), track.pt() * 2.0, track.mass() * track.mass(), event.centFT0C());
         }
       }
     }
