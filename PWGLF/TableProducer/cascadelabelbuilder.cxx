@@ -151,7 +151,7 @@ struct cascadeLabelBuilder {
         lLabel);
     } // end casctable loop
   }
-  PROCESS_SWITCH(cascadeLabelBuilder, processTrackedCascades, "Produce tracked cascade label tables", true);
+  PROCESS_SWITCH(cascadeLabelBuilder, processTrackedCascades, "Produce tracked cascade label tables", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
