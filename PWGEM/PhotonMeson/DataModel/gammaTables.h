@@ -99,7 +99,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
                            });
 } // namespace emmcparticle
 // NOTE: This table is nearly identical to the one from Framework (except that it points to the event ID, not the BC id)
-//       This table contains all MC truth tracks (both barrel and muon)
+//       This table contains all MC truth tracks (both v0 and calos)
 DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
                        o2::soa::Index<>, emmcparticle::EMReducedMCEventId,
                        mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
