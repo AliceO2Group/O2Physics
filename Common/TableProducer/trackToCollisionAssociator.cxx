@@ -40,7 +40,7 @@ struct TrackToCollisionAssociation {
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
   Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
 
-  Filter trackFilter = (applyIsGlobalTrackWoDCA == false) || requireGlobalTrackWoDCAInFilter();
+  Filter trackFilter = (applyIsGlobalTrackWoDCA.node() == false) || requireGlobalTrackWoDCAInFilter();
   using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   using TracksWithSelFilter = soa::Filtered<TracksWithSel>;
 

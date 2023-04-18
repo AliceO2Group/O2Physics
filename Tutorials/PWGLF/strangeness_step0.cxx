@@ -11,7 +11,7 @@
 ///
 /// \brief this is a starting point for the Strangeness tutorial
 /// \author
-/// \since
+/// \since 12/05/2023
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -30,17 +30,17 @@ struct strangeness_tutorial {
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
 
   // histogram defined with HistogramRegistry
-  HistogramRegistry registry{
-    "registry",
-    {{"hVertexZ", "hVertexZ", {HistType::kTH1F, {{nBins, -15., 15.}}}},
-     {"hMassK0Short", "hMassK0Short", {HistType::kTH1F, {{200, 0.45f, 0.55f}}}}}};
+  HistogramRegistry registry{"registry",
+                             {{"hVertexZ", "hVertexZ", {HistType::kTH1F, {{nBins, -15., 15.}}}},
+                              {"hMassK0Short", "hMassK0Short", {HistType::kTH1F, {{200, 0.45f, 0.55f}}}}}};
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& V0s)
+  // Defining filters for events (event selection)
+  // Processed events will be already fulfulling the event selection requirements
+  Filter eventFilter = (o2::aod::evsel::sel8 == true);
+
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
+               aod::V0Datas const& V0s)
   {
-    // basic event selection
-    if (!collision.sel8()) {
-      return;
-    }
     // Fill the event counter
     registry.fill(HIST("hVertexZ"), collision.posZ());
 
@@ -50,8 +50,4 @@ struct strangeness_tutorial {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    adaptAnalysisTask<strangeness_tutorial>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<strangeness_tutorial>(cfgc)}; }

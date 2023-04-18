@@ -64,7 +64,7 @@ class OnnxModel
       }
       for (std::size_t i = 0; i < outputTensors.size(); i++) {
         LOG(debug) << "Output tensor shape: " << printShape(outputTensors[i].GetTensorTypeAndShapeInfo().GetShape());
-        if (outputTensors[i].GetTensorTypeAndShapeInfo().GetShape() != mOutputShapes[i]) {
+        if ((outputTensors[i].GetTensorTypeAndShapeInfo().GetShape() != mOutputShapes[i]) && (mOutputShapes[i][0] != -1)) {
           LOG(fatal) << "Shape of tensor " << i << " does not agree with model specification! Output: " << printShape(outputTensors[i].GetTensorTypeAndShapeInfo().GetShape()) << " model: " << printShape(mOutputShapes[i]);
         }
       }

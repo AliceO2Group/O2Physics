@@ -40,12 +40,6 @@
 /// \brief Skeleton task for EMCal cluster tutorial
 /// \author Florian Jonas <florian.jonas@cern.ch>, Oak Ridge National Laoratory; Joshua König <joshua.konig@cern.ch>, Goethe-University Frankfurt; Marvin Hemmer <marvin.hemmer@cern.ch>, Goethe-University Frankfurt
 /// \since 09.04.2023
-///
-/// This task is meant to be used to learn how to use EMCal clusters and their properties, such as:
-/// - cluster energy
-/// - cluster position
-/// - cluster time
-/// - cluster shape
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using collisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator;
@@ -56,7 +50,6 @@ struct ClusterTutorial {
   HistogramRegistry mHistManager{"ClusterMonitorHistograms"};
 
   Preslice<o2::aod::EMCALClusterCells> perCluster = o2::aod::emcalclustercell::emcalclusterId;
-  Preslice<o2::aod::EMCALAmbiguousClusterCells> perClusterAmb = o2::aod::emcalclustercell::emcalclusterId;
   // configurable parameters
   Configurable<bool> mDoEventSel{"doEventSel", 0, "demand kINT7"};
   Configurable<double> mVertexCut{"vertexCut", -1, "apply z-vertex cut with abs value in cm"};

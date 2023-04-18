@@ -17,6 +17,7 @@
 // Data (run3):
 // o2-analysis-lf-nuclei-spectra, o2-analysis-track-propagation, o2-analysis-timestamp
 // o2-analysis-trackselection, o2-analysis-pid-tof-base, o2-analysis-pid-tof-full
+// o2-analysis-pid-tpc-base, o2-analysis-pid-tof-beta
 // o2-analysis-pid-tpc-full, o2-analysis-multiplicity-table, o2-analysis-event-selection
 
 #include <cmath>
@@ -271,6 +272,7 @@ struct NucleiSpectraTask {
 
     spectra.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     spectra.add("hTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
+    spectra.add("hTofSignalData", "TOF beta", HistType::kTH2F, {{500, 0., 5., "#it{p} (GeV/#it{c})"}, {750, 0, 1.5, "TOF #beta"}});
     for (int iC{0}; iC < 2; ++iC) {
       for (int iS{0}; iS < nuclei::species; ++iS) {
         for (int iPID{0}; iPID < 2; ++iPID) {
@@ -314,6 +316,7 @@ struct NucleiSpectraTask {
       }
       const int iC{track.sign() < 0};
       spectra.fill(HIST("hTpcSignalData"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
+      spectra.fill(HIST("hTofSignalData"), track.p(), track.beta());
       float nSigma[2][4]{
         {track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl()},
         {track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl()}};
@@ -433,9 +436,9 @@ struct NucleiSpectraTask {
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
           nucleiTableMC(0, 0, 0, 0, 0, 0, flags, 0, 0, 0, particle.pt(), particle.eta(), particle.pdgCode());
         }
-        index++;
         break;
       }
+      index++;
     }
   }
   PROCESS_SWITCH(NucleiSpectraTask, processMC, "MC analysis", false);
