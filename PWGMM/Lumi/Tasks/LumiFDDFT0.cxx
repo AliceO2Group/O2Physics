@@ -100,7 +100,7 @@ struct LumiFDDFT0 {
   const char* ccdburl = "http://alice-ccdb.cern.ch";
   int mRunNumber;
 
-  Configurable<Long64_t> ftts{"ftts", 1668080173000, "First time of time stamp"};
+  Configurable<uint64_t> fttimestamp{"fttimestamp", 1668080173000, "First time of time stamp"};
   Configurable<int> nContribMax{"nContribMax", 2500, "Maximum number of contributors"};
   Configurable<int> nContribMin{"nContribMin", 10, "Minimum number of contributors"};
 
@@ -139,7 +139,7 @@ struct LumiFDDFT0 {
                              o2::aod::TracksExtra> const& unfiltered_tracks)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    Long64_t relTS = bc.timestamp() - ftts;
+    Long64_t relTS = bc.timestamp() - fttimestamp;
 
     std::vector<int64_t> vec_globID_contr = {};
     std::vector<o2::track::TrackParCov> vec_TrkContributos = {};
