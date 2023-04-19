@@ -64,6 +64,7 @@ struct NucleiHistTask {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec centAxis = {centBinning, "V0M (%)"};
     AxisSpec centralityAxis = {100, 0.0, 100.0, "VT0C (%)"};
+    AxisSpec centralityAxis_extended = {105, 0.0, 105.0, "VT0C (%)"};
 
     // QA histograms
     spectra.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
@@ -78,6 +79,7 @@ struct NucleiHistTask {
     spectra.add("histNClusterITS", "Number of Clusters in ITS vs Pt", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     spectra.add("histChi2TPC", "chi^2 TPC vs Pt", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     spectra.add("histChi2ITS", "chi^2 ITS vs Pt", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
+    spectra.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
 
     // histograms for Proton
     proton_erg.add("histKeepEventData", "skimming histogram (p)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -949,6 +951,8 @@ struct NucleiHistTask {
   void fillCentHistorgrams(const CollisionType& event, const TracksType& tracks)
   {
 
+    spectra.fill(HIST("histCentrality"), event.centFT0C());
+
     for (auto track : tracks) { // start loop over tracks
 
       float TPCnumberClsFound = track.tpcNClsFound();
@@ -958,7 +962,11 @@ struct NucleiHistTask {
       float Chi2perClusterITS = track.itsChi2NCl();
 
       // track cuts
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNCls()) < minReqClusterITS || !(track.isPVContributor())) {
+      if (enable_PVcontributor_global && !(track.isPVContributor())) {
+        continue;
+      }
+
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNCls()) < minReqClusterITS) {
         continue;
       }
 

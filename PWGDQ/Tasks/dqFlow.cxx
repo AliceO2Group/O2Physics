@@ -174,18 +174,18 @@ struct DQEventQvector {
     fFC->Initialize(oba, axisMultiplicity, 10);
     delete oba;
 
-    int pows[] = {3, 0, 2, 2, 3, 3, 3};
-    int powsFull[] = {5, 0, 4, 4, 3, 3, 3};
     // Define regions of positive and negative eta in order to create gaps
-    fGFW->AddRegion("refN", 7, pows, fConfigCutEtaMin, fConfigEtaLimitMin, 1, 1);
-    fGFW->AddRegion("refP", 7, pows, fConfigEtaLimitMax, fConfigCutEtaMax, 1, 1);
-    fGFW->AddRegion("full", 7, powsFull, fConfigCutEtaMin, fConfigCutEtaMax, 1, 2);
+    fGFW->AddRegion("refN", fConfigCutEtaMin, fConfigEtaLimitMin, 1, 1);
+    fGFW->AddRegion("refP", fConfigEtaLimitMax, fConfigCutEtaMax, 1, 1);
+    fGFW->AddRegion("full", fConfigCutEtaMin, fConfigCutEtaMax, 1, 2);
     // Defined the different charged particle correlations
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
+
+    fGFW->CreateRegions();
   }
 
   // Fill the FlowContainer
@@ -193,34 +193,32 @@ struct DQEventQvector {
   {
     // Calculate the correlations from the GFW
     double dnx, dny, valx;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).Re();
-    dny = fGFW->Calculate(corrconf, 0, kTRUE).Im();
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    dny = fGFW->Calculate(corrconf, 0, kTRUE).imag();
     if (dnx == 0) {
       return;
     }
 
     if (!corrconf.pTDif) {
-      valx = fGFW->Calculate(corrconf, 0, kFALSE).Re() / dnx;
+      valx = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (TMath::Abs(valx) < 1) {
-        fFC->FillProfile(corrconf.Head.Data(), cent, valx, 1, rndm);
+        fFC->FillProfile(corrconf.Head.c_str(), cent, valx, 1, rndm);
         if (dny == 0) {
           return;
         }
       }
       return;
     }
-
-    bool DisableOverlap = kFALSE;
     uint8_t nAxisPtBins = 31;
     for (int i = 1; i <= nAxisPtBins; i++) {
-      dnx = fGFW->Calculate(corrconf, 0, kTRUE, DisableOverlap).Re();
+      dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
       if (dnx == 0) {
         return;
       }
-      valx = fGFW->Calculate(corrconf, 0, kFALSE, DisableOverlap).Re() / dnx;
+      valx = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (TMath::Abs(valx) < 1) {
         // Fill the charged particle correlation vs pT profiles
-        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.Data(), i), cent, valx, 1., rndm);
+        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, valx, 1., rndm);
       }
       return;
     }
@@ -281,12 +279,12 @@ struct DQEventQvector {
     uint8_t nentriesN = 0.0;
     uint8_t nentriesP = 0.0;
     uint8_t nentriesFull = 0.0;
-    TComplex Q2vecN;
-    TComplex Q2vecP;
-    TComplex Q2vecFull;
-    TComplex Q3vecN;
-    TComplex Q3vecP;
-    TComplex Q3vecFull;
+    complex<double> Q2vecN;
+    complex<double> Q2vecP;
+    complex<double> Q2vecFull;
+    complex<double> Q3vecN;
+    complex<double> Q3vecP;
+    complex<double> Q3vecFull;
 
     if (fGFW && (tracks1.size() > 0)) {
       // Obtain the GFWCumulant where Q is calculated (index=region, with different eta gaps)

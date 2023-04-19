@@ -133,6 +133,23 @@ class FemtoWorldContainer
     const float kT = FemtoWorldMath::getkT(part1, mMassOne, part2, mMassTwo);
     const float mT = FemtoWorldMath::getmT(part1, mMassOne, part2, mMassTwo);
 
+    // // HERE RANDOMLY CHOOSE PARTICLES
+    // TRandom* rndm = new TRandom(0);
+    // double ran = rndm->Rndm();
+
+    // double delta_eta;
+    // double delta_phi;
+
+    // if (ran < 0.5) {
+    //   delta_eta = part1.eta() - part2.eta();
+    //   delta_phi = part1.phi() - part2.phi();
+    // } else if (ran >= 0.5) {
+    //   delta_eta = part2.eta() - part1.eta();
+    //   delta_phi = part2.phi() - part1.phi();
+    // } else {
+    //   LOGF(error, "-------Error in FemtoWorldContainer (randomly picking particles in a pair) - value %i, not 0 or 1", ran);
+    // }
+
     double delta_eta = part1.eta() - part2.eta();
     double delta_phi = part1.phi() - part2.phi();
 

@@ -128,6 +128,7 @@ struct PCMQC {
   void fillHistosLeg(const T& leg, const char* cutname)
   {
     reinterpret_cast<TH1F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hPt"))->Fill(leg.pt());
+    reinterpret_cast<TH1F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hQoverPt"))->Fill(leg.sign() / leg.pt());
     reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hEtaPhi"))->Fill(leg.phi(), leg.eta());
     reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hDCAxyz"))->Fill(leg.dcaXY(), leg.dcaZ());
     reinterpret_cast<TH1F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hNclsTPC"))->Fill(leg.tpcNClsFound());

@@ -18,31 +18,101 @@
 #include "Framework/AnalysisTask.h"
 
 //_______________________________________________________________________
-template <typename T, typename TMCs>
-bool IsPhysicalPrimary(T const& mctrack, TMCs const& mcTracks)
+template <typename TCollision, typename TTrack, typename TMCs>
+bool IsPhysicalPrimary(TCollision const& mccollision, TTrack const& mctrack, TMCs const& mcTracks)
 {
   // This is to check mctrack is ALICE physical primary.
   // https://inspirehep.net/files/4c26ef5fb432df99bdc1ff847653502f
 
   if (!mctrack.producedByGenerator())
     return false;
-  float r3D = sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2) + pow(mctrack.vz(), 2)); // cm
+  float r3D = sqrt(pow(mctrack.vx() - mccollision.posX(), 2) + pow(mctrack.vy() - mccollision.posY(), 2) + pow(mctrack.vz() - mccollision.posZ(), 2)); // cm
   if (r3D > 1.0)
     return false;
 
   // exclude weak decay. K0S is the most relevant strange particle for neutral mesons.
   if (mctrack.has_mothers()) {
-    for (auto& m : mctrack.mothersIds()) {
-      if (m < mcTracks.size()) { // protect against bad mother indices
-        auto mp = mcTracks.iteratorAt(m);
+    // auto mp = mctrack.template mothers_first_as<TMCs>();
+    int motherid = mctrack.mothersIds()[0]; // first mother index
+    while (motherid > -1) {
+      if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+        auto mp = mcTracks.iteratorAt(motherid);
         int pdg_mother = mp.pdgCode();
-        if (pdg_mother == 310 || pdg_mother == 3122) {
+        // LOGF(info, "mctrack.globalIndex() = %d, mp.globalIndex() = %d , pdg_mother = %d", mctrack.globalIndex(), mp.globalIndex(), pdg_mother);
+        if (abs(pdg_mother) == 310 || abs(pdg_mother) == 3122) {
           return false;
+        }
+        if (mp.has_mothers()) {
+          motherid = mp.mothersIds()[0]; // first mother index
+        } else {
+          motherid = -999;
         }
       }
     }
+
+    // for (auto& m : mctrack.mothersIds()) {
+    //   if (m < mcTracks.size()) { // protect against bad mother indices
+    //     auto mp = mcTracks.iteratorAt(m);
+    //     int pdg_mother = mp.pdgCode();
+    //     if (abs(pdg_mother) == 310 || abs(pdg_mother) == 3122 || abs(pdg_mother) == 3212) {
+    //       return false;
+    //     }
+    //   }
+    // }
   }
   return true;
+}
+//_______________________________________________________________________
+template <typename TCollision, typename T, typename TMCs>
+bool IsFromWD(TCollision const& mccollision, T const& mctrack, TMCs const& mcTracks)
+{
+  // is this particle from weak decay? production vertex of this particle is within 1 cm, but from weak decay
+  float r3D = sqrt(pow(mctrack.vx() - mccollision.posX(), 2) + pow(mctrack.vy() - mccollision.posY(), 2) + pow(mctrack.vz() - mccollision.posZ(), 2)); // cm
+  if (r3D > 1.0) {
+    return false;
+  }
+
+  if (mctrack.has_mothers()) {
+    // auto mp = mctrack.template mothers_first_as<TMCs>();
+    int motherid = mctrack.mothersIds()[0]; // first mother index
+    while (motherid > -1) {
+      if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+        auto mp = mcTracks.iteratorAt(motherid);
+        int pdg_mother = mp.pdgCode();
+        if (abs(pdg_mother) == 310 || abs(pdg_mother) == 3122) {
+          // LOGF(info, "mctrack.globalIndex() = %d, mp.globalIndex() = %d , pdg_mother = %d", mctrack.globalIndex(), mp.globalIndex(), pdg_mother);
+          return true;
+        }
+        if (mp.has_mothers()) {
+          motherid = mp.mothersIds()[0]; // first mother index
+        } else {
+          motherid = -999;
+        }
+      }
+    }
+
+    // for (auto& mp : mctrack.template mothers_as<TMCs>() ) {
+    //   int pdg_mother = mp.pdgCode();
+    //   //LOGF(info, "mctrack.globalIndex() = %d, mp.globalIndex() = %d , pdg_mother = %d", mctrack.globalIndex(), mp.globalIndex(), pdg_mother);
+    //   if (abs(pdg_mother) == 310 || abs(pdg_mother) == 3122 || abs(pdg_mother) == 3212) {
+    //     return true;
+    //   }
+    // }
+
+    // for (auto& m : mctrack.mothersIds()) {
+    //   if (m < mcTracks.size()) { // protect against bad mother indices
+    //     auto mp = mcTracks.iteratorAt(m);
+    //     int pdg_mother = mp.pdgCode();
+    //     LOGF(info, "mother pdg = %d", pdg_mother);
+    //     if (abs(pdg_mother) == 311 || abs(pdg_mother) == 310 || abs(pdg_mother) == 3122) {
+    //       return true;
+    //     }
+    //   }
+    // }
+  } else {
+    return false;
+  }
+  return false;
 }
 //_______________________________________________________________________
 template <typename T, typename TMCs>

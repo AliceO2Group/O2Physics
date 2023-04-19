@@ -75,6 +75,8 @@ DECLARE_SOA_COLUMN(CPA, cpa, float);
 DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
@@ -152,6 +154,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
                   full::Y,
                   full::E,
                   full::MCflag,
+                  full::OriginMcRec,
                   full::IsCandidateSwapped);
 
 DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
@@ -169,7 +172,8 @@ DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::MCflag);
+                  full::MCflag,
+                  full::OriginMcGen);
 
 } // namespace o2::aod
 
@@ -290,6 +294,7 @@ struct HfTreeCreatorLcToPKPi {
             FunctionY,
             FunctionE,
             candidate.flagMcMatchRec(),
+            candidate.originMcRec(),
             candidate.isCandidateSwapped());
         }
       };
@@ -308,7 +313,8 @@ struct HfTreeCreatorLcToPKPi {
           particle.eta(),
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
-          particle.flagMcMatchGen());
+          particle.flagMcMatchGen(),
+          particle.originMcGen());
       }
     }
   }
@@ -416,6 +422,7 @@ struct HfTreeCreatorLcToPKPi {
             candidate.phi(),
             FunctionY,
             FunctionE,
+            0.,
             0.,
             0.);
         }
