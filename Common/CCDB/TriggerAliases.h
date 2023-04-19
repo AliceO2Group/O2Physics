@@ -40,6 +40,8 @@ enum triggerAliases {
   kDJ1,
   kDG2,
   kDJ2,
+  kTVXinTRD,
+  kTVXinEMC,
   kALL,
   kNaliases
 };
@@ -63,7 +65,7 @@ class TriggerAliases
   std::map<uint32_t, std::string> mAliasToClassNames;
   std::map<uint32_t, ULong64_t> mAliasToTriggerMask;
   std::map<uint32_t, ULong64_t> mAliasToTriggerMaskNext50;
-  ClassDefNV(TriggerAliases, 5)
+  ClassDefNV(TriggerAliases, 6)
 };
 
 #endif

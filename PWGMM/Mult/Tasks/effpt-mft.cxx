@@ -15,6 +15,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RuntimeError.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
 #include "ReconstructionDataFormats/GlobalTrackID.h"
@@ -38,7 +39,7 @@ AxisSpec ZAxis = {301, -30.1, 30.1};
 using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
 struct EffPtMFT {
-  Service<TDatabasePDG> pdg;
+  Service<O2DatabasePDG> pdg;
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   ConfigurableAxis PtAxis{"PtAxis", {1001, -0.0005, 1.0005}, "pt axis for histograms"};
@@ -137,7 +138,7 @@ struct EffPtMFT {
             if (!track.has_mcParticle()) {
               continue;
             }
-            auto particle = track.mcParticle(); // this mcParticle doesn't necessarly come from the right mcCollision
+            auto particle = track.mcParticle(); // this mcParticle doesn't necessarily come from the right mcCollision
             registry.fill(HIST("TracksToPartPtEta"), particle.pt(), particle.eta());
             if ((particle.mcCollisionId() != collision.mcCollision().globalIndex()) || (!particle.isPhysicalPrimary())) {
               if (particle.mcCollisionId() != collision.mcCollision().globalIndex()) {

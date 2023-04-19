@@ -11,6 +11,7 @@
 
 add_subdirectory(Skimming)
 add_subdirectory(OpenData)
+add_subdirectory(ML)
 
 o2physics_add_dpl_workflow(histogram-track-selection
                     SOURCES src/histogramTrackSelection.cxx
@@ -19,6 +20,11 @@ o2physics_add_dpl_workflow(histogram-track-selection
 
 o2physics_add_dpl_workflow(track-iteration
                   SOURCES src/trackIteration.cxx
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(pid
+                  SOURCES src/pid.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(full-track-iteration
@@ -97,7 +103,7 @@ o2physics_add_dpl_workflow(event-mixing-validation
 
 o2physics_add_dpl_workflow(mc-histograms
                   SOURCES src/mcHistograms.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(ccdbaccess

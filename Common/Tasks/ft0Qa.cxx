@@ -42,11 +42,11 @@ struct FT0Qa {
   OutputObj<TH1F> hColTime{TH1F("hColTime", "ColTime, ns; Coiilisions, ns", 500, -5, 5.)};
   OutputObj<TH2F> hT0V0mult{TH2F("hT0V0mult", "T0A vs V0 multiplicity;V0Mult, #ADC channels;T0Mmult, #ADC channels", 200, 0., 500., 300, 0., 1500.)};
   OutputObj<TH2F> hT0V0time{TH2F("hT0V0time", "T0A vs V0 time ;V0time;T0A", 200, -2, 2., 200, -2, 2)};
-  OutputObj<TH1F> hNcontrib{TH1F("hContrib", "Ncontributers;#contributers", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribAC{TH1F("hContribAC", "Ncontributers with T0AC;#contributers", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribA{TH1F("hContribA", "Ncontributers with T0A;#contributers", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribC{TH1F("hContribC", "Ncontributers with T0C;#contributers", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribV0{TH1F("hContribV0", "Ncontributers with V0A;#contributers", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontrib{TH1F("hContrib", "Ncontributers;#contributors", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribAC{TH1F("hContribAC", "Ncontributers with T0AC;#contributors", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribA{TH1F("hContribA", "Ncontributers with T0A;#contributors", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribC{TH1F("hContribC", "Ncontributers with T0C;#contributors", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribV0{TH1F("hContribV0", "Ncontributers with V0A;#contributors", 100, -0.5, 99.5)};
   OutputObj<TH1F> hAmpV0{TH1F("hAmpV0", "amplitude V0A;#ADC channels", 500, 0, 3000)};
   OutputObj<TH1F> hAmpT0{TH1F("hAmpT0", "amplitude T0A;#ADC channels", 500, 0, 500)};
 

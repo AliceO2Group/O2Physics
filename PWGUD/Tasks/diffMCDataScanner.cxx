@@ -15,15 +15,14 @@
 
 #include "Framework/AnalysisTask.h"
 #include "PWGUD/DataModel/McPIDTable.h"
-#include "EventFiltering/PWGUD/DGHelpers.h"
-#include "PWGUD/Core/DGMCHelpers.h"
+#include "PWGUD/Core/UDHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
 
 void customize(std::vector<ConfigParamSpec>& workflowOptions)
 {
-  workflowOptions.push_back(ConfigParamSpec{"runCase", VariantType::Int, 0, {"runCase: 0 - histos,  1 - mcTruth, else - tree"}});
+  workflowOptions.push_back(ConfigParamSpec{"runCase", VariantType::Int, 0, {"runCase: 0 - histos,  1 - mcTruth, 2 - mc only, else - tree"}});
 }
 
 #include "Framework/runDataProcessing.h"
@@ -38,7 +37,7 @@ struct CompatibleBCs {
 
   void process(CC const& collision, aod::BCs const& bcs)
   {
-    auto bcSlice = MCcompatibleBCs(collision, 4, bcs);
+    auto bcSlice = udhelpers::MCcompatibleBCs(collision, 4, bcs);
     LOGF(debug, "  Number of possible BCs: %i", bcSlice.size());
     for (auto& bc : bcSlice) {
       LOGF(debug, "    This collision may belong to BC %lld", bc.globalBC());
@@ -109,15 +108,15 @@ struct collisionsInfo {
   {
 
     // obtain slice of compatible BCs
-    auto bcSlice = MCcompatibleBCs(collision, 4, bct0s);
+    auto bcSlice = udhelpers::MCcompatibleBCs(collision, 4, bct0s);
     LOGF(info, "  Number of compatible BCs: %i", bcSlice.size());
     registry.get<TH1>(HIST("numberBCs"))->Fill(bcSlice.size());
 
     // check that there are no FIT signals in any of the compatible BCs
-    std::vector<float> const lims{1.0, 1.0, 1.0, 1.0, 1.0}; // amplitude thresholds: FV0A, FT0A, FT0C, FDDA, FDDC
+    std::vector<float> const lims{0.0, 0.0, 0.0, 0.0, 0.0}; // amplitude thresholds: FV0A, FT0A, FT0C, FDDA, FDDC
     auto isDGcandidate = true;
     for (auto& bc : bcSlice) {
-      if (!cleanFIT(bc, lims)) {
+      if (!udhelpers::cleanFIT(bc, lims)) {
         isDGcandidate = false;
         break;
       }
@@ -407,8 +406,18 @@ struct MCTracks {
   }
 };
 
-// TPC nSigma
+// MC only
 // runCase = 2
+struct MConly {
+
+  void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    LOGF(info, "Number of MC particles %i", mcParticles.size());
+  }
+};
+
+// TPC nSigma
+// runCase > 2
 struct TPCnSigma {
   Produces<aod::UDnSigmas> nSigmas;
 
@@ -439,6 +448,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   } else if (cfgc.options().get<int>("runCase") == 1) {
     return WorkflowSpec{
       adaptAnalysisTask<MCTracks>(cfgc, TaskName{"mctracks"}),
+    };
+  } else if (cfgc.options().get<int>("runCase") == 2) {
+    return WorkflowSpec{
+      adaptAnalysisTask<MConly>(cfgc, TaskName{"mconly"}),
     };
   } else {
     return WorkflowSpec{

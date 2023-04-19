@@ -855,7 +855,7 @@ struct hypertriton3bodyMcParticleCount {
 
         //double dauProtonPos[3] = {-999, -999, -999}; 
         //double dauPionPos[3] = {-999, -999, -999}; 
-        //double dauDeuteronPos[3] = {-999, -999, -999}; 
+        double dauDeuteronPos[3] = {-999, -999, -999}; 
         double dauProtonMom[3] = {-999, -999, -999}; 
         double dauPionMom[3] = {-999, -999, -999}; 
         double dauDeuteronMom[3] = {-999, -999, -999}; 
@@ -886,9 +886,9 @@ struct hypertriton3bodyMcParticleCount {
             dauPionMom[2] = mcparticleDaughter.pz();
           }
           if ( std::abs(mcparticleDaughter.pdgCode()) == 1000010020 ){
-            /*dauDeuteronPos[0] = mcparticleDaughter.vx();
+            dauDeuteronPos[0] = mcparticleDaughter.vx();
             dauDeuteronPos[1] = mcparticleDaughter.vy();
-            dauDeuteronPos[2] = mcparticleDaughter.vz();*/
+            dauDeuteronPos[2] = mcparticleDaughter.vz();
             dauDeuteronMom[0] = mcparticleDaughter.px();
             dauDeuteronMom[1] = mcparticleDaughter.py();
             dauDeuteronMom[2] = mcparticleDaughter.pz();

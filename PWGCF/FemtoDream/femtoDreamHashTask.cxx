@@ -17,7 +17,6 @@
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "Common/Core/EventMixing.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/ASoAHelpers.h"
 

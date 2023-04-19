@@ -9,9 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef FEMTOWORLDDERIVED_H_
-#define FEMTOWORLDDERIVED_H_
+#ifndef PWGCF_FEMTOWORLD_DATAMODEL_FEMTOWORLDDERIVED_H_
+#define PWGCF_FEMTOWORLD_DATAMODEL_FEMTOWORLDDERIVED_H_
 
+#include <cmath>
 #include "Framework/ASoA.h"
 #include "MathUtils/Utils.h"
 #include "Framework/DataTypes.h"
@@ -20,7 +21,7 @@
 #include "Framework/Expressions.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include <cmath>
+#include "Common/DataModel/Centrality.h"
 
 namespace o2::aod
 {
@@ -38,7 +39,8 @@ DECLARE_SOA_TABLE(FemtoWorldCollisions, "AOD", "FEMTOWORLDCOLS",
                   o2::aod::collision::PosZ,
                   femtoworldcollision::MultV0M,
                   femtoworldcollision::Sphericity,
-                  femtoworldcollision::MagField);
+                  femtoworldcollision::MagField,
+                  o2::aod::cent::CentRun2V0M);
 using FemtoWorldCollision = FemtoWorldCollisions::iterator;
 
 /// FemtoWorldTrack
@@ -195,4 +197,4 @@ DECLARE_SOA_TABLE(FemtoHashes, "AOD", "HASH", femtohash::FemtoBin);
 using FemtoHash = FemtoHashes::iterator;
 
 } // namespace o2::aod
-#endif /* FEMTOWORLDDERIVED_H_ */
+#endif // PWGCF_FEMTOWORLD_DATAMODEL_FEMTOWORLDDERIVED_H_

@@ -13,25 +13,32 @@
 /// \brief Executable that encodes physical selection criteria in a bit-wise selection
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
+#include <iostream>
+#include <filesystem>
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "FemtoDreamSelection.h"
 #include "FemtoDreamTrackSelection.h"
 #include "FemtoDreamCutculator.h"
-#include <iostream>
 
 using namespace o2::analysis::femtoDream;
 
 /// The function takes the path to the dpl-config.json as a argument and the does a Q&A session for the user to find the appropriate selection criteria for the analysis task
 int main(int argc, char* argv[])
 {
-  FemtoDreamCutculator cut;
-  cut.init(argv[1]);
-  cut.setTrackSelectionFromFile("ConfTrk");
-  cut.setPIDSelectionFromFile("ConfTrk");
-  cut.setV0SelectionFromFile("ConfV0");
+  std::string configFileName(argv[1]);
+  std::filesystem::path configFile{configFileName};
 
-  /// \todo factor out the pid here
-  // cut.setTrackSelection(femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit, "ConfTrk");
+  if (std::filesystem::exists(configFile)) {
+    FemtoDreamCutculator cut;
+    cut.init(argv[1]);
+    cut.setTrackSelectionFromFile("ConfTrk");
+    cut.setPIDSelectionFromFile("ConfPID");
+    cut.setV0SelectionFromFile("ConfV0");
 
-  cut.analyseCuts();
+    /// \todo factor out the pid here
+    // cut.setTrackSelection(femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit, "ConfTrk");
+    cut.analyseCuts();
+  } else {
+    LOG(info) << "The configuration file " << configFileName << " could not be found.";
+  }
 }

@@ -30,7 +30,7 @@ namespace PWGCF
 /* forward declaration */
 class EventSelectionFilterAndAnalysis;
 
-///\brief Convenince class for configurable access
+///\brief Convenience class for configurable access
 class EventSelectionConfigurable
 {
   friend class EventSelectionFilterAndAnalysis;

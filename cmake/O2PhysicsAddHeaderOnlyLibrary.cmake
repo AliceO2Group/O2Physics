@@ -24,7 +24,7 @@ function(o2physics_add_header_only_library baseTargetName)
                         A
                         ""
                         ""
-                        "INCLUDE_DIRECTORIES;INTERFACE_LINK_LIBRARIES")
+                        "INCLUDE_DIRECTORIES;INTERFACE_LINK_LIBRARIES;HEADERS")
 
   if(A_UNPARSED_ARGUMENTS)
     message(
@@ -47,21 +47,31 @@ function(o2physics_add_header_only_library baseTargetName)
     if(EXISTS ${dir})
       set(A_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${dir}>)
     else()
-      set(A_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>)
-      list(APPEND A_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>)
+      set(A_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>)
     endif()
   endif()
 
+  # specify only the BUILD_INTERFACE directories here.
+  # the INSTALL_INTERFACE is taken care of by the
+  # install(TARGETS ... EXPORT ... INCLUDES DESTINATION) below
   target_include_directories(
     ${target}
-    INTERFACE $<BUILD_INTERFACE:${A_INCLUDE_DIRECTORIES}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    INTERFACE ${A_INCLUDE_DIRECTORIES})
 
   if(A_INTERFACE_LINK_LIBRARIES)
     target_link_libraries(${target} INTERFACE ${A_INTERFACE_LINK_LIBRARIES})
   endif()
 
+  if(A_HEADERS)
+    target_sources(${target} INTERFACE FILE_SET HEADERS FILES ${A_HEADERS})
+  endif()
+
+  # All the directories given after
+  # INCLUDES DESTINATION are added to the INTERFACE_INCLUDE_DIRECTORIES
+  # property of each installed target listed after TARGETS
   install(TARGETS ${target}
           EXPORT O2PhysicsTargets
+          FILE_SET HEADERS
           INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
 endfunction()

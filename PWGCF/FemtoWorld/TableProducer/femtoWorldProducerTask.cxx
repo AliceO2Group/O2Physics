@@ -14,6 +14,7 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
+#include "CCDB/BasicCCDBManager.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldCollisionSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldV0Selection.h"
@@ -31,16 +32,13 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
-#include <CCDB/BasicCCDBManager.h>
-
-// for comparison because of the NaN
-#include <math.h>
 
 using namespace o2;
 using namespace o2::analysis::femtoWorld;
@@ -52,7 +50,8 @@ namespace o2::aod
 
 using FemtoFullCollision = soa::Join<aod::Collisions,
                                      aod::EvSels,
-                                     aod::Mults>::iterator;
+                                     aod::Mults,
+                                     aod::CentRun2V0Ms>::iterator;
 using FemtoFullTracks = soa::Join<aod::FullTracks,
                                   aod::TracksDCA, aod::TOFSignal,
                                   aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
@@ -110,7 +109,7 @@ struct femtoWorldProducerTask {
 
   Configurable<bool> ConfStoreV0{"ConfStoreV0", true, "True: store V0 table"};
   Configurable<bool> ConfStorePhi{"ConfStorePhi", true, "True: store Phi table"};
-  // just sanity check to make sure in case there are problems in convertion or MC production it does not affect results
+  // just sanity check to make sure in case there are problems in conversion or MC production it does not affect results
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   Configurable<bool> ConfRejectITSHitandTOFMissing{"ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
 
@@ -159,12 +158,43 @@ struct femtoWorldProducerTask {
   Configurable<float> ConfInvKaonMassUpLimit{"ConfInvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
 
   // PHI Daughters (Kaons)
-  Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.005, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
-  Configurable<float> ConfInvMassUpLimitPhi{"ConfInvMassUpLimitPhi", 1.035, "Upper limit of the Phi invariant mass"};
-
+  Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.011, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
+  Configurable<float> ConfInvMassUpLimitPhi{"ConfInvMassUpLimitPhi", 1.027, "Upper limit of the Phi invariant mass"};
   Configurable<bool> ConfRejectKaonsPhi{"ConfRejectKaonsPhi", false, "Switch to reject kaons"};
   Configurable<float> ConfInvKaonMassLowLimitPhi{"ConfInvKaonMassLowLimitPhi", 0.48, "Lower limit of the Phi invariant mass for Kaon rejection"};
   Configurable<float> ConfInvKaonMassUpLimitPhi{"ConfInvKaonMassUpLimitPhi", 0.515, "Upper limit of the Phi invariant mass for Kaon rejection"};
+  Configurable<bool> ConfNsigmaTPCTOFKaon{"ConfNsigmaTPCTOFKaon", true, "Use TPC and TOF for PID of Kaons"};
+  Configurable<float> ConfNsigmaCombinedKaon{"ConfNsigmaCombinedKaon", 3.0, "TPC and TOF Kaon Sigma (combined) for momentum > 0.4"};
+  Configurable<float> ConfNsigmaTPCKaon{"ConfNsigmaTPCKaon", 3.0, "TPC Kaon Sigma for momentum < 0.4"};
+  // For Phi (daughter 1)
+  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
+  Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.14, "Lower limit for Pt for the first particle"};
+  Configurable<float> cfgPtHighPart1{"cfgPtHighPart1", 4.0, "Higher limit for Pt for the first particle"};
+  Configurable<float> cfgPLowPart1{"cfgPLowPart1", 0.14, "Lower limit for P for the first particle"};
+  Configurable<float> cfgPHighPart1{"cfgPHighPart1", 1.5, "Higher limit for P for the first particle"};
+  Configurable<float> cfgEtaLowPart1{"cfgEtaLowPart1", -0.8, "Lower limit for Eta for the first particle"};
+  Configurable<float> cfgEtaHighPart1{"cfgEtaHighPart1", 0.8, "Higher limit for Eta for the first particle"};
+  Configurable<float> cfgDcaXYPart1{"cfgDcaXYPart1", 2.4, "Value for DCA_XY for the first particle"};
+  Configurable<float> cfgDcaZPart1{"cfgDcaZPart1", 3.2, "Value for DCA_Z for the first particle"};
+  Configurable<int> cfgTpcClPart1{"cfgTpcClPart1", 88, "Number of tpc clasters for the first particle"};             // min number of found TPC clusters
+  Configurable<int> cfgTpcCrosRoPart1{"cfgTpcCrosRoPart1", 70, "Number of tpc crossed rows for the first particle"}; // min number of crossed rows
+  Configurable<float> cfgChi2TpcPart1{"cfgChi2TpcPart1", 4.0, "Chi2 / cluster for the TPC track segment for the first particle"};
+  Configurable<float> cfgChi2ItsPart1{"cfgChi2ItsPart1", 36.0, "Chi2 / cluster for the ITS track segment for the first particle"};
+
+  // For Phi (daughter 2)
+  Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
+  Configurable<float> cfgPtLowPart2{"cfgPtLowPart2", 0.14, "Lower limit for Pt for the second particle"};
+  Configurable<float> cfgPtHighPart2{"cfgPtHighPart2", 4.0, "Higher limit for Pt for the second particle"};
+  Configurable<float> cfgPLowPart2{"cfgPLowPart2", 0.14, "Lower limit for P for the second particle"};
+  Configurable<float> cfgPHighPart2{"cfgPHighPart2", 1.5, "Higher limit for P for the second particle"};
+  Configurable<float> cfgEtaLowPart2{"cfgEtaLowPart2", -0.8, "Lower limit for Eta for the second particle"};
+  Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the second particle"};
+  Configurable<float> cfgDcaXYPart2{"cfgDcaXYPart2", 2.4, "Value for DCA_XY for the second particle"};
+  Configurable<float> cfgDcaZPart2{"cfgDcaZPart2", 3.2, "Value for DCA_Z for the second particle"};
+  Configurable<int> cfgTpcClPart2{"cfgTpcClPart2", 88, "Number of tpc clasters for the second particle"};             // min number of found TPC clusters
+  Configurable<int> cfgTpcCrosRoPart2{"cfgTpcCrosRoPart2", 70, "Number of tpc crossed rows for the second particle"}; // min number of crossed rows
+  Configurable<float> cfgChi2TpcPart2{"cfgChi2TpcPart2", 4.0, "Chi2 / cluster for the TPC track segment for the second particle"};
+  Configurable<float> cfgChi2ItsPart2{"cfgChi2ItsPart2", 36.0, "Chi2 / cluster for the ITS track segment for the second particle"};
 
   // PHI Candidates
   FemtoWorldPhiSelection PhiCuts;
@@ -268,11 +298,13 @@ struct femtoWorldProducerTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    // changed long to float because of the MegaLinter
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
   }
 
   // PID
+  /*
   bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
     bool fNsigmaTPCTOF = true;
@@ -282,36 +314,74 @@ struct femtoWorldProducerTask {
       if (mom > 0.5) {
         //        if (TMath::Hypot( nsigmaTOFP, nsigmaTPCP )/TMath::Sqrt(2) < 3.0)
         if (mom < 2.0) {
-          if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma)
+          if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma) {
             return true;
-        } else if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma2)
+          }
+        } else if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma2) {
           return true;
+        }
       } else {
-        if (TMath::Abs(nsigmaTPCK) < fNsigma)
+        if (TMath::Abs(nsigmaTPCK) < fNsigma) {
           return true;
+        }
       }
     } else {
-
       if (mom < 0.4) {
         if (nsigmaTOFK < -999.) {
-          if (TMath::Abs(nsigmaTPCK) < 2.0)
+          if (TMath::Abs(nsigmaTPCK) < 2.0) {
             return true;
-        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          }
+        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0) {
           return true;
-      } else if (mom >= 0.4 && mom <= 0.6) {
+        }
+      } else if ((mom >= 0.4 && mom <= 0.45) || (mom >= 0.5 && mom <= 0.6)) {
         if (nsigmaTOFK < -999.) {
-          if (TMath::Abs(nsigmaTPCK) < 2.0)
+          if (TMath::Abs(nsigmaTPCK) < 2.0) {
             return true;
-        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          }
+        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0) {
           return true;
+        }
+      } else if ((mom >= 0.45 && mom <= 0.5)) {
+        if (ConfKaonChangePID == true) { // reducing contamination
+          return false;
+        } else {
+          return true;
+        }
       } else if (nsigmaTOFK < -999.) {
         return false;
-      } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+      } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0) {
         return true;
+      }
+    }
+    return false;
+  }*/
+  bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    //|nsigma_TPC| < 5 for p < 0.4 GeV/c
+    //|nsigma_combined| < 5 for p > 0.4
+
+    // using configurables:
+    // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
+    // ConfNsigmaTPCKaon -> TPC Kaon Sigma for momentum < 0.4
+    // ConfNsigmaCombinedKaon -> TPC and TOF Kaon Sigma (combined) for momentum > 0.4
+    if (ConfNsigmaTPCTOFKaon) {
+      if (mom < 0.4) {
+        if (TMath::Abs(nsigmaTPCK) < ConfNsigmaTPCKaon) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom > 0.4) {
+        if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfNsigmaCombinedKaon) {
+          return true;
+        } else {
+          return false;
+        }
+      }
     }
     return false;
   }
-
   /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
   float getMagneticFieldTesla(uint64_t timestamp)
   {
@@ -340,12 +410,12 @@ struct femtoWorldProducerTask {
     }
 
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
-    // If the basic selection is NOT fullfilled:
+    // If the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), mMagField);
+        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), mMagField, col.centRun2V0M());
       }
       return;
     }
@@ -353,13 +423,14 @@ struct femtoWorldProducerTask {
     const auto vtxZ = col.posZ();
     const auto mult = col.multFV0M();
     const auto spher = colCuts.computeSphericity(col, tracks);
+    const auto centrality = col.centRun2V0M();
     colCuts.fillQA(col);
 
     // now the table is filled
     if (ConfIsRun3) {
-      outputCollision(vtxZ, col.multFT0M(), spher, mMagField);
+      outputCollision(vtxZ, col.multFT0M(), spher, mMagField, -1);
     } else {
-      outputCollision(vtxZ, mult, spher, mMagField);
+      outputCollision(vtxZ, mult, spher, mMagField, centrality);
     }
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
@@ -594,36 +665,6 @@ struct femtoWorldProducerTask {
       }
     }
     if (ConfStorePhi) {
-      // First particle
-      Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
-      Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.14, "Lower limit for Pt for the first particle"};
-      Configurable<float> cfgPtHighPart1{"cfgPtHighPart1", 1.5, "Higher limit for Pt for the first particle"};
-      Configurable<float> cfgPLowPart1{"cfgPLowPart1", 0.14, "Lower limit for P for the first particle"};
-      Configurable<float> cfgPHighPart1{"cfgPHighPart1", 1.5, "Higher limit for P for the first particle"};
-      Configurable<float> cfgEtaLowPart1{"cfgEtaLowPart1", -0.8, "Lower limit for Eta for the first particle"};
-      Configurable<float> cfgEtaHighPart1{"cfgEtaHighPart1", 0.8, "Higher limit for Eta for the first particle"};
-      Configurable<float> cfgDcaXYPart1{"cfgDcaXYPart1", 2.4, "Value for DCA_XY for the first particle"};
-      Configurable<float> cfgDcaZPart1{"cfgDcaZPart1", 3.2, "Value for DCA_Z for the first particle"};
-      Configurable<int> cfgTpcClPart1{"cfgTpcClPart1", 88, "Number of tpc clasters for the first particle"};             // min number of found TPC clusters
-      Configurable<int> cfgTpcCrosRoPart1{"cfgTpcCrosRoPart1", 70, "Number of tpc crossed rows for the first particle"}; // min number of crossed rows
-      Configurable<float> cfgChi2TpcPart1{"cfgChi2TpcPart1", 4.0, "Chi2 / cluster for the TPC track segment for the first particle"};
-      Configurable<float> cfgChi2ItsPart1{"cfgChi2ItsPart1", 36.0, "Chi2 / cluster for the ITS track segment for the first particle"};
-
-      // Second particle
-      Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
-      Configurable<float> cfgPtLowPart2{"cfgPtLowPart2", 0.14, "Lower limit for Pt for the second particle"};
-      Configurable<float> cfgPtHighPart2{"cfgPtHighPart2", 1.5, "Higher limit for Pt for the second particle"};
-      Configurable<float> cfgPLowPart2{"cfgPLowPart2", 0.14, "Lower limit for P for the second particle"};
-      Configurable<float> cfgPHighPart2{"cfgPHighPart2", 1.5, "Higher limit for P for the second particle"};
-      Configurable<float> cfgEtaLowPart2{"cfgEtaLowPart2", -0.8, "Lower limit for Eta for the second particle"};
-      Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the second particle"};
-      Configurable<float> cfgDcaXYPart2{"cfgDcaXYPart2", 2.4, "Value for DCA_XY for the second particle"};
-      Configurable<float> cfgDcaZPart2{"cfgDcaZPart2", 3.2, "Value for DCA_Z for the second particle"};
-      Configurable<int> cfgTpcClPart2{"cfgTpcClPart2", 88, "Number of tpc clasters for the second particle"};             // min number of found TPC clusters
-      Configurable<int> cfgTpcCrosRoPart2{"cfgTpcCrosRoPart2", 70, "Number of tpc crossed rows for the second particle"}; // min number of crossed rows
-      Configurable<float> cfgChi2TpcPart2{"cfgChi2TpcPart2", 4.0, "Chi2 / cluster for the TPC track segment for the second particle"};
-      Configurable<float> cfgChi2ItsPart2{"cfgChi2ItsPart2", 36.0, "Chi2 / cluster for the ITS track segment for the second particle"};
-
       for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
         if ((p1.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet) || (p2.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet)) {
           continue;
@@ -641,9 +682,7 @@ struct femtoWorldProducerTask {
           continue;
         } else if ((p2.eta() < cfgEtaLowPart2) || (p2.eta() > cfgEtaHighPart2)) { // eta for part2
           continue;
-        }
-        // PID for Kaons
-        else if (!(IsKaonNSigma(p1.p(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
+        } else if (!(IsKaonNSigma(p1.p(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) { // PID for Kaons
           continue;
         } else if (!(IsKaonNSigma(p2.p(), p2.tpcNSigmaKa(), p2.tofNSigmaKa()))) {
           continue;
@@ -661,7 +700,6 @@ struct femtoWorldProducerTask {
         sumVec += part2Vec;
 
         float phiEta = sumVec.Eta();
-        float phiPhi = sumVec.Phi();
         float phiPt = sumVec.Pt();
         float phiP = sumVec.P();
         float phiM = sumVec.M();
@@ -777,6 +815,12 @@ struct femtoWorldProducerTask {
 
           const int rowOfNegTrack = outputParts.lastIndex();
           int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
+          float phiPhi = sumVec.Phi();
+          if (sumVec.Phi() < 0) {
+            phiPhi = sumVec.Phi() + 2 * o2::constants::math::PI;
+          } else if (sumVec.Phi() >= 0) {
+            phiPhi = sumVec.Phi();
+          }
           outputParts(outputCollision.lastIndex(),
                       phiPt,
                       phiEta,

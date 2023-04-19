@@ -13,16 +13,15 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  30.09.2022
 
-#ifndef O2_ANALYSIS_DGBCANDIDATE_H_
-#define O2_ANALYSIS_DGBCANDIDATE_H_
+#ifndef PWGUD_TABLEPRODUCER_DGBCCANDPRODUCER_H_
+#define PWGUD_TABLEPRODUCER_DGBCCANDPRODUCER_H_
 
+#include <map>
+#include <vector>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "MathUtils/Utils.h"
 #include "Framework/DataTypes.h"
-#include "EventFiltering/PWGUD/DGCutparHolder.h"
-#include "EventFiltering/PWGUD/DGHelpers.h"
-#include "PWGUD/Core/DGMCHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -32,23 +31,18 @@ namespace o2::aod
 
 namespace dgbcandidate
 {
-DECLARE_SOA_COLUMN(BCNum, bcnum, uint64_t);     //! BC number
-DECLARE_SOA_COLUMN(FullDiff2, fulldiff2, bool); //! BC contains all tracks if Diff2 event
+DECLARE_SOA_COLUMN(BCNum, bcnum, uint64_t); //! BC number
 
-DECLARE_SOA_INDEX_COLUMN(BC, bc);                      //! BC index
-DECLARE_SOA_COLUMN(HasFIT, hasFIT, bool);              //! has FIT signal
-DECLARE_SOA_COLUMN(NCollisions, nCollisions, int);     //! number of associated collisions
-DECLARE_SOA_COLUMN(NtrwTOF, ntrwTOF, int);             //! number of tracks with TOF
-DECLARE_SOA_COLUMN(NPVTracks, nPVTracks, int);         //! number of PV tracks
-DECLARE_SOA_COLUMN(NGlobalTracks, nGlobalTracks, int); //! number of global tracks
-DECLARE_SOA_ARRAY_INDEX_COLUMN(Track, track);          //! track index array
-DECLARE_SOA_ARRAY_INDEX_COLUMN(FwdTrack, fwdtrack);    //! fwd track index array
+DECLARE_SOA_INDEX_COLUMN(BC, bc);                   //! BC index
+DECLARE_SOA_ARRAY_INDEX_COLUMN(Track, track);       //! track index array
+DECLARE_SOA_ARRAY_INDEX_COLUMN(FwdTrack, fwdtrack); //! fwd track index array
 
 } // namespace dgbcandidate
 
 DECLARE_SOA_TABLE(TracksWGTInBCs, "AOD", "TRKSWGTINBCS", //!
                   o2::soa::Index<>,
                   collision::BCId,
+                  bc::RunNumber,
                   dgbcandidate::BCNum,
                   dgbcandidate::TrackIds);
 
@@ -57,6 +51,7 @@ using TracksWGTInBC = TracksWGTInBCs::iterator;
 DECLARE_SOA_TABLE(FwdTracksWGTInBCs, "AOD", "FWDTRKSWGTINBCS", //!
                   o2::soa::Index<>,
                   collision::BCId,
+                  bc::RunNumber,
                   dgbcandidate::BCNum,
                   dgbcandidate::FwdTrackIds);
 
@@ -64,4 +59,4 @@ using FwdTracksWGTInBC = FwdTracksWGTInBCs::iterator;
 
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_DGBCANDIDATE_H_
+#endif // PWGUD_TABLEPRODUCER_DGBCCANDPRODUCER_H_

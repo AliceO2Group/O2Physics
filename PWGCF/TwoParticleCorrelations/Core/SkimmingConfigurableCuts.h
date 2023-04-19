@@ -46,7 +46,7 @@ class CutBrick : public TNamed
   CutBrick& operator=(const CutBrick&) = delete;
 
  public:
-  /// Returns whether the cut brick is active alowing the selection
+  /// Returns whether the cut brick is active allowing the selection
   /// \return true if the brick is active
   bool IsActive() { return mState == kACTIVE; }
   /// Pure virual function
@@ -81,8 +81,8 @@ class CutBrick : public TNamed
   /// \enum BrickStatus
   /// \brief The status of the brick
   enum BrickStatus {
-    kPASSIVE, ///< if the passed value does not comply whith the brick condition
-    kACTIVE   ///< if the passed value comply whith the brick condition
+    kPASSIVE, ///< if the passed value does not comply with the brick condition
+    kACTIVE   ///< if the passed value comply with the brick condition
   };
   /// \enum BrickMode
   /// \brief The mode of operation of the brick
@@ -467,7 +467,7 @@ class SpecialCutBrick : public TNamed
   SpecialCutBrick& operator=(const SpecialCutBrick&) = delete;
 
  public:
-  /// Returns whether the cut brick is active alowing the selection
+  /// Returns whether the cut brick is active allowing the selection
   /// \return true if the brick is active
   bool IsActive() { return mState == kACTIVE; }
   /// Pure virtual function
@@ -486,8 +486,8 @@ class SpecialCutBrick : public TNamed
   /// \enum BrickStatus
   /// \brief The status of the brick
   enum BrickStatus {
-    kPASSIVE, ///< if the passed value does not comply whith the brick condition
-    kACTIVE   ///< if the passed value comply whith the brick condition
+    kPASSIVE, ///< if the passed value does not comply with the brick condition
+    kACTIVE   ///< if the passed value comply with the brick condition
   };
   /// \enum BrickMode
   /// \brief The mode of operation of the brick

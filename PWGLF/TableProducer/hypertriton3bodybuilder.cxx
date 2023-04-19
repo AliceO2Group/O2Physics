@@ -45,7 +45,7 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
-#include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
+//#include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
 
 using namespace o2;
 using namespace o2::framework;

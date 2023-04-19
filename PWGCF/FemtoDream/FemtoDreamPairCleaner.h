@@ -13,8 +13,8 @@
 /// \brief FemtoDreamPairCleaner - Makes sure only proper candidates are paired
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de, Laura Serksnyte <laura.serksnyte@cern.ch>, TU München
 
-#ifndef ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMPAIRCLEANER_H_
-#define ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMPAIRCLEANER_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMPAIRCLEANER_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMPAIRCLEANER_H_
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
@@ -35,7 +35,7 @@ class FemtoDreamPairCleaner
   /// Destructor
   virtual ~FemtoDreamPairCleaner() = default;
 
-  /// Initalization of the QA histograms
+  /// Initialization of the QA histograms
   /// \param registry HistogramRegistry
   void init(HistogramRegistry* registry)
   {
@@ -89,4 +89,4 @@ class FemtoDreamPairCleaner
 };
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMPAIRCLEANER_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMPAIRCLEANER_H_

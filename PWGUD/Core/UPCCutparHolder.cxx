@@ -41,6 +41,8 @@ void UPCCutparHolder::setCheckMaxDcaXY(bool checkMaxDcaXY) { fCheckMaxDcaXY = ch
 void UPCCutparHolder::setDcaZLow(float dcaZLow) { fDcaZLow = dcaZLow; }
 void UPCCutparHolder::setDcaZHigh(float dcaZHigh) { fDcaZHigh = dcaZHigh; }
 void UPCCutparHolder::setRequireTOF(bool requireTOF) { fRequireTOF = requireTOF; }
+void UPCCutparHolder::setRequireITSTPC(bool requireITSTPC) { fRequireITSTPC = requireITSTPC; }
+void UPCCutparHolder::setProduceITSITS(bool produceITSITS) { fProduceITSITS = produceITSITS; }
 void UPCCutparHolder::setMaxNContrib(int maxNContrib) { fMaxNContrib = maxNContrib; }
 void UPCCutparHolder::setAmbigSwitch(int ambigSwitch) { fAmbigSwitch = ambigSwitch; }
 
@@ -74,5 +76,7 @@ bool UPCCutparHolder::getCheckMaxDcaXY() const { return fCheckMaxDcaXY; }
 float UPCCutparHolder::getDcaZLow() const { return fDcaZLow; }
 float UPCCutparHolder::getDcaZHigh() const { return fDcaZHigh; }
 bool UPCCutparHolder::getRequireTOF() const { return fRequireTOF; }
+bool UPCCutparHolder::getRequireITSTPC() const { return fRequireITSTPC; }
+bool UPCCutparHolder::getProduceITSITS() const { return fProduceITSITS; }
 int UPCCutparHolder::getMaxNContrib() const { return fMaxNContrib; }
 int UPCCutparHolder::getAmbigSwitch() const { return fAmbigSwitch; }

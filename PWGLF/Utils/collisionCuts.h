@@ -17,8 +17,8 @@
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
-#ifndef ANALYSIS_TASKS_PWGLF_COLLISIONCUTS_H_
-#define ANALYSIS_TASKS_PWGLF_COLLISIONCUTS_H_
+#ifndef PWGLF_UTILS_COLLISIONCUTS_H_
+#define PWGLF_UTILS_COLLISIONCUTS_H_
 
 #include "Common/CCDB/TriggerAliases.h"
 #include "Framework/HistogramRegistry.h"
@@ -34,7 +34,7 @@ class CollisonCuts
  public:
   virtual ~CollisonCuts() = default;
 
-  /// Pass the selection criteria to the class
+  /// \brief Pass the selection criteria to the class
   /// \param zvtxMax Maximal value of the z-vertex
   /// \param checkTrigger whether or not to check for the trigger alias
   /// \param trig Requested trigger alias
@@ -66,8 +66,11 @@ class CollisonCuts
   /// Print some debug information
   void printCuts()
   {
-    std::cout << "Debug information for CollisonCuts \n Max. z-vertex: " << mZvtxMax << "\n Check trigger: " << mCheckTrigger << "\n Trigger: " << mTrigger << "\n Check offline: " << mCheckOffline << "\n";
+    LOGF(info, "Debug information for Collison Cuts \n Max. z-vertex: %f \n Check trigger: %d \n Trigger: %d \n Check offline: %d \n", mZvtxMax, mCheckTrigger, mTrigger, mCheckOffline);
   }
+
+  /// Scan the trigger alias of the event
+  void setInitialTriggerScan(bool checkTrigger) { mInitialTriggerScan = checkTrigger; }
 
   /// Check whether the collisions fulfills the specified selections
   /// \tparam T type of the collision
@@ -77,17 +80,30 @@ class CollisonCuts
   bool isSelected(T const& col)
   {
     if (std::abs(col.posZ()) > mZvtxMax) {
+      LOGF(debug, "Vertex out of range");
       return false;
     }
     if (mCheckIsRun3) {
       if (mCheckOffline && !col.sel8()) {
+        LOGF(debug, "Offline selection failed (Run3)");
         return false;
       }
     } else {
       if (mCheckTrigger && !col.alias()[mTrigger]) {
+        LOGF(debug, "Trigger selection failed");
+        if (mInitialTriggerScan) {
+          LOGF(debug, "Trigger scan initialized");
+          for (int i = 0; i < kNaliases; i++) {
+            if (col.alias()[i]) {
+              LOGF(debug, "Trigger %d fired", i);
+            }
+          }
+          mInitialTriggerScan = false;
+        }
         return false;
       }
       if (mCheckOffline && !col.sel7()) {
+        LOGF(debug, "Offline selection failed (sel7)");
         return false;
       }
     }
@@ -129,9 +145,10 @@ class CollisonCuts
   bool mCheckTrigger = false;                      ///< Check for trigger
   bool mCheckOffline = false;                      ///< Check for offline criteria (might change)
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
+  bool mInitialTriggerScan = false;                ///< Check trigger when the event is first selected
   triggerAliases mTrigger = kINT7;                 ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
 };
 } // namespace o2::analysis
 
-#endif /* ANALYSIS_TASKS_PWGLF_COLLISIONCUTS_H_ */
+#endif // PWGLF_UTILS_COLLISIONCUTS_H_

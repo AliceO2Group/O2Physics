@@ -23,9 +23,12 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+// needed for HFFilterHelpers, to be fixed
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+
 #include "EventFiltering/filterTables.h"
 #include "HFFilterHelpers.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -107,8 +110,10 @@ struct HfFilterQc { // Main struct for HF trigger QC
     bool hasDoubleCharm2P = filterDecision.hasHfDoubleCharm2P();
     bool hasDoubleCharm3P = filterDecision.hasHfDoubleCharm3P();
     bool hasDoubleCharmMix = filterDecision.hasHfDoubleCharmMix();
-    bool isTriggered = hasHighPt2P || hasHighPt3P || hasBeauty3P || hasBeauty4P || hasFemto2P || hasFemto3P || hasDoubleCharm2P || hasDoubleCharm3P || hasDoubleCharmMix;
-    auto triggerDecision = std::array{isTriggered, hasHighPt2P, hasHighPt3P, hasBeauty3P, hasBeauty4P, hasFemto2P, hasFemto3P, hasDoubleCharm2P, hasDoubleCharm3P, hasDoubleCharmMix};
+    bool hasHfSoftGamma2P = filterDecision.hasHfSoftGamma2P();
+    bool hasHfSoftGamma3P = filterDecision.hasHfSoftGamma3P();
+    bool isTriggered = hasHighPt2P || hasHighPt3P || hasBeauty3P || hasBeauty4P || hasFemto2P || hasFemto3P || hasDoubleCharm2P || hasDoubleCharm3P || hasDoubleCharmMix || hasHfSoftGamma2P || hasHfSoftGamma3P;
+    auto triggerDecision = std::array{isTriggered, hasHighPt2P, hasHighPt3P, hasBeauty3P, hasBeauty4P, hasFemto2P, hasFemto3P, hasDoubleCharm2P, hasDoubleCharm3P, hasDoubleCharmMix, hasHfSoftGamma2P, hasHfSoftGamma3P};
 
     std::array<int, kNCharmParticles> nPart{0};
     // Loop over the MC particles

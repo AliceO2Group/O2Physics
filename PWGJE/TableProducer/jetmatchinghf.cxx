@@ -23,8 +23,8 @@
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetUtilities.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
-#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -33,8 +33,8 @@ using namespace o2::framework::expressions;
 struct JetMatchingHF {
   using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
-  using HfCandidates = soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>;
-  using McParticles = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
+  using HfCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>;
+  using McParticles = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
   using DetectorLevelJets = soa::Join<aod::MCDetectorLevelHFJets, aod::MCDetectorLevelHFJetConstituents>;
   using ParticleLevelJets = soa::Join<aod::MCParticleLevelHFJets, aod::MCParticleLevelHFJetConstituents>;
 
@@ -61,13 +61,13 @@ struct JetMatchingHF {
 
       const auto& cands = jet.hfcandidates_as<HfCandidates>();
       int matchedIdx = -1;
-      if ((cands.front().flagMCMatchRec() & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK)) == 0) {
+      if ((cands.front().flagMcMatchRec() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) == 0) {
         jetsDetToPartMatching(matchedIdx);
         continue;
       }
       for (const auto& cand : cands) {
-        const auto& daughter0 = cand.index0_as<Tracks>();
-        const auto& daughter1 = cand.index1_as<Tracks>();
+        const auto& daughter0 = cand.prong0_as<Tracks>();
+        const auto& daughter1 = cand.prong1_as<Tracks>();
         if (!daughter0.has_mcParticle() || !daughter1.has_mcParticle()) {
           LOGF(warning, "Encountered candidate daughter (%d or %d) without MC particle", daughter0.globalIndex(), daughter1.globalIndex());
           continue;
@@ -79,7 +79,7 @@ struct JetMatchingHF {
              daughter1.globalIndex(), daughter1.mcParticle_as<McParticles>().globalIndex());
         LOGF(info, "MC ids of mothers: %d - %d", mother0Id, mother1Id);
         if ((mother0Id == mother1Id) &&
-            std::abs(daughter0.mcParticle_as<McParticles>().mothers_as<McParticles>().front().flagMCMatchGen()) & (1 << aod::hf_cand_prong2::DecayType::D0ToPiK)) {
+            std::abs(daughter0.mcParticle_as<McParticles>().mothers_as<McParticles>().front().flagMcMatchGen()) & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           LOGF(info, "D0 - looking for jet");
           for (const auto& pjet : jetsPL) {
             for (const auto& cand : pjet.hfcandidates_as<McParticles>()) {
@@ -124,9 +124,9 @@ struct JetMatchingHF {
         int candIdx = 0;
         for (const auto& prong : hfcandidates) {
           LOGF(info, "checking prong %d with daughters %d-%d, %d-%d",
-               prong.globalIndex(), prong.index0Id(), prong.index0_as<Tracks>().globalIndex(), prong.index1Id(), prong.index1_as<Tracks>().globalIndex());
-          if ((prong.index0_as<Tracks>().globalIndex() == index0 && prong.index1_as<Tracks>().globalIndex() == index1) ||
-              (prong.index0Id() == index1 && prong.index1Id() == index0)) {
+               prong.globalIndex(), prong.prong0Id(), prong.prong0_as<Tracks>().globalIndex(), prong.prong1Id(), prong.prong1_as<Tracks>().globalIndex());
+          if ((prong.prong0_as<Tracks>().globalIndex() == index0 && prong.prong1_as<Tracks>().globalIndex() == index1) ||
+              (prong.prong0Id() == index1 && prong.prong1Id() == index0)) {
             candIdx = prong.globalIndex();
             LOGF(info, "Found matching 2prong candidate: %d", candIdx);
           }

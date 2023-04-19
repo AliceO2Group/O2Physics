@@ -173,7 +173,7 @@ int EventSelectionFilterAndAnalysis::CalculateMaskLength()
 
 void EventSelectionFilterAndAnalysis::MultiplicityBrick::initialize()
 {
-  /* initialize the storage of multiplicities from the differente estimators */
+  /* initialize the storage of multiplicities from the different estimators */
   for (int i = 0; i < nNoOfMultiplicityEstimators; ++i) {
     mValues.push_back(-1);
   }
@@ -229,7 +229,7 @@ void EventSelectionFilterAndAnalysis::MultiplicityBrick::initialize()
 
 void EventSelectionFilterAndAnalysis::PileUpRejBrick::initialize()
 {
-  /* initialize the storage of multiplicities from the differente pile-up correlator estimators */
+  /* initialize the storage of multiplicities from the different pile-up correlator estimators */
   for (int i = 0; i < nNoOfPileUpCorrelators; ++i) {
     mValues.push_back(-1);
     mIndepVar.push_back(-1);

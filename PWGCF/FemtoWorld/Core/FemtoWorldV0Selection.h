@@ -289,7 +289,7 @@ void FemtoWorldV0Selection::init(HistogramRegistry* registry)
 
     mHistogramRegistry->add("LambdaQA/hInvMassLambdaNoCuts", "No cuts", kTH1F, {massAxisLambda});
     mHistogramRegistry->add("LambdaQA/hInvMassLambdaInvMassCut", "Invariant mass cut", kTH1F, {massAxisLambda});
-    mHistogramRegistry->add("LambdaQA/hInvMassLambdaPtMin", "Minumum Pt cut", kTH1F, {massAxisLambda});
+    mHistogramRegistry->add("LambdaQA/hInvMassLambdaPtMin", "Minimum Pt cut", kTH1F, {massAxisLambda});
     mHistogramRegistry->add("LambdaQA/hInvMassLambdaPtMax", "Maximum Pt cut", kTH1F, {massAxisLambda});
     mHistogramRegistry->add("LambdaQA/hInvMassLambdaDCAV0Daugh", "V0-daughters DCA cut", kTH1F, {massAxisLambda});
     mHistogramRegistry->add("LambdaQA/hInvMassLambdaCPA", "CPA cut", kTH1F, {massAxisLambda});

@@ -9,7 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
 
 project(O2Physics
         VERSION 0.0.1
@@ -74,6 +74,8 @@ add_subdirectory(PWGUD)
 add_subdirectory(Tools)
 add_subdirectory(Tutorials)
 add_subdirectory(EventFiltering)
+
+add_subdirectory(Scripts)
 
 # Testing and packaging only needed if we are the top level directory
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)

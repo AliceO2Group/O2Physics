@@ -16,8 +16,8 @@
 ///         the analysis data model and the PID response
 ///
 
-#ifndef O2_FRAMEWORK_PIDRESPONSE_H_
-#define O2_FRAMEWORK_PIDRESPONSE_H_
+#ifndef COMMON_DATAMODEL_PIDRESPONSE_H_
+#define COMMON_DATAMODEL_PIDRESPONSE_H_
 
 #include <experimental/type_traits>
 
@@ -114,12 +114,56 @@ using hasTPCAl = decltype(std::declval<T&>().tpcNSigmaAl());
 
 perSpeciesWrapper(tofNSigma);
 perSpeciesWrapper(tofExpSigma);
-perSpeciesWrapper(tofExpSignal);
+template <o2::track::PID::ID index, typename TrackType>
+const auto tofExpSignal(const TrackType& track)
+{
+  if constexpr (index == o2::track::PID::Electron) {
+    return track.tofExpSignalEl(track.tofSignal());
+  } else if constexpr (index == o2::track::PID::Muon) {
+    return track.tofExpSignalMu(track.tofSignal());
+  } else if constexpr (index == o2::track::PID::Pion) {
+    return track.tofExpSignalPi(track.tofSignal());
+  } else if constexpr (index == o2::track::PID::Kaon) {
+    return track.tofExpSignalKa(track.tofSignal());
+  } else if constexpr (index == o2::track::PID::Proton) {
+    return track.tofExpSignalPr(track.tofSignal());
+  } else if constexpr (index == o2::track::PID::Deuteron) {
+    return track.tofExpSignalDe(track.tofSignal());
+  } else if constexpr (index == o2::track::PID::Triton) {
+    return track.tofExpSignalTr(track.tofSignal());
+  } else if constexpr (index == o2::track::PID::Helium3) {
+    return track.tofExpSignalHe(track.tofSignal());
+  } else if constexpr (index == o2::track::PID::Alpha) {
+    return track.tofExpSignalAl(track.tofSignal());
+  }
+}
 perSpeciesWrapper(tofExpSignalDiff);
 
 perSpeciesWrapper(tpcNSigma);
 perSpeciesWrapper(tpcExpSigma);
-perSpeciesWrapper(tpcExpSignal);
+template <o2::track::PID::ID index, typename TrackType>
+const auto tpcExpSignal(const TrackType& track)
+{
+  if constexpr (index == o2::track::PID::Electron) {
+    return track.tpcExpSignalEl(track.tpcSignal());
+  } else if constexpr (index == o2::track::PID::Muon) {
+    return track.tpcExpSignalMu(track.tpcSignal());
+  } else if constexpr (index == o2::track::PID::Pion) {
+    return track.tpcExpSignalPi(track.tpcSignal());
+  } else if constexpr (index == o2::track::PID::Kaon) {
+    return track.tpcExpSignalKa(track.tpcSignal());
+  } else if constexpr (index == o2::track::PID::Proton) {
+    return track.tpcExpSignalPr(track.tpcSignal());
+  } else if constexpr (index == o2::track::PID::Deuteron) {
+    return track.tpcExpSignalDe(track.tpcSignal());
+  } else if constexpr (index == o2::track::PID::Triton) {
+    return track.tpcExpSignalTr(track.tpcSignal());
+  } else if constexpr (index == o2::track::PID::Helium3) {
+    return track.tpcExpSignalHe(track.tpcSignal());
+  } else if constexpr (index == o2::track::PID::Alpha) {
+    return track.tpcExpSignalAl(track.tpcSignal());
+  }
+}
 perSpeciesWrapper(tpcExpSignalDiff);
 
 #undef perSpeciesWrapper
@@ -174,7 +218,51 @@ perSpeciesWrapper(tpcExpSignalDiff);
 
 perSpeciesWrapper(tofNSigma);
 perSpeciesWrapper(tofExpSigma);
-perSpeciesWrapper(tofExpSignal);
+template <typename TrackType>
+const auto tofExpSignal(const o2::track::PID::ID index, const TrackType& track)
+{
+  switch (index) {
+    case o2::track::PID::Electron:
+      if constexpr (std::experimental::is_detected<hasTOFEl, TrackType>::value) {
+        return track.tofExpSignalEl(track.tofSignal());
+      }
+    case o2::track::PID::Muon:
+      if constexpr (std::experimental::is_detected<hasTOFMu, TrackType>::value) {
+        return track.tofExpSignalMu(track.tofSignal());
+      }
+    case o2::track::PID::Pion:
+      if constexpr (std::experimental::is_detected<hasTOFPi, TrackType>::value) {
+        return track.tofExpSignalPi(track.tofSignal());
+      }
+    case o2::track::PID::Kaon:
+      if constexpr (std::experimental::is_detected<hasTOFKa, TrackType>::value) {
+        return track.tofExpSignalKa(track.tofSignal());
+      }
+    case o2::track::PID::Proton:
+      if constexpr (std::experimental::is_detected<hasTOFPr, TrackType>::value) {
+        return track.tofExpSignalPr(track.tofSignal());
+      }
+    case o2::track::PID::Deuteron:
+      if constexpr (std::experimental::is_detected<hasTOFDe, TrackType>::value) {
+        return track.tofExpSignalDe(track.tofSignal());
+      }
+    case o2::track::PID::Triton:
+      if constexpr (std::experimental::is_detected<hasTOFTr, TrackType>::value) {
+        return track.tofExpSignalTr(track.tofSignal());
+      }
+    case o2::track::PID::Helium3:
+      if constexpr (std::experimental::is_detected<hasTOFHe, TrackType>::value) {
+        return track.tofExpSignalHe(track.tofSignal());
+      }
+    case o2::track::PID::Alpha:
+      if constexpr (std::experimental::is_detected<hasTOFAl, TrackType>::value) {
+        return track.tofExpSignalAl(track.tofSignal());
+      }
+    default:
+      LOGF(fatal, "TOF PID table for PID index %i (%s) is not available", index, o2::track::PID::getName(index));
+      return 0.f;
+  }
+}
 perSpeciesWrapper(tofExpSignalDiff);
 
 #undef perSpeciesWrapper
@@ -229,7 +317,51 @@ perSpeciesWrapper(tofExpSignalDiff);
 
 perSpeciesWrapper(tpcNSigma);
 perSpeciesWrapper(tpcExpSigma);
-perSpeciesWrapper(tpcExpSignal);
+template <typename TrackType>
+const auto tpcExpSignal(const o2::track::PID::ID index, const TrackType& track)
+{
+  switch (index) {
+    case o2::track::PID::Electron:
+      if constexpr (std::experimental::is_detected<hasTPCEl, TrackType>::value) {
+        return track.tpcExpSignalEl(track.tpcSignal());
+      }
+    case o2::track::PID::Muon:
+      if constexpr (std::experimental::is_detected<hasTPCMu, TrackType>::value) {
+        return track.tpcExpSignalMu(track.tpcSignal());
+      }
+    case o2::track::PID::Pion:
+      if constexpr (std::experimental::is_detected<hasTPCPi, TrackType>::value) {
+        return track.tpcExpSignalPi(track.tpcSignal());
+      }
+    case o2::track::PID::Kaon:
+      if constexpr (std::experimental::is_detected<hasTPCKa, TrackType>::value) {
+        return track.tpcExpSignalKa(track.tpcSignal());
+      }
+    case o2::track::PID::Proton:
+      if constexpr (std::experimental::is_detected<hasTPCPr, TrackType>::value) {
+        return track.tpcExpSignalPr(track.tpcSignal());
+      }
+    case o2::track::PID::Deuteron:
+      if constexpr (std::experimental::is_detected<hasTPCDe, TrackType>::value) {
+        return track.tpcExpSignalDe(track.tpcSignal());
+      }
+    case o2::track::PID::Triton:
+      if constexpr (std::experimental::is_detected<hasTPCTr, TrackType>::value) {
+        return track.tpcExpSignalTr(track.tpcSignal());
+      }
+    case o2::track::PID::Helium3:
+      if constexpr (std::experimental::is_detected<hasTPCHe, TrackType>::value) {
+        return track.tpcExpSignalHe(track.tpcSignal());
+      }
+    case o2::track::PID::Alpha:
+      if constexpr (std::experimental::is_detected<hasTPCAl, TrackType>::value) {
+        return track.tpcExpSignalAl(track.tpcSignal());
+      }
+    default:
+      LOGF(fatal, "TPC PID table for PID index %i (%s) is not available", index, o2::track::PID::getName(index));
+      return 0.f;
+  }
+}
 perSpeciesWrapper(tpcExpSignalDiff);
 
 #undef perSpeciesWrapper
@@ -242,9 +374,10 @@ namespace pidflags
 namespace enums
 {
 enum PIDFlags : uint8_t {
-  EvTimeUndef = 0x0, // Event collision not set, corresponding to the LHC Fill event time
-  EvTimeTOF = 0x1,   // Event collision time from TOF
-  EvTimeT0AC = 0x2   // Event collision time from the FT0AC
+  EvTimeUndef = 0x0,  // Event collision not set, corresponding to the LHC Fill event time
+  EvTimeTOF = 0x1,    // Event collision time from TOF
+  EvTimeT0AC = 0x2,   // Event collision time from the FT0AC
+  EvTimeTOFT0AC = 0x3 // Event collision time from the TOF and FT0AC
 };
 }
 
@@ -255,6 +388,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeTOF, isEvTimeTOF, //! True if the Event Time 
                            [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeTOF) == enums::PIDFlags::EvTimeTOF; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeT0AC, isEvTimeT0AC, //! True if the Event Time was computed with the T0AC
                            [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeT0AC) == enums::PIDFlags::EvTimeT0AC; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeTOFT0AC, isEvTimeTOFT0AC, //! True if the Event Time was computed with the TOF and T0AC
+                           [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeTOFT0AC) == enums::PIDFlags::EvTimeTOFT0AC; });
 
 } // namespace pidflags
 
@@ -400,7 +535,8 @@ DECLARE_SOA_TABLE(pidEvTimeFlags, "AOD", "pidEvTimeFlags", //! Table of the PID 
                   pidflags::TOFFlags,
                   pidflags::IsEvTimeDefined<pidflags::TOFFlags>,
                   pidflags::IsEvTimeTOF<pidflags::TOFFlags>,
-                  pidflags::IsEvTimeT0AC<pidflags::TOFFlags>);
+                  pidflags::IsEvTimeT0AC<pidflags::TOFFlags>,
+                  pidflags::IsEvTimeTOFT0AC<pidflags::TOFFlags>);
 
 // Per particle tables
 DECLARE_SOA_TABLE(pidTOFFullEl, "AOD", "pidTOFFullEl", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for electron
@@ -645,4 +781,4 @@ DECLARE_SOA_TABLE(pidBayes, "AOD", "pidBayes", pidbayes::BayesProb, pidbayes::Ba
 
 } // namespace o2::aod
 
-#endif // O2_FRAMEWORK_PIDRESPONSE_H_
+#endif // COMMON_DATAMODEL_PIDRESPONSE_H_

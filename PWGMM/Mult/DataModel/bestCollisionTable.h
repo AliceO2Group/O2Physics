@@ -8,6 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#ifndef PWGMM_MULT_DATAMODEL_BESTCOLLISIONTABLE_H_
+#define PWGMM_MULT_DATAMODEL_BESTCOLLISIONTABLE_H_
 
 #include "Framework/AnalysisDataModel.h"
 
@@ -32,12 +34,6 @@ DECLARE_SOA_COLUMN(PStatic, ps, float);
 DECLARE_SOA_COLUMN(EtaStatic, etas, float);
 DECLARE_SOA_COLUMN(PhiStatic, phis, float);
 } // namespace fwdtrack
-DECLARE_SOA_TABLE(BestCollisions, "AOD", "BESTCOLL",
-                  aod::track::BestCollisionId, aod::track::BestDCAXY,
-                  aod::track::BestDCAZ, track::X, track::Alpha, track::Y,
-                  track::Z, track::Snp, track::Tgl, track::Signed1Pt,
-                  track::PtStatic, track::PStatic, track::EtaStatic,
-                  track::PhiStatic);
 
 DECLARE_SOA_TABLE(BestCollisionsFwd, "AOD", "BESTCOLLFWD",
                   aod::fwdtrack::BestCollisionId, aod::fwdtrack::BestDCAXY,
@@ -51,11 +47,18 @@ namespace pwgmm::indices
 DECLARE_SOA_INDEX_COLUMN(Track, track);
 }
 
-DECLARE_SOA_TABLE(ReassignedTracks, "AOD", "RATRACKS",
-                  aod::track::BestCollisionId, aod::track::BestDCAXY,
-                  aod::track::BestDCAZ, track::X, track::Alpha, track::Y,
+DECLARE_SOA_TABLE(ReassignedTracksCore, "AOD", "CRRETRACKS",
+                  aod::track::BestCollisionId,
+                  pwgmm::indices::TrackId,
+                  aod::track::BestDCAXY,
+                  aod::track::BestDCAZ);
+
+DECLARE_SOA_TABLE(ReassignedTracksExtra, "AOD", "EXRETRACKS",
+                  track::X, track::Alpha, track::Y,
                   track::Z, track::Snp, track::Tgl, track::Signed1Pt,
                   track::PtStatic, track::PStatic, track::EtaStatic,
-                  track::PhiStatic, pwgmm::indices::TrackId);
+                  track::PhiStatic);
 
 } // namespace o2::aod
+
+#endif // PWGMM_MULT_DATAMODEL_BESTCOLLISIONTABLE_H_

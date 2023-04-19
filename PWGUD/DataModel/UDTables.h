@@ -9,16 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2PHYSICS_UDTABLES_H
-#define O2PHYSICS_UDTABLES_H
+#ifndef PWGUD_DATAMODEL_UDTABLES_H_
+#define PWGUD_DATAMODEL_UDTABLES_H_
 
+#include <cmath>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/DataTypes.h"
 #include "MathUtils/Utils.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include <cmath>
 
 namespace o2::aod
 {
@@ -113,7 +113,7 @@ DECLARE_SOA_COLUMN(BGFDDCPF, bgFDDCpf, int32_t); //! Beam-gas time in FDC
 DECLARE_SOA_DYNAMIC_COLUMN(BBFT0A, bbFT0A,
                            [](int32_t bbFT0Apf) -> bool { return TESTBIT(bbFT0Apf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BBFT0C, bbFT0C,
-                           [](int32_t bbFT0Apf) -> bool { return TESTBIT(bbFT0Apf, 16); });
+                           [](int32_t bbFT0Cpf) -> bool { return TESTBIT(bbFT0Cpf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BGFT0A, bgFT0A,
                            [](int32_t bgFT0Apf) -> bool { return TESTBIT(bgFT0Apf, 16); });
 DECLARE_SOA_DYNAMIC_COLUMN(BGFT0C, bgFT0C,
@@ -179,7 +179,13 @@ DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);      //!
 DECLARE_SOA_COLUMN(TrackTime, trackTime, double);      //!
 DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float); //! time resolution
 DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t); //!
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                     //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int32_t); //! Id of original collision if any, -1 if ambiguous
+DECLARE_SOA_DYNAMIC_COLUMN(IsAmbiguous, isAmbiguous,
+                           [](int32_t collisionId) -> bool {
+                             return collisionId == -1;
+                           });                              //!
+DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //!
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                          //!
                            [](float px, float py) -> float {
                              return std::sqrt(px * px + py * py);
                            });
@@ -207,6 +213,7 @@ DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
                   pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr);
 
 DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
+                  track::TPCInnerParam,
                   track::ITSClusterMap,
                   track::TPCNClsFindable,
                   track::TPCNClsFindableMinusFound,
@@ -232,12 +239,18 @@ DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
 
 DECLARE_SOA_TABLE(UDTracksDCA, "AOD", "UDTRACKDCA",
                   track::DcaZ,
-                  track::DcaXY)
+                  track::DcaXY);
+
+DECLARE_SOA_TABLE(UDTracksFlags, "AOD", "UDTRACKFLAG",
+                  udtrack::CollisionId,
+                  udtrack::IsPVContributor,
+                  udtrack::IsAmbiguous<udtrack::CollisionId>);
 
 using UDTrack = UDTracks::iterator;
 using UDTrackCov = UDTracksCov::iterator;
 using UDTrackExtra = UDTracksExtra::iterator;
 using UDTrackDCA = UDTracksDCA::iterator;
+using UDTrackFlags = UDTracksFlags::iterator;
 
 namespace udmctracklabel
 {
@@ -311,6 +324,19 @@ DECLARE_SOA_TABLE(UDMcFwdTrackLabels, "AOD", "UDMCFWDTRLABEL",
 
 using UDMcFwdTrackLabel = UDMcFwdTrackLabels::iterator;
 
+namespace udzdc
+{
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t); //! Global BC
+} // namespace udzdc
+
+DECLARE_SOA_TABLE(UDZdcs, "AOD", "UDZDC", //! ZDC information
+                  udzdc::GlobalBC, zdc::EnergyZEM1, zdc::EnergyZEM2,
+                  zdc::EnergyCommonZNA, zdc::EnergyCommonZNC, zdc::EnergyCommonZPA, zdc::EnergyCommonZPC,
+                  zdc::EnergySectorZNA, zdc::EnergySectorZNC, zdc::EnergySectorZPA, zdc::EnergySectorZPC,
+                  zdc::TimeZEM1, zdc::TimeZEM2, zdc::TimeZNA, zdc::TimeZNC, zdc::TimeZPA, zdc::TimeZPC);
+
+using UDZdc = UDZdcs::iterator;
+
 } // namespace o2::aod
 
-#endif // O2PHYSICS_UDTABLES_H
+#endif // PWGUD_DATAMODEL_UDTABLES_H_

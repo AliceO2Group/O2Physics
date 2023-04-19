@@ -41,12 +41,12 @@ struct fddQA {
   OutputObj<TH1F> hChFDDA{TH1F("hChFDDA", "FDDA; Charge in ADC;", 5010, -10, 5000)};
   OutputObj<TH1F> hChFDDC{TH1F("hChFDDC", "FDDC; Charge in ADC;", 5010, -10, 5000)};
   OutputObj<TH1F> hTotalChargeFDDAC{TH1F("hTotalChargeFDDAC", "FDDC; Charge in ADC;", 8010, -10, 8000)};
-  OutputObj<TH1F> hNcontribColl{TH1F("hNcontribColl", "Ncontributers in Coll TABLE;#contributers", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribFDD{TH1F("hNcontribFDD", "Ncontributers in FDD;#contributers", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribFDDAC{TH1F("hNcontribFDDAC", "Ncontributers in FDD A and C;#contributers", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribFDDorAC{TH1F("hNcontribFDDorAC", "Ncontributers in FDD A or C;#contributers", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribFDDA{TH1F("hNcontribFDDA", "Ncontributers in FDDA;#contributers", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribFDDC{TH1F("hNcontribFDDC", "Ncontributers with FDDC;#contributers", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribColl{TH1F("hNcontribColl", "Ncontributers in Coll TABLE;#contributors", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribFDD{TH1F("hNcontribFDD", "Ncontributers in FDD;#contributors", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribFDDAC{TH1F("hNcontribFDDAC", "Ncontributers in FDD A and C;#contributors", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribFDDorAC{TH1F("hNcontribFDDorAC", "Ncontributers in FDD A or C;#contributors", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribFDDA{TH1F("hNcontribFDDA", "Ncontributers in FDDA;#contributors", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribFDDC{TH1F("hNcontribFDDC", "Ncontributers with FDDC;#contributors", 100, -0.5, 99.5)};
 
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, aod::FDDs const& fdds, aod::BCs const&)
   {

@@ -901,15 +901,13 @@ struct goodtrackcheck{
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(d_UseAbsDCA);
 
-
-    for (auto& t0id : he3tracks) {
-      registry.fill(HIST("hHe3Counter"), 0.5);
-    }
-    for (auto& t1id : piontracks) {
+    for (auto& t1id : piontracks) {//Try to change the loop
+      auto t1 = t1id.goodTrack_as<MyTracks>();//must make use of t1id, otherwise error
       registry.fill(HIST("hPionCounter"), 0.5);
     }
 
     for (auto& t0id : he3tracks) { // FIXME: turn into combination(...)
+      registry.fill(HIST("hHe3Counter"), 0.5);
       for (auto& t1id : piontracks) {
 
 

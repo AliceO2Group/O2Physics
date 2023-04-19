@@ -13,14 +13,19 @@
 /// \brief FemtoDreamObjectSelection - Parent class of all selections
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMOBJECTSELECTION_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMOBJECTSELECTION_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMOBJECTSELECTION_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMOBJECTSELECTION_H_
+
+#include <algorithm>
+#include <string>
+#include <vector>
 
 #include "FemtoDreamSelection.h"
-
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
+#include "PWGCF/DataModel/FemtoDerived.h"
 
+using namespace o2;
 using namespace o2::framework;
 
 namespace o2::analysis
@@ -92,7 +97,7 @@ class FemtoDreamObjectSelection
     }
 
     /// Then, the sorted selections are added to the overall container of cuts
-    for (const auto sel : sels) {
+    for (const auto& sel : sels) {
       mSelections.push_back(sel);
     }
   }
@@ -189,4 +194,4 @@ class FemtoDreamObjectSelection
 } // namespace femtoDream
 } // namespace o2::analysis
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMOBJECTSELECTION_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMOBJECTSELECTION_H_

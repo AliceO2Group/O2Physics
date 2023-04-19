@@ -25,7 +25,7 @@
 
 #include "Framework/AnalysisDataModel.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include <cmath>
 
 // Defines the jet table definition
@@ -282,7 +282,7 @@ using HybridIntermediateJetConstituentSub = HybridIntermediateJetConstituentsSub
 JET_TABLE_DEF(Collision, HFJet, hfjet, "HFJET");
 using HFJet = HFJets::iterator;
 using MatchedHFJet = MatchedHFJets::iterator;
-JET_CONSTITUENTS_ARRAY_TABLE_DEF(HFJet, hfjet, "HFJET", Track, HfCandProng2);
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(HFJet, hfjet, "HFJET", Track, HfCand2Prong);
 using HFJetConstituent = HFJetConstituents::iterator;
 JET_CONSTITUENTS_SUB_TABLE_DEF(HFJet, hfjet, "HFJET");
 using HFJetConstituentSub = HFJetConstituentsSub::iterator;
@@ -300,7 +300,7 @@ using MCParticleLevelHFJetConstituentSub = MCParticleLevelHFJetConstituentsSub::
 JET_TABLE_DEF(Collision, MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFJETMCD");
 using MCDetectorLevelHFJet = MCDetectorLevelHFJets::iterator;
 using MatchedMCDetectorLevelHFJet = MatchedMCDetectorLevelHFJets::iterator;
-JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD", Track, HfCandProng2);
+JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD", Track, HfCand2Prong);
 using MCDetectorLevelHFJetConstituent = MCDetectorLevelHFJetConstituents::iterator;
 JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelHFJet, mcdetectorlevelhfjet, "HFMCD");
 using MCDetectorLevelHFJetConstituentSub = MCDetectorLevelHFJetConstituentsSub::iterator;

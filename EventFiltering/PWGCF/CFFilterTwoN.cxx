@@ -95,7 +95,7 @@ struct CFFilterTwoN {
 
   Configurable<std::vector<float>> ConfPIDnSigmaTPCMax{"PIDnSigmaTPCMax",
                                                        std::vector<float>{3.5f, 3.f, 2.5f},
-                                                       "Vector of all possible nSigma values for Accpetance and Rejection (this needs to be in sync with FemtoDreamProducerTask.ConfTrkPIDnSigmaMax)"};
+                                                       "Vector of all possible nSigma values for Acceptance and Rejection (this needs to be in sync with FemtoDreamProducerTask.ConfTrkPIDnSigmaMax)"};
   // this configurable needs to be in sync with FemtoDreamProducerTask.ConfTrkPIDnSigmaMax
   // do not use more than 3 values, otherwise the FemtoDreamProducerTask will break!
 
@@ -175,7 +175,7 @@ struct CFFilterTwoN {
           }
         }
       }
-      // and reject the candiate, otherwise check if it is fullfills the deuteron hypothesis
+      // and reject the candidate, otherwise check if it is fullfills the deuteron hypothesis
       if (!rejectDeuteron) {
         pidSelection = isPIDSelected(pidCut,
                                      std::vector<int>{confPIDDeuteronIndex.value},
