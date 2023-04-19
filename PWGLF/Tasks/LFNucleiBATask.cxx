@@ -103,7 +103,6 @@ struct LFNucleiBATask {
   Configurable<int> useHasTRDConfig{"useHasTRDConfig", 0, "No selections on TRD (0); With TRD (1); Without TRD (2)"};
   Configurable<int> massTOFConfig{"massTOFConfig", 0, "Estimate massTOF using beta with (0) TPC momentum (1) TOF expected momentum"};
   Configurable<int> tritonSelConfig{"tritonSelConfig", 0, "Select tritons using (0) 3Sigma TPC triton (1) additional 3sigma TPC pi,K,p veto cut"};
-  // Configurable<int> heRapiditySelConfig{"heRapiditySelConfig", 0, "Select rapidity configuration for Helium selection"};
 
   Configurable<int> nITSLayer{"nITSLayer", 0, "ITS Layer (0-6)"};
   Configurable<bool> usenITSLayer{"usenITSLayer", false, "Flag to enable ITS layer hit"};
@@ -1142,16 +1141,8 @@ struct LFNucleiBATask {
       }
 
       // debug on helium rapidity cut
-      // switch (heRapiditySelConfig) {
-      //   case 0:
       deRapCut = TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Deuteron))) < yCut;
       heRapCut = TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3))) < yCut;
-      // break;
-      // case 1:
-      //   lVec_helium.SetPtEtaPhiM(2.f * track.pt(), track.eta(), track.phi(), fMassHelium);
-      //   heRapCut = TMath::Abs(lVec_helium.Rapidity()) < yCut;
-      //   break;
-      // }
 
       // Tracks DCA histos fill
       if (makeDCABeforeCutPlots) {
