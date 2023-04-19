@@ -118,7 +118,7 @@ struct OnTheFlyTracker {
     auto pdgInfo = pdgDB->GetParticle(particle.pdgCode());
     int charge = 0;
     if (pdgInfo != nullptr) {
-      charge = pdgInfo->Charge()/3;
+      charge = pdgInfo->Charge() / 3;
     }
     std::array<float, 5> params;
     std::array<float, 15> covm = {0.};
@@ -172,7 +172,7 @@ struct OnTheFlyTracker {
     }
 
     for (const auto& mcParticle : mcParticles) {
-      if(!mcParticle.isPhysicalPrimary()){
+      if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
       const auto pdg = std::abs(mcParticle.pdgCode());
@@ -190,11 +190,11 @@ struct OnTheFlyTracker {
       }
       o2::track::TrackParCov trackParCov;
       convertMCParticleToO2Track(mcParticle, trackParCov);
-      
+
       if (!mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta)) {
         continue;
       }
-      
+
       // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
       // Calculate primary vertex
       // To be added once smeared tracks are in place
