@@ -156,8 +156,8 @@ o2physics_add_dpl_workflow(hstrangecorrelation
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(strangenesstracking
-                    SOURCES strangenesstracking.cxx
+o2physics_add_dpl_workflow(stqa
+                    SOURCES stqa.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
