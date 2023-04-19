@@ -112,7 +112,7 @@ struct UDTutorial01 {
 
       auto signalTPC = track.tpcSignal() * track.sign();
       registry.get<TH2>(HIST("tracks/TPCSignalvspAll"))->Fill(vtrk.Mag(), signalTPC, 1.);
-      auto signalTOF = track.tofSignal() / 1.E3;
+      auto signalTOF = track.tofSignal() * track.sign() / 1.E3;
       registry.get<TH2>(HIST("tracks/TOFSignalvspAll"))->Fill(vtrk.Mag(), signalTOF, 1.);
 
       if (track.isPVContributor()) {
