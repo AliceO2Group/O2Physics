@@ -1,6 +1,6 @@
 # UD tutorial, April 27th, 2023
- - from 09:00 to 12:30 (CERN time)
- - zoom link: [https://cern.zoom.us/j/63176005388?pwd=MjNVTUlrTVJwMGcyZ25xeUxVanVndz09](https://cern.zoom.us/j/63176005388?pwd=MjNVTUlrTVJwMGcyZ25xeUxVanVndz09)
+- from 09:00 to 12:30 (CERN time)
+- zoom link: [https://cern.zoom.us/j/63176005388?pwd=MjNVTUlrTVJwMGcyZ25xeUxVanVndz09](https://cern.zoom.us/j/63176005388?pwd=MjNVTUlrTVJwMGcyZ25xeUxVanVndz09)
 
 ## 1. Get started
 
