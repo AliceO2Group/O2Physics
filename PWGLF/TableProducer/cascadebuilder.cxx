@@ -1210,6 +1210,7 @@ struct cascadePreselector {
 /// Extends the cascdata table with expression columns
 struct cascadeInitializer {
   Spawns<aod::CascData> cascdataext;
+  Spawns<aod::TraCascData> tracascdataext;
   void init(InitContext const&) {}
 };
 
