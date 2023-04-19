@@ -105,7 +105,8 @@ struct OnTheFlyTracker {
 
     // Basic QA
     const AxisSpec axisMomentum{static_cast<int>(100), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
-    histos.add("hPt", "hPt", kTH1F, {axisMomentum});
+    histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axisMomentum});
+    histos.add("hPtReconstructed", "hPtReconstructed", kTH1F, {axisMomentum});
   }
 
   /// Function to convert a McParticle into a perfect Track
@@ -117,7 +118,7 @@ struct OnTheFlyTracker {
     auto pdgInfo = pdgDB->GetParticle(particle.pdgCode());
     int charge = 0;
     if (pdgInfo != nullptr) {
-      charge = pdgInfo->Charge();
+      charge = pdgInfo->Charge()/3;
     }
     std::array<float, 5> params;
     std::array<float, 15> covm = {0.};
@@ -171,6 +172,9 @@ struct OnTheFlyTracker {
     }
 
     for (const auto& mcParticle : mcParticles) {
+      if(!mcParticle.isPhysicalPrimary()){
+        continue;
+      }
       const auto pdg = std::abs(mcParticle.pdgCode());
       if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton) {
         continue;
@@ -178,23 +182,26 @@ struct OnTheFlyTracker {
       if (std::fabs(mcParticle.eta()) > maxEta) {
         continue;
       }
+
+      histos.fill(HIST("hPtGenerated"), mcParticle.pt());
+
       if (mcParticle.pt() < minPt) {
         continue;
       }
       o2::track::TrackParCov trackParCov;
       convertMCParticleToO2Track(mcParticle, trackParCov);
-
+      
       if (!mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta)) {
         continue;
       }
-
+      
       // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
       // Calculate primary vertex
       // To be added once smeared tracks are in place
       // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
 
-      // Base QA
-      histos.fill(HIST("hPt"), trackParCov.getPt());
+      // Base QA (note: reco pT here)
+      histos.fill(HIST("hPtReconstructed"), trackParCov.getPt());
 
       // Fixme: collision index could be changeable
       aod::track::TrackTypeEnum trackType = aod::track::Track;
