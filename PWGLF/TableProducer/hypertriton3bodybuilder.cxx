@@ -14,7 +14,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -152,7 +152,7 @@ struct hypertriton3bodybuilder{
   }
   //__________________________________________________________________
 
-  void process( aod::Collision const& collision, MyTracksIU const& tracks, aod::Decays3Body const& decays3body, aod::BCsWithTimestamps const&) {
+  void process( aod::Collision const& collision, MyTracksIU const& tracks, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&) {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
@@ -169,7 +169,7 @@ struct hypertriton3bodybuilder{
     fitter3body.setMaxChi2(1e9);
     fitter3body.setUseAbsDCA(d_UseAbsDCA);
 
-    for (auto& vtx3body : decays3body) { // FIXME: turn into combination(...)
+    for (auto& vtx3body : decay3bodys) { // FIXME: turn into combination(...)
 
       registry.fill(HIST("hVtx3BodyCounter"), 0.5);
 
@@ -297,9 +297,9 @@ struct hypertriton3bodyLabelBuilder {
   }
   PROCESS_SWITCH(hypertriton3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
-  void processBuildLabels(aod::Collisions::iterator const& collision, aod::Decays3Body const& decays3body, LabeledTracks const&, aod::McParticles const& particlesMC)
+  void processBuildLabels(aod::Collisions::iterator const& collision, aod::Decay3Bodys const& decay3bodys, LabeledTracks const&, aod::McParticles const& particlesMC)
   {
-    for (auto& vtx : decays3body) {
+    for (auto& vtx : decay3bodys) {
 
       int lLabel = -1;
       int lPDG = -1;

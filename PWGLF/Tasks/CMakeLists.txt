@@ -163,21 +163,21 @@ o2physics_add_dpl_workflow(strangenesstracking
 
 o2physics_add_dpl_workflow(hypertriton-analysis
                    SOURCES hypertritonanalysis.cxx
-                   PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                   PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertritonanalysis-mc
                    SOURCES hypertritonanalysisMC.cxx
-                   PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                   PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertriton3bodyanalysis
                    SOURCES hypertriton3bodyanalysis.cxx
-                   PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                   PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore 
                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertriton3bodyanalysis-mc
                    SOURCES hypertriton3bodyanalysisMC.cxx
-                   PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                   PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore 
                    COMPONENT_NAME Analysis)
 

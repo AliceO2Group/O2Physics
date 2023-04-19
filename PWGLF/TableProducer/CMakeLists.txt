@@ -69,17 +69,17 @@ o2physics_add_dpl_workflow(nucleustreecreator
 
 o2physics_add_dpl_workflow(hypertritonfinder
                     SOURCES hypertritonfinder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                    PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertriton3bodybuilder
                     SOURCES hypertriton3bodybuilder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                    PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertriton3bodyfinder
                     SOURCES hypertriton3bodyfinder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                    PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 # Resonances

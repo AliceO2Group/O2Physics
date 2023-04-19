@@ -14,7 +14,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -135,7 +135,7 @@ struct trackprefilter {
 struct hypertriton3bodyFinder{
 
   Produces<aod::StoredVtx3BodyDatas> vtx3bodydata;
-  //Produces<aod::Decays3Body> decay3bodyv0;
+  //Produces<aod::Decay3Bodys> decay3bodyv0;
 
   // Configurables
   Configurable<int> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};

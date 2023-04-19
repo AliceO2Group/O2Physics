@@ -146,7 +146,7 @@ DECLARE_SOA_INDEX_COLUMN(Vtx3BodyData, vtx3BodyData); //! Index to Vtx3BodyData 
 DECLARE_SOA_TABLE(Vtx3BodyDataLink, "AOD", "VtxDATALINK", //! Joinable table with V0s which links to Vtx3BodyData which is not produced for all entries
                   vtx3body::Vtx3BodyDataId);
 
-using Vtxs3BodyLinked = soa::Join<Decays3Body, Vtx3BodyDataLink>;
+using Vtxs3BodyLinked = soa::Join<Decay3Bodys, Vtx3BodyDataLink>;
 using Vtx3BodyLinked = Vtxs3BodyLinked::iterator;
 
 }
