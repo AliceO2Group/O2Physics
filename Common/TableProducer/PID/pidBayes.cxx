@@ -23,8 +23,13 @@
 #include "Framework/Array2D.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/PID/DetectorResponse.h"
+#include "Common/Core/PID/ParamBase.h"
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/PIDResponse.h"
+
 #include "pidTOFBase.h"
 
 using namespace o2;

@@ -76,14 +76,14 @@ class Beta
   /// Gets the expected beta for a given mass hypothesis (no energy loss taken into account)
   /// \param momentum momentum in GeV/c of the track
   /// \param mass mass in GeV/c2 of the particle of interest
-  static float GetExpectedSignal(const float momentum, const float mass) { return momentum > 0 ? momentum / std::sqrt(momentum * momentum + mass * mass) : 0.f; }
+  static float GetExpectedBeta(const float momentum, const float mass) { return momentum > 0 ? momentum / std::sqrt(momentum * momentum + mass * mass) : 0.f; }
 
   /// Gets the expected beta given the particle index (no energy loss taken into account) of the track of interest
   /// \param track Track of interest
   template <o2::track::PID::ID id>
-  float GetExpectedSignal(const TrackType& track) const
+  float GetExpectedBeta(const TrackType& track) const
   {
-    return GetExpectedSignal(track.p(), o2::track::PID::getMass2Z(id));
+    return GetExpectedBeta(track.p(), o2::track::PID::getMass2Z(id));
   }
 
   /// Gets the number of sigmas with respect the approximate beta (no energy loss taken into account) of the track of interest
@@ -91,7 +91,7 @@ class Beta
   template <o2::track::PID::ID id>
   float GetSeparation(const TrackType& track) const
   {
-    return (GetBeta(track) - GetExpectedSignal<id>(track)) / GetExpectedSigma(track);
+    return (GetBeta(track) - GetExpectedBeta<id>(track)) / GetExpectedSigma(track);
   }
 
   float mExpectedResolution = 80; /// Expected time resolution
@@ -117,15 +117,6 @@ class TOFMass
   /// Gets the TOF mass for the track of interest
   /// \param track Track of interest
   static float GetTOFMass(const TrackType& track) { return track.hasTOF() ? GetTOFMass(track.p(), Beta<TrackType>::GetBeta(track)) : defaultReturnValue; }
-};
-
-/// \brief Implementation class to store TOF response parameters for exp. times
-class TOFResoParams : public o2::pid::PidParameters<5>
-{
- public:
-  TOFResoParams() : PidParameters("TOFResoParams") { SetParameters(std::array<float, 5>{0.008, 0.008, 0.002, 40.0, 60.0}); } // Default constructor with default parameters
-  ~TOFResoParams() = default;
-  ClassDef(TOFResoParams, 1);
 };
 
 /// \brief Next implementation class to store TOF response parameters for exp. times
@@ -233,24 +224,8 @@ class ExpTimes
     if (track.trackType() == o2::aod::track::Run2Track) {
       return ComputeExpectedTime(track.tofExpMom() * kCSPEDDInv / (1.f + track.sign() * parameters.getShift(track.eta())), track.length());
     }
+    LOG(debug) << "TOF exp. mom. "<< track.tofExpMom() << " shifted = " << track.tofExpMom() / (1.f + track.sign() * parameters.getShift(track.eta()));
     return ComputeExpectedTime(track.tofExpMom() / (1.f + track.sign() * parameters.getShift(track.eta())), track.length());
-  }
-
-  /// Gets the expected resolution of the t-texp-t0
-  /// Given a TOF signal and collision time resolutions
-  /// \param parameters Detector response parameters
-  /// \param track Track of interest
-  /// \param tofSignal TOF signal of the track of interest
-  /// \param collisionTimeRes Collision time resolution of the track of interest
-  static float GetExpectedSigma(const TOFResoParams& parameters, const TrackType& track, const float tofSignal, const float collisionTimeRes)
-  {
-    const float mom = track.p();
-    if (mom <= 0) {
-      return -999.f;
-    }
-    const float dpp = parameters[0] + parameters[1] * mom + parameters[2] * mMassZ / mom; // mean relative pt resolution;
-    const float sigma = dpp * tofSignal / (1. + mom * mom / (mMassZSqared));
-    return std::sqrt(sigma * sigma + parameters[3] * parameters[3] / mom / mom + parameters[4] * parameters[4] + collisionTimeRes * collisionTimeRes);
   }
 
   /// Gets the expected resolution of the t-texp-t0
@@ -285,29 +260,12 @@ class ExpTimes
   /// Gets the expected resolution of the t-texp-t0
   /// \param parameters Detector response parameters
   /// \param track Track of interest
-  static float GetExpectedSigma(const TOFResoParams& parameters, const TrackType& track) { return GetExpectedSigma(parameters, track, track.tofSignal(), track.tofEvTime()); }
-
-  /// Gets the expected resolution of the t-texp-t0
-  /// \param parameters Detector response parameters
-  /// \param track Track of interest
   static float GetExpectedSigma(const TOFResoParamsV2& parameters, const TrackType& track) { return GetExpectedSigma(parameters, track, track.tofSignal(), track.tofEvTime()); }
 
   /// Gets the expected resolution of the time measurement, uses the expected time and no event time resolution
   /// \param parameters Parameters to use to compute the expected resolution
   /// \param track Track of interest
   static float GetExpectedSigmaTracking(const TOFResoParamsV2& parameters, const TrackType& track) { return GetExpectedSigma(parameters, track, GetCorrectedExpectedSignal(parameters, track), 0.f); }
-
-  /// Gets the number of sigmas with respect the expected time
-  /// \param parameters Detector response parameters
-  /// \param track Track of interest
-  /// \param collisionTime Collision time
-  /// \param collisionTimeRes Collision time resolution of the track of interest
-  static float GetSeparation(const TOFResoParams& parameters, const TrackType& track, const float collisionTime, const float collisionTimeRes) { return track.hasTOF() ? (track.tofSignal() - collisionTime - GetExpectedSignal(track)) / GetExpectedSigma(parameters, track, track.tofSignal(), collisionTimeRes) : defaultReturnValue; }
-
-  /// Gets the number of sigmas with respect the expected time
-  /// \param parameters Detector response parameters
-  /// \param track Track of interest
-  static float GetSeparation(const TOFResoParams& parameters, const TrackType& track) { return GetSeparation(parameters, track, track.tofEvTime(), track.tofEvTimeErr()); }
 
   /// Gets the number of sigmas with respect the expected time
   /// \param parameters Detector response parameters
