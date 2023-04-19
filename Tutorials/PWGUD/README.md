@@ -41,7 +41,7 @@ There are three example tasks which all can be found in the O2Physics repository
 - [UDTutorial_02a.cxx](https://github.com/AliceO2Group/O2Physics/tree/master/Tutorials/PWGUD/UDTutorial_02a.cxx)
 - [UDTutorial_02b.cxx](https://github.com/AliceO2Group/O2Physics/tree/master/Tutorials/PWGUD/UDTutorial_02b.cxx)
 
-During the tutorial session we will talk about the tasks and implement some modification. However, to test whether your
+During the tutorial session we will talk about the tasks and implement some modifications. However, to test whether your
 installation is working fine you can run the first example as is by executing the following commands
 
 > \> copts="--configuration json://UDTutorialsConfig.json -b"
@@ -53,3 +53,5 @@ installation is working fine you can run the first example as is by executing th
 > \> root -b -l -q 'plotHistograms.C("AR_UDTutorial01.root","LHC22q, UD Tutorials")';  mv UDTutorials.ps UDTutorial01.ps
 
 This should run the task on the downloaded skimmed data, produce the result file AR_UDTutorial01.root with some histograms, and finally create UDTutorial01.ps with plots of the histograms.
+
+Running the task over all data files can take a while. On my not so new laptop, it takes around 15 minutes. For testing you can reduce this time by removing some file names from rootfiles.txt. But don't forget to add them later again!
