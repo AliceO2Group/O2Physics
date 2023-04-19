@@ -226,7 +226,7 @@ class ExpTimes
     if (track.trackType() == o2::aod::track::Run2Track) {
       return ComputeExpectedTime(track.tofExpMom() * kCSPEDDInv / (1.f + track.sign() * parameters.getShift(track.eta())), track.length());
     }
-    LOG(debug) << "TOF exp. mom. "<< track.tofExpMom() << " shifted = " << track.tofExpMom() / (1.f + track.sign() * parameters.getShift(track.eta()));
+    LOG(debug) << "TOF exp. mom. " << track.tofExpMom() << " shifted = " << track.tofExpMom() / (1.f + track.sign() * parameters.getShift(track.eta()));
     return ComputeExpectedTime(track.tofExpMom() / (1.f + track.sign() * parameters.getShift(track.eta())), track.length());
   }
 
