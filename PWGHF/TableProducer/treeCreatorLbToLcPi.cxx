@@ -60,6 +60,7 @@ DECLARE_SOA_COLUMN(CPA, cpa, float);
 DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(NSigRICHTrk0Pi, nsigRICHTrk0Pi, float);
 DECLARE_SOA_COLUMN(NSigfRICHTrk0Pi, nsigfRICHTrk0Pi, float);
 DECLARE_SOA_COLUMN(NSigTOFTrk0Pi, nsigTOFTrk0Pi, float);
@@ -161,7 +162,8 @@ DECLARE_SOA_TABLE(HfCandLbFull, "AOD", "HFCANDLbFull",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::MCflag);
+                  full::MCflag,
+                  full::OriginMcRec);
 
 } // namespace o2::aod
 
@@ -318,7 +320,8 @@ struct HfTreeCreatorLbToLcPi {
             candidate.eta(),
             candidate.phi(),
             FunctionY,
-            candidate.flagMcMatchRec());
+            candidate.flagMcMatchRec(),
+            candidate.originMcRec());
         }
       };
       fillTable(candidate.isSelLbToLcPi(), invMassLbToLcPi(candidate), ctLb(candidate), yLb(candidate));

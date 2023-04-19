@@ -34,6 +34,7 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 
 struct PidMultiplicity {
+  SliceCache cache;
   Produces<aod::PIDMults> mult;
 
   bool enableTable = false;
@@ -57,7 +58,7 @@ struct PidMultiplicity {
     if (!enableTable) {
       return;
     }
-    auto tracksGrouped = tracksWithTPCIU->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto tracksGrouped = tracksWithTPCIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     mult(tracksGrouped.size());
   }
   PROCESS_SWITCH(PidMultiplicity, processIU, "Process with IU tracks, faster but works on Run3 only", false);
@@ -69,7 +70,7 @@ struct PidMultiplicity {
     if (!enableTable) {
       return;
     }
-    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     mult(tracksGrouped.size());
   }
   PROCESS_SWITCH(PidMultiplicity, processStandard, "Process with tracks, needs propagated tracks", true);

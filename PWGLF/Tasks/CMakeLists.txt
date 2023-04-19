@@ -146,6 +146,20 @@ o2physics_add_dpl_workflow(nuclei-hist
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(cascpostprocessing
+                    SOURCES cascpostprocessing.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hstrangecorrelation
+                    SOURCES hStrangeCorrelation.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strangenesstracking
+                    SOURCES strangenesstracking.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertriton-analysis
                    SOURCES hypertritonanalysis.cxx
@@ -166,3 +180,4 @@ o2physics_add_dpl_workflow(hypertriton3bodyanalysis-mc
                    SOURCES hypertriton3bodyanalysisMC.cxx
                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                    COMPONENT_NAME Analysis)
+

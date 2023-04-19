@@ -39,6 +39,7 @@
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
+#include "CommonConstants/LHCConstants.h"
 
 using std::cout;
 using std::endl;
@@ -198,7 +199,7 @@ struct DQBarrelTrackSelection {
   std::vector<TString> fCutHistNames;
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
-  std::map<uint64_t, uint32_t> fSelectedTracks;
+  std::map<int64_t, uint32_t> fSelectedTracks;
 
   // int fTimeFrameAssociation;
   // int fTimeFrameSelection;
@@ -352,7 +353,7 @@ struct DQBarrelTrackSelection {
     }
 
     // map to keep all collision-track associations (ordered based on the key by construction); for each collision there is a vector of tracks
-    std::map<uint64_t, std::vector<uint64_t>> collTrackIds;
+    std::map<int64_t, std::vector<int64_t>> collTrackIds;
     // map to hold collision - BC associations
     std::map<uint64_t, uint64_t> collBCmap;
 
@@ -361,7 +362,7 @@ struct DQBarrelTrackSelection {
       auto track = tracksBarrel.rawIteratorAt(trackIdx);
       auto collId = track.collisionId();
       if (collTrackIds.find(collId) == collTrackIds.end()) { // this colision is not in the map
-        std::vector<uint64_t> idxs{trackIdx};
+        std::vector<int64_t> idxs{trackIdx};
         collTrackIds[collId] = idxs;
       } else { // collision is in the map, add track to the vector
         auto idxs = collTrackIds[collId];
@@ -396,9 +397,9 @@ struct DQBarrelTrackSelection {
         // loop over the track BC slice and check if this collision matches
         for (const auto& bc : ambTrack.bc()) {
           if (bc.globalBC() == mostProbableBc) { // found a match, add it to the association map
-            const uint64_t trackId = track.globalIndex();
+            const int64_t trackId = track.globalIndex();
             if (collTrackIds.find(collId) == collTrackIds.end()) {
-              std::vector<uint64_t> idxs{trackId};
+              std::vector<int64_t> idxs{trackId};
               collTrackIds[collId] = idxs;
             } else {
               auto idxs = collTrackIds[collId];
@@ -435,7 +436,7 @@ struct DQBarrelTrackSelection {
       for (const auto& pileupCollId : pileupCollIds) {
         for (const auto& assocTrack : assocTracks) {
           if (collTrackIds.find(pileupCollId) == collTrackIds.end()) { // this colision is not in the map
-            std::vector<uint64_t> idxs{assocTrack};
+            std::vector<int64_t> idxs{assocTrack};
             collTrackIds[pileupCollId] = idxs;
           } else {
             auto idxs = collTrackIds[pileupCollId];
@@ -545,11 +546,22 @@ struct DQMuonsSelection {
   OutputObj<THashList> fOutputList{"output"};
   HistogramManager* fHistMan;
 
+  HistogramRegistry registry{
+    "registry",
+    {{"Association/DeltaT", "; t_vtx - t_track; counts", {HistType::kTH1F, {{2000, -50., 50.}}}},
+     {"Association/AssociationTrackStatus", "; status; counts", {HistType::kTH1F, {{10, 0, 10}}}}}};
+
   Configurable<std::string> fConfigCuts{"cfgMuonsCuts", "muonQualityCuts", "Comma separated list of ADDITIONAL muon track cuts"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
   Configurable<float> fConfigMuonPtLow{"cfgMuonLowPt", 0.5f, "Low pt cut for muons"};
   Configurable<int> fConfigCollisionMuonAssoc{"cfgCollisionMuonAssoc", 0, "0 - standard association, 1 - time compatibility, 2 - ambiguous"};
   Configurable<float> fConfigAssocTimeMargin{"cfgAssocTimeMargin", 0.0f, "Extra time margin to be considered when doing collision - muon matching (in ns)"};
+  Configurable<float> fSigmaTrack{"cfgSigmaTrack", 1.0, "Number of sigma for track time window"};
+  Configurable<float> fSigmaVtx{"cfgSigmaVtx", 4.0, "Number of sigma for vertex time window"};
+  Configurable<float> fTimeMarginTrack{"cfgTimeMarginTrack", 0.0, "Number of sigma for track time window"};
+  Configurable<float> fTimeMarginVtx{"cfgTimeMarginVtx", 0.0, "Number of sigma for vertex time window"};
+  Configurable<float> fTimeBias{"cfgTimeBias", 0.0, "Number of sigma for track time window"};
+
   // TODO: configure the histogram classes to be filled by QA
 
   Filter muonFilter = o2::aod::fwdtrack::pt >= fConfigMuonPtLow;
@@ -557,7 +569,9 @@ struct DQMuonsSelection {
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<TString> fCutHistNames;
 
-  std::map<uint64_t, uint32_t> fSelectedMuons;
+  std::map<int64_t, uint32_t> fSelectedMuons;
+  std::map<int64_t, int> isMuonReassigned;
+  std::vector<std::pair<std::pair<double, double>, int>> vtxOrdBrack;
 
   void init(o2::framework::InitContext&)
   {
@@ -586,6 +600,15 @@ struct DQMuonsSelection {
       VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
+
+    auto hstatus2 = registry.get<TH1>(HIST("Association/AssociationTrackStatus"));
+    auto* x3 = hstatus2->GetXaxis();
+    x3->SetBinLabel(1, "Ambiguous tracks");
+    x3->SetBinLabel(2, "Orphan tracks");
+    x3->SetBinLabel(3, "Associated tracks");
+    x3->SetBinLabel(4, "Ambiguous after assoc.");
+    x3->SetBinLabel(5, "Orphan after assoc.");
+    x3->SetBinLabel(6, "Reassociated ");
   }
 
   template <uint32_t TMuonFillMap, typename TMuons>
@@ -617,6 +640,21 @@ struct DQMuonsSelection {
         fSelectedMuons[muon.globalIndex()] = filterMap;
       }
     } // end loop over muons
+  }
+
+  void runCollisionMap(Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
+  {
+    // association of time brackets to each collision
+    for (auto& collision : collisions) {
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      double t0 = bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS - collision.collisionTime();
+      double err = collision.collisionTimeRes() * fSigmaVtx + fTimeMarginVtx;
+      std::pair<double, double> timeBracket = {t0 - err, t0 + err};
+      std::pair<std::pair<double, double>, int> timeNID = {timeBracket, collision.globalIndex()};
+      vtxOrdBrack.emplace_back(timeNID);
+    }
+    // sorting collision according to time
+    std::sort(vtxOrdBrack.begin(), vtxOrdBrack.end(), [](const std::pair<std::pair<double, double>, int>& a, const std::pair<std::pair<double, double>, int>& b) { return a.first.first < b.first.first; });
   }
 
   template <typename TMuons>
@@ -701,7 +739,7 @@ struct DQMuonsSelection {
       return;
     }
 
-    std::map<uint64_t, std::vector<uint64_t>> collTrackIds; // map to keep all collision-track associations (ordered based on the key by construction)
+    std::map<int64_t, std::vector<int64_t>> collTrackIds;   // map to keep all collision-track associations (ordered based on the key by construction)
     std::map<uint64_t, uint64_t> collBCmap;                 // map to hold collision - BC associations
 
     // first lets associate all the non-orphan muons to their primary collision Id
@@ -712,7 +750,7 @@ struct DQMuonsSelection {
       }
       auto collId = muon.collisionId();
       if (collTrackIds.find(collId) == collTrackIds.end()) { // this colision is not in the map
-        std::vector<uint64_t> idxs{muonIdx};
+        std::vector<int64_t> idxs{muonIdx};
         collTrackIds[collId] = idxs;
       } else { // collision is in the map, add track to the associated vector
         auto idxs = collTrackIds[collId];
@@ -746,9 +784,9 @@ struct DQMuonsSelection {
         // loop over the BCs compatible with the muon
         for (const auto& bc : ambMuon.bc()) {
           if (bc.globalBC() == mostProbableBc) { // found a match
-            const uint64_t muonId = muon.globalIndex();
+            const int64_t muonId = muon.globalIndex();
             if (collTrackIds.find(collId) == collTrackIds.end()) { // this colision is not in the map, adding it
-              std::vector<uint64_t> idxs{muonId};
+              std::vector<int64_t> idxs{muonId};
               collTrackIds[collId] = idxs;
             } else {
               auto idxs = collTrackIds[collId];
@@ -765,7 +803,7 @@ struct DQMuonsSelection {
     // Check only collisions that are associated with filtered muons
     for (auto const& [collId, assocTracks] : collTrackIds) {
       const uint64_t currentBC = collBCmap[collId];
-      std::vector<uint64_t> pileupCollIds{};
+      std::vector<int64_t> pileupCollIds{};
       for (const auto& collision : collisions) { // NOTE: since collisions should be ordered in time, one could optimize here and not make the full loop (similar as with the tracks in the time based association)
         if (collision.bc().globalBC() == currentBC) {
           if (collision.globalIndex() != collId) { // add the collision only if its a different one
@@ -783,7 +821,7 @@ struct DQMuonsSelection {
       for (const auto& pileupCollId : pileupCollIds) {
         for (const auto& assocTrack : assocTracks) {
           if (collTrackIds.find(pileupCollId) == collTrackIds.end()) { // this colision is not in the map
-            std::vector<uint64_t> idxs{assocTrack};
+            std::vector<int64_t> idxs{assocTrack};
             collTrackIds[pileupCollId] = idxs;
           } else {
             auto idxs = collTrackIds[pileupCollId];
@@ -804,19 +842,130 @@ struct DQMuonsSelection {
     }
   }
 
+  template <typename TMuons>
+  void associateMuonsToCollisionsAllTracks(Collisions const& collisions,
+                                           TMuons const& muons,
+                                           BCsWithTimestamps const& bcs,
+                                           AmbiguousFwdTracks const& ambiTracksFwd)
+  {
+    // first processing tracks registered in the ambigous tracks table
+    for (auto& ambiTrackFwd : ambiTracksFwd) {
+      if (fSelectedMuons.find(ambiTrackFwd.fwdtrackId()) == fSelectedMuons.end()) {
+        continue;
+      }
+      auto muon = ambiTrackFwd.template fwdtrack_as<TMuons>();
+      if (muon.collisionId() < 0) {
+        registry.fill(HIST("Association/AssociationTrackStatus"), 1);
+      } else {
+        registry.fill(HIST("Association/AssociationTrackStatus"), 0);
+      }
+      std::vector<int> vtxList;
+      const auto& bcSlice = ambiTrackFwd.bc();
+      int64_t trackBC = -1;
+      if (bcSlice.size() != 0) {
+        auto first = bcSlice.begin();
+        trackBC = first.globalBC();
+      }
+      double t0 = muon.trackTime() + trackBC * o2::constants::lhc::LHCBunchSpacingNS + fTimeBias; // computing track time relative to first BC of the compatible BC slice
+      double err = muon.trackTimeRes() * fSigmaTrack + fTimeMarginTrack;
+      double tmin = t0 - err;
+      double tmax = t0 + err;
+      double vtxminOK = 0;
+      double vtxmaxOK = 0;
+      for (auto& vtxBracket : vtxOrdBrack) {
+        double vtxmin = vtxBracket.first.first;
+        double vtxmax = vtxBracket.first.second;
+        if (tmax < vtxmin) {
+          break; // all following collisions will be later and not compatible
+        } else if (tmin > vtxmax) {
+          continue; // following vertex with longer span might still match this track
+        } else {
+          vtxList.push_back(vtxBracket.second);
+          vtxminOK = vtxmin;
+          vtxmaxOK = vtxmax;
+        }
+      }
+      isMuonReassigned[muon.globalIndex()] = -1;
+      if (vtxList.size() > 1) {
+        registry.fill(HIST("Association/AssociationTrackStatus"), 3); // track is still ambiguous
+      } else if (vtxList.size() == 0) {
+        registry.fill(HIST("Association/AssociationTrackStatus"), 4); // track is now orphan
+      } else {
+        isMuonReassigned[muon.globalIndex()] = vtxList.front();                             // track is non-ambiguously associated
+        muonAssoc(vtxList.front(), muon.globalIndex(), fSelectedMuons[muon.globalIndex()]); // writes in the table (collId, fwdtrackId, filterMap)
+        registry.fill(HIST("Association/AssociationTrackStatus"), 5);
+        registry.fill(HIST("Association/DeltaT"), (vtxminOK + vtxmaxOK) / 2 - t0);
+      }
+    }
+    auto trackBegin = fSelectedMuons.begin();
+    // now processing all other tracks (which were not registered in the ambiguous table)
+    for (auto trackFiltered = trackBegin; trackFiltered != fSelectedMuons.end(); trackFiltered++) {
+      auto muon = muons.rawIteratorAt(trackFiltered->first);
+      if (!(muon.has_collision())) {
+        continue;
+      }
+      if (isMuonReassigned.find(muon.globalIndex()) != isMuonReassigned.end()) {
+        continue;
+      }
+      registry.fill(HIST("Association/AssociationTrackStatus"), 2);
+      std::vector<int> vtxList;
+      auto collision = collisions.rawIteratorAt(muon.collisionId() - collisions.offset());
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      double t0 = muon.trackTime() + bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS - collision.collisionTime() + fTimeBias; // computing track time relative to associated collisino time
+      double err = muon.trackTimeRes() * fSigmaTrack + fTimeMarginTrack;
+      double tmin = t0 - err;
+      double tmax = t0 + err;
+      double vtxminOK = 0;
+      double vtxmaxOK = 0;
+      for (auto& vtxBracket : vtxOrdBrack) {
+        double vtxmin = vtxBracket.first.first;
+        double vtxmax = vtxBracket.first.second;
+        if (tmax < vtxmin) {
+          break; // all following collisions will be later and not compatible
+        } else if (tmin > vtxmax) {
+          continue; // following vertex with longer span might still match this track
+        } else {
+          vtxList.push_back(vtxBracket.second);
+          vtxminOK = vtxmin;
+          vtxmaxOK = vtxmax;
+        }
+      }
+      isMuonReassigned[muon.globalIndex()] = -1;
+      if (vtxList.size() > 1) {
+        registry.fill(HIST("Association/AssociationTrackStatus"), 3); // track is still ambiguous
+        for (auto& vtx : vtxList) {
+          muonAssoc(vtx, muon.globalIndex(), fSelectedMuons[muon.globalIndex()]); // writes in the table (collId, fwdtrackId, filterMap)
+        }
+      } else if (vtxList.size() == 0) {
+        registry.fill(HIST("Association/AssociationTrackStatus"), 4); // track is now orphan
+      } else {
+        isMuonReassigned[muon.globalIndex()] = vtxList.front();                             // track is non-ambiguously associated
+        muonAssoc(vtxList.front(), muon.globalIndex(), fSelectedMuons[muon.globalIndex()]); // writes in the table (collId, fwdtrackId, filterMap)
+        registry.fill(HIST("Association/AssociationTrackStatus"), 5);
+        registry.fill(HIST("Association/DeltaT"), (vtxminOK + vtxmaxOK) / 2 - t0);
+      }
+    }
+  }
+
   void processSelection(Collisions const& collisions,
-                        aod::BCs const& bcs,
+                        BCsWithTimestamps const& bcstimestamp,
+                        BCs const& bcs,
                         MyMuons const& muons,
                         soa::Filtered<MyMuons> const& filteredMuons,
                         AmbiguousFwdTracks const& ambFwdTracks)
   {
     runMuonSelection<gkMuonFillMap>(filteredMuons);
+    runCollisionMap(collisions, bcstimestamp);
     if (fConfigCollisionMuonAssoc.value == 0) {
       associateMuonsToCollisionsStandard(collisions, muons);
     } else if (fConfigCollisionMuonAssoc.value == 1) {
       associateMuonsToCollisionsTime(collisions, muons, bcs);
-    } else {
+    } else if (fConfigCollisionMuonAssoc.value == 2) {
       associateMuonsToCollisionsAmbigous(collisions, muons, bcs, ambFwdTracks);
+    } else {
+      associateMuonsToCollisionsAllTracks(collisions, muons, bcstimestamp, ambFwdTracks);
+      isMuonReassigned.clear();
+      vtxOrdBrack.clear();
     }
   }
   void processDummy(MyMuons&)

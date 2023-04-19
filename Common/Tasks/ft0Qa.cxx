@@ -8,15 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// This code calculates output histograms for centrality calibration
-// as well as vertex-Z dependencies of raw variables (either for calibration
-// of vtx-Z dependencies or for the calibration of those).
-//
-// This task is not strictly necessary in a typical analysis workflow,
-// except for centrality calibration! The necessary task is the multiplicity
-// tables.
 
+#include <bitset>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -25,95 +18,259 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "TH1F.h"
 #include "TH2F.h"
+#include "DataFormatsFT0/Digit.h"
+
 using namespace o2;
 using namespace o2::framework;
 
-struct FT0Qa {
-  OutputObj<TH1F> hT0A{TH1F("hT0A", "T0A; ns", 200, -2, 2)};
-  OutputObj<TH1F> hT0C{TH1F("hT0C", "T0C; ns", 200, -2, 2)};
-  OutputObj<TH1F> hT0AC{TH1F("hT0AC", "(T0C+T0A)/2; ns", 200, -2, 2)};
-  OutputObj<TH1F> hT0res{TH1F("hT0res", "T0 resolution; ns", 200, -0.5, 0.5)};
-  OutputObj<TH1F> hT0Vertex{TH1F("hT0vertex", "T0 vertex; cm", 200, -30, 30.)};
-  OutputObj<TH1F> hPV{TH1F("hPV", "Primary vertex; cm", 200, -30, 30.)};
-  OutputObj<TH1F> hT0VertexDiff{TH1F("hT0vertexDiff", "T0 vertex -  PV; cm", 200, -30, 30.)};
-  OutputObj<TH2F> hVertex_T0_PV{TH2F(" hVertex_T0_PV", "T0 vertex vs Primary Vertex; T0 vertex, cm; PV, cm", 200, -30, 30., 200, -30, 30.)};
-  OutputObj<TH2F> hResMult{TH2F("hResMult", "T0 resolution vs event multiplicity", 100, 0., 100, 100, -0.5, 0.5)};
-  OutputObj<TH2F> hResColMult{TH2F("hResCol", "Col. time resolution vs event multiplicity", 100, 0., 100, 100, -0.5, 0.5)};
-  OutputObj<TH1F> hColTime{TH1F("hColTime", "ColTime, ns; Coiilisions, ns", 500, -5, 5.)};
-  OutputObj<TH2F> hT0V0mult{TH2F("hT0V0mult", "T0A vs V0 multiplicity;V0Mult, #ADC channels;T0Mmult, #ADC channels", 200, 0., 500., 300, 0., 1500.)};
-  OutputObj<TH2F> hT0V0time{TH2F("hT0V0time", "T0A vs V0 time ;V0time;T0A", 200, -2, 2., 200, -2, 2)};
-  OutputObj<TH1F> hNcontrib{TH1F("hContrib", "Ncontributers;#contributors", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribAC{TH1F("hContribAC", "Ncontributers with T0AC;#contributors", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribA{TH1F("hContribA", "Ncontributers with T0A;#contributors", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribC{TH1F("hContribC", "Ncontributers with T0C;#contributors", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hNcontribV0{TH1F("hContribV0", "Ncontributers with V0A;#contributors", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hAmpV0{TH1F("hAmpV0", "amplitude V0A;#ADC channels", 500, 0, 3000)};
-  OutputObj<TH1F> hAmpT0{TH1F("hAmpT0", "amplitude T0A;#ADC channels", 500, 0, 500)};
+struct ft0QaTask {
 
   // Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
+  Configurable<int> selection{"selection", 0, "trigger: 0 - no sel, 8 - sel8"};
+  Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected>::iterator const& col, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  void init(InitContext&)
   {
-    float sumAmpFT0 = 0;
-    float sumAmpFV0 = 0;
-    int innerFV0 = 24;
-    float fv0Time = -5000;
-    uint16_t nContrib = col.numContrib();
-    hNcontrib->Fill(nContrib);
-    float colTime = col.collisionTime();
-    hColTime->Fill(float(colTime));
-    if (col.has_foundFV0()) {
-      auto fv0 = col.foundFV0();
-      fv0Time = fv0.time();
-      hNcontribV0->Fill(nContrib);
-      for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
-        hAmpV0->Fill(fv0.amplitude()[ich]);
-        if (int(fv0.channel()[ich]) > innerFV0)
-          continue;
-        sumAmpFV0 += fv0.amplitude()[ich];
-      }
-    }
-    if (col.has_foundFT0()) {
-      auto ft0 = col.foundFT0();
-      if (col.t0ACorrectedValid()) {
-        hT0A->Fill(col.t0ACorrected());
-        hNcontribA->Fill(nContrib);
-        if (col.has_foundFV0()) {
-          hT0V0time->Fill(fv0Time, ft0.timeA());
-        }
-        for (auto amplitude : ft0.amplitudeA()) {
-          sumAmpFT0 += amplitude;
-          hAmpT0->Fill(amplitude);
-        }
-      }
-      if (col.has_foundFV0()) {
-        if (sumAmpFV0 > 0 && sumAmpFT0 > 0) {
-          hT0V0mult->Fill(sumAmpFV0, sumAmpFT0);
-          LOG(debug) << "V0 amp  " << sumAmpFV0 << " T0 amp " << sumAmpFT0;
-        }
-      }
-      if (col.t0CCorrectedValid()) {
-        hT0C->Fill(col.t0CCorrected());
-        hNcontribC->Fill(nContrib);
-      }
-      if (col.t0CCorrectedValid() && col.t0ACorrectedValid()) {
-        LOGF(debug, "multFV0A=%f;  multFT0A=%f; PV=%f; T0vertex=%f; T0A=%f; T0C=%f; T0AC=%f; ColTime=%f", col.multFV0A(), col.multFT0A(), col.posZ(), ft0.posZ(), col.t0ACorrected(), col.t0CCorrected(), col.t0AC(), colTime);
-        hT0AC->Fill(col.t0AC());
-        hT0Vertex->Fill(ft0.posZ());
-        hVertex_T0_PV->Fill(ft0.posZ(), col.posZ());
-        hPV->Fill(col.posZ());
-        hT0res->Fill(col.t0resolution());
-        hT0VertexDiff->Fill(ft0.posZ() - col.posZ());
-        hResMult->Fill(nContrib, (col.t0ACorrected() - col.t0CCorrected()) / 2.);
-        hResColMult->Fill(nContrib, colTime);
-        hNcontribAC->Fill(nContrib);
-      }
-    }
-  }
-};
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+    const AxisSpec axisTime{500, -5., 5., "collision time (ns)"};
+    const AxisSpec axisColTimeRes{isLowFlux ? 500 : 2000, -0.5, 0.5, "(T0A - T0C)/2 (ns)"};
+    const AxisSpec axisVertex{300, -30., 30.};
+
+    const AxisSpec axisAmpT0A{isLowFlux ? 500 : 2000, 0., isLowFlux ? 500. : 2000., "T0A amplitude (# ADC channels)"};
+    const AxisSpec axisAmpT0C{isLowFlux ? 500 : 2000, 0., isLowFlux ? 500. : 2000., "T0C amplitude (# ADC channels)"};
+
+    const AxisSpec axisMultT0A{isLowFlux ? 10000 : 200000, 0., isLowFlux ? 10000. : 200000., "T0A multiplicity (# ADC channels)"};
+    const AxisSpec axisMultT0C{isLowFlux ? 2000 : 70000, 0., isLowFlux ? 2000. : 70000., "T0C multiplicity (# ADC channels)"};
+    const AxisSpec axisMultT0AC{isLowFlux ? 12000 : 27000, 0., isLowFlux ? 12000. : 270000., "T0AC multiplicity (# ADC channels)"};
+    const AxisSpec axisMultV0A{isLowFlux ? 40000 : 200000, 0., isLowFlux ? 40000. : 200000., "V0A multiplicity (# ADC channels)"};
+
+    const AxisSpec axisNcontrib{isLowFlux ? 150 : 4500, 0., isLowFlux ? 150. : 4500., "# contributors"};
+
+    // FT0 time
+    histos.add("hT0A", "T0A;T0A time (ns);counts", kTH1F, {axisTime});
+    histos.add("hT0C", "T0C;T0C time (ns);counts", kTH1F, {axisTime});
+    histos.add("hT0AC", "T0AC;T0AC time (ns);counts", kTH1F, {axisTime});
+    histos.add("hT0res", "FT0 resolution", kTH1F, {axisColTimeRes});
+    histos.add("hColTime", "", kTH1F, {axisTime});
+
+    // FT0 vertex
+    histos.add("hT0vertex", "FT0 vertex;FT0 vertex (cm);counts", kTH1F, {axisVertex});
+    histos.add("hPV", "PV;primary vertex (cm);counts", kTH1F, {axisVertex});
+    histos.add("hT0vertexDiff", "FT0V - PV;FT0 vertex -  PV (cm);counts", kTH1F, {axisVertex});
+    histos.add("hVertex_T0_PV", "PV vs. FT0V;FT0 vertex (cm);primary vertex (cm)", kTH2F, {axisVertex, axisVertex});
+    histos.add("hVertex_T0_PV_nC20", "PV vs. FT0V;FT0 vertex (cm);primary vertex (cm)", kTH2F, {axisVertex, axisVertex});
+    histos.add("hT0vertexDiff_nC20", "FT0V - PV;FT0 vertex -  PV (cm);counts", kTH1F, {axisVertex});
+    histos.add("hVertex_T0_PV_TVX", "PV vs. FT0V;FT0 vertex (cm);primary vertex (cm)", kTH2F, {axisVertex, axisVertex});
+    histos.add("hT0AC_T0Vertex_TVX", "time vs. FT0V;FT0 vertex (cm);T0AC time (ns)", kTH2F, {axisVertex, axisTime});
+
+    histos.add("hPV_nContrib", "PV vs. Ncontributers;primary vertex (cm);(# contrubutors)", kTH2F, {axisVertex, axisNcontrib});
+
+    // FT0 amplitude and multiplicity
+    histos.add("hAmpT0A", "amplitude T0A;#ADC channels;counts", kTH1F, {axisAmpT0A});
+    histos.add("hAmpT0C", "amplitude T0C;#ADC channels;counts", kTH1F, {axisAmpT0C});
+
+    histos.add("hMultT0A", ";(# ADC channels);counts", kTH1F, {axisMultT0A});
+    histos.add("hMultT0AOrA", "OrA trig;(# ADC channels);counts", kTH1F, {axisMultT0A});
+    histos.add("hMultT0ATVX", "TVX trig;(# ADC channels);counts", kTH1F, {axisMultT0A});
+    histos.add("hMultT0AOrAC", "OrA && OrC trig;(# ADC channels);counts", kTH1F, {axisMultT0A});
+    histos.add("hMultT0ACent", "Central trig;(# ADC channels);counts", kTH1F, {axisMultT0A});
+    histos.add("hMultT0ASCent", "SemiCentral trig;(# ADC channels);counts", kTH1F, {axisMultT0A});
+
+    histos.add("hMultT0C", ";(# ADC channels);counts", kTH1F, {axisMultT0C});
+    histos.add("hMultT0COrC", "OrC trig;(# ADC channels);counts", kTH1F, {axisMultT0C});
+    histos.add("hMultT0CTVX", "TVX trig;(# ADC channels);counts", kTH1F, {axisMultT0C});
+    histos.add("hMultT0COrAC", "OrA && OrC trig;(# ADC channels);counts", kTH1F, {axisMultT0C});
+    histos.add("hMultT0CCent", "Central trig;(# ADC channels);counts", kTH1F, {axisMultT0C});
+    histos.add("hMultT0CSCent", "SemiCentral trig;(# ADC channels);counts", kTH1F, {axisMultT0C});
+
+    histos.add("hMultT0AC", ";(# ADC channels);counts", kTH1F, {axisMultT0AC});
+    histos.add("hMultT0ACTVX", "TVX trig;(# ADC channels);counts", kTH1F, {axisMultT0AC});
+    histos.add("hMultT0ACOrAC", "OrA && OrC trig;(# ADC channels);counts", kTH1F, {axisMultT0AC});
+    histos.add("hMultT0ACCent", "Central trig;(# ADC channels);counts", kTH1F, {axisMultT0AC});
+    histos.add("hMultT0ACSCent", "SemiCentral trig;(# ADC channels);counts", kTH1F, {axisMultT0AC});
+
+    // Number of contributers to PV for FT0 triggers
+    histos.add("hContrib", ";(# contrubutors);counts", kTH1F, {axisNcontrib});
+    histos.add("hContribOrAC", "Ncontributers with T0AC;(# contrubutors);counts", kTH1F, {axisNcontrib});
+    histos.add("hContribOrA", "Ncontributers with T0A;(# contrubutors);counts", kTH1F, {axisNcontrib});
+    histos.add("hContribOrC", "Ncontributers with T0C;(# contrubutors);counts", kTH1F, {axisNcontrib});
+    histos.add("hContribTVX", "Ncontributers with TVX;(# contrubutors);counts", kTH1F, {axisNcontrib});
+    histos.add("hContribCent", "Ncontributers with bitCen;(# contrubutors);counts", kTH1F, {axisNcontrib});
+    histos.add("hContribSemiCent", "Ncontributers with bitSCen;(# contrubutors);counts", kTH1F, {axisNcontrib});
+
+    // FV0
+    histos.add("hContribV0", "Ncontributers with V0A", kTH1F, {axisNcontrib});
+    histos.add("hT0V0time", "T0A vs V0 time;V0 time (ns);T0A time (ns)", kTH2F, {axisTime, axisTime});
+  }
+
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected>::iterator const& collision, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  {
+
+    if (selection == 8 && !collision.sel8()) {
+      return;
+    }
+
+    float multFT0A = 0.f;
+    float multFT0C = 0.f;
+    float multFT0M = 0.f;
+
+    bool ora = false;
+    bool orc = false;
+    bool tvx = false;
+    bool cent = false;
+    bool semicent = false;
+
+    // number of contributers used for vertex calculation
+    int nContrib = collision.numContrib();
+    histos.fill(HIST("hContrib"), nContrib);
+
+    histos.fill(HIST("hPV_nContrib"), collision.posZ(), nContrib);
+
+    //  collision time
+    float colTime = collision.collisionTime();
+    histos.fill(HIST("hColTime"), colTime);
+
+    // is FT0
+    if (collision.has_foundFT0()) {
+
+      auto ft0 = collision.foundFT0();
+
+      std::bitset<8> triggers = ft0.triggerMask();
+      ora = triggers[o2::ft0::Triggers::bitA];
+      orc = triggers[o2::ft0::Triggers::bitC];
+      tvx = triggers[o2::ft0::Triggers::bitVertex];
+      cent = triggers[o2::ft0::Triggers::bitCen];
+      semicent = triggers[o2::ft0::Triggers::bitSCen];
+
+      // FT0 multiplicity calculation
+      if (tvx) {
+        histos.fill(HIST("hContribTVX"), nContrib);
+      }
+      if (ora) {
+        histos.fill(HIST("hContribOrA"), nContrib);
+      }
+      if (orc) {
+        histos.fill(HIST("hContribOrC"), nContrib);
+      }
+      if (ora && orc) {
+        histos.fill(HIST("hContribOrAC"), nContrib);
+      }
+      if (cent) {
+        histos.fill(HIST("hContribCent"), nContrib);
+      }
+      if (semicent) {
+        histos.fill(HIST("hContribSemiCent"), nContrib);
+      }
+
+      for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++) {
+
+        float amplitudeA = ft0.amplitudeA()[i_a];
+        //   uint8_t channel = ft0.channelA()[i_a];
+
+        histos.fill(HIST("hAmpT0A"), amplitudeA);
+      }
+
+      for (std::size_t i_c = 0; i_c < ft0.amplitudeC().size(); i_c++) {
+        float amplitudeC = ft0.amplitudeC()[i_c];
+        //  uint8_t channel = ft0.channelC()[i_c];
+        histos.fill(HIST("hAmpT0C"), amplitudeC);
+      }
+
+      multFT0A = collision.multFT0A();
+      multFT0C = collision.multFT0C();
+      multFT0M = multFT0A + multFT0C;
+
+      // Multiplicities (no triggers)
+
+      histos.fill(HIST("hMultT0A"), multFT0A);
+      histos.fill(HIST("hMultT0C"), multFT0C);
+
+      histos.fill(HIST("hMultT0AC"), multFT0M);
+
+      // Multiplicities (incl. triggers)
+      if (tvx) {
+        histos.fill(HIST("hMultT0ATVX"), multFT0A);
+        histos.fill(HIST("hMultT0CTVX"), multFT0C);
+        histos.fill(HIST("hMultT0ACTVX"), multFT0M);
+      }
+
+      if (ora) {
+        histos.fill(HIST("hMultT0AOrA"), multFT0A);
+      }
+
+      if (orc) {
+        histos.fill(HIST("hMultT0COrC"), multFT0C);
+      }
+
+      if (ora && orc) {
+        histos.fill(HIST("hMultT0AOrAC"), multFT0A);
+        histos.fill(HIST("hMultT0COrAC"), multFT0C);
+        histos.fill(HIST("hMultT0ACOrAC"), multFT0M);
+      }
+
+      if (cent) {
+        histos.fill(HIST("hMultT0ACent"), multFT0A);
+        histos.fill(HIST("hMultT0CCent"), multFT0C);
+        histos.fill(HIST("hMultT0ACCent"), multFT0M);
+      }
+
+      if (semicent) {
+        histos.fill(HIST("hMultT0ASCent"), multFT0A);
+        histos.fill(HIST("hMultT0CSCent"), multFT0C);
+        histos.fill(HIST("hMultT0ACSCent"), multFT0M);
+      }
+
+      // vertex corrected FT0A and FT0C times
+      if (collision.t0ACorrectedValid()) {
+        histos.fill(HIST("hT0A"), collision.t0ACorrected());
+      }
+      if (collision.t0CCorrectedValid()) {
+        histos.fill(HIST("hT0C"), collision.t0CCorrected());
+      }
+
+      if (collision.t0CCorrectedValid() && collision.t0ACorrectedValid()) {
+        histos.fill(HIST("hT0AC"), collision.t0AC());
+        histos.fill(HIST("hT0vertex"), ft0.posZ());
+        histos.fill(HIST("hVertex_T0_PV"), ft0.posZ(), collision.posZ());
+        histos.fill(HIST("hPV"), collision.posZ());
+        histos.fill(HIST("hT0res"), collision.t0resolution());
+        histos.fill(HIST("hT0vertexDiff"), ft0.posZ() - collision.posZ());
+
+        if (nContrib > 20) {
+
+          histos.fill(HIST("hVertex_T0_PV_nC20"), ft0.posZ(), collision.posZ());
+          histos.fill(HIST("hT0vertexDiff_nC20"), ft0.posZ() - collision.posZ());
+        }
+
+        if (tvx) {
+          histos.fill(HIST("hVertex_T0_PV_TVX"), ft0.posZ(), collision.posZ());
+          histos.fill(HIST("hT0AC_T0Vertex_TVX"), ft0.posZ(), collision.t0AC());
+        }
+      }
+
+    } // end of if (collision.has_foundFT0())
+
+    // is FV0
+    if (collision.has_foundFV0()) {
+      auto fv0 = collision.foundFV0();
+
+      histos.fill(HIST("hContribV0"), nContrib);
+
+      if (collision.has_foundFT0()) {
+        auto ft0 = collision.foundFT0();
+        histos.fill(HIST("hT0V0time"), fv0.time(), ft0.timeA());
+      }
+    } // end of if (collision.has_foundFV0())
+
+  } // end of process()
+
+}; // end of struct
+
+WorkflowSpec
+  defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FT0Qa>(cfgc, TaskName{"ft0-qa"})};
+    adaptAnalysisTask<ft0QaTask>(cfgc, TaskName{"ft0-qa"})};
 }

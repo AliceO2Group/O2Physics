@@ -94,6 +94,8 @@ struct OnTheFlyTOFPID {
   Configurable<float> outerTOFTimeReso{"outerTOFTimeReso", 20, "barrel outer TOF time error (ps)"};
   Configurable<int> nStepsLIntegrator{"nStepsLIntegrator", 200, "number of steps in length integrator"};
   Configurable<bool> doQAplots{"doQAplots", true, "do basic velocity plot qa"};
+  Configurable<int> nBinsBeta{"nBinsBeta", 2200, "number of bins in beta"};
+  Configurable<int> nBinsP{"nBinsP", 80, "number of bins in momentum"};
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
@@ -108,8 +110,8 @@ struct OnTheFlyTOFPID {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
     if (doQAplots) {
-      const AxisSpec axisMomentum{static_cast<int>(80), 0.0f, +4.0f, "#it{p} (GeV/#it{c})"};
-      const AxisSpec axisVelocity{static_cast<int>(110), 0.0f, +1.1f, "Measured #beta"};
+      const AxisSpec axisMomentum{static_cast<int>(nBinsP), 0.0f, +4.0f, "#it{p} (GeV/#it{c})"};
+      const AxisSpec axisVelocity{static_cast<int>(nBinsBeta), 0.0f, +1.1f, "Measured #beta"};
       histos.add("h2dVelocityVsMomentumInner", "h2dVelocityVsMomentumInner", kTH2F, {axisMomentum, axisVelocity});
       histos.add("h2dVelocityVsMomentumOuter", "h2dVelocityVsMomentumOuter", kTH2F, {axisMomentum, axisVelocity});
     }
@@ -179,15 +181,20 @@ struct OnTheFlyTOFPID {
     o2::dataformats::VertexBase pvVtx({collision.posX(), collision.posY(), collision.posZ()},
                                       {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()});
 
-    auto mcCollision = collision.mcCollision();
     std::array<float, 6> mcPvCov = {0.};
-    o2::dataformats::VertexBase mcPvVtx({mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()}, mcPvCov);
+    o2::dataformats::VertexBase mcPvVtx({0.0f, 0.0f, 0.0f}, mcPvCov);
+    if (collision.has_mcCollision()) {
+      auto mcCollision = collision.mcCollision();
+      mcPvVtx.setX(mcCollision.posX());
+      mcPvVtx.setY(mcCollision.posY());
+      mcPvVtx.setZ(mcCollision.posZ());
+    } // else remains untreated for now
 
     for (const auto& track : tracks) {
       // first step: find precise arrival time (if any)
       // --- convert track into perfect track
       if (!track.has_mcParticle()) // should always be OK but check please
-        LOG(error) << "Oh no! No mcParticle label for this track! This shouldn't happen!";
+        continue;
 
       o2::track::TrackParCov o2track;
       auto mcParticle = track.mcParticle();
@@ -240,11 +247,13 @@ struct OnTheFlyTOFPID {
 
       if (doQAplots) {
         float momentum = recoTrack.getP();
-        float innerBeta = (trackLengthInnerTOF / (1e+3 * measuredTimeInnerTOF)) / o2::constants::physics::LightSpeedCm2NS;
-        float outerBeta = (trackLengthOuterTOF / (1e+3 * measuredTimeOuterTOF)) / o2::constants::physics::LightSpeedCm2NS;
-
-        histos.fill(HIST("h2dVelocityVsMomentumInner"), momentum, innerBeta);
-        histos.fill(HIST("h2dVelocityVsMomentumOuter"), momentum, outerBeta);
+        // unit conversion: length in cm, time in ps
+        float innerBeta = 1e+3 * (trackLengthInnerTOF / measuredTimeInnerTOF) / o2::constants::physics::LightSpeedCm2NS;
+        float outerBeta = 1e+3 * (trackLengthOuterTOF / measuredTimeOuterTOF) / o2::constants::physics::LightSpeedCm2NS;
+        if (trackLengthRecoInnerTOF > 0)
+          histos.fill(HIST("h2dVelocityVsMomentumInner"), momentum, innerBeta);
+        if (trackLengthRecoOuterTOF > 0)
+          histos.fill(HIST("h2dVelocityVsMomentumOuter"), momentum, outerBeta);
       }
 
       for (int ii = 0; ii < 5; ii++) {

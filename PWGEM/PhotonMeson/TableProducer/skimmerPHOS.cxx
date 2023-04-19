@@ -27,7 +27,7 @@ struct skimmerPHOS {
   Produces<aod::PHOSClusters> tablePHOS;
 
   // Configurable for filter/cuts
-  Configurable<float> minM20{"minM20", 0.1, "Minimum M20 cut"};
+  Configurable<float> minM02{"minM02", 0.1, "Minimum M02 cut"};
   Configurable<float> minE{"minE", 0.2, "Minimum energy cut in GeV"};
   Configurable<int> minNcell{"minNcell", 0, "Minimum Ncell cut"};
 
@@ -37,7 +37,7 @@ struct skimmerPHOS {
     auto hPHOSClusterFilter = registry.add<TH1>("hPHOSClusterFilter", "hPHOSClusterFilter", kTH1I, {{5, 0.5, 5.5}});
     hPHOSClusterFilter->GetXaxis()->SetBinLabel(1, "in");
     hPHOSClusterFilter->GetXaxis()->SetBinLabel(2, "energy cut");
-    hPHOSClusterFilter->GetXaxis()->SetBinLabel(3, "M20 cut");
+    hPHOSClusterFilter->GetXaxis()->SetBinLabel(3, "M02 cut");
     hPHOSClusterFilter->GetXaxis()->SetBinLabel(4, "Ncell cut");
     hPHOSClusterFilter->GetXaxis()->SetBinLabel(5, "out");
   }
@@ -51,7 +51,7 @@ struct skimmerPHOS {
         continue;
         registry.fill(HIST("hPHOSClusterFilter"), 2);
       }
-      if (cluster.m20() < minM20) {
+      if (cluster.m02() < minM02) {
         continue;
         registry.fill(HIST("hPHOSClusterFilter"), 3);
       }
