@@ -20,6 +20,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
+#include "TDatabasePDG.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "FemtoDreamParticleHisto.h"
@@ -116,6 +117,9 @@ struct femtoDreamPairTaskTrackTrack {
 
   void init(InitContext&)
   {
+    TDatabasePDG::Instance()->AddParticle("deuteron", "deuteron", 1.8756134, kTRUE, 0.0, 3, "Nucleus", 1000010020);
+    TDatabasePDG::Instance()->AddAntiParticle("anti-deuteron", -1000010020);
+
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins);
     if (!ConfIsSame) {
