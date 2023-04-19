@@ -26,10 +26,8 @@ struct STCollIdTask {
 
   void processTrackedCascades(aod::TrackedCascades const& trackedCascades, aod::Tracks const& tracks)
   {
-    for (const auto &trackedCascade : trackedCascades) {
-      LOGF(info, "registering casc %d with collision %d", trackedCascade.globalIndex(), trackedCascade.track().collisionId());
+    for (const auto &trackedCascade : trackedCascades)
       trackedCascadeColls(trackedCascade.track().collisionId());
-    }
   }
   PROCESS_SWITCH(STCollIdTask, processTrackedCascades, "process cascades from strangeness tracking", true);
 };

@@ -57,10 +57,7 @@ struct StrangenessTrackingQATask {
                               TrackedCascades const& trackedCascades, aod::Cascades const& cascades,
                               aod::V0s const& v0s, TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
-    // LOGF(info, "collision %g", collision.globalIndex());
-
     for (const auto& trackedCascade : trackedCascades) {
-      // LOGF(info, "trk casc %g of collision %g", trackedCascade.globalIndex(), trackedCascade.collisionId());
       const auto track = trackedCascade.track_as<TracksExt>();
       auto trackCovTrk = getTrackParCov(track);
       auto primaryVertex = getPrimaryVertex(collision);
@@ -81,44 +78,52 @@ struct StrangenessTrackingQATask {
       hDCAVsR->Fill(impactParameterTrk.getY(), QuadraticSum(track.x(), track.y()));
       hMassVsPt->Fill(trackedCascade.omegaMass(), track.pt());
 
-      int mcid{0};
+      LOGF(info, "ptrack (id: %d, pdg: %d) has mother %d", ptrack.mcParticleId(),
+        ptrack.mcParticle().pdgCode(), ptrack.mcParticle().has_mothers() ? ptrack.mcParticle().mothersIds()[0] : -1);
+      LOGF(info, "ntrack (id: %d, pdg: %d) has mother %d", ntrack.mcParticleId(),
+        ntrack.mcParticle().pdgCode(), ntrack.mcParticle().has_mothers() ? ntrack.mcParticle().mothersIds()[0] : -1);
+
       if (ptrack.mcParticle().has_mothers() && ntrack.mcParticle().has_mothers() &&
           ptrack.mcParticle().mothersIds()[0] == ntrack.mcParticle().mothersIds()[0]) {
         const auto v0part = ptrack.mcParticle().mothers_as<aod::McParticles>()[0];
+        LOG(info) << "v0 with PDG code: " << v0part.pdgCode();
         if (v0part.has_mothers() && bachelor.mcParticle().has_mothers() &&
             v0part.mothersIds()[0] == bachelor.mcParticle().mothersIds()[0]) {
-              mcid = v0part.mothers_as<aod::McParticles>()[0].globalIndex();
-              LOG(debug) << "cascade with PDG code: " << v0part.mothers_as<aod::McParticles>()[0].pdgCode();
+              LOG(info) << "cascade with PDG code: " << v0part.mothers_as<aod::McParticles>()[0].pdgCode();
         }
       }
     }
   }
   PROCESS_SWITCH(StrangenessTrackingQATask, processTrackedCascades, "process cascades from strangeness tracking", true);
 
-  void processCascades(aod::Collision const& collision, aod::TrackedCascades const& trackedCascades, aod::Cascades const& cascades, 
-                       aod::McTraCascLabels const& mctrackedcascadelabel, aod::V0Datas const& v0datas,
-                       aod::TraCascDatas const& trackedcascdata, TracksExt const& tracks, aod::McParticles const& mcParticles)
+  void processCascades(aod::Collision const& collision, aod::TrackedCascades const& trackedCascades, aod::Cascades const& cascades, aod::V0s const& v0s,
+                       soa::Join<aod::TraCascDatas, aod::McTraCascLabels> const& trackedcascdata, TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
     for (const auto &trackedCascadeData : trackedcascdata) {
       hBuilderMassVsPt->Fill(trackedCascadeData.mOmega(), trackedCascadeData.pt());
     }
 
-    // for (const auto& trackedCascade : trackedCascades) {
-    //   const auto& casc = trackedCascade.cascade();
-    //   const auto& v0 = casc.v0();
-    //   const auto& ptrack = v0.posTrack_as<TracksExt>();
-    //   const auto& ntrack = v0.negTrack_as<TracksExt>();
-    //   if (ptrack.mcParticle().has_mothers() && ntrack.mcParticle().has_mothers() &&
-    //       ptrack.mcParticle().mothersIds()[0] == ntrack.mcParticle().mothersIds()[0]) {
-    //     const auto v0part = ptrack.mcParticle().mothers_as<aod::McParticles>()[0];
-    //   for (const auto &trackedCascadeData : trackedcascdata) {
-    //     if (trackedCascadeData.cascadeId() == trackedCascade.cascadeId()) {
-    //       hMassVsMass->Fill(trackedCascade.omegaMass(), trackedCascadeData.mOmega());
-    //       break;
-    //       }
-    //     }
-    //   }
-    // }
+    for (const auto& trackedCascade : trackedCascades) {
+      const auto& casc = trackedCascade.cascade();
+      const auto& bachelor = casc.bachelor_as<TracksExt>();
+      const auto& v0 = casc.v0();
+      const auto& ptrack = v0.posTrack_as<TracksExt>();
+      const auto& ntrack = v0.negTrack_as<TracksExt>();
+      if (ptrack.mcParticle().has_mothers() && ntrack.mcParticle().has_mothers() &&
+          ptrack.mcParticle().mothersIds()[0] == ntrack.mcParticle().mothersIds()[0]) {
+        const auto v0part = ptrack.mcParticle().mothers_as<aod::McParticles>()[0];
+        if (v0part.has_mothers() && bachelor.mcParticle().has_mothers() &&
+            v0part.mothersIds()[0] == bachelor.mcParticle().mothersIds()[0]) {
+          int mcid = v0part.mothersIds()[0];
+          for (const auto &trackedCascadeData : trackedcascdata) {
+            if (trackedCascadeData.mcParticleId() == mcid) {
+              hMassVsMass->Fill(trackedCascade.omegaMass(), trackedCascadeData.mOmega());
+              break;
+            }
+          }
+        }
+      }
+    }
   }
   PROCESS_SWITCH(StrangenessTrackingQATask, processCascades, "process cascades from builder", true);
 
