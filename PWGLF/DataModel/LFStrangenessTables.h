@@ -537,6 +537,10 @@ DECLARE_SOA_TABLE(McTraCascLabels, "AOD", "MCTRACASCLABEL", //! Table joinable t
                   mctracasclabel::McParticleId);
 using McTraCascLabel = McTraCascLabels::iterator;
 
+DECLARE_SOA_TABLE(TrackedCascadeColls, "AOD", "TRACASCCOLL", //! Table joinable with TrackedCascades containing collision ids
+                  track::CollisionId);
+using TrackedCascadeColl = TrackedCascadeColls::iterator;
+
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_STRANGENESSTABLES_H_

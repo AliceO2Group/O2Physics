@@ -23,6 +23,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct StrangenessTrackingQATask {
+  using TrackedCascades = soa::Join<aod::TrackedCascades, aod::TrackedCascadeColls>;
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels>;
 
   Configurable<double> bz{"bz", 50., "magnetic field"};
@@ -42,7 +43,7 @@ struct StrangenessTrackingQATask {
 
   void init(InitContext const&)
   {
-    hDCA.setObject(new TH1F("h_dca", "DCA;DCA (cm)", 200, 0., 20.));
+    hDCA.setObject(new TH1F("h_dca", "DCA;DCA (cm)", 200, 0., 2.));
     hDCAxy.setObject(new TH1F("h_dcaxy", "DCA xy;DCA_{xy} (cm)", 200, -2., 2.));
     hDCAz.setObject(new TH1F("h_dcaz", "DCA z;DCA_{z} (cm)", 200, -2., 2.));
     hDCAVsPt.setObject(new TH2F("h_dcavspt", "DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", 200, -2., 2., 200, 0., 10.));
@@ -53,10 +54,13 @@ struct StrangenessTrackingQATask {
   }
 
   void processTrackedCascades(aod::Collision const& collision,
-                              aod::TrackedCascades const& trackedCascades, aod::Cascades const& cascades,
+                              TrackedCascades const& trackedCascades, aod::Cascades const& cascades,
                               aod::V0s const& v0s, TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
+    // LOGF(info, "collision %g", collision.globalIndex());
+
     for (const auto& trackedCascade : trackedCascades) {
+      // LOGF(info, "trk casc %g of collision %g", trackedCascade.globalIndex(), trackedCascade.collisionId());
       const auto track = trackedCascade.track_as<TracksExt>();
       auto trackCovTrk = getTrackParCov(track);
       auto primaryVertex = getPrimaryVertex(collision);
@@ -88,11 +92,11 @@ struct StrangenessTrackingQATask {
         }
       }
     }
-
   }
   PROCESS_SWITCH(StrangenessTrackingQATask, processTrackedCascades, "process cascades from strangeness tracking", true);
 
-  void processCascades(aod::Collision const& collision, aod::TrackedCascades const& trackedCascades, aod::Cascades const& cascades,
+  void processCascades(aod::Collision const& collision, aod::TrackedCascades const& trackedCascades, aod::Cascades const& cascades, 
+                       aod::McTraCascLabels const& mctrackedcascadelabel, aod::V0Datas const& v0datas,
                        aod::TraCascDatas const& trackedcascdata, TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
     for (const auto &trackedCascadeData : trackedcascdata) {
@@ -104,16 +108,16 @@ struct StrangenessTrackingQATask {
     //   const auto& v0 = casc.v0();
     //   const auto& ptrack = v0.posTrack_as<TracksExt>();
     //   const auto& ntrack = v0.negTrack_as<TracksExt>();
-      // if (ptrack.mcParticle().has_mothers() && ntrack.mcParticle().has_mothers() &&
-      //     ptrack.mcParticle().mothersIds()[0] == ntrack.mcParticle().mothersIds()[0]) {
-      //   const auto v0part = ptrack.mcParticle().mothers_as<aod::McParticles>()[0];
-      // for (const auto &trackedCascadeData : trackedcascdata) {
-      //   if (trackedCascadeData.cascadeId() == trackedCascade.cascadeId()) {
-      //     hMassVsMass->Fill(trackedCascade.omegaMass(), trackedCascadeData.mOmega());
-      //     break;
-      //     }
-      //   }
-      // }
+    //   if (ptrack.mcParticle().has_mothers() && ntrack.mcParticle().has_mothers() &&
+    //       ptrack.mcParticle().mothersIds()[0] == ntrack.mcParticle().mothersIds()[0]) {
+    //     const auto v0part = ptrack.mcParticle().mothers_as<aod::McParticles>()[0];
+    //   for (const auto &trackedCascadeData : trackedcascdata) {
+    //     if (trackedCascadeData.cascadeId() == trackedCascade.cascadeId()) {
+    //       hMassVsMass->Fill(trackedCascade.omegaMass(), trackedCascadeData.mOmega());
+    //       break;
+    //       }
+    //     }
+    //   }
     // }
   }
   PROCESS_SWITCH(StrangenessTrackingQATask, processCascades, "process cascades from builder", true);
