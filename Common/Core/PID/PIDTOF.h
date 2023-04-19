@@ -20,6 +20,8 @@
 #define COMMON_CORE_PID_PIDTOF_H_
 
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 // ROOT includes
 #include "Rtypes.h"
