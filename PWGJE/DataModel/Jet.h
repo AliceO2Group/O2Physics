@@ -114,20 +114,20 @@
                     constituentssub::P<constituentssub::Pt, constituentssub::Eta>);
 
 // combine definition of tables for jets, constituents, and substructure
-#define JET_TABLES_DEF(_collision_name_, _jet_type_, _const_type_, _hfcand_type_) \
-  JET_TABLE_DEF(_collision_name_, _jet_type_##Jet, _jet_type_##jet, #_jet_type_ "JET");       \
-  using _jet_type_##Jet = _jet_type_##Jet##s::iterator; \
-  using Matched##_jet_type_##Jet = Matched##_jet_type_##Jet##s::iterator; \
+#define JET_TABLES_DEF(_collision_name_, _jet_type_, _const_type_, _hfcand_type_)                               \
+  JET_TABLE_DEF(_collision_name_, _jet_type_##Jet, _jet_type_##jet, #_jet_type_ "JET");                         \
+  using _jet_type_##Jet = _jet_type_##Jet##s::iterator;                                                         \
+  using Matched##_jet_type_##Jet = Matched##_jet_type_##Jet##s::iterator;                                       \
   JET_CONSTITUENTS_ARRAY_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, #_jet_type_, _const_type_, _hfcand_type_); \
-  using _jet_type_##Jet##Constituent = _jet_type_##Jet##Constituents::iterator; \
-  JET_CONSTITUENTS_SUB_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, #_jet_type_); \
+  using _jet_type_##Jet##Constituent = _jet_type_##Jet##Constituents::iterator;                                 \
+  JET_CONSTITUENTS_SUB_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, #_jet_type_);                                \
   using _jet_type_##Jet##ConstituentSub = _jet_type_##Jet##ConstituentsSub::iterator;
 
 // generate tables for data, generator- and detector-level jets
-#define JET_TABLES_LEVELS_DEF(_jet_type_, _hfcand_type_) \
-  JET_TABLES_DEF(Collision, _jet_type_, Track, _hfcand_type_); \
-  JET_TABLES_DEF(Collision, _jet_type_##MCD, Track, _hfcand_type_); \
-  JET_TABLES_DEF(McCollision, _jet_type_##MCP, McParticle, McParticles); \
+#define JET_TABLES_LEVELS_DEF(_jet_type_, _hfcand_type_)                                                                                                                                       \
+  JET_TABLES_DEF(Collision, _jet_type_, Track, _hfcand_type_);                                                                                                                                 \
+  JET_TABLES_DEF(Collision, _jet_type_##MCD, Track, _hfcand_type_);                                                                                                                            \
+  JET_TABLES_DEF(McCollision, _jet_type_##MCP, McParticle, McParticles);                                                                                                                         \
   DECLARE_SOA_TABLE(NewMatched##_jet_type_##MCPJets, "AOD", #_jet_type_ "JETMCHP", _jet_type_##MCDjetmatchingGeo::_jet_type_##MCDJetId, _jet_type_##MCDjetmatchingCand::_jet_type_##MCDJetId); \
   DECLARE_SOA_TABLE(NewMatched##_jet_type_##MCDJets, "AOD", #_jet_type_ "JETMCHD", _jet_type_##MCPjetmatchingGeo::_jet_type_##MCPJetId, _jet_type_##MCPjetmatchingCand::_jet_type_##MCPJetId);
 
