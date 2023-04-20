@@ -58,6 +58,8 @@ DECLARE_SOA_COLUMN(CPA, cpa, float);
 DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 // Xic selection variable
 DECLARE_SOA_COLUMN(XicM, xicM, float);
 DECLARE_SOA_COLUMN(XicCt, xicCt, float);
@@ -132,7 +134,8 @@ DECLARE_SOA_TABLE(HfCandXiccFull, "AOD", "HFCANDXiccFull",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::MCflag);
+                  full::MCflag,
+                  full::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCandXiccFullEvents, "AOD", "HFCANDXiccFullE",
                   collision::BCId,
@@ -149,7 +152,8 @@ DECLARE_SOA_TABLE(HfCandXiccFullParticles, "AOD", "HFCANDXiccFullP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::MCflag);
+                  full::MCflag,
+                  full::OriginMcGen);
 
 } // namespace o2::aod
 
@@ -246,7 +250,8 @@ struct HfTreeCreatorXiccToPKPiPi {
             candidate.eta(),
             candidate.phi(),
             FunctionY,
-            candidate.flagMcMatchRec());
+            candidate.flagMcMatchRec(),
+            candidate.originMcRec());
         }
       };
 
@@ -263,7 +268,8 @@ struct HfTreeCreatorXiccToPKPiPi {
           particle.eta(),
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
-          particle.flagMcMatchGen());
+          particle.flagMcMatchGen(),
+          particle.originMcGen());
       }
     }
   }

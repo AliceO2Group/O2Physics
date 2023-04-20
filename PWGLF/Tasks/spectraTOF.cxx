@@ -426,6 +426,7 @@ struct tofSpectra {
     }
 
     // Print output histograms statistics
+    LOG(info) << "Size of the histograms in spectraTOF";
     histos.print();
   }
 

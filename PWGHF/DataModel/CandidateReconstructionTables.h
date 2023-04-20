@@ -1074,7 +1074,6 @@ enum DecayType { XicplusToXiPiPi = 0,
 
 } // namespace hf_cand_casc_lf_3prong
 
-// specific X candidate properties
 namespace hf_cand_x
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand2Prong, "_0"); // Jpsi index
@@ -1085,10 +1084,10 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               // particle 
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle origin, generator level
 DECLARE_SOA_COLUMN(FlagMcDecayChanRec, flagMcDecayChanRec, int8_t); // resonant decay channel flag, reconstruction level
 DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); // resonant decay channel flag, generator level
+
 // mapping of decay types
 enum DecayType { XToJpsiToEEPiPi = 0,
                  XToJpsiToMuMuPiPi }; // move this to a dedicated cascade namespace in the future?
-} // namespace hf_cand_x
 
 // X → Jpsi π+ π-
 // TODO: add pdg code for X (9920443), temporarily hardcode mass here:
@@ -1155,7 +1154,7 @@ auto dRX(const T& candidate, int numPi)
   double deltaEta = etaJpsi - etaPi;
   double deltaPhi = RecoDecay::constrainAngle(phiJpsi - phiPi, -o2::constants::math::PI);
 
-  return std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
+  return RecoDecay::sqrtSumOfSquares(deltaEta, deltaPhi);
 }
 
 /// Difference in pT between the two pions
@@ -1166,6 +1165,8 @@ auto balancePtPionsX(const T& candidate)
   double ptPi2 = RecoDecay::pt(candidate.pxProng2(), candidate.pyProng2());
   return std::abs(ptPi1 - ptPi2) / (ptPi1 + ptPi2);
 }
+} // namespace hf_cand_x
+
 // declare dedicated X candidate table
 DECLARE_SOA_TABLE(HfCandXBase, "AOD", "HFCANDXBASE",
                   // general columns

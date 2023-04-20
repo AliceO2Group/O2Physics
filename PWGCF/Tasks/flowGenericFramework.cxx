@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <CCDB/BasicCCDBManager.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/HistogramRegistry.h"
 
@@ -21,6 +21,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 
+#include "GFWPowerArray.h"
 #include "GFW.h"
 #include "GFWCumulant.h"
 #include "FlowContainer.h"
@@ -56,7 +57,7 @@ struct GenericFramework {
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
   struct Config {
@@ -72,6 +73,7 @@ struct GenericFramework {
   GFW* fGFW = new GFW();
   std::vector<GFW::CorrConfig> corrconfigs;
   TRandom3* fRndm = new TRandom3(0);
+  TAxis* fPtAxis;
 
   void init(InitContext const&)
   {
@@ -92,6 +94,11 @@ struct GenericFramework {
     registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
     registry.add("hVtxZ", "", {HistType::kTH1D, {axisVertex}});
 
+    o2::framework::AxisSpec axis = axisPt;
+    int nPtBins = axis.binEdges.size() - 1;
+    double* PtBins = &(axis.binEdges)[0];
+    fPtAxis = new TAxis(nPtBins, PtBins);
+
     TObjArray* oba = new TObjArray();
     // Reference flow
     oba->Add(new TNamed("ChGap22", "ChGap22"));   // for gap (|eta|>0.4) case
@@ -103,15 +110,19 @@ struct GenericFramework {
     oba->Add(new TNamed("ChSC244", "ChSC244"));   // gap case
     oba->Add(new TNamed("ChSC234", "ChSC234"));   // gap case
     fFC->SetName("FlowContainer");
+    fFC->SetXAxis(fPtAxis);
     fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
     delete oba;
 
-    int pows[] = {3, 0, 2, 2, 3, 3, 3};
-    int powsFull[] = {5, 0, 4, 4, 3, 3, 3};
-    fGFW->AddRegion("refN", 7, pows, -0.8, -0.4, 1, 1);
-    fGFW->AddRegion("refP", 7, pows, 0.4, 0.8, 1, 1);
-    fGFW->AddRegion("full", 7, powsFull, -0.8, 0.8, 1, 2);
+    fGFW->AddRegion("refN", -0.8, -0.4, 1, 1);
+    fGFW->AddRegion("refP", 0.4, 0.8, 1, 1);
+    fGFW->AddRegion("full", -0.8, 0.8, 1, 2);
+    CreateCorrConfigs();
+    fGFW->CreateRegions();
+  }
 
+  void CreateCorrConfigs()
+  {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
@@ -125,14 +136,22 @@ struct GenericFramework {
   void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
     double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).Re();
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
     if (dnx == 0)
       return;
     if (!corrconf.pTDif) {
-      val = fGFW->Calculate(corrconf, 0, kFALSE).Re() / dnx;
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (TMath::Abs(val) < 1)
-        fFC->FillProfile(corrconf.Head.Data(), cent, val, 1, rndm);
+        fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
       return;
+    }
+    for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
+      dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
+      if (dnx == 0)
+        continue;
+      val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1)
+        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
     }
     return;
   }
@@ -182,9 +201,9 @@ struct GenericFramework {
 
       fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 3);
     }
-    for (unsigned long int l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
+    for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       FillFC(corrconfigs.at(l_ind), centrality, l_Random);
-    };
+    }
   }
 };
 

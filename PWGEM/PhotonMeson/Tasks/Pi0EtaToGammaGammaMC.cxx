@@ -83,43 +83,6 @@ struct Pi0EtaToGammaGammaMC {
     }
   }
 
-  //  template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
-  //  int FindCommonMotherFrom2Prongs(TMCParticle1 const& p1, TMCParticle2 const& p2, const int expected_pdg1, const int expected_pdg2, const int expected_mother_pdg, TMCParticles const& mcparticles)
-  //  {
-  //    if (p1.globalIndex() == p2.globalIndex())
-  //      return -1; // mc particle p1 and p2 is identical. reject.
-  //
-  //    if (p1.pdgCode() != expected_pdg1)
-  //      return -1;
-  //    if (p2.pdgCode() != expected_pdg2)
-  //      return -1;
-  //
-  //    if (!p1.has_mothers())
-  //      return -1;
-  //    if (!p2.has_mothers())
-  //      return -1;
-  //
-  //    // LOGF(info,"original motherid1 = %d , motherid2 = %d", p1.mothersIds()[0], p2.mothersIds()[0]);
-  //
-  //    int motherid1 = p1.mothersIds()[0];
-  //    auto mother1 = mcparticles.iteratorAt(motherid1);
-  //    int mother1_pdg = mother1.pdgCode();
-  //
-  //    int motherid2 = p2.mothersIds()[0];
-  //    auto mother2 = mcparticles.iteratorAt(motherid2);
-  //    int mother2_pdg = mother2.pdgCode();
-  //
-  //    // LOGF(info,"motherid1 = %d , motherid2 = %d", motherid1, motherid2);
-  //
-  //    if (motherid1 != motherid2)
-  //      return -1;
-  //    if (mother1_pdg != mother2_pdg)
-  //      return -1;
-  //    if (mother1_pdg != expected_mother_pdg)
-  //      return -1;
-  //    return motherid1;
-  //  }
-
   Preslice<MyV0Photons> perCollision_pcm = aod::v0photon::collisionId;
 
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TV0Legs, typename TMCParticles>
@@ -127,6 +90,14 @@ struct Pi0EtaToGammaGammaMC {
   {
     constexpr int itmp = pairtype;
     for (auto& collision : collisions) {
+
+      if ((pairtype == kPHOSPHOS || pairtype == kPCMPHOS) && !collision.isPHOSCPVreadout()) {
+        continue;
+      }
+      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && !collision.isEMCreadout()) {
+        continue;
+      }
+
       registry.fill(HIST(pairnames[itmp]) + HIST("/hCollisionCounter"), 1.0); // all
       if (!collision.sel8()) {
         continue;
@@ -222,17 +193,23 @@ struct Pi0EtaToGammaGammaMC {
 
   Configurable<float> maxYgen{"maxYgen", 0.9, "maximum rapidity for generated particles"};
 
-  Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  Preslice<soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>> rec_perMcCollision = aod::emmceventlabel::emreducedmceventId;
+  // Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
+  // Preslice<soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>> rec_perMcCollision = aod::emmceventlabel::emreducedmceventId;
   void processGen(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
     for (auto& mccollision : mccollisions) {
-      auto collision_per_mccoll = collisions.sliceBy(rec_perMcCollision, mccollision.globalIndex());
-      int nrec_per_mc = collision_per_mccoll.size();
-      registry.fill(HIST("Generated/hRecCollision"), nrec_per_mc);
+      int nrec = 0;
+      // auto collision_per_mccoll = collisions.sliceBy(rec_perMcCollision, mccollision.globalIndex());
+      // int nrec_per_mc = collision_per_mccoll.size();
+      for (auto& collision : collisions) {
+        if (mccollision.globalIndex() == collision.emreducedmceventId()) {
+          nrec++;
+        }
+      }
+      registry.fill(HIST("Generated/hRecCollision"), nrec);
     }
 
     for (auto& collision : collisions) {
@@ -253,24 +230,30 @@ struct Pi0EtaToGammaGammaMC {
       registry.fill(HIST("Generated/hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
       auto mccollision = collision.emreducedmcevent();
 
-      auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
-      for (auto& mctrack : mctracks_coll) {
+      // auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
+      // for (auto& mctrack : mctracks_coll) {
+      for (auto& mctrack : mcparticles) {
+
+        if (mctrack.emreducedmceventId() != mccollision.globalIndex()) {
+          continue;
+        }
+
         if (abs(mctrack.y()) > maxYgen) {
           continue;
         }
         int pdg = mctrack.pdgCode();
 
-        if (abs(pdg) == 22 && IsPhysicalPrimary(mctrack, mcparticles)) {
+        if (abs(pdg) == 22 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {
           registry.fill(HIST("Generated/hPt_Gamma"), mctrack.pt());
           registry.fill(HIST("Generated/hY_Gamma"), mctrack.y());
           registry.fill(HIST("Generated/hPhi_Gamma"), mctrack.phi());
         }
-        if (abs(pdg) == 111 && IsPhysicalPrimary(mctrack, mcparticles)) {
+        if (abs(pdg) == 111 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {
           registry.fill(HIST("Generated/hPt_Pi0"), mctrack.pt());
           registry.fill(HIST("Generated/hY_Pi0"), mctrack.y());
           registry.fill(HIST("Generated/hPhi_Pi0"), mctrack.phi());
         }
-        if (abs(pdg) == 221 && IsPhysicalPrimary(mctrack, mcparticles)) {
+        if (abs(pdg) == 221 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {
           registry.fill(HIST("Generated/hPt_Eta"), mctrack.pt());
           registry.fill(HIST("Generated/hY_Eta"), mctrack.y());
           registry.fill(HIST("Generated/hPhi_Eta"), mctrack.phi());

@@ -1910,6 +1910,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("kaonPIDnsigma")) {
+    cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0);
+    return cut;
+  }
+
   if (!nameStr.compare("kaonPIDnsigma2")) {
     cut->AddCut(VarManager::kTPCnSigmaKa, -2.0, 2.0);
     return cut;
