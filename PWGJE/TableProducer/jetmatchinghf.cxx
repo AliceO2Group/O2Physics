@@ -60,8 +60,7 @@ struct JetMatchingHF {
     constexpr bool jetsBaseIsMC = o2::soa::is_binding_compatible_v<BaseJetCollection, std::decay_t<aod::McCollisions>>();
     if constexpr (jetsBaseIsMC) {
       LOGF(info, "slicing base jet collection by MC collision");
-    }
-    else {
+    } else {
       LOGF(info, "not slicing base jet collection by MC collision");
     }
     // jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, collision.mcCollisionId());
@@ -71,8 +70,7 @@ struct JetMatchingHF {
     // decltype(jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId())) jetsTagPerColl;
     if (jetsTagIsMC) {
       LOGF(info, "slicing tag jet collection by MC collision");
-    }
-    else {
+    } else {
       LOGF(info, "not slicing tag jet collection by MC collision");
     }
     const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId());
