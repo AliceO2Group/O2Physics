@@ -17,7 +17,7 @@
 // Data (run3):
 // o2-analysis-lf-nuclei-spectra, o2-analysis-track-propagation, o2-analysis-timestamp
 // o2-analysis-trackselection, o2-analysis-pid-tof-base, o2-analysis-pid-tof-full
-// o2-analysis-pid-tpc-base, o2-analysis-pid-tof-beta
+// o2-analysis-pid-tpc-base
 // o2-analysis-pid-tpc-full, o2-analysis-multiplicity-table, o2-analysis-event-selection
 
 #include <cmath>
@@ -28,6 +28,8 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 
 #include "DataFormatsTPC/BetheBlochAleph.h"
 
@@ -248,8 +250,9 @@ struct NucleiSpectraTask {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackWoDCAInFilter());
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTOFbeta, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl, aod::TOFEvTime>>;
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  o2::pid::tof::Beta<TrackCandidates::iterator> responseBeta;
 
   void init(o2::framework::InitContext&)
   {
@@ -315,12 +318,12 @@ struct NucleiSpectraTask {
         continue;
       }
       const int iC{track.sign() < 0};
-      spectra.fill(HIST("hTpcSignalData"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
-      spectra.fill(HIST("hTofSignalData"), track.p(), track.beta());
       float nSigma[2][4]{
         {track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl()},
         {track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl()}};
-      float beta{track.beta()};
+      float beta{responseBeta.GetBeta(track)};
+      spectra.fill(HIST("hTofSignalData"), track.p(), beta);
+      spectra.fill(HIST("hTpcSignalData"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
       for (int iS{0}; iS < nuclei::species; ++iS) {
         bool selectedTPC{false}, selectedTOF{false};
         if (std::abs(track.dcaZ()) > cfgDCAcut->get(iS, 1)) {
