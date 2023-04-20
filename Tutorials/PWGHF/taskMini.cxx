@@ -41,7 +41,6 @@ static const double massK = RecoDecay::getMassPDG(kKPlus);
 static const auto arrMassPiK = std::array{massPi, massK};
 static const auto arrMassKPi = std::array{massK, massPi};
 
-
 // Track selection =====================================================================
 
 namespace o2::aod
@@ -120,7 +119,6 @@ struct HfTagSelTracks {
     }
   }
 };
-
 
 // Track index skimming =====================================================================
 
@@ -223,7 +221,6 @@ struct HfTrackIndexSkimCreator {
     }
   }
 };
-
 
 // Candidate creation =====================================================================
 
@@ -397,7 +394,6 @@ struct HfCandidateCreator2ProngExpressions {
   void init(InitContext const&) {}
 };
 
-
 // Candidate selection =====================================================================
 
 namespace o2::aod
@@ -430,8 +426,8 @@ struct HfCandidateSelectorD0 {
   Configurable<double> massWindow{"massWindow", 0.4, "Half-width of the invariant-mass window"};
 
   using TracksWithPid = soa::Join<Tracks,
-                               aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                               aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
@@ -553,7 +549,6 @@ struct HfCandidateSelectorD0 {
     }
   }
 };
-
 
 // Analysis task =====================================================================
 
