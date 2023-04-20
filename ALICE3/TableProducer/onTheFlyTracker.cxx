@@ -207,11 +207,11 @@ struct OnTheFlyTracker {
       }
 
       histos.fill(HIST("hPtGenerated"), mcParticle.pt());
-      if( TMath::Abs(mcParticle.pdgCode())  == 211)
+      if (TMath::Abs(mcParticle.pdgCode()) == 211)
         histos.fill(HIST("hPtGeneratedPi"), mcParticle.pt());
-      if( TMath::Abs(mcParticle.pdgCode())  == 321)
+      if (TMath::Abs(mcParticle.pdgCode()) == 321)
         histos.fill(HIST("hPtGeneratedKa"), mcParticle.pt());
-      if( TMath::Abs(mcParticle.pdgCode())  == 2212)
+      if (TMath::Abs(mcParticle.pdgCode()) == 2212)
         histos.fill(HIST("hPtGeneratedPr"), mcParticle.pt());
 
       if (mcParticle.pt() < minPt) {
@@ -231,11 +231,11 @@ struct OnTheFlyTracker {
 
       // Base QA (note: reco pT here)
       histos.fill(HIST("hPtReconstructed"), trackParCov.getPt());
-      if( TMath::Abs(mcParticle.pdgCode())  == 211)
+      if (TMath::Abs(mcParticle.pdgCode()) == 211)
         histos.fill(HIST("hPtReconstructedPi"), mcParticle.pt());
-      if( TMath::Abs(mcParticle.pdgCode())  == 321)
+      if (TMath::Abs(mcParticle.pdgCode()) == 321)
         histos.fill(HIST("hPtReconstructedKa"), mcParticle.pt());
-      if( TMath::Abs(mcParticle.pdgCode())  == 2212)
+      if (TMath::Abs(mcParticle.pdgCode()) == 2212)
         histos.fill(HIST("hPtReconstructedPr"), mcParticle.pt());
 
       // Fixme: collision index could be changeable
