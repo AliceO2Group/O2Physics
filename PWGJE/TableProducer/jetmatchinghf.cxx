@@ -38,8 +38,8 @@ struct JetMatchingHF {
   Produces<BaseToTagMatchingTable> jetsBaseToTag;
   Produces<TagToBaseMatchingTable> jetsTagToBase;
 
-  // soa::hasIndexTo<BaseJetCollection, aod::McCollisions>;
-  Preslice<BaseJetCollection> baseJetsPerCollision = aod::jet::mcCollisionId;
+  // preslicing jet collections, only for MC-based collection
+  // Preslice<BaseJetCollection> baseJetsPerCollision = aod::jet::mcCollisionId;
   Preslice<TagJetCollection> tagJetsPerCollision = aod::jet::mcCollisionId;
 
   using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
@@ -55,26 +55,45 @@ struct JetMatchingHF {
                Tracks const& tracks, McParticles const& particlesMC,
                HfCandidates const& hfcandidates)
   {
-    const auto jetsPL = jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId());
-    const auto jetsPL2 = jetsBase.sliceBy(baseJetsPerCollision, collision.mcCollisionId());
+    // slicing base jets, only for MC-based collection
+    auto jetsBasePerColl = jetsBase;
+    constexpr bool jetsBaseIsMC = o2::soa::is_binding_compatible_v<BaseJetCollection, std::decay_t<aod::McCollisions>>();
+    if constexpr (jetsBaseIsMC) {
+      LOGF(info, "slicing base jet collection by MC collision");
+    }
+    else {
+      LOGF(info, "not slicing base jet collection by MC collision");
+    }
+    // jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, collision.mcCollisionId());
+
+    // slicing tag jets, only for MC-based collection
+    constexpr bool jetsTagIsMC = o2::soa::is_binding_compatible_v<TagJetCollection, std::decay_t<aod::McCollisions>>();
+    // decltype(jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId())) jetsTagPerColl;
+    if (jetsTagIsMC) {
+      LOGF(info, "slicing tag jet collection by MC collision");
+    }
+    else {
+      LOGF(info, "not slicing tag jet collection by MC collision");
+    }
+    const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId());
 
     // geometric matching
     std::vector<double> jetsBasePhi(jetsBase.size());
     std::vector<double> jetsBaseEta(jetsBase.size());
-    for (auto jet : jetsBase) {
+    for (auto jet : jetsBasePerColl) {
       jetsBasePhi.emplace_back(jet.phi());
       jetsBaseEta.emplace_back(jet.eta());
     }
     std::vector<double> jetsTagPhi(jetsTag.size());
     std::vector<double> jetsTagEta(jetsTag.size());
-    for (auto& jet : jetsTag) {
+    for (auto& jet : jetsTagPerColl) {
       jetsTagPhi.emplace_back(jet.phi());
       jetsTagEta.emplace_back(jet.eta());
     }
     auto&& [baseToTagIndexMap, tagToBaseIndexMap] = JetUtilities::MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, maxMatchingDistance);
 
     // forward matching
-    for (const auto& jet : jetsBase) {
+    for (const auto& jet : jetsBasePerColl) {
       LOGF(info, "jet index: %d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
            jet.index(), jet.collisionId(), jet.pt(), jet.phi(), jet.tracks().size(), jet.hfcandidates().size());
 
@@ -97,7 +116,7 @@ struct JetMatchingHF {
           if ((mother0Id == mother1Id) &&
               std::abs(daughter0.template mcParticle_as<McParticles>().template mothers_as<McParticles>().front().flagMcMatchGen()) & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             LOGF(info, "D0 - looking for jet");
-            for (const auto& pjet : jetsPL) {
+            for (const auto& pjet : jetsTagPerColl) {
               for (const auto& cand : pjet.template hfcandidates_as<McParticles>()) {
                 if (mother0Id == cand.globalIndex()) {
                   matchedIdx = pjet.globalIndex();
@@ -113,7 +132,7 @@ struct JetMatchingHF {
     }
 
     // backward matching
-    for (const auto& jet : jetsPL) {
+    for (const auto& jet : jetsTagPerColl) {
       LOGF(info, "MC jet index: %d (coll %d) with %d tracks, %d HF candidates",
            jet.index(), jet.mcCollisionId(), jet.tracks().size(), jet.hfcandidates().size());
 
@@ -148,7 +167,7 @@ struct JetMatchingHF {
             LOGF(info, "Found matching 2prong candidate: %d", candIdx);
           }
         }
-        for (const auto& djet : jetsBase) {
+        for (const auto& djet : jetsBasePerColl) {
           if (djet.template hfcandidates_as<HfCandidates>().front().globalIndex() == candIdx) {
             matchedIdx = djet.globalIndex();
             LOGF(info, "Found match part to det: %d -> %d", jet.globalIndex(), matchedIdx);
