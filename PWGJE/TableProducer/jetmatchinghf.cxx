@@ -30,7 +30,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-template <typename BaseJetCollection, typename TagJetCollection, 
+template <typename BaseJetCollection, typename TagJetCollection,
           typename BaseToTagMatchingTable, typename TagToBaseMatchingTable, typename HfCandidates>
 struct JetMatchingHF {
   Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.4f, "Max matching distance"};
@@ -88,8 +88,8 @@ struct JetMatchingHF {
           const auto mother0Id = daughter0.template mcParticle_as<McParticles>().template mothers_as<McParticles>().front().globalIndex();
           const auto mother1Id = daughter1.template mcParticle_as<McParticles>().template mothers_as<McParticles>().front().globalIndex();
           LOGF(debug, "MC candidate %d with prongs: %d (MC %d), %d (MC %d)", cand.globalIndex(),
-              daughter0.globalIndex(), daughter0.template mcParticle_as<McParticles>().globalIndex(),
-              daughter1.globalIndex(), daughter1.template mcParticle_as<McParticles>().globalIndex());
+               daughter0.globalIndex(), daughter0.template mcParticle_as<McParticles>().globalIndex(),
+               daughter1.globalIndex(), daughter1.template mcParticle_as<McParticles>().globalIndex());
           LOGF(info, "MC ids of mothers: %d - %d", mother0Id, mother1Id);
           if ((mother0Id == mother1Id) &&
               std::abs(daughter0.template mcParticle_as<McParticles>().template mothers_as<McParticles>().front().flagMcMatchGen()) & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
@@ -99,7 +99,7 @@ struct JetMatchingHF {
                 if (mother0Id == cand.globalIndex()) {
                   matchedIdx = pjet.globalIndex();
                   LOGF(info, "Found match det to part: %d (pt %g) -> %d (pt %g)",
-                      jet.globalIndex(), jet.pt(), matchedIdx, pjet.pt());
+                       jet.globalIndex(), jet.pt(), matchedIdx, pjet.pt());
                 }
               }
             }
@@ -160,8 +160,8 @@ struct JetMatchingHF {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetMatchingHF<soa::Join<aod::D0MCDJets, aod::D0MCDJetConstituents>, 
-    soa::Join<aod::D0MCPJets, aod::D0MCPJetConstituents>, 
-    aod::NewMatchedD0MCDJets, aod::NewMatchedD0MCPJets, 
-    soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> > >(cfgc, TaskName{"jet-matching-hf"})};
+    adaptAnalysisTask<JetMatchingHF<soa::Join<aod::D0MCDJets, aod::D0MCDJetConstituents>,
+                                    soa::Join<aod::D0MCPJets, aod::D0MCPJetConstituents>,
+                                    aod::NewMatchedD0MCDJets, aod::NewMatchedD0MCPJets,
+                                    soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>>(cfgc, TaskName{"jet-matching-hf"})};
 }
