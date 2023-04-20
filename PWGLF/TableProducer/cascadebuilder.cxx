@@ -175,7 +175,7 @@ struct cascadeBuilder {
     float cosPA;
     float cascradius;
     float cascDCAxy; // cascade DCA xy (with bending)
-    float cascDCAz; // cascade DCA z
+    float cascDCAz;  // cascade DCA z
     std::array<float, 3> v0pos;
     std::array<float, 3> v0mompos;
     std::array<float, 3> v0momneg;
@@ -923,7 +923,7 @@ struct cascadeBuilder {
                         cascadeMomentumVector[0], cascadeMomentumVector[1], cascadeMomentumVector[2], // <--- stratrack momentum
                         cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                         cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
-                        cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz, // <--- stratrack (cascDCAxy/z)
+                        cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,          // <--- stratrack (cascDCAxy/z)
                         trackedCascade.matchingChi2(), trackedCascade.topologyChi2(), trackedCascade.itsClsSize()); // <--- stratrack fit info
       }
     }

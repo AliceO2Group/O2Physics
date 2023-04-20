@@ -330,7 +330,7 @@ DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance mat
 // Saved from strangeness tracking
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float); //!
 DECLARE_SOA_COLUMN(TopologyChi2, topologyChi2, float); //!
-DECLARE_SOA_COLUMN(ItsClsSize, itsCluSize, float);       //!
+DECLARE_SOA_COLUMN(ItsClsSize, itsCluSize, float);     //!
 
 // Derived expressions
 // Momenta
