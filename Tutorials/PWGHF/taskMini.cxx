@@ -12,7 +12,7 @@
 /// \file task-mini.cxx
 /// \brief Mini version of the HF analysis chain
 ///
-/// \author Vít Kučera <vit.kucera@cern.ch>, CERN
+/// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
 #include <algorithm>
 
