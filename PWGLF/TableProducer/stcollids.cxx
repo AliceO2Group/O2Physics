@@ -21,6 +21,8 @@ using namespace o2::framework::expressions;
 
 struct STCollIdTask {
   Produces<aod::TrackedCascadeColls> trackedCascadeColls;
+  Produces<aod::TrackedV0Colls> trackedV0Colls;
+  Produces<aod::Tracked3BodyColls> tracked3BodyColls;
 
   void init(InitContext const&) {}
 
@@ -30,6 +32,20 @@ struct STCollIdTask {
       trackedCascadeColls(trackedCascade.track().collisionId());
   }
   PROCESS_SWITCH(STCollIdTask, processTrackedCascades, "process cascades from strangeness tracking", true);
+
+  void processTrackedV0s(aod::TrackedV0s const& trackedV0s, aod::Tracks const& tracks)
+  {
+    for (const auto& trackedV0 : trackedV0s)
+      trackedV0Colls(trackedV0.track().collisionId());
+  }
+  PROCESS_SWITCH(STCollIdTask, processTrackedV0s, "process V0s from strangeness tracking", true);
+
+  void processTracked3Bodys(aod::Tracked3Bodys const& tracked3Bodys, aod::Tracks const& tracks)
+  {
+    for (const auto& tracked3Body : tracked3Bodys)
+      tracked3BodyColls(tracked3Body.track().collisionId());
+  }
+  PROCESS_SWITCH(STCollIdTask, processTracked3Bodys, "process cascades from strangeness tracking", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

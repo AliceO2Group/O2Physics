@@ -24,6 +24,8 @@ using namespace o2::framework::expressions;
 
 struct StrangenessTrackingQATask {
   using TrackedCascades = soa::Join<aod::TrackedCascades, aod::TrackedCascadeColls>;
+  using TrackedV0s = soa::Join<aod::TrackedV0s, aod::TrackedV0Colls>;
+  using Tracked3Bodys = soa::Join<aod::Tracked3Bodys, aod::Tracked3BodyColls>;
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels>;
 
   Configurable<double> bz{"bz", 50., "magnetic field"};
@@ -130,7 +132,7 @@ struct StrangenessTrackingQATask {
   PROCESS_SWITCH(StrangenessTrackingQATask, processCascades, "process cascades from builder", true);
 
   void processTrackedV0s(aod::Collision const& collision,
-                         aod::TrackedV0s const& trackedV0s, aod::V0s const& v0s,
+                         TrackedV0s const& trackedV0s, aod::V0s const& v0s,
                          TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
     for (const auto& trackedV0 : trackedV0s) {
@@ -142,7 +144,7 @@ struct StrangenessTrackingQATask {
   PROCESS_SWITCH(StrangenessTrackingQATask, processTrackedV0s, "process tracked V0s", true);
 
   void processTracked3Bodys(aod::Collision const& collision,
-                            aod::Tracked3Bodys const& tracked3Bodys, aod::Decay3Bodys const& decay3Bodys,
+                            Tracked3Bodys const& tracked3Bodys, aod::Decay3Bodys const& decay3Bodys,
                             TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
     for (const auto& tracked3Body : tracked3Bodys) {
