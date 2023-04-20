@@ -67,20 +67,20 @@
     DECLARE_SOA_INDEX_COLUMN(_jet_type_, matchedJetCand);                  \
   }
 
-// Defines the jet constituent table
-#define JET_CONSTITUENTS_TABLE_DEF(_jet_type_, _name_, _Description_, _track_type_)    \
-  namespace _name_##constituents                                                       \
-  {                                                                                    \
-    DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                                         \
-    DECLARE_SOA_INDEX_COLUMN(_track_type_, track);                                     \
-    DECLARE_SOA_INDEX_COLUMN(EMCALCluster, cluster);                                   \
-  }                                                                                    \
-  DECLARE_SOA_TABLE(_jet_type_##TrackConstituents, "AOD", _Description_ "TRKCONSTS",   \
-                    _name_##constituents::_jet_type_##Id,                              \
-                    _name_##constituents::_track_type_##Id);                           \
-  DECLARE_SOA_TABLE(_jet_type_##ClusterConstituents, "AOD", _Description_ "CLSCONSTS", \
-                    _name_##constituents::_jet_type_##Id,                              \
-                    _name_##constituents::EMCALClusterId);
+// // Defines the jet constituent table
+// #define JET_CONSTITUENTS_TABLE_DEF(_jet_type_, _name_, _Description_, _track_type_)    \
+//   namespace _name_##constituents                                                       \
+//   {                                                                                    \
+//     DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                                         \
+//     DECLARE_SOA_INDEX_COLUMN(_track_type_, track);                                     \
+//     DECLARE_SOA_INDEX_COLUMN(EMCALCluster, cluster);                                   \
+//   }                                                                                    \
+//   DECLARE_SOA_TABLE(_jet_type_##TrackConstituents, "AOD", _Description_ "TRKCONSTS",   \
+//                     _name_##constituents::_jet_type_##Id,                              \
+//                     _name_##constituents::_track_type_##Id);                           \
+//   DECLARE_SOA_TABLE(_jet_type_##ClusterConstituents, "AOD", _Description_ "CLSCONSTS", \
+//                     _name_##constituents::_jet_type_##Id,                              \
+//                     _name_##constituents::EMCALClusterId);
 
 #define JET_CONSTITUENTS_ARRAY_TABLE_DEF(_jet_type_, _name_, _Description_, _track_type_, _cand_type_) \
   namespace _name_##constituents                                                                       \
@@ -128,8 +128,8 @@
   JET_TABLES_DEF(Collision, _jet_type_, Track, _hfcand_type_); \
   JET_TABLES_DEF(Collision, _jet_type_##MCD, Track, _hfcand_type_); \
   JET_TABLES_DEF(McCollision, _jet_type_##MCP, McParticle, McParticles); \
-  DECLARE_SOA_TABLE(NewMatched##_jet_type_##MCPJets, "AOD", #_jet_type_ "JETMATCH", _jet_type_##MCDjetmatchingGeo::_jet_type_##MCDJetId, _jet_type_##MCDjetmatchingCand::_jet_type_##MCDJetId); \
-  DECLARE_SOA_TABLE(NewMatched##_jet_type_##MCDJets, "AOD", #_jet_type_ "JETMATCH", _jet_type_##MCPjetmatchingGeo::_jet_type_##MCPJetId, _jet_type_##MCPjetmatchingCand::_jet_type_##MCPJetId);
+  DECLARE_SOA_TABLE(NewMatched##_jet_type_##MCPJets, "AOD", #_jet_type_ "JETMCHP", _jet_type_##MCDjetmatchingGeo::_jet_type_##MCDJetId, _jet_type_##MCDjetmatchingCand::_jet_type_##MCDJetId); \
+  DECLARE_SOA_TABLE(NewMatched##_jet_type_##MCDJets, "AOD", #_jet_type_ "JETMCHD", _jet_type_##MCPjetmatchingGeo::_jet_type_##MCPJetId, _jet_type_##MCPjetmatchingCand::_jet_type_##MCPJetId);
 
 namespace o2::aod
 {
@@ -356,6 +356,10 @@ JET_CONSTITUENTS_ARRAY_TABLE_DEF(HybridIntermediateJet, hybridintermediate, "HYB
 using HybridIntermediateJetConstituent = HybridIntermediateJetConstituents::iterator;
 JET_CONSTITUENTS_SUB_TABLE_DEF(HybridIntermediateJet, hybridintermediate, "HYBINT");
 using HybridIntermediateJetConstituentSub = HybridIntermediateJetConstituentsSub::iterator;
+
+JET_TABLES_LEVELS_DEF(D0, HfCand2Prong);
+JET_TABLES_LEVELS_DEF(Lc, HfCand3Prong);
+JET_TABLES_LEVELS_DEF(BPl, HfCandBplus);
 
 } // namespace o2::aod
 

@@ -28,9 +28,9 @@ namespace o2::aod
 
 // HF jets
 // D0 tagged jets
-JET_TABLES_LEVELS_DEF(D0, HfCand2Prong);
-JET_TABLES_LEVELS_DEF(Lc, HfCand3Prong);
-JET_TABLES_LEVELS_DEF(BPl, HfCandBplus);
+// JET_TABLES_LEVELS_DEF(D0, HfCand2Prong);
+// JET_TABLES_LEVELS_DEF(Lc, HfCand3Prong);
+// JET_TABLES_LEVELS_DEF(BPl, HfCandBplus);
 
 // using D0Jet = D0Jets::iterator;
 // using MatchedD0Jet = MatchedD0Jets::iterator;

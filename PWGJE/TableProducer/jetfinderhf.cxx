@@ -30,7 +30,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
-#include "PWGJE/DataModel/JetHF.h"
+#include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
 
@@ -608,7 +608,8 @@ struct JetFinderHFTask {
   {
     processHFGenBPlus(collision, particles);
   }
-  PROCESS_SWITCH(JetFinderHFTask, processBPlusMCP, "B+ HF jet finding on MC particle level", false);
+  // PROCESS_SWITCH(JetFinderHFTask, processBPlusMCP, "B+ HF jet finding on MC particle level", false);
+  PROCESS_SWITCH(JetFinderHFTask, processBPlusMCP, "B+ HF jet finding on MC particle level", (std::is_same<JetTable, o2::aod::BPlJets>::value ? true : false));
 };
 
 using JetFinderD0 = JetFinderHFTask<o2::aod::D0Jets, o2::aod::D0JetConstituents, o2::aod::D0JetConstituentsSub>;

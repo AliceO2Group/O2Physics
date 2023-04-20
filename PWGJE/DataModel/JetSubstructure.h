@@ -22,7 +22,6 @@
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetHF.h"
 
 using namespace o2::analysis;
 
