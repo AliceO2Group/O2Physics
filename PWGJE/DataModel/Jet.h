@@ -96,14 +96,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
                     jet::Pz<jet::Pt, jet::Eta>,                            \
                     jet::P<jet::Pt, jet::Eta>,                             \
                     _name_##util::Dummy##_jet_type_##s<>);                 \
-  namespace _name_##matching                                               \
-  {                                                                        \
-    DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                             \
-    DECLARE_SOA_COLUMN(MatchedJetIndex, matchedJetIndex, int);             \
-  }                                                                        \
-  DECLARE_SOA_TABLE(Matched##_jet_type_##s, "AOD", _description_ "MATCH",  \
-                    _name_##matching::_jet_type_##Id,                      \
-                    _name_##matching::MatchedJetIndex);                    \
   namespace _name_##matchingGeo                                            \
   {                                                                        \
     DECLARE_SOA_INDEX_COLUMN(_jet_type_, matchedJetGeo);                   \
@@ -148,7 +140,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 #define DECLARE_JET_TABLES(_collision_name_, _jet_type_, _const_type_, _hfcand_type_, _description_)                           \
   JET_TABLE_DEF(_collision_name_, _jet_type_##Jet, _jet_type_##jet, _description_);                         \
   using _jet_type_##Jet = _jet_type_##Jet##s::iterator;                                                         \
-  using Matched##_jet_type_##Jet = Matched##_jet_type_##Jet##s::iterator;                                       \
   JET_CONSTITUENTS_ARRAY_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, _description_, _const_type_, _hfcand_type_); \
   using _jet_type_##Jet##Constituent = _jet_type_##Jet##Constituents::iterator;                                 \
   JET_CONSTITUENTS_SUB_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, _description_);                                \
@@ -157,7 +148,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 #define DECLARE_JETMATCHING_TABLE(_jet_type_base_, _jet_type_tag_, _description_)               \
   DECLARE_SOA_TABLE(_jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jets, "AOD", _description_, \
                     _jet_type_tag_##jetmatchingGeo::_jet_type_tag_##JetId,                      \
-                    _jet_type_tag_##jetmatchingCand::_jet_type_tag_##JetId);
+                    _jet_type_tag_##jetmatchingCand::_jet_type_tag_##JetId); \
+  using _jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jet = _jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jets::iterator;
 
 // generate tables for data-, detector- and particle-level jets
 #define DECLARE_JET_TABLES_LEVELS(_jet_type_, _hfcand_type_, _shortname_)                         \
@@ -176,11 +168,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 
 namespace o2::aod
 {
-// Data jets charged
-// DECLARE_JET_TABLES(Collision, , Track, HfCand2Prong);
-// DECLARE_JET_TABLES(Collision, Full, Track, HfCand2Prong);
-// DECLARE_JET_TABLES(Collision, Neutral, Track, HfCand2Prong);
-
 DECLARE_JET_TABLES_LEVELS(, HfCand2Prong, "");
 DECLARE_JET_TABLES_LEVELS(Full, HfCand2Prong, "F");
 DECLARE_JET_TABLES_LEVELS(Neutral, HfCand2Prong, "N");
@@ -188,106 +175,8 @@ DECLARE_JET_TABLES_LEVELS2(D0, HfCand2Prong, "D0");
 DECLARE_JET_TABLES_LEVELS2(Lc, HfCand3Prong, "Lc");
 DECLARE_JET_TABLES_LEVELS2(BPl, HfCandBplus, "BPl");
 
-// JET_TABLE_DEF(Collision, Jet, jet, "JET");
-// using Jet = Jets::iterator;
-// using MatchedJet = MatchedJets::iterator;
-// JET_CONSTITUENTS_ARRAY_TABLE_DEF(Jet, jet, "JET", Track, HfCand2Prong);
-// using JetConstituent = JetConstituents::iterator;
-// JET_CONSTITUENTS_SUB_TABLE_DEF(Jet, jet, "JET");
-// using JetConstituentSub = JetConstituentsSub::iterator;
-
-// Data jets full
-// JET_TABLE_DEF(Collision, FullJet, fulljet, "JETF");
-// using FullJet = FullJets::iterator;
-// using MatchedFullJet = MatchedFullJets::iterator;
-// JET_CONSTITUENTS_ARRAY_TABLE_DEF(FullJet, fulljet, "JETF", Track, HfCand2Prong);
-// using FullJetConstituent = FullJetConstituents::iterator;
-// JET_CONSTITUENTS_SUB_TABLE_DEF(FullJet, fulljet, "JETF");
-// using FullJetConstituentSub = FullJetConstituentsSub::iterator;
-
-// // Data jets neutral
-// JET_TABLE_DEF(Collision, NeutralJet, neutraljet, "JETN");
-// using NeutralJet = NeutralJets::iterator;
-// using MatchedNeutralJet = MatchedNeutralJets::iterator;
-// JET_CONSTITUENTS_ARRAY_TABLE_DEF(NeutralJet, neutraljet, "JETN", Track, HfCand2Prong);
-// using NeutralJetConstituent = NeutralJetConstituents::iterator;
-// JET_CONSTITUENTS_SUB_TABLE_DEF(NeutralJet, neutraljet, "JETN");
-// using NeutralJetConstituentSub = NeutralJetConstituentsSub::iterator;
-
-// MC Detector Level charged Jets
-// NOTE: The same condition as describe for particle leve jets also applies here
-//       to subtracted constituents.
-
-// JET_TABLE_DEF(Collision, MCDetectorLevelJet, mcdetectorleveljet, "JETMCDET");
-// using MCDetectorLevelJet = MCDetectorLevelJets::iterator;
-// using MatchedMCDetectorLevelJet = MatchedMCDetectorLevelJets::iterator;
-// JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCDetectorLevelJet, mcdetectorleveljet, "MCD", Track, HfCand2Prong);
-// using MCDetectorLevelJetConstituent = MCDetectorLevelJetConstituents::iterator;
-// JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelJet, mcdetectorleveljet, "MCD");
-// using MCDetectorLevelJetConstituentSub = MCDetectorLevelJetConstituentsSub::iterator;
-
-// // MC Detector Level full Jets
-// JET_TABLE_DEF(Collision, MCDetectorLevelFullJet, mcdetectorlevelfulljet, "JETFMCDET");
-// using MCDetectorLevelFullJet = MCDetectorLevelFullJets::iterator;
-// using MatchedMCDetectorLevelFullJet = MatchedMCDetectorLevelFullJets::iterator;
-// JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCDetectorLevelFullJet, mcdetectorlevelfulljet, "MCDF", Track, HfCand2Prong);
-// using MCDetectorLevelFullJetConstituent = MCDetectorLevelFullJetConstituents::iterator;
-// JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelFullJet, mcdetectorlevelfulljet, "MCDF");
-// using MCDetectorLevelFullJetConstituentSub = MCDetectorLevelFullJetConstituentsSub::iterator;
-
-// // MC Detector Level neutral Jets
-// JET_TABLE_DEF(Collision, MCDetectorLevelNeutralJet, mcdetectorlevelneutraljet, "JETNMCDET");
-// using MCDetectorLevelNeutralJet = MCDetectorLevelNeutralJets::iterator;
-// using MatchedMCDetectorLevelNeutralJet = MatchedMCDetectorLevelNeutralJets::iterator;
-// JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCDetectorLevelNeutralJet, mcdetectorlevelneutraljet, "MCDN", Track, HfCand2Prong);
-// using MCDetectorLevelNeutralJetConstituent = MCDetectorLevelNeutralJetConstituents::iterator;
-// JET_CONSTITUENTS_SUB_TABLE_DEF(MCDetectorLevelNeutralJet, mcdetectorlevelneutraljet, "MCDN");
-// using MCDetectorLevelNeutralJetConstituentSub = MCDetectorLevelNeutralJetConstituentsSub::iterator;
-
-// // MC Particle Level Jets
-// // NOTE: Cluster constituents aren't really meaningful for particle level.
-// //       However, it's a convenient construction, as it allows everything else
-// //       to work as it would otherwise, and it won't be filled (because there
-// //       are no clusters and nothing that would be identified as clusters), so
-// //       it causes no harm. Perhaps better would be making this std::optional,
-// //       but for now, we keep it simple.
-// // NOTE: The same condition applies to subtracted constituents.
-// // MC Particle Level charged Jets
-// JET_TABLE_DEF(McCollision, MCParticleLevelJet, mcparticleleveljet, "JETMCPART");
-// using MCParticleLevelJet = MCParticleLevelJets::iterator;
-// using MatchedMCParticleLevelJet = MatchedMCParticleLevelJets::iterator;
-// JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCParticleLevelJet, mcparticleleveljet, "MCP", McParticle, McParticles);
-// using MCParticleLevelJetConstituent = MCParticleLevelJetConstituents::iterator;
-// JET_CONSTITUENTS_SUB_TABLE_DEF(MCParticleLevelJet, mcparticleleveljet, "MCP");
-// using MCParticleLevelJetConstituentSub = MCParticleLevelJetConstituentsSub::iterator;
-
-// // MC Particle Level full
-// JET_TABLE_DEF(McCollision, MCParticleLevelFullJet, mcparticlelevelfulljet, "JETFMCPART");
-// using MCParticleLevelFullJet = MCParticleLevelFullJets::iterator;
-// using MatchedMCParticleLevelFullJet = MatchedMCParticleLevelFullJets::iterator;
-// JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCParticleLevelFullJet, mcparticlelevelfulljet, "MCPF", McParticle, McParticles);
-// using MCParticleLevelFullJetConstituent = MCParticleLevelFullJetConstituents::iterator;
-// JET_CONSTITUENTS_SUB_TABLE_DEF(MCParticleLevelFullJet, mcparticlelevelfulljet, "MCPF");
-// using MCParticleLevelFullJetConstituentSub = MCParticleLevelFullJetConstituentsSub::iterator;
-
-// // MC Particle Level neutral Jets
-// JET_TABLE_DEF(McCollision, MCParticleLevelNeutralJet, mcparticlelevelneutraljet, "JETNMCPART");
-// using MCParticleLevelNeutralJet = MCParticleLevelNeutralJets::iterator;
-// using MatchedMCParticleLevelNeutralJet = MatchedMCParticleLevelNeutralJets::iterator;
-// JET_CONSTITUENTS_ARRAY_TABLE_DEF(MCParticleLevelNeutralJet, mcparticlelevelneutraljet, "MCPN", McParticle, McParticles);
-// using MCParticleLevelNeutralJetConstituent = MCParticleLevelNeutralJetConstituents::iterator;
-// JET_CONSTITUENTS_SUB_TABLE_DEF(MCParticleLevelNeutralJet, mcparticlelevelneutraljet, "MCPN");
-// using MCParticleLevelNeutralJetConstituentSub = MCParticleLevelNeutralJetConstituentsSub::iterator;
-
 // Hybrid intermediate
-JET_TABLE_DEF(Collision, HybridIntermediateJet, hybridintermediatejet, "JETHYBINT");
-using HybridIntermediateJet = HybridIntermediateJets::iterator;
-using MatchedHybridIntermediateJet = MatchedHybridIntermediateJets::iterator;
-JET_CONSTITUENTS_ARRAY_TABLE_DEF(HybridIntermediateJet, hybridintermediate, "HYBINT", Track, HfCand2Prong);
-using HybridIntermediateJetConstituent = HybridIntermediateJetConstituents::iterator;
-JET_CONSTITUENTS_SUB_TABLE_DEF(HybridIntermediateJet, hybridintermediate, "HYBINT");
-using HybridIntermediateJetConstituentSub = HybridIntermediateJetConstituentsSub::iterator;
-
+DECLARE_JET_TABLES(Collision, HybridIntermediate, Track, HfCand2Prong, "JEHYIN");
 } // namespace o2::aod
 
 #endif // PWGJE_DATAMODEL_JET_H_
