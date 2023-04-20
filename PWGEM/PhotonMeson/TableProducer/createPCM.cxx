@@ -77,6 +77,7 @@ struct createPCM {
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
   Configurable<bool> useTPConly{"useTPConly", false, "Use truly TPC only tracks for V0 finder"};
+  Configurable<bool> rejectTPConly{"rejectTPConly", false, "Reject truly TPC only tracks for V0 finder"};
 
   int mRunNumber;
   float d_bz;
@@ -171,6 +172,16 @@ struct createPCM {
     }
   }
 
+  template <typename TTrack>
+  bool IsTPConlyTrack(TTrack const& track)
+  {
+    if (track.hasTPC() && (!track.hasITS() && !track.hasTOF() && !track.hasTRD())) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   template <typename TCollision, typename TTrack>
   void fillV0Table(TCollision const& collision, TTrack const& ele, TTrack const& pos)
   {
@@ -238,22 +249,16 @@ struct createPCM {
       auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
 
       for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
-        if (ele.tpcNClsCrossedRows() < mincrossedrows) {
-          continue;
-        }
-        if (pos.tpcNClsCrossedRows() < mincrossedrows) {
+        if (ele.tpcNClsCrossedRows() < mincrossedrows || pos.tpcNClsCrossedRows() < mincrossedrows) {
           continue;
         }
 
-        if (useTPConly) {
-          if ((ele.hasITS() || ele.hasTOF() || ele.hasTRD())) {
-            continue;
-          }
-          if ((pos.hasITS() || pos.hasTOF() || pos.hasTRD())) {
-            continue;
-          }
+        if (useTPConly && (!IsTPConlyTrack(ele) || !IsTPConlyTrack(pos))) {
+          continue;
         }
-
+        if (rejectTPConly && (IsTPConlyTrack(ele) || IsTPConlyTrack(pos))) {
+          continue;
+        }
         fillV0Table(collision, ele, pos);
       }
     } // end of collision loop
@@ -295,13 +300,11 @@ struct createPCM {
           continue;
         }
 
-        if (useTPConly) {
-          if ((ele.hasITS() || ele.hasTOF() || ele.hasTRD())) {
-            continue;
-          }
-          if ((pos.hasITS() || pos.hasTOF() || pos.hasTRD())) {
-            continue;
-          }
+        if (useTPConly && (!IsTPConlyTrack(ele) || !IsTPConlyTrack(pos))) {
+          continue;
+        }
+        if (rejectTPConly && (IsTPConlyTrack(ele) || IsTPConlyTrack(pos))) {
+          continue;
         }
 
         if (ele.sign() < 0) {
