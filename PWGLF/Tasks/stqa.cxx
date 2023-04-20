@@ -37,17 +37,16 @@ struct StrangenessTrackingQATask {
   OutputObj<TH2F> hBuilderMassVsPt{"h_BuilderMassVsPt"};
   OutputObj<TH2F> hMassVsMass{"h_MassVsMass"};
 
-  float Square(float x) { return x * x; }
   template <typename T>
   float QuadraticSum(T x, T y) { return TMath::Sqrt(x * x + y * y); }
 
   void init(InitContext const&)
   {
-    hDCA.setObject(new TH1F("h_dca", "DCA;DCA (cm)", 200, 0., 2.));
-    hDCAxy.setObject(new TH1F("h_dcaxy", "DCA xy;DCA_{xy} (cm)", 200, -2., 2.));
-    hDCAz.setObject(new TH1F("h_dcaz", "DCA z;DCA_{z} (cm)", 200, -2., 2.));
-    hDCAVsPt.setObject(new TH2F("h_dcavspt", "DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", 200, -2., 2., 200, 0., 10.));
-    hDCAVsR.setObject(new TH2F("h_dcavspt", "DCA vs R;DCA (cm);R (cm)", 200, -2., 2., 200, 0., 10.));
+    hDCA.setObject(new TH1F("h_dca", "DCA;DCA (cm)", 200, 0., .5));
+    hDCAxy.setObject(new TH1F("h_dcaxy", "DCA xy;DCA_{xy} (cm)", 200, -.5, .5));
+    hDCAz.setObject(new TH1F("h_dcaz", "DCA z;DCA_{z} (cm)", 200, -.5, .5));
+    hDCAVsPt.setObject(new TH2F("h_dcavspt", "DCA vs p_{T};DCA (cm);p_{T} (GeV/#it{c})", 200, -.5, .5, 200, 0., 10.));
+    hDCAVsR.setObject(new TH2F("h_dcavspt", "DCA vs R;DCA (cm);R (cm)", 200, -.5, .5, 200, 0., 10.));
     hMassVsPt.setObject(new TH2F("h_massvspt", "Mass vs p_{T};Mass (GeV/#it{c}^2);p_{T} (GeV/#it{c})", 200, 0., 10., 200, 0., 10.));
     hBuilderMassVsPt.setObject(new TH2F("h_buildermassvspt", "Mass (from builder) vs p_{T};Mass (GeV/#it{c}^2);p_{T} (GeV/#it{c})", 200, 0., 10., 200, 0., 10.));
     hMassVsMass.setObject(new TH2F("h_massvsmass", "Mass vs mass;Mass (GeV/#it{c}^{2});Mass (GeV/#it{c}^{2})", 200, 0., 10., 200, 0., 10.));
