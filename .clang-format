@@ -54,3 +54,7 @@ UseTab:          Never
 # Do not format protobuf files
 Language: Proto
 DisableFormat: true
+---
+Language: Json
+# O2 dumps JSON files with 4-space indents.
+IndentWidth: 4
