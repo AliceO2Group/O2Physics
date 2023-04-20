@@ -38,7 +38,9 @@ struct JetMatchingHF {
   Produces<BaseToTagMatchingTable> jetsBaseToTag;
   Produces<TagToBaseMatchingTable> jetsTagToBase;
 
-  Preslice<TagJetCollection> mcJetsPerMcCollision = aod::jet::mcCollisionId;
+  // soa::hasIndexTo<BaseJetCollection, aod::McCollisions>;
+  Preslice<BaseJetCollection> baseJetsPerCollision = aod::jet::mcCollisionId;
+  Preslice<TagJetCollection> tagJetsPerCollision = aod::jet::mcCollisionId;
 
   using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
@@ -53,7 +55,8 @@ struct JetMatchingHF {
                Tracks const& tracks, McParticles const& particlesMC,
                HfCandidates const& hfcandidates)
   {
-    const auto jetsPL = jetsTag.sliceBy(mcJetsPerMcCollision, collision.mcCollisionId());
+    const auto jetsPL = jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId());
+    const auto jetsPL2 = jetsBase.sliceBy(baseJetsPerCollision, collision.mcCollisionId());
 
     // geometric matching
     std::vector<double> jetsBasePhi(jetsBase.size());
@@ -162,6 +165,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<JetMatchingHF<soa::Join<aod::D0MCDJets, aod::D0MCDJetConstituents>,
                                     soa::Join<aod::D0MCPJets, aod::D0MCPJetConstituents>,
-                                    aod::NewMatchedD0MCDJets, aod::NewMatchedD0MCPJets,
+                                    aod::D0MCDJetsMatchedToD0MCPJets, aod::D0MCPJetsMatchedToD0MCDJets,
                                     soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>>(cfgc, TaskName{"jet-matching-hf"})};
 }
