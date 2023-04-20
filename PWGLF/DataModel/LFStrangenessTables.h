@@ -8,13 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_STRANGENESSTABLES_H_
-#define O2_ANALYSIS_STRANGENESSTABLES_H_
+#ifndef PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_
+#define PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_
 
+#include <cmath>
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include <cmath>
 
 namespace o2::aod
 {
@@ -537,6 +537,18 @@ DECLARE_SOA_TABLE(McTraCascLabels, "AOD", "MCTRACASCLABEL", //! Table joinable t
                   mctracasclabel::McParticleId);
 using McTraCascLabel = McTraCascLabels::iterator;
 
+DECLARE_SOA_TABLE(TrackedCascadeColls, "AOD", "TRACASCCOLL", //! Table joinable with TrackedCascades containing collision ids
+                  track::CollisionId, o2::soa::Marker<1>);
+using TrackedCascadeColl = TrackedCascadeColls::iterator;
+
+DECLARE_SOA_TABLE(TrackedV0Colls, "AOD", "TRAV0COLL", //! Table joinable with TrackedV0s containing collision ids
+                  track::CollisionId, o2::soa::Marker<2>);
+using TrackedV0Coll = TrackedV0Colls::iterator;
+
+DECLARE_SOA_TABLE(Tracked3BodyColls, "AOD", "TRA3BODYCOLL", //! Table joinable with Tracked3Bodys containing collision ids
+                  track::CollisionId, o2::soa::Marker<3>);
+using Tracked3BodyColl = Tracked3BodyColls::iterator;
+
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_STRANGENESSTABLES_H_
+#endif // PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_
