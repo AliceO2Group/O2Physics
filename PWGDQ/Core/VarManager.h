@@ -372,6 +372,8 @@ class VarManager : public TObject
     kKFTracksDCAxyMax,
     kKFDCAxyBetweenProngs,
     kKFChi2OverNDFGeo,
+    kKFNContributorsPV,
+    kKFCosPA,
 
     // Candidate-track correlation variables
     kPairMass,
@@ -571,6 +573,7 @@ class VarManager : public TObject
   static KFPTrack createKFPTrackFromTrack(const T& track);
   template <typename T>
   static KFPVertex createKFPVertexFromCollision(const T& collision);
+  static float calculateCosPA(KFParticle kfp, KFParticle PV);
 
   static o2::vertexing::DCAFitterN<2> fgFitterTwoProngBarrel;
   static o2::vertexing::DCAFitterN<3> fgFitterThreeProngBarrel;
@@ -721,6 +724,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultZNA] = event.multZNA();
     values[kMultZNC] = event.multZNC();
     values[kMultTracklets] = event.multTracklets();
+    values[kVtxNcontribReal] = event.multNTracksPV();
   }
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
 
@@ -731,7 +735,6 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxY] = event.posY();
     values[kVtxZ] = event.posZ();
     values[kVtxNcontrib] = event.numContrib();
-    values[kVtxNcontribReal] = event.multNTracksPV();
   }
 
   if constexpr ((fillMap & ReducedEventExtended) > 0) {
@@ -1577,9 +1580,9 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     KFParticle KFGeoTwoProngBarrel;
     if constexpr ((pairType == kDecayToEE) && trackHasCov) {
       KFPTrack kfpTrack0 = createKFPTrackFromTrack(t1);
-      trk0KF = KFParticle(kfpTrack0, 11 * t1.sign());
+      trk0KF = KFParticle(kfpTrack0, -11 * t1.sign());
       KFPTrack kfpTrack1 = createKFPTrackFromTrack(t2);
-      trk1KF = KFParticle(kfpTrack1, 11 * t2.sign());
+      trk1KF = KFParticle(kfpTrack1, -11 * t2.sign());
 
       KFGeoTwoProngBarrel.SetConstructMethod(2);
       KFGeoTwoProngBarrel.AddDaughter(trk0KF);
@@ -1589,6 +1592,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     }
     if constexpr (eventHasVtxCov) {
       KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
+      values[kKFNContributorsPV] = kfpVertex.GetNContributors();
       KFParticle KFPV(kfpVertex);
       double dxPair2PV = KFGeoTwoProngBarrel.GetX() - KFPV.GetX();
       double dyPair2PV = KFGeoTwoProngBarrel.GetY() - KFPV.GetY();
@@ -1618,6 +1622,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingTauzErr] = values[kVertexingLzErr] * KFGeoTwoProngBarrel.GetMass() / (TMath::Abs(KFGeoTwoProngBarrel.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
 
       values[kKFChi2OverNDFGeo] = KFGeoTwoProngBarrel.GetChi2() / KFGeoTwoProngBarrel.GetNDF();
+      values[kKFCosPA] = calculateCosPA(KFGeoTwoProngBarrel,KFPV);
 
       // in principle, they should be in FillTrack
       values[kKFTrack0DCAxyz] = trk0KF.GetDistanceFromVertex(KFPV);
