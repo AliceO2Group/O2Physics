@@ -754,6 +754,7 @@ struct AnalysisSameEventPairing {
   //           dilepton - hadron task downstream. So the bit mask is required to select pairs just based on the electron cuts
   // TODO: provide as Configurable the list and names of the cuts which should be used in pairing
   uint32_t fSingleTrackFilterMask = 0;
+  uint32_t fSingleMuonFilterMask = 0;
   uint32_t fTwoTrackFilterMask = 0;
   uint32_t fTwoMuonFilterMask = 0;
   std::vector<std::vector<TString>> fTrackHistNames;
@@ -761,6 +762,7 @@ struct AnalysisSameEventPairing {
   std::vector<std::vector<TString>> fTrackMuonHistNames;
   std::vector<AnalysisCompositeCut> fPairCuts;
   std::vector<std::string> fTrackCutNames;
+  std::vector<std::string> fMuonCutNames;
   std::vector<std::string> fPairCutNames;
 
   void init(o2::framework::InitContext& context)
@@ -790,17 +792,21 @@ struct AnalysisSameEventPairing {
     std::vector<TString> names;
 
     TString cutTrackNamesStr = fConfigTrackCuts.value;
-    if (context.mOptions.get<bool>("processDecayToMuMuSkimmed") || context.mOptions.get<bool>("processDecayToMuMuVertexingSkimmed") || context.mOptions.get<bool>("processVnDecayToMuMuSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
-      cutTrackNamesStr = fConfigMuonCuts.value;
-    }
-    if (context.mOptions.get<bool>("processElectronMuonSkimmed") || context.mOptions.get<bool>("processAllSkimmed")){
-      cutTrackNamesStr = cutTrackNamesStr + "," + fConfigMuonCuts.value;
-    }
+    TString cutMuonNamesStr = fConfigMuonCuts.value;
+
     if (!cutTrackNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutTrackNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         fTrackCutNames.emplace_back(objArray->At(icut)->GetName());
         fSingleTrackFilterMask |= (uint32_t(1) << icut);
+      }
+    }
+
+    if (!cutMuonNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutMuonNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        fMuonCutNames.emplace_back(objArray->At(icut)->GetName());
+        fSingleMuonFilterMask |= (uint32_t(1) << icut);
       }
     }
 
@@ -811,18 +817,32 @@ struct AnalysisSameEventPairing {
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         TString selStr = objArray->At(icut)->GetName();
         std::unique_ptr<TObjArray> sel(selStr.Tokenize(":"));
+
+        AnalysisCompositeCut cut;
         if (sel->GetEntries() < 2) continue; // no pair cut defined
-        else {
-          AnalysisCompositeCut cut = *dqcuts::GetCompositeCut(sel->At(1)->GetName());
-          if(std::find(fPairCutNames.begin(), fPairCutNames.end(), cut.GetName()) != fPairCutNames.end()) continue;
-          fPairCuts.emplace_back(cut);
-          fPairCutNames.emplace_back(cut.GetName());
-          fTwoTrackFilterMask |= (uint32_t(1) << pairCuts);
-          pairCuts++;
+        else if (sel->GetEntries() == 2) {
+          if (context.mOptions.get<bool>("processElectronMuonSkimmed")) {
+            printf("[Info] SameEventPairing: No pair cut provided for ith cut = %i.\n",icut);
+            continue; // no pair cuts applied for processElectronMuonSkimmed
+          }
+          cut = *dqcuts::GetCompositeCut(sel->At(1)->GetName());
         }
+        else if (sel->GetEntries() == 3 && (context.mOptions.get<bool>("processElectronMuonSkimmed") || context.mOptions.get<bool>("processAllSkimmed"))) {
+          cut = *dqcuts::GetCompositeCut(sel->At(2)->GetName());
+        }
+        else {
+          printf(" [Error] SameEventPairing: Too many arguments provided in cfgPaiCuts.\n");
+          continue;
+        }
+        
+        if(std::find(fPairCutNames.begin(), fPairCutNames.end(), cut.GetName()) != fPairCutNames.end()) continue;
+        fPairCuts.emplace_back(cut);
+        fPairCutNames.emplace_back(cut.GetName());
+        fTwoTrackFilterMask |= (uint32_t(1) << pairCuts);
+        pairCuts++;
       }
     }
-    
+
     if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedWithCov") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmed") || context.mOptions.get<bool>("processDecayToPiPiSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
       TString cutNames = fConfigPairCuts.value;
       if (!cutPairNamesStr.IsNull()) { // config pair cut string not empty
@@ -883,37 +903,39 @@ struct AnalysisSameEventPairing {
     if (context.mOptions.get<bool>("processElectronMuonSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
       TString cutNamesBarrel = fConfigTrackCuts.value;
       TString cutNamesMuon = fConfigMuonCuts.value;
-      if (!cutNamesBarrel.IsNull() && !cutNamesMuon.IsNull()) {
+      TString cutNamesPair = fConfigPairCuts.value;
+      if (!cutNamesPair.IsNull()) {
         std::unique_ptr<TObjArray> objArrayBarrel(cutNamesBarrel.Tokenize(","));
         std::unique_ptr<TObjArray> objArrayMuon(cutNamesMuon.Tokenize(","));
-        if (objArrayBarrel->GetEntries() == objArrayMuon->GetEntries()) {   // one must specify equal number of barrel and muon cuts
-          for (int icut = 0; icut < objArrayBarrel->GetEntries(); ++icut) { // loop over track cuts
-            TString selStrBarrel = objArrayBarrel->At(icut)->GetName();
-            TString selStrMuon = objArrayMuon->At(icut)->GetName();
-            std::unique_ptr<TObjArray> selBarrel(selStrBarrel.Tokenize(":"));
-            std::unique_ptr<TObjArray> selMuon(selStrMuon.Tokenize(":"));
+        std::unique_ptr<TObjArray> objArrayPair(cutNamesPair.Tokenize(","));
+        if ((objArrayBarrel->GetEntries() == objArrayMuon->GetEntries())) { // one must specify equal number of barrel and muon cuts
+          for (int icut = 0; icut < objArrayPair->GetEntries(); ++icut) { // loop over pair cuts
+            TString selStrPair = objArrayPair->At(icut)->GetName();
+            std::unique_ptr<TObjArray> selPair(selStrPair.Tokenize(":"));
             // no pair cuts
-            if (selBarrel->GetEntries() == 1 && selMuon->GetEntries() == 1) {
+            if (selPair->GetEntries() == 2) {
               names = {
-                Form("PairsEleMuSEPM_%s_%s", selBarrel->At(0)->GetName(), selMuon->At(0)->GetName()),
-                Form("PairsEleMuSEPP_%s_%s", selBarrel->At(0)->GetName(), selMuon->At(0)->GetName()),
-                Form("PairsEleMuSEMM_%s_%s", selBarrel->At(0)->GetName(), selMuon->At(0)->GetName())};
+                Form("PairsEleMuSEPM_%s_%s", selPair->At(0)->GetName(), selPair->At(1)->GetName()),
+                Form("PairsEleMuSEPP_%s_%s", selPair->At(0)->GetName(), selPair->At(1)->GetName()),
+                Form("PairsEleMuSEMM_%s_%s", selPair->At(0)->GetName(), selPair->At(1)->GetName())};
               histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
               fTrackMuonHistNames.emplace_back(names);
             } 
             // pair cuts 
-            else if (selBarrel->GetEntries() == 2 && selMuon->GetEntries() == 2 && (selBarrel->At(1)->GetName() == selMuon->At(1)->GetName())) {
+            else if (selPair->GetEntries() == 3) {
               std::vector<TString> names = {
-                Form("PairsEleMuSEPM_%s_%s_%s", selBarrel->At(0)->GetName(), selMuon->At(0)->GetName(), selBarrel->At(1)->GetName()),
-                Form("PairsEleMuSEPP_%s_%s_%s", selBarrel->At(0)->GetName(), selMuon->At(0)->GetName(), selBarrel->At(1)->GetName()),
-                Form("PairsEleMuSEMM_%s_%s_%s", selBarrel->At(0)->GetName(), selMuon->At(0)->GetName(), selBarrel->At(1)->GetName())};
+                Form("PairsEleMuSEPM_%s_%s_%s", selPair->At(0)->GetName(), selPair->At(1)->GetName(), selPair->At(2)->GetName()),
+                Form("PairsEleMuSEPP_%s_%s_%s", selPair->At(0)->GetName(), selPair->At(1)->GetName(), selPair->At(2)->GetName()),
+                Form("PairsEleMuSEMM_%s_%s_%s", selPair->At(0)->GetName(), selPair->At(1)->GetName(), selPair->At(2)->GetName())};
               histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
               fTrackMuonHistNames.emplace_back(names);
             } // end if (pair cut is provided)
-          }   // end loop (track cuts)
-        }     // end if (equal number of cuts)
-      }       // end if (track cuts)
-    }
+            else continue;
+          }   // end loop (pair cuts)
+        }
+        else printf("[ERROR] SameEventPairing: A different number of trackBarrel and muon cuts has been provided.\n");
+      }     // end if (fConfigPairCuts)
+    }       // end if (processElectronMuonSkimmed)
 
     // Usage example of ccdb
     // ccdb->setURL(url.value);
@@ -979,10 +1001,10 @@ struct AnalysisSameEventPairing {
         singleTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected() & fSingleTrackFilterMask);
       }
       if constexpr (TPairType == VarManager::kDecayToMuMu) {
-        singleTrackFilter = uint32_t(t1.isMuonSelected()) & uint32_t(t2.isMuonSelected() & fSingleTrackFilterMask);
+        singleTrackFilter = uint32_t(t1.isMuonSelected()) & uint32_t(t2.isMuonSelected() & fSingleMuonFilterMask);
       }
       if constexpr (TPairType == VarManager::kElectronMuon) {
-        singleTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isMuonSelected() & fSingleTrackFilterMask);
+        singleTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isMuonSelected() & fSingleTrackFilterMask & fSingleMuonFilterMask);
       }
       if (!singleTrackFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
@@ -1024,16 +1046,35 @@ struct AnalysisSameEventPairing {
         std::unique_ptr<TObjArray> sel(selStr.Tokenize(":"));
         uint32_t posBitPairCut = 0;
         uint32_t posBitTrackCut = 0;
+        uint32_t posBitMuonCut = 0;
         ptrdiff_t positionTrackCut = distance(fTrackCutNames.begin(), find(fTrackCutNames.begin(), fTrackCutNames.end(), sel->At(0)->GetName()));
+        ptrdiff_t positionMuonCut = 0;
         ptrdiff_t positionPairCut = 0;
-        if (sel->GetEntries() == 2) {
-          positionPairCut = distance(fPairCutNames.begin(), find(fPairCutNames.begin(), fPairCutNames.end(), sel->At(1)->GetName()));
-          posBitPairCut = uint32_t(1) << positionPairCut;
+        if (TPairType == VarManager::kDecayToMuMu) {
+          positionMuonCut = distance(fMuonCutNames.begin(), find(fMuonCutNames.begin(), fMuonCutNames.end(), sel->At(0)->GetName()));
+          if (sel->GetEntries() == 2) {
+            positionPairCut = distance(fPairCutNames.begin(), find(fPairCutNames.begin(), fPairCutNames.end(), sel->At(1)->GetName()));
+            posBitPairCut = uint32_t(1) << positionPairCut;
+          }
+        }
+        if (TPairType == VarManager::kElectronMuon) {
+          positionMuonCut = distance(fMuonCutNames.begin(), find(fMuonCutNames.begin(), fMuonCutNames.end(), sel->At(1)->GetName()));
+          if (sel->GetEntries() == 3) {
+            positionPairCut = distance(fPairCutNames.begin(), find(fPairCutNames.begin(), fPairCutNames.end(), sel->At(2)->GetName()));
+            posBitPairCut = uint32_t(1) << positionPairCut;
+          }
         }
         posBitTrackCut = uint32_t(1) << positionTrackCut;
+        posBitMuonCut = uint32_t(1) << positionMuonCut;
 
+        if (TPairType == VarManager::kDecayToMuMu) posBitTrackCut = posBitMuonCut; // if kDecayToMuMu use the same variable as in kDecayToEE case
 
-          if (sel->GetEntries() == 1 && (posBitTrackCut & singleTrackFilter)) {
+          if (sel->GetEntries() == 1) {
+            if (TPairType == VarManager::kElectronMuon) {
+              printf(" [Error] SameEventPairing: To less arguments passed in cfgPairCuts. At least 2 arguments are required (ElectronTrackCut:MuonTrackCut:PairCut).\n");
+              continue;
+            }
+            else if (!(posBitTrackCut & singleTrackFilter)) continue;
             if (t1.sign() * t2.sign() < 0) {
               fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
             } else {
@@ -1043,18 +1084,51 @@ struct AnalysisSameEventPairing {
                 fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
               }
             }
-          } else if (sel->GetEntries() == 2 && (posBitTrackCut & singleTrackFilter) && (posBitPairCut & fTwoTrackFilterMask)) {
-            AnalysisCompositeCut cut = fPairCuts.at(positionPairCut);
-            if (!(cut.IsSelected(VarManager::fgValues))) { // apply pair cuts
-              continue;                                    // if cut.IsSelected is false, continue
-            }
-            if (t1.sign() * t2.sign() < 0) {
-              fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
-            } else {
-              if (t1.sign() > 0) {
-                fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+          } else if (sel->GetEntries() == 2) {
+            if (TPairType == VarManager::kElectronMuon && (posBitTrackCut & singleTrackFilter) && (posBitMuonCut & singleTrackFilter)) {
+              if (t1.sign() * t2.sign() < 0) {
+                fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
               } else {
-                fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+                if (t1.sign() > 0) {
+                  fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+                } else {
+                  fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+                }
+              }
+            }
+            else if ((posBitTrackCut & singleTrackFilter) && (posBitPairCut & fTwoTrackFilterMask)){
+              AnalysisCompositeCut cut = fPairCuts.at(positionPairCut);
+              if (!(cut.IsSelected(VarManager::fgValues))) { // apply pair cuts
+                continue;                                    // if cut.IsSelected is false, continue
+              }
+              if (t1.sign() * t2.sign() < 0) {
+                fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+              } else {
+                if (t1.sign() > 0) {
+                  fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+                } else {
+                  fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+                }
+              }
+            }
+          } else if (sel->GetEntries() == 3) {
+            if (!(TPairType == VarManager::kElectronMuon)) {
+              printf(" [Error] SameEventPairing: To many arguments passed in cfgPairCuts. At max 2 arguments are allowed (TrackCut:PairCut).\n");
+              continue;
+            } 
+            else if ((posBitTrackCut & singleTrackFilter) && (posBitMuonCut & singleTrackFilter) && (posBitPairCut & fTwoTrackFilterMask)) {
+              AnalysisCompositeCut cut = fPairCuts.at(positionPairCut);
+              if (!(cut.IsSelected(VarManager::fgValues))) { // apply pair cuts
+                continue;                                    // if cut.IsSelected is false, continue
+              }
+              if (t1.sign() * t2.sign() < 0) {
+                fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+              } else {
+                if (t1.sign() > 0) {
+                  fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+                } else {
+                  fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+                }
               }
             }
           }
