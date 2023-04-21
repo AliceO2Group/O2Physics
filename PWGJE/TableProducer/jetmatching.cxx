@@ -9,9 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file jetmatchinghf.cxx
-/// \brief Match jets containing the same D0s
+/// \file jetmatching.cxx
+/// \brief Unified implementation of jet matching based on different criteria
+/// expanding on previously separate implementations of geometric matching 
+/// (by Raymond Ehlers) and heavy-flavour matching
 ///
+/// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
 /// \author Jochen Klein <jochen.klein@cern.ch>
 
 #include "Framework/AnalysisTask.h"
@@ -39,8 +42,9 @@ struct JetMatchingHF {
   Produces<TagToBaseMatchingTable> jetsTagToBase;
 
   // preslicing jet collections, only for MC-based collection
-  // Preslice<BaseJetCollection> baseJetsPerCollision = aod::jet::mcCollisionId;
-  Preslice<TagJetCollection> tagJetsPerCollision = aod::jet::mcCollisionId;
+
+  Preslice<BaseJetCollection> baseJetsPerCollision = []{ if constexpr (o2::soa::relatedByIndex<aod::McCollisions, BaseJetCollection>()) return aod::jet::mcCollisionId; else return aod::jet::collisionId; }();
+  Preslice<TagJetCollection> tagJetsPerCollision = []{ if constexpr (o2::soa::relatedByIndex<aod::McCollisions, TagJetCollection>()) return aod::jet::mcCollisionId; else return aod::jet::collisionId; }();
 
   using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
@@ -55,25 +59,19 @@ struct JetMatchingHF {
                Tracks const& tracks, McParticles const& particlesMC,
                HfCandidates const& hfcandidates)
   {
-    // slicing base jets, only for MC-based collection
-    auto jetsBasePerColl = jetsBase;
-    constexpr bool jetsBaseIsMC = o2::soa::is_binding_compatible_v<BaseJetCollection, std::decay_t<aod::McCollisions>>();
-    if constexpr (jetsBaseIsMC) {
-      LOGF(info, "slicing base jet collection by MC collision");
-    } else {
-      LOGF(info, "not slicing base jet collection by MC collision");
-    }
-    // jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, collision.mcCollisionId());
+    constexpr bool jetsBaseIsMC = o2::soa::relatedByIndex<aod::McCollisions, BaseJetCollection>();
+    constexpr bool jetsTagIsMC = o2::soa::relatedByIndex<aod::McCollisions, TagJetCollection>();
 
-    // slicing tag jets, only for MC-based collection
-    constexpr bool jetsTagIsMC = o2::soa::is_binding_compatible_v<TagJetCollection, std::decay_t<aod::McCollisions>>();
+    // slicing jets if MC collection
     // decltype(jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId())) jetsTagPerColl;
-    if (jetsTagIsMC) {
-      LOGF(info, "slicing tag jet collection by MC collision");
-    } else {
-      LOGF(info, "not slicing tag jet collection by MC collision");
-    }
-    const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId());
+    // std::remove_const<TagJetCollection>::type jetsTagPerColl;
+    // const auto jetsTagPerColl = jetsTag;
+    // auto jetsTagPerColl = [&] -> TagJetCollection const& { if (jetsTagIsMC) return jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId()); else return jetsTag; }();
+    // if (jetsTagIsMC) jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId());
+    // const auto jetsTagPerColl = jetsTagIsMC ? const jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId()) : jetsTag;
+
+    const auto jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, jetsBaseIsMC ? collision.mcCollisionId() : collision.globalIndex());
+    const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, jetsTagIsMC ? collision.mcCollisionId() : collision.globalIndex());
 
     // geometric matching
     std::vector<double> jetsBasePhi(jetsBase.size());
