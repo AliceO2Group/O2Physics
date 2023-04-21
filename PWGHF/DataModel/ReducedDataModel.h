@@ -16,8 +16,8 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
-#ifndef PWGHF_DATAMODEL_REDUCED_DATA_MODEL_H_
-#define PWGHF_DATAMODEL_REDUCED_DATA_MODEL_H_
+#ifndef PWGHF_DATAMODEL_REDUCEDDATAMODEL_H_
+#define PWGHF_DATAMODEL_REDUCEDDATAMODEL_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
@@ -243,5 +243,4 @@ DECLARE_EQUIVALENT_FOR_INDEX(aod::StoredTracks, aod::HfReducedTracksWithSel);
 DECLARE_EQUIVALENT_FOR_INDEX(aod::StoredTracks, aod::HfReducedTracksPIDWithSel);
 } // namespace soa
 } // namespace o2
-
-#endif // PWGHF_DATAMODEL_REDUCED_DATA_MODEL_H_
+#endif // PWGHF_DATAMODEL_REDUCEDDATAMODEL_H_
