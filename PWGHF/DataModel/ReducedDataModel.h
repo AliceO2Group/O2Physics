@@ -37,9 +37,9 @@ namespace aod
 {
 namespace hf_reduced_collision
 {
-DECLARE_SOA_COLUMN(Bz, bz, float); //! Magnetic field in z-direction 
+DECLARE_SOA_COLUMN(Bz, bz, float); //! Magnetic field in z-direction
 // keep track of the number of studied events (for normalization purposes)
-DECLARE_SOA_COLUMN(OriginalAODId, originalAODId, int); //! User-defined index of COLLISION table processed
+DECLARE_SOA_COLUMN(OriginalAODId, originalAODId, int);     //! User-defined index of COLLISION table processed
 DECLARE_SOA_COLUMN(OriginalAODSize, originalAODSize, int); //! Size of COLLISION table processed
 } // namespace hf_reduced_collision
 
@@ -120,7 +120,7 @@ DECLARE_SOA_COLUMN(Pz, pz, float); //! Momentum in z-direction in GeV/c
 
 namespace hf_reduced_track_index
 {
-DECLARE_SOA_INDEX_COLUMN(Track, track); //! Track index
+DECLARE_SOA_INDEX_COLUMN(Track, track);   //! Track index
 DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool); //! Flag to check if track has a TPC match
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool); //! Flag to check if track has a TOF match
 } // namespace hf_reduced_track_index
@@ -137,7 +137,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float); //! Transverse momentum of the track in GeV/c
 } // namespace hf_track_pid_with_sel
 
 // table with all attributes needed to call getStatusTrackPIDTpcAndTof() in the selector task
-DECLARE_SOA_TABLE(HfReducedTracksPIDWithSel, "AOD", "HFREDTRACKPID",  //! Table with PID track information for reduced workflow
+DECLARE_SOA_TABLE(HfReducedTracksPIDWithSel, "AOD", "HFREDTRACKPID", //! Table with PID track information for reduced workflow
                   o2::soa::Index<>,
                   track::CollisionId,
                   hf_track_pid_with_sel::Pt,
@@ -156,9 +156,9 @@ DECLARE_SOA_TABLE(HfReducedTracksPIDWithSel, "AOD", "HFREDTRACKPID",  //! Table 
 
 namespace hf_reduced_cand_3prong
 {
-DECLARE_SOA_COLUMN(CPA, cpa, float); //! Cosinus pointing angle
+DECLARE_SOA_COLUMN(CPA, cpa, float);                 //! Cosinus pointing angle
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float); //! Decay length in cm
-DECLARE_SOA_COLUMN(InvMass, invMass, float); //! Invariant mass of 3prong candidate in GeV/c2
+DECLARE_SOA_COLUMN(InvMass, invMass, float);         //! Invariant mass of 3prong candidate in GeV/c2
 
 template <typename T>
 auto invMassDplusToPiKPi(const T& pVec0, const T& pVec1, const T& pVec2)
