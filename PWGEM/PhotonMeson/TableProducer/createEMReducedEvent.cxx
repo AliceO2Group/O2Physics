@@ -59,6 +59,9 @@ struct createEMReducedEvent {
     hEventCounter->GetXaxis()->SetBinLabel(4, "has > minN_EMC");
     hEventCounter->GetXaxis()->SetBinLabel(5, "has > minN_any");
     hEventCounter->GetXaxis()->SetBinLabel(6, "sel8");
+    registry.add<TH1>("hNGammas_PCM", ";#it{N}_{#gamma,PCM};#it{count}", kTH1I, {{21, -0.5, 20.5}});
+    registry.add<TH1>("hNGammas_PHOS", ";#it{N}_{#gamma,PHOS};#it{count}", kTH1I, {{21, -0.5, 20.5}});
+    registry.add<TH1>("hNGammas_EMC", ";#it{N}_{#gamma,EMC};#it{count}", kTH1I, {{21, -0.5, 20.5}});
   }
 
   using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::CentNTPVs>;
@@ -81,14 +84,17 @@ struct createEMReducedEvent {
       if constexpr (static_cast<bool>(system & kPCM)) {
         auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
         ng_pcm = v0photons_coll.size();
+        registry.fill(HIST("hNGammas_PCM"), ng_pcm);
       }
       if constexpr (static_cast<bool>(system & kPHOS)) {
         auto phos_coll = phosclusters.sliceBy(perCollision_phos, collision.globalIndex());
         ng_phos = phos_coll.size();
+        registry.fill(HIST("hNGammas_PHOS"), ng_phos);
       }
       if constexpr (static_cast<bool>(system & kEMC)) {
         auto emc_coll = emcclusters.sliceBy(perCollision_emc, collision.globalIndex());
         ng_emc = emc_coll.size();
+        registry.fill(HIST("hNGammas_EMC"), ng_emc);
       }
       if (ng_pcm >= minN_PCM) {
         minN_any = true;
