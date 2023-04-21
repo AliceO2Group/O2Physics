@@ -16,9 +16,7 @@
 //
 // Data (run3):
 // o2-analysis-lf-nuclei-spectra, o2-analysis-timestamp
-// o2-analysis-pid-tof-base, o2-analysis-pid-tof-full
-// o2-analysis-pid-tpc-base, o2-analysis-pid-tpc-full,
-// o2-analysis-multiplicity-table, o2-analysis-event-selection
+// o2-analysis-pid-tof-base, o2-analysis-multiplicity-table, o2-analysis-event-selection
 
 #include <cmath>
 
@@ -152,6 +150,7 @@ std::shared_ptr<TH3> hTOFmass[4][2];
 std::shared_ptr<TH2> hGenNuclei[4][2];
 std::shared_ptr<TH3> hMomRes[4][2];
 std::shared_ptr<TH3> hDCAxy[2][4][2];
+o2::base::MatLayerCylSet* lut = nullptr;
 
 std::vector<NucleusCandidate> candidates;
 } // namespace nuclei
@@ -265,7 +264,7 @@ struct NucleiSpectraTask {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta;
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::pidTOFbeta, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::TOFEvTime>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal,  aod::TOFEvTime>>;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   o2::pid::tof::Beta<TrackCandidates::iterator> responseBeta;
@@ -303,6 +302,8 @@ struct NucleiSpectraTask {
       }
     }
     mRunNumber = bc.runNumber();
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    o2::base::Propagator::Instance()->setMatLUT(nuclei::lut);
   }
 
   void init(o2::framework::InitContext&)
@@ -310,7 +311,7 @@ struct NucleiSpectraTask {
     ccdb->setURL(cfgCCDBurl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(true);
+    ccdb->setFatalWhenNull(false);
 
     const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)cfgCentralityEstimator)};
     const AxisSpec nSigmaAxes[2]{{cfgNsigmaTPCbins, "n#sigma_{TPC}"}, {cfgNsigmaTOFbins, "n#sigma_{TOF}"}};
@@ -349,6 +350,9 @@ struct NucleiSpectraTask {
         nuclei::pidCuts[0][iS][iMax] = cfgNsigmaTPC->get(iS, iMax);
       }
     }
+
+    nuclei::lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+
   }
 
   void fillDataInfo(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
@@ -381,16 +385,14 @@ struct NucleiSpectraTask {
         continue;
       }
       float nSigma[2][4]{
-        {track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl()},
+        {-10., -10., -10., -10.},
         {0.f, 0.f, 0.f, 0.f}}; /// then we will calibrate the TOF mass for the He3 and Alpha
       const int iC{track.sign() < 0};
       bool selectedTPC[4]{false}, goodToAnalyse{false};
       for (int iS{0}; iS < nuclei::species; ++iS) {
-        if (cfgBetheBlochParams->get(iS, 5u) > 0.f) {
-          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScalings[iS][iC]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
-          double expSigma{expBethe * cfgBetheBlochParams->get(iS, 5u)};
-          nSigma[0][iS] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
-        }
+        double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScalings[iS][iC]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
+        double expSigma{expBethe * cfgBetheBlochParams->get(iS, 5u)};
+        nSigma[0][iS] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         selectedTPC[iS] = (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] < nuclei::pidCuts[0][iS][1]);
         goodToAnalyse = goodToAnalyse || selectedTPC[iS];
       }
@@ -425,7 +427,9 @@ struct NucleiSpectraTask {
             }
             nuclei::hDCAxy[iPID][iS][iC]->Fill(1., fvector.pt(), dcaInfo[0]);
             if (std::abs(dcaInfo[0]) < cfgDCAcut->get(iS, 0u)) {
-              nuclei::hNsigma[iPID][iS][iC]->Fill(1., fvector.pt(), nSigma[iPID][iS]);
+              if (!iPID) { /// temporary exclusion of the TOF nsigma PID for the He3 and Alpha
+                nuclei::hNsigma[iPID][iS][iC]->Fill(1., fvector.pt(), nSigma[iPID][iS]);
+              }
               if (iPID) {
                 float mass{track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS]};
                 nuclei::hTOFmass[iS][iC]->Fill(1., fvector.pt(), mass);
@@ -454,7 +458,7 @@ struct NucleiSpectraTask {
     } // end loop over tracks
   }
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
@@ -463,7 +467,7 @@ struct NucleiSpectraTask {
   }
   PROCESS_SWITCH(NucleiSpectraTask, processData, "Data analysis", true);
 
-  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
     fillDataInfo(collision, tracks);
     std::vector<bool> isReconstructed(particlesMC.size(), false);
