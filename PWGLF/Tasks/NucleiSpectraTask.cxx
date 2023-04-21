@@ -264,7 +264,7 @@ struct NucleiSpectraTask {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta;
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal,  aod::TOFEvTime>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>>;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   o2::pid::tof::Beta<TrackCandidates::iterator> responseBeta;
@@ -352,7 +352,6 @@ struct NucleiSpectraTask {
     }
 
     nuclei::lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
-
   }
 
   void fillDataInfo(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
