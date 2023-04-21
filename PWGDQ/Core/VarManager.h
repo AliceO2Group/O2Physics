@@ -1622,7 +1622,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingTauzErr] = values[kVertexingLzErr] * KFGeoTwoProngBarrel.GetMass() / (TMath::Abs(KFGeoTwoProngBarrel.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
 
       values[kKFChi2OverNDFGeo] = KFGeoTwoProngBarrel.GetChi2() / KFGeoTwoProngBarrel.GetNDF();
-      values[kKFCosPA] = calculateCosPA(KFGeoTwoProngBarrel,KFPV);
+      values[kKFCosPA] = calculateCosPA(KFGeoTwoProngBarrel, KFPV);
 
       // in principle, they should be in FillTrack
       values[kKFTrack0DCAxyz] = trk0KF.GetDistanceFromVertex(KFPV);
