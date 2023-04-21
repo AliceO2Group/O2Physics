@@ -53,8 +53,6 @@ struct HfReducedCandidateCreatorB0 {
   double massDPi{0.};
   double bz{0.};
 
-  std::vector<int> aodIds = {};
-
   // Fitter for B vertex (2-prong vertex filter)
   o2::vertexing::DCAFitterN<2> df2;
 
@@ -80,19 +78,16 @@ struct HfReducedCandidateCreatorB0 {
 
   void process(aod::HfReducedCollisions const& collisions,
                aod::HfReducedCand3Prong const& candsD,
-               aod::HfReducedTracksWithSel const& tracksPion)
+               aod::HfReducedTracksWithSel const& tracksPion,
+               aod::HfOriginalCollisionsCounter const& collisionsCounter)
   {
+    for (const auto& collisionCounter : collisionsCounter) {
+      registry.fill(HIST("hEvents"), 1, collisionCounter.originalAODSize());
+    }
+
     static int ncol = 0;
 
     for (const auto& collision : collisions) {
-      // handle normalization
-      int aodId = collision.originalAODId();
-      if (!std::count(aodIds.begin(), aodIds.end(), aodId)) {
-        // fill histogram with collision.originalAODSize();
-        registry.fill(HIST("hEvents"), 1, collision.originalAODSize());
-        aodIds.emplace_back(aodId);
-      }
-
       auto thisCollId = collision.collisionId(); // FIXME : works only with column CollisionId
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();

@@ -44,6 +44,7 @@ enum Event : int {
 struct HfReducedDataCreatorDplusPi {
   // Produces AOD tables to store track information
   Produces<aod::HfReducedCollisions> hfReducedCollision;
+  Produces<aod::HfOriginalCollisionsCounter> hfCollisionCounter;
   Produces<aod::HfReducedTracksWithSel> hfTrackPion;
   Produces<aod::HfReducedTracksPIDWithSel> hfTrackPIDPion;
   Produces<aod::HfReducedCand3Prong> hfCand3Prong;
@@ -204,12 +205,7 @@ struct HfReducedDataCreatorDplusPi {
     }
 
     // handle normalization by the right number of collisions
-    auto collisionTableSize = collisions.tableSize();
-    // identify the original AOD table by collisionTableId
-    // that shall be incremented for each process function
-    // i.e. for each new aod::Collisions table called
-    static int collisionTableId = 0;
-    collisionTableId++;
+    hfCollisionCounter(collisions.tableSize());
 
     static int ncol = 0;
     for (const auto& collision : collisions) {
@@ -370,8 +366,7 @@ struct HfReducedDataCreatorDplusPi {
                          collision.posX(), collision.posY(), collision.posZ(),
                          collision.covXX(), collision.covXY(), collision.covYY(),
                          collision.covXZ(), collision.covYZ(), collision.covZZ(),
-                         bz,
-                         collisionTableId, collisionTableSize);
+                         bz);
     } // collision
   }   // process
 };    // struct

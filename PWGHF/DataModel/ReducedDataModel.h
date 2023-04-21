@@ -39,8 +39,8 @@ namespace hf_reduced_collision
 {
 DECLARE_SOA_COLUMN(Bz, bz, float); //! Magnetic field in z-direction
 // keep track of the number of studied events (for normalization purposes)
-DECLARE_SOA_COLUMN(OriginalAODId, originalAODId, int);     //! User-defined index of COLLISION table processed
 DECLARE_SOA_COLUMN(OriginalAODSize, originalAODSize, int); //! Size of COLLISION table processed
+
 } // namespace hf_reduced_collision
 
 DECLARE_SOA_TABLE(HfReducedCollisions, "AOD", "HFREDCOLLISION", //! Table with collision for reduced workflow
@@ -54,8 +54,9 @@ DECLARE_SOA_TABLE(HfReducedCollisions, "AOD", "HFREDCOLLISION", //! Table with c
                   collision::CovXZ,
                   collision::CovYZ,
                   collision::CovZZ,
-                  hf_reduced_collision::Bz,
-                  hf_reduced_collision::OriginalAODId,
+                  hf_reduced_collision::Bz);
+
+DECLARE_SOA_TABLE(HfOriginalCollisionsCounter, "AOD", "HFCOLCOUNTER", //! Table with original number of collisions
                   hf_reduced_collision::OriginalAODSize);
 
 namespace hf_track_par_cov
