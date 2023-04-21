@@ -218,11 +218,8 @@ DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int); //! Checks mother PDG, where moth
 
 DECLARE_SOA_TABLE(FemtoDreamMCParticles, "AOD", "FEMTODREAMMCPS",
                   o2::soa::Index<>,
-//                femtodreamMCparticle::FemtoDreamParticleId,
-                  femtodreamparticle::FemtoDreamCollisionId,    // \todo: not sure yet, which one to use
                   femtodreamMCparticle::PartOriginMCTruth,
                   femtodreamMCparticle::PDGMCTruth,
-//                femtodreamMCparticle::PDGMCTruth);
                   femtodreamparticle::Pt,
                   femtodreamparticle::Eta,
                   femtodreamparticle::Phi);

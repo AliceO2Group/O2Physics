@@ -12,6 +12,8 @@
 /// \file FemtoDreamParticleHisto.h
 /// \brief FemtoDreamParticleHisto - Histogram class for tracks, V0s and cascades
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
+/// \author Anton Riedel, TU München, anton.riedel@tum.de
 
 #ifndef PWGCF_FEMTODREAM_FEMTODREAMPARTICLEHISTO_H_
 #define PWGCF_FEMTODREAM_FEMTODREAMPARTICLEHISTO_H_
@@ -35,9 +37,17 @@ class FemtoDreamParticleHisto
  public:
   /// Destructor
   virtual ~FemtoDreamParticleHisto() = default;
-
+  
+  /// Initializes particle histograms 
+  /// Called by init both in case of reconstructed data/ Monte Carlo, and for Monte Carlo Truth
+  /// \tparam T type of the axis Object 
+  /// \tparam mc enum object to get the suffix ("" for data/ Monte Cartlo reconstructed, "_MC" for Monte Carlo truth) for the folder in the output file 
+  /// \param folderName base path of the directory in the output file, in which to store the histograms
+  /// \param tempFitVarAxisTitle  Title of the axis of the tempFitVar (DCA_xy in case of tracks, CPA in case of V0s, etc.)
+  /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
+  /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void init_base(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarAxis, T& tempFitVarpTAxis, bool isMC)
+  void init_base(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis)
   {
       std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[mc]).c_str(); 
       /// Histograms of the kinematic properties
@@ -51,21 +61,27 @@ class FemtoDreamParticleHisto
       }
 
   }
-  
+
+  /// Initializes specialized Monte Carlo particle histograms
+  /// internal function called by init only in case of Monte Carlo truth
+  /// \tparam T type of the axis Object 
+  /// \param folderName base path of the directory in the output file, in which to store the histograms
+  /// \param tempFitVarAxisTitle  Title of the axis of the tempFitVar (DCA_xy in case of tracks, CPA in case of V0s, etc.)
+  /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
+  /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <typename T>
-  void init_MC(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarAxis, T& tempFitVarpTAxis)
+  void init_MC(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis)
   {
 
     /// Particle-type specific histograms
     if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
       /// Track histograms
-      mHistogramRegistry->add((folderName + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]).c_str() + "/hDCAxy_Primary").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-      mHistogramRegistry->add((folderName + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]).c_str() + "/hDCAxy_Daughter").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
       mHistogramRegistry->add((folderName + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]).c_str() + "/hDCAxy_Material").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-      mHistogramRegistry->add((folderName + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]).c_str() + "/hDCAxy_NotPrimary").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
       mHistogramRegistry->add((folderName + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]).c_str() + "/hDCAxy_Fake").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
       mHistogramRegistry->add((folderName + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]).c_str() + "/hDCAxy_DaughterLambda").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
       mHistogramRegistry->add((folderName + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]).c_str() + "/hDCAxy_DaughterSigmaplus").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
+      mHistogramRegistry->add((folderName + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]).c_str() + "/hDCAxy_Primary").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
+      mHistogramRegistry->add((folderName + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]).c_str() + "/hDCAxy_Daughter").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
     } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0) {
       /// V0 histograms
     } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
@@ -74,19 +90,16 @@ class FemtoDreamParticleHisto
       LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
     }
 
-    /*
-    for (int theorigin = o2::aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary; theorigin < o2::aod::femtodreamMCparticle::ParticleOriginMCTruth::kNOriginMCTruthTypes; theorigin++){
-      mHistogramRegistry->add(folderName + (static_cast<std::string>(o2::aod::femtodreamparticle::TempFitVarName[mParticleType])
-                                          + static_cast<std::string>(o2::aod::femtodreamMCparticle::ParticleOriginMCTruthName[theorigin])).c_str(),
-                              ("; #it{p}_{T} (GeV/#it{c}); " + tempFitVarAxisTitle).c_str(), kTH2F, {{tempFitVarpTAxis}, {tempFitVarAxis}});
-    }
-    */
-
-
   }
-
-  /// Initialization of the QA histograms
-  /// \param registry HistogramRegistry
+  
+  /// Templated function for the initialization of the QA histograms
+  /// Always calls init_base to initialize the histograms with data/ Monte Carlo reconstructed
+  /// In case of Monte Carlo, calls init_base again for Monte Carlo truth and the specialized function init_MC for additional Monte Carlo histogramms
+  /// \tparam T type of the axis binning
+  /// \param registry Histogram registry to be passed
+  /// \param tempFitVarpTBins binning of the pT axis in the pT vs. tempFitVar 
+  /// \param tempFitVarBins binning of the tempFitVar (DCA_xy in case of tracks, CPA in case of V0s, etc.)
+  /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T>
   void init(HistogramRegistry* registry, T& tempFitVarpTBins, T& tempFitVarBins, bool isMC)
   {
@@ -113,16 +126,17 @@ class FemtoDreamParticleHisto
       std::string folderName = (static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]).c_str() + static_cast<std::string>(mFolderSuffix[mFolderSuffixType])).c_str();
 
       //Fill here the actual histogramms by calling init_base and init_MC
-      init_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(folderName, tempFitVarAxisTitle, tempFitVarAxis, tempFitVarpTAxis, isMC);
+      init_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
       if(isMC){
-        init_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(folderName, tempFitVarAxisTitle, tempFitVarAxis, tempFitVarpTAxis, isMC);
-        init_MC(folderName, tempFitVarAxisTitle, tempFitVarAxis, tempFitVarpTAxis);
+        init_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
+        init_MC(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
       }
 
     }
   }
 
   /// Filling of the histograms
+  /// Called by init both in case of reconstructed data/ Monte Carlo, and for Monte Carlo Truth
   /// \tparam T Data type of the particle
   /// \param part Particle
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
@@ -141,7 +155,8 @@ class FemtoDreamParticleHisto
   } 
 
 
-  /// Filling of the histograms for MC
+  /// Filling specialized histograms for Monte Carlo truth
+  /// internal function called by init only in case of Monte Carlo truth
   /// \tparam T Data type of the particle
   /// \param part Particle
   /// \param mctruthorigin Origin of the associated mc Truth particle
@@ -149,7 +164,6 @@ class FemtoDreamParticleHisto
   void fillQA_MC(T const& part, int mctruthorigin)
   {
     if (mHistogramRegistry) {
-      
 
       if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
         /// Track histograms
@@ -193,24 +207,15 @@ class FemtoDreamParticleHisto
         LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
       }
 
-
-      /*
-      for (int theorigin = o2::aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary; theorigin < o2::aod::femtodreamMCparticle::ParticleOriginMCTruth::kNOriginMCTruthTypes; theorigin++){
-        if (theorigin == mctruthorigin){
-          mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType])
-                                 + HIST(mFolderSuffix[mFolderSuffixType]) 
-                                 + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth])
-                                 + HIST(o2::aod::femtodreamparticle::TempFitVarName[mParticleType])
-                                 + HIST(o2::aod::femtodreamMCparticle::ParticleOriginMCTruthName[mctruthorigin]),
-                                 part.pt(), part.tempFitVar());
-        }
-      }
-      */
-
     }
   }
 
-  
+  /// Templated function to fill particle histograms for data/ Monte Carlo reconstructed and Monte Carlo truth
+  /// Always calls fillQA_base fill histogramms with data/ Monte Carlo reconstructed 
+  /// In case of Monte Carlo, calls fillQA_base with Monte Carlo truth info and specialized function fillQA_MC for additional histogramms
+  /// \tparam T particle type 
+  /// \tparam isMC fills the additional histograms for Monte Carlo truth
+  /// \param part particle for which the histograms should be filled
   template <bool isMC, typename T>
   void fillQA(T const& part)
   {

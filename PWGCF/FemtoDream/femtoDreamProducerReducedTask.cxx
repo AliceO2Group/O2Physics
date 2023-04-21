@@ -12,6 +12,8 @@
 /// \file femtoDreamProducerReducedTask.cxx
 /// \brief Tasks that produces the track tables used for the pairing (tracks only)
 /// \author Luca Barioglio, TU München, andreas.mathis@ph.tum.de
+/// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
+/// \author Anton Riedel, TU München, anton.riedel@tum.de
 
 #include "TMath.h"
 #include <CCDB/BasicCCDBManager.h>
@@ -33,6 +35,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "Math/Vector4D.h"
+#include "FemtoUtils.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -82,6 +85,7 @@ struct femtoDreamProducerReducedTask {
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   Configurable<bool> ConfRejectITSHitandTOFMissing{"ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
 
+  Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "PDG code of the selected track for Monte Carlo truth"};
   // Track cuts
   FemtoDreamTrackSelection trackCuts;
   Configurable<std::vector<float>> ConfTrkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
@@ -185,7 +189,7 @@ struct femtoDreamProducerReducedTask {
   }
 
   template <typename ParticleType>
-  void fillMCParticle(ParticleType const& particle)
+  void fillMCParticle(ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype)
   {
     if (particle.has_mcParticle()) {
       // get corresponding MC particle and its info
@@ -195,51 +199,32 @@ struct femtoDreamProducerReducedTask {
       int particleOrigin = 99;
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
 
-      if (abs(pdgCode) == 2212) { // TODO: create a configurable and do not hardcode!
+      if (abs(pdgCode) == abs(ConfPDGCodeTrack.value)) { 
+
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
         } else if (motherparticleMC.producedByGenerator()) {
-          switch (abs(motherparticleMC.pdgCode())) {
-            case 3122:
-              particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughterLambda;
-              break;
-            case 3222:
-              particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughterSigmaplus;
-              break;
-            default:
-              particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughter;
-          } // switch
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode()); 
         } else {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
         }
-      } else {
-        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
-      }
-      outputPartsMC(outputCollision.lastIndex(), particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
-      //outputPartsMCLabels(particleMC.globalIndex());
-      outputPartsMCLabels(outputPartsMC.lastIndex());
       
-      LOGF(info, "--> pT MC : %f", particleMC.pt());
-      LOGF(info, "--> pdgCode : %i", pdgCode);
-      LOGF(info, "--> Origin : %i", particleOrigin);
-      LOGF(info, "--> particleMC last index : %i", outputPartsMC.lastIndex());
+      } else {
 
-    } else {
-      //outputPartsMC(outputCollision.lastIndex(), -999, -999, -999, -999, -999);
-      outputPartsMC(outputCollision.lastIndex(), aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake, 0, 0., 0., 0.);
+        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
+      
+      }
+      outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
       outputPartsMCLabels(outputPartsMC.lastIndex());
-      LOGF(info, "--> NO MC PARTICLE AVAILABLE");
-      LOGF(info, "--> particleMC last index : %i", outputPartsMC.lastIndex());
-      //outputPartsMCLabels(-1);
+    } else {
+      outputPartsMCLabels(-1);
     }
   }
 
-  //void process(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks) /// \todo with FilteredFullV0s
   template <bool isMC, typename CollisionType, typename TrackType>
   void fillCollisionsAndTracks(CollisionType const& col, TrackType const& tracks) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
-    //getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>()); //\todo: remove this line
 
     const auto vtxZ = col.posZ();
     const auto spher = colCuts.computeSphericity(col, tracks);
@@ -295,10 +280,8 @@ struct femtoDreamProducerReducedTask {
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
                   track.dcaXY(), childIDs, 0, 0);
 
-      LOGF(info, "----- NEW PARTICLE ----");
-      LOGF(info, "pT : %f", track.pt());
       if constexpr (isMC) {
-        fillMCParticle(track);
+        fillMCParticle(track, o2::aod::femtodreamparticle::ParticleType::kTrack);
       }
 
       if (ConfDebugOutput) {
@@ -336,7 +319,6 @@ struct femtoDreamProducerReducedTask {
   void processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
-    //getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>(), false);
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracks<false>(col, tracks);
@@ -349,7 +331,6 @@ struct femtoDreamProducerReducedTask {
                  aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
     // get magnetic field for run
-    //getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>(), true);
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracks<true>(col, tracks);
