@@ -35,7 +35,7 @@ struct ALICE3Centrality {
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   bool centralityLoaded = false;
-  TH1D* hCumMultALICE3;
+  TH1D* hCumMultALICE3 = nullptr;
 
   void init(InitContext&)
   {
