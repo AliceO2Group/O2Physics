@@ -320,7 +320,8 @@ DECLARE_SOA_COLUMN(DCACascDaughters, dcacascdaughters, float); //!
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);             //!
 DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);             //!
 DECLARE_SOA_COLUMN(DCABachToPV, dcabachtopv, float);           //!
-DECLARE_SOA_COLUMN(DCACascToPV, dcacasctopv, float);           //!
+DECLARE_SOA_COLUMN(DCAXYCascToPV, dcaXYCascToPV, float);       //!
+DECLARE_SOA_COLUMN(DCAZCascToPV, dcaZCascToPV, float);         //!
 
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
@@ -329,7 +330,7 @@ DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance mat
 // Saved from strangeness tracking
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float); //!
 DECLARE_SOA_COLUMN(TopologyChi2, topologyChi2, float); //!
-DECLARE_SOA_COLUMN(ItsClsSize, itsCluSize, int);       //!
+DECLARE_SOA_COLUMN(ItsClsSize, itsCluSize, float);     //!
 
 // Derived expressions
 // Momenta
@@ -392,7 +393,7 @@ DECLARE_SOA_TABLE(StoredCascDatas, "AOD", "CASCDATA", //!
                   cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
-                  cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCACascToPV,
+                  cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
 
                   // Dynamic columns
                   cascdata::Pt<cascdata::Px, cascdata::Py>,
@@ -422,7 +423,7 @@ DECLARE_SOA_TABLE(StoredTraCascDatas, "AOD", "TRACASCDATA", //!
                   cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
-                  cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCACascToPV,
+                  cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
                   cascdata::MatchingChi2, cascdata::TopologyChi2, cascdata::ItsClsSize,
 
                   // Dynamic columns
