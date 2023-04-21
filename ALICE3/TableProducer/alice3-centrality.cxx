@@ -36,7 +36,7 @@ struct ALICE3Centrality {
 
   bool centralityLoaded = false;
   TH1D* hCumMultALICE3;
-  
+
   void init(InitContext&)
   {
     const AxisSpec axisMult{MaxMult.value > 10000.f ? 10000 : (int)MaxMult, 0, MaxMult, "Reconstructed tracks"};
@@ -55,7 +55,7 @@ struct ALICE3Centrality {
   {
     if (!centralityLoaded) {
       hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>("Analysis/ALICE3/Centrality", -1);
-      centralityLoaded = true; 
+      centralityLoaded = true;
       LOGF(info, "ALICE 3 centrality calibration loaded!");
     }
 
