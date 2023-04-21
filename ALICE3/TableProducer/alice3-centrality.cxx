@@ -55,7 +55,7 @@ struct ALICE3Centrality {
   {
     if (!centralityLoaded) {
       hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>("Analysis/ALICE3/Centrality", -1);
-      centralityLoaded = false; 
+      centralityLoaded = true; 
       LOGF(info, "ALICE 3 centrality calibration loaded!");
     }
 
