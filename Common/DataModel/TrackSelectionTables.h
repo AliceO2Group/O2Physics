@@ -98,14 +98,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(CheckFlag, checkFlag,
                            [](TrackSelectionFlags::flagtype flags,
                               TrackSelectionFlags::flagtype mask) -> bool { return TrackSelectionFlags::checkFlag(flags, mask); }); //! Checks the single cut
 // Combo selections
-DECLARE_DYN_TRKSEL_COLUMN(IsQualityTrack, isQualityTrack, TrackSelectionFlags::kQualityTracks);                  //! Passed the combined track cut: kQualityTracks
-DECLARE_DYN_TRKSEL_COLUMN(IsPrimaryTrack, isPrimaryTrack, TrackSelectionFlags::kPrimaryTracks);                  //! Passed the combined track cut: kPrimaryTracks
-DECLARE_DYN_TRKSEL_COLUMN(IsInAcceptanceTrack, isInAcceptanceTrack, TrackSelectionFlags::kInAcceptanceTracks);   //! Passed the combined track cut: kInAcceptanceTracks
-DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrack, isGlobalTrack, TrackSelectionFlags::kGlobalTrack);                      //! Passed the combined track cut: kGlobalTrack
-DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoTPCCluster, isGlobalTrackWoTPCCluster, TrackSelectionFlags::kGlobalTrackWoTPCCluster);                      //! Passed the combined track cut: kGlobalTrackWoTPCCluster
-DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, TrackSelectionFlags::kGlobalTrackWoPtEta); //! Passed the combined track cut: kGlobalTrackWoPtEta
-DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, TrackSelectionFlags::kGlobalTrackWoDCA);       //! Passed the combined track cut: kGlobalTrackWoDCA
-DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoDCATPCCluster, isGlobalTrackWoDCATPCCluster, TrackSelectionFlags::kGlobalTrackWoDCATPCCluster);       //! Passed the combined track cut: kGlobalTrackWoDCATPCCluster
+DECLARE_DYN_TRKSEL_COLUMN(IsQualityTrack, isQualityTrack, TrackSelectionFlags::kQualityTracks);                                          //! Passed the combined track cut: kQualityTracks
+DECLARE_DYN_TRKSEL_COLUMN(IsPrimaryTrack, isPrimaryTrack, TrackSelectionFlags::kPrimaryTracks);                                          //! Passed the combined track cut: kPrimaryTracks
+DECLARE_DYN_TRKSEL_COLUMN(IsInAcceptanceTrack, isInAcceptanceTrack, TrackSelectionFlags::kInAcceptanceTracks);                           //! Passed the combined track cut: kInAcceptanceTracks
+DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrack, isGlobalTrack, TrackSelectionFlags::kGlobalTrack);                                              //! Passed the combined track cut: kGlobalTrack
+DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoTPCCluster, isGlobalTrackWoTPCCluster, TrackSelectionFlags::kGlobalTrackWoTPCCluster);          //! Passed the combined track cut: kGlobalTrackWoTPCCluster
+DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, TrackSelectionFlags::kGlobalTrackWoPtEta);                         //! Passed the combined track cut: kGlobalTrackWoPtEta
+DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, TrackSelectionFlags::kGlobalTrackWoDCA);                               //! Passed the combined track cut: kGlobalTrackWoDCA
+DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoDCATPCCluster, isGlobalTrackWoDCATPCCluster, TrackSelectionFlags::kGlobalTrackWoDCATPCCluster); //! Passed the combined track cut: kGlobalTrackWoDCATPCCluster
 
 #undef DECLARE_DYN_TRKSEL_COLUMN
 
