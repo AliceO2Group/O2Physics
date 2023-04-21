@@ -77,7 +77,7 @@ float getBinCenter(uint8_t bin, double max)
 }
 
 struct NucleusCandidate {
-  NucleusCandidate(int idx, float aPt, float aEta, uint8_t aITSclsMap, uint8_t aTPCnCls, int8_t aDCAxy, int8_t aDCAz, uint16_t aFlags, uint8_t aTPCnsigma, uint8_t aTOFnsigma, uint8_t aTOFmass) : globalIndex(idx), pt(aPt), eta(aEta), ITSclsMap(aITSclsMap), TPCnCls(aTPCnCls), DCAxy(aDCAxy), DCAz(aDCAz), flags(aFlags), TPCnsigma(aTPCnsigma), TOFnsigma(aTOFnsigma), TOFmass(aTOFmass)
+  NucleusCandidate(int idx, float aPt, float aEta, uint8_t aITSclsMap, uint8_t aTPCnCls, int8_t aDCAxy, int8_t aDCAz, uint16_t aFlags, uint8_t aTPCnsigma, uint8_t aTOFmass) : globalIndex(idx), pt(aPt), eta(aEta), ITSclsMap(aITSclsMap), TPCnCls(aTPCnCls), DCAxy(aDCAxy), DCAz(aDCAz), flags(aFlags), TPCnsigma(aTPCnsigma), TOFmass(aTOFmass)
   {
   }
   int globalIndex;
@@ -89,7 +89,6 @@ struct NucleusCandidate {
   int8_t DCAz;
   uint16_t flags;
   uint8_t TPCnsigma;
-  uint8_t TOFnsigma;
   uint8_t TOFmass;
 };
 
@@ -169,7 +168,6 @@ DECLARE_SOA_COLUMN(DCAxy, dcaxy, int8_t);
 DECLARE_SOA_COLUMN(DCAz, dcaz, int8_t);
 DECLARE_SOA_COLUMN(Flags, flags, uint16_t);
 DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, uint8_t);
-DECLARE_SOA_COLUMN(TOFnsigma, tofnsigma, uint8_t);
 DECLARE_SOA_COLUMN(TOFmass, tofmass, uint8_t);
 DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
@@ -185,7 +183,6 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::DCAz,
                   NucleiTableNS::Flags,
                   NucleiTableNS::TPCnsigma,
-                  NucleiTableNS::TOFnsigma,
                   NucleiTableNS::TOFmass)
 
 DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
@@ -197,7 +194,6 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::DCAz,
                   NucleiTableNS::Flags,
                   NucleiTableNS::TPCnsigma,
-                  NucleiTableNS::TOFnsigma,
                   NucleiTableNS::TOFmass,
                   NucleiTableNS::gPt,
                   NucleiTableNS::gEta,
@@ -235,7 +231,6 @@ struct NucleiSpectraTask {
   Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {nuclei::bbMomScalingDefault[0], 4, 2, nuclei::names, nuclei::chargeLabelNames}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei::betheBlochDefault[0], 4, 6, nuclei::names, nuclei::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgNsigmaTPC{"cfgNsigmaTPC", {nuclei::nSigmaTPCdefault[0], 4, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
-  Configurable<LabeledArray<double>> cfgNsigmaTOF{"cfgNsigmaTOF", {nuclei::nSigmaTOFdefault[0], 4, 2, nuclei::names, nuclei::nSigmaConfigName}, "TOF nsigma selection for light nuclei"};
   Configurable<LabeledArray<double>> cfgDCAcut{"cfgDCAcut", {nuclei::DCAcutDefault[0], 4, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
   Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 4, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
   Configurable<LabeledArray<double>> cfgBinnedVariables{"cfgBinnedVariables", {nuclei::BinnedVariablesDefaultMax[0], 5, 1, nuclei::binnedVariableNames, nuclei::binnedLabelNames}, "Maximum value for the binned variables"};
@@ -270,7 +265,7 @@ struct NucleiSpectraTask {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta;
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::pidTOFbeta, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl, aod::TOFEvTime>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::pidTOFbeta, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::TOFEvTime>>;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   o2::pid::tof::Beta<TrackCandidates::iterator> responseBeta;
@@ -338,8 +333,9 @@ struct NucleiSpectraTask {
     spectra.add("hTofSignalData", "TOF beta", HistType::kTH2F, {{500, 0., 5., "#it{p} (GeV/#it{c})"}, {750, 0, 1.5, "TOF #beta"}});
     for (int iC{0}; iC < 2; ++iC) {
       for (int iS{0}; iS < nuclei::species; ++iS) {
+        nuclei::hNsigma[0][iS][iC] = spectra.add<TH3>(fmt::format("h{}nsigma{}_{}", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("n#sigma_{{}} {} {}", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], nSigmaAxes[0]});
+
         for (int iPID{0}; iPID < 2; ++iPID) {
-          nuclei::hNsigma[iPID][iS][iC] = spectra.add<TH3>(fmt::format("h{}nsigma{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("n#sigma_{{}} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], nSigmaAxes[iPID]});
           nuclei::hDCAxy[iPID][iS][iC] = spectra.add<TH3>(fmt::format("hDCAxy{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCAxy {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], dcaAxes[iS]});
         }
         nuclei::hTOFmass[iS][iC] = spectra.add<TH3>(fmt::format("h{}TOFmass{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("TOF mass - {}  PDG mass", nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], tofMassAxis});
@@ -351,7 +347,6 @@ struct NucleiSpectraTask {
     for (int iS{0}; iS < 4; ++iS) {
       for (int iMax{0}; iMax < 2; ++iMax) {
         nuclei::pidCuts[0][iS][iMax] = cfgNsigmaTPC->get(iS, iMax);
-        nuclei::pidCuts[1][iS][iMax] = cfgNsigmaTOF->get(iS, iMax);
       }
     }
   }
@@ -387,7 +382,7 @@ struct NucleiSpectraTask {
       }
       float nSigma[2][4]{
         {track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl()},
-        {track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl()}};
+        {0.f, 0.f, 0.f, 0.f}}; /// then we will calibrate the TOF mass for the He3 and Alpha
       const int iC{track.sign() < 0};
       bool selectedTPC[4]{false}, goodToAnalyse{false};
       for (int iS{0}; iS < nuclei::species; ++iS) {
@@ -423,7 +418,7 @@ struct NucleiSpectraTask {
 
         for (int iPID{0}; iPID < 2; ++iPID) {
           if (selectedTPC[iS]) {
-            if (iPID && (!track.hasTOF() || nSigma[1][iS] < nuclei::pidCuts[1][iS][0] || nSigma[1][iS] > nuclei::pidCuts[1][iS][1])) {
+            if (iPID && !track.hasTOF()) {
               continue;
             } else if (iPID) {
               selectedTOF = true;
@@ -452,9 +447,8 @@ struct NucleiSpectraTask {
           int8_t dcaxy = getBinnedValue(dcaInfo[0], cfgBinnedVariables->get(0u, 1u));
           int8_t dcaz = getBinnedValue(dcaInfo[1], cfgBinnedVariables->get(1u, 1u));
           int8_t nsigmaTPC = getBinnedValue(nSigma[0][iS], cfgBinnedVariables->get(2u, 1u));
-          int8_t nsigmaTOF = getBinnedValue(nSigma[1][iS], cfgBinnedVariables->get(3u, 1u));
 
-          nuclei::candidates.emplace_back(track.globalIndex(), fvector.pt(), fvector.eta(), track.itsClusterMap(), track.tpcNClsFound(), dcaxy, dcaz, flag, nsigmaTPC, nsigmaTOF, massTOF);
+          nuclei::candidates.emplace_back(track.globalIndex(), fvector.pt(), fvector.eta(), track.itsClusterMap(), track.tpcNClsFound(), dcaxy, dcaz, flag, nsigmaTPC, massTOF);
         }
       }
     } // end loop over tracks
@@ -464,7 +458,7 @@ struct NucleiSpectraTask {
   {
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
-      nucleiTable(c.pt, c.eta, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFnsigma, c.TOFmass);
+      nucleiTable(c.pt, c.eta, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFmass);
     }
   }
   PROCESS_SWITCH(NucleiSpectraTask, processData, "Data analysis", true);
@@ -488,7 +482,7 @@ struct NucleiSpectraTask {
         c.flags |= kIsSecondaryFromMaterial;
       }
 
-      nucleiTableMC(c.pt, c.eta, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFnsigma, c.TOFmass, particle.pt(), particle.eta(), particle.pdgCode());
+      nucleiTableMC(c.pt, c.eta, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFmass, particle.pt(), particle.eta(), particle.pdgCode());
       for (int iS{0}; iS < nuclei::species; ++iS) {
         if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
           nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt), 1. - std::abs(c.pt) / particle.pt());
@@ -517,7 +511,7 @@ struct NucleiSpectraTask {
         }
 
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
-          nucleiTableMC(0, 0, 0, 0, 0, 0, flags, 0, 0, 0, particle.pt(), particle.eta(), particle.pdgCode());
+          nucleiTableMC(0, 0, 0, 0, 0, 0, flags, 0, 0, particle.pt(), particle.eta(), particle.pdgCode());
         }
         break;
       }
