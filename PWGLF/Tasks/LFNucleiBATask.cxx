@@ -140,6 +140,8 @@ struct LFNucleiBATask {
     }
 
     histos.add<TH1>("event/h1VtxZ", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
+    histos.add<TH1>("tracks/h1pT", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{500, 0., 10.}});
+    histos.add<TH1>("tracks/h1p", "Track momentum; p (GeV/#it{c}); counts", HistType::kTH1F, {{500, 0., 10.}});
 
     histos.add<TH1>("qa/h1ITSncr", "number of crossed rows in ITS; ITSncr; counts", HistType::kTH1F, {{12, 0, 12}});
     histos.add<TH1>("qa/h1TPCncr", "number of crossed rows in TPC; TPCncr; counts", HistType::kTH1F, {{150, 60, 170}});
@@ -191,8 +193,6 @@ struct LFNucleiBATask {
       histos.add<TH1>("tracks/h1Eta", "pseudoRapidity; #eta; counts", HistType::kTH1F, {{200, -1.0, 1.0}});
       histos.add<TH1>("tracks/h1VarPhi", "#phi; #phi; counts", HistType::kTH1F, {{63, 0.0, 6.3}});
       histos.add<TH2>("tracks/h2EtaVsPhi", "#eta vs #phi; #eta; #phi", HistType::kTH2F, {{200, -1.0, 1.0}, {63, 0.0, 6.3}});
-      histos.add<TH1>("tracks/h1pT", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{250, 0., 5.}});
-      histos.add<TH1>("tracks/h1p", "Track momentum; p (GeV/#it{c}); counts", HistType::kTH1F, {{250, 0., 5.}});
     }
 
     if (enablePtSpectra) {
@@ -1114,6 +1114,8 @@ struct LFNucleiBATask {
       histos.fill(HIST("event/h1CentV0M"), event.multFV0M());
 
     for (auto& track : tracks) {
+      histos.fill(HIST("tracks/h1pT"), track.pt());
+      histos.fill(HIST("tracks/h1p"), track.p());
       if (isPVContributorCut && !track.isPVContributor()) {
         continue;
       }
@@ -1301,8 +1303,6 @@ struct LFNucleiBATask {
       histos.fill(HIST("qa/h1chi2TPC"), track.itsChi2NCl());
 
       if (enableDebug) {
-        histos.fill(HIST("tracks/h1pT"), track.pt());
-        histos.fill(HIST("tracks/h1p"), track.p());
         histos.fill(HIST("tracks/h1Eta"), track.eta());
         histos.fill(HIST("tracks/h1VarPhi"), track.phi());
         histos.fill(HIST("tracks/h2EtaVsPhi"), track.eta(), track.phi());

@@ -134,7 +134,6 @@ struct LfTreeCreatorNuclei {
         track.p(),
         track.eta(),
         track.phi(),
-        track.isPVContributor(),
         track.sign(),
         track.itsNCls(),
         track.tpcNClsCrossedRows(),
@@ -142,7 +141,8 @@ struct LfTreeCreatorNuclei {
         track.tpcNClsFound(),
         track.tpcChi2NCl(),
         track.itsChi2NCl(),
-        track.itsClusterMap());
+        track.itsClusterMap(),
+        track.isPVContributor());
 
       if constexpr (isMC) { // Filling MC reco information
         if (track.has_mcParticle()) {
