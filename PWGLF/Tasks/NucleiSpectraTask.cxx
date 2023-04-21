@@ -15,15 +15,19 @@
 // Executable + dependencies:
 //
 // Data (run3):
-// o2-analysis-lf-nuclei-spectra, o2-analysis-track-propagation, o2-analysis-timestamp
-// o2-analysis-trackselection, o2-analysis-pid-tof-base, o2-analysis-pid-tof-full
-// o2-analysis-pid-tpc-base
-// o2-analysis-pid-tpc-full, o2-analysis-multiplicity-table, o2-analysis-event-selection
+// o2-analysis-lf-nuclei-spectra, o2-analysis-timestamp
+// o2-analysis-pid-tof-base, o2-analysis-pid-tof-full
+// o2-analysis-pid-tpc-base, o2-analysis-pid-tpc-full,
+// o2-analysis-multiplicity-table, o2-analysis-event-selection
 
 #include <cmath>
 
 #include "Math/Vector4D.h"
 
+#include "CCDB/BasicCCDBManager.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -31,7 +35,11 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -213,6 +221,7 @@ struct NucleiSpectraTask {
 
   Produces<o2::aod::NucleiTable> nucleiTable;
   Produces<o2::aod::NucleiTableMC> nucleiTableMC;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Configurable<std::string> cfgCentralityEstimator{"cfgCentralityEstimator", "V0A", "Centrality estimator name"};
   Configurable<float> cfgCMrapidity{"cfgCMrapidity", 0.f, "Rapidity of the center of mass (only for p-Pb)"};
@@ -220,7 +229,7 @@ struct NucleiSpectraTask {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgCutRapidityMin{"cfgCutRapidityMin", -0.5, "Minimum rapidity for tracks"};
   Configurable<float> cfgCutRapidityMax{"cfgCutRapidityMax", 0.5, "Maximum rapidity for tracks"};
-  Configurable<float> cfgCutNclusITS{"cfgCutNclusITS", 4, "Minimum number of ITS clusters"};
+  Configurable<float> cfgCutNclusITS{"cfgCutNclusITS", 5, "Minimum number of ITS clusters"};
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
 
   Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {nuclei::bbMomScalingDefault[0], 4, 2, nuclei::names, nuclei::chargeLabelNames}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
@@ -247,15 +256,66 @@ struct NucleiSpectraTask {
   ConfigurableAxis cfgNsigmaTOFbins{"cfgNsigmaTOFbins", {100, -5., 5.}, "nsigma_TOF binning"};
   ConfigurableAxis cfgTOFmassBins{"cfgTOFmassBins", {200, -5., 5.}, "TOF mass binning"};
 
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackWoDCAInFilter());
+  // CCDB options
+  Configurable<double> cfgBz{"cfgBz", -999, "bz field, -999 is automatic"};
+  Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
+  Configurable<std::string> cfgCCDBurl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> cfgGRPpath{"cfgGRPpath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> cfgGRPmagPath{"cfgGRPmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> cfgLUTpath{"cfgLUTpath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> cfgGeoPath{"cfgGeoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  int mRunNumber = 0;
+  float mBz = 0.f;
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl, aod::TOFEvTime>>;
+  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  Filter trackFilter = nabs(aod::track::eta) < cfgCutEta;
+
+  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::pidTOFbeta, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl, aod::TOFEvTime>>;
+
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   o2::pid::tof::Beta<TrackCandidates::iterator> responseBeta;
 
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+    auto run3grp_timestamp = bc.timestamp();
+
+    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(cfgGRPpath, run3grp_timestamp);
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      if (cfgBz < -990) {
+        // Fetch magnetic field from ccdb for current collision
+        mBz = grpo->getNominalL3Field();
+        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
+      } else {
+        mBz = cfgBz;
+      }
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(cfgGRPmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << cfgGRPmagPath << " of object GRPMagField and " << cfgGRPpath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+      if (cfgBz < -990) {
+        // Fetch magnetic field from ccdb for current collision
+        mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
+      } else {
+        mBz = cfgBz;
+      }
+    }
+    mRunNumber = bc.runNumber();
+  }
+
   void init(o2::framework::InitContext&)
   {
+    ccdb->setURL(cfgCCDBurl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(true);
 
     const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)cfgCentralityEstimator)};
     const AxisSpec nSigmaAxes[2]{{cfgNsigmaTPCbins, "n#sigma_{TPC}"}, {cfgNsigmaTOFbins, "n#sigma_{TOF}"}};
@@ -298,12 +358,17 @@ struct NucleiSpectraTask {
 
   void fillDataInfo(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
   {
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+
     nuclei::candidates.clear();
     // collision process loop
     if (!collision.sel8()) {
       return;
     }
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
+
+    const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
 
     const double bgScalings[4][2]{
       {nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / nuclei::masses[0], nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / nuclei::masses[0]},
@@ -314,42 +379,57 @@ struct NucleiSpectraTask {
     for (auto& track : tracks) { // start loop over tracks
       if (track.itsNCls() < cfgCutNclusITS ||
           track.tpcNClsFound() < cfgCutNclusTPC ||
-          std::abs(track.eta()) > cfgCutEta) {
+          track.tpcNClsCrossedRows() < 70 ||
+          track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
+          track.tpcChi2NCl() > 4.f ||
+          track.itsChi2NCl() > 36.f) {
         continue;
       }
-      const int iC{track.sign() < 0};
       float nSigma[2][4]{
         {track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl()},
         {track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl()}};
-      float beta{responseBeta.GetBeta(track)};
-      spectra.fill(HIST("hTofSignalData"), track.p(), beta);
-      spectra.fill(HIST("hTpcSignalData"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
+      const int iC{track.sign() < 0};
+      bool selectedTPC[4]{false}, goodToAnalyse{false};
       for (int iS{0}; iS < nuclei::species; ++iS) {
-        bool selectedTPC{false}, selectedTOF{false};
-        if (std::abs(track.dcaZ()) > cfgDCAcut->get(iS, 1)) {
-          continue;
-        }
-        ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{track.pt() * nuclei::charges[iS], track.eta(), track.phi(), nuclei::masses[iS]};
-        float y{fvector.Rapidity() + cfgCMrapidity};
-        if (y < cfgCutRapidityMin || y > cfgCutRapidityMax) {
-          continue;
-        }
-
         if (cfgBetheBlochParams->get(iS, 5u) > 0.f) {
           double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScalings[iS][iC]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
           double expSigma{expBethe * cfgBetheBlochParams->get(iS, 5u)};
           nSigma[0][iS] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         }
+        selectedTPC[iS] = (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] < nuclei::pidCuts[0][iS][1]);
+        goodToAnalyse = goodToAnalyse || selectedTPC[iS];
+      }
+      if (!goodToAnalyse) {
+        continue;
+      }
+
+      auto trackParCov = getTrackParCov(track); // should we set the charge according to the nucleus?
+      gpu::gpustd::array<float, 2> dcaInfo;
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(collVtx, trackParCov, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
+
+      float beta{responseBeta.GetBeta(track)};
+      spectra.fill(HIST("hTpcSignalData"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
+      spectra.fill(HIST("hTofSignalData"), track.tpcInnerParam(), beta);
+      for (int iS{0}; iS < nuclei::species; ++iS) {
+        bool selectedTOF{false};
+        if (std::abs(dcaInfo[1]) > cfgDCAcut->get(iS, 1)) {
+          continue;
+        }
+        ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{trackParCov.getPt() * nuclei::charges[iS], trackParCov.getEta(), trackParCov.getPhi(), nuclei::masses[iS]};
+        float y{fvector.Rapidity() + cfgCMrapidity};
+        if (y < cfgCutRapidityMin || y > cfgCutRapidityMax) {
+          continue;
+        }
+
         for (int iPID{0}; iPID < 2; ++iPID) {
-          if (nSigma[0][iS] > nuclei::pidCuts[0][iS][0] && nSigma[0][iS] < nuclei::pidCuts[0][iS][1]) {
-            selectedTPC = true;
+          if (selectedTPC[iS]) {
             if (iPID && (!track.hasTOF() || nSigma[1][iS] < nuclei::pidCuts[1][iS][0] || nSigma[1][iS] > nuclei::pidCuts[1][iS][1])) {
               continue;
             } else if (iPID) {
               selectedTOF = true;
             }
-            nuclei::hDCAxy[iPID][iS][iC]->Fill(1., fvector.pt(), track.dcaXY());
-            if (std::abs(track.dcaXY()) < cfgDCAcut->get(iS, 0u)) {
+            nuclei::hDCAxy[iPID][iS][iC]->Fill(1., fvector.pt(), dcaInfo[0]);
+            if (std::abs(dcaInfo[0]) < cfgDCAcut->get(iS, 0u)) {
               nuclei::hNsigma[iPID][iS][iC]->Fill(1., fvector.pt(), nSigma[iPID][iS]);
               if (iPID) {
                 float mass{track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS]};
@@ -359,7 +439,7 @@ struct NucleiSpectraTask {
           }
         }
         uint16_t flag{kIsReconstructed};
-        if (cfgTreeConfig->get(iS, 0u) && selectedTPC) {
+        if (cfgTreeConfig->get(iS, 0u) && selectedTPC[iS]) {
           int8_t massTOF{0u};
           if (cfgTreeConfig->get(iS, 1u) && !selectedTOF) {
             continue;
@@ -369,12 +449,12 @@ struct NucleiSpectraTask {
             massTOF = getBinnedValue(beta > 1.e-6f ? track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS] : -999.f, cfgBinnedVariables->get(4u, 1u));
           }
           flag |= BIT(iS);
-          int8_t dcaxy = getBinnedValue(track.dcaXY(), cfgBinnedVariables->get(0u, 1u));
-          int8_t dcaz = getBinnedValue(track.dcaZ(), cfgBinnedVariables->get(1u, 1u));
+          int8_t dcaxy = getBinnedValue(dcaInfo[0], cfgBinnedVariables->get(0u, 1u));
+          int8_t dcaz = getBinnedValue(dcaInfo[1], cfgBinnedVariables->get(1u, 1u));
           int8_t nsigmaTPC = getBinnedValue(nSigma[0][iS], cfgBinnedVariables->get(2u, 1u));
           int8_t nsigmaTOF = getBinnedValue(nSigma[1][iS], cfgBinnedVariables->get(3u, 1u));
 
-          nuclei::candidates.emplace_back(track.globalIndex(), track.sign() * track.pt() * nuclei::charges[iS], track.eta(), track.itsClusterMap(), track.tpcNClsFound(), dcaxy, dcaz, flag, nsigmaTPC, nsigmaTOF, massTOF);
+          nuclei::candidates.emplace_back(track.globalIndex(), fvector.pt(), fvector.eta(), track.itsClusterMap(), track.tpcNClsFound(), dcaxy, dcaz, flag, nsigmaTPC, nsigmaTOF, massTOF);
         }
       }
     } // end loop over tracks
