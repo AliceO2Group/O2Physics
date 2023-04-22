@@ -20,6 +20,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "TDatabasePDG.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
@@ -48,6 +49,7 @@ static const float cutsTable[nPart][nCuts]{
 } // namespace
 
 struct femtoDreamPairTaskTrackTrack {
+  Service<O2DatabasePDG> pdg;
 
   /// Particle selection part
 
@@ -117,9 +119,6 @@ struct femtoDreamPairTaskTrackTrack {
 
   void init(InitContext&)
   {
-    TDatabasePDG::Instance()->AddParticle("deuteron", "deuteron", 1.8756134, kTRUE, 0.0, 3, "Nucleus", 1000010020);
-    TDatabasePDG::Instance()->AddAntiParticle("anti-deuteron", -1000010020);
-
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins);
     if (!ConfIsSame) {
