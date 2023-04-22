@@ -41,56 +41,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-// namespace o2::aod
-//{
-// namespace v0photonflag // flag to distinguish 1 track belongs to 1 V0 or 2 (or more) V0s in a collision.
-//{
-// DECLARE_SOA_COLUMN(IsCloser, isCloser, bool); //! true if 2 legs of this v0 do not belong to other V0s in a collision or PCA between 2 legs is closer.
-// } // namespace v0photonflag
-// DECLARE_SOA_TABLE(V0PhotonFlags, "AOD", "V0PHOTONFLAG", v0photonflag::IsCloser);
-// using V0PhotonFlag = V0PhotonFlags::iterator;
-// } // namespace o2::aod
-//
-// struct LabelUniqueV0 {
-//   Produces<aod::V0PhotonFlags> v0flags;
-//
-//   Preslice<aod::V0Photons> perCollision = aod::v0photon::collisionId;
-//   void process(aod::EMReducedEvents::iterator const& collision, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs)
-//   {
-//     auto v0photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
-//
-//     for (auto& g1 : v0photons_coll) {
-//       auto pos1 = g1.posTrack_as<aod::V0Legs>();
-//       auto ele1 = g1.negTrack_as<aod::V0Legs>();
-//       bool flag = true;
-//
-//       int posid1 = pos1.trackId(); // unique index to point o2::track
-//       int eleid1 = ele1.trackId(); // unique index to point o2::track
-//       float pca1 = g1.pca();
-//
-//       for (auto& g2 : v0photons_coll) {
-//         if (g2.index() == g1.index()) {
-//           continue;
-//         }
-//
-//         auto pos2 = g2.posTrack_as<aod::V0Legs>();
-//         auto ele2 = g2.negTrack_as<aod::V0Legs>();
-//         int posid2 = pos2.trackId(); // unique index to point o2::track
-//         int eleid2 = ele2.trackId(); // unique index to point o2::track
-//         float pca2 = g2.pca();
-//
-//         if ((posid2 == posid1 || eleid2 == eleid1) && pca1 > pca2) {
-//           // LOGF(info, "g1 id = %d , g2 id = %d , posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f", g1.index(), g2.index(), posid1, eleid1, posid2, eleid2, pca1, pca2);
-//           flag = false;
-//           break;
-//         }
-//       }
-//       v0flags(flag);
-//     }
-//   }
-// };
-
-using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF, aod::V0PhotonFlags>;
+using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct Pi0EtaToGammaGammaMC {
@@ -132,43 +83,6 @@ struct Pi0EtaToGammaGammaMC {
     }
   }
 
-  template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
-  int FindCommonMotherFrom2Prongs(TMCParticle1 const& p1, TMCParticle2 const& p2, const int expected_pdg1, const int expected_pdg2, const int expected_mother_pdg, TMCParticles const& mcparticles)
-  {
-    if (p1.globalIndex() == p2.globalIndex())
-      return -1; // mc particle p1 and p2 is identical. reject.
-
-    if (p1.pdgCode() != expected_pdg1)
-      return -1;
-    if (p2.pdgCode() != expected_pdg2)
-      return -1;
-
-    if (!p1.has_mothers())
-      return -1;
-    if (!p2.has_mothers())
-      return -1;
-
-    // LOGF(info,"original motherid1 = %d , motherid2 = %d", p1.mothersIds()[0], p2.mothersIds()[0]);
-
-    int motherid1 = p1.mothersIds()[0];
-    auto mother1 = mcparticles.iteratorAt(motherid1);
-    int mother1_pdg = mother1.pdgCode();
-
-    int motherid2 = p2.mothersIds()[0];
-    auto mother2 = mcparticles.iteratorAt(motherid2);
-    int mother2_pdg = mother2.pdgCode();
-
-    // LOGF(info,"motherid1 = %d , motherid2 = %d", motherid1, motherid2);
-
-    if (motherid1 != motherid2)
-      return -1;
-    if (mother1_pdg != mother2_pdg)
-      return -1;
-    if (mother1_pdg != expected_mother_pdg)
-      return -1;
-    return motherid1;
-  }
-
   Preslice<MyV0Photons> perCollision_pcm = aod::v0photon::collisionId;
 
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TV0Legs, typename TMCParticles>
@@ -176,6 +90,14 @@ struct Pi0EtaToGammaGammaMC {
   {
     constexpr int itmp = pairtype;
     for (auto& collision : collisions) {
+
+      if ((pairtype == kPHOSPHOS || pairtype == kPCMPHOS) && !collision.isPHOSCPVreadout()) {
+        continue;
+      }
+      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && !collision.isEMCreadout()) {
+        continue;
+      }
+
       registry.fill(HIST(pairnames[itmp]) + HIST("/hCollisionCounter"), 1.0); // all
       if (!collision.sel8()) {
         continue;
@@ -262,29 +184,32 @@ struct Pi0EtaToGammaGammaMC {
     } // end of collision loop
   }
 
-  Filter v0filter = o2::aod::v0photonflag::isCloser == true;
-  using MyFilteredV0Photons = soa::Filtered<MyV0Photons>;
-
   // using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>;
 
-  void processPCMPCM(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, MyFilteredV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles)
+  void processPCMPCM(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles)
   {
     TruePairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, v0legs, mcparticles);
   }
 
   Configurable<float> maxYgen{"maxYgen", 0.9, "maximum rapidity for generated particles"};
 
-  Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  Preslice<soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>> rec_perMcCollision = aod::emmceventlabel::emreducedmceventId;
+  // Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
+  // Preslice<soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>> rec_perMcCollision = aod::emmceventlabel::emreducedmceventId;
   void processGen(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
     for (auto& mccollision : mccollisions) {
-      auto collision_per_mccoll = collisions.sliceBy(rec_perMcCollision, mccollision.globalIndex());
-      int nrec_per_mc = collision_per_mccoll.size();
-      registry.fill(HIST("Generated/hRecCollision"), nrec_per_mc);
+      int nrec = 0;
+      // auto collision_per_mccoll = collisions.sliceBy(rec_perMcCollision, mccollision.globalIndex());
+      // int nrec_per_mc = collision_per_mccoll.size();
+      for (auto& collision : collisions) {
+        if (mccollision.globalIndex() == collision.emreducedmceventId()) {
+          nrec++;
+        }
+      }
+      registry.fill(HIST("Generated/hRecCollision"), nrec);
     }
 
     for (auto& collision : collisions) {
@@ -305,24 +230,30 @@ struct Pi0EtaToGammaGammaMC {
       registry.fill(HIST("Generated/hCollisionCounter"), 4.0); //|Zvtx| < 10 cm
       auto mccollision = collision.emreducedmcevent();
 
-      auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
-      for (auto& mctrack : mctracks_coll) {
+      // auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
+      // for (auto& mctrack : mctracks_coll) {
+      for (auto& mctrack : mcparticles) {
+
+        if (mctrack.emreducedmceventId() != mccollision.globalIndex()) {
+          continue;
+        }
+
         if (abs(mctrack.y()) > maxYgen) {
           continue;
         }
         int pdg = mctrack.pdgCode();
 
-        if (abs(pdg) == 22 && IsPhysicalPrimary(mctrack, mcparticles)) {
+        if (abs(pdg) == 22 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {
           registry.fill(HIST("Generated/hPt_Gamma"), mctrack.pt());
           registry.fill(HIST("Generated/hY_Gamma"), mctrack.y());
           registry.fill(HIST("Generated/hPhi_Gamma"), mctrack.phi());
         }
-        if (abs(pdg) == 111 && IsPhysicalPrimary(mctrack, mcparticles)) {
+        if (abs(pdg) == 111 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {
           registry.fill(HIST("Generated/hPt_Pi0"), mctrack.pt());
           registry.fill(HIST("Generated/hY_Pi0"), mctrack.y());
           registry.fill(HIST("Generated/hPhi_Pi0"), mctrack.phi());
         }
-        if (abs(pdg) == 221 && IsPhysicalPrimary(mctrack, mcparticles)) {
+        if (abs(pdg) == 221 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {
           registry.fill(HIST("Generated/hPt_Eta"), mctrack.pt());
           registry.fill(HIST("Generated/hY_Eta"), mctrack.y());
           registry.fill(HIST("Generated/hPhi_Eta"), mctrack.phi());
@@ -342,6 +273,5 @@ struct Pi0EtaToGammaGammaMC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    //    adaptAnalysisTask<LabelUniqueV0>(cfgc, TaskName{"label-unique-v0"}),
     adaptAnalysisTask<Pi0EtaToGammaGammaMC>(cfgc, TaskName{"pi0eta-to-gammagamma-mc"})};
 }

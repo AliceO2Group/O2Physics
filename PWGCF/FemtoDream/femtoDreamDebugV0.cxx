@@ -33,6 +33,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 struct femtoDreamDebugV0 {
+  SliceCache cache;
 
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 3122, "Particle 1 - PDG code"};
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 338, "Particle 1 - Selection bit from cutCulator"};
@@ -42,6 +43,8 @@ struct femtoDreamDebugV0 {
   Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
                                            // (aod::femtodreamparticle::pt < cfgCutTable->get("MaxPt")) &&
                                            ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+
+  Preslice<aod::FemtoDreamParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
@@ -78,7 +81,7 @@ struct femtoDreamDebugV0 {
   /// Porduce QA plots for V0 selection in FemtoDream framework
   void process(o2::aod::FemtoDreamCollision& col, FemtoFullParticles& parts)
   {
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
 
     eventHisto.fillQA(col);
 

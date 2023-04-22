@@ -17,6 +17,8 @@
 
 #include <string>
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 
 namespace o2::aod
 {
@@ -27,12 +29,12 @@ V0PhotonCut* GetCut(const char* cutName);
 
 namespace phoscuts
 {
-// PHOSPhotonCut* GetCut(const char* cutName);
+PHOSPhotonCut* GetCut(const char* cutName);
 } // namespace phoscuts
 
 namespace emccuts
 {
-// EMCPhotonCut* GetCut(const char* cutName);
+EMCPhotonCut* GetCut(const char* cutName);
 } // namespace emccuts
 
 } // namespace o2::aod

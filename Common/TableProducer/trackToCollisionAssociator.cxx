@@ -30,6 +30,7 @@ using namespace o2::aod;
 
 struct TrackToCollisionAssociation {
   Produces<TrackAssoc> association;
+  Produces<TrackCompColls> reverseIndices;
 
   Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 4.f, "number of sigmas for time compatibility"};
   Configurable<float> timeMargin{"timeMargin", 0.f, "time margin in ns added to uncertainty because of uncalibrated TPC"};
@@ -37,8 +38,9 @@ struct TrackToCollisionAssociation {
   Configurable<bool> applyIsGlobalTrackWoDCA{"applyIsGlobalTrackWoDCA", true, "flag to apply global track w/o DCA selection"};
   Configurable<bool> usePVAssociation{"usePVAssociation", true, "if the track is a PV contributor, use the collision time for it"};
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
+  Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
 
-  Filter trackFilter = (applyIsGlobalTrackWoDCA == false) || requireGlobalTrackWoDCAInFilter();
+  Filter trackFilter = (applyIsGlobalTrackWoDCA.node() == false) || requireGlobalTrackWoDCAInFilter();
   using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   using TracksWithSelFilter = soa::Filtered<TracksWithSel>;
 
@@ -54,6 +56,7 @@ struct TrackToCollisionAssociation {
   }
 
   void processAssocWithTime(Collisions const& collisions,
+                            TracksWithSel const& tracksUnfiltered,
                             TracksWithSelFilter const& tracks,
                             AmbiguousTracks const& ambiguousTracks,
                             BCs const& bcs)
@@ -72,6 +75,9 @@ struct TrackToCollisionAssociation {
         }
       }
     }
+
+    // define vector of vectors to store indices of compatible collisions per track
+    std::vector<std::unique_ptr<std::vector<int>>> collsPerTrack(tracksUnfiltered.size());
 
     // loop over collisions to find time-compatible tracks
     auto trackBegin = tracks.begin();
@@ -128,6 +134,29 @@ struct TrackToCollisionAssociation {
           const auto trackIdx = track.globalIndex();
           LOGP(debug, "Filling track id {} for coll id {}", trackIdx, collIdx);
           association(collIdx, trackIdx);
+          if (fillTableOfCollIdsPerTrack) {
+            if (collsPerTrack[trackIdx] == nullptr) {
+              collsPerTrack[trackIdx] = std::make_unique<std::vector<int>>();
+            }
+            collsPerTrack[trackIdx].get()->push_back(collIdx);
+          }
+        }
+      }
+    }
+
+    // create reverse index track to collisions if enabled
+    if (fillTableOfCollIdsPerTrack) {
+      std::vector<int> empty{};
+      for (const auto& track : tracksUnfiltered) {
+
+        const auto trackId = track.globalIndex();
+        if (collsPerTrack[trackId] == nullptr) {
+          reverseIndices(empty);
+        } else {
+          // for (const auto& collId : *collsPerTrack[trackId]) {
+          //   LOGP(info, "  -> Coll id {}", collId);
+          // }
+          reverseIndices(*collsPerTrack[trackId].get());
         }
       }
     }
@@ -135,22 +164,39 @@ struct TrackToCollisionAssociation {
 
   PROCESS_SWITCH(TrackToCollisionAssociation, processAssocWithTime, "Use track-to-collision association based on time", false);
 
-  void processStandardAssoc(Collision const& collision,
-                            TracksWithSel const& tracksPerCollision)
+  Preslice<TracksWithSel> tracksPerCollisions = aod::track::collisionId;
+
+  void processStandardAssoc(Collisions const& collisions,
+                            TracksWithSel const& tracks)
   {
     // we do it for all tracks, to be compatible with Run 2 analyses
-    for (const auto& track : tracksPerCollision) {
-      bool hasGoodQuality = true;
-      if (applyIsGlobalTrackWoDCA && !track.isGlobalTrackWoDCA()) {
-        hasGoodQuality = false;
-      } else if (applyMinimalTrackSelForRun2) {
-        unsigned char itsClusterMap = track.itsClusterMap();
-        if (!(track.tpcNClsFound() >= 50 && track.flags() & o2::aod::track::ITSrefit && track.flags() & o2::aod::track::TPCrefit && (TESTBIT(itsClusterMap, 0) || TESTBIT(itsClusterMap, 1)))) {
+    for (const auto& collision : collisions) {
+      auto tracksThisCollision = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
+      for (const auto& track : tracksThisCollision) {
+        bool hasGoodQuality = true;
+        if (applyIsGlobalTrackWoDCA && !track.isGlobalTrackWoDCA()) {
           hasGoodQuality = false;
+        } else if (applyMinimalTrackSelForRun2) {
+          unsigned char itsClusterMap = track.itsClusterMap();
+          if (!(track.tpcNClsFound() >= 50 && track.flags() & o2::aod::track::ITSrefit && track.flags() & o2::aod::track::TPCrefit && (TESTBIT(itsClusterMap, 0) || TESTBIT(itsClusterMap, 1)))) {
+            hasGoodQuality = false;
+          }
+        }
+        if (hasGoodQuality) {
+          association(collision.globalIndex(), track.globalIndex());
         }
       }
-      if (hasGoodQuality) {
-        association(collision.globalIndex(), track.globalIndex());
+    }
+
+    // create reverse index track to collisions if enabled
+    std::vector<int> empty{};
+    if (fillTableOfCollIdsPerTrack) {
+      for (const auto& track : tracks) {
+        if (track.has_collision()) {
+          reverseIndices(std::vector<int>{track.collisionId()});
+        } else {
+          reverseIndices(empty);
+        }
       }
     }
   }

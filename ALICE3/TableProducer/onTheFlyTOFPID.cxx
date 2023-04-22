@@ -128,7 +128,7 @@ struct OnTheFlyTOFPID {
     auto pdgInfo = pdg->GetParticle(particle.pdgCode());
     int charge = 0;
     if (pdgInfo != nullptr) {
-      charge = pdgInfo->Charge();
+      charge = pdgInfo->Charge() / 3;
     }
     std::array<float, 5> params;
     std::array<float, 15> covm = {0.};

@@ -34,27 +34,31 @@ DECLARE_SOA_COLUMN(Tag, tag, uint64_t);         //!  Bit-field for storing event
 DECLARE_SOA_COLUMN(NgammaPCM, ngpcm, int);
 DECLARE_SOA_COLUMN(NgammaPHOS, ngphos, int);
 DECLARE_SOA_COLUMN(NgammaEMC, ngemc, int);
+DECLARE_SOA_COLUMN(IsPHOSCPVReadout, isPHOSCPVreadout, bool);
+DECLARE_SOA_COLUMN(IsEMCReadout, isEMCreadout, bool);
 
 } // namespace emreducedevent
 DECLARE_SOA_TABLE(EMReducedEvents, "AOD", "EMREDUCEDEVENT", //!   Main event information table
-                  o2::soa::Index<>, emreducedevent::CollisionId, emreducedevent::Tag, bc::RunNumber, evsel::Sel8,
+                  o2::soa::Index<>, emreducedevent::CollisionId, emreducedevent::Tag, bc::RunNumber, bc::TriggerMask, evsel::Sel8,
+                  emreducedevent::IsPHOSCPVReadout, emreducedevent::IsEMCReadout,
                   collision::PosX, collision::PosY, collision::PosZ,
                   collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes,
                   mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
                   mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV, mult::MultNTracksPVeta1,
+                  cent::CentFV0A, cent::CentFT0M, cent::CentFT0A, cent::CentFT0C, cent::CentFDDM, cent::CentNTPV,
                   emreducedevent::NgammaPCM, emreducedevent::NgammaPHOS, emreducedevent::NgammaEMC);
 using EMReducedEvent = EMReducedEvents::iterator;
 
 namespace emreducedmcevent
 {
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //!
-DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);          //!
-DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);          //!
-DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);          //!
+DECLARE_SOA_COLUMN(PosX, posX, float);              //!
+DECLARE_SOA_COLUMN(PosY, posY, float);              //!
+DECLARE_SOA_COLUMN(PosZ, posZ, float);              //!
 } // namespace emreducedmcevent
 DECLARE_SOA_TABLE(EMReducedMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
-                  o2::soa::Index<>, emreducedmcevent::McCollisionId,
-                  mccollision::GeneratorsID, emreducedmcevent::MCPosX, emreducedmcevent::MCPosY, emreducedmcevent::MCPosZ,
+                  o2::soa::Index<>, mccollision::GeneratorsID,
+                  emreducedmcevent::PosX, emreducedmcevent::PosY, emreducedmcevent::PosZ,
                   mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
 using EMReducedMCEvent = EMReducedMCEvents::iterator;
 
@@ -96,7 +100,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
                            });
 } // namespace emmcparticle
 // NOTE: This table is nearly identical to the one from Framework (except that it points to the event ID, not the BC id)
-//       This table contains all MC truth tracks (both barrel and muon)
+//       This table contains all MC truth tracks (both v0 and calos)
 DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
                        o2::soa::Index<>, emmcparticle::EMReducedMCEventId,
                        mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
@@ -217,13 +221,6 @@ DECLARE_SOA_TABLE(V0Photons, "AOD", "V0PHOTON", //!
                   v0data::MGamma<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>);
 // iterators
 using V0Photon = V0Photons::iterator;
-
-namespace v0photonflag // flag to distinguish 1 track belongs to 1 V0 or 2 (or more) V0s in a collision.
-{
-DECLARE_SOA_COLUMN(IsCloser, isCloser, bool); //! true if 2 legs of this v0 do not belong to other V0s in a collision or PCA between 2 legs is closer.
-} // namespace v0photonflag
-DECLARE_SOA_TABLE(V0PhotonFlags, "AOD", "V0PHOTONFLAG", v0photonflag::IsCloser);
-using V0PhotonFlag = V0PhotonFlags::iterator;
 
 namespace MCTracksTrue
 {

@@ -19,6 +19,11 @@
 /// of a future detector even in very statistics-hungry analyses.
 ///
 /// \author David Dobrigkeit Chinellato, UNICAMP
+/// \author Nicolò Jacazio <nicolo.jacazio@cern.ch>, UniBo
+/// \author Roberto Preghenella preghenella@bo.infn.it
+///
+
+#include <utility>
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -38,6 +43,9 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
+#include "TableHelper.h"
+
+#include "ALICE3/Core/DelphesO2TrackSmearer.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -53,33 +61,75 @@ struct OnTheFlyTracker {
   Produces<aod::TracksDCA> tracksDCA;
 
   Configurable<float> maxEta{"maxEta", 1.5, "maximum eta to consider viable"};
+  Configurable<float> multEtaRange{"multEtaRange", 0.8, "eta range to compute the multiplicity"};
   Configurable<float> minPt{"minPt", 0.1, "minimum pt to consider viable"};
+  Configurable<bool> enableLUT{"enableLUT", false, "Enable track smearing"};
+  Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
+
+  Configurable<std::string> lutEl{"lutEl", "lutCovm.el.dat", "LUT for electrons"};
+  Configurable<std::string> lutMu{"lutMu", "lutCovm.mu.dat", "LUT for muons"};
+  Configurable<std::string> lutPi{"lutPi", "lutCovm.pi.dat", "LUT for pions"};
+  Configurable<std::string> lutKa{"lutKa", "lutCovm.ka.dat", "LUT for kaons"};
+  Configurable<std::string> lutPr{"lutPr", "lutCovm.pr.dat", "LUT for protons"};
+  Configurable<std::string> lutDe{"lutDe", "lutCovm.de.dat", "LUT for deuterons"};
+  Configurable<std::string> lutTr{"lutTr", "lutCovm.tr.dat", "LUT for tritons"};
+  Configurable<std::string> lutHe3{"lutHe3", "lutCovm.he3.dat", "LUT for Helium-3"};
 
   bool fillTracksDCA = false;
 
   // necessary for particle charges
-  Service<O2DatabasePDG> pdg;
+  Service<O2DatabasePDG> pdgDB;
 
   // for handling basic QA histograms if requested
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
+  // Track smearer
+  o2::delphes::DelphesO2TrackSmearer mSmearer;
+
   void init(o2::framework::InitContext& initContext)
   {
     // Checking if the tables are requested in the workflow and enabling them
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec const& device : workflows.devices) {
-      for (auto const& input : device.inputs) {
-        if (input.matcher.binding == "TracksDCA") {
-          fillTracksDCA = true;
+    fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
+
+    if (enableLUT) {
+      std::map<int, const char*> mapPdgLut;
+      const char* lutElChar = ((std::string)lutEl).c_str();
+      const char* lutMuChar = ((std::string)lutMu).c_str();
+      const char* lutPiChar = ((std::string)lutPi).c_str();
+      const char* lutKaChar = ((std::string)lutKa).c_str();
+      const char* lutPrChar = ((std::string)lutPr).c_str();
+      mapPdgLut.insert(std::make_pair(11, lutElChar));
+      mapPdgLut.insert(std::make_pair(13, lutMuChar));
+      mapPdgLut.insert(std::make_pair(211, lutPiChar));
+      mapPdgLut.insert(std::make_pair(321, lutKaChar));
+      mapPdgLut.insert(std::make_pair(2212, lutPrChar));
+      if (enableNucleiSmearing) {
+        const char* lutDeChar = ((std::string)lutDe).c_str();
+        const char* lutTrChar = ((std::string)lutTr).c_str();
+        const char* lutHe3Char = ((std::string)lutHe3).c_str();
+        mapPdgLut.insert(std::make_pair(1000010020, lutDeChar));
+        mapPdgLut.insert(std::make_pair(1000010030, lutTrChar));
+        mapPdgLut.insert(std::make_pair(1000020030, lutHe3Char));
+      }
+      for (auto e : mapPdgLut) {
+        if (!mSmearer.loadTable(e.first, e.second)) {
+          LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
         }
       }
     }
 
     // Basic QA
-    const AxisSpec axisMomentum{static_cast<int>(100), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
-    histos.add("hPt", "hPt", kTH1F, {axisMomentum});
+    const AxisSpec axisMomentum{static_cast<int>(1000), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
+    histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axisMomentum});
+    histos.add("hPtGeneratedPi", "hPtGeneratedPi", kTH1F, {axisMomentum});
+    histos.add("hPtGeneratedKa", "hPtGeneratedKa", kTH1F, {axisMomentum});
+    histos.add("hPtGeneratedPr", "hPtGeneratedPr", kTH1F, {axisMomentum});
+    histos.add("hPtReconstructed", "hPtReconstructed", kTH1F, {axisMomentum});
+    histos.add("hPtReconstructedPi", "hPtReconstructedPi", kTH1F, {axisMomentum});
+    histos.add("hPtReconstructedKa", "hPtReconstructedKa", kTH1F, {axisMomentum});
+    histos.add("hPtReconstructedPr", "hPtReconstructedPr", kTH1F, {axisMomentum});
   }
 
   /// Function to convert a McParticle into a perfect Track
@@ -88,10 +138,10 @@ struct OnTheFlyTracker {
   template <typename McParticleType>
   void convertMCParticleToO2Track(McParticleType& particle, o2::track::TrackParCov& o2track)
   {
-    auto pdgInfo = pdg->GetParticle(particle.pdgCode());
+    auto pdgInfo = pdgDB->GetParticle(particle.pdgCode());
     int charge = 0;
     if (pdgInfo != nullptr) {
-      charge = pdgInfo->Charge();
+      charge = pdgInfo->Charge() / 3;
     }
     std::array<float, 5> params;
     std::array<float, 15> covm = {0.};
@@ -119,36 +169,74 @@ struct OnTheFlyTracker {
     tracksParExtension(trackPar.getPt(), trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
   }
 
+  float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     o2::dataformats::DCA dcaInfoCov;
     o2::dataformats::VertexBase vtx;
+    // First we compute the number of charged particles in the event
+    dNdEta = 0.f;
+    for (const auto& mcParticle : mcParticles) {
+      if (std::abs(mcParticle.eta()) > multEtaRange) {
+        continue;
+      }
+      if (mcParticle.has_daughters()) {
+        continue;
+      }
+      const auto& pdgInfo = pdgDB->GetParticle(mcParticle.pdgCode());
+      if (!pdgInfo) {
+        LOG(warning) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
+        continue;
+      }
+      if (pdgInfo->Charge() == 0) {
+        continue;
+      }
+      dNdEta += 1.f;
+    }
 
     for (const auto& mcParticle : mcParticles) {
-      auto pdg = std::abs(mcParticle.pdgCode());
-      if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton)
+      if (!mcParticle.isPhysicalPrimary()) {
         continue;
-      if (std::fabs(mcParticle.eta()) > maxEta)
+      }
+      const auto pdg = std::abs(mcParticle.pdgCode());
+      if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton) {
         continue;
-      if (mcParticle.pt() < minPt)
+      }
+      if (std::fabs(mcParticle.eta()) > maxEta) {
         continue;
+      }
 
+      histos.fill(HIST("hPtGenerated"), mcParticle.pt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 211)
+        histos.fill(HIST("hPtGeneratedPi"), mcParticle.pt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 321)
+        histos.fill(HIST("hPtGeneratedKa"), mcParticle.pt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 2212)
+        histos.fill(HIST("hPtGeneratedPr"), mcParticle.pt());
+
+      if (mcParticle.pt() < minPt) {
+        continue;
+      }
       o2::track::TrackParCov trackParCov;
       convertMCParticleToO2Track(mcParticle, trackParCov);
 
-      // *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-      // do the smearing in a one-liner with TrackSmearer
-      // FIXME this has to be made available!
-      // if (!smearer.smearTrack(o2track, pdg, nch)) continue;
-      // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
+      if (!mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta)) {
+        continue;
+      }
 
       // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
       // Calculate primary vertex
       // To be added once smeared tracks are in place
       // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
 
-      // Base QA
-      histos.fill(HIST("hPt"), trackParCov.getPt());
+      // Base QA (note: reco pT here)
+      histos.fill(HIST("hPtReconstructed"), trackParCov.getPt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 211)
+        histos.fill(HIST("hPtReconstructedPi"), mcParticle.pt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 321)
+        histos.fill(HIST("hPtReconstructedKa"), mcParticle.pt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 2212)
+        histos.fill(HIST("hPtReconstructedPr"), mcParticle.pt());
 
       // Fixme: collision index could be changeable
       aod::track::TrackTypeEnum trackType = aod::track::Track;
@@ -174,7 +262,4 @@ struct OnTheFlyTracker {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<OnTheFlyTracker>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<OnTheFlyTracker>(cfgc)}; }

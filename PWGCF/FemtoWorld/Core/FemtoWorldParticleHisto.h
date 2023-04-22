@@ -73,6 +73,8 @@ class FemtoWorldParticleHisto
         mHistogramRegistry->add((folderName + "/EtaVsMultiplicity").c_str(), "; multiplicity; #eta", kTH2F, {{12, 0., 200.}, {29, -2., 2.}});
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhiChild) {
         /// Phi daughters histograms
+        mHistogramRegistry->add((folderName + "/TOFNSigmaKvsP").c_str(), "; #it{p} (GeV/#it{c}); n#sigma TOF vs p ", kTH2F, {{200, 0., 5.}, {80, -10, 10}});
+        mHistogramRegistry->add((folderName + "/TPCNSigmaKvsP").c_str(), "; #it{p} (GeV/#it{c}); n#sigma TPC vs p ", kTH2F, {{200, 0., 5.}, {80, -10, 10}});
       } else {
         LOG(fatal) << "FemtoWorldParticleHisto: Histogramming for requested object not defined - quitting!";
       }
@@ -109,6 +111,9 @@ class FemtoWorldParticleHisto
         mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST("/InvariantMass"), part.mass());
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhiChild) {
         /// Phi daughters histograms
+        mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/TOFNSigmaKvsP"), part.p(), part.tofNSigmaKa());
+        mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/TPCNSigmaKvsP"), part.p(), part.tpcNSigmaKa());
+        // mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/TOFNSigmaKvsP"), part.p(), part.tofNSigmaKa());
       } else {
         LOG(fatal) << "FemtoWorldParticleHisto: Histogramming for requested object not defined - quitting!";
       }

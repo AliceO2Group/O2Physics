@@ -14,12 +14,12 @@
 // Class to handle analysis variables
 //
 
+#ifndef PWGDQ_CORE_VARMANAGER_H_
+#define PWGDQ_CORE_VARMANAGER_H_
+
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
-
-#ifndef PWGDQ_CORE_VARMANAGER_H_
-#define PWGDQ_CORE_VARMANAGER_H_
 
 #include <vector>
 #include <map>
@@ -107,8 +107,9 @@ class VarManager : public TObject
 
   enum PairCandidateType {
     // TODO: need to agree on a scheme to incorporate all various hypotheses (e.g. e - mu, jpsi - K+, Jpsi - pipi,...)
-    kDecayToEE = 0,  // e.g. J/psi        -> e+ e-
-    kDecayToMuMu,    // e.g. J/psi        -> mu+ mu-
+    kDecayToEE = 0, // e.g. J/psi        -> e+ e-
+    kDecayToMuMu,   // e.g. J/psi        -> mu+ mu-
+    kDecayToPiPi,
     kElectronMuon,   // e.g. Electron - muon correlations
     kBcToThreeMuons, // e.g. Bc           -> mu+ mu- mu+
     kBtoJpsiEEK,     // e.g. B+           -> e+ e- K+
@@ -479,6 +480,18 @@ class VarManager : public TObject
     fgFitterTwoProngFwd.setUseAbsDCA(useAbsDCA);
     fgUsedKF = false;
   }
+  // Use MatLayerCylSet to correct MCS in fwdtrack propagation
+  static void SetupMatLUTFwdDCAFitter(o2::base::MatLayerCylSet* m)
+  {
+    fgFitterTwoProngFwd.setTGeoMat(false);
+    fgFitterTwoProngFwd.setMatLUT(m);
+  }
+  // Use GeometryManager to correct MCS in fwdtrack propagation
+  static void SetupTGeoFwdDCAFitter()
+  {
+    fgFitterTwoProngFwd.setTGeoMat(true);
+  }
+
   static auto getEventPlane(int harm, float qnxa, float qnya)
   {
     // Compute event plane angle from qn vector components for the sub-event A
@@ -693,11 +706,11 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kCentVZERO] = event.centRun2V0M();
   }
 
-  if constexpr ((fillMap & CollisionCent) > 0) {
+  if constexpr ((fillMap & CollisionCent) > 0 || (fillMap & ReducedEventExtended) > 0) {
     values[kCentFT0C] = event.centFT0C();
   }
 
-  if constexpr ((fillMap & CollisionMult) > 0) {
+  if constexpr ((fillMap & CollisionMult) > 0 || (fillMap & ReducedEventExtended) > 0) {
     values[kMultTPC] = event.multTPC();
     values[kMultFV0A] = event.multFV0A();
     values[kMultFV0C] = event.multFV0C();
@@ -725,6 +738,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kBC] = event.globalBC();
     values[kTimestamp] = event.timestamp();
     values[kCentVZERO] = event.centRun2V0M();
+    values[kCentFT0C] = event.centFT0C();
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.triggerAlias() & (uint32_t(1) << kINT7)) > 0;
     }
@@ -1173,6 +1187,11 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     m2 = MassMuon;
   }
 
+  if constexpr (pairType == kDecayToPiPi) {
+    m1 = MassPionCharged;
+    m2 = MassPionCharged;
+  }
+
   if constexpr (pairType == kElectronMuon) {
     m2 = MassMuon;
   }
@@ -1346,6 +1365,11 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     m2 = MassMuon;
   }
 
+  if constexpr (pairType == kDecayToPiPi) {
+    m1 = MassPionCharged;
+    m2 = MassPionCharged;
+  }
+
   if constexpr (pairType == kElectronMuon) {
     m2 = MassMuon;
   }
@@ -1372,6 +1396,11 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
   if (pairType == kDecayToMuMu) {
     m1 = MassMuon;
     m2 = MassMuon;
+  }
+
+  if (pairType == kDecayToPiPi) {
+    m1 = MassPionCharged;
+    m2 = MassPionCharged;
   }
 
   if (pairType == kElectronMuon) {
@@ -1763,18 +1792,18 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
   }
 
   // Fill Qn vectors from generic flow framework for different eta gap A, B, C (n=2,3)
-  values[kQ2X0A] = compA2.Re() / normA;
-  values[kQ2Y0A] = compA2.Im() / normA;
-  values[kQ2X0B] = compB2.Re() / normB;
-  values[kQ2Y0B] = compB2.Im() / normB;
-  values[kQ2X0C] = compC2.Re() / normC;
-  values[kQ2Y0C] = compC2.Im() / normC;
-  values[kQ3X0A] = compA3.Re() / normA;
-  values[kQ3Y0A] = compA3.Im() / normA;
-  values[kQ3X0B] = compB3.Re() / normB;
-  values[kQ3Y0B] = compB3.Im() / normB;
-  values[kQ3X0C] = compC3.Re() / normC;
-  values[kQ3Y0C] = compC3.Im() / normC;
+  values[kQ2X0A] = compA2.real() / normA;
+  values[kQ2Y0A] = compA2.imag() / normA;
+  values[kQ2X0B] = compB2.real() / normB;
+  values[kQ2Y0B] = compB2.imag() / normB;
+  values[kQ2X0C] = compC2.real() / normC;
+  values[kQ2Y0C] = compC2.imag() / normC;
+  values[kQ3X0A] = compA3.real() / normA;
+  values[kQ3Y0A] = compA3.imag() / normA;
+  values[kQ3X0B] = compB3.real() / normB;
+  values[kQ3Y0B] = compB3.imag() / normB;
+  values[kQ3X0C] = compC3.real() / normC;
+  values[kQ3Y0C] = compC3.imag() / normC;
   values[kMultA] = normA;
   values[kMultB] = normB;
   values[kMultC] = normC;
@@ -1808,6 +1837,11 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   if constexpr (pairType == kDecayToMuMu) {
     m1 = MassMuon;
     m2 = MassMuon;
+  }
+
+  if constexpr (pairType == kDecayToPiPi) {
+    m1 = MassPionCharged;
+    m2 = MassPionCharged;
   }
 
   if constexpr (pairType == kElectronMuon) {

@@ -10,36 +10,6 @@
 // or submit itself to any jurisdiction.
 ///
 /// \brief A QA task for DG events
-///
-///     options:
-///           DiffCuts.mNDtcoll(4)
-///           DiffCuts.mMinNBCs(7)
-///           DiffCuts.mMinNTracks(0)
-///           DiffCuts.mMaxNTracks(10000)
-///           DiffCuts.mNetCharges({0})
-///           DiffCuts.mPidHypo(211)
-///           DiffCuts.mMinPosz(-1000.)
-///           DiffCuts.mMaxPosz(1000.)
-///           DiffCuts.mMinPt(0.)
-///           DiffCuts.mMaxPt(1000.)
-///           DiffCuts.mMinEta(-1.)
-///           DiffCuts.mMaxEta(1.)
-///           DiffCuts.mMinIVM(0.)
-///           DiffCuts.mMaxIVM(1000.)
-///           DiffCuts.mMaxnSigmaTPC(1000.)
-///           DiffCuts.mMaxnSigmaTOF(1000.)
-///           DiffCutsX.mFITAmpLimits({0., 0., 0., 0., 0.})
-///
-///     usage: copts="--configuration json://DiffQAConfig.json -b"
-///
-///           o2-analysis-timestamp $copts |
-///           o2-analysis-track-propagation $copts |
-///           o2-analysis-event-selection $copts |
-///           o2-analysis-ft0-corrected-table $copts |
-///           o2-analysis-trackextension $copts |
-///           o2-analysis-trackselection $copts |
-///           o2-analysis-ud-diff-mcqa $copts > diffQA.log
-///
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  01.10.2021
 
@@ -55,6 +25,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct DiffMCQA {
+  SliceCache cache;
+  Preslice<aod::Zdcs> perBCzdc = aod::zdc::bcId;
+  Preslice<aod::Calos> perBCcalo = aod::calo::bcId;
 
   float maxdEdxTPC;
   float maxdEdxTOF;
@@ -70,102 +43,17 @@ struct DiffMCQA {
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
   o2::dataformats::bcRanges afbcrs = o2::dataformats::bcRanges("ambiguous_fwdtracks");
 
-  // define histograms
-  // Stat:
-  //  bin  0: all collisions
-  //  bin  1: clean FIT
-  //  bin  2: clean ZDC
-  //  bin  3: clean Calo
-  //  bin  4: no V0s
-  //  bin  5: no Cascades
-  //  bin  6: no FWD tracks
-  //  bin  7: no global tracks which are no vtx tracks
-  //  bin  8: no vtx tracks which are no global tracks
-  //  bin  9: possible ambiguous tracks
-  //  bin 10: possible ambiguous FwdTracks
-  //  bin 11: fraction of PV tracks with TOF hit > minRgtrwTOF
-  //  bin 12: number of tracks >= minimum number
-  //  bin 13: number of tracks <= maximum number
-  //  bin 14: minimum pt <= pt of vtx tracks <= maximum pt
-  //  bin 15: minimum eta <= eta of vtx tracks <= maximum eta
-  //  bin 16: net charge >= minimum net charge
-  //  bin 17: net charge <= maximum net charge
-  //  bin 18: IVM >= minimum IVM
-  //  bin 19: IVM <= maximum IVM
+  // 3 different versions of histograms:
+  //  MBRDiff: Pythia MBR
+  //  Diff   : GRANIITTI
+  //  nonDiff: Rest (Pythia MB)
   //
-  // 3 diverent versions of histograms:
-  //  Diff1: Pythia MBR
-  //  Diff2: GRANIITTI
-  //       : Rest (Pythia MB)
-  //
+  // initialize HistogramRegistry
   HistogramRegistry registry{
     "registry",
-    {
-      // non diffractive events
-      {"Stat", "#Stat", {HistType::kTH1F, {{20, -0.5, 19.5}}}},
-      {"cleanFIT", "#cleanFIT", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}}},
-      {"Tracks", "#Tracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
-      {"vtxTracks", "#vtxTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
-      {"globalTracks", "#globalTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
-      {"rejectedTracks", "#rejectedTracks", {HistType::kTH1F, {{17, -0.5, 16.5}}}},
-      {"tResvsrTOFTracks", "#tResvsrTOFTracks", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}}},
-      {"vtxPosxy", "#vtxPosxy", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
-      {"vtxPosz", "#vtxPosz", {HistType::kTH1F, {{1000, -100., 100.}}}},
-      {"etapt", "#etapt", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
-      {"dEdxTPC", "#dEdxTPC", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
-      {"dEdxTOF", "#dEdxTOF", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
-      {"vtxPosxyDG", "#vtxPosxyDG", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
-      {"vtxPoszDG", "#vtxPoszDG", {HistType::kTH1F, {{1000, -100., 100.}}}},
-      {"etaptDG", "#etaptDG", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
-      {"dEdxTPCDG", "#dEdxTPCDG", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
-      {"dEdxTOFDG", "#dEdxTOFDG", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
-      {"netChargeDG", "#netChargeDG", {HistType::kTH1F, {{21, -10.5, 10.5}}}},
-      {"IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
-      {"IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
-      // PYTHIA8 diffractive events
-      {"StatDiff1", "#StatDiff1", {HistType::kTH1F, {{20, -0.5, 19.5}}}},
-      {"cleanFITDiff1", "#cleanFITDiff1", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}}},
-      {"TracksDiff1", "#TracksDiff1", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
-      {"vtxTracksDiff1", "#vtxTracksDiff1", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
-      {"globalTracksDiff1", "#globalTracksDiff1", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
-      {"rejectedTracksDiff1", "#rejectedTracksDiff1", {HistType::kTH1F, {{17, -0.5, 16.5}}}},
-      {"tResvsrTOFTracksDiff1", "#tResvsrTOFTracksDiff1", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}}},
-      {"vtxPosxyDiff1", "#vtxPosxyDiff1", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
-      {"vtxPoszDiff1", "#vtxPoszDiff1", {HistType::kTH1F, {{1000, -100., 100.}}}},
-      {"etaptDiff1", "#etaptDiff1", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
-      {"dEdxTPCDiff1", "#dEdxTPCDiff1", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
-      {"dEdxTOFDiff1", "#dEdxTOFDiff1", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
-      {"vtxPosxyDGDiff1", "#vtxPosxyDGDiff1", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
-      {"vtxPoszDGDiff1", "#vtxPoszDGDiff1", {HistType::kTH1F, {{1000, -100., 100.}}}},
-      {"etaptDGDiff1", "#etaptDGDiff1", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
-      {"dEdxTPCDGDiff1", "#dEdxTPCDGDiff1", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
-      {"dEdxTOFDGDiff1", "#dEdxTOFDGDiff1", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
-      {"netChargeDGDiff1", "#netChargeDGDiff1", {HistType::kTH1F, {{21, -10.5, 10.5}}}},
-      {"IVMptSysDGDiff1", "#IVMptSysDGDiff1", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
-      {"IVMptTrkDGDiff1", "#IVMptTrkDGDiff1", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
-      // GRANIITTI diffractive events
-      {"StatDiff2", "#StatDiff2", {HistType::kTH1F, {{20, -0.5, 19.5}}}},
-      {"cleanFITDiff2", "#cleanFITDiff2", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}}},
-      {"TracksDiff2", "#TracksDiff2", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
-      {"vtxTracksDiff2", "#vtxTracksDiff2", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
-      {"globalTracksDiff2", "#globalTracksDiff2", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
-      {"rejectedTracksDiff2", "#rejectedTracksDiff2", {HistType::kTH1F, {{17, -0.5, 16.5}}}},
-      {"tResvsrTOFTracksDiff2", "#tResvsrTOFTracksDiff2", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}}},
-      {"vtxPosxyDiff2", "#vtxPosxyDiff2", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
-      {"vtxPoszDiff2", "#vtxPoszDiff2", {HistType::kTH1F, {{1000, -100., 100.}}}},
-      {"etaptDiff2", "#etaptDiff2", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
-      {"dEdxTPCDiff2", "#dEdxTPCDiff2", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
-      {"dEdxTOFDiff2", "#dEdxTOFDiff2", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
-      {"vtxPosxyDGDiff2", "#vtxPosxyDGDiff2", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
-      {"vtxPoszDGDiff2", "#vtxPoszDGDiff2", {HistType::kTH1F, {{1000, -100., 100.}}}},
-      {"etaptDGDiff2", "#etaptDGDiff2", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
-      {"dEdxTPCDGDiff2", "#dEdxTPCDGDiff2", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
-      {"dEdxTOFDGDiff2", "#dEdxTOFDGDiff2", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
-      {"netChargeDGDiff2", "#netChargeDGDiff2", {HistType::kTH1F, {{21, -10.5, 10.5}}}},
-      {"IVMptSysDGDiff2", "#IVMptSysDGDiff2", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
-      {"IVMptTrkDGDiff2", "#IVMptTrkDGDiff2", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
-    }};
+    {}};
 
+  // define abbreviations
   using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
@@ -174,11 +62,105 @@ struct DiffMCQA {
   using ATs = aod::AmbiguousTracks;
   using AFTs = aod::AmbiguousFwdTracks;
 
-  void init(InitContext&)
+  void init(InitContext& context)
   {
     maxdEdxTPC = 0.;
     maxdEdxTOF = 0.;
     diffCuts = (DGCutparHolder)DGCuts;
+
+    // add histograms for the different process functions
+    if (context.mOptions.get<bool>("processMCTruth")) {
+      registry.add("MCTruth/Stat", "Simulated event type; event type; Entries", {HistType::kTH1F, {{4, 0.5, 4.5}}});
+    }
+
+    if (context.mOptions.get<bool>("processMain")) {
+      // non diffractive events
+      registry.add("nonDiff/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{20, -0.5, 19.5}}});
+      registry.add("nonDiff/cleanFIT", "Statistics of collisions with empty FIT; Multiple of collision time resolution; FIT status; Collisions", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}});
+      registry.add("nonDiff/Tracks", "Number of tracks; Number of tracks; Collisions", {HistType::kTH1F, {{50, 0.5, 50.5}}});
+      registry.add("nonDiff/PVTracks", "Number of PV tracks; Number of PV tracks; Collisions", {HistType::kTH1F, {{50, 0.5, 50.5}}});
+      registry.add("nonDiff/globalTracks", "Number of global tracks; Number of global tracks; Collisions", {HistType::kTH1F, {{50, 0.5, 50.5}}});
+      registry.add("nonDiff/notPVTracks", "Not PV tracks; Track status bit; Not PV tracks", {HistType::kTH1F, {{17, -0.5, 16.5}}});
+      registry.add("nonDiff/tResvsrTOFTracks", "#tResvsrTOFTracks", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}});
+      registry.add("nonDiff/PVposxy", "Vertex position in x and y direction; V_x; V_y; Collisions", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}});
+      registry.add("nonDiff/PVposz", "Vertex position in z direction; V_z; Collisions", {HistType::kTH1F, {{1000, -100., 100.}}});
+      registry.add("nonDiff/etapt", "eta versus pT of all tracks; eta of track; p_T of track [MeV/c^2]; Tracks", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}});
+      registry.add("nonDiff/dEdxTPC", "TPC signal versus signed track momentum; Signed track momentum [GeV/c]; TPC signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}});
+      registry.add("nonDiff/dEdxTOF", "TOF signal versus signed track momentum; Signed track momentum [GeV/c]; TOF signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}});
+      registry.add("nonDiff/PVposxyDG", "DG: Vertex position in x and y direction; V_x; V_y; Collisions", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}});
+      registry.add("nonDiff/PVposzDG", "DG: Vertex position in z direction; V_z; Collisions", {HistType::kTH1F, {{1000, -100., 100.}}});
+      registry.add("nonDiff/etaptDG", "DG: eta versus pT of all tracks; eta of track; p_T of track [MeV/c^2]; Tracks", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}});
+      registry.add("nonDiff/dEdxTPCDG", "DG: TPC signal versus signed track momentum; Signed track momentum [GeV/c]; TPC signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}});
+      registry.add("nonDiff/dEdxTOFDG", "DG: TOF signal versus signed track momentum; Signed track momentum [GeV/c]; TOF signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}});
+      registry.add("nonDiff/netChargeDG", "DG: Net charge; Net charge; DG collisions", {HistType::kTH1F, {{21, -10.5, 10.5}}});
+      registry.add("nonDiff/IVMptSysDG", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
+      registry.add("nonDiff/IVMptTrkDG", "DG: Invariant mass versus p_{T, tracks}; Invarian mass [GeV/c^2]; p_{T, tracks} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
+      // PYTHIA8 diffractive events
+      registry.add("MBRDiff/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{20, -0.5, 19.5}}});
+      registry.add("MBRDiff/cleanFIT", "Statistics of collisions with empty FIT; Multiple of collision time resolution; FIT status; Collisions", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}});
+      registry.add("MBRDiff/Tracks", "Number of tracks; Number of tracks; Collisions", {HistType::kTH1F, {{50, 0.5, 50.5}}});
+      registry.add("MBRDiff/PVTracks", "Number of PV tracks; Number of PV tracks; Collisions", {HistType::kTH1F, {{50, 0.5, 50.5}}});
+      registry.add("MBRDiff/globalTracks", "Number of global tracks; Number of global tracks; Collisions", {HistType::kTH1F, {{50, 0.5, 50.5}}});
+      registry.add("MBRDiff/notPVTracks", "Not PV tracks; Track status bit; Not PV tracks", {HistType::kTH1F, {{17, -0.5, 16.5}}});
+      registry.add("MBRDiff/tResvsrTOFTracks", "#tResvsrTOFTracks", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}});
+      registry.add("MBRDiff/PVposxy", "Vertex position in x and y direction; V_x; V_y; Collisions", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}});
+      registry.add("MBRDiff/PVposz", "Vertex position in z direction; V_z; Collisions", {HistType::kTH1F, {{1000, -100., 100.}}});
+      registry.add("MBRDiff/etapt", "eta versus pT of all tracks; eta of track; p_T of track [MeV/c^2]; Tracks", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}});
+      registry.add("MBRDiff/dEdxTPC", "TPC signal versus signed track momentum; Signed track momentum [GeV/c]; TPC signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}});
+      registry.add("MBRDiff/dEdxTOF", "TOF signal versus signed track momentum; Signed track momentum [GeV/c]; TOF signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}});
+      registry.add("MBRDiff/PVposxyDG", "DG: Vertex position in x and y direction; V_x; V_y; Collisions", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}});
+      registry.add("MBRDiff/PVposzDG", "DG: Vertex position in z direction; V_z; Collisions", {HistType::kTH1F, {{1000, -100., 100.}}});
+      registry.add("MBRDiff/etaptDG", "DG: eta versus pT of all tracks; eta of track; p_T of track [MeV/c^2]; Tracks", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}});
+      registry.add("MBRDiff/dEdxTPCDG", "DG: TPC signal versus signed track momentum; Signed track momentum [GeV/c]; TPC signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}});
+      registry.add("MBRDiff/dEdxTOFDG", "DG: TOF signal versus signed track momentum; Signed track momentum [GeV/c]; TOF signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}});
+      registry.add("MBRDiff/netChargeDG", "DG: Net charge; Net charge; DG collisions", {HistType::kTH1F, {{21, -10.5, 10.5}}});
+      registry.add("MBRDiff/IVMptSysDG", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
+      registry.add("MBRDiff/IVMptTrkDG", "DG: Invariant mass versus p_{T, tracks}; Invarian mass [GeV/c^2]; p_{T, tracks} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
+      // GRANIITTI diffractive events
+      registry.add("Diff/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{20, -0.5, 19.5}}});
+      registry.add("Diff/cleanFIT", "Statistics of collisions with empty FIT; Multiple of collision time resolution; FIT status; Collisions", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}});
+      registry.add("Diff/Tracks", "Number of tracks; Number of tracks; Collisions", {HistType::kTH1F, {{50, 0.5, 50.5}}});
+      registry.add("Diff/PVTracks", "Number of PV tracks; Number of PV tracks; Collisions", {HistType::kTH1F, {{50, 0.5, 50.5}}});
+      registry.add("Diff/globalTracks", "Number of global tracks; Number of global tracks; Collisions", {HistType::kTH1F, {{50, 0.5, 50.5}}});
+      registry.add("Diff/notPVTracks", "Not PV tracks; Track status bit; Not PV tracks", {HistType::kTH1F, {{17, -0.5, 16.5}}});
+      registry.add("Diff/tResvsrTOFTracks", "#tResvsrTOFTracks", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}});
+      registry.add("Diff/PVposxy", "Vertex position in x and y direction; V_x; V_y; Collisions", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}});
+      registry.add("Diff/PVposz", "Vertex position in z direction; V_z; Collisions", {HistType::kTH1F, {{1000, -100., 100.}}});
+      registry.add("Diff/etapt", "eta versus pT of all tracks; eta of track; p_T of track [MeV/c^2]; Tracks", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}});
+      registry.add("Diff/dEdxTPC", "TPC signal versus signed track momentum; Signed track momentum [GeV/c]; TPC signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}});
+      registry.add("Diff/dEdxTOF", "TOF signal versus signed track momentum; Signed track momentum [GeV/c]; TOF signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}});
+      registry.add("Diff/PVposxyDG", "DG: Vertex position in x and y direction; V_x; V_y; Collisions", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}});
+      registry.add("Diff/PVposzDG", "DG: Vertex position in z direction; V_z; Collisions", {HistType::kTH1F, {{1000, -100., 100.}}});
+      registry.add("Diff/etaptDG", "DG: eta versus pT of all tracks; eta of track; p_T of track [MeV/c^2]; Tracks", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}});
+      registry.add("Diff/dEdxTPCDG", "DG: TPC signal versus signed track momentum; Signed track momentum [GeV/c]; TPC signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}});
+      registry.add("Diff/dEdxTOFDG", "DG: TOF signal versus signed track momentum; Signed track momentum [GeV/c]; TOF signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}});
+      registry.add("Diff/netChargeDG", "DG: Net charge; Net charge; DG collisions", {HistType::kTH1F, {{21, -10.5, 10.5}}});
+      registry.add("Diff/IVMptSysDG", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
+      registry.add("Diff/IVMptTrkDG", "DG: Invariant mass versus p_{T, tracks}; Invarian mass [GeV/c^2]; p_{T, tracks} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
+    }
+
+    if (context.mOptions.get<bool>("processFV0")) {
+      registry.add("FV0/FV0Aamp", "Amplitudes of FV0A channels; FV0A amplitude; FV0A channel; Entries", {HistType::kTH2F, {{48, -0.5, 47.5}, {1000, 0., 1000.}}});
+    }
+
+    if (context.mOptions.get<bool>("processFT0")) {
+      registry.add("FT0/FT0Aamp", "Amplitudes of FT0A channels; FT0A amplitude; FT0A channel; Entries", {HistType::kTH2F, {{96, -0.5, 95.5}, {100, 0., 200.}}});
+      registry.add("FT0/FT0Camp", "Amplitudes of FT0C channels; FT0C amplitude; FT0C channel; Entries", {HistType::kTH2F, {{112, -0.5, 111.5}, {100, 0., 200.}}});
+    }
+
+    if (context.mOptions.get<bool>("processFDD")) {
+      registry.add("FDD/FDDAamp", "Amplitudes of FDDA channels; FDDA amplitude; FDDA channel; Entries", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}});
+      registry.add("FDD/FDDCamp", "Amplitudes of FDDC channels; FDDC amplitude; FDDC channel; Entries", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}});
+    }
+
+    if (context.mOptions.get<bool>("processZDC")) {
+      registry.add("ZdcEnergies", "Various ZDC energies; Energy type; ZDC energy; Entries", {HistType::kTH2F, {{22, -0.5, 21.5}, {100, 0., 1000.}}});
+    }
+
+    if (context.mOptions.get<bool>("processCalo")) {
+      registry.add("CaloCell", "Calorimeter cell; Calorimeter cell number; Entries", {HistType::kTH1I, {{18000, -0.5, 17999.5}}});
+      registry.add("CaloAmplitude", "Calorimeter amplitudes; Calorimeter amplitude; Entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    }
   }
 
   void run(ProcessingContext& pc)
@@ -227,12 +209,38 @@ struct DiffMCQA {
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
-  void process(CC const& collision, BCs const& bct0s,
-               TCs const& tracks, FWs const& fwdtracks, ATs const& ambtracks, AFTs const& ambfwdtracks,
-               aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds,
-               aod::Zdcs& zdcs, aod::Calos& calos,
-               aod::V0s const& v0s, aod::Cascades const& cascades,
-               aod::McCollisions const& McCols, aod::McParticles const& McParts)
+  // ...............................................................................................................
+  void processMCTruth(CCs const& collisions, aod::McCollisions const& mccollisions, aod::McParticles const& McParts)
+  {
+    LOGF(info, "Number of mc collisions %d collisions %d", mccollisions.size(), collisions.size());
+
+    // is this a central diffractive event?
+    // by default it is assumed to be a MB event
+    bool isPythiaDiff = false;
+    bool isGraniittiDiff = false;
+    for (auto mccol : mccollisions) {
+      registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(1., 1.);
+      auto MCPartSlice = McParts.sliceBy(perMcCollision, mccol.globalIndex());
+      isPythiaDiff = udhelpers::isPythiaCDE(MCPartSlice);
+      isGraniittiDiff = udhelpers::isGraniittiCDE(MCPartSlice);
+      if (isPythiaDiff) {
+        registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(3., 1.);
+      } else if (isGraniittiDiff) {
+        registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(4., 1.);
+      } else {
+        registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(2., 1.);
+      }
+    }
+  }
+  PROCESS_SWITCH(DiffMCQA, processMCTruth, "Process NC truth", true);
+
+  // ...............................................................................................................
+  void processMain(CC const& collision, BCs const& bct0s,
+                   TCs const& tracks, FWs const& fwdtracks, ATs const& ambtracks, AFTs const& ambfwdtracks,
+                   aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds,
+                   aod::Zdcs& zdcs, aod::Calos& calos,
+                   aod::V0s const& v0s, aod::Cascades const& cascades,
+                   aod::McCollisions const& McCols, aod::McParticles const& McParts)
   {
     bool isDGcandidate = true;
 
@@ -253,26 +261,26 @@ struct DiffMCQA {
 
     // update collision histograms
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(0., 1.);
-      registry.get<TH2>(HIST("vtxPosxyDiff1"))->Fill(collision.posX(), collision.posY());
-      registry.get<TH1>(HIST("vtxPoszDiff1"))->Fill(collision.posZ());
-      registry.get<TH1>(HIST("TracksDiff1"))->Fill(tracks.size());
-      registry.get<TH1>(HIST("vtxTracksDiff1"))->Fill(collision.numContrib());
-      registry.get<TH1>(HIST("globalTracksDiff1"))->Fill(goodTracks.size());
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(0., 1.);
+      registry.get<TH2>(HIST("MBRDiff/PVposxy"))->Fill(collision.posX(), collision.posY());
+      registry.get<TH1>(HIST("MBRDiff/PVposz"))->Fill(collision.posZ());
+      registry.get<TH1>(HIST("MBRDiff/Tracks"))->Fill(tracks.size());
+      registry.get<TH1>(HIST("MBRDiff/PVTracks"))->Fill(collision.numContrib());
+      registry.get<TH1>(HIST("MBRDiff/globalTracks"))->Fill(goodTracks.size());
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(0., 1.);
-      registry.get<TH2>(HIST("vtxPosxyDiff2"))->Fill(collision.posX(), collision.posY());
-      registry.get<TH1>(HIST("vtxPoszDiff2"))->Fill(collision.posZ());
-      registry.get<TH1>(HIST("TracksDiff2"))->Fill(tracks.size());
-      registry.get<TH1>(HIST("vtxTracksDiff2"))->Fill(collision.numContrib());
-      registry.get<TH1>(HIST("globalTracksDiff2"))->Fill(goodTracks.size());
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(0., 1.);
+      registry.get<TH2>(HIST("Diff/PVposxy"))->Fill(collision.posX(), collision.posY());
+      registry.get<TH1>(HIST("Diff/PVposz"))->Fill(collision.posZ());
+      registry.get<TH1>(HIST("Diff/Tracks"))->Fill(tracks.size());
+      registry.get<TH1>(HIST("Diff/PVTracks"))->Fill(collision.numContrib());
+      registry.get<TH1>(HIST("Diff/globalTracks"))->Fill(goodTracks.size());
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(0., 1.);
-      registry.get<TH2>(HIST("vtxPosxy"))->Fill(collision.posX(), collision.posY());
-      registry.get<TH1>(HIST("vtxPosz"))->Fill(collision.posZ());
-      registry.get<TH1>(HIST("Tracks"))->Fill(tracks.size());
-      registry.get<TH1>(HIST("vtxTracks"))->Fill(collision.numContrib());
-      registry.get<TH1>(HIST("globalTracks"))->Fill(goodTracks.size());
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(0., 1.);
+      registry.get<TH2>(HIST("nonDiff/PVposxy"))->Fill(collision.posX(), collision.posY());
+      registry.get<TH1>(HIST("nonDiff/PVposz"))->Fill(collision.posZ());
+      registry.get<TH1>(HIST("nonDiff/Tracks"))->Fill(tracks.size());
+      registry.get<TH1>(HIST("nonDiff/PVTracks"))->Fill(collision.numContrib());
+      registry.get<TH1>(HIST("nonDiff/globalTracks"))->Fill(goodTracks.size());
     }
 
     // test influence of BCrange width
@@ -283,27 +291,27 @@ struct DiffMCQA {
         isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
       }
       if (isPythiaDiff) {
-        registry.get<TH2>(HIST("cleanFITDiff1"))->Fill(NDtcoll, isDGcandidate * 1.);
+        registry.get<TH2>(HIST("MBRDiff/cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
       } else if (isGraniittiDiff) {
-        registry.get<TH2>(HIST("cleanFITDiff2"))->Fill(NDtcoll, isDGcandidate * 1.);
+        registry.get<TH2>(HIST("Diff/cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
       } else {
-        registry.get<TH2>(HIST("cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
+        registry.get<TH2>(HIST("nonDiff/cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
       }
     }
 
-    // number of vertex tracks with TOF hit
+    // loop over all tracks
     float rgtrwTOF = 0.;
     for (auto const& track : tracks) {
       // update eta vs pt and dEdx histograms histogram
       if (isPythiaDiff) {
-        registry.get<TH2>(HIST("etaptDiff1"))->Fill(track.eta(), track.pt());
-        registry.get<TH2>(HIST("dEdxTPCDiff1"))->Fill(track.p(), track.tpcSignal());
+        registry.get<TH2>(HIST("MBRDiff/etapt"))->Fill(track.eta(), track.pt());
+        registry.get<TH2>(HIST("MBRDiff/dEdxTPC"))->Fill(track.p(), track.tpcSignal());
       } else if (isGraniittiDiff) {
-        registry.get<TH2>(HIST("etaptDiff2"))->Fill(track.eta(), track.pt());
-        registry.get<TH2>(HIST("dEdxTPCDiff2"))->Fill(track.p(), track.tpcSignal());
+        registry.get<TH2>(HIST("Diff/etapt"))->Fill(track.eta(), track.pt());
+        registry.get<TH2>(HIST("Diff/dEdxTPC"))->Fill(track.p(), track.tpcSignal());
       } else {
-        registry.get<TH2>(HIST("etapt"))->Fill(track.eta(), track.pt());
-        registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.p(), track.tpcSignal());
+        registry.get<TH2>(HIST("nonDiff/etapt"))->Fill(track.eta(), track.pt());
+        registry.get<TH2>(HIST("nonDiff/dEdxTPC"))->Fill(track.p(), track.tpcSignal());
       }
       if (track.tpcSignal() > maxdEdxTPC) {
         maxdEdxTPC = track.tpcSignal();
@@ -313,11 +321,11 @@ struct DiffMCQA {
       // TOF hit?
       if (track.hasTOF()) {
         if (isPythiaDiff) {
-          registry.get<TH2>(HIST("dEdxTOFDiff1"))->Fill(track.p(), track.tofSignal());
+          registry.get<TH2>(HIST("MBRDiff/dEdxTOF"))->Fill(track.p(), track.tofSignal());
         } else if (isGraniittiDiff) {
-          registry.get<TH2>(HIST("dEdxTOFDiff2"))->Fill(track.p(), track.tofSignal());
+          registry.get<TH2>(HIST("Diff/dEdxTOF"))->Fill(track.p(), track.tofSignal());
         } else {
-          registry.get<TH2>(HIST("dEdxTOF"))->Fill(track.p(), track.tofSignal());
+          registry.get<TH2>(HIST("nonDiff/dEdxTOF"))->Fill(track.p(), track.tofSignal());
         }
         if (track.tofSignal() > maxdEdxTOF) {
           maxdEdxTOF = track.tofSignal();
@@ -335,11 +343,11 @@ struct DiffMCQA {
     }
     LOGF(debug, "<DiffMCQA> Vertex tracks with TOF: %f [1]", rgtrwTOF);
     if (isPythiaDiff) {
-      registry.get<TH2>(HIST("tResvsrTOFTracksDiff1"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
+      registry.get<TH2>(HIST("MBRDiff/tResvsrTOFTracks"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
     } else if (isGraniittiDiff) {
-      registry.get<TH2>(HIST("tResvsrTOFTracksDiff2"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
+      registry.get<TH2>(HIST("Diff/tResvsrTOFTracks"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
     } else {
-      registry.get<TH2>(HIST("tResvsrTOFTracks"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
+      registry.get<TH2>(HIST("nonDiff/tResvsrTOFTracks"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
     }
 
     // is it a DG candidate?
@@ -370,72 +378,72 @@ struct DiffMCQA {
       }
     }
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(1., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(1., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(1., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(1., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(1., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(1., isDGcandidate * 1.);
     }
 
     // no Zdc signal in bcSlice
     std::vector<float> lims(10, 0.);
     for (auto const& bc : bcSlice) {
-      if (!udhelpers::cleanZDC(bc, zdcs, lims)) {
+      if (!udhelpers::cleanZDC(bc, zdcs, lims, cache)) {
         isDGcandidate = false;
         break;
       }
     }
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(2., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(2., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(2., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(2., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(2., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(2., isDGcandidate * 1.);
     }
 
     // no Calo signal in bcSlice
     for (auto const& bc : bcSlice) {
-      if (!udhelpers::cleanCalo(bc, calos, lims)) {
+      if (!udhelpers::cleanCalo(bc, calos, lims, cache)) {
         isDGcandidate = false;
         break;
       }
     }
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(3., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(3., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(3., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(3., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(3., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(3., isDGcandidate * 1.);
     }
 
     // no V0s
     isDGcandidate &= (v0s.size() == 0);
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(4., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(4., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(4., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(4., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(4., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(4., isDGcandidate * 1.);
     }
 
     // no Cascades
     isDGcandidate &= (cascades.size() == 0);
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(5., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(5., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(5., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(5., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(5., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(5., isDGcandidate * 1.);
     }
 
     // number of forward tracks = 0
     isDGcandidate &= (fwdtracks.size() == 0);
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(6., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(6., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(6., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(6., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(6., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(6., isDGcandidate * 1.);
     }
 
     // no global tracks which are no vtx tracks
@@ -450,14 +458,14 @@ struct DiffMCQA {
       }
     }
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(7., globalAndVtx * 1.);
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(8., vtxAndGlobal * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(7., globalAndVtx * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(8., vtxAndGlobal * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(7., globalAndVtx * 1.);
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(8., vtxAndGlobal * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(7., globalAndVtx * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(8., vtxAndGlobal * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(7., globalAndVtx * 1.);
-      registry.get<TH1>(HIST("Stat"))->Fill(8., vtxAndGlobal * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(7., globalAndVtx * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(8., vtxAndGlobal * 1.);
     }
     isDGcandidate &= globalAndVtx;
     if (diffCuts.globalTracksOnly()) {
@@ -473,11 +481,11 @@ struct DiffMCQA {
       }
     }
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(9., noAmbTracks * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(9., noAmbTracks * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(9., noAmbTracks * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(9., noAmbTracks * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(9., noAmbTracks * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(9., noAmbTracks * 1.);
     }
 
     // check a given bc for possible ambiguous FwdTracks
@@ -489,39 +497,39 @@ struct DiffMCQA {
       }
     }
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(10., noAmbFwdTracks * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(10., noAmbFwdTracks * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(10., noAmbFwdTracks * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(10., noAmbFwdTracks * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(10., noAmbFwdTracks * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(10., noAmbFwdTracks * 1.);
     }
 
     // at least one vtx track with TOF hit
     isDGcandidate &= (rgtrwTOF >= diffCuts.minRgtrwTOF());
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(11., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(11., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(11., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(11., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(11., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(11., isDGcandidate * 1.);
     }
 
     // number of vertex tracks <= n
     isDGcandidate &= (collision.numContrib() >= diffCuts.minNTracks());
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(12., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(12., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(12., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(12., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(12., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(12., isDGcandidate * 1.);
     }
     isDGcandidate &= (collision.numContrib() <= diffCuts.maxNTracks());
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(13., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(13., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(13., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(13., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(13., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(13., isDGcandidate * 1.);
     }
 
     // net charge and invariant mass
@@ -541,62 +549,62 @@ struct DiffMCQA {
 
       // check also pt and eta of tracks
       for (auto& track : tracks) {
-        // update histogram rejectedTracks
+        // update histogram notPVTracks
         if (!track.isPVContributor()) {
           if (isPythiaDiff) {
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(0., 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(1., track.isGlobalTrackSDD() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(2., track.passedTrackType() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(3., track.passedPtRange() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(4., track.passedEtaRange() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(5., track.passedTPCNCls() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(6., track.passedTPCCrossedRows() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(7., track.passedTPCCrossedRowsOverNCls() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(8., track.passedTPCChi2NDF() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(9., track.passedTPCRefit() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(10., track.passedITSNCls() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(11., track.passedITSChi2NDF() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(12., track.passedITSRefit() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(13., track.passedITSHits() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(14., track.passedGoldenChi2() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(15., track.passedDCAxy() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(16., track.passedDCAz() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(0., 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(1., track.isGlobalTrackSDD() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(2., track.passedTrackType() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(3., track.passedPtRange() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(4., track.passedEtaRange() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(5., track.passedTPCNCls() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(6., track.passedTPCCrossedRows() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(7., track.passedTPCCrossedRowsOverNCls() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(8., track.passedTPCChi2NDF() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(9., track.passedTPCRefit() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(10., track.passedITSNCls() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(11., track.passedITSChi2NDF() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(12., track.passedITSRefit() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(13., track.passedITSHits() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(14., track.passedGoldenChi2() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(15., track.passedDCAxy() * 1.);
+            registry.get<TH1>(HIST("MBRDiff/notPVTracks"))->Fill(16., track.passedDCAz() * 1.);
           } else if (isGraniittiDiff) {
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(0., 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(1., track.isGlobalTrackSDD() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(2., track.passedTrackType() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(3., track.passedPtRange() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(4., track.passedEtaRange() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(5., track.passedTPCNCls() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(6., track.passedTPCCrossedRows() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(7., track.passedTPCCrossedRowsOverNCls() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(8., track.passedTPCChi2NDF() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(9., track.passedTPCRefit() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(10., track.passedITSNCls() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(11., track.passedITSChi2NDF() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(12., track.passedITSRefit() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(13., track.passedITSHits() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(14., track.passedGoldenChi2() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(15., track.passedDCAxy() * 1.);
-            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(16., track.passedDCAz() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(0., 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(1., track.isGlobalTrackSDD() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(2., track.passedTrackType() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(3., track.passedPtRange() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(4., track.passedEtaRange() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(5., track.passedTPCNCls() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(6., track.passedTPCCrossedRows() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(7., track.passedTPCCrossedRowsOverNCls() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(8., track.passedTPCChi2NDF() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(9., track.passedTPCRefit() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(10., track.passedITSNCls() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(11., track.passedITSChi2NDF() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(12., track.passedITSRefit() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(13., track.passedITSHits() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(14., track.passedGoldenChi2() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(15., track.passedDCAxy() * 1.);
+            registry.get<TH1>(HIST("Diff/notPVTracks"))->Fill(16., track.passedDCAz() * 1.);
           } else {
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(0., 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(1., track.isGlobalTrackSDD() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(2., track.passedTrackType() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(3., track.passedPtRange() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(4., track.passedEtaRange() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(5., track.passedTPCNCls() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(6., track.passedTPCCrossedRows() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(7., track.passedTPCCrossedRowsOverNCls() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(8., track.passedTPCChi2NDF() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(9., track.passedTPCRefit() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(10., track.passedITSNCls() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(11., track.passedITSChi2NDF() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(12., track.passedITSRefit() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(13., track.passedITSHits() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(14., track.passedGoldenChi2() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(15., track.passedDCAxy() * 1.);
-            registry.get<TH1>(HIST("rejectedTracks"))->Fill(16., track.passedDCAz() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(0., 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(1., track.isGlobalTrackSDD() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(2., track.passedTrackType() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(3., track.passedPtRange() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(4., track.passedEtaRange() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(5., track.passedTPCNCls() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(6., track.passedTPCCrossedRows() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(7., track.passedTPCCrossedRowsOverNCls() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(8., track.passedTPCChi2NDF() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(9., track.passedTPCRefit() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(10., track.passedITSNCls() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(11., track.passedITSChi2NDF() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(12., track.passedITSRefit() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(13., track.passedITSHits() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(14., track.passedGoldenChi2() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(15., track.passedDCAxy() * 1.);
+            registry.get<TH1>(HIST("nonDiff/notPVTracks"))->Fill(16., track.passedDCAz() * 1.);
           }
           continue;
         }
@@ -615,19 +623,19 @@ struct DiffMCQA {
     }
     isDGcandidate &= goodpts;
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(14., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(14., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(14., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(14., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(14., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(14., isDGcandidate * 1.);
     }
     isDGcandidate &= goodetas;
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(15., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(15., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(15., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(15., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(15., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(15., isDGcandidate * 1.);
     }
     auto netChargeValues = diffCuts.netCharges();
     if (std::find(netChargeValues.begin(), netChargeValues.end(), netCharge) == netChargeValues.end()) {
@@ -635,150 +643,122 @@ struct DiffMCQA {
     }
     isDGcandidate &= goodnchs;
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(16., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(16., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(16., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(16., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(16., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(16., isDGcandidate * 1.);
     }
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(17., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(17., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(17., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(17., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(17., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(17., isDGcandidate * 1.);
     }
     isDGcandidate &= (ivm.M() >= diffCuts.minIVM());
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(18., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(18., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(18., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(18., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(18., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(18., isDGcandidate * 1.);
     }
     isDGcandidate &= (ivm.M() <= diffCuts.maxIVM());
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(19., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("MBRDiff/Stat"))->Fill(19., isDGcandidate * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(19., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("Diff/Stat"))->Fill(19., isDGcandidate * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(19., isDGcandidate * 1.);
+      registry.get<TH1>(HIST("nonDiff/Stat"))->Fill(19., isDGcandidate * 1.);
     }
 
     // update some DG histograms
     if (isDGcandidate) {
       if (isPythiaDiff) {
-        registry.get<TH2>(HIST("vtxPosxyDGDiff1"))->Fill(collision.posX(), collision.posY());
-        registry.get<TH1>(HIST("vtxPoszDGDiff1"))->Fill(collision.posZ());
-        registry.get<TH1>(HIST("netChargeDGDiff1"))->Fill(netCharge);
-        registry.get<TH2>(HIST("IVMptSysDGDiff1"))->Fill(ivm.M(), ivm.Perp());
+        registry.get<TH2>(HIST("MBRDiff/PVposxyDG"))->Fill(collision.posX(), collision.posY());
+        registry.get<TH1>(HIST("MBRDiff/PVposzDG"))->Fill(collision.posZ());
+        registry.get<TH1>(HIST("MBRDiff/netChargeDG"))->Fill(netCharge);
+        registry.get<TH2>(HIST("MBRDiff/IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
       } else if (isGraniittiDiff) {
-        registry.get<TH2>(HIST("vtxPosxyDGDiff2"))->Fill(collision.posX(), collision.posY());
-        registry.get<TH1>(HIST("vtxPoszDGDiff2"))->Fill(collision.posZ());
-        registry.get<TH1>(HIST("netChargeDGDiff2"))->Fill(netCharge);
-        registry.get<TH2>(HIST("IVMptSysDGDiff2"))->Fill(ivm.M(), ivm.Perp());
+        registry.get<TH2>(HIST("Diff/PVposxyDG"))->Fill(collision.posX(), collision.posY());
+        registry.get<TH1>(HIST("Diff/PVposzDG"))->Fill(collision.posZ());
+        registry.get<TH1>(HIST("Diff/netChargeDG"))->Fill(netCharge);
+        registry.get<TH2>(HIST("Diff/IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
       } else {
-        registry.get<TH2>(HIST("vtxPosxyDG"))->Fill(collision.posX(), collision.posY());
-        registry.get<TH1>(HIST("vtxPoszDG"))->Fill(collision.posZ());
-        registry.get<TH1>(HIST("netChargeDG"))->Fill(netCharge);
-        registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
+        registry.get<TH2>(HIST("nonDiff/PVposxyDG"))->Fill(collision.posX(), collision.posY());
+        registry.get<TH1>(HIST("nonDiff/PVposzDG"))->Fill(collision.posZ());
+        registry.get<TH1>(HIST("nonDiff/netChargeDG"))->Fill(netCharge);
+        registry.get<TH2>(HIST("nonDiff/IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
       }
 
       // fill dEdx of DG event tracks
       for (auto& track : tracks) {
         if (track.isPVContributor()) {
           if (isPythiaDiff) {
-            registry.get<TH2>(HIST("etaptDGDiff1"))->Fill(track.eta(), track.pt());
-            registry.get<TH2>(HIST("dEdxTPCDGDiff1"))->Fill(track.p(), track.tpcSignal());
-            registry.get<TH2>(HIST("IVMptTrkDGDiff1"))->Fill(ivm.M(), track.pt());
+            registry.get<TH2>(HIST("MBRDiff/etaptDG"))->Fill(track.eta(), track.pt());
+            registry.get<TH2>(HIST("MBRDiff/dEdxTPCDG"))->Fill(track.p(), track.tpcSignal());
+            registry.get<TH2>(HIST("MBRDiff/IVMptTrkDG"))->Fill(ivm.M(), track.pt());
           } else if (isGraniittiDiff) {
-            registry.get<TH2>(HIST("etaptDGDiff2"))->Fill(track.eta(), track.pt());
-            registry.get<TH2>(HIST("dEdxTPCDGDiff2"))->Fill(track.p(), track.tpcSignal());
-            registry.get<TH2>(HIST("IVMptTrkDGDiff2"))->Fill(ivm.M(), track.pt());
+            registry.get<TH2>(HIST("Diff/etaptDG"))->Fill(track.eta(), track.pt());
+            registry.get<TH2>(HIST("Diff/dEdxTPCDG"))->Fill(track.p(), track.tpcSignal());
+            registry.get<TH2>(HIST("Diff/IVMptTrkDG"))->Fill(ivm.M(), track.pt());
           } else {
-            registry.get<TH2>(HIST("etaptDG"))->Fill(track.eta(), track.pt());
-            registry.get<TH2>(HIST("dEdxTPCDG"))->Fill(track.p(), track.tpcSignal());
-            registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
+            registry.get<TH2>(HIST("nonDiff/etaptDG"))->Fill(track.eta(), track.pt());
+            registry.get<TH2>(HIST("nonDiff/dEdxTPCDG"))->Fill(track.p(), track.tpcSignal());
+            registry.get<TH2>(HIST("nonDiff/IVMptTrkDG"))->Fill(ivm.M(), track.pt());
           }
           if (track.hasTOF()) {
             if (isPythiaDiff) {
-              registry.get<TH2>(HIST("dEdxTOFDGDiff1"))->Fill(track.p(), track.tofSignal());
+              registry.get<TH2>(HIST("MBRDiff/dEdxTOFDG"))->Fill(track.p(), track.tofSignal());
             } else if (isGraniittiDiff) {
-              registry.get<TH2>(HIST("dEdxTOFDGDiff2"))->Fill(track.p(), track.tofSignal());
+              registry.get<TH2>(HIST("Diff/dEdxTOFDG"))->Fill(track.p(), track.tofSignal());
             } else {
-              registry.get<TH2>(HIST("dEdxTOFDG"))->Fill(track.p(), track.tofSignal());
+              registry.get<TH2>(HIST("nonDiff/dEdxTOFDG"))->Fill(track.p(), track.tofSignal());
             }
           }
         }
       }
     }
-  };
-};
+  }
+  PROCESS_SWITCH(DiffMCQA, processMain, "Process Main", true);
 
-struct FV0Signals {
-
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"FV0A", "#FV0A", {HistType::kTH2F, {{48, -0.5, 47.5}, {1000, 0., 1000.}}}},
-    }};
-
-  void process(aod::FV0A const& fv0)
+  void processFV0(aod::FV0A const& fv0)
   {
     // side A
     for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
-      registry.get<TH2>(HIST("FV0A"))->Fill((fv0.channel())[ind], (fv0.amplitude())[ind]);
+      registry.get<TH2>(HIST("FV0/FV0Aamp"))->Fill((fv0.channel())[ind], (fv0.amplitude())[ind]);
     }
-  };
-};
+  }
+  PROCESS_SWITCH(DiffMCQA, processFV0, "Process FV0", true);
 
-struct FT0Signals {
-
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"FT0A", "#FT0A", {HistType::kTH2F, {{96, -0.5, 95.5}, {100, 0., 200.}}}},
-      {"FT0C", "#FT0C", {HistType::kTH2F, {{112, -0.5, 111.5}, {100, 0., 200.}}}},
-    }};
-
-  void process(aod::FT0 const& ft0)
+  void processFT0(aod::FT0 const& ft0)
   {
     // side A
     for (size_t ind = 0; ind < ft0.channelA().size(); ind++) {
-      registry.get<TH2>(HIST("FT0A"))->Fill((ft0.channelA())[ind], (ft0.amplitudeA())[ind]);
+      registry.get<TH2>(HIST("FT0/FT0Aamp"))->Fill((ft0.channelA())[ind], (ft0.amplitudeA())[ind]);
     }
 
     // side C
     for (size_t ind = 0; ind < ft0.channelC().size(); ind++) {
-      registry.get<TH2>(HIST("FT0C"))->Fill((ft0.channelC())[ind], (ft0.amplitudeC())[ind]);
+      registry.get<TH2>(HIST("FT0/FT0Camp"))->Fill((ft0.channelC())[ind], (ft0.amplitudeC())[ind]);
     }
-  };
-};
+  }
+  PROCESS_SWITCH(DiffMCQA, processFT0, "Process FT0", true);
 
-struct FDDSignals {
-
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"FDDA", "#FDDA", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}}},
-      {"FDDC", "#FDDC", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}}},
-    }};
-
-  void process(aod::FDD const& fdd)
+  void processFDD(aod::FDD const& fdd)
   {
     // side A
     for (auto ind = 0; ind < 8; ind++) {
-      registry.get<TH2>(HIST("FDDA"))->Fill(ind, (fdd.chargeA())[ind]);
+      registry.get<TH2>(HIST("FDD/FDDAamp"))->Fill(ind, (fdd.chargeA())[ind]);
     }
 
     // side C
     for (auto ind = 0; ind < 8; ind++) {
-      registry.get<TH2>(HIST("FDDC"))->Fill(ind, (fdd.chargeC())[ind]);
+      registry.get<TH2>(HIST("FDD/FDDCamp"))->Fill(ind, (fdd.chargeC())[ind]);
     }
-  };
-};
-
-struct ZDCSignals {
+  }
+  PROCESS_SWITCH(DiffMCQA, processFDD, "Process FDD", true);
 
   // energies:
   //  0: energyZEM1
@@ -803,13 +783,7 @@ struct ZDCSignals {
   // 19: energySectorZPC[1]
   // 20: energySectorZPC[2]
   // 21: energySectorZPC[3]
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"ZdcEnergies", "#ZdcEnergies", {HistType::kTH2F, {{22, -0.5, 21.5}, {100, 0., 1000.}}}},
-    }};
-
-  void process(aod::Zdc const& zdc)
+  void processZDC(aod::Zdc const& zdc)
   {
     // Zdc energies
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(0., zdc.energyZEM1());
@@ -834,36 +808,22 @@ struct ZDCSignals {
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(19., (zdc.energySectorZPC())[1]);
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(20., (zdc.energySectorZPC())[2]);
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(21., (zdc.energySectorZPC())[3]);
-  };
-};
+  }
+  PROCESS_SWITCH(DiffMCQA, processZDC, "Process ZDC", true);
 
-struct CaloSignals {
-
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"CaloCell", "#CaloCell", {HistType::kTH1I, {{18000, -0.5, 17999.5}}}},
-      {"CaloAmplitude", "#CaloAmplitude", {HistType::kTH1F, {{100, 0, 10.}}}},
-    }};
-
-  void process(aod::Calo const& calo)
+  void processCalo(aod::Calo const& calo)
   {
     // cell number
     registry.get<TH1>(HIST("CaloCell"))->Fill(calo.cellNumber());
 
     // amplitude
     registry.get<TH1>(HIST("CaloAmplitude"))->Fill(calo.amplitude());
-  };
+  }
+  PROCESS_SWITCH(DiffMCQA, processCalo, "Process Calorimeter", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DiffMCQA>(cfgc, TaskName{"diffmcqa"}),
-    adaptAnalysisTask<FV0Signals>(cfgc, TaskName{"fv0signals"}),
-    adaptAnalysisTask<FT0Signals>(cfgc, TaskName{"ft0signals"}),
-    adaptAnalysisTask<FDDSignals>(cfgc, TaskName{"fddsignals"}),
-    adaptAnalysisTask<ZDCSignals>(cfgc, TaskName{"zdcsignals"}),
-    adaptAnalysisTask<CaloSignals>(cfgc, TaskName{"calosignals"}),
-  };
+    adaptAnalysisTask<DiffMCQA>(cfgc, TaskName{"diffmcqa"})};
 }

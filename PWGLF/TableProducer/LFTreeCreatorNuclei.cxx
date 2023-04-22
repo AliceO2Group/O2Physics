@@ -124,6 +124,7 @@ struct LfTreeCreatorNuclei {
         track.hasTOF(),
         track.hasTRD(),
         track.tpcInnerParam(),
+        track.tofExpMom(),
         track.tpcSignal(),
         track.beta(),
         track.px(),
@@ -140,7 +141,8 @@ struct LfTreeCreatorNuclei {
         track.tpcNClsFound(),
         track.tpcChi2NCl(),
         track.itsChi2NCl(),
-        track.itsClusterMap());
+        track.itsClusterMap(),
+        track.isPVContributor());
 
       if constexpr (isMC) { // Filling MC reco information
         if (track.has_mcParticle()) {

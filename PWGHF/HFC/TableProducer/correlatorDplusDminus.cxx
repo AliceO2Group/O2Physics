@@ -68,6 +68,9 @@ using MCParticlesPlus2Prong = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen
 using MCParticlesPlus3Prong = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
 struct HfCorrelatorDplusDminus {
+  SliceCache cache;
+  Preslice<aod::HfCand3Prong> perCol = aod::hf_cand::collisionId;
+
   Produces<aod::DDbarPair> entryDplusDminusPair;
   Produces<aod::DDbarRecoInfo> entryDplusDminusRecoInfo;
 
@@ -150,7 +153,7 @@ struct HfCorrelatorDplusDminus {
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
 
-    auto selectedDPlusCandidatesGrouped = selectedDPlusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+    auto selectedDPlusCandidatesGrouped = selectedDPlusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
     for (auto& candidate1 : selectedDPlusCandidatesGrouped) {
       if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
@@ -258,7 +261,7 @@ struct HfCorrelatorDplusDminus {
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
 
-    auto selectedDPlusCandidatesGroupedMC = selectedDPlusCandidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+    auto selectedDPlusCandidatesGroupedMC = selectedDPlusCandidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
     // MC reco level
     bool flagDplusSignal = false;

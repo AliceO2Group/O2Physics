@@ -327,6 +327,7 @@ struct BcSelectionTask {
 };
 
 struct EventSelectionTask {
+  SliceCache cache;
   Produces<aod::EvSels> evsel;
   Configurable<std::string> syst{"syst", "PbPb", "pp, pPb, Pbp, PbPb, XeXe"}; // TODO determine from AOD metadata or from CCDB
   Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
@@ -396,7 +397,7 @@ struct EventSelectionTask {
     float multV0C012 = bc.multRingV0C()[0] + bc.multRingV0C()[1] + bc.multRingV0C()[2];
 
     // applying selections depending on the number of tracklets
-    auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex());
+    auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
     int nTkl = trackletsGrouped.size();
 
     uint32_t spdClusters = bc.spdClusters();
@@ -484,7 +485,7 @@ struct EventSelectionTask {
     // temporary workaround for runs at high rate (>22m)
     // significant eta-dependent biases up to 70 bcs for single ITS-TPC track times
     // extend deltaBC for collisions built with ITS-TPC tracks only
-    if (run >= 523141 && nTRDtracks == 0 && nTOFtracks == 0 && nTPCtracks > 0) {
+    if (run >= 517619 && nTRDtracks == 0 && nTOFtracks == 0 && nTPCtracks > 0) {
       minBC -= 100;
       maxBC += 100;
     }
@@ -495,21 +496,10 @@ struct EventSelectionTask {
       maxBC += 100;
     }
 
-    // temporary workaround for runs without proper TOF calibration
-    if (run > 520297 && run < 523306 && nTOFtracks > 0) {
-      minBC = meanBC - deltaBC - 2;
-      maxBC = meanBC + deltaBC - 2;
-    }
-
     // precise timing for collisions with TRD-matched tracks
     if (nTRDtracks > 0) {
       minBC = meanBC;
       maxBC = meanBC;
-      // collisions with TRD tracks shifted by 15 bcs in LHC22cdef
-      if (run > 520297 && run <= 521326) {
-        minBC = meanBC - 15;
-        maxBC = meanBC - 15;
-      }
       // collisions with TRD tracks shifted by -1 bc in LHC22s
       if (run >= 529397 && run <= 529418) {
         minBC = meanBC - 1;

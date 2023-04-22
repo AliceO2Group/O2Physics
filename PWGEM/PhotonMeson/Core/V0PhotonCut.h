@@ -24,6 +24,7 @@
 #include "Framework/DataTypes.h"
 #include "Rtypes.h"
 #include "TNamed.h"
+#include "TMath.h"
 
 class V0PhotonCut : public TNamed
 {
@@ -38,6 +39,9 @@ class V0PhotonCut : public TNamed
     kRxyKF,
     kCosPA,
     kPCA,
+    kRZLine,
+    kOnWwireIB,
+    kOnWwireOB,
     // leg cut
     kPtRange,
     kEtaRange,
@@ -52,11 +56,11 @@ class V0PhotonCut : public TNamed
     kNCuts
   };
 
-  static const std::string mCutNames[static_cast<int>(V0PhotonCuts::kNCuts)];
+  static const char* mCutNames[static_cast<int>(V0PhotonCuts::kNCuts)];
 
   // Temporary function to check if track passes selection criteria. To be replaced by framework filters.
-  template <typename T>
-  bool IsSelected(T const& v0) const
+  template <class TLeg, typename TV0>
+  bool IsSelected(TV0 const& v0) const
   {
     if (!IsSelectedV0(v0, V0PhotonCuts::kMee)) {
       return false;
@@ -73,9 +77,18 @@ class V0PhotonCut : public TNamed
     if (!IsSelectedV0(v0, V0PhotonCuts::kPCA)) {
       return false;
     }
+    if (!IsSelectedV0(v0, V0PhotonCuts::kRZLine)) {
+      return false;
+    }
+    if (mIsOnWwireIB && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB)) {
+      return false;
+    }
+    if (mIsOnWwireOB && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireOB)) {
+      return false;
+    }
 
-    auto pos = v0.posTrack();
-    auto ele = v0.negTrack();
+    auto pos = v0.template posTrack_as<TLeg>();
+    auto ele = v0.template negTrack_as<TLeg>();
     for (auto& track : {pos, ele}) {
       if (!IsSelectedTrack(track, V0PhotonCuts::kPtRange)) {
         return false;
@@ -139,6 +152,7 @@ class V0PhotonCut : public TNamed
   template <typename T>
   bool IsSelectedV0(T const& v0, const V0PhotonCuts& cut) const
   {
+    const float margin = 1.0; // cm
     switch (cut) {
       case V0PhotonCuts::kMee:
         return v0.mGamma() <= ((mMaxMeePsiPairDep) ? mMaxMeePsiPairDep(abs(v0.psipair())) : mMaxMee);
@@ -155,6 +169,48 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kPCA:
         return v0.pca() <= mMaxPCA;
 
+      case V0PhotonCuts::kRZLine:
+        return TMath::Abs(v0.vz()) < 12.0 + v0.recalculatedVtxR() * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxEta))); // as long as z recalculation is not fixed use this
+
+      case V0PhotonCuts::kOnWwireIB: {
+        const float rxy_min = 5.506;          // cm
+        const float rxy_max = 14.846;         // cm
+        const float z_min = -17.56;           // cm
+        const float z_max = +31.15;           // cm
+        float x = abs(v0.recalculatedVtxX()); // cm, measured secondary vertex of gamma->ee
+        float y = v0.recalculatedVtxY();      // cm, measured secondary vertex of gamma->ee
+        float z = v0.recalculatedVtxZ();      // cm, measured secondary vertex of gamma->ee
+        float rxy = sqrt(x * x + y * y);
+        if ((rxy < rxy_min || rxy_max < rxy) || (z < z_min || z_max < z)) {
+          return false;
+        }
+        float x_exp = abs(rxy * TMath::Cos(-8.52 * TMath::DegToRad()));                // cm, expected position x of W wire
+        float y_exp = rxy * TMath::Sin(-8.52 * TMath::DegToRad());                     // cm, expected position y of W wire
+        float z_exp = z_min + (rxy - rxy_min) / TMath::Tan(10.86 * TMath::DegToRad()); // cm, expected position rxy of W wire as a function of z
+        if (abs(x - x_exp) > margin || abs(y - y_exp) > margin || abs(z - z_exp) > margin) {
+          return false;
+        }
+        return true;
+      }
+      case V0PhotonCuts::kOnWwireOB: {
+        const float rxy_min = 30.8 - margin;  // cm
+        const float rxy_max = 30.8 + margin;  // cm
+        const float z_min = -47.0;            // cm
+        const float z_max = +47.0;            // cm
+        float x = abs(v0.recalculatedVtxX()); // cm, measured secondary vertex of gamma->ee
+        float y = v0.recalculatedVtxY();      // cm, measured secondary vertex of gamma->ee
+        float z = v0.recalculatedVtxZ();      // cm, measured secondary vertex of gamma->ee
+        float rxy = sqrt(x * x + y * y);
+        if ((rxy < rxy_min || rxy_max < rxy) || (z < z_min || z_max < z)) {
+          return false;
+        }
+        float x_exp = abs(rxy * TMath::Cos(-1.3 * TMath::DegToRad())); // cm, expected position x of W wire
+        float y_exp = rxy * TMath::Sin(-1.3 * TMath::DegToRad());      // cm, expected position y of W wire
+        if (abs(x - x_exp) > margin || abs(y - y_exp) > margin) {
+          return false;
+        }
+        return true;
+      }
       default:
         return false;
     }
@@ -207,6 +263,8 @@ class V0PhotonCut : public TNamed
   void SetMinCosPA(float min = 0.95);
   void SetMaxPCA(float max = 2.f);
   void SetMaxMeePsiPairDep(std::function<float(float)> psiDepCut);
+  void SetOnWwireIB(bool flag = false);
+  void SetOnWwireOB(bool flag = false);
 
   void SetPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -233,6 +291,8 @@ class V0PhotonCut : public TNamed
   float mMinCosPA{0.95};
   float mMaxPCA{2.f};
   std::function<float(float)> mMaxMeePsiPairDep{}; // max mee as a function of psipair
+  bool mIsOnWwireIB{false};
+  bool mIsOnWwireOB{false};
 
   // pid cuts
   float mMinTPCNsigmaEl{-5}, mMaxTPCNsigmaEl{+5};

@@ -11,8 +11,11 @@
 ///
 /// \brief This task pre-filters tracks, V0s and cascades to do h-strangeness
 ///        correlations with an analysis task.
-/// \author Kai Cui
-/// \since
+///
+/// \author Kai Cui (kaicui@mails.ccnu.edu.cn)
+/// \author Lucia Anna Tarasovicova (lucia.anna.husova@cern.ch)
+/// \author David Dobrigkeit Chinellato (david.dobrigkeit.chinellato@cern.ch)
+/// \author Zhongbao Yin (Zhong-Bao.Yin@cern.ch)
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -87,8 +90,8 @@ struct hstrangecorrelationfilter {
      {"hMassAntiLambda", "hMassAntiLambda", {HistType::kTH1F, {{200, 1.0f, 1.550f}}}},
      {"hMassXiMinus", "hMassXiMinus", {HistType::kTH1F, {{200, 1.0f, 1.550f}}}},
      {"hMassXiPlus", "hMassXiPlus", {HistType::kTH1F, {{200, 1.0f, 1.550f}}}},
-     {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH1F, {{200, 1.0f, 1.550f}}}},
-     {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH1F, {{200, 1.016f, 1.216f}}}}}};
+     {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH1F, {{200, 1.57f, 1.77f}}}},
+     {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH1F, {{200, 1.57f, 1.77f}}}}}};
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
   Produces<aod::TriggerTracks> triggerTrack;

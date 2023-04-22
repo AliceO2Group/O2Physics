@@ -18,7 +18,7 @@
 
 ClassImp(V0PhotonCut);
 
-const std::string V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "PsiPair", "RxyKF", "CosPA", "PCA", "PtRange", "EtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz"};
+const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "PsiPair", "RxyKF", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "PtRange", "EtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz"};
 
 void V0PhotonCut::SetMeeRange(float min, float max)
 {
@@ -52,6 +52,16 @@ void V0PhotonCut::SetMaxPCA(float max)
 {
   mMaxPCA = max;
   LOG(info) << "V0 Photon Cut, set max distance between 2 legs: " << mMaxPCA;
+}
+void V0PhotonCut::SetOnWwireIB(bool flag)
+{
+  mIsOnWwireIB = flag;
+  LOG(info) << "V0 Photon Cut, select photon on Tungstate wire IB: " << mIsOnWwireIB;
+}
+void V0PhotonCut::SetOnWwireOB(bool flag)
+{
+  mIsOnWwireOB = flag;
+  LOG(info) << "V0 Photon Cut, select photon on Tungstate wire OB: " << mIsOnWwireOB;
 }
 void V0PhotonCut::SetTPCNsigmaElRange(float min, float max)
 {

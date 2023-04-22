@@ -249,18 +249,25 @@ struct cascadefinder {
 
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, &dcaInfo);
 
+            auto lXiMass = RecoDecay::m(array{array{pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]}, array{pvecbach[0], pvecbach[1], pvecbach[2]}}, array{o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged});
+            auto lOmegaMass = RecoDecay::m(array{array{pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]}, array{pvecbach[0], pvecbach[1], pvecbach[2]}}, array{o2::constants::physics::MassLambda, o2::constants::physics::MassKaonCharged});
+
             lNCand++;
             // If we got here, it means this is a good candidate!
             cascdata(v0.globalIndex(), -1, v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
-                     -1, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
+                     -1, lXiMass, lOmegaMass,
+                     posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
                      pvecpos[0], pvecpos[1], pvecpos[2],
                      pvecneg[0], pvecneg[1], pvecneg[2],
                      pvecbach[0], pvecbach[1], pvecbach[2],
+                     pvecbach[0] + pvecpos[0] + pvecneg[0], // <--- redundant but ok
+                     pvecbach[1] + pvecpos[1] + pvecneg[1], // <--- redundant but ok
+                     pvecbach[2] + pvecpos[2] + pvecneg[2], // <--- redundant but ok
                      fitterV0.getChi2AtPCACandidate(), fitterCasc.getChi2AtPCACandidate(),
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
                      t0id.dcaXY(),
-                     dcaInfo[0]);
+                     dcaInfo[0], dcaInfo[1]);
           } // end if cascade recoed
         }   // end loop over bachelor
       }     // end if v0 recoed
@@ -332,18 +339,25 @@ struct cascadefinder {
 
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, &dcaInfo);
 
+            auto lXiMass = RecoDecay::m(array{array{pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]}, array{pvecbach[0], pvecbach[1], pvecbach[2]}}, array{o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged});
+            auto lOmegaMass = RecoDecay::m(array{array{pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]}, array{pvecbach[0], pvecbach[1], pvecbach[2]}}, array{o2::constants::physics::MassLambda, o2::constants::physics::MassKaonCharged});
+
             lNCand++;
             // If we got here, it means this is a good candidate!
             cascdata(v0.globalIndex(), -1, v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
-                     +1, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
+                     +1, lXiMass, lOmegaMass,
+                     posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
                      pvecpos[0], pvecpos[1], pvecpos[2],
                      pvecneg[0], pvecneg[1], pvecneg[2],
                      pvecbach[0], pvecbach[1], pvecbach[2],
+                     pvecbach[0] + pvecpos[0] + pvecneg[0], // <--- redundant but ok
+                     pvecbach[1] + pvecpos[1] + pvecneg[1], // <--- redundant but ok
+                     pvecbach[2] + pvecpos[2] + pvecneg[2], // <--- redundant but ok
                      fitterV0.getChi2AtPCACandidate(), fitterCasc.getChi2AtPCACandidate(),
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
                      t0id.dcaXY(),
-                     dcaInfo[0]);
+                     dcaInfo[0], dcaInfo[1]);
           } // end if cascade recoed
         }   // end loop over bachelor
       }     // end if v0 recoed
