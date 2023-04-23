@@ -188,10 +188,10 @@ struct JetFinderTask {
 using JetFinderDataCharged = JetFinderTask<o2::aod::Jets, o2::aod::JetConstituents, o2::aod::JetConstituentsSub>;
 using JetFinderDataFull = JetFinderTask<o2::aod::FullJets, o2::aod::FullJetConstituents, o2::aod::FullJetConstituentsSub>;
 using JetFinderDataNeutral = JetFinderTask<o2::aod::NeutralJets, o2::aod::NeutralJetConstituents, o2::aod::NeutralJetConstituentsSub>;
-using JetFinderMCDetectorLevel = JetFinderTask<o2::aod::MCDetectorLevelJets, o2::aod::MCDetectorLevelJetConstituents, o2::aod::MCDetectorLevelJetConstituentsSub>;
+using JetFinderMCDetectorLevelCharged = JetFinderTask<o2::aod::MCDetectorLevelJets, o2::aod::MCDetectorLevelJetConstituents, o2::aod::MCDetectorLevelJetConstituentsSub>;
 using JetFinderMCDetectorLevelFull = JetFinderTask<o2::aod::FullMCDetectorLevelJets, o2::aod::FullMCDetectorLevelJetConstituents, o2::aod::FullMCDetectorLevelJetConstituentsSub>;
 using JetFinderMCDetectorLevelNeutral = JetFinderTask<o2::aod::NeutralMCDetectorLevelJets, o2::aod::NeutralMCDetectorLevelJetConstituents, o2::aod::NeutralMCDetectorLevelJetConstituentsSub>;
-using JetFinderMCParticleLevel = JetFinderTask<o2::aod::MCParticleLevelJets, o2::aod::MCParticleLevelJetConstituents, o2::aod::MCParticleLevelJetConstituentsSub>;
+using JetFinderMCParticleLevelCharged = JetFinderTask<o2::aod::MCParticleLevelJets, o2::aod::MCParticleLevelJetConstituents, o2::aod::MCParticleLevelJetConstituentsSub>;
 using JetFinderMCParticleLevelFull = JetFinderTask<o2::aod::FullMCParticleLevelJets, o2::aod::FullMCParticleLevelJetConstituents, o2::aod::FullMCParticleLevelJetConstituentsSub>;
 using JetFinderMCParticleLevelNeutral = JetFinderTask<o2::aod::NeutralMCParticleLevelJets, o2::aod::NeutralMCParticleLevelJetConstituents, o2::aod::NeutralMCParticleLevelJetConstituentsSub>;
 // using JetFinderHybridIntermediate = JetFinderTask<o2::aod::HybridIntermediateJets, o2::aod::HybridIntermediateJetConstituents, o2::aod::HybridIntermediateJetConstituentsSub>;
