@@ -43,8 +43,9 @@ struct JetMatchingHF {
 
   // preslicing jet collections, only for MC-based collection
 
-  Preslice<BaseJetCollection> baseJetsPerCollision = []{ if constexpr (o2::soa::relatedByIndex<aod::McCollisions, BaseJetCollection>()) return aod::jet::mcCollisionId; else return aod::jet::collisionId; }();
-  Preslice<TagJetCollection> tagJetsPerCollision = []{ if constexpr (o2::soa::relatedByIndex<aod::McCollisions, TagJetCollection>()) return aod::jet::mcCollisionId; else return aod::jet::collisionId; }();
+  Preslice<BaseJetCollection> baseJetsPerCollision = o2::soa::relatedByIndex<aod::McCollisions, BaseJetCollection>() ? aod::jet::mcCollisionId : aod::jet::collisionId;
+  // Preslice<TagJetCollection> tagJetsPerCollision = []{ if constexpr (o2::soa::relatedByIndex<aod::McCollisions, TagJetCollection>()) return aod::jet::mcCollisionId; else return aod::jet::collisionId; }();
+  Preslice<TagJetCollection> tagJetsPerCollision = o2::soa::relatedByIndex<aod::McCollisions, TagJetCollection>() ? aod::jet::mcCollisionId : aod::jet::collisionId;
 
   using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
