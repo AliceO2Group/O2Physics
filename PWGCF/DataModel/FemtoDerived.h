@@ -186,12 +186,12 @@ namespace femtodreamMCparticle
 {
 /// Distinuishes the different particle origins
 enum ParticleOriginMCTruth {
-  kPrimary,          //! Primary track or V0
-  kDaughter,         //! Particle from a decay
-  kMaterial,         //! Particle from a material
-  kNotPrimary,       //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
-  kFake,             //! particle, that has NOT the PDG code of the current analysed particle
-  kDaughterLambda,   //! Daughter from a Lambda decay
+  kPrimary,           //! Primary track or V0
+  kDaughter,          //! Particle from a decay
+  kMaterial,          //! Particle from a material
+  kNotPrimary,        //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
+  kFake,              //! particle, that has NOT the PDG code of the current analysed particle
+  kDaughterLambda,    //! Daughter from a Lambda decay
   kDaughterSigmaplus, //! Daughter from a Sigma^plus decay
   kNOriginMCTruthTypes
 };
@@ -201,13 +201,13 @@ static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes
 /// Distinguished between reconstructed and truth
 enum MCType {
   kRecon, //! Reconstructed in case of MC and used as default in case of data
-  kTruth,  //! MC truth
+  kTruth, //! MC truth
   kNMCTypes
 };
 
 static constexpr std::string_view MCTypeName[kNMCTypes] = {"", "_MC"};
 
-//DECLARE_SOA_INDEX_COLUMN(FemtoDreamParticle, femtoDreamParticle);
+// DECLARE_SOA_INDEX_COLUMN(FemtoDreamParticle, femtoDreamParticle);
 DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
 DECLARE_SOA_COLUMN(PartOriginMCTruth, partOriginMCTruth, uint8_t); //! Origin of the particle, according to femtodreamparticle::ParticleOriginMCTruth
 DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle PDG
