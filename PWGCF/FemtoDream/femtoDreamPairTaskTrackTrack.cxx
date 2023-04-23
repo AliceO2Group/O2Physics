@@ -146,7 +146,7 @@ struct femtoDreamPairTaskTrackTrack {
     vPIDPartTwo = ConfPIDPartTwo;
     kNsigma = ConfPIDnSigmaMax;
   }
-  
+
   template <typename CollisionType>
   void fillCollision(CollisionType col)
   {
@@ -156,18 +156,18 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// This function processes the same event and takes care of all the histogramming
   /// \todo the trivial loops over the tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
-  /// @tparam PartitionType 
-  /// @tparam PartType 
+  /// @tparam PartitionType
+  /// @tparam PartType
   /// @tparam isMC: enables Monte Carlo truth specific histograms
   /// @param groupPartsOne partition for the first particle passed by the process function
   /// @param groupPartsTwo partition for the second particle passed by the process function
-  /// @param parts femtoDreamParticles table (in case of Monte Carlo joined with FemtoDreamMCLabels) 
+  /// @param parts femtoDreamParticles table (in case of Monte Carlo joined with FemtoDreamMCLabels)
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
   void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol)
   {
-    
+
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
       if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
@@ -183,10 +183,10 @@ struct femtoDreamPairTaskTrackTrack {
                              cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
-      
+
       trackHistoPartOne.fillQA<isMC>(part);
     }
-    
+
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
         if (part.p() > cfgCutTable->get("PartTwo", "MaxP") || part.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
@@ -243,8 +243,8 @@ struct femtoDreamPairTaskTrackTrack {
     }
   }
 
-  /// process function for to call doSameEvent with Data 
-  /// \param col subscribe to the collision table (Data) 
+  /// process function for to call doSameEvent with Data
+  /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoDreamParticleTable
   void processSameEvent(o2::aod::FemtoDreamCollision& col,
                         o2::aod::FemtoDreamParticles& parts)
@@ -253,15 +253,15 @@ struct femtoDreamPairTaskTrackTrack {
 
     auto thegroupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
-    
+
     doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEvent, "Enable processing same event", true);
-  
+
   /// process function for to call doSameEvent with Monte Carlo
-  /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed) 
+  /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoDreamParticles and FemtoDreamMCLables to access Monte Carlo truth
-  /// \param FemtoDreamMCParticles subscribe to the Monte Carlo truth table 
+  /// \param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
   void processSameEventMC(o2::aod::FemtoDreamCollision& col,
                           soa::Join<o2::aod::FemtoDreamParticles, o2::aod::FemtoDreamMCLabels>& parts,
                           o2::aod::FemtoDreamMCParticles&)
@@ -270,63 +270,60 @@ struct femtoDreamPairTaskTrackTrack {
 
     auto thegroupPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTwo = partsTwoMC->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
-    
+
     doSameEvent<true>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEventMC, "Enable processing same event for Monte Carlo", false);
-  
-
- 
 
   /// This function processes the mixed event
   /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
-  /// \tparam PartitionType 
-  /// \tparam PartType 
+  /// \tparam PartitionType
+  /// \tparam PartType
   /// \tparam isMC: enables Monte Carlo truth specific histograms
   /// \param groupPartsOne partition for the first particle passed by the process function
   /// \param groupPartsTwo partition for the second particle passed by the process function
-  /// \param parts femtoDreamParticles table (in case of Monte Carlo joined with FemtoDreamMCLabels) 
+  /// \param parts femtoDreamParticles table (in case of Monte Carlo joined with FemtoDreamMCLabels)
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
   void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol)
   {
 
-      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.p() > cfgCutTable->get("PartTwo", "MaxP") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
-          continue;
-        }
-        if (!isFullPIDSelected(p1.pidcut(),
-                               p1.p(),
-                               cfgCutTable->get("PartOne", "PIDthr"),
-                               vPIDPartOne,
-                               cfgNspecies,
-                               kNsigma,
-                               cfgCutTable->get("PartOne", "nSigmaTPC"),
-                               cfgCutTable->get("PartOne", "nSigmaTPCTOF")) ||
-            !isFullPIDSelected(p2.pidcut(),
-                               p2.p(),
-                               cfgCutTable->get("PartTwo", "PIDthr"),
-                               vPIDPartTwo,
-                               cfgNspecies,
-                               kNsigma,
-                               cfgCutTable->get("PartTwo", "nSigmaTPC"),
-                               cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
-          continue;
-        }
-
-        if (ConfIsCPR) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
-            continue;
-          }
-        }
-
-        mixedEventCont.setPair<isMC>(p1, p2, multCol);
+    for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.p() > cfgCutTable->get("PartTwo", "MaxP") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
+        continue;
       }
+      if (!isFullPIDSelected(p1.pidcut(),
+                             p1.p(),
+                             cfgCutTable->get("PartOne", "PIDthr"),
+                             vPIDPartOne,
+                             cfgNspecies,
+                             kNsigma,
+                             cfgCutTable->get("PartOne", "nSigmaTPC"),
+                             cfgCutTable->get("PartOne", "nSigmaTPCTOF")) ||
+          !isFullPIDSelected(p2.pidcut(),
+                             p2.p(),
+                             cfgCutTable->get("PartTwo", "PIDthr"),
+                             vPIDPartTwo,
+                             cfgNspecies,
+                             kNsigma,
+                             cfgCutTable->get("PartTwo", "nSigmaTPC"),
+                             cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
+        continue;
+      }
+
+      if (ConfIsCPR) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+          continue;
+        }
+      }
+
+      mixedEventCont.setPair<isMC>(p1, p2, multCol);
+    }
   }
 
-  /// process function for to call doMixedEvent with Data 
-  /// @param cols subscribe to the collisions table (Data) 
+  /// process function for to call doMixedEvent with Data
+  /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoDreamParticleTable
   void processMixedEvent(o2::aod::FemtoDreamCollisions& cols,
                          o2::aod::FemtoDreamParticles& parts)
@@ -347,16 +344,16 @@ struct femtoDreamPairTaskTrackTrack {
       }
       /// \todo before mixing we should check whether both collisions contain a pair of particles!
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
-      
+
       doMixedEvent<false>(groupPartsOne, groupPartsTwo, parts, magFieldTesla1, multiplicityCol);
     }
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processMixedEvent, "Enable processing mixed events", true);
 
   /// brief process function for to call doMixedEvent with Monte Carlo
-  /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed) 
+  /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoDreamParticles and FemtoDreamMCLables to access Monte Carlo truth
-  /// @param FemtoDreamMCParticles subscribe to the Monte Carlo truth table 
+  /// @param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
   void processMixedEventMC(o2::aod::FemtoDreamCollisions& cols,
                            soa::Join<o2::aod::FemtoDreamParticles, o2::aod::FemtoDreamMCLabels>& parts,
                            o2::aod::FemtoDreamMCParticles&)
@@ -377,7 +374,7 @@ struct femtoDreamPairTaskTrackTrack {
       }
       /// \todo before mixing we should check whether both collisions contain a pair of particles!
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
-      
+
       doMixedEvent<true>(groupPartsOne, groupPartsTwo, parts, magFieldTesla1, multiplicityCol);
     }
   }

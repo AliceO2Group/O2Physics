@@ -59,10 +59,9 @@ class FemtoDreamContainer
   /// Destructor
   virtual ~FemtoDreamContainer() = default;
 
-
   /// Initializes histograms for the task
   /// Called by init both in case of reconstructed data/ Monte Carlo, and for Monte Carlo Truth
-  /// \tparam T type of the axis Object 
+  /// \tparam T type of the axis Object
   /// \param folderName Name of the directory in the output file (no suffix for reconstructed data/ Monte Carlo; "_MC" for Monte Carlo Truth)
   /// \param femtoObs Title of the femto observable axis
   /// \param femtoObsAxis axis object for the femto observable axis
@@ -72,7 +71,7 @@ class FemtoDreamContainer
   template <typename T>
   void init_base(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T kTAxis, T mTAxis)
   {
-    
+
     mHistogramRegistry->add((folderName + "/relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
     mHistogramRegistry->add((folderName + "/relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
     mHistogramRegistry->add((folderName + "/relPairkstarkT").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, kTAxis});
@@ -87,7 +86,7 @@ class FemtoDreamContainer
 
   /// Initializes specialized Monte Carlo truth histograms for the task
   /// internal function called by init only in case of Monte Carlo truth
-  /// \tparam T type of the xxis Object 
+  /// \tparam T type of the xxis Object
   /// \param folderName Name of the directory in the output file (no suffix for reconstructed data/ Monte Carlo; "_MC" for Monte Carlo Truth)
   /// \param femtoObsAxis axis object for the femto observable axis
   template <typename T>
@@ -121,9 +120,9 @@ class FemtoDreamContainer
     framework::AxisSpec mTAxis = {mTBins, "#it{m}_{T} (GeV/#it{c}^{2})"};
 
     std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kRecon]);
-    
+
     init_base(folderName, femtoObs, femtoObsAxis, multAxis, kTAxis, mTAxis);
-    if(isMC){
+    if (isMC) {
       folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]);
       init_base(folderName, femtoObs, femtoObsAxis, multAxis, kTAxis, mTAxis);
       init_MC(folderName, femtoObsAxis);
@@ -199,23 +198,22 @@ class FemtoDreamContainer
     if (mHistogramRegistry) {
       setPair_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(part1, part2, mult);
 
-      if constexpr (isMC){
-        if(part1.has_femtoDreamMCParticle() && part2.has_femtoDreamMCParticle()){ //fill the resolution matrix only if both particles have a Monte Carlo Truth particle
+      if constexpr (isMC) {
+        if (part1.has_femtoDreamMCParticle() && part2.has_femtoDreamMCParticle()) { // fill the resolution matrix only if both particles have a Monte Carlo Truth particle
           setPair_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(part1.femtoDreamMCParticle(), part2.femtoDreamMCParticle(), mult);
           setPair_MC(part1, part2, mult);
         }
       }
-
     }
   }
 
  protected:
-  HistogramRegistry* mHistogramRegistry = nullptr;                                    ///< For QA output
+  HistogramRegistry* mHistogramRegistry = nullptr;                                  ///< For QA output
   static constexpr std::string_view mFolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to mEventType
-  static constexpr femtoDreamContainer::Observable mFemtoObs = obs;                   ///< Femtoscopic observable to be computed (according to femtoDreamContainer::Observable)
-  static constexpr int mEventType = eventType;                                        ///< Type of the event (same/mixed, according to femtoDreamContainer::EventType)
-  float mMassOne = 0.f;                                                               ///< PDG mass of particle 1
-  float mMassTwo = 0.f;                                                               ///< PDG mass of particle 2
+  static constexpr femtoDreamContainer::Observable mFemtoObs = obs;                 ///< Femtoscopic observable to be computed (according to femtoDreamContainer::Observable)
+  static constexpr int mEventType = eventType;                                      ///< Type of the event (same/mixed, according to femtoDreamContainer::EventType)
+  float mMassOne = 0.f;                                                             ///< PDG mass of particle 1
+  float mMassTwo = 0.f;                                                             ///< PDG mass of particle 2
 };
 
 } // namespace o2::analysis::femtoDream

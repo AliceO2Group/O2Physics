@@ -199,20 +199,19 @@ struct femtoDreamProducerReducedTask {
       int particleOrigin = 99;
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
 
-      if (abs(pdgCode) == abs(ConfPDGCodeTrack.value)) { 
+      if (abs(pdgCode) == abs(ConfPDGCodeTrack.value)) {
 
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
         } else if (motherparticleMC.producedByGenerator()) {
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode()); 
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
         } else {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
         }
-      
+
       } else {
 
         particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
-      
       }
       outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
       outputPartsMCLabels(outputPartsMC.lastIndex());
@@ -324,7 +323,7 @@ struct femtoDreamProducerReducedTask {
     fillCollisionsAndTracks<false>(col, tracks);
   }
   PROCESS_SWITCH(femtoDreamProducerReducedTask, processData, "Provide experimental data", true);
-  
+
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
                  soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,

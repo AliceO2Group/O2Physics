@@ -37,11 +37,11 @@ class FemtoDreamParticleHisto
  public:
   /// Destructor
   virtual ~FemtoDreamParticleHisto() = default;
-  
-  /// Initializes particle histograms 
+
+  /// Initializes particle histograms
   /// Called by init both in case of reconstructed data/ Monte Carlo, and for Monte Carlo Truth
-  /// \tparam T type of the axis Object 
-  /// \tparam mc enum object to get the suffix ("" for data/ Monte Cartlo reconstructed, "_MC" for Monte Carlo truth) for the folder in the output file 
+  /// \tparam T type of the axis Object
+  /// \tparam mc enum object to get the suffix ("" for data/ Monte Cartlo reconstructed, "_MC" for Monte Carlo truth) for the folder in the output file
   /// \param folderName base path of the directory in the output file, in which to store the histograms
   /// \param tempFitVarAxisTitle  Title of the axis of the tempFitVar (DCA_xy in case of tracks, CPA in case of V0s, etc.)
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
@@ -49,22 +49,21 @@ class FemtoDreamParticleHisto
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
   void init_base(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis)
   {
-      std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[mc]).c_str(); 
-      /// Histograms of the kinematic properties
-      mHistogramRegistry->add((folderName + folderSuffix + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-      
-      /// particle specific histogramms for the TempFitVar column in FemtoDreamParticles
-      if constexpr (o2::aod::femtodreamMCparticle::MCType::kRecon == mc){
-        mHistogramRegistry->add((folderName + folderSuffix + static_cast<std::string>(o2::aod::femtodreamparticle::TempFitVarName[mParticleType])).c_str(), ("; #it{p}_{T} (GeV/#it{c}); " + tempFitVarAxisTitle).c_str(), kTH2F, {{tempFitVarpTAxis}, {tempFitVarAxis}});
-      }
+    std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[mc]).c_str();
+    /// Histograms of the kinematic properties
+    mHistogramRegistry->add((folderName + folderSuffix + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
+    mHistogramRegistry->add((folderName + folderSuffix + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
+    mHistogramRegistry->add((folderName + folderSuffix + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
 
+    /// particle specific histogramms for the TempFitVar column in FemtoDreamParticles
+    if constexpr (o2::aod::femtodreamMCparticle::MCType::kRecon == mc) {
+      mHistogramRegistry->add((folderName + folderSuffix + static_cast<std::string>(o2::aod::femtodreamparticle::TempFitVarName[mParticleType])).c_str(), ("; #it{p}_{T} (GeV/#it{c}); " + tempFitVarAxisTitle).c_str(), kTH2F, {{tempFitVarpTAxis}, {tempFitVarAxis}});
+    }
   }
 
   /// Initializes specialized Monte Carlo particle histograms
   /// internal function called by init only in case of Monte Carlo truth
-  /// \tparam T type of the axis Object 
+  /// \tparam T type of the axis Object
   /// \param folderName base path of the directory in the output file, in which to store the histograms
   /// \param tempFitVarAxisTitle  Title of the axis of the tempFitVar (DCA_xy in case of tracks, CPA in case of V0s, etc.)
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
@@ -89,15 +88,14 @@ class FemtoDreamParticleHisto
     } else {
       LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
     }
-
   }
-  
+
   /// Templated function for the initialization of the QA histograms
   /// Always calls init_base to initialize the histograms with data/ Monte Carlo reconstructed
   /// In case of Monte Carlo, calls init_base again for Monte Carlo truth and the specialized function init_MC for additional Monte Carlo histogramms
   /// \tparam T type of the axis binning
   /// \param registry Histogram registry to be passed
-  /// \param tempFitVarpTBins binning of the pT axis in the pT vs. tempFitVar 
+  /// \param tempFitVarpTBins binning of the pT axis in the pT vs. tempFitVar
   /// \param tempFitVarBins binning of the tempFitVar (DCA_xy in case of tracks, CPA in case of V0s, etc.)
   /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T>
@@ -122,16 +120,15 @@ class FemtoDreamParticleHisto
 
       framework::AxisSpec tempFitVarpTAxis = {tempFitVarpTBins, "#it{p}_{T} (GeV/#it{c})"}; // the pT binning may vary
       framework::AxisSpec tempFitVarAxis = {tempFitVarBins, tempFitVarAxisTitle};
-      
+
       std::string folderName = (static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]).c_str() + static_cast<std::string>(mFolderSuffix[mFolderSuffixType])).c_str();
 
-      //Fill here the actual histogramms by calling init_base and init_MC
+      // Fill here the actual histogramms by calling init_base and init_MC
       init_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
-      if(isMC){
+      if (isMC) {
         init_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
         init_MC(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
       }
-
     }
   }
 
@@ -146,14 +143,12 @@ class FemtoDreamParticleHisto
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hPt"), part.pt());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hEta"), part.eta());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hPhi"), part.phi());
-        
-    /// particle specific histogramms for the TempFitVar column in FemtoDreamParticles
-    if constexpr (mc == o2::aod::femtodreamMCparticle::MCType::kRecon){
-      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) 
-                             + HIST(o2::aod::femtodreamparticle::TempFitVarName[mParticleType]), part.pt(), part.tempFitVar());
-    }
-  } 
 
+    /// particle specific histogramms for the TempFitVar column in FemtoDreamParticles
+    if constexpr (mc == o2::aod::femtodreamMCparticle::MCType::kRecon) {
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST(o2::aod::femtodreamparticle::TempFitVarName[mParticleType]), part.pt(), part.tempFitVar());
+    }
+  }
 
   /// Filling specialized histograms for Monte Carlo truth
   /// internal function called by init only in case of Monte Carlo truth
@@ -206,14 +201,13 @@ class FemtoDreamParticleHisto
       } else {
         LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
       }
-
     }
   }
 
   /// Templated function to fill particle histograms for data/ Monte Carlo reconstructed and Monte Carlo truth
-  /// Always calls fillQA_base fill histogramms with data/ Monte Carlo reconstructed 
+  /// Always calls fillQA_base fill histogramms with data/ Monte Carlo reconstructed
   /// In case of Monte Carlo, calls fillQA_base with Monte Carlo truth info and specialized function fillQA_MC for additional histogramms
-  /// \tparam T particle type 
+  /// \tparam T particle type
   /// \tparam isMC fills the additional histograms for Monte Carlo truth
   /// \param part particle for which the histograms should be filled
   template <bool isMC, typename T>
@@ -221,15 +215,14 @@ class FemtoDreamParticleHisto
   {
     std::string tempFitVarName;
     if (mHistogramRegistry) {
-      
+
       fillQA_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(part);
-      if constexpr (isMC){
-        if( part.has_femtoDreamMCParticle()){
+      if constexpr (isMC) {
+        if (part.has_femtoDreamMCParticle()) {
           fillQA_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(part.femtoDreamMCParticle());
           fillQA_MC(part, (part.femtoDreamMCParticle()).partOriginMCTruth());
-        } 
-      } 
-
+        }
+      }
     }
   }
 
