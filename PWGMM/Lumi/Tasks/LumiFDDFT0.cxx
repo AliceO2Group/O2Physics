@@ -266,7 +266,6 @@ struct LumiFDDFT0 {
     if (collision.numContrib() > nContribMax ||
         collision.numContrib() < nContribMin)
       return;
-
     histos.fill(HIST("vertexx"), collision.posX());
     histos.fill(HIST("vertexy"), collision.posY());
     histos.fill(HIST("timestamp"), relTS);
