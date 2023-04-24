@@ -35,9 +35,6 @@ struct JetFinderTask {
   OutputObj<TH1F> hJetEta{"h_jet_eta"};
   OutputObj<TH1F> hJetNTracks{"h_jet_ntracks"};
 
-  Service<O2DatabasePDG> pdg;
-  std::string trackSelection;
-
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
@@ -74,16 +71,15 @@ struct JetFinderTask {
   Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
   Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
 
+  Service<O2DatabasePDG> pdg;
+  std::string trackSelection;
+
+  JetFinder jetFinder;
+  std::vector<fastjet::PseudoJet> inputParticles;
+
   void init(InitContext const&)
   {
-    // variables passed to the common header
-    trackEtaMin_ = static_cast<float>(trackEtaMin);
-    trackEtaMax_ = static_cast<float>(trackEtaMax);
-    jetRadius_ = static_cast<std::vector<double>>(jetRadius);
-    DoConstSub_ = static_cast<bool>(DoConstSub);
-
     trackSelection = static_cast<std::string>(trackSelections);
-    jetTypeParticleLevelCheck = jetTypeParticleLevel;
 
     h2JetPt.setObject(new TH2F("h2_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
                                100, 0., 100., 10, 0.05, 1.05));
@@ -144,9 +140,8 @@ struct JetFinderTask {
 
     LOG(debug) << "Process data charged!";
     inputParticles.clear();
-    using ArgType = std::decay_t<decltype(tracks)>;
-    analyseTracks<ArgType, typename ArgType::iterator>(tracks, trackSelection);
-    findJets(collision, jetsTable, constituentsTable, constituentsSubTable);
+    analyseTracks<JetTracks, JetTracks::iterator>(inputParticles, tracks, trackSelection);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
 
   PROCESS_SWITCH(JetFinderTask, processChargedJets, "Data jet finding for charged jets", false);
@@ -159,8 +154,8 @@ struct JetFinderTask {
     }
     LOG(debug) << "Process data neutral!";
     inputParticles.clear();
-    analyseClusters(&clusters);
-    findJets(collision, jetsTable, constituentsTable, constituentsSubTable);
+    analyseClusters(inputParticles, &clusters);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
   PROCESS_SWITCH(JetFinderTask, processNeutralJets, "Data jet finding for neutral jets", false);
 
@@ -173,10 +168,9 @@ struct JetFinderTask {
     }
     LOG(debug) << "Process data full!";
     inputParticles.clear();
-    using ArgType = std::decay_t<decltype(tracks)>;
-    analyseTracks<ArgType, typename ArgType::iterator>(tracks, trackSelection);
-    analyseClusters(&clusters);
-    findJets(collision, jetsTable, constituentsTable, constituentsSubTable);
+    analyseTracks<JetTracks, JetTracks::iterator>(inputParticles, tracks, trackSelection);
+    analyseClusters(inputParticles, &clusters);
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
 
   PROCESS_SWITCH(JetFinderTask, processFullJets, "Data jet finding for full and neutral jets", false);
@@ -184,9 +178,8 @@ struct JetFinderTask {
   void processParticleLevelJets(aod::McCollision const& collision, aod::McParticles const& particles)
   {
     // TODO: MC event selection?
-    using ArgType = std::decay_t<decltype(particles)>;
-    analyseParticles<ArgType, typename ArgType::iterator>(particles, pdg->Instance());
-    findJets(collision, jetsTable, constituentsTable, constituentsSubTable);
+    analyseParticles<aod::McParticles, aod::McParticles::iterator>(inputParticles, trackEtaMin, trackEtaMax, jetTypeParticleLevel, particles, pdg->Instance());
+    findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
   }
 
   PROCESS_SWITCH(JetFinderTask, processParticleLevelJets, "Particle level jet finding", false);

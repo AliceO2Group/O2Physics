@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet finder task
+// jet finder hf task
 //
 // Authors: Nima Zardoshti, Jochen Klein
 
@@ -86,20 +86,15 @@ struct JetFinderHFTask {
   Service<O2DatabasePDG> pdg;
   std::string trackSelection;
 
+  JetFinder jetFinder;
+  std::vector<fastjet::PseudoJet> inputParticles;
+
+  int candPDG;
+  int candDecay;
+
   void init(InitContext const&)
   {
-    // variables passed to the common header
-    trackEtaMin_ = static_cast<float>(trackEtaMin);
-    trackEtaMax_ = static_cast<float>(trackEtaMax);
-    candPtMin_ = static_cast<float>(candPtMin);
-    candPtMax_ = static_cast<float>(candPtMax);
-    candYMin_ = static_cast<float>(candYMin);
-    candYMax_ = static_cast<float>(candYMax);
-    jetRadius_ = static_cast<std::vector<double>>(jetRadius);
-    DoConstSub_ = static_cast<bool>(DoConstSub);
-
     trackSelection = static_cast<std::string>(trackSelections);
-    jetTypeParticleLevelCheck = jetTypeParticleLevel;
 
     h2JetPt.setObject(new TH2F("h2_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
                                100, 0., 100., 10, 0.05, 1.05));
@@ -160,19 +155,14 @@ struct JetFinderHFTask {
         candDecay = static_cast<int>(aod::hf_cand_2prong::DecayType::JpsiToMuMu);
       }
     }
-    doHFJetFinding = true;
   }
-
-  using JetParticles2Prong = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
-  using JetParticles3Prong = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using JetParticlesBPlus = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
 
   o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
   Filter collisionFilter = (nabs(aod::collision::posZ) < vertexZCut);
   Filter trackCuts = (aod::track::pt >= trackPtMin && aod::track::pt < trackPtMax && aod::track::eta > trackEtaMin && aod::track::eta < trackEtaMax && aod::track::phi >= trackPhiMin && aod::track::phi <= trackPhiMax);
   Filter partCuts = (aod::mcparticle::pt >= trackPtMin && aod::mcparticle::pt < trackPtMax);
   Filter clusterFilter = (o2::aod::emcalcluster::definition == static_cast<int>(clusterDefinition) && aod::emcalcluster::eta > clusterEtaMin && aod::emcalcluster::eta < clusterEtaMax && aod::emcalcluster::phi >= clusterPhiMin && aod::emcalcluster::phi <= clusterPhiMax);
-  // Filter candidateCuts = (aod::hf_cand::Pt >= candPtMin && aod::hf_cand::Pt < candPtMax); FIXME: why wont this work?
+  // Filter candidateCuts = (aod::hfcand::pt >= candPtMin && aod::hfcand::pt < candPtMax && aod::hfcand::y >= candYMin && aod::hfcand::y < candYMax);
   Filter candidateCutsD0 = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
   Filter candidateCutsLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPiPK);
   Filter candidateCutsBPlus = (aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBPlus);
@@ -187,11 +177,11 @@ struct JetFinderHFTask {
 
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      if (!analyseCandidate(candidate)) {
+      if (!analyseCandidate(inputParticles, candPDG, candPtMin, candPtMax, candYMin, candYMax, candidate)) {
         continue;
       }
-      analyseTracks(tracks, trackSelection, std::optional{candidate});
-      findJets(collision, jetsTable, constituentsTable, constituentsSubTable);
+      analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
+      findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub, true);
     }
   }
 
@@ -205,11 +195,11 @@ struct JetFinderHFTask {
 
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      if (!analyseCandidateMC(candidate, rejectBackgroundMCCandidates)) {
+      if (!analyseCandidateMC(inputParticles, candPDG, candDecay, candPtMin, candPtMax, candYMin, candYMax, candidate, rejectBackgroundMCCandidates)) {
         continue;
       }
-      analyseTracks(tracks, trackSelection, std::optional{candidate});
-      findJets(collision, jetsTable, constituentsTable, constituentsSubTable);
+      analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
+      findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub, true);
     }
   }
 
@@ -230,9 +220,9 @@ struct JetFinderHFTask {
       }
     }
     for (auto& candidate : candidates) {
-      analyseParticles(particles, pdg->Instance(), std::optional{candidate});
+      analyseParticles(inputParticles, trackEtaMin, trackEtaMax, jetTypeParticleLevel, particles, pdg->Instance(), std::optional{candidate});
       FastJetUtilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candidate.pdgCode()));
-      findJets(collision, jetsTable, constituentsTable, constituentsSubTable);
+      findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub, true);
     }
   }
 
@@ -241,7 +231,6 @@ struct JetFinderHFTask {
   template <typename T, typename U>
   void analyseMCGen2Prong(T const& collision, U const& particles)
   {
-    jets.clear();
     inputParticles.clear();
     LOG(debug) << "Per Event MCP";
     std::vector<JetParticles2Prong::iterator> candidates;
@@ -252,7 +241,6 @@ struct JetFinderHFTask {
   template <typename T, typename U>
   void analyseMCGen3Prong(T const& collision, U const& particles)
   {
-    jets.clear();
     inputParticles.clear();
     LOG(debug) << "Per Event MCP";
     std::vector<JetParticles3Prong::iterator> candidates;
@@ -262,7 +250,6 @@ struct JetFinderHFTask {
   template <typename T, typename U>
   void analyseMCGenBPlus(T const& collision, U const& particles)
   {
-    jets.clear();
     inputParticles.clear();
     LOG(debug) << "Per Event MCP";
     std::vector<JetParticlesBPlus::iterator> candidates;
