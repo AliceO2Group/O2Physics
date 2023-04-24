@@ -13,8 +13,11 @@ add_subdirectory(Skimming)
 add_subdirectory(OpenData)
 add_subdirectory(ML)
 add_subdirectory(PWGEM)
+add_subdirectory(PWGUD)
 add_subdirectory(PWGLF)
 add_subdirectory(PWGCF)
+add_subdirectory(PWGMM)
+add_subdirectory(PWGHF)
 
 o2physics_add_dpl_workflow(histogram-track-selection
                     SOURCES src/histogramTrackSelection.cxx
