@@ -157,21 +157,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
   DECLARE_JETMATCHING_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCDetectorLevel, _shortname_ "JETMP2D") \
   DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCParticleLevel, _shortname_ "JETMD2P")
 
-#define DECLARE_JET_TABLES_LEVELS2(_jet_type_, _hfcand_type_, _shortname_)                       \
-  DECLARE_JET_TABLES(Collision, _jet_type_, Track, _hfcand_type_, _shortname_ "JET");            \
-  DECLARE_JET_TABLES(Collision, _jet_type_##MCD, Track, _hfcand_type_, _shortname_ "DJET");      \
-  DECLARE_JET_TABLES(McCollision, _jet_type_##MCP, McParticle, McParticles, _shortname_ "PJET"); \
-  DECLARE_JETMATCHING_TABLE(_jet_type_##MCP, _jet_type_##MCD, _shortname_ "JETMP2D")             \
-  DECLARE_JETMATCHING_TABLE(_jet_type_##MCD, _jet_type_##MCP, _shortname_ "JETMD2P")
-
 namespace o2::aod
 {
-DECLARE_JET_TABLES_LEVELS(, HfCand2Prong, "");
+DECLARE_JET_TABLES_LEVELS(Charged, HfCand2Prong, "");
 DECLARE_JET_TABLES_LEVELS(Full, HfCand2Prong, "F");
 DECLARE_JET_TABLES_LEVELS(Neutral, HfCand2Prong, "N");
-DECLARE_JET_TABLES_LEVELS2(D0, HfCand2Prong, "D0");
-DECLARE_JET_TABLES_LEVELS2(Lc, HfCand3Prong, "Lc");
-DECLARE_JET_TABLES_LEVELS2(BPl, HfCandBplus, "BPl");
+DECLARE_JET_TABLES_LEVELS(D0Charged, HfCand2Prong, "D0");
+DECLARE_JET_TABLES_LEVELS(LcCharged, HfCand3Prong, "Lc");
+DECLARE_JET_TABLES_LEVELS(BPlusCharged, HfCandBplus, "BPl");
 
 // Hybrid intermediate
 DECLARE_JET_TABLES(Collision, HybridIntermediate, Track, HfCand2Prong, "JEHYIN");

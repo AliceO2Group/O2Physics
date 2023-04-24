@@ -334,17 +334,17 @@ struct JetFinderHFTask {
   PROCESS_SWITCH(JetFinderHFTask, processBPlusJetsMCP, "B+ HF jet finding on MC particle level", false);
 };
 
-using JetFinderD0DataCharged = JetFinderHFTask<o2::aod::D0Jets, o2::aod::D0JetConstituents, o2::aod::D0JetConstituentsSub>;
-using JetFinderD0MCDetectorLevelCharged = JetFinderHFTask<o2::aod::D0MCDJets, o2::aod::D0MCDJetConstituents, o2::aod::D0MCDJetConstituentsSub>;
-using JetFinderD0MCParticleLevelCharged = JetFinderHFTask<o2::aod::D0MCPJets, o2::aod::D0MCPJetConstituents, o2::aod::D0MCPJetConstituentsSub>;
+using JetFinderD0DataCharged = JetFinderHFTask<o2::aod::D0ChargedJets, o2::aod::D0ChargedJetConstituents, o2::aod::D0ChargedJetConstituentsSub>;
+using JetFinderD0MCDetectorLevelCharged = JetFinderHFTask<o2::aod::D0ChargedMCDetectorLevelJets, o2::aod::D0ChargedMCDetectorLevelJetConstituents, o2::aod::D0ChargedMCDetectorLevelJetConstituentsSub>;
+using JetFinderD0MCParticleLevelCharged = JetFinderHFTask<o2::aod::D0ChargedMCParticleLevelJets, o2::aod::D0ChargedMCParticleLevelJetConstituents, o2::aod::D0ChargedMCParticleLevelJetConstituentsSub>;
 
-using JetFinderBPlusDataCharged = JetFinderHFTask<o2::aod::BPlJets, o2::aod::BPlJetConstituents, o2::aod::BPlJetConstituentsSub>;
-using JetFinderBPlusMCDetectorLevelCharged = JetFinderHFTask<o2::aod::BPlMCDJets, o2::aod::BPlMCDJetConstituents, o2::aod::BPlMCDJetConstituentsSub>;
-using JetFinderBPlusMCParticleLevelCharged = JetFinderHFTask<o2::aod::BPlMCPJets, o2::aod::BPlMCPJetConstituents, o2::aod::BPlMCPJetConstituentsSub>;
+using JetFinderBPlusDataCharged = JetFinderHFTask<o2::aod::BPlusChargedJets, o2::aod::BPlusChargedJetConstituents, o2::aod::BPlusChargedJetConstituentsSub>;
+using JetFinderBPlusMCDetectorLevelCharged = JetFinderHFTask<o2::aod::BPlusChargedMCDetectorLevelJets, o2::aod::BPlusChargedMCDetectorLevelJetConstituents, o2::aod::BPlusChargedMCDetectorLevelJetConstituentsSub>;
+using JetFinderBPlusMCParticleLevelCharged = JetFinderHFTask<o2::aod::BPlusChargedMCParticleLevelJets, o2::aod::BPlusChargedMCParticleLevelJetConstituents, o2::aod::BPlusChargedMCParticleLevelJetConstituentsSub>;
 
-using JetFinderLcDataCharged = JetFinderHFTask<o2::aod::LcJets, o2::aod::LcJetConstituents, o2::aod::LcJetConstituentsSub>;
-using JetFinderLcMCDetectorLevelCharged = JetFinderHFTask<o2::aod::LcMCDJets, o2::aod::LcMCDJetConstituents, o2::aod::LcMCDJetConstituentsSub>;
-using JetFinderLcMCParticleLevelCharged = JetFinderHFTask<o2::aod::LcMCPJets, o2::aod::LcMCPJetConstituents, o2::aod::LcMCPJetConstituentsSub>;
+using JetFinderLcDataCharged = JetFinderHFTask<o2::aod::LcChargedJets, o2::aod::LcChargedJetConstituents, o2::aod::LcChargedJetConstituentsSub>;
+using JetFinderLcMCDetectorLevelCharged = JetFinderHFTask<o2::aod::LcChargedMCDetectorLevelJets, o2::aod::LcChargedMCDetectorLevelJetConstituents, o2::aod::LcChargedMCDetectorLevelJetConstituentsSub>;
+using JetFinderLcMCParticleLevelCharged = JetFinderHFTask<o2::aod::LcChargedMCParticleLevelJets, o2::aod::LcChargedMCParticleLevelJetConstituents, o2::aod::LcChargedMCParticleLevelJetConstituentsSub>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

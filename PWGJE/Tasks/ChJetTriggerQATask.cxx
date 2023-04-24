@@ -175,7 +175,7 @@ struct ChJetTriggerQATask {
   // declare filters on jets
   Filter jetRadiusSelection = o2::aod::jet::r == nround(cfgJetR.node() * 100.0f);
 
-  using filteredJets = o2::soa::Filtered<o2::aod::Jets>;
+  using filteredJets = o2::soa::Filtered<o2::aod::ChargedJets>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra,
                                     aod::TracksDCA, aod::TrackSelection>;
 
