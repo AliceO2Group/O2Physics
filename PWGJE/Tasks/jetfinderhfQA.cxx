@@ -27,7 +27,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
-#include "PWGJE/DataModel/JetHF.h"
+#include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
 
@@ -137,7 +137,7 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsData, "jet finder HF QA data", false);
 
-  void processJetsMCD(soa::Join<aod::MCDetectorLevelD0Jets, aod::MCDetectorLevelD0JetConstituents>::iterator const& jet,
+  void processJetsMCD(soa::Join<aod::D0MCDJets, aod::D0MCDJetConstituents>::iterator const& jet,
                    CandidateD0MC const& candidates,
                    JetTracks const& tracks)
   {
@@ -156,7 +156,7 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCD, "jet finder HF QA mcd", false);
 
-  void processJetsMCP(soa::Join<o2::aod::MCParticleLevelD0Jets, o2::aod::MCParticleLevelD0JetConstituents>::iterator const& jet,
+  void processJetsMCP(soa::Join<aod::D0MCPJets, aod::D0MCPJetConstituents>::iterator const& jet,
                    JetParticles2Prong const& particles)
   {
     LOGF(info,"mcp");

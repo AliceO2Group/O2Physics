@@ -148,11 +148,14 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
     jetFinder.jetR = R;
     std::vector<fastjet::PseudoJet> jets;
     fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
+    LOGF(info,"jets %d",jets.size());
     for (const auto& jet : jets) {
       bool isHFJet = false;
       if (doHFJetFinding) {
+         LOGF(info,"in HF jet finding");
         for (const auto& constituent : jet.constituents()) {
           if (constituent.template user_info<FastJetUtilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidateHF)) {
+            LOGF(info,"found HF hadron");
             isHFJet = true;
             // candidatepT = constituent.pt();
             break;
