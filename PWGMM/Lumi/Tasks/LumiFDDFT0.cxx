@@ -246,7 +246,7 @@ struct LumiFDDFT0 {
         }
       } // ft0
 
-    }   // pv refit
+    } // pv refit
     rowEventInfo(relTS, refitX, refitY, refitZ, globalBC, chi2, nContrib, collision.has_foundFDD(),
                  mTriggerFDD, timeaFDD, timecFDD, chargeaFDD, chargecFDD, collision.has_foundFT0(), mTriggerFT0, timeaFT0,
                  timecFT0, chargeaFT0, chargecFT0);
