@@ -91,6 +91,12 @@ struct JetFinderHFTask {
 
   BkgSubMode _bkgSubMode;
 
+  JetFinder jetFinder;
+  std::vector<fastjet::PseudoJet> inputParticles;
+
+  int candPDG;
+  int candDecay;
+
   void init(InitContext const&)
   {
     trackSelection = static_cast<std::string>(trackSelections);
@@ -134,7 +140,6 @@ struct JetFinderHFTask {
         candDecay = static_cast<int>(aod::hf_cand_2prong::DecayType::JpsiToMuMu);
       }
     }
-    doHFJetFinding = true;
   }
 
   o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
