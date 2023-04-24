@@ -196,7 +196,15 @@ enum ParticleOriginMCTruth {
   kNOriginMCTruthTypes
 };
 
-static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes] = {"_Primary", "_Daughter", "_Material", "_NotPrimary", "_Fake", "_DaughterLambda", "DaughterSigmaPlus"}; //! Naming of the different OriginMCTruth types
+//! Naming of the different OriginMCTruth types
+static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes] = {
+  "_Primary",
+  "_Daughter",
+  "_Material",
+  "_NotPrimary",
+  "_Fake",
+  "_DaughterLambda",
+  "DaughterSigmaPlus"};
 
 /// Distinguished between reconstructed and truth
 enum MCType {
