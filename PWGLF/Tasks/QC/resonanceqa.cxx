@@ -65,6 +65,7 @@ struct resonanceqa {
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
+  Configurable<bool> isEtaAssym{"isEtaAssym", false, "isEtaAssym"};
   // particle
   Configurable<int> cfgparticletype{"cfgparticletype", 0, "Resonance particle type: 0(kstar), 1(phi), 2(Lambdastar)"};
   // MC
@@ -89,6 +90,14 @@ struct resonanceqa {
       histos.add("h3PhiInvMassLikeSignMM", "Invariant mass of Phi meson Like Sign negative", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
       histos.add("h3PhiInvMassRotational", "Invariant mass of Phi meson Rotational", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
       histos.add("h3PhiInvMassMixed", "Invariant mass of Phi meson Mixed", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+      if (isEtaAssym) {
+        histos.add("h3PhiInvMassUnlikeSignAside", "Invariant mass of Phi meson Unlike Sign A side", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+        histos.add("h3PhiInvMassLikeSignAside", "Invariant mass of Phi meson Like Sign A side", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+        histos.add("h3PhiInvMassMixedAside", "Invariant mass of Phi meson Mixed A side", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+        histos.add("h3PhiInvMassUnlikeSignCside", "Invariant mass of Phi meson Unlike Sign C side", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+        histos.add("h3PhiInvMassLikeSignCside", "Invariant mass of Phi meson Like Sign C side", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+        histos.add("h3PhiInvMassMixedCside", "Invariant mass of Phi meson Mixed C side", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {300, 0.9, 1.2}});
+      }
     } else if (cfgparticletype == 0 && !isMC) {
       histos.add("h3KstarInvMassUnlikeSign", "Invariant mass of Kstar meson Unlike Sign", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {180, 0.6, 1.5}});
       histos.add("h3KstarInvMassLikeSignPP", "Invariant mass of Kstar meson Like Sign positive", kTH3F, {{500, 0.0f, 500.0f}, {100, 0.0f, 10.0f}, {180, 0.6, 1.5}});
@@ -172,7 +181,28 @@ struct resonanceqa {
     pT = RecoDecay::pt(array{candidate1.px() + candidate2.px(), candidate1.py() + candidate2.py()});
     pT_roat = RecoDecay::pt(array{candidate1.px() - candidate2.px(), candidate1.py() - candidate2.py()});
     rapidity = RecoDecay::y(array{candidate1.px() + candidate2.px(), candidate1.py() + candidate2.py(), candidate1.pz() + candidate2.pz()}, mass);
-    if (std::abs(rapidity) < 0.5) {
+    if (isEtaAssym && unlike && track1Sign * track2Sign < 0) {
+      if (candidate1.eta() > 0.2 && candidate1.eta() < 0.8 && candidate2.eta() > 0.2 && candidate2.eta() < 0.8) {
+        histos.fill(HIST("h3PhiInvMassUnlikeSignAside"), multiplicity, pT, mass);
+      } else if (candidate1.eta() > -0.6 && candidate1.eta() < 0.0 && candidate2.eta() > -0.6 && candidate2.eta() < 0.0) {
+        histos.fill(HIST("h3PhiInvMassUnlikeSignCside"), multiplicity, pT, mass);
+      }
+    }
+    if (isEtaAssym && mix && track1Sign * track2Sign < 0) {
+      if (candidate1.eta() > 0.2 && candidate1.eta() < 0.8 && candidate2.eta() > 0.2 && candidate2.eta() < 0.8) {
+        histos.fill(HIST("h3PhiInvMassMixedAside"), multiplicity, pT, mass);
+      } else if (candidate1.eta() > -0.6 && candidate1.eta() < 0.0 && candidate2.eta() > -0.6 && candidate2.eta() < 0.0) {
+        histos.fill(HIST("h3PhiInvMassMixedCside"), multiplicity, pT, mass);
+      }
+    }
+    if (isEtaAssym && likesign && track1Sign * track2Sign > 0) {
+      if (candidate1.eta() > 0.2 && candidate1.eta() < 0.8 && candidate2.eta() > 0.2 && candidate2.eta() < 0.8) {
+        histos.fill(HIST("h3PhiInvMassLikeSignAside"), multiplicity, pT, mass);
+      } else if (candidate1.eta() > -0.6 && candidate1.eta() < 0.0 && candidate2.eta() > -0.6 && candidate2.eta() < 0.0) {
+        histos.fill(HIST("h3PhiInvMassLikeSignCside"), multiplicity, pT, mass);
+      }
+    }
+    if (std::abs(rapidity) < 0.5 && !isEtaAssym) {
       if (track1Sign * track2Sign < 0 && unlike) /// unlike sign
       {
         if (cfgparticletype == 0) {
