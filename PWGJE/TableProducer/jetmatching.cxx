@@ -11,7 +11,7 @@
 
 /// \file jetmatching.cxx
 /// \brief Unified implementation of jet matching based on different criteria
-/// expanding on previously separate implementations of geometric matching 
+/// expanding on previously separate implementations of geometric matching
 /// (by Raymond Ehlers) and heavy-flavour matching
 ///
 /// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
