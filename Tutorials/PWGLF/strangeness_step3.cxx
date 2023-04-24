@@ -109,19 +109,19 @@ struct strangeness_tutorial {
         registry.fill(HIST("hNSigmaNegPionFromK0s"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
       }
 
-      // Checking that the V0 is a true K0s in the MC
-      if (v0.has_mcParticle()) {
-        auto v0mcparticle = v0.mcParticle();
-        if (v0mcparticle.pdgCode() == 310) {
-          registry.fill(HIST("hMassK0ShortMCTrue"), v0.mK0Short());
-        }
-      }
-
       if (posDaughterTrack.has_mcParticle() && negDaughterTrack.has_mcParticle()) { // Checking that the daughter tracks come from particles and are not fake
         auto posParticle = posDaughterTrack.mcParticle();
         auto negParticle = negDaughterTrack.mcParticle();
         if (posParticle.pdgCode() == 211 && negParticle.pdgCode() == -211) { // Checking that the daughter tracks are true pions
           registry.fill(HIST("hMassK0ShortTruePions"), v0.mK0Short());
+        }
+      }
+
+      // Checking that the V0 is a true K0s in the MC
+      if (v0.has_mcParticle()) {
+        auto v0mcparticle = v0.mcParticle();
+        if (v0mcparticle.pdgCode() == 310) {
+          registry.fill(HIST("hMassK0ShortMCTrue"), v0.mK0Short());
         }
       }
     }
