@@ -71,17 +71,12 @@ struct strangeness_tutorial {
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv&& nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv&& aod::v0data::dcaV0daughters < v0setting_dcav0dau;
 
   // Defining the type of the daughter tracks
-  using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi>;
-
-  // Defining the type of the daughter tracks with MC matching
-  using DaughterTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
+  using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::McTrackLabels>;
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-               soa::Filtered<aod::V0Datas> const& V0s,
+               soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& V0s,
                DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
-               aod::McParticles const& mcParticles,
-               soa::Join<DaughterTracks, aod::McTrackLabels> const&,
-               soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& mcV0s)
+               aod::McParticles const& mcParticles)
   {
     // Fill the event counter
     registry.fill(HIST("hVertexZ"), collision.posZ());
@@ -114,26 +109,19 @@ struct strangeness_tutorial {
         registry.fill(HIST("hNSigmaNegPionFromK0s"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
       }
 
-      // Checking that the daughter tracks are true pions in the MC
-      const auto& posDaughterTrackMC = v0.posTrack_as<DaughterTracksMC>();
-      const auto& negDaughterTrackMC = v0.negTrack_as<DaughterTracksMC>();
-
-      if (posDaughterTrackMC.has_mcParticle() && negDaughterTrackMC.has_mcParticle()) { // Checking that the daughter tracks come from particles and are not fake
-        const auto& posParticle = posDaughterTrackMC.mcParticle();
-        const auto& negParticle = negDaughterTrackMC.mcParticle();
+      if (posDaughterTrack.has_mcParticle() && negDaughterTrack.has_mcParticle()) { // Checking that the daughter tracks come from particles and are not fake
+        auto posParticle = posDaughterTrack.mcParticle();
+        auto negParticle = negDaughterTrack.mcParticle();
         if (posParticle.pdgCode() == 211 && negParticle.pdgCode() == -211) { // Checking that the daughter tracks are true pions
           registry.fill(HIST("hMassK0ShortTruePions"), v0.mK0Short());
         }
       }
-    }
 
-    // Looping over the V0s with the MC info attached
-    for (const auto& mcv0 : mcV0s) {
       // Checking that the V0 is a true K0s in the MC
-      if (mcv0.has_mcParticle()) {
-        auto v0mcparticle = mcv0.mcParticle();
+      if (v0.has_mcParticle()) {
+        auto v0mcparticle = v0.mcParticle();
         if (v0mcparticle.pdgCode() == 310) {
-          registry.fill(HIST("hMassK0ShortMCTrue"), mcv0.mK0Short());
+          registry.fill(HIST("hMassK0ShortMCTrue"), v0.mK0Short());
         }
       }
     }
