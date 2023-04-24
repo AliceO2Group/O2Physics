@@ -107,11 +107,11 @@ constexpr double nSigmaTPCdefault[4][2]{
   {-5., 5.},
   {-5., 5.},
   {-5., 5.}};
-constexpr double nSigmaTOFdefault[4][2]{
-  {-5., 5.},
-  {-5., 5.},
-  {-5., 5.},
-  {-5., 5.}};
+// constexpr double nSigmaTOFdefault[4][2]{
+//   {-5., 5.},
+//   {-5., 5.},
+//   {-5., 5.},
+//   {-5., 5.}};
 constexpr double DCAcutDefault[4][2]{
   {1., 1.},
   {1., 1.},
