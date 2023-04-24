@@ -27,8 +27,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetMatchingHFQA {
-  using DetectorLevelJets = soa::Join<aod::D0MCDJets, aod::D0MCDJetConstituents, aod::D0MCDJetsMatchedToD0MCPJets>;
-  using ParticleLevelJets = soa::Join<aod::D0MCPJets, aod::D0MCPJetConstituents, aod::D0MCPJetsMatchedToD0MCDJets>;
+  using DetectorLevelJets = soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>;
+  using ParticleLevelJets = soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>;
 
   OutputObj<TH2F> hJetPt{"h_jet_pt"};
   OutputObj<TH2F> hJetDetaDphi{"h_jet_deta_dphi"};

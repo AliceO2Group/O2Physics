@@ -179,8 +179,9 @@ struct JetMatchingHF {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetMatchingHF<soa::Join<aod::D0MCDJets, aod::D0MCDJetConstituents>,
-                                    soa::Join<aod::D0MCPJets, aod::D0MCPJetConstituents>,
-                                    aod::D0MCDJetsMatchedToD0MCPJets, aod::D0MCPJetsMatchedToD0MCDJets,
+    adaptAnalysisTask<JetMatchingHF<soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>,
+                                    soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>,
+                                    aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets,
+                                    aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets,
                                     soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>>(cfgc, TaskName{"jet-matching-hf"})};
 }
