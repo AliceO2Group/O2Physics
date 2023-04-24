@@ -60,7 +60,7 @@ void plotLFCocktail(TString filename = "AnalysisResults.root", int rebin = 1)
   gPad->SetLogy();
   for (int i = 0; i < nHists; i++) {
     mee_orig[i]->SetLineColor(i + 1);
-    mee_orig[i]->Draw("same");
+    mee_orig[i]->Draw("hist same");
   }
   gPad->BuildLegend(0.62, 0.9, 0.9, 0.6);
   mee_orig[0]->SetTitle("before resolution and acceptance");
@@ -68,7 +68,7 @@ void plotLFCocktail(TString filename = "AnalysisResults.root", int rebin = 1)
   gPad->SetLogy();
   for (int i = 0; i < nHists; i++) {
     mee[i]->SetLineColor(i + 1);
-    mee[i]->Draw("same");
+    mee[i]->Draw("hist same");
   }
   gPad->BuildLegend(0.62, 0.9, 0.9, 0.6);
   mee[0]->SetTitle("after resolution and acceptance");
