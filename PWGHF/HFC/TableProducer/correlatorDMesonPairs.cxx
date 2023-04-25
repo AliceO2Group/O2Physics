@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file correlatorD0Pairs.cxx
-/// \brief D0-Hadron correlator task - data-like, MC-reco and MC-kine analyses.
+/// \file correlatorDMesonPairs.cxx
+/// \brief D0(bar) and DPlus(Minus) correlator task - data-like, MC-reco and MC-kine analyses.
 ///
 /// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
 /// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab Orsay

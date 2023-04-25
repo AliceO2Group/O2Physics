@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskCorrelationDMesonPairs.cxx
-/// \brief D-Dbar analysis task - data-like, MC-reco and MC-kine analyses. For ULS and LS pairs
+/// \brief D-Dbar analysis task - data-like, MC-reco and MC-kine analyses for D0 and DPlus pairs.
 ///
 /// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
 /// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab Orsay
@@ -31,8 +31,8 @@ using namespace o2::constants::math;
 
 namespace o2::aod
 {
-using D0PairFull = soa::Join<aod::D0Pair, aod::D0PairRecoInfo>;
-using DPlusPairFull = soa::Join<aod::DPlusPair, aod::DPlusPairRecoInfo>;
+  using D0PairFull = soa::Join<aod::D0Pair, aod::D0PairRecoInfo>;
+  using DPlusPairFull = soa::Join<aod::DPlusPair, aod::DPlusPairRecoInfo>;
 } // namespace o2::aod
 
 ///
