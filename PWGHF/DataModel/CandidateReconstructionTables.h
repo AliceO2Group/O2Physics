@@ -1301,6 +1301,88 @@ DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO",
                   aod::hf_correlation_dplus_hadron::MD,
                   aod::hf_correlation_dplus_hadron::SignalStatus);
 
+// definition of columns and tables for D0(bar) correlation pair studies
+namespace hf_correlation_d0_pair
+{
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
+DECLARE_SOA_COLUMN(PtCand1, ptCand1, float);
+DECLARE_SOA_COLUMN(PtCand2, ptCand2, float);
+DECLARE_SOA_COLUMN(YCand1, yCand1, float);
+DECLARE_SOA_COLUMN(YCand2, yCand2, float);
+DECLARE_SOA_COLUMN(MCand1, mCand1, float);
+DECLARE_SOA_COLUMN(MCand2, mCand2, float);
+DECLARE_SOA_COLUMN(CandidateType1, candidateType1, int);
+DECLARE_SOA_COLUMN(CandidateType2, candidateType2, int);
+DECLARE_SOA_COLUMN(IsData, isData, int);
+DECLARE_SOA_COLUMN(Origin1, origin1, int);
+DECLARE_SOA_COLUMN(Origin2, origin2, int);
+DECLARE_SOA_COLUMN(MatchedMc1, matchedMc1, int);
+DECLARE_SOA_COLUMN(MatchedMc2, matchedMc2, int);
+DECLARE_SOA_COLUMN(IsReco, isReco, int);
+
+} // namespace hf_correlation_d0_pair
+
+DECLARE_SOA_TABLE(D0Pair, "AOD", "DHADRONPAIR",
+                  hf_correlation_d0_pair::DeltaPhi,
+                  hf_correlation_d0_pair::DeltaEta,
+                  hf_correlation_d0_pair::PtCand1,
+                  hf_correlation_d0_pair::PtCand2,
+                  hf_correlation_d0_pair::YCand1,
+                  hf_correlation_d0_pair::YCand2,
+                  hf_correlation_d0_pair::MCand1,
+                  hf_correlation_d0_pair::MCand2,
+                  hf_correlation_d0_pair::CandidateType1,
+                  hf_correlation_d0_pair::CandidateType2,
+                  hf_correlation_d0_pair::IsData);
+DECLARE_SOA_TABLE(D0PairRecoInfo, "AOD", "DHADRONRECOINFO",
+                  hf_correlation_d0_pair::Origin1,
+                  hf_correlation_d0_pair::Origin2,
+                  hf_correlation_d0_pair::MatchedMc1,
+                  hf_correlation_d0_pair::MatchedMc2,
+                  hf_correlation_d0_pair::IsReco);
+
+// definition of columns and tables for DPlus(Minus) correlation pair studies
+namespace hf_correlation_dplus_pair
+{
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
+DECLARE_SOA_COLUMN(PtCand1, ptCand1, float);
+DECLARE_SOA_COLUMN(PtCand2, ptCand2, float);
+DECLARE_SOA_COLUMN(YCand1, yCand1, float);
+DECLARE_SOA_COLUMN(YCand2, yCand2, float);
+DECLARE_SOA_COLUMN(MCand1, mCand1, float);
+DECLARE_SOA_COLUMN(MCand2, mCand2, float);
+DECLARE_SOA_COLUMN(CandidateType1, candidateType1, int);
+DECLARE_SOA_COLUMN(CandidateType2, candidateType2, int);
+DECLARE_SOA_COLUMN(IsData, isData, int);
+DECLARE_SOA_COLUMN(Origin1, origin1, int);
+DECLARE_SOA_COLUMN(Origin2, origin2, int);
+DECLARE_SOA_COLUMN(MatchedMc1, matchedMc1, int);
+DECLARE_SOA_COLUMN(MatchedMc2, matchedMc2, int);
+DECLARE_SOA_COLUMN(IsReco, isReco, int);
+
+} // namespace hf_correlation_dplus_pair
+
+DECLARE_SOA_TABLE(DPlusPair, "AOD", "DPLUSPAIR",
+                  hf_correlation_dplus_pair::DeltaPhi,
+                  hf_correlation_dplus_pair::DeltaEta,
+                  hf_correlation_dplus_pair::PtCand1,
+                  hf_correlation_dplus_pair::PtCand2,
+                  hf_correlation_dplus_pair::YCand1,
+                  hf_correlation_dplus_pair::YCand2,
+                  hf_correlation_dplus_pair::MCand1,
+                  hf_correlation_dplus_pair::MCand2,
+                  hf_correlation_dplus_pair::CandidateType1,
+                  hf_correlation_dplus_pair::CandidateType2,
+                  hf_correlation_dplus_pair::IsData);
+DECLARE_SOA_TABLE(DPlusPairRecoInfo, "AOD", "DPLUSRECOINFO",
+                  hf_correlation_dplus_pair::Origin1,
+                  hf_correlation_dplus_pair::Origin2,
+                  hf_correlation_dplus_pair::MatchedMc1,
+                  hf_correlation_dplus_pair::MatchedMc2,
+                  hf_correlation_dplus_pair::IsReco);
+
 // specific Xicc candidate properties
 namespace hf_cand_xicc
 {
