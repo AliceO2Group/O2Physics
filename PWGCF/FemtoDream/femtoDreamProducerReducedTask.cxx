@@ -188,12 +188,12 @@ struct femtoDreamProducerReducedTask {
     mRunNumber = bc.runNumber();
   }
 
-  template <typename ParticleType>
-  void fillMCParticle(ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype)
+  template <typename CandidateType>
+  void fillMCParticle(CandidateType const& candidate, o2::aod::femtodreamparticle::ParticleType fdparttype)
   {
-    if (particle.has_mcParticle()) {
+    if (candidate.has_mcParticle()) {
       // get corresponding MC particle and its info
-      auto particleMC = particle.mcParticle();
+      auto particleMC = candidate.mcParticle();
       auto pdgCode = particleMC.pdgCode();
 
       int particleOrigin = 99;

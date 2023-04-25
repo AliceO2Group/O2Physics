@@ -215,7 +215,6 @@ enum MCType {
 
 static constexpr std::string_view MCTypeName[kNMCTypes] = {"", "_MC"};
 
-// DECLARE_SOA_INDEX_COLUMN(FemtoDreamParticle, femtoDreamParticle);
 DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
 DECLARE_SOA_COLUMN(PartOriginMCTruth, partOriginMCTruth, uint8_t); //! Origin of the particle, according to femtodreamparticle::ParticleOriginMCTruth
 DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle PDG
