@@ -405,17 +405,17 @@ bool cleanFITCollision(T& col, std::vector<float> lims)
 }
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims)
+bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims, SliceCache& cache)
 {
-  const auto& ZdcBC = zdcs.sliceByCached(aod::zdc::bcId, bc.globalIndex());
+  const auto& ZdcBC = zdcs.sliceByCached(aod::zdc::bcId, bc.globalIndex(), cache);
   return (ZdcBC.size() == 0);
 }
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims)
+bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims, SliceCache& cache)
 {
-  const auto& CaloBC = calos.sliceByCached(aod::calo::bcId, bc.globalIndex());
+  const auto& CaloBC = calos.sliceByCached(aod::calo::bcId, bc.globalIndex(), cache);
   return (CaloBC.size() == 0);
 }
 

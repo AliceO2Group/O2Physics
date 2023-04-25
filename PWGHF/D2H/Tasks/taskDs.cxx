@@ -69,7 +69,8 @@ struct HfTaskDs {
     registry.add("hImpactParameterXY", "3-prong candidates;impact parameter xy (cm);entries", {HistType::kTH2F, {{200, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMaxNormalisedDeltaIP", "3-prong candidates;norm. IP;entries", {HistType::kTH2F, {{200, -20., 20.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCos3PiK", "3-prong candidates;cos^{3} #theta'(K);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDeltaMassPhi", "3-prong candidates;|M(KK) - M(#phi)| (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{40, 0., 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hAbsCos3PiK", "3-prong candidates;|cos^{3} #theta'(K)|;entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDeltaMassPhi", "3-prong candidates;|M(KK) - M(#phi)| (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hImpactParameterProngSqSum", "3-prong candidates;squared sum of prong imp. par. (cm^{2});entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecayLengthError", "3-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecayLengthXYError", "3-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -138,6 +139,7 @@ struct HfTaskDs {
     auto pt = candidate.pt();
     registry.fill(HIST("hMass"), invMassDsToKKPi(candidate), pt);
     registry.fill(HIST("hCos3PiK"), cos3PiKDsToKKPi(candidate), pt);
+    registry.fill(HIST("hAbsCos3PiK"), std::abs(cos3PiKDsToKKPi(candidate)), pt);
     registry.fill(HIST("hDeltaMassPhi"), deltaMassPhiDsToKKPi(candidate), pt);
     return;
   }
@@ -150,6 +152,7 @@ struct HfTaskDs {
     auto pt = candidate.pt();
     registry.fill(HIST("hMass"), invMassDsToPiKK(candidate), pt);
     registry.fill(HIST("hCos3PiK"), cos3PiKDsToPiKK(candidate), pt);
+    registry.fill(HIST("hAbsCos3PiK"), std::abs(cos3PiKDsToPiKK(candidate)), pt);
     registry.fill(HIST("hDeltaMassPhi"), deltaMassPhiDsToPiKK(candidate), pt);
     return;
   }

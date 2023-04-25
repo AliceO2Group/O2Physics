@@ -29,6 +29,7 @@
 #include "Field/MagneticField.h"
 #include "TGeoGlobalMagField.h"
 
+#include "Common/DataModel/CollisionAssociation.h"
 #include "bestCollisionTable.h"
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
@@ -113,27 +114,24 @@ struct AmbiguousTrackPropagation {
     TrackSelectionFlags::kTPCCrossedRowsOverNCls |
     TrackSelectionFlags::kTPCChi2NDF;
 
-  using ExTracksSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
+  using ExTracksSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackCompColls>;
 
-  void processCentral(ExTracksSel const&,
-                      aod::Collisions const&, ExtBCs const& bcs,
-                      aod::AmbiguousTracks const& atracks)
+  void processCentral(ExTracksSel const& tracks,
+                      aod::Collisions const& collisions,
+                      ExtBCs const&)
   {
-    if (bcs.size() == 0) {
-      return;
-    }
-    initCCDB(bcs.begin());
+    auto bc = collisions.begin().bc_as<ExtBCs>();
+    initCCDB(bc);
 
     gpu::gpustd::array<float, 2> dcaInfo;
     float bestDCA[2];
     o2::track::TrackParametrization<float> bestTrackPar;
-    for (auto& atrack : atracks) {
-      dcaInfo[0] = 999; // DCAxy
-      dcaInfo[1] = 999; // DCAz
-      bestDCA[0] = 999;
-      bestDCA[1] = 999;
+    for (auto& track : tracks) {
+      dcaInfo[0] = track.dcaXY(); // DCAxy
+      dcaInfo[1] = track.dcaZ();  // DCAz
+      bestDCA[0] = dcaInfo[0];
+      bestDCA[1] = dcaInfo[1];
 
-      auto track = atrack.track_as<ExTracksSel>();
       auto bestCol = track.has_collision() ? track.collisionId() : -1;
       if ((track.trackCutFlag() & trackSelectionITS) != trackSelectionITS) {
         continue;
@@ -147,20 +145,18 @@ struct AmbiguousTrackPropagation {
       // TPC (e.g. skipping loopers etc).
       auto trackPar = getTrackPar(track);
       if (track.x() < o2::constants::geom::XTPCInnerRef + 0.1) {
-        auto compatibleBCs = atrack.bc_as<ExtBCs>();
-        for (auto& bc : compatibleBCs) {
-          if (!bc.has_collisions()) {
-            continue;
-          }
-          auto collisions = bc.collisions();
-          for (auto const& collision : collisions) {
-            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
-            if ((std::abs(dcaInfo[0]) < std::abs(bestDCA[0])) && (std::abs(dcaInfo[1]) < std::abs(bestDCA[1]))) {
-              bestCol = collision.globalIndex();
-              bestDCA[0] = dcaInfo[0];
-              bestDCA[1] = dcaInfo[1];
-              bestTrackPar = trackPar;
-            }
+        auto ids = track.compatibleCollIds();
+        if (ids.empty() || (ids.size() == 1 && bestCol == ids[0])) {
+          continue;
+        }
+        auto compatibleColls = track.compatibleColl();
+        for (auto& collision : compatibleColls) {
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
+          if ((std::abs(dcaInfo[0]) < std::abs(bestDCA[0])) && (std::abs(dcaInfo[1]) < std::abs(bestDCA[1]))) {
+            bestCol = collision.globalIndex();
+            bestDCA[0] = dcaInfo[0];
+            bestDCA[1] = dcaInfo[1];
+            bestTrackPar = trackPar;
           }
         }
       }

@@ -63,7 +63,7 @@ o2physics_add_dpl_workflow(spectra-tpc-tiny-pikapr
 
 o2physics_add_dpl_workflow(nuclei-spectra
                     SOURCES NucleiSpectraTask.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-efficiency
@@ -144,4 +144,19 @@ o2physics_add_dpl_workflow(cascqaanalysis
 o2physics_add_dpl_workflow(nuclei-hist
                     SOURCES NucleiHistTask.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascpostprocessing
+                    SOURCES cascpostprocessing.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hstrangecorrelation
+                    SOURCES hStrangeCorrelation.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(stqa
+                    SOURCES stqa.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

@@ -31,6 +31,11 @@ o2physics_add_dpl_workflow(lambdakzerofinder
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lambdakzeromcfinder
+                    SOURCES lambdakzeromcfinder.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(cascadebuilder
                     SOURCES cascadebuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
@@ -44,6 +49,21 @@ o2physics_add_dpl_workflow(cascadelabelbuilder
 o2physics_add_dpl_workflow(cascadefinder
                     SOURCES cascadefinder.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascademcfinder
+                    SOURCES cascademcfinder.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hstrangecorrelationfilter
+                    SOURCES hStrangeCorrelationFilter.cxx
+                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(stcollids
+                    SOURCES stcollids.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 # Nuclei
@@ -60,5 +80,10 @@ o2physics_add_dpl_workflow(reso2initializer
 
 o2physics_add_dpl_workflow(f1protoninitializer
                     SOURCES f1protonInitializer.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(filterf1proton
+                    SOURCES filterf1proton.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)

@@ -52,14 +52,15 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::TracksCov>;
-using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels, aod::TracksCov>;
+using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::TracksCov>;
+using tracksAndTPCInfoMC = soa::Join<tracksAndTPCInfo, aod::McTrackLabels>;
 
 struct skimmerGammaConversions {
 
   // configurables for CCDB access
   Configurable<std::string> ccdbPath{"ccdb-path", "GLO/GRP/GRP", "path to the ccdb object"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "path to the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<float> kfMassConstrain{"KFParticleMassConstrain", 0.f, "mass constrain for the KFParticle mother particle"};
 
@@ -111,7 +112,6 @@ struct skimmerGammaConversions {
 
   Produces<aod::V0Photons> v0photons;
   Produces<aod::V0Legs> v0legs;
-  // Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
   Produces<aod::V0RecalculationAndKF> fFuncTableV0Recalculated;
   Produces<aod::V0DaughterMcParticles> fFuncTableMCTrackInformation;
@@ -120,6 +120,7 @@ struct skimmerGammaConversions {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int runNumber = -1;
+  o2::base::MatLayerCylSet* lut = nullptr;
 
   void init(InitContext const&)
   {
@@ -139,6 +140,8 @@ struct skimmerGammaConversions {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -164,29 +167,14 @@ struct skimmerGammaConversions {
       o2::base::Propagator::initFieldFromGRP(grpmag);
     }
 
+    o2::base::Propagator::Instance()->setMatLUT(lut);
     runNumber = bc.runNumber();
   }
 
   template <typename TV0, typename TTRACK>
-  void fillTrackTable(TV0 const& theV0, TTRACK const& theTrack, bool theIsPositive)
+  void fillTrackTable(TV0 const& theV0, TTRACK const& theTrack)
   {
-    //    fFuncTableV0DaughterTracks(
-    //      theV0.v0Id(),
-    //      theTrack.dcaXY(),
-    //      theTrack.eta(),
-    //      theTrack.p(),
-    //      theTrack.phi(),
-    //      theTrack.pt(),
-    //      theIsPositive,
-    //      theTrack.tpcCrossedRowsOverFindableCls(),
-    //      theTrack.tpcFoundOverFindableCls(),
-    //      theTrack.tpcNClsCrossedRows(),
-    //      theTrack.tpcNSigmaEl(),
-    //      theTrack.tpcNSigmaPi(),
-    //      theTrack.tpcSignal());
-
-    auto collision = theTrack.template collision_as<aod::Collisions>();
-    v0legs(collision.globalIndex(),
+    v0legs(theTrack.collisionId(),
            theTrack.globalIndex(), theTrack.sign(), false,
            theTrack.pt(), theTrack.eta(), theTrack.phi(), theTrack.p(), theTrack.dcaXY(), theTrack.dcaZ(),
            theTrack.tpcNClsFindable(), theTrack.tpcNClsFindableMinusFound(), theTrack.tpcNClsFindableMinusCrossedRows(),
@@ -216,6 +204,30 @@ struct skimmerGammaConversions {
       sameMother);
   }
 
+  template <typename TLeg>
+  bool checkV0leg(TLeg const& leg)
+  {
+    if (abs(leg.eta()) > maxeta) {
+      return false;
+    }
+    if (abs(leg.tpcNSigmaEl()) > maxTPCNsigmaEl) {
+      return false;
+    }
+    if (leg.tpcChi2NCl() > maxchi2tpc) {
+      return false;
+    }
+    if (leg.tpcNClsCrossedRows() < mincrossedrows) {
+      return false;
+    }
+    if (abs(leg.dcaXY()) < dcamin) {
+      return false;
+    }
+    if (dcamax < abs(leg.dcaXY())) {
+      return false;
+    }
+    return true;
+  }
+
   // ============================ FUNCTION DEFINITIONS ====================================================
 
   Preslice<aod::V0Datas> perCollision = aod::v0data::collisionId;
@@ -235,15 +247,36 @@ struct skimmerGammaConversions {
         if (!checkAP(v0.alpha(), v0.qtarm())) { // store only photon conversions
           continue;
         }
-
         auto pos = v0.template posTrack_as<tracksAndTPCInfo>(); // positive daughter
         auto ele = v0.template negTrack_as<tracksAndTPCInfo>(); // negative daughter
-
-        if (abs(ele.eta()) > maxeta || abs(ele.tpcNSigmaEl()) > maxTPCNsigmaEl || ele.tpcChi2NCl() > maxchi2tpc || ele.tpcNClsCrossedRows() < mincrossedrows || abs(ele.dcaXY()) < dcamin || dcamax < abs(ele.dcaXY())) {
+        if (!checkV0leg(pos) || !checkV0leg(ele)) {
           continue;
         }
 
-        if (abs(pos.eta()) > maxeta || abs(pos.tpcNSigmaEl()) > maxTPCNsigmaEl || pos.tpcChi2NCl() > maxchi2tpc || pos.tpcNClsCrossedRows() < mincrossedrows || abs(pos.dcaXY()) < dcamin || dcamax < abs(pos.dcaXY())) {
+        bool flag_closer = true;
+        for (auto& v0tmp : groupedV0s) {
+          if (!checkAP(v0tmp.alpha(), v0tmp.qtarm())) { // store only photon conversions
+            continue;
+          }
+          auto pos_tmp = v0tmp.template posTrack_as<tracksAndTPCInfo>(); // positive daughter
+          auto ele_tmp = v0tmp.template negTrack_as<tracksAndTPCInfo>(); // negative daughter
+          if (!checkV0leg(pos_tmp) || !checkV0leg(ele_tmp)) {
+            continue;
+          }
+
+          if (v0.index() == v0tmp.index()) { // don't check onviously, exactly the same v0.
+            // LOGF(info, "don't check the exactly the same 2 V0s");
+            continue;
+          }
+          if ((ele.globalIndex() == ele_tmp.globalIndex() || pos.globalIndex() == pos_tmp.globalIndex()) && v0.dcaV0daughters() > v0tmp.dcaV0daughters()) {
+            // LOGF(info, "!reject! | collision id = %d | g1 id = %d , g2 id = %d , posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f",
+            //     collision.globalIndex(), v0.index(), v0tmp.index(), pos.globalIndex(), ele.globalIndex(), pos_tmp.globalIndex(), ele_tmp.globalIndex(), v0.dcaV0daughters(), v0tmp.dcaV0daughters());
+            flag_closer = false;
+            break;
+          }
+        } // end of v0tmp loop
+
+        if (!flag_closer) {
           continue;
         }
 
@@ -256,64 +289,92 @@ struct skimmerGammaConversions {
                   v0.pxneg(), v0.pyneg(), v0.pzneg(),
                   v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()), v0.dcaV0daughters()); // if v0legs is empty, lastIndex = -1.
 
-        fillTrackTable(v0, pos, true);
-        fillTrackTable(v0, ele, false);
+        fillTrackTable(v0, pos);
+        fillTrackTable(v0, ele);
         fillV0RecalculatedTable(v0, recalculatedVertex);
       } // end of v0 loop
     }   // end of collision loop
   }
   PROCESS_SWITCH(skimmerGammaConversions, processRec, "process reconstructed info only", true);
 
-  void processMc(aod::McCollision const& theMcCollision,
-                 soa::SmallGroups<soa::Join<aod::McCollisionLabels,
-                                            aod::Collisions>> const& theCollisions,
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+  void processMc(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions,
+                 aod::McCollisions const&,
                  aod::BCsWithTimestamps const& bcs,
                  aod::V0Datas const& theV0s,
                  tracksAndTPCInfoMC const& theTracks,
-                 aod::McParticles const& theMcParticles)
+                 aod::McParticles const& mcTracks)
   {
+    for (auto& collision : collisions) {
 
-    initCCDB(bcs.begin());
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+      auto mcCollision = collision.mcCollision();
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
 
-    fRegistry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());
+      fRegistry.fill(HIST("hCollisionZ_all_MCTrue"), mcCollision.posZ());
+      fRegistry.fill(HIST("hCollisionZ_MCTrue"), mcCollision.posZ());
 
-    if (theCollisions.size() == 0) {
-      return;
-    }
+      auto groupedMcTracks = mcTracks.sliceBy(perMcCollision, mcCollision.globalIndex());
+      fRegistry.fill(HIST("hMcParticlesSize"), groupedMcTracks.size());
+      fRegistry.fill(HIST("hCollisionZ_MCRec"), collision.posZ());
 
-    fRegistry.fill(HIST("hCollisionZ_MCTrue"), theMcCollision.posZ());
-    fRegistry.fill(HIST("hMcParticlesSize"), theMcParticles.size());
-
-    for (auto& lCollision : theCollisions) {
-      fRegistry.fill(HIST("hCollisionZ_MCRec"), lCollision.posZ());
-
-      auto lGroupedV0s = theV0s.sliceBy(perCollision, lCollision.globalIndex());
-      for (auto& lV0 : lGroupedV0s) {
-        if (!checkAP(lV0.alpha(), lV0.qtarm())) { // store only photon conversions
+      auto lGroupedV0s = theV0s.sliceBy(perCollision, collision.globalIndex());
+      for (auto& v0 : lGroupedV0s) {
+        if (!checkAP(v0.alpha(), v0.qtarm())) { // store only photon conversions
+          continue;
+        }
+        auto pos = v0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
+        auto ele = v0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
+        if (!checkV0leg(pos) || !checkV0leg(ele)) {
           continue;
         }
 
-        auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
-        auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
+        bool flag_closer = true;
+        for (auto& v0tmp : lGroupedV0s) {
+          if (!checkAP(v0tmp.alpha(), v0tmp.qtarm())) { // store only photon conversions
+            continue;
+          }
+          auto pos_tmp = v0tmp.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
+          auto ele_tmp = v0tmp.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
+          if (!checkV0leg(pos_tmp) || !checkV0leg(ele_tmp)) {
+            continue;
+          }
 
-        eV0Confirmation lV0Status = isTrueV0(lV0,
-                                             lTrackPos,
-                                             lTrackNeg);
+          if (v0.index() == v0tmp.index()) { // don't check onviously, exactly the same v0.
+            // LOGF(info, "don't check the exactly the same 2 V0s");
+            continue;
+          }
+          if ((ele.globalIndex() == ele_tmp.globalIndex() || pos.globalIndex() == pos_tmp.globalIndex()) && v0.dcaV0daughters() > v0tmp.dcaV0daughters()) {
+            // LOGF(info, "!reject! | collision id = %d | g1 id = %d , g2 id = %d , posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f",
+            //     collision.globalIndex(), v0.index(), v0tmp.index(), pos.globalIndex(), ele.globalIndex(), pos_tmp.globalIndex(), ele_tmp.globalIndex(), v0.dcaV0daughters(), v0tmp.dcaV0daughters());
+            flag_closer = false;
+            break;
+          }
+        } // end of v0tmp loop
 
-        fRegistry.get<TH1>(HIST("hV0Confirmation"))->Fill(lV0Status);
+        if (!flag_closer) {
+          continue;
+        }
+
+        eV0Confirmation v0Status = isTrueV0(v0, pos, ele);
+
+        fRegistry.get<TH1>(HIST("hV0Confirmation"))->Fill(v0Status);
 
         recalculatedVertexParameters recalculatedVertex;
-        Vtx_recalculation(lTrackPos, lTrackNeg, &recalculatedVertex);
+        Vtx_recalculation(pos, ele, &recalculatedVertex);
 
-        v0photons(lCollision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
-                  lV0.x(), lV0.y(), lV0.z(),
-                  lV0.pxpos(), lV0.pypos(), lV0.pzpos(),
-                  lV0.pxneg(), lV0.pyneg(), lV0.pzneg(),
-                  lV0.v0cosPA(lCollision.posX(), lCollision.posY(), lCollision.posZ()), lV0.dcaV0daughters()); // if lV0legs is empty, lastIndex = -1.
+        v0photons(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
+                  v0.x(), v0.y(), v0.z(),
+                  v0.pxpos(), v0.pypos(), v0.pzpos(),
+                  v0.pxneg(), v0.pyneg(), v0.pzneg(),
+                  v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()), v0.dcaV0daughters()); // if v0legs is empty, lastIndex = -1.
 
-        fillTrackTable(lV0, lTrackPos, true);
-        fillTrackTable(lV0, lTrackNeg, false);
-        fillV0RecalculatedTable(lV0, recalculatedVertex);
+        fillTrackTable(v0, pos);
+        fillTrackTable(v0, ele);
+        fillV0RecalculatedTable(v0, recalculatedVertex);
       }
     }
   }
@@ -472,13 +533,14 @@ struct skimmerGammaConversions {
                        o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                        o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
                        o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrNONE);
-
+    // o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrLUT);
     prop->propagateToX(trackNegInformationCopy,
                        vertexNegRot.X(),
                        bz,
                        o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                        o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
                        o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrNONE);
+    // o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrLUT);
 
     // TODO: This is still off and needs to be checked...
     recalculatedVertex->recalculatedConversionPoint[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);

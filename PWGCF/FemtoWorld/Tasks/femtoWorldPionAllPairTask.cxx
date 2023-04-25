@@ -47,6 +47,9 @@ using FemtoWorldParticleMerged = FemtoWorldParticlesMerged::iterator;
 } // namespace o2::aod
 
 struct FemtoWorldIdenticalPionPair {
+  SliceCache cache;
+  Preslice<aod::FemtoWorldParticlesMerged> perCol = aod::femtoworldparticle::femtoWorldCollisionId;
+
   // Configurables for cuts
   // First particle
   Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.14, "Lower limit for Pt for the first particle"};
@@ -163,7 +166,7 @@ struct FemtoWorldIdenticalPionPair {
   void processSameEvent(o2::aod::FemtoWorldCollision& col, o2::aod::FemtoWorldParticlesMerged& parts)
   {
 
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
 
     // auto groupPartsOne=groupParts.sliceByCached(aod::femtoworldparticle::sign,cfgSignPartOne);
     // auto groupPartsTwo=groupParts.sliceByCached(aod::femtoworldparticle::sign,cfgSignPartTwo);
@@ -255,8 +258,8 @@ struct FemtoWorldIdenticalPionPair {
 
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning2.getBin({collision1.posZ(), collision1.centRun2V0M()}));
 
-      auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex());
-      auto groupPartsTwo = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex());
+      auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();

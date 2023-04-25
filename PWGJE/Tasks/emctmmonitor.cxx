@@ -76,6 +76,9 @@ struct TrackMatchingMonitor {
   Configurable<std::vector<float>> tpcNsigmaElectron{"tpcNsigmaElectron", {-1., +3.}, "TPC PID NSigma range for electron signal (first <= NSigma <= second)"};
   Configurable<std::vector<float>> tpcNsigmaBack{"tpcNsigmaBack", {-10., -4.}, "TPC PID NSigma range for electron background (first <= NSigma <= second)"};
   Configurable<std::vector<float>> tpcNsigmaPion{"tpcNsigmaPion", {-3., +3.}, "TPC PID NSigma range for pions for rejection if usePionRejection is enabled (first <= NSigma <= second)"};
+  Configurable<float> minTime{"minTime", -25., "Minimum cluster time for time cut"};
+  Configurable<float> maxTime{"maxTime", +20., "Maximum cluster time for time cut"};
+  Configurable<float> minM02{"minM02", 0.1, "Minimum M02 for M02 cut"};
 
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
@@ -110,8 +113,6 @@ struct TrackMatchingMonitor {
     // event properties
     mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
     mHistManager.add("eventsSelected", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
-    mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", o2HistType::kTH1F, {{200, -20, 20}});
     mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", o2HistType::kTH1F, {{200, -20, 20}});
 
@@ -175,7 +176,7 @@ struct TrackMatchingMonitor {
   // define cluster filter. It selects only those clusters which are of the type
   // sadly passing of the string at runtime is not possible for technical region so cluster definition is
   // an integer instead
-  Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition);
+  Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition) && (o2::aod::emcalcluster::time >= minTime) && (o2::aod::emcalcluster::time <= maxTime) && (o2::aod::emcalcluster::m02 > minM02);
 
   /// \brief Process EMCAL clusters that are matched to a collisions
   void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::Calos const& allcalos, o2::aod::EMCALMatchedTracks const& matchedtracks, tracksPID const& alltrack)

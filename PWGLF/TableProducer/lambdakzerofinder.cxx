@@ -38,12 +38,15 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessFinderTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "CCDB/BasicCCDBManager.h"
 
 #include <TFile.h>
 #include <TLorentzVector.h>
@@ -63,63 +66,59 @@ using namespace o2::framework::expressions;
 using std::array;
 using namespace ROOT::Math;
 
-namespace o2::aod
-{
-namespace v0goodpostracks
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(GoodTrack, goodTrack, int, Tracks, "_GoodTrack");
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
-} // namespace v0goodpostracks
-DECLARE_SOA_TABLE(V0GoodPosTracks, "AOD", "V0GOODPOSTRACKS", o2::soa::Index<>, v0goodpostracks::GoodTrackId, v0goodpostracks::CollisionId, v0goodpostracks::DCAXY);
-namespace v0goodnegtracks
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(GoodTrack, goodTrack, int, Tracks, "_GoodTrack");
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
-} // namespace v0goodnegtracks
-DECLARE_SOA_TABLE(V0GoodNegTracks, "AOD", "V0GOODNEGTRACKS", o2::soa::Index<>, v0goodnegtracks::GoodTrackId, v0goodnegtracks::CollisionId, v0goodnegtracks::DCAXY);
-} // namespace o2::aod
+// For dE/dx association in pre-selection
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA>;
+using TracksExtraWithDCAnPID = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::TracksDCA>;
 
 struct lambdakzeroprefilter {
-  Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
-  Configurable<int> tpcrefit{"tpcrefit", 1, "demand TPC refit"};
+  Configurable<float> dcaSingleTrackToPV{"dcaSingleTrackToPV", .1, "DCA single track to PV"};
 
-  Produces<aod::V0GoodPosTracks> v0GoodPosTracks;
-  Produces<aod::V0GoodNegTracks> v0GoodNegTracks;
+  // dEdx pre-selection compatibility
+  Configurable<float> ddEdxPreSelectionWindow{"ddEdxPreSelectionWindow", 7, "Nsigma window for dE/dx preselection"};
 
-  // still exhibiting issues? To be checked
-  // Partition<soa::Join<aod::FullTracks, aod::TracksDCA>> goodPosTracks = aod::track::signed1Pt > 0.0f && aod::track::dcaXY > dcapostopv;
-  // Partition<soa::Join<aod::FullTracks, aod::TracksDCA>> goodNegTracks = aod::track::signed1Pt < 0.0f && aod::track::dcaXY < -dcanegtopv;
+  Produces<aod::VFinderTracks> VFinderTracks;
 
-  void process(aod::Collision const& collision,
-               soa::Join<aod::FullTracks, aod::TracksDCA> const& tracks)
+  void processAll(aod::Collision const& collision,
+                  soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA> const& tracks)
   {
     for (auto& t0 : tracks) {
-      if (tpcrefit) {
-        if (!(t0.trackType() & o2::aod::track::TPCrefit)) {
-          continue; // TPC refit
-        }
-      }
-      if (t0.tpcNClsCrossedRows() < mincrossedrows) {
-        continue;
-      }
-      if (t0.signed1Pt() > 0.0f) {
-        if (fabs(t0.dcaXY()) < dcapostopv) {
-          continue;
-        }
-        v0GoodPosTracks(t0.globalIndex(), t0.collisionId(), t0.dcaXY());
-      }
-      if (t0.signed1Pt() < 0.0f) {
-        if (fabs(t0.dcaXY()) < dcanegtopv) {
-          continue;
-        }
-        v0GoodNegTracks(t0.globalIndex(), t0.collisionId(), -t0.dcaXY());
-      }
+      if (TMath::Abs(t0.dcaXY()) < dcaSingleTrackToPV)
+        continue; // single track DCA to PV
+      if (t0.tpcNClsCrossedRows() < mincrossedrows)
+        continue; // crossed rows
+      bool isPositive = false;
+      if (t0.signed1Pt() > 0.0f)
+        isPositive = true;
+      VFinderTracks(t0.globalIndex(), isPositive, true, true, true);
     }
   }
+  PROCESS_SWITCH(lambdakzeroprefilter, processAll, "Take all tracks, select only on crossed rows + TPC refit", false);
+
+  void processWithdEdx(aod::Collision const& collision,
+                       TracksExtraWithDCAnPID const& tracks)
+  {
+    for (auto& t0 : tracks) {
+      if (TMath::Abs(t0.dcaXY()) < dcaSingleTrackToPV)
+        continue; // single track DCA to PV
+      if (t0.tpcNClsCrossedRows() < mincrossedrows)
+        continue; // crossed rows
+      bool compatiblePion = false;
+      bool compatibleKaon = false;
+      bool compatibleProton = false;
+      if (TMath::Abs(t0.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
+        compatiblePion = true;
+      if (TMath::Abs(t0.tpcNSigmaKa()) < ddEdxPreSelectionWindow)
+        compatibleKaon = true;
+      if (TMath::Abs(t0.tpcNSigmaPr()) < ddEdxPreSelectionWindow)
+        compatibleProton = true;
+      bool isPositive = false;
+      if (t0.signed1Pt() > 0.0f)
+        isPositive = true;
+      VFinderTracks(t0.globalIndex(), isPositive, compatiblePion, compatibleKaon, compatibleProton);
+    }
+  }
+  PROCESS_SWITCH(lambdakzeroprefilter, processWithdEdx, "Utilise TPC dE/dx pre-selections", true);
 };
 
 struct lambdakzerofinder {
@@ -143,47 +142,35 @@ struct lambdakzerofinder {
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
+  Configurable<float> maxV0DCAtoPV{"maxV0DCAtoPV", 0.5, "maximum V0 DCA to PV"};
+
+  // Configurables for selecting which particles to generate
+  Configurable<bool> findK0Short{"findK0Short", true, "findK0Short"};
+  Configurable<bool> findLambda{"findLambda", true, "findLambda"};
+  Configurable<bool> findAntiLambda{"findAntiLambda", true, "findAntiLambda"};
+
+  // CCDB options
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+
+  Partition<aod::VFinderTracks> pTracks = o2::aod::vFinderTrack::isPositive == true;
+  Partition<aod::VFinderTracks> nTracks = o2::aod::vFinderTrack::isPositive == false;
+
+  // Define o2 fitter, 2-prong
+  o2::vertexing::DCAFitterN<2> fitter;
+  int mRunNumber;
+  float d_bz;
 
   void init(InitContext& context)
   {
-    // using namespace analysis::lambdakzerofinder;
-
+    mRunNumber = 0;
+    d_bz = 0;
     ccdb->setURL("https://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-  }
-
-  float getMagneticField(uint64_t timestamp)
-  {
-    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-        return 0;
-      }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
-    }
-    float output = grpo->getNominalL3Field();
-    return output;
-  }
-
-  void process(aod::Collision const& collision, soa::Join<aod::FullTracks, aod::TracksCov> const& tracks,
-               aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::BCsWithTimestamps const&)
-  {
-
-    float d_bz;
-    if (d_bz_input < -990) {
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp());
-    } else {
-      d_bz = d_bz_input;
-    }
-
-    // Define o2 fitter, 2-prong
-    o2::vertexing::DCAFitterN<2> fitter;
-    fitter.setBz(d_bz);
     fitter.setPropagateToPCA(true);
     fitter.setMaxR(200.);
     fitter.setMinParamChange(1e-3);
@@ -191,60 +178,141 @@ struct lambdakzerofinder {
     fitter.setMaxDZIni(1e9);
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(d_UseAbsDCA);
+  }
+
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      fitter.setBz(d_bz);
+      o2::parameters::GRPMagField grpmag;
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
+      mRunNumber = bc.runNumber();
+      return;
+    }
+
+    auto run3grp_timestamp = bc.timestamp();
+    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
+    mRunNumber = bc.runNumber();
+    // Set magnetic field value once known
+    fitter.setBz(d_bz);
+  }
+
+  float getDCAtoPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
+  {
+    return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
+  }
+
+  template <class TTrack, class TCollisions>
+  int buildV0Candidate(TTrack const& t1, TTrack const& t2, TCollisions const& collisions)
+  {
+    auto Track1 = getTrackParCov(t1);
+    auto Track2 = getTrackParCov(t2);
+
+    // Try to progate to dca
+    int nCand = fitter.process(Track1, Track2);
+    if (nCand == 0) {
+      return 0;
+    }
+    const auto& vtx = fitter.getPCACandidate();
+
+    // Fiducial: min radius
+    auto thisv0radius = TMath::Sqrt(TMath::Power(vtx[0], 2) + TMath::Power(vtx[1], 2));
+    if (thisv0radius < v0radius) {
+      return 0;
+    }
+
+    // DCA V0 daughters
+    auto thisdcav0dau = fitter.getChi2AtPCACandidate();
+    if (thisdcav0dau > dcav0dau) {
+      return 0;
+    }
+
+    std::array<float, 3> pos = {0.};
+    std::array<float, 3> pvec0;
+    std::array<float, 3> pvec1;
+    for (int i = 0; i < 3; i++) {
+      pos[i] = vtx[i];
+    }
+    fitter.getTrack(0).getPxPyPzGlo(pvec0);
+    fitter.getTrack(1).getPxPyPzGlo(pvec1);
+
+    // Attempt collision association on pure geometrical basis
+    // FIXME this can of course be far better
+    float smallestDCA = 1e+3;
+    int collisionIndex = -1;
+    //   float getDCAtoPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ){
+    for (auto const& collision : collisions) {
+      float thisDCA = TMath::Abs(getDCAtoPV(vtx[0], vtx[1], vtx[2], pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2], collision.posX(), collision.posY(), collision.posY()));
+      if (thisDCA < smallestDCA) {
+        collisionIndex = collision.globalIndex();
+        smallestDCA = thisDCA;
+      }
+    }
+    if (smallestDCA > maxV0DCAtoPV)
+      return 0; // unassociated
+    v0(collisionIndex, t1.globalIndex(), t2.globalIndex());
+    v0data(t1.globalIndex(), t2.globalIndex(), collisionIndex, 0,
+           fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
+           pos[0], pos[1], pos[2],
+           pvec0[0], pvec0[1], pvec0[2],
+           pvec1[0], pvec1[1], pvec1[2],
+           TMath::Sqrt(fitter.getChi2AtPCACandidate()),
+           t1.dcaXY(), t2.dcaXY());
+    v0datalink(v0data.lastIndex());
+    return 1;
+  }
+
+  void process(aod::Collisions const& collisions, FullTracksExtIU const& tracks,
+               aod::VFinderTracks const& v0findertracks, aod::BCsWithTimestamps const&)
+  {
+    auto firstcollision = collisions.begin();
+    auto bc = firstcollision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
 
     Long_t lNCand = 0;
 
-    for (auto& t0id : ptracks) { // FIXME: turn into combination(...)
-      auto t0 = t0id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
-      auto Track1 = getTrackParCov(t0);
-      for (auto& t1id : ntracks) {
-        auto t1 = t1id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
-        auto Track2 = getTrackParCov(t1);
-
-        // Try to progate to dca
-        int nCand = fitter.process(Track1, Track2);
-        if (nCand == 0) {
+    for (auto& pTrack : pTracks) { // FIXME: turn into combination(...)
+      for (auto& nTrack : nTracks) {
+        // Check compatibility with certain hypotheses and desired building
+        bool keepCandidate = false;
+        if (pTrack.compatiblePi() && nTrack.compatiblePi() && findK0Short)
+          keepCandidate = true;
+        if (pTrack.compatiblePr() && nTrack.compatiblePi() && findLambda)
+          keepCandidate = true;
+        if (pTrack.compatiblePi() && nTrack.compatiblePr() && findAntiLambda)
+          keepCandidate = true;
+        if (!keepCandidate)
           continue;
-        }
-        const auto& vtx = fitter.getPCACandidate();
 
-        // Fiducial: min radius
-        auto thisv0radius = TMath::Sqrt(TMath::Power(vtx[0], 2) + TMath::Power(vtx[1], 2));
-        if (thisv0radius < v0radius) {
-          continue;
-        }
+        auto t1 = pTrack.track_as<FullTracksExtIU>();
+        auto t2 = nTrack.track_as<FullTracksExtIU>();
 
-        // DCA V0 daughters
-        auto thisdcav0dau = fitter.getChi2AtPCACandidate();
-        if (thisdcav0dau > dcav0dau) {
-          continue;
-        }
-
-        std::array<float, 3> pos = {0.};
-        std::array<float, 3> pvec0;
-        std::array<float, 3> pvec1;
-        for (int i = 0; i < 3; i++) {
-          pos[i] = vtx[i];
-        }
-        fitter.getTrack(0).getPxPyPzGlo(pvec0);
-        fitter.getTrack(1).getPxPyPzGlo(pvec1);
-
-        auto thisv0cospa = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()},
-                                          array{vtx[0], vtx[1], vtx[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
-        if (thisv0cospa < v0cospa) {
-          continue;
-        }
-
-        lNCand++;
-        v0(t0.collisionId(), t0.globalIndex(), t1.globalIndex());
-        v0data(t0.globalIndex(), t1.globalIndex(), t0.collisionId(), 0,
-               fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
-               pos[0], pos[1], pos[2],
-               pvec0[0], pvec0[1], pvec0[2],
-               pvec1[0], pvec1[1], pvec1[2],
-               fitter.getChi2AtPCACandidate(),
-               t0id.dcaXY(), t1id.dcaXY());
-        v0datalink(v0data.lastIndex());
+        lNCand += buildV0Candidate(t1, t2, collisions);
       }
     }
     registry.fill(HIST("hCandPerEvent"), lNCand);

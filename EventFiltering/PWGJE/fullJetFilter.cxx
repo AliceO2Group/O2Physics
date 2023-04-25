@@ -32,6 +32,7 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/Core/FastJetUtilities.h"
 
 #include "../filterTables.h"
 
@@ -39,7 +40,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
-using filteredJets = o2::soa::Filtered<o2::aod::Jets>;
+using filteredJets = o2::soa::Filtered<o2::aod::FullJets>;
 
 struct fullJetFilter {
   enum {
@@ -81,7 +82,7 @@ struct fullJetFilter {
   // Configurables
   Configurable<float> f_jetPtMin{"f_jetPtMin", 0.0, "minimum jet pT cut"};
   Configurable<float> f_clusterPtMin{"f_clusterPtMin", 0.0, "minimum cluster pT cut"};
-  Configurable<double> f_jetR{"f_jetR", 0.2, "jet R to trigger on"};
+  Configurable<int> f_jetR{"f_jetR", 20, "jet R * 100 to trigger on"};
   Configurable<int> f_JetType{"f_JetType", 0, "Jet type used for the selection (0 - full jets, 1 - neutral jets)"};
   Configurable<int> f_ObservalbeGammaTrigger{"fObservableGammaTrigger", 0, "Observable for the gamma trigger (0 - Energy, 1 - pt)"};
   Configurable<bool> b_PublishReadoutTrigger{"b_publishReadoutTrigger", false, "Publish EMCAL readout status as trigger flag"};
@@ -138,7 +139,7 @@ struct fullJetFilter {
     LOG(info) << "Gamma trigger: " << (b_doJetTrigger ? "on" : "off");
     LOG(info) << "Thresholds gamma trigger: EG1 " << f_gammaPtMinEMCALHigh << " GeV, DG1 " << f_gammaPtMinDCALHigh << " GeV, EG2 " << f_gammaPtMinEMCALLow << " GeV, DG2 " << f_gammaPtMinDCALLow << " GeV";
     LOG(info) << "Gamma trigger observable: " << (f_ObservalbeGammaTrigger == 0 ? "Energy" : "pt");
-    LOG(info) << "Jet trigger: Type: " << (f_JetType == 0 ? "Full jets" : "Neutral jets") << ", R: " << f_jetR << ", pt > " << f_jetPtMin << " cluster(" << f_clusterPtMin << ")";
+    LOG(info) << "Jet trigger: Type: " << (f_JetType == 0 ? "Full jets" : "Neutral jets") << ", R: " << (static_cast<double>(f_jetR) / 100.) << ", pt > " << f_jetPtMin << " cluster(" << f_clusterPtMin << ")";
     LOG(info) << "Ignore EMCAL flag: " << (b_IgnoreEmcalFlag ? "yes" : "no");
     LOG(info) << "Publishing neutral jet trigger: " << (b_PublishNeutralJetTrigger ? "yes" : "no");
     LOG(info) << "Publishing EMCAL trigger: " << (b_PublishReadoutTrigger ? "yes" : "no");
@@ -149,7 +150,7 @@ struct fullJetFilter {
   // Declare filters
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
   Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
-  Filter jetRadiusSelection = o2::aod::jet::r == std::round(f_jetR * 100);
+  Filter jetRadiusSelection = o2::aod::jet::r == f_jetR;
 
   Bool_t isJetInEmcal(filteredJets::iterator const& jet)
   {
