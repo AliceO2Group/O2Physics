@@ -28,7 +28,6 @@ struct JetFinderTask {
   Produces<ConstituentSubTable> constituentsSubTable;
 
   OutputObj<TH2F> hJetRho{"h2_jet_rho"};
-
   Configurable<int> bkgSubMode{"BkgSubMode", 0, "background subtraction method. 0 = none, 1 = rhoAreaSub, 2 = constSub, 3 = rhoSparseSub, 4 = rhoPerpConeSub, 5 = rhoMedianAreaSub, 6 = jetconstSub"};
 
   // event level configurables
@@ -117,6 +116,10 @@ struct JetFinderTask {
     if (!selectCollision(collision)) {
       return;
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 98d27c5d (PWGJE: Debugging jet task and adding QA and tutorial tasks (#2481))
     inputParticles.clear();
     analyseTracks<JetTracks, JetTracks::iterator>(inputParticles, tracks, trackSelection);
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
