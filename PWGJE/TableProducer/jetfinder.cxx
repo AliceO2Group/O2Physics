@@ -185,15 +185,15 @@ struct JetFinderTask {
   PROCESS_SWITCH(JetFinderTask, processParticleLevelJets, "Particle level jet finding", false);
 };
 
-using JetFinderDataCharged = JetFinderTask<o2::aod::Jets, o2::aod::JetConstituents, o2::aod::JetConstituentsSub>;
+using JetFinderDataCharged = JetFinderTask<o2::aod::ChargedJets, o2::aod::ChargedJetConstituents, o2::aod::ChargedJetConstituentsSub>;
 using JetFinderDataFull = JetFinderTask<o2::aod::FullJets, o2::aod::FullJetConstituents, o2::aod::FullJetConstituentsSub>;
 using JetFinderDataNeutral = JetFinderTask<o2::aod::NeutralJets, o2::aod::NeutralJetConstituents, o2::aod::NeutralJetConstituentsSub>;
-using JetFinderMCDetectorLevelCharged = JetFinderTask<o2::aod::MCDetectorLevelJets, o2::aod::MCDetectorLevelJetConstituents, o2::aod::MCDetectorLevelJetConstituentsSub>;
-using JetFinderMCDetectorLevelFull = JetFinderTask<o2::aod::MCDetectorLevelFullJets, o2::aod::MCDetectorLevelFullJetConstituents, o2::aod::MCDetectorLevelFullJetConstituentsSub>;
-using JetFinderMCDetectorLevelNeutral = JetFinderTask<o2::aod::MCDetectorLevelNeutralJets, o2::aod::MCDetectorLevelNeutralJetConstituents, o2::aod::MCDetectorLevelNeutralJetConstituentsSub>;
-using JetFinderMCParticleLevelCharged = JetFinderTask<o2::aod::MCParticleLevelJets, o2::aod::MCParticleLevelJetConstituents, o2::aod::MCParticleLevelJetConstituentsSub>;
-using JetFinderMCParticleLevelFull = JetFinderTask<o2::aod::MCParticleLevelFullJets, o2::aod::MCParticleLevelFullJetConstituents, o2::aod::MCParticleLevelFullJetConstituentsSub>;
-using JetFinderMCParticleLevelNeutral = JetFinderTask<o2::aod::MCParticleLevelNeutralJets, o2::aod::MCParticleLevelNeutralJetConstituents, o2::aod::MCParticleLevelNeutralJetConstituentsSub>;
+using JetFinderMCDetectorLevelCharged = JetFinderTask<o2::aod::ChargedMCDetectorLevelJets, o2::aod::ChargedMCDetectorLevelJetConstituents, o2::aod::ChargedMCDetectorLevelJetConstituentsSub>;
+using JetFinderMCDetectorLevelFull = JetFinderTask<o2::aod::FullMCDetectorLevelJets, o2::aod::FullMCDetectorLevelJetConstituents, o2::aod::FullMCDetectorLevelJetConstituentsSub>;
+using JetFinderMCDetectorLevelNeutral = JetFinderTask<o2::aod::NeutralMCDetectorLevelJets, o2::aod::NeutralMCDetectorLevelJetConstituents, o2::aod::NeutralMCDetectorLevelJetConstituentsSub>;
+using JetFinderMCParticleLevelCharged = JetFinderTask<o2::aod::ChargedMCParticleLevelJets, o2::aod::ChargedMCParticleLevelJetConstituents, o2::aod::ChargedMCParticleLevelJetConstituentsSub>;
+using JetFinderMCParticleLevelFull = JetFinderTask<o2::aod::FullMCParticleLevelJets, o2::aod::FullMCParticleLevelJetConstituents, o2::aod::FullMCParticleLevelJetConstituentsSub>;
+using JetFinderMCParticleLevelNeutral = JetFinderTask<o2::aod::NeutralMCParticleLevelJets, o2::aod::NeutralMCParticleLevelJetConstituents, o2::aod::NeutralMCParticleLevelJetConstituentsSub>;
 // using JetFinderHybridIntermediate = JetFinderTask<o2::aod::HybridIntermediateJets, o2::aod::HybridIntermediateJetConstituents, o2::aod::HybridIntermediateJetConstituentsSub>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
