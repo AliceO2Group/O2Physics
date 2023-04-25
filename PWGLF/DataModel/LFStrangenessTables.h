@@ -8,13 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_STRANGENESSTABLES_H_
-#define O2_ANALYSIS_STRANGENESSTABLES_H_
+#ifndef PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_
+#define PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_
 
+#include <cmath>
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include <cmath>
 
 namespace o2::aod
 {
@@ -320,7 +320,8 @@ DECLARE_SOA_COLUMN(DCACascDaughters, dcacascdaughters, float); //!
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);             //!
 DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);             //!
 DECLARE_SOA_COLUMN(DCABachToPV, dcabachtopv, float);           //!
-DECLARE_SOA_COLUMN(DCACascToPV, dcacasctopv, float);           //!
+DECLARE_SOA_COLUMN(DCAXYCascToPV, dcaXYCascToPV, float);       //!
+DECLARE_SOA_COLUMN(DCAZCascToPV, dcaZCascToPV, float);         //!
 
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
@@ -329,7 +330,7 @@ DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance mat
 // Saved from strangeness tracking
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float); //!
 DECLARE_SOA_COLUMN(TopologyChi2, topologyChi2, float); //!
-DECLARE_SOA_COLUMN(ItsClsSize, itsCluSize, int);       //!
+DECLARE_SOA_COLUMN(ItsClsSize, itsCluSize, float);     //!
 
 // Derived expressions
 // Momenta
@@ -392,7 +393,7 @@ DECLARE_SOA_TABLE(StoredCascDatas, "AOD", "CASCDATA", //!
                   cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
-                  cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCACascToPV,
+                  cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
 
                   // Dynamic columns
                   cascdata::Pt<cascdata::Px, cascdata::Py>,
@@ -422,7 +423,7 @@ DECLARE_SOA_TABLE(StoredTraCascDatas, "AOD", "TRACASCDATA", //!
                   cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
-                  cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCACascToPV,
+                  cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
                   cascdata::MatchingChi2, cascdata::TopologyChi2, cascdata::ItsClsSize,
 
                   // Dynamic columns
@@ -537,6 +538,18 @@ DECLARE_SOA_TABLE(McTraCascLabels, "AOD", "MCTRACASCLABEL", //! Table joinable t
                   mctracasclabel::McParticleId);
 using McTraCascLabel = McTraCascLabels::iterator;
 
+DECLARE_SOA_TABLE(TrackedCascadeColls, "AOD", "TRACASCCOLL", //! Table joinable with TrackedCascades containing collision ids
+                  track::CollisionId, o2::soa::Marker<1>);
+using TrackedCascadeColl = TrackedCascadeColls::iterator;
+
+DECLARE_SOA_TABLE(TrackedV0Colls, "AOD", "TRAV0COLL", //! Table joinable with TrackedV0s containing collision ids
+                  track::CollisionId, o2::soa::Marker<2>);
+using TrackedV0Coll = TrackedV0Colls::iterator;
+
+DECLARE_SOA_TABLE(Tracked3BodyColls, "AOD", "TRA3BODYCOLL", //! Table joinable with Tracked3Bodys containing collision ids
+                  track::CollisionId, o2::soa::Marker<3>);
+using Tracked3BodyColl = Tracked3BodyColls::iterator;
+
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_STRANGENESSTABLES_H_
+#endif // PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_

@@ -61,6 +61,7 @@ DECLARE_SOA_COLUMN(VertexZ, vertexZ, double);
 DECLARE_SOA_COLUMN(VertexXX, vertexXX, double);
 DECLARE_SOA_COLUMN(VertexYY, vertexYY, double);
 DECLARE_SOA_COLUMN(VertexXY, vertexXY, double);
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(VertexChi2, vertexChi2, double);
 DECLARE_SOA_COLUMN(NContrib, nContrib, int);
 
@@ -82,8 +83,7 @@ DECLARE_SOA_COLUMN(ChargeCFT0, chargeCft0, double);
 
 } // namespace full
 DECLARE_SOA_TABLE(EventInfo, "AOD", "EventInfo", full::TimeStamp, full::VertexX,
-                  full::VertexY, full::VertexZ,
-                  full::VertexXX, full::VertexYY, full::VertexXY,
+                  full::VertexY, full::VertexZ, full::GlobalBC,
                   full::VertexChi2, full::NContrib,
                   full::isFDD, full::TCMTriggerFDD,
                   full::TimeAFDD, full::TimeCFDD,
@@ -140,7 +140,7 @@ struct LumiFDDFT0 {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     Long64_t relTS = bc.timestamp() - fttimestamp;
-
+    Long64_t globalBC = bc.globalBC();
     std::vector<int64_t> vec_globID_contr = {};
     std::vector<o2::track::TrackParCov> vec_TrkContributos = {};
 
@@ -189,12 +189,12 @@ struct LumiFDDFT0 {
     vertexer.init();
     bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos, Pvtx);
     double chi2 = -1.;
-    double refitX = -9999.;
-    double refitY = -9999.;
-    double refitZ = -9999.;
-    double refitXX = -9999.;
-    double refitYY = -9999.;
-    double refitXY = -9999.;
+    double refitX = -999.;
+    double refitY = -999.;
+    double refitZ = -999.;
+    double refitXX = -999.;
+    double refitYY = -999.;
+    double refitXY = -999.;
 
     double timeaFDD = -999.;
     double timecFDD = -999.;
@@ -247,7 +247,7 @@ struct LumiFDDFT0 {
       } // ft0
 
     } // pv refit
-    rowEventInfo(relTS, refitX, refitY, refitZ, refitXX, refitYY, refitXY, chi2, nContrib, collision.has_foundFDD(),
+    rowEventInfo(relTS, refitX, refitY, refitZ, globalBC, chi2, nContrib, collision.has_foundFDD(),
                  mTriggerFDD, timeaFDD, timecFDD, chargeaFDD, chargecFDD, collision.has_foundFT0(), mTriggerFT0, timeaFT0,
                  timecFT0, chargeaFT0, chargecFT0);
 
@@ -266,7 +266,6 @@ struct LumiFDDFT0 {
     if (collision.numContrib() > nContribMax ||
         collision.numContrib() < nContribMin)
       return;
-
     histos.fill(HIST("vertexx"), collision.posX());
     histos.fill(HIST("vertexy"), collision.posY());
     histos.fill(HIST("timestamp"), relTS);

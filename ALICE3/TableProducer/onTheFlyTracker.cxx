@@ -66,6 +66,15 @@ struct OnTheFlyTracker {
   Configurable<bool> enableLUT{"enableLUT", false, "Enable track smearing"};
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
 
+  Configurable<std::string> lutEl{"lutEl", "lutCovm.el.dat", "LUT for electrons"};
+  Configurable<std::string> lutMu{"lutMu", "lutCovm.mu.dat", "LUT for muons"};
+  Configurable<std::string> lutPi{"lutPi", "lutCovm.pi.dat", "LUT for pions"};
+  Configurable<std::string> lutKa{"lutKa", "lutCovm.ka.dat", "LUT for kaons"};
+  Configurable<std::string> lutPr{"lutPr", "lutCovm.pr.dat", "LUT for protons"};
+  Configurable<std::string> lutDe{"lutDe", "lutCovm.de.dat", "LUT for deuterons"};
+  Configurable<std::string> lutTr{"lutTr", "lutCovm.tr.dat", "LUT for tritons"};
+  Configurable<std::string> lutHe3{"lutHe3", "lutCovm.he3.dat", "LUT for Helium-3"};
+
   bool fillTracksDCA = false;
 
   // necessary for particle charges
@@ -86,15 +95,23 @@ struct OnTheFlyTracker {
 
     if (enableLUT) {
       std::map<int, const char*> mapPdgLut;
-      mapPdgLut.insert(std::make_pair(11, "lutCovm.el.dat"));
-      mapPdgLut.insert(std::make_pair(13, "lutCovm.mu.dat"));
-      mapPdgLut.insert(std::make_pair(211, "lutCovm.pi.dat"));
-      mapPdgLut.insert(std::make_pair(321, "lutCovm.ka.dat"));
-      mapPdgLut.insert(std::make_pair(2212, "lutCovm.pr.dat"));
+      const char* lutElChar = ((std::string)lutEl).c_str();
+      const char* lutMuChar = ((std::string)lutMu).c_str();
+      const char* lutPiChar = ((std::string)lutPi).c_str();
+      const char* lutKaChar = ((std::string)lutKa).c_str();
+      const char* lutPrChar = ((std::string)lutPr).c_str();
+      mapPdgLut.insert(std::make_pair(11, lutElChar));
+      mapPdgLut.insert(std::make_pair(13, lutMuChar));
+      mapPdgLut.insert(std::make_pair(211, lutPiChar));
+      mapPdgLut.insert(std::make_pair(321, lutKaChar));
+      mapPdgLut.insert(std::make_pair(2212, lutPrChar));
       if (enableNucleiSmearing) {
-        mapPdgLut.insert(std::make_pair(1000010020, "lutCovm.de.dat"));
-        mapPdgLut.insert(std::make_pair(1000010030, "lutCovm.tr.dat"));
-        mapPdgLut.insert(std::make_pair(1000020030, "lutCovm.he3.dat"));
+        const char* lutDeChar = ((std::string)lutDe).c_str();
+        const char* lutTrChar = ((std::string)lutTr).c_str();
+        const char* lutHe3Char = ((std::string)lutHe3).c_str();
+        mapPdgLut.insert(std::make_pair(1000010020, lutDeChar));
+        mapPdgLut.insert(std::make_pair(1000010030, lutTrChar));
+        mapPdgLut.insert(std::make_pair(1000020030, lutHe3Char));
       }
       for (auto e : mapPdgLut) {
         if (!mSmearer.loadTable(e.first, e.second)) {
@@ -104,8 +121,15 @@ struct OnTheFlyTracker {
     }
 
     // Basic QA
-    const AxisSpec axisMomentum{static_cast<int>(100), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
-    histos.add("hPt", "hPt", kTH1F, {axisMomentum});
+    const AxisSpec axisMomentum{static_cast<int>(1000), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
+    histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axisMomentum});
+    histos.add("hPtGeneratedPi", "hPtGeneratedPi", kTH1F, {axisMomentum});
+    histos.add("hPtGeneratedKa", "hPtGeneratedKa", kTH1F, {axisMomentum});
+    histos.add("hPtGeneratedPr", "hPtGeneratedPr", kTH1F, {axisMomentum});
+    histos.add("hPtReconstructed", "hPtReconstructed", kTH1F, {axisMomentum});
+    histos.add("hPtReconstructedPi", "hPtReconstructedPi", kTH1F, {axisMomentum});
+    histos.add("hPtReconstructedKa", "hPtReconstructedKa", kTH1F, {axisMomentum});
+    histos.add("hPtReconstructedPr", "hPtReconstructedPr", kTH1F, {axisMomentum});
   }
 
   /// Function to convert a McParticle into a perfect Track
@@ -117,7 +141,7 @@ struct OnTheFlyTracker {
     auto pdgInfo = pdgDB->GetParticle(particle.pdgCode());
     int charge = 0;
     if (pdgInfo != nullptr) {
-      charge = pdgInfo->Charge();
+      charge = pdgInfo->Charge() / 3;
     }
     std::array<float, 5> params;
     std::array<float, 15> covm = {0.};
@@ -171,6 +195,9 @@ struct OnTheFlyTracker {
     }
 
     for (const auto& mcParticle : mcParticles) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       const auto pdg = std::abs(mcParticle.pdgCode());
       if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton) {
         continue;
@@ -178,6 +205,15 @@ struct OnTheFlyTracker {
       if (std::fabs(mcParticle.eta()) > maxEta) {
         continue;
       }
+
+      histos.fill(HIST("hPtGenerated"), mcParticle.pt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 211)
+        histos.fill(HIST("hPtGeneratedPi"), mcParticle.pt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 321)
+        histos.fill(HIST("hPtGeneratedKa"), mcParticle.pt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 2212)
+        histos.fill(HIST("hPtGeneratedPr"), mcParticle.pt());
+
       if (mcParticle.pt() < minPt) {
         continue;
       }
@@ -193,8 +229,14 @@ struct OnTheFlyTracker {
       // To be added once smeared tracks are in place
       // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
 
-      // Base QA
-      histos.fill(HIST("hPt"), trackParCov.getPt());
+      // Base QA (note: reco pT here)
+      histos.fill(HIST("hPtReconstructed"), trackParCov.getPt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 211)
+        histos.fill(HIST("hPtReconstructedPi"), mcParticle.pt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 321)
+        histos.fill(HIST("hPtReconstructedKa"), mcParticle.pt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 2212)
+        histos.fill(HIST("hPtReconstructedPr"), mcParticle.pt());
 
       // Fixme: collision index could be changeable
       aod::track::TrackTypeEnum trackType = aod::track::Track;
