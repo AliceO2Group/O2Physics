@@ -36,9 +36,9 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/DataModel/Jet.h"
 
 using JetTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
 using JetClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
@@ -81,20 +81,19 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
     }
     if (candidate != std::nullopt) {
       auto cand = candidate.value();
-
-      if constexpr (std::is_same_v<U, CandidateD0Data> || std::is_same_v<U, CandidateD0MC>) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidateD0Data::iterator> || std::is_same_v<std::decay_t<U>, CandidateD0Data::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateD0MC::iterator> || std::is_same_v<std::decay_t<U>, CandidateD0MC::filtered_iterator>) {
         if (cand.template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
       }
 
-      if constexpr (std::is_same_v<U, CandidateLcData> || std::is_same_v<U, CandidateLcMC>) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidateLcData::iterator> || std::is_same_v<std::decay_t<U>, CandidateLcData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateLcMC::iterator> || std::is_same_v<std::decay_t<U>, CandidateLcMC::filtered_iterator>) {
         if (cand.template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong2_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
       }
 
-      if constexpr (std::is_same_v<U, CandidateBPlusData> || std::is_same_v<U, CandidateBPlusMC>) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidateBPlusData::iterator> || std::is_same_v<std::decay_t<U>, CandidateBPlusData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateBPlusMC::iterator> || std::is_same_v<std::decay_t<U>, CandidateBPlusMC::filtered_iterator>) {
         if (cand.template prong0_as<aod::HfCand2Prong>().template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong0_as<aod::HfCand2Prong>().template prong1_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
@@ -165,7 +164,6 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       std::vector<int> trackconst;
       std::vector<int> candconst;
       std::vector<int> clusterconst;
-
       jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
                 jet.E(), jet.m(), jet.area(), std::round(R * 100));
       for (const auto& constituent : sorted_by_pt(jet.constituents())) {
@@ -186,15 +184,6 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
         }
       }
       constituentsTable(jetsTable.lastIndex(), trackconst, clusterconst, candconst);
-      //  h2JetPt->Fill(jet.pt(), R);
-      //  h2JetPhi->Fill(jet.phi(), R);
-      //  h2JetEta->Fill(jet.rap(), R);
-      //  h2JetNTracks->Fill(jet.constituents().size(), R);
-      //  hJetPt->Fill(jet.pt());
-      //  hJetPhi->Fill(jet.phi());
-      //  hJetEta->Fill(jet.rap());
-      //  hJetNTracks->Fill(jet.constituents().size());
-      //  hCandPt->Fill(candidatepT);
       break;
     }
   }
@@ -224,7 +213,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, float par
     if (particle.eta() < particleEtaMin || particle.eta() > particleEtaMax) {
       continue;
     }
-    if (particle.getGenStatusCode() != 1) { // CHECK : Does this include HF hadrons that decay?
+    if (particle.getGenStatusCode() != 1) { // CHECK : Does this exclude the HF hadron?
       continue;
     }
     auto pdgParticle = pdg->GetParticle(particle.pdgCode());

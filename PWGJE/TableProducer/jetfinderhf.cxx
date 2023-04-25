@@ -27,15 +27,6 @@ struct JetFinderHFTask {
   Produces<JetTable> jetsTable;
   Produces<ConstituentTable> constituentsTable;
   Produces<ConstituentSubTable> constituentsSubTable;
-  OutputObj<TH2F> h2JetPt{"h2_jet_pt"};
-  OutputObj<TH2F> h2JetPhi{"h2_jet_phi"};
-  OutputObj<TH2F> h2JetEta{"h2_jet_eta"};
-  OutputObj<TH2F> h2JetNTracks{"h2_jet_ntracks"};
-  OutputObj<TH1F> hJetPt{"h_jet_pt"};
-  OutputObj<TH1F> hJetPhi{"h_jet_phi"};
-  OutputObj<TH1F> hJetEta{"h_jet_eta"};
-  OutputObj<TH1F> hJetNTracks{"h_jet_ntracks"};
-  OutputObj<TH1F> hCandPt{"h_cand_pt"};
 
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
@@ -95,26 +86,6 @@ struct JetFinderHFTask {
   void init(InitContext const&)
   {
     trackSelection = static_cast<std::string>(trackSelections);
-
-    h2JetPt.setObject(new TH2F("h2_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
-                               100, 0., 100., 10, 0.05, 1.05));
-    h2JetPhi.setObject(new TH2F("h2_jet_phi", "jet #phi;#phi",
-                                80, -1., 7., 10, 0.05, 1.05));
-    h2JetEta.setObject(new TH2F("h2_jet_eta", "jet #eta;#eta",
-                                70, -0.7, 0.7, 10, 0.05, 1.05));
-    h2JetNTracks.setObject(new TH2F("h2_jet_ntracks", "jet n;n constituents",
-                                    30, 0., 30., 10, 0.05, 1.05));
-
-    hJetPt.setObject(new TH1F("h_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
-                              100, 0., 100.));
-    hJetPhi.setObject(new TH1F("h_jet_phi", "jet #phi; #phi",
-                               140, -7.0, 7.0));
-    hJetEta.setObject(new TH1F("h_jet_eta", "jet #eta; #eta",
-                               30, -1.5, 1.5));
-    hJetNTracks.setObject(new TH1F("h_jet_ntracks", "jet N tracks ; N tracks",
-                                   150, -0.5, 99.5));
-    hCandPt.setObject(new TH1F("h_cand_pt", "jet p_{T,cand};p_{T,cand} (GeV/#it{c})",
-                               100, 0., 100.));
 
     if (DoRhoAreaSub) {
       jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
@@ -232,7 +203,6 @@ struct JetFinderHFTask {
   void analyseMCGen2Prong(T const& collision, U const& particles)
   {
     inputParticles.clear();
-    LOG(debug) << "Per Event MCP";
     std::vector<JetParticles2Prong::iterator> candidates;
     candidates.clear();
     analyseMCGenParticles(collision, particles, candidates);
@@ -242,7 +212,6 @@ struct JetFinderHFTask {
   void analyseMCGen3Prong(T const& collision, U const& particles)
   {
     inputParticles.clear();
-    LOG(debug) << "Per Event MCP";
     std::vector<JetParticles3Prong::iterator> candidates;
     analyseMCGenParticles(collision, particles, candidates);
   }
@@ -251,7 +220,6 @@ struct JetFinderHFTask {
   void analyseMCGenBPlus(T const& collision, U const& particles)
   {
     inputParticles.clear();
-    LOG(debug) << "Per Event MCP";
     std::vector<JetParticlesBPlus::iterator> candidates;
     candidates.clear();
     analyseMCGenParticles(collision, particles, candidates);
@@ -262,54 +230,22 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processDummy, "Dummy process function turned on by default", true);
 
-  void processD0ChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-                                JetTracks const& tracks,
-                                soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> const& candidates)
-  {
-    analyseData(collision, tracks, candidates);
-  }
+  void processD0ChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, JetTracks const& tracks, CandidateD0Data const& candidates) { analyseData(collision, tracks, candidates); }
   PROCESS_SWITCH(JetFinderHFTask, processD0ChargedJetsData, "D0 jet finding on data", false);
 
-  void processD0ChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                               JetTracks const& tracks,
-                               soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> const& candidates)
-  {
-    analyseMCD(collision, tracks, candidates);
-  }
+  void processD0ChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, JetTracks const& tracks, CandidateD0MC const& candidates) { analyseMCD(collision, tracks, candidates); }
   PROCESS_SWITCH(JetFinderHFTask, processD0ChargedJetsMCD, "D0 finding on MC detector level", false);
 
-  void processBPlusChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-                                   JetTracks const& tracks,
-                                   soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>> const& candidates,
-                                   aod::HfCand2Prong const& HFdaughters)
-  {
-    analyseData(collision, tracks, candidates);
-  }
+  void processBPlusChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, JetTracks const& tracks, CandidateBPlusData const& candidates, aod::HfCand2Prong const& HFdaughters) { analyseData(collision, tracks, candidates); }
   PROCESS_SWITCH(JetFinderHFTask, processBPlusChargedJetsData, "B+ jet finding on data", false);
 
-  void processBPlusChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                                  JetTracks const& tracks,
-                                  soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>> const& candidates,
-                                  aod::HfCand2Prong const& HFdaughters)
-  {
-    analyseMCD(collision, tracks, candidates);
-  }
+  void processBPlusChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, JetTracks const& tracks, CandidateBPlusMC const& candidates, aod::HfCand2Prong const& HFdaughters) { analyseMCD(collision, tracks, candidates); }
   PROCESS_SWITCH(JetFinderHFTask, processBPlusChargedJetsMCD, "B+ finding on MC detector level", false);
 
-  void processLcChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-                                JetTracks const& tracks,
-                                soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
-  {
-    analyseData(collision, tracks, candidates);
-  }
+  void processLcChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, JetTracks const& tracks, CandidateLcData const& candidates) { analyseData(collision, tracks, candidates); }
   PROCESS_SWITCH(JetFinderHFTask, processLcChargedJetsData, "Lc jet finding on data", false);
 
-  void processLcChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                               JetTracks const& tracks,
-                               soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>> const& candidates)
-  {
-    analyseMCD(collision, tracks, candidates);
-  }
+  void processLcChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, JetTracks const& tracks, CandidateLcMC const& candidates) { analyseMCD(collision, tracks, candidates); }
   PROCESS_SWITCH(JetFinderHFTask, processLcChargedJetsMCD, "Lc finding on MC detector level", false);
 
   void process2ProngJetsMCP(aod::McCollision const& collision,
