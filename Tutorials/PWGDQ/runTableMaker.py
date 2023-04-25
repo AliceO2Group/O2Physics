@@ -252,7 +252,7 @@ if extrargs.add_weakdecay_ind:
   commandToRun += " | o2-analysis-weak-decay-indices --configuration json://" + updatedConfigFileName + " -b"
 
 if extrargs.add_col_conv:
-  commandToRun += " | o2-analysis-collision-converter --configuration json://" + updatedConfigFileName + " -b" 
+  commandToRun += " | o2-analysis-collision-converter --configuration json://" + updatedConfigFileName + " -b"
 
 print("====================================================================================================================")
 print("Command to run:")
