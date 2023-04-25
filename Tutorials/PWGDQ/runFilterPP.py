@@ -55,11 +55,11 @@ with open(updatedConfigFileName,'w') as outputFile:
 depsToRun = {}
 for dep in commonDeps:
   depsToRun[dep] = 1
-      
+
 commandToRun = taskNameInCommandLine + " --configuration json://" + updatedConfigFileName + " --severity error --shm-segment-size 12000000000 -b"
 for dep in depsToRun.keys():
   commandToRun += " | " + dep + " --configuration json://" + updatedConfigFileName + " -b"
-  
+
 if extrargs.add_mc_conv:
     commandToRun += " | o2-analysis-mc-converter --configuration json://" + updatedConfigFileName + " -b"
 
@@ -68,7 +68,7 @@ if extrargs.add_fdd_conv:
 
 if extrargs.add_track_prop:
     commandToRun += " | o2-analysis-track-propagation --configuration json://" + updatedConfigFileName + " -b"
-    
+
 if extrargs.add_col_conv:
     commandToRun += " | o2-analysis-collision-converter --configuration json://" + updatedConfigFileName + " -b" 
 

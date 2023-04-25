@@ -61,11 +61,11 @@ if not taskNameInConfig in config:
 updatedConfigFileName = "tempConfig.json"
 with open(updatedConfigFileName,'w') as outputFile:
   json.dump(config, outputFile, indent = 2)
-  
+
 commandToRun = (taskNameInCommandLine + " --configuration json://" + updatedConfigFileName + " -b")
 if extrargs.aod_writer_json:
     commandToRun = (taskNameInCommandLine + " --configuration json://" + updatedConfigFileName + " --aod-writer-json " + extrargs.aod_writer_json + " -b")
-    
+
 print("====================================================================================================================")
 print("Command to run:")
 print(commandToRun)

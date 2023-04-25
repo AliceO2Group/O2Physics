@@ -174,7 +174,7 @@ for processFunc in specificDeps.keys():
         depsToRun[dep] = 1
     if "processFull" in processFunc or "processMuon" in processFunc or "processAmbiguousMuon" in processFunc:
       for dep in muonDeps:
-        depsToRun[dep] = 1    
+        depsToRun[dep] = 1
     for dep in specificDeps[processFunc]:
       depsToRun[dep] = 1
 
@@ -240,19 +240,19 @@ for dep in depsToRun.keys():
   commandToRun += " | " + dep + " --configuration json://" + updatedConfigFileName + " -b"
 
 if extrargs.add_mc_conv:
-    commandToRun += " | o2-analysis-mc-converter --configuration json://" + updatedConfigFileName + " -b"
+  commandToRun += " | o2-analysis-mc-converter --configuration json://" + updatedConfigFileName + " -b"
 
 if extrargs.add_fdd_conv:
-    commandToRun += " | o2-analysis-fdd-converter --configuration json://" + updatedConfigFileName + " -b"
+  commandToRun += " | o2-analysis-fdd-converter --configuration json://" + updatedConfigFileName + " -b"
 
 if extrargs.add_track_prop:
-    commandToRun += " | o2-analysis-track-propagation --configuration json://" + updatedConfigFileName + " -b"
-    
+  commandToRun += " | o2-analysis-track-propagation --configuration json://" + updatedConfigFileName + " -b"
+
 if extrargs.add_weakdecay_ind:
-    commandToRun += " | o2-analysis-weak-decay-indices --configuration json://" + updatedConfigFileName + " -b"
-    
+  commandToRun += " | o2-analysis-weak-decay-indices --configuration json://" + updatedConfigFileName + " -b"
+
 if extrargs.add_col_conv:
-    commandToRun += " | o2-analysis-collision-converter --configuration json://" + updatedConfigFileName + " -b" 
+  commandToRun += " | o2-analysis-collision-converter --configuration json://" + updatedConfigFileName + " -b" 
 
 print("====================================================================================================================")
 print("Command to run:")
