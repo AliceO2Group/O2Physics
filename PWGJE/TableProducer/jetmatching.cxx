@@ -42,10 +42,10 @@ struct JetMatchingHF {
   Produces<TagToBaseMatchingTable> jetsTagToBase;
 
   // preslicing jet collections, only for MC-based collection
-
-  Preslice<BaseJetCollection> baseJetsPerCollision = o2::soa::relatedByIndex<aod::McCollisions, BaseJetCollection>() ? aod::jet::mcCollisionId : aod::jet::collisionId;
-  // Preslice<TagJetCollection> tagJetsPerCollision = []{ if constexpr (o2::soa::relatedByIndex<aod::McCollisions, TagJetCollection>()) return aod::jet::mcCollisionId; else return aod::jet::collisionId; }();
-  Preslice<TagJetCollection> tagJetsPerCollision = o2::soa::relatedByIndex<aod::McCollisions, TagJetCollection>() ? aod::jet::mcCollisionId : aod::jet::collisionId;
+  static constexpr bool jetsBaseIsMC = o2::soa::relatedByIndex<aod::McCollisions, BaseJetCollection>();
+  static constexpr bool jetsTagIsMC = o2::soa::relatedByIndex<aod::McCollisions, TagJetCollection>();
+  Preslice<BaseJetCollection> baseJetsPerCollision = jetsBaseIsMC ? aod::jet::mcCollisionId : aod::jet::collisionId;
+  Preslice<TagJetCollection> tagJetsPerCollision = jetsTagIsMC ? aod::jet::mcCollisionId : aod::jet::collisionId;
 
   using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
@@ -60,29 +60,19 @@ struct JetMatchingHF {
                Tracks const& tracks, McParticles const& particlesMC,
                HfCandidates const& hfcandidates)
   {
-    constexpr bool jetsBaseIsMC = o2::soa::relatedByIndex<aod::McCollisions, BaseJetCollection>();
-    constexpr bool jetsTagIsMC = o2::soa::relatedByIndex<aod::McCollisions, TagJetCollection>();
-
-    // slicing jets if MC collection
-    // decltype(jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId())) jetsTagPerColl;
-    // std::remove_const<TagJetCollection>::type jetsTagPerColl;
-    // const auto jetsTagPerColl = jetsTag;
-    // auto jetsTagPerColl = [&] -> TagJetCollection const& { if (jetsTagIsMC) return jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId()); else return jetsTag; }();
-    // if (jetsTagIsMC) jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId());
-    // const auto jetsTagPerColl = jetsTagIsMC ? const jetsTag.sliceBy(tagJetsPerCollision, collision.mcCollisionId()) : jetsTag;
-
-    const auto jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, jetsBaseIsMC ? collision.mcCollisionId() : collision.globalIndex());
+    // const auto jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, jetsBaseIsMC ? collision.mcCollisionId() : collision.globalIndex());
+    const auto jetsBasePerColl = jetsBase;
     const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, jetsTagIsMC ? collision.mcCollisionId() : collision.globalIndex());
 
     // geometric matching
-    std::vector<double> jetsBasePhi(jetsBase.size());
-    std::vector<double> jetsBaseEta(jetsBase.size());
+    std::vector<double> jetsBasePhi(jetsBasePerColl.size());
+    std::vector<double> jetsBaseEta(jetsBasePerColl.size());
     for (auto jet : jetsBasePerColl) {
       jetsBasePhi.emplace_back(jet.phi());
       jetsBaseEta.emplace_back(jet.eta());
     }
-    std::vector<double> jetsTagPhi(jetsTag.size());
-    std::vector<double> jetsTagEta(jetsTag.size());
+    std::vector<double> jetsTagPhi(jetsTagPerColl.size());
+    std::vector<double> jetsTagEta(jetsTagPerColl.size());
     for (auto& jet : jetsTagPerColl) {
       jetsTagPhi.emplace_back(jet.phi());
       jetsTagEta.emplace_back(jet.eta());
@@ -125,7 +115,7 @@ struct JetMatchingHF {
           }
         }
       }
-      jetsBaseToTag(matchedIdx, baseToTagIndexMap[jet.index()]); // TODO: check usage of index
+      jetsBaseToTag(matchedIdx, baseToTagIndexMap[jet.index()]);
     }
 
     // backward matching
@@ -171,7 +161,7 @@ struct JetMatchingHF {
           }
         }
       }
-      jetsTagToBase(matchedIdx, tagToBaseIndexMap[jet.index()]); // TODO: check usage of index
+      jetsTagToBase(matchedIdx, tagToBaseIndexMap[jet.index()]);
     }
   }
 };

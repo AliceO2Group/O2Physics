@@ -26,12 +26,14 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct JetMatchingHFQA {
+struct JetMatchingQA {
   using DetectorLevelJets = soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>;
   using ParticleLevelJets = soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>;
 
   OutputObj<TH2F> hJetPt{"h_jet_pt"};
   OutputObj<TH2F> hJetDetaDphi{"h_jet_deta_dphi"};
+  OutputObj<TH2F> hJetGeoPt{"h_jet_geo_pt"};
+  OutputObj<TH2F> hJetGeoDetaDphi{"h_jet_geo_deta_dphi"};
   OutputObj<TH1F> hJetDetPt{"h_jet_det_pt"};
   OutputObj<TH1F> hJetGenPt{"h_jet_gen_pt"};
   OutputObj<TH1F> hJetDetPhi{"h_jet_det_phi"};
@@ -45,10 +47,14 @@ struct JetMatchingHFQA {
   {
     hJetPt.setObject(new TH2F("h_jet_pt", "HF-matched jets;jet p_{T}^{gen} (GeV/#it{c});jet p_{T}^{det} (GeV/#it{c})",
                               100, 0., 100., 100, 0., 100.));
-    hJetDetaDphi.setObject(new TH2F("h_jet_deta_dphi", "HF-matched jets;jet #Delta#phi;#Delta#eta",
+    hJetDetaDphi.setObject(new TH2F("h_jet_deta_dphi", "HFg-matched jets;jet #Delta#phi;#Delta#eta",
                                     100, -2. * TMath::Pi(), 2. * TMath::Pi(), 100, -2., 2.));
-    hJetDetPt.setObject(new TH1F("h_jet_det_pt", "HF-matched jets;jet p_{T}^{det} (GeV/#it{c})", 100, 0., 100.));
-    hJetGenPt.setObject(new TH1F("h_jet_gen_pt", "HF-matched jets;jet p_{T}^{gen} (GeV/#it{c})", 100, 0., 100.));
+    hJetGeoPt.setObject(new TH2F("h_jet_geo_pt", "geo-matched jets;jet p_{T}^{gen} (GeV/#it{c});jet p_{T}^{det} (GeV/#it{c})",
+                                 100, 0., 100., 100, 0., 100.));
+    hJetGeoDetaDphi.setObject(new TH2F("h_jet_geo_deta_dphi", "geo-matched jets;jet #Delta#phi;#Delta#eta",
+                                       100, -2. * TMath::Pi(), 2. * TMath::Pi(), 100, -2., 2.));
+    hJetDetPt.setObject(new TH1F("h_jet_det_pt", "detector level jets;jet p_{T}^{det} (GeV/#it{c})", 100, 0., 100.));
+    hJetGenPt.setObject(new TH1F("h_jet_gen_pt", "particle level jets;jet p_{T}^{gen} (GeV/#it{c})", 100, 0., 100.));
     hJetDetPhi.setObject(new TH1F("h_jet_det_phi", "jet #phi; #phi", 140, -7.0, 7.0));
     hJetGenPhi.setObject(new TH1F("h_jet_gen_phi", "jet #phi; #phi", 140, -7.0, 7.0));
     hJetDetEta.setObject(new TH1F("h_jet_det_eta", "jet #eta; #eta", 30, -1.5, 1.5));
@@ -73,6 +79,14 @@ struct JetMatchingHFQA {
         const auto dphi = -TMath::Pi() + fmod(2 * TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2 * TMath::Pi()), 2 * TMath::Pi());
         hJetDetaDphi->Fill(dphi, djet.eta() - pjet.eta());
       }
+
+      if (djet.has_matchedJetGeo()) {
+        const auto& pjet = djet.matchedJetGeo_as<ParticleLevelJets>();
+        LOGF(info, "djet %d (pt of %g GeV/c) is geo-matched to %d (pt of %g GeV/c)",
+             djet.globalIndex(), djet.pt(), djet.matchedJetGeoId(), pjet.pt());
+        const auto dphi = -TMath::Pi() + fmod(2 * TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2 * TMath::Pi()), 2 * TMath::Pi());
+        hJetGeoDetaDphi->Fill(dphi, djet.eta() - pjet.eta());
+      }
     }
   }
 
@@ -90,13 +104,19 @@ struct JetMatchingHFQA {
         hJetGenEta->Fill(pjet.eta());
         hJetGenNTracks->Fill(pjet.tracksIds().size() + 1); // adding HF candidate
       }
+
+      if (pjet.has_matchedJetGeo()) {
+        const auto& djet = pjet.matchedJetGeo_as<DetectorLevelJets>();
+        LOGF(info, "pjet %d (pt of %g GeV/c) is geo-matched to %d (pt of %g GeV/c)",
+             pjet.globalIndex(), pjet.pt(), pjet.matchedJetGeoId(), djet.pt());
+      }
     }
   }
-  PROCESS_SWITCH(JetMatchingHFQA, processMCP, "QA on generator-level jets", true);
+  PROCESS_SWITCH(JetMatchingQA, processMCP, "QA on generator-level jets", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetMatchingHFQA>(cfgc, TaskName{"jet-matching-hf-qa"})};
+    adaptAnalysisTask<JetMatchingQA>(cfgc, TaskName{"jet-matching-qa"})};
 }
