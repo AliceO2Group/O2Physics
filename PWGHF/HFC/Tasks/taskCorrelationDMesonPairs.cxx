@@ -31,8 +31,8 @@ using namespace o2::constants::math;
 
 namespace o2::aod
 {
-  using D0PairFull = soa::Join<aod::D0Pair, aod::D0PairRecoInfo>;
-  using DPlusPairFull = soa::Join<aod::DPlusPair, aod::DPlusPairRecoInfo>;
+using D0PairFull = soa::Join<aod::D0Pair, aod::D0PairRecoInfo>;
+using DPlusPairFull = soa::Join<aod::DPlusPair, aod::DPlusPairRecoInfo>;
 } // namespace o2::aod
 
 ///
@@ -512,9 +512,9 @@ struct HfTaskCorrelationDMesonPairs {
     }
   } // end loop
 
-  /// 
+  ///
   /// PROCESS FUNCTIONS
-  /// 
+  ///
   void processDataD0(aod::D0Pair const& pairEntries)
   {
     analyseData(pairEntries);
