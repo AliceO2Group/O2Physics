@@ -26,14 +26,6 @@ struct JetFinderTask {
   Produces<JetTable> jetsTable;
   Produces<ConstituentTable> constituentsTable;
   Produces<ConstituentSubTable> constituentsSubTable;
-  OutputObj<TH2F> h2JetPt{"h2_jet_pt"};
-  OutputObj<TH2F> h2JetPhi{"h2_jet_phi"};
-  OutputObj<TH2F> h2JetEta{"h2_jet_eta"};
-  OutputObj<TH2F> h2JetNTracks{"h2_jet_ntracks"};
-  OutputObj<TH1F> hJetPt{"h_jet_pt"};
-  OutputObj<TH1F> hJetPhi{"h_jet_phi"};
-  OutputObj<TH1F> hJetEta{"h_jet_eta"};
-  OutputObj<TH1F> hJetNTracks{"h_jet_ntracks"};
 
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
@@ -81,24 +73,6 @@ struct JetFinderTask {
   {
     trackSelection = static_cast<std::string>(trackSelections);
 
-    h2JetPt.setObject(new TH2F("h2_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
-                               100, 0., 100., 10, 0.05, 1.05));
-    h2JetPhi.setObject(new TH2F("h2_jet_phi", "jet #phi;#phi",
-                                80, -1., 7., 10, 0.05, 1.05));
-    h2JetEta.setObject(new TH2F("h2_jet_eta", "jet #eta;#eta",
-                                70, -0.7, 0.7, 10, 0.05, 1.05));
-    h2JetNTracks.setObject(new TH2F("h2_jet_ntracks", "jet n;n constituents",
-                                    30, 0., 30., 10, 0.05, 1.05));
-
-    hJetPt.setObject(new TH1F("h_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
-                              100, 0., 100.));
-    hJetPhi.setObject(new TH1F("h_jet_phi", "jet #phi; #phi",
-                               140, -7.0, 7.0));
-    hJetEta.setObject(new TH1F("h_jet_eta", "jet #eta; #eta",
-                               30, -1.5, 1.5));
-    hJetNTracks.setObject(new TH1F("h_jet_ntracks", "jet N tracks ; N tracks",
-                                   150, -0.5, 99.5));
-
     if (DoRhoAreaSub) {
       jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
     }
@@ -138,7 +112,6 @@ struct JetFinderTask {
       return;
     }
 
-    LOG(debug) << "Process data charged!";
     inputParticles.clear();
     analyseTracks<JetTracks, JetTracks::iterator>(inputParticles, tracks, trackSelection);
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
@@ -152,7 +125,6 @@ struct JetFinderTask {
     if (!collision.alias()[kTVXinEMC]) {
       return;
     }
-    LOG(debug) << "Process data neutral!";
     inputParticles.clear();
     analyseClusters(inputParticles, &clusters);
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
@@ -166,7 +138,6 @@ struct JetFinderTask {
     if (!collision.alias()[kTVXinEMC]) {
       return;
     }
-    LOG(debug) << "Process data full!";
     inputParticles.clear();
     analyseTracks<JetTracks, JetTracks::iterator>(inputParticles, tracks, trackSelection);
     analyseClusters(inputParticles, &clusters);

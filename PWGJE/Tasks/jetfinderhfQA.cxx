@@ -13,9 +13,9 @@
 //
 // Authors: Nima Zardoshti
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "TDatabasePDG.h"
 
@@ -27,16 +27,15 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/DataModel/Jet.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_2prong;
 
-// NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
 struct JetFinderHFQATask {
@@ -62,47 +61,27 @@ struct JetFinderHFQATask {
 
   void init(o2::framework::InitContext&)
   {
-    h2JetPt.setObject(new TH2F("h2_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
-                               100, 0., 100., 10, 0.05, 1.05));
-    h2JetPhi.setObject(new TH2F("h2_jet_phi", "jet #phi;#phi",
-                                80, -1., 7., 10, 0.05, 1.05));
-    h2JetEta.setObject(new TH2F("h2_jet_eta", "jet #eta;#eta",
-                                70, -0.7, 0.7, 10, 0.05, 1.05));
-    h2JetNTracks.setObject(new TH2F("h2_jet_ntracks", "jet n;n constituents",
-                                    30, 0., 30., 10, 0.05, 1.05));
+    h2JetPt.setObject(new TH2F("h2_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})", 100, 0., 100., 10, 0.05, 1.05));
+    h2JetPhi.setObject(new TH2F("h2_jet_phi", "jet #phi;#phi", 80, -1., 7., 10, 0.05, 1.05));
+    h2JetEta.setObject(new TH2F("h2_jet_eta", "jet #eta;#eta", 70, -0.7, 0.7, 10, 0.05, 1.05));
+    h2JetNTracks.setObject(new TH2F("h2_jet_ntracks", "jet n;n constituents", 30, 0., 30., 10, 0.05, 1.05));
 
-    hJetPt.setObject(new TH1F("h_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
-                              100, 0., 100.));
-    hJetPhi.setObject(new TH1F("h_jet_phi", "jet #phi; #phi",
-                               140, -7.0, 7.0));
-    hJetEta.setObject(new TH1F("h_jet_eta", "jet #eta; #eta",
-                               30, -1.5, 1.5));
-    hJetNTracks.setObject(new TH1F("h_jet_ntracks", "jet N tracks ; N tracks",
-                                   150, -0.5, 99.5));
-    hCandPt.setObject(new TH1F("h_cand_pt", "jet p_{T,cand};p_{T,cand} (GeV/#it{c})",
-                               100, 0., 100.));
+    hJetPt.setObject(new TH1F("h_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})", 100, 0., 100.));
+    hJetPhi.setObject(new TH1F("h_jet_phi", "jet #phi; #phi", 140, -7.0, 7.0));
+    hJetEta.setObject(new TH1F("h_jet_eta", "jet #eta; #eta", 30, -1.5, 1.5));
+    hJetNTracks.setObject(new TH1F("h_jet_ntracks", "jet N tracks ; N tracks", 150, -0.5, 99.5));
+    hCandPt.setObject(new TH1F("h_cand_pt", "jet p_{T,cand};p_{T,cand} (GeV/#it{c})", 100, 0., 100.));
 
+    h2JetPt_Part.setObject(new TH2F("h2_jet_pt_part", "jet p_{T};p_{T} (GeV/#it{c})", 100, 0., 100., 10, 0.05, 1.05));
+    h2JetPhi_Part.setObject(new TH2F("h2_jet_phi_part", "jet #phi;#phi", 80, -1., 7., 10, 0.05, 1.05));
+    h2JetEta_Part.setObject(new TH2F("h2_jet_eta_part", "jet #eta;#eta", 70, -0.7, 0.7, 10, 0.05, 1.05));
+    h2JetNTracks_Part.setObject(new TH2F("h2_jet_ntracks_part", "jet n;n constituents", 30, 0., 30., 10, 0.05, 1.05));
 
-
-    h2JetPt_Part.setObject(new TH2F("h2_jet_pt_part", "jet p_{T};p_{T} (GeV/#it{c})",
-                               100, 0., 100., 10, 0.05, 1.05));
-    h2JetPhi_Part.setObject(new TH2F("h2_jet_phi_part", "jet #phi;#phi",
-                                80, -1., 7., 10, 0.05, 1.05));
-    h2JetEta_Part.setObject(new TH2F("h2_jet_eta_part", "jet #eta;#eta",
-                                70, -0.7, 0.7, 10, 0.05, 1.05));
-    h2JetNTracks_Part.setObject(new TH2F("h2_jet_ntracks_part", "jet n;n constituents",
-                                    30, 0., 30., 10, 0.05, 1.05));
-
-    hJetPt_Part.setObject(new TH1F("h_jet_pt_part", "jet p_{T};p_{T} (GeV/#it{c})",
-                              100, 0., 100.));
-    hJetPhi_Part.setObject(new TH1F("h_jet_phi_part", "jet #phi; #phi",
-                               140, -7.0, 7.0));
-    hJetEta_Part.setObject(new TH1F("h_jet_eta_part", "jet #eta; #eta",
-                               30, -1.5, 1.5));
-    hJetNTracks_Part.setObject(new TH1F("h_jet_ntracks_part", "jet N tracks ; N tracks",
-                                   150, -0.5, 99.5));
-    hCandPt_Part.setObject(new TH1F("h_cand_pt_part", "jet p_{T,cand};p_{T,cand} (GeV/#it{c})",
-                               100, 0., 100.));
+    hJetPt_Part.setObject(new TH1F("h_jet_pt_part", "jet p_{T};p_{T} (GeV/#it{c})", 100, 0., 100.));
+    hJetPhi_Part.setObject(new TH1F("h_jet_phi_part", "jet #phi; #phi", 140, -7.0, 7.0));
+    hJetEta_Part.setObject(new TH1F("h_jet_eta_part", "jet #eta; #eta", 30, -1.5, 1.5));
+    hJetNTracks_Part.setObject(new TH1F("h_jet_ntracks_part", "jet N tracks ; N tracks", 150, -0.5, 99.5));
+    hCandPt_Part.setObject(new TH1F("h_cand_pt_part", "jet p_{T,cand};p_{T,cand} (GeV/#it{c})", 100, 0., 100.));
   }
 
   using JetTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
@@ -112,17 +91,11 @@ struct JetFinderHFQATask {
   using JetParticles3Prong = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
   using JetParticlesBPlus = soa::Join<aod::McParticles, aod::HfCandBplusMcGen>;
 
-  void processDummy(aod::Tracks const& track)
-  {
-    LOGF(info,"dummy");
-  }
+  void processDummy(aod::Tracks const& track) {}
   PROCESS_SWITCH(JetFinderHFQATask, processDummy, "Dummy process function turned on by default", true);
 
-  void processJetsData(soa::Join<aod::D0Jets, aod::D0JetConstituents>::iterator const& jet,
-                   CandidateD0Data const& candidates,
-                   JetTracks const& tracks)
+  void processJetsData(soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents>::iterator const& jet, CandidateD0Data const& candidates, JetTracks const& tracks)
   {
-    LOGF(info,"data");
     h2JetPt->Fill(jet.pt(), jet.r() / 100.0);
     h2JetPhi->Fill(jet.phi(), jet.r() / 100.0);
     h2JetEta->Fill(jet.eta(), jet.r() / 100.0);
@@ -137,11 +110,8 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsData, "jet finder HF QA data", false);
 
-  void processJetsMCD(soa::Join<aod::D0MCDJets, aod::D0MCDJetConstituents>::iterator const& jet,
-                   CandidateD0MC const& candidates,
-                   JetTracks const& tracks)
+  void processJetsMCD(soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>::iterator const& jet, CandidateD0MC const& candidates, JetTracks const& tracks)
   {
-    LOGF(info,"mcd");
     h2JetPt->Fill(jet.pt(), jet.r() / 100.0);
     h2JetPhi->Fill(jet.phi(), jet.r() / 100.0);
     h2JetEta->Fill(jet.eta(), jet.r() / 100.0);
@@ -156,10 +126,8 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCD, "jet finder HF QA mcd", false);
 
-  void processJetsMCP(soa::Join<aod::D0MCPJets, aod::D0MCPJetConstituents>::iterator const& jet,
-                   JetParticles2Prong const& particles)
+  void processJetsMCP(soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>::iterator const& jet, JetParticles2Prong const& particles)
   {
-    LOGF(info,"mcp");
     h2JetPt_Part->Fill(jet.pt(), jet.r() / 100.0);
     h2JetPhi_Part->Fill(jet.phi(), jet.r() / 100.0);
     h2JetEta_Part->Fill(jet.eta(), jet.r() / 100.0);
@@ -175,8 +143,4 @@ struct JetFinderHFQATask {
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCP, "jet finder HF QA mcp", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    adaptAnalysisTask<JetFinderHFQATask>(cfgc, TaskName{"jet-finder-hf-qa"})};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetFinderHFQATask>(cfgc, TaskName{"jet-finder-hf-qa"})}; }
