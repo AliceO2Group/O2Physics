@@ -48,6 +48,8 @@ using myGlobTracks = o2::soa::Join<o2::aod::FullTracks, o2::aod::TrackSelection>
 using bcEvSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 using collEventSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
 using filteredCells = o2::soa::Filtered<aod::Calos>;
+using mcCells = o2::soa::Join<aod::Calos, aod::McCaloLabels_001>;
+using filteredMCCells = o2::soa::Filtered<mcCells>;
 
 struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusters> clusters;
@@ -61,6 +63,7 @@ struct EmcalCorrectionTask {
   // Preslice<collEventSels> collisionsPerFoundBC = aod::evsel::foundBCId;
   Preslice<aod::Collisions> collisionsPerBC = aod::collision::bcId;
   Preslice<filteredCells> cellsPerFoundBC = aod::calo::bcId;
+  Preslice<filteredMCCells> mcCellsPerFoundBC = aod::calo::bcId;
 
   // Options for the clusterization
   // 1 corresponds to EMCAL cells based on the Run2 definition.
@@ -77,6 +80,7 @@ struct EmcalCorrectionTask {
   Configurable<float> exoticCellMinAmplitude{"exoticCellMinAmplitude", 4, "Check for exotic only if amplitud is larger than this value"};
   Configurable<float> exoticCellInCrossMinAmplitude{"exoticCellInCrossMinAmplitude", 0.1, "Minimum energy of cells in cross, if lower not considered in cross"};
   Configurable<bool> useWeightExotic{"useWeightExotic", false, "States if weights should be used for exotic cell cut"};
+  Configurable<bool> isMC{"isMC", false, "States if run over MC"};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -196,6 +200,10 @@ struct EmcalCorrectionTask {
     hBC->GetXaxis()->SetBinLabel(6, "no EMCal cells and with collision");
     hBC->GetXaxis()->SetBinLabel(7, "no EMCal cells and mult. collisions");
     hBC->GetXaxis()->SetBinLabel(8, "all BC");
+    if (isMC) {
+      mHistManager.add("hContributors", "hContributors;contributor per cell hit;#it{counts}", o2HistType::kTH1I, {{20, 0, 20}});
+      mHistManager.add("hMCParticleEnergy", "hMCParticleEnergy;#it{E} (GeV/#it{c});#it{counts}", o2HistType::kTH1F, {energyAxis});
+    }
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
@@ -312,6 +320,119 @@ struct EmcalCorrectionTask {
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processFull, "run full analysis", true);
 
+  void processMCFull(bcEvSels const& bcs, collEventSels const& collisions, myGlobTracks const& tracks, filteredMCCells const& cells, aod::StoredMcParticles_001 const& mcparticles)
+  {
+    LOG(debug) << "Starting process full.";
+
+    int nBCsProcessed = 0;
+    int nCellsProcessed = 0;
+    for (auto bc : bcs) {
+      LOG(debug) << "Next BC";
+      // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
+      // In particular, we need to filter only EMCAL cells.
+
+      // Since aod::evsel::foundBCId is not sorted we can't use sliceBy anymore.
+      // Anton is working on a fix for sliceBy and soa::SmallGroups so that we can
+      // use them again. For now we need to do the following
+      int nColInBc = 0;
+      for (auto& col : collisions) {
+        if (col.foundBCId() == bc.globalIndex()) {
+          nColInBc++;
+        }
+      }
+      // Get the collisions matched to the BC using foundBCId of the collision
+      // auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
+      auto cellsInBC = cells.sliceBy(mcCellsPerFoundBC, bc.globalIndex());
+
+      if (!cellsInBC.size()) {
+        LOG(debug) << "No cells found for BC";
+        // countBC(collisionsInFoundBC.size(), false);
+        countBC(nColInBc, false);
+        continue;
+      }
+      // Counters for BCs with matched collisions
+      // countBC(collisionsInFoundBC.size(), true);
+      countBC(nColInBc, true);
+      std::vector<o2::emcal::Cell> cellsBC;
+      std::vector<int64_t> cellIndicesBC;
+      for (auto& cell : cellsInBC) {
+        mHistManager.fill(HIST("hContributors"), cell.mcParticle().size());
+        auto cellParticles = cell.mcParticle_as<aod::StoredMcParticles_001>();
+        for (auto& cellparticle : cellParticles) {
+          mHistManager.fill(HIST("hMCParticleEnergy"), cellparticle.e());
+        }
+        auto amplitude = cell.amplitude();
+        if (static_cast<bool>(hasShaperCorrection)) {
+          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
+        }
+        cellsBC.emplace_back(cell.cellNumber(),
+                             amplitude,
+                             cell.time(),
+                             o2::emcal::intToChannelType(cell.cellType()));
+        cellIndicesBC.emplace_back(cell.globalIndex());
+      }
+      LOG(detail) << "Number of cells for BC (CF): " << cellsBC.size();
+      nCellsProcessed += cellsBC.size();
+
+      fillQAHistogram(cellsBC);
+
+      // TODO: Helpful for now, but should be removed.
+      LOG(debug) << "Converted EMCAL cells";
+      for (auto& cell : cellsBC) {
+        LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
+      }
+
+      LOG(debug) << "Converted cells. Contains: " << cellsBC.size() << ". Originally " << cellsInBC.size() << ". About to run clusterizer.";
+      //  this is a test
+      //  Run the clusterizers
+      LOG(debug) << "Running clusterizers";
+      for (size_t iClusterizer = 0; iClusterizer < mClusterizers.size(); iClusterizer++) {
+        cellsToCluster(iClusterizer, cellsBC);
+
+        // if (collisionsInFoundBC.size() == 1) {
+        if (nColInBc == 1) {
+          // dummy loop to get the first collision
+          // for (const auto& col : collisionsInFoundBC) {
+          for (const auto& col : collisions) {
+            if (col.foundBCId() == bc.globalIndex()) {
+              mHistManager.fill(HIST("hCollPerBC"), 1);
+              mHistManager.fill(HIST("hCollisionType"), 1);
+              math_utils::Point3D<float> vertex_pos = {col.posX(), col.posY(), col.posZ()};
+
+              std::vector<std::vector<int>> clusterToTrackIndexMap;
+              std::vector<std::vector<int>> trackToClusterIndexMap;
+              std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> IndexMapPair{clusterToTrackIndexMap, trackToClusterIndexMap};
+              std::vector<int64_t> trackGlobalIndex;
+              doTrackMatching<collEventSels::iterator>(col, tracks, IndexMapPair, vertex_pos, trackGlobalIndex);
+
+              // Store the clusters in the table where a matching collision could
+              // be identified.
+              FillClusterTable<collEventSels::iterator>(col, vertex_pos, iClusterizer, cellIndicesBC, IndexMapPair, trackGlobalIndex);
+            }
+          }
+        } else { // ambiguous
+          // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
+          bool hasCollision = false;
+          // mHistManager.fill(HIST("hCollPerBC"), collisionsInFoundBC.size());
+          mHistManager.fill(HIST("hCollPerBC"), nColInBc);
+          // if (collisionsInFoundBC.size() == 0) {
+          if (nColInBc == 0) {
+            mHistManager.fill(HIST("hCollisionType"), 0);
+          } else {
+            hasCollision = true;
+            mHistManager.fill(HIST("hCollisionType"), 2);
+          }
+          FillAmbigousClusterTable<bcEvSels::iterator>(bc, iClusterizer, cellIndicesBC, hasCollision);
+        }
+
+        LOG(debug) << "Cluster loop done for clusterizer " << iClusterizer;
+      } // end of clusterizer loop
+      LOG(debug) << "Done with process BC.";
+      nBCsProcessed++;
+    } // end of bc loop
+    LOG(detail) << "Processed " << nBCsProcessed << " BCs with " << nCellsProcessed << " cells";
+  }
+  PROCESS_SWITCH(EmcalCorrectionTask, processMCFull, "run full analysis with MC info", false);
   void processStandalone(aod::BCs const& bcs, aod::Collisions const& collisions, filteredCells const& cells)
   {
     LOG(debug) << "Starting process standalone.";
