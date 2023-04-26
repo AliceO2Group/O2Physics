@@ -72,20 +72,19 @@ struct k892analysis {
     histos.add("k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTH1F, {invMassAxis});
     histos.add("k892invmassLS", "Invariant mass of K(892)0 like sign", kTH1F, {invMassAxis});
     histos.add("k892invmassME", "Invariant mass of K(892)0 mixed event", kTH1F, {invMassAxis});
-    // before the selection
     // pT QA
     histos.add("QAbefore/trkpT_pi", "pT distribution of pion track candidates", kTH1F, {ptAxis});
     histos.add("QAbefore/trkpT_ka", "pT distribution of kaon track candidates", kTH1F, {ptAxis});
     histos.add("QAafter/trkpT_pi", "pT distribution of pion track candidates", kTH1F, {ptAxis});
     histos.add("QAafter/trkpT_ka", "pT distribution of kaon track candidates", kTH1F, {ptAxis});
-    // PID QA
+    // PID QA before cuts
     histos.add("QAbefore/TOF_TPC_Map_pi_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
     histos.add("QAbefore/TOF_Nsigma_pi_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH2F, {ptAxis, pidQAAxis}});
     histos.add("QAbefore/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH2F, {ptAxis, pidQAAxis}});
     histos.add("QAbefore/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
     histos.add("QAbefore/TOF_Nsigma_ka_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2F, {ptAxis, pidQAAxis}});
     histos.add("QAbefore/TPC_Nsigmaka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2F, {ptAxis, pidQAAxis}});
-
+    // PID QA after cuts
     histos.add("QAafter/TOF_TPC_Map_pi_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
     histos.add("QAafter/TOF_Nsigma_pi_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH2F, {ptAxis, pidQAAxis}});
     histos.add("QAafter/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH2F, {ptAxis, pidQAAxis}});
@@ -94,13 +93,13 @@ struct k892analysis {
     histos.add("QAafter/TPC_Nsigmaka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2F, {ptAxis, pidQAAxis}});
 
     // 3d histogram
-    histos.add("h3k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTH3F, {{300, 0, 3000}, ptAxis, invMassAxis});
-    histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTH3F, {{300, 0, 3000}, ptAxis, invMassAxis});
-    histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTH3F, {{300, 0, 3000}, ptAxis, invMassAxis});
+    histos.add("h3k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTH3F, {{300, 0, 3000}, ptAxis, invMassAxis}); // TODO: multiplicity bin has to be updatde.
+    histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTH3F, {{300, 0, 3000}, ptAxis, invMassAxis});     // TODO: multiplicity bin has to be updatde.
+    histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTH3F, {{300, 0, 3000}, ptAxis, invMassAxis});   // TODO: multiplicity bin has to be updatde.
 
     if (doprocessMC) {
       // MC QA
-      histos.add("h3recok892invmass", "Invariant mass of Reconstructed MC K(892)0", kTH3F, {{300, 0, 3000}, ptAxis, invMassAxis});
+      histos.add("h3recok892invmass", "Invariant mass of Reconstructed MC K(892)0", kTH3F, {{300, 0, 3000}, ptAxis, invMassAxis}); // TODO: multiplicity bin has to be updatde.
       histos.add("truek892pt", "pT distribution of True MC K(892)0", kTH1F, {ptAxis});
       histos.add("reconk892pt", "pT distribution of Reconstructed MC K(892)0", kTH1F, {ptAxis});
       histos.add("reconk892invmass", "Inv mass distribution of Reconstructed MC Phi", kTH1F, {invMassAxis});
@@ -123,41 +122,51 @@ struct k892analysis {
     for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
-        continue;
+        continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
+
+      //// Initialize variables
       // Trk1: Pion, Trk2: Kaon
       isTrk1Selected = true;
       isTrk2Selected = true;
       isTrk1hasTOF = false;
       isTrk2hasTOF = false;
+      auto trk1ptPi = trk1.pt();
+      auto trk1NSigmaPiTPC = trk1.tpcNSigmaPi();
+      auto trk1NSigmaPiTOF = -999.;
+      auto trk2ptKa = trk2.pt();
+      auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
+      auto trk2NSigmaKaTOF = -999.;
+
+      // hasTOF?
       if ((trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
         isTrk1hasTOF = true;
       }
       if ((trk2.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
         isTrk2hasTOF = true;
       }
+      //// PID selections
       // For Pion candidate, we don't need to apply pT-dependent PID cuts
-      if (std::abs(trk1.tpcNSigmaPi()) > cMaxTPCnSigmaPion)
+      if (std::abs(trk1NSigmaPiTPC) > cMaxTPCnSigmaPion)
         isTrk1Selected = false;
       if (isTrk1hasTOF) {
-        if (std::abs(trk1.tofNSigmaPi()) > cMaxTOFnSigmaPion)
+        trk1NSigmaPiTOF = trk1.tofNSigmaPi();
+        if (std::abs(trk1NSigmaPiTOF) > cMaxTOFnSigmaPion)
           isTrk1Selected = false;
       }
       // For Kaon candidate, we need to apply pT-dependent PID cuts
-      auto trkpT_ka_temp = trk2.pt();
-      auto trk2NSigmaKa = trk2.tpcNSigmaKa();
       if (lengthOfkaonTPCPIDpTintv > 0) {
         for (int i = 0; i < lengthOfkaonTPCPIDpTintv; i++) {
-          if (trkpT_ka_temp < vKaonTPCPIDpTintv[i]) {
-            if (std::abs(trk2NSigmaKa) > vKaonTPCPIDcuts[i])
+          if (trk2ptKa < vKaonTPCPIDpTintv[i]) {
+            if (std::abs(trk2NSigmaKaTPC) > vKaonTPCPIDcuts[i])
               isTrk2Selected = false;
           }
         }
       }
       if (isTrk2hasTOF) {
-        auto trk2NSigmaKaTOF = trk2.tofNSigmaKa();
+        trk2NSigmaKaTOF = trk2.tofNSigmaKa();
         if (lengthOfkaonTPCPIDpTintv > 0) {
           for (int i = 0; i < lengthOfkaonTPCPIDpTintv; i++) {
-            if (trkpT_ka_temp < vKaonTOFPIDpTintv[i]) {
+            if (trk2ptKa < vKaonTOFPIDpTintv[i]) {
               if (std::abs(trk2NSigmaKaTOF) > vKaonTOFPIDcuts[i])
                 isTrk2Selected = false;
             }
@@ -165,57 +174,57 @@ struct k892analysis {
         }
       }
 
-      // QA plots before the selection
+      //// QA plots before the selection
       //  --- PID QA Pion
-      histos.fill(HIST("QAbefore/TPC_Nsigma_pi_all"), trk1.pt(), trk1.tpcNSigmaPi());
+      histos.fill(HIST("QAbefore/TPC_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTPC);
       if (isTrk1hasTOF) {
-        histos.fill(HIST("QAbefore/TOF_Nsigma_pi_all"), trk1.pt(), trk1.tofNSigmaPi());
-        histos.fill(HIST("QAbefore/TOF_TPC_Map_pi_all"), trk1.tofNSigmaPi(), trk1.tpcNSigmaPi());
+        histos.fill(HIST("QAbefore/TOF_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTOF);
+        histos.fill(HIST("QAbefore/TOF_TPC_Map_pi_all"), trk1NSigmaPiTOF, trk1NSigmaPiTPC);
       }
       //  --- PID QA Kaon
-      histos.fill(HIST("QAbefore/TPC_Nsigmaka_all"), trk2.pt(), trk2.tpcNSigmaKa());
+      histos.fill(HIST("QAbefore/TPC_Nsigmaka_all"), trk2ptKa, trk2NSigmaKaTPC);
       if (isTrk1hasTOF) {
-        histos.fill(HIST("QAbefore/TOF_Nsigma_ka_all"), trk2.pt(), trk2.tofNSigmaKa());
-        histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all"), trk2.tofNSigmaKa(), trk2.tpcNSigmaKa());
+        histos.fill(HIST("QAbefore/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
+        histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
       }
-      histos.fill(HIST("QAbefore/trkpT_pi"), trk1.pt());
-      histos.fill(HIST("QAbefore/trkpT_ka"), trk2.pt());
+      histos.fill(HIST("QAbefore/trkpT_pi"), trk1ptPi);
+      histos.fill(HIST("QAbefore/trkpT_ka"), trk2ptKa);
 
-      // Apply the selection
+      //// Apply the selection
       if (!isTrk1Selected || !isTrk2Selected)
         continue;
 
-      // QA plots after the selection
+      //// QA plots after the selection
       //  --- PID QA Pion
-      histos.fill(HIST("QAafter/TPC_Nsigma_pi_all"), trk1.pt(), trk1.tpcNSigmaPi());
+      histos.fill(HIST("QAafter/TPC_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTPC);
       if (isTrk1hasTOF) {
-        histos.fill(HIST("QAafter/TOF_Nsigma_pi_all"), trk1.pt(), trk1.tofNSigmaPi());
-        histos.fill(HIST("QAafter/TOF_TPC_Map_pi_all"), trk1.tofNSigmaPi(), trk1.tpcNSigmaPi());
+        histos.fill(HIST("QAafter/TOF_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTOF);
+        histos.fill(HIST("QAafter/TOF_TPC_Map_pi_all"), trk1NSigmaPiTOF, trk1NSigmaPiTPC);
       }
       //  --- PID QA Kaon
-      histos.fill(HIST("QAafter/TPC_Nsigmaka_all"), trk2.pt(), trk2.tpcNSigmaKa());
+      histos.fill(HIST("QAafter/TPC_Nsigmaka_all"), trk2ptKa, trk2NSigmaKaTPC);
       if (isTrk1hasTOF) {
-        histos.fill(HIST("QAafter/TOF_Nsigma_ka_all"), trk2.pt(), trk2.tofNSigmaKa());
-        histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), trk2.tofNSigmaKa(), trk2.tpcNSigmaKa());
+        histos.fill(HIST("QAafter/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
+        histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
       }
-      histos.fill(HIST("QAafter/trkpT_pi"), trk1.pt());
-      histos.fill(HIST("QAafter/trkpT_ka"), trk2.pt());
+      histos.fill(HIST("QAafter/trkpT_pi"), trk1ptPi);
+      histos.fill(HIST("QAafter/trkpT_ka"), trk2ptKa);
 
-      // Resonance reconstruction
+      //// Resonance reconstruction
       lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
       lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
       lResonance = lDecayDaughter1 + lDecayDaughter2;
-
+      // Rapidity cut
       if (lResonance.Rapidity() > 0.5 || lResonance.Rapidity() < -0.5)
         continue;
-      // Un-like sign pair only
+      //// Un-like sign pair only
       if (trk1.sign() * trk2.sign() < 0) {
         if constexpr (!IsMix) {
           histos.fill(HIST("k892invmassDS"), lResonance.M());
-          histos.fill(HIST("h3k892invmassDS"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3k892invmassDS"), collision.multV0M(), lResonance.Pt(), lResonance.M()); // TODO: multV0M has to be updatde.
         } else {
           histos.fill(HIST("k892invmassME"), lResonance.M());
-          histos.fill(HIST("h3k892invmassME"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3k892invmassME"), collision.multV0M(), lResonance.Pt(), lResonance.M()); // TODO: multV0M has to be updatde.
         }
 
         // MC
@@ -228,14 +237,14 @@ struct k892analysis {
             if (abs(trk1.motherPDG()) == 313) { // k892(0)
               histos.fill(HIST("reconk892pt"), lResonance.Pt());
               histos.fill(HIST("reconk892invmass"), lResonance.M());
-              histos.fill(HIST("h3recok892invmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+              histos.fill(HIST("h3recok892invmass"), collision.multV0M(), lResonance.Pt(), lResonance.M()); // TODO: multV0M has to be updatde.
             }
           }
         }
       } else {
         if constexpr (!IsMix) {
           histos.fill(HIST("k892invmassLS"), lResonance.M());
-          histos.fill(HIST("h3k892invmassLS"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3k892invmassLS"), collision.multV0M(), lResonance.Pt(), lResonance.M()); // TODO: multV0M has to be updatde.
         }
       }
     }
@@ -269,20 +278,19 @@ struct k892analysis {
     for (auto& part : mcParticles) {             // loop over all MC particles
       if (abs(part.pdgCode()) == 313) {          // K892(0)
         if (part.y() > 0.5 || part.y() < -0.5) { // rapidity cut
-          // LOGF(info, "[Rapidity cut] K892(0): %d, y: %f", part.pdgCode(), part.y());
           continue;
         }
         bool pass1 = false;
         bool pass2 = false;
         for (auto& dau : part.daughters_as<aod::McParticles>()) {
-          if (abs(dau.pdgCode()) == kKPlus) { // Decay to Kaons
+          if (abs(dau.pdgCode()) == kKPlus) { // At least one decay to Kaon
             pass2 = true;
           }
-          if (abs(dau.pdgCode()) == kPiPlus) { // Decay to Pions
+          if (abs(dau.pdgCode()) == kPiPlus) { // At least one decay to Pion
             pass1 = true;
           }
         }
-        if (!pass1 || !pass2)
+        if (!pass1 || !pass2) // If we have both decay products
           continue;
         histos.fill(HIST("truek892pt"), part.pt());
       }
@@ -291,7 +299,7 @@ struct k892analysis {
   PROCESS_SWITCH(k892analysis, processMC, "Process Event for MC", false);
 
   // Processing Event Mixing
-  using BinningTypeVetZTPCtemp = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultTPCtemp>;
+  using BinningTypeVetZTPCtemp = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultTPCtemp>; // TODO: MultTPCtemp has to be updatde.
   BinningTypeVetZTPCtemp colBinning{{CfgVtxBins, CfgMultBins}, true};
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
