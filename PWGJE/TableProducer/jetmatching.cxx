@@ -55,11 +55,15 @@ struct JetMatchingHF {
   {
   }
 
+  // for now: 
+  // BaseJetCollection must contain detector level jets
+  // TagJetCollection must contain particle level jets
   void process(Collisions::iterator const& collision, aod::McCollisions const& mcCollisions,
                BaseJetCollection const& jetsBase, TagJetCollection const& jetsTag,
                Tracks const& tracks, McParticles const& particlesMC,
                HfCandidates const& hfcandidates)
   {
+    // waiting for framework fix to make sliced collection of same type as original collection:
     // const auto jetsBasePerColl = jetsBaseIsMC ? jetsBase.sliceBy(baseJetsPerCollision, collision.mcCollisionId());
     const auto jetsBasePerColl = jetsBase;
     const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, jetsTagIsMC ? collision.mcCollisionId() : collision.globalIndex());
@@ -70,10 +74,10 @@ struct JetMatchingHF {
       hf_flag = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
     else if (std::is_same<BaseJetCollection, aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets>::value &&
              std::is_same<TagJetCollection, aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets>::value)
-      hf_flag = 1 << aod::hf_cand_bplus::DecayType::BplusToD0Pi;
+      hf_flag = 1 << aod::hf_cand_3prong::DecayType::LcToPKPi;
     else if (std::is_same<BaseJetCollection, aod::BPlusChargedMCDetectorLevelJetsMatchedToBPlusChargedMCParticleLevelJets>::value &&
              std::is_same<TagJetCollection, aod::BPlusChargedMCParticleLevelJetsMatchedToBPlusChargedMCDetectorLevelJets>::value)
-      hf_flag = 1 << aod::hf_cand_3prong::DecayType::LcToPKPi;
+      hf_flag = 1 << aod::hf_cand_bplus::DecayType::BplusToD0Pi;
 
     // geometric matching
     std::vector<double> jetsBasePhi(jetsBasePerColl.size());
