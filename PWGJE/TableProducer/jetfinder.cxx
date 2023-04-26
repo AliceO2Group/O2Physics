@@ -26,14 +26,6 @@ struct JetFinderTask {
   Produces<JetTable> jetsTable;
   Produces<ConstituentTable> constituentsTable;
   Produces<ConstituentSubTable> constituentsSubTable;
-  OutputObj<TH2F> h2JetPt{"h2_jet_pt"};
-  OutputObj<TH2F> h2JetPhi{"h2_jet_phi"};
-  OutputObj<TH2F> h2JetEta{"h2_jet_eta"};
-  OutputObj<TH2F> h2JetNTracks{"h2_jet_ntracks"};
-  OutputObj<TH1F> hJetPt{"h_jet_pt"};
-  OutputObj<TH1F> hJetPhi{"h_jet_phi"};
-  OutputObj<TH1F> hJetEta{"h_jet_eta"};
-  OutputObj<TH1F> hJetNTracks{"h_jet_ntracks"};
 
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
@@ -81,24 +73,6 @@ struct JetFinderTask {
   {
     trackSelection = static_cast<std::string>(trackSelections);
 
-    h2JetPt.setObject(new TH2F("h2_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
-                               100, 0., 100., 10, 0.05, 1.05));
-    h2JetPhi.setObject(new TH2F("h2_jet_phi", "jet #phi;#phi",
-                                80, -1., 7., 10, 0.05, 1.05));
-    h2JetEta.setObject(new TH2F("h2_jet_eta", "jet #eta;#eta",
-                                70, -0.7, 0.7, 10, 0.05, 1.05));
-    h2JetNTracks.setObject(new TH2F("h2_jet_ntracks", "jet n;n constituents",
-                                    30, 0., 30., 10, 0.05, 1.05));
-
-    hJetPt.setObject(new TH1F("h_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
-                              100, 0., 100.));
-    hJetPhi.setObject(new TH1F("h_jet_phi", "jet #phi; #phi",
-                               140, -7.0, 7.0));
-    hJetEta.setObject(new TH1F("h_jet_eta", "jet #eta; #eta",
-                               30, -1.5, 1.5));
-    hJetNTracks.setObject(new TH1F("h_jet_ntracks", "jet N tracks ; N tracks",
-                                   150, -0.5, 99.5));
-
     if (DoRhoAreaSub) {
       jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
     }
@@ -138,7 +112,6 @@ struct JetFinderTask {
       return;
     }
 
-    LOG(debug) << "Process data charged!";
     inputParticles.clear();
     analyseTracks<JetTracks, JetTracks::iterator>(inputParticles, tracks, trackSelection);
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
@@ -152,7 +125,6 @@ struct JetFinderTask {
     if (!collision.alias()[kTVXinEMC]) {
       return;
     }
-    LOG(debug) << "Process data neutral!";
     inputParticles.clear();
     analyseClusters(inputParticles, &clusters);
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
@@ -166,7 +138,6 @@ struct JetFinderTask {
     if (!collision.alias()[kTVXinEMC]) {
       return;
     }
-    LOG(debug) << "Process data full!";
     inputParticles.clear();
     analyseTracks<JetTracks, JetTracks::iterator>(inputParticles, tracks, trackSelection);
     analyseClusters(inputParticles, &clusters);
@@ -185,15 +156,15 @@ struct JetFinderTask {
   PROCESS_SWITCH(JetFinderTask, processParticleLevelJets, "Particle level jet finding", false);
 };
 
-using JetFinderDataCharged = JetFinderTask<o2::aod::Jets, o2::aod::JetConstituents, o2::aod::JetConstituentsSub>;
+using JetFinderDataCharged = JetFinderTask<o2::aod::ChargedJets, o2::aod::ChargedJetConstituents, o2::aod::ChargedJetConstituentsSub>;
 using JetFinderDataFull = JetFinderTask<o2::aod::FullJets, o2::aod::FullJetConstituents, o2::aod::FullJetConstituentsSub>;
 using JetFinderDataNeutral = JetFinderTask<o2::aod::NeutralJets, o2::aod::NeutralJetConstituents, o2::aod::NeutralJetConstituentsSub>;
-using JetFinderMCDetectorLevelCharged = JetFinderTask<o2::aod::MCDetectorLevelJets, o2::aod::MCDetectorLevelJetConstituents, o2::aod::MCDetectorLevelJetConstituentsSub>;
-using JetFinderMCDetectorLevelFull = JetFinderTask<o2::aod::MCDetectorLevelFullJets, o2::aod::MCDetectorLevelFullJetConstituents, o2::aod::MCDetectorLevelFullJetConstituentsSub>;
-using JetFinderMCDetectorLevelNeutral = JetFinderTask<o2::aod::MCDetectorLevelNeutralJets, o2::aod::MCDetectorLevelNeutralJetConstituents, o2::aod::MCDetectorLevelNeutralJetConstituentsSub>;
-using JetFinderMCParticleLevelCharged = JetFinderTask<o2::aod::MCParticleLevelJets, o2::aod::MCParticleLevelJetConstituents, o2::aod::MCParticleLevelJetConstituentsSub>;
-using JetFinderMCParticleLevelFull = JetFinderTask<o2::aod::MCParticleLevelFullJets, o2::aod::MCParticleLevelFullJetConstituents, o2::aod::MCParticleLevelFullJetConstituentsSub>;
-using JetFinderMCParticleLevelNeutral = JetFinderTask<o2::aod::MCParticleLevelNeutralJets, o2::aod::MCParticleLevelNeutralJetConstituents, o2::aod::MCParticleLevelNeutralJetConstituentsSub>;
+using JetFinderMCDetectorLevelCharged = JetFinderTask<o2::aod::ChargedMCDetectorLevelJets, o2::aod::ChargedMCDetectorLevelJetConstituents, o2::aod::ChargedMCDetectorLevelJetConstituentsSub>;
+using JetFinderMCDetectorLevelFull = JetFinderTask<o2::aod::FullMCDetectorLevelJets, o2::aod::FullMCDetectorLevelJetConstituents, o2::aod::FullMCDetectorLevelJetConstituentsSub>;
+using JetFinderMCDetectorLevelNeutral = JetFinderTask<o2::aod::NeutralMCDetectorLevelJets, o2::aod::NeutralMCDetectorLevelJetConstituents, o2::aod::NeutralMCDetectorLevelJetConstituentsSub>;
+using JetFinderMCParticleLevelCharged = JetFinderTask<o2::aod::ChargedMCParticleLevelJets, o2::aod::ChargedMCParticleLevelJetConstituents, o2::aod::ChargedMCParticleLevelJetConstituentsSub>;
+using JetFinderMCParticleLevelFull = JetFinderTask<o2::aod::FullMCParticleLevelJets, o2::aod::FullMCParticleLevelJetConstituents, o2::aod::FullMCParticleLevelJetConstituentsSub>;
+using JetFinderMCParticleLevelNeutral = JetFinderTask<o2::aod::NeutralMCParticleLevelJets, o2::aod::NeutralMCParticleLevelJetConstituents, o2::aod::NeutralMCParticleLevelJetConstituentsSub>;
 // using JetFinderHybridIntermediate = JetFinderTask<o2::aod::HybridIntermediateJets, o2::aod::HybridIntermediateJetConstituents, o2::aod::HybridIntermediateJetConstituentsSub>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
