@@ -1271,16 +1271,22 @@ DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);        //! DeltaEta between Ds an
 DECLARE_SOA_COLUMN(PtD, ptD, float);                  //! Transverse momentum of Ds
 DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);        //! Transverse momentum of Hadron
 DECLARE_SOA_COLUMN(MD, mD, float);                    //! Invariant mass of Ds
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);            //! Pool Bin for the MixedEvent
 DECLARE_SOA_COLUMN(SignalStatus, signalStatus, bool); //! Used in MC-Rec, Ds Signal
+DECLARE_SOA_COLUMN(PromptStatus, promptStatus, bool); //! Used in MC-Rec, Ds Prompt
 } // namespace hf_correlation_ds_hadron
 DECLARE_SOA_TABLE(DsHadronPair, "AOD", "DSHPAIR", //! Ds-Hadrons pairs Informations
                   aod::hf_correlation_ds_hadron::DeltaPhi,
                   aod::hf_correlation_ds_hadron::DeltaEta,
                   aod::hf_correlation_ds_hadron::PtD,
-                  aod::hf_correlation_ds_hadron::PtHadron);
+                  aod::hf_correlation_ds_hadron::PtHadron,
+                  aod::hf_correlation_ds_hadron::PoolBin);
 DECLARE_SOA_TABLE(DsHadronRecoInfo, "AOD", "DSHRECOINFO", //! Ds-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_ds_hadron::MD,
-                  aod::hf_correlation_ds_hadron::SignalStatus);
+                  aod::hf_correlation_ds_hadron::SignalStatus,
+                  aod::hf_correlation_ds_hadron::PromptStatus);
+DECLARE_SOA_TABLE(DsHadronGenInfo, "AOD", "DSHGENINFO", //! Ds-Hadrons pairs Generated Informations
+                  aod::hf_correlation_ds_hadron::PromptStatus);
 
 // definition of columns and tables for Dplus-Hadron correlation pairs
 namespace hf_correlation_dplus_hadron
