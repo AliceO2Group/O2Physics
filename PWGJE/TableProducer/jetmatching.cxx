@@ -90,20 +90,28 @@ struct JetMatchingHF {
     const auto hf_flag = getHfFlag();
 
     // geometric matching
-    LOGF(info, "performing geometric matching for collision %d", collision.globalIndex());
-    std::vector<double> jetsBasePhi(jetsBasePerColl.size());
-    std::vector<double> jetsBaseEta(jetsBasePerColl.size());
+    LOGF(info, "performing geometric matching for collision %d (%d / %d jets)",
+         collision.globalIndex(), jetsBasePerColl.size(), jetsTagPerColl.size());
+    std::vector<double> jetsBasePhi;
+    std::vector<double> jetsBaseEta;
     for (const auto& jet : jetsBasePerColl) {
       jetsBasePhi.emplace_back(jet.phi());
       jetsBaseEta.emplace_back(jet.eta());
     }
-    std::vector<double> jetsTagPhi(jetsTagPerColl.size());
-    std::vector<double> jetsTagEta(jetsTagPerColl.size());
+    std::vector<double> jetsTagPhi;
+    std::vector<double> jetsTagEta;
     for (const auto& jet : jetsTagPerColl) {
       jetsTagPhi.emplace_back(jet.phi());
       jetsTagEta.emplace_back(jet.eta());
     }
     auto&& [baseToTagGeo, tagToBaseGeo] = JetUtilities::MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, maxMatchingDistance);
+    LOGF(debug, "geometric matching: %d - %d jets", baseToTagGeo.size(), tagToBaseGeo.size());
+    for (int i = 0; i < baseToTagGeo.size(); ++i) {
+      LOGF(debug, "bjet %i -> %i", i, baseToTagGeo[i]);
+    }
+    for (int i = 0; i < tagToBaseGeo.size(); ++i) {
+      LOGF(debug, "tjet %i -> %i", i, tagToBaseGeo[i]);
+    }
 
     // HF matching
     std::vector<int> baseToTagHF(jetsBasePerColl.size(), -1);
@@ -137,8 +145,8 @@ struct JetMatchingHF {
         geojetid = jetsTagPerColl.iteratorAt(geojetid).globalIndex();
       else
         geojetid = -1;
-      LOGF(info, "registering matches for base jet %d (%d): geo -> %d, HF -> %d",
-           jet.index(), jet.globalIndex(), geojetid, baseToTagHF[jet.index()]);
+      LOGF(info, "registering matches for base jet %d (%d): geo -> %d (%d), HF -> %d",
+           jet.index(), jet.globalIndex(), geojetid, baseToTagGeo[jet.index()], baseToTagHF[jet.index()]);
       jetsBaseToTag(geojetid, baseToTagHF[jet.index()]);
     }
 
@@ -148,8 +156,8 @@ struct JetMatchingHF {
         geojetid = jetsBasePerColl.iteratorAt(geojetid).globalIndex();
       else
         geojetid = -1;
-      LOGF(info, "registering matches for tag jet %d (%d): geo -> %d, HF -> %d",
-           jet.index(), jet.globalIndex(), geojetid, tagToBaseHF[jet.index()]);
+      LOGF(info, "registering matches for tag jet %d (%d): geo -> %d (%d), HF -> %d",
+           jet.index(), jet.globalIndex(), geojetid, tagToBaseGeo[jet.index()], tagToBaseHF[jet.index()]);
       jetsTagToBase(geojetid, tagToBaseHF[jet.index()]);
     }
   }
