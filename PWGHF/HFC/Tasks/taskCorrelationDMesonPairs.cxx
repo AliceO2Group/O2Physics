@@ -247,8 +247,9 @@ struct HfTaskCorrelationDMesonPairs {
       return 2;
     } else if (candidateType == 100 || candidateType == 102 || candidateType == 120 || candidateType == 300) { // Background
       return 3;
-    } else
+    } else {
       return 0;
+    }
   }
 
   // Register whether our D0bar candidate is Sig, Ref or Bkg
@@ -260,8 +261,9 @@ struct HfTaskCorrelationDMesonPairs {
       return 2;
     } else if (candidateType == 200 || candidateType == 201 || candidateType == 210 || candidateType == 300) { // Background
       return 3;
-    } else
+    } else {
       return 0;
+    }
   }
 
   // Plot Mass correlations

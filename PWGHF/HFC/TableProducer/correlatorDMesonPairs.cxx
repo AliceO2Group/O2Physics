@@ -667,7 +667,7 @@ struct HfCorrelatorDMesonPairs {
         // check if it's MC matched
         int8_t matchedGen2 = particle2.flagMcMatchGen();
 
-        short int mass = 0;
+        double mass = 0;
         if (particlePdgCode == pdg::Code::kD0) {
           mass = 1.864;
         } else if (particlePdgCode == pdg::Code::kDPlus) {
