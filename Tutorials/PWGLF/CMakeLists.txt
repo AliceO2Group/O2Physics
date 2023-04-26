@@ -30,3 +30,18 @@ o2physics_add_dpl_workflow(strangeness-step3
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
+o2physics_add_dpl_workflow(strangeness-step4
+                  SOURCES strangeness_step4.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+# Resonance analysis tutorial
+o2physics_add_dpl_workflow(resonances-step0
+                  SOURCES resonances_step0.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(resonances-step1
+                  SOURCES resonances_step1.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)

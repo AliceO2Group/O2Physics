@@ -95,16 +95,16 @@ struct OnTheFlyTracker {
 
     if (enableLUT) {
       std::map<int, const char*> mapPdgLut;
-      const char* lutElChar = ((std::string)lutEl).c_str();
-      const char* lutMuChar = ((std::string)lutMu).c_str();
-      const char* lutPiChar = ((std::string)lutPi).c_str();
-      const char* lutKaChar = ((std::string)lutKa).c_str();
-      const char* lutPrChar = ((std::string)lutPr).c_str();
-      mapPdgLut.insert(std::make_pair(11, lutElChar));
-      mapPdgLut.insert(std::make_pair(13, lutMuChar));
-      mapPdgLut.insert(std::make_pair(211, lutPiChar));
-      mapPdgLut.insert(std::make_pair(321, lutKaChar));
-      mapPdgLut.insert(std::make_pair(2212, lutPrChar));
+      //       const char* lutElChar = ((std::string)lutEl).c_str();
+      //       const char* lutMuChar = ((std::string)lutMu).c_str();
+      //       const char* lutPiChar = ((std::string)lutPi).c_str();
+      //       const char* lutKaChar = ((std::string)lutKa).c_str();
+      //       const char* lutPrChar = ((std::string)lutPr).c_str();
+      mapPdgLut.insert(std::make_pair(11, "lutCovm.el.dat"));
+      mapPdgLut.insert(std::make_pair(13, "lutCovm.mu.dat"));
+      mapPdgLut.insert(std::make_pair(211, "lutCovm.pi.dat"));
+      mapPdgLut.insert(std::make_pair(321, "lutCovm.ka.dat"));
+      mapPdgLut.insert(std::make_pair(2212, "lutCovm.pr.dat"));
       if (enableNucleiSmearing) {
         const char* lutDeChar = ((std::string)lutDe).c_str();
         const char* lutTrChar = ((std::string)lutTr).c_str();
