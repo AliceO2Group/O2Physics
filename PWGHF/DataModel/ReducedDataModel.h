@@ -39,12 +39,11 @@ namespace hf_reduced_collision
 {
 DECLARE_SOA_COLUMN(Bz, bz, float); //! Magnetic field in z-direction
 // keep track of the number of studied events (for normalization purposes)
-DECLARE_SOA_COLUMN(OriginalAODSize, originalAODSize, int); //! Size of COLLISION table processed
-
+DECLARE_SOA_COLUMN(OriginalCollisionCount, originalCollisionCount, int); //! Size of COLLISION table processed
 } // namespace hf_reduced_collision
 
 DECLARE_SOA_TABLE(HfReducedCollisions, "AOD", "HFREDCOLLISION", //! Table with collision for reduced workflow
-                  track::CollisionId,                           // FIXME : soa::Index<> does not work event with DECLARE_EQUIVALENT_FOR_INDEX(aod::Collisions, aod::HfReducedCollisions)
+                  soa::Index<>,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -56,8 +55,10 @@ DECLARE_SOA_TABLE(HfReducedCollisions, "AOD", "HFREDCOLLISION", //! Table with c
                   collision::CovZZ,
                   hf_reduced_collision::Bz);
 
+using HfReducedCollision = HfReducedCollisions::iterator;
+
 DECLARE_SOA_TABLE(HfOriginalCollisionsCounter, "AOD", "HFCOLCOUNTER", //! Table with original number of collisions
-                  hf_reduced_collision::OriginalAODSize);
+                  hf_reduced_collision::OriginalCollisionCount);
 
 namespace hf_track_par_cov
 {
@@ -121,7 +122,8 @@ DECLARE_SOA_COLUMN(Pz, pz, float); //! Momentum in z-direction in GeV/c
 
 namespace hf_reduced_track_index
 {
-DECLARE_SOA_INDEX_COLUMN(Track, track);   //! Track index
+DECLARE_SOA_INDEX_COLUMN(HfReducedCollision, hfReducedCollision); //! ReducedCollision index
+DECLARE_SOA_INDEX_COLUMN(Track, track);                           //! Track index
 DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool); //! Flag to check if track has a TPC match
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool); //! Flag to check if track has a TOF match
 } // namespace hf_reduced_track_index
@@ -129,7 +131,7 @@ DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool); //! Flag to check if track has a TOF m
 DECLARE_SOA_TABLE(HfReducedTracksWithSel, "AOD", "HFREDTRACKWSEL", //! Table with track information for reduced workflow
                   soa::Index<>,
                   hf_reduced_track_index::TrackId,
-                  track::CollisionId,
+                  hf_reduced_track_index::HfReducedCollisionId,
                   HFTRACKPARCOV_COLUMNS);
 
 namespace hf_track_pid_with_sel
@@ -140,7 +142,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float); //! Transverse momentum of the track in GeV/c
 // table with all attributes needed to call getStatusTrackPIDTpcAndTof() in the selector task
 DECLARE_SOA_TABLE(HfReducedTracksPIDWithSel, "AOD", "HFREDTRACKPID", //! Table with PID track information for reduced workflow
                   o2::soa::Index<>,
-                  track::CollisionId,
+                  hf_reduced_track_index::HfReducedCollisionId,
                   hf_track_pid_with_sel::Pt,
                   hf_reduced_track_index::HasTPC,
                   hf_reduced_track_index::HasTOF,
@@ -174,7 +176,7 @@ auto invMassDplusToPiKPi(const T& pVec0, const T& pVec1, const T& pVec2)
 DECLARE_SOA_TABLE(HfReducedCand3Prong, "AOD", "HFREDCAND3PRONG", //! Table with 3prong candidate information for reduced workflow
                   o2::soa::Index<>,
                   hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id,
-                  track::CollisionId,
+                  hf_reduced_track_index::HfReducedCollisionId,
                   HFTRACKPARCOV_COLUMNS,
                   hf_reduced_cand_3prong::CPA,
                   hf_reduced_cand_3prong::DecayLength,

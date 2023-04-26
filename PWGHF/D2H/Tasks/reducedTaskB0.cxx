@@ -111,6 +111,7 @@ struct HfReducedTaskB0 {
     registry.add("hPtRecBg", "B0 candidates (unmatched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hPtGenSig", "B0 candidates (gen+rec);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 10.}}});
     registry.add("hPtGen", "MC particles (generated);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
+    registry.add("hPtGenWithRapidityBelowHalf", "MC particles (generated - |#it{y}^{gen}|<0.5);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hPtGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
   }
 
@@ -240,13 +241,17 @@ struct HfReducedTaskB0 {
       registry.fill(HIST("hYGen"), yParticle, ptParticle);
       registry.fill(HIST("hEtaGen"), etaParticle, ptParticle);
 
-      // reject B0 daughters that are not in geometrical acceptance
-      if (!isProngInAcceptance(etaProngs[0], ptProngs[0]) || !isProngInAcceptance(etaProngs[1], ptProngs[1])) {
-        continue;
+      // generated B0 with |y|<0.5
+      if (std::abs(yParticle) < 0.5) {
+        registry.fill(HIST("hPtGenWithRapidityBelowHalf"), ptParticle);
       }
-      registry.fill(HIST("hPtGenWithProngsInAcceptance"), ptParticle);
-      registry.fill(HIST("hYGenWithProngsInAcceptance"), yParticle, ptParticle);
-      registry.fill(HIST("hEtaGenWithProngsInAcceptance"), etaParticle, ptParticle);
+
+      // generated B0 with daughters in geometrical acceptance
+      if (isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1])) {
+        registry.fill(HIST("hPtGenWithProngsInAcceptance"), ptParticle);
+        registry.fill(HIST("hYGenWithProngsInAcceptance"), yParticle, ptParticle);
+        registry.fill(HIST("hEtaGenWithProngsInAcceptance"), etaParticle, ptParticle);
+      }
     } // gen
   }   // process
   PROCESS_SWITCH(HfReducedTaskB0, processMc, "Process MC", false);

@@ -33,7 +33,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // event types
-enum Event : int {
+enum Event : uint8_t {
   Processed = 0,
   noDPiSelected,
   DPiSelected,
@@ -204,14 +204,22 @@ struct HfReducedDataCreatorDplusPi {
       isHfCandB0ConfigFilled = true;
     }
 
+    static int aodNumber = 0;
+    aodNumber++;
+
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize());
 
     static int ncol = 0;
     for (const auto& collision : collisions) {
       ncol++;
-      std::vector<int> selectedTracksPion = {};
+
+      // helpers for ReducedTables filling
+      int hfReducedCollisionIndex = hfReducedCollision.lastIndex() + 1;
+      std::vector<int64_t> selectedTracksPion;
+      selectedTracksPion.reserve(trackIndices.size());
       bool fillHfReducedCollision = false;
+
       auto primaryVertex = getPrimaryVertex(collision);
       if (ncol % 10000 == 0) {
         LOG(info) << ncol << " collisions parsed";
@@ -231,7 +239,6 @@ struct HfReducedDataCreatorDplusPi {
 
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
-
       for (const auto& candD : candsDThisColl) {
         bool fillHfCand3Prong = false;
         float invMassD;
@@ -315,7 +322,7 @@ struct HfReducedDataCreatorDplusPi {
           // fill Pion tracks table
           // if information on track already stored, go to next track
           if (!std::count(selectedTracksPion.begin(), selectedTracksPion.end(), trackPion.globalIndex())) {
-            hfTrackPion(trackPion.globalIndex(), thisCollId,
+            hfTrackPion(trackPion.globalIndex(), hfReducedCollisionIndex,
                         trackPion.x(), trackPion.alpha(),
                         trackPion.y(), trackPion.z(), trackPion.snp(),
                         trackPion.tgl(), trackPion.signed1Pt(),
@@ -326,7 +333,8 @@ struct HfReducedDataCreatorDplusPi {
                         trackPion.c1PtY(), trackPion.c1PtZ(), trackPion.c1PtSnp(),
                         trackPion.c1PtTgl(), trackPion.c1Pt21Pt2(),
                         trackPion.px(), trackPion.py(), trackPion.pz());
-            hfTrackPIDPion(thisCollId, trackPion.pt(),
+            hfTrackPIDPion(hfReducedCollisionIndex,
+                           trackPion.pt(),
                            trackPion.hasTPC(), trackPion.hasTOF(),
                            trackPion.tpcNSigmaEl(), trackPion.tpcNSigmaMu(), trackPion.tpcNSigmaPi(), trackPion.tpcNSigmaKa(), trackPion.tpcNSigmaPr(),
                            trackPion.tofNSigmaEl(), trackPion.tofNSigmaMu(), trackPion.tofNSigmaPi(), trackPion.tofNSigmaKa(), trackPion.tofNSigmaPr());
@@ -338,7 +346,7 @@ struct HfReducedDataCreatorDplusPi {
         }                       // pion loop
         if (fillHfCand3Prong) { // fill candDplus table only once per D candidate
           hfCand3Prong(track0.globalIndex(), track1.globalIndex(), track2.globalIndex(),
-                       thisCollId,
+                       hfReducedCollisionIndex,
                        trackParCovD.getX(), trackParCovD.getAlpha(),
                        trackParCovD.getY(), trackParCovD.getZ(), trackParCovD.getSnp(),
                        trackParCovD.getTgl(), trackParCovD.getQ2Pt(),
@@ -362,8 +370,7 @@ struct HfReducedDataCreatorDplusPi {
       }
       registry.fill(HIST("hEvents"), 1 + Event::DPiSelected);
       // fill collision table if it contains a DPi pair a minima
-      hfReducedCollision(thisCollId,
-                         collision.posX(), collision.posY(), collision.posZ(),
+      hfReducedCollision(collision.posX(), collision.posY(), collision.posZ(),
                          collision.covXX(), collision.covXY(), collision.covYY(),
                          collision.covXZ(), collision.covYZ(), collision.covZZ(),
                          bz);
@@ -395,7 +402,7 @@ struct HfReducedDataCreatorDplusPiExpressions {
                                    candD.prong2_as<aod::BigTracksMC>()};
 
       for (const auto& trackPion : tracksPion) {
-        if (trackPion.collisionId() != candD.collisionId()) {
+        if (trackPion.hfReducedCollisionId() != candD.hfReducedCollisionId()) {
           continue;
         }
         // const auto& trackId = trackPion.globalIndex();

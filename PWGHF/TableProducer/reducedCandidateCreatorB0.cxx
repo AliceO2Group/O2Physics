@@ -56,6 +56,9 @@ struct HfReducedCandidateCreatorB0 {
   // Fitter for B vertex (2-prong vertex filter)
   o2::vertexing::DCAFitterN<2> df2;
 
+  Preslice<aod::HfReducedCand3Prong> candsDPerCollision = hf_reduced_track_index::hfReducedCollisionId;
+  Preslice<aod::HfReducedTracksWithSel> tracksPionPerCollision = hf_reduced_track_index::hfReducedCollisionId;
+
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -82,18 +85,18 @@ struct HfReducedCandidateCreatorB0 {
                aod::HfOriginalCollisionsCounter const& collisionsCounter)
   {
     for (const auto& collisionCounter : collisionsCounter) {
-      registry.fill(HIST("hEvents"), 1, collisionCounter.originalAODSize());
+      registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
     }
 
     static int ncol = 0;
 
     for (const auto& collision : collisions) {
-      auto thisCollId = collision.collisionId(); // FIXME : works only with column CollisionId
+      auto thisCollId = collision.globalIndex();
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
 
       if (ncol % 10000 == 0) {
-        LOG(info) << ncol << " collisions parsed";
+        LOG(debug) << ncol << " collisions parsed";
       }
       ncol++;
 
@@ -101,27 +104,15 @@ struct HfReducedCandidateCreatorB0 {
       bz = collision.bz();
       df2.setBz(bz);
 
-      // FIXME : partitioning is slower than using if loops
-      // Partition<aod::HfReducedCand3Prong> candsDThisColl = hf_track_par_cov::collisionId == thisCollId;
-      // candsDThisColl.bindTable(candsD);
-      for (const auto& candD : candsD) {
-        if (candD.collisionId() != thisCollId) {
-          continue;
-        }
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      for (const auto& candD : candsDThisColl) {
         auto trackParCovD = getTrackParCov(candD);
         std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
 
-        // FIXME
-        // Partition<aod::HfReducedTracksWithSel> tracksPionThisColl = hf_track_par_cov::collisionId == thisCollId;
-        // tracksPionThisColl.bindTable(tracksPion);
-        for (const auto& trackPion : tracksPion) {
-          if (trackPion.collisionId() != thisCollId) {
-            continue;
-          }
+        auto tracksPionThisCollision = tracksPion.sliceBy(tracksPionPerCollision, thisCollId);
+        for (const auto& trackPion : tracksPionThisCollision) {
           auto trackParCovPi = getTrackParCov(trackPion);
           std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
-
-          auto massDPi_before = RecoDecay::m(array{pVecD, pVecPion}, array{massD, massPi});
 
           // ---------------------------------
           // reconstruct the 2-prong B0 vertex
@@ -145,11 +136,6 @@ struct HfReducedCandidateCreatorB0 {
 
           // compute invariant
           massDPi = RecoDecay::m(array{pVecD, pVecPion}, array{massD, massPi});
-
-          if (std::abs(massDPi - massB0) < invMassWindowB0 && std::abs(massDPi_before - massB0) > invMassWindowB0) {
-            LOG(info) << "Mass before = " << massDPi_before << " , mass after = " << massDPi;
-            LOG(info) << "Delta mass before = " << std::abs(massDPi_before - massB0) << " , delta mass after = " << std::abs(massDPi - massB0);
-          }
 
           if (std::abs(massDPi - massB0) > invMassWindowB0) {
             continue;
