@@ -484,12 +484,8 @@ struct HfCorrelatorDsHadrons {
       }
       registry.fill(HIST("hMultiplicity"), nTracks);
 
-<<<<<<< Updated upstream
-      auto selectedDsCandidatesGroupedMC = recoFlagDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-=======
       auto selectedDsMcRecoCandGrouped = selectedDsMcRecoCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
        
->>>>>>> Stashed changes
       // MC reco level
       bool flagDsPrompt = false;
       float multiplicityV0M = collision.multFV0M();
