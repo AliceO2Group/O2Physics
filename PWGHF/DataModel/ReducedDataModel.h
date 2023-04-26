@@ -124,8 +124,8 @@ namespace hf_reduced_track_index
 {
 DECLARE_SOA_INDEX_COLUMN(HfReducedCollision, hfReducedCollision); //! ReducedCollision index
 DECLARE_SOA_INDEX_COLUMN(Track, track);                           //! Track index
-DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool); //! Flag to check if track has a TPC match
-DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool); //! Flag to check if track has a TOF match
+DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                         //! Flag to check if track has a TPC match
+DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                         //! Flag to check if track has a TOF match
 } // namespace hf_reduced_track_index
 
 DECLARE_SOA_TABLE(HfReducedTracksWithSel, "AOD", "HFREDTRACKWSEL", //! Table with track information for reduced workflow
