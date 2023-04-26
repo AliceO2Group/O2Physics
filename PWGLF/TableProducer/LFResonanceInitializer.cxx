@@ -78,7 +78,6 @@ struct reso2initializer {
                                              {"hGoodTrackIndices", "hGoodTrackIndices", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
                                              {"hGoodMCTrackIndices", "hGoodMCTrackIndices", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
                                              {"hGoodV0Indices", "hGoodV0Indices", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
-                                             {"hMCParentsScan", "hMCParentsScan", {HistType::kTH1F, {{18, 0.0f, 18.0f}}}},
                                            },
                                OutputObjHandlingPolicy::AnalysisObject};
 
@@ -90,20 +89,20 @@ struct reso2initializer {
   Filter collisionFilter = nabs(aod::collision::posZ) < ConfEvtZvtx;
 
   // MC Resonance parent filter
-  Partition<aod::McParticles> selectedMCParticles = (aod::mcparticle::pdgCode == 313)        // K*
-                                                    || (aod::mcparticle::pdgCode == 323)     // K*pm
-                                                    || (aod::mcparticle::pdgCode == 333)     // phi
-                                                    || (aod::mcparticle::pdgCode == 9010221) // f_0(980)
-                                                    || (aod::mcparticle::pdgCode == 10221)   // f_0(1370)
-                                                    || (aod::mcparticle::pdgCode == 9030221) // f_0(1500)
-                                                    || (aod::mcparticle::pdgCode == 10331)   // f_0(1710)
-                                                    || (aod::mcparticle::pdgCode == 113)     // rho(770)
-                                                    || (aod::mcparticle::pdgCode == 213)     // rho(770)pm
-                                                    || (aod::mcparticle::pdgCode == 3224)    // Sigma(1385)+
-                                                    || (aod::mcparticle::pdgCode == 3124)    // Sigma(1385)-
-                                                    || (aod::mcparticle::pdgCode == 3324)    // Xi(1530)0
-                                                    || (aod::mcparticle::pdgCode == 123314)  // Xi(1820)0
-                                                    || (aod::mcparticle::pdgCode == 123324); // Xi(1820)-0
+  Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == 313)        // K*
+                                                    || (nabs(aod::mcparticle::pdgCode) == 323)     // K*pm
+                                                    || (nabs(aod::mcparticle::pdgCode) == 333)     // phi
+                                                    || (nabs(aod::mcparticle::pdgCode) == 9010221) // f_0(980)
+                                                    || (nabs(aod::mcparticle::pdgCode) == 10221)   // f_0(1370)
+                                                    || (nabs(aod::mcparticle::pdgCode) == 9030221) // f_0(1500)
+                                                    || (nabs(aod::mcparticle::pdgCode) == 10331)   // f_0(1710)
+                                                    || (nabs(aod::mcparticle::pdgCode) == 113)     // rho(770)
+                                                    || (nabs(aod::mcparticle::pdgCode) == 213)     // rho(770)pm
+                                                    || (nabs(aod::mcparticle::pdgCode) == 3224)    // Sigma(1385)+
+                                                    || (nabs(aod::mcparticle::pdgCode) == 3124)    // Sigma(1385)-
+                                                    || (nabs(aod::mcparticle::pdgCode) == 3324)    // Xi(1530)0
+                                                    || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
+                                                    || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
   using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
@@ -367,7 +366,6 @@ struct reso2initializer {
                  v0mc.isPhysicalPrimary(),
                  v0mc.producedByGenerator());
     } else {
-      LOGF(info, "no MC particle");
       reso2mcv0s(0,
                  mothers[0],
                  motherPDGs[0],
