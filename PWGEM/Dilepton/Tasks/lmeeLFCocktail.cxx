@@ -882,7 +882,7 @@ struct lmeelfcocktail {
         ptbin = fArrResoPt->GetLast();
       Double_t smearing = 0.;
       TH1D* thisHist = reinterpret_cast<TH1D*>(fArrResoPt->At(ptbin));
-      if (thisHist->GetEntries()>0){
+      if (thisHist->GetEntries() > 0) {
         smearing = thisHist->GetRandom() * pt;
       }
       Double_t sPt = pt - smearing;
@@ -895,7 +895,7 @@ struct lmeelfcocktail {
         ptbin = fArrResoEta->GetLast();
       smearing = 0.;
       thisHist = reinterpret_cast<TH1D*>(fArrResoEta->At(ptbin));
-      if (thisHist->GetEntries()>0){
+      if (thisHist->GetEntries() > 0) {
         smearing = thisHist->GetRandom();
       }
       Double_t sEta = eta - smearing;
@@ -912,7 +912,7 @@ struct lmeelfcocktail {
       } else if (ch < 0) {
         thisHist = reinterpret_cast<TH1D*>(fArrResoPhi_Neg->At(ptbin));
       }
-      if (thisHist->GetEntries()>0){
+      if (thisHist->GetEntries() > 0) {
         smearing = thisHist->GetRandom();
       }
       Double_t sPhi = phi - smearing;
