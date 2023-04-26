@@ -366,7 +366,6 @@ struct reso2initializer {
                  v0mc.isPhysicalPrimary(),
                  v0mc.producedByGenerator());
     } else {
-      LOGF(info, "no MC particle");
       reso2mcv0s(0,
                  mothers[0],
                  motherPDGs[0],
