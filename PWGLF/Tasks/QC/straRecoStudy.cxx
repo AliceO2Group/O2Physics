@@ -652,7 +652,7 @@ struct straRecoStudy {
         histos.fill(HIST("h2dXiMinusQADCAPosToPV"), casc.pt(), casc.dcapostopv());
         histos.fill(HIST("h2dXiMinusQADCANegToPV"), casc.pt(), casc.dcanegtopv());
         histos.fill(HIST("h2dXiMinusQADCABachToPV"), casc.pt(), casc.dcabachtopv());
-        histos.fill(HIST("h2dXiMinusQADCACascToPV"), casc.pt(), casc.dcacasctopv());
+        histos.fill(HIST("h2dXiMinusQADCACascToPV"), casc.pt(), casc.dcaXYCascToPV());
         histos.fill(HIST("h2dXiMinusQAPointingAngle"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())));
       }
       if (cascmc.pdgCode() == 3334) {
@@ -663,7 +663,7 @@ struct straRecoStudy {
         histos.fill(HIST("h2dOmegaMinusQADCAPosToPV"), casc.pt(), casc.dcapostopv());
         histos.fill(HIST("h2dOmegaMinusQADCANegToPV"), casc.pt(), casc.dcanegtopv());
         histos.fill(HIST("h2dOmegaMinusQADCABachToPV"), casc.pt(), casc.dcabachtopv());
-        histos.fill(HIST("h2dOmegaMinusQADCACascToPV"), casc.pt(), casc.dcacasctopv());
+        histos.fill(HIST("h2dOmegaMinusQADCACascToPV"), casc.pt(), casc.dcaXYCascToPV());
         histos.fill(HIST("h2dOmegaMinusQAPointingAngle"), casc.pt(), TMath::ACos(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ())));
       }
 

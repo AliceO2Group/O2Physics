@@ -13,6 +13,7 @@
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  06.06.2022
 
+#include <set>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
@@ -23,7 +24,6 @@
 #include "PWGUD/Core/DGPIDSelector.h"
 #include "PWGUD/Core/UDGoodRunSelector.h"
 #include "PWGUD/Core/UDFSParser.h"
-#include <set>
 
 using namespace o2;
 using namespace o2::framework;
@@ -260,6 +260,7 @@ struct DGCandAnalyzer {
 
     // find track combinations which are compatible with PID cuts
     auto nIVMs = pidsel.computeIVMs(PVContributors);
+    LOGF(info, "Number of IVMs %d", nIVMs);
 
     // update candCase histogram
     if (nIVMs > 0) {

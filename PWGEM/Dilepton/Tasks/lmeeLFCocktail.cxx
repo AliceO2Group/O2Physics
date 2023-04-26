@@ -28,6 +28,7 @@
 #include "TGenPhaseSpace.h"
 #include "TGrid.h"
 #include "TTree.h"
+#include <nlohmann/json.hpp>
 
 using namespace o2::framework;
 using namespace ROOT::Math;
@@ -153,8 +154,9 @@ struct lmeelfcocktail {
   Configurable<std::string> fConfigMultHistMt2Name{"cfgMultHistMt2Name", "fhwMultmT_upperlimit", "histogram name for mt 2 in multiplicity file"};
   Configurable<int> fConfigKWNBins{"cfgKWNBins", 10000, "number of bins for Kroll-Wada"};
   Configurable<float> fConfigKWMax{"cfgKWMax", 1.1, "upper bound of Kroll-Wada"};
+  Configurable<bool> fConfigDoVirtPh{"cfgDoVirtPh", false, "generate one virt. photon for each pion"};
   Configurable<std::string> fConfigPhotonPtFileName{"cfgPhotonPtFileName", "", "file name for photon pT parametrization"};
-  Configurable<std::string> fConfigPhotonPtDirName{"cfgPhotonPtDirName", "7TeV_Comb", "directory name for photon pT parametrization"};
+  Configurable<std::string> fConfigPhotonPtDirName{"cfgPhotonPtDirName", "", "directory name for photon pT parametrization"};
   Configurable<std::string> fConfigPhotonPtFuncName{"cfgPhotonPtFuncName", "111_pt", "function name for photon pT parametrization"};
 
   // Configurable axes crashed the task. Take them out for the moment
@@ -174,10 +176,11 @@ struct lmeelfcocktail {
     nbDCAtemplate = DCATemplateEdges.size();
     DCATemplateEdges.push_back(10000000.);
 
-    if (TString(fConfigEffFileName).BeginsWith("alien://") || TString(fConfigResFileName).BeginsWith("alien://") || TString(fConfigDCAFileName).BeginsWith("alien://") || TString(fConfigMultFileName).BeginsWith("alien://") || TString(fConfigPhotonPtFileName).BeginsWith("alien://")) {
+    if ((TString(fConfigEffFileName).BeginsWith("alien://") && TString(fConfigEffFileName).EndsWith(".root")) || (TString(fConfigResFileName).BeginsWith("alien://") && TString(fConfigResFileName).EndsWith(".root")) || (TString(fConfigDCAFileName).BeginsWith("alien://") && TString(fConfigDCAFileName).EndsWith(".root")) || (TString(fConfigMultFileName).BeginsWith("alien://") && TString(fConfigMultFileName).EndsWith(".root")) || (TString(fConfigPhotonPtFileName).BeginsWith("alien://") && TString(fConfigPhotonPtFileName).EndsWith(".root"))) {
       LOGP(info, "Connecting to grid via TGrid");
       TGrid::Connect("alien://");
     }
+
     GetEffHisto(TString(fConfigEffFileName), TString(fConfigEffHistName));
     if (fConfigResolType == 1) {
       GetResHisto(TString(fConfigResFileName), TString(fConfigResPHistName));
@@ -186,7 +189,9 @@ struct lmeelfcocktail {
     }
     GetDCATemplates(TString(fConfigDCAFileName), TString(fConfigDCAHistName));
     GetMultHisto(TString(fConfigMultFileName), TString(fConfigMultHistPtName), TString(fConfigMultHistPt2Name), TString(fConfigMultHistMtName), TString(fConfigMultHistMt2Name));
-    GetPhotonPtParametrization(TString(fConfigPhotonPtFileName), TString(fConfigPhotonPtDirName), TString(fConfigPhotonPtFuncName));
+    if (fConfigDoVirtPh) {
+      GetPhotonPtParametrization(TString(fConfigPhotonPtFileName), TString(fConfigPhotonPtDirName), TString(fConfigPhotonPtFuncName));
+    }
     fillKrollWada();
   }
 
@@ -550,129 +555,132 @@ struct lmeelfcocktail {
           }
         }
 
-        // Virtual photon generation
-        //-------------------------
-        // We will generate one virtual photon per histogrammed pion
-        if (mother.GetPdgCode() == 111) {
-          // get mass and pt from histos and flat eta and phi
-          Double_t VPHpT = ffVPHpT->GetRandom();
-          Double_t VPHmass = fhKW->GetRandom();
-          Double_t VPHeta = -1. + gRandom->Rndm() * 2.;
-          Double_t VPHphi = 2.0 * TMath::ACos(-1.) * gRandom->Rndm();
-          TLorentzVector beam;
-          beam.SetPtEtaPhiM(VPHpT, VPHeta, VPHphi, VPHmass);
-          Double_t decaymasses[2] = {(TDatabasePDG::Instance()->GetParticle(11))->Mass(), (TDatabasePDG::Instance()->GetParticle(11))->Mass()};
-          TGenPhaseSpace VPHgen;
-          Bool_t SetDecay;
-          SetDecay = VPHgen.SetDecay(beam, 2, decaymasses);
-          if (SetDecay == 0)
-            LOGP(error, "Decay not permitted by kinematics");
-          Double_t VPHweight = VPHgen.Generate();
-          // get electrons from the decay
-          TLorentzVector *decay1, *decay2;
-          decay1 = VPHgen.GetDecay(0);
-          decay2 = VPHgen.GetDecay(1);
-          dau1.SetPxPyPzE(decay1->Px(), decay1->Py(), decay1->Pz(), decay1->E());
-          dau2.SetPxPyPzE(decay2->Px(), decay2->Py(), decay2->Pz(), decay2->E());
-
-          // create dielectron before resolution effects:
-          ee = dau1 + dau2;
-
-          // get index for histograms
-          hindex[0] = nInputParticles - 1;
-          hindex[1] = -1;
-          hindex[2] = -1;
-
-          // Fill tree words before resolution/acceptance
-          treeWords.fd1origpt = dau1.Pt();
-          treeWords.fd1origp = dau1.P();
-          treeWords.fd1origeta = dau1.Eta();
-          treeWords.fd1origphi = dau1.Phi();
-          treeWords.fd2origpt = dau2.Pt();
-          treeWords.fd2origp = dau2.P();
-          treeWords.fd2origeta = dau2.Eta();
-          treeWords.fd2origphi = dau2.Phi();
-          treeWords.feeorigpt = ee.Pt();
-          treeWords.feeorigp = ee.P();
-          treeWords.feeorigm = ee.M();
-          treeWords.feeorigeta = ee.Eta();
-          treeWords.feeorigrap = ee.Rapidity();
-          treeWords.feeorigphi = ee.Phi();
-          treeWords.feeorigphiv = PhiV(dau1, dau2);
-
-          // get the efficiency weight
-          Int_t effbin = fhwEffpT->FindBin(treeWords.fd1origpt);
-          treeWords.fwEffpT = fhwEffpT->GetBinContent(effbin);
-          effbin = fhwEffpT->FindBin(treeWords.fd2origpt);
-          treeWords.fwEffpT = treeWords.fwEffpT * fhwEffpT->GetBinContent(effbin);
-
-          // Resolution and acceptance
+        if (fConfigDoVirtPh) {
+          // Virtual photon generation
           //-------------------------
-          dau1 = ApplyResolution(dau1, 1, fConfigResolType);
-          dau2 = ApplyResolution(dau2, -1, fConfigResolType);
-          treeWords.fpass = true;
-          if (dau1.Pt() < fConfigMinPt || dau2.Pt() < fConfigMinPt)
-            treeWords.fpass = false; // leg pT cut
-          if (dau1.Pt() > fConfigMaxPt || dau2.Pt() > fConfigMaxPt)
-            treeWords.fpass = false; // leg pT cut
-          if (dau1.Vect().Unit().Dot(dau2.Vect().Unit()) > TMath::Cos(fConfigMinOpAng))
-            treeWords.fpass = false; // opening angle cut
-          if (TMath::Abs(dau1.Eta()) > fConfigMaxEta || TMath::Abs(dau2.Eta()) > fConfigMaxEta)
-            treeWords.fpass = false;
+          // We will generate one virtual photon per histogrammed pion
+          if (mother.GetPdgCode() == 111) {
+            // get mass and pt from histos and flat eta and phi
+            Double_t VPHpT = ffVPHpT->GetRandom();
+            Double_t VPHmass = fhKW->GetRandom();
+            Double_t VPHeta = -1. + gRandom->Rndm() * 2.;
+            Double_t VPHphi = 2.0 * TMath::ACos(-1.) * gRandom->Rndm();
+            TLorentzVector beam;
+            beam.SetPtEtaPhiM(VPHpT, VPHeta, VPHphi, VPHmass);
+            Double_t decaymasses[2] = {(TDatabasePDG::Instance()->GetParticle(11))->Mass(), (TDatabasePDG::Instance()->GetParticle(11))->Mass()};
+            TGenPhaseSpace VPHgen;
+            Bool_t SetDecay;
+            SetDecay = VPHgen.SetDecay(beam, 2, decaymasses);
+            if (SetDecay == 0)
+              LOGP(error, "Decay not permitted by kinematics");
+            Double_t VPHweight = VPHgen.Generate();
+            // get electrons from the decay
+            TLorentzVector *decay1, *decay2;
+            decay1 = VPHgen.GetDecay(0);
+            decay2 = VPHgen.GetDecay(1);
+            dau1.SetPxPyPzE(decay1->Px(), decay1->Py(), decay1->Pz(), decay1->E());
+            dau2.SetPxPyPzE(decay2->Px(), decay2->Py(), decay2->Pz(), decay2->E());
 
-          treeWords.fpairDCA = 10000.; // ??
+            // create dielectron before resolution effects:
+            ee = dau1 + dau2;
 
-          // Fill tree words after resolution/acceptance
-          ee = dau1 + dau2;
-          treeWords.fd1pt = dau1.Pt();
-          treeWords.fd1p = dau1.P();
-          treeWords.fd1eta = dau1.Eta();
-          treeWords.fd1phi = dau1.Phi();
-          treeWords.fd2pt = dau2.Pt();
-          treeWords.fd2p = dau2.P();
-          treeWords.fd2eta = dau2.Eta();
-          treeWords.fd2phi = dau2.Phi();
-          treeWords.feept = ee.Pt();
-          treeWords.feemt = ee.Mt();
-          treeWords.feep = ee.P();
-          treeWords.feem = ee.M();
-          treeWords.feeeta = ee.Eta();
-          treeWords.feerap = ee.Rapidity();
-          treeWords.feephi = ee.Phi();
-          treeWords.feephiv = PhiV(dau1, dau2);
-          treeWords.fmotherpt = beam.Pt();
-          treeWords.fmothermt = sqrt(pow(beam.M(), 2) + pow(beam.Pt(), 2));
-          treeWords.fmotherp = beam.P();
-          treeWords.fmotherm = beam.M();
-          treeWords.fmothereta = beam.Eta();
-          treeWords.fmotherphi = beam.Phi();
-          treeWords.fID = 0; // set ID to Zero for VPH
-          treeWords.fweight = VPHweight;
-          // get multiplicity based weight:
-          treeWords.fwMultmT = 1; // no weight for photons so far
+            // get index for histograms
+            hindex[0] = nInputParticles - 1;
+            hindex[1] = -1;
+            hindex[2] = -1;
 
-          // Fill the tree
-          if (fConfigWriteTTree) { // many parameters not set for photons: d1DCA,fd2DCA, fdectyp,fdau3pdg,fwMultpT,fwMultpT2,fwMultmT2
-            tree->Fill();
-          }
+            // Fill tree words before resolution/acceptance
+            treeWords.fd1origpt = dau1.Pt();
+            treeWords.fd1origp = dau1.P();
+            treeWords.fd1origeta = dau1.Eta();
+            treeWords.fd1origphi = dau1.Phi();
+            treeWords.fd2origpt = dau2.Pt();
+            treeWords.fd2origp = dau2.P();
+            treeWords.fd2origeta = dau2.Eta();
+            treeWords.fd2origphi = dau2.Phi();
+            treeWords.feeorigpt = ee.Pt();
+            treeWords.feeorigp = ee.P();
+            treeWords.feeorigm = ee.M();
+            treeWords.feeorigeta = ee.Eta();
+            treeWords.feeorigrap = ee.Rapidity();
+            treeWords.feeorigphi = ee.Phi();
+            treeWords.feeorigphiv = PhiV(dau1, dau2);
 
-          // Fill the histograms
-          for (Int_t jj = 0; jj < 3; jj++) { // fill the different hindex -> particles
-            if (hindex[jj] > -1) {
-              fmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, VPHweight);
-              fpteevsmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.feept, VPHweight);
-              fphi_orig[hindex[jj]]->Fill(treeWords.feeorigphi, VPHweight);
-              frap_orig[hindex[jj]]->Fill(treeWords.feeorigrap, VPHweight);
-              if (treeWords.fpass) {
-                fmee[hindex[jj]]->Fill(treeWords.feem, VPHweight);
-                fpteevsmee[hindex[jj]]->Fill(treeWords.feem, treeWords.feept, VPHweight);
-                fphi[hindex[jj]]->Fill(treeWords.feephi, VPHweight);
-                frap[hindex[jj]]->Fill(treeWords.feerap, VPHweight);
+            // get the efficiency weight
+            Int_t effbin = fhwEffpT->FindBin(treeWords.fd1origpt);
+            treeWords.fwEffpT = fhwEffpT->GetBinContent(effbin);
+            effbin = fhwEffpT->FindBin(treeWords.fd2origpt);
+            treeWords.fwEffpT = treeWords.fwEffpT * fhwEffpT->GetBinContent(effbin);
+
+            // Resolution and acceptance
+            //-------------------------
+            dau1 = ApplyResolution(dau1, 1, fConfigResolType);
+            dau2 = ApplyResolution(dau2, -1, fConfigResolType);
+            treeWords.fpass = true;
+            if (dau1.Pt() < fConfigMinPt || dau2.Pt() < fConfigMinPt)
+              treeWords.fpass = false; // leg pT cut
+            if (dau1.Pt() > fConfigMaxPt || dau2.Pt() > fConfigMaxPt)
+              treeWords.fpass = false; // leg pT cut
+            if (dau1.Vect().Unit().Dot(dau2.Vect().Unit()) > TMath::Cos(fConfigMinOpAng))
+              treeWords.fpass = false; // opening angle cut
+            if (TMath::Abs(dau1.Eta()) > fConfigMaxEta || TMath::Abs(dau2.Eta()) > fConfigMaxEta)
+              treeWords.fpass = false;
+
+            treeWords.fpairDCA = 10000.; // ??
+
+            // Fill tree words after resolution/acceptance
+            ee = dau1 + dau2;
+            treeWords.fd1pt = dau1.Pt();
+            treeWords.fd1p = dau1.P();
+            treeWords.fd1eta = dau1.Eta();
+            treeWords.fd1phi = dau1.Phi();
+            treeWords.fd2pt = dau2.Pt();
+            treeWords.fd2p = dau2.P();
+            treeWords.fd2eta = dau2.Eta();
+            treeWords.fd2phi = dau2.Phi();
+            treeWords.feept = ee.Pt();
+            treeWords.feemt = ee.Mt();
+            treeWords.feep = ee.P();
+            treeWords.feem = ee.M();
+            treeWords.feeeta = ee.Eta();
+            treeWords.feerap = ee.Rapidity();
+            treeWords.feephi = ee.Phi();
+            treeWords.feephiv = PhiV(dau1, dau2);
+            treeWords.fmotherpt = beam.Pt();
+            treeWords.fmothermt = sqrt(pow(beam.M(), 2) + pow(beam.Pt(), 2));
+            treeWords.fmotherp = beam.P();
+            treeWords.fmotherm = beam.M();
+            treeWords.fmothereta = beam.Eta();
+            treeWords.fmotherphi = beam.Phi();
+            treeWords.fID = 0; // set ID to Zero for VPH
+            treeWords.fweight = VPHweight;
+            // get multiplicity based weight:
+            treeWords.fwMultmT = 1; // no weight for photons so far
+
+            // Fill the tree
+            if (fConfigWriteTTree) { // many parameters not set for photons: d1DCA,fd2DCA, fdectyp,fdau3pdg,fwMultpT,fwMultpT2,fwMultmT2
+              tree->Fill();
+            }
+
+            // Fill the histograms
+            for (Int_t jj = 0; jj < 3; jj++) { // fill the different hindex -> particles
+              if (hindex[jj] > -1) {
+                fmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, VPHweight);
+                fpteevsmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.feept, VPHweight);
+                fphi_orig[hindex[jj]]->Fill(treeWords.feeorigphi, VPHweight);
+                frap_orig[hindex[jj]]->Fill(treeWords.feeorigrap, VPHweight);
+                fmotherpT_orig[hindex[jj]]->Fill(treeWords.fmotherpt, treeWords.fweight);
+                if (treeWords.fpass) {
+                  fmee[hindex[jj]]->Fill(treeWords.feem, VPHweight);
+                  fpteevsmee[hindex[jj]]->Fill(treeWords.feem, treeWords.feept, VPHweight);
+                  fphi[hindex[jj]]->Fill(treeWords.feephi, VPHweight);
+                  frap[hindex[jj]]->Fill(treeWords.feerap, VPHweight);
+                }
               }
             }
-          }
 
-        } // mother.pdgCode()==111
+          } // mother.pdgCode()==111
+        }   // fConfigDoVirtPh
 
       } // abs(pdgCode())==11
 
@@ -734,7 +742,7 @@ struct lmeelfcocktail {
     for (auto& particle : fParticleListNames) {
       fmee.push_back(registry.add<TH1>(Form("mee_%s", particle.Data()), Form("mee_%s", particle.Data()), HistType::kTH1F, {mAxis}, true));
       fmee_orig.push_back(registry.add<TH1>(Form("mee_orig_%s", particle.Data()), Form("mee_orig_%s", particle.Data()), HistType::kTH1F, {mAxis}, true));
-      fmotherpT_orig.push_back(registry.add<TH1>(Form("mohterpT_orig_%s", particle.Data()), Form("motherpT_orig_%s", particle.Data()), HistType::kTH1F, {ptAxis}, true));
+      fmotherpT_orig.push_back(registry.add<TH1>(Form("motherpT_orig_%s", particle.Data()), Form("motherpT_orig_%s", particle.Data()), HistType::kTH1F, {ptAxis}, true));
       fphi.push_back(registry.add<TH1>(Form("phi_%s", particle.Data()), Form("phi_%s", particle.Data()), HistType::kTH1F, {phiAxis}, true));
       fphi_orig.push_back(registry.add<TH1>(Form("phi_orig_%s", particle.Data()), Form("phi_orig_%s", particle.Data()), HistType::kTH1F, {phiAxis}, true));
       frap.push_back(registry.add<TH1>(Form("rap_%s", particle.Data()), Form("rap_%s", particle.Data()), HistType::kTH1F, {rapAxis}, true));
@@ -743,7 +751,7 @@ struct lmeelfcocktail {
       fpteevsmee_orig.push_back(registry.add<TH2>(Form("pteevsmee_orig_%s", particle.Data()), Form("pteevsmee_orig_%s", particle.Data()), HistType::kTH2F, {mAxis, ptAxis}, true));
       fmee_wALT.push_back(registry.add<TH1>(Form("mee_wALT_%s", particle.Data()), Form("mee_wALT_%s", particle.Data()), HistType::kTH1F, {mAxis}, true));
       fmee_orig_wALT.push_back(registry.add<TH1>(Form("mee_orig_wALT_%s", particle.Data()), Form("mee_orig_wALT_%s", particle.Data()), HistType::kTH1F, {mAxis}, true));
-      fmotherpT_orig_wALT.push_back(registry.add<TH1>(Form("mohterpT_orig_wALT_%s", particle.Data()), Form("motherpT_orig_wALT%s", particle.Data()), HistType::kTH1F, {ptAxis}, true));
+      fmotherpT_orig_wALT.push_back(registry.add<TH1>(Form("motherpT_orig_wALT_%s", particle.Data()), Form("motherpT_orig_wALT%s", particle.Data()), HistType::kTH1F, {ptAxis}, true));
       fpteevsmee_wALT.push_back(registry.add<TH2>(Form("pteevsmee_wALT%s", particle.Data()), Form("pteevsmee_wALT_%s", particle.Data()), HistType::kTH2F, {mAxis, ptAxis}, true));
       fpteevsmee_orig_wALT.push_back(registry.add<TH2>(Form("pteevsmee_orig_wALT%s", particle.Data()), Form("pteevsmee_orig_wALT_%s", particle.Data()), HistType::kTH2F, {mAxis, ptAxis}, true));
     }
@@ -913,19 +921,17 @@ struct lmeelfcocktail {
   {
     // get efficiency histo
     LOGP(info, "Set Efficiency histo");
-    TString fFileName = filename;
-    TString fFileNameLocal = filename;
     // Get Efficiency weight file:
-    TFile* fFile = TFile::Open(fFileNameLocal.Data());
+    TFile* fFile = TFile::Open(filename.Data());
     if (!fFile) {
-      LOGP(error, "Could not open Efficiency file {}", fFileNameLocal.Data());
+      LOGP(error, "Could not open Efficiency file {}", filename.Data());
       return;
     }
     if (fFile->GetListOfKeys()->Contains(histname.Data())) {
       fhwEffpT = reinterpret_cast<TH1F*>(fFile->Get(histname.Data())); // histo: eff weight in function of pT.
       fhwEffpT->SetDirectory(nullptr);
     } else {
-      LOGP(error, "Could not open histogram {} from file {}", histname.Data(), fFileNameLocal.Data());
+      LOGP(error, "Could not open histogram {} from file {}", histname.Data(), filename.Data());
     }
 
     fFile->Close();
@@ -935,40 +941,38 @@ struct lmeelfcocktail {
   {
     // get resolutoin histo
     LOGP(info, "Set Resolution histo");
-    TString fFileName = filename;
-    TString fFileNameLocal = filename;
     // Get Resolution map
-    TFile* fFile = TFile::Open(fFileNameLocal.Data());
+    TFile* fFile = TFile::Open(filename.Data());
     if (!fFile) {
-      LOGP(error, "Could not open Resolution file {}", fFileNameLocal.Data());
+      LOGP(error, "Could not open Resolution file {}", filename.Data());
       return;
     }
     TObjArray* ArrResoPt = nullptr;
     if (fFile->GetListOfKeys()->Contains(ptHistName.Data())) {
       ArrResoPt = reinterpret_cast<TObjArray*>(fFile->Get(ptHistName.Data()));
     } else {
-      LOGP(error, "Could not open {} from file {}", ptHistName.Data(), fFileNameLocal.Data());
+      LOGP(error, "Could not open {} from file {}", ptHistName.Data(), filename.Data());
     }
 
     TObjArray* ArrResoEta = nullptr;
     if (fFile->GetListOfKeys()->Contains(etaHistName.Data())) {
       ArrResoEta = reinterpret_cast<TObjArray*>(fFile->Get(etaHistName.Data()));
     } else {
-      LOGP(error, "Could not open {} from file {}", etaHistName.Data(), fFileNameLocal.Data());
+      LOGP(error, "Could not open {} from file {}", etaHistName.Data(), filename.Data());
     }
 
     TObjArray* ArrResoPhi_Pos = nullptr;
     if (fFile->GetListOfKeys()->Contains(phiPosHistName.Data())) {
       ArrResoPhi_Pos = reinterpret_cast<TObjArray*>(fFile->Get(phiPosHistName.Data()));
     } else {
-      LOGP(error, "Could not open {} from file {}", phiPosHistName.Data(), fFileNameLocal.Data());
+      LOGP(error, "Could not open {} from file {}", phiPosHistName.Data(), filename.Data());
     }
 
     TObjArray* ArrResoPhi_Neg = nullptr;
     if (fFile->GetListOfKeys()->Contains(phiNegHistName.Data())) {
       ArrResoPhi_Neg = reinterpret_cast<TObjArray*>(fFile->Get(phiNegHistName.Data()));
     } else {
-      LOGP(error, "Could not open {} from file {}", phiNegHistName.Data(), fFileNameLocal.Data());
+      LOGP(error, "Could not open {} from file {}", phiNegHistName.Data(), filename.Data());
     }
     fArrResoPt = ArrResoPt;
     fArrResoEta = ArrResoEta;
@@ -981,12 +985,10 @@ struct lmeelfcocktail {
   {
     // get resolutoin histo
     LOGP(info, "Set Resolution histo");
-    TString fFileName = filename;
-    TString fFileNameLocal = filename;
     // Get Resolution map
-    TFile* fFile = TFile::Open(fFileNameLocal.Data());
+    TFile* fFile = TFile::Open(filename.Data());
     if (!fFile) {
-      LOGP(error, "Could not open Resolution file {}", fFileNameLocal.Data());
+      LOGP(error, "Could not open Resolution file {}", filename.Data());
       LOGP(error, "No resolution array set! Using internal parametrization");
       return;
     }
@@ -994,7 +996,7 @@ struct lmeelfcocktail {
     if (fFile->GetListOfKeys()->Contains(pHistName.Data())) {
       ArrResoP = reinterpret_cast<TObjArray*>(fFile->Get(pHistName.Data()));
     } else {
-      LOGP(error, "Could not open {} from file {}", pHistName.Data(), fFileNameLocal.Data());
+      LOGP(error, "Could not open {} from file {}", pHistName.Data(), filename.Data());
       LOGP(error, "No resolution array set! Using internal parametrization");
     }
 
@@ -1006,12 +1008,10 @@ struct lmeelfcocktail {
   {
     // get dca tamplates
     LOGP(info, "Set DCA templates");
-    TString fFileName = filename;
-    TString fFileNameLocal = filename;
     // Get  file:
-    TFile* fFile = TFile::Open(fFileNameLocal.Data());
+    TFile* fFile = TFile::Open(filename.Data());
     if (!fFile) {
-      LOGP(error, "Could not open DCATemplate file {}", fFileNameLocal.Data());
+      LOGP(error, "Could not open DCATemplate file {}", filename.Data());
       return;
     }
     fh_DCAtemplates = new TH1F*[nbDCAtemplate];
@@ -1019,7 +1019,7 @@ struct lmeelfcocktail {
       if (fFile->GetListOfKeys()->Contains(Form("%s%d", histname.Data(), jj + 1))) {
         fh_DCAtemplates[jj] = reinterpret_cast<TH1F*>(fFile->Get(Form("%s%d", histname.Data(), jj + 1)));
       } else {
-        LOGP(error, "Could not open {}{} from file {}", histname.Data(), jj + 1, fFileNameLocal.Data());
+        LOGP(error, "Could not open {}{} from file {}", histname.Data(), jj + 1, filename.Data());
       }
     }
     fFile->Close();
@@ -1029,36 +1029,34 @@ struct lmeelfcocktail {
   {
     // get multiplicity weights
     LOGP(info, "Set Multiplicity weight files");
-    TString fFileName = filename;
-    TString fFileNameLocal = filename;
-    TFile* fFile = TFile::Open(fFileNameLocal.Data());
+    TFile* fFile = TFile::Open(filename.Data());
     if (!fFile) {
-      LOGP(error, "Could not open Multiplicity weight file {}", fFileNameLocal.Data());
+      LOGP(error, "Could not open Multiplicity weight file {}", filename.Data());
       return;
     }
 
     if (fFile->GetListOfKeys()->Contains(histnamept.Data())) {
       fhwMultpT = reinterpret_cast<TH1F*>(fFile->Get(histnamept.Data())); // histo: multiplicity weight in function of pT.
     } else {
-      LOGP(error, "Could not open {} from file {}", histnamept.Data(), fFileNameLocal.Data());
+      LOGP(error, "Could not open {} from file {}", histnamept.Data(), filename.Data());
     }
 
     if (fFile->GetListOfKeys()->Contains(histnamemt.Data())) {
       fhwMultmT = reinterpret_cast<TH1F*>(fFile->Get(histnamemt.Data())); // histo: multiplicity weight in function of mT.
     } else {
-      LOGP(error, "Could not open {} from file {}", histnamemt.Data(), fFileNameLocal.Data());
+      LOGP(error, "Could not open {} from file {}", histnamemt.Data(), filename.Data());
     }
 
     if (fFile->GetListOfKeys()->Contains(histnamept2.Data())) {
       fhwMultpT2 = reinterpret_cast<TH1F*>(fFile->Get(histnamept2.Data())); // histo: multiplicity weight in function of pT.
     } else {
-      LOGP(error, "Could not open {} from file {}", histnamept2.Data(), fFileNameLocal.Data());
+      LOGP(error, "Could not open {} from file {}", histnamept2.Data(), filename.Data());
     }
 
     if (fFile->GetListOfKeys()->Contains(histnamemt2.Data())) {
       fhwMultmT2 = reinterpret_cast<TH1F*>(fFile->Get(histnamemt2)); // histo: multiplicity weight in function of mT.
     } else {
-      LOGP(error, "Could not open {} from file {}", histnamemt2.Data(), fFileNameLocal.Data());
+      LOGP(error, "Could not open {} from file {}", histnamemt2.Data(), filename.Data());
     }
     fFile->Close();
   }
@@ -1066,25 +1064,49 @@ struct lmeelfcocktail {
   void GetPhotonPtParametrization(TString filename, TString dirname, TString funcname)
   {
     LOGP(info, "Set photon parametrization");
-    TString fFileName = filename;
-    TString fFileNameLocal = filename;
-    TFile* fFile = TFile::Open(fFileNameLocal.Data());
-    if (!fFile) {
-      LOGP(error, "Could not open photon parametrization from file {}", fFileNameLocal.Data());
-      return;
-    }
-    bool good = false;
-    if (fFile->GetListOfKeys()->Contains(dirname.Data())) {
-      TDirectory* dir = fFile->GetDirectory(dirname.Data());
-      if (dir->GetListOfKeys()->Contains(funcname.Data())) {
-        ffVPHpT = reinterpret_cast<TF1*>(dir->Get(funcname.Data()));
-        good = true;
+
+    if (filename.EndsWith(".root")) { // read from ROOT file
+      TFile* fFile = TFile::Open(filename.Data());
+      if (!fFile) {
+        LOGP(error, "Could not open photon parametrization from file {}", filename.Data());
+        return;
       }
+      bool good = false;
+      if (fFile->GetListOfKeys()->Contains(dirname.Data())) {
+        TDirectory* dir = fFile->GetDirectory(dirname.Data());
+        if (dir->GetListOfKeys()->Contains(funcname.Data())) {
+          ffVPHpT = reinterpret_cast<TF1*>(dir->Get(funcname.Data()));
+          ffVPHpT->SetNpx(10000);
+          good = true;
+        }
+      }
+      if (!good) {
+        LOGP(error, "Could not open photon parametrization {}/{} from file {}", dirname.Data(), funcname.Data(), filename.Data());
+      }
+      fFile->Close();
+    } else if (filename.EndsWith(".json")) { // read from JSON file
+      std::ifstream fFile(filename.Data());
+      if (!fFile) {
+        LOGP(error, "Could not open photon parametrization from file {}", filename.Data());
+        return;
+      }
+      nlohmann::json paramfile = nlohmann::json::parse(fFile);
+      if (paramfile.contains(dirname.Data())) {
+        nlohmann::json dir = paramfile[dirname.Data()];
+        if (dir.contains(funcname.Data())) {
+          std::string formula = dir[funcname.Data()];
+          ffVPHpT = new TF1(TString(funcname.Data()), TString(formula), 0, 100);
+          if (ffVPHpT) {
+            ffVPHpT->SetNpx(10000);
+            return;
+          }
+        }
+      }
+      LOGP(error, "Could not open photon parametrization {}/{} from file {}", dirname.Data(), funcname.Data(), filename.Data());
+      return;
+    } else { // neither ROOT nor JSON
+      LOGP(error, "Not compatible file format for {}", filename.Data());
     }
-    if (!good) {
-      LOGP(error, "Could not open photon parametrization {}/{} from file {}", dirname.Data(), funcname.Data(), fFileNameLocal.Data());
-    }
-    fFile->Close();
   }
 
   void fillKrollWada()

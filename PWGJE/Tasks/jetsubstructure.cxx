@@ -111,9 +111,9 @@ struct JetSubstructureTask {
   }
   PROCESS_SWITCH(JetSubstructureTask, processDummy, "Dummy process function turned on by default", true);
 
-  void processData(soa::Join<aod::Jets, aod::JetConstituents>::iterator const& jet,
+  void processData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet,
                    aod::Tracks const& tracks,
-                   aod::JetConstituentsSub const& constituentsSub)
+                   aod::ChargedJetConstituentsSub const& constituentsSub)
   {
     jetConstituents.clear();
 
@@ -130,9 +130,9 @@ struct JetSubstructureTask {
   }
   PROCESS_SWITCH(JetSubstructureTask, processData, "jet substructure on data", false);
 
-  void processMCD(soa::Join<aod::MCDetectorLevelJets, aod::MCDetectorLevelJetConstituents>::iterator const& jet,
+  void processMCD(soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>::iterator const& jet,
                   aod::Tracks const& tracks,
-                  aod::JetConstituentsSub const& constituentsSub)
+                  aod::ChargedJetConstituentsSub const& constituentsSub)
   {
     jetConstituents.clear();
 
@@ -149,7 +149,7 @@ struct JetSubstructureTask {
   }
   PROCESS_SWITCH(JetSubstructureTask, processMCD, "jet substructure on MC detector level", false);
 
-  void processMCP(soa::Join<aod::MCParticleLevelJets, aod::MCParticleLevelJetConstituents>::iterator const& jet,
+  void processMCP(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet,
                   aod::McParticles const& particles)
   {
     jetConstituents.clear();
@@ -160,9 +160,9 @@ struct JetSubstructureTask {
   }
   PROCESS_SWITCH(JetSubstructureTask, processMCP, "jet substructure on MC particle level", false);
 };
-using JetSubstructureDataLevel = JetSubstructureTask<o2::aod::JetSubstructure>;
-using JetSubstructureMCDetectorLevel = JetSubstructureTask<o2::aod::MCDetectorLevelJetSubstructure>;
-using JetSubstructureMCParticleLevel = JetSubstructureTask<o2::aod::MCParticleLevelJetSubstructure>;
+using JetSubstructureDataLevel = JetSubstructureTask<o2::aod::ChargedJetSubstructure>;
+using JetSubstructureMCDetectorLevel = JetSubstructureTask<o2::aod::ChargedMCDetectorLevelJetSubstructure>;
+using JetSubstructureMCParticleLevel = JetSubstructureTask<o2::aod::ChargedMCParticleLevelJetSubstructure>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

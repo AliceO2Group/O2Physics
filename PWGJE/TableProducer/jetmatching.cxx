@@ -10,124 +10,168 @@
 // or submit itself to any jurisdiction.
 
 /// \file jetmatching.cxx
-/// \brief Matching jets between different jet tables
+/// \brief Unified implementation of jet matching based on different criteria
+/// expanding on previously separate implementations of geometric matching
+/// (by Raymond Ehlers) and heavy-flavour matching
 ///
 /// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
+/// \author Jochen Klein <jochen.klein@cern.ch>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
+#include "Framework/runDataProcessing.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetUtilities.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec jetMatching = {"jet-matching",
-                                 VariantType::String,
-                                 // NOTE: Even though this may not be the most sensible default, one
-                                 // must be set to avoid a segfault during compilation due to an empty workflow.
-                                 "MCDetectorLevel-MCParticleLevel",
-                                 {"Jet collections to match, separated by commas. Example: \"MCDetectorLevel-MCParticleLevel\". Possible components: MCParticleLevel, MCDetectorLevel, HybridIntermediate, Hybrid"}};
-  workflowOptions.push_back(jetMatching);
-}
-
-#include "Framework/runDataProcessing.h"
-
-template <typename CollisionType, typename BaseJetCollection, typename BaseJetCollectionMatching, typename TagJetCollection, typename TagJetCollectionMatching>
-struct JetMatching {
+template <typename BaseJetCollection, typename TagJetCollection,
+          typename BaseToTagMatchingTable, typename TagToBaseMatchingTable, typename HfCandidates>
+struct JetMatchingHF {
   Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.4f, "Max matching distance"};
-  Produces<BaseJetCollectionMatching> jetsBaseMatching;
-  Produces<TagJetCollectionMatching> jetsTagMatching;
+
+  Produces<BaseToTagMatchingTable> jetsBaseToTag;
+  Produces<TagToBaseMatchingTable> jetsTagToBase;
+
+  // preslicing jet collections, only for MC-based collection
+  static constexpr bool jetsBaseIsMC = o2::soa::relatedByIndex<aod::McCollisions, BaseJetCollection>();
+  static constexpr bool jetsTagIsMC = o2::soa::relatedByIndex<aod::McCollisions, TagJetCollection>();
+  Preslice<BaseJetCollection> baseJetsPerCollision = jetsBaseIsMC ? aod::jet::mcCollisionId : aod::jet::collisionId;
+  Preslice<TagJetCollection> tagJetsPerCollision = jetsTagIsMC ? aod::jet::mcCollisionId : aod::jet::collisionId;
+
+  using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
+  using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
+  using McParticles = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
 
   void init(InitContext const&)
   {
   }
 
-  void process(
-    //soa::Filtered<CollisionType>::iterator const& collision,
-    CollisionType const& collision,
-    //aod::Collision const& collision,
-    BaseJetCollection const& jetsBase,
-    TagJetCollection const& jetsTag)
+  void process(Collisions::iterator const& collision, aod::McCollisions const& mcCollisions,
+               BaseJetCollection const& jetsBase, TagJetCollection const& jetsTag,
+               Tracks const& tracks, McParticles const& particlesMC,
+               HfCandidates const& hfcandidates)
   {
-    std::vector<double> jetsBasePhi(jetsBase.size());
-    std::vector<double> jetsBaseEta(jetsBase.size());
-    for (auto jet : jetsBase) {
+    // const auto jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, jetsBaseIsMC ? collision.mcCollisionId() : collision.globalIndex());
+    const auto jetsBasePerColl = jetsBase;
+    const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, jetsTagIsMC ? collision.mcCollisionId() : collision.globalIndex());
+
+    // geometric matching
+    std::vector<double> jetsBasePhi(jetsBasePerColl.size());
+    std::vector<double> jetsBaseEta(jetsBasePerColl.size());
+    for (auto jet : jetsBasePerColl) {
       jetsBasePhi.emplace_back(jet.phi());
       jetsBaseEta.emplace_back(jet.eta());
     }
-    std::vector<double> jetsTagPhi(jetsTag.size());
-    std::vector<double> jetsTagEta(jetsTag.size());
-    for (auto& jet : jetsTag) {
+    std::vector<double> jetsTagPhi(jetsTagPerColl.size());
+    std::vector<double> jetsTagEta(jetsTagPerColl.size());
+    for (auto& jet : jetsTagPerColl) {
       jetsTagPhi.emplace_back(jet.phi());
       jetsTagEta.emplace_back(jet.eta());
     }
     auto&& [baseToTagIndexMap, tagToBaseIndexMap] = JetUtilities::MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, maxMatchingDistance);
 
-    unsigned int i = 0;
-    for (auto& jet : jetsBase) {
-      // Store results
-      jetsBaseMatching(jet.globalIndex(), baseToTagIndexMap[i]);
-      ++i;
+    // forward matching
+    for (const auto& jet : jetsBasePerColl) {
+      LOGF(info, "jet index: %d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
+           jet.index(), jet.collisionId(), jet.pt(), jet.phi(), jet.tracks().size(), jet.hfcandidates().size());
+
+      const auto& cands = jet.template hfcandidates_as<HfCandidates>();
+      int matchedIdx = -1;
+      if ((cands.front().flagMcMatchRec() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) != 0) {
+        for (const auto& cand : cands) {
+          const auto& daughter0 = cand.template prong0_as<Tracks>();
+          const auto& daughter1 = cand.template prong1_as<Tracks>();
+          if (!daughter0.has_mcParticle() || !daughter1.has_mcParticle()) {
+            LOGF(warning, "Encountered candidate daughter (%d or %d) without MC particle", daughter0.globalIndex(), daughter1.globalIndex());
+            continue;
+          }
+          const auto mother0Id = daughter0.template mcParticle_as<McParticles>().template mothers_as<McParticles>().front().globalIndex();
+          const auto mother1Id = daughter1.template mcParticle_as<McParticles>().template mothers_as<McParticles>().front().globalIndex();
+          LOGF(debug, "MC candidate %d with prongs: %d (MC %d), %d (MC %d)", cand.globalIndex(),
+               daughter0.globalIndex(), daughter0.template mcParticle_as<McParticles>().globalIndex(),
+               daughter1.globalIndex(), daughter1.template mcParticle_as<McParticles>().globalIndex());
+          LOGF(info, "MC ids of mothers: %d - %d", mother0Id, mother1Id);
+          if ((mother0Id == mother1Id) &&
+              std::abs(daughter0.template mcParticle_as<McParticles>().template mothers_as<McParticles>().front().flagMcMatchGen()) & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+            LOGF(info, "D0 - looking for jet");
+            for (const auto& pjet : jetsTagPerColl) {
+              for (const auto& cand : pjet.template hfcandidates_as<McParticles>()) {
+                if (mother0Id == cand.globalIndex()) {
+                  matchedIdx = pjet.globalIndex();
+                  LOGF(info, "Found match det to part: %d (pt %g) -> %d (pt %g)",
+                       jet.globalIndex(), jet.pt(), matchedIdx, pjet.pt());
+                }
+              }
+            }
+          }
+        }
+      }
+      jetsBaseToTag(matchedIdx, baseToTagIndexMap[jet.index()]);
     }
-    i = 0;
-    for (auto& jet : jetsTag) {
-      // Store results
-      jetsTagMatching(jet.globalIndex(), tagToBaseIndexMap[i]);
-      ++i;
+
+    // backward matching
+    for (const auto& jet : jetsTagPerColl) {
+      LOGF(info, "MC jet index: %d (coll %d) with %d tracks, %d HF candidates",
+           jet.index(), jet.mcCollisionId(), jet.tracks().size(), jet.hfcandidates().size());
+
+      int matchedIdx = -1;
+      for (const auto& cand : jet.template hfcandidates_as<McParticles>()) {
+        const auto& daughters = cand.template daughters_as<McParticles>();
+        LOGF(info, "MC candidate %d with daughters %d, %d", cand.globalIndex(), daughters.iteratorAt(0).globalIndex(), daughters.iteratorAt(1).globalIndex());
+        int index0 = -1, index1 = -1;
+        for (const auto& track : tracks) {
+          if (!track.has_mcParticle())
+            continue;
+          if (track.mcParticle_as<McParticles>().globalIndex() == daughters.iteratorAt(0).globalIndex() &&
+              index0 < 0) {
+            index0 = track.globalIndex();
+            LOGF(info, "Found track for daughter 0: %d", index0);
+          }
+          if (track.mcParticle_as<McParticles>().globalIndex() == daughters.iteratorAt(1).globalIndex() &&
+              index1 < 0) {
+            index1 = track.globalIndex();
+            LOGF(info, "Found track for daughter 1: %d", index1);
+          }
+        }
+        if (index0 < 0 || index1 < 0)
+          continue;
+        int candIdx = 0;
+        for (const auto& prong : hfcandidates) {
+          LOGF(info, "checking prong %d with daughters %d-%d, %d-%d",
+               prong.globalIndex(), prong.prong0Id(), prong.template prong0_as<Tracks>().globalIndex(), prong.prong1Id(), prong.template prong1_as<Tracks>().globalIndex());
+          if ((prong.template prong0_as<Tracks>().globalIndex() == index0 && prong.template prong1_as<Tracks>().globalIndex() == index1) ||
+              (prong.prong0Id() == index1 && prong.prong1Id() == index0)) {
+            candIdx = prong.globalIndex();
+            LOGF(info, "Found matching 2prong candidate: %d", candIdx);
+          }
+        }
+        for (const auto& djet : jetsBasePerColl) {
+          if (djet.template hfcandidates_as<HfCandidates>().front().globalIndex() == candIdx) {
+            matchedIdx = djet.globalIndex();
+            LOGF(info, "Found match part to det: %d -> %d", jet.globalIndex(), matchedIdx);
+          }
+        }
+      }
+      jetsTagToBase(matchedIdx, tagToBaseIndexMap[jet.index()]);
     }
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  // TODO: Is there a better way to do this?
-  // TODO: String validation and normalization. There's too much room for error with enumerations.
-  auto jetMatching = cfgc.options().get<std::string>("jet-matching");
-  // Tokenize using stringstream
-  std::vector<std::string> matchingOptions;
-  std::stringstream ss;
-  ss << jetMatching;
-  while (ss.good()) {
-    std::string substring;
-    getline(ss, substring, ',');
-    matchingOptions.push_back(substring);
-  }
-  std::vector<o2::framework::DataProcessorSpec> tasks;
-  // NOTE: soa::Filtered must be applied here. It would have been nicer to apply in process, but it doesn't
-  //       appear to get recognized as a type in that case (reason is unclear).
-  for (auto opt : matchingOptions) {
-    // If there is a hybrid subtracted jet collection.
-    if (opt == "Hybrid-HybridIntermediate") {
-      tasks.emplace_back(
-        adaptAnalysisTask<JetMatching<soa::Filtered<o2::aod::Collisions>::iterator, o2::aod::Jets, o2::aod::MatchedJets,
-                                      o2::aod::HybridIntermediateJets, o2::aod::MatchedHybridIntermediateJets>>(
-          cfgc, TaskName{"jet-matching-hybrid-sub-to-hybrid-intermedaite"}));
-    }
-    // If there are two classes of hybrid jets, this will match from the second class to the detector level
-    if (opt == "HybridIntermediate-MCDetectorLevel") {
-      tasks.emplace_back(
-        adaptAnalysisTask<JetMatching<soa::Filtered<o2::aod::Collisions>::iterator, o2::aod::HybridIntermediateJets, o2::aod::MatchedHybridIntermediateJets,
-                                      o2::aod::MCDetectorLevelJets, o2::aod::MatchedMCDetectorLevelJets>>(cfgc, TaskName{"jet-matching-hybrid-intermediate-to-MC-detector-level"}));
-    }
-    // If there is just a single standard hybrid jet collection, it can be matched directly to MC detector level.
-    if (opt == "Hybrid-MCDetectorLevel") {
-      tasks.emplace_back(
-        adaptAnalysisTask<JetMatching<soa::Filtered<o2::aod::Collisions>::iterator, o2::aod::Jets,
-                                      o2::aod::MatchedJets, o2::aod::MCDetectorLevelJets, o2::aod::MatchedMCDetectorLevelJets>>(cfgc, TaskName{"jet-matching-hybrid-to-MC-detector-level"}));
-    }
-    // Finally, match MC detector level to MC particle level.
-    if (opt == "MCDetectorLevel-MCParticleLevel") {
-      tasks.emplace_back(
-        adaptAnalysisTask<JetMatching<soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels>>::iterator,
-                                      o2::aod::MCDetectorLevelJets, o2::aod::MatchedMCDetectorLevelJets, o2::aod::MCParticleLevelJets, o2::aod::MatchedMCParticleLevelJets>>(cfgc, TaskName{"jet-matching-MC-detector-level-to-MC-particle-level"}));
-    }
-  }
-  return WorkflowSpec{tasks};
+  return WorkflowSpec{
+    adaptAnalysisTask<JetMatchingHF<soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>,
+                                    soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>,
+                                    aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets,
+                                    aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets,
+                                    soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>>(cfgc, TaskName{"jet-matching-hf"})};
 }
