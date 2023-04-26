@@ -123,25 +123,25 @@ struct JetMatchingHF {
 };
 
 using ChargedJetMatching = JetMatchingHF<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>,
-                                    soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>,
-                                    aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets,
-                                    aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets,
-                                    soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
+                                         soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>,
+                                         aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets,
+                                         aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets,
+                                         soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
 using D0ChargedJetMatching = JetMatchingHF<soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>,
-                                    soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>,
-                                    aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets,
-                                    aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets,
-                                    soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
+                                           soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>,
+                                           aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets,
+                                           aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets,
+                                           soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
 using LcChargedJetMatching = JetMatchingHF<soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents>,
-                                    soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents>,
-                                    aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets,
-                                    aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets,
-                                    soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
+                                           soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents>,
+                                           aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets,
+                                           aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets,
+                                           soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
 using BPlusChargedJetMatching = JetMatchingHF<soa::Join<aod::BPlusChargedMCDetectorLevelJets, aod::BPlusChargedMCDetectorLevelJetConstituents>,
-                                       soa::Join<aod::BPlusChargedMCParticleLevelJets, aod::BPlusChargedMCParticleLevelJetConstituents>,
-                                       aod::BPlusChargedMCDetectorLevelJetsMatchedToBPlusChargedMCParticleLevelJets,
-                                       aod::BPlusChargedMCParticleLevelJetsMatchedToBPlusChargedMCDetectorLevelJets,
-                                       soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>;
+                                              soa::Join<aod::BPlusChargedMCParticleLevelJets, aod::BPlusChargedMCParticleLevelJetConstituents>,
+                                              aod::BPlusChargedMCDetectorLevelJetsMatchedToBPlusChargedMCParticleLevelJets,
+                                              aod::BPlusChargedMCParticleLevelJetsMatchedToBPlusChargedMCDetectorLevelJets,
+                                              soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
