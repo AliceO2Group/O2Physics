@@ -118,7 +118,7 @@ struct k892analysis {
     auto vKaonTPCPIDcuts = static_cast<std::vector<double>>(kaonTPCPIDcuts);
     auto vKaonTOFPIDpTintv = static_cast<std::vector<double>>(kaonTOFPIDpTintv);
     auto vKaonTOFPIDcuts = static_cast<std::vector<double>>(kaonTOFPIDcuts);
-    auto lengthOfkaonTPCPIDpTintv = (int)vKaonTPCPIDpTintv.size();
+    auto lengthOfkaonTPCPIDpTintv = static_cast<int>(vKaonTPCPIDpTintv.size());
     for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
