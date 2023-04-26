@@ -72,7 +72,7 @@ struct JetMatchingHF {
   {
   }
 
-  // for now: 
+  // for now:
   // BaseJetCollection must contain detector level jets
   // TagJetCollection must contain particle level jets
   void process(Collisions::iterator const& collision, aod::McCollisions const& mcCollisions,
@@ -90,7 +90,7 @@ struct JetMatchingHF {
     const auto hf_flag = getHfFlag();
 
     // geometric matching
-    LOGF(debug, "performing geometric matching for collision %d", collision.globalIndex());
+    LOGF(info, "performing geometric matching for collision %d", collision.globalIndex());
     std::vector<double> jetsBasePhi(jetsBasePerColl.size());
     std::vector<double> jetsBaseEta(jetsBasePerColl.size());
     for (const auto& jet : jetsBasePerColl) {
@@ -105,16 +105,11 @@ struct JetMatchingHF {
     }
     auto&& [baseToTagGeo, tagToBaseGeo] = JetUtilities::MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, maxMatchingDistance);
 
-    for (auto i : baseToTagGeo)
-      LOGF(info, "bjet %i -> %i", i, baseToTagGeo[i]);
-    for (auto i : tagToBaseGeo)
-      LOGF(info, "tjet %i -> %i", i, baseToTagGeo[i]);
-
     // HF matching
     std::vector<int> baseToTagHF(jetsBasePerColl.size(), -1);
     std::vector<int> tagToBaseHF(jetsTagPerColl.size(), -1);
     if (hf_flag > 0) {
-      LOGF(debug, "performing HF matching for collision %d", collision.globalIndex());
+      LOGF(info, "performing HF matching for collision %d", collision.globalIndex());
       for (const auto& bjet : jetsBasePerColl) {
         LOGF(info, "jet index: %d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
              bjet.index(), bjet.collisionId(), bjet.pt(), bjet.phi(), bjet.tracks().size(), bjet.hfcandidates().size());
@@ -137,15 +132,25 @@ struct JetMatchingHF {
     }
 
     for (const auto& jet : jetsBasePerColl) {
+      int geojetid = baseToTagGeo[jet.index()];
+      if (geojetid > -1 && geojetid < jetsTagPerColl.size())
+        geojetid = jetsTagPerColl.iteratorAt(geojetid).globalIndex();
+      else
+        geojetid = -1;
       LOGF(info, "registering matches for base jet %d (%d): geo -> %d, HF -> %d",
-           jet.index(), jet.globalIndex(), baseToTagGeo[jet.index()], baseToTagHF[jet.index()]);
-      jetsBaseToTag(baseToTagGeo[jet.index()], baseToTagHF[jet.index()]);
+           jet.index(), jet.globalIndex(), geojetid, baseToTagHF[jet.index()]);
+      jetsBaseToTag(geojetid, baseToTagHF[jet.index()]);
     }
 
     for (const auto& jet : jetsTagPerColl) {
+      int geojetid = tagToBaseGeo[jet.index()];
+      if (geojetid > -1 && geojetid < jetsBasePerColl.size())
+        geojetid = jetsBasePerColl.iteratorAt(geojetid).globalIndex();
+      else
+        geojetid = -1;
       LOGF(info, "registering matches for tag jet %d (%d): geo -> %d, HF -> %d",
-           jet.index(), jet.globalIndex(), tagToBaseGeo[jet.index()], tagToBaseHF[jet.index()]);
-      jetsTagToBase(tagToBaseGeo[jet.index()], tagToBaseHF[jet.index()]);
+           jet.index(), jet.globalIndex(), geojetid, tagToBaseHF[jet.index()]);
+      jetsTagToBase(geojetid, tagToBaseHF[jet.index()]);
     }
   }
 };

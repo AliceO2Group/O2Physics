@@ -139,7 +139,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
-  // tasks.emplace_back(adaptAnalysisTask<ChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<ChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-ch"}));
   tasks.emplace_back(adaptAnalysisTask<D0ChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-d0-ch"}));
   tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-lc-ch"}));
   tasks.emplace_back(adaptAnalysisTask<BPlusChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-bplus-ch"}));
