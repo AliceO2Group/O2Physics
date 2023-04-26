@@ -13,6 +13,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "Framework/runDataProcessing.h"
+#include "Common/DataModel/StrangenessTracking.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -87,6 +88,7 @@ struct StrangenessTrackingQATask {
       LOGF(info, "ntrack (id: %d, pdg: %d) has mother %d", ntrack.mcParticleId(),
            ntrack.mcParticle().pdgCode(), ntrack.mcParticle().has_mothers() ? ntrack.mcParticle().mothersIds()[0] : -1);
 
+      LOG(info) << "bachelor with PDG code: " << bachelor.mcParticle().pdgCode();
       if (ptrack.mcParticle().has_mothers() && ntrack.mcParticle().has_mothers() &&
           ptrack.mcParticle().mothersIds()[0] == ntrack.mcParticle().mothersIds()[0]) {
         const auto v0part = ptrack.mcParticle().mothers_as<aod::McParticles>()[0];

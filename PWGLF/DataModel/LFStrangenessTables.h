@@ -537,19 +537,6 @@ DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
 DECLARE_SOA_TABLE(McTraCascLabels, "AOD", "MCTRACASCLABEL", //! Table joinable to cascdata containing the MC labels
                   mctracasclabel::McParticleId);
 using McTraCascLabel = McTraCascLabels::iterator;
-
-DECLARE_SOA_TABLE(TrackedCascadeColls, "AOD", "TRACASCCOLL", //! Table joinable with TrackedCascades containing collision ids
-                  track::CollisionId, o2::soa::Marker<1>);
-using TrackedCascadeColl = TrackedCascadeColls::iterator;
-
-DECLARE_SOA_TABLE(TrackedV0Colls, "AOD", "TRAV0COLL", //! Table joinable with TrackedV0s containing collision ids
-                  track::CollisionId, o2::soa::Marker<2>);
-using TrackedV0Coll = TrackedV0Colls::iterator;
-
-DECLARE_SOA_TABLE(Tracked3BodyColls, "AOD", "TRA3BODYCOLL", //! Table joinable with Tracked3Bodys containing collision ids
-                  track::CollisionId, o2::soa::Marker<3>);
-using Tracked3BodyColl = Tracked3BodyColls::iterator;
-
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_

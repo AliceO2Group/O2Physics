@@ -13,7 +13,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "Common/DataModel/StrangenessTracking.h"
 
 using namespace o2;
 using namespace o2::framework;
