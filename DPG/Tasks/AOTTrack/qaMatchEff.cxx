@@ -58,7 +58,7 @@ struct qaMatchEff {
       "Boolean to switch the usage of pt calculated at the inner wall of TPC "
       "on/off."};
   Configurable<bool> b_useTPCinnerWallPtForITS{
-      "b_useTPCinnerWallPtForITS", true,
+      "b_useTPCinnerWallPtForITS", false,
       "Boolean to switch the usage of pt calculated at the inner wall of TPC "
       "on/off just for ITS-tagged (not TPC tagged) histos."};
   // TPC
