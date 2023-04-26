@@ -57,6 +57,10 @@ using MCParticlesPlus2Prong = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen
 using MCParticlesPlus3Prong = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
 struct HfCorrelatorDMesonPairs {
+  SliceCache cache;
+  Preslice<aod::HfCand2Prong> perCol2Prong = aod::hf_cand::collisionId;
+  Preslice<aod::HfCand3Prong> perCol3Prong = aod::hf_cand::collisionId;
+
   Produces<aod::D0Pair> entryD0Pair;
   Produces<aod::D0PairRecoInfo> entryD0PairRecoInfo;
   Produces<aod::DPlusPair> entryDPlusPair;
@@ -356,7 +360,7 @@ struct HfCorrelatorDMesonPairs {
       LOGF(fatal, "Wrong PDG code. Change it to 421 (D0)."); // Assure that we have the right PDG code
     }
     analyseMultiplicity(collision, tracks);
-    auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+    auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (auto& candidate1 : selectedD0CandidatesGrouped) {
       if (!kinematicCuts(candidate1))
         continue;
@@ -401,7 +405,7 @@ struct HfCorrelatorDMesonPairs {
       LOGF(fatal, "Wrong PDG code. Change it to 421 (D0)."); // Assure that we have the right PDG code
     }
     analyseMultiplicity(collision, tracks);
-    auto selectedD0CandidatesGroupedMC = selectedD0candidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+    auto selectedD0CandidatesGroupedMC = selectedD0candidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (auto& candidate1 : selectedD0CandidatesGroupedMC) {
       if (!kinematicCuts(candidate1))
         continue;
@@ -481,7 +485,7 @@ struct HfCorrelatorDMesonPairs {
       LOGF(fatal, "Wrong PDG code. Change it to 431 (DPlus)."); // Assure that we have the right PDG code
     }
     analyseMultiplicity(collision, tracks);
-    auto selectedDPlusCandidatesGrouped = selectedDPlusCandidates->sliceByCached(o2::aod::hf_cand::collisionId, collision.globalIndex());
+    auto selectedDPlusCandidatesGrouped = selectedDPlusCandidates->sliceByCached(o2::aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (auto& candidate1 : selectedDPlusCandidatesGrouped) {
       if (!kinematicCuts(candidate1))
         continue;
@@ -538,7 +542,7 @@ struct HfCorrelatorDMesonPairs {
       LOGF(fatal, "Wrong PDG code. Change it to 431 (DPlus)."); // Assure that we have the right PDG code
     }
     analyseMultiplicity(collision, tracks);
-    auto selectedDPlusCandidatesGroupedMC = selectedDPlusCandidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+    auto selectedDPlusCandidatesGroupedMC = selectedDPlusCandidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (auto& candidate1 : selectedDPlusCandidatesGroupedMC) {
       if (!kinematicCuts(candidate1))
         continue;

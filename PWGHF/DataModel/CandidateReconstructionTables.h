@@ -1323,7 +1323,7 @@ DECLARE_SOA_COLUMN(IsReco, isReco, int);
 
 } // namespace hf_correlation_d0_pair
 
-DECLARE_SOA_TABLE(D0Pair, "AOD", "DHADRONPAIR",
+DECLARE_SOA_TABLE(D0Pair, "AOD", "D0PAIR",
                   hf_correlation_d0_pair::DeltaPhi,
                   hf_correlation_d0_pair::DeltaEta,
                   hf_correlation_d0_pair::PtCand1,
@@ -1335,7 +1335,7 @@ DECLARE_SOA_TABLE(D0Pair, "AOD", "DHADRONPAIR",
                   hf_correlation_d0_pair::CandidateType1,
                   hf_correlation_d0_pair::CandidateType2,
                   hf_correlation_d0_pair::IsData);
-DECLARE_SOA_TABLE(D0PairRecoInfo, "AOD", "DHADRONRECOINFO",
+DECLARE_SOA_TABLE(D0PairRecoInfo, "AOD", "D0PAIRRECOINFO",
                   hf_correlation_d0_pair::Origin1,
                   hf_correlation_d0_pair::Origin2,
                   hf_correlation_d0_pair::MatchedMc1,
