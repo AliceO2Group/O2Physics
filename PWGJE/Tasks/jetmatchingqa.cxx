@@ -49,7 +49,7 @@ struct JetMatchingQA {
                                        100, -2. * TMath::Pi(), 2. * TMath::Pi(), 100, -2., 2.));
     hJetPt.setObject(new TH2F("h_jet_pt", "HF-matched jets;jet p_{T}^{gen} (GeV/#it{c});jet p_{T}^{det} (GeV/#it{c})",
                               100, 0., 100., 100, 0., 100.));
-    hJetDetaDphi.setObject(new TH2F("h_jet_deta_dphi", "HFg-matched jets;jet #Delta#phi;#Delta#eta",
+    hJetDetaDphi.setObject(new TH2F("h_jet_deta_dphi", "HF-matched jets;jet #Delta#phi;#Delta#eta",
                                     100, -2. * TMath::Pi(), 2. * TMath::Pi(), 100, -2., 2.));
 
     hJetDetPt.setObject(new TH1F("h_jet_det_pt", "detector level jets;jet p_{T}^{det} (GeV/#it{c})", 100, 0., 100.));
@@ -74,7 +74,7 @@ struct JetMatchingQA {
 
       if (djet.has_matchedJetCand() && djet.matchedJetCandId() >= 0) {
         const auto& pjet = djet.template matchedJetCand_as<TagJetCollection>();
-        LOGF(info, "djet %d (pt of %g GeV/c) is matched to %d (pt of %g GeV/c)",
+        LOGF(info, "djet %d (pt of %g GeV/c) is HF-matched to %d (pt of %g GeV/c)",
              djet.globalIndex(), djet.pt(), djet.matchedJetCandId(), pjet.pt());
         hJetPt->Fill(pjet.pt(), djet.pt());
         const auto dphi = -TMath::Pi() + fmod(2 * TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2 * TMath::Pi()), 2 * TMath::Pi());
@@ -105,7 +105,7 @@ struct JetMatchingQA {
 
       if (pjet.has_matchedJetCand() && pjet.matchedJetCandId() >= 0) {
         const auto& djet = pjet.template matchedJetCand_as<BaseJetCollection>();
-        LOGF(info, "pjet %d (pt of %g GeV/c) is matched to %d (pt of %g GeV/c)",
+        LOGF(info, "pjet %d (pt of %g GeV/c) is HF-matched to %d (pt of %g GeV/c)",
              pjet.globalIndex(), pjet.pt(), pjet.matchedJetCandId(), djet.pt());
       }
 
@@ -118,6 +118,10 @@ struct JetMatchingQA {
   }
   PROCESS_SWITCH(JetMatchingQA, processMCP, "QA on generator-level jets", true);
 };
+
+using ChargedDetectorLevelJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>;
+using ChargedParticleLevelJets = soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
+using ChargedJetMatchingQA = JetMatchingQA<ChargedDetectorLevelJets, ChargedParticleLevelJets>;
 
 using D0ChargedDetectorLevelJets = soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>;
 using D0ChargedParticleLevelJets = soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>;
@@ -135,9 +139,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
-  tasks.emplace_back(adaptAnalysisTask<D0ChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-d0"}));
-  tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-lc"}));
-  tasks.emplace_back(adaptAnalysisTask<BPlusChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-bplus"}));
+  // tasks.emplace_back(adaptAnalysisTask<ChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<D0ChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-d0-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-lc-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<BPlusChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-bplus-ch"}));
 
   return WorkflowSpec{tasks};
 }
