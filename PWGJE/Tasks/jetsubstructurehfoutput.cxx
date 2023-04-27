@@ -49,7 +49,7 @@ struct JetSubstructureHFOutputTask {
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc->PKPi"};
   Configurable<int> selectionFlagLcToPiKP{"selectionFlagLcToPiKP", 1, "Selection Flag for Lc->PiKP"};
-  Configurable<int> selectionFlagBPlus{"selectionFlagBPlus", 1, "Selection Flag for B+"};
+  Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
 
   void processDummy(aod::Tracks const& track)
   {
@@ -158,7 +158,7 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processLcMCP, "Lc jet substructure output on MC particle level", false);
 
-  void processBPlusData(soa::Join<aod::BPlusChargedJets, aod::BPlusChargedJetConstituents, aod::BPlusChargedJetSubstructure>::iterator const& jet, // add template back
+  void processBplusData(soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents, aod::BplusChargedJetSubstructure>::iterator const& jet, // add template back
                         soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const& candidates,
                         aod::Tracks const& tracks)
   {
@@ -172,9 +172,9 @@ struct JetSubstructureHFOutputTask {
 
     jetSubstructurehfoutputTable(jet.pt(), jet.phi(), jet.eta(), jet.tracks().size(), cand.pt(), cand.phi(), cand.eta(), yBplus(cand), invMassCand, invMassCandBar, jet.zg(), jet.rg(), jet.nsd());
   }
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processBPlusData, "B+ jet substructure output on data", false);
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processBplusData, "B+ jet substructure output on data", false);
 
-  void processBPlusMCD(soa::Join<aod::BPlusChargedMCDetectorLevelJets, aod::BPlusChargedMCDetectorLevelJetConstituents, aod::BPlusChargedMCDetectorLevelJetSubstructure>::iterator const& jet,
+  void processBplusMCD(soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents, aod::BplusChargedMCDetectorLevelJetSubstructure>::iterator const& jet,
                        soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec> const& candidates,
                        aod::Tracks const& tracks)
   {
@@ -187,9 +187,9 @@ struct JetSubstructureHFOutputTask {
     invMassCandBar = invMassCand;
     jetSubstructurehfoutputTable(jet.pt(), jet.phi(), jet.eta(), jet.tracks().size(), cand.pt(), cand.phi(), cand.eta(), yBplus(cand), invMassCand, invMassCandBar, jet.zg(), jet.rg(), jet.nsd());
   }
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processBPlusMCD, "B+ jet substructure output on MC detector level", false);
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processBplusMCD, "B+ jet substructure output on MC detector level", false);
 
-  void processBPlusMCP(soa::Join<aod::BPlusChargedMCParticleLevelJets, aod::BPlusChargedMCParticleLevelJetConstituents, aod::BPlusChargedMCParticleLevelJetSubstructure>::iterator const& jet,
+  void processBplusMCP(soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents, aod::BplusChargedMCParticleLevelJetSubstructure>::iterator const& jet,
                        aod::McParticles const& particles)
   {
 
@@ -199,7 +199,7 @@ struct JetSubstructureHFOutputTask {
     auto M = RecoDecay::getMassPDG(hfparticle.pdgCode());
     jetSubstructurehfoutputTable(jet.pt(), jet.phi(), jet.eta(), jet.tracks().size(), hfparticle.pt(), hfparticle.phi(), hfparticle.eta(), Y, M, M, jet.zg(), jet.rg(), jet.nsd());
   }
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processBPlusMCP, "B+ jet substructure output on MC particle level", false);
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processBplusMCP, "B+ jet substructure output on MC particle level", false);
 };
 using JetSubstructureOutputDataD0 = JetSubstructureHFOutputTask<aod::D0ChargedJetSubstructureOutput>;
 using JetSubstructureOutputMCParticleLevelD0 = JetSubstructureHFOutputTask<aod::D0ChargedMCDetectorLevelJetSubstructureOutput>;
@@ -207,9 +207,9 @@ using JetSubstructureOutputMCDetectorLevelD0 = JetSubstructureHFOutputTask<aod::
 using JetSubstructureOutputDataLc = JetSubstructureHFOutputTask<aod::LcChargedJetSubstructureOutput>;
 using JetSubstructureOutputMCParticleLevelLc = JetSubstructureHFOutputTask<aod::LcChargedMCDetectorLevelJetSubstructureOutput>;
 using JetSubstructureOutputMCDetectorLevelLc = JetSubstructureHFOutputTask<aod::LcChargedMCParticleLevelJetSubstructureOutput>;
-using JetSubstructureOutputDataBPlus = JetSubstructureHFOutputTask<aod::BPlusChargedJetSubstructureOutput>;
-using JetSubstructureOutputMCParticleLevelBPlus = JetSubstructureHFOutputTask<aod::BPlusChargedMCDetectorLevelJetSubstructureOutput>;
-using JetSubstructureOutputMCDetectorLevelBPlus = JetSubstructureHFOutputTask<aod::BPlusChargedMCParticleLevelJetSubstructureOutput>;
+using JetSubstructureOutputDataBplus = JetSubstructureHFOutputTask<aod::BplusChargedJetSubstructureOutput>;
+using JetSubstructureOutputMCParticleLevelBplus = JetSubstructureHFOutputTask<aod::BplusChargedMCDetectorLevelJetSubstructureOutput>;
+using JetSubstructureOutputMCDetectorLevelBplus = JetSubstructureHFOutputTask<aod::BplusChargedMCParticleLevelJetSubstructureOutput>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -239,17 +239,17 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
                                                                                SetDefaultProcesses{},
                                                                                TaskName{"jet-substructure-output-Lc-mcp"}));
 
-  tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputDataBPlus>(cfgc,
+  tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputDataBplus>(cfgc,
                                                                        SetDefaultProcesses{},
-                                                                       TaskName{"jet-substructure-output-BPlus-data"}));
+                                                                       TaskName{"jet-substructure-output-Bplus-data"}));
 
-  tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputMCDetectorLevelBPlus>(cfgc,
+  tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputMCDetectorLevelBplus>(cfgc,
                                                                                   SetDefaultProcesses{},
-                                                                                  TaskName{"jet-substructure-output-BPlus-mcd"}));
+                                                                                  TaskName{"jet-substructure-output-Bplus-mcd"}));
 
-  tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputMCParticleLevelBPlus>(cfgc,
+  tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputMCParticleLevelBplus>(cfgc,
                                                                                   SetDefaultProcesses{},
-                                                                                  TaskName{"jet-substructure-output-BPlus-mcp"}));
+                                                                                  TaskName{"jet-substructure-output-Bplus-mcp"}));
 
   return WorkflowSpec{tasks};
 }

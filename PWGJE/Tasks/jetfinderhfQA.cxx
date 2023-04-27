@@ -89,7 +89,7 @@ struct JetFinderHFQATask {
   using CandidateD0MC = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>;
   using JetParticles2Prong = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
   using JetParticles3Prong = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
-  using JetParticlesBPlus = soa::Join<aod::McParticles, aod::HfCandBplusMcGen>;
+  using JetParticlesBplus = soa::Join<aod::McParticles, aod::HfCandBplusMcGen>;
 
   void processDummy(aod::Tracks const& track) {}
   PROCESS_SWITCH(JetFinderHFQATask, processDummy, "Dummy process function turned on by default", true);

@@ -61,8 +61,8 @@ struct JetMatching {
         std::is_same<TagToBaseMatchingTable, aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets>::value)
       return 1 << aod::hf_cand_3prong::DecayType::LcToPKPi;
 
-    if (std::is_same<BaseToTagMatchingTable, aod::BPlusChargedMCDetectorLevelJetsMatchedToBPlusChargedMCParticleLevelJets>::value &&
-        std::is_same<TagToBaseMatchingTable, aod::BPlusChargedMCParticleLevelJetsMatchedToBPlusChargedMCDetectorLevelJets>::value)
+    if (std::is_same<BaseToTagMatchingTable, aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets>::value &&
+        std::is_same<TagToBaseMatchingTable, aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets>::value)
       return 1 << aod::hf_cand_bplus::DecayType::BplusToD0Pi;
 
     return -1;
@@ -181,10 +181,10 @@ using LcChargedJetMatching = JetMatching<soa::Join<aod::LcChargedMCDetectorLevel
                                          aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets,
                                          aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets,
                                          soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
-using BPlusChargedJetMatching = JetMatching<soa::Join<aod::BPlusChargedMCDetectorLevelJets, aod::BPlusChargedMCDetectorLevelJetConstituents>,
-                                            soa::Join<aod::BPlusChargedMCParticleLevelJets, aod::BPlusChargedMCParticleLevelJetConstituents>,
-                                            aod::BPlusChargedMCDetectorLevelJetsMatchedToBPlusChargedMCParticleLevelJets,
-                                            aod::BPlusChargedMCParticleLevelJetsMatchedToBPlusChargedMCDetectorLevelJets,
+using BplusChargedJetMatching = JetMatching<soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,
+                                            soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents>,
+                                            aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets,
+                                            aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets,
                                             soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -194,7 +194,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   tasks.emplace_back(adaptAnalysisTask<ChargedJetMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-ch"}));
   tasks.emplace_back(adaptAnalysisTask<D0ChargedJetMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-d0-ch"}));
   tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-lc-ch"}));
-  tasks.emplace_back(adaptAnalysisTask<BPlusChargedJetMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-bplus-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<BplusChargedJetMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-bplus-ch"}));
 
   return WorkflowSpec{tasks};
 }
