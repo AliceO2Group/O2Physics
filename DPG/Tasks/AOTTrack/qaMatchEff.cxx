@@ -13,7 +13,7 @@
 /// \brief ITS-TPC track matching and prim/sec separation checks
 ///
 /// \author Rosario Turrisi  <rosario.turrisi@pd.infn.it>, INFN-PD
-/// \author Mattia Faggin <mattia.faggin@pd.infn.it>, UniPd & INFN-PD
+/// \author Mattia Faggin <mattia.faggin@ts.infn.it>, UniPd & INFN-TS
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
