@@ -165,15 +165,15 @@ struct HfCorrelatorDsHadrons {
 
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
-  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
-  Configurable<double> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
-  Configurable<double> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
-  Configurable<double> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
-  Configurable<double> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
-  Configurable<double> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
-  Configurable<double> ptTrackMax{"ptTrackMax", 50., "max. track pT"};
-  Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
-  Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
+  Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
+  Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
+  Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
+  Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
+  Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
+  Configurable<float> ptTrackMax{"ptTrackMax", 50., "max. track pT"};
+  Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
+  Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for Ds meson"};
 
@@ -186,9 +186,8 @@ struct HfCorrelatorDsHadrons {
   using candDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using candDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
-  Filter trackFilter = (aod::track::eta > static_cast<float>(-etaTrackMax)) && (aod::track::eta< static_cast<float>(etaTrackMax)) && (aod::track::pt > static_cast<float>(ptTrackMin)) 
-                       && (aod::track::dcaXY > static_cast<float>(-dcaXYTrackMax)) && (aod::track::dcaXY< static_cast<float>(dcaXYTrackMax)) && 
-                       (aod::track::dcaZ > static_cast<float>(-dcaZTrackMax)) && (aod::track::dcaZ< static_cast<float>(dcaZTrackMax));
+  Filter trackFilter = (aod::track::eta < std::abs(etaTrackMax)) && (aod::track::pt > ptTrackMin) 
+                       && (aod::track::dcaXY < std::abs(dcaXYTrackMax)) && (aod::track::dcaZ < std::abs(dcaZTrackMax));
   using myTracksData = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>>;
   using myTracksMc = soa::Filtered<soa::Join<aod::BigTracksMC, aod::TracksDCA>>;
   
