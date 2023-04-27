@@ -13,7 +13,7 @@
 /// \brief ITS-TPC track matching and prim/sec separation checks
 ///
 /// \author Rosario Turrisi  <rosario.turrisi@pd.infn.it>, INFN-PD
-/// \author Mattia Faggin <mattia.faggin@pd.infn.it>, UniPd & INFN-PD
+/// \author Mattia Faggin <mattia.faggin@ts.infn.it>, UniTs & INFN-TS
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
@@ -241,6 +241,11 @@ struct qaMatchEff {
                "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS",
                kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
 
+    /// compare pt's (tracking and innerParamTPC)
+    histos.add("data/ptptconf", "Tracking pt vs TPC inner point pt", kTH2D,
+               {{100, 0.0, 10.0, "tracking #it{p}_{T}"},
+                {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+
     //
     // tpc, its and tpc+its request for all, positive and negative charges vs
 
@@ -385,6 +390,10 @@ struct qaMatchEff {
     histos.add("MC/itsHitsMatched",
                "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS",
                kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
+    /// compare pt's (tracking and innerParamTPC)
+    histos.add("MC/ptptconf", "TPC inner point pt vs. tracking pt", kTH2D,
+               {{100, 0.0, 10.0, "tracking #it{p}_{T}"},
+                {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
 
     //
     // all, positive, negative
@@ -933,7 +942,8 @@ struct qaMatchEff {
   /////////////////////////////////////////////////////
   template <bool IS_MC, typename T, typename P>
   void fillHistograms(T &tracks, P &mcParticles) {
-
+    //
+    float trackPt = 0, ITStrackPt = 0;
     //
     //
     for (auto &track : tracks) {
@@ -955,21 +965,25 @@ struct qaMatchEff {
 
       //
       // pt from full tracking or from TPCinnerWallPt
-      float trackPt = track.pt();
-      if (b_useTPCinnerWallPt) {
-        /// Using pt calculated at the inner wall of TPC
-        /// Caveat: tgl still from tracking: this is not the value of tgl at the
-        /// inner wall of TPC
-        trackPt = computePtInParamTPC(track);
-      }
-      // special case for ITS tracks
-      float ITStrackPt = track.pt();
-      if (b_useTPCinnerWallPtForITS) {
-        /// Using pt calculated at the inner wall of TPC
-        /// Caveat: tgl still from tracking: this is not the value of tgl at the
-        /// inner wall of TPC
-        ITStrackPt = computePtInParamTPC(track);
-      }
+      float reco_pt = track.pt();
+      float tpcinner_pt = computePtInParamTPC(track);
+
+      /// Using pt calculated at the inner wall of TPC
+      /// Caveat: tgl still from tracking: this is not the value of tgl at the
+      /// inner wall of TPC
+      if (b_useTPCinnerWallPt)
+        trackPt = tpcinner_pt;
+      else
+        trackPt = reco_pt;
+
+      /// special case for ITS tracks
+      /// Using pt calculated at the inner wall of TPC
+      /// Caveat: tgl still from tracking: this is not the value of tgl at the
+      /// inner wall of TPC
+      if (b_useTPCinnerWallPtForITS)
+        ITStrackPt = tpcinner_pt;
+      else
+        ITStrackPt = reco_pt;
 
       // kinematic track seletions for all tracks
       if (!isTrackSelectedKineCuts(track))
@@ -1038,11 +1052,17 @@ struct qaMatchEff {
       // all tracks, no conditions
       if (track.hasITS() && isTrackSelectedITSCuts(track)) {
         if constexpr (IS_MC) {
+          // pt comparison plot
+          histos.fill(HIST("MC/ptptconf"), reco_pt, tpcinner_pt);
+          //
           histos.get<TH1>(HIST("MC/qopthist_its"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("MC/pthist_its"))->Fill(ITStrackPt);
           histos.get<TH1>(HIST("MC/phihist_its"))->Fill(track.phi());
           histos.get<TH1>(HIST("MC/etahist_its"))->Fill(track.eta());
         } else {
+          // pt comparison plot
+          histos.fill(HIST("data/ptptconf"), reco_pt, tpcinner_pt);
+          //
           histos.get<TH1>(HIST("data/qopthist_its"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("data/pthist_its"))->Fill(ITStrackPt);
           histos.get<TH1>(HIST("data/phihist_its"))->Fill(track.phi());
