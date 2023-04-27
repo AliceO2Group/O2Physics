@@ -28,6 +28,12 @@ using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+static constexpr int nSpecies = 9;
+static constexpr int nParameters = 1;
+static const std::vector<std::string> particleNames{"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
+static const std::vector<std::string> parameterNames{"Enable"};
+static constexpr int defaultParameters[nSpecies][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+
 namespace o2::aod
 {
 
