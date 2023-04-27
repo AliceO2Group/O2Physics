@@ -1019,6 +1019,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("muonHighPt4")) {
+    cut->AddCut(GetAnalysisCut("muonHighPt4"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
   if (!nameStr.compare("muonHighPtMatchingOnly2")) {
     cut->AddCut(GetAnalysisCut("muonHighPt2"));
     cut->AddCut(GetAnalysisCut("muonQualityCutsMatchingOnly"));
@@ -2054,6 +2060,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("muonHighPt3")) {
     cut->AddCut(VarManager::kPt, 6.0, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt4")) {
+    cut->AddCut(VarManager::kPt, 20.0, 1000.0);
     return cut;
   }
 
