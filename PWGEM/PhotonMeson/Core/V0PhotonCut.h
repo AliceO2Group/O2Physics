@@ -39,6 +39,7 @@ class V0PhotonCut : public TNamed
     kRxyKF,
     kCosPA,
     kPCA,
+    kRZLine,
     kOnWwireIB,
     kOnWwireOB,
     // leg cut
@@ -74,6 +75,9 @@ class V0PhotonCut : public TNamed
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kPCA)) {
+      return false;
+    }
+    if (!IsSelectedV0(v0, V0PhotonCuts::kRZLine)) {
       return false;
     }
     if (mIsOnWwireIB && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB)) {
@@ -164,6 +168,9 @@ class V0PhotonCut : public TNamed
 
       case V0PhotonCuts::kPCA:
         return v0.pca() <= mMaxPCA;
+
+      case V0PhotonCuts::kRZLine:
+        return TMath::Abs(v0.vz()) < 12.0 + v0.recalculatedVtxR() * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxEta))); // as long as z recalculation is not fixed use this
 
       case V0PhotonCuts::kOnWwireIB: {
         const float rxy_min = 5.506;          // cm

@@ -34,7 +34,7 @@ struct JetAnalysis {
   }
 
   // Jet and JetConstituents are tables which are filled by executable o2-analysis-jetfinder
-  void process(soa::Join<aod::Jets, aod::JetConstituents>::iterator const& jet, aod::Tracks const& tracks)
+  void process(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet, aod::Tracks const& tracks)
   {
     hJetPt->Fill(jet.pt());
     for (const auto& track : jet.tracks_as<aod::Tracks>()) {

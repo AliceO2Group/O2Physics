@@ -1,0 +1,18 @@
+{
+    "em-lmee-lf-cocktail": {
+        "cfgResFileName": "PATH/Cocktail/files/resolution/Resolution_PbPb5TeV.root",
+        "cfgEffFileName": "PATH/Cocktail/files/resolution/EffMult.root",
+        "cfgMultFileName": "PATH/Cocktail/files/resolution/EffMult.root",
+        "cfgDCAFileName": "PATH/Cocktail/files/resolution/DCA.root",
+        "cfgWriteTTree": "false",
+        "cfgDoPairing": "false",
+        "cfgMaxEta": "0.8",
+        "cfgMinPt": "0.2",
+        "cfgMaxPt": "10.0",
+        "cfgMinOpAng": "0",
+        "cfgALTweight": "1",
+        "cfgDoVirtPh": "false",
+        "cfgPhotonPtFileName": "",
+        "cfgPhotonPtDirName": ""
+    }
+}

@@ -82,11 +82,8 @@ struct DGCandProducer {
   using MCTC = MCTCs::iterator;
 
   // extract FIT information
-  upchelpers::FITInfo getFITinfo(uint64_t const& bcnum, BCs const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+  void getFITinfo(upchelpers::FITInfo& info, uint64_t const& bcnum, BCs const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
-    // FITinfo
-    upchelpers::FITInfo info{};
-
     // find bc with globalBC = bcnum
     Partition<BCs> selbc = aod::bc::globalBC == bcnum;
     selbc.bindTable(bcs);
@@ -177,8 +174,6 @@ struct DGCandProducer {
       if (bc2u.selection()[evsel::kIsBBFDC])
         SETBIT(info.BBFDDCpf, bit);
     }
-
-    return info;
   }
 
   // function to update UDTracks, UDTracksCov, UDTracksDCA, UDTracksPID, UDTracksExtra, UDTracksFlag,
@@ -296,19 +291,22 @@ struct DGCandProducer {
       return;
     }
     auto bc = collision.foundBC_as<BCs>();
+    LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
 
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
+    LOGF(debug, "<DGCandProducer>  Size of bcRange %d", bcRange.size());
 
     // apply DG selection
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
     // save DG candidates
     if (isDGEvent == 0) {
-      LOGF(debug, "  Data: good collision!");
+      LOGF(debug, "<DGCandProducer>  Data: good collision!");
 
       // fill FITInfo
-      upchelpers::FITInfo fitInfo = getFITinfo(bc.globalBC(), bcs, ft0s, fv0as, fdds);
+      upchelpers::FITInfo fitInfo{};
+      getFITinfo(fitInfo, bc.globalBC(), bcs, ft0s, fv0as, fdds);
 
       // update DG candidates tables
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
@@ -347,7 +345,7 @@ struct DGCandProducer {
                 pt2 = tr.pt() * tr.sign();
                 signalTPC2 = tr.tpcSignal();
             }
-            LOGF(debug, "track[%d] %d pT %f ITS %d TPC %d TRD %d TOF %d",
+            LOGF(debug, "<DGCandProducer>    track[%d] %d pT %f ITS %d TPC %d TRD %d TOF %d",
                  cnt, tr.isGlobalTrack(), tr.pt(), tr.itsNCls(), tr.tpcNClsCrossedRows(), tr.hasTRD(), tr.hasTOF());
           }
         }

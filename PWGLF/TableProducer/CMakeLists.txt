@@ -61,6 +61,11 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(stcollids
+                    SOURCES stcollids.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 # Nuclei
 o2physics_add_dpl_workflow(nucleustreecreator
                     SOURCES LFTreeCreatorNuclei.cxx

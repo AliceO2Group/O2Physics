@@ -347,7 +347,7 @@ struct tpcPidQa {
                soa::Filtered<TrackCandidates> const& tracks)
   {
     isEventSelected<true>(collision, tracks);
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       isTrackSelected<true>(collision, t);
     }
   }
@@ -362,7 +362,7 @@ struct tpcPidQa {
       return;
     }
 
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       if (!isTrackSelected<false>(collision, t)) {
         continue;
       }

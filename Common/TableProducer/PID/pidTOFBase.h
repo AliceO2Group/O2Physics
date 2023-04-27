@@ -19,7 +19,6 @@
 #define COMMON_TABLEPRODUCER_PID_PIDTOFBASE_H_
 
 #include "PID/ParamBase.h"
-#include "PID/DetectorResponse.h"
 #include "PID/PIDTOF.h"
 
 #include "Common/DataModel/PIDResponse.h"
