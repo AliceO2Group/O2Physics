@@ -68,10 +68,11 @@ struct LfTreeCreatorNuclei {
   Configurable<int> nITSInnerBarrelHits{"nITSInnerBarrelHits", 0, "Option for ITS inner barrel hits maximum: 3"};
 
   // events
-  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> cfgHighCutVertex{"cfgHighCutVertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> cfgLowCutVertex{"cfgLowCutVertex", -10.0f, "Accepted z-vertex range"};
   Configurable<bool> useEvsel{"useEvsel", true, "Use sel8 for run3 Event Selection"};
 
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  Filter collisionFilter = (aod::collision::posZ < cfgHighCutVertex && aod::collision::posZ > cfgLowCutVertex);
   // Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
   Filter etaFilter = (nabs(aod::track::eta) < cfgCutEta);
   Filter trackFilter = (trackSelType.value == 0 && requireGlobalTrackWoDCAInFilter()) || (trackSelType.value == 1 && requireGlobalTrackInFilter());
