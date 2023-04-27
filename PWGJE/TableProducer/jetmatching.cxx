@@ -35,7 +35,7 @@ using namespace o2::framework::expressions;
 
 template <typename BaseJetCollection, typename TagJetCollection,
           typename BaseToTagMatchingTable, typename TagToBaseMatchingTable, typename HfCandidates>
-struct JetMatchingHF {
+struct JetMatching {
   Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.4f, "Max matching distance"};
 
   Produces<BaseToTagMatchingTable> jetsBaseToTag;
@@ -51,7 +51,7 @@ struct JetMatchingHF {
   using Tracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
   using McParticles = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
 
-  constexpr int8_t getHfFlag() const
+  static constexpr int8_t getHfFlag()
   {
     if (std::is_same<BaseToTagMatchingTable, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>::value &&
         std::is_same<TagToBaseMatchingTable, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>::value)
@@ -75,10 +75,10 @@ struct JetMatchingHF {
   // for now:
   // BaseJetCollection must contain detector level jets
   // TagJetCollection must contain particle level jets
-  void process(Collisions::iterator const& collision, aod::McCollisions const& mcCollisions,
-               BaseJetCollection const& jetsBase, TagJetCollection const& jetsTag,
-               Tracks const& tracks, McParticles const& particlesMC,
-               HfCandidates const& hfcandidates)
+  void processJets(Collisions::iterator const& collision, aod::McCollisions const& mcCollisions,
+                   BaseJetCollection const& jetsBase, TagJetCollection const& jetsTag,
+                   Tracks const& tracks, McParticles const& particlesMC,
+                   HfCandidates const& hfcandidates)
   {
     // TODO: check whether we need to handle jets in MC collisions without a reconstructed collision
 
@@ -87,43 +87,45 @@ struct JetMatchingHF {
     const auto jetsBasePerColl = jetsBase;
     const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, jetsTagIsMC ? collision.mcCollisionId() : collision.globalIndex());
 
-    const auto hf_flag = getHfFlag();
-
     // geometric matching
     LOGF(info, "performing geometric matching for collision %d (%d / %d jets)",
          collision.globalIndex(), jetsBasePerColl.size(), jetsTagPerColl.size());
     std::vector<double> jetsBasePhi;
     std::vector<double> jetsBaseEta;
     for (const auto& jet : jetsBasePerColl) {
+      LOGF(info, "base jet index: %d-%d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
+           jet.index(), jet.globalIndex(), jet.collisionId(), jet.pt(), jet.phi(), jet.tracks().size(), jet.hfcandidates().size());
       jetsBasePhi.emplace_back(jet.phi());
       jetsBaseEta.emplace_back(jet.eta());
     }
     std::vector<double> jetsTagPhi;
     std::vector<double> jetsTagEta;
     for (const auto& jet : jetsTagPerColl) {
+      LOGF(info, "tag jet index: %d-%d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
+           jet.index(), jet.globalIndex(), jet.mcCollisionId(), jet.pt(), jet.phi(), jet.tracks().size(), jet.hfcandidates().size());
       jetsTagPhi.emplace_back(jet.phi());
       jetsTagEta.emplace_back(jet.eta());
     }
     auto&& [baseToTagGeo, tagToBaseGeo] = JetUtilities::MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, maxMatchingDistance);
     LOGF(debug, "geometric matching: %d - %d jets", baseToTagGeo.size(), tagToBaseGeo.size());
-    for (int i = 0; i < baseToTagGeo.size(); ++i) {
+    for (std::size_t i = 0; i < baseToTagGeo.size(); ++i) {
       LOGF(debug, "bjet %i -> %i", i, baseToTagGeo[i]);
     }
-    for (int i = 0; i < tagToBaseGeo.size(); ++i) {
+    for (std::size_t i = 0; i < tagToBaseGeo.size(); ++i) {
       LOGF(debug, "tjet %i -> %i", i, tagToBaseGeo[i]);
     }
 
     // HF matching
     std::vector<int> baseToTagHF(jetsBasePerColl.size(), -1);
     std::vector<int> tagToBaseHF(jetsTagPerColl.size(), -1);
-    if (hf_flag > 0) {
+    if constexpr (getHfFlag() > 0) {
       LOGF(info, "performing HF matching for collision %d", collision.globalIndex());
       for (const auto& bjet : jetsBasePerColl) {
         LOGF(info, "jet index: %d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
              bjet.index(), bjet.collisionId(), bjet.pt(), bjet.phi(), bjet.tracks().size(), bjet.hfcandidates().size());
 
         const auto hfcand = bjet.template hfcandidates_first_as<HfCandidates>();
-        if (hfcand.flagMcMatchRec() & hf_flag) {
+        if (hfcand.flagMcMatchRec() & getHfFlag()) {
           const auto hfCandMC = hfcand.template prong0_as<Tracks>().template mcParticle_as<McParticles>();
           const auto hfCandMcId = hfCandMC.template mothers_first_as<McParticles>().globalIndex();
           for (const auto& tjet : jetsTagPerColl) {
@@ -161,37 +163,38 @@ struct JetMatchingHF {
       jetsTagToBase(geojetid, tagToBaseHF[jet.index()]);
     }
   }
+  PROCESS_SWITCH(JetMatching, processJets, "Perform jet matching", true);
 };
 
-using ChargedJetMatching = JetMatchingHF<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>,
-                                         soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>,
-                                         aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets,
-                                         aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets,
+using ChargedJetMatching = JetMatching<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>,
+                                       soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>,
+                                       aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets,
+                                       aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets,
+                                       aod::Tracks>;
+using D0ChargedJetMatching = JetMatching<soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>,
+                                         soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>,
+                                         aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets,
+                                         aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets,
                                          soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
-using D0ChargedJetMatching = JetMatchingHF<soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>,
-                                           soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>,
-                                           aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets,
-                                           aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets,
-                                           soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
-using LcChargedJetMatching = JetMatchingHF<soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents>,
-                                           soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents>,
-                                           aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets,
-                                           aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets,
-                                           soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
-using BPlusChargedJetMatching = JetMatchingHF<soa::Join<aod::BPlusChargedMCDetectorLevelJets, aod::BPlusChargedMCDetectorLevelJetConstituents>,
-                                              soa::Join<aod::BPlusChargedMCParticleLevelJets, aod::BPlusChargedMCParticleLevelJetConstituents>,
-                                              aod::BPlusChargedMCDetectorLevelJetsMatchedToBPlusChargedMCParticleLevelJets,
-                                              aod::BPlusChargedMCParticleLevelJetsMatchedToBPlusChargedMCDetectorLevelJets,
-                                              soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>;
+using LcChargedJetMatching = JetMatching<soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents>,
+                                         soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents>,
+                                         aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets,
+                                         aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets,
+                                         soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
+using BPlusChargedJetMatching = JetMatching<soa::Join<aod::BPlusChargedMCDetectorLevelJets, aod::BPlusChargedMCDetectorLevelJetConstituents>,
+                                            soa::Join<aod::BPlusChargedMCParticleLevelJets, aod::BPlusChargedMCParticleLevelJetConstituents>,
+                                            aod::BPlusChargedMCDetectorLevelJetsMatchedToBPlusChargedMCParticleLevelJets,
+                                            aod::BPlusChargedMCParticleLevelJetsMatchedToBPlusChargedMCDetectorLevelJets,
+                                            soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
-  tasks.emplace_back(adaptAnalysisTask<ChargedJetMatching>(cfgc, TaskName{"jet-matching-ch"}));
-  tasks.emplace_back(adaptAnalysisTask<D0ChargedJetMatching>(cfgc, TaskName{"jet-matching-d0-ch"}));
-  tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatching>(cfgc, TaskName{"jet-matching-lc-ch"}));
-  tasks.emplace_back(adaptAnalysisTask<BPlusChargedJetMatching>(cfgc, TaskName{"jet-matching-bplus-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<ChargedJetMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<D0ChargedJetMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-d0-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-lc-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<BPlusChargedJetMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-bplus-ch"}));
 
   return WorkflowSpec{tasks};
 }

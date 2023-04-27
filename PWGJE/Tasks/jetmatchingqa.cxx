@@ -62,8 +62,8 @@ struct JetMatchingQA {
     hJetGenNTracks.setObject(new TH1F("h_jet_gen_ntracks", "jet N tracks ; N tracks", 150, -0.5, 99.5));
   }
 
-  void process(aod::Collisions::iterator const& collision,
-               BaseJetCollection const& djets, TagJetCollection const& pjets)
+  void processMCD(aod::Collisions::iterator const& collision,
+                  BaseJetCollection const& djets, TagJetCollection const& pjets)
   {
     for (const auto& djet : djets) {
       if (djet.has_matchedJetCand() || djet.has_matchedJetGeo()) {
@@ -91,6 +91,7 @@ struct JetMatchingQA {
       }
     }
   }
+  PROCESS_SWITCH(JetMatchingQA, processMCD, "QA on detector-level jets", true);
 
   void processMCP(aod::McCollision const& collision,
                   TagJetCollection const& pjets, BaseJetCollection const& djets)
