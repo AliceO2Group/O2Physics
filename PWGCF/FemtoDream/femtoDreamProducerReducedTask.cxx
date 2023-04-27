@@ -12,6 +12,8 @@
 /// \file femtoDreamProducerReducedTask.cxx
 /// \brief Tasks that produces the track tables used for the pairing (tracks only)
 /// \author Luca Barioglio, TU München, andreas.mathis@ph.tum.de
+/// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
+/// \author Anton Riedel, TU München, anton.riedel@tum.de
 
 #include "TMath.h"
 #include <CCDB/BasicCCDBManager.h>
@@ -33,6 +35,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "Math/Vector4D.h"
+#include "FemtoUtils.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -45,10 +48,10 @@ namespace o2::aod
 using FemtoFullCollision = soa::Join<aod::Collisions,
                                      aod::EvSels,
                                      aod::Mults>::iterator;
-// using FemtoFullCollisionMC = soa::Join<aod::Collisions,
-//                                        aod::EvSels,
-//                                        aod::Mults,
-//                                        aod::McCollisionLabels>::iterator;
+using FemtoFullCollisionMC = soa::Join<aod::Collisions,
+                                       aod::EvSels,
+                                       aod::Mults,
+                                       aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks = soa::Join<aod::FullTracks, aod::TracksDCA,
                                   aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
@@ -61,9 +64,10 @@ struct femtoDreamProducerReducedTask {
 
   Produces<aod::FemtoDreamCollisions> outputCollision;
   Produces<aod::FemtoDreamParticles> outputParts;
-  // Produces<aod::FemtoDreamParticlesMC> outputPartsMC;
+  Produces<aod::FemtoDreamMCParticles> outputPartsMC;
   Produces<aod::FemtoDreamDebugParticles> outputDebugParts;
-  // Produces<aod::FemtoDreamDebugParticlesMC> outputDebugPartsMC;
+  Produces<aod::FemtoDreamMCLabels> outputPartsMCLabels;
+  Produces<aod::FemtoDreamDebugMCParticles> outputDebugPartsMC;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
   Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"}; // Choose if filtering or skimming version is run
@@ -81,6 +85,7 @@ struct femtoDreamProducerReducedTask {
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   Configurable<bool> ConfRejectITSHitandTOFMissing{"ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
 
+  Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "PDG code of the selected track for Monte Carlo truth"};
   // Track cuts
   FemtoDreamTrackSelection trackCuts;
   Configurable<std::vector<float>> ConfTrkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
@@ -183,10 +188,42 @@ struct femtoDreamProducerReducedTask {
     mRunNumber = bc.runNumber();
   }
 
-  void process(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks) /// \todo with FilteredFullV0s
+  template <typename CandidateType>
+  void fillMCParticle(CandidateType const& candidate, o2::aod::femtodreamparticle::ParticleType fdparttype)
+  {
+    if (candidate.has_mcParticle()) {
+      // get corresponding MC particle and its info
+      auto particleMC = candidate.mcParticle();
+      auto pdgCode = particleMC.pdgCode();
+
+      int particleOrigin = 99;
+      auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
+
+      if (abs(pdgCode) == abs(ConfPDGCodeTrack.value)) {
+
+        if (particleMC.isPhysicalPrimary()) {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
+        } else if (motherparticleMC.producedByGenerator()) {
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+        } else {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+        }
+
+      } else {
+
+        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
+      }
+      outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
+      outputPartsMCLabels(outputPartsMC.lastIndex());
+    } else {
+      outputPartsMCLabels(-1);
+    }
+  }
+
+  template <bool isMC, typename CollisionType, typename TrackType>
+  void fillCollisionsAndTracks(CollisionType const& col, TrackType const& tracks) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
-    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
 
     const auto vtxZ = col.posZ();
     const auto spher = colCuts.computeSphericity(col, tracks);
@@ -241,6 +278,11 @@ struct femtoDreamProducerReducedTask {
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
                   track.dcaXY(), childIDs, 0, 0);
+
+      if constexpr (isMC) {
+        fillMCParticle(track, o2::aod::femtodreamparticle::ParticleType::kTrack);
+      }
+
       if (ConfDebugOutput) {
         outputDebugParts(track.sign(),
                          (uint8_t)track.tpcNClsFound(),
@@ -272,6 +314,27 @@ struct femtoDreamProducerReducedTask {
       }
     }
   }
+
+  void processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsAndTracks<false>(col, tracks);
+  }
+  PROCESS_SWITCH(femtoDreamProducerReducedTask, processData, "Provide experimental data", true);
+
+  void processMC(aod::FemtoFullCollisionMC const& col,
+                 aod::BCsWithTimestamps const&,
+                 soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                 aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsAndTracks<true>(col, tracks);
+  }
+  PROCESS_SWITCH(femtoDreamProducerReducedTask, processMC, "Provide MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
