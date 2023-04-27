@@ -122,7 +122,7 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometricallyImpl(
   const std::size_t nJetsBase = jetsBaseEta.size();
   const std::size_t nJetsTag = jetsTagEta.size();
   if (!(nJetsBase && nJetsTag)) {
-    return std::make_tuple(std::vector<int>(nJetsBase), std::vector<int>(nJetsTag));
+    return std::make_tuple(std::vector<int>(nJetsBase, -1), std::vector<int>(nJetsTag, -1));
   }
   // Require that the comparison vectors are greater than or equal to the standard collections.
   if (jetsBasePhiForMatching.size() < jetsBasePhi.size()) {
@@ -253,7 +253,7 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometrically(
   const std::size_t nJetsTag = jetsTagEta.size();
   if (!(nJetsBase && nJetsTag)) {
     // There are no jets, so nothing to be done.
-    return std::make_tuple(std::vector<int>(nJetsBase), std::vector<int>(nJetsTag));
+    return std::make_tuple(std::vector<int>(nJetsBase, -1), std::vector<int>(nJetsTag, -1));
   }
   // Input sizes must match
   if (jetsBasePhi.size() != jetsBaseEta.size()) {

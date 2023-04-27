@@ -111,7 +111,6 @@ struct JetFinderTask {
     if (!selectCollision(collision)) {
       return;
     }
-
     inputParticles.clear();
     analyseTracks<JetTracks, JetTracks::iterator>(inputParticles, tracks, trackSelection);
     findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub);
