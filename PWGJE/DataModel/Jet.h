@@ -73,34 +73,34 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 } // namespace o2::aod
 
 // Defines the jet table definition
-#define DECLARE_JET_TABLE(_collision_name_, _jet_type_, _name_, _description_) \
-  namespace _name_##util                                                       \
-  {                                                                            \
-    DECLARE_SOA_DYNAMIC_COLUMN(Dummy##_jet_type_##s, dummy##_jet_type##s,      \
-                               []() -> int { return 0; });                     \
-  }                                                                            \
-  DECLARE_SOA_TABLE(_jet_type_##s, "AOD", _description_,                       \
-                    o2::soa::Index<>,                                          \
-                    jet::_collision_name_##Id,                                 \
-                    jet::Pt,                                                   \
-                    jet::Eta,                                                  \
-                    jet::Phi,                                                  \
-                    jet::Energy,                                               \
-                    jet::Mass,                                                 \
-                    jet::Area,                                                 \
-                    jet::R,                                                    \
-                    jet::Px<jet::Pt, jet::Phi>,                                \
-                    jet::Py<jet::Pt, jet::Phi>,                                \
-                    jet::Pz<jet::Pt, jet::Eta>,                                \
-                    jet::P<jet::Pt, jet::Eta>,                                 \
-                    _name_##util::Dummy##_jet_type_##s<>);                     \
-  namespace _name_##matchingGeo                                                \
-  {                                                                            \
-    DECLARE_SOA_INDEX_COLUMN(_jet_type_, matchedJetGeo);                       \
-  }                                                                            \
-  namespace _name_##matchingCand                                               \
-  {                                                                            \
-    DECLARE_SOA_INDEX_COLUMN(_jet_type_, matchedJetCand);                      \
+#define DECLARE_JET_TABLE(_collision_name_, _jet_type_, _name_, _description_)                \
+  namespace _name_##util                                                                      \
+  {                                                                                           \
+    DECLARE_SOA_DYNAMIC_COLUMN(Dummy##_jet_type_##s, dummy##_jet_type##s,                     \
+                               []() -> int { return 0; });                                    \
+  }                                                                                           \
+  DECLARE_SOA_TABLE(_jet_type_##s, "AOD", _description_,                                      \
+                    o2::soa::Index<>,                                                         \
+                    jet::_collision_name_##Id,                                                \
+                    jet::Pt,                                                                  \
+                    jet::Eta,                                                                 \
+                    jet::Phi,                                                                 \
+                    jet::Energy,                                                              \
+                    jet::Mass,                                                                \
+                    jet::Area,                                                                \
+                    jet::R,                                                                   \
+                    jet::Px<jet::Pt, jet::Phi>,                                               \
+                    jet::Py<jet::Pt, jet::Phi>,                                               \
+                    jet::Pz<jet::Pt, jet::Eta>,                                               \
+                    jet::P<jet::Pt, jet::Eta>,                                                \
+                    _name_##util::Dummy##_jet_type_##s<>);                                    \
+  namespace _name_##matchingGeo                                                               \
+  {                                                                                           \
+    DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetGeo, int32_t, _jet_type_##s, "_geo"); \
+  }                                                                                           \
+  namespace _name_##matchingCand                                                              \
+  {                                                                                           \
+    DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetCand, int32_t, _jet_type_##s, "_hf"); \
   }
 
 #define DECLARE_CONSTITUENTS_TABLE(_jet_type_, _name_, _Description_, _track_type_, _cand_type_)      \
@@ -159,7 +159,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 
 namespace o2::aod
 {
-DECLARE_JET_TABLES_LEVELS(Charged, HfCand2Prong, "");
+DECLARE_JET_TABLES_LEVELS(Charged, HfCand2Prong, "C");
 DECLARE_JET_TABLES_LEVELS(Full, HfCand2Prong, "F");
 DECLARE_JET_TABLES_LEVELS(Neutral, HfCand2Prong, "N");
 DECLARE_JET_TABLES_LEVELS(D0Charged, HfCand2Prong, "D0");
