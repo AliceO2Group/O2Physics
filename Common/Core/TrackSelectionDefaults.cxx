@@ -82,7 +82,7 @@ TrackSelection getGlobalTrackSelectionSDD()
 // Default track selection for nuclei analysis in run3 (STILL JUST A PLACEHOLDER)
 TrackSelection getGlobalTrackSelectionRun3Nuclei()
 {
-  return getGlobalTrackSelection();
+  return getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo);
 }
 
 // Default track selection for HF analysis (global tracks, with its points, but no tight selection for primary) in run3 (STILL JUST A PLACEHOLDER)
@@ -113,7 +113,7 @@ TrackSelection getJEGlobalTrackSelectionRun2()
   TrackSelection selectedTracks = getGlobalTrackSelection();
   selectedTracks.SetTrackType(o2::aod::track::Run2Track); // Run 2 track asked by default
   selectedTracks.SetRequireGoldenChi2(false);
-  selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 1e+10; }); // std::function<float(float)>{}
+  selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 1e+10; });
   selectedTracks.SetEtaRange(-0.9f, 0.9f);
   selectedTracks.SetMaxDcaXY(2.4f);
   selectedTracks.SetMaxDcaZ(3.2f);

@@ -149,7 +149,7 @@ DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on th
                   track::TrackCutFlagFb2,
                   track::TrackCutFlagFb3,
                   track::TrackCutFlagFb4,
-                  track::TrackCutFlagFb5,
+		              track::TrackCutFlagFb5,
                   track::IsQualityTrack<track::TrackCutFlag>,
                   track::IsPrimaryTrack<track::TrackCutFlag>,
                   track::IsInAcceptanceTrack<track::TrackCutFlag>,
@@ -158,6 +158,7 @@ DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on th
                   track::IsGlobalTrackWoPtEta<track::TrackCutFlag>,
                   track::IsGlobalTrackWoDCA<track::TrackCutFlag>,
                   track::IsGlobalTrackWoDCATPCCluster<track::TrackCutFlag>);
+                  
 
 DECLARE_SOA_TABLE(TrackSelectionExtension, "AOD", "TRACKSELEXTRA", //! Information on the track selections set by each Filter Bit
                   track::PassedTrackType,
