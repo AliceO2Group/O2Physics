@@ -36,27 +36,9 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
-#include "PWGJE/DataModel/JetHF.h"
-#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
-
-JetFinder jetFinder;
-std::vector<fastjet::PseudoJet> jets;
-std::vector<fastjet::PseudoJet> inputParticles;
-int jetTypeParticleLevelCheck = -1;
-
-bool doHFJetFinding = false;
-int candPDG;
-int candDecay;
-
-float trackEtaMin_;
-float trackEtaMax_;
-std::vector<double> jetRadius_;
-float candYMin_;
-float candYMax_;
-float candPtMin_;
-float candPtMax_;
-bool DoConstSub_;
+#include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/DataModel/Jet.h"
 
 using JetTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
 using JetClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
@@ -91,7 +73,7 @@ bool selectTrack(T const& track, std::string trackSelection)
 
 // function that adds tracks to the fastjet list, removing daughters of 2Prong candidates
 template <typename T, typename U>
-void analyseTracks(T const& tracks, std::string trackSelection, std::optional<U> const& candidate = std::nullopt)
+void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, std::string trackSelection, std::optional<U> const& candidate = std::nullopt)
 {
   for (auto& track : tracks) {
     if (!selectTrack(track, trackSelection)) {
@@ -99,20 +81,19 @@ void analyseTracks(T const& tracks, std::string trackSelection, std::optional<U>
     }
     if (candidate != std::nullopt) {
       auto cand = candidate.value();
-
-      if constexpr (std::is_same_v<U, CandidateD0Data> || std::is_same_v<U, CandidateD0MC>) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidateD0Data::iterator> || std::is_same_v<std::decay_t<U>, CandidateD0Data::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateD0MC::iterator> || std::is_same_v<std::decay_t<U>, CandidateD0MC::filtered_iterator>) {
         if (cand.template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
       }
 
-      if constexpr (std::is_same_v<U, CandidateLcData> || std::is_same_v<U, CandidateLcMC>) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidateLcData::iterator> || std::is_same_v<std::decay_t<U>, CandidateLcData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateLcMC::iterator> || std::is_same_v<std::decay_t<U>, CandidateLcMC::filtered_iterator>) {
         if (cand.template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong2_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
       }
 
-      if constexpr (std::is_same_v<U, CandidateBPlusData> || std::is_same_v<U, CandidateBPlusMC>) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidateBPlusData::iterator> || std::is_same_v<std::decay_t<U>, CandidateBPlusData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateBPlusMC::iterator> || std::is_same_v<std::decay_t<U>, CandidateBPlusMC::filtered_iterator>) {
         if (cand.template prong0_as<aod::HfCand2Prong>().template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong0_as<aod::HfCand2Prong>().template prong1_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
@@ -124,7 +105,7 @@ void analyseTracks(T const& tracks, std::string trackSelection, std::optional<U>
 
 // function that adds clusters to the fastjet list
 template <typename T>
-void analyseClusters(T const& clusters)
+void analyseClusters(std::vector<fastjet::PseudoJet>& inputParticles, T const& clusters)
 {
   for (auto& cluster : *clusters) {
     // add cluster selections
@@ -134,12 +115,12 @@ void analyseClusters(T const& clusters)
 
 // function that takes any generic candidate, performs selections and adds the candidate to the fastjet list
 template <typename T>
-bool analyseCandidate(T const& candidate)
+bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, int candPDG, float candPtMin, float candPtMax, float candYMin, float candYMax, T const& candidate)
 {
-  if (candidate.y(RecoDecay::getMassPDG(candPDG)) < candYMin_ || candidate.y(RecoDecay::getMassPDG(candPDG)) > candYMax_) {
+  if (candidate.y(RecoDecay::getMassPDG(candPDG)) < candYMin || candidate.y(RecoDecay::getMassPDG(candPDG)) > candYMax) {
     return false;
   }
-  if (candidate.pt() < candPtMin_ || candidate.pt() >= candPtMax_) {
+  if (candidate.pt() < candPtMin || candidate.pt() >= candPtMax) {
     return false;
   }
   FastJetUtilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candPDG));
@@ -148,23 +129,23 @@ bool analyseCandidate(T const& candidate)
 
 // function that checks the MC status of a candidate and then calls the function to analyseCandidates
 template <typename T>
-bool analyseCandidateMC(T const& candidate, bool rejectBackgroundMCCandidates)
+bool analyseCandidateMC(std::vector<fastjet::PseudoJet>& inputParticles, int candPDG, int candDecay, float candPtMin, float candPtMax, float candYMin, float candYMax, T const& candidate, bool rejectBackgroundMCCandidates)
 {
   if (rejectBackgroundMCCandidates && !(std::abs(candidate.flagMcMatchRec()) == 1 << candDecay)) {
     return false;
   }
-  return analyseCandidate(candidate);
+  return analyseCandidate(inputParticles, candPDG, candPtMin, candPtMax, candYMin, candYMax, candidate);
 }
 
 // function that calls the jet finding and fills the relevant tables
 template <typename T, typename U, typename V, typename W>
-void findJets(T const& collision, U& jetsTable, V& constituentsTable, W& constituentsSubTable)
+void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, std::vector<double> jetRadius, T const& collision, U& jetsTable, V& constituentsTable, W& constituentsSubTable, bool DoConstSub, bool doHFJetFinding = false)
 {
   // auto candidatepT = 0.0;
-  auto jetRValues = static_cast<std::vector<double>>(jetRadius_);
+  auto jetRValues = static_cast<std::vector<double>>(jetRadius);
   for (auto R : jetRValues) {
     jetFinder.jetR = R;
-    jets.clear();
+    std::vector<fastjet::PseudoJet> jets;
     fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
     for (const auto& jet : jets) {
       bool isHFJet = false;
@@ -183,12 +164,11 @@ void findJets(T const& collision, U& jetsTable, V& constituentsTable, W& constit
       std::vector<int> trackconst;
       std::vector<int> candconst;
       std::vector<int> clusterconst;
-
       jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
                 jet.E(), jet.m(), jet.area(), std::round(R * 100));
       for (const auto& constituent : sorted_by_pt(jet.constituents())) {
         // need to add seperate thing for constituent subtraction
-        if (DoConstSub_) { // FIXME: needs to be addressed in Haadi's PR
+        if (DoConstSub) { // FIXME: needs to be addressed in Haadi's PR
           constituentsSubTable(jetsTable.lastIndex(), constituent.pt(), constituent.eta(), constituent.phi(),
                                constituent.E(), constituent.m(), constituent.user_index());
         }
@@ -204,15 +184,6 @@ void findJets(T const& collision, U& jetsTable, V& constituentsTable, W& constit
         }
       }
       constituentsTable(jetsTable.lastIndex(), trackconst, clusterconst, candconst);
-      //  h2JetPt->Fill(jet.pt(), R);
-      //  h2JetPhi->Fill(jet.phi(), R);
-      //  h2JetEta->Fill(jet.rap(), R);
-      //  h2JetNTracks->Fill(jet.constituents().size(), R);
-      //  hJetPt->Fill(jet.pt());
-      //  hJetPhi->Fill(jet.phi());
-      //  hJetEta->Fill(jet.rap());
-      //  hJetNTracks->Fill(jet.constituents().size());
-      //  hCandPt->Fill(candidatepT);
       break;
     }
   }
@@ -234,23 +205,23 @@ bool checkDaughters(T const& particle, int globalIndex)
 }
 
 template <typename T, typename U>
-void analyseParticles(T const& particles, TDatabasePDG* pdg, std::optional<U> const& candidate = std::nullopt)
+void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, float particleEtaMin, float particleEtaMax, int jetTypeParticleLevel, T const& particles, TDatabasePDG* pdg, std::optional<U> const& candidate = std::nullopt)
 {
   inputParticles.clear();
   for (auto& particle : particles) {
     // TODO: can we do this through the filter?
-    if (particle.eta() < trackEtaMin_ || particle.eta() > trackEtaMax_) {
+    if (particle.eta() < particleEtaMin || particle.eta() > particleEtaMax) {
       continue;
     }
-    if (particle.getGenStatusCode() != 1) { // CHECK : Does this include HF hadrons that decay?
+    if (particle.getGenStatusCode() != 1) { // CHECK : Does this exclude the HF hadron?
       continue;
     }
     auto pdgParticle = pdg->GetParticle(particle.pdgCode());
     auto pdgCharge = pdgParticle ? std::abs(pdgParticle->Charge()) : -1.0;
-    if (jetTypeParticleLevelCheck == static_cast<int>(JetType::charged) && pdgCharge < 3.0) {
+    if (jetTypeParticleLevel == static_cast<int>(JetType::charged) && pdgCharge < 3.0) {
       continue;
     }
-    if (jetTypeParticleLevelCheck == static_cast<int>(JetType::neutral) && pdgCharge != 0.0) {
+    if (jetTypeParticleLevel == static_cast<int>(JetType::neutral) && pdgCharge != 0.0) {
       continue;
     }
     if (candidate != std::nullopt) {
