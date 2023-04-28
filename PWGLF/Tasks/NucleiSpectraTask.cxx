@@ -524,7 +524,6 @@ struct NucleiSpectraTask {
     }
   }
   PROCESS_SWITCH(NucleiSpectraTask, processMCgen, "MC analysis gen", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
