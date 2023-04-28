@@ -93,7 +93,7 @@ struct HfDsSelectionCollision {
   {
     bool isDsFound = false;
     if (selectedDsAllCand.size() > 0) {
-      auto selectedDsAllCandGrouped = selectedDsAllCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+      auto selectedDsAllCandGrouped = selectedDsAllCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       for (auto const& candidate : selectedDsAllCandGrouped) {
         if (yCandMax >= 0. && std::abs(yDplus(candidate)) > yCandMax) {
           continue;
@@ -113,7 +113,7 @@ struct HfDsSelectionCollision {
   {
     bool isDsFound = false;
     if (recoFlagDsCandidates.size() > 0) {
-      auto selectedDsCandidatesGroupedMc = recoFlagDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+      auto selectedDsCandidatesGroupedMc = recoFlagDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       for (auto const& candidate : selectedDsCandidatesGroupedMc) {
         // check decay channel flag for candidate
         if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
@@ -386,8 +386,8 @@ struct HfCorrelatorDsHadrons {
       }
       registry.fill(HIST("hMultiplicity"), nTracks);
 
-      auto selectedDsToKKPiCandGrouped = selectedDsToKKPiCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
-      auto selectedDsToPiKKCandGrouped = selectedDsToPiKKCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+      auto selectedDsToKKPiCandGrouped = selectedDsToKKPiCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+      auto selectedDsToPiKKCandGrouped = selectedDsToPiKKCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       
       // Ds fill histograms and Ds-Hadron correlation for DsToKKPi
       for (const auto& candidate : selectedDsToKKPiCandGrouped) {
@@ -483,7 +483,7 @@ struct HfCorrelatorDsHadrons {
       }
       registry.fill(HIST("hMultiplicity"), nTracks);
 
-      auto selectedDsMcRecoCandGrouped = selectedDsMcRecoCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+      auto selectedDsMcRecoCandGrouped = selectedDsMcRecoCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
        
       // MC reco level
       bool flagDsPrompt = false;
@@ -653,7 +653,7 @@ struct HfCorrelatorDsHadrons {
    void processDataME(selCollisionsWithDs& collisions, candDsData& candidates, myTracksData& tracks)
     {
       auto tracksTuple = std::make_tuple(candidates,tracks);
-      Pair<selCollisionsWithDs, candDsData, myTracksData, BinningType> pairData{corrBinning, 5, -1, collisions, tracksTuple};
+      Pair<selCollisionsWithDs, candDsData, myTracksData, BinningType> pairData{corrBinning, 5, -1, collisions, tracksTuple, &cache};
    
     for (auto& [c1, tracks1, c2, tracks2] : pairData) {
        LOGF(info, "Mixed event collisions: Index = (%d, %d), tracks Size: (%d, %d), Z Vertex: (%f, %f), Pool Bin: (%d, %d)", c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size(), c1.posZ(), c2.posZ(), corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFV0M())),corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M())));
@@ -696,7 +696,7 @@ struct HfCorrelatorDsHadrons {
   void processMcRecME(selCollisionsWithDs& collisions, candDsMcReco& candidates, candDsMcGen const& particlesMc, myTracksMc& tracks)
   {
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<selCollisionsWithDs, candDsMcReco, myTracksMc, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple};
+    Pair<selCollisionsWithDs, candDsMcReco, myTracksMc, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple, &cache};
     
     //bool flagDsSignal = false;
     bool flagDsPrompt = false;
