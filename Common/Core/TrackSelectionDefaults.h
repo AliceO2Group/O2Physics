@@ -41,4 +41,3 @@ TrackSelection getGlobalTrackSelectionRun3HF();
 TrackSelection getJEGlobalTrackSelectionRun2();
 
 #endif // COMMON_CORE_TRACKSELECTIONDEFAULTS_H_
-
