@@ -451,7 +451,7 @@ struct EventSelectionQaTask {
   PROCESS_SWITCH(EventSelectionQaTask, processRun2, "Process Run2 event selection QA", true);
 
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
-  Preslice<ColEvSels> perFoundBC = aod::evsel::foundBCId;
+  // Preslice<ColEvSels> perFoundBC = aod::evsel::foundBCId;
 
   void processRun3(
     ColEvSels const& cols,
@@ -1020,7 +1020,7 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hMultZNCacc"), multZNC);
       histos.fill(HIST("hNcontribAcc"), nContributors);
     } // collisions
-
+    /*
     // pileup checks
     for (auto const& bc : bcs) {
       auto collisionsGrouped = cols.sliceBy(perFoundBC, bc.globalIndex());
@@ -1035,6 +1035,7 @@ struct EventSelectionQaTask {
       }
       histos.fill(HIST("hMultT0Mpup"), multT0M);
     }
+    */
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
 

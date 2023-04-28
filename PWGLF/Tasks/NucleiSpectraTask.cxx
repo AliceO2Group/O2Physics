@@ -275,35 +275,24 @@ struct NucleiSpectraTask {
       return;
     }
     auto run3grp_timestamp = bc.timestamp();
-
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(cfgGRPpath, run3grp_timestamp);
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (grpo) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      if (cfgBz < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        mBz = grpo->getNominalL3Field();
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
-      } else {
-        mBz = cfgBz;
-      }
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(cfgGRPmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << cfgGRPmagPath << " of object GRPMagField and " << cfgGRPpath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (cfgBz < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
-      } else {
-        mBz = cfgBz;
-      }
-    }
     mRunNumber = bc.runNumber();
-    o2::base::Propagator::initFieldFromGRP(grpmag);
-    o2::base::Propagator::Instance()->setMatLUT(nuclei::lut);
+
+    if (cfgBz > -990) {
+      mBz = cfgBz;
+    } else {
+      o2::parameters::GRPObject* grpo{ccdb->getForTimeStamp<o2::parameters::GRPObject>(cfgGRPpath, run3grp_timestamp)};
+      o2::parameters::GRPMagField* grpmag{nullptr};
+      if (grpo) {
+        mBz = grpo->getNominalL3Field();
+      } else {
+        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(cfgGRPmagPath, run3grp_timestamp);
+        if (!grpmag) {
+          LOG(fatal) << "Got nullptr from CCDB for path " << cfgGRPmagPath << " of object GRPMagField and " << cfgGRPpath << " of object GRPObject for timestamp " << run3grp_timestamp;
+        }
+        mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      }
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
+    }
   }
 
   void init(o2::framework::InitContext&)
@@ -331,6 +320,7 @@ struct NucleiSpectraTask {
 
     spectra.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     spectra.add("hTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
+    spectra.add("hTpcSignalDataSelected", "Specific energy loss for selected particles", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTofSignalData", "TOF beta", HistType::kTH2F, {{500, 0., 5., "#it{p} (GeV/#it{c})"}, {750, 0, 1.5, "TOF #beta"}});
     for (int iC{0}; iC < 2; ++iC) {
       for (int iS{0}; iS < nuclei::species; ++iS) {
@@ -352,6 +342,7 @@ struct NucleiSpectraTask {
     }
 
     nuclei::lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+    o2::base::Propagator::Instance(true)->setMatLUT(nuclei::lut);
   }
 
   void fillDataInfo(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
@@ -383,6 +374,7 @@ struct NucleiSpectraTask {
           track.itsChi2NCl() > 36.f) {
         continue;
       }
+      spectra.fill(HIST("hTpcSignalData"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
       float nSigma[2][4]{
         {-10., -10., -10., -10.},
         {0.f, 0.f, 0.f, 0.f}}; /// then we will calibrate the TOF mass for the He3 and Alpha
@@ -401,10 +393,10 @@ struct NucleiSpectraTask {
 
       auto trackParCov = getTrackParCov(track); // should we set the charge according to the nucleus?
       gpu::gpustd::array<float, 2> dcaInfo;
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(collVtx, trackParCov, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
+      o2::base::Propagator::Instance()->propagateToDCA(collVtx, trackParCov, mBz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
 
       float beta{responseBeta.GetBeta(track)};
-      spectra.fill(HIST("hTpcSignalData"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
+      spectra.fill(HIST("hTpcSignalDataSelected"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
       spectra.fill(HIST("hTofSignalData"), track.tpcInnerParam(), beta);
       for (int iS{0}; iS < nuclei::species; ++iS) {
         bool selectedTOF{false};

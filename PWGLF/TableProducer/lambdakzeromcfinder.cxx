@@ -34,6 +34,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFQATables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -61,7 +62,7 @@ using namespace o2::framework::expressions;
 using std::array;
 using namespace ROOT::Math;
 
-using LabeledTracks = soa::Join<aod::TracksIU, aod::McTrackLabels>;
+using LabeledTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
 
 struct lambdakzeromcfinder {
   Produces<aod::V0s> v0;
@@ -75,18 +76,65 @@ struct lambdakzeromcfinder {
   Configurable<bool> findAntiLambda{"findAntiLambda", true, "findAntiLambda"};
   Configurable<bool> findHyperTriton{"findHyperTriton", false, "findHyperTriton"};
   Configurable<bool> findAntiHyperTriton{"findAntiHyperTriton", false, "findAntiHyperTriton"};
+  Configurable<bool> requireITS{"requireITS", false, "require ITS information used in tracks"};
+
+  Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
+
+  std::vector<int> v0collisionId;
+  std::vector<int> v0positiveIndex;
+  std::vector<int> v0negativeIndex;
+  std::vector<int> v0mcLabel;
 
   void init(InitContext& context)
   {
     // initialize histograms
     const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
+    const AxisSpec axisPt{(int)100, +0.0f, +10.0f, "p_{T} (GeV/c)"};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
+
+    histos.add("hPtK0ShortGenerated", "hPtK0ShortGenerated", kTH1F, {axisPt});
+    histos.add("hPtLambdaGenerated", "hPtLambdaGenerated", kTH1F, {axisPt});
+    histos.add("hPtAntiLambdaGenerated", "hPtAntiLambdaGenerated", kTH1F, {axisPt});
+    histos.add("hPtHypertritonGenerated", "hPtHypertritonGenerated", kTH1F, {axisPt});
+    histos.add("hPtAntiHypertritonGenerated", "hPtAntiHypertritonGenerated", kTH1F, {axisPt});
+
+    histos.add("hPtK0ShortReconstructed", "hPtK0ShortReconstructed", kTH1F, {axisPt});
+    histos.add("hPtLambdaReconstructed", "hPtLambdaReconstructed", kTH1F, {axisPt});
+    histos.add("hPtAntiLambdaReconstructed", "hPtAntiLambdaReconstructed", kTH1F, {axisPt});
+    histos.add("hPtHypertritonReconstructed", "hPtHypertritonReconstructed", kTH1F, {axisPt});
+    histos.add("hPtAntiHypertritonReconstructed", "hPtAntiHypertritonReconstructed", kTH1F, {axisPt});
+
+    histos.add("hPtK0ShortReconstructedWithPV", "hPtK0ShortReconstructedWithPV", kTH1F, {axisPt});
+    histos.add("hPtLambdaReconstructedWithPV", "hPtLambdaReconstructedWithPV", kTH1F, {axisPt});
+    histos.add("hPtAntiLambdaReconstructedWithPV", "hPtAntiLambdaReconstructedWithPV", kTH1F, {axisPt});
+    histos.add("hPtHypertritonReconstructedWithPV", "hPtHypertritonReconstructedWithPV", kTH1F, {axisPt});
+    histos.add("hPtAntiHypertritonReconstructedWithPV", "hPtAntiHypertritonReconstructedWithPV", kTH1F, {axisPt});
+
+    histos.add("hPtK0ShortReconstructedWithPV_ITS", "hPtK0ShortReconstructedWithPV_ITS", kTH1F, {axisPt});
+    histos.add("hPtLambdaReconstructedWithPV_ITS", "hPtLambdaReconstructedWithPV_ITS", kTH1F, {axisPt});
+    histos.add("hPtAntiLambdaReconstructedWithPV_ITS", "hPtAntiLambdaReconstructedWithPV_ITS", kTH1F, {axisPt});
+    histos.add("hPtHypertritonReconstructedWithPV_ITS", "hPtHypertritonReconstructedWithPV_ITS", kTH1F, {axisPt});
+    histos.add("hPtAntiHypertritonReconstructedWithPV_ITS", "hPtAntiHypertritonReconstructedWithPV_ITS", kTH1F, {axisPt});
+  }
+
+  // for sorting
+  template <typename T>
+  std::vector<std::size_t> sort_indices(const std::vector<T>& v)
+  {
+    std::vector<std::size_t> idx(v.size());
+    std::iota(idx.begin(), idx.end(), 0);
+    std::stable_sort(idx.begin(), idx.end(),
+                     [&v](std::size_t i1, std::size_t i2) { return v[i1] < v[i2]; });
+    return idx;
   }
 
   template <typename TmcParticle, typename TTrackList>
-  void PopulateV0s(TmcParticle const& mcParticle, TTrackList const& trackList, int bestCollisionIndex)
+  bool ProcessV0(TmcParticle const& mcParticle, TTrackList const& trackList, int bestCollisionIndex, bool& positiveITS, bool& negativeITS)
   {
+    bool reconstructed = false;
+    positiveITS = false;
+    negativeITS = false;
     int trackIndexPositive = -1;
     int trackIndexNegative = -1;
     if (mcParticle.has_daughters()) {
@@ -98,10 +146,14 @@ struct lambdakzeromcfinder {
               // determine which charge this particle has
               if (track.sign() > 0) {
                 trackIndexPositive = track.globalIndex();
+                if (track.hasITS())
+                  positiveITS = true;
                 if (trackIndexNegative >= 0)
                   break;
               } else {
                 trackIndexNegative = track.globalIndex();
+                if (track.hasITS())
+                  negativeITS = true;
                 if (trackIndexPositive >= 0)
                   break;
               }
@@ -110,43 +162,105 @@ struct lambdakzeromcfinder {
         }
       }
     }
-    if (trackIndexPositive >= 0 && trackIndexNegative >= 0) {
-      v0(bestCollisionIndex, trackIndexPositive, trackIndexNegative);
-      fullv0labels(mcParticle.globalIndex());
+    if (trackIndexPositive >= 0 && trackIndexNegative >= 0 && (!requireITS || (requireITS && positiveITS && negativeITS))) {
+      reconstructed = true;
+      v0collisionId.emplace_back(bestCollisionIndex);
+      v0positiveIndex.emplace_back(trackIndexPositive);
+      v0negativeIndex.emplace_back(trackIndexNegative);
+      v0mcLabel.emplace_back(mcParticle.globalIndex());
     }
+    return reconstructed;
   }
 
-  void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, LabeledTracks const& tracks, aod::McParticles const& mcParticles)
+  void process(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, aod::McParticles const& allMcParticles)
   {
-    // Resolve collision (note: this loop is only over recoed collisions)
-    histos.fill(HIST("hNTimesCollRecoed"), collisions.size());
-    if (collisions.size() < 1)
-      return; // not recoed, can't do anything, skip
-    int biggestNContribs = -1;
-    int bestCollisionIndex = -1;
-    for (auto& collision : collisions) {
-      if (biggestNContribs < collision.numContrib()) {
-        biggestNContribs = collision.numContrib();
-        bestCollisionIndex = collision.globalIndex();
+    v0collisionId.clear();
+    v0positiveIndex.clear();
+    v0negativeIndex.clear();
+    v0mcLabel.clear();
+
+    // Step 1: sweep over all mcCollisions and find all relevant candidates
+    for (auto const& mcCollision : mcCollisions) {
+      histos.fill(HIST("hNTimesCollRecoed"), mcCollision.hasRecoCollision());
+      int bestCollisionIndex = mcCollision.bestCollisionIndex();
+
+      auto mcParticles = allMcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
+
+      bool positiveITS = false;
+      bool negativeITS = false;
+      bool reconstructed = false;
+      for (auto& mcParticle : mcParticles) {
+        if (mcParticle.pdgCode() == 310 && findK0Short) {
+          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS);
+          if (fabs(mcParticle.y()) < 0.5) {
+            histos.fill(HIST("hPtK0ShortGenerated"), mcParticle.pt());
+            if (reconstructed)
+              histos.fill(HIST("hPtK0ShortReconstructed"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0)
+              histos.fill(HIST("hPtK0ShortReconstructedWithPV"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS)
+              histos.fill(HIST("hPtK0ShortReconstructedWithPV_ITS"), mcParticle.pt());
+          }
+        }
+        if (mcParticle.pdgCode() == 3122 && findLambda) {
+          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS);
+          if (fabs(mcParticle.y()) < 0.5) {
+            histos.fill(HIST("hPtLambdaGenerated"), mcParticle.pt());
+            if (reconstructed)
+              histos.fill(HIST("hPtLambdaReconstructed"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0)
+              histos.fill(HIST("hPtLambdaReconstructedWithPV"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS)
+              histos.fill(HIST("hPtLambdaReconstructedWithPV_ITS"), mcParticle.pt());
+          }
+        }
+        if (mcParticle.pdgCode() == -3122 && findAntiLambda) {
+          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS);
+          if (fabs(mcParticle.y()) < 0.5) {
+            histos.fill(HIST("hPtAntiLambdaGenerated"), mcParticle.pt());
+            if (reconstructed)
+              histos.fill(HIST("hPtAntiLambdaReconstructed"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0)
+              histos.fill(HIST("hPtAntiLambdaReconstructedWithPV"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS)
+              histos.fill(HIST("hPtAntiLambdaReconstructedWithPV_ITS"), mcParticle.pt());
+          }
+        }
+        if (mcParticle.pdgCode() == 1010010030 && findHyperTriton) {
+          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS);
+          if (fabs(mcParticle.y()) < 0.5) {
+            histos.fill(HIST("hPtHyperTritonGenerated"), mcParticle.pt());
+            if (reconstructed)
+              histos.fill(HIST("hPtHyperTritonReconstructed"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0)
+              histos.fill(HIST("hPtHyperTritonReconstructedWithPV"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS)
+              histos.fill(HIST("hPtHyperTritonReconstructedWithPV_ITS"), mcParticle.pt());
+          }
+        }
+        if (mcParticle.pdgCode() == -1010010030 && findAntiHyperTriton) {
+          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS);
+          if (fabs(mcParticle.y()) < 0.5) {
+            histos.fill(HIST("hPtAntiHyperTritonGenerated"), mcParticle.pt());
+            if (reconstructed)
+              histos.fill(HIST("hPtAntiHyperTritonReconstructed"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0)
+              histos.fill(HIST("hPtAntiHyperTritonReconstructedWithPV"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS)
+              histos.fill(HIST("hPtAntiHyperTritonReconstructedWithPV_ITS"), mcParticle.pt());
+          }
+        }
       }
     }
 
-    // Iterate over MC collisions, identify particles that are desired
-    for (auto& mcParticle : mcParticles) {
-      if (mcParticle.pdgCode() == 310 && findK0Short) {
-        PopulateV0s(mcParticle, tracks, bestCollisionIndex);
-      }
-      if (mcParticle.pdgCode() == 3122 && findLambda) {
-        PopulateV0s(mcParticle, tracks, bestCollisionIndex);
-      }
-      if (mcParticle.pdgCode() == -3122 && findAntiLambda) {
-        PopulateV0s(mcParticle, tracks, bestCollisionIndex);
-      }
-      if (mcParticle.pdgCode() == 1010010030 && findHyperTriton) {
-        PopulateV0s(mcParticle, tracks, bestCollisionIndex);
-      }
-      if (mcParticle.pdgCode() == -1010010030 && findAntiHyperTriton) {
-        PopulateV0s(mcParticle, tracks, bestCollisionIndex);
+    // sort according to collision ID
+    auto sortedIndices = sort_indices(v0collisionId);
+
+    // V0 list established, populate
+    for (auto ic : sortedIndices) {
+      if (v0collisionId[ic] >= 0) {
+        v0(v0collisionId[ic], v0positiveIndex[ic], v0negativeIndex[ic]);
+        fullv0labels(v0mcLabel[ic]);
       }
     }
   }
