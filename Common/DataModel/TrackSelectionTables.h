@@ -149,7 +149,7 @@ DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on th
                   track::TrackCutFlagFb2,
                   track::TrackCutFlagFb3,
                   track::TrackCutFlagFb4,
-		              track::TrackCutFlagFb5,
+                  track::TrackCutFlagFb5,
                   track::IsQualityTrack<track::TrackCutFlag>,
                   track::IsPrimaryTrack<track::TrackCutFlag>,
                   track::IsInAcceptanceTrack<track::TrackCutFlag>,

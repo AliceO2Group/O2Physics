@@ -113,7 +113,7 @@ TrackSelection getJEGlobalTrackSelectionRun2()
   TrackSelection selectedTracks = getGlobalTrackSelection();
   selectedTracks.SetTrackType(o2::aod::track::Run2Track); // Run 2 track asked by default
   selectedTracks.SetRequireGoldenChi2(false);
-  selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 1e+10;});//std::function<float(float)>{}
+  selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 1e+10; }); // std::function<float(float)>{}
   selectedTracks.SetEtaRange(-0.9f, 0.9f);
   selectedTracks.SetMaxDcaXY(2.4f);
   selectedTracks.SetMaxDcaZ(3.2f);

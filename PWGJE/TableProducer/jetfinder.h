@@ -66,7 +66,7 @@ bool selectTrack(T const& track, std::string trackSelection)
     return false;
   } else if (trackSelection == "QualityTracks" && !track.isQualityTrack()) {
     return false;
-  } else if (trackSelection == "hybridTracksJE" && !track.trackCutFlagFb5()) {//isQualityTrack
+  } else if (trackSelection == "hybridTracksJE" && !track.trackCutFlagFb5()) { // isQualityTrack
     return false;
   } else {
     return true;

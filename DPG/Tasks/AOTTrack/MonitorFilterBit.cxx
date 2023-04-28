@@ -154,7 +154,7 @@ struct CheckFilterBit {
               if (track.trackCutFlagFb4()) {
                 histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
               }
-              if (track.trackCutFlagFb5()){
+              if (track.trackCutFlagFb5()) {
                 histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB5"), track.pt(), track.eta(), track.phi());
               }
               if (isHF == RecoDecay::OriginType::Prompt || isHF == RecoDecay::OriginType::NonPrompt) {
@@ -173,7 +173,7 @@ struct CheckFilterBit {
                 if (track.trackCutFlagFb4()) {
                   histos.fill(HIST("Tracks/RecoMCfromHFdecayCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
                 }
-                if (track.trackCutFlagFb5()){
+                if (track.trackCutFlagFb5()) {
                   histos.fill(HIST("Tracks/RecoMCfromHFdecayCollMatch/histptFB5"), track.pt(), track.eta(), track.phi());
                 }
               }
