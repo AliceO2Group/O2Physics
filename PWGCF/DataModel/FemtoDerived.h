@@ -57,6 +57,7 @@ enum ParticleType {
 };
 
 static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/DCAxy", "/CPA", "/DCAxy", "/CPA", "/DCAxy"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -181,34 +182,67 @@ DECLARE_SOA_TABLE(FemtoDreamDebugParticles, "AOD", "FEMTODEBUGPARTS",
 using FemtoDreamDebugParticle = FemtoDreamDebugParticles::iterator;
 
 /// FemtoDreamTrackMC
-namespace femtodreamparticleMC
+namespace femtodreamMCparticle
 {
 /// Distinuishes the different particle origins
 enum ParticleOriginMCTruth {
-  kPrimary,   //! Primary track or V0
-  kDaughter,  //! Particle from a decay
-  kMaterial,  //! Particle from a material
-  kNotPrimary //! Particle from a material
+  kPrimary,           //! Primary track or V0
+  kDaughter,          //! Particle from a decay
+  kMaterial,          //! Particle from a material
+  kNotPrimary,        //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
+  kFake,              //! particle, that has NOT the PDG code of the current analysed particle
+  kDaughterLambda,    //! Daughter from a Lambda decay
+  kDaughterSigmaplus, //! Daughter from a Sigma^plus decay
+  kNOriginMCTruthTypes
 };
 
-DECLARE_SOA_INDEX_COLUMN(FemtoDreamParticle, femtoDreamParticle);
+//! Naming of the different OriginMCTruth types
+static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes] = {
+  "_Primary",
+  "_Daughter",
+  "_Material",
+  "_NotPrimary",
+  "_Fake",
+  "_DaughterLambda",
+  "DaughterSigmaPlus"};
+
+/// Distinguished between reconstructed and truth
+enum MCType {
+  kRecon, //! Reconstructed in case of MC and used as default in case of data
+  kTruth, //! MC truth
+  kNMCTypes
+};
+
+static constexpr std::string_view MCTypeName[kNMCTypes] = {"", "_MC"};
+
+DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
 DECLARE_SOA_COLUMN(PartOriginMCTruth, partOriginMCTruth, uint8_t); //! Origin of the particle, according to femtodreamparticle::ParticleOriginMCTruth
 DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle PDG
 
 // debug variables
 DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int); //! Checks mother PDG, where mother is the primary particle for that decay chain
-} // namespace femtodreamparticleMC
+} // namespace femtodreamMCparticle
 
-DECLARE_SOA_TABLE(FemtoDreamParticlesMC, "AOD", "FEMTODREAMPSMC",
+DECLARE_SOA_TABLE(FemtoDreamMCParticles, "AOD", "FEMTODREAMMCPS",
                   o2::soa::Index<>,
-                  femtodreamparticleMC::FemtoDreamParticleId,
-                  femtodreamparticleMC::PartOriginMCTruth,
-                  femtodreamparticleMC::PDGMCTruth);
-using FemtoDreamParticleMC = FemtoDreamParticlesMC::iterator;
+                  femtodreamMCparticle::PartOriginMCTruth,
+                  femtodreamMCparticle::PDGMCTruth,
+                  femtodreamparticle::Pt,
+                  femtodreamparticle::Eta,
+                  femtodreamparticle::Phi);
+using FemtoDreamMCParticle = FemtoDreamMCParticles::iterator;
 
-DECLARE_SOA_TABLE(FemtoDreamDebugParticlesMC, "AOD", "FEMTODEBUGPMC",
-                  femtodreamparticleMC::MotherPDG);
-using FemtoDreamDebugParticleMC = FemtoDreamParticlesMC::iterator;
+DECLARE_SOA_TABLE(FemtoDreamDebugMCParticles, "AOD", "FEMTODEBUGMCP",
+                  femtodreamMCparticle::MotherPDG);
+using FemtoDreamDebugMCParticle = FemtoDreamDebugMCParticles::iterator;
+
+namespace mcfdlabel
+{
+DECLARE_SOA_INDEX_COLUMN(FemtoDreamMCParticle, femtoDreamMCParticle); //! MC particle for femtodreamparticle
+} // namespace mcfdlabel
+DECLARE_SOA_TABLE(FemtoDreamMCLabels, "AOD", "FEMTOMCLABELS", //! Table joinable to FemtoDreamParticle containing the MC labels
+                  mcfdlabel::FemtoDreamMCParticleId);
+using FemtoDreamMCLabel = FemtoDreamMCLabels::iterator;
 
 /// Hash
 namespace hash
