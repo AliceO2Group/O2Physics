@@ -84,13 +84,34 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hConvPoint_diffZ_recalc", "conversion point diff Z MC;Z_{MC} (cm);Z_{rec}^{recalc} - Z_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
   }
 
+  const int nmgg = 401;
+  float mgg[nmgg] = {};
+  for (int i = 0; i < nmgg; i++)
+    mgg[i] = 0.002 * i;
+
+  const int npTgg = 91;
+  float pTgg[npTgg] = {};
+  for (int i = 0; i < 50; i++)
+    pTgg[i] = 0.1 * (i - 0) + 0.0; // from 0 to 5 GeV/c, every 0.1 GeV/c
+  for (int i = 50; i < 60; i++)
+    pTgg[i] = 0.5 * (i - 50) + 5.0; // from 5 to 10 GeV/c, evety 0.5 GeV/c
+  for (int i = 60; i < npTgg; i++)
+    pTgg[i] = 1.0 * (i - 60) + 10.0; // from 10 to 40 GeV/c, evety 1 GeV/c
+
   if (TString(histClass) == "gammagamma_mass_pt") {
     // LOGF(info, "Add 2 photon histograms");
-    list->Add(new TH2F("hMggPt_Same", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", 400, 0, 0.8, 400, 0.0f, 40));
-    list->Add(new TH2F("hMggPt_Mixed", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", 400, 0, 0.8, 400, 0.0f, 40));
+    list->Add(new TH2F("hMggPt_Same", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
+    list->Add(new TH2F("hMggPt_Mixed", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
     // registry.add("EMCEMC/h2MggPt_Rotated", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/#it{c}^{2});p_{T,#gamma#gamma} (GeV/#it{c})", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}}, true);
+  }
+  if (TString(histClass) == "gammagamma_mass_pt_mc") {
+    // LOGF(info, "Add 2 photon histograms");
+    list->Add(new TH2F("hMggPt_Pi0", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
+    list->Add(new TH2F("hMggPt_Eta", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0"))->Sumw2();
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Eta"))->Sumw2();
   }
 
   if (TString(histClass) == "Generated") {
@@ -111,9 +132,15 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(new TH1F("hPhi_Photon", "photon #varphi;#varphi (rad.)", 180, 0, TMath::TwoPi()));
     }
 
-    ////Generated, particles
-    // if (TString(subGroup) == "Pi0Eta") {
-    // }
+    // Generated, particles
+    if (TString(subGroup) == "Pi0Eta") {
+      static constexpr std::string_view parnames[2] = {"Pi0", "Eta"};
+      for (int i = 0; i < 2; i++) {
+        list->Add(new TH1F(Form("hPt_%s", parnames[i].data()), Form("%s pT;p_{T} (GeV/c)", parnames[i].data()), 1000, 0.0f, 10));
+        list->Add(new TH1F(Form("hY_%s", parnames[i].data()), Form("%s y;rapidity y", parnames[i].data()), 40, -2.0f, 2.0f));
+        list->Add(new TH1F(Form("hPhi_%s", parnames[i].data()), Form("%s #varphi;#varphi (rad.)", parnames[i].data()), 180, 0, TMath::TwoPi()));
+      }
+    }
   }
 
   if (TString(histClass) == "tagged_photon") {
@@ -121,6 +148,12 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hMggPt_Mixed", "m_{ee#gamma} vs. p_{T,ee};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c)", 200, 0, 0.4, 100, 0.0f, 10));
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
+  }
+  if (TString(histClass) == "tagged_photon_mc") {
+    list->Add(new TH1F("hPt_v0photon_Pi0", "reconstructed v0 photon from pi0;p_{T,ee} (GeV/c);N_{ee}^{#pi^{0}}", 100, 0.0f, 10));                                                        // denominator for conditional probability
+    list->Add(new TH2F("hMggPt_Pi0", "reconstructed m_{ee#gamma} vs. p_{T,ee} from pi0;m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c);N_{ee}^{tagged #pi^{0}}", 200, 0, 0.4, 100, 0.0f, 10)); // numerator for conditional probability
+    reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0"))->Sumw2();
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0"))->Sumw2();
   }
 
   if (TString(histClass) == "photon_hbt") {
