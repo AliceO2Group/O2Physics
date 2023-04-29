@@ -200,7 +200,7 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
 
 } // namespace o2::aod
 
-struct NucleiSpectraTask {
+struct nucleiSpectra {
   enum {
     kDeuteron = BIT(0),
     kTriton = BIT(1),
@@ -456,7 +456,7 @@ struct NucleiSpectraTask {
       nucleiTable(c.pt, c.eta, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFmass);
     }
   }
-  PROCESS_SWITCH(NucleiSpectraTask, processData, "Data analysis", true);
+  PROCESS_SWITCH(nucleiSpectra, processData, "Data analysis", true);
 
   void processMCrec(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
@@ -484,7 +484,7 @@ struct NucleiSpectraTask {
       }
     }
   }
-  PROCESS_SWITCH(NucleiSpectraTask, processMCrec, "MC analysis rec", false);
+  PROCESS_SWITCH(nucleiSpectra, processMCrec, "MC analysis rec", false);
 
   void processMCgen(aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
@@ -523,11 +523,11 @@ struct NucleiSpectraTask {
       index++;
     }
   }
-  PROCESS_SWITCH(NucleiSpectraTask, processMCgen, "MC analysis gen", false);
+  PROCESS_SWITCH(nucleiSpectra, processMCgen, "MC analysis gen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<NucleiSpectraTask>(cfgc, TaskName{"nuclei-spectra"})};
+    adaptAnalysisTask<nucleiSpectra>(cfgc, TaskName{"nuclei-spectra"})};
 }

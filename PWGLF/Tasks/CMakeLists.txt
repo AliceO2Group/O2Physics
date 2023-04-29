@@ -62,18 +62,8 @@ o2physics_add_dpl_workflow(spectra-tpc-tiny-pikapr
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-spectra
-                    SOURCES NucleiSpectraTask.cxx
+                    SOURCES nucleiSpectra.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(nuclei-efficiency
-                    SOURCES NucleiSpectraEfficiency.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(nuclei-efficiencylight
-                    SOURCES NucleiSpectraEfficiencyLight.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdakzeroanalysis
