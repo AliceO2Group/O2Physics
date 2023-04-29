@@ -458,17 +458,15 @@ struct NucleiSpectraTask {
   }
   PROCESS_SWITCH(NucleiSpectraTask, processData, "Data analysis", true);
 
-  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
+  void processMCrec(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
     fillDataInfo(collision, tracks);
-    std::vector<bool> isReconstructed(particlesMC.size(), false);
     for (auto& c : nuclei::candidates) {
       auto label = trackLabelsMC.iteratorAt(c.globalIndex);
       if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
         continue;
       }
       auto particle = particlesMC.iteratorAt(label.mcParticleId());
-      isReconstructed[particle.globalIndex()] = true;
       if (particle.isPhysicalPrimary()) {
         c.flags |= kIsPhysicalPrimary;
       } else if (particle.has_mothers()) {
@@ -485,7 +483,20 @@ struct NucleiSpectraTask {
         }
       }
     }
+  }
+  PROCESS_SWITCH(NucleiSpectraTask, processMCrec, "MC analysis rec", false);
 
+  void processMCgen(aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  {
+    std::vector<bool> isReconstructed(particlesMC.size(), false);
+    for (auto& c : nuclei::candidates) {
+      auto label = trackLabelsMC.iteratorAt(c.globalIndex);
+      if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
+        continue;
+      }
+      auto particle = particlesMC.iteratorAt(label.mcParticleId());
+      isReconstructed[particle.globalIndex()] = true;
+    }
     int index{0};
     for (auto& particle : particlesMC) {
       int pdg{std::abs(particle.pdgCode())};
@@ -504,7 +515,6 @@ struct NucleiSpectraTask {
         } else {
           flags |= kIsSecondaryFromMaterial;
         }
-
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
           nucleiTableMC(0, 0, 0, 0, 0, 0, flags, 0, 0, particle.pt(), particle.eta(), particle.pdgCode());
         }
@@ -513,7 +523,7 @@ struct NucleiSpectraTask {
       index++;
     }
   }
-  PROCESS_SWITCH(NucleiSpectraTask, processMC, "MC analysis", false);
+  PROCESS_SWITCH(NucleiSpectraTask, processMCgen, "MC analysis gen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
