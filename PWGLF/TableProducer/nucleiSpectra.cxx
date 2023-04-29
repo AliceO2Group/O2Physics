@@ -47,6 +47,8 @@
 
 #include "ReconstructionDataFormats/Track.h"
 
+#include "PWGLF/DataModel/LFSlimNucleiTables.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -154,51 +156,6 @@ o2::base::MatLayerCylSet* lut = nullptr;
 
 std::vector<NucleusCandidate> candidates;
 } // namespace nuclei
-
-namespace o2::aod
-{
-namespace NucleiTableNS
-{
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(ITSclsMap, itsClsMap, uint8_t);
-DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, uint8_t);
-DECLARE_SOA_COLUMN(DCAxy, dcaxy, int8_t);
-DECLARE_SOA_COLUMN(DCAz, dcaz, int8_t);
-DECLARE_SOA_COLUMN(Flags, flags, uint16_t);
-DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, uint8_t);
-DECLARE_SOA_COLUMN(TOFmass, tofmass, uint8_t);
-DECLARE_SOA_COLUMN(gPt, genPt, float);
-DECLARE_SOA_COLUMN(gEta, genEta, float);
-DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
-
-} // namespace NucleiTableNS
-DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
-                  NucleiTableNS::Pt,
-                  NucleiTableNS::Eta,
-                  NucleiTableNS::ITSclsMap,
-                  NucleiTableNS::TPCnCls,
-                  NucleiTableNS::DCAxy,
-                  NucleiTableNS::DCAz,
-                  NucleiTableNS::Flags,
-                  NucleiTableNS::TPCnsigma,
-                  NucleiTableNS::TOFmass)
-
-DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
-                  NucleiTableNS::Pt,
-                  NucleiTableNS::Eta,
-                  NucleiTableNS::ITSclsMap,
-                  NucleiTableNS::TPCnCls,
-                  NucleiTableNS::DCAxy,
-                  NucleiTableNS::DCAz,
-                  NucleiTableNS::Flags,
-                  NucleiTableNS::TPCnsigma,
-                  NucleiTableNS::TOFmass,
-                  NucleiTableNS::gPt,
-                  NucleiTableNS::gEta,
-                  NucleiTableNS::PDGcode)
-
-} // namespace o2::aod
 
 struct nucleiSpectra {
   enum {
