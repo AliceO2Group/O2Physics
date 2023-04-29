@@ -113,4 +113,4 @@ using MCHypCand = MCHypCands::iterator;
 
 } // namespace o2::aod
 
-#endif
+#endif  // PWGLF_DATAMODEL_LFHYPERNUCLEITABLES_H_

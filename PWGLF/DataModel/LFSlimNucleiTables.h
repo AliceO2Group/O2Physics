@@ -65,4 +65,4 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
 
 } // namespace o2::aod
 
-#endif
+#endif  // PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
