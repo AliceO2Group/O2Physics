@@ -47,6 +47,8 @@
 
 #include "ReconstructionDataFormats/Track.h"
 
+#include "PWGLF/DataModel/LFSlimNucleiTables.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -155,52 +157,7 @@ o2::base::MatLayerCylSet* lut = nullptr;
 std::vector<NucleusCandidate> candidates;
 } // namespace nuclei
 
-namespace o2::aod
-{
-namespace NucleiTableNS
-{
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(ITSclsMap, itsClsMap, uint8_t);
-DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, uint8_t);
-DECLARE_SOA_COLUMN(DCAxy, dcaxy, int8_t);
-DECLARE_SOA_COLUMN(DCAz, dcaz, int8_t);
-DECLARE_SOA_COLUMN(Flags, flags, uint16_t);
-DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, uint8_t);
-DECLARE_SOA_COLUMN(TOFmass, tofmass, uint8_t);
-DECLARE_SOA_COLUMN(gPt, genPt, float);
-DECLARE_SOA_COLUMN(gEta, genEta, float);
-DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
-
-} // namespace NucleiTableNS
-DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
-                  NucleiTableNS::Pt,
-                  NucleiTableNS::Eta,
-                  NucleiTableNS::ITSclsMap,
-                  NucleiTableNS::TPCnCls,
-                  NucleiTableNS::DCAxy,
-                  NucleiTableNS::DCAz,
-                  NucleiTableNS::Flags,
-                  NucleiTableNS::TPCnsigma,
-                  NucleiTableNS::TOFmass)
-
-DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
-                  NucleiTableNS::Pt,
-                  NucleiTableNS::Eta,
-                  NucleiTableNS::ITSclsMap,
-                  NucleiTableNS::TPCnCls,
-                  NucleiTableNS::DCAxy,
-                  NucleiTableNS::DCAz,
-                  NucleiTableNS::Flags,
-                  NucleiTableNS::TPCnsigma,
-                  NucleiTableNS::TOFmass,
-                  NucleiTableNS::gPt,
-                  NucleiTableNS::gEta,
-                  NucleiTableNS::PDGcode)
-
-} // namespace o2::aod
-
-struct NucleiSpectraTask {
+struct nucleiSpectra {
   enum {
     kDeuteron = BIT(0),
     kTriton = BIT(1),
@@ -456,19 +413,17 @@ struct NucleiSpectraTask {
       nucleiTable(c.pt, c.eta, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFmass);
     }
   }
-  PROCESS_SWITCH(NucleiSpectraTask, processData, "Data analysis", true);
+  PROCESS_SWITCH(nucleiSpectra, processData, "Data analysis", true);
 
-  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
+  void processMCrec(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
     fillDataInfo(collision, tracks);
-    std::vector<bool> isReconstructed(particlesMC.size(), false);
     for (auto& c : nuclei::candidates) {
       auto label = trackLabelsMC.iteratorAt(c.globalIndex);
       if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
         continue;
       }
       auto particle = particlesMC.iteratorAt(label.mcParticleId());
-      isReconstructed[particle.globalIndex()] = true;
       if (particle.isPhysicalPrimary()) {
         c.flags |= kIsPhysicalPrimary;
       } else if (particle.has_mothers()) {
@@ -485,7 +440,20 @@ struct NucleiSpectraTask {
         }
       }
     }
+  }
+  PROCESS_SWITCH(nucleiSpectra, processMCrec, "MC analysis rec", false);
 
+  void processMCgen(aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  {
+    std::vector<bool> isReconstructed(particlesMC.size(), false);
+    for (auto& c : nuclei::candidates) {
+      auto label = trackLabelsMC.iteratorAt(c.globalIndex);
+      if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
+        continue;
+      }
+      auto particle = particlesMC.iteratorAt(label.mcParticleId());
+      isReconstructed[particle.globalIndex()] = true;
+    }
     int index{0};
     for (auto& particle : particlesMC) {
       int pdg{std::abs(particle.pdgCode())};
@@ -504,7 +472,6 @@ struct NucleiSpectraTask {
         } else {
           flags |= kIsSecondaryFromMaterial;
         }
-
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
           nucleiTableMC(0, 0, 0, 0, 0, 0, flags, 0, 0, particle.pt(), particle.eta(), particle.pdgCode());
         }
@@ -513,11 +480,11 @@ struct NucleiSpectraTask {
       index++;
     }
   }
-  PROCESS_SWITCH(NucleiSpectraTask, processMC, "MC analysis", false);
+  PROCESS_SWITCH(nucleiSpectra, processMCgen, "MC analysis gen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<NucleiSpectraTask>(cfgc, TaskName{"nuclei-spectra"})};
+    adaptAnalysisTask<nucleiSpectra>(cfgc, TaskName{"nuclei-spectra"})};
 }
