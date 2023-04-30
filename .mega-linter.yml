@@ -18,6 +18,7 @@ DISABLE_LINTERS:
   - YAML_PRETTIER
   - REPOSITORY_DEVSKIM
   - REPOSITORY_SECRETLINT
+  - REPOSITORY_TRIVY
 DISABLE_ERRORS_LINTERS: # If errors are found by these linters, they will be considered as non blocking.
   - PYTHON_BANDIT # The bandit check is overly broad and complains about subprocess usage in Scripts/update_ccdb.py.
 SHOW_ELAPSED_TIME: true

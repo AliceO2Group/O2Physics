@@ -48,7 +48,8 @@ struct LFNucleiBATask {
   Configurable<bool> enableHe{"enableHe", true, "Flag to enable helium-3 analysis."};
   Configurable<bool> enableAl{"enableAl", true, "Flag to enable alpha analysis."};
 
-  Configurable<float> cfgCutVertex{"cfgCutVSertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> cfgHighCutVertex{"cfgHighCutVertex", 10.0f, "Accepted z-vertex upper limit"};
+  Configurable<float> cfgLowCutVertex{"cfgLowCutVertex", -10.0f, "Accepted z-vertex lower limit"};
   Configurable<float> cfgCutITSClusters{"cfgCutITSClusters", -1.f, "Minimum number of ITS clusters"};
   Configurable<float> cfgCutTPCXRows{"cfgCutTPCXRows", -1.f, "Minimum number of crossed TPC rows"};
   Configurable<float> cfgCutTPCClusters{"cfgCutTPCClusters", -1.f, "Minimum number of found TPC clusters"};
@@ -1097,7 +1098,7 @@ struct LFNucleiBATask {
       if (!event.sel8()) {
         return;
       }
-      if (std::abs(event.posZ()) > 10.f) {
+      if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex) {
         return;
       }
     }

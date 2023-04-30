@@ -91,5 +91,36 @@ bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut, 
   return pidSelection;
 };
 
+int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int motherPDG)
+{
+  int partOrigin = 0;
+  if (partType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
+
+    switch (abs(motherPDG)) {
+      case 3122:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughterLambda;
+        break;
+      case 3222:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughterSigmaplus;
+        break;
+      default:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughter;
+    } // switch
+
+  } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0) {
+    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughter;
+
+  } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
+    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughter;
+
+  } else if (partType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
+    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughter;
+
+  } else if (partType == o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor) {
+    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughter;
+  }
+  return partOrigin;
+};
+
 } // namespace o2::analysis::femtoDream
 #endif // PWGCF_FEMTODREAM_FEMTOUTILS_H_

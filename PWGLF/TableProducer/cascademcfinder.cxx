@@ -100,7 +100,7 @@ struct cascademcfinder {
     histos.add("hPtXiPlusReconstructed", "hPtXiPlusReconstructed", kTH1F, {axisPt});
     histos.add("hPtOmegaMinusReconstructed", "hPtOmegaMinusReconstructed", kTH1F, {axisPt});
     histos.add("hPtOmegaPlusReconstructed", "hPtOmegaPlusReconstructed", kTH1F, {axisPt});
-
+    
     histos.add("hPtXiMinusGlobal", "hPtXiMinusGlobal", kTH1F, {axisPt});
     histos.add("hPtXiPlusGlobal", "hPtXiPlusGlobal", kTH1F, {axisPt});
     histos.add("hPtOmegaMinusGlobal", "hPtOmegaMinusGlobal", kTH1F, {axisPt});
@@ -133,6 +133,7 @@ struct cascademcfinder {
     positiveTPC = false;
     negativeTPC = false;
     bachelorTPC = false;
+
     int trackIndexBachelor = -1;
     int trackIndexV0 = -1;
 
@@ -206,6 +207,10 @@ struct cascademcfinder {
       for (auto& mcParticle : mcParticles) {
         if (mcParticle.pdgCode() == 3312 && findXiMinus) {
           reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS, positiveTPC, negativeTPC, bachelorTPC);
+      bool reconstructed = false;
+      for (auto& mcParticle : mcParticles) {
+        if (mcParticle.pdgCode() == 3312 && findXiMinus) {
+          reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS);
           if (fabs(mcParticle.y()) < 0.5) {
             histos.fill(HIST("hPtXiMinusGenerated"), mcParticle.pt());
             if (reconstructed)
