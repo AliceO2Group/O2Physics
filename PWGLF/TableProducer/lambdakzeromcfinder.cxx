@@ -168,7 +168,7 @@ struct lambdakzeromcfinder {
         }
       }
     }
-    if (trackIndexPositive >= 0 && trackIndexNegative >= 0 && (!requireITS || (requireITS && positiveITS && negativeITS ))) {
+    if (trackIndexPositive >= 0 && trackIndexNegative >= 0 && (!requireITS || (requireITS && positiveITS && negativeITS))) {
       reconstructed = true;
       v0collisionId.emplace_back(bestCollisionIndex);
       v0positiveIndex.emplace_back(trackIndexPositive);
@@ -204,9 +204,9 @@ struct lambdakzeromcfinder {
             histos.fill(HIST("hPtK0ShortGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtK0ShortReconstructed"), mcParticle.pt());
-            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC )
+            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC)
               histos.fill(HIST("hPtK0ShortGlobal"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC )
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC)
               histos.fill(HIST("hPtK0ShortGlobalWithPV"), mcParticle.pt());
           }
         }
@@ -216,9 +216,9 @@ struct lambdakzeromcfinder {
             histos.fill(HIST("hPtLambdaGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtLambdaReconstructed"), mcParticle.pt());
-            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC )
+            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC)
               histos.fill(HIST("hPtLambdaGlobal"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC )
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC)
               histos.fill(HIST("hPtLambdaGlobalWithPV"), mcParticle.pt());
           }
         }
@@ -228,9 +228,9 @@ struct lambdakzeromcfinder {
             histos.fill(HIST("hPtAntiLambdaGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtAntiLambdaReconstructed"), mcParticle.pt());
-            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC )
+            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC)
               histos.fill(HIST("hPtAntiLambdaGlobal"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC )
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC)
               histos.fill(HIST("hPtAntiLambdaGlobalWithPV"), mcParticle.pt());
           }
         }
@@ -240,9 +240,9 @@ struct lambdakzeromcfinder {
             histos.fill(HIST("hPtHyperTritonGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtHyperTritonReconstructed"), mcParticle.pt());
-            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC )
+            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC)
               histos.fill(HIST("hPtHyperTritonGlobal"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC )
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC)
               histos.fill(HIST("hPtHyperTritonGlobalWithPV"), mcParticle.pt());
           }
         }
@@ -252,9 +252,9 @@ struct lambdakzeromcfinder {
             histos.fill(HIST("hPtAntiHyperTritonGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtAntiHyperTritonReconstructed"), mcParticle.pt());
-            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC )
+            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC)
               histos.fill(HIST("hPtAntiHyperTritonGlobal"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC )
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC)
               histos.fill(HIST("hPtAntiHyperTritonGlobalWithPV"), mcParticle.pt());
           }
         }
