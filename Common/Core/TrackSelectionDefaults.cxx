@@ -111,7 +111,6 @@ TrackSelection getGlobalTrackSelectionRun3HF()
 TrackSelection getJEGlobalTrackSelectionRun2()
 {
   TrackSelection selectedTracks = getGlobalTrackSelection();
-  selectedTracks.SetTrackType(o2::aod::track::Run2Track); // Run 2 track asked by default
   selectedTracks.SetRequireGoldenChi2(false);
   selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 1e+10; });
   selectedTracks.SetEtaRange(-0.9f, 0.9f);
