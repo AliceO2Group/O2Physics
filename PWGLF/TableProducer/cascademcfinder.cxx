@@ -207,10 +207,6 @@ struct cascademcfinder {
       for (auto& mcParticle : mcParticles) {
         if (mcParticle.pdgCode() == 3312 && findXiMinus) {
           reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS, positiveTPC, negativeTPC, bachelorTPC);
-          bool reconstructed = false;
-          for (auto& mcParticle : mcParticles) {
-            if (mcParticle.pdgCode() == 3312 && findXiMinus) {
-              reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS);
               if (fabs(mcParticle.y()) < 0.5) {
                 histos.fill(HIST("hPtXiMinusGenerated"), mcParticle.pt());
                 if (reconstructed)
