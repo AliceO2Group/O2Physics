@@ -63,6 +63,7 @@ struct Pi0EtaToGammaGamma {
   };
 
   HistogramRegistry registry{"Pi0EtaToGammaGamma"};
+  Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
 
@@ -333,6 +334,10 @@ struct Pi0EtaToGammaGamma {
             ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
             ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
             ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+            if (abs(v12.Rapidity()) > maxY) {
+              continue;
+            }
+
             reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
           }    // end of combination
         }      // end of cut loop
@@ -346,6 +351,9 @@ struct Pi0EtaToGammaGamma {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+              if (abs(v12.Rapidity()) > maxY) {
+                continue;
+              }
               reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
             } // end of combination
           }   // end of cut2 loop
@@ -426,6 +434,9 @@ struct Pi0EtaToGammaGamma {
             ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
             ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
             ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+            if (abs(v12.Rapidity()) > maxY) {
+              continue;
+            }
             reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Mixed"))->Fill(v12.M(), v12.Pt());
 
           } // end of different photon combinations

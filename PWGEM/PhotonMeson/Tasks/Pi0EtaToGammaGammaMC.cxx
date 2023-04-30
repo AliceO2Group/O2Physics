@@ -64,6 +64,7 @@ struct Pi0EtaToGammaGammaMC {
 
   HistogramRegistry registry{"Pi0EtaToGammaGammaMC"};
 
+  Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for generated particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
@@ -210,8 +211,8 @@ struct Pi0EtaToGammaGammaMC {
 
   Preslice<MyV0Photons> perCollision_pcm = aod::v0photon::collisionId;
 
-  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TV0Legs, typename TMCParticles>
-  void TruePairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TV0Legs const& v0legs, TMCParticles const& mcparticles)
+  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TV0Legs, typename TMCParticles, typename TMCEvents>
+  void TruePairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TV0Legs const& v0legs, TMCParticles const& mcparticles, TMCEvents const& mcevents)
   {
     // constexpr int itmp = pairtype;
     for (auto& collision : collisions) {
@@ -293,12 +294,20 @@ struct Pi0EtaToGammaGammaMC {
             ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
             ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
             ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+            if (abs(v12.Rapidity()) > maxY) {
+              continue;
+            }
 
             if (pi0id > 0) {
-              reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hMggPt_Pi0"))->Fill(v12.M(), v12.Pt());
+              auto pi0mc = mcparticles.iteratorAt(pi0id);
+              if (IsPhysicalPrimary(pi0mc.emreducedmcevent(), pi0mc, mcparticles)) {
+                reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v12.Pt());
+              } else if (IsFromWD(pi0mc.emreducedmcevent(), pi0mc, mcparticles)) {
+                reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hMggPt_Pi0_FromWD"))->Fill(v12.M(), v12.Pt());
+              }
             }
             if (etaid > 0) {
-              reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hMggPt_Eta"))->Fill(v12.M(), v12.Pt());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hMggPt_Eta_Primary"))->Fill(v12.M(), v12.Pt());
             }
           } // end of combination
         }   // end of cut loop
@@ -314,8 +323,8 @@ struct Pi0EtaToGammaGammaMC {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Pi0"))->Fill(v12.M(), v12.Pt());
-              reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Eta"))->Fill(v12.M(), v12.Pt());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v12.Pt());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Eta_Primary"))->Fill(v12.M(), v12.Pt());
 
             } // end of combination
           }   // end of cut2 loop
@@ -327,17 +336,15 @@ struct Pi0EtaToGammaGammaMC {
 
   using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>;
 
-  void processPCMPCM(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles)
+  void processPCMPCM(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   {
-    TruePairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, v0legs, mcparticles);
+    TruePairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, v0legs, mcparticles, mccollisions);
   }
   void processPHOSPHOS(MyCollisions const& collisions) {}
   void processEMCEMC(MyCollisions const& collisions) {}
   void processPCMPHOS(MyCollisions const& collisions) {}
   void processPCMEMC(MyCollisions const& collisions) {}
   void processPHOSEMC(MyCollisions const& collisions) {}
-
-  Configurable<float> maxYgen{"maxYgen", 0.9, "maximum rapidity for generated particles"};
 
   // Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
   // Preslice<soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>> rec_perMcCollision = aod::emmceventlabel::emreducedmceventId;
@@ -387,7 +394,7 @@ struct Pi0EtaToGammaGammaMC {
           continue;
         }
 
-        if (abs(mctrack.y()) > maxYgen) {
+        if (abs(mctrack.y()) > maxY) {
           continue;
         }
         int pdg = mctrack.pdgCode();
