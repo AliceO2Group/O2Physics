@@ -67,8 +67,8 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hMassGamma_recalc", "recalc. hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TH2F("hGammaRxy_recalc", "recalc. conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
-    list->Add(new TH2F("hKFChi2vsR_recalc", "KF chi2 vs. recalc. conversion point in XY;R_{xy} (cm);KF chi2/NDF", 250, 0.0f, 250.0f, 500, 0.f, 5000.0f));
-    list->Add(new TH2F("hKFChi2vsZ_recalc", "KF chi2 vs. recalc. conversion point in Z;Z (cm);KF chi2/NDF", 500, -250.0f, 250.0f, 500, 0.f, 5000.0f));
+    list->Add(new TH2F("hKFChi2vsR_recalc", "KF chi2 vs. recalc. conversion point in XY;R_{xy} (cm);KF chi2/NDF", 250, 0.0f, 250.0f, 100, 0.f, 100.0f));
+    list->Add(new TH2F("hKFChi2vsZ_recalc", "KF chi2 vs. recalc. conversion point in Z;Z (cm);KF chi2/NDF", 500, -250.0f, 250.0f, 100, 0.f, 100.0f));
     list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
     list->Add(new TH1F("hPt_Primary", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                  // for MC efficiency
     list->Add(new TH2F("hEtaPhi_Primary", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f)); // for MC efficiency
@@ -99,7 +99,6 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     pTgg[i] = 1.0 * (i - 60) + 10.0; // from 10 to 40 GeV/c, evety 1 GeV/c
 
   if (TString(histClass) == "gammagamma_mass_pt") {
-    // LOGF(info, "Add 2 photon histograms");
     list->Add(new TH2F("hMggPt_Same", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
     list->Add(new TH2F("hMggPt_Mixed", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
@@ -107,7 +106,6 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     // registry.add("EMCEMC/h2MggPt_Rotated", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/#it{c}^{2});p_{T,#gamma#gamma} (GeV/#it{c})", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}}, true);
   }
   if (TString(histClass) == "gammagamma_mass_pt_mc") {
-    // LOGF(info, "Add 2 photon histograms");
     list->Add(new TH2F("hMggPt_Pi0", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
     list->Add(new TH2F("hMggPt_Eta", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0"))->Sumw2();
@@ -162,8 +160,8 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     const double xmin[ndim] = {0.0, -0.4, -0.4, -0.4, 0.0};
     const double xmax[ndim] = {0.4, +0.4, +0.4, +0.4, 1.0};
 
-    THnSparseF* hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;q_{inv} (GeV/c);q_{long} (GeV/c);q_{out} (GeV/c);q_{side} (GeV/c);k_{T} (GeV/c)", ndim, nbins, xmin, xmax);
-    THnSparseF* hs_q_mix = new THnSparseF("hs_q_mix", "hs_q_mix;q_{inv} (GeV/c);q_{long} (GeV/c);q_{out} (GeV/c);q_{side} (GeV/c);k_{T} (GeV/c)", ndim, nbins, xmin, xmax);
+    THnSparseF* hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;q_{inv} (GeV/c);q_{long} (GeV/c);q_{out} (GeV/c);q_{side} (GeV/c);k_{T} (GeV/c);", ndim, nbins, xmin, xmax);
+    THnSparseF* hs_q_mix = new THnSparseF("hs_q_mix", "hs_q_mix;q_{inv} (GeV/c);q_{long} (GeV/c);q_{out} (GeV/c);q_{side} (GeV/c);k_{T} (GeV/c);", ndim, nbins, xmin, xmax);
     hs_q_same->Sumw2();
     hs_q_mix->Sumw2();
     list->Add(hs_q_same);
