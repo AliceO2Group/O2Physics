@@ -134,11 +134,11 @@ struct TrackSelectionTask {
 
         filterTable((uint8_t)0,
                     globalTracks.IsSelectedMask(track),
-		    filtBit1.IsSelected(track),
-		    filtBit2.IsSelected(track),
-		    filtBit3.IsSelected(track),
-		    filtBit4.IsSelected(track),
-		    filtBit5.IsSelected(track));
+                    filtBit1.IsSelected(track),
+                    filtBit2.IsSelected(track),
+                    filtBit3.IsSelected(track),
+                    filtBit4.IsSelected(track),
+                    filtBit5.IsSelected(track));
         if (produceFBextendedTable) {
           filterTableDetail(o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTrackType),
                             o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kPtRange),
@@ -166,11 +166,11 @@ struct TrackSelectionTask {
       o2::aod::track::TrackSelectionFlags::flagtype trackflagGlob = globalTracks.IsSelectedMask(track);
       filterTable((uint8_t)globalTracksSDD.IsSelected(track),
                   globalTracks.IsSelectedMask(track),
-		  filtBit1.IsSelected(track),
-		  filtBit2.IsSelected(track),
-		  filtBit3.IsSelected(track),
-		  filtBit4.IsSelected(track),
-		  filtBit5.IsSelected(track));
+                  filtBit1.IsSelected(track),
+                  filtBit2.IsSelected(track),
+                  filtBit3.IsSelected(track),
+                  filtBit4.IsSelected(track),
+                  filtBit5.IsSelected(track));
       if (produceFBextendedTable) {
         filterTableDetail(o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTrackType),
                           o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kPtRange),
