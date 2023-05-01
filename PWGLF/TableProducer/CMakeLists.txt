@@ -61,10 +61,26 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(stcollids
+                    SOURCES stcollids.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 # Nuclei
 o2physics_add_dpl_workflow(nucleustreecreator
                     SOURCES LFTreeCreatorNuclei.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(nuclei-spectra
+                    SOURCES nucleiSpectra.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
+# Hypernuclei
+o2physics_add_dpl_workflow(hypertriton-reco-task
+                    SOURCES hyperRecoTask.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
 # Resonances

@@ -271,9 +271,6 @@ struct HfCandidateSelectorToXiPi {
       if (trackPiFromOmeg.itsNClsInnerBarrel() < nClustersItsInnBarrMin) {
         resultSelections = false;
       }
-      if (trackPiFromCasc.itsNCls() < nClustersItsMin) {
-        resultSelections = false;
-      }
 
       // track-level PID selection
       int pidProton = -999;

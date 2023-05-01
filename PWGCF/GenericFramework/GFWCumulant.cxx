@@ -9,8 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/*
+Author: Vytautas Vislavicius
+Extention of Generic Flow (https://arxiv.org/abs/1312.3572 by A. Bilandzic et al.)
+A part of <GFW.cxx/h>
+A container to store Q vectors for one subevent with an extra layer to recursively calculate particle correlations.
+If used, modified, or distributed, please aknowledge the author of this code.
+*/
 #include "GFWCumulant.h"
-
 GFWCumulant::GFWCumulant() : fQvector(0),
                              fUsed(kBlank),
                              fNEntries(-1),
@@ -18,13 +24,10 @@ GFWCumulant::GFWCumulant() : fQvector(0),
                              fPow(1),
                              fPt(1),
                              fFilledPts(0),
-                             fInitialized(kFALSE){};
+                             fInitialized(false) {}
 
-GFWCumulant::~GFWCumulant(){
-  // printf("Destructor (?) for some reason called?\n");
-  // DestroyComplexVectorArray();
-};
-void GFWCumulant::FillArray(double eta, int ptin, double phi, double weight, double SecondWeight)
+GFWCumulant::~GFWCumulant() {}
+void GFWCumulant::FillArray(int ptin, double phi, double weight, double SecondWeight)
 {
   if (!fInitialized)
     CreateComplexVectorArray(1, 1, 1);
@@ -32,24 +35,24 @@ void GFWCumulant::FillArray(double eta, int ptin, double phi, double weight, dou
     ptin = 0; // If one bin, then just fill it straight; otherwise, if ptin is out-of-range, do not fill
   else if (ptin < 0 || ptin >= fPt)
     return;
-  fFilledPts[ptin] = kTRUE;
+  fFilledPts[ptin] = true;
   for (int lN = 0; lN < fN; lN++) {
-    double lSin = TMath::Sin(lN * phi); // No need to recalculate for each power
-    double lCos = TMath::Cos(lN * phi); // No need to recalculate for each power
+    double lSin = sin(lN * phi); // No need to recalculate for each power
+    double lCos = cos(lN * phi); // No need to recalculate for each power
     for (int lPow = 0; lPow < PW(lN); lPow++) {
       double lPrefactor = 0;
       // Dont calculate it twice; multiplication is cheaper that power
       // Also, if second weight is specified, then keep the first weight with power no more than 1, and us the other weight otherwise
       // this is important when POIs are a subset of REFs and have different weights than REFs
       if (SecondWeight > 0 && lPow > 1)
-        lPrefactor = TMath::Power(SecondWeight, lPow - 1) * weight;
+        lPrefactor = pow(SecondWeight, lPow - 1) * weight;
       else
-        lPrefactor = TMath::Power(weight, lPow);
+        lPrefactor = pow(weight, lPow);
       double qsin = lPrefactor * lSin;
       double qcos = lPrefactor * lCos;
-      fQvector[ptin][lN][lPow](fQvector[ptin][lN][lPow].Re() + qcos, fQvector[ptin][lN][lPow].Im() + qsin); //+=TComplex(qcos,qsin);
-    };
-  };
+      fQvector[ptin][lN][lPow] += complex<double>(qcos, qsin);
+    }
+  }
   Inc();
 };
 void GFWCumulant::ResetQs()
@@ -57,13 +60,13 @@ void GFWCumulant::ResetQs()
   if (!fNEntries)
     return; // If 0 entries, then no need to reset. Otherwise, if -1, then just initialized and need to set to 0.
   for (int i = 0; i < fPt; i++) {
-    fFilledPts[i] = kFALSE;
+    fFilledPts[i] = false;
     for (int lN = 0; lN < fN; lN++) {
       for (int lPow = 0; lPow < PW(lN); lPow++) {
-        fQvector[i][lN][lPow](0., 0.);
-      };
-    };
-  };
+        fQvector[i][lN][lPow] = fNullQ;
+      }
+    }
+  }
   fNEntries = 0;
 };
 void GFWCumulant::DestroyComplexVectorArray()
@@ -73,14 +76,14 @@ void GFWCumulant::DestroyComplexVectorArray()
   for (int l_n = 0; l_n < fN; l_n++) {
     for (int i = 0; i < fPt; i++) {
       delete[] fQvector[i][l_n];
-    };
-  };
+    }
+  }
   for (int i = 0; i < fPt; i++) {
     delete[] fQvector[i];
-  };
+  }
   delete[] fQvector;
   delete[] fFilledPts;
-  fInitialized = kFALSE;
+  fInitialized = false;
   fNEntries = -1;
 };
 
@@ -100,19 +103,19 @@ void GFWCumulant::CreateComplexVectorArrayVarPower(int N, vector<int> PowVec, in
   fPt = Pt;
   fFilledPts = new bool[Pt];
   fPowVec = PowVec;
-  fQvector = new TComplex**[fPt];
+  fQvector = new complex<double>**[fPt];
   for (int i = 0; i < fPt; i++) {
-    fQvector[i] = new TComplex*[fN];
-  };
+    fQvector[i] = new complex<double>*[fN];
+  }
   for (int l_n = 0; l_n < fN; l_n++) {
     for (int i = 0; i < fPt; i++) {
-      fQvector[i][l_n] = new TComplex[PW(l_n)];
-    };
-  };
+      fQvector[i][l_n] = new complex<double>[PW(l_n)];
+    }
+  }
   ResetQs();
-  fInitialized = kTRUE;
+  fInitialized = true;
 };
-TComplex GFWCumulant::Vec(int n, int p, int ptbin)
+complex<double> GFWCumulant::Vec(int n, int p, int ptbin)
 {
   if (!fInitialized)
     return 0;
@@ -120,5 +123,17 @@ TComplex GFWCumulant::Vec(int n, int p, int ptbin)
     ptbin = 0;
   if (n >= 0)
     return fQvector[ptbin][n][p];
-  return TComplex::Conjugate(fQvector[ptbin][-n][p]);
+  return conj(fQvector[ptbin][-n][p]);
 };
+bool GFWCumulant::IsPtBinFilled(int ptb)
+{
+  if (!fFilledPts)
+    return false;
+  if (ptb > 0) {
+    if (fPt == 1)
+      ptb = 0;
+    else if (ptb >= fPt)
+      return false; // This is in case we are differential and going out of range for whatever reason.
+  }
+  return fFilledPts[ptb];
+}

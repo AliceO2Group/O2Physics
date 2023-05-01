@@ -33,3 +33,8 @@ o2physics_add_dpl_workflow(strarecostudy
                     SOURCES straRecoStudy.cxx
                     PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(mccollisionextra
+                    SOURCES mcCollisionExtra.cxx
+                    PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

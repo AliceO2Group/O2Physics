@@ -39,6 +39,7 @@ struct phianalysis {
   framework::Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
@@ -78,12 +79,12 @@ struct phianalysis {
     histos.add("phiinvmassME", "Invariant mass of Phi mixed event", kTH1F, {{700, 0.8, 1.5, "Invariant Mass (GeV/#it{c}^2)"}});
     histos.add("trk1pT", "pT distribution of track1", kTH1F, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
     histos.add("trk2pT", "pT distribution of track1", kTH1F, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
-    histos.add("TOF_TPC_Map1", "TOF + TPC Combined PID for Kaons;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
-    histos.add("TOF_Nsigma1", "TOF NSigma for Kaons;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
-    histos.add("TPC_Nsigma1", "TPC NSigma for Kaons;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
-    histos.add("TOF_TPC_Map2", "TOF + TPC Combined PID for Kaons;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
-    histos.add("TOF_Nsigma2", "TOF NSigma for Kaons;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
-    histos.add("TPC_Nsigma2", "TPC NSigma for Kaons;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2F, {{1000, -10, 10}, {1000, -10, 10}}});
+    histos.add("TOF_TPC_Map1", "TOF + TPC Combined PID for Kaons;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2F, {{200, -10, 10}, {200, -10, 10}}});
+    histos.add("TOF_Nsigma1", "TOF NSigma for Kaons;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2F, {{200, -10, 10}, {200, -10, 10}}});
+    histos.add("TPC_Nsigma1", "TPC NSigma for Kaons;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2F, {{200, -10, 10}, {200, -10, 10}}});
+    histos.add("TOF_TPC_Map2", "TOF + TPC Combined PID for Kaons;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2F, {{200, -10, 10}, {200, -10, 10}}});
+    histos.add("TOF_Nsigma2", "TOF NSigma for Kaons;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2F, {{200, -10, 10}, {200, -10, 10}}});
+    histos.add("TPC_Nsigma2", "TPC NSigma for Kaons;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2F, {{200, -10, 10}, {200, -10, 10}}});
 
     // 3d histogram
     histos.add("h3phiinvmass", "Invariant mass of Phi", kTH3F, {{300, 0, 3000}, {100, 0.0f, 10.0f}, {700, 0.8, 1.5}});
@@ -219,12 +220,12 @@ struct phianalysis {
 
   // Processing Event Mixing
   using BinningTypeVetZTPCtemp = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultTPCtemp>;
+  BinningTypeVetZTPCtemp colBinning{{CfgVtxBins, CfgMultBins}, true};
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     LOGF(debug, "Event Mixing Started");
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVetZTPCtemp colBinning{{CfgVtxBins, CfgMultBins}, true};
-    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVetZTPCtemp> pairs{colBinning, 10, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVetZTPCtemp> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {

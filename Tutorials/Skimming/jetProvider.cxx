@@ -36,9 +36,9 @@ struct JetProviderTask {
   Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
   Filter jetCuts = aod::jet::pt > jetPtMin;
 
-  void process(soa::Filtered<soa::Join<aod::Jets, aod::JetConstituents>>::iterator const& jet,
+  void process(soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>::iterator const& jet,
                aod::Tracks const& tracks,
-               aod::JetConstituentsSub const& constituentsSub)
+               aod::ChargedJetConstituentsSub const& constituentsSub)
   {
     outputJets(jet.pt(), jet.eta(), jet.phi(), jet.energy(), jet.mass(), jet.area());
     if (keepConstituents) {

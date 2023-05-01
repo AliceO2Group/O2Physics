@@ -11,7 +11,9 @@
 ///
 /// \brief this is a starting point for the Strangeness tutorial
 /// \author
-/// \since
+/// \since 12/05/2023
+/// \file strangeness_step2.cxx
+///
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -23,16 +25,19 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+// STEP 0
+// Starting point: loop over all V0s and fill invariant mass histogram
+// STEP 1
+// Apply selections on topological variables of V0s
 // STEP 2
 // Apply PID selections on V0 daughter tracks
-
-using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi>;
 
 struct strangeness_tutorial {
 
   // Configurable for number of bins
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
 
+  // Configurables parameters for V0 selection
   Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
   Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.06, "DCA Pos To PV"};
   Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.06, "DCA Neg To PV"};
@@ -40,38 +45,40 @@ struct strangeness_tutorial {
   Configurable<float> v0setting_radius{"v0setting_radius", 0.5, "v0radius"};
   Configurable<float> NSigmaTPCPion{"NSigmaTPCPion", 4, "NSigmaTPCPion"};
 
-  // Prefilters on V0s
+  AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"}; // Definition of axis
+
+  // histogram defined with HistogramRegistry
+  HistogramRegistry registry{"registry",
+                             {{"hVertexZ", "hVertexZ", {HistType::kTH1F, {{nBins, -15., 15.}}}},
+                              {"hMassK0Short", "hMassK0Short", {HistType::kTH1F, {{200, 0.45f, 0.55f}}}},
+                              {"hMassK0ShortSelected", "hMassK0ShortSelected", {HistType::kTH1F, {{200, 0.45f, 0.55f}}}},
+                              {"hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}}},
+                              {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}}},
+                              {"hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}}},
+                              {"hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}}}}};
+
+  // Defining filters for events (event selection)
+  // Processed events will be already fulfulling the event selection requirements
+  Filter eventFilter = (o2::aod::evsel::sel8 == true);
+
+  // Filters on V0s
   // Cannot filter on dynamic columns, so we cut on DCA to PV and DCA between daughters only
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv&& nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv&& aod::v0data::dcaV0daughters < v0setting_dcav0dau;
 
-  AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+  // Defining the type of the daughter tracks
+  using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi>;
 
-  // histogram defined with HistogramRegistry
-  HistogramRegistry registry{
-    "registry",
-    {{"hVertexZ", "hVertexZ", {HistType::kTH1F, {{nBins, -15., 15.}}}},
-     {"hMassK0Short", "hMassK0Short", {HistType::kTH1F, {{200, 0.45f, 0.55f}}}},
-     {"hMassK0ShortSelected", "hMassK0ShortSelected", {HistType::kTH1F, {{200, 0.45f, 0.55f}}}},
-     {"hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}}},
-     {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}}},
-     {"hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}}},
-     {"hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}}}
-
-    }};
-
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::V0Datas> const& V0s, DaughterTracks& dtracks)
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
+               soa::Filtered<aod::V0Datas> const& V0s,
+               DaughterTracks const&)
   {
-    // basic event selection
-    if (!collision.sel8()) {
-      return;
-    }
     // Fill the event counter
     registry.fill(HIST("hVertexZ"), collision.posZ());
 
-    for (auto& v0 : V0s) {
+    for (const auto& v0 : V0s) {
 
-      auto posdau = v0.posTrack_as<DaughterTracks>();
-      auto negdau = v0.negTrack_as<DaughterTracks>();
+      const auto& posDaughterTrack = v0.posTrack_as<DaughterTracks>();
+      const auto& negDaughterTrack = v0.negTrack_as<DaughterTracks>();
 
       registry.fill(HIST("hMassK0Short"), v0.mK0Short());
 
@@ -79,25 +86,24 @@ struct strangeness_tutorial {
         continue;
       if (v0.v0radius() < v0setting_radius)
         continue;
-      if (TMath::Abs(posdau.tpcNSigmaPi()) > NSigmaTPCPion)
+      if (TMath::Abs(posDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
         continue;
-      if (TMath::Abs(negdau.tpcNSigmaPi()) > NSigmaTPCPion)
+      }
+      if (TMath::Abs(negDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
         continue;
+      }
 
       registry.fill(HIST("hMassK0ShortSelected"), v0.mK0Short());
       registry.fill(HIST("hDCAV0Daughters"), v0.dcaV0daughters());
       registry.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
 
-      if (0.45 < v0.mK0Short() < 0.55) {
-        registry.fill(HIST("hNSigmaPosPionFromK0s"), posdau.tpcNSigmaPi(), posdau.tpcInnerParam());
-        registry.fill(HIST("hNSigmaNegPionFromK0s"), negdau.tpcNSigmaPi(), negdau.tpcInnerParam());
+      // Filling the PID of the V0 daughters in the region of the K0 peak
+      if (0.45 > v0.mK0Short() && v0.mK0Short() < 0.55) {
+        registry.fill(HIST("hNSigmaPosPionFromK0s"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
+        registry.fill(HIST("hNSigmaNegPionFromK0s"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
       }
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    adaptAnalysisTask<strangeness_tutorial>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<strangeness_tutorial>(cfgc)}; }

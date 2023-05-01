@@ -108,7 +108,7 @@ struct jetTrackCollisionQa {
     mHistManager.add("MCselectedTrackEta", "MC hybrid track #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
   }
   // add another process for MC studies !
-  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Jets, aod::JetConstituents> const& jets, TracksJE const& tracks)
+  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks)
   {
     mHistManager.fill(HIST("collisionVtxZ"), collision.posZ());
 
