@@ -87,8 +87,6 @@ struct JetFinderHFTask {
   int candPDG;
   int candDecay;
 
-  BkgSubMode _bkgSubMode;
-
   void init(InitContext const&)
   {
     trackSelection = static_cast<std::string>(trackSelections);
