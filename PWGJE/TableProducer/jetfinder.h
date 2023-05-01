@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <string>
+#include <optional>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -166,8 +167,10 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       std::vector<int> trackconst;
       std::vector<int> candconst;
       std::vector<int> clusterconst;
+      // FIXME unfortunately the jetwise consistuent subtractor doesn't propagate the jet area
+      // We contacted the fastjet developers and they said this is very difficult
       jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
-                jet.E(), jet.m(), jet.area(), std::round(R * 100));
+                jet.E(), jet.m(), jet.has_area() ? jet.area() : -1., std::round(R * 100));
       for (const auto& constituent : sorted_by_pt(jet.constituents())) {
         // need to add seperate thing for constituent subtraction
         if (DoConstSub) {

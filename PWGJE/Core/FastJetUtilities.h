@@ -22,6 +22,7 @@
 #include <numeric>
 #include <tuple>
 #include <vector>
+#include <string>
 
 #include "fastjet/PseudoJet.hh"
 #include "fastjet/Selector.hh"
@@ -69,24 +70,7 @@ class fastjet_user_info : public fastjet::PseudoJet::UserInfoBase
  * @param status status of constituent type
  */
 
-void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track))
-{
-  fastjet_user_info* user_info = new fastjet_user_info(status, index); // FIXME: can setting this as a pointer be avoided?
-  constituents.back().set_user_info(user_info);
-  if (index != -99999999) { // FIXME: needed for constituent subtraction as user_info is not propagated, but need to be quite careful to make sure indices dont overlap between tracks, clusters and HF candidates. Current solution might not be optimal
-    int i = index;
-    if (status == static_cast<int>(JetConstituentStatus::track)) {
-      i = i + 1;
-    }
-    if (status == static_cast<int>(JetConstituentStatus::cluster)) {
-      i = -1 * (i + 1);
-    }
-    if (status == static_cast<int>(JetConstituentStatus::candidateHF)) {
-      i = 0;
-    }
-    constituents.back().set_user_index(i); // FIXME: needed for constituent subtraction, but need to be quite careful to make sure indices dont overlap between tracks, clusters and HF candidates. Current solution might not be optimal
-  }
-}
+void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track));
 
 // Class defined to select the HF candidate particle
 class SW_IsHFCand : public fastjet::SelectorWorker
@@ -108,10 +92,7 @@ class SW_IsHFCand : public fastjet::SelectorWorker
 };
 
 // Selector of HF candidates
-fastjet::Selector SelectorIsHFCand()
-{
-  return fastjet::Selector(new SW_IsHFCand());
-}
+fastjet::Selector SelectorIsHFCand();
 
 /**
  * Add track as a pseudojet object to the fastjet vector

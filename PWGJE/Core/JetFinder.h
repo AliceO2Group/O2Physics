@@ -42,8 +42,10 @@ class JetFinder
 
  public:
   BkgSubMode bkgSubMode;
+  BkgSubEstimator bkgSubEst;
 
   void setBkgSubMode(BkgSubMode bSM) { bkgSubMode = bSM; }
+  void setBkgSubEstimator(BkgSubEstimator bSE) { bkgSubEst = bSE; }
 
   /// Performs jet finding
   /// \note the input particle and jet lists are passed by reference
@@ -81,6 +83,7 @@ class JetFinder
   float bkgEtaMin;
   float bkgEtaMax;
   float bkgRho;
+  float bkgRhoM;
   float constSubAlpha;
   float constSubRMax;
 
@@ -123,9 +126,10 @@ class JetFinder
                                                                                                                  jetBkgR(0.2),
                                                                                                                  bkgPhiMin(phi_Min),
                                                                                                                  bkgPhiMax(phi_Max),
-                                                                                                                 bkgEtaMin(eta_Min),
-                                                                                                                 bkgEtaMax(eta_Max),
+                                                                                                                 bkgEtaMin(-0.8),
+                                                                                                                 bkgEtaMax(0.8),
                                                                                                                  bkgRho(0.),
+                                                                                                                 bkgRhoM(0.),
                                                                                                                  constSubAlpha(1.0),
                                                                                                                  constSubRMax(0.6),
                                                                                                                  isReclustering(false),
@@ -148,6 +152,13 @@ class JetFinder
   {
     return bkgRho;
   }
+
+  float getRhoM() const
+  {
+    return bkgRhoM;
+  }
+
+  void setRemoveHFCand(bool removeHF_out = true) { subUtils->setRemoveHFCandidate(removeHF_out); }
 
   /// Sets the jet finding parameters
   void setParams();

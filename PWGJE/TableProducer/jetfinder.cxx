@@ -27,7 +27,8 @@ struct JetFinderTask {
   Produces<ConstituentTable> constituentsTable;
   Produces<ConstituentSubTable> constituentsSubTable;
 
-  Configurable<int> bkgSubMode{"BkgSubMode", 0, "background subtraction method. 0 = none, 1 = rhoAreaSub, 2 = constSub, 3 = rhoSparseSub, 4 = rhoPerpConeSub, 5 = rhoMedianAreaSub, 6 = jetconstSub"};
+  Configurable<int> bkgSubEstimator{"BkgSubEstimator", 0, "background subtraction estimator. 0 = none, 1 = medianRho, 2 = medianRhoSparse, 3 = perpCone"};
+  Configurable<int> bkgSubMode{"BkgSubMode", 0, "background subtraction method. 0 = none, 1 = rhoAreaSub, 2 = eventConstSub, 3 = jetConstSub"};
 
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
@@ -69,6 +70,7 @@ struct JetFinderTask {
   JetFinder jetFinder;
   std::vector<fastjet::PseudoJet> inputParticles;
 
+  BkgSubEstimator _bkgSubEst;
   BkgSubMode _bkgSubMode;
 
   bool doConstSub = false;
@@ -77,12 +79,14 @@ struct JetFinderTask {
   {
     trackSelection = static_cast<std::string>(trackSelections);
 
+    _bkgSubEst = static_cast<BkgSubEstimator>(static_cast<int>(bkgSubEstimator));
     _bkgSubMode = static_cast<BkgSubMode>(static_cast<int>(bkgSubMode));
 
-    if (_bkgSubMode == BkgSubMode::constSub || _bkgSubMode == BkgSubMode::jetconstSub) {
+    if (_bkgSubMode == BkgSubMode::eventConstSub || _bkgSubMode == BkgSubMode::jetConstSub) {
       doConstSub = true;
     }
 
+    jetFinder.setBkgSubEstimator(_bkgSubEst);
     jetFinder.setBkgSubMode(_bkgSubMode);
 
     jetFinder.etaMin = trackEtaMin;
