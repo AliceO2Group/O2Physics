@@ -46,7 +46,7 @@ using MFTTracksExtra = soa::Join<aod::MFTTracks, aod::MA2T>; // MFT track + inde
 struct ProduceMFTAmbii {
   // build the index table MA2T
   Builds<aod::MA2T> idx;
-  void init(InitContext const&){}
+  void init(InitContext const&) {}
   // Additionnal methods provided:
   // mfttrack.has_ambMFTtrack()
   // mfttrack.ambMFTtrack()
