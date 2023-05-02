@@ -101,15 +101,15 @@ struct cascademcfinder {
     histos.add("hPtOmegaMinusReconstructed", "hPtOmegaMinusReconstructed", kTH1F, {axisPt});
     histos.add("hPtOmegaPlusReconstructed", "hPtOmegaPlusReconstructed", kTH1F, {axisPt});
 
-    histos.add("hPtXiMinusReconstructedWithPV", "hPtXiMinusReconstructedWithPV", kTH1F, {axisPt});
-    histos.add("hPtXiPlusReconstructedWithPV", "hPtXiPlusReconstructedWithPV", kTH1F, {axisPt});
-    histos.add("hPtOmegaMinusReconstructedWithPV", "hPtOmegaMinusReconstructedWithPV", kTH1F, {axisPt});
-    histos.add("hPtOmegaPlusReconstructedWithPV", "hPtOmegaPlusReconstructedWithPV", kTH1F, {axisPt});
+    histos.add("hPtXiMinusGlobal", "hPtXiMinusGlobal", kTH1F, {axisPt});
+    histos.add("hPtXiPlusGlobal", "hPtXiPlusGlobal", kTH1F, {axisPt});
+    histos.add("hPtOmegaMinusGlobal", "hPtOmegaMinusGlobal", kTH1F, {axisPt});
+    histos.add("hPtOmegaPlusGlobal", "hPtOmegaPlusGlobal", kTH1F, {axisPt});
 
-    histos.add("hPtXiMinusReconstructedWithPV_ITS", "hPtXiMinusReconstructedWithPV_ITS", kTH1F, {axisPt});
-    histos.add("hPtXiPlusReconstructedWithPV_ITS", "hPtXiPlusReconstructedWithPV_ITS", kTH1F, {axisPt});
-    histos.add("hPtOmegaMinusReconstructedWithPV_ITS", "hPtOmegaMinusReconstructedWithPV_ITS", kTH1F, {axisPt});
-    histos.add("hPtOmegaPlusReconstructedWithPV_ITS", "hPtOmegaPlusReconstructedWithPV_ITS", kTH1F, {axisPt});
+    histos.add("hPtXiMinusGlobalWithPV", "hPtXiMinusGlobalWithPV", kTH1F, {axisPt});
+    histos.add("hPtXiPlusGlobalWithPV", "hPtXiPlusGlobalWithPV", kTH1F, {axisPt});
+    histos.add("hPtOmegaMinusGlobalWithPV", "hPtOmegaMinusGlobalWithPV", kTH1F, {axisPt});
+    histos.add("hPtOmegaPlusGlobalWithPV", "hPtOmegaPlusGlobalWithPV", kTH1F, {axisPt});
   }
 
   // for sorting
@@ -124,12 +124,16 @@ struct cascademcfinder {
   }
 
   template <typename TmcParticle, typename TTrackList, typename TV0List>
-  bool ProcessCascade(TmcParticle const& mcParticle, TTrackList const& trackList, TV0List const& v0s, int bestCollisionIndex, bool& positiveITS, bool& negativeITS, bool& bachelorITS)
+  bool ProcessCascade(TmcParticle const& mcParticle, TTrackList const& trackList, TV0List const& v0s, int bestCollisionIndex, bool& positiveITS, bool& negativeITS, bool& bachelorITS, bool& positiveTPC, bool& negativeTPC, bool& bachelorTPC)
   {
     bool reconstructed = false;
     positiveITS = false;
     negativeITS = false;
     bachelorITS = false;
+    positiveTPC = false;
+    negativeTPC = false;
+    bachelorTPC = false;
+
     int trackIndexBachelor = -1;
     int trackIndexV0 = -1;
 
@@ -148,6 +152,10 @@ struct cascademcfinder {
                   positiveITS = true;
                 if (negativeTrack.hasITS())
                   negativeITS = true;
+                if (positiveTrack.hasTPC())
+                  positiveTPC = true;
+                if (negativeTrack.hasTPC())
+                  negativeTPC = true;
                 break;
               }
             }
@@ -158,6 +166,8 @@ struct cascademcfinder {
                 trackIndexBachelor = track.globalIndex();
                 if (track.hasITS())
                   bachelorITS = true;
+                if (track.hasTPC())
+                  bachelorTPC = true;
                 break;
               }
             }
@@ -190,69 +200,72 @@ struct cascademcfinder {
       bool positiveITS = false;
       bool negativeITS = false;
       bool bachelorITS = false;
+      bool positiveTPC = false;
+      bool negativeTPC = false;
+      bool bachelorTPC = false;
       bool reconstructed = false;
       for (auto& mcParticle : mcParticles) {
         if (mcParticle.pdgCode() == 3312 && findXiMinus) {
-          reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS);
+          reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS, positiveTPC, negativeTPC, bachelorTPC);
           if (fabs(mcParticle.y()) < 0.5) {
             histos.fill(HIST("hPtXiMinusGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtXiMinusReconstructed"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0)
-              histos.fill(HIST("hPtXiMinusReconstructedWithPV"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && bachelorITS)
-              histos.fill(HIST("hPtXiMinusReconstructedWithPV_ITS"), mcParticle.pt());
+            if (reconstructed && positiveITS && negativeITS && bachelorITS && positiveTPC && negativeTPC && bachelorTPC)
+              histos.fill(HIST("hPtXiMinusGlobal"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && bachelorITS && positiveTPC && negativeTPC && bachelorTPC)
+              histos.fill(HIST("hPtXiMinusGlobalWithPV"), mcParticle.pt());
           }
         }
         if (mcParticle.pdgCode() == -3312 && findXiPlus) {
-          reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS);
+          reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS, positiveTPC, negativeTPC, bachelorTPC);
           if (fabs(mcParticle.y()) < 0.5) {
             histos.fill(HIST("hPtXiPlusGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtXiPlusReconstructed"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0)
-              histos.fill(HIST("hPtXiPlusReconstructedWithPV"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && bachelorITS)
-              histos.fill(HIST("hPtXiPlusReconstructedWithPV_ITS"), mcParticle.pt());
+            if (reconstructed && positiveITS && negativeITS && bachelorITS && positiveTPC && negativeTPC && bachelorTPC)
+              histos.fill(HIST("hPtXiPlusGlobal"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && bachelorITS && positiveTPC && negativeTPC && bachelorTPC)
+              histos.fill(HIST("hPtXiPlusGlobalWithPV"), mcParticle.pt());
           }
         }
         if (mcParticle.pdgCode() == 3334 && findOmegaMinus) {
-          reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS);
+          reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS, positiveTPC, negativeTPC, bachelorTPC);
           if (fabs(mcParticle.y()) < 0.5) {
             histos.fill(HIST("hPtOmegaMinusGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtOmegaMinusReconstructed"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0)
-              histos.fill(HIST("hPtOmegaMinusReconstructedWithPV"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && bachelorITS)
-              histos.fill(HIST("hPtOmegaMinusReconstructedWithPV_ITS"), mcParticle.pt());
+            if (reconstructed && positiveITS && negativeITS && bachelorITS && positiveTPC && negativeTPC && bachelorTPC)
+              histos.fill(HIST("hPtOmegaMinusGlobal"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && bachelorITS && positiveTPC && negativeTPC && bachelorTPC)
+              histos.fill(HIST("hPtOmegaMinusGlobalWithPV"), mcParticle.pt());
           }
         }
         if (mcParticle.pdgCode() == -3334 && findOmegaPlus) {
-          reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS);
+          reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS, positiveTPC, negativeTPC, bachelorTPC);
           if (fabs(mcParticle.y()) < 0.5) {
             histos.fill(HIST("hPtOmegaPlusGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtOmegaPlusReconstructed"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0)
-              histos.fill(HIST("hPtOmegaPlusReconstructedWithPV"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && bachelorITS)
-              histos.fill(HIST("hPtOmegaPlusReconstructedWithPV_ITS"), mcParticle.pt());
+            if (reconstructed && positiveITS && negativeITS && bachelorITS && positiveTPC && negativeTPC && bachelorTPC)
+              histos.fill(HIST("hPtOmegaPlusGlobal"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && bachelorITS && positiveTPC && negativeTPC && bachelorTPC)
+              histos.fill(HIST("hPtOmegaPlusGlobalWithPV"), mcParticle.pt());
+          }
+        }
+          }
+        }
+
+        // sort according to collision ID
+        auto sortedIndices = sort_indices(casccollisionId);
+
+        // V0 list established, populate
+        for (auto ic : sortedIndices) {
+          if (casccollisionId[ic] >= 0) {
+            cascades(casccollisionId[ic], cascv0Index[ic], cascbachelorIndex[ic]);
           }
         }
       }
-    }
-
-    // sort according to collision ID
-    auto sortedIndices = sort_indices(casccollisionId);
-
-    // V0 list established, populate
-    for (auto ic : sortedIndices) {
-      if (casccollisionId[ic] >= 0) {
-        cascades(casccollisionId[ic], cascv0Index[ic], cascbachelorIndex[ic]);
-      }
-    }
-  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

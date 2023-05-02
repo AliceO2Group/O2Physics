@@ -77,12 +77,13 @@ float getBinCenter(uint8_t bin, double max)
 }
 
 struct NucleusCandidate {
-  NucleusCandidate(int idx, float aPt, float aEta, uint8_t aITSclsMap, uint8_t aTPCnCls, int8_t aDCAxy, int8_t aDCAz, uint16_t aFlags, uint8_t aTPCnsigma, uint8_t aTOFmass) : globalIndex(idx), pt(aPt), eta(aEta), ITSclsMap(aITSclsMap), TPCnCls(aTPCnCls), DCAxy(aDCAxy), DCAz(aDCAz), flags(aFlags), TPCnsigma(aTPCnsigma), TOFmass(aTOFmass)
+  NucleusCandidate(int idx, float aPt, float aEta, uint8_t z, uint8_t aITSclsMap, uint8_t aTPCnCls, int8_t aDCAxy, int8_t aDCAz, uint16_t aFlags, uint8_t aTPCnsigma, uint8_t aTOFmass) : globalIndex(idx), pt(aPt), eta(aEta), zVertex(z), ITSclsMap(aITSclsMap), TPCnCls(aTPCnCls), DCAxy(aDCAxy), DCAz(aDCAz), flags(aFlags), TPCnsigma(aTPCnsigma), TOFmass(aTOFmass)
   {
   }
   int globalIndex;
   float pt;
   float eta;
+  uint8_t zVertex;
   uint8_t ITSclsMap;
   uint8_t TPCnCls;
   int8_t DCAxy;
@@ -181,6 +182,7 @@ struct nucleiSpectra {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgCutRapidityMin{"cfgCutRapidityMin", -0.5, "Minimum rapidity for tracks"};
   Configurable<float> cfgCutRapidityMax{"cfgCutRapidityMax", 0.5, "Maximum rapidity for tracks"};
+  Configurable<bool> cfgCutOnReconstructedRapidity{"cfgCutOnReconstructedRapidity", false, "Cut on reconstructed rapidity"};
   Configurable<float> cfgCutNclusITS{"cfgCutNclusITS", 5, "Minimum number of ITS clusters"};
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
 
@@ -302,7 +304,8 @@ struct nucleiSpectra {
     o2::base::Propagator::Instance(true)->setMatLUT(nuclei::lut);
   }
 
-  void fillDataInfo(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
+  template <typename TC>
+  void fillDataInfo(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TC const& tracks)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
@@ -315,6 +318,7 @@ struct nucleiSpectra {
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
 
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
+    uint8_t zVert{getBinnedValue(collision.posZ(), 10.16)};
 
     const double bgScalings[4][2]{
       {nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / nuclei::masses[0], nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / nuclei::masses[0]},
@@ -362,7 +366,7 @@ struct nucleiSpectra {
         }
         ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{trackParCov.getPt() * nuclei::charges[iS], trackParCov.getEta(), trackParCov.getPhi(), nuclei::masses[iS]};
         float y{fvector.Rapidity() + cfgCMrapidity};
-        if (y < cfgCutRapidityMin || y > cfgCutRapidityMax) {
+        if (cfgCutOnReconstructedRapidity && (y < cfgCutRapidityMin || y > cfgCutRapidityMax)) {
           continue;
         }
 
@@ -396,11 +400,11 @@ struct nucleiSpectra {
             massTOF = getBinnedValue(beta > 1.e-6f ? track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS] : -999.f, cfgBinnedVariables->get(4u, 1u));
           }
           flag |= BIT(iS);
-          int8_t dcaxy = getBinnedValue(dcaInfo[0], cfgBinnedVariables->get(0u, 1u));
-          int8_t dcaz = getBinnedValue(dcaInfo[1], cfgBinnedVariables->get(1u, 1u));
-          int8_t nsigmaTPC = getBinnedValue(nSigma[0][iS], cfgBinnedVariables->get(2u, 1u));
+          uint8_t dcaxy = getBinnedValue(dcaInfo[0], cfgBinnedVariables->get(0u, 1u));
+          uint8_t dcaz = getBinnedValue(dcaInfo[1], cfgBinnedVariables->get(1u, 1u));
+          uint8_t nsigmaTPC = getBinnedValue(nSigma[0][iS], cfgBinnedVariables->get(2u, 1u));
 
-          nuclei::candidates.emplace_back(track.globalIndex(), fvector.pt(), fvector.eta(), track.itsClusterMap(), track.tpcNClsFound(), dcaxy, dcaz, flag, nsigmaTPC, massTOF);
+          nuclei::candidates.emplace_back(track.globalIndex(), fvector.pt(), fvector.eta(), zVert, track.itsClusterMap(), track.tpcNClsFound(), dcaxy, dcaz, flag, nsigmaTPC, massTOF);
         }
       }
     } // end loop over tracks
@@ -410,41 +414,18 @@ struct nucleiSpectra {
   {
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
-      nucleiTable(c.pt, c.eta, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFmass);
+      nucleiTable(c.pt, c.eta, c.zVertex, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFmass);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processData, "Data analysis", true);
 
-  void processMCrec(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
+  Preslice<TrackCandidates> tracksPerCollisions = aod::track::collisionId;
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>> const& collisions, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
-    fillDataInfo(collision, tracks);
-    for (auto& c : nuclei::candidates) {
-      auto label = trackLabelsMC.iteratorAt(c.globalIndex);
-      if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
-        continue;
-      }
-      auto particle = particlesMC.iteratorAt(label.mcParticleId());
-      if (particle.isPhysicalPrimary()) {
-        c.flags |= kIsPhysicalPrimary;
-      } else if (particle.has_mothers()) {
-        c.flags |= kIsSecondaryFromWeakDecay;
-      } else {
-        c.flags |= kIsSecondaryFromMaterial;
-      }
-
-      nucleiTableMC(c.pt, c.eta, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFmass, particle.pt(), particle.eta(), particle.pdgCode());
-      for (int iS{0}; iS < nuclei::species; ++iS) {
-        if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
-          nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt), 1. - std::abs(c.pt) / particle.pt());
-          break;
-        }
-      }
+    for (auto& collision : collisions) {
+      const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
+      fillDataInfo(collision, slicedTracks);
     }
-  }
-  PROCESS_SWITCH(nucleiSpectra, processMCrec, "MC analysis rec", false);
-
-  void processMCgen(aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
-  {
     std::vector<bool> isReconstructed(particlesMC.size(), false);
     for (auto& c : nuclei::candidates) {
       auto label = trackLabelsMC.iteratorAt(c.globalIndex);
@@ -453,7 +434,23 @@ struct nucleiSpectra {
       }
       auto particle = particlesMC.iteratorAt(label.mcParticleId());
       isReconstructed[particle.globalIndex()] = true;
+      if (particle.isPhysicalPrimary()) {
+        c.flags |= kIsPhysicalPrimary;
+      } else if (particle.has_mothers()) {
+        c.flags |= kIsSecondaryFromWeakDecay;
+      } else {
+        c.flags |= kIsSecondaryFromMaterial;
+      }
+
+      nucleiTableMC(c.pt, c.eta, c.zVertex, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFmass, particle.pt(), particle.eta(), particle.pdgCode());
+      for (int iS{0}; iS < nuclei::species; ++iS) {
+        if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
+          nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt), 1. - std::abs(c.pt) / particle.pt());
+          break;
+        }
+      }
     }
+
     int index{0};
     for (auto& particle : particlesMC) {
       int pdg{std::abs(particle.pdgCode())};
@@ -472,15 +469,16 @@ struct nucleiSpectra {
         } else {
           flags |= kIsSecondaryFromMaterial;
         }
+
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
-          nucleiTableMC(0, 0, 0, 0, 0, 0, flags, 0, 0, particle.pt(), particle.eta(), particle.pdgCode());
+          nucleiTableMC(0, 0, 0, 0, 0, 0, 0, flags, 0, 0, particle.pt(), particle.eta(), particle.pdgCode());
         }
         break;
       }
       index++;
     }
   }
-  PROCESS_SWITCH(nucleiSpectra, processMCgen, "MC analysis gen", false);
+  PROCESS_SWITCH(nucleiSpectra, processMC, "MC analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -1242,8 +1242,8 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
       values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
 
-      double det1 = t1.cZY() * t1.cZZ() - t1.cZY() * t1.cZY();
-      double det2 = t2.cZY() * t2.cZZ() - t2.cZY() * t2.cZY();
+      double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
+      double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
       if ((det1 < 0) || (det2 < 0)) {
         values[kQuadDCAsigXYZ] = -999;
       } else {
