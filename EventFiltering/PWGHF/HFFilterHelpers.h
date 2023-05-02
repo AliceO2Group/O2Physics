@@ -529,7 +529,7 @@ int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrac
     hMassVsPt->Fill(ptD, invMassDplus);
   }
 
-  if (std::abs(invMassDplus - massDPlus) > deltaMassCharmHadronForBeauty || ptD > 10) {
+  if (std::abs(invMassDplus - massDPlus) > deltaMassCharmHadronForBeauty && ptD > 0) {
     return 0;
   }
 
