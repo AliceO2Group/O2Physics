@@ -269,17 +269,17 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   // 2-prong cuts
   Configurable<double> ptMinTrack2Prong{"ptMinTrack2Prong", -1., "min. track pT for 2 prong candidate"};
   Configurable<LabeledArray<double>> cutsTrack2Prong{"cutsTrack2Prong", {hf_cuts_single_track::cutsTrack[0], nBinsPtTrack, nCutVarsTrack, labelsPtTrack, labelsCutVarTrack}, "Single-track selections per pT bin for 2-prong candidates"};
-  Configurable<double> etaMinTrack2Prong{"etaMinTrack2Prong", -4., "min. pseudorapidity for 2 prong candidate"};
+  Configurable<double> etaMinTrack2Prong{"etaMinTrack2Prong", -99999., "min. pseudorapidity for 2 prong candidate"};
   Configurable<double> etaMaxTrack2Prong{"etaMaxTrack2Prong", 4., "max. pseudorapidity for 2 prong candidate"};
   // 3-prong cuts
   Configurable<double> ptMinTrack3Prong{"ptMinTrack3Prong", -1., "min. track pT for 3 prong candidate"};
   Configurable<LabeledArray<double>> cutsTrack3Prong{"cutsTrack3Prong", {hf_cuts_single_track::cutsTrack[0], nBinsPtTrack, nCutVarsTrack, labelsPtTrack, labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong candidates"};
-  Configurable<double> etaMinTrack3Prong{"etaMinTrack3Prong", -4., "min. pseudorapidity for 3 prong candidate"};
+  Configurable<double> etaMinTrack3Prong{"etaMinTrack3Prong", -99999., "min. pseudorapidity for 3 prong candidate"};
   Configurable<double> etaMaxTrack3Prong{"etaMaxTrack3Prong", 4., "max. pseudorapidity for 3 prong candidate"};
   // bachelor cuts (when using cascades)
   Configurable<double> ptMinTrackBach{"ptMinTrackBach", 0.3, "min. track pT for bachelor in cascade candidate"}; // 0.5 for PbPb 2015?
   Configurable<LabeledArray<double>> cutsTrackBach{"cutsTrackBach", {hf_cuts_single_track::cutsTrack[0], nBinsPtTrack, nCutVarsTrack, labelsPtTrack, labelsCutVarTrack}, "Single-track selections per pT bin for the bachelor of V0-bachelor candidates"};
-  Configurable<double> etaMinTrackBach{"etaMinTrackBach", -0.8, "min. pseudorapidity for bachelor in cascade candidate"};
+  Configurable<double> etaMinTrackBach{"etaMinTrackBach", -99999., "min. pseudorapidity for bachelor in cascade candidate"};
   Configurable<double> etaMaxTrackBach{"etaMaxTrackBach", 0.8, "max. pseudorapidity for bachelor in cascade candidate"};
   // CCDB
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -314,6 +314,16 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   void init(InitContext const&)
   {
     cutsSingleTrack = {cutsTrack2Prong, cutsTrack3Prong, cutsTrackBach};
+
+    if (etaMinTrack2Prong == -99999.) {
+      etaMinTrack2Prong.value = -etaMaxTrack2Prong;
+    }
+    if (etaMinTrack3Prong == -99999.) {
+      etaMinTrack3Prong.value = -etaMaxTrack3Prong;
+    }
+    if (etaMinTrackBach == -99999.) {
+      etaMinTrackBach.value = -etaMaxTrackBach;
+    }
 
     if (fillHistograms) {
       // general tracks
@@ -2270,7 +2280,7 @@ struct HfTrackIndexSkimCreatorCascades {
   // track cuts for V0 daughters
   Configurable<bool> tpcRefitV0Daugh{"tpcRefitV0Daugh", true, "request TPC refit V0 daughters"};
   Configurable<int> nCrossedRowsMinV0Daugh{"nCrossedRowsMinV0Daugh", 50, "min crossed rows V0 daughters"};
-  Configurable<double> etaMinV0Daugh{"etaMinV0Daugh", -1.1, "min. pseudorapidity V0 daughters"};
+  Configurable<double> etaMinV0Daugh{"etaMinV0Daugh", -99999., "min. pseudorapidity V0 daughters"};
   Configurable<double> etaMaxV0Daugh{"etaMaxV0Daugh", 1.1, "max. pseudorapidity V0 daughters"};
   Configurable<double> ptMinV0Daugh{"ptMinV0Daugh", 0.05, "min. pT V0 daughters"};
   // bachelor cuts
@@ -2329,6 +2339,11 @@ struct HfTrackIndexSkimCreatorCascades {
     if (!doprocessCascades) {
       return;
     }
+
+    if (etaMinV0Daugh == -99999.) {
+      etaMinV0Daugh.value = -etaMaxV0Daugh;
+    }
+
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
