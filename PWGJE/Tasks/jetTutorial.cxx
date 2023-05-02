@@ -53,8 +53,8 @@ struct JetTutorialTask {
                               {"h_full_jet_angularity", "jet angularity ;#lambda_{1};entries", {HistType::kTH1F, {{5, 0.0, 0.5}}}},
                               {"h_part_jet_angularity", "jet angularity ;#lambda_{1};entries", {HistType::kTH1F, {{5, 0.0, 0.5}}}},
                               {"h_recoil_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 50.}}}},
-                              {"h_recoil_full_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{30, -1.5, 1.5}}}},
-                              {"h_recoil_full_jet_phi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{140, -7.0, 7.}}}},
+                              {"h_recoil_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{30, -1.5, 1.5}}}},
+                              {"h_recoil_jet_phi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{140, -7.0, 7.}}}},
                               {"h_recoil_jet_dphi", "hadron-jet #Delta#phi;#Delta#phi_{jet,trigger hadron};entries", {HistType::kTH1F, {{40, -2.0, 2.0}}}},
                               {"h_matched_jets_pt", "#it{p}_{T,jet part}; #it{p}_{T,jet det}", {HistType::kTH2F, {{100, 0., 20.}, {100, 0., 20.0}}}},
                               {"h_matched_jets_eta", "#eta_{jet part}; #eta_{jet det}", {HistType::kTH2F, {{30, -1.5, 1.5}, {30, -1.5, 1.5}}}},
@@ -129,7 +129,7 @@ struct JetTutorialTask {
     for (auto& jetConstituent : jet.tracks_as<aod::Tracks>()) {
       angularity += jetConstituent.pt() * TMath::Sqrt(TMath::Power(jet.phi() - jetConstituent.phi(), 2.0) + TMath::Power(jet.eta() - jetConstituent.eta(), 2.0));
     }
-    registry.fill(HIST("h_jet_angularity"), angularity / (jet.pt() * round(jet.r() * 100.0f)));
+    registry.fill(HIST("h_jet_angularity"), angularity / (jet.pt() * round(jet.r() / 100.0f)));
   }
   PROCESS_SWITCH(JetTutorialTask, processDataChargedSubstructure, "jet substructure charged jets", false);
 
@@ -160,7 +160,7 @@ struct JetTutorialTask {
     for (auto& jetConstituents : jet.tracks_as<aod::McParticles>()) {
       angularity += jetConstituents.pt() * TMath::Sqrt(TMath::Power(jet.phi() - jetConstituents.phi(), 2.0) + TMath::Power(jet.eta() - jetConstituents.eta(), 2.0));
     }
-    registry.fill(HIST("h_part_jet_angularity"), angularity / (jet.pt() * round(jet.r() * 100.0f)));
+    registry.fill(HIST("h_part_jet_angularity"), angularity / (jet.pt() * round(jet.r() / 100.0f)));
   }
   PROCESS_SWITCH(JetTutorialTask, processMCParticleSubstructure, "jet substructure particle level full jets", false);
 
