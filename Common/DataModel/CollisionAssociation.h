@@ -24,7 +24,7 @@ namespace track_association
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                      //! Collision index
 DECLARE_SOA_INDEX_COLUMN(Track, track);                              //! Track index
-DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, compatibleColl);           //! Array of collision indices
+DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, compatibleColl);      //! Array of collision indices
 } // namespace track_association
 
 DECLARE_SOA_TABLE(TrackAssoc, "AOD", "TRACKASSOC", //! Table for track-to-collision association for e.g. HF vertex finding - tracks can appear for several collisions
@@ -33,6 +33,29 @@ DECLARE_SOA_TABLE(TrackAssoc, "AOD", "TRACKASSOC", //! Table for track-to-collis
 
 DECLARE_SOA_TABLE(TrackCompColls, "AOD", "TRACKCOMPCOLLS", //! Table with vectors of collision indices stored per track
                   track_association::CollisionIds);
+
+namespace fwdtrack_association
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);            //! Collision index
+DECLARE_SOA_INDEX_COLUMN(FwdTrack, fwdtrack);              //! FwdTrack index
+DECLARE_SOA_INDEX_COLUMN(MFTTrack, mfttrack);              //! MFTTrack index
+DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, compatibleColl); //! Array of collision indices
+} // namespace fwdtrack_association
+
+DECLARE_SOA_TABLE(FwdTrackAssoc, "AOD", "FWDTRACKASSOC", //! Table for fwdtrack-to-collision association
+                  fwdtrack_association::CollisionId,
+                  fwdtrack_association::FwdTrackId);
+
+DECLARE_SOA_TABLE(FwdTrackCompColls, "AOD", "FWDTRACKCOLLS", //! Table with vectors of collision indices stored per fwdtrack
+                  fwdtrack_association::CollisionIds);
+
+DECLARE_SOA_TABLE(MFTTrackAssoc, "AOD", "MFTTRACKASSOC", //! Table for mfttrack-to-collision association
+                  fwdtrack_association::CollisionId,
+                  fwdtrack_association::MFTTrackId);
+
+DECLARE_SOA_TABLE(MFTTrackCompColls, "AOD", "MFTTRKCOMPCOLLS", //! Table with vectors of collision indices stored per mfttrack
+                  fwdtrack_association::CollisionIds, o2::soa::Marker<1>);
+
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_COLLISIONASSOCIATION_H_
