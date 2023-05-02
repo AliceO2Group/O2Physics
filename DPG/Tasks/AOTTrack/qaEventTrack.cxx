@@ -76,7 +76,7 @@ struct qaEventTrack {
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
   ConfigurableAxis binsDeltaPt{"binsDeltaPt", {100, -0.495, 0.505}, ""};
 
-  ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {100, -20., 20.}, ""}; // TODO: do we need this to be configurable?
+  ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {80, -20., 20.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplcity", {200, 0, 200}, ""};
 
@@ -327,6 +327,10 @@ struct qaEventTrack {
     auto h2 = histos.add<TH2>("Tracks/TPC/tpcNClsFoundVsEta", "tracks with at least 1 TPC cluster", kTH2D, {axisEta, {165, -0.5, 164.5}});
     h2->GetXaxis()->SetTitle("#eta");
     h2->GetYaxis()->SetTitle("# clusters TPC");
+    auto h3 = histos.add<TH3>("Tracks/TPC/tpcNClsFoundVsEtaVtxZ", "tracks with at least 1 TPC cluster", kTH3D, {axisEta, {165, -0.5, 164.5}, axisVertexPosZ});
+    h3->GetXaxis()->SetTitle("#eta");
+    h3->GetYaxis()->SetTitle("# clusters TPC");
+    h3->GetZaxis()->SetTitle("Vtx. Z [cm]");
     histos.add("Tracks/TPC/tpcNClsShared", "number of shared TPC clusters;# shared clusters TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH1D, {{100, 0., 1.}});
@@ -1185,6 +1189,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/TPC/tpcNClsFindable"), track.tpcNClsFindable());
     histos.fill(HIST("Tracks/TPC/tpcNClsFound"), track.tpcNClsFound());
     histos.fill(HIST("Tracks/TPC/tpcNClsFoundVsEta"), track.eta(), track.tpcNClsFound());
+    histos.fill(HIST("Tracks/TPC/tpcNClsFoundVsEtaVtxZ"), track.eta(), track.tpcNClsFound(), collision.posZ());
     histos.fill(HIST("Tracks/TPC/tpcNClsShared"), track.tpcNClsShared());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
