@@ -253,7 +253,24 @@ struct qaMatchEff {
                kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
 
     /// compare pt's (tracking and innerParamTPC)
-    histos.add("data/ptptconf", "Tracking pt vs TPC inner point pt", kTH2D,
+    histos.add("data/ptptconfTPCall",
+               "Tracking pt vs TPC inner wall pt - TPC tag", kTH2D,
+               {{100, 0.0, 10.0, "tracking #it{p}_{T}"},
+                {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    histos.add("data/ptptconfITSall",
+               "Tracking pt vs TPC inner wall pt - ITS tag", kTH2D,
+               {{100, 0.0, 10.0, "tracking #it{p}_{T}"},
+                {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    histos.add("data/ptptconfTPCITS",
+               "Tracking pt vs TPC inner wall pt - TPC & ITS tag", kTH2D,
+               {{100, 0.0, 10.0, "tracking #it{p}_{T}"},
+                {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    histos.add("data/ptptconfITSo",
+               "Tracking pt vs TPC inner wall pt - ITS-only tracks", kTH2D,
+               {{100, 0.0, 10.0, "tracking #it{p}_{T}"},
+                {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    histos.add("data/ptptconfTPCo",
+               "Tracking pt vs TPC inner wall pt - TPC-only tracks", kTH2D,
                {{100, 0.0, 10.0, "tracking #it{p}_{T}"},
                 {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
 
@@ -403,7 +420,24 @@ struct qaMatchEff {
                "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS",
                kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
     /// compare pt's (tracking and innerParamTPC)
-    histos.add("MC/ptptconf", "TPC inner point pt vs. tracking pt", kTH2D,
+    histos.add("MC/ptptconfTPCall",
+               "Tracking pt vs TPC inner wall pt - TPC tag", kTH2D,
+               {{100, 0.0, 10.0, "tracking #it{p}_{T}"},
+                {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    histos.add("MC/ptptconfITSall",
+               "Tracking pt vs TPC inner wall pt - ITS tag", kTH2D,
+               {{100, 0.0, 10.0, "tracking #it{p}_{T}"},
+                {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    histos.add("MC/ptptconfTPCITS",
+               "Tracking pt vs TPC inner wall pt - TPC & ITS tag", kTH2D,
+               {{100, 0.0, 10.0, "tracking #it{p}_{T}"},
+                {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    histos.add("MC/ptptconfITSo",
+               "Tracking pt vs TPC inner wall pt - ITS-only tracks", kTH2D,
+               {{100, 0.0, 10.0, "tracking #it{p}_{T}"},
+                {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    histos.add("MC/ptptconfTPCo",
+               "Tracking pt vs TPC inner wall pt - TPC-only tracks", kTH2D,
                {{100, 0.0, 10.0, "tracking #it{p}_{T}"},
                 {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
 
@@ -1074,7 +1108,9 @@ struct qaMatchEff {
       if (track.hasITS() && isTrackSelectedITSCuts(track)) {
         if constexpr (IS_MC) {
           // pt comparison plot
-          histos.fill(HIST("MC/ptptconf"), reco_pt, tpcinner_pt);
+          histos.fill(HIST("MC/ptptconfITSall"), reco_pt, tpcinner_pt);
+          if (!track.hasTPC())
+            histos.fill(HIST("MC/ptptconfITSo"), reco_pt, tpcinner_pt);
           //
           histos.get<TH1>(HIST("MC/qopthist_its"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("MC/pthist_its"))->Fill(ITStrackPt);
@@ -1082,7 +1118,9 @@ struct qaMatchEff {
           histos.get<TH1>(HIST("MC/etahist_its"))->Fill(track.eta());
         } else {
           // pt comparison plot
-          histos.fill(HIST("data/ptptconf"), reco_pt, tpcinner_pt);
+          histos.fill(HIST("data/ptptconfITSall"), reco_pt, tpcinner_pt);
+          if (!track.hasTPC())
+            histos.fill(HIST("data/ptptconfITSo"), reco_pt, tpcinner_pt);
           //
           histos.get<TH1>(HIST("data/qopthist_its"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("data/pthist_its"))->Fill(ITStrackPt);
@@ -1092,11 +1130,17 @@ struct qaMatchEff {
       }
       if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
         if constexpr (IS_MC) {
+          histos.fill(HIST("MC/ptptconfTPCall"), reco_pt, tpcinner_pt);
+          if (!track.hasITS())
+            histos.fill(HIST("MC/ptptconfTPCo"), reco_pt, tpcinner_pt);
           histos.get<TH1>(HIST("MC/qopthist_tpc"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(track.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc"))->Fill(track.eta());
         } else {
+          histos.fill(HIST("data/ptptconfTPCall"), reco_pt, tpcinner_pt);
+          if (!track.hasITS())
+            histos.fill(HIST("data/ptptconfTPCo"), reco_pt, tpcinner_pt);
           histos.get<TH1>(HIST("data/qopthist_tpc"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpc"))->Fill(track.phi());
@@ -1104,12 +1148,14 @@ struct qaMatchEff {
         }
         if (track.hasITS() && isTrackSelectedITSCuts(track)) {
           if constexpr (IS_MC) {
+            histos.fill(HIST("MC/ptptconfTPCITS"), reco_pt, tpcinner_pt);
             histos.get<TH1>(HIST("MC/qopthist_tpcits"))
               ->Fill(track.signed1Pt());
             histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(track.eta());
           } else {
+            histos.fill(HIST("data/ptptconfTPCITS"), reco_pt, tpcinner_pt);
             histos.get<TH1>(HIST("data/qopthist_tpcits"))
               ->Fill(track.signed1Pt());
             histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(trackPt);
