@@ -46,14 +46,14 @@ DECLARE_SOA_TABLE(FwdTrackAssoc, "AOD", "FWDTRACKASSOC", //! Table for fwdtrack-
                   fwdtrack_association::CollisionId,
                   fwdtrack_association::FwdTrackId);
 
-DECLARE_SOA_TABLE(FwdTrackCompColls, "AOD", "FWDTRACKCOLLS", //! Table with vectors of collision indices stored per fwdtrack
+DECLARE_SOA_TABLE(FwdTrkCompColls, "AOD", "FWDTRKCOMPCOLL", //! Table with vectors of collision indices stored per fwdtrack
                   fwdtrack_association::CollisionIds);
 
 DECLARE_SOA_TABLE(MFTTrackAssoc, "AOD", "MFTTRACKASSOC", //! Table for mfttrack-to-collision association
                   fwdtrack_association::CollisionId,
                   fwdtrack_association::MFTTrackId);
 
-DECLARE_SOA_TABLE(MFTTrackCompColls, "AOD", "MFTTRKCOMPCOLLS", //! Table with vectors of collision indices stored per mfttrack
+DECLARE_SOA_TABLE(MFTTrkCompColls, "AOD", "MFTTRKCOMPCOLL", //! Table with vectors of collision indices stored per mfttrack
                   fwdtrack_association::CollisionIds, o2::soa::Marker<1>);
 
 } // namespace o2::aod
