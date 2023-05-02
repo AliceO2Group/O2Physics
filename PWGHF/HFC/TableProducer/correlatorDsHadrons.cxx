@@ -74,6 +74,7 @@ using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0
 BinningType corrBinning{{zBins, multBins}, true};
 
 struct HfDsSelectionCollision {
+  SliceCache cache;
   Produces<aod::DsSelCollision> collisionSelDs; 
 
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
@@ -684,9 +685,6 @@ struct HfCorrelatorDsHadrons {
                             pAssoc.pt(),
                             poolBin);
           entryDsHadronRecoInfo(invMassDsToPiKK(candidate), false, false);
-        }
-        else {
-          LOGF(info, "**** PROBLEM IN THE DS SELECTION OR IN THE FLAG USED ****");
         }
       }
     }
