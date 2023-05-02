@@ -14,10 +14,9 @@
 /// \author
 /// \since
 
+#include "configurableCut.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "configurableCut.h"
-
 #include <sstream>
 
 using namespace o2;
