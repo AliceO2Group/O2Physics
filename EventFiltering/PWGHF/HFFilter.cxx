@@ -636,7 +636,7 @@ struct HfFilter { // Main struct for HF triggers
 
         auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
         auto pt3Prong = RecoDecay::pt(pVec3Prong);
-        float sign3Prong = trackFirst.sign() * trackSecond.sign() * trackThird.sign();
+        float sign3Prong = -1 * trackFirst.sign() * trackSecond.sign() * trackThird.sign();
 
         std::array<int8_t, kNCharmParticles - 1> is3ProngInMass{0};
         if (is3Prong[0]) {
@@ -696,7 +696,7 @@ struct HfFilter { // Main struct for HF triggers
           float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
           float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
           float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassB0, deltaMassBs, deltaMassLb, deltaMassXib};
-          if (track.sign() * sign3Prong < 0 && isSelectedTrackForBeauty(trackParFourth, dcaFourth, pTMinSoftPion, pTMinBeautyBachelor, pTBinsTrack, cutsSingleTrackBeauty[kBeauty4P - 2]) == kRegular) {
+          if (track.sign() * sign3Prong < 0 && isSelectedTrackForBeauty(trackParFourth, dcaFourth, pTMinBeautyBachelor, pTMinBeautyBachelor, pTBinsTrack, cutsSingleTrackBeauty[kBeauty4P - 2]) == kRegular) {
             for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty4P]; ++iHypo) {
               if (isBeautyTagged[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1))) {
                 auto massCandB = RecoDecay::m(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
