@@ -14,10 +14,9 @@
 /// \author
 /// \since
 
+#include "configurableCut.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "configurableCut.h"
-
 #include <sstream>
 
 using namespace o2;
@@ -68,7 +67,9 @@ struct ConfigurableObjectDemo {
 
   // Array type configurables
   // note that size is fixed by this declaration - externally supplied vector needs to be the same size!
-  Configurable<std::vector<int>> array{"array", {0, 0, 0, 0, 0, 0, 0}, "generic array"};
+  Configurable<std::vector<int>> array{"array", {0, 0, 0, 0, 0, 0, 0}, "generic int array"};
+  Configurable<std::vector<float>> farray{"farray", {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}, "generic float array"};
+  Configurable<std::vector<double>> darray{"darray", {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}, "generic double array"};
   Configurable<Array2D<float>> vmatrix{"matrix", {&defaultm[0][0], 3, 4}, "generic matrix"};
   Configurable<LabeledArray<float>> vla{"vla", {defaultm[0], 3, 4, {"r 1", "r 2", "r 3"}, {"c 1", "c 2", "c 3", "c 4"}}, "labeled array"};
 
@@ -81,12 +82,16 @@ struct ConfigurableObjectDemo {
 
   void init(InitContext const&)
   {
-    LOGP(info, "min_pt: {}; require_tof: {}", min_pt, require_tof);
+    LOGP(info, "min_pt: {}; require_tof: {}", (float)min_pt, (bool)require_tof);
     LOGF(info, "max_eta: %f; min_clusters: %d", (float)trackcuts.max_eta, (int)trackcuts.min_clusters);
     LOGF(info, "Cut1 bins: %s; Cut2 bins: %s", printArray(cut->getBins()), printArray(mutable_cut->getBins()));
     LOGF(info, "Cut1 labels: %s; Cut2 labels: %s", printArray(cut->getLabels()), printArray(mutable_cut->getLabels()));
     auto vec = (std::vector<int>)array;
     LOGF(info, "Array: %s", printArray(vec).c_str());
+    auto dvec = (std::vector<double>)darray;
+    LOGF(info, "Double array: %s", printArray(dvec).c_str());
+    auto fvec = (std::vector<float>)farray;
+    LOGF(info, "Float array: %s", printArray(fvec).c_str());
     LOGF(info, "Matrix: %s", printMatrix((Array2D<float>)vmatrix));
     LOGF(info, "Labeled:\n %s\n %s\n %s", printArray(vla->getLabelsRows()), printArray(vla->getLabelsCols()), printMatrix(vla->getData()));
   };
