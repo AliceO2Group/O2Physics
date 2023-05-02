@@ -12,7 +12,7 @@
 /// \file fwdtrackToCollisionAssociator.cxx
 /// \brief Associates fwd and MFT tracks to collisions considering ambiguities
 /// \author Sarah Herrmann <sarah.herrmann@cern.ch>, IP2I Lyon
-/// \author Maurice Coquet <maurice.louis.coquet@cern.ch>, CEA-Saclay/Irfu 
+/// \author Maurice Coquet <maurice.louis.coquet@cern.ch>, CEA-Saclay/Irfu
 
 #include "Common/DataModel/CollisionAssociation.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -33,7 +33,6 @@ struct FwdTrackToCollisionAssociation {
   Produces<MFTTrackAssoc> mftassociation;
   Produces<MFTTrackCompColls> mftreverseIndices;
 
-
   Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 4.f, "number of sigmas for time compatibility"};
   Configurable<float> timeMargin{"timeMargin", 0.f, "time margin in ns added to uncertainty because of uncalibrated TPC"};
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
@@ -46,9 +45,9 @@ struct FwdTrackToCollisionAssociation {
   }
 
   void processFwdAssocWithTime(Collisions const& collisions,
-			    MyMuons const& muons,
-			    AmbiguousFwdTracks const& ambiTracksFwd,
-                            BCs const& bcs)
+                               MyMuons const& muons,
+                               AmbiguousFwdTracks const& ambiTracksFwd,
+                               BCs const& bcs)
   {
     // cache globalBC
     std::vector<uint64_t> globalBC;
@@ -154,10 +153,10 @@ struct FwdTrackToCollisionAssociation {
 
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processStandardAssoc, "Use standard fwdtrack-to-collision association", true);
 
-    void processMFTAssocWithTime(Collisions const& collisions,
-                            MFTTracks const& tracks,
-                            AmbiguousMFTTracks const& ambiguousTracks,
-                            BCs const& bcs)
+  void processMFTAssocWithTime(Collisions const& collisions,
+                               MFTTracks const& tracks,
+                               AmbiguousMFTTracks const& ambiguousTracks,
+                               BCs const& bcs)
   {
     // cache globalBC
     std::vector<uint64_t> globalBC;
@@ -196,16 +195,13 @@ struct FwdTrackToCollisionAssociation {
         float trackTime = track.trackTime();
         float trackTimeRes = track.trackTimeRes();
 
-
         const float deltaTime = trackTime - collTime + bcOffset * constants::lhc::LHCBunchSpacingNS;
         float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
         LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), track.trackTime(), track.trackTimeRes(), collBC, globalBC[track.filteredIndex()], deltaTime);
 
-
         float thresholdTime = 0.;
 
         thresholdTime = nSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + timeMargin;
-
 
         if (std::abs(deltaTime) < thresholdTime) {
           const auto collIdx = collision.globalIndex();
@@ -237,8 +233,6 @@ struct FwdTrackToCollisionAssociation {
   }
 
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processMFTAssocWithTime, "Use MFTtrack-to-collision association based on time", true);
-
-
 };
 
 //________________________________________________________________________________________________________________________
