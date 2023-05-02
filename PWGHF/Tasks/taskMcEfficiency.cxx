@@ -62,7 +62,7 @@ struct HfTaskMcEfficiency {
 
   HistogramRegistry registry{"registry"};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
 
     std::array<bool, 2> doprocessData{doprocessDataD0, doprocessDataLc};
@@ -76,7 +76,7 @@ struct HfTaskMcEfficiency {
     hCandidates->GetAxis(1)->SetTitle("#it{m}_{inv} (GeV/#it{c}^{2})");
     hCandidates->GetAxis(2)->SetTitle("PDG code");
     hCandidates->GetAxis(3)->SetTitle("CPA");
-    hCandidates->GetAxis(5)->SetTitle("origin");
+    hCandidates->GetAxis(5)->SetTitle("Charm hadron origin");
 
     registry.add("hDuplicateCount", "Duplicate count;frequency;count", {HistType::kTH1F, {{10, 0.5, 10.5}}});
 
@@ -107,7 +107,7 @@ struct HfTaskMcEfficiency {
         std::array<int, 3> pdgDaughters;
 
         if (pdgCode == pdg::kLambdaCPlus) {
-          decayType = 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi;
+          decayType = 1 << aod::hf_cand_3prong::DecayType::LcToPKPi;
           pdgDaughters[0] = +kProton;
           pdgDaughters[1] = -kKPlus;
           pdgDaughters[2] = +kPiPlus;
@@ -245,11 +245,11 @@ struct HfTaskMcEfficiency {
       std::array<int, 2> pdgDaughters;
 
       if (pdgCode == pdg::kD0) {
-        decayType = 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK;
+        decayType = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
         pdgDaughters[0] = +kPiPlus;
         pdgDaughters[1] = -kKPlus;
       } else if (pdgCode == pdg::kD0Bar) {
-        decayType = 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK;
+        decayType = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
         pdgDaughters[0] = -kPiPlus;
         pdgDaughters[1] = +kKPlus;
       } else {
