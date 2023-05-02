@@ -76,7 +76,7 @@ struct qaEventTrack {
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
   ConfigurableAxis binsDeltaPt{"binsDeltaPt", {100, -0.495, 0.505}, ""};
 
-  ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {80, -20., 20.}, ""}; // TODO: do we need this to be configurable?
+  ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {80, -20., 20.}, ""};  // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplcity", {200, 0, 200}, ""};
 
