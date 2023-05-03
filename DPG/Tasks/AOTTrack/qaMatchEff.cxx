@@ -1248,17 +1248,17 @@ struct qaMatchEff {
           //
           // PID is applied
           if (isPion) {
-            histos.get<TH1>(HIST("data/pthist_tpc_pi"))->Fill(ITStrackPt);
+            histos.get<TH1>(HIST("data/pthist_tpc_pi"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpc_pi"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_tpc_pi"))->Fill(track.eta());
           }
           if (isKaon) {
-            histos.get<TH1>(HIST("data/pthist_tpc_ka"))->Fill(ITStrackPt);
+            histos.get<TH1>(HIST("data/pthist_tpc_ka"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpc_ka"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_tpc_ka"))->Fill(track.eta());
           }
           if (isProton) {
-            histos.get<TH1>(HIST("data/pthist_tpc_pr"))->Fill(ITStrackPt);
+            histos.get<TH1>(HIST("data/pthist_tpc_pr"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpc_pr"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_tpc_pr"))->Fill(track.eta());
           }
@@ -1278,17 +1278,17 @@ struct qaMatchEff {
             //
             //  PID is applied
             if (isPion) {
-              histos.get<TH1>(HIST("data/pthist_tpcits_pi"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("data/pthist_tpcits_pi"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/phihist_tpcits_pi"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/etahist_tpcits_pi"))->Fill(track.eta());
             }
             if (isKaon) {
-              histos.get<TH1>(HIST("data/pthist_tpcits_ka"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("data/pthist_tpcits_ka"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/phihist_tpcits_ka"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/etahist_tpcits_ka"))->Fill(track.eta());
             }
             if (isProton) {
-              histos.get<TH1>(HIST("data/pthist_tpcits_pr"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("data/pthist_tpcits_pr"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/phihist_tpcits_pr"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/etahist_tpcits_pr"))->Fill(track.eta());
             }
