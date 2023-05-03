@@ -120,7 +120,7 @@ struct MultiplicityTableTaskIndexed {
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", true);
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra, soa::Join<aod::BCs, aod::Timestamps> const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::TracksIU, aod::TracksExtra> const& tracksExtra, soa::Join<aod::BCs, aod::Timestamps> const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
   {
     float multFV0A = 0.f;
     float multFV0C = 0.f;
