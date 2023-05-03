@@ -377,7 +377,7 @@ enum PIDFlags : uint8_t {
   EvTimeUndef = 0x0,  // Event collision not set, corresponding to the LHC Fill event time
   EvTimeTOF = 0x1,    // Event collision time from TOF
   EvTimeT0AC = 0x2,   // Event collision time from the FT0AC
-  EvTimeTOFT0AC = 0x3 // Event collision time from the TOF and FT0AC
+  EvTimeTOFT0AC = 0x4 // Event collision time from the TOF and FT0AC
 };
 }
 
@@ -523,10 +523,7 @@ DECLARE_SOA_TABLE(TOFSignal, "AOD", "TOFSignal", //! Table of the TOF signal
                   pidtofsignal::TOFSignal);
 
 DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta
-                  pidtofbeta::Beta, pidtofbeta::BetaError,
-                  pidtofbeta::ExpBetaEl, pidtofbeta::ExpBetaElError,
-                  pidtofbeta::SeparationBetaEl,
-                  pidtofbeta::DiffBetaEl<pidtofbeta::Beta, pidtofbeta::ExpBetaEl>);
+                  pidtofbeta::Beta, pidtofbeta::BetaError);
 
 DECLARE_SOA_TABLE(pidTOFmass, "AOD", "pidTOFmass", //! Table of the TOF mass
                   pidtofmass::TOFMass);

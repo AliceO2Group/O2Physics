@@ -47,6 +47,9 @@ using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
 struct HfTaskFlow {
+  SliceCache cache;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+
   //  configurables for processing options
   Configurable<bool> processRun2{"processRun2", false, "Flag to run on Run 2 data"};
   Configurable<bool> processRun3{"processRun3", true, "Flag to run on Run 3 data"};
@@ -429,7 +432,7 @@ struct HfTaskFlow {
     BinningType binningWithTracksSize{{getPartsSize}, {axisVertex, axisMultiplicity}, true};
 
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<aodCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple};
+    Pair<aodCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -534,8 +537,8 @@ struct HfTaskFlow {
                             aodTracks& tracks)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks](aodCollisions::iterator const& col) {
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
+    auto getTracksSize = [&tracks, this](aodCollisions::iterator const& col) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
       auto size = associatedTracks.size();
       return size;
     };
@@ -552,8 +555,8 @@ struct HfTaskFlow {
                              hfCandidates& candidates)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks](aodCollisions::iterator const& col) {
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex());
+    auto getTracksSize = [&tracks, this](aodCollisions::iterator const& col) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
       auto size = associatedTracks.size();
       return size;
     };

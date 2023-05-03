@@ -41,6 +41,8 @@ using MyTrack = MyTracks::iterator;
 } // namespace o2::aod
 
 struct CFTutorialTask4 {
+  SliceCache cache;
+  Preslice<o2::aod::MyTracks> perCol = aod::track::collisionId;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Defining configurables
@@ -86,8 +88,8 @@ struct CFTutorialTask4 {
   // Equivalent of the AliRoot task UserExec
   void process(MyFilteredCollision const& coll, o2::aod::MyTracks const& tracks)
   {
-    auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex());
-    auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex());
+    auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
+    auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     histos.fill(HIST("hZvtx"), coll.posZ());
 
     for (auto track : groupPositive) {

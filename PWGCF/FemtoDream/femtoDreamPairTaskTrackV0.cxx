@@ -49,12 +49,15 @@ static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 } // namespace
 
 struct femtoDreamPairTaskTrackV0 {
+  SliceCache cache;
+  Preslice<aod::FemtoDreamParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
 
   /// Particle selection part
 
   /// Table for both particles
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
+  Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
 
   /// Particle 1 (track)
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
@@ -108,12 +111,12 @@ struct femtoDreamPairTaskTrackV0 {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins);
-    trackHistoPartTwo.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins);
+    trackHistoPartOne.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins, ConfIsMC);
+    trackHistoPartTwo.init(&qaRegistry, CfgTempFitVarpTBins, CfgTempFitVarBins, ConfIsMC);
 
-    sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
+    sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins, ConfIsMC);
     sameEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
-    mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
+    mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins, ConfIsMC);
     mixedEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR) {
@@ -130,8 +133,8 @@ struct femtoDreamPairTaskTrackV0 {
   {
     const auto& magFieldTesla = col.magField();
 
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
     const int multCol = col.multNtr();
 
     eventHisto.fillQA(col);
@@ -144,10 +147,10 @@ struct femtoDreamPairTaskTrackV0 {
       if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
-      trackHistoPartOne.fillQA(part);
+      trackHistoPartOne.fillQA<false>(part);
     }
     for (auto& part : groupPartsTwo) {
-      trackHistoPartTwo.fillQA(part);
+      trackHistoPartTwo.fillQA<false>(part);
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
@@ -168,7 +171,7 @@ struct femtoDreamPairTaskTrackV0 {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      sameEventCont.setPair(p1, p2, multCol);
+      sameEventCont.setPair<false>(p1, p2, multCol);
     }
   }
 
@@ -185,8 +188,8 @@ struct femtoDreamPairTaskTrackV0 {
 
       const int multCol = collision1.multNtr();
 
-      auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex());
-      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex());
+      auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -207,7 +210,7 @@ struct femtoDreamPairTaskTrackV0 {
             continue;
           }
         }
-        mixedEventCont.setPair(p1, p2, multCol);
+        mixedEventCont.setPair<false>(p1, p2, multCol);
       }
     }
   }

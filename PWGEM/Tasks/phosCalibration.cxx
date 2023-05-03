@@ -151,6 +151,10 @@ struct phosCalibration {
     // clusterize
     // Fill clusters histograms
 
+    if (bcs.begin() == bcs.end()) {
+      return;
+    }
+
     if (!clusterizer) {
       clusterizer = std::make_unique<o2::phos::Clusterer>();
       clusterizer->initialize();
@@ -179,16 +183,13 @@ struct phosCalibration {
       LOG(info) << "Read calibration";
     }
     if (!mSkipL1phase && mL1 == 0) { // should be read, but not read yet
-      for (auto bc : bcs) {
-        const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", bc.timestamp());
-        if (vec) {
-          clusterizer->setL1phase((*vec)[0]);
-          mL1 = (*vec)[0];
-          LOG(info) << "Got L1phase=" << mL1;
-        } else {
-          LOG(fatal) << "Can not get PHOS L1phase calibration";
-        }
-        break;
+      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", bcs.begin().timestamp());
+      if (vec) {
+        clusterizer->setL1phase((*vec)[0]);
+        mL1 = (*vec)[0];
+        LOG(info) << "Got L1phase=" << mL1;
+      } else {
+        LOG(fatal) << "Can not get PHOS L1phase calibration";
       }
     }
 
@@ -232,6 +233,12 @@ struct phosCalibration {
       int ddl = (relid[0] - 1) * 4 + (relid[1] - 1) / 16 - 2;
       uint64_t bc = c.bc_as<aod::BCsWithTimestamps>().globalBC();
       float tcorr = c.time();
+      if (c.cellType() == o2::phos::HIGH_GAIN) {
+        tcorr -= calibParams->getHGTimeCalib(c.cellNumber());
+      } else {
+        tcorr -= calibParams->getLGTimeCalib(c.cellNumber());
+      }
+
       if (!mSkipL1phase) {
         int shift = (mL1 >> (ddl * 2)) & 3; // extract 2 bits corresponding to this ddl
         shift = bc % 4 - shift;
@@ -311,6 +318,10 @@ struct phosCalibration {
         }
         if (e > 1.5) {
           mHistManager.fill(HIST("hHardClu"), mod, relid[1], relid[2]);
+        }
+
+        if (clu.getTime() < mMinCellTimeMain || clu.getTime() > mMaxCellTimeMain) {
+          continue;
         }
 
         TVector3 globaPos;

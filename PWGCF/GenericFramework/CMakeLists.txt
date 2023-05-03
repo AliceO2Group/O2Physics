@@ -10,7 +10,8 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_library(GFWCore
-               SOURCES  GFWCumulant.cxx
+               SOURCES  GFWPowerArray.cxx
+                        GFWCumulant.cxx
                         GFW.cxx
                         ProfileSubset.cxx
                         FlowContainer.cxx
@@ -18,7 +19,8 @@ o2physics_add_library(GFWCore
                PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(GFWCore
-              HEADERS GFWCumulant.h
+              HEADERS GFWPowerArray.h
+                      GFWCumulant.h
                       GFW.h
                       ProfileSubset.h
                       FlowContainer.h

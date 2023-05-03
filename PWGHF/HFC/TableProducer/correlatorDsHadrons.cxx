@@ -52,6 +52,8 @@ using MCParticlesPlus3Prong = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen
 
 /// Ds-Hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfCorrelatorDsHadrons {
+  SliceCache cache;
+  Preslice<aod::HfCand3Prong> perCol = aod::hf_cand::collisionId;
   Produces<aod::DsHadronPair> entryDsHadronPair;
   Produces<aod::DsHadronRecoInfo> entryDsHadronRecoInfo;
 
@@ -128,7 +130,7 @@ struct HfCorrelatorDsHadrons {
         }
       }
 
-      auto selectedDsCandidatesGrouped = selectedDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+      auto selectedDsCandidatesGrouped = selectedDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
       for (const auto& candidate1 : selectedDsCandidatesGrouped) {
         if (yCandMax >= 0. && std::abs(yDs(candidate1)) > yCandMax) {
@@ -211,7 +213,7 @@ struct HfCorrelatorDsHadrons {
       }
       registry.fill(HIST("hMultiplicity"), nTracks);
 
-      auto selectedDsCandidatesGroupedMC = recoFlagDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex());
+      auto selectedDsCandidatesGroupedMC = recoFlagDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       // MC reco level
       bool flagDsSignal = false;
       for (const auto& candidate1 : selectedDsCandidatesGroupedMC) {

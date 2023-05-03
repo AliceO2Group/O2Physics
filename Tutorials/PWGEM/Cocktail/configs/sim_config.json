@@ -1,0 +1,21 @@
+{
+    "collisionSystem": "kPbPb",
+    "centrality": "k0005",
+    "selectedMothers": 63,
+    "paramFile": "PATH/Cocktail/files/parametrizations/PbPb_5TeV.json",
+    "paramFileDir": "5TeV_0005_wRatio",
+    "numberOfParticles": 350,
+    "minPt": 0.0,
+    "maxPt": 30.0,
+    "yGenRange": 1.1,
+    "externalDecayer": 1,
+    "decayMode": 3,
+    "dynamicalPtRange": 0,
+    "useLMeeDecaytable": "PATH/Cocktail/files/decaytables/decaytable_LMee.dat",
+    "weightingMode": 0,
+    "pythiaErrorTolerance": 10000,
+    "paramV2FileDir": "",
+    "useYWeights": 0,
+    "decayLongLived": 1,
+    "toFixEP": 0
+}

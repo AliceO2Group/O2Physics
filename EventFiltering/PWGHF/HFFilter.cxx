@@ -29,6 +29,7 @@
 #include "EventFiltering/filterTables.h"
 #include "HFFilterHelpers.h"
 
+#include "Common/DataModel/CollisionAssociation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -249,17 +250,17 @@ struct HfFilter { // Main struct for HF triggers
   Filter trackFilter = requireGlobalTrackWoDCAInFilter();
   using BigTracksPID = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
 
-  Preslice<aod::HfTrackAssoc> trackIndicesPerCollision = aod::hf_track_association::collisionId;
+  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
-  Preslice<aod::Hf2Prongs> hf2ProngPerCollision = aod::hf_track_association::collisionId;
-  Preslice<aod::Hf3Prongs> hf3ProngPerCollision = aod::hf_track_association::collisionId;
+  Preslice<aod::Hf2Prongs> hf2ProngPerCollision = aod::track_association::collisionId;
+  Preslice<aod::Hf3Prongs> hf3ProngPerCollision = aod::track_association::collisionId;
 
   void process(aod::Collisions const& collisions,
                aod::BCsWithTimestamps const&,
                aod::V0Datas const& theV0s,
                aod::Hf2Prongs const& cand2Prongs,
                aod::Hf3Prongs const& cand3Prongs,
-               aod::HfTrackAssoc const& trackIndices,
+               aod::TrackAssoc const& trackIndices,
                BigTracksPID const& tracks)
   {
     for (const auto& collision : collisions) {
@@ -635,7 +636,7 @@ struct HfFilter { // Main struct for HF triggers
 
         auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
         auto pt3Prong = RecoDecay::pt(pVec3Prong);
-        float sign3Prong = trackFirst.sign() * trackSecond.sign() * trackThird.sign();
+        float sign3Prong = -1 * trackFirst.sign() * trackSecond.sign() * trackThird.sign();
 
         std::array<int8_t, kNCharmParticles - 1> is3ProngInMass{0};
         if (is3Prong[0]) {
@@ -695,7 +696,7 @@ struct HfFilter { // Main struct for HF triggers
           float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
           float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
           float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassB0, deltaMassBs, deltaMassLb, deltaMassXib};
-          if (track.sign() * sign3Prong < 0 && isSelectedTrackForBeauty(trackParFourth, dcaFourth, pTMinSoftPion, pTMinBeautyBachelor, pTBinsTrack, cutsSingleTrackBeauty[kBeauty4P - 2]) == kRegular) {
+          if (track.sign() * sign3Prong < 0 && isSelectedTrackForBeauty(trackParFourth, dcaFourth, pTMinBeautyBachelor, pTMinBeautyBachelor, pTBinsTrack, cutsSingleTrackBeauty[kBeauty4P - 2]) == kRegular) {
             for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty4P]; ++iHypo) {
               if (isBeautyTagged[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1))) {
                 auto massCandB = RecoDecay::m(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});

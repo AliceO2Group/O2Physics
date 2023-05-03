@@ -98,7 +98,10 @@ struct caloClusterProducerTask {
                          o2::aod::CPVClusters const& cpvs)
   {
 
-    int64_t timestamp = bcs.begin().timestamp(); // timestamp for CCDB object retrieval
+    int64_t timestamp = 0;
+    if (bcs.begin() != bcs.end()) {
+      timestamp = bcs.begin().timestamp(); // timestamp for CCDB object retrieval
+    }
     std::map<int64_t, int> bcMap;
     int bcId = 0;
     for (auto bc : bcs) {
@@ -163,6 +166,10 @@ struct caloClusterProducerTask {
     for (auto& c : cells) {
       if (c.caloType() != kPHOS) // PHOS
         continue;
+      // Fix for bug in trigger digits
+      if ((c.cellType() == phos::TRU2x2 || c.cellType() == phos::TRU4x4) && c.cellNumber() == 0) {
+        continue;
+      }
       if (phosCellTRs.size() == 0) { // first cell, first TrigRec
         ir.setFromLong(c.bc_as<aod::BCsWithTimestamps>().globalBC());
         phosCellTRs.emplace_back(ir, 0, 0); // BC,first cell, ncells
@@ -200,12 +207,14 @@ struct caloClusterProducerTask {
     // Number of entries in each cell per TrigRecord
     std::vector<trackTrigRec> cpvNMatchPoints;
     cpvNMatchPoints.reserve(outputPHOSClusterTrigRecs.size());
-    cpvNMatchPoints.emplace_back();
-
-    int64_t curBC = cpvs.begin().bc_as<aod::BCsWithTimestamps>().globalBC();
-    cpvNMatchPoints.back().mTR = curBC;
-    for (int i = kCpvCells; i--;) {
-      cpvNMatchPoints.back().mStart[i] = 0;
+    int64_t curBC = -1;
+    if (cpvs.begin() != cpvs.end()) {
+      cpvs.begin().bc_as<aod::BCsWithTimestamps>().globalBC();
+      cpvNMatchPoints.emplace_back();
+      cpvNMatchPoints.back().mTR = curBC;
+      for (int i = kCpvCells; i--;) {
+        cpvNMatchPoints.back().mStart[i] = 0;
+      }
     }
 
     for (const auto& cpvclu : cpvs) {
@@ -228,8 +237,10 @@ struct caloClusterProducerTask {
       int index = CpvMatchIndex(cpvclu.moduleNumber(), cpvclu.posX(), cpvclu.posZ());
       cpvMatchPoints[index].emplace_back(cpvclu.posX(), cpvclu.posZ());
     }
-    for (int i = kCpvCells; i--;) {
-      cpvNMatchPoints.back().mEnd[i] = cpvMatchPoints[i].size();
+    if (cpvNMatchPoints.size() > 0) {
+      for (int i = kCpvCells; i--;) {
+        cpvNMatchPoints.back().mEnd[i] = cpvMatchPoints[i].size();
+      }
     }
 
     // Fill output
@@ -389,7 +400,10 @@ struct caloClusterProducerTask {
                    o2::aod::FullTracks const& tracks)
   {
 
-    int64_t timestamp = bcs.begin().timestamp(); // timestamp for CCDB object retrieval
+    int64_t timestamp = 0;
+    if (bcs.begin() != bcs.end()) {
+      timestamp = bcs.begin().timestamp(); // timestamp for CCDB object retrieval
+    }
     std::map<int64_t, int> bcMap;
     int bcId = 0;
     for (auto bc : bcs) {
@@ -453,6 +467,10 @@ struct caloClusterProducerTask {
     for (auto& c : cells) {
       if (c.caloType() != kPHOS) // PHOS
         continue;
+      // Fix for bug in trigger digits
+      if ((c.cellType() == phos::TRU2x2 || c.cellType() == phos::TRU4x4) && c.cellNumber() == 0) {
+        continue;
+      }
       if (phosCellTRs.size() == 0) { // first cell, first TrigRec
         ir.setFromLong(c.bc_as<aod::BCsWithTimestamps>().globalBC());
         phosCellTRs.emplace_back(ir, 0, 0); // BC,first cell, ncells
@@ -490,12 +508,15 @@ struct caloClusterProducerTask {
     // Number of entries in each cell per TrigRecord
     std::vector<trackTrigRec> cpvNMatchPoints;
     cpvNMatchPoints.reserve(outputPHOSClusterTrigRecs.size());
-    cpvNMatchPoints.emplace_back();
 
-    int64_t curBC = cpvs.begin().bc_as<aod::BCsWithTimestamps>().globalBC();
-    cpvNMatchPoints.back().mTR = curBC;
-    for (int i = kCpvCells; i--;) {
-      cpvNMatchPoints.back().mStart[i] = 0;
+    int64_t curBC = -1;
+    if (cpvs.begin() != cpvs.end()) {
+      curBC = cpvs.begin().bc_as<aod::BCsWithTimestamps>().globalBC();
+      cpvNMatchPoints.emplace_back();
+      cpvNMatchPoints.back().mTR = curBC;
+      for (int i = kCpvCells; i--;) {
+        cpvNMatchPoints.back().mStart[i] = 0;
+      }
     }
 
     for (const auto& cpvclu : cpvs) {
@@ -517,17 +538,24 @@ struct caloClusterProducerTask {
       int index = CpvMatchIndex(cpvclu.moduleNumber(), cpvclu.posX(), cpvclu.posZ());
       cpvMatchPoints[index].emplace_back(cpvclu.posX(), cpvclu.posZ());
     }
-    for (int i = kCpvCells; i--;) {
-      cpvNMatchPoints.back().mEnd[i] = cpvMatchPoints[i].size();
+    if (cpvNMatchPoints.size()) {
+      for (int i = kCpvCells; i--;) {
+        cpvNMatchPoints.back().mEnd[i] = cpvMatchPoints[i].size();
+      }
     }
     // same for tracks
     std::vector<trackMatch> trackMatchPoints[kCpvCells]; // tracks hit in grid/cell in PHOS
     // Number of entries in each cell per TrigRecord
     std::vector<trackTrigRec> trackNMatchPoints;
     trackNMatchPoints.reserve(outputPHOSClusterTrigRecs.size());
-    trackNMatchPoints.emplace_back();
 
-    curBC = tracks.begin().collision().bc_as<aod::BCsWithTimestamps>().globalBC();
+    curBC = 0;
+    for (const auto& track : tracks) {
+      if (track.has_collision()) { // ignore orphan tracks without collision
+        curBC = tracks.begin().collision().bc_as<aod::BCsWithTimestamps>().globalBC();
+        break;
+      }
+    }
     bool keepBC = false;
     for (auto& cluTR : outputPHOSClusterTrigRecs) {
       if (cluTR.getBCData().toLong() == curBC) {
@@ -536,12 +564,16 @@ struct caloClusterProducerTask {
       }
     }
     if (keepBC) {
+      trackNMatchPoints.emplace_back();
       trackNMatchPoints.back().mTR = curBC;
       for (int i = kCpvCells; i--;) {
         trackNMatchPoints.back().mStart[i] = 0;
       }
     }
     for (const auto& track : tracks) {
+      if (!track.has_collision()) {
+        continue;
+      }
       if (static_cast<int64_t>(track.collision().bc_as<aod::BCsWithTimestamps>().globalBC()) != curBC) { // new BC
         // close previous BC if exist
         if (keepBC) {
