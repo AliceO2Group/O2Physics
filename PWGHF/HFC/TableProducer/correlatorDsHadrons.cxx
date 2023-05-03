@@ -491,7 +491,6 @@ struct HfCorrelatorDsHadrons {
         }
         auto prong0McPart = candidate.prong0_as<myTracksMc>().mcParticle_as<candDsMcGen>();
         auto indexMother = RecoDecay::getMother(particlesMc, prong0McPart, pdg::Code::kDS, true);
-        auto particleMother = particlesMc.iteratorAt(indexMother);
         if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
           fillHistoMcRecSig(candidate, multiplicityV0M);
           // KKPi
