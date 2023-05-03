@@ -120,6 +120,9 @@ struct MultiplicityTableTaskIndexed {
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", true);
 
+  Partition<soa::Join<aod::TracksIU, aod::TracksExtra>> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<soa::Join<aod::TracksIU, aod::TracksExtra>> pvContribTracksIU = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<soa::Join<aod::TracksIU, aod::TracksExtra>> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::TracksIU, aod::TracksExtra> const& tracksExtra, soa::Join<aod::BCs, aod::Timestamps> const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
   {
     float multFV0A = 0.f;
@@ -139,9 +142,9 @@ struct MultiplicityTableTaskIndexed {
     float multZeqFDDC = 0.f;
     float multZeqNContribs = 0.f;
 
-    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto pvContribsGrouped = pvContribTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto pvContribsEta1Grouped = pvContribTracksEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto pvContribsGrouped = pvContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto pvContribsEta1Grouped = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     int multTPC = tracksGrouped.size();
     int multNContribs = pvContribsGrouped.size();
     int multNContribsEta1 = pvContribsEta1Grouped.size();
