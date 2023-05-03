@@ -50,51 +50,49 @@ struct FwdTrackToCollisionAssociation {
 
   template <uint32_t TTrackFillMap, typename TTracks>
   void runStandardAssoc(Collisions const& collisions,
-                            TTracks const& tracks)
+                        TTracks const& tracks)
   {
     // we do it for all tracks, to be compatible with Run 2 analyses
     for (const auto& collision : collisions) {
-	  if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
-      		auto mftsThisCollision = tracks.sliceBy(mftsPerCollisions, collision.globalIndex());
-	        for (const auto& track : mftsThisCollision) {
-		        mftassociation(collision.globalIndex(), track.globalIndex());
-      		}
-	  }else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
-      		auto muonsThisCollision = tracks.sliceBy(muonsPerCollisions, collision.globalIndex());
-	        for (const auto& muon : muonsThisCollision) {
-		        fwdassociation(collision.globalIndex(), muon.globalIndex());
-      		}
-	  }
+      if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
+        auto mftsThisCollision = tracks.sliceBy(mftsPerCollisions, collision.globalIndex());
+        for (const auto& track : mftsThisCollision) {
+          mftassociation(collision.globalIndex(), track.globalIndex());
+        }
+      } else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
+        auto muonsThisCollision = tracks.sliceBy(muonsPerCollisions, collision.globalIndex());
+        for (const auto& muon : muonsThisCollision) {
+          fwdassociation(collision.globalIndex(), muon.globalIndex());
+        }
+      }
     }
-
 
     // create reverse index track to collisions if enabled
     std::vector<int> empty{};
     if (fillTableOfCollIdsPerTrack) {
       for (const auto& track : tracks) {
         if (track.has_collision()) {
-	  if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
-          	mftreverseIndices(std::vector<int>{track.collisionId()});
-	  }else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
-          	fwdreverseIndices(std::vector<int>{track.collisionId()});
-	  }
+          if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
+            mftreverseIndices(std::vector<int>{track.collisionId()});
+          } else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
+            fwdreverseIndices(std::vector<int>{track.collisionId()});
+          }
         } else {
-	  if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
-          	mftreverseIndices(empty);
-	  }else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
-          	fwdreverseIndices(empty);
-	  }
+          if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
+            mftreverseIndices(empty);
+          } else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
+            fwdreverseIndices(empty);
+          }
         }
       }
     }
   }
 
-
   template <uint32_t TTrackFillMap, typename TTracks, typename TAmbiTracks>
   void runAssocWithTime(Collisions const& collisions,
-                               TTracks const& tracks,
-                               TAmbiTracks const& ambiguousTracks,
-                               BCs const& bcs)
+                        TTracks const& tracks,
+                        TAmbiTracks const& ambiguousTracks,
+                        BCs const& bcs)
   {
     // cache globalBC
     std::vector<uint64_t> globalBC;
@@ -103,17 +101,17 @@ struct FwdTrackToCollisionAssociation {
         globalBC.push_back(track.collision().bc().globalBC());
       } else {
         for (const auto& ambTrack : ambiguousTracks) {
-	  if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
-          	if (ambTrack.mfttrackId() == track.globalIndex()) {
-	            globalBC.push_back(ambTrack.bc().begin().globalBC());
-        	    break;
-	          }
-	  }else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
-          	if (ambTrack.fwdtrackId() == track.globalIndex()) {
-	            globalBC.push_back(ambTrack.bc().begin().globalBC());
-        	    break;
-	          }
-	  }
+          if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
+            if (ambTrack.mfttrackId() == track.globalIndex()) {
+              globalBC.push_back(ambTrack.bc().begin().globalBC());
+              break;
+            }
+          } else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
+            if (ambTrack.fwdtrackId() == track.globalIndex()) {
+              globalBC.push_back(ambTrack.bc().begin().globalBC());
+              break;
+            }
+          }
         }
       }
     }
@@ -152,11 +150,11 @@ struct FwdTrackToCollisionAssociation {
           const auto collIdx = collision.globalIndex();
           const auto trackIdx = track.globalIndex();
           LOGP(debug, "Filling track id {} for coll id {}", trackIdx, collIdx);
-	  if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
+          if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
             mftassociation(collIdx, trackIdx);
-	  }else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
+          } else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
             fwdassociation(collIdx, trackIdx);
-	  }
+          }
           if (fillTableOfCollIdsPerTrack) {
             if (collsPerTrack[trackIdx] == nullptr) {
               collsPerTrack[trackIdx] = std::make_unique<std::vector<int>>();
@@ -173,17 +171,17 @@ struct FwdTrackToCollisionAssociation {
 
         const auto trackId = track.globalIndex();
         if (collsPerTrack[trackId] == nullptr) {
-	  if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
+          if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
             mftreverseIndices(empty);
-	  }else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
+          } else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
             fwdreverseIndices(empty);
-	  }
+          }
         } else {
-	  if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
+          if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
             mftreverseIndices(*collsPerTrack[trackId].get());
-	  }else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
+          } else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
             fwdreverseIndices(*collsPerTrack[trackId].get());
-	  }
+          }
         }
       }
     }
@@ -194,14 +192,14 @@ struct FwdTrackToCollisionAssociation {
                                AmbiguousFwdTracks const& ambiTracksFwd,
                                BCs const& bcs)
   {
-	  runAssocWithTime<gkMuonFillMap>(collisions, muons, ambiTracksFwd, bcs);
+    runAssocWithTime<gkMuonFillMap>(collisions, muons, ambiTracksFwd, bcs);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processFwdAssocWithTime, "Use fwdtrack-to-collision association based on time", true);
 
   void processFwdStandardAssoc(Collisions const& collisions,
-                            FwdTracks const& muons)
+                               FwdTracks const& muons)
   {
-	  runStandardAssoc<gkMuonFillMap>(collisions, muons);
+    runStandardAssoc<gkMuonFillMap>(collisions, muons);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processFwdStandardAssoc, "Use standard fwdtrack-to-collision association", false);
 
@@ -210,14 +208,14 @@ struct FwdTrackToCollisionAssociation {
                                AmbiguousMFTTracks const& ambiguousTracks,
                                BCs const& bcs)
   {
-	  runAssocWithTime<gkMFTFillMap>(collisions, tracks, ambiguousTracks, bcs);
+    runAssocWithTime<gkMFTFillMap>(collisions, tracks, ambiguousTracks, bcs);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processMFTAssocWithTime, "Use MFTtrack-to-collision association based on time", true);
 
   void processMFTStandardAssoc(Collisions const& collisions,
-                            MFTTracks const& tracks)
+                               MFTTracks const& tracks)
   {
-	  runStandardAssoc<gkMFTFillMap>(collisions, tracks);
+    runStandardAssoc<gkMFTFillMap>(collisions, tracks);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processMFTStandardAssoc, "Use standard mfttrack-to-collision association", false);
 };
