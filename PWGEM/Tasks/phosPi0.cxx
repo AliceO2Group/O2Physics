@@ -16,6 +16,8 @@
 #include <vector>
 #include "Common/DataModel/CaloClusters.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
@@ -27,6 +29,8 @@
 
 #include "PHOSBase/Geometry.h"
 #include "CommonDataFormat/InteractionRecord.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
 
 /// \struct PHOS pi0 analysis
 /// \brief Monitoring task for PHOS related quantities
@@ -45,12 +49,18 @@ struct phosPi0 {
   Configurable<float> mMaxCluTime{"mMinCluTime", 100.e-9, "Max. cluster time"};
   Configurable<int> mMinCluNcell{"mMinCluNcell", 2, "min cells in cluster"};
   Configurable<int> mMixedEvents{"mixedEvents", 10, "number of events to mix"};
+  Configurable<bool> mEventSelection{"mEventSelection", true, "to apply event selection"};
+  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
 
   Configurable<float> mOccE{"minOccE", 0.6, "Minimum cluster energy to fill occupancy"};
+
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using FilteredClusters = soa::Filtered<aod::CaloClusters>;
 
   HistogramRegistry mHistManager{"phosPi0Histograms"};
+
+  bool fillBCmap = true; // fill BC map once
 
   /// \brief Create output histograms
   void init(InitContext const&)
@@ -67,25 +77,40 @@ struct phosPi0 {
       multAxis{100, 0., 100.},
       mggAxis{250, 0., 1., "mgg", "m_{#gamma#gamma} (GeV/c^{2})"},
       vertexAxis{100, -20., 20., "z", "z (cm)"},
+      modCombAxis{10, 0., 10.},
       centAxis{10, 0., 10.},
       centralityAxis{100, 0., 100., "centrality", "centrality"};
 
-    auto h{std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsAll", "Number of events", HistType::kTH1F, {{2, 0., 2.}}))};
-    h->GetXaxis()->SetBinLabel(1, "Ev with coll.");
-    h->GetXaxis()->SetBinLabel(2, "Ev w/o coll.");
+    auto h{std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsCol", "Number of events", HistType::kTH1F, {{7, 0., 7.}}))};
+    h->GetXaxis()->SetBinLabel(1, "All");
+    h->GetXaxis()->SetBinLabel(2, "T0a||T0c");
+    h->GetXaxis()->SetBinLabel(3, "T0a&&T0c");
+    h->GetXaxis()->SetBinLabel(4, "V0A");
+    h->GetXaxis()->SetBinLabel(5, "kIsTriggerTVX");
+    h->GetXaxis()->SetBinLabel(6, "kTVXinPHOS");
+    h->GetXaxis()->SetBinLabel(7, "kTVXinPHOSClu");
+
+    auto h2{std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsBC", "Number of events per trigger", HistType::kTH1F, {{7, 0., 7.}}))};
+    h2->GetXaxis()->SetBinLabel(1, "All");
+    h2->GetXaxis()->SetBinLabel(2, "T0a||T0c");
+    h2->GetXaxis()->SetBinLabel(3, "T0a&&T0c");
+    h2->GetXaxis()->SetBinLabel(4, "V0A");
+    h2->GetXaxis()->SetBinLabel(5, "kIsTriggerTVX");
+    h2->GetXaxis()->SetBinLabel(6, "kTVXinPHOS");
+    h2->GetXaxis()->SetBinLabel(7, "kTVXinPHOSClu");
+
     mHistManager.add("contributors", "Centrality", HistType::kTH1F, {centralityAxis});
     mHistManager.add("vertex", "vertex", HistType::kTH1F, {vertexAxis});
     mHistManager.add("vertex2", "PHOS with vertex", HistType::kTH1F, {vertexAxis});
-    mHistManager.add("BCA", "Bunch crossing schedule A only", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("BCC", "Bunch crossing schedule C only", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("BCB", "Bunch crossing schedule Both",  o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("cpvBCAll", "Bunch crossing ID of event with CPV", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("cluBCAll", "Bunch crossing ID of event with PHOS", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("ambcluBCAll", "Bunch crossing ID of event with PHOS", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("cluBCkINT7", "Bunch crossing ID of event with PHOS", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("ambcluBCkINT7", "Bunch crossing ID of event with PHOS", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("cluBCkTVXinPHS", "Bunch crossing ID of event with PHOS", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("ambcluBCkTVXinPHS", "Bunch crossing ID of event with PHOS", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("BCA", "Bunch crossing schedule A only", HistType::kTH1F, {bcAxis});
+    mHistManager.add("BCC", "Bunch crossing schedule C only", HistType::kTH1F, {bcAxis});
+    mHistManager.add("BCB", "Bunch crossing schedule Both", HistType::kTH1F, {bcAxis});
+    mHistManager.add("cpvBCAll", "Bunch crossing ID of event with CPV", HistType::kTH1F, {bcAxis});
+    mHistManager.add("cluBCAll", "Bunch crossing ID of event with PHOS", HistType::kTH1F, {bcAxis});
+    mHistManager.add("cluBCAll2", "Bunch crossing ID of event with PHOS clu", HistType::kTH1F, {bcAxis});
+    mHistManager.add("ambcluBCAll", "Bunch crossing ID of event with PHOS", HistType::kTH1F, {bcAxis});
+    mHistManager.add("cluBCkTVXinPHOS", "Bunch crossing ID of event with PHOS", HistType::kTH1F, {bcAxis});
+    mHistManager.add("ambcluBCkTVXinPHOS", "Bunch crossing ID of event with PHOS", HistType::kTH1F, {bcAxis});
 
     mHistManager.add("cluSp", "Cluster spectrum per module",
                      HistType::kTH2F, {amplitudeAxisLarge, modAxis});
@@ -96,30 +121,38 @@ struct phosPi0 {
     mHistManager.add("ambcluETime", "Amb. cluster time vs E",
                      HistType::kTH3F, {amplitudeAxisLarge, timeAxisLarge, modAxis});
     mHistManager.add("mggRe", "inv mass for centrality",
-                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
     mHistManager.add("mggMi", "inv mass for centrality",
-                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
     mHistManager.add("mggReCPV", "inv mass for centrality",
-                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
     mHistManager.add("mggMiCPV", "inv mass for centrality",
-                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
     mHistManager.add("mggReDisp", "inv mass for centrality",
-                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
     mHistManager.add("mggMiDisp", "inv mass for centrality",
-                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
+    mHistManager.add("mggReBoth", "inv mass for centrality",
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
+    mHistManager.add("mggMiBoth", "inv mass for centrality",
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
 
     mHistManager.add("mggReAmb", "inv mass for centrality",
-                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
     mHistManager.add("mggMiAmb", "inv mass for centrality",
-                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
     mHistManager.add("mggReAmbCPV", "inv mass for centrality",
-                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
     mHistManager.add("mggMiAmbCPV", "inv mass for centrality",
-                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
     mHistManager.add("mggReAmbDisp", "inv mass for centrality",
-                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
     mHistManager.add("mggMiAmbDisp", "inv mass for centrality",
-                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, centAxis});
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
+    mHistManager.add("mggReAmbBoth", "inv mass for centrality",
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
+    mHistManager.add("mggMiAmbBoth", "inv mass for centrality",
+                     HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
 
     mHistManager.add("cluOcc", "Cluster occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
     mHistManager.add("cluCPVOcc", "Cluster with CPV occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
@@ -133,44 +166,99 @@ struct phosPi0 {
     mHistManager.add("ambcluE", "Cluster energy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
   }
 
+  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using BCsWithBcSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+
   /// \brief Process PHOS data
-  void process(aod::BCs const& bcs,
-               aod::Collisions const& collisions,
+  void process(BCsWithBcSels const& bcs,
+               SelCollisions const& collisions,
                aod::CaloClusters const& clusters,
                aod::CaloAmbiguousClusters const& ambclusters)
   {
 
-    //Filll BC map
-    if(fillBCmap && bcs.begin()!=bcs.end()){
+    // Filll BC map
+    if (fillBCmap && bcs.begin() != bcs.end()) {
       auto rl = ccdb->getRunDuration(bcs.begin().runNumber());
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", rl.first);
       constexpr int nBCsPerOrbit = 3564;
       std::bitset<nBCsPerOrbit> beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
       std::bitset<nBCsPerOrbit> beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
-      std::bitset<nBCsPerOrbit>  bcPatternA = beamPatternA & ~beamPatternC;
+      std::bitset<nBCsPerOrbit> bcPatternA = beamPatternA & ~beamPatternC;
       std::bitset<nBCsPerOrbit> bcPatternC = ~beamPatternA & beamPatternC;
       std::bitset<nBCsPerOrbit> bcPatternB = beamPatternA & beamPatternC;
       for (int i = 0; i < nBCsPerOrbit; i++) {
-        if (bcPatternB[i]) mHistManager.fill(HIST("BCB"),i);
-        if (bcPatternA[i]) mHistManager.fill(HIST("BCA"),i);
-        if (bcPatternC[i]) mHistManager.fill(HIST("BCC"),i);
+        if (bcPatternB[i])
+          mHistManager.fill(HIST("BCB"), i);
+        if (bcPatternA[i])
+          mHistManager.fill(HIST("BCA"), i);
+        if (bcPatternC[i])
+          mHistManager.fill(HIST("BCC"), i);
       }
-      fillBCmap=false;
+      fillBCmap = false;
     }
-
-
+    o2::InteractionRecord ir;
     for (const auto& col : collisions) {
       mHistManager.fill(HIST("contributors"), col.numContrib());
       mHistManager.fill(HIST("vertex"), col.posZ());
+      ir.setFromLong(col.bc().globalBC());
+      mHistManager.fill(HIST("cluBCAll"), ir.bc);
+      if (col.alias()[kTVXinPHOS]) {
+        mHistManager.fill(HIST("cluBCkTVXinPHOS"), ir.bc);
+      }
+      mHistManager.fill(HIST("eventsCol"), 0.);
+      if (col.alias()[kIsBBT0A] || col.alias()[kIsBBT0C]) {
+        mHistManager.fill(HIST("eventsCol"), 1);
+      }
+      if (col.alias()[kIsBBT0A] && col.alias()[kIsBBT0C]) {
+        mHistManager.fill(HIST("eventsCol"), 2);
+      }
+      if (col.alias()[kIsBBV0A]) {
+        mHistManager.fill(HIST("eventsCol"), 3);
+      }
+      if (col.alias()[kIsTriggerTVX]) {
+        mHistManager.fill(HIST("eventsCol"), 4);
+      }
+      if (col.alias()[kTVXinPHOS]) {
+        mHistManager.fill(HIST("eventsCol"), 5);
+      }
     }
 
+    for (const auto& bc : bcs) {
+      mHistManager.fill(HIST("eventsBC"), 0);
+      if (bc.selection()[kIsBBT0A] || bc.selection()[kIsBBT0C]) {
+        mHistManager.fill(HIST("eventsBC"), 1);
+      }
+      if (bc.selection()[kIsBBT0A] && bc.selection()[kIsBBT0C]) {
+        mHistManager.fill(HIST("eventsBC"), 2);
+      }
+      if (bc.selection()[kIsBBV0A]) {
+        mHistManager.fill(HIST("eventsBC"), 3);
+      }
+      if (bc.selection()[kIsTriggerTVX]) {
+        mHistManager.fill(HIST("eventsBC"), 4);
+      }
+      if (bc.alias()[kTVXinPHOS]) {
+        mHistManager.fill(HIST("eventsBC"), 5);
+      }
+    }
 
     uint64_t bcevent = 0;
     for (const auto& clu : clusters) {
-      if (clu.collision().bc().globalBC() != bcevent) {
+      if (clu.collision().bc().globalBC() != bcevent) { // New BC
         mHistManager.fill(HIST("vertex2"), clu.collision().posZ());
-        mHistManager.fill(HIST("eventsAll"), 0.);
+        mHistManager.fill(HIST("eventsCol"), 6.);
         bcevent = clu.collision().bc().globalBC();
+        ir.setFromLong(clu.collision().bc().globalBC());
+        mHistManager.fill(HIST("cluBCAll2"), ir.bc);
+        if (clu.collision_as<SelCollisions>().alias()[kTVXinPHOS]) {
+          mHistManager.fill(HIST("cluBCkTVXinPHOS"), ir.bc);
+        }
+      }
+
+      if (mEventSelection) {
+        if (!clu.collision_as<SelCollisions>().alias()[mEvSelTrig]) {
+          continue;
+        }
       }
 
       mHistManager.fill(HIST("cluETime"), clu.e(), clu.time(), clu.mod());
@@ -195,7 +283,6 @@ struct phosPi0 {
         mHistManager.fill(HIST("cluE"), clu.x(), clu.z(), clu.mod(), clu.e());
       }
 
-      float cen1 = 1.; // TODO: To be extended to use centrality
       // inv mass
       auto clu2 = clu;
       ++clu2;
@@ -213,35 +300,52 @@ struct phosPi0 {
         }
         double pt = sqrt(pow(clu.px() + clu2.px(), 2) +
                          pow(clu.py() + clu2.py(), 2));
+        int modComb = ModuleCombination(clu.mod(), clu2.mod());
         if (clu.collision() == clu2.collision()) { // Real
-          mHistManager.fill(HIST("mggRe"), m, pt, cen1);
+          mHistManager.fill(HIST("mggRe"), m, pt, modComb);
           if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
-            mHistManager.fill(HIST("mggReCPV"), m, pt, cen1);
+            mHistManager.fill(HIST("mggReCPV"), m, pt, modComb);
           }
           if (TestLambda(clu.e(), clu.m02(), clu.m20()) && TestLambda(clu2.e(), clu2.m02(), clu2.m20())) {
-            mHistManager.fill(HIST("mggReDisp"), m, pt, cen1);
+            mHistManager.fill(HIST("mggReDisp"), m, pt, modComb);
+            if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+              mHistManager.fill(HIST("mggReBoth"), m, pt, modComb);
+            }
           }
         } else { // Mixed
           if (clu2.collision().bc().globalBC() != bcurrent) {
             --nMix;
             bcurrent = clu2.collision().bc().globalBC();
           }
-          mHistManager.fill(HIST("mggMi"), m, pt, cen1);
+          mHistManager.fill(HIST("mggMi"), m, pt, modComb);
           if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
-            mHistManager.fill(HIST("mggMiCPV"), m, pt, cen1);
+            mHistManager.fill(HIST("mggMiCPV"), m, pt, modComb);
           }
           if (TestLambda(clu.e(), clu.m02(), clu.m20()) && TestLambda(clu2.e(), clu2.m02(), clu2.m20())) {
-            mHistManager.fill(HIST("mggMiDisp"), m, pt, cen1);
+            mHistManager.fill(HIST("mggMiDisp"), m, pt, modComb);
+            if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+              mHistManager.fill(HIST("mggMiBoth"), m, pt, modComb);
+            }
           }
         }
       }
     }
+    // }
 
-    //same for amb clusters
+    // same for amb clusters
     for (const auto& clu : ambclusters) {
-      if (clu.bc().globalBC() != bcevent) {
-        mHistManager.fill(HIST("eventsAll"), 1.);
-        bcevent = clu.bc().globalBC();
+      if (clu.bc_as<BCsWithBcSels>().globalBC() != bcevent) {
+        mHistManager.fill(HIST("eventsBC"), 6.);
+        bcevent = clu.bc_as<BCsWithBcSels>().globalBC();
+        ir.setFromLong(bcevent);
+        mHistManager.fill(HIST("ambcluBCAll"), ir.bc);
+        if (clu.bc_as<BCsWithBcSels>().selection()[kIsTriggerTVX]) {
+          mHistManager.fill(HIST("ambcluBCkTVXinPHOS"), ir.bc);
+        }
+      }
+
+      if (mEventSelection && !clu.bc_as<BCsWithBcSels>().selection()[mEvSelTrig]) {
+        continue;
       }
 
       mHistManager.fill(HIST("ambcluETime"), clu.e(), clu.time(), clu.mod());
@@ -265,7 +369,6 @@ struct phosPi0 {
         mHistManager.fill(HIST("ambcluE"), clu.x(), clu.z(), clu.mod(), clu.e());
       }
 
-      float cen1 = 1.; // TODO: To be extended to use centrality
       // inv mass
       auto clu2 = clu;
       ++clu2;
@@ -283,32 +386,56 @@ struct phosPi0 {
         }
         double pt = sqrt(pow(clu.px() + clu2.px(), 2) +
                          pow(clu.py() + clu2.py(), 2));
-        if (clu.bc() == clu2.bc()) { // Real
-          mHistManager.fill(HIST("mggReAmb"), m, pt, cen1);
+        int modComb = ModuleCombination(clu.mod(), clu2.mod());
+        if (clu.bc_as<BCsWithBcSels>() == clu2.bc_as<BCsWithBcSels>()) { // Real
+          mHistManager.fill(HIST("mggReAmb"), m, pt, modComb);
           if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
-            mHistManager.fill(HIST("mggReAmbCPV"), m, pt, cen1);
+            mHistManager.fill(HIST("mggReAmbCPV"), m, pt, modComb);
           }
           if (TestLambda(clu.e(), clu.m02(), clu.m20()) && TestLambda(clu2.e(), clu2.m02(), clu2.m20())) {
-            mHistManager.fill(HIST("mggReAmbDisp"), m, pt, cen1);
+            mHistManager.fill(HIST("mggReAmbDisp"), m, pt, modComb);
+            if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+              mHistManager.fill(HIST("mggReAmbBoth"), m, pt, modComb);
+            }
           }
         } else { // Mixed
-          if (clu2.bc().globalBC() != bcurrent) {
+          if (clu2.bc_as<BCsWithBcSels>().globalBC() != bcurrent) {
             --nMix;
-            bcurrent = clu2.bc().globalBC();
+            bcurrent = clu2.bc_as<BCsWithBcSels>().globalBC();
           }
-          mHistManager.fill(HIST("mggMiAmb"), m, pt, cen1);
+          mHistManager.fill(HIST("mggMiAmb"), m, pt, modComb);
           if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
-            mHistManager.fill(HIST("mggMiAmbCPV"), m, pt, cen1);
+            mHistManager.fill(HIST("mggMiAmbCPV"), m, pt, modComb);
           }
           if (TestLambda(clu.e(), clu.m02(), clu.m20()) && TestLambda(clu2.e(), clu2.m02(), clu2.m20())) {
-            mHistManager.fill(HIST("mggMiAmbDisp"), m, pt, cen1);
+            mHistManager.fill(HIST("mggMiAmbDisp"), m, pt, modComb);
+            if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+              mHistManager.fill(HIST("mggMiAmbBoth"), m, pt, modComb);
+            }
           }
         }
       }
     }
-
   }
 
+  //_____________________________________________________________________________
+  int ModuleCombination(int m1, int m2)
+  {
+    // enumerates possible module combinations
+    // (1,1)=0, (2,2)=1, (3,3)=2, (4,4)=3, (1,2)=(2,1)=4, (2,3)=(3,2)=5, (3,4)=(4,3)=6, (1,3)=(3,1)=7,
+    // (2,4)=(4,2)=8, (1,4)=(4,1)=9
+    int d = TMath::Abs(m1 - m2);
+    if (d == 0) {
+      return m1 - 1;
+    }
+    if (d == 1) {
+      return 3 + TMath::Min(m1, m2);
+    }
+    if (d == 2) {
+      return 6 + TMath::Min(m1, m2);
+    }
+    return 9;
+  }
   //_____________________________________________________________________________
   bool TestLambda(float pt, float l1, float l2)
   {

@@ -47,7 +47,7 @@ struct phosCluQA {
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  bool fillBCmap = true ;
+  bool fillBCmap = true;
 
   /// \brief Create output histograms
   void init(o2::framework::InitContext const&)
@@ -73,7 +73,7 @@ struct phosCluQA {
 
     mHistManager.add("BCA", "Bunch crossing schedule A only", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("BCC", "Bunch crossing schedule C only", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("BCB", "Bunch crossing schedule Both",  o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("BCB", "Bunch crossing schedule Both", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("cpvBCAll", "Bunch crossing ID of event with CPV", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("cluBCAll", "Bunch crossing ID of event with PHOS", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("ambcluBCAll", "Bunch crossing ID of event with PHOS", o2HistType::kTH1F, {bcAxis});
@@ -141,22 +141,25 @@ struct phosCluQA {
                o2::aod::CaloAmbiguousClusters const& ambclusters,
                o2::aod::CPVClusters const& cpvs)
   {
-    //Filll BC map
-    if(fillBCmap && bcs.begin()!=bcs.end()){
+    // Filll BC map
+    if (fillBCmap && bcs.begin() != bcs.end()) {
       auto rl = ccdb->getRunDuration(bcs.begin().runNumber());
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", rl.first);
       constexpr int nBCsPerOrbit = 3564;
       std::bitset<nBCsPerOrbit> beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
       std::bitset<nBCsPerOrbit> beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
-      std::bitset<nBCsPerOrbit>  bcPatternA = beamPatternA & ~beamPatternC;
+      std::bitset<nBCsPerOrbit> bcPatternA = beamPatternA & ~beamPatternC;
       std::bitset<nBCsPerOrbit> bcPatternC = ~beamPatternA & beamPatternC;
       std::bitset<nBCsPerOrbit> bcPatternB = beamPatternA & beamPatternC;
       for (int i = 0; i < nBCsPerOrbit; i++) {
-        if (bcPatternB[i]) mHistManager.fill(HIST("BCB"),i);
-        if (bcPatternA[i]) mHistManager.fill(HIST("BCA"),i);
-        if (bcPatternC[i]) mHistManager.fill(HIST("BCC"),i);
+        if (bcPatternB[i])
+          mHistManager.fill(HIST("BCB"), i);
+        if (bcPatternA[i])
+          mHistManager.fill(HIST("BCA"), i);
+        if (bcPatternC[i])
+          mHistManager.fill(HIST("BCC"), i);
       }
-      fillBCmap=false;
+      fillBCmap = false;
     }
 
     // If several collisions appear in BC, choose one with largers number of contributors
@@ -453,7 +456,6 @@ struct phosCluQA {
         }
       }
     }
-
 
     // inv mass
     for (const auto& clu1 : ambclusters) {
