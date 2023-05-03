@@ -50,6 +50,7 @@ std::shared_ptr<TH1> hZvtx;
 std::shared_ptr<TH2> hNsigma3HeSel;
 std::shared_ptr<TH2> hDeDx3HeSel;
 std::shared_ptr<TH2> hDeDxTot;
+std::shared_ptr<TH1> hDecayChannel;
 } // namespace
 
 struct hyperCandidate {
@@ -174,6 +175,11 @@ struct hyperRecoTask {
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
     hEvents->GetXaxis()->SetBinLabel(3, "z vtx");
+    if (doprocessMC) {
+      hDecayChannel = qaRegistry.add<TH1>("hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+      hDecayChannel->GetXaxis()->SetBinLabel(1, "2-body");
+      hDecayChannel->GetXaxis()->SetBinLabel(2, "3-body");
+    }
     hZvtx = qaRegistry.add<TH1>("hZvtx", ";z_{vtx} (cm); ", HistType::kTH1D, {{100, -20, 20}});
   }
 
@@ -411,10 +417,12 @@ struct hyperRecoTask {
           break;
         }
       }
-      if (!isHeFound)
+      if (!isHeFound) {
+        hDecayChannel->Fill(1.);
         continue;
+      }
+      hDecayChannel->Fill(0.);
       if (std::find(filledMothers.begin(), filledMothers.end(), mcPart.globalIndex()) != std::end(filledMothers)) {
-
         continue;
       }
       hyperCandidate hypCand;
