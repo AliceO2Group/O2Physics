@@ -404,7 +404,7 @@ struct HfTaskMcEfficiency {
         if (tracked[prong0Id] && tracked[prong1Id]) {
           hCandidates->Fill(kHFStepTrackable, mcParticle.pt(), mass, pdgCode, 1.0, true, origin);
           if (inAcceptance) {
-            hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, pdgCode, 1.0, true, origin;
+            hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, pdgCode, 1.0, true, origin);
           } else {
             LOGP(debug, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
             for (const auto& daughter : daughters) {
