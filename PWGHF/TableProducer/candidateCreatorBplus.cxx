@@ -27,7 +27,6 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "ReconstructionDataFormats/V0.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociation.h"
 
 using namespace o2;
