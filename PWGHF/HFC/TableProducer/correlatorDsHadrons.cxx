@@ -30,20 +30,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_correlation_ds_hadron;
+using namespace o2::aod::hf_sel_collision_ds;
 using namespace o2::analysis::hf_cuts_ds_to_k_k_pi;
 using namespace o2::constants::math;
-
-namespace o2::aod
-{
-namespace ds_sel_collision
-{
-DECLARE_SOA_COLUMN(DsFound, dsFound, bool);
-} // namespace hash
-DECLARE_SOA_TABLE(DsSelCollision, "AOD", "DSCOLL", ds_sel_collision::DsFound);
-using It = DsSelCollision::iterator;
-} // namespace o2::aod
-
-using namespace o2::aod::ds_sel_collision;
 
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
 double getDeltaPhi(double phiD, double phiHadron)
@@ -75,7 +64,7 @@ BinningType corrBinning{{zBins, multBins}, true};
 
 struct HfDsSelectionCollision {
   SliceCache cache;
-  Produces<aod::DsSelCollision> collisionSelDs; 
+  Produces<aod::DsSelCollision> collisionsWithSelDs; 
 
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
@@ -106,7 +95,7 @@ struct HfDsSelectionCollision {
         break;
       }
     }
-    collisionSelDs(isDsFound);
+    collisionsWithSelDs(isDsFound);
   }
   PROCESS_SWITCH(HfDsSelectionCollision, processDsSelCollisionsData, "Process Ds Collision Selection Data", true);
 
@@ -130,7 +119,7 @@ struct HfDsSelectionCollision {
         break;
       }
     }
-    collisionSelDs(isDsFound);
+    collisionsWithSelDs(isDsFound);
   }
   PROCESS_SWITCH(HfDsSelectionCollision, processDsSelCollisionsMcRec, "Process Ds Collision Selection MCRec", false);
 
@@ -151,7 +140,7 @@ struct HfDsSelectionCollision {
       isDsFound = true;
       break;
     }
-    collisionSelDs(isDsFound);
+    collisionsWithSelDs(isDsFound);
   }
   PROCESS_SWITCH(HfDsSelectionCollision, processDsSelCollisionsMcGen, "Process Ds Collision Selection MCGen", false);
 };
@@ -178,19 +167,17 @@ struct HfCorrelatorDsHadrons {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for Ds meson"};
 
-  Filter collisionFilter = aod::ds_sel_collision::dsFound == true;
-  using selCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DsSelCollision>>;
-  using selCollisionsWithDsMc = soa::Join<aod::McCollisions, aod::Mults, aod::DsSelCollision>;
-
+  Filter collisionFilter = aod::hf_ds_sel_collision::dsFound == true;
   Filter flagDsFilter = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0);
-  using candDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
-  using candDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
-  using candDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+  Filter trackFilter = (aod::track::eta < std::abs(etaTrackMax)) && (aod::track::pt > ptTrackMin) && (aod::track::dcaXY < std::abs(dcaXYTrackMax)) && (aod::track::dcaZ < std::abs(dcaZTrackMax));
 
-  Filter trackFilter = (aod::track::eta < std::abs(etaTrackMax)) && (aod::track::pt > ptTrackMin) 
-                       && (aod::track::dcaXY < std::abs(dcaXYTrackMax)) && (aod::track::dcaZ < std::abs(dcaZTrackMax));
-  using myTracksData = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>>;
-  using myTracksMc = soa::Filtered<soa::Join<aod::BigTracksMC, aod::TracksDCA>>;
+  using selCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DsSelCollision>>; // collisionFilter applied
+  using selCollisionsWithDsMc = soa::Join<aod::McCollisions, aod::Mults, aod::DsSelCollision>; // collisionFilter applied
+  using candDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>; // flagDsFilter applied
+  using candDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>; // flagDsFilter applied
+  using candDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>; // flagDsFilter applied
+  using myTracksData = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>>; // trackFilter applied
+  using myTracksMc = soa::Filtered<soa::Join<aod::BigTracksMC, aod::TracksDCA>>; // trackFilter applied
   
   Partition<candDsData> selectedDsAllCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
   Partition<candDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
@@ -312,7 +299,6 @@ struct HfCorrelatorDsHadrons {
     // prompt
     if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
       registry.fill(HIST("hPtCandMCRecSigPrompt"), candidate.pt());
-      //std::cout <<"Multiplicity when Prompt: "<< multiplicityV0M << std::endl;
       registry.fill(HIST("hPtVsMultiplicityMCRecPrompt"), candidate.pt(), multiplicityV0M);
     }
 
@@ -375,7 +361,7 @@ struct HfCorrelatorDsHadrons {
       int nTracks = 0;
       if (collision.numContrib() > 1) {
         for (const auto& track : tracks) {
-          if (std::abs(track.eta()) > etaTrackMax) { // se tolgo da errore perche track e' unused variable
+          if (std::abs(track.eta()) > etaTrackMax) {
             continue;
           }
           nTracks++;
@@ -478,7 +464,7 @@ struct HfCorrelatorDsHadrons {
           nTracks++;
         }
       }
-      //registry.fill(HIST("hMultiplicityPreSelection"), nTracks);
+      registry.fill(HIST("hMultiplicityPreSelection"), nTracks);
       if (nTracks < multMin || nTracks > multMax) {
         return;
       }
@@ -664,8 +650,6 @@ struct HfCorrelatorDsHadrons {
         if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
           continue;
         }
-        std::cout << "candidate.isSelDsToKKPi() = " << candidate.isSelDsToKKPi() << std::endl;
-        std::cout << "candidate.isSelDsToPiKK() = " << candidate.isSelDsToPiKK() << std::endl;
         // KKPi
         if (candidate.isSelDsToKKPi() == selectionFlagDs){
           LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", candidate.index(), pAssoc.index(), c1.index(), c2.index(), candidate.collision().index(), pAssoc.collision().index()); 

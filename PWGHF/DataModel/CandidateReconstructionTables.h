@@ -1288,6 +1288,13 @@ DECLARE_SOA_TABLE(DsHadronRecoInfo, "AOD", "DSHRECOINFO", //! Ds-Hadrons pairs R
 DECLARE_SOA_TABLE(DsHadronGenInfo, "AOD", "DSHGENINFO", //! Ds-Hadrons pairs Generated Informations
                   aod::hf_correlation_ds_hadron::PromptStatus);
 
+// table for selection of collisions with at least one Ds meson
+namespace hf_sel_collision_ds
+{
+DECLARE_SOA_COLUMN(DsFound, dsFound, bool); //! Ds found in a collision
+} // namespace hf_sel_collision_ds
+DECLARE_SOA_TABLE(DsSelCollision, "AOD", "DSCOLL", aod::ds_sel_collision::DsFound);
+
 // definition of columns and tables for Dplus-Hadron correlation pairs
 namespace hf_correlation_dplus_hadron
 {
