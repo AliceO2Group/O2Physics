@@ -661,7 +661,7 @@ struct HfCorrelatorDsHadrons {
           entryDsHadronRecoInfo(invMassDsToKKPi(candidate), false, false);
         }
         // PiKK
-        else if (candidate.isSelDsToPiKK() == selectionFlagDs) {
+        if (candidate.isSelDsToPiKK() == selectionFlagDs) {
           LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", candidate.index(), pAssoc.index(), c1.index(), c2.index(), candidate.collision().index(), pAssoc.collision().index());
           entryDsHadronPair(getDeltaPhi(candidate.phi(), pAssoc.phi()),
                             candidate.eta() - pAssoc.eta(),

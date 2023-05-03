@@ -197,7 +197,7 @@ struct HfTaskCorrelationDsHadrons {
       double ptHadron = pairEntry.ptHadron();
       int poolBin = pairEntry.poolBin();
       double massD = pairEntry.mD();
-      int statusDsPrompt = int(pairEntry.promptStatus());
+      int statusDsPrompt = static_cast<int>(pairEntry.promptStatus());
       int effBinD = o2::analysis::findBin(binsPtEfficiency, ptD);
       int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
       // reject entries outside pT ranges of interest
