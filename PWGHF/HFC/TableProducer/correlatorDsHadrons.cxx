@@ -490,7 +490,6 @@ struct HfCorrelatorDsHadrons {
           efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate.pt()));
         }
         auto prong0McPart = candidate.prong0_as<myTracksMc>().mcParticle_as<candDsMcGen>();
-        auto indexMother = RecoDecay::getMother(particlesMc, prong0McPart, pdg::Code::kDS, true);
         if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
           fillHistoMcRecSig(candidate, multiplicityV0M);
           // KKPi
