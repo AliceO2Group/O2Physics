@@ -213,7 +213,7 @@ struct HfTaskCorrelationDsHadrons {
       if (pairEntry.signalStatus()) {
         registry.fill(HIST("hCorrel2DVsPtSignalMCRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
       } else {
-        registry.fill(HIST("hCorrel2DVsPtBkgMCRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin,efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtBkgMCRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
       }
       // in signal region
       if (massD > signalRegionInner->at(pTBinD) && massD < signalRegionOuter->at(pTBinD)) {
@@ -223,7 +223,7 @@ struct HfTaskCorrelationDsHadrons {
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionMCRec"), deltaPhi, efficiencyWeight);
         // prompt and non-prompt division
         if (pairEntry.signalStatus()) {
-        registry.fill(HIST("hCorrel2DVsPtSignalRegionMCRecPromptDivision"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
+          registry.fill(HIST("hCorrel2DVsPtSignalRegionMCRecPromptDivision"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
         }
       }
       // in sideband region
