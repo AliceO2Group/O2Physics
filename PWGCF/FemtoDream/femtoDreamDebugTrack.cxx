@@ -51,10 +51,17 @@ struct femtoDreamDebugTrack {
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"};
-  Configurable<std::vector<float>> ConfPIDnSigmaMax{"ConfPIDnSigmaMax", std::vector<float>{3.5f, 3.f, 2.5f}, "This configurable needs to be the same as the one used in the producer task"};
+  Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{"ConfTrkPIDnSigmaMax", std::vector<float>{3.5f, 3.f, 2.5f},
+                                                       "This configurable needs to be the same as the one used in the producer "
+                                                       "task"};
 
   using FemtoFullParticles = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
   Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+
+  using FemtoFullParticlesMC = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles, aod::FemtoDreamMCLabels>;
+  Partition<FemtoFullParticlesMC> partsOneMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+
+  // Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
@@ -167,7 +174,7 @@ struct femtoDreamDebugTrack {
       FullQaRegistry.add("FullTrackQA_MC/hNoMCtruthCounter", "; Counter; Entries", kTH1I, {{1, 0, 1}});
     }
     vPIDPartOne = ConfPIDPartOne.value;
-    kNsigma = ConfPIDnSigmaMax.value;
+    kNsigma = ConfTrkPIDnSigmaMax.value;
   }
 
   /// Porduce QA plots for sigle track selection in FemtoDream framework

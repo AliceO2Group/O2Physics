@@ -25,21 +25,38 @@ using namespace o2::analysis::femtoDream;
 /// The function takes the path to the dpl-config.json as a argument and the
 /// does a Q&A session for the user to find the appropriate selection criteria
 /// for the analysis task
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[])
+{
   std::string configFileName(argv[1]);
   std::filesystem::path configFile{configFileName};
 
   if (std::filesystem::exists(configFile)) {
     FemtoDreamCutculator cut;
     cut.init(argv[1]);
-    cut.setTrackSelectionFromFile("ConfTrk");
-    cut.setPIDSelectionFromFile("ConfPID");
-    cut.setV0SelectionFromFile("ConfV0", "ConfChild");
+
+    LOG(info) << "Do you want to work with tracks or V0s (T/V)?";
+    std::string choice;
+    std::cin >> choice;
+
+    if (choice == std::string("T")) {
+      cut.setTrackSelectionFromFile("ConfTrk");
+      cut.setPIDSelectionFromFile("ConfPIDTrk");
+    } else if (choice == std::string("V")) {
+      LOG(info) << "Do you want to select V0s or one of its children (V/T)?";
+      std::cin >> choice;
+      cut.setV0SelectionFromFile("ConfV0");
+      cut.setTrackSelectionFromFile("ConfChild");
+      cut.setPIDSelectionFromFile("ConfPIDChild");
+    } else {
+      LOG(info) << "Option not recognized. Break...";
+      return 1;
+    }
 
     /// \todo factor out the pid here
     // cut.setTrackSelection(femtoDreamTrackSelection::kPIDnSigmaMax,
     // femtoDreamSelection::kAbsUpperLimit, "ConfTrk");
-    cut.analyseCuts();
+    cut.analyseCuts(choice);
+
   } else {
     LOG(info) << "The configuration file " << configFileName
               << " could not be found.";

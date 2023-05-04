@@ -129,170 +129,44 @@ struct femtoDreamProducerTask {
 
   Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "PDG code of the selected track for Monte Carlo truth"};
   FemtoDreamTrackSelection trackCuts;
-  Configurable<std::vector<float>> ConfTrkCharge{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kSign, "ConfTrk"),
-    std::vector<float>{-1, 1},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kSign, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkPtmin{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kpTMin, "ConfTrk"),
-    std::vector<float>{0.4f, 0.6f, 0.5f},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kpTMin, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkPtmin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMin, "ConfTrk"), std::vector<float>{0.4f, 0.6f, 0.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkPtmax{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kpTMax, "ConfTrk"),
-    std::vector<float>{5.4f, 5.6f, 5.5f},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kpTMax, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkEta{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kEtaMax, "ConfTrk"),
-    std::vector<float>{0.8f, 0.7f, 0.9f},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kEtaMax, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkTPCnclsMin{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kTPCnClsMin, "ConfTrk"),
-    std::vector<float>{80.f, 70.f, 60.f},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kTPCnClsMin, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkTPCfCls{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kTPCfClsMin, "ConfTrk"),
-    std::vector<float>{0.7f, 0.83f, 0.9f},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kTPCfClsMin, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkTPCcRowsMin{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kTPCcRowsMin, "ConfTrk"),
-    std::vector<float>{70.f, 60.f, 80.f},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kTPCcRowsMin, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkTPCsCls{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kTPCsClsMax, "ConfTrk"),
-    std::vector<float>{0.1f, 160.f},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kTPCsClsMax, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkITSnclsMin{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kITSnClsMin, "ConfTrk"),
-    std::vector<float>{-1.f, 2.f, 4.f},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kITSnClsMin, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkITSnclsIbMin{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kITSnClsIbMin, "ConfTrk"),
-    std::vector<float>{-1.f, 1.f},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kITSnClsIbMin, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkDCAxyMax{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kDCAxyMax, "ConfTrk"),
-    std::vector<float>{0.1f, 3.5f},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kDCAxyMax,
-      "Track selection: ")}; /// here we need an open cut to do the DCA fits
-                             /// later on!
-  Configurable<std::vector<float>> ConfTrkDCAzMax{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kDCAzMax, "ConfTrk"),
-    std::vector<float>{0.2f, 3.5f},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kDCAzMax, "Track selection: ")};
-  /// \todo Reintegrate PID to the general selection container
-  Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{
-    FemtoDreamTrackSelection::getSelectionName(
-      femtoDreamTrackSelection::kPIDnSigmaMax, "ConfTrk"),
-    std::vector<float>{3.5f, 3.f, 2.5f},
-    FemtoDreamTrackSelection::getSelectionHelper(
-      femtoDreamTrackSelection::kPIDnSigmaMax, "Track selection: ")};
-  Configurable<float> ConfPIDnSigmaOffsetTPC{
-    "ConfPIDnSigmaOffsetTPC", 0.,
-    "Offset for TPC nSigma because of bad calibration"};
-  Configurable<float> ConfPIDnSigmaOffsetTOF{
-    "ConfPIDnSigmaOffsetTOF", 0.,
-    "Offset for TOF nSigma because of bad calibration"};
-  Configurable<std::vector<int>> ConfPIDspecies{
-    "ConfPIDspecies",
-    std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon,
-                     o2::track::PID::Proton, o2::track::PID::Deuteron},
-    "Trk sel: Particles species for PID"};
+    FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMax, "ConfTrk"), std::vector<float>{5.4f, 5.6f, 5.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMax, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkEta{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kEtaMax, "ConfTrk"), std::vector<float>{0.8f, 0.7f, 0.9f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kEtaMax, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkTPCnclsMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCnClsMin, "ConfTrk"), std::vector<float>{80.f, 70.f, 60.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCnClsMin, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkTPCfCls{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCfClsMin, "ConfTrk"), std::vector<float>{0.7f, 0.83f, 0.9f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCfClsMin, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkTPCcRowsMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCcRowsMin, "ConfTrk"), std::vector<float>{70.f, 60.f, 80.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCcRowsMin, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkTPCsCls{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCsClsMax, "ConfTrk"), std::vector<float>{0.1f, 160.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCsClsMax, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkITSnclsMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsMin, "ConfTrk"), std::vector<float>{-1.f, 2.f, 4.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsMin, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkITSnclsIbMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsIbMin, "ConfTrk"), std::vector<float>{-1.f, 1.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsIbMin, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkDCAxyMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAxyMax, "ConfTrk"), std::vector<float>{0.1f, 3.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAxyMax, "Track selection: ")}; /// here we need an open cut to do the DCA fits
+                                                                                                                                                                                                                                                                                        /// later on!
+  Configurable<std::vector<float>> ConfTrkDCAzMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAzMax, "ConfTrk"), std::vector<float>{0.2f, 3.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAzMax, "Track selection: ")};    /// \todo Reintegrate PID to the general selection container
+  Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kPIDnSigmaMax, "ConfTrk"), std::vector<float>{3.5f, 3.f, 2.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kPIDnSigmaMax, "Track selection: ")};
+  Configurable<float> ConfPIDnSigmaOffsetTPC{"ConfPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
+  Configurable<float> ConfPIDnSigmaOffsetTOF{"ConfPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
+  Configurable<std::vector<int>> ConfPIDTrkspecies{"ConfPIDTrkspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
 
   FemtoDreamV0Selection v0Cuts;
   // TrackSelection *o2PhysicsTrackSelection;
   /// \todo Labeled array (see Track-Track task)
 
-  Configurable<std::vector<float>> ConfV0Sign{
-    FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0Sign,
-                                            "ConfV0"),
-    std::vector<float>{-1, 1},
-    FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0Sign,
-                                              "V0 selection: ")};
-  Configurable<std::vector<float>> ConfV0PtMin{
-    FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0pTMin,
-                                            "ConfV0"),
-    std::vector<float>{0.3f, 0.4f, 0.5f},
-    FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0pTMin,
-                                              "V0 selection: ")};
-  Configurable<std::vector<float>> ConfV0PtMax{
-    FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0pTMax,
-                                            "ConfV0"),
-    std::vector<float>{3.3f, 3.4f, 3.5f},
-    FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0pTMax,
-                                              "V0 selection: ")};
-  Configurable<std::vector<float>> ConfV0DCADaughMax{
-    FemtoDreamV0Selection::getSelectionName(
-      femtoDreamV0Selection::kV0DCADaughMax, "ConfV0"),
-    std::vector<float>{1.2f, 1.5f},
-    FemtoDreamV0Selection::getSelectionHelper(
-      femtoDreamV0Selection::kV0DCADaughMax, "V0 selection: ")};
-  Configurable<std::vector<float>> ConfV0CPAMin{
-    FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0CPAMin,
-                                            "ConfV0"),
-    std::vector<float>{0.99f, 0.995f},
-    FemtoDreamV0Selection::getSelectionHelper(
-      femtoDreamV0Selection::kV0CPAMin, "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0Sign{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0Sign, "ConfV0"), std::vector<float>{-1, 1}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0Sign, "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0PtMin{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0pTMin, "ConfV0"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0pTMin, "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0PtMax{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0pTMax, "ConfV0"), std::vector<float>{3.3f, 3.4f, 3.5f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0pTMax, "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0DCADaughMax{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0DCADaughMax, "ConfV0"), std::vector<float>{1.2f, 1.5f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0DCADaughMax, "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0CPAMin{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0CPAMin, "ConfV0"), std::vector<float>{0.99f, 0.995f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0CPAMin, "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0TranRadMin{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0TranRadMin, "ConfV0"), std::vector<float>{0.2f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0TranRadMin, "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0TranRadMax{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0TranRadMax, "ConfV0"), std::vector<float>{100.f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0TranRadMax, "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0DecVtxMax{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0DecVtxMax, "ConfV0"), std::vector<float>{100.f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0DecVtxMax, "V0 selection: ")};
 
-  Configurable<std::vector<float>> ConfV0TranRadMin{
-    FemtoDreamV0Selection::getSelectionName(
-      femtoDreamV0Selection::kV0TranRadMin, "ConfV0"),
-    std::vector<float>{0.2f},
-    FemtoDreamV0Selection::getSelectionHelper(
-      femtoDreamV0Selection::kV0TranRadMin, "V0 selection: ")};
-  Configurable<std::vector<float>> ConfV0TranRadMax{
-    FemtoDreamV0Selection::getSelectionName(
-      femtoDreamV0Selection::kV0TranRadMax, "ConfV0"),
-    std::vector<float>{100.f},
-    FemtoDreamV0Selection::getSelectionHelper(
-      femtoDreamV0Selection::kV0TranRadMax, "V0 selection: ")};
-  Configurable<std::vector<float>> ConfV0DecVtxMax{
-    FemtoDreamV0Selection::getSelectionName(
-      femtoDreamV0Selection::kV0DecVtxMax, "ConfV0"),
-    std::vector<float>{100.f},
-    FemtoDreamV0Selection::getSelectionHelper(
-      femtoDreamV0Selection::kV0DecVtxMax, "V0 selection: ")};
-
-  Configurable<std::vector<float>> ConfChildCharge{
-    "ConfChildSign", std::vector<float>{-1, 1}, "V0 Child sel: Charge"};
-  Configurable<std::vector<float>> ConfChildEtaMax{
-    "ConfChildEtaMax", std::vector<float>{0.8f}, "V0 Child sel: max eta"};
-  Configurable<std::vector<float>> ConfChildTPCnClsMin{
-    "ConfChildTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f},
-    "V0 Child sel: Min. nCls TPC"};
-  Configurable<std::vector<float>> ConfChildDCAMin{
-    "ConfChildDCAMin", std::vector<float>{0.05f, 0.06f},
-    "V0 Child sel:  Max. DCA Daugh to PV (cm)"};
-  Configurable<std::vector<float>> ConfChildPIDnSigmaMax{
-    "ConfChildPIDnSigmaMax", std::vector<float>{5.f, 4.f},
-    "V0 Child sel: Max. PID nSigma TPC"};
-  Configurable<std::vector<int>> ConfChildPIDspecies{
-    "ConfChildPIDspecies",
-    std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton},
-    "V0 Child sel: Particles species for PID"};
+  Configurable<std::vector<float>> ConfChildCharge{"ConfChildSign", std::vector<float>{-1, 1}, "V0 Child sel: Charge"};
+  Configurable<std::vector<float>> ConfChildEtaMax{"ConfChildEtaMax", std::vector<float>{0.8f}, "V0 Child sel: max eta"};
+  Configurable<std::vector<float>> ConfChildTPCnClsMin{"ConfChildTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "V0 Child sel: Min. nCls TPC"};
+  Configurable<std::vector<float>> ConfChildDCAMin{"ConfChildDCAMin", std::vector<float>{0.05f, 0.06f}, "V0 Child sel:  Max. DCA Daugh to PV (cm)"};
+  Configurable<std::vector<float>> ConfChildPIDnSigmaMax{"ConfChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "V0 Child sel: Max. PID nSigma TPC"};
+  Configurable<std::vector<int>> ConfPIDChildspecies{"ConfPIDChildspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "V0 Child sel: Particles species for PID"};
 
   Configurable<float> ConfV0InvMassLowLimit{
     "ConfInvV0MassLowLimit", 1.05, "Lower limit of the V0 invariant mass"};
@@ -353,8 +227,9 @@ struct femtoDreamProducerTask {
     trackCuts.setSelection(ConfTrkDCAxyMax, femtoDreamTrackSelection::kDCAxyMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkDCAzMax, femtoDreamTrackSelection::kDCAzMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
-    trackCuts.setPIDSpecies(ConfPIDspecies);
-    trackCuts.setnSigmaPIDOffset(ConfPIDnSigmaOffsetTPC, ConfPIDnSigmaOffsetTOF);
+    trackCuts.setPIDSpecies(ConfPIDTrkspecies);
+    trackCuts.setnSigmaPIDOffset(ConfPIDnSigmaOffsetTPC,
+                                 ConfPIDnSigmaOffsetTOF);
     trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
 
     /// \todo fix how to pass array to setSelection, getRow() passing a
@@ -415,9 +290,9 @@ struct femtoDreamProducerTask {
                           femtoDreamTrackSelection::kPIDnSigmaMax,
                           femtoDreamSelection::kAbsUpperLimit);
       v0Cuts.setChildPIDSpecies(femtoDreamV0Selection::kPosTrack,
-                                ConfChildPIDspecies);
+                                ConfPIDChildspecies);
       v0Cuts.setChildPIDSpecies(femtoDreamV0Selection::kNegTrack,
-                                ConfChildPIDspecies);
+                                ConfPIDChildspecies);
       v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0,
                   aod::femtodreamparticle::ParticleType::kV0Child,
                   aod::femtodreamparticle::cutContainerType>(&qaRegistry);
@@ -600,11 +475,8 @@ struct femtoDreamProducerTask {
     colCuts.fillQA(col);
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);
 
-    int childIDs[2] = {
-      0, 0}; // these IDs are necessary to keep track of the children
-    std::vector<int>
-      tmpIDtrack; // this vector keeps track of the matching of the primary
-                  // track table row <-> aod::track table global index
+    std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
+    std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
 
     for (auto& track : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
@@ -640,9 +512,9 @@ struct femtoDreamProducerTask {
     if (ConfStoreV0) {
       for (auto& v0 : fullV0s) {
         auto postrack = v0.template posTrack_as<TrackType>();
-        auto negtrack = v0.template negTrack_as<
-          TrackType>(); ///\tocheck funnily enough if we apply the filter the
-                        /// sign of Pos and Neg track is always negative
+        auto negtrack = v0.template negTrack_as<TrackType>();
+        ///\tocheck funnily enough if we apply the filter the
+        /// sign of Pos and Neg track is always negative
         // const auto dcaXYpos = postrack.dcaXY();
         // const auto dcaZpos = postrack.dcaZ();
         // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
@@ -707,7 +579,7 @@ struct femtoDreamProducerTask {
           if constexpr (isMC) {
             fillMCParticle(negtrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
           }
-          int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
+          std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
           // LOG(info) << cutContainerV0.at(
           //     femtoDreamV0Selection::V0ContainerPosition::kV0);
           outputParts(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(),
