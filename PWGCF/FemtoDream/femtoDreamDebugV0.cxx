@@ -55,6 +55,9 @@ struct femtoDreamDebugV0 {
     "V0 Child sel: Max. PID nSigma TPC"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 2, "Number of particle spieces (for V0 children) with PID info"};
 
+  ConfigurableAxis CfgTempFitVarBins{"CfgDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  ConfigurableAxis CfgTempFitVarpTBins{"CfgTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
+
   using FemtoFullParticles = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
 
   Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && ((aod::femtodreamparticle::cut & ConfCutV0) == ConfCutV0);
@@ -64,16 +67,25 @@ struct femtoDreamDebugV0 {
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
 
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child> posChildHisto;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child> negChildHisto;
+
   /// The configurables need to be passed to an std::vector
   std::vector<int> vPIDPartOne;
 
   /// Histogram output
-  HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry qaRegistry{"Event", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry qaRegistryPos{"PosTrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry qaRegistryNeg{"NegTrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry FullQaRegistry{"FullV0QA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
+    LOG(warn) << "Init start";
+    // posChildHisto.init(&qaRegistryPos, CfgTempFitVarpTBins, CfgTempFitVarBins, false, true);
+    // negChildHisto.init(&qaRegistryNeg, CfgTempFitVarpTBins, CfgTempFitVarBins, false, true);
+    LOG(warn) << "Init done";
 
     AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "m_{#Lambda} (GeV/#it{c}^{2})"};
     AxisSpec massAxisAntiLambda = {600, 0.0f, 3.0f, "m_{#bar{#Lambda}} (GeV/#it{c}^{2})"};

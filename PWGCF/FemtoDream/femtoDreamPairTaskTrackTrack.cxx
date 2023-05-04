@@ -187,7 +187,7 @@ struct femtoDreamPairTaskTrackTrack {
         continue;
       }
 
-      trackHistoPartOne.fillQA<isMC>(part);
+      trackHistoPartOne.fillQA<isMC, false>(part);
     }
 
     if (!ConfIsSame) {
@@ -205,7 +205,7 @@ struct femtoDreamPairTaskTrackTrack {
                                cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;
         }
-        trackHistoPartTwo.fillQA<isMC>(part);
+        trackHistoPartTwo.fillQA<isMC, false>(part);
       }
     }
     /// Now build the combinations

@@ -147,10 +147,10 @@ struct femtoDreamPairTaskTrackV0 {
       if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
-      trackHistoPartOne.fillQA<false>(part);
+      trackHistoPartOne.fillQA<false, false>(part);
     }
     for (auto& part : groupPartsTwo) {
-      trackHistoPartTwo.fillQA<false>(part);
+      trackHistoPartTwo.fillQA<false, false>(part);
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
