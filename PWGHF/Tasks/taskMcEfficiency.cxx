@@ -372,6 +372,9 @@ struct HfTaskMcEfficiency {
           /// check if we have D0(bar) → π± K∓
           continue;
         }
+
+        int origin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle);
+
         hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, pdgCode, 1.0, true, origin);
 
         if (std::abs(mcParticle.y()) < 0.5) {
