@@ -16,9 +16,11 @@
 #include <iostream>
 #include <vector>
 #include <TMath.h>
-#include <TH1F.h>
-#include <THashList.h>
+#include <TH1D.h>
 #include <TString.h>
+#include <TGrid.h>
+#include <TObjArray.h>
+#include <TFile.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -26,21 +28,7 @@
 #include "Framework/ASoA.h"
 #include "Framework/DataTypes.h"
 #include "Framework/HistogramRegistry.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
-#include "PWGDQ/Core/CutsLibrary.h"
-#include "PWGDQ/Core/MCSignal.h"
-#include "PWGDQ/Core/MCSignalLibrary.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/CCDB/TriggerAliases.h"
 
 using std::cout;
 using std::endl;
@@ -51,23 +39,68 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
 
-// Some definitions
-namespace o2::aod
-{
-
-namespace emsmearedtrack
-{
-DECLARE_SOA_COLUMN(PtSmeared, ptSmeared, float);
-DECLARE_SOA_COLUMN(EtaSmeared, etaSmeared, float);
-DECLARE_SOA_COLUMN(PhiSmeared, phiSmeared, float);
-} // namespace emsmearedtrack
-
-DECLARE_SOA_TABLE(SmearedTracks, "AOD", "SMEAREDTRACK",
-                  emsmearedtrack::PtSmeared, emsmearedtrack::EtaSmeared, emsmearedtrack::PhiSmeared);
-} // namespace o2::aod
-
 struct ApplySmearing {
   Produces<aod::SmearedTracks> smearedtrack;
+
+  Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
+  Configurable<std::string> fConfigResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
+  Configurable<std::string> fConfigResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
+  Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
+  Configurable<std::string> fConfigResPhiNegHistName{"cfgResPhiNegHistName", "PhiEleResArr", "hisogram for phi neg in resolution file"};
+
+  TObjArray* fArrResoPt;
+  TObjArray* fArrResoEta;
+  TObjArray* fArrResoPhi_Pos;
+  TObjArray* fArrResoPhi_Neg;
+
+  void init(InitContext& context)
+  {
+    if (TString(fConfigResFileName).BeginsWith("alien://")) {
+      TGrid::Connect("alien://");
+    }
+
+    // get resolutoin histo
+    LOGP(info, "Set Resolution histo");
+    // Get Resolution map
+    TFile* fFile = TFile::Open(TString(fConfigResFileName));
+    if (!fFile) {
+      LOGP(error, "Could not open Resolution file {}", TString(fConfigResFileName));
+      return;
+    }
+    TObjArray* ArrResoPt = nullptr;
+    if (fFile->GetListOfKeys()->Contains(TString(fConfigResPtHistName))) {
+      ArrResoPt = reinterpret_cast<TObjArray*>(fFile->Get(TString(fConfigResPtHistName)));
+    } else {
+      LOGP(error, "Could not open {} from file {}", TString(fConfigResPtHistName), TString(fConfigResFileName));
+    }
+
+    TObjArray* ArrResoEta = nullptr;
+    if (fFile->GetListOfKeys()->Contains(TString(fConfigResEtaHistName))) {
+      ArrResoEta = reinterpret_cast<TObjArray*>(fFile->Get(TString(fConfigResEtaHistName)));
+    } else {
+      LOGP(error, "Could not open {} from file {}", TString(fConfigResEtaHistName), TString(fConfigResFileName));
+    }
+
+    TObjArray* ArrResoPhi_Pos = nullptr;
+    if (fFile->GetListOfKeys()->Contains(TString(fConfigResPhiPosHistName))) {
+      ArrResoPhi_Pos = reinterpret_cast<TObjArray*>(fFile->Get(TString(fConfigResPhiPosHistName)));
+    } else {
+      LOGP(error, "Could not open {} from file {}", TString(fConfigResPhiPosHistName), TString(fConfigResFileName));
+    }
+
+    TObjArray* ArrResoPhi_Neg = nullptr;
+    if (fFile->GetListOfKeys()->Contains(TString(fConfigResPhiNegHistName))) {
+      ArrResoPhi_Neg = reinterpret_cast<TObjArray*>(fFile->Get(TString(fConfigResPhiNegHistName)));
+    } else {
+      LOGP(error, "Could not open {} from file {}", TString(fConfigResPhiNegHistName), TString(fConfigResFileName));
+    }
+
+    fArrResoPt = ArrResoPt;
+    fArrResoEta = ArrResoEta;
+    fArrResoPhi_Pos = ArrResoPhi_Pos;
+    fArrResoPhi_Neg = ArrResoPhi_Neg;
+    fFile->Close();
+  }
 
   template <typename TTracksMC>
   void applySmearing(TTracksMC const& tracksMC)
@@ -79,13 +112,59 @@ struct ApplySmearing {
 
       if (abs(mctrack.pdgCode()) == 11 || abs(mctrack.pdgCode()) == 13) {
         // apply smearing for electrons or muons.
-        float ptsmeared = ptgen;
-        float etasmeared = etagen;
-        float phismeared = phigen;
+
+        // smear pt
+        Int_t ptbin = reinterpret_cast<TH2D*>(fArrResoPt->At(0))->GetXaxis()->FindBin(ptgen);
+        if (ptbin < 1) {
+          ptbin = 1;
+        }
+        if (ptbin > fArrResoPt->GetLast()) {
+          ptbin = fArrResoPt->GetLast();
+        }
+        float smearing = 0.;
+        TH1D* thisHist = reinterpret_cast<TH1D*>(fArrResoPt->At(ptbin));
+        if (thisHist->GetEntries() > 0) {
+          smearing = thisHist->GetRandom() * ptgen;
+        }
+        float ptsmeared = ptgen - smearing;
+
+        // smear eta
+        ptbin = reinterpret_cast<TH2D*>(fArrResoEta->At(0))->GetXaxis()->FindBin(ptgen);
+        if (ptbin < 1) {
+          ptbin = 1;
+        }
+        if (ptbin > fArrResoEta->GetLast()) {
+          ptbin = fArrResoEta->GetLast();
+        }
+        smearing = 0.;
+        thisHist = reinterpret_cast<TH1D*>(fArrResoEta->At(ptbin));
+        if (thisHist->GetEntries() > 0) {
+          smearing = thisHist->GetRandom();
+        }
+        float etasmeared = etagen - smearing;
+
+        // smear phi
+        ptbin = reinterpret_cast<TH2D*>(fArrResoPhi_Pos->At(0))->GetXaxis()->FindBin(ptgen);
+        if (ptbin < 1) {
+          ptbin = 1;
+        }
+        if (ptbin > fArrResoPhi_Pos->GetLast()) {
+          ptbin = fArrResoPhi_Pos->GetLast();
+        }
+        smearing = 0.;
+        if (mctrack.pdgCode() < 0) { // positron: -11
+          thisHist = reinterpret_cast<TH1D*>(fArrResoPhi_Pos->At(ptbin));
+        } else if (mctrack.pdgCode() > 0) { // electron: 11
+          thisHist = reinterpret_cast<TH1D*>(fArrResoPhi_Neg->At(ptbin));
+        }
+        if (thisHist->GetEntries() > 0) {
+          smearing = thisHist->GetRandom();
+        }
+        float phismeared = phigen - smearing;
 
         smearedtrack(ptsmeared, etasmeared, phismeared);
       } else {
-        // don't touch
+        // don't apply smearing
         smearedtrack(ptgen, etagen, phigen);
       }
     }

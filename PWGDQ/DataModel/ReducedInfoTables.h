@@ -115,13 +115,13 @@ DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent); //!
 // ----  flags reserved for storing various information during filtering
 DECLARE_SOA_COLUMN(FilteringFlags, filteringFlags, uint64_t); //!
 // -----------------------------------------------------
-DECLARE_SOA_COLUMN(Pt, pt, float);       //!
-DECLARE_SOA_COLUMN(Eta, eta, float);     //!
-DECLARE_SOA_COLUMN(Phi, phi, float);     //!
-DECLARE_SOA_COLUMN(Sign, sign, int);     //!
-DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int); //!
-DECLARE_SOA_COLUMN(DcaXY, dcaXY, float); //!
-DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);   //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                     //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                   //!
+DECLARE_SOA_COLUMN(Phi, phi, float);                   //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                   //!
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int);     //!
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);               //!
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                 //!
 DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t); //! Detector map: see enum DetectorMapEnum
 DECLARE_SOA_DYNAMIC_COLUMN(HasITS, hasITS,             //! Flag to check if track has a ITS match
                            [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; });
@@ -131,7 +131,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasTRD, hasTRD, //! Flag to check if track has a TRD 
                            [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TRD; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF, //! Flag to check if track has a TOF measurement
                            [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; });
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px,       //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
                            [](float pt, float phi) -> float { return pt * std::sin(phi); });
@@ -139,7 +139,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //!
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
-} //namespace reducedtrack
+} // namespace reducedtrack
 
 // basic track information
 DECLARE_SOA_TABLE(ReducedTracks, "AOD", "REDUCEDTRACK", //!
@@ -261,14 +261,14 @@ namespace reducedmuon
 DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);        //!
 DECLARE_SOA_COLUMN(FilteringFlags, filteringFlags, uint8_t); //!
 // the (pt,eta,phi,sign) will be computed in the skimming task //!
-DECLARE_SOA_COLUMN(Pt, pt, float);   //!
-DECLARE_SOA_COLUMN(Eta, eta, float); //!
-DECLARE_SOA_COLUMN(Phi, phi, float); //!
-DECLARE_SOA_COLUMN(Sign, sign, int); //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                 //!
+DECLARE_SOA_COLUMN(Eta, eta, float);               //!
+DECLARE_SOA_COLUMN(Phi, phi, float);               //!
+DECLARE_SOA_COLUMN(Sign, sign, int);               //!
 DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float);       //!  Impact parameter in X of forward track to the primary vertex
 DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float);       //!  Impact parameter in Y of forward track to the primary vertex
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int); //!
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px,   //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                 //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
                            [](float pt, float phi) -> float { return pt * std::sin(phi); });
@@ -331,6 +331,17 @@ DECLARE_SOA_TABLE(ReducedMuonsLabels, "AOD", "RTMUONSLABELS", //!
 
 using ReducedMuonsLabel = ReducedMuonsLabels::iterator;
 
+namespace smearedtrack
+{
+DECLARE_SOA_COLUMN(PtSmeared, ptSmeared, float);
+DECLARE_SOA_COLUMN(EtaSmeared, etaSmeared, float);
+DECLARE_SOA_COLUMN(PhiSmeared, phiSmeared, float);
+} // namespace smearedtrack
+
+DECLARE_SOA_TABLE(SmearedTracks, "AOD", "SMEAREDTRACK", // use like this Join<ReducedMCTracks, SmearedTracks>
+                  smearedtrack::PtSmeared, smearedtrack::EtaSmeared, smearedtrack::PhiSmeared);
+using SmearedTrack = SmearedTracks::iterator;
+
 namespace dilepton_track_index
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, ReducedMuons, "_0"); //! Index to first prong
@@ -384,22 +395,22 @@ DECLARE_SOA_COLUMN(IsAmbig2, isAmbig2, int); //!
 // pair information
 namespace reducedpair
 {
-DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent); //!
-DECLARE_SOA_COLUMN(Mass, mass, float);                //!
-DECLARE_SOA_COLUMN(Pt, pt, float);                    //!
-DECLARE_SOA_COLUMN(Eta, eta, float);                  //!
-DECLARE_SOA_COLUMN(Phi, phi, float);                  //!
-DECLARE_SOA_COLUMN(Sign, sign, int);                  //!
-DECLARE_SOA_COLUMN(FilterMap, filterMap, uint32_t);   //!
-DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t); //!
-DECLARE_SOA_COLUMN(Tauz, tauz, float);                //! Longitudinal pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);          //! Error on longitudinal pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(Tauxy, tauxy, float);              //! Transverse pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);        //! Error on transverse pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(Lz, lz, float);                    //! Longitudinal projection of decay length
-DECLARE_SOA_COLUMN(Lxy, lxy, float);                  //! Transverse projection of decay length
-DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                //! Scalar product between unitary vector with event flow vector (harmonic 2)
-DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                //! Scalar product between unitary vector with event flow vector (harmonic 3)
+DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);  //!
+DECLARE_SOA_COLUMN(Mass, mass, float);                 //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                     //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                   //!
+DECLARE_SOA_COLUMN(Phi, phi, float);                   //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                   //!
+DECLARE_SOA_COLUMN(FilterMap, filterMap, uint32_t);    //!
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);  //!
+DECLARE_SOA_COLUMN(Tauz, tauz, float);                 //! Longitudinal pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);           //! Error on longitudinal pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(Tauxy, tauxy, float);               //! Transverse pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);         //! Error on transverse pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(Lz, lz, float);                     //! Longitudinal projection of decay length
+DECLARE_SOA_COLUMN(Lxy, lxy, float);                   //! Transverse projection of decay length
+DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                 //! Scalar product between unitary vector with event flow vector (harmonic 2)
+DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                 //! Scalar product between unitary vector with event flow vector (harmonic 3)
 DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float); //! Cosinus term using event plane angle (harmonic 2)
 DECLARE_SOA_COLUMN(Cos3DeltaPhi, cos3deltaphi, float); //! Cosinus term using event plane angle (harmonic 3)
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
