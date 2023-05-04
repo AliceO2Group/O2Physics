@@ -167,9 +167,9 @@ struct HfTaskD0 {
         registry.fill(HIST("hMassVsPhi"), massD0, ptCandidate, candidate.phi());
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), massD0barToKPi(candidate), ptCandidate);
-        registry.fill(HIST("hMassFinerBinning"), massD0barToKPi(candidate), ptCandidate);
-        registry.fill(HIST("hMassVsPhi"), massD0barToKPi(candidate), ptCandidate, candidate.phi());
+        registry.fill(HIST("hMass"), massD0bar, ptCandidate);
+        registry.fill(HIST("hMassFinerBinning"), massD0bar, ptCandidate);
+        registry.fill(HIST("hMassVsPhi"), massD0bar, ptCandidate, candidate.phi());
       }
       registry.fill(HIST("hPtCand"), ptCandidate);
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
