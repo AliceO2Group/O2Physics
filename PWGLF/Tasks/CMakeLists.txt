@@ -161,8 +161,8 @@ o2physics_add_dpl_workflow(stqa
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hypertriton-analysis
-                   SOURCES hypertritonanalysis.cxx
+o2physics_add_dpl_workflow(hypertritonfinderanalysis
+                   SOURCES hypertritonfinderanalysis.cxx
                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                    COMPONENT_NAME Analysis)
 

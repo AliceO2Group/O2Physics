@@ -39,12 +39,12 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
-//------------------copy from lamdakzerobuilder---------------------
+
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include <CCDB/BasicCCDBManager.h>
-//------------------copy from lamdakzerobuilder---------------------
+#include "DataFormatsParameters/GRPMagField.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 
 #include <TFile.h>
@@ -63,7 +63,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
-using namespace ROOT::Math;
 
 //use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullHe>;
@@ -155,6 +154,12 @@ struct hypertritonprefilter {
 };
 
 struct hypertritonfinder {
+
+  Produces<aod::StoredV0Datas> v0data;
+  Produces<aod::V0s> v0;
+  Produces<aod::V0DataLink> v0datalink;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   // Configurables
   Configurable<double> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -164,9 +169,13 @@ struct hypertritonfinder {
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   //Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
 
-  Produces<aod::StoredV0Datas> v0data;
-  Produces<aod::V0s> v0;
-  Produces<aod::V0DataLink> v0datalink;
+  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
+  // CCDB options
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   HistogramRegistry registry{
     "registry",
@@ -175,17 +184,16 @@ struct hypertritonfinder {
         {"hV0CutCounter", "hV0CutCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
       },
   };
-  //------------------copy from lamdakzerobuilder---------------------
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   int mRunNumber;
   float d_bz;
   float maxSnp;  //max sine phi for propagation
   float maxStep; //max step size (cm) for propagation
+  o2::base::MatLayerCylSet* lut = nullptr;
+  o2::vertexing::DCAFitterN<2> fitter;
+
   void init(InitContext& context)
   {
-    // using namespace analysis::lambdakzerobuilder;
     mRunNumber = 0;
     d_bz = 0;
     maxSnp = 0.85f;  //could be changed later
@@ -195,52 +203,86 @@ struct hypertritonfinder {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
-
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>("GLO/Config/Geometry");
-      /* it seems this is needed at this level for the material LUT to work properly */
-      /* but what happens if the run changes while doing the processing?             */
-      constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
-
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", run3grp_timestamp);
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      o2::base::Propagator::Instance()->setMatLUT(lut);
-    }
-
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(1, "DiffCol");
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(2, "hasSV");
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(3, "hasSV2");
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(4, "Dcav0Dau");
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(5, "CosPA");
-  }
 
-  float getMagneticField(uint64_t timestamp)
-  {
-    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-        return 0;
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+
+    fitter.setPropagateToPCA(true);
+    fitter.setMaxR(200.);
+    fitter.setMinParamChange(1e-3);
+    fitter.setMinRelChi2Change(0.9);
+    fitter.setMaxDZIni(1e9);
+    fitter.setMaxChi2(1e9);
+    fitter.setUseAbsDCA(d_UseAbsDCA);
+
+    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+    if (useMatCorrType == 1) {
+      LOGF(info, "TGeo correction requested, loading geometry");
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
       }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
     }
-    float output = grpo->getNominalL3Field();
-    return output;
+    if (useMatCorrType == 2) {
+      LOGF(info, "LUT correction requested, loading LUT");
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    }
+    fitter.setMatCorrType(matCorr);
   }
 
-  void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
-    if (lRunNumber != mRunNumber) {
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = getMagneticField(lTimeStamp);
-      } else {
-        d_bz = d_bz_input;
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      fitter.setBz(d_bz);
+      o2::parameters::GRPMagField grpmag;
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
-      mRunNumber = lRunNumber;
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
+      mRunNumber = bc.runNumber();
+      return;
+    }
+
+    auto run3grp_timestamp = bc.timestamp();
+    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
+    mRunNumber = bc.runNumber();
+    // Set magnetic field value once known
+    fitter.setBz(d_bz);
+
+    if (useMatCorrType == 2) {
+      // setMatLUT only after magfield has been initalized
+      // (setMatLUT has implicit and problematic init field call if not)
+      o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }
   //------------------------------------------------------------------
@@ -250,18 +292,7 @@ struct hypertritonfinder {
   {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    CheckAndUpdate(bc.runNumber(), bc.timestamp());
-
-    // Define o2 fitter, 2-prong
-    o2::vertexing::DCAFitterN<2> fitter;
-    fitter.setBz(d_bz);
-    fitter.setPropagateToPCA(true);
-    fitter.setMaxR(200.);
-    fitter.setMinParamChange(1e-3);
-    fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
-    fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(d_UseAbsDCA);
+    initCCDB(bc);
 
     Long_t lNCand = 0;
 
