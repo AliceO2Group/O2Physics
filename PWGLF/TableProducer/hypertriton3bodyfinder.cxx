@@ -663,7 +663,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<trackprefilter>(cfgc),
-      adaptAnalysisTask<hypertriton3bodyFinder>(cfgc),
-      adaptAnalysisTask<hypertriton3bodyInitializer>(cfgc),
+    adaptAnalysisTask<hypertriton3bodyFinder>(cfgc),
+    adaptAnalysisTask<hypertriton3bodyInitializer>(cfgc),
   };
 }

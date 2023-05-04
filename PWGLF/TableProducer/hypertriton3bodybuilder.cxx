@@ -98,7 +98,6 @@ struct hypertriton3bodybuilder{
 
   void init(InitContext& context)
   {
-    // using namespace analysis::lambdakzerobuilder;
     mRunNumber = 0;
     d_bz = 0;
     maxSnp = 0.85f;  //could be changed later
@@ -434,7 +433,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<hypertriton3bodyinitializer>(cfgc),
-      adaptAnalysisTask<hypertriton3bodyLabelBuilder>(cfgc),
-      adaptAnalysisTask<hypertriton3bodybuilder>(cfgc),
+    adaptAnalysisTask<hypertriton3bodyLabelBuilder>(cfgc),
+    adaptAnalysisTask<hypertriton3bodybuilder>(cfgc),
   };
 }

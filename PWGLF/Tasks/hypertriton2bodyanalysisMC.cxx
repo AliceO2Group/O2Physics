@@ -36,6 +36,7 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "DetectorsBase/Propagator.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
@@ -782,9 +783,19 @@ struct hypertritonTrackMcinfo{
 };
 
 struct goodtrackcheck{
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   // Configurables
   Configurable<double> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+
+  Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
+  // CCDB options
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   // Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -803,36 +814,19 @@ struct goodtrackcheck{
       },
   };
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   int mRunNumber;
   float d_bz;
   float maxSnp;  //max sine phi for propagation
   float maxStep; //max step size (cm) for propagation
+  o2::base::MatLayerCylSet* lut = nullptr;
+  o2::vertexing::DCAFitterN<2> fitter;
+
   void init(InitContext& context)
   {
-    // using namespace analysis::lambdakzerobuilder;
     mRunNumber = 0;
     d_bz = 0;
     maxSnp = 0.85f;  //could be changed later
     maxStep = 2.00f; //could be changed later
-
-    ccdb->setURL("https://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-
-    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
-
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>("GLO/Config/Geometry");
-      /* it seems this is needed at this level for the material LUT to work properly */
-      /* but what happens if the run changes while doing the processing?             */
-      constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
-
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", run3grp_timestamp);
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      o2::base::Propagator::Instance()->setMatLUT(lut);
-    }
 
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(1, "Sign");
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(2, "DiffCol");
@@ -852,47 +846,12 @@ struct goodtrackcheck{
     registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(7, "Rapidity");
     registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(8, "Lifetime");
     registry.get<TH1>(HIST("hTrueV0Counter"))->GetXaxis()->SetBinLabel(9, "pT");
-  }
 
-  float getMagneticField(uint64_t timestamp)
-  {
-    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-        return 0;
-      }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
-    }
-    float output = grpo->getNominalL3Field();
-    return output;
-  }
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
 
-  void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
-  {
-    if (lRunNumber != mRunNumber) {
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = getMagneticField(lTimeStamp);
-      } else {
-        d_bz = d_bz_input;
-      }
-      mRunNumber = lRunNumber;
-    }
-  }
-
-  void process(aod::Collision const& collision, MyTracks const& tracks, aod::McParticles const& mcparticles, 
-      aod::V0GoodHe3 const& he3tracks, aod::V0GoodPion const& piontracks, aod::BCsWithTimestamps const&)
-  {
-
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    CheckAndUpdate(bc.runNumber(), bc.timestamp());
-
-    // Define o2 fitter, 2-prong
-    o2::vertexing::DCAFitterN<2> fitter;
-    fitter.setBz(d_bz);
     fitter.setPropagateToPCA(true);
     fitter.setMaxR(200.);
     fitter.setMinParamChange(1e-3);
@@ -900,6 +859,79 @@ struct goodtrackcheck{
     fitter.setMaxDZIni(1e9);
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(d_UseAbsDCA);
+
+    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+    if (useMatCorrType == 1) {
+      LOGF(info, "TGeo correction requested, loading geometry");
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
+      }
+      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+    }
+    if (useMatCorrType == 2) {
+      LOGF(info, "LUT correction requested, loading LUT");
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    }
+    fitter.setMatCorrType(matCorr);
+
+  }
+
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      fitter.setBz(d_bz);
+      o2::parameters::GRPMagField grpmag;
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
+      mRunNumber = bc.runNumber();
+      return;
+    }
+
+    auto run3grp_timestamp = bc.timestamp();
+    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
+    mRunNumber = bc.runNumber();
+    // Set magnetic field value once known
+    fitter.setBz(d_bz);
+
+    if (useMatCorrType == 2) {
+      // setMatLUT only after magfield has been initalized
+      // (setMatLUT has implicit and problematic init field call if not)
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
+  }
+  //------------------------------------------------------------------
+
+  void process(aod::Collision const& collision, MyTracks const& tracks, aod::McParticles const& mcparticles, 
+      aod::V0GoodHe3 const& he3tracks, aod::V0GoodPion const& piontracks, aod::BCsWithTimestamps const&)
+  {
+
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
 
     for (auto& t1id : piontracks) {//Try to change the loop
       auto t1 = t1id.goodTrack_as<MyTracks>();//must make use of t1id, otherwise error
@@ -1132,11 +1164,11 @@ namespace o2::aod
   }
   DECLARE_SOA_TABLE(McHypertritonCheck, "AOD", "HypCheck", 
       mcparticleidcheck::HypertritonDaughterPdgCode 
-      )
-    DECLARE_SOA_TABLE(McHelium3Check, "AOD", "Helium3Check", 
-        mcparticleidcheck::Helium3MontherPdgCode,
-        mcparticleidcheck::Helium3DaughterPdgCode
-        )
+  )
+  DECLARE_SOA_TABLE(McHelium3Check, "AOD", "Helium3Check", 
+      mcparticleidcheck::Helium3MontherPdgCode,
+      mcparticleidcheck::Helium3DaughterPdgCode
+  )
 }
 
 
@@ -1362,6 +1394,9 @@ namespace o2::aod
 
 struct V0McCheck {
 
+  Produces<aod::V0Mc> v0mcinfo;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};//loose cut
@@ -1372,14 +1407,15 @@ struct V0McCheck {
   Configurable<float> etacut{"etacut", 0.9, "etacut"};
   Configurable<float> rapidity{"rapidity", 0.8, "rapidity"};
   Configurable<float> dcapiontopv{"dcapiontopv", .1, "DCA Pion To PV"};
+  Configurable<double> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};
 
-  int mRunNumber;
-  float d_bz;
-  float maxSnp;  //max sine phi for propagation
-  float maxStep; //max step size (cm) for propagation
-
-  Produces<aod::V0Mc> v0mcinfo;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
+  // CCDB options
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   HistogramRegistry registry{
     "registry",
@@ -1460,29 +1496,19 @@ struct V0McCheck {
       },
   };
 
+  int mRunNumber;
+  float d_bz;
+  float maxSnp;  //max sine phi for propagation
+  float maxStep; //max step size (cm) for propagation
+  o2::base::MatLayerCylSet* lut = nullptr;
+  o2::vertexing::DCAFitterN<2> fitter;
+
   void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
     maxSnp = 0.85f;  //could be changed later
     maxStep = 2.00f; //could be changed later
-
-    ccdb->setURL("http://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-
-    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
-
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>("GLO/Config/GeometryAligned");
-      /* it seems this is needed at this level for the material LUT to work properly */
-      /* but what happens if the run changes while doing the processing?             */
-      constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
-
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", run3grp_timestamp);
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      o2::base::Propagator::Instance()->setMatLUT(lut);
-    }
 
     registry.get<TH1>(HIST("hV0McCheckCounter"))->GetXaxis()->SetBinLabel(1, "Readin");
     registry.get<TH1>(HIST("hV0McCheckCounter"))->GetXaxis()->SetBinLabel(2, "DauhasMc");
@@ -1499,51 +1525,90 @@ struct V0McCheck {
     registry.get<TH1>(HIST("hTrueHypertritonCounter"))->GetXaxis()->SetBinLabel(10, "PhysicalAntiHypertritonV0Cut");
     registry.get<TH1>(HIST("hTrueHypertritonCounter"))->GetXaxis()->SetBinLabel(11, "AntiHypertritonCandidateCut");
     registry.get<TH1>(HIST("hTrueHypertritonCounter"))->GetXaxis()->SetBinLabel(12, "PhysicalAntiHypertritonCandidateCut");
-  }
 
-  float getMagneticField(uint64_t timestamp)
-  {
-    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-        return 0;
-      }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
-    }
-    float output = grpo->getNominalL3Field();
-    return output;
-  }
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
 
-  void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
-  {
-    if (lRunNumber != mRunNumber) {
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = getMagneticField(lTimeStamp);
-      } else {
-        d_bz = d_bz_input;
-      }
-      mRunNumber = lRunNumber;
-    }
-  }
-  void process(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcparticles){
-
-    /* check the previous run number */
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    CheckAndUpdate(bc.runNumber(), bc.timestamp());
-
-    o2::vertexing::DCAFitterN<2> fitter;
-    fitter.setBz(d_bz);
     fitter.setPropagateToPCA(true);
     fitter.setMaxR(200.);
     fitter.setMinParamChange(1e-3);
     fitter.setMinRelChi2Change(0.9);
     fitter.setMaxDZIni(1e9);
     fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(true); // use d_UseAbsDCA once we want to use the weighted DCA
+    fitter.setUseAbsDCA(d_UseAbsDCA);
+
+    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+    if (useMatCorrType == 1) {
+      LOGF(info, "TGeo correction requested, loading geometry");
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
+      }
+      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+    }
+    if (useMatCorrType == 2) {
+      LOGF(info, "LUT correction requested, loading LUT");
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    }
+    fitter.setMatCorrType(matCorr);
+  }
+
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      fitter.setBz(d_bz);
+      o2::parameters::GRPMagField grpmag;
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
+      mRunNumber = bc.runNumber();
+      return;
+    }
+
+    auto run3grp_timestamp = bc.timestamp();
+    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
+    mRunNumber = bc.runNumber();
+    // Set magnetic field value once known
+    fitter.setBz(d_bz);
+
+    if (useMatCorrType == 2) {
+      // setMatLUT only after magfield has been initalized
+      // (setMatLUT has implicit and problematic init field call if not)
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
+  }
+  //------------------------------------------------------------------
+
+  void process(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcparticles){
+
+    /* check the previous run number */
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
 
     int countHe3=0, countAntiHe3=0;
     std::vector<int> He3TrackID;
@@ -1883,20 +1948,14 @@ struct V0McCheck {
 };
 
 
-struct V0DataInitializer {
-  Spawns<aod::V0Datas> v0datas;
-  void init(InitContext const&) {}
-};
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<hypertritonAnalysisMc>(cfgc),
-      adaptAnalysisTask<hypertritonQa>(cfgc),
-      adaptAnalysisTask<hypertritonMcParticleCount>(cfgc),
-      adaptAnalysisTask<hypertritonTrackMcinfo>(cfgc),
-      adaptAnalysisTask<goodtrackcheck>(cfgc),
-      adaptAnalysisTask<V0DataInitializer>(cfgc),
-      adaptAnalysisTask<V0McCheck>(cfgc)
+    adaptAnalysisTask<hypertritonQa>(cfgc),
+    adaptAnalysisTask<hypertritonMcParticleCount>(cfgc),
+    adaptAnalysisTask<hypertritonTrackMcinfo>(cfgc),
+    adaptAnalysisTask<goodtrackcheck>(cfgc),
+    adaptAnalysisTask<V0McCheck>(cfgc)
   };
 }

@@ -169,7 +169,7 @@ struct hypertritonfinder {
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   //Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
 
-  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
@@ -198,10 +198,6 @@ struct hypertritonfinder {
     d_bz = 0;
     maxSnp = 0.85f;  //could be changed later
     maxStep = 2.00f; //could be changed later
-
-    ccdb->setURL("https://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
 
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(1, "DiffCol");
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(2, "hasSV");
@@ -401,7 +397,6 @@ struct hypertritonfinder {
 
         lNCand++;
         v0(t0.collisionId(), t0.globalIndex(), t1.globalIndex());
-        //there is a change in the position of "0" compared with lambdakzerofinder.cxx
         v0data(t0.globalIndex(), t1.globalIndex(), t0.collisionId(), 0,
             fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
             pos[0], pos[1], pos[2],
@@ -416,95 +411,6 @@ struct hypertritonfinder {
   }
 };
 
-/*struct hypertritonfinderQA {
-  // Basic checks
-  // Selection criteria
-  Configurable<double> v0cospa{"v0cospa", 0.998, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> dcav0dau{"dcav0dau", .6, "DCA V0 Daughters"};
-  Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
-  Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
-
-  HistogramRegistry registry{
-    "registry",
-      {
-        {"hCandPerEvent", "hCandPerEvent", {HistType::kTH1F, {{1000, 0.0f, 1000.0f}}}},
-
-        {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f}}}},
-        {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
-        {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
-        {"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
-        {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
-
-        {"h3dMassHypertriton", "h3dMassHypertriton", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
-        {"h3dMassAntiHypertriton", "h3dMassAntiHypertriton", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
-      },
-  };
-
-  //Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
-
-  /// Connect to V0Data: newly indexed, note: V0Datas table incompatible with standard V0 table!
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As>::iterator const& collision,
-      //soa::Filtered<aod::V0Datas> const& fullV0s)
-      aod::V0Datas const& fullV0s)
-  {
-    if (!collision.sel8()) {
-      return;
-    }
-
-    Long_t lNCand = 0;
-    for (auto& v0 : fullV0s) {
-      if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
-        registry.fill(HIST("hV0Radius"), v0.v0radius());
-        registry.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
-        registry.fill(HIST("hDCAPosToPV"), v0.dcapostopv());
-        registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
-        registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());
-
-        if (TMath::Abs(v0.yHypertriton()) < 0.5) {
-          registry.fill(HIST("h3dMassHypertriton"), collision.centFV0A(), v0.pt(), v0.mLambda());
-          registry.fill(HIST("h3dMassAntiHypertriton"), collision.centFV0A(), v0.pt(), v0.mAntiLambda());
-        }
-        lNCand++;
-      }
-    }
-    registry.fill(HIST("hCandPerEvent"), lNCand);
-  }
-  PROCESS_SWITCH(hypertritonfinderQA, processRun3, "Process Run 3 data", true);
-
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision,
-      //soa::Filtered<aod::V0Datas> const& fullV0s)
-      aod::V0Datas const& fullV0s)
-  {
-    if (!collision.alias()[kINT7]) {
-      return;
-    }
-    if (!collision.sel7()) {
-      return;
-    }
-
-    Long_t lNCand = 0;
-    for (auto& v0 : fullV0s) {
-      if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
-        registry.fill(HIST("hV0Radius"), v0.v0radius());
-        registry.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
-        registry.fill(HIST("hDCAPosToPV"), v0.dcapostopv());
-        registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
-        registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());
-
-        if (TMath::Abs(v0.yHypertriton()) < 0.5) {
-          registry.fill(HIST("h3dMassHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mHypertriton());
-          registry.fill(HIST("h3dMassAntiHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mAntiHypertriton());
-        }
-        lNCand++;
-      }
-    }
-    registry.fill(HIST("hCandPerEvent"), lNCand);
-  }
-  PROCESS_SWITCH(hypertritonfinderQA, processRun2, "Process Run 2 data", false);
-
-};*/
-
 /// Extends the v0data table with expression columns
 struct hypertritoninitializer {
   Spawns<aod::V0Datas> v0datas;
@@ -514,8 +420,7 @@ struct hypertritoninitializer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<hypertritonprefilter>(cfgc, TaskName{"lf-hypertritonprefilter"}),
-      adaptAnalysisTask<hypertritonfinder>(cfgc, TaskName{"lf-hypertritonfinder"}),
-      //adaptAnalysisTask<hypertritonfinderQA>(cfgc, TaskName{"lf-hypertritonfinderQA"}),
-      adaptAnalysisTask<hypertritoninitializer>(cfgc, TaskName{"lf-hypertritoninitializer"})};
+    adaptAnalysisTask<hypertritonprefilter>(cfgc),
+    adaptAnalysisTask<hypertritonfinder>(cfgc),
+    adaptAnalysisTask<hypertritoninitializer>(cfgc)};
 }
