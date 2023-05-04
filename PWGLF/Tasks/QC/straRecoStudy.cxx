@@ -28,6 +28,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFQATables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -57,16 +58,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-namespace o2::aod
-{
-namespace mccollisionprop
-{
-DECLARE_SOA_COLUMN(HasRecoCollision, hasRecoCollision, int); //! stores N times this PV was recoed
-}
-DECLARE_SOA_TABLE(McCollsExtra, "AOD", "MCCOLLSEXTRA",
-                  mccollisionprop::HasRecoCollision);
-} // namespace o2::aod
-
 // using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPr>;
 using TracksCompleteIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
 using TracksCompleteIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::McTrackLabels>;
@@ -75,8 +66,6 @@ using CascMC = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 using RecoedMCCollisions = soa::Join<aod::McCollisions, aod::McCollsExtra>;
 
 struct preProcessMCcollisions {
-  Produces<aod::McCollsExtra> mcCollsExtra;
-
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
@@ -298,7 +287,6 @@ struct preProcessMCcollisions {
       histos.fill(HIST("h2dNContribSpecialCorr2a"), collisionStatAggregator[sortedIndices[0]].nContribsWithTRDNoTOF, collisionStatAggregator[sortedIndices[0]].nContribsWithTOF);
       histos.fill(HIST("h2dNContribSpecialCorr2b"), collisionStatAggregator[sortedIndices[1]].nContribsWithTRDNoTOF, collisionStatAggregator[sortedIndices[1]].nContribsWithTOF);
     }
-    mcCollsExtra(collisions.size());
   }
   PROCESS_SWITCH(preProcessMCcollisions, processMC, "MC prepare", true);
 };
