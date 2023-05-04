@@ -9,23 +9,21 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file reducedCandidateCreatorB0.cxx
+/// \file candidateCreatorB0Reduced.cxx
 /// \brief Reconstruction of B0 candidates
-/// \note Adapted from candidateCreatorXicc.cxx
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "PWGHF/DataModel/ReducedDataModel.h"
-
-#include "DCAFitter/DCAFitterN.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociation.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -33,7 +31,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 /// Reconstruction of B0 candidates
-struct HfReducedCandidateCreatorB0 {
+struct HfCandidateCreatorB0Reduced {
   Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in CandidateReconstructionTables.h
 
   // vertexing
@@ -56,8 +54,8 @@ struct HfReducedCandidateCreatorB0 {
   // Fitter for B vertex (2-prong vertex filter)
   o2::vertexing::DCAFitterN<2> df2;
 
-  Preslice<aod::HfReducedCand3Prong> candsDPerCollision = hf_reduced_track_index::hfReducedCollisionId;
-  Preslice<aod::HfReducedTracksWithSel> tracksPionPerCollision = hf_reduced_track_index::hfReducedCollisionId;
+  Preslice<aod::HfCand3ProngReduced> candsDPerCollision = hf_track_index_reduced::hfReducedCollisionId;
+  Preslice<aod::HfTracksReduced> tracksPionPerCollision = hf_track_index_reduced::hfReducedCollisionId;
 
   HistogramRegistry registry{"registry"};
 
@@ -80,8 +78,8 @@ struct HfReducedCandidateCreatorB0 {
   }
 
   void process(aod::HfReducedCollisions const& collisions,
-               aod::HfReducedCand3Prong const& candsD,
-               aod::HfReducedTracksWithSel const& tracksPion,
+               aod::HfCand3ProngReduced const& candsD,
+               aod::HfTracksReduced const& tracksPion,
                aod::HfOriginalCollisionsCounter const& collisionsCounter)
   {
     for (const auto& collisionCounter : collisionsCounter) {
@@ -100,7 +98,7 @@ struct HfReducedCandidateCreatorB0 {
       }
       ncol++;
 
-      /// Set the magnetic field from ccdb
+      // Set the magnetic field from ccdb
       bz = collision.bz();
       df2.setBz(bz);
 
@@ -175,11 +173,12 @@ struct HfReducedCandidateCreatorB0 {
   }       // process
 };        // struct
 
-struct HfReducedCandidateCreatorB0Expressions {
+/// Extends the table base with expression columns and performs MC matching.
+struct HfCandidateCreatorB0ReducedExpressions {
   Spawns<aod::HfCandB0Ext> rowCandidateB0;
-  Produces<aod::HfReducedB0McRec> rowB0McRec;
+  Produces<aod::HfB0McRecReduced> rowB0McRec;
 
-  void processMc(HfReducedDPiMcRec const& rowsDPiMcRec)
+  void processMc(HfDPiMcRecReduced const& rowsDPiMcRec)
   {
     for (const auto& candB0 : *rowCandidateB0) {
       for (const auto& rowDPiMcRec : rowsDPiMcRec) {
@@ -190,11 +189,11 @@ struct HfReducedCandidateCreatorB0Expressions {
       }
     }
   }
-  PROCESS_SWITCH(HfReducedCandidateCreatorB0Expressions, processMc, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreatorB0ReducedExpressions, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfReducedCandidateCreatorB0>(cfgc),
-                      adaptAnalysisTask<HfReducedCandidateCreatorB0Expressions>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateCreatorB0Reduced>(cfgc),
+                      adaptAnalysisTask<HfCandidateCreatorB0ReducedExpressions>(cfgc)};
 }

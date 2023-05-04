@@ -9,22 +9,21 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file reducedDataCreatorDplusPi.cxx
-/// \brief Selection of Dplus and Pions tracks
-/// \note
+/// \file dataCreatorDplusPiReduced.cxx
+/// \brief Creation of Dplus-Pi pairs
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "DCAFitter/DCAFitterN.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociation.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/ReducedDataModel.h"
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
@@ -35,19 +34,19 @@ using namespace o2::framework::expressions;
 // event types
 enum Event : uint8_t {
   Processed = 0,
-  noDPiSelected,
+  NoDPiSelected,
   DPiSelected,
   kNEvent
 };
 
-/// Selection of Dplus and Pions
-struct HfReducedDataCreatorDplusPi {
+/// Creation of Dplus-Pi pairs
+struct HfDataCreatorDplusPiReduced {
   // Produces AOD tables to store track information
   Produces<aod::HfReducedCollisions> hfReducedCollision;
   Produces<aod::HfOriginalCollisionsCounter> hfCollisionCounter;
-  Produces<aod::HfReducedTracksWithSel> hfTrackPion;
-  Produces<aod::HfReducedTracksPIDWithSel> hfTrackPIDPion;
-  Produces<aod::HfReducedCand3Prong> hfCand3Prong;
+  Produces<aod::HfTracksReduced> hfTrackPion;
+  Produces<aod::HfTracksPidReduced> hfTrackPidPion;
+  Produces<aod::HfCand3ProngReduced> hfCand3Prong;
   Produces<aod::HfCandB0Config> rowCandidateConfig;
 
   // vertexing
@@ -92,13 +91,12 @@ struct HfReducedDataCreatorDplusPi {
   // Fitter to redo D-vertex to get extrapolated daughter tracks (3-prong vertex filter)
   o2::vertexing::DCAFitterN<3> df3;
 
-  // using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
   using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
+  using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagD);
-  using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
-  Preslice<CandsDFiltered> candsDPerCollision = aod::track_association::collisionId;
 
+  Preslice<CandsDFiltered> candsDPerCollision = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
   HistogramRegistry registry{"registry"};
@@ -109,7 +107,7 @@ struct HfReducedDataCreatorDplusPi {
     constexpr int kNBinsEvents = kNEvent;
     std::string labels[kNBinsEvents];
     labels[Event::Processed] = "processed";
-    labels[Event::noDPiSelected] = "without DPi pairs";
+    labels[Event::NoDPiSelected] = "without DPi pairs";
     labels[Event::DPiSelected] = "with DPi pairs";
     static const AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
@@ -147,7 +145,6 @@ struct HfReducedDataCreatorDplusPi {
   /// \param track0 is prong0 of selected D candidate
   /// \param track1 is prong1 of selected D candidate
   /// \param track2 is prong2 of selected D candidate
-  /// \param indexD is an array of globalIndex of each D prong
   /// \return true if trackPion passes all cuts
   template <typename T1, typename T2>
   bool isPionSelected(const T1& trackPion, const T2& track0, const T2& track1, const T2& track2)
@@ -210,9 +207,9 @@ struct HfReducedDataCreatorDplusPi {
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize());
 
-    static int ncol = 0;
+    static int nCol = 0;
     for (const auto& collision : collisions) {
-      ncol++;
+      nCol++;
 
       // helpers for ReducedTables filling
       int hfReducedCollisionIndex = hfReducedCollision.lastIndex() + 1;
@@ -221,13 +218,13 @@ struct HfReducedDataCreatorDplusPi {
       bool fillHfReducedCollision = false;
 
       auto primaryVertex = getPrimaryVertex(collision);
-      if (ncol % 10000 == 0) {
-        LOG(info) << ncol << " collisions parsed";
+      if (nCol % 10000 == 0) {
+        LOG(debug) << nCol << " collisions parsed";
       }
 
-      /// Set the magnetic field from ccdb.
-      /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
-      /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
+      // Set the magnetic field from ccdb.
+      // The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
+      // but this is not true when running on Run2 data/MC already converted into AO2Ds.
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
@@ -312,12 +309,12 @@ struct HfReducedDataCreatorDplusPi {
           registry.fill(HIST("hPtPion"), trackPion.pt());
           std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
           // compute invariant mass and apply selection
-          massDPi = RecoDecay::m(array{pVecD, pVecPion}, array{massD, massPi});
+          massDPi = RecoDecay::m(std::array{pVecD, pVecPion}, std::array{massD, massPi});
           if (std::abs(massDPi - massB0) > invMassWindowB0) {
             continue;
           }
 
-          invMassD = hf_reduced_cand_3prong::invMassDplusToPiKPi(pVec0, pVec1, pVec2);
+          invMassD = hf_cand_3prong_reduced::invMassDplusToPiKPi(pVec0, pVec1, pVec2);
 
           // fill Pion tracks table
           // if information on track already stored, go to next track
@@ -333,7 +330,7 @@ struct HfReducedDataCreatorDplusPi {
                         trackPion.c1PtY(), trackPion.c1PtZ(), trackPion.c1PtSnp(),
                         trackPion.c1PtTgl(), trackPion.c1Pt21Pt2(),
                         trackPion.px(), trackPion.py(), trackPion.pz());
-            hfTrackPIDPion(hfReducedCollisionIndex,
+            hfTrackPidPion(hfReducedCollisionIndex,
                            trackPion.pt(),
                            trackPion.hasTPC(), trackPion.hasTOF(),
                            trackPion.tpcNSigmaEl(), trackPion.tpcNSigmaMu(), trackPion.tpcNSigmaPi(), trackPion.tpcNSigmaKa(), trackPion.tpcNSigmaPr(),
@@ -365,7 +362,7 @@ struct HfReducedDataCreatorDplusPi {
       } // candsD loop
       registry.fill(HIST("hEvents"), 1 + Event::Processed);
       if (!fillHfReducedCollision) {
-        registry.fill(HIST("hEvents"), 1 + Event::noDPiSelected);
+        registry.fill(HIST("hEvents"), 1 + Event::NoDPiSelected);
         continue;
       }
       registry.fill(HIST("hEvents"), 1 + Event::DPiSelected);
@@ -378,15 +375,15 @@ struct HfReducedDataCreatorDplusPi {
   }   // process
 };    // struct
 
-/// Extends the base table with expression columns and performs MC matching.
-struct HfReducedDataCreatorDplusPiExpressions {
-  Produces<aod::HfReducedDPiMcRec> rowHfReducedDPiMcRec;
-  Produces<aod::HfReducedB0McGen> rowHfReducedB0McGen;
+/// Performs MC matching.
+struct HfDataCreatorDplusPiReducedMc {
+  Produces<aod::HfDPiMcRecReduced> rowHfDPiMcRecReduced;
+  Produces<aod::HfB0McGenReduced> rowHfB0McGenReduced;
 
   void init(InitContext const&) {}
 
-  void processMc(aod::HfReducedCand3Prong const& candsD,
-                 aod::HfReducedTracksWithSel const& tracksPion,
+  void processMc(aod::HfCand3ProngReduced const& candsD,
+                 aod::HfTracksReduced const& tracksPion,
                  aod::BigTracksMC const&,
                  aod::McParticles const& particlesMc)
   {
@@ -427,7 +424,7 @@ struct HfReducedDataCreatorDplusPiExpressions {
         auto indexMother = RecoDecay::getMother(particlesMc, trackPion.track_as<aod::BigTracksMC>().mcParticle_as<aod::McParticles>(), pdg::Code::kB0, true);
         auto particleMother = particlesMc.rawIteratorAt(indexMother);
 
-        rowHfReducedDPiMcRec(candD.globalIndex(), trackPion.globalIndex(), flag, origin, debug, particleMother.pt());
+        rowHfDPiMcRecReduced(candD.globalIndex(), trackPion.globalIndex(), flag, origin, debug, particleMother.pt());
       }
     } // rec
 
@@ -452,7 +449,7 @@ struct HfReducedDataCreatorDplusPiExpressions {
       }
 
       auto ptParticle = particle.pt();
-      auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
+      auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
       auto etaParticle = particle.eta();
 
       std::array<float, 2> ptProngs;
@@ -465,19 +462,19 @@ struct HfReducedDataCreatorDplusPiExpressions {
         yProngs[counter] = RecoDecay::y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
         counter++;
       }
-      rowHfReducedB0McGen(flag, origin,
+      rowHfB0McGenReduced(flag, origin,
                           ptParticle, yParticle, etaParticle,
                           ptProngs[0], yProngs[0], etaProngs[0],
                           ptProngs[1], yProngs[1], etaProngs[1]);
     } // gen
 
   } // processMc
-  PROCESS_SWITCH(HfReducedDataCreatorDplusPiExpressions, processMc, "Process MC", false);
+  PROCESS_SWITCH(HfDataCreatorDplusPiReducedMc, processMc, "Process MC", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfReducedDataCreatorDplusPi>(cfgc),
-    adaptAnalysisTask<HfReducedDataCreatorDplusPiExpressions>(cfgc)};
+    adaptAnalysisTask<HfDataCreatorDplusPiReduced>(cfgc),
+    adaptAnalysisTask<HfDataCreatorDplusPiReducedMc>(cfgc)};
 }

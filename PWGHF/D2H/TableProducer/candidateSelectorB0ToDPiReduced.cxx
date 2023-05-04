@@ -9,18 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorB0ToDPi.cxx
+/// \file candidateSelectorB0ToDPiReduced.cxx
 /// \brief B0 → D- π+ candidate selector
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
 #include "Common/Core/TrackSelectorPID.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/ReducedDataModel.h"
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -52,9 +52,9 @@ struct HfReducedCandidateSelectorB0ToDPi {
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_b0_to_d_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B0 candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
-  // check if selectionFlagD (defined in candidateCreatorB0.cxx) and usePid configurables are in sync
+  // check if selectionFlagD (defined in dataCreatorDplusPiReduced.cxx) and usePid configurables are in sync
   bool selectionFlagDAndUsePidInSync = true;
-  // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
+  // variable that will store the value of selectionFlagD (defined in dataCreatorDplusPiReduced.cxx)
   int mySelectionFlagD = -1;
 
   TrackSelectorPID selectorPion;
@@ -184,7 +184,7 @@ struct HfReducedCandidateSelectorB0ToDPi {
   }
 
   void process(HfCandB0 const& hfCandsB0,
-               HfReducedTracksPIDWithSel const&,
+               HfTracksPidReduced const&,
                HfCandB0Config const& configs)
   {
     // get DplusPi creator configurable
@@ -236,7 +236,7 @@ struct HfReducedCandidateSelectorB0ToDPi {
         continue;
       }
       // track-level PID selection
-      auto trackPi = hfCandB0.prong1_as<HfReducedTracksPIDWithSel>();
+      auto trackPi = hfCandB0.prong1_as<HfTracksPidReduced>();
       if (usePid) {
         int pidTrackPi = selectorPion.getStatusTrackPIDTpcAndTof(trackPi);
         if (!selectionPID(pidTrackPi)) {

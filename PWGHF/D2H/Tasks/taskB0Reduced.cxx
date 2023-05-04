@@ -9,18 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskB0.cxx
+/// \file taskB0Reduced.cxx
 /// \brief B0 → D- π+ → (π- K+ π-) π+ analysis task
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/ReducedDataModel.h"
-#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -30,13 +30,12 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 
 /// B0 analysis task
-struct HfReducedTaskB0 {
+struct HfTaskB0Reduced {
   Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
   Configurable<double> yCandMax{"yCandMax", -1, "max. cand. rapidity"};
+  Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. track pseudo-rapidity"};
+  Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
-
-  float etaMaxAcceptance = 0.8;
-  float ptMinAcceptance = 0.1;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0);
 
@@ -48,7 +47,7 @@ struct HfReducedTaskB0 {
 
   void init(o2::framework::InitContext&)
   {
-    registry.add("hMass", "B^{0} candidates;inv. mass D^{#minus}#pi^{#plus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{500, 0., 10.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMass", "B^{0} candidates;inv. mass D^{#minus}#pi^{#plus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{300, 4.5, 6.0}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLength", "B^{0} candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthXY", "B^{0} candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong0", "B^{0} candidates;prong 0 (D^{#minus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -60,7 +59,7 @@ struct HfReducedTaskB0 {
     registry.add("hDecLenErr", "B^{0} candidates;B^{0} candidate decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLenXYErr", "B^{0} candidates;B^{0} candidate decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hIPProd", "B^{0} candidates;B^{0} candidate impact parameter product;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hInvMassD", "B^{0} candidates;prong0, D^{#minus} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hInvMassD", "B^{0} candidates;prong0, D^{#minus} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{350, 1.7, 2.05}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
 
     registry.add("hEtaGen", "MC particles (generated);B^{0} candidate #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hYGen", "MC particles (generated);B^{0} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -122,11 +121,11 @@ struct HfReducedTaskB0 {
   template <typename T = float>
   bool isProngInAcceptance(const T& etaProng, const T& ptProng)
   {
-    return std::abs(etaProng) <= etaMaxAcceptance && ptProng >= ptMinAcceptance;
+    return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates,
-               aod::HfReducedCand3Prong const&)
+               aod::HfCand3ProngReduced const&)
   {
     for (auto const& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
@@ -137,7 +136,7 @@ struct HfReducedTaskB0 {
       }
 
       auto ptCandB0 = candidate.pt();
-      auto candD = candidate.prong0_as<aod::HfReducedCand3Prong>();
+      auto candD = candidate.prong0_as<aod::HfCand3ProngReduced>();
 
       registry.fill(HIST("hMass"), invMassB0ToDPi(candidate), ptCandB0);
       registry.fill(HIST("hPtCand"), ptCandB0);
@@ -160,9 +159,9 @@ struct HfReducedTaskB0 {
   }   // process
 
   /// B0 MC analysis and fill histograms
-  void processMc(soa::Join<aod::HfCandB0, aod::HfReducedB0McRec> const& candidates,
-                 aod::HfReducedB0McGen const& particlesMc,
-                 aod::HfReducedCand3Prong const&)
+  void processMc(soa::Join<aod::HfCandB0, aod::HfB0McRecReduced> const& candidates,
+                 aod::HfB0McGenReduced const& particlesMc,
+                 aod::HfCand3ProngReduced const&)
   {
     // MC rec
     for (auto const& candidate : candidates) {
@@ -174,7 +173,7 @@ struct HfReducedTaskB0 {
       }
 
       auto ptCandB0 = candidate.pt();
-      auto candD = candidate.prong0_as<aod::HfReducedCand3Prong>();
+      auto candD = candidate.prong0_as<aod::HfCand3ProngReduced>();
 
       if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_b0::DecayType::B0ToDPi)) {
         registry.fill(HIST("hPtGenSig"), candidate.ptMother());
@@ -219,9 +218,9 @@ struct HfReducedTaskB0 {
     // MC gen. level
     // Printf("MC Particles: %d", particlesMc.size());
     for (auto const& particle : particlesMc) {
-      auto ptParticle = particle.pt();
-      auto yParticle = particle.y();
-      auto etaParticle = particle.eta();
+      auto ptParticle = particle.ptTrack();
+      auto yParticle = particle.yTrack();
+      auto etaParticle = particle.etaTrack();
       if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
         continue;
       }
@@ -254,10 +253,10 @@ struct HfReducedTaskB0 {
       }
     } // gen
   }   // process
-  PROCESS_SWITCH(HfReducedTaskB0, processMc, "Process MC", false);
+  PROCESS_SWITCH(HfTaskB0Reduced, processMc, "Process MC", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfReducedTaskB0>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskB0Reduced>(cfgc)};
 }
