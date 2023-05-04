@@ -50,15 +50,6 @@ using ResoCollision = ResoCollisions::iterator;
 // inspired from PWGCF/DataModel/FemtoDerived.h
 namespace resodaughter
 {
-/// Distinuishes the different daughter types
-enum DaughterType {
-  kTrack,         //! Track
-  kV0,            //! V0
-  kCascade,       //! Cascade
-  kNDaughterTypes //! Number of Daughter types
-};
-static constexpr std::string_view DaughterTypeName[kNDaughterTypes] = {"Tracks", "V0", "Cascade"}; //! Naming of the different particle types
-
 enum PDGtype {
   kPion = BIT(0),
   kKaon = BIT(1),
