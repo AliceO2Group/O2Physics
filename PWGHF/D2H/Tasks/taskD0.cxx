@@ -119,6 +119,7 @@ struct HfTaskD0 {
   {
     auto vbins = (std::vector<double>)binsPt;
     registry.add("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassVsPhi", "2-prong candidates vs phi;inv. mass (#pi K) (GeV/#it{c}^{2});phi (rad);entries", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"},{32,0,2.*o2::constants::math::PI}}});
     registry.add("hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthxy", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{800, 0., 0.2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -159,10 +160,12 @@ struct HfTaskD0 {
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMass"), invMassD0ToPiK(candidate), candidate.pt());
         registry.fill(HIST("hMassFinerBinning"), invMassD0ToPiK(candidate), candidate.pt());
+        registry.fill(HIST("hMassVsPhi"), invMassD0ToPiK(candidate), candidate.pt(), candidate.phi());
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
         registry.fill(HIST("hMass"), invMassD0barToKPi(candidate), candidate.pt());
         registry.fill(HIST("hMassFinerBinning"), invMassD0barToKPi(candidate), candidate.pt());
+        registry.fill(HIST("hMassVsPhi"), invMassD0barToKPi(candidate), candidate.pt(), candidate.phi());
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
