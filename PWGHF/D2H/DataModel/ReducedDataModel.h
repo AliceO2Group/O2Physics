@@ -16,8 +16,8 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
-#ifndef PWGHF_DATAMODEL_REDUCEDDATAMODEL_H_
-#define PWGHF_DATAMODEL_REDUCEDDATAMODEL_H_
+#ifndef PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
+#define PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -238,4 +238,4 @@ DECLARE_EQUIVALENT_FOR_INDEX(aod::StoredTracks, aod::HfTracksReduced);
 DECLARE_EQUIVALENT_FOR_INDEX(aod::StoredTracks, aod::HfTracksPidReduced);
 } // namespace soa
 } // namespace o2
-#endif // PWGHF_DATAMODEL_REDUCEDDATAMODEL_H_
+#endif // PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
