@@ -74,10 +74,6 @@ struct tofPidFull {
   int mLastCollisionId = -1;          // Last collision ID analysed
   void init(o2::framework::InitContext& initContext)
   {
-    std::string tmp = "lol";
-    LOG(info) << "tmp before " << tmp;
-    LOG(info) << "YOOOOOOOOOOOOOOOOOOO " << getTaskOptionValue(initContext, "tof-event-time", "paramFileName", tmp);
-    LOG(info) << "tmp after " << tmp;
     if (doprocessWSlice == true && doprocessWoSlice == true) {
       LOGF(fatal, "Cannot enable processWoSlice and processWSlice at the same time. Please choose one.");
     }
