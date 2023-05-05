@@ -40,7 +40,7 @@ using DPlusPairFull = soa::Join<aod::DPlusPair, aod::DPlusPairRecoInfo>;
 ///
 double getDeltaPhi(double phiD, double phiDbar)
 {
-  return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PI / 2.);
+  return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
 }
 
 ///
