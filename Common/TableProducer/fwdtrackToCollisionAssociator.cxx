@@ -21,7 +21,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
-#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
