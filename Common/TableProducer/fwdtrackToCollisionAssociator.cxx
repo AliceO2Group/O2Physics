@@ -21,6 +21,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
+#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
@@ -41,14 +42,11 @@ struct FwdTrackToCollisionAssociation {
   Preslice<FwdTracks> muonsPerCollisions = aod::fwdtrack::collisionId;
   Preslice<MFTTracks> mftsPerCollisions = aod::fwdtrack::collisionId;
 
-  constexpr static uint32_t gkMFTFillMap = BIT(0);
-  constexpr static uint32_t gkMuonFillMap = BIT(1);
-
   void init(InitContext const&)
   {
   }
 
-  template <uint32_t TTrackFillMap, typename TTracks, typename Slice, typename Assoc, typename RevIndices>
+  template <typename TTracks, typename Slice, typename Assoc, typename RevIndices>
   void runStandardAssoc(Collisions const& collisions,
                         TTracks const& tracks, Slice perCollisions, Assoc association, RevIndices reverseIndices)
   {
@@ -73,7 +71,7 @@ struct FwdTrackToCollisionAssociation {
     }
   }
 
-  template <uint32_t TTrackFillMap, typename TTracks, typename TAmbiTracks, typename Assoc, typename RevIndices>
+  template <typename TTracks, typename TAmbiTracks, typename Assoc, typename RevIndices>
   void runAssocWithTime(Collisions const& collisions,
                         TTracks const& tracks,
                         TAmbiTracks const& ambiguousTracks,
@@ -87,17 +85,10 @@ struct FwdTrackToCollisionAssociation {
         globalBC.push_back(track.collision().bc().globalBC());
       } else {
         for (const auto& ambTrack : ambiguousTracks) {
-          if constexpr (static_cast<bool>(TTrackFillMap & BIT(0))) {
-            if (ambTrack.mfttrackId() == track.globalIndex()) {
+            if (ambTrack.template getId<TTracks>() == track.globalIndex()) {
               globalBC.push_back(ambTrack.bc().begin().globalBC());
               break;
             }
-          } else if constexpr (static_cast<bool>(TTrackFillMap & BIT(1))) {
-            if (ambTrack.fwdtrackId() == track.globalIndex()) {
-              globalBC.push_back(ambTrack.bc().begin().globalBC());
-              break;
-            }
-          }
         }
       }
     }
@@ -166,14 +157,14 @@ struct FwdTrackToCollisionAssociation {
                                AmbiguousFwdTracks const& ambiTracksFwd,
                                BCs const& bcs)
   {
-    runAssocWithTime<gkMuonFillMap>(collisions, muons, ambiTracksFwd, bcs, fwdassociation, fwdreverseIndices);
+    runAssocWithTime(collisions, muons, ambiTracksFwd, bcs, fwdassociation, fwdreverseIndices);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processFwdAssocWithTime, "Use fwdtrack-to-collision association based on time", true);
 
   void processFwdStandardAssoc(Collisions const& collisions,
                                FwdTracks const& muons)
   {
-    runStandardAssoc<gkMuonFillMap>(collisions, muons, muonsPerCollisions, fwdassociation, fwdreverseIndices);
+    runStandardAssoc(collisions, muons, muonsPerCollisions, fwdassociation, fwdreverseIndices);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processFwdStandardAssoc, "Use standard fwdtrack-to-collision association", false);
 
@@ -182,14 +173,14 @@ struct FwdTrackToCollisionAssociation {
                                AmbiguousMFTTracks const& ambiguousTracks,
                                BCs const& bcs)
   {
-    runAssocWithTime<gkMFTFillMap>(collisions, tracks, ambiguousTracks, bcs, mftassociation, mftreverseIndices);
+    runAssocWithTime(collisions, tracks, ambiguousTracks, bcs, mftassociation, mftreverseIndices);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processMFTAssocWithTime, "Use MFTtrack-to-collision association based on time", true);
 
   void processMFTStandardAssoc(Collisions const& collisions,
                                MFTTracks const& tracks)
   {
-    runStandardAssoc<gkMFTFillMap>(collisions, tracks, mftsPerCollisions, mftassociation, mftreverseIndices);
+    runStandardAssoc(collisions, tracks, mftsPerCollisions, mftassociation, mftreverseIndices);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processMFTStandardAssoc, "Use standard mfttrack-to-collision association", false);
 };
