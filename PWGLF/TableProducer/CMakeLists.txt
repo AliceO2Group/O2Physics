@@ -83,6 +83,11 @@ o2physics_add_dpl_workflow(hypertriton-reco-task
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(hyhefour-builder
+                    SOURCES hyhe4builder.cxx
+                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 # Resonances
 o2physics_add_dpl_workflow(reso2initializer
                     SOURCES LFResonanceInitializer.cxx
