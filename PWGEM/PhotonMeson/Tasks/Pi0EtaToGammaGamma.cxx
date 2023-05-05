@@ -63,6 +63,7 @@ struct Pi0EtaToGammaGamma {
   };
 
   HistogramRegistry registry{"Pi0EtaToGammaGamma"};
+  Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
 
@@ -122,8 +123,8 @@ struct Pi0EtaToGammaGamma {
   }
 
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
-  Filter collisionFilter_subsys = (o2::aod::emreducedevent::ngpcm >= 2) || (o2::aod::emreducedevent::ngphos >= 2) || (o2::aod::emreducedevent::ngemc >= 2) || (o2::aod::emreducedevent::ngpcm >= 1 && o2::aod::emreducedevent::ngphos >= 1) || (o2::aod::emreducedevent::ngpcm >= 1 && o2::aod::emreducedevent::ngemc >= 1) || (o2::aod::emreducedevent::ngphos >= 1 && o2::aod::emreducedevent::ngemc >= 1);
-
+  Filter collisionFilter_subsys = (o2::aod::emreducedevent::ngpcm >= 1) || (o2::aod::emreducedevent::ngphos >= 1) || (o2::aod::emreducedevent::ngemc >= 1);
+  // Filter collisionFilter_subsys = (o2::aod::emreducedevent::ngpcm >= 2) || (o2::aod::emreducedevent::ngphos >= 2) || (o2::aod::emreducedevent::ngemc >= 2) || (o2::aod::emreducedevent::ngpcm >= 1 && o2::aod::emreducedevent::ngphos >= 1) || (o2::aod::emreducedevent::ngpcm >= 1 && o2::aod::emreducedevent::ngemc >= 1) || (o2::aod::emreducedevent::ngphos >= 1 && o2::aod::emreducedevent::ngemc >= 1);
   using MyFilteredCollisions = soa::Filtered<aod::EMReducedEvents>;
 
   template <typename TCuts1, typename TCuts2>
@@ -333,6 +334,10 @@ struct Pi0EtaToGammaGamma {
             ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
             ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
             ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+            if (abs(v12.Rapidity()) > maxY) {
+              continue;
+            }
+
             reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
           }    // end of combination
         }      // end of cut loop
@@ -346,6 +351,9 @@ struct Pi0EtaToGammaGamma {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+              if (abs(v12.Rapidity()) > maxY) {
+                continue;
+              }
               reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
             } // end of combination
           }   // end of cut2 loop
@@ -401,32 +409,7 @@ struct Pi0EtaToGammaGamma {
   void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TLegs const& legs)
   {
     // LOGF(info, "Number of collisions after filtering: %d", collisions.size());
-    int nev = 0; // event counter for collision1
-    int index_coll1 = -999;
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 1e+3, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
-
-      if (index_coll1 != collision1.collisionId()) {
-        index_coll1 = collision1.collisionId();
-        nev = 0; // reset event counter for mixing, when collision index of collision1 changes.
-      }
-
-      if (nev > ndepth) {
-        continue;
-      }
-
-      if (pairtype == PairType::kPCMPCM && (collision1.ngpcm() < 2 || collision2.ngpcm() < 2)) {
-        continue;
-      } else if (pairtype == PairType::kPHOSPHOS && (collision1.ngphos() < 2 || collision2.ngphos() < 2)) {
-        continue;
-      } else if (pairtype == PairType::kEMCEMC && (collision1.ngemc() < 2 || collision2.ngemc() < 2)) {
-        continue;
-      } else if (pairtype == PairType::kPCMPHOS && ((collision1.ngpcm() < 1 || collision1.ngphos() < 1) || (collision2.ngpcm() < 1 || collision2.ngphos() < 1))) {
-        continue;
-      } else if (pairtype == PairType::kPCMEMC && ((collision1.ngpcm() < 1 || collision1.ngemc() < 1) || (collision2.ngpcm() < 1 || collision2.ngemc() < 1))) {
-        continue;
-      } else if (pairtype == PairType::kPHOSEMC && ((collision1.ngphos() < 1 || collision1.ngemc() < 1) || (collision2.ngphos() < 1 || collision2.ngemc() < 1))) {
-        continue;
-      }
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
 
       // LOGF(info, "Mixed event collisionId: (%d, %d) , counter = %d, ngpcm: (%d, %d), ngphos: (%d, %d), ngemc: (%d, %d)",
       //     collision1.collisionId(), collision2.collisionId(), nev, collision1.ngpcm(), collision2.ngpcm(), collision1.ngphos(), collision2.ngphos(), collision1.ngemc(), collision2.ngemc());
@@ -451,13 +434,15 @@ struct Pi0EtaToGammaGamma {
             ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
             ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
             ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+            if (abs(v12.Rapidity()) > maxY) {
+              continue;
+            }
             reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Mixed"))->Fill(v12.M(), v12.Pt());
 
           } // end of different photon combinations
         }   // end of cut2 loop
       }     // end of cut1 loop
-      nev++;
-    } // end of different collision combinations
+    }       // end of different collision combinations
   }
 
   /// \brief Calculate background (using rotation background method only for EMCal!)

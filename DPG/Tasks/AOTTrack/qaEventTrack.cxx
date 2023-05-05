@@ -327,6 +327,10 @@ struct qaEventTrack {
     auto h2 = histos.add<TH2>("Tracks/TPC/tpcNClsFoundVsEta", "tracks with at least 1 TPC cluster", kTH2D, {axisEta, {165, -0.5, 164.5}});
     h2->GetXaxis()->SetTitle("#eta");
     h2->GetYaxis()->SetTitle("# clusters TPC");
+    auto h3 = histos.add<TH3>("Tracks/TPC/tpcNClsFoundVsEtaVtxZ", "tracks with at least 1 TPC cluster", kTH3D, {axisEta, {165, -0.5, 164.5}, axisVertexPosZ});
+    h3->GetXaxis()->SetTitle("#eta");
+    h3->GetYaxis()->SetTitle("# clusters TPC");
+    h3->GetZaxis()->SetTitle("Vtx. Z [cm]");
     histos.add("Tracks/TPC/tpcNClsShared", "number of shared TPC clusters;# shared clusters TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH1D, {{100, 0., 1.}});
@@ -1185,6 +1189,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/TPC/tpcNClsFindable"), track.tpcNClsFindable());
     histos.fill(HIST("Tracks/TPC/tpcNClsFound"), track.tpcNClsFound());
     histos.fill(HIST("Tracks/TPC/tpcNClsFoundVsEta"), track.eta(), track.tpcNClsFound());
+    histos.fill(HIST("Tracks/TPC/tpcNClsFoundVsEtaVtxZ"), track.eta(), track.tpcNClsFound(), collision.posZ());
     histos.fill(HIST("Tracks/TPC/tpcNClsShared"), track.tpcNClsShared());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());

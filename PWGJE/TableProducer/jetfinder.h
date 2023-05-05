@@ -45,13 +45,13 @@ using JetClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 
 using JetParticles2Prong = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
 using JetParticles3Prong = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-using JetParticlesBPlus = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
+using JetParticlesBplus = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
 
 using CandidateD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 using CandidateD0MC = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
 
-using CandidateBPlusData = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>>;
-using CandidateBPlusMC = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>;
+using CandidateBplusData = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>>;
+using CandidateBplusMC = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>;
 
 using CandidateLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
 using CandidateLcMC = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
@@ -65,6 +65,8 @@ bool selectTrack(T const& track, std::string trackSelection)
   if (trackSelection == "globalTracks" && !track.isGlobalTrackWoPtEta()) {
     return false;
   } else if (trackSelection == "QualityTracks" && !track.isQualityTrack()) {
+    return false;
+  } else if (trackSelection == "hybridTracksJE" && !track.trackCutFlagFb5()) { // isQualityTrack
     return false;
   } else {
     return true;
@@ -93,7 +95,7 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
         }
       }
 
-      if constexpr (std::is_same_v<std::decay_t<U>, CandidateBPlusData::iterator> || std::is_same_v<std::decay_t<U>, CandidateBPlusData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateBPlusMC::iterator> || std::is_same_v<std::decay_t<U>, CandidateBPlusMC::filtered_iterator>) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidateBplusData::iterator> || std::is_same_v<std::decay_t<U>, CandidateBplusData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateBplusMC::iterator> || std::is_same_v<std::decay_t<U>, CandidateBplusMC::filtered_iterator>) {
         if (cand.template prong0_as<aod::HfCand2Prong>().template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong0_as<aod::HfCand2Prong>().template prong1_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
