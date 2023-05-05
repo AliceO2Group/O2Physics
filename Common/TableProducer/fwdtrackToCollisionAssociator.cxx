@@ -85,10 +85,10 @@ struct FwdTrackToCollisionAssociation {
         globalBC.push_back(track.collision().bc().globalBC());
       } else {
         for (const auto& ambTrack : ambiguousTracks) {
-            if (ambTrack.template getId<TTracks>() == track.globalIndex()) {
-              globalBC.push_back(ambTrack.bc().begin().globalBC());
-              break;
-            }
+          if (ambTrack.template getId<TTracks>() == track.globalIndex()) {
+            globalBC.push_back(ambTrack.bc().begin().globalBC());
+            break;
+          }
         }
       }
     }
