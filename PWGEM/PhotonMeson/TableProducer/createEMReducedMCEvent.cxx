@@ -138,21 +138,6 @@ struct createEMReducedMCEvent {
         }
         int pdg = mctrack.pdgCode();
 
-        // if(pdg == 111){
-        //   if (mctrack.has_mothers()) {
-        //     //auto mck0s = mcTracks.iteratorAt(mctrack.mothersIds()[0]);
-        //     auto mp = mctrack.template mothers_first_as<aod::McParticles>();
-        //     int pdg_mp = mp.pdgCode();
-        //     if(pdg_mp == 310){
-        //       LOGF(info,"pi0 from K0S : index = %d , mc track pdg = %d , producedByGenerator =  %d , isPhysicalPrimary = %d", mctrack.index(), mctrack.pdgCode(), mctrack.producedByGenerator(), mctrack.isPhysicalPrimary());
-        //     }
-        //     else if(pdg_mp == 223){
-        //       LOGF(info,"pi0 from omega : index = %d , mc track pdg = %d , producedByGenerator =  %d , isPhysicalPrimary = %d", mctrack.index(), mctrack.pdgCode(), mctrack.producedByGenerator(), mctrack.isPhysicalPrimary());
-        //     }
-
-        //   }
-        // }
-
         // Note that pi0 from weak decay gives producedByGenerator() = false
         if (
           abs(pdg) != 11      // electron
