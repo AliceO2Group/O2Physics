@@ -371,6 +371,9 @@ struct hyhefourbuilder {
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct hyHe4Preselector 
 {
+  // storing output
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   Produces<aod::HyHe4Tags> hyhetags; // MC tags
   Preslice<aod::Decay3Bodys> perCollision = o2::aod::decay3body::collisionId;
   //  Configurable<bool> dIfMCgenerateHelium3{"dIfMCgenerateHelium3", true, "if MC, generate MC true Helium3 (yes/no)"};
@@ -385,6 +388,12 @@ struct hyHe4Preselector
 
   // tpc quality pre-selection
   Configurable<int> dTPCNCrossedRows{"dTPCNCrossedRows", 50, "Minimum TPC crossed rows"};
+
+  void init(InitContext& context)
+  {
+    const AxisSpec hEventCounter{(int)1, 0.0f, 1.0f, "Number of events"};
+    histos.add("hNEvents", "hNEvents", kTH1F, {hEventCounter});
+  }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
@@ -405,6 +414,8 @@ struct hyHe4Preselector
   template <class TTrackTo, typename T3Body>
   void checkPDG(T3Body const& d3body, bool& lIsInteresting,  bool& lIsTrueHyHelium4, bool& lIsTrueAntiHyHelium4)
   {
+    lIsTrueHyHelium4 = false; 
+    lIsTrueAntiHyHelium4 = false; 
     int lPDG = -1;
     lIsInteresting = false;
     auto const& trackProng0 = d3body.template track0_as<TTrackTo>();
