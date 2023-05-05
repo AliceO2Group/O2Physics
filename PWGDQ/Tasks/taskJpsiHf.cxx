@@ -215,12 +215,12 @@ struct taskJpsiHf {
       // loop over D mesons
       for (auto& dmeson : dmesons) {
         if (dmeson.isSelD0() >= selectionFlagD0) {
-            VarManager::FillDileptonHadron(dilepton, dmeson, fValuesDmeson, invMassD0ToPiK(dmeson));
-            fHistMan->FillHistClass("DileptonHadronInvMass", fValuesDmeson);
+          VarManager::FillDileptonHadron(dilepton, dmeson, fValuesDmeson, invMassD0ToPiK(dmeson));
+          fHistMan->FillHistClass("DileptonHadronInvMass", fValuesDmeson);
         }
         if (dmeson.isSelD0bar() >= selectionFlagD0bar) {
-            VarManager::FillDileptonHadron(dilepton, dmeson, fValuesDmeson, invMassD0barToKPi(dmeson));
-            fHistMan->FillHistClass("DileptonHadronInvMass", fValuesDmeson);
+          VarManager::FillDileptonHadron(dilepton, dmeson, fValuesDmeson, invMassD0barToKPi(dmeson));
+          fHistMan->FillHistClass("DileptonHadronInvMass", fValuesDmeson);
         }
       }
     }
