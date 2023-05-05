@@ -53,8 +53,8 @@ const int ptDAxisBins = 180;
 const double ptDAxisMin = 0.;
 const double ptDAxisMax = 36.;
 
-using MCParticlesPlus2Prong = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
-using MCParticlesPlus3Prong = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+using McParticlesPlus2Prong = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
+using McParticlesPlus3Prong = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
 struct HfCorrelatorDMesonPairs {
   SliceCache cache;
