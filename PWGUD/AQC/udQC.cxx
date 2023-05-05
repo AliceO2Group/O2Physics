@@ -53,7 +53,7 @@ struct UDQC {
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
   o2::dataformats::bcRanges afbcrs = o2::dataformats::bcRanges("ambiguous_fwdtracks");
 
-  // initialize HistogramRegistry
+  // inivinitialize HistogramRegistry
   HistogramRegistry registry{
     "registry",
     {}};
@@ -142,11 +142,6 @@ struct UDQC {
     if (context.mOptions.get<bool>("processZDC")) {
       registry.add("ZdcEnergies", "#ZdcEnergies", {HistType::kTH2F, {{22, -0.5, 21.5}, {100, 0., 1000.}}});
     }
-
-    /* if (context.mOptions.get<bool>("processCalo")) {
-       registry.add("CaloCell", "#CaloCell", {HistType::kTH1I, {{18000, -0.5, 17999.5}}});
-        registry.add("CaloAmplitude", "#CaloAmplitude", {HistType::kTH1F, {{100, 0, 10.}}});
-      }*/
   }
 
   void run(ProcessingContext& pc)
@@ -846,14 +841,6 @@ struct UDQC {
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(21., (zdc.energySectorZPC())[3]);
   };
   PROCESS_SWITCH(UDQC, processZDC, "Process ZDC", true);
-
-  // ...............................................................................................................
-
-  //  void processCalo(aod::Calos const& calos, BCs const&)
-  //   {
-  //  LOGF(info, "<CaloSignals> %d", calos.size());
-  //     }
-  //   PROCESS_SWITCH(UDQC, processCalo, "Process calo", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
