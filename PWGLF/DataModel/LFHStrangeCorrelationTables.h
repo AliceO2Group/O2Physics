@@ -46,9 +46,9 @@ DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data);                             //!
 DECLARE_SOA_COLUMN(CompatibleK0Short, compatibleK0Short, bool);       // compatible with K0Short
 DECLARE_SOA_COLUMN(CompatibleLambda, compatibleLambda, bool);         // compatible with Lambda
 DECLARE_SOA_COLUMN(CompatibleAntiLambda, compatibleAntiLambda, bool); // compatible with AntiLambda
-DECLARE_SOA_COLUMN(MassRegionK0Short, massRegionK0Short, int);        // 
-DECLARE_SOA_COLUMN(MassRegionLambda, massRegionLambda, int);          // 
-DECLARE_SOA_COLUMN(MassRegionAntiLambda, massRegionAntiLambda, int);  // 
+DECLARE_SOA_COLUMN(MassRegionK0Short, massRegionK0Short, int);        //
+DECLARE_SOA_COLUMN(MassRegionLambda, massRegionLambda, int);          //
+DECLARE_SOA_COLUMN(MassRegionAntiLambda, massRegionAntiLambda, int);  //
 DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
                            [](bool cK0Short, bool cLambda, bool cAntiLambda, int value) -> bool {
                              if (value == 0 && cK0Short)
@@ -59,7 +59,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check 
                                return true;
                              return false;
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(InMassRegionCheck, inMassRegionCheck,                                    
+DECLARE_SOA_DYNAMIC_COLUMN(InMassRegionCheck, inMassRegionCheck,
                            [](int rK0Short, int rLambda, int rAntiLambda, int value, int region) -> bool {
                              if (value == 0 && rK0Short == region)
                                return true;
@@ -90,8 +90,8 @@ DECLARE_SOA_COLUMN(CompatibleXiMinus, compatibleXiMinus, bool);       // compati
 DECLARE_SOA_COLUMN(CompatibleXiPlus, compatibleXiPlus, bool);         // compatible with XiPlus
 DECLARE_SOA_COLUMN(CompatibleOmegaMinus, compatibleOmegaMinus, bool); // compatible with OmegaMinus
 DECLARE_SOA_COLUMN(CompatibleOmegaPlus, compatibleOmegaPlus, bool);   // compatible with OmegaPlus
-DECLARE_SOA_COLUMN(MassRegionXi, massRegionXi, int);        // 
-DECLARE_SOA_COLUMN(MassRegionOmega, massRegionOmega, int);  // 
+DECLARE_SOA_COLUMN(MassRegionXi, massRegionXi, int);                  //
+DECLARE_SOA_COLUMN(MassRegionOmega, massRegionOmega, int);            //
 DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
                            [](bool cXiMinus, bool cXiPlus, bool cOmegaMinus, bool cOmegaPlus, int value) -> bool {
                              if (value == 0 && cXiMinus)
@@ -104,7 +104,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check 
                                return true;
                              return false;
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(InMassRegionCheck, inMassRegionCheck,                   
+DECLARE_SOA_DYNAMIC_COLUMN(InMassRegionCheck, inMassRegionCheck,
                            [](int rXi, int rOmega, int value, int region) -> bool {
                              if (value == 0 && rXi == region)
                                return true;

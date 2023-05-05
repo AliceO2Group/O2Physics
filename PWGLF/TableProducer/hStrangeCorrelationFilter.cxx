@@ -86,7 +86,7 @@ struct hstrangecorrelationfilter {
   Configurable<float> omegaWidthAngular{"omegaWidthAngular", 0.00641875f, "angular coefficient of omega width vs pT"};
   Configurable<float> omegaWidthLinear{"omegaWidthLinear", -0.00422177f, "linear coefficient of omega width vs pT"};
 
-  // definitions of peak and background 
+  // definitions of peak and background
   Configurable<float> peakNsigma{"peakNsigma", 3.0f, "peak region is +/- this many sigmas away"};
   Configurable<float> backgroundNsigma{"backgroundNsigma", 6.0f, "bg region is +/- this many sigmas away (minus peak)"};
 
@@ -124,34 +124,34 @@ struct hstrangecorrelationfilter {
   Produces<aod::AssocV0s> assocV0;
   Produces<aod::AssocCascades> assocCascades;
 
-  TF1 *fK0Mean; 
-  TF1 *fK0Width;
-  TF1 *fLambdaMean; 
-  TF1 *fLambdaWidth;
-  TF1 *fXiMean; 
-  TF1 *fXiWidth;
-  TF1 *fOmegaMean; 
-  TF1 *fOmegaWidth;
+  TF1* fK0Mean;
+  TF1* fK0Width;
+  TF1* fLambdaMean;
+  TF1* fLambdaWidth;
+  TF1* fXiMean;
+  TF1* fXiWidth;
+  TF1* fOmegaMean;
+  TF1* fOmegaWidth;
   void init(InitContext const&)
   {
-    // initialise regions of mean and width 
-    fK0Mean = new TF1("fK0Mean", "[0]*x+[1]"); 
-    fK0Width = new TF1("fK0Width", "[0]*x+[1]"); 
-    fLambdaMean = new TF1("fLambdaMean", "[0]*x+[1]"); 
+    // initialise regions of mean and width
+    fK0Mean = new TF1("fK0Mean", "[0]*x+[1]");
+    fK0Width = new TF1("fK0Width", "[0]*x+[1]");
+    fLambdaMean = new TF1("fLambdaMean", "[0]*x+[1]");
     fLambdaWidth = new TF1("fLambdaWidth", "[0]*x+[1]");
-    fXiMean = new TF1("fXiMean", "[0]*x+[1]"); 
+    fXiMean = new TF1("fXiMean", "[0]*x+[1]");
     fXiWidth = new TF1("fXiWidth", "[0]*x+[1]");
-    fOmegaMean = new TF1("fomegaMean", "[0]*x+[1]"); 
+    fOmegaMean = new TF1("fomegaMean", "[0]*x+[1]");
     fOmegaWidth = new TF1("fomegaWidth", "[0]*x+[1]");
 
-    fK0Mean -> SetParameters(k0MeanAngular, k0MeanLinear);
-    fK0Width -> SetParameters(k0WidthAngular, k0WidthLinear);
-    fLambdaMean -> SetParameters(lambdaMeanAngular, lambdaMeanLinear);
-    fLambdaWidth -> SetParameters(lambdaWidthAngular, lambdaWidthLinear);
-    fXiMean -> SetParameters(xiMeanAngular, xiMeanLinear);
-    fXiWidth -> SetParameters(xiWidthAngular, xiWidthLinear);
-    fOmegaMean -> SetParameters(omegaMeanAngular, omegaMeanLinear);
-    fOmegaWidth -> SetParameters(omegaWidthAngular, omegaWidthLinear);
+    fK0Mean->SetParameters(k0MeanAngular, k0MeanLinear);
+    fK0Width->SetParameters(k0WidthAngular, k0WidthLinear);
+    fLambdaMean->SetParameters(lambdaMeanAngular, lambdaMeanLinear);
+    fLambdaWidth->SetParameters(lambdaWidthAngular, lambdaWidthLinear);
+    fXiMean->SetParameters(xiMeanAngular, xiMeanLinear);
+    fXiWidth->SetParameters(xiWidthAngular, xiWidthLinear);
+    fOmegaMean->SetParameters(omegaMeanAngular, omegaMeanLinear);
+    fOmegaWidth->SetParameters(omegaWidthAngular, omegaWidthLinear);
   }
 
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const& tracks, soa::Filtered<aod::V0Datas> const& V0s, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&)
@@ -230,54 +230,54 @@ struct hstrangecorrelationfilter {
         compatibleAntiLambda = true;
       }
       // check whether V0s are in the regin
-      int massRegK0Short = -1; 
-      if ( TMath::Abs(v0.mK0Short()-fK0Mean->Eval(v0.pt())<peakNsigma*fK0Width->Eval(v0.pt()) ) ){
+      int massRegK0Short = -1;
+      if (TMath::Abs(v0.mK0Short() - fK0Mean->Eval(v0.pt()) < peakNsigma * fK0Width->Eval(v0.pt()))) {
         massRegK0Short = 2;
       }
-      if ( v0.mK0Short()>fK0Mean->Eval(v0.pt()) + peakNsigma*fK0Width->Eval(v0.pt()) && v0.mK0Short()<fK0Mean->Eval(v0.pt()) + backgroundNsigma*fK0Width->Eval(v0.pt()) ) {
+      if (v0.mK0Short() > fK0Mean->Eval(v0.pt()) + peakNsigma * fK0Width->Eval(v0.pt()) && v0.mK0Short() < fK0Mean->Eval(v0.pt()) + backgroundNsigma * fK0Width->Eval(v0.pt())) {
         massRegK0Short = 3;
       }
-      if ( v0.mK0Short()<fK0Mean->Eval(v0.pt()) - peakNsigma*fK0Width->Eval(v0.pt()) && v0.mK0Short()>fK0Mean->Eval(v0.pt()) - backgroundNsigma*fK0Width->Eval(v0.pt()) ) {
+      if (v0.mK0Short() < fK0Mean->Eval(v0.pt()) - peakNsigma * fK0Width->Eval(v0.pt()) && v0.mK0Short() > fK0Mean->Eval(v0.pt()) - backgroundNsigma * fK0Width->Eval(v0.pt())) {
         massRegK0Short = 1;
       }
-      if ( v0.mK0Short()>fK0Mean->Eval(v0.pt()) + backgroundNsigma*fK0Width->Eval(v0.pt()) ) {
+      if (v0.mK0Short() > fK0Mean->Eval(v0.pt()) + backgroundNsigma * fK0Width->Eval(v0.pt())) {
         massRegK0Short = 4;
       }
-      if ( v0.mK0Short()<fK0Mean->Eval(v0.pt()) - backgroundNsigma*fK0Width->Eval(v0.pt()) ) {
+      if (v0.mK0Short() < fK0Mean->Eval(v0.pt()) - backgroundNsigma * fK0Width->Eval(v0.pt())) {
         massRegK0Short = 0;
       }
 
       int massRegLambda = -1;
-      if ( TMath::Abs(v0.mLambda()-fLambdaMean->Eval(v0.pt())<peakNsigma*fLambdaWidth->Eval(v0.pt()) ) ){
+      if (TMath::Abs(v0.mLambda() - fLambdaMean->Eval(v0.pt()) < peakNsigma * fLambdaWidth->Eval(v0.pt()))) {
         massRegLambda = 2;
       }
-      if ( v0.mLambda()>fLambdaMean->Eval(v0.pt()) + peakNsigma*fLambdaWidth->Eval(v0.pt()) && v0.mLambda()<fLambdaMean->Eval(v0.pt()) + backgroundNsigma*fLambdaWidth->Eval(v0.pt()) ) {
+      if (v0.mLambda() > fLambdaMean->Eval(v0.pt()) + peakNsigma * fLambdaWidth->Eval(v0.pt()) && v0.mLambda() < fLambdaMean->Eval(v0.pt()) + backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
         massRegLambda = 3;
       }
-      if ( v0.mLambda()<fLambdaMean->Eval(v0.pt()) - peakNsigma*fLambdaWidth->Eval(v0.pt()) && v0.mLambda()>fLambdaMean->Eval(v0.pt()) - backgroundNsigma*fLambdaWidth->Eval(v0.pt()) ) {
+      if (v0.mLambda() < fLambdaMean->Eval(v0.pt()) - peakNsigma * fLambdaWidth->Eval(v0.pt()) && v0.mLambda() > fLambdaMean->Eval(v0.pt()) - backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
         massRegLambda = 1;
       }
-      if ( v0.mLambda()>fLambdaMean->Eval(v0.pt()) + backgroundNsigma*fLambdaWidth->Eval(v0.pt()) ) {
+      if (v0.mLambda() > fLambdaMean->Eval(v0.pt()) + backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
         massRegLambda = 4;
       }
-      if ( v0.mLambda()<fLambdaMean->Eval(v0.pt()) - backgroundNsigma*fLambdaWidth->Eval(v0.pt()) ) {
+      if (v0.mLambda() < fLambdaMean->Eval(v0.pt()) - backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
         massRegLambda = 0;
       }
 
       int massRegAntiLambda = -1;
-      if ( TMath::Abs(v0.mAntiLambda()-fLambdaMean->Eval(v0.pt())<peakNsigma*fLambdaWidth->Eval(v0.pt()) ) ){
+      if (TMath::Abs(v0.mAntiLambda() - fLambdaMean->Eval(v0.pt()) < peakNsigma * fLambdaWidth->Eval(v0.pt()))) {
         massRegAntiLambda = 2;
       }
-      if ( v0.mAntiLambda()>fLambdaMean->Eval(v0.pt()) + peakNsigma*fLambdaWidth->Eval(v0.pt()) && v0.mAntiLambda()<fLambdaMean->Eval(v0.pt()) + backgroundNsigma*fLambdaWidth->Eval(v0.pt()) ) {
+      if (v0.mAntiLambda() > fLambdaMean->Eval(v0.pt()) + peakNsigma * fLambdaWidth->Eval(v0.pt()) && v0.mAntiLambda() < fLambdaMean->Eval(v0.pt()) + backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
         massRegAntiLambda = 3;
       }
-      if ( v0.mAntiLambda()<fLambdaMean->Eval(v0.pt()) - peakNsigma*fLambdaWidth->Eval(v0.pt()) && v0.mAntiLambda()>fLambdaMean->Eval(v0.pt()) - backgroundNsigma*fLambdaWidth->Eval(v0.pt()) ) {
+      if (v0.mAntiLambda() < fLambdaMean->Eval(v0.pt()) - peakNsigma * fLambdaWidth->Eval(v0.pt()) && v0.mAntiLambda() > fLambdaMean->Eval(v0.pt()) - backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
         massRegAntiLambda = 1;
       }
-      if ( v0.mAntiLambda()>fLambdaMean->Eval(v0.pt()) + backgroundNsigma*fLambdaWidth->Eval(v0.pt()) ) {
+      if (v0.mAntiLambda() > fLambdaMean->Eval(v0.pt()) + backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
         massRegAntiLambda = 4;
       }
-      if ( v0.mAntiLambda()<fLambdaMean->Eval(v0.pt()) - backgroundNsigma*fLambdaWidth->Eval(v0.pt()) ) {
+      if (v0.mAntiLambda() < fLambdaMean->Eval(v0.pt()) - backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
         massRegAntiLambda = 0;
       }
       assocV0(v0.collisionId(), v0.globalIndex(), compatibleK0Short, compatibleLambda, compatibleAntiLambda, massRegK0Short, massRegLambda, massRegAntiLambda);
@@ -326,37 +326,37 @@ struct hstrangecorrelationfilter {
         compatibleOmegaPlus = true;
       }
 
-      int massRegXi = -1; 
-      if ( TMath::Abs(casc.mXi()-fXiMean->Eval(casc.pt())<peakNsigma*fXiWidth->Eval(casc.pt()) ) ){
+      int massRegXi = -1;
+      if (TMath::Abs(casc.mXi() - fXiMean->Eval(casc.pt()) < peakNsigma * fXiWidth->Eval(casc.pt()))) {
         massRegXi = 2;
       }
-      if ( casc.mXi()>fXiMean->Eval(casc.pt()) + peakNsigma*fXiWidth->Eval(casc.pt()) && casc.mXi()<fXiMean->Eval(casc.pt()) + backgroundNsigma*fXiWidth->Eval(casc.pt()) ) {
+      if (casc.mXi() > fXiMean->Eval(casc.pt()) + peakNsigma * fXiWidth->Eval(casc.pt()) && casc.mXi() < fXiMean->Eval(casc.pt()) + backgroundNsigma * fXiWidth->Eval(casc.pt())) {
         massRegXi = 3;
       }
-      if ( casc.mXi()<fXiMean->Eval(casc.pt()) - peakNsigma*fXiWidth->Eval(casc.pt()) && casc.mXi()>fXiMean->Eval(casc.pt()) - backgroundNsigma*fXiWidth->Eval(casc.pt()) ) {
+      if (casc.mXi() < fXiMean->Eval(casc.pt()) - peakNsigma * fXiWidth->Eval(casc.pt()) && casc.mXi() > fXiMean->Eval(casc.pt()) - backgroundNsigma * fXiWidth->Eval(casc.pt())) {
         massRegXi = 1;
       }
-      if ( casc.mXi()>fXiMean->Eval(casc.pt()) + backgroundNsigma*fXiWidth->Eval(casc.pt()) ) {
+      if (casc.mXi() > fXiMean->Eval(casc.pt()) + backgroundNsigma * fXiWidth->Eval(casc.pt())) {
         massRegXi = 4;
       }
-      if ( casc.mXi()<fXiMean->Eval(casc.pt()) - backgroundNsigma*fXiWidth->Eval(casc.pt()) ) {
+      if (casc.mXi() < fXiMean->Eval(casc.pt()) - backgroundNsigma * fXiWidth->Eval(casc.pt())) {
         massRegXi = 0;
       }
 
-      int massRegOmega = -1; 
-      if ( TMath::Abs(casc.mOmega()-fOmegaMean->Eval(casc.pt())<peakNsigma*fOmegaWidth->Eval(casc.pt()) ) ){
+      int massRegOmega = -1;
+      if (TMath::Abs(casc.mOmega() - fOmegaMean->Eval(casc.pt()) < peakNsigma * fOmegaWidth->Eval(casc.pt()))) {
         massRegOmega = 2;
       }
-      if ( casc.mOmega()>fOmegaMean->Eval(casc.pt()) + peakNsigma*fOmegaWidth->Eval(casc.pt()) && casc.mOmega()<fOmegaMean->Eval(casc.pt()) + backgroundNsigma*fOmegaWidth->Eval(casc.pt()) ) {
+      if (casc.mOmega() > fOmegaMean->Eval(casc.pt()) + peakNsigma * fOmegaWidth->Eval(casc.pt()) && casc.mOmega() < fOmegaMean->Eval(casc.pt()) + backgroundNsigma * fOmegaWidth->Eval(casc.pt())) {
         massRegOmega = 3;
       }
-      if ( casc.mOmega()<fOmegaMean->Eval(casc.pt()) - peakNsigma*fOmegaWidth->Eval(casc.pt()) && casc.mOmega()>fOmegaMean->Eval(casc.pt()) - backgroundNsigma*fOmegaWidth->Eval(casc.pt()) ) {
+      if (casc.mOmega() < fOmegaMean->Eval(casc.pt()) - peakNsigma * fOmegaWidth->Eval(casc.pt()) && casc.mOmega() > fOmegaMean->Eval(casc.pt()) - backgroundNsigma * fOmegaWidth->Eval(casc.pt())) {
         massRegOmega = 1;
       }
-      if ( casc.mOmega()>fOmegaMean->Eval(casc.pt()) + backgroundNsigma*fOmegaWidth->Eval(casc.pt()) ) {
+      if (casc.mOmega() > fOmegaMean->Eval(casc.pt()) + backgroundNsigma * fOmegaWidth->Eval(casc.pt())) {
         massRegOmega = 4;
       }
-      if ( casc.mOmega()<fOmegaMean->Eval(casc.pt()) - backgroundNsigma*fOmegaWidth->Eval(casc.pt()) ) {
+      if (casc.mOmega() < fOmegaMean->Eval(casc.pt()) - backgroundNsigma * fOmegaWidth->Eval(casc.pt())) {
         massRegOmega = 0;
       }
       assocCascades(casc.collisionId(), casc.globalIndex(), compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus, massRegXi, massRegOmega);
