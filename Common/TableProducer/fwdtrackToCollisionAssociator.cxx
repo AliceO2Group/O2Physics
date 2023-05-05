@@ -54,10 +54,10 @@ struct FwdTrackToCollisionAssociation {
   {
     // we do it for all tracks, to be compatible with Run 2 analyses
     for (const auto& collision : collisions) {
-        auto tracksThisCollision = tracks.sliceBy(perCollisions, collision.globalIndex());
-        for (const auto& track : tracksThisCollision) {
-          association(collision.globalIndex(), track.globalIndex());
-        }
+      auto tracksThisCollision = tracks.sliceBy(perCollisions, collision.globalIndex());
+      for (const auto& track : tracksThisCollision) {
+        association(collision.globalIndex(), track.globalIndex());
+      }
     }
 
     // create reverse index track to collisions if enabled
@@ -65,9 +65,9 @@ struct FwdTrackToCollisionAssociation {
     if (fillTableOfCollIdsPerTrack) {
       for (const auto& track : tracks) {
         if (track.has_collision()) {
-            reverseIndices(std::vector<int>{track.collisionId()});
+          reverseIndices(std::vector<int>{track.collisionId()});
         } else {
-            reverseIndices(empty);
+          reverseIndices(empty);
         }
       }
     }
@@ -78,7 +78,7 @@ struct FwdTrackToCollisionAssociation {
                         TTracks const& tracks,
                         TAmbiTracks const& ambiguousTracks,
                         BCs const& bcs,
-			Assoc association, RevIndices reverseIndices)
+                        Assoc association, RevIndices reverseIndices)
   {
     // cache globalBC
     std::vector<uint64_t> globalBC;
@@ -153,9 +153,9 @@ struct FwdTrackToCollisionAssociation {
 
         const auto trackId = track.globalIndex();
         if (collsPerTrack[trackId] == nullptr) {
-            reverseIndices(empty);
+          reverseIndices(empty);
         } else {
-            reverseIndices(*collsPerTrack[trackId].get());
+          reverseIndices(*collsPerTrack[trackId].get());
         }
       }
     }
