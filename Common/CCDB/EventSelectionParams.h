@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef EventSelectionParams_H
-#define EventSelectionParams_H
+#ifndef COMMON_CCDB_EVENTSELECTIONPARAMS_H_
+#define COMMON_CCDB_EVENTSELECTIONPARAMS_H_
 
 #include <Rtypes.h>
 #include <TMath.h>
@@ -65,7 +65,7 @@ using namespace evsel;
 class EventSelectionParams
 {
  public:
-  EventSelectionParams(int system = 0, int run = 2);
+  explicit EventSelectionParams(int system = 0, int run = 2);
   void DisableOutOfBunchPileupCuts();
   void SetOnVsOfParams(float newV0MOnVsOfA, float newV0MOnVsOfB, float newSPDOnVsOfA, float newSPDOnVsOfB);
   bool* GetSelection(int iSelection);
@@ -138,4 +138,4 @@ class EventSelectionParams
   ClassDefNV(EventSelectionParams, 3)
 };
 
-#endif
+#endif // COMMON_CCDB_EVENTSELECTIONPARAMS_H_
