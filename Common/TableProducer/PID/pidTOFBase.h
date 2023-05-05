@@ -23,6 +23,9 @@
 
 #include "Common/DataModel/PIDResponse.h"
 
+#include <string>
+#include <vector>
+
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
