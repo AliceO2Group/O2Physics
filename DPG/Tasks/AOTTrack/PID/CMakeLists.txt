@@ -44,6 +44,11 @@ o2physics_add_dpl_workflow(pid-tpc-qa
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pid-tpc-qa-sig
+                           SOURCES qaPIDTPCSignal.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(pid-tpc-qa-mc
                            SOURCES qaPIDTPCMC.cxx
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
