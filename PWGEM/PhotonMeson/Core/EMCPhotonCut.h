@@ -102,7 +102,7 @@ class EMCPhotonCut : public TNamed
         // }
       }
       case EMCPhotonCuts::kExotic:
-        return mUseExoticCut ? cluster.isExotic() : true;
+        return mUseExoticCut ? !cluster.isExotic() : true;
 
       default:
         return false;
