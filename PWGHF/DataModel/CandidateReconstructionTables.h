@@ -1335,6 +1335,7 @@ DECLARE_SOA_TABLE(D0Pair, "AOD", "D0PAIR",
                   hf_correlation_d0_pair::CandidateType1,
                   hf_correlation_d0_pair::CandidateType2,
                   hf_correlation_d0_pair::IsData);
+
 DECLARE_SOA_TABLE(D0PairRecoInfo, "AOD", "D0PAIRRECOINFO",
                   hf_correlation_d0_pair::Origin1,
                   hf_correlation_d0_pair::Origin2,
