@@ -395,7 +395,6 @@ struct HfCorrelatorDMesonPairs {
       }   // end inner loop (Cand2)
     }     // end outer loop (Cand1)
   }
-
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processDataD0, "Process data D0", true);
 
   /// D0(bar)-D0(bar) correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
