@@ -114,10 +114,10 @@ class EventSelectionParams
   float fZNCBGlower = 5.0;   // ns
   float fZNCBGupper = 100.0; // ns
 
-  float fT0ABBlower = -1.0; // ns
-  float fT0ABBupper = 1.0;  // ns
-  float fT0CBBlower = -1.0; // ns
-  float fT0CBBupper = 1.0;  // ns
+  float fT0ABBlower = -2.0; // ns
+  float fT0ABBupper = 2.0;  // ns
+  float fT0CBBlower = -2.0; // ns
+  float fT0CBBupper = 2.0;  // ns
   float fT0ABGlower = 32.7; // ns
   float fT0ABGupper = 32.8; // ns
   float fT0CBGlower = 32.7; // ns
