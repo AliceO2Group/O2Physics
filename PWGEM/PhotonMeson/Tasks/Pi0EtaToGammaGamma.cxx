@@ -55,6 +55,10 @@ using MyV0Photon = MyV0Photons::iterator;
 struct Pi0EtaToGammaGamma {
 
   // HistogramRegistry registry{"Pi0EtaToGammaGamma"};
+  Configurable<float> CentMin{"CentMin", -1, "min. centrality"};
+  Configurable<float> CentMax{"CentMax", 999, "max. centrality"};
+  Configurable<std::string> CentEstimator{"CentEstimator", "FT0M", "centrality estimator"};
+
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
@@ -113,10 +117,6 @@ struct Pi0EtaToGammaGamma {
     fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
     fOutputPair.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Pair")));
   }
-
-  Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
-  Filter collisionFilter_subsys = (o2::aod::emreducedevent::ngpcm >= 1) || (o2::aod::emreducedevent::ngphos >= 1) || (o2::aod::emreducedevent::ngemc >= 1);
-  using MyFilteredCollisions = soa::Filtered<aod::EMReducedEvents>;
 
   template <typename TCuts1, typename TCuts2>
   void add_pair_histograms(THashList* list_pair, const std::string pairname, TCuts1 const& cuts1, TCuts2 const& cuts2)
@@ -280,12 +280,7 @@ struct Pi0EtaToGammaGamma {
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TLegs, typename TEMCMTs>
   void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TLegs const& legs, TEMCMTs const& emcmatchedtracks)
   {
-    // THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
-    // THashList* list_ev_pair = reinterpret_cast<THashList*>(list_ev->FindObject(pairnames[pairtype].data()));
     THashList* list_ev_pair = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data()));
-
-    // THashList* list_pair = reinterpret_cast<THashList*>(fMainList->FindObject("Pair"));
-    // THashList* list_pair_subsys = reinterpret_cast<THashList*>(list_pair->FindObject(pairnames[pairtype].data()));
 
     for (auto& collision : collisions) {
       if ((pairtype == PairType::kPHOSPHOS || pairtype == PairType::kPCMPHOS) && !collision.isPHOSCPVreadout()) {
@@ -332,7 +327,7 @@ struct Pi0EtaToGammaGamma {
             }
             reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
             if constexpr (pairtype == PairType::kEMCEMC) {
-              RotationBackground<aod::SkimEMCClusters, aod::EMReducedEvent>(v12, v1, v2, photons2_coll, collision, g1.globalIndex(), g2.globalIndex(), cut, emcmatchedtracks);
+              RotationBackground<aod::SkimEMCClusters>(v12, v1, v2, photons2_coll, g1.globalIndex(), g2.globalIndex(), cut, emcmatchedtracks);
             }
           }    // end of combination
         }      // end of cut loop
@@ -359,7 +354,7 @@ struct Pi0EtaToGammaGamma {
 
   Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 10.f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 1e+10f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 1e+10f}, "Mixing bins - multiplicity"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
   BinningType colBinning{{ConfVtxBins, ConfMultBins}, true};
 
@@ -404,8 +399,8 @@ struct Pi0EtaToGammaGamma {
   }
 
   /// \brief Calculate background (using rotation background method only for EMCal!)
-  template <typename TPhotons, typename TEvent>
-  void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, TEvent const& collision, unsigned int ig1, unsigned int ig2, EMCPhotonCut const& cut, SkimEMCMTs const& emcmatchedtracks)
+  template <typename TPhotons>
+  void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, EMCPhotonCut const& cut, SkimEMCMTs const& emcmatchedtracks)
   {
     // if less than 3 clusters are present skip event since we need at least 3 clusters
     if (photons_coll.size() < 3) {
@@ -465,39 +460,44 @@ struct Pi0EtaToGammaGamma {
     }
   }
 
+  Partition<aod::EMReducedEvents> grouped_collisions = CentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < CentMax; // this goes to same event.
+  Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && CentMin < o2::aod::cent::centFT0M&& o2::aod::cent::centFT0M < CentMax;
+  Filter collisionFilter_subsys = (o2::aod::emreducedevent::ngpcm >= 1) || (o2::aod::emreducedevent::ngphos >= 1) || (o2::aod::emreducedevent::ngemc >= 1);
+  using MyFilteredCollisions = soa::Filtered<aod::EMReducedEvents>; // this goes to mixed event.
+
   void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
   {
-    SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision, perCollision, fPCMCuts, fPCMCuts, legs, nullptr);
+    SameEventPairing<PairType::kPCMPCM>(grouped_collisions, v0photons, v0photons, perCollision, perCollision, fPCMCuts, fPCMCuts, legs, nullptr);
     MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision, fPCMCuts, fPCMCuts, legs, nullptr);
   }
 
   void processPHOSPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters)
   {
-    SameEventPairing<PairType::kPHOSPHOS>(collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, nullptr, nullptr);
+    SameEventPairing<PairType::kPHOSPHOS>(grouped_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, nullptr, nullptr);
     MixedEventPairing<PairType::kPHOSPHOS>(filtered_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, nullptr, nullptr);
   }
 
   void processEMCEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::SkimEMCClusters const& emcclusters, aod::SkimEMCMTs const& emcmatchedtracks)
   {
-    SameEventPairing<PairType::kEMCEMC>(collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fEMCCuts, fEMCCuts, nullptr, emcmatchedtracks);
+    SameEventPairing<PairType::kEMCEMC>(grouped_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fEMCCuts, fEMCCuts, nullptr, emcmatchedtracks);
     MixedEventPairing<PairType::kEMCEMC>(filtered_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fEMCCuts, fEMCCuts, nullptr, emcmatchedtracks);
   }
 
   void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::PHOSClusters const& phosclusters, aod::V0Legs const& legs)
   {
-    SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision, perCollision_phos, fPCMCuts, fPHOSCuts, legs, nullptr);
+    SameEventPairing<PairType::kPCMPHOS>(grouped_collisions, v0photons, phosclusters, perCollision, perCollision_phos, fPCMCuts, fPHOSCuts, legs, nullptr);
     MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision, perCollision_phos, fPCMCuts, fPHOSCuts, legs, nullptr);
   }
 
   void processPCMEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters, aod::V0Legs const& legs, aod::SkimEMCMTs const& emcmatchedtracks)
   {
-    SameEventPairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision, perCollision_emc, fPCMCuts, fEMCCuts, legs, emcmatchedtracks);
+    SameEventPairing<PairType::kPCMEMC>(grouped_collisions, v0photons, emcclusters, perCollision, perCollision_emc, fPCMCuts, fEMCCuts, legs, emcmatchedtracks);
     MixedEventPairing<PairType::kPCMEMC>(filtered_collisions, v0photons, emcclusters, perCollision, perCollision_emc, fPCMCuts, fEMCCuts, legs, emcmatchedtracks);
   }
 
   void processPHOSEMC(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters, aod::SkimEMCMTs const& emcmatchedtracks)
   {
-    SameEventPairing<PairType::kPHOSEMC>(collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc, fPHOSCuts, fEMCCuts, nullptr, emcmatchedtracks);
+    SameEventPairing<PairType::kPHOSEMC>(grouped_collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc, fPHOSCuts, fEMCCuts, nullptr, emcmatchedtracks);
     MixedEventPairing<PairType::kPHOSEMC>(filtered_collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc, fPHOSCuts, fEMCCuts, nullptr, emcmatchedtracks);
   }
 

@@ -55,6 +55,7 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH1F*>(list->FindObject("hMultNTracksPVeta1"))->Fill(obj.multNTracksPVeta1());
     reinterpret_cast<TH2F*>(list->FindObject("hMultFT0"))->Fill(obj.multFT0A(), obj.multFT0C());
     reinterpret_cast<TH1F*>(list->FindObject("hCentFT0M"))->Fill(obj.centFT0M());
+    reinterpret_cast<TH2F*>(list->FindObject("hCentFT0MvsMultNTracksPV"))->Fill(obj.centFT0M(), obj.multNTracksPV());
 
   } else if constexpr (htype == EMHistType::kV0) {
     reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.pt());
