@@ -107,4 +107,16 @@ TrackSelection getGlobalTrackSelectionRun3HF()
   return selectedTracks;
 }
 
+// Reduced default track selection for jet validation based on hybrid cuts for converted (based on ESD's from run 2) A02D's
+TrackSelection getJEGlobalTrackSelectionRun2()
+{
+  TrackSelection selectedTracks = getGlobalTrackSelection();
+  selectedTracks.SetRequireGoldenChi2(false);
+  selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 1e+10; });
+  selectedTracks.SetEtaRange(-0.9f, 0.9f);
+  selectedTracks.SetMaxDcaXY(2.4f);
+  selectedTracks.SetMaxDcaZ(3.2f);
+  return selectedTracks;
+}
+
 #endif

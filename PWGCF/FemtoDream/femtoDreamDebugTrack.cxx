@@ -46,15 +46,18 @@ struct femtoDreamDebugTrack {
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nCuts, cutNames}, "Particle selections"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
 
+  Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
+
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"};
   Configurable<std::vector<float>> ConfPIDnSigmaMax{"ConfPIDnSigmaMax", std::vector<float>{3.5f, 3.f, 2.5f}, "This configurable needs to be the same as the one used in the producer task"};
 
   using FemtoFullParticles = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
-
   Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
-  Preslice<aod::FemtoDreamParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
+
+  using FemtoFullParticlesMC = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles, aod::FemtoDreamMCLabels>;
+  Partition<FemtoFullParticlesMC> partsOneMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
@@ -65,6 +68,7 @@ struct femtoDreamDebugTrack {
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry FullQaRegistry{"FullTrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry FullQaRegistryMC{"FullTrackQA_MC", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
@@ -101,14 +105,22 @@ struct femtoDreamDebugTrack {
     FullQaRegistry.add("FullTrackQA/nSigmaComb_p", "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
     FullQaRegistry.add("FullTrackQA/nSigmaComb_d", "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
 
+    if (ConfIsMC) {
+      FullQaRegistry.add("FullTrackQA_MC/hPt_MC", "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
+      FullQaRegistry.add("FullTrackQA_MC/hEta_MC", "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
+      FullQaRegistry.add("FullTrackQA_MC/hPhi_MC", "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
+      FullQaRegistry.add("FullTrackQA_MC/hPDG", "; PDG; Entries", kTH1I, {{6001, -3000, 3000}});
+      FullQaRegistry.add("FullTrackQA_MC/hOrigin_MC", "; Origin; Entries", kTH1I, {{8, 0, 7}});
+      FullQaRegistry.add("FullTrackQA_MC/hNoMCtruthCounter", "; Counter; Entries", kTH1I, {{1, 0, 1}});
+    }
     vPIDPartOne = ConfPIDPartOne.value;
     kNsigma = ConfPIDnSigmaMax.value;
   }
 
   /// Porduce QA plots for sigle track selection in FemtoDream framework
-  void process(o2::aod::FemtoDreamCollision& col, FemtoFullParticles& parts)
+  template <bool isMC, typename PartitionType>
+  void FillDebugHistos(o2::aod::FemtoDreamCollision& col, PartitionType& groupPartsOne)
   {
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
 
     eventHisto.fillQA(col);
 
@@ -157,8 +169,46 @@ struct femtoDreamDebugTrack {
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaComb_K"), part.p(), std::sqrt(part.tpcNSigmaKa() * part.tpcNSigmaKa() + part.tofNSigmaKa() * part.tofNSigmaKa()));
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaComb_p"), part.p(), std::sqrt(part.tpcNSigmaPr() * part.tpcNSigmaPr() + part.tofNSigmaPr() * part.tofNSigmaPr()));
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaComb_d"), part.p(), std::sqrt(part.tpcNSigmaDe() * part.tpcNSigmaDe() + part.tofNSigmaDe() * part.tofNSigmaDe()));
+
+      if constexpr (isMC) {
+        if (part.has_femtoDreamMCParticle()) {
+          auto partMC = part.template femtoDreamMCParticle_as<o2::aod::FemtoDreamMCParticles>();
+          FullQaRegistry.fill(HIST("FullTrackQA_MC/hPt_MC"), partMC.pt());
+          FullQaRegistry.fill(HIST("FullTrackQA_MC/hEta_MC"), partMC.eta());
+          FullQaRegistry.fill(HIST("FullTrackQA_MC/hPhi_MC"), partMC.phi());
+          FullQaRegistry.fill(HIST("FullTrackQA_MC/hPDG"), partMC.pdgMCTruth());
+          FullQaRegistry.fill(HIST("FullTrackQA_MC/hOrigin_MC"), partMC.partOriginMCTruth());
+        } else {
+          FullQaRegistry.fill(HIST("FullTrackQA_MC/hNoMCtruthCounter"), 1);
+        }
+      }
     }
   }
+
+  /// Porduce QA plots for sigle track selection in FemtoDream framework
+  ///
+
+  /// process function when runnning over data/ Monte Carlo reconstructed only
+  /// \param col subscribe to FemtoDreamCollision table
+  /// \param parts subscribe to FemtoDreamParticles table
+  void processData(o2::aod::FemtoDreamCollision& col, FemtoFullParticles& parts)
+  {
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    FillDebugHistos<false>(col, groupPartsOne);
+  }
+  PROCESS_SWITCH(femtoDreamDebugTrack, processData, "Enable Debug processing for Monte Carlo", true);
+
+  /// process function when runnning over Monte Carlo with MC truth enabled
+
+  /// \param col subscribe to FemtoDreamCollision table
+  /// \param parts subscribe to the joined table of FemtoDreamParticles and FemtoDreamMCLabels table
+  /// @param FemtoDramMCParticles subscribe to the table containing the Monte Carlo Truth information
+  void processMC(o2::aod::FemtoDreamCollision& col, FemtoFullParticlesMC& parts, o2::aod::FemtoDreamMCParticles&)
+  {
+    auto groupPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    FillDebugHistos<true>(col, groupPartsOne);
+  }
+  PROCESS_SWITCH(femtoDreamDebugTrack, processMC, "Enable Debug processing for Monte Carlo", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

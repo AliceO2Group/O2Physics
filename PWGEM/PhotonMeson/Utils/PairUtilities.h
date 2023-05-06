@@ -9,27 +9,41 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \commonly used for PCM analyses.
+/// \commonly used for pair analyses.
 /// \author daiki.sekihata@cern.ch
 
-#ifndef PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
-#define PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
+#ifndef PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_
+#define PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_
 
 #include "Framework/AnalysisTask.h"
 
 //_______________________________________________________________________
-bool checkAP(float alpha, float qt)
+enum PairType {
+  kPCMPCM = 0,
+  kPHOSPHOS = 1,
+  kEMCEMC = 2,
+  kPCMPHOS = 3,
+  kPCMEMC = 4,
+  kPHOSEMC = 5,
+};
+//_______________________________________________________________________
+namespace o2::aod
 {
-  const float alpha_max = 0.95;
-  const float qt_max = 0.05;
-  float ellipse = pow(alpha / alpha_max, 2) + pow(qt / qt_max, 2);
-  if (ellipse < 1.0) {
-    return true;
-  } else {
-    return false;
-  }
+namespace photonpair
+{
+template <typename U1, typename U2, typename TG1, typename TG2, typename TCut1, typename TCut2>
+bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const& cut2)
+{
+  bool is_g1_selected = false;
+  bool is_g2_selected = false;
+  is_g1_selected = cut1.template IsSelected<U1>(g1);
+  is_g2_selected = cut2.template IsSelected<U2>(g2);
+  return (is_g1_selected & is_g2_selected);
 }
+} // namespace photonpair
+} // namespace o2::aod
+
 //_______________________________________________________________________
 //_______________________________________________________________________
 //_______________________________________________________________________
-#endif // PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
+#endif // PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_

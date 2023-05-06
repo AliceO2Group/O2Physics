@@ -441,7 +441,7 @@ struct MultiplicityCounter {
       if constexpr (hasCentrality) {
         registry.fill(HIST("Events/Centrality/Selection"), 3., c);
       } else {
-        registry.fill(HIST("Events/Selection"), 3.);
+        registry.fill(HIST("Events/Selection"), 4.);
       }
     }
   }

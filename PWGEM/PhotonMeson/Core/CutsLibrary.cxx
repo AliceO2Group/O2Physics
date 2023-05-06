@@ -29,7 +29,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetMinCosPA(0.998);
     cut->SetMaxPCA(0.5);
-    cut->SetRxyKFRange(1, 90);
+    cut->SetRxyRange(1, 90);
     cut->SetMaxMeePsiPairDep([](float psipair) { return psipair < 0.4 ? 0.06 : 0.015; });
     return cut;
   }
@@ -44,7 +44,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetMinCosPA(0.998);
     cut->SetMaxPCA(0.5);
-    cut->SetRxyKFRange(1, 90);
+    cut->SetRxyRange(1, 90);
     return cut;
   }
   if (!nameStr.compare("qc")) {
@@ -58,7 +58,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
-    cut->SetRxyKFRange(1, 180);
+    cut->SetRxyRange(1, 180);
     cut->SetMaxMeePsiPairDep([](float psipair) { return psipair < 0.4 ? 0.06 : 0.015; });
     return cut;
   }
@@ -76,6 +76,19 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetOnWwireIB(true);
     return cut;
   }
+  if (!nameStr.compare("nopid")) {
+    // for track
+    cut->SetPtRange(0.01f, 1e10f);
+    cut->SetEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(20);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
+    cut->SetMaxChi2PerClusterTPC(4.0);
+    // for v0
+    cut->SetMinCosPA(0.99);
+    cut->SetMaxPCA(1.5);
+    cut->SetRxyRange(1, 180);
+    return cut;
+  }
   if (!nameStr.compare("nocut")) {
     // for track
     cut->SetPtRange(0.01f, 1e10f);
@@ -87,7 +100,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
-    cut->SetRxyKFRange(1, 180);
+    cut->SetRxyRange(1, 180);
     return cut;
   }
 

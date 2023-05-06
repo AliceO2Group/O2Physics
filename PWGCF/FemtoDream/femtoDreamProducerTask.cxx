@@ -35,6 +35,7 @@
 #include "FemtoDreamCollisionSelection.h"
 #include "FemtoDreamTrackSelection.h"
 #include "FemtoDreamV0Selection.h"
+#include "FemtoUtils.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -84,9 +85,10 @@ struct femtoDreamProducerTask {
 
   Produces<aod::FemtoDreamCollisions> outputCollision;
   Produces<aod::FemtoDreamParticles> outputParts;
-  Produces<aod::FemtoDreamParticlesMC> outputPartsMC;
+  Produces<aod::FemtoDreamMCParticles> outputPartsMC;
   Produces<aod::FemtoDreamDebugParticles> outputDebugParts;
-  Produces<aod::FemtoDreamDebugParticlesMC> outputDebugPartsMC;
+  Produces<aod::FemtoDreamMCLabels> outputPartsMCLabels;
+  Produces<aod::FemtoDreamDebugMCParticles> outputDebugPartsMC;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
 
@@ -111,6 +113,7 @@ struct femtoDreamProducerTask {
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   Configurable<bool> ConfRejectITSHitandTOFMissing{"ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
 
+  Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "PDG code of the selected track for Monte Carlo truth"};
   FemtoDreamTrackSelection trackCuts;
   Configurable<std::vector<float>> ConfTrkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkPtmin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMin, "ConfTrk"), std::vector<float>{0.4f, 0.6f, 0.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMin, "Track selection: ")};
@@ -182,6 +185,7 @@ struct femtoDreamProducerTask {
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&qaRegistry);
 
+    Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "PDG code of the selected track for Monte Carlo truth"};
     trackCuts.setSelection(ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
     trackCuts.setSelection(ConfTrkPtmin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkPtmax, femtoDreamTrackSelection::kpTMax, femtoDreamSelection::kUpperLimit);
@@ -328,24 +332,36 @@ struct femtoDreamProducerTask {
                        particle.mK0Short()); // QA for v0
     }
   }
+
   template <typename ParticleType>
-  void fillMCParticle(ParticleType const& particle)
+  void fillMCParticle(ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype)
   {
     if (particle.has_mcParticle()) {
       // get corresponding MC particle and its info
       auto particleMC = particle.mcParticle();
       auto pdgCode = particleMC.pdgCode();
-      bool isPrimary = particleMC.isPhysicalPrimary();
-      if (isPrimary) {
-        outputPartsMC(outputParts.lastIndex(), aod::femtodreamparticleMC::ParticleOriginMCTruth::kPrimary, pdgCode);
+
+      int particleOrigin = 99;
+      auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
+
+      if (abs(pdgCode) == abs(ConfPDGCodeTrack.value)) {
+
+        if (particleMC.isPhysicalPrimary()) {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
+        } else if (motherparticleMC.producedByGenerator()) {
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+        } else {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+        }
+
       } else {
-        outputPartsMC(outputParts.lastIndex(), aod::femtodreamparticleMC::ParticleOriginMCTruth::kNotPrimary, pdgCode);
+
+        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
       }
-      // fill with correct values, this is currently placeholder
-      outputDebugPartsMC(-999);
+      outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
+      outputPartsMCLabels(outputPartsMC.lastIndex());
     } else {
-      outputPartsMC(outputParts.lastIndex(), -999, -999);
-      outputDebugPartsMC(-999);
+      outputPartsMCLabels(-1);
     }
   }
 
@@ -410,7 +426,7 @@ struct femtoDreamProducerTask {
       }
 
       if constexpr (isMC) {
-        fillMCParticle(track);
+        fillMCParticle(track, o2::aod::femtodreamparticle::ParticleType::kTrack);
       }
     }
 
@@ -445,7 +461,7 @@ struct femtoDreamProducerTask {
           outputParts(outputCollision.lastIndex(), v0.positivept(), v0.positiveeta(), v0.positivephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosPID), 0., childIDs, 0, 0);
           const int rowOfPosTrack = outputParts.lastIndex();
           if constexpr (isMC) {
-            fillMCParticle(postrack);
+            fillMCParticle(postrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
           }
           int negtrackID = v0.negTrackId();
           int rowInPrimaryTrackTableNeg = -1;
@@ -455,7 +471,7 @@ struct femtoDreamProducerTask {
           outputParts(outputCollision.lastIndex(), v0.negativept(), v0.negativeeta(), v0.negativephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegPID), 0., childIDs, 0, 0);
           const int rowOfNegTrack = outputParts.lastIndex();
           if constexpr (isMC) {
-            fillMCParticle(negtrack);
+            fillMCParticle(negtrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
           }
           int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
           outputParts(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(), aod::femtodreamparticle::ParticleType::kV0, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID, v0.mLambda(), v0.mAntiLambda());
@@ -465,7 +481,7 @@ struct femtoDreamProducerTask {
             fillDebugParticle<false>(v0);      // QA for v0
           }
           if constexpr (isMC) {
-            fillMCParticle(v0);
+            fillMCParticle(v0, o2::aod::femtodreamparticle::ParticleType::kV0);
           }
         }
       }

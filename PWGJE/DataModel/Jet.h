@@ -164,7 +164,7 @@ DECLARE_JET_TABLES_LEVELS(Full, HfCand2Prong, "F");
 DECLARE_JET_TABLES_LEVELS(Neutral, HfCand2Prong, "N");
 DECLARE_JET_TABLES_LEVELS(D0Charged, HfCand2Prong, "D0");
 DECLARE_JET_TABLES_LEVELS(LcCharged, HfCand3Prong, "Lc");
-DECLARE_JET_TABLES_LEVELS(BPlusCharged, HfCandBplus, "BPl");
+DECLARE_JET_TABLES_LEVELS(BplusCharged, HfCandBplus, "BPl");
 
 // Hybrid intermediate
 DECLARE_JET_TABLES(Collision, HybridIntermediate, Track, HfCand2Prong, "JEHYIN");

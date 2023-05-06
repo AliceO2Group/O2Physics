@@ -53,6 +53,27 @@ void VarManager::SetVariableDependencies()
     fgUsedVars[kPt] = kTRUE;
     fgUsedVars[kEta] = kTRUE;
   }
+
+  if (fgUsedVars[kVertexingLxyOverErr]) {
+    fgUsedVars[kVertexingLxy] = kTRUE;
+    fgUsedVars[kVertexingLxyErr] = kTRUE;
+  }
+  if (fgUsedVars[kVertexingLzOverErr]) {
+    fgUsedVars[kVertexingLz] = kTRUE;
+    fgUsedVars[kVertexingLzErr] = kTRUE;
+  }
+  if (fgUsedVars[kVertexingLxyzOverErr]) {
+    fgUsedVars[kVertexingLxyz] = kTRUE;
+    fgUsedVars[kVertexingLxyzErr] = kTRUE;
+  }
+  if (fgUsedVars[kKFTracksDCAxyzMax]) {
+    fgUsedVars[kKFTrack0DCAxyz] = kTRUE;
+    fgUsedVars[kKFTrack1DCAxyz] = kTRUE;
+  }
+  if (fgUsedVars[kKFTracksDCAxyMax]) {
+    fgUsedVars[kKFTrack0DCAxy] = kTRUE;
+    fgUsedVars[kKFTrack1DCAxy] = kTRUE;
+  }
 }
 
 //__________________________________________________________________
@@ -221,8 +242,9 @@ TString VarManager::GetRunPeriod(float runNumber)
   }
 };
 //__________________________________________________________________
-float VarManager::calculateCosPA(KFParticle kfp, KFParticle PV){
-  return cpaFromKF( kfp,  PV);
+float VarManager::calculateCosPA(KFParticle kfp, KFParticle PV)
+{
+  return cpaFromKF(kfp, PV);
 }
 //__________________________________________________________________
 void VarManager::SetDefaultVarNames()
