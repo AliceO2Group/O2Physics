@@ -280,6 +280,13 @@ struct Pi0EtaToGammaGamma {
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TLegs, typename TEMCMTs>
   void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TLegs const& legs, TEMCMTs const& emcmatchedtracks)
   {
+    // THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
+    // THashList* list_ev_pair = reinterpret_cast<THashList*>(list_ev->FindObject(pairnames[pairtype].data()));
+    THashList* list_ev_pair = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data()));
+
+    // THashList* list_pair = reinterpret_cast<THashList*>(fMainList->FindObject("Pair"));
+    // THashList* list_pair_subsys = reinterpret_cast<THashList*>(list_pair->FindObject(pairnames[pairtype].data()));
+
     for (auto& collision : collisions) {
       if ((pairtype == PairType::kPHOSPHOS || pairtype == PairType::kPCMPHOS) && !collision.isPHOSCPVreadout()) {
         continue;
@@ -305,6 +312,8 @@ struct Pi0EtaToGammaGamma {
       }
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hZvtx_after"))->Fill(collision.posZ());
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
+
+      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
 
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.collisionId());
       auto photons2_coll = photons2.sliceBy(perCollision2, collision.collisionId());
