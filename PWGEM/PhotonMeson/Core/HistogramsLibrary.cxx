@@ -93,6 +93,20 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     }
   }
 
+  if (TString(histClass) == "singlephoton") {
+    list->Add(new TH1F("hPt", "pT of photon;p_{T} (GeV/c)", 1000, 0.0f, 10));
+    list->Add(new TH1F("hY", "rapidity of photon;y", 40, -2.0f, 2.0f));
+    list->Add(new TH1F("hPhi", "azimuthal angle of photon;#varphi (rad.)", 180, 0, TMath::TwoPi()));
+    if (TString(subGroup) == "mc") {
+      list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                 // for MC efficiency
+      list->Add(new TH1F("hY_Photon_Primary", "rapidity;y", 40, -2.0f, 2.0f));                       // for MC efficiency
+      list->Add(new TH1F("hPhi_Photon_Primary", "#varphi;#varphi (rad.);", 180, 0, TMath::TwoPi())); // for MC efficiency
+      list->Add(new TH1F("hPt_Photon_FromWD", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                  // for MC efficiency
+      list->Add(new TH1F("hY_Photon_FromWD", "rapidity;y", 40, -2.0f, 2.0f));                        // for MC efficiency
+      list->Add(new TH1F("hPhi_Photon_FromWD", "#varphi;#varphi (rad.);", 180, 0, TMath::TwoPi()));  // for MC efficiency
+    }
+  }
+
   const int nmgg = 401;
   float mgg[nmgg] = {};
   for (int i = 0; i < nmgg; i++)
