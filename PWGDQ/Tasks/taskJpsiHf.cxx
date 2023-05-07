@@ -174,16 +174,18 @@ struct taskJpsiHf {
   }
 
   // Template function to run pair - hadron combinations
-  template <uint32_t TEventFillMap, typename TEvent, typename THfTrack>
-  void runDileptonDmeson(TEvent const& event, MyPairCandidatesSelected const& dileptons, THfTrack const& dmesons)
+  template <uint32_t TEventFillMap, typename TEvent, typename TDqTrack, typename THfTrack>
+  void runDileptonDmeson(TEvent const& event, TDqTrack const& dileptons, THfTrack const& dmesons)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDmeson);
     VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
     VarManager::FillEvent<TEventFillMap>(event, fValuesDmeson);
+    //std::cout << "DIMUON GLOBAL INDEX = " << event.globalIndex() << std::endl;
 
     // loop over D mesons
     for (auto& dmeson : dmesons) {
+        //std::cout << "D-MESONS GLOBAL INDEX = " << dmeson.collisionId() << std::endl;
       if (!(dmeson.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
@@ -228,7 +230,26 @@ struct taskJpsiHf {
 
   void processSkimmedJpsiD0(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyPairCandidatesSelected const& dileptons, MyD0CandidatesSelected const& dmesons)
   {
+    if (dileptons.size() > 0) {
+        std::cout << "GENERAL GLOBAL INDEX = " << event.globalIndex() << std::endl;
+        for (auto& dilepton : dileptons) {
+            std::cout << "DILEPTON REDUCED EVENT ID = " << dilepton.reducedeventId() << std::endl;
+        }
+        std::cout << "----------------" << std::endl;
+    }
+    //auto groupedDmesonCandidates = dmesons.sliceBy(perCollision, event.globalIndex());
     auto groupedDmesonCandidates = dmesons.sliceBy(perCollision, event.globalIndex());
+    //auto groupedDmesonCandidatesReduced = dmesons.sliceBy(perCollision, dilepton.reducedeventId());
+    //std::cout << "N D-mesons = " << groupedDmesonCandidates.size() << " ; N D-mesons reduced = " << groupedDmesonCandidatesReduced.size() << std::endl;
+    //std::cout << "N D-mesons = " << groupedDmesonCandidates.size() << " ; N J/psi = " << groupedDileptonCandidates.size() << std::endl;
+
+    if (groupedDmesonCandidates.size() > 0) {
+        std::cout << "GENERAL GLOBAL INDEX = " << event.globalIndex() << std::endl;
+        for (auto& candidate : groupedDmesonCandidates) {
+            std::cout << "DMESON REDUCED EVENT ID = " << candidate.collisionId() << std::endl;
+        }
+        std::cout << "----------------" << std::endl;
+    }
     runDileptonDmeson<gkEventFillMapWithCov>(event, dileptons, groupedDmesonCandidates);
   }
   void processDummy(MyEvents&)
