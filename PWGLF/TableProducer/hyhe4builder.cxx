@@ -409,7 +409,6 @@ struct hyHe4Preselector {
     auto const& trackProng0 = d3body.template track0_as<TTrackTo>();
     auto const& trackProng1 = d3body.template track1_as<TTrackTo>();
     auto const& trackProng2 = d3body.template track2_as<TTrackTo>();
-    //	cout<<"The number of TPC clusters are "<<trackProng1.tpcNClsCrossedRows() <<endl;
     if ((trackProng0.tpcNClsCrossedRows() >= dTPCNCrossedRows) && (trackProng1.tpcNClsCrossedRows() >= dTPCNCrossedRows) && (trackProng2.tpcNClsCrossedRows() >= dTPCNCrossedRows)) {
       lIsInteresting = true;
     }
