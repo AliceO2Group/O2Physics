@@ -412,7 +412,7 @@ struct HfCorrelatorDplusHadrons {
     BinningTypeMCGen corrBinningMcGen{{getTracksSize}, {zBins, multBinsMcGen}, true};
 
     // MC gen level
-    for (auto& particle1 : particlesMc) {
+    for (auto const& particle1 : particlesMc) {
       // check if the particle is Dplus  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
         continue;
@@ -435,7 +435,7 @@ struct HfCorrelatorDplusHadrons {
         continue;
       }
       registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus for normalisation)
-      for (auto& particle2 : particlesMc) {
+      for (auto const& particle2 : particlesMc) {
        
        // Check Mother of particle 2
         bool flagMotherFound = false;
