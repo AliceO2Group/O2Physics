@@ -52,7 +52,7 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
 // For dE/dx association in pre-selection
-//using TracksExtraWithPID = soa::Join<aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe>;
+// using TracksExtraWithPID = soa::Join<aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe>;
 
 // For MC and dE/dx association
 using TracksExtraWithPIDandLabels = soa::Join<aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::McTrackLabels>;
@@ -64,81 +64,62 @@ using TaggedHyHe4Candidates = soa::Join<aod::Decay3Bodys, aod::HyHe4Tags>;
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct hyhefourbuilder {
-  //  Produces<aod::CascData> hyp4data;	//Declaring the table that created by this task
-  
+  Produces<aod::StoredHyHe4Datas> hyhe4data;
+
   Service<o2::ccdb::BasicCCDBManager> ccdb; // <-- for CCDB access
-  
+
   Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
-  Preslice<aod::Decay3Bodys> perCollision = o2::aod::decay3body::collisionId;	//used for grouping, here we use the collisionID
-  
+  Preslice<aod::Decay3Bodys> perCollision = o2::aod::decay3body::collisionId; // used for grouping, here we use the collisionID
+
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
-  
+
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  
+
   // Basic selection criteria
-  Configurable<float> hyhe4daudca{"hyhe4daudca", 1, "DCA between HyHe4 daughters"};
+  Configurable<float> selHyHe4daudca{"selHyHe4daudca", 1, "DCA between HyHe4 daughters"};
 
   // Filter out HyHe4 that are interesting!
   Filter taggedFilter = aod::hyhe4tag::isInteresting == true;
-  
+
   // bookkeeping propagation / run number / magnetic field
   int mRunNumber;
   float d_bz;
-  float maxSnp;  // max sine phi for propagation
-  float maxStep; // max step size (cm) for propagation
+  float maxSnp;                            // max sine phi for propagation
+  float maxStep;                           // max step size (cm) for propagation
   o2::base::MatLayerCylSet* lut = nullptr; // lut pointer
-  
+
   // storing output
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  
+
   // Define o2 fitter, 3-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<3> fitter;
-  
+
   void init(InitContext& context)
   {
-    const AxisSpec axispionmass{(int)100, 0.0f, 0.3f, "pion Mass Distribution  (GeV/c^{2})"};
-    const AxisSpec axisprotonmass{(int)100, 0.5f, 1.5f, "proton Mass Distribution (GeV/c^{2})"};
-    const AxisSpec axishelium3{(int)100, 2.5f, 3.5f, "Helium3 Mass Distribution (GeV/c^{2})"};
-    const AxisSpec axisHyHe4{(int)1000, 3.5f, 4.5f, "Hyperhelium4 Mass Distribution (GeV/c^{2})"};
-    
-    const AxisSpec hEventCounter{(int)1, 0.0f, 1.0f, "Number of events"};
-    const AxisSpec Helium3pT{(int)100, 0.0f, 10.0f, "Helium3 pT distribution"};
-    const AxisSpec protonpT{(int)100, 0.0f, 10.0f, "proton pT distribution"};
-    const AxisSpec pionpT{(int)100, 0.0f, 0.5f, "pion pT distribution"};
-    
-    
-    const AxisSpec dcaDaughters{(int)200, 0.0f, 10.0f, "DCA"};
-    
-    const AxisSpec axisNCandidates{(int)100, 0.0f, 100.0f, "Number of 3 body candidates"};
-    histos.add("hNCandidates", "hNCandidates", kTH1F, {axisNCandidates});
-    histos.add("hNEvents", "hNEvents", kTH1F, {hEventCounter});
-    
-    histos.add("hHe3pT", "hHe3pT", kTH1F, {Helium3pT});
-    histos.add("hprotonpT", "hprotonpT", kTH1F, {protonpT});
-    histos.add("hpionpT", "hpionpT", kTH1F, {pionpT});
-    
-    histos.add("helium3mass", "helium3mass", kTH1F, {axishelium3});
-    histos.add("protonmass", "protonmass", kTH1F, {axisprotonmass});
-    histos.add("pionmass", "pionmass", kTH1F, {axispionmass});
-    
-    histos.add("hyhe4mass", "hyhe4mass", kTH1F, {axisHyHe4});
-    histos.add("hyhe4daudcaHisto", "hyhe4daudcaHisto", kTH1F, {dcaDaughters});
-//    histos.add("hyhe4daudcaHistobefore", "hyhe4daudcaHisto", kTH1F, {dcaDaughters});
-   
+    const AxisSpec axisMassHyHe4{(int)1000, 3.5f, 4.5f, "Hyperhelium4 Mass Distribution (GeV/c^{2})"};
+    const AxisSpec axisNCandidates{(int)100, 0.0f, 100.0f, "Number of 3-body candidates"};
+
+    const AxisSpec axisEventCounter{(int)1, 0.0f, 1.0f, "Number of events"};
+    const AxisSpec axisPt{(int)1000, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+
+    // Base counters
+    histos.add("hNEvents", "hNEvents", kTH1F, {axisEventCounter});
+    histos.add("hNCandidates", "hNCandidates", kTH1F, {axisPt});
+
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-    
+
     if (useMatCorrType == 1) {
       LOGF(info, "TGeo correction requested, loading geometry");
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
@@ -149,8 +130,8 @@ struct hyhefourbuilder {
       LOGF(info, "LUT correction requested, loading LUT");
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
-    
-    //initialize O2 3-prong fitter (only once)
+
+    // initialize O2 3-prong fitter (only once)
     fitter.setPropagateToPCA(true);
     fitter.setMaxR(200.);
     fitter.setMinParamChange(1e-3);
@@ -159,7 +140,7 @@ struct hyhefourbuilder {
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(d_UseAbsDCA);
     fitter.setWeightedFinalPCA(d_UseWeightedPCA);
-    
+
     // Material correction in the DCA fitter
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
     if (useMatCorrType == 1)
@@ -168,9 +149,13 @@ struct hyhefourbuilder {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     fitter.setMatCorrType(matCorr);
   }
-  
+
   // Helper struct to pass HyHe4 information
   struct {
+    int sign;
+    int index3He;
+    int indexProton;
+    int indexPion;
     float track3HeX;
     float trackProtonX;
     float trackPionX;
@@ -185,11 +170,11 @@ struct hyhefourbuilder {
     float dcaXY;
     float dcaZ;
     float decayRadius;
-    float hyHe4Mass;
-    float hyHe4BarMass;
+    float massHyHe4;
+    float massAntiHyHe4;
   } hyHe4Candidate;
 
-//ccdb to fetch the magnetic fieldd  
+  // ccdb to fetch the magnetic fieldd
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
@@ -237,34 +222,40 @@ struct hyhefourbuilder {
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }
-  
-  //wirte something to verify whether the selected particles are the he3, proton or pion somehow with pdg code
-  //function to check pdg associations:
-  //  template <class TTrackTo, typename TCascadeObject>
-  //  void checkPDG(TCascadeObject const& lCascadeCandidate, bool& lIsInteresting, bool& lIsXiMinus, bool& lIsXiPlus, bool& lIsOmegaMinus, bool& lIsOmegaPlus)
-  //  {
-  //  }
-  template <class TTrackTo, typename TTrack>
-  bool buildHyHe4Candidate(TTrack const& Helium3, TTrack const& proton, TTrack const& pion)
+
+  template <typename TCollision, typename TTrack>
+  bool buildHyHe4Candidate(TCollision const& collision, TTrack const& Helium3, TTrack const& proton, TTrack const& pion)
   {
-    //          histos.fill(HIST("helium3mass"), RecoDecay::m(array{Helium3.px(), Helium3.py(), Helium3.pz()},Helium3.energy()));
-    //          histos.fill(HIST("protonmass"), RecoDecay::m(array{proton.px(), proton.py(), proton.pz()},proton.energy()));
-    //    histos.fill(HIST("pionmass"), RecoDecay::m(array{pion.px(), pion.py(), pion.pz()},RecoDecay::e(array{pion.px(), pion.py(), pion.pz()},o2::constants::physics::MassPionCharged)));
-    //    histos.fill(HIST("helium3mass"), RecoDecay::m(array{Helium3.px(), Helium3.py(), Helium3.pz()},RecoDecay::e(array{Helium3.px(), Helium3.py(), Helium3.pz()},o2::constants::physics::MassHelium3)));
-    //    histos.fill(HIST("protonmass"), RecoDecay::m(array{proton.px(), proton.py(), proton.pz()},RecoDecay::e(array{proton.px(), proton.py(), proton.pz()},o2::constants::physics::MassProton)));
-    //
-    
-    // Step 0: check DCAxy / z to primary vertex for each of those tracks
-    
-    
-    // Step 1: try distance minimization with 3-body DCA fitter
-    
+    hyHe4Candidate.index3He = Helium3.globalIndex();
+    hyHe4Candidate.indexProton = proton.globalIndex();
+    hyHe4Candidate.indexPion = pion.globalIndex();
+
+    //---/---/---/---/---/---/---/---/---/---/---/---/---/
+    // Create TrackParCovs for DCA (N.B. propagation irreversibility wrt covmats)
+    auto lHelium3TrackForDCA = getTrackParCov(Helium3);
+    auto lProtonTrackForDCA = getTrackParCov(proton);
+    auto lPionTrackForDCA = getTrackParCov(pion);
+
+    // determine base property of charge for matter vs antimatter
+    hyHe4Candidate.sign = +1;
+    if (Helium3.sign() < 0)
+      hyHe4Candidate.sign = -1;
+
+    //---/---/---/---/---/---/---/---/---/---/---/---/---/
+    // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+    gpu::gpustd::array<float, 2> dcaInfo;
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lHelium3TrackForDCA, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    hyHe4Candidate.dcaXY3He = dcaInfo[0];
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lProtonTrackForDCA, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    hyHe4Candidate.dcaXYProton = dcaInfo[0];
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lPionTrackForDCA, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    hyHe4Candidate.dcaXYPion = dcaInfo[0];
+
+    //---/---/---/---/---/---/---/---/---/---/---/---/---/
+    // Move close to minima
     auto lHelium3Track = getTrackParCov(Helium3);
     auto lProtonTrack = getTrackParCov(proton);
     auto lPionTrack = getTrackParCov(pion);
-    
-    //---/---/---/
-    // Move close to minima
     int nCand = 0;
     try {
       nCand = fitter.process(lHelium3Track, lProtonTrack, lPionTrack);
@@ -275,102 +266,116 @@ struct hyhefourbuilder {
     if (nCand == 0) {
       return false;
     }
-//    cout<<"Hey beautiful peoples I am going to print the momemtum of 3He before filling "<<Helium3.px()<<"\n\n\n\n" <<endl; 
 
+    //---/---/---/---/---/---/---/---/---/---/---/---/---/
+    // Get base properties
     fitter.getTrack(0).getPxPyPzGlo(hyHe4Candidate.mom3He);
-
-//    cout<<"Hey beautiful peoples I am going to print the momemtum of 3He "<<hyHe4Candidate.mom3He[0]<<"\n\n\n\n" <<endl; 
     fitter.getTrack(1).getPxPyPzGlo(hyHe4Candidate.momProton);
     fitter.getTrack(2).getPxPyPzGlo(hyHe4Candidate.momPion);
-    
+
+    hyHe4Candidate.track3HeX = fitter.getTrack(0).getX();
+    hyHe4Candidate.trackProtonX = fitter.getTrack(1).getX();
+    hyHe4Candidate.trackPionX = fitter.getTrack(2).getX();
+
     // get decay vertex coordinates
     const auto& vtx = fitter.getPCACandidate();
     for (int i = 0; i < 3; i++) {
       hyHe4Candidate.pos[i] = vtx[i];
     }
-    
-    hyHe4Candidate.dcaHyHe4dau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    
-    histos.fill(HIST("hyhe4daudcaHisto"), hyHe4Candidate.dcaHyHe4dau);
-    if( hyHe4Candidate.dcaHyHe4dau > hyhe4daudca ) return false;
-    
-    auto lHyHe4m = RecoDecay::m(array{array{hyHe4Candidate.mom3He[0], hyHe4Candidate.mom3He[1], hyHe4Candidate.mom3He[2]}, array{hyHe4Candidate.momProton[0], hyHe4Candidate.momProton[1], hyHe4Candidate.momProton[2]}, array{hyHe4Candidate.momPion[0], hyHe4Candidate.momPion[1], hyHe4Candidate.momPion[2]}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
 
-    histos.fill(HIST("hyhe4mass"), lHyHe4m); 
-    //		cout<<"The collision id of Helim3 is "<< Helium3.pt()<<endl;
-    
+    // baseline selection
+    hyHe4Candidate.dcaHyHe4dau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+    if (hyHe4Candidate.dcaHyHe4dau > selHyHe4daudca)
+      return false;
+
+    //---/---/---/---/---/---/---/---/---/---/---/---/---/
+    // Calculate DCAxy of the HyHe4 (with bending)
+    auto lHyHe4Track = fitter.createParentTrackPar();
+    lHyHe4Track.setAbsCharge(2); // to be sure
+    dcaInfo[0] = 999;
+    dcaInfo[1] = 999;
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lHyHe4Track, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    hyHe4Candidate.dcaXY = dcaInfo[0];
+    hyHe4Candidate.dcaZ = dcaInfo[1];
     return true;
   }
-  
-  
+
   template <class TTrackTo, typename T3BodyTable>
   void buildHyHe4Tables(T3BodyTable const& d3Bodys)
   {
     for (const auto& d3body : d3Bodys) {
+      auto const& collision = d3body.collision();
       auto const& trackProng0 = d3body.template track0_as<TTrackTo>();
       auto const& trackProng1 = d3body.template track1_as<TTrackTo>();
       auto const& trackProng2 = d3body.template track2_as<TTrackTo>();
-      
-      //sign -> if positive, matter; if negative, antimatter
+
+      // sign -> if positive, matter; if negative, antimatter
       int sign = trackProng0.sign() + trackProng1.sign() + trackProng2.sign();
-      
-      if( trackProng0.sign() != sign ){ //prong 0 = pion
-        if( trackProng1.tpcSignal() < trackProng2.tpcSignal() ){ //0 = pi, 1 = p, 2 = 3He
-          buildHyHe4Candidate<FullTracksExtIU>(trackProng2, trackProng1, trackProng0);
+
+      // N.B. TPC signal ordering may not be ideal
+      //      consider also momentum ordering (explore kinematics first)
+
+      if (trackProng0.sign() != sign) {                          // prong 0 = pion
+        if (trackProng1.tpcSignal() < trackProng2.tpcSignal()) { // 0 = pi, 1 = p, 2 = 3He
+          buildHyHe4Candidate(collision, trackProng2, trackProng1, trackProng0);
+        }
+        if (trackProng1.tpcSignal() > trackProng2.tpcSignal()) { // 0 = pi, 1 = p, 2 = 3He
+          buildHyHe4Candidate(collision, trackProng1, trackProng2, trackProng0);
         }
       }
-      if( trackProng1.sign() != sign ){ //prong 1 = pion
-        if( trackProng0.tpcSignal() > trackProng2.tpcSignal() ){ //0 = 3He, 1 = pi, 2 = p
-          buildHyHe4Candidate<FullTracksExtIU>(trackProng0, trackProng2, trackProng1);
+      if (trackProng1.sign() != sign) {                          // prong 1 = pion
+        if (trackProng0.tpcSignal() > trackProng2.tpcSignal()) { // 0 = 3He, 1 = pi, 2 = p
+          buildHyHe4Candidate(collision, trackProng0, trackProng2, trackProng1);
         }
-        if( trackProng0.tpcSignal() < trackProng2.tpcSignal() ){ //0 = p, 1 = pi, 2 = 3He
-          buildHyHe4Candidate<FullTracksExtIU>(trackProng2, trackProng0, trackProng1);
+        if (trackProng0.tpcSignal() < trackProng2.tpcSignal()) { // 0 = p, 1 = pi, 2 = 3He
+          buildHyHe4Candidate(collision, trackProng2, trackProng0, trackProng1);
         }
       }
-      if( trackProng2.sign() != sign ){ //prong 2 = pion
-        if( trackProng0.tpcSignal() > trackProng1.tpcSignal() ){ //0 = 3He, 1 = p, 2 = pi
-          buildHyHe4Candidate<FullTracksExtIU>(trackProng0, trackProng1, trackProng2);
+      if (trackProng2.sign() != sign) {                          // prong 2 = pion
+        if (trackProng0.tpcSignal() > trackProng1.tpcSignal()) { // 0 = 3He, 1 = p, 2 = pi
+          buildHyHe4Candidate(collision, trackProng0, trackProng1, trackProng2);
         }
-        if( trackProng0.tpcSignal() < trackProng1.tpcSignal() ){ //0 = p, 1 = 3He, 2 = pi
-          buildHyHe4Candidate<FullTracksExtIU>(trackProng1, trackProng0, trackProng2);
+        if (trackProng0.tpcSignal() < trackProng1.tpcSignal()) { // 0 = p, 1 = 3He, 2 = pi
+          buildHyHe4Candidate(collision, trackProng1, trackProng0, trackProng2);
         }
       }
 
-      // Fill the table
+      // Fill the table of candidates for posterior analysis
+      hyhe4data(hyHe4Candidate.index3He, hyHe4Candidate.indexProton, hyHe4Candidate.indexPion,
+                collision.globalIndex(), d3body.globalIndex(), hyHe4Candidate.sign,
+                hyHe4Candidate.track3HeX, hyHe4Candidate.trackProtonX, hyHe4Candidate.trackPionX,
+                2.0f * hyHe4Candidate.mom3He[0], 2.0f * hyHe4Candidate.mom3He[1], 2.0f * hyHe4Candidate.mom3He[2],
+                hyHe4Candidate.momProton[0], hyHe4Candidate.momProton[1], hyHe4Candidate.momProton[2],
+                hyHe4Candidate.momPion[0], hyHe4Candidate.momPion[1], hyHe4Candidate.momPion[2],
+                hyHe4Candidate.pos[0], hyHe4Candidate.pos[1], hyHe4Candidate.pos[2],
+                hyHe4Candidate.dcaHyHe4dau, hyHe4Candidate.dcaXY3He, hyHe4Candidate.dcaXYProton, hyHe4Candidate.dcaXYPion,
+                hyHe4Candidate.dcaXY, hyHe4Candidate.dcaZ);
     }
   }
-  
+
   void process(aod::Collisions const& collisions, soa::Filtered<TaggedHyHe4Candidates> const& d3bodys, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
-    long eventCounter=0;
+    long eventCounter = 0;
     for (const auto& collision : collisions) {
       eventCounter++;
-      //      bool lIsInteresting = false;
-      //      bool lIsQualityInteresting = false;
-      //      bool lIsTrueHelium3 = false;
-      //      bool lIsTrueProton = false;
-      //      bool lIsTruePion = false;
       // Fire up CCDB
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = collision.globalIndex();
-      auto d3Bodys_thisCollision = d3bodys.sliceBy(perCollision, collIdx);	//To access the 3body decays only collisons or I can say the collision with contain the 3body decay
-      
+      auto d3Bodys_thisCollision = d3bodys.sliceBy(perCollision, collIdx); // To access the 3body decays only collisons or I can say the collision with contain the 3body decay
+
       histos.fill(HIST("hNCandidates"), d3Bodys_thisCollision.size());
-      
+
       // Do the building
       buildHyHe4Tables<FullTracksExtIU>(d3Bodys_thisCollision);
     }
     histos.fill(HIST("hNEvents"), 0.0, eventCounter);
-    
   }
 };
 
-
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-struct hyHe4Preselector 
-{
+struct hyHe4Preselector {
   // storing output
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -400,22 +405,22 @@ struct hyHe4Preselector
   template <class TTrackTo, typename T3Body>
   void checkTrackQuality(T3Body const& d3body, bool& lIsInteresting)
   {
-      lIsInteresting = false;
-      auto const& trackProng0 = d3body.template track0_as<TTrackTo>();
-      auto const& trackProng1 = d3body.template track1_as<TTrackTo>();
-      auto const& trackProng2 = d3body.template track2_as<TTrackTo>();
-      //	cout<<"The number of TPC clusters are "<<trackProng1.tpcNClsCrossedRows() <<endl;
-      if ((trackProng0.tpcNClsCrossedRows() >= dTPCNCrossedRows) && (trackProng1.tpcNClsCrossedRows() >= dTPCNCrossedRows) && (trackProng2.tpcNClsCrossedRows() >= dTPCNCrossedRows) ){
-        lIsInteresting = true;
-      } 
+    lIsInteresting = false;
+    auto const& trackProng0 = d3body.template track0_as<TTrackTo>();
+    auto const& trackProng1 = d3body.template track1_as<TTrackTo>();
+    auto const& trackProng2 = d3body.template track2_as<TTrackTo>();
+    //	cout<<"The number of TPC clusters are "<<trackProng1.tpcNClsCrossedRows() <<endl;
+    if ((trackProng0.tpcNClsCrossedRows() >= dTPCNCrossedRows) && (trackProng1.tpcNClsCrossedRows() >= dTPCNCrossedRows) && (trackProng2.tpcNClsCrossedRows() >= dTPCNCrossedRows)) {
+      lIsInteresting = true;
+    }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  /// function to check PDG code 
+  /// function to check PDG code
   template <class TTrackTo, typename T3Body>
-  void checkPDG(T3Body const& d3body, bool& lIsInteresting,  bool& lIsTrueHyHelium4, bool& lIsTrueAntiHyHelium4)
+  void checkPDG(T3Body const& d3body, bool& lIsInteresting, bool& lIsTrueHyHelium4, bool& lIsTrueAntiHyHelium4)
   {
-    lIsTrueHyHelium4 = false; 
-    lIsTrueAntiHyHelium4 = false; 
+    lIsTrueHyHelium4 = false;
+    lIsTrueAntiHyHelium4 = false;
     int lPDG = -1;
     lIsInteresting = false;
     auto const& trackProng0 = d3body.template track0_as<TTrackTo>();
@@ -423,8 +428,8 @@ struct hyHe4Preselector
     auto const& trackProng2 = d3body.template track2_as<TTrackTo>();
 
     // Association check
-    // Lets do something to identify the PID of particles 
-    if (trackProng0.has_mcParticle() && trackProng1.has_mcParticle() && trackProng2.has_mcParticle() ) {
+    // Lets do something to identify the PID of particles
+    if (trackProng0.has_mcParticle() && trackProng1.has_mcParticle() && trackProng2.has_mcParticle()) {
       auto lMCtrackProng0 = trackProng0.template mcParticle_as<aod::McParticles>();
       auto lMCtrackProng1 = trackProng1.template mcParticle_as<aod::McParticles>();
       auto lMCtrackProng2 = trackProng2.template mcParticle_as<aod::McParticles>();
@@ -452,37 +457,44 @@ struct hyHe4Preselector
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all 3 body candidates are built. It will simply tag everything as true.
-  void processBuildAll(aod::Collisions const& collisions, aod::Decay3Bodys const& d3bodys, aod::TracksExtra const&){
-    long eventCounter=0;
+  void processBuildAll(aod::Collisions const& collisions, aod::Decay3Bodys const& d3bodys, aod::TracksExtra const&)
+  {
+    long eventCounter = 0;
     for (const auto& d3body : d3bodys) {
       eventCounter++;
       bool lIsQualityInteresting = false;
       checkTrackQuality<aod::TracksExtra>(d3body, lIsQualityInteresting);
-      hyhetags( lIsQualityInteresting, true, true, true, true );
+      hyhetags(lIsQualityInteresting, true, true, true, true);
     }
-
   }
-  PROCESS_SWITCH(hyHe4Preselector , processBuildAll, "Switch to build all V0s", false);
+  PROCESS_SWITCH(hyHe4Preselector, processBuildAll, "Switch to build all V0s", false);
 
-   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processBuildMCAssociated(aod::Collisions const& collisions, aod::Decay3Bodys const& d3bodys, LabeledTracksExtra const&, aod::McParticles const& particlesMC)
   {
-	  for (const auto& d3body : d3bodys) {
-		  bool lIsInteresting = false;
+    for (const auto& d3body : d3bodys) {
+      bool lIsInteresting = false;
       bool lIsQualityInteresting = false;
       bool lIsTrueHyHelium4 = false;
       bool lIsTrueAntiHyHelium4 = false;
-      checkPDG<LabeledTracksExtra>(d3body, lIsInteresting,  lIsTrueHyHelium4, lIsTrueAntiHyHelium4);
+      checkPDG<LabeledTracksExtra>(d3body, lIsInteresting, lIsTrueHyHelium4, lIsTrueAntiHyHelium4);
       checkTrackQuality<LabeledTracksExtra>(d3body, lIsQualityInteresting);
-      hyhetags( lIsQualityInteresting, lIsTrueHyHelium4, lIsTrueAntiHyHelium4, true, true );
+      hyhetags(lIsQualityInteresting, lIsTrueHyHelium4, lIsTrueAntiHyHelium4, true, true);
     }
   }
   PROCESS_SWITCH(hyHe4Preselector, processBuildMCAssociated, "Switch to build MC-associated V0s", true);
 };
- 
+
+// Extends the v0data table with expression columns
+struct hyhe4Initializer {
+  Spawns<aod::HyHe4Datas> hyhe4datas;
+  void init(InitContext const&) {}
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
+    adaptAnalysisTask<hyhe4Initializer>(cfgc),
     adaptAnalysisTask<hyhefourbuilder>(cfgc),
     adaptAnalysisTask<hyHe4Preselector>(cfgc)};
 }

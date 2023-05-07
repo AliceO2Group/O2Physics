@@ -12,10 +12,10 @@
 // 3-body MC finder task
 // -----------------
 //
-//    This task allows for the re-creation of the Decay3Body table with 
-//    perfect MC information. It is meant to be used to understand 
-//    baseline svertexer efficiency and to allow for tuning 
-//    of the 3-body decay reconstruction using MC. 
+//    This task allows for the re-creation of the Decay3Body table with
+//    perfect MC information. It is meant to be used to understand
+//    baseline svertexer efficiency and to allow for tuning
+//    of the 3-body decay reconstruction using MC.
 //
 //    Nota bene: special attention could still be dedicated to the PV
 //               reconstruction efficiency.
@@ -91,23 +91,23 @@ struct threebodymcfinder {
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
 
-    histos.add("hPtLambdaGenerated", "hPtLambdaGenerated", kTH1F, {axisPt});
-    histos.add("hPtAntiLambdaGenerated", "hPtAntiLambdaGenerated", kTH1F, {axisPt});
+    histos.add("hPtHyHe4Generated", "hPtHyHe4Generated", kTH1F, {axisPt});
+    histos.add("hPtAntiHyHe4Generated", "hPtAntiHyHe4Generated", kTH1F, {axisPt});
     histos.add("hPtHypertritonGenerated", "hPtHypertritonGenerated", kTH1F, {axisPt});
     histos.add("hPtAntiHypertritonGenerated", "hPtAntiHypertritonGenerated", kTH1F, {axisPt});
 
-    histos.add("hPtLambdaReconstructed", "hPtLambdaReconstructed", kTH1F, {axisPt});
-    histos.add("hPtAntiLambdaReconstructed", "hPtAntiLambdaReconstructed", kTH1F, {axisPt});
+    histos.add("hPtHyHe4Reconstructed", "hPtHyHe4Reconstructed", kTH1F, {axisPt});
+    histos.add("hPtAntiHyHe4Reconstructed", "hPtAntiHyHe4Reconstructed", kTH1F, {axisPt});
     histos.add("hPtHypertritonReconstructed", "hPtHypertritonReconstructed", kTH1F, {axisPt});
     histos.add("hPtAntiHypertritonReconstructed", "hPtAntiHypertritonReconstructed", kTH1F, {axisPt});
 
-    histos.add("hPtLambdaGlobal", "hPtLambdaGlobal", kTH1F, {axisPt});
-    histos.add("hPtAntiLambdaGlobal", "hPtAntiLambdaGlobal", kTH1F, {axisPt});
+    histos.add("hPtHyHe4Global", "hPtHyHe4Global", kTH1F, {axisPt});
+    histos.add("hPtAntiHyHe4Global", "hPtAntiHyHe4Global", kTH1F, {axisPt});
     histos.add("hPtHypertritonGlobal", "hPtHypertritonGlobal", kTH1F, {axisPt});
     histos.add("hPtAntiHypertritonGlobal", "hPtAntiHypertritonGlobal", kTH1F, {axisPt});
 
-    histos.add("hPtLambdaGlobalWithPV", "hPtLambdaGlobalWithPV", kTH1F, {axisPt});
-    histos.add("hPtAntiLambdaGlobalWithPV", "hPtAntiLambdaGlobalWithPV", kTH1F, {axisPt});
+    histos.add("hPtHyHe4GlobalWithPV", "hPtHyHe4GlobalWithPV", kTH1F, {axisPt});
+    histos.add("hPtAntiHyHe4GlobalWithPV", "hPtAntiHyHe4GlobalWithPV", kTH1F, {axisPt});
     histos.add("hPtHypertritonGlobalWithPV", "hPtHypertritonGlobalWithPV", kTH1F, {axisPt});
     histos.add("hPtAntiHypertritonGlobalWithPV", "hPtAntiHypertritonGlobalWithPV", kTH1F, {axisPt});
   }
@@ -127,36 +127,36 @@ struct threebodymcfinder {
   bool ProcessThreeBody(TmcParticle const& mcParticle, TTrackList const& trackList, int bestCollisionIndex, bool& prong0ITS, bool& prong1ITS, bool& prong2ITS, bool& prong0TPC, bool& prong1TPC, bool& prong2TPC)
   {
     bool reconstructed = false;
-    prong0ITS = false; 
-    prong1ITS = false; 
+    prong0ITS = false;
+    prong1ITS = false;
     prong2ITS = false;
-    prong0TPC = false; 
-    prong1TPC = false; 
+    prong0TPC = false;
+    prong1TPC = false;
     prong2TPC = false;
     int trackIndexProng0 = -1, trackIndexProng1 = -1, trackIndexProng2 = -1;
     int prong0pdg = -1, prong1pdg = -1, prong2pdg = -1;
 
-    //expected daughter pdgs 
-    if(mcParticle.pdgCode() == +1010020040){
+    // expected daughter pdgs
+    if (mcParticle.pdgCode() == +1010020040) {
       prong0pdg = +1000020030;
       prong1pdg = +2212;
       prong2pdg = -211;
     }
-    if(mcParticle.pdgCode() == -1010020040){
+    if (mcParticle.pdgCode() == -1010020040) {
       prong0pdg = -1000020030;
       prong1pdg = -2212;
       prong2pdg = +211;
     }
-    if(mcParticle.pdgCode() == +1010010030){
+    if (mcParticle.pdgCode() == +1010010030) {
       prong0pdg = +1000010020;
       prong1pdg = +2212;
       prong2pdg = -211;
     }
-    if(mcParticle.pdgCode() == -1010010030){
+    if (mcParticle.pdgCode() == -1010010030) {
       prong0pdg = -1000010020;
       prong1pdg = -2212;
       prong2pdg = +211;
-    }      
+    }
 
     if (mcParticle.has_daughters()) {
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
@@ -165,30 +165,30 @@ struct threebodymcfinder {
           for (auto const& track : trackList) {
             if (track.mcParticleId() == daughter.globalIndex()) {
               // determine which charge this particle has
-              if (daughter.pdgCode() == prong0pdg ) {
+              if (daughter.pdgCode() == prong0pdg) {
                 trackIndexProng0 = track.globalIndex();
                 if (track.hasITS())
                   prong0ITS = true;
                 if (track.hasTPC())
                   prong0TPC = true;
               }
-              if (daughter.pdgCode() == prong1pdg ) {
+              if (daughter.pdgCode() == prong1pdg) {
                 trackIndexProng1 = track.globalIndex();
                 if (track.hasITS())
                   prong1ITS = true;
                 if (track.hasTPC())
                   prong1TPC = true;
               }
-              if (daughter.pdgCode() == prong2pdg ) {
+              if (daughter.pdgCode() == prong2pdg) {
                 trackIndexProng2 = track.globalIndex();
                 if (track.hasITS())
                   prong2ITS = true;
                 if (track.hasTPC())
                   prong2TPC = true;
               }
-              if(trackIndexProng0 >= 0 && trackIndexProng1 >= 0 && trackIndexProng2 >= 0) 
+              if (trackIndexProng0 >= 0 && trackIndexProng1 >= 0 && trackIndexProng2 >= 0)
                 break; // all found
-              }
+            }
           }
         }
       }
@@ -236,7 +236,7 @@ struct threebodymcfinder {
         if (mcParticle.pdgCode() == -1010020040 && findHyHe4) {
           reconstructed = ProcessThreeBody(mcParticle, tracks, bestCollisionIndex, prong0ITS, prong1ITS, prong2ITS, prong0TPC, prong1TPC, prong2TPC);
           if (fabs(mcParticle.y()) < 0.5) {
-            histos.fill(HIST("hPtHyAntiHe4Generated"), mcParticle.pt());
+            histos.fill(HIST("hPtAntiHyHe4Generated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtAntiHyHe4Reconstructed"), mcParticle.pt());
             if (reconstructed && prong0ITS && prong1ITS && prong2ITS && prong0TPC && prong1TPC && prong2TPC)
