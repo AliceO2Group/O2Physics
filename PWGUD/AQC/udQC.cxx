@@ -27,6 +27,10 @@ using namespace o2::framework::expressions;
 
 struct UDQC {
 
+    SliceCache cache;
+    Preslice<aod::Zdcs> perBCzdc = aod::zdc::bcId;
+    Preslice<aod::Calos> perBCcalo = aod::calo::bcId;
+    
   // constants
   static const int nBCpOrbit = 3564;
   static const int ns = 20;    // number of BCs to save (used in processF[V0, T0, DD])
@@ -277,7 +281,7 @@ struct UDQC {
     // no Zdc signal in bcSlice
     std::vector<float> lims(10, 0.);
     for (auto const& bc : bcSlice) {
-      if (!udhelpers::cleanZDC(bc, zdcs, lims)) {
+      if (!udhelpers::cleanZDC(bc, zdcs, lims, cache)) {
         isDGcandidate = false;
         break;
       }
@@ -286,7 +290,7 @@ struct UDQC {
 
     // no Calo signal in bcSlice
     for (auto const& bc : bcSlice) {
-      if (!udhelpers::cleanCalo(bc, calos, lims)) {
+      if (!udhelpers::cleanCalo(bc, calos, lims, cache)) {
         isDGcandidate = false;
         break;
       }
