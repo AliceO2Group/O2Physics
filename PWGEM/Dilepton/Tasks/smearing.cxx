@@ -117,7 +117,7 @@ struct ApplySmearing {
         // apply smearing for electrons or muons.
 
         // smear pt
-        Int_t ptbin = reinterpret_cast<TH2D*>(fArrResoPt->At(0))->GetXaxis()->FindBin(ptgen);
+        int ptbin = reinterpret_cast<TH2D*>(fArrResoPt->At(0))->GetXaxis()->FindBin(ptgen);
         if (ptbin < 1) {
           ptbin = 1;
         }
@@ -178,12 +178,12 @@ struct ApplySmearing {
     applySmearing(tracksMC);
   }
 
-  void processCocktail(aod::McParticles_001 const& tracksMC)
+  void processCocktail(aod::McParticles const& tracksMC)
   {
     applySmearing(tracksMC);
   }
 
-  void processDummyCocktail(aod::McParticles_001 const& tracksMC) {}
+  void processDummyCocktail(aod::McParticles const& tracksMC) {}
 
   void processDummyMCanalysis(ReducedMCTracks const& tracksMC) {}
 
@@ -195,7 +195,7 @@ struct ApplySmearing {
 
 struct CheckSmearing {
   using MyReducedTracks = soa::Join<ReducedMCTracks, SmearedTracks>;
-  using MyCocktailTracks = soa::Join<aod::McParticles_001, SmearedTracks>;
+  using MyCocktailTracks = soa::Join<aod::McParticles, SmearedTracks>;
 
   // Run for electrons or muons
   Configurable<int> fPdgCode{"cfgPdgCode", 11, "Set the type of particle to be checked"};
@@ -218,7 +218,7 @@ struct CheckSmearing {
 
     // Binning for resolution
     AxisSpec axisPtRes{ptResBins, "#it{p}^{gen}_{T,e} (GeV/#it{c})"};
-    AxisSpec axisDeltaptRes{deltaptResBins, "(p^{gen}_{T} - p^{rec}_{T}) / p^{gen}_{T} (GeV/c)"};
+    AxisSpec axisDeltaptRes{deltaptResBins, "(p^{gen}_{T} - p^{rec}_{T}) / p^{gen}_{T}"};
     AxisSpec axisDeltaetaRes{deltaetaResBins, "#eta^{gen} - #eta^{rec}"};
     AxisSpec axisDeltaphiRes{deltaphiResBins, "#varphi^{gen} - #varphi^{rec} (rad)"};
 
@@ -243,11 +243,11 @@ struct CheckSmearing {
         continue;
       }
 
-      Double_t deltaptoverpt = -1000.;
+      float deltaptoverpt = -1000.;
       if (mctrack.pt() > 0.)
         deltaptoverpt = (mctrack.pt() - mctrack.ptSmeared()) / mctrack.pt();
-      Double_t deltaeta = mctrack.eta() - mctrack.etaSmeared();
-      Double_t deltaphi = mctrack.phi() - mctrack.phiSmeared();
+      float deltaeta = mctrack.eta() - mctrack.etaSmeared();
+      float deltaphi = mctrack.phi() - mctrack.phiSmeared();
       registry.fill(HIST("PtGen_DeltaPtOverPtGen"), mctrack.pt(), deltaptoverpt);
       registry.fill(HIST("PtGen_DeltaEta"), mctrack.pt(), deltaeta);
       if (mctrack.pdgCode() < 0) {
@@ -272,7 +272,7 @@ struct CheckSmearing {
   }
 
   void processDummyMCanalysis(ReducedMCTracks const& tracksMC) {}
-  void processDummyCocktail(aod::McParticles_001 const& tracksMC) {}
+  void processDummyCocktail(aod::McParticles const& tracksMC) {}
 
   PROCESS_SWITCH(CheckSmearing, processCheckMCanalysis, "Run for MC analysis", false);
   PROCESS_SWITCH(CheckSmearing, processCheckCocktail, "Run for cocktail analysis", false);
