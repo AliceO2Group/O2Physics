@@ -52,6 +52,7 @@ DECLARE_SOA_COLUMN(GenYDecVtx, genYDecVtx, float);      // Decay vertex of the c
 DECLARE_SOA_COLUMN(GenZDecVtx, genZDecVtx, float);      // Decay vertex of the candidate (z direction)
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);               // bool: true for reco
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);           // bool: true for signal
+DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);              // int: PDG code of the hypernucleus
 } // namespace hyperrec
 
 DECLARE_SOA_TABLE(DataHypCands, "AOD", "DATAHYPCANDS",
@@ -106,7 +107,8 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::GenYDecVtx,
                   hyperrec::GenZDecVtx,
                   hyperrec::IsReco,
-                  hyperrec::IsSignal);
+                  hyperrec::IsSignal,
+                  hyperrec::PdgCode);
 
 using DataHypCand = DataHypCands::iterator;
 using MCHypCand = MCHypCands::iterator;
