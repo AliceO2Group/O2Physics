@@ -144,10 +144,14 @@ struct TrackMatchingMonitor {
     mHistManager.add("clusterTM_EoverP_E", "E/p ", o2HistType::kTH3F, {eoverpAxis, energyAxis, nmatchedtrack});                                                                           // E/p vs p for the Nth closest track
     mHistManager.add("clusterTM_EoverP_Pt", "E/p vs track pT", o2HistType::kTH3F, {eoverpAxis, trackptAxis, nmatchedtrack});                                                              // E/p vs track pT for the Nth closest track
     mHistManager.add("clusterTM_EvsP", "cluster E/track p", o2HistType::kTH3F, {energyAxis, trackpAxis, nmatchedtrack});                                                                  // E vs p for the Nth closest track
-    mHistManager.add("clusterTM_EoverP_electron", "cluster E/electron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                    // E over p vs track pT for the Nth closest electron/positron track
+    mHistManager.add("clusterTM_EoverP_ep", "cluster E/electron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                          // E over p vs track pT for the Nth closest electron/positron track
+    mHistManager.add("clusterTM_EoverP_e", "cluster E/electron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                           // E over p vs track pT for the Nth closest electron track
+    mHistManager.add("clusterTM_EoverP_p", "cluster E/electron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                           // E over p vs track pT for the Nth closest positron track
     mHistManager.add("clusterTM_EoverP_electron_ASide", "cluster E/electron p in A-Side", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                    // E over p vs track pT for the Nth closest electron/positron track in A-Side
     mHistManager.add("clusterTM_EoverP_electron_CSide", "cluster E/electron p in C-Side", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                    // E over p vs track pT for the Nth closest electron/positron track in C-Side
     mHistManager.add("clusterTM_EoverP_hadron", "cluster E/hadron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                        // E over p vs track pT for the Nth closest hadron track
+    mHistManager.add("clusterTM_EoverP_hn", "cluster E/hadron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                            // E over p vs track pT for the Nth closest negative hadron track
+    mHistManager.add("clusterTM_EoverP_hp", "cluster E/hadron p", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                            // E over p vs track pT for the Nth closest positive hadron track
     mHistManager.add("clusterTM_EoverP_hadron_ASide", "cluster E/hadron p in A-Side", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                        // E over p vs track pT for the Nth closest hadron track in A-Side
     mHistManager.add("clusterTM_EoverP_hadron_CSide", "cluster E/hadron p in C-Side", o2HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                        // E over p vs track pT for the Nth closest hadron track in C-Side
 
@@ -308,11 +312,16 @@ struct TrackMatchingMonitor {
         }
         if (tpcNsigmaElectron->at(0) <= match.track_as<tracksPID>().tpcNSigmaEl() && match.track_as<tracksPID>().tpcNSigmaEl() <= tpcNsigmaElectron->at(1)) {                 // E/p for e+/e-
           if (usePionRejection && (tpcNsigmaPion->at(0) <= match.track_as<tracksPID>().tpcNSigmaPi() || match.track_as<tracksPID>().tpcNSigmaPi() <= tpcNsigmaPion->at(1))) { // with pion rejection
-            mHistManager.fill(HIST("clusterTM_EoverP_electron"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+            mHistManager.fill(HIST("clusterTM_EoverP_ep"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
             if (match.track_as<tracksPID>().eta() >= 0.) {
               mHistManager.fill(HIST("clusterTM_EoverP_electron_ASide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
             } else {
               mHistManager.fill(HIST("clusterTM_EoverP_electron_CSide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+            }
+            if (match.track_as<tracksPID>().sign() == -1) {
+              mHistManager.fill(HIST("clusterTM_EoverP_e"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+            } else if (match.track_as<tracksPID>().sign() == +1) {
+              mHistManager.fill(HIST("clusterTM_EoverP_p"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
             }
           } else { // without pion rejection
             mHistManager.fill(HIST("clusterTM_EoverP_electron"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
@@ -321,6 +330,11 @@ struct TrackMatchingMonitor {
             } else {
               mHistManager.fill(HIST("clusterTM_EoverP_electron_CSide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
             }
+            if (match.track_as<tracksPID>().sign() == -1) {
+              mHistManager.fill(HIST("clusterTM_EoverP_e"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+            } else if (match.track_as<tracksPID>().sign() == +1) {
+              mHistManager.fill(HIST("clusterTM_EoverP_p"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+            }
           }
         } else if (tpcNsigmaBack->at(0) <= match.track_as<tracksPID>().tpcNSigmaEl() && match.track_as<tracksPID>().tpcNSigmaEl() <= tpcNsigmaBack->at(1)) { // E/p for hadrons / background
           mHistManager.fill(HIST("clusterTM_EoverP_hadron"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
@@ -328,6 +342,11 @@ struct TrackMatchingMonitor {
             mHistManager.fill(HIST("clusterTM_EoverP_hadron_ASide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
           } else {
             mHistManager.fill(HIST("clusterTM_EoverP_hadron_CSide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+          }
+          if (match.track_as<tracksPID>().sign() == -1) {
+            mHistManager.fill(HIST("clusterTM_EoverP_hn"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+          } else if (match.track_as<tracksPID>().sign() == +1) {
+            mHistManager.fill(HIST("clusterTM_EoverP_hp"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
           }
         }
         if ((fabs(dEta) <= 0.01 + pow(match.track_as<tracksPID>().pt() + 4.07, -2.5)) &&
