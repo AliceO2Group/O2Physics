@@ -27,10 +27,10 @@ using namespace o2::framework::expressions;
 
 struct UDQC {
 
-    SliceCache cache;
-    Preslice<aod::Zdcs> perBCzdc = aod::zdc::bcId;
-    Preslice<aod::Calos> perBCcalo = aod::calo::bcId;
-    
+  SliceCache cache;
+  Preslice<aod::Zdcs> perBCzdc = aod::zdc::bcId;
+  Preslice<aod::Calos> perBCcalo = aod::calo::bcId;
+
   // constants
   static const int nBCpOrbit = 3564;
   static const int ns = 20;    // number of BCs to save (used in processF[V0, T0, DD])
