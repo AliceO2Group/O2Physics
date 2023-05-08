@@ -132,9 +132,9 @@ using LcChargedDetectorLevelJets = soa::Join<aod::LcChargedMCDetectorLevelJets, 
 using LcChargedParticleLevelJets = soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents, aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets>;
 using LcChargedJetMatchingQA = JetMatchingQA<LcChargedDetectorLevelJets, LcChargedParticleLevelJets>;
 
-using BPlusChargedDetectorLevelJets = soa::Join<aod::BPlusChargedMCDetectorLevelJets, aod::BPlusChargedMCDetectorLevelJetConstituents, aod::BPlusChargedMCDetectorLevelJetsMatchedToBPlusChargedMCParticleLevelJets>;
-using BPlusChargedParticleLevelJets = soa::Join<aod::BPlusChargedMCParticleLevelJets, aod::BPlusChargedMCParticleLevelJetConstituents, aod::BPlusChargedMCParticleLevelJetsMatchedToBPlusChargedMCDetectorLevelJets>;
-using BPlusChargedJetMatchingQA = JetMatchingQA<BPlusChargedDetectorLevelJets, BPlusChargedParticleLevelJets>;
+using BplusChargedDetectorLevelJets = soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents, aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets>;
+using BplusChargedParticleLevelJets = soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents, aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets>;
+using BplusChargedJetMatchingQA = JetMatchingQA<BplusChargedDetectorLevelJets, BplusChargedParticleLevelJets>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -143,7 +143,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   tasks.emplace_back(adaptAnalysisTask<ChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-ch"}));
   tasks.emplace_back(adaptAnalysisTask<D0ChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-d0-ch"}));
   tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-lc-ch"}));
-  tasks.emplace_back(adaptAnalysisTask<BPlusChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-bplus-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<BplusChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-bplus-ch"}));
 
   return WorkflowSpec{tasks};
 }

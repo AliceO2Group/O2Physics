@@ -18,7 +18,7 @@
 
 ClassImp(V0PhotonCut);
 
-const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "PsiPair", "RxyKF", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "PtRange", "EtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz"};
+const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "PsiPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "PtRange", "EtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz"};
 
 void V0PhotonCut::SetMeeRange(float min, float max)
 {
@@ -37,11 +37,11 @@ void V0PhotonCut::SetMaxMeePsiPairDep(std::function<float(float)> psiDepCut)
   mMaxMeePsiPairDep = psiDepCut;
   LOG(info) << "V0 Photon Cut, set max mee psi pair dep: " << mMaxMeePsiPairDep(0.1);
 }
-void V0PhotonCut::SetRxyKFRange(float min, float max)
+void V0PhotonCut::SetRxyRange(float min, float max)
 {
-  mMinRxyKF = min;
-  mMaxRxyKF = max;
-  LOG(info) << "V0 Photon selection, set RxyKF range: " << mMinRxyKF << " - " << mMaxRxyKF;
+  mMinRxy = min;
+  mMaxRxy = max;
+  LOG(info) << "V0 Photon selection, set Rxy range: " << mMinRxy << " - " << mMaxRxy;
 }
 void V0PhotonCut::SetMinCosPA(float min)
 {

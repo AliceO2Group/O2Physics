@@ -136,15 +136,16 @@ struct createEMReducedMCEvent {
         if (mctrack.pt() < 1e-2 || abs(mctrack.y()) > 1.5 || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > 260) {
           continue;
         }
-
         int pdg = mctrack.pdgCode();
+
+        // Note that pi0 from weak decay gives producedByGenerator() = false
         if (
           abs(pdg) != 11      // electron
           && (abs(pdg) != 22) // photon
           // light mesons
           && (abs(pdg) != 111) // pi0
           && (abs(pdg) != 113) // rho(770)
-          //&& (abs(pdg) != 211 ) // changed pion
+          // && (abs(pdg) != 211) // changed pion
           && (abs(pdg) != 221) // eta
           && (abs(pdg) != 223) // omega(782)
           && (abs(pdg) != 331) // eta'(958)
@@ -155,28 +156,6 @@ struct createEMReducedMCEvent {
         ) {
           continue;
         }
-
-        // float dx = mctrack.vx() - mcCollision.posX();
-        // float dy = mctrack.vy() - mcCollision.posY();
-        // float dz = mctrack.vz() - mcCollision.posZ();
-        // float r3D = sqrt(dx*dx + dy*dy + dz*dz);
-        // if (
-        //   abs(pdg) != 11                                               // electron
-        //   && (abs(pdg) != 22   || r3D > 1.0f) // photon
-        //   // light mesons
-        //   && (abs(pdg) != 111  || r3D > 1.0f) // pi0
-        //   && (abs(pdg) != 113  || r3D > 1.0f) // rho(770)
-        //   && (abs(pdg) != 211  || r3D > 1.0f) // changed pion
-        //   && (abs(pdg) != 221  || r3D > 1.0f) // eta
-        //   && (abs(pdg) != 223  || r3D > 1.0f) // omega(782)
-        //   && (abs(pdg) != 331  || r3D > 1.0f) // eta'(958)
-        //   && (abs(pdg) != 333  || r3D > 1.0f) // phi(1020)
-        //   //strange hadrons
-        //   && (abs(pdg) != 310  || r3D > 1.0f) // K0S
-        //   && (abs(pdg) != 3122 || r3D > 1.0f) // Lambda
-        //) {
-        //   continue;
-        // }
 
         // LOGF(info,"index = %d , mc track pdg = %d , producedByGenerator =  %d , isPhysicalPrimary = %d", mctrack.index(), mctrack.pdgCode(), mctrack.producedByGenerator(), mctrack.isPhysicalPrimary());
 

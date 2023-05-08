@@ -271,7 +271,7 @@ struct tofEventTime {
   Preslice<TrksEvTime> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksEvTime::iterator, pid>;
-  using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>;
+  using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   void processNoFT0(TrksEvTime const& tracks,
                     EvTimeCollisions const&)
   {
@@ -332,9 +332,10 @@ struct tofEventTime {
 
   ///
   /// Process function to prepare the event for each track on Run 3 data with the FT0
+  using EvTimeCollisionsFT0 = soa::Join<EvTimeCollisions, aod::FT0sCorrected>;
   void processFT0(TrksEvTime& tracks,
                   aod::FT0s const&,
-                  EvTimeCollisions const&)
+                  EvTimeCollisionsFT0 const&)
   {
     if (!enableTable) {
       return;
@@ -346,9 +347,9 @@ struct tofEventTime {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
 
-    int lastCollisionId = -1;                                                                                    // Last collision ID analysed
-    for (auto const& t : tracks) {                                                                               // Loop on collisions
-      if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
+    int lastCollisionId = -1;                                                                                       // Last collision ID analysed
+    for (auto const& t : tracks) {                                                                                  // Loop on collisions
+      if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
         tableFlags(0);
         tableEvTime(0.f, 999.f);
         if (enableTableTOFOnly) {
@@ -363,7 +364,7 @@ struct tofEventTime {
       lastCollisionId = t.collisionId(); /// Cache last collision ID
 
       const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
-      const auto& collision = t.collision_as<EvTimeCollisions>();
+      const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
 
       // Compute the TOF event time
       const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
@@ -429,7 +430,7 @@ struct tofEventTime {
   /// Process function to prepare the event for each track on Run 3 data with only the FT0
   void processOnlyFT0(TrksEvTime& tracks,
                       aod::FT0s const&,
-                      EvTimeCollisions const&)
+                      EvTimeCollisionsFT0 const&)
   {
     if (!enableTable) {
       return;
@@ -450,7 +451,7 @@ struct tofEventTime {
         tableEvTime(0.f, 999.f);
         continue;
       }
-      const auto& collision = t.collision_as<EvTimeCollisions>();
+      const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
 
       if (collision.has_foundFT0()) { // T0 measurement is available
         // const auto& ft0 = collision.foundFT0();

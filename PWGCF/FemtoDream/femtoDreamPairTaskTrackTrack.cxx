@@ -22,6 +22,8 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "TDatabasePDG.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "FemtoDreamParticleHisto.h"
@@ -49,6 +51,7 @@ static const float cutsTable[nPart][nCuts]{
 } // namespace
 
 struct femtoDreamPairTaskTrackTrack {
+  Service<O2DatabasePDG> pdg;
   SliceCache cache;
   Preslice<aod::FemtoDreamDebugParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
 
