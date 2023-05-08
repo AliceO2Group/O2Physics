@@ -102,8 +102,6 @@ float philow = 0.0;
 float phiup = constants::math::TwoPI;
 
 int tracktype = 1;
-int trackonecharge = 1;
-int tracktwocharge = -1;
 
 std::vector<TrackSelection*> trackFilters = {};
 bool dca2Dcut = false;
@@ -596,23 +594,29 @@ inline bool matchTrackType(TrackObject const& track)
   }
 }
 
+/// \brief Accepts or not the passed track
+/// \param track the track of interest
+/// \return the internal track id, -1 if not accepted
+/// TODO: the PID implementation
+/// For the time being we keep the convention
+/// - positive track pid even
+/// - negative track pid odd
+/// - charged hadron 0/1
 template <typename TrackObject>
-inline void AcceptTrack(TrackObject const& track, uint8_t& asone, uint8_t& astwo)
+inline int8_t AcceptTrack(TrackObject const& track)
 {
-  asone = uint8_t(false);
-  astwo = uint8_t(false);
-
   /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if (matchTrackType(track)) {
     if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
-      if (((track.sign() > 0) && (trackonecharge > 0)) || ((track.sign() < 0) && (trackonecharge < 0))) {
-        asone = uint8_t(true);
+      if (track.sign() > 0) {
+        return 0;
       }
-      if (((track.sign() > 0) && (tracktwocharge > 0)) || ((track.sign() < 0) && (tracktwocharge < 0))) {
-        astwo = uint8_t(true);
+      if (track.sign() < 0) {
+        return 1;
       }
     }
   }
+  return -1;
 }
 
 template <typename ParticleObject, typename MCCollisionObject>
@@ -629,12 +633,17 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
   }
 }
 
+/// \brief Accepts or not the passed generated particle
+/// \param track the particle of interest
+/// \return the internal particle id, -1 if not accepted
+/// TODO: the PID implementation
+/// For the time being we keep the convention
+/// - positive particle pid even
+/// - negative particle pid odd
+/// - charged hadron 0/1
 template <typename ParticleObject, typename MCCollisionObject>
-inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision, uint8_t& asone, uint8_t& astwo)
+inline int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
 {
-  asone = uint8_t(false);
-  astwo = uint8_t(false);
-
   float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
 
   if (particle.isPhysicalPrimary()) {
@@ -655,15 +664,15 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
 
           exploreMothers(particle, collision);
         }
-        return;
+        return -1;
       }
     }
     if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
-      if (((charge > 0) && (trackonecharge > 0)) || ((charge < 0) && (trackonecharge < 0))) {
-        asone = uint8_t(true);
+      if (charge > 0) {
+        return 0;
       }
-      if (((charge > 0) && (tracktwocharge > 0)) || ((charge < 0) && (tracktwocharge < 0))) {
-        astwo = uint8_t(true);
+      if (charge < 0) {
+        return 1;
       }
     }
   } else {
@@ -671,6 +680,7 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
       LOGF(info, "Particle %d NOT passed isPhysicalPrimary", particle.globalIndex());
     }
   }
+  return -1;
 }
 
 } // namespace dptdptfilter

@@ -411,16 +411,17 @@ struct CheckGeneratorLevelVsDetectorLevel {
           typename CollisionsObject::iterator coll = collisions.iteratorAt(track.collisionId());
           float centormult = -100.0f;
           if (IsEvtSelected(coll, centormult)) {
-            uint8_t asone = uint8_t(false);
-            uint8_t astwo = uint8_t(false);
-
             /* TODO: AcceptTrack does not consider PID */
-            AcceptTrack(track, asone, astwo);
-            if ((asone == uint8_t(true)) or (astwo == uint8_t(true))) {
+            int pid = AcceptTrack(track);
+            if ((pid == 0) or (pid == 1)) {
               /* the track has been accepted */
               nreco++;
               LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.template mcParticle_as<aod::McParticles>().mcCollisionId());
               mclabelpos[kPOSITIVE][label].push_back(recix);
+            } else {
+              if (pid > 1) {
+                LOGF(fatal, "Task not prepared for PID");
+              }
             }
           }
         }
