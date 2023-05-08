@@ -57,6 +57,7 @@ struct MultiplicityCounter {
   SliceCache cache;
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<aod::ReassignedTracksCore> perColU = aod::track::bestCollisionId;
 
   Service<O2DatabasePDG> pdg;
 
@@ -82,7 +83,7 @@ struct MultiplicityCounter {
     AxisSpec MultAxis = {multBinning, "N_{trk}"};
     AxisSpec CentAxis = {centBinning, "centrality"};
 
-    auto* hstat = registry.get<TH1>(HIST("Events/BCSelection"));
+    auto hstat = registry.get<TH1>(HIST("Events/BCSelection"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "Good BCs");
     x->SetBinLabel(2, "BCs with collisions");
@@ -710,11 +711,11 @@ struct MultiplicityCounter {
         auto perCollisionSample = tracks.sliceBy(perCol, collision.globalIndex());
         auto perCollisionASample = atracks.sliceBy(perColU, collision.globalIndex());
         for (auto const& track : perCollisionASample) {
+          auto otrack = track.template track_as<FiTracks>();
           usedTracksIds.emplace_back(track.trackId());
           if (otrack.collisionId() != track.bestCollisionId()) {
             usedTracksIdsDFMC.emplace_back(track.trackId());
           }
-          auto otrack = track.track_as<FiTracks>();
           if (std::abs(otrack.eta()) < estimatorEta) {
             ++Nrec;
           }
@@ -827,9 +828,9 @@ struct MultiplicityCounter {
   void processGen(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExCols, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks)
+    Particles const& particles, FiTracks const& tracks, soa::Filtered<aod::ReassignedTracksCore> const& atracks)
   {
-    processGenGeneral<MC, ExCols>(mcCollision, collisions, particles, tracks);
+    processGenGeneral<MC, ExCols>(mcCollision, collisions, particles, tracks, atracks);
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processGen, "Process generator-level info", false);
@@ -837,9 +838,9 @@ struct MultiplicityCounter {
   void processGenFT0C(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks)
+    Particles const& particles, FiTracks const& tracks, soa::Filtered<aod::ReassignedTracksCore> const& atracks)
   {
-    processGenGeneral<MC, ExColsCentFT0C>(mcCollision, collisions, particles, tracks);
+    processGenGeneral<MC, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, atracks);
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0C, "Process generator-level info (FT0C centrality)", false);
@@ -847,9 +848,9 @@ struct MultiplicityCounter {
   void processGenFT0M(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks)
+    Particles const& particles, FiTracks const& tracks, soa::Filtered<aod::ReassignedTracksCore> const& atracks)
   {
-    processGenGeneral<MC, ExColsCentFT0M>(mcCollision, collisions, particles, tracks);
+    processGenGeneral<MC, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, atracks);
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0M, "Process generator-level info (FT0M centrality)", false);
@@ -859,9 +860,9 @@ struct MultiplicityCounter {
   void processGenFT0Chi(
     MChi::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks)
+    Particles const& particles, FiTracks const& tracks, soa::Filtered<aod::ReassignedTracksCore> const& atracks)
   {
-    processGenGeneral<MChi, ExColsCentFT0C>(mcCollision, collisions, particles, tracks);
+    processGenGeneral<MChi, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, atracks);
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0Chi, "Process generator-level info (FT0C centrality, HI)", false);
@@ -869,9 +870,9 @@ struct MultiplicityCounter {
   void processGenFT0Mhi(
     MChi::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks)
+    Particles const& particles, FiTracks const& tracks, soa::Filtered<aod::ReassignedTracksCore> const& atracks)
   {
-    processGenGeneral<MChi, ExColsCentFT0M>(mcCollision, collisions, particles, tracks);
+    processGenGeneral<MChi, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, atracks);
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0Mhi, "Process generator-level info (FT0M centrality, HI)", false);
