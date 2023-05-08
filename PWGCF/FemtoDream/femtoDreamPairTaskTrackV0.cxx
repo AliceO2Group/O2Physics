@@ -54,16 +54,13 @@ struct femtoDreamPairTaskTrackV0 {
   SliceCache cache;
   Preslice<aod::FemtoDreamParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
 
-  /// Particle selection part
-  Configurable<int> ConfNspecies{"ConfNspecies", 2, "Number of particle spieces with PID info"};
-  Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
-  Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{"ConfTrkPIDnSigmaMax", std::vector<float>{4.f, 3.f, 2.f}, "This configurable needs to be the same as the one used in the producer task"};
-
   /// Particle 1 (track)
   Configurable<LabeledArray<float>> ConfTrkCutTable{"ConfTrkCutTable", {cutsTableTrack[0], nTrack, nCuts, TrackName, cutNames}, "Particle selections"};
   Configurable<int> ConfTrkPDGCodePartOne{"ConfTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};
   Configurable<uint32_t> ConfTrkCutPartOne{"ConfTrkCutPartOne", 5542474, "Particle 1 (Track) - Selection bit from cutCulator"};
   Configurable<std::vector<int>> ConfTrkPIDPartOne{"ConfTrkPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"};
+  Configurable<int> ConfNspecies{"ConfNspecies", 2, "Number of particle spieces with PID info"};
+  Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{"ConfTrkPIDnSigmaMax", std::vector<float>{4.f, 3.f, 2.f}, "This configurable needs to be the same as the one used in the producer task"};
   ConfigurableAxis ConfTrkTempFitVarBins{"ConfTrkDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfTrkTempFitVarpTBins{"ConfTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
 
@@ -105,6 +102,7 @@ struct femtoDreamPairTaskTrackV0 {
   std::vector<float> kNsigma;
 
   /// Correlation part
+  Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
   ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
@@ -140,7 +138,6 @@ struct femtoDreamPairTaskTrackV0 {
     if (ConfIsCPR.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
     }
-
     vPIDPartOne = ConfTrkPIDPartOne.value;
     kNsigma = ConfTrkPIDnSigmaMax.value;
   }
