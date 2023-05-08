@@ -18,13 +18,13 @@
 #ifndef COMMON_TABLEPRODUCER_PID_PIDTOFBASE_H_
 #define COMMON_TABLEPRODUCER_PID_PIDTOFBASE_H_
 
+#include <string>
+#include <vector>
+
 #include "PID/ParamBase.h"
 #include "PID/PIDTOF.h"
 
 #include "Common/DataModel/PIDResponse.h"
-
-#include <string>
-#include <vector>
 
 using namespace o2;
 using namespace o2::track;
