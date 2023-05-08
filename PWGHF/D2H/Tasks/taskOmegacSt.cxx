@@ -45,9 +45,6 @@ struct HfTaskOmegacSt {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int runNumber;
 
-  using TrackedCascades = soa::Join<aod::TrackedCascades, aod::TrackedCascadeColls>;
-  using TrackedV0s = soa::Join<aod::TrackedV0s, aod::TrackedV0Colls>;
-  using Tracked3Bodys = soa::Join<aod::Tracked3Bodys, aod::Tracked3BodyColls>;
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels>;
 
   HistogramRegistry registry{
@@ -68,7 +65,7 @@ struct HfTaskOmegacSt {
   }
 
   void process(aod::Collision const& collision,
-               TrackedCascades const& trackedCascades, aod::Cascades const& cascades,
+               aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
                aod::V0s const& v0s, TracksExt const& tracks, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
     const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
