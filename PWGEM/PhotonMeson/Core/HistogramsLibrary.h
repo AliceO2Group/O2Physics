@@ -22,6 +22,7 @@ using namespace std;
 #include <TObject.h>
 #include <TObjArray.h>
 #include <THashList.h>
+#include <TMath.h>
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TH3F.h>
@@ -38,6 +39,7 @@ enum EMHistType {
   kV0 = 1,
   kTrack = 2,
   kCluster = 3,
+  kPhoton = 4, // photon candidates
 };
 
 namespace o2::aod
@@ -55,7 +57,12 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH1F*>(list->FindObject("hMultNTracksPVeta1"))->Fill(obj.multNTracksPVeta1());
     reinterpret_cast<TH2F*>(list->FindObject("hMultFT0"))->Fill(obj.multFT0A(), obj.multFT0C());
     reinterpret_cast<TH1F*>(list->FindObject("hCentFT0M"))->Fill(obj.centFT0M());
+    reinterpret_cast<TH2F*>(list->FindObject("hCentFT0MvsMultNTracksPV"))->Fill(obj.centFT0M(), obj.multNTracksPV());
 
+  } else if constexpr (htype == EMHistType::kPhoton) { // ROOT::Math::PtEtaPhiMVector
+    reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.Pt());
+    reinterpret_cast<TH1F*>(list->FindObject("hY"))->Fill(obj.Rapidity());
+    reinterpret_cast<TH1F*>(list->FindObject("hPhi"))->Fill(obj.Phi() < 0.f ? obj.Phi() + TMath::TwoPi() : obj.Phi());
   } else if constexpr (htype == EMHistType::kV0) {
     reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.pt());
   }
