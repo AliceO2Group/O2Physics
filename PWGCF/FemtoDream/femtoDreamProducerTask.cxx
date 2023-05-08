@@ -13,6 +13,7 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
+#include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -34,8 +35,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "TMath.h"
-#include <CCDB/BasicCCDBManager.h>
-#include <cstdint>
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -105,24 +104,15 @@ struct femtoDreamProducerTask {
 
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
-  Configurable<bool> ConfUseTPCmult{
-    "ConfUseTPCmult", false,
-    "Use multiplicity based on the number of tracks with TPC information"};
-  Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f,
-                                  "Evt sel: Max. z-Vertex (cm)"};
-  Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true,
-                                         "Evt sel: check for trigger"};
-  Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7,
-                                      "Evt sel: trigger"};
-  Configurable<bool> ConfEvtOfflineCheck{
-    "ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
-
+  Configurable<bool> ConfUseTPCmult{"ConfUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
+  Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+  Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
+  Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
+  Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
   Configurable<bool> ConfStoreV0{"ConfStoreV0", true, "True: store V0 table"};
   // just sanity check to make sure in case there are problems in conversion or
   // MC production it does not affect results
-  Configurable<bool> ConfRejectNotPropagatedTracks{
-    "ConfRejectNotPropagatedTracks", false,
-    "True: reject not propagated tracks"};
+  Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   // Configurable<bool> ConfRejectITSHitandTOFMissing{
   //     "ConfRejectITSHitandTOFMissing", false,
   //     "True: reject if neither ITS hit nor TOF timing satisfied"};
@@ -140,9 +130,8 @@ struct femtoDreamProducerTask {
   Configurable<std::vector<float>> ConfTrkTPCsCls{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCsClsMax, "ConfTrk"), std::vector<float>{0.1f, 160.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCsClsMax, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkITSnclsMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsMin, "ConfTrk"), std::vector<float>{-1.f, 2.f, 4.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkITSnclsIbMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsIbMin, "ConfTrk"), std::vector<float>{-1.f, 1.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsIbMin, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkDCAxyMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAxyMax, "ConfTrk"), std::vector<float>{0.1f, 3.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAxyMax, "Track selection: ")}; /// here we need an open cut to do the DCA fits
-                                                                                                                                                                                                                                                                                        /// later on!
-  Configurable<std::vector<float>> ConfTrkDCAzMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAzMax, "ConfTrk"), std::vector<float>{0.2f, 3.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAzMax, "Track selection: ")};    /// \todo Reintegrate PID to the general selection container
+  Configurable<std::vector<float>> ConfTrkDCAxyMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAxyMax, "ConfTrk"), std::vector<float>{0.1f, 3.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAxyMax, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkDCAzMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAzMax, "ConfTrk"), std::vector<float>{0.2f, 3.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAzMax, "Track selection: ")}; /// \todo Reintegrate PID to the general selection container
   Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kPIDnSigmaMax, "ConfTrk"), std::vector<float>{3.5f, 3.f, 2.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kPIDnSigmaMax, "Track selection: ")};
   Configurable<float> ConfPIDnSigmaOffsetTPC{"ConfPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
   Configurable<float> ConfPIDnSigmaOffsetTOF{"ConfPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
@@ -168,19 +157,12 @@ struct femtoDreamProducerTask {
   Configurable<std::vector<float>> ConfChildPIDnSigmaMax{"ConfChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "V0 Child sel: Max. PID nSigma TPC"};
   Configurable<std::vector<int>> ConfPIDChildspecies{"ConfPIDChildspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "V0 Child sel: Particles species for PID"};
 
-  Configurable<float> ConfV0InvMassLowLimit{
-    "ConfInvV0MassLowLimit", 1.05, "Lower limit of the V0 invariant mass"};
-  Configurable<float> ConfV0InvMassUpLimit{
-    "ConfInvV0MassUpLimit", 1.30, "Upper limit of the V0 invariant mass"};
+  Configurable<float> ConfV0InvMassLowLimit{"ConfInvV0MassLowLimit", 1.05, "Lower limit of the V0 invariant mass"};
+  Configurable<float> ConfV0InvMassUpLimit{"ConfInvV0MassUpLimit", 1.30, "Upper limit of the V0 invariant mass"};
 
-  Configurable<bool> ConfV0RejectKaons{"ConfRejectKaons", false,
-                                       "Switch to reject kaons"};
-  Configurable<float> ConfV0InvKaonMassLowLimit{
-    "ConfInvKaonMassLowLimit", 0.48,
-    "Lower limit of the V0 invariant mass for Kaon rejection"};
-  Configurable<float> ConfV0InvKaonMassUpLimit{
-    "ConfInvKaonMassUpLimit", 0.515,
-    "Upper limit of the V0 invariant mass for Kaon rejection"};
+  Configurable<bool> ConfV0RejectKaons{"ConfRejectKaons", false, "Switch to reject kaons"};
+  Configurable<float> ConfV0InvKaonMassLowLimit{"ConfInvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
+  Configurable<float> ConfV0InvKaonMassUpLimit{"ConfInvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
 
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
   /*Filter v0Filter = (nabs(aod::v0data::x) < V0DecVtxMax.value) &&
@@ -189,10 +171,7 @@ struct femtoDreamProducerTask {
   // (aod::v0data::v0radius > V0TranRadV0Min.value); to be added, not working
   // for now do not know why
 
-  HistogramRegistry qaRegistry{
-    "QAHistos",
-    {},
-    OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
 
   int mRunNumber;
   float mMagField;
@@ -201,8 +180,7 @@ struct femtoDreamProducerTask {
   void init(InitContext&)
   {
     if (doprocessData == false && doprocessMC == false) {
-      LOGF(fatal,
-           "Neither processData nor processMC enabled. Please choose one.");
+      LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
     }
     if (doprocessData == true && doprocessMC == true) {
       LOGF(fatal,
@@ -210,8 +188,7 @@ struct femtoDreamProducerTask {
            "Please choose one.");
     }
 
-    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel,
-                    ConfEvtOfflineCheck, ConfIsRun3);
+    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&qaRegistry);
 
     trackCuts.setSelection(ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
@@ -228,8 +205,7 @@ struct femtoDreamProducerTask {
     trackCuts.setSelection(ConfTrkDCAzMax, femtoDreamTrackSelection::kDCAzMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setPIDSpecies(ConfPIDTrkspecies);
-    trackCuts.setnSigmaPIDOffset(ConfPIDnSigmaOffsetTPC,
-                                 ConfPIDnSigmaOffsetTOF);
+    trackCuts.setnSigmaPIDOffset(ConfPIDnSigmaOffsetTPC, ConfPIDnSigmaOffsetTOF);
     trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
 
     /// \todo fix how to pass array to setSelection, getRow() passing a
@@ -237,83 +213,38 @@ struct femtoDreamProducerTask {
     // v0Cuts.setSelection(ConfV0Selection->getRow(0),
     // femtoDreamV0Selection::kDecVtxMax, femtoDreamSelection::kAbsUpperLimit);
     if (ConfStoreV0) {
-      v0Cuts.setSelection(ConfV0Sign, femtoDreamV0Selection::kV0Sign,
-                          femtoDreamSelection::kEqual);
-      v0Cuts.setSelection(ConfV0PtMin, femtoDreamV0Selection::kV0pTMin,
-                          femtoDreamSelection::kLowerLimit);
-      v0Cuts.setSelection(ConfV0PtMax, femtoDreamV0Selection::kV0pTMax,
-                          femtoDreamSelection::kUpperLimit);
-      v0Cuts.setSelection(ConfV0DCADaughMax,
-                          femtoDreamV0Selection::kV0DCADaughMax,
-                          femtoDreamSelection::kUpperLimit);
-      v0Cuts.setSelection(ConfV0CPAMin, femtoDreamV0Selection::kV0CPAMin,
-                          femtoDreamSelection::kLowerLimit);
-      v0Cuts.setSelection(ConfV0TranRadMin,
-                          femtoDreamV0Selection::kV0TranRadMin,
-                          femtoDreamSelection::kLowerLimit);
-      v0Cuts.setSelection(ConfV0TranRadMax,
-                          femtoDreamV0Selection::kV0TranRadMax,
-                          femtoDreamSelection::kUpperLimit);
-      v0Cuts.setSelection(ConfV0DecVtxMax, femtoDreamV0Selection::kV0DecVtxMax,
-                          femtoDreamSelection::kUpperLimit);
-
-      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfChildCharge,
-                          femtoDreamTrackSelection::kSign,
-                          femtoDreamSelection::kEqual);
-      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfChildEtaMax,
-                          femtoDreamTrackSelection::kEtaMax,
-                          femtoDreamSelection::kAbsUpperLimit);
-      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfChildTPCnClsMin,
-                          femtoDreamTrackSelection::kTPCnClsMin,
-                          femtoDreamSelection::kLowerLimit);
-      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfChildDCAMin,
-                          femtoDreamTrackSelection::kDCAMin,
-                          femtoDreamSelection::kAbsLowerLimit);
-      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack,
-                          ConfChildPIDnSigmaMax,
-                          femtoDreamTrackSelection::kPIDnSigmaMax,
-                          femtoDreamSelection::kAbsUpperLimit);
-      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfChildCharge,
-                          femtoDreamTrackSelection::kSign,
-                          femtoDreamSelection::kEqual);
-      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfChildEtaMax,
-                          femtoDreamTrackSelection::kEtaMax,
-                          femtoDreamSelection::kAbsUpperLimit);
-      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfChildTPCnClsMin,
-                          femtoDreamTrackSelection::kTPCnClsMin,
-                          femtoDreamSelection::kLowerLimit);
-      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfChildDCAMin,
-                          femtoDreamTrackSelection::kDCAMin,
-                          femtoDreamSelection::kAbsLowerLimit);
-      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack,
-                          ConfChildPIDnSigmaMax,
-                          femtoDreamTrackSelection::kPIDnSigmaMax,
-                          femtoDreamSelection::kAbsUpperLimit);
-      v0Cuts.setChildPIDSpecies(femtoDreamV0Selection::kPosTrack,
-                                ConfPIDChildspecies);
-      v0Cuts.setChildPIDSpecies(femtoDreamV0Selection::kNegTrack,
-                                ConfPIDChildspecies);
-      v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0,
-                  aod::femtodreamparticle::ParticleType::kV0Child,
-                  aod::femtodreamparticle::cutContainerType>(&qaRegistry);
+      v0Cuts.setSelection(ConfV0Sign, femtoDreamV0Selection::kV0Sign, femtoDreamSelection::kEqual);
+      v0Cuts.setSelection(ConfV0PtMin, femtoDreamV0Selection::kV0pTMin, femtoDreamSelection::kLowerLimit);
+      v0Cuts.setSelection(ConfV0PtMax, femtoDreamV0Selection::kV0pTMax, femtoDreamSelection::kUpperLimit);
+      v0Cuts.setSelection(ConfV0DCADaughMax, femtoDreamV0Selection::kV0DCADaughMax, femtoDreamSelection::kUpperLimit);
+      v0Cuts.setSelection(ConfV0CPAMin, femtoDreamV0Selection::kV0CPAMin, femtoDreamSelection::kLowerLimit);
+      v0Cuts.setSelection(ConfV0TranRadMin, femtoDreamV0Selection::kV0TranRadMin, femtoDreamSelection::kLowerLimit);
+      v0Cuts.setSelection(ConfV0TranRadMax, femtoDreamV0Selection::kV0TranRadMax, femtoDreamSelection::kUpperLimit);
+      v0Cuts.setSelection(ConfV0DecVtxMax, femtoDreamV0Selection::kV0DecVtxMax, femtoDreamSelection::kUpperLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfChildCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfChildCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
+      v0Cuts.setChildPIDSpecies(femtoDreamV0Selection::kPosTrack, ConfPIDChildspecies);
+      v0Cuts.setChildPIDSpecies(femtoDreamV0Selection::kNegTrack, ConfPIDChildspecies);
+      v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
       v0Cuts.setInvMassLimits(ConfV0InvMassLowLimit, ConfV0InvMassUpLimit);
 
-      v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kPosTrack,
-                                               ConfRejectNotPropagatedTracks);
-      v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kNegTrack,
-                                               ConfRejectNotPropagatedTracks);
+      v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kPosTrack, ConfRejectNotPropagatedTracks);
+      v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kNegTrack, ConfRejectNotPropagatedTracks);
 
       v0Cuts.setnSigmaPIDOffsetTPC(ConfPIDnSigmaOffsetTPC);
-      v0Cuts.setChildnSigmaPIDOffset(femtoDreamV0Selection::kPosTrack,
-                                     ConfPIDnSigmaOffsetTPC,
-                                     ConfPIDnSigmaOffsetTOF);
-      v0Cuts.setChildnSigmaPIDOffset(femtoDreamV0Selection::kNegTrack,
-                                     ConfPIDnSigmaOffsetTPC,
-                                     ConfPIDnSigmaOffsetTOF);
+      v0Cuts.setChildnSigmaPIDOffset(femtoDreamV0Selection::kPosTrack, ConfPIDnSigmaOffsetTPC, ConfPIDnSigmaOffsetTOF);
+      v0Cuts.setChildnSigmaPIDOffset(femtoDreamV0Selection::kNegTrack, ConfPIDnSigmaOffsetTPC, ConfPIDnSigmaOffsetTOF);
 
       if (ConfV0RejectKaons) {
-        v0Cuts.setKaonInvMassLimits(ConfV0InvKaonMassLowLimit,
-                                    ConfV0InvKaonMassUpLimit);
+        v0Cuts.setKaonInvMassLimits(ConfV0InvKaonMassLowLimit, ConfV0InvKaonMassUpLimit);
       }
       // if (ConfRejectITSHitandTOFMissing) {
       //   o2PhysicsTrackSelection = new
@@ -329,9 +260,7 @@ struct femtoDreamProducerTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::system_clock::now().time_since_epoch())
-                    .count();
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
   }
 
@@ -439,9 +368,7 @@ struct femtoDreamProducerTask {
 
   template <bool isMC, typename V0Type, typename TrackType,
             typename CollisionType>
-  void fillCollisionsAndTracksAndV0(CollisionType const& col,
-                                    TrackType const& tracks,
-                                    V0Type const& fullV0s)
+  void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
 
     const auto vtxZ = col.posZ();
@@ -487,9 +414,7 @@ struct femtoDreamProducerTask {
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack,
                        aod::femtodreamparticle::TrackType::kNoChild>(track);
       // the bit-wise container of the systematic variations is obtained
-      auto cutContainer =
-        trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(
-          track);
+      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track);
 
       // now the table is filled
       outputParts(outputCollision.lastIndex(), track.pt(), track.eta(),

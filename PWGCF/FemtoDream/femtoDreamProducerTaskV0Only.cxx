@@ -13,6 +13,7 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
+#include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -33,7 +34,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "TMath.h"
-#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -85,35 +85,24 @@ struct femtoDreamProducerTaskV0Only {
 
   // Choose if filtering or skimming version is run
 
-  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false,
-                                   "Store all collisions"};
+  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"};
 
   // Choose if running on converted data or Run3  / Pilot
-  Configurable<bool> ConfIsRun3{"ConfIsRun3", false,
-                                "Running on Run3 or pilot"};
-  Configurable<bool> ConfIsMC{"ConfIsMC", false,
-                              "Running on MC; implemented only for Run3"};
+  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
+  Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
 
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
-  Configurable<bool> ConfUseTPCmult{
-    "ConfUseTPCmult", false,
-    "Use multiplicity based on the number of tracks with TPC information"};
-  Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f,
-                                  "Evt sel: Max. z-Vertex (cm)"};
-  Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true,
-                                         "Evt sel: check for trigger"};
-  Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7,
-                                      "Evt sel: trigger"};
-  Configurable<bool> ConfEvtOfflineCheck{
-    "ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
+  Configurable<bool> ConfUseTPCmult{"ConfUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
+  Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+  Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
+  Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
+  Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
   Configurable<bool> ConfStoreV0{"ConfStoreV0", true, "True: store V0 table"};
   // just sanity check to make sure in case there are problems in conversion or
   // MC production it does not affect results
-  Configurable<bool> ConfRejectNotPropagatedTracks{
-    "ConfRejectNotPropagatedTracks", false,
-    "True: reject not propagated tracks"};
+  Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   FemtoDreamV0Selection v0Cuts;
   /// \todo Labeled array (see Track-Track task)
 

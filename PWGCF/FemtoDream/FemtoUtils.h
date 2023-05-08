@@ -17,11 +17,9 @@
 #ifndef PWGCF_FEMTODREAM_FEMTOUTILS_H_
 #define PWGCF_FEMTODREAM_FEMTOUTILS_H_
 
+#include <vector>
 #include "Framework/ASoAHelpers.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include <CCDB/BasicCCDBManager.h>
-#include <fairlogger/Logger.h>
-#include <vector>
 
 namespace o2::analysis::femtoDream
 {
@@ -41,7 +39,7 @@ int getPIDselection(const float nSigma, const std::vector<float>& vNsigma)
       return static_cast<int>(i);
     }
   }
-  LOG(info) << "Invalid value of nSigma: " << nSigma
+  LOG(warn) << "Invalid value of nSigma: " << nSigma
             << ". Return the first value of the vector: " << vNsigma[0]
             << std::endl;
   return 0;
@@ -99,12 +97,10 @@ bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut,
   bool pidSelection = true;
   if (momentum < pidThresh) {
     /// TPC PID only
-    pidSelection = isPIDSelected(pidCut, vSpecies, nSpecies, nSigmaTPC, vNsigma,
-                                 kDetector::kTPC);
+    pidSelection = isPIDSelected(pidCut, vSpecies, nSpecies, nSigmaTPC, vNsigma, kDetector::kTPC);
   } else {
     /// TPC + TOF PID
-    pidSelection = isPIDSelected(pidCut, vSpecies, nSpecies, nSigmaTPCTOF,
-                                 vNsigma, kDetector::kTPCTOF);
+    pidSelection = isPIDSelected(pidCut, vSpecies, nSpecies, nSigmaTPCTOF, vNsigma, kDetector::kTPCTOF);
   }
   return pidSelection;
 };
