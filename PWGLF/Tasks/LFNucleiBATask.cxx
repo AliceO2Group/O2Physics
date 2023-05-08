@@ -1419,9 +1419,9 @@ struct LFNucleiBATask {
         }
         if (enableHe && heRapCut) {
           if (enableExpSignalTPC)
-            histos.fill(HIST("tracks/helium/h2HeliumTPCExpSignalDiffVsPt"),hePt, track.tpcExpSignalDiffHe());
+            histos.fill(HIST("tracks/helium/h2HeliumTPCExpSignalDiffVsPt"), hePt, track.tpcExpSignalDiffHe());
 
-          histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaTPC"),hePt, track.tpcNSigmaHe());
+          histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaTPC"), hePt, track.tpcNSigmaHe());
         }
         if (enableAl) {
           if (TMath::Abs(track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Alpha))) < yCut) {
