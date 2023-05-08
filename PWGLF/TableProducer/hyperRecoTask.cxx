@@ -85,6 +85,7 @@ struct hyperCandidate {
   bool isMatter = false;
   bool isSignal = false; // true MC signal
   bool isReco = false;   // true if the candidate is actually reconstructed
+  int pdgCode = 0;       // PDG code of the hypernucleus
 };
 
 struct hyperRecoTask {
@@ -403,6 +404,7 @@ struct hyperRecoTask {
                 hypCand.gMom[i] = posMom[i];
               }
               hypCand.isSignal = true;
+              hypCand.pdgCode = posMother.pdgCode();
               filledMothers.push_back(posMother.globalIndex());
             }
           }
@@ -451,6 +453,7 @@ struct hyperRecoTask {
       hypCand.posTrackID = -1;
       hypCand.negTrackID = -1;
       hypCand.isSignal = true;
+      hypCand.isSignal = mcPart.pdgCode();
       hyperCandidates.push_back(hypCand);
     }
   }
@@ -530,7 +533,7 @@ struct hyperRecoTask {
                     hypCand.momPi, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
                     hypCand.he3DCAXY, hypCand.piDCAXY,
                     hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(),
-                    hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
+                    hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal, hypCand.pdgCode);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processMC, "MC analysis", false);
