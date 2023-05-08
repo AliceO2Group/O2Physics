@@ -212,29 +212,27 @@ struct CheckSmearing {
 
   void init(o2::framework::InitContext&)
   {
-	registry.add<TH2>("hCorrelation_Pt", "pT correlation", {HistType::kTH2F, {{1000, 0.0f, 10.0f}, {1000, 0.0f, 10.0f}}});
-	registry.add<TH2>("hCorrelation_Eta", "eta correlation", {HistType::kTH2F, {{200, -1.0f, +1.0f}, {200, -1.0f, +1.0f}}});
-	registry.add<TH2>("hCorrelation_Phi", "phi correlation", {HistType::kTH2F, {{100, 0.0f, TMath::TwoPi()}, {100, 0.0f, TMath::TwoPi()}}});
+    registry.add<TH2>("hCorrelation_Pt", "pT correlation", {HistType::kTH2F, {{1000, 0.0f, 10.0f}, {1000, 0.0f, 10.0f}}});
+    registry.add<TH2>("hCorrelation_Eta", "eta correlation", {HistType::kTH2F, {{200, -1.0f, +1.0f}, {200, -1.0f, +1.0f}}});
+    registry.add<TH2>("hCorrelation_Phi", "phi correlation", {HistType::kTH2F, {{100, 0.0f, TMath::TwoPi()}, {100, 0.0f, TMath::TwoPi()}}});
 
-      // Binning for resolution
-      AxisSpec axisPtRes{ptResBins, "#it{p}^{gen}_{T,e} (GeV/#it{c})"};
-      AxisSpec axisDeltaptRes{deltaptResBins, "(p^{gen}_{T} - p^{rec}_{T}) / p^{gen}_{T} (GeV/c)"};
-      AxisSpec axisDeltaetaRes{deltaetaResBins, "#eta^{gen} - #eta^{rec}"};
-      AxisSpec axisDeltaphiRes{deltaphiResBins, "#varphi^{gen} - #varphi^{rec} (rad)"};
+    // Binning for resolution
+    AxisSpec axisPtRes{ptResBins, "#it{p}^{gen}_{T,e} (GeV/#it{c})"};
+    AxisSpec axisDeltaptRes{deltaptResBins, "(p^{gen}_{T} - p^{rec}_{T}) / p^{gen}_{T} (GeV/c)"};
+    AxisSpec axisDeltaetaRes{deltaetaResBins, "#eta^{gen} - #eta^{rec}"};
+    AxisSpec axisDeltaphiRes{deltaphiResBins, "#varphi^{gen} - #varphi^{rec} (rad)"};
 
-
-     if (!fConfigUsePtVecRes) {
-        registry.add<TH2>("PtGen_DeltaPtOverPtGen", "", HistType::kTH2D, {axisPtRes, axisDeltaptRes}, true);
-        registry.add<TH2>("PtGen_DeltaEta", "", HistType::kTH2D, {axisPtRes, axisDeltaetaRes}, true);
-        registry.add<TH2>("PtGen_DeltaPhi_Ele", "", HistType::kTH2D, {axisPtRes, axisDeltaphiRes}, true);
-        registry.add<TH2>("PtGen_DeltaPhi_Pos", "", HistType::kTH2D, {axisPtRes, axisDeltaphiRes}, true);
-      } else {
-        registry.add<TH2>("PtGen_DeltaPtOverPtGen", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,e} (GeV/#it{c})"}, axisDeltaptRes}, true);
-        registry.add<TH2>("PtGen_DeltaEta", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,e} (GeV/#it{c})"}, axisDeltaetaRes}, true);
-        registry.add<TH2>("PtGen_DeltaPhi_Ele", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,e} (GeV/#it{c})"}, axisDeltaphiRes}, true);
-        registry.add<TH2>("PtGen_DeltaPhi_Pos", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,e} (GeV/#it{c})"}, axisDeltaphiRes}, true);
-      }
-
+    if (!fConfigUsePtVecRes) {
+      registry.add<TH2>("PtGen_DeltaPtOverPtGen", "", HistType::kTH2D, {axisPtRes, axisDeltaptRes}, true);
+      registry.add<TH2>("PtGen_DeltaEta", "", HistType::kTH2D, {axisPtRes, axisDeltaetaRes}, true);
+      registry.add<TH2>("PtGen_DeltaPhi_Ele", "", HistType::kTH2D, {axisPtRes, axisDeltaphiRes}, true);
+      registry.add<TH2>("PtGen_DeltaPhi_Pos", "", HistType::kTH2D, {axisPtRes, axisDeltaphiRes}, true);
+    } else {
+      registry.add<TH2>("PtGen_DeltaPtOverPtGen", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,e} (GeV/#it{c})"}, axisDeltaptRes}, true);
+      registry.add<TH2>("PtGen_DeltaEta", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,e} (GeV/#it{c})"}, axisDeltaetaRes}, true);
+      registry.add<TH2>("PtGen_DeltaPhi_Ele", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,e} (GeV/#it{c})"}, axisDeltaphiRes}, true);
+      registry.add<TH2>("PtGen_DeltaPhi_Pos", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,e} (GeV/#it{c})"}, axisDeltaphiRes}, true);
+    }
   }
 
   template <typename TTracksMC>
@@ -244,7 +242,7 @@ struct CheckSmearing {
       if (abs(mctrack.pdgCode()) != fPdgCode) {
         continue;
       }
-      
+
       Double_t deltaptoverpt = -1000.;
       if (mctrack.pt() > 0.)
         deltaptoverpt = (mctrack.pt() - mctrack.ptSmeared()) / mctrack.pt();
@@ -253,18 +251,17 @@ struct CheckSmearing {
       registry.fill(HIST("PtGen_DeltaPtOverPtGen"), mctrack.pt(), deltaptoverpt);
       registry.fill(HIST("PtGen_DeltaEta"), mctrack.pt(), deltaeta);
       if (mctrack.pdgCode() < 0) {
-         registry.fill(HIST("PtGen_DeltaPhi_Ele"), mctrack.pt(), deltaphi);
+        registry.fill(HIST("PtGen_DeltaPhi_Ele"), mctrack.pt(), deltaphi);
       } else {
-         registry.fill(HIST("PtGen_DeltaPhi_Pos"), mctrack.pt(), deltaphi);
+        registry.fill(HIST("PtGen_DeltaPhi_Pos"), mctrack.pt(), deltaphi);
       }
-
       registry.fill(HIST("hCorrelation_Pt"), mctrack.pt(), mctrack.ptSmeared());
       registry.fill(HIST("hCorrelation_Eta"), mctrack.eta(), mctrack.etaSmeared());
       registry.fill(HIST("hCorrelation_Phi"), mctrack.phi(), mctrack.phiSmeared());
     } // end of mctrack loop
   }
 
-  void processCheckMCanalysis(MyReducedTracks const& tracksMC) 
+  void processCheckMCanalysis(MyReducedTracks const& tracksMC)
   {
     Check(tracksMC);
   }
