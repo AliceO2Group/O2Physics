@@ -259,7 +259,7 @@ struct HfCandidateSelectorToXiPi {
         resultSelections = false;
         hSelDCACascDau->Fill(0);
       } else {
-        hSelDCACascDau->Fill(1); 
+        hSelDCACascDau->Fill(1);
       }
       if (candidate.dcaV0Dau() > dcaV0DauMax) {
         resultSelections = false;

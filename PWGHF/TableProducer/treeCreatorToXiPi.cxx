@@ -31,7 +31,7 @@ namespace o2::aod
 {
 namespace full
 {
-//from creator
+// from creator
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
@@ -113,10 +113,10 @@ DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascDau, float);
 DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
 DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
 DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, float);
-//from creator - MC
+// from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
-//from selector
+// from selector
 DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, bool);
 DECLARE_SOA_COLUMN(StatusPidCascade, statusPidCascade, bool);
 DECLARE_SOA_COLUMN(StatusPidOmegac, statusPidOmegac, bool);
@@ -171,7 +171,7 @@ struct HfTreeCreatorToXiPi {
 
   Configurable<bool> doNotMc{"doNotMc", true, "Process data tree writer"};
   Configurable<bool> doMc{"doMc", false, "Process MC tree writer"};
-  
+
   void init(InitContext const&)
   {
   }
@@ -287,18 +287,17 @@ struct HfTreeCreatorToXiPi {
                    soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
 
-      // Filling event properties
-      rowCandidateEvents.reserve(collisions.size());
-      for (auto& collision : collisions) {
-        fillEvent(collision);
-      }
+    // Filling event properties
+    rowCandidateEvents.reserve(collisions.size());
+    for (auto& collision : collisions) {
+      fillEvent(collision);
+    }
 
-      // Filling candidate properties
-      rowCandidateFull.reserve(candidates.size());
-      for (auto& candidate : candidates) {
-        fillCandidate(candidate, -2, -2);
-      }
-
+    // Filling candidate properties
+    rowCandidateFull.reserve(candidates.size());
+    for (auto& candidate : candidates) {
+      fillCandidate(candidate, -2, -2);
+    }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processData, "Process data tree writer", doNotMc);
 
@@ -306,18 +305,17 @@ struct HfTreeCreatorToXiPi {
                  soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
 
-      // Filling event properties
-      rowCandidateEvents.reserve(collisions.size());
-      for (auto& collision : collisions) {
-        fillEvent(collision);
-      }
+    // Filling event properties
+    rowCandidateEvents.reserve(collisions.size());
+    for (auto& collision : collisions) {
+      fillEvent(collision);
+    }
 
-      // Filling candidate properties
-      rowCandidateFull.reserve(candidates.size());
-      for (auto& candidate : candidates) {
-        fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec());
-      }
-
+    // Filling candidate properties
+    rowCandidateFull.reserve(candidates.size());
+    for (auto& candidate : candidates) {
+      fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec());
+    }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMc, "Process MC tree writer", doMc);
 };
