@@ -182,11 +182,11 @@ struct taskJpsiHf {
     VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
     VarManager::FillEvent<TEventFillMap>(event, fValuesDmeson);
 
-    //std::cout << "---> Event global index: " << event.globalIndex() << std::endl;
+    // std::cout << "---> Event global index: " << event.globalIndex() << std::endl;
 
     // loop over D mesons
     for (auto& dmeson : dmesons) {
-        //std::cout << "------> D meson collision index: " << dmeson.collisionId() << std::endl;
+      // std::cout << "------> D meson collision index: " << dmeson.collisionId() << std::endl;
       if (!(dmeson.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
@@ -207,7 +207,7 @@ struct taskJpsiHf {
 
     // loop over dileptons
     for (auto dilepton : dileptons) {
-        //std::cout << "------> Dilepton collision index: " << dilepton.reducedeventId() << std::endl;
+      // std::cout << "------> Dilepton collision index: " << dilepton.reducedeventId() << std::endl;
       // Check that the dilepton has zero charge
       if (dilepton.sign() != 0) {
         continue;
@@ -228,7 +228,7 @@ struct taskJpsiHf {
         }
       }
     }
-    //std::cout << "------------------------" << std::endl;
+    // std::cout << "------------------------" << std::endl;
   }
 
   void processSkimmedJpsiD0(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyPairCandidatesSelected const& dileptons, MyD0CandidatesSelected const& dmesons)
