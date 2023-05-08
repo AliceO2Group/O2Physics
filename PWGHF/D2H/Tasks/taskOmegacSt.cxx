@@ -15,11 +15,11 @@
 /// \author Jochen Klein
 
 #include "TDatabasePDG.h"
+#include "TPDGCode.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/StrangenessTracking.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/Propagator.h"
@@ -28,6 +28,7 @@
 #include "Framework/ASoA.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
@@ -36,13 +37,13 @@ using namespace o2::framework::expressions;
 
 struct HfTaskOmegacSt {
   Configurable<double> bz{"bz", 50., "magnetic field"};
-  Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<int> materialCorrectionType{"materialCorrectionType", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpMagPath{"grpMagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
+  int runNumber;
 
   using TrackedCascades = soa::Join<aod::TrackedCascades, aod::TrackedCascadeColls>;
   using TrackedV0s = soa::Join<aod::TrackedV0s, aod::TrackedV0Colls>;
@@ -71,18 +72,16 @@ struct HfTaskOmegacSt {
                aod::V0s const& v0s, TracksExt const& tracks, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
     const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if (mRunNumber != bc.runNumber()) {
-      mRunNumber = bc.runNumber();
-      auto run3grp_timestamp = bc.timestamp();
+    if (runNumber != bc.runNumber()) {
+      runNumber = bc.runNumber();
+      auto timestamp = bc.timestamp();
 
-      if (o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp)) {
+      if (o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
         o2::base::Propagator::initFieldFromGRP(grpo);
+      } else if (o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpMagPath, timestamp)) {
+        o2::base::Propagator::initFieldFromGRP(grpmag);
       } else {
-        if (o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp)) {
-          o2::base::Propagator::initFieldFromGRP(grpmag);
-        } else {
-          LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-        }
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpMagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
       }
     }
 
@@ -93,7 +92,7 @@ struct HfTaskOmegacSt {
       auto trackParCovTrk = getTrackParCov(trackCasc);
       // trackParCovTrk.propagateToDCA(primaryVertex, bz, &impactParameterTrk);
       // gpu::gpustd::array<float, 2> dcaInfo;
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovTrk, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &impactParameterTrk);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovTrk, 2.f, static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value), &impactParameterTrk);
 
       const auto& casc = trackedCascade.cascade();
       const auto& bachelor = casc.bachelor_as<TracksExt>();
@@ -108,8 +107,9 @@ struct HfTaskOmegacSt {
       registry.fill(HIST("hDcaVsR"), impactParameterTrk.getY(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
       registry.fill(HIST("hMassVsPt"), trackedCascade.omegaMass(), trackCasc.pt());
 
-      if (!ptrack.has_mcParticle() || !ntrack.has_mcParticle() || !bachelor.has_mcParticle())
+      if (!ptrack.has_mcParticle() || !ntrack.has_mcParticle() || !bachelor.has_mcParticle()) {
         continue;
+      }
 
       LOGF(debug, "ptrack (id: %d, pdg: %d) has mother %d", ptrack.mcParticleId(),
            ptrack.mcParticle().pdgCode(), ptrack.mcParticle().has_mothers() ? ptrack.mcParticle().mothersIds()[0] : -1);
@@ -126,22 +126,23 @@ struct HfTaskOmegacSt {
           const auto mother = v0part.mothers_as<aod::McParticles>()[0];
           const auto pdgCode = mother.pdgCode();
           LOG(debug) << "cascade with PDG code: " << pdgCode;
-          if (std::abs(pdgCode) == 3334) {
+          if (std::abs(pdgCode) == kOmegaMinus) {
             LOG(debug) << "found Omega, looking for pions";
             std::array<double, 2> masses{RecoDecay::getMassPDG(3334), RecoDecay::getMassPDG(kPiPlus)};
             std::array<std::array<float, 3>, 2> momenta;
             trackParCovTrk.getPxPyPzGlo(momenta[0]);
             // momenta[0] = {trackCasc.px(), trackCasc.py(), trackCasc.pz()};
             for (const auto& track : tracks) {
-              if (!track.has_mcParticle())
+              if (!track.has_mcParticle()) {
                 continue;
+              }
               const auto mcpart = track.mcParticle();
-              if (mcpart.pdgCode() == std::copysign(211, pdgCode)) {
+              if (mcpart.pdgCode() == (pdgCode > 0 ? kPiPlus : -kPiPlus)) {
                 LOGF(debug, "combining Omega with pion %d", track.globalIndex());
                 auto trackParCovPion = getTrackParCov(track);
                 o2::dataformats::DCA impactParameterPion;
                 // trackParCovPion.propagateToDCA(primaryVertex, bz, &impactParameterPion);
-                o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPion, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &impactParameterPion);
+                o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPion, 2.f, static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value), &impactParameterPion);
                 trackParCovPion.getPxPyPzGlo(momenta[1]);
                 // momenta[1] = {track.px(), track.py(), track.pz()};
                 registry.fill(HIST("hMassOmegac"), RecoDecay::m(momenta, masses));
