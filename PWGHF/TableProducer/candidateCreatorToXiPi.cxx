@@ -403,8 +403,8 @@ struct HfCandidateCreatorToXiPi {
         } // loop over pions
       }   // loop over cascades
     }     // close loop collisions
-  }     // end of process
-};      // end of struct
+  }       // end of process
+};        // end of struct
 
 /// Performs MC matching.
 struct HfCandidateCreatorToXiPiMc {
@@ -562,7 +562,7 @@ struct HfCandidateCreatorToXiPiMc {
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processMc, "Process MC", false);
-}; // close struct
+};  // close struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
