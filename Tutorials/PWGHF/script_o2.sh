@@ -35,6 +35,7 @@ OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --sh
 o2-analysistutorial-hf-task-mini $OPTIONS | \
 o2-analysis-timestamp $OPTIONS | \
 o2-analysis-trackextension $OPTIONS | \
+o2-analysis-collision-converter $OPTIONS | \
 o2-analysis-pid-tpc-base $OPTIONS | \
 o2-analysis-pid-tpc-full $OPTIONS | \
 o2-analysis-pid-tof-base $OPTIONS | \
