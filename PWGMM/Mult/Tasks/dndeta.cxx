@@ -75,13 +75,14 @@ struct MultiplicityCounter {
 
   std::vector<int> usedTracksIds;
   std::vector<int> usedTracksIdsDF;
+  std::vector<int> usedTracksIdsDFMC;
 
   void init(InitContext&)
   {
     AxisSpec MultAxis = {multBinning, "N_{trk}"};
     AxisSpec CentAxis = {centBinning, "centrality"};
 
-    auto hstat = registry.get<TH1>(HIST("Events/BCSelection"));
+    auto* hstat = registry.get<TH1>(HIST("Events/BCSelection"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "Good BCs");
     x->SetBinLabel(2, "BCs with collisions");
@@ -98,8 +99,8 @@ struct MultiplicityCounter {
 
     if (doprocessCounting) {
       registry.add({"Events/Selection", ";status;events", {HistType::kTH1F, {{4, 0.5, 4.5}}}});
-      auto hstat = registry.get<TH1>(HIST("Events/Selection"));
-      auto* x = hstat->GetXaxis();
+      hstat = registry.get<TH1>(HIST("Events/Selection"));
+      x = hstat->GetXaxis();
       x->SetBinLabel(1, "All");
       x->SetBinLabel(2, "Selected");
       x->SetBinLabel(3, "Selected INEL>0");
@@ -125,8 +126,8 @@ struct MultiplicityCounter {
 
     if (doprocessCountingCentralityFT0C || doprocessCountingCentralityFT0M) {
       registry.add({"Events/Centrality/Selection", ";status;centrality;events", {HistType::kTH2F, {{3, 0.5, 3.5}, CentAxis}}});
-      auto hstat = registry.get<TH2>(HIST("Events/Centrality/Selection"));
-      auto* x = hstat->GetXaxis();
+      hstat = registry.get<TH2>(HIST("Events/Centrality/Selection"));
+      x = hstat->GetXaxis();
       x->SetBinLabel(1, "All");
       x->SetBinLabel(2, "Selected");
       x->SetBinLabel(3, "Rejected");
@@ -170,7 +171,7 @@ struct MultiplicityCounter {
       }
 
       auto heff = registry.get<TH1>(HIST("Events/Efficiency"));
-      auto* x = heff->GetXaxis();
+      x = heff->GetXaxis();
       x->SetBinLabel(1, "Generated");
       x->SetBinLabel(2, "Generated INEL>0");
       x->SetBinLabel(3, "Reconstructed");
@@ -178,7 +179,7 @@ struct MultiplicityCounter {
       x->SetBinLabel(5, "Selected INEL>0");
     }
 
-    if (doprocessGenFT0C || doprocessGenFT0M) {
+    if (doprocessGenFT0C || doprocessGenFT0M || doprocessGenFT0Chi || doprocessGenFT0Mhi) {
       registry.add({"Events/Centrality/NtrkZvtxGen", "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       registry.add({"Events/Centrality/NtrkZvtxGen_t", "; N_{part}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       registry.add({"Tracks/Centrality/EtaZvtxGen", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
@@ -300,6 +301,7 @@ struct MultiplicityCounter {
   void process(aod::Collisions const&)
   {
     usedTracksIdsDF.clear();
+    usedTracksIdsDFMC.clear();
   }
 
   expressions::Filter trackSelectionProper = ((aod::track::trackCutFlag & trackSelectionITS) == trackSelectionITS) &&
@@ -638,7 +640,7 @@ struct MultiplicityCounter {
   void processGenGeneral(
     typename MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks)
+    Particles const& particles, FiTracks const& tracks, soa::Filtered<aod::ReassignedTracksCore> const& atracks)
   {
     constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>() || MC::template contains<aod::HepMCHeavyIons>();
     float c_rec = -1;
@@ -682,6 +684,9 @@ struct MultiplicityCounter {
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
 
     auto Nrec = 0;
+    std::vector<int> NrecPerCol;
+    std::vector<float> c_recPerCol;
+    usedTracksIds.clear();
 
     for (auto& collision : collisions) {
       c_rec = -1;
@@ -691,6 +696,7 @@ struct MultiplicityCounter {
         } else if (C::template contains<aod::CentFT0Ms>()) {
           c_rec = collision.centFT0M();
         }
+        c_recPerCol.emplace_back(c_rec);
       }
       if constexpr (hasCentrality) {
         registry.fill(HIST("Events/Centrality/Efficiency"), 3., c_gen);
@@ -698,30 +704,49 @@ struct MultiplicityCounter {
         registry.fill(HIST("Events/Efficiency"), 3.);
       }
       if (!useEvSel || collision.sel8()) {
+        ++moreThanOne;
+        atLeastOne = true;
+
         auto perCollisionSample = tracks.sliceBy(perCol, collision.globalIndex());
+        auto perCollisionASample = atracks.sliceBy(perColU, collision.globalIndex());
+        for (auto const& track : perCollisionASample) {
+          usedTracksIds.emplace_back(track.trackId());
+          if (otrack.collisionId() != track.bestCollisionId()) {
+            usedTracksIdsDFMC.emplace_back(track.trackId());
+          }
+          auto otrack = track.track_as<FiTracks>();
+          if (std::abs(otrack.eta()) < estimatorEta) {
+            ++Nrec;
+          }
+        }
+        for (auto const& track : perCollisionSample) {
+          if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
+            continue;
+          }
+          if (std::find(usedTracksIdsDFMC.begin(), usedTracksIdsDFMC.end(), track.globalIndex()) != usedTracksIdsDFMC.end()) {
+            continue;
+          }
+          if (std::abs(track.eta()) < estimatorEta) {
+            ++Nrec;
+          }
+        }
+        NrecPerCol.emplace_back(Nrec);
+
         if constexpr (hasCentrality) {
           registry.fill(HIST("Events/Centrality/Efficiency"), 4., c_gen);
         } else {
           registry.fill(HIST("Events/Efficiency"), 4.);
         }
 
-        if (perCollisionSample.size() > 0) {
+        if (Nrec > 0) {
           if constexpr (hasCentrality) {
             registry.fill(HIST("Events/Centrality/Efficiency"), 5., c_gen);
           } else {
             registry.fill(HIST("Events/Efficiency"), 5.);
           }
-        }
-        ++moreThanOne;
-        atLeastOne = true;
-        for (auto& t : perCollisionSample) {
-          if (std::abs(t.eta()) < estimatorEta) {
-            ++Nrec;
-          }
-        }
-        if (perCollisionSample.size() > 0) {
           atLeastOne_gt0 = true;
         }
+
         if constexpr (hasCentrality) {
           registry.fill(HIST("Events/Centrality/NtrkZvtxGen"), Nrec, collision.posZ(), c_rec);
         } else {
@@ -731,27 +756,12 @@ struct MultiplicityCounter {
     }
 
     if (fillResponse) {
-      for (auto& collision : collisions) {
-        c_rec = -1;
+      for (auto i = 0U; i < NrecPerCol.size(); ++i) {
         if constexpr (hasCentrality) {
-          if constexpr (C::template contains<aod::CentFT0Cs>()) {
-            c_rec = collision.centFT0C();
-          } else if (C::template contains<aod::CentFT0Ms>()) {
-            c_rec = collision.centFT0M();
-          }
-        }
-        auto perCollisionSample = tracks.sliceBy(perCol, collision.globalIndex());
-        Nrec = 0;
-        for (auto& t : perCollisionSample) {
-          if (std::abs(t.eta()) < estimatorEta) {
-            ++Nrec;
-          }
-        }
-        if constexpr (hasCentrality) {
-          registry.fill(HIST("Events/Centrality/Response"), Nrec, nCharged, mcCollision.posZ(), c_rec);
-          registry.fill(HIST("Events/Centrality/EfficiencyMult"), nCharged, mcCollision.posZ(), c_rec);
+          registry.fill(HIST("Events/Centrality/Response"), NrecPerCol[i], nCharged, mcCollision.posZ(), c_recPerCol[i]);
+          registry.fill(HIST("Events/Centrality/EfficiencyMult"), nCharged, mcCollision.posZ(), c_recPerCol[i]);
         } else {
-          registry.fill(HIST("Events/Response"), Nrec, nCharged, mcCollision.posZ());
+          registry.fill(HIST("Events/Response"), NrecPerCol[i], nCharged, mcCollision.posZ());
           registry.fill(HIST("Events/EfficiencyMult"), nCharged, mcCollision.posZ());
         }
       }
