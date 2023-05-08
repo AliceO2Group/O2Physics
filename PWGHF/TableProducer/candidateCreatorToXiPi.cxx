@@ -562,7 +562,7 @@ struct HfCandidateCreatorToXiPiMc {
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processMc, "Process MC", false);
-};  // close struct
+}; // close struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
