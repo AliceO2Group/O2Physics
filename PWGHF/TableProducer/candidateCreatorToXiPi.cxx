@@ -570,3 +570,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<HfCandidateCreatorToXiPi>(cfgc),
     adaptAnalysisTask<HfCandidateCreatorToXiPiMc>(cfgc)};
 }
+
