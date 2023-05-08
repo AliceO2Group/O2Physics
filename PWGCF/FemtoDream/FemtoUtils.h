@@ -1,6 +1,6 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -9,9 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file CFFilter.cxx
+/// \file FemtoUtils.h
 /// \brief Utilities for the FemtoDream framework
-///
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
 #ifndef PWGCF_FEMTODREAM_FEMTOUTILS_H_

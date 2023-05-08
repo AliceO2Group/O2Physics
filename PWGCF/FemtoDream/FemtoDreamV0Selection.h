@@ -1,6 +1,6 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -11,10 +11,9 @@
 
 /// \file FemtoDreamV0Selection.h
 /// \brief Definition of the FemtoDreamV0Selection
-/// \author Valentina Mantovani Sarti, TU München
-/// valentina.mantovani-sarti@tum.de \author Andi Mathis, TU München,
-/// andreas.mathis@ph.tum.de \author Luca Barioglio, TU München,
-/// luca.barioglio@cern.ch
+/// \author Valentina Mantovani Sarti, TU München valentina.mantovani-sarti@tum.de
+/// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
 #ifndef PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_
 #define PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_
