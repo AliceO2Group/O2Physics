@@ -32,6 +32,7 @@ using namespace o2::framework::expressions;
 struct UDQC {
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   SliceCache cache;
   Preslice<aod::Zdcs> perBCzdc = aod::zdc::bcId;
   Preslice<aod::Calos> perBCcalo = aod::calo::bcId;
@@ -39,6 +40,12 @@ struct UDQC {
   static constexpr std::string_view hcFIT1s[5] = {"cleanFIT1FV0A", "cleanFIT1FT0A", "cleanFIT1FT0C", "cleanFIT1FDDA", "cleanFIT1FDDC"};
   static constexpr std::string_view hcFIT2s[5] = {"cleanFIT2FV0A", "cleanFIT2FT0A", "cleanFIT2FT0C", "cleanFIT2FDDA", "cleanFIT2FDDC"};
 =======
+=======
+    SliceCache cache;
+    Preslice<aod::Zdcs> perBCzdc = aod::zdc::bcId;
+    Preslice<aod::Calos> perBCcalo = aod::calo::bcId;
+    
+>>>>>>> 50bbe42b (Fixed compilation errors)
   // constants
   static const int nBCpOrbit = 3564;
   static const int ns = 20;    // number of BCs to save (used in processF[V0, T0, DD])
@@ -889,7 +896,7 @@ struct UDQC {
     // no Zdc signal in bcSlice
     std::vector<float> lims(10, 0.);
     for (auto const& bc : bcSlice) {
-      if (!udhelpers::cleanZDC(bc, zdcs, lims)) {
+      if (!udhelpers::cleanZDC(bc, zdcs, lims, cache)) {
         isDGcandidate = false;
         break;
       }
@@ -898,7 +905,7 @@ struct UDQC {
 
     // no Calo signal in bcSlice
     for (auto const& bc : bcSlice) {
-      if (!udhelpers::cleanCalo(bc, calos, lims)) {
+      if (!udhelpers::cleanCalo(bc, calos, lims, cache)) {
         isDGcandidate = false;
         break;
       }
