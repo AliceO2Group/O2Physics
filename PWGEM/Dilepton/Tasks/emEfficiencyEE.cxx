@@ -687,6 +687,7 @@ struct AnalysisTrackSelection {
 
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
+    VarManager::FillEvent<TEventFillMap>(event);
 
     runRecTrack<TTrackFillMap>(tracks, tracksMC, true, write);
   }
@@ -694,6 +695,8 @@ struct AnalysisTrackSelection {
   template <uint32_t TEventMCFillMap, uint32_t TTrackMCFillMap, typename TEventsMC, typename TTracksMC>
   void runMCFill(TEventsMC const& eventMC, TTracksMC const& tracksMC)
   {
+    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+    VarManager::FillEvent<TEventMCFillMap>(eventMC);
     runMCGenTrack(tracksMC);
   }
 
