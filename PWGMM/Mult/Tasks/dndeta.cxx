@@ -52,12 +52,13 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
   TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
 
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
+using ReTracks = soa::Join<aod::ReassignedTracksCore, aod::ReassignedTracksExtra>;
 
 struct MultiplicityCounter {
   SliceCache cache;
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
-  PresliceUnsorted<aod::ReassignedTracksCore> perColU = aod::track::bestCollisionId;
+  PresliceUnsorted<ReTracks> perColU = aod::track::bestCollisionId;
 
   Service<O2DatabasePDG> pdg;
 
@@ -311,19 +312,21 @@ struct MultiplicityCounter {
                                                     true) &&
                                              ((aod::track::trackCutFlag & trackSelectionDCA) == trackSelectionDCA);
 
-  using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
-  using FiTracks = soa::Filtered<ExTracks>;
-
   expressions::Filter atrackFilter = (aod::track::bestCollisionId >= 0) &&
                                      (nabs(aod::track::bestDCAZ) <= 2.f) &&
                                      (nabs(aod::track::bestDCAXY) <= ((0.0105f + 0.0350f / npow(aod::track::pts, 1.1f))));
+
+  using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
+  using FiTracks = soa::Filtered<ExTracks>;
+  using FiReTracks = soa::Filtered<ReTracks>;
+
   using ExCols = soa::Join<aod::Collisions, aod::EvSels>;
 
   template <typename C>
   void processCountingGeneral(
     typename C::iterator const& collision,
     FiTracks const& tracks,
-    soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
+    soa::SmallGroups<ReTracks> const& atracks)
   {
     float c = -1;
     constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>();
@@ -452,7 +455,7 @@ struct MultiplicityCounter {
   void processCounting(
     ExCols::iterator const& collision,
     FiTracks const& tracks,
-    soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
+    soa::SmallGroups<ReTracks> const& atracks)
   {
     processCountingGeneral<ExCols>(collision, tracks, atracks);
   }
@@ -463,7 +466,7 @@ struct MultiplicityCounter {
   void processCountingCentralityFT0C(
     ExColsCentFT0C::iterator const& collision,
     FiTracks const& tracks,
-    soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
+    soa::SmallGroups<ReTracks> const& atracks)
   {
     processCountingGeneral<ExColsCentFT0C>(collision, tracks, atracks);
   }
@@ -474,7 +477,7 @@ struct MultiplicityCounter {
   void processCountingCentralityFT0M(
     ExColsCentFT0M::iterator const& collision,
     FiTracks const& tracks,
-    soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
+    soa::SmallGroups<ReTracks> const& atracks)
   {
     processCountingGeneral<ExColsCentFT0M>(collision, tracks, atracks);
   }
@@ -583,7 +586,7 @@ struct MultiplicityCounter {
     soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
     aod::McCollisions const&, Particles const& mcParticles,
     soa::Filtered<LabeledTracksEx> const&,
-    soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
+    soa::SmallGroups<ReTracks> const& atracks)
   {
     for (auto& collision : collisions) {
       if (useEvSel && !collision.sel8()) {
@@ -637,17 +640,30 @@ struct MultiplicityCounter {
 
   PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiency, "Calculate tracking efficiency vs pt", false);
 
+  template <typename T>
+  static constexpr bool hasCent()
+  {
+    if constexpr (!soa::is_soa_join_v<T>) {
+      return false;
+    } else if (T::template contains<aod::HepMCHeavyIons>()) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   template <typename MC, typename C>
   void processGenGeneral(
     typename MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks, soa::Filtered<aod::ReassignedTracksCore> const& atracks)
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks)
   {
-    constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>() || MC::template contains<aod::HepMCHeavyIons>();
+    constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>() || hasCent<MC>();
+
     float c_rec = -1;
     float c_gen = -1;
     // add generated centrality estimation
-    if constexpr (MC::template contains<aod::HepMCHeavyIons>()) {
+    if constexpr (hasCent<MC>()) {
       c_gen = mcCollision.centrality();
     }
 
@@ -687,9 +703,9 @@ struct MultiplicityCounter {
     auto Nrec = 0;
     std::vector<int> NrecPerCol;
     std::vector<float> c_recPerCol;
-    usedTracksIds.clear();
 
     for (auto& collision : collisions) {
+      usedTracksIds.clear();
       c_rec = -1;
       if constexpr (hasCentrality) {
         if constexpr (C::template contains<aod::CentFT0Cs>()) {
@@ -705,6 +721,7 @@ struct MultiplicityCounter {
         registry.fill(HIST("Events/Efficiency"), 3.);
       }
       if (!useEvSel || collision.sel8()) {
+        Nrec = 0;
         ++moreThanOne;
         atLeastOne = true;
 
@@ -824,11 +841,11 @@ struct MultiplicityCounter {
     }
   }
 
-  using MC = soa::Join<aod::McCollisions, aod::HepMCXSections>;
+  using MC = aod::McCollisions; // soa::Join<aod::McCollisions, aod::HepMCXSections>;
   void processGen(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExCols, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks, soa::Filtered<aod::ReassignedTracksCore> const& atracks)
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks)
   {
     processGenGeneral<MC, ExCols>(mcCollision, collisions, particles, tracks, atracks);
   }
@@ -838,7 +855,7 @@ struct MultiplicityCounter {
   void processGenFT0C(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks, soa::Filtered<aod::ReassignedTracksCore> const& atracks)
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks)
   {
     processGenGeneral<MC, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, atracks);
   }
@@ -848,7 +865,7 @@ struct MultiplicityCounter {
   void processGenFT0M(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks, soa::Filtered<aod::ReassignedTracksCore> const& atracks)
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks)
   {
     processGenGeneral<MC, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, atracks);
   }
@@ -860,7 +877,7 @@ struct MultiplicityCounter {
   void processGenFT0Chi(
     MChi::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks, soa::Filtered<aod::ReassignedTracksCore> const& atracks)
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks)
   {
     processGenGeneral<MChi, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, atracks);
   }
@@ -870,7 +887,7 @@ struct MultiplicityCounter {
   void processGenFT0Mhi(
     MChi::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, FiTracks const& tracks, soa::Filtered<aod::ReassignedTracksCore> const& atracks)
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks)
   {
     processGenGeneral<MChi, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, atracks);
   }
