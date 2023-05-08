@@ -165,6 +165,8 @@ struct PCMQC {
   Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
   void processQC(aod::EMReducedEvents const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& v0legs)
   {
+    THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
+
     for (auto& collision : collisions) {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(1.0);
@@ -183,6 +185,7 @@ struct PCMQC {
       }
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
+      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
 
       auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
       for (const auto& cut : fPCMCuts) {
