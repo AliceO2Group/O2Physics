@@ -96,17 +96,6 @@ struct femtoDreamDebugTrack {
         continue;
       }
       trackHisto.fillQA<isMC, true>(part);
-      // if constexpr (isMC) {
-      // if (part.has_femtoDreamMCParticle()) {
-      // mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hPt_MC"), part.pt());
-      // mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hEta_MC"), part.eta());
-      // mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hPhi_MC"), part.phi());
-      // mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hPDG"), part.pdgMCTruth());
-      // mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hOrigin_MC"), part.partOriginMCTruth());
-      // } else {
-      // FullQaRegistry.fill(HIST("FullTrackQA_MC/hNoMCtruthCounter"), 1);
-      // }
-      // }
     }
   }
 
