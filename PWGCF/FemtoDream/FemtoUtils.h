@@ -28,9 +28,9 @@ enum kDetector { kTPC = 0,
                  kNdetectors = 2 };
 
 /// internal function that returns the kPIDselection element corresponding to a
-/// specifica n-sigma value \param nSigma number of sigmas for PID \param
-/// vNsigma vector with the number of sigmas of interest \return kPIDselection
-/// corresponding to n-sigma
+/// specifica n-sigma value \param nSigma number of sigmas for PID
+/// \param vNsigma vector with the number of sigmas of interest
+/// \return kPIDselection corresponding to n-sigma
 int getPIDselection(const float nSigma, const std::vector<float>& vNsigma)
 {
   for (std::size_t i = 0; i < vNsigma.size(); i++) {
@@ -46,17 +46,13 @@ int getPIDselection(const float nSigma, const std::vector<float>& vNsigma)
 
 /// function that checks whether the PID selection specified in the vectors is
 /// fulfilled
-/// \param pidcut Bit-wise container for the PID \param vSpecies
-/// vector with ID corresponding to the selected species (output from
-/// cutculator)
-/// \param nSpecies number of available selected species (output
-/// from cutculator)
-/// \param nSigma number of sigma selection fo PID \param
-/// vNsigma vector with available n-sigma selections for PID
-/// \param kDetector
-/// enum corresponding to the PID technique
-/// \return Whether the PID selection
-/// specified in the vectors is fulfilled
+/// \param pidcut Bit-wise container for the PID
+/// \param vSpecies vector with ID corresponding to the selected species (output from cutculator)
+/// \param nSpecies number of available selected species (output from cutculator)
+/// \param nSigma number of sigma selection fo PID
+/// \param vNsigma vector with available n-sigma selections for PID
+/// \param kDetector enum corresponding to the PID technique
+/// \return Whether the PID selection specified in the vectors is fulfilled
 bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut,
                    std::vector<int> const& vSpecies, int nSpecies, float nSigma,
                    const std::vector<float>& vNsigma,
@@ -80,8 +76,7 @@ bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut,
 /// function that checks whether the PID selection specified in the vectors is fulfilled, depending on the momentum TPC or TPC+TOF PID is conducted
 /// \param pidcut Bit-wise container for the PID
 /// \param momentum Momentum of the track
-/// \param pidThresh Momentum threshold that separates between TPC and TPC+TOF
-/// PID
+/// \param pidThresh Momentum threshold that separates between TPC and TPC+TOF PID
 /// \param vSpecies Vector with the species of interest (number returned by the CutCulator)
 /// \param nSpecies number of available selected species (output from cutculator)
 /// \param nSigmaTPC Number of TPC sigmas for selection

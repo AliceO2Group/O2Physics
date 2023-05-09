@@ -116,11 +116,10 @@ class FemtoDreamV0Selection
     }
   }
 
-  /// Helper function to obtain the name of a given selection criterion for
-  /// consistent naming of the configurables \param iSel Track selection
-  /// variable to be examined \param prefix Additional prefix for the name of
-  /// the configurable \param suffix Additional suffix for the name of the
-  /// configurable
+  /// Helper function to obtain the name of a given selection criterion for consistent naming of the configurables
+  /// \param iSel Track selection variable to be examined
+  /// \param prefix Additional prefix for the name of the configurable
+  /// \param suffix Additional suffix for the name of the configurable
   static std::string getSelectionName(femtoDreamV0Selection::V0Sel iSel,
                                       std::string_view prefix = "",
                                       std::string_view suffix = "")
@@ -131,10 +130,9 @@ class FemtoDreamV0Selection
     return outString;
   }
 
-  /// Helper function to obtain the index of a given selection variable for
-  /// consistent naming of the configurables \param obs V0 selection variable
-  /// (together with prefix) got from file \param prefix Additional prefix for
-  /// the output of the configurable
+  /// Helper function to obtain the index of a given selection variable for consistent naming of the configurables
+  /// \param obs V0 selection variable (together with prefix) got from file
+  /// \param prefix Additional prefix for the output of the configurable
   static int findSelectionIndex(const std::string_view& obs,
                                 std::string_view prefix = "")
   {
@@ -149,9 +147,8 @@ class FemtoDreamV0Selection
     return -1;
   }
 
-  /// Helper function to obtain the type of a given selection variable for
-  /// consistent naming of the configurables \param iSel V0 selection variable
-  /// whose type is returned
+  /// Helper function to obtain the type of a given selection variable for consistent naming of the configurables
+  /// \param iSel V0 selection variable whose type is returned
   static femtoDreamSelection::SelectionType
     getSelectionType(femtoDreamV0Selection::V0Sel iSel)
   {
@@ -159,9 +156,9 @@ class FemtoDreamV0Selection
   }
 
   /// Helper function to obtain the helper string of a given selection criterion
-  /// for consistent description of the configurables \param iSel Track
-  /// selection variable to be examined \param prefix Additional prefix for the
-  /// output of the configurable
+  /// for consistent description of the configurables
+  /// \param iSel Track selection variable to be examined
+  /// \param prefix Additional prefix for the output of the configurable
   static std::string getSelectionHelper(femtoDreamV0Selection::V0Sel iSel,
                                         std::string_view prefix = "")
   {
@@ -195,8 +192,7 @@ class FemtoDreamV0Selection
   }
 
   void
-    setChildRejectNotPropagatedTracks(femtoDreamV0Selection::ChildTrackType child,
-                                      bool reject)
+    setChildRejectNotPropagatedTracks(femtoDreamV0Selection::ChildTrackType child, bool reject)
   {
     if (child == femtoDreamV0Selection::kPosTrack) {
       PosDaughTrack.setRejectNotPropagatedTracks(reject);
@@ -205,8 +201,7 @@ class FemtoDreamV0Selection
     }
   }
 
-  void setChildnSigmaPIDOffset(femtoDreamV0Selection::ChildTrackType child,
-                               float offsetTPC, float offsetTOF)
+  void setChildnSigmaPIDOffset(femtoDreamV0Selection::ChildTrackType child, float offsetTPC, float offsetTOF)
   {
     if (child == femtoDreamV0Selection::kPosTrack) {
       PosDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);

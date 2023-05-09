@@ -43,8 +43,7 @@ static constexpr int nCuts = 5;
 static const std::vector<std::string> TrackName{"Track"};
 static const std::vector<std::string> V0ChildrenName{"PosChild", "NegChild"};
 static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
-static const float cutsTableTrack[nTrack][nCuts]{
-  {4.05f, 0.75f, 3.f, 3.f, 100.f}};
+static const float cutsTableTrack[nTrack][nCuts]{{4.05f, 0.75f, 3.f, 3.f, 100.f}};
 static const float cutsTableV0Children[nV0Children][nCuts]{
   {90.f, 99.f, 5.f, 5.f, 100.f},
   {90.f, 99.f, 5.f, 5.f, 100.f}};
