@@ -51,6 +51,8 @@ std::shared_ptr<TH2> hNsigma3HeSel;
 std::shared_ptr<TH2> hDeDx3HeSel;
 std::shared_ptr<TH2> hDeDxTot;
 std::shared_ptr<TH1> hDecayChannel;
+std::shared_ptr<TH1> hIsMatterGen;
+std::shared_ptr<TH1> hIsMatterGenTwoBody;
 } // namespace
 
 struct hyperCandidate {
@@ -83,6 +85,7 @@ struct hyperCandidate {
   bool isMatter = false;
   bool isSignal = false; // true MC signal
   bool isReco = false;   // true if the candidate is actually reconstructed
+  int pdgCode = 0;       // PDG code of the hypernucleus
 };
 
 struct hyperRecoTask {
@@ -179,6 +182,12 @@ struct hyperRecoTask {
       hDecayChannel = qaRegistry.add<TH1>("hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hDecayChannel->GetXaxis()->SetBinLabel(1, "2-body");
       hDecayChannel->GetXaxis()->SetBinLabel(2, "3-body");
+      hIsMatterGen = qaRegistry.add<TH1>("hIsMatterGen", ";; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+      hIsMatterGen->GetXaxis()->SetBinLabel(1, "Matter");
+      hIsMatterGen->GetXaxis()->SetBinLabel(2, "Antimatter");
+      hIsMatterGenTwoBody = qaRegistry.add<TH1>("hIsMatterGenTwoBody", ";; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+      hIsMatterGenTwoBody->GetXaxis()->SetBinLabel(1, "Matter");
+      hIsMatterGenTwoBody->GetXaxis()->SetBinLabel(2, "Antimatter");
     }
     hZvtx = qaRegistry.add<TH1>("hZvtx", ";z_{vtx} (cm); ", HistType::kTH1D, {{100, -20, 20}});
   }
@@ -395,6 +404,7 @@ struct hyperRecoTask {
                 hypCand.gMom[i] = posMom[i];
               }
               hypCand.isSignal = true;
+              hypCand.pdgCode = posMother.pdgCode();
               filledMothers.push_back(posMother.globalIndex());
             }
           }
@@ -417,11 +427,21 @@ struct hyperRecoTask {
           break;
         }
       }
+      if (mcPart.pdgCode() > 0) {
+        hIsMatterGen->Fill(0.);
+      } else {
+        hIsMatterGen->Fill(1.);
+      }
       if (!isHeFound) {
         hDecayChannel->Fill(1.);
         continue;
       }
       hDecayChannel->Fill(0.);
+      if (mcPart.pdgCode() > 0) {
+        hIsMatterGenTwoBody->Fill(0.);
+      } else {
+        hIsMatterGenTwoBody->Fill(1.);
+      }
       if (std::find(filledMothers.begin(), filledMothers.end(), mcPart.globalIndex()) != std::end(filledMothers)) {
         continue;
       }
@@ -433,6 +453,7 @@ struct hyperRecoTask {
       hypCand.posTrackID = -1;
       hypCand.negTrackID = -1;
       hypCand.isSignal = true;
+      hypCand.isSignal = mcPart.pdgCode();
       hyperCandidates.push_back(hypCand);
     }
   }
@@ -512,7 +533,7 @@ struct hyperRecoTask {
                     hypCand.momPi, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
                     hypCand.he3DCAXY, hypCand.piDCAXY,
                     hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(),
-                    hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
+                    hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal, hypCand.pdgCode);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processMC, "MC analysis", false);

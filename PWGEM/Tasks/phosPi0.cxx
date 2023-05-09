@@ -61,6 +61,10 @@ struct phosPi0 {
   HistogramRegistry mHistManager{"phosPi0Histograms"};
 
   bool fillBCmap = true; // fill BC map once
+  static constexpr int nBCsPerOrbit = 3564;
+  std::bitset<nBCsPerOrbit> mbcPatternB;
+  std::bitset<nBCsPerOrbit> mbcPatternA;
+  std::bitset<nBCsPerOrbit> mbcPatternC;
 
   /// \brief Create output histograms
   void init(InitContext const&)
@@ -81,23 +85,27 @@ struct phosPi0 {
       centAxis{10, 0., 10.},
       centralityAxis{100, 0., 100., "centrality", "centrality"};
 
-    auto h{std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsCol", "Number of events", HistType::kTH1F, {{7, 0., 7.}}))};
+    auto h{std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsCol", "Number of events", HistType::kTH1F, {{9, 0., 9.}}))};
     h->GetXaxis()->SetBinLabel(1, "All");
     h->GetXaxis()->SetBinLabel(2, "T0a||T0c");
     h->GetXaxis()->SetBinLabel(3, "T0a&&T0c");
     h->GetXaxis()->SetBinLabel(4, "V0A");
     h->GetXaxis()->SetBinLabel(5, "kIsTriggerTVX");
     h->GetXaxis()->SetBinLabel(6, "kTVXinPHOS");
-    h->GetXaxis()->SetBinLabel(7, "kTVXinPHOSClu");
+    h->GetXaxis()->SetBinLabel(7, "PHOSClu");
+    h->GetXaxis()->SetBinLabel(8, "PHOSClu&&Trig");
+    h->GetXaxis()->SetBinLabel(9, "PHOSClu&&Trig&&BB");
 
-    auto h2{std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsBC", "Number of events per trigger", HistType::kTH1F, {{7, 0., 7.}}))};
+    auto h2{std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsBC", "Number of events per trigger", HistType::kTH1F, {{9, 0., 9.}}))};
     h2->GetXaxis()->SetBinLabel(1, "All");
     h2->GetXaxis()->SetBinLabel(2, "T0a||T0c");
     h2->GetXaxis()->SetBinLabel(3, "T0a&&T0c");
     h2->GetXaxis()->SetBinLabel(4, "V0A");
     h2->GetXaxis()->SetBinLabel(5, "kIsTriggerTVX");
     h2->GetXaxis()->SetBinLabel(6, "kTVXinPHOS");
-    h2->GetXaxis()->SetBinLabel(7, "kTVXinPHOSClu");
+    h2->GetXaxis()->SetBinLabel(7, "PHOSClu");
+    h2->GetXaxis()->SetBinLabel(8, "PHOSClu&&Trig");
+    h2->GetXaxis()->SetBinLabel(9, "PHOSClu&&Trig&&BB");
 
     mHistManager.add("contributors", "Centrality", HistType::kTH1F, {centralityAxis});
     mHistManager.add("vertex", "vertex", HistType::kTH1F, {vertexAxis});
@@ -109,8 +117,9 @@ struct phosPi0 {
     mHistManager.add("cluBCAll", "Bunch crossing ID of event with PHOS", HistType::kTH1F, {bcAxis});
     mHistManager.add("cluBCAll2", "Bunch crossing ID of event with PHOS clu", HistType::kTH1F, {bcAxis});
     mHistManager.add("ambcluBCAll", "Bunch crossing ID of event with PHOS", HistType::kTH1F, {bcAxis});
+    mHistManager.add("evBCkTVXinPHOS", "Bunch crossing ID of event with PHOS", HistType::kTH1F, {bcAxis});
     mHistManager.add("cluBCkTVXinPHOS", "Bunch crossing ID of event with PHOS", HistType::kTH1F, {bcAxis});
-    mHistManager.add("ambcluBCkTVXinPHOS", "Bunch crossing ID of event with PHOS", HistType::kTH1F, {bcAxis});
+    mHistManager.add("ambCluBCkTVXinPHOS", "Bunch crossing ID of event with PHOS", HistType::kTH1F, {bcAxis});
 
     mHistManager.add("cluSp", "Cluster spectrum per module",
                      HistType::kTH2F, {amplitudeAxisLarge, modAxis});
@@ -180,18 +189,17 @@ struct phosPi0 {
     if (fillBCmap && bcs.begin() != bcs.end()) {
       auto rl = ccdb->getRunDuration(bcs.begin().runNumber());
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", rl.first);
-      constexpr int nBCsPerOrbit = 3564;
       std::bitset<nBCsPerOrbit> beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
       std::bitset<nBCsPerOrbit> beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
-      std::bitset<nBCsPerOrbit> bcPatternA = beamPatternA & ~beamPatternC;
-      std::bitset<nBCsPerOrbit> bcPatternC = ~beamPatternA & beamPatternC;
-      std::bitset<nBCsPerOrbit> bcPatternB = beamPatternA & beamPatternC;
+      mbcPatternB = beamPatternA & beamPatternC;
+      mbcPatternA = beamPatternA & ~beamPatternC;
+      mbcPatternC = ~beamPatternA & beamPatternC;
       for (int i = 0; i < nBCsPerOrbit; i++) {
-        if (bcPatternB[i])
+        if (mbcPatternB[i])
           mHistManager.fill(HIST("BCB"), i);
-        if (bcPatternA[i])
+        if (mbcPatternA[i])
           mHistManager.fill(HIST("BCA"), i);
-        if (bcPatternC[i])
+        if (mbcPatternC[i])
           mHistManager.fill(HIST("BCC"), i);
       }
       fillBCmap = false;
@@ -200,10 +208,10 @@ struct phosPi0 {
     for (const auto& col : collisions) {
       mHistManager.fill(HIST("contributors"), col.numContrib());
       mHistManager.fill(HIST("vertex"), col.posZ());
-      ir.setFromLong(col.bc().globalBC());
+      ir.setFromLong(col.bc_as<BCsWithBcSels>().globalBC());
       mHistManager.fill(HIST("cluBCAll"), ir.bc);
       if (col.alias()[kTVXinPHOS]) {
-        mHistManager.fill(HIST("cluBCkTVXinPHOS"), ir.bc);
+        mHistManager.fill(HIST("evBCkTVXinPHOS"), ir.bc);
       }
       mHistManager.fill(HIST("eventsCol"), 0.);
       if (col.alias()[kIsBBT0A] || col.alias()[kIsBBT0C]) {
@@ -244,11 +252,17 @@ struct phosPi0 {
 
     uint64_t bcevent = 0;
     for (const auto& clu : clusters) {
-      if (clu.collision().bc().globalBC() != bcevent) { // New BC
-        mHistManager.fill(HIST("vertex2"), clu.collision().posZ());
+      if (clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC() != bcevent) { // New BC
+        bcevent = clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC();
+        ir.setFromLong(bcevent);
         mHistManager.fill(HIST("eventsCol"), 6.);
-        bcevent = clu.collision().bc().globalBC();
-        ir.setFromLong(clu.collision().bc().globalBC());
+        if (clu.collision_as<SelCollisions>().alias()[mEvSelTrig]) {
+          mHistManager.fill(HIST("eventsCol"), 7.);
+          if (mbcPatternB[ir.bc]) {
+            mHistManager.fill(HIST("eventsCol"), 8.);
+            mHistManager.fill(HIST("vertex2"), clu.collision_as<SelCollisions>().posZ());
+          }
+        }
         mHistManager.fill(HIST("cluBCAll2"), ir.bc);
         if (clu.collision_as<SelCollisions>().alias()[kTVXinPHOS]) {
           mHistManager.fill(HIST("cluBCkTVXinPHOS"), ir.bc);
@@ -256,7 +270,7 @@ struct phosPi0 {
       }
 
       if (mEventSelection) {
-        if (!clu.collision_as<SelCollisions>().alias()[mEvSelTrig]) {
+        if (!clu.collision_as<SelCollisions>().alias()[mEvSelTrig] || !mbcPatternB[ir.bc]) {
           continue;
         }
       }
@@ -287,7 +301,8 @@ struct phosPi0 {
       auto clu2 = clu;
       ++clu2;
       int nMix = mMixedEvents; // Number of events to mix
-      uint64_t bcurrent = 0;
+      bool skipMix = false;
+      uint64_t bcurrentMix = 0;
       for (; clu2 != clusters.end() && nMix > 0; clu2++) {
         if (clu2.e() < mMinCluE || clu2.ncell() < mMinCluNcell ||
             clu2.time() > mMaxCluTime || clu2.time() < mMinCluTime) {
@@ -313,9 +328,19 @@ struct phosPi0 {
             }
           }
         } else { // Mixed
-          if (clu2.collision().bc().globalBC() != bcurrent) {
-            --nMix;
-            bcurrent = clu2.collision().bc().globalBC();
+          if (clu2.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC() != bcurrentMix) {
+            bcurrentMix = clu2.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC();
+            o2::InteractionRecord irMix;
+            irMix.setFromLong(bcurrentMix);
+            if (mEventSelection) {
+              skipMix = !clu2.collision_as<SelCollisions>().alias()[mEvSelTrig] || !mbcPatternB[irMix.bc];
+            }
+            if (!skipMix) {
+              --nMix;
+            }
+          }
+          if (skipMix) {
+            continue;
           }
           mHistManager.fill(HIST("mggMi"), m, pt, modComb);
           if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
@@ -333,18 +358,25 @@ struct phosPi0 {
     // }
 
     // same for amb clusters
+    bcevent = 0;
     for (const auto& clu : ambclusters) {
       if (clu.bc_as<BCsWithBcSels>().globalBC() != bcevent) {
-        mHistManager.fill(HIST("eventsBC"), 6.);
         bcevent = clu.bc_as<BCsWithBcSels>().globalBC();
         ir.setFromLong(bcevent);
+        mHistManager.fill(HIST("eventsBC"), 6.);
+        if (clu.bc_as<BCsWithBcSels>().selection()[mEvSelTrig]) {
+          mHistManager.fill(HIST("eventsBC"), 7.);
+          if (mbcPatternB[ir.bc]) {
+            mHistManager.fill(HIST("eventsBC"), 8.);
+          }
+        }
         mHistManager.fill(HIST("ambcluBCAll"), ir.bc);
         if (clu.bc_as<BCsWithBcSels>().selection()[kIsTriggerTVX]) {
-          mHistManager.fill(HIST("ambcluBCkTVXinPHOS"), ir.bc);
+          mHistManager.fill(HIST("ambCluBCkTVXinPHOS"), ir.bc);
         }
       }
 
-      if (mEventSelection && !clu.bc_as<BCsWithBcSels>().selection()[mEvSelTrig]) {
+      if (mEventSelection && (!clu.bc_as<BCsWithBcSels>().selection()[mEvSelTrig] || !mbcPatternB[ir.bc])) {
         continue;
       }
 
@@ -373,7 +405,8 @@ struct phosPi0 {
       auto clu2 = clu;
       ++clu2;
       int nMix = mMixedEvents; // Number of events to mix
-      uint64_t bcurrent = 0;
+      uint64_t bcurrentMix = 0;
+      bool skipMix = false;
       for (; clu2 != ambclusters.end() && nMix > 0; clu2++) {
         if (clu2.e() < mMinCluE || clu2.ncell() < mMinCluNcell ||
             clu2.time() > mMaxCluTime || clu2.time() < mMinCluTime) {
@@ -399,9 +432,19 @@ struct phosPi0 {
             }
           }
         } else { // Mixed
-          if (clu2.bc_as<BCsWithBcSels>().globalBC() != bcurrent) {
-            --nMix;
-            bcurrent = clu2.bc_as<BCsWithBcSels>().globalBC();
+          if (clu2.bc_as<BCsWithBcSels>().globalBC() != bcurrentMix) {
+            bcurrentMix = clu2.bc_as<BCsWithBcSels>().globalBC();
+            o2::InteractionRecord irMix;
+            irMix.setFromLong(bcevent);
+            if (mEventSelection) {
+              skipMix = !clu2.bc_as<BCsWithBcSels>().selection()[mEvSelTrig] || !mbcPatternB[irMix.bc];
+            }
+            if (!skipMix) {
+              --nMix;
+            }
+          }
+          if (skipMix) {
+            continue;
           }
           mHistManager.fill(HIST("mggMiAmb"), m, pt, modComb);
           if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {

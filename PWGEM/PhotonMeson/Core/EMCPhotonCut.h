@@ -46,9 +46,11 @@ class EMCPhotonCut : public TNamed
   static const char* mCutNames[static_cast<int>(EMCPhotonCuts::kNCuts)];
 
   // Temporary function to check if cluster passes selection criteria. To be replaced by framework filters.
-  template <typename Cluster, typename Track>
-  bool IsSelected(Cluster const& cluster, std::optional<Track> const& track = std::nullopt) const
+  template <typename T, typename Cluster>
+  bool IsSelected(Cluster const& cluster) const
   {
+    // auto track = cluster.template MatchedTrack_as<T>(); //please implement a column to point matched track index (DECLARE_SOA_ARRAY_INDEX_COLUMN) in SkimEMCClusters table.
+    auto track = nullptr;
     if (!IsSelectedEMCal(EMCPhotonCuts::kEnergy, cluster, track)) {
       return false;
     }
@@ -73,10 +75,8 @@ class EMCPhotonCut : public TNamed
   // Temporary function to check if cluster passes a given selection criteria. To be replaced by framework filters.
   // Returns true if a cluster survives the cuts!
   template <typename Cluster, typename Track>
-  bool IsSelectedEMCal(const EMCPhotonCuts& cut, Cluster const& cluster, std::optional<Track> const& track = std::nullopt) const
+  bool IsSelectedEMCal(const EMCPhotonCuts& cut, Cluster const& cluster, Track const& track) const
   {
-    float dEta = fabs(track.tracketa() - cluster.eta());
-    float dPhi = fabs(track.trackphi() - cluster.phi());
     switch (cut) {
       case EMCPhotonCuts::kEnergy:
         return cluster.e() > mMinE;
@@ -90,16 +90,19 @@ class EMCPhotonCut : public TNamed
       case EMCPhotonCuts::kTiming:
         return mMinTime <= cluster.time() && cluster.time() <= mMaxTime;
 
-      case EMCPhotonCuts::kTM:
-        if (track) {
-          return (dEta > mTrackMatchingEta(track.trackpt())) || (dPhi > mTrackMatchingPhi(track.trackpt())) || (cluster.e() / track.trackp() >= mMinEoverP);
-        } else {
-          // when we don't have any tracks the cluster should always survive the TM cut!
-          return true;
-        }
-
+      case EMCPhotonCuts::kTM: {
+        return true;
+        // if (track) {
+        //   float dEta = fabs(track.tracketa() - cluster.eta());
+        //   float dPhi = fabs(track.trackphi() - cluster.phi());
+        //   return (dEta > mTrackMatchingEta(track.trackpt())) || (dPhi > mTrackMatchingPhi(track.trackpt())) || (cluster.e() / track.trackp() >= mMinEoverP);
+        // } else {
+        //   // when we don't have any tracks the cluster should always survive the TM cut!
+        //   return true;
+        // }
+      }
       case EMCPhotonCuts::kExotic:
-        return mUseExoticCut ? cluster.isExotic() : true;
+        return mUseExoticCut ? !cluster.isExotic() : true;
 
       default:
         return false;

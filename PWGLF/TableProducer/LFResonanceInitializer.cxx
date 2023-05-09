@@ -652,7 +652,7 @@ struct reso2initializer {
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackV0Data, "Process for data", true);
+  PROCESS_SWITCH(reso2initializer, processTrackV0Data, "Process for data", false);
 
   void processTrackV0CascData(soa::Filtered<ResoEvents>::iterator const& collision,
                               soa::Filtered<ResoTracks> const& tracks,
@@ -676,7 +676,7 @@ struct reso2initializer {
     fillV0s<false>(collision, V0s, tracks);
     fillCascades<false>(collision, Cascades, tracks);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackV0CascData, "Process for data", true);
+  PROCESS_SWITCH(reso2initializer, processTrackV0CascData, "Process for data", false);
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   void processTrackMC(soa::Filtered<soa::Join<ResoEvents, aod::McCollisionLabels>>::iterator const& collision,
