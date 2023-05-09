@@ -90,59 +90,69 @@ struct HfCorrelatorDMesonPairs {
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> selectedDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>> selectedDPlusCandidatesMc = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
+  // HistoTypes
+  HistogramConfigSpec hTH1Pt{HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}};
+  HistogramConfigSpec hTH1Y{HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}};
+  HistogramConfigSpec hTH1Phi{HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}};
+  HistogramConfigSpec hTH1Matched{HistType::kTH1F, {{3, -1.5, 1.5}}};
+  HistogramConfigSpec hTH1Origin{HistType::kTH1F, {{3, -0.5, 2.5}}};
+  HistogramConfigSpec hTH1Multiplicity{HistType::kTH1F, {{10000, 0., 10000.}}};
+
   HistogramRegistry registry{
     "registry",
     // NOTE: use hMassD0 for trigger normalisation (S*0.955), and hMass2DCorrelationPairs (in final task) for 2D-sideband-subtraction purposes
-    {{"hPtCand", "D Meson pair candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng0", "D Meson pair candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng1", "D Meson pair candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
+    {{"hPtCand", "D Meson pair candidates;candidate #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
+     {"hPtProng0", "D Meson pair candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
+     {"hPtProng1", "D Meson pair candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hSelectionStatus", "D Meson pair candidates;selection status;entries", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
-     {"hEta", "D Meson pair candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
-     {"hPhi", "D Meson pair candidates;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
-     {"hY", "D Meson pair candidates;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hEta", "D Meson pair candidates;candidate #it{#eta};entries", hTH1Y},
+     {"hPhi", "D Meson pair candidates;candidate #it{#varphi};entries", hTH1Phi},
+     {"hY", "D Meson pair candidates;candidate #it{y};entries", hTH1Y},
      // Mc Reco
-     {"hOriginMcRec", "D Meson pair candidates - MC reco;prompt vs. non-prompt;entries", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
-     {"hMatchedMcRec", "D Meson pair candidates - MC reco;MC Matched;entries", {HistType::kTH1F, {{3, -1.5, 1.5}}}},
-     {"hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
-     {"hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
-     {"hPtCandMcRec", "D Meson pair candidates - MC reco;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng0McRec", "D Meson pair candidates - MC reco;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hPtProng1McRec", "D Meson pair candidates - MC reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", hTH1Multiplicity},
+     {"hMultiplicity", "multiplicity;multiplicity;entries", hTH1Multiplicity},
+     {"hPtCandMcRec", "D Meson pair candidates - MC reco;candidate #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
+     {"hPtProng0McRec", "D Meson pair candidates - MC reco;prong 0 #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
+     {"hPtProng1McRec", "D Meson pair candidates - MC reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hSelectionStatusMcRec", "D Meson pair candidates - MC reco;selection status;entries", {HistType::kTH1F, {{301, -0.5, 300.5}}}},
-     {"hEtaMcRec", "D Meson pair candidates - MC reco;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
-     {"hPhiMcRec", "D Meson pair candidates - MC reco;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
-     {"hYMcRec", "D Meson pair candidates - MC reco;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
+     {"hEtaMcRec", "D Meson pair candidates - MC reco;candidate #it{#eta};entries", hTH1Y},
+     {"hPhiMcRec", "D Meson pair candidates - MC reco;candidate #it{#varphi};entries", hTH1Phi},
+     {"hYMcRec", "D Meson pair candidates - MC reco;candidate #it{y};entries", hTH1Y},
+     {"hMatchedMcRec", "D Meson pair candidates - MC reco;MC Matched;entries", hTH1Matched},
+     {"hOriginMcRec", "D Meson pair candidates - MC reco;prompt vs. non-prompt;entries", hTH1Origin},
      // Mc Gen
      {"hMcEvtCount", "Event counter - MC gen;;entries", {HistType::kTH1F, {{1, -0.5, 0.5}}}},
-     {"hPtCandMcGen", "D Meson pair particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hEtaMcGen", "D Meson pair particles - MC gen;particle #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
-     {"hPhiMcGen", "D Meson pair particles - MC gen;particle #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
-     {"hYMcGen", "D Meson pair candidates - MC gen;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
-     {"hMatchedMcGen", "D Meson pair candidates - MC gen;MC Matched;entries", {HistType::kTH1F, {{3, -1.5, 1.5}}}},
-     {"hOriginMcGen", "D Meson pair candidates - MC gen;prompt vs. non-prompt;entries", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
-     {"hCountD0D0barPerEvent", "D Meson pair particles - MC gen;Number per event;entries", {HistType::kTH1F, {{20, 0., 20.}}}}}};
+     {"hPtCandMcGen", "D Meson pair particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
+     {"hEtaMcGen", "D Meson pair particles - MC gen;particle #it{#eta};entries", hTH1Y},
+     {"hPhiMcGen", "D Meson pair particles - MC gen;particle #it{#varphi};entries", hTH1Phi},
+     {"hYMcGen", "D Meson pair candidates - MC gen;candidate #it{y};entries", hTH1Y},
+     {"hMatchedMcGen", "D Meson pair candidates - MC gen;MC Matched;entries", hTH1Matched},
+     {"hOriginMcGen", "D Meson pair candidates - MC gen;prompt vs. non-prompt;entries", hTH1Origin}}};
 
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
-    registry.add("hMass", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassD0", "D0,D0bar candidates;inv. mass D0 only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassD0bar", "D0,D0bar candidates;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassD0McRecSig", "D0 signal candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassD0McRecRefl", "D0 reflection candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassD0McRecBkg", "D0 background candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassD0barMcRecSig", "D0bar signal candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassD0barMcRecRefl", "D0bar reflection candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassD0barMcRecBkg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    HistogramConfigSpec hTH2Mass{HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}};
+
+    registry.add("hMass", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassD0", "D0,D0bar candidates;inv. mass D0 only (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassD0bar", "D0,D0bar candidates;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassD0McRecSig", "D0 signal candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassD0McRecRefl", "D0 reflection candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassD0McRecBkg", "D0 background candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassD0barMcRecSig", "D0bar signal candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassD0barMcRecRefl", "D0bar reflection candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassD0barMcRecBkg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
     // DPlus plots
-    registry.add("hMassDPlus", "Dplus Pair candidates;inv. mass DPlus only (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassDMinus", "Dplus Pair candidates;inv. mass DMinus only (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassDPlusMcRecSig", "DPlus signal candidates - MC reco;inv. mass DPlus only (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassDPlusMcRecBkg", "DPlus background candidates - MC reco;inv. mass DPlus only (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassDMinusMcRecSig", "DMinus signal candidates - MC reco;inv. mass DMinus only (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassDMinusMcRecBkg", "DMinus background candidates - MC reco;inv. mass DMinus only (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassDPlus", "Dplus Pair candidates;inv. mass DPlus only (#pi K #pi) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassDMinus", "Dplus Pair candidates;inv. mass DMinus only (#pi K #pi) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassDPlusMcRecSig", "DPlus signal candidates - MC reco;inv. mass DPlus only (#pi K #pi) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassDPlusMcRecBkg", "DPlus background candidates - MC reco;inv. mass DPlus only (#pi K #pi) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassDMinusMcRecSig", "DMinus signal candidates - MC reco;inv. mass DMinus only (#pi K #pi) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMassDMinusMcRecBkg", "DMinus background candidates - MC reco;inv. mass DMinus only (#pi K #pi) (GeV/#it{c}^{2});entries", hTH2Mass);
   }
 
+  // Performs an analysis on multiplicity and fills histograms about it.
   template <typename T, typename U>
   void analyseMultiplicity(const T& collision, const U& tracks)
   {
@@ -165,6 +175,7 @@ struct HfCorrelatorDMesonPairs {
     registry.fill(HIST("hMultiplicity"), nTracks);
   }
 
+  // Returns false if the candidate does not pass cuts on decay type, y max, and pt min. Used for data and MC reco.
   template <typename T>
   bool kinematicCuts(const T& candidate)
   {
@@ -188,6 +199,7 @@ struct HfCorrelatorDMesonPairs {
     return cuts;
   }
 
+  // Returns false if the candidate does not pass cuts on pdgCode, y max, and pt min. Used for MC gen.
   template <typename T>
   bool kinematicCutsGen(const T& particle)
   {
@@ -205,6 +217,7 @@ struct HfCorrelatorDMesonPairs {
     return cuts;
   }
 
+  // Fills histograms with basic kinematic info.
   template <typename T>
   void fillInfoHists(const T& candidate, bool const& isReco)
   {
@@ -359,6 +372,7 @@ struct HfCorrelatorDMesonPairs {
     }
   }
 
+  // Common code to analyse D0's and D+'s at Gen level.
   template <typename T>
   void analyseMcGen(const T& particlesMc)
   {
