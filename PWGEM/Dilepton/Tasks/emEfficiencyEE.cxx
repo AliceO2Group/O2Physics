@@ -719,10 +719,12 @@ struct AnalysisTrackSelection {
         if ((*sig).CheckSignal<TTracksMC>(true, groupedMCTracks, mctrack)) {
           if (mctrack.pdgCode() > 0) {
             fHistGenNegPart[isig]->Fill(mctrack.pt(), mctrack.eta(), mctrack.phi());
-            if constexpr (smeared) fHistGenSmearedNegPart[isig]->Fill(mctrack.ptSmeared(), mctrack.etaSmeared(), mctrack.phiSmeared());
+            if constexpr (smeared)
+              fHistGenSmearedNegPart[isig]->Fill(mctrack.ptSmeared(), mctrack.etaSmeared(), mctrack.phiSmeared());
           } else {
             fHistGenPosPart[isig]->Fill(mctrack.pt(), mctrack.eta(), mctrack.phi());
-            if constexpr (smeared) fHistGenSmearedPosPart[isig]->Fill(mctrack.ptSmeared(), mctrack.etaSmeared(), mctrack.phiSmeared());
+            if constexpr (smeared)
+              fHistGenSmearedPosPart[isig]->Fill(mctrack.ptSmeared(), mctrack.etaSmeared(), mctrack.phiSmeared());
           }
           if (fConfigQA)
             fHistManQA->FillHistClass(Form("MCTruthGen_%s", (*sig).GetName()), VarManager::fgValues);
@@ -1218,7 +1220,6 @@ struct AnalysisSameEventPairing {
       }
     } // end of true pairing loop
   }   // end runMCGen
-
 
   template <uint32_t TTrackFillMap, typename TTracks, typename TTracksMC>
   void runRecPair(TTracks const& tracks, TTracksMC const& tracksMC)
