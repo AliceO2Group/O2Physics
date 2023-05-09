@@ -514,7 +514,7 @@ struct MultiplicityCounter {
   template <typename C, typename MC>
   void processTrackEfficiencyIndexedGeneral(
     typename soa::Join<C, aod::McCollisionLabels>::iterator const& collision,
-    MC const&, ParticlesI const&,
+    MC const&, soa::Filtered<ParticlesI> const& particles,
     FiLTracks const& tracks)
   {
     if (useEvSel && !collision.sel8()) {
@@ -524,10 +524,11 @@ struct MultiplicityCounter {
       return;
     }
     auto mcCollision = collision.mcCollision();
-    auto particlesI = primariesI->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-    particlesI.bindExternalIndices(&tracks);
+    //    auto particlesI = primariesI->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+    //    particlesI.bindExternalIndices(&tracks);
+    auto sample = particles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
-    for (auto& particle : particlesI) {
+    for (auto& particle : sample) {
       auto charge = 0.;
       auto p = pdg->GetParticle(particle.pdgCode());
       if (p != nullptr) {
@@ -598,7 +599,7 @@ struct MultiplicityCounter {
 
   void processTrackEfficiencyIndexed(
     soa::Join<ExCols, aod::McCollisionLabels>::iterator const& collision,
-    aod::McCollisions const& mccollisions, ParticlesI const& particles,
+    aod::McCollisions const& mccollisions, soa::Filtered<ParticlesI> const& particles,
     FiLTracks const& tracks)
   {
     processTrackEfficiencyIndexedGeneral<ExCols, aod::McCollisions>(collision, mccollisions, particles, tracks);
