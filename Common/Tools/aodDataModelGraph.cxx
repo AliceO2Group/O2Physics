@@ -271,8 +271,8 @@ int main(int, char**)
   displayEntity<McParticles>();
   displayEntity<McTrackLabels>();
 
-  displayEntity<Jets>();
-  displayEntity<JetConstituents>();
+  displayEntity<ChargedJets>();
+  displayEntity<ChargedJetConstituents>();
 
   displayEntities<V0s, V0Datas>();
 

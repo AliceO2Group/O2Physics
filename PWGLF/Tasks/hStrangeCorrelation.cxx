@@ -42,13 +42,15 @@ struct correlateStrangeness {
 
   Configurable<int> nBinsPhi{"nBinsPhi", 72, "Number of phi bins"};
   Configurable<int> nBinsEta{"nBinsEta", 80, "Number of eta bins"};
-  Configurable<int> nBinsDeltaEta{"nBinsDeltaEta", 160, "Number of delta-eta bins"};
-  Configurable<int> nBinsDeltaPhi{"nBinsDeltaPhi", 144, "Number of delta-phi bins"};
   Configurable<int> nBinsMass{"nBinsMass", 200, "Number of mass bins"};
   Configurable<int> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
 
-  ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "Mixing bins - multiplicity"};
+  ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta #varphi axis for histograms"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {50, -2, 2}, "delta eta axis for histograms"};
+  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
 
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
 
@@ -57,6 +59,7 @@ struct correlateStrangeness {
   Preslice<aod::AssocV0s> collisionSliceV0s = aod::assocV0s::collisionId;
   Preslice<aod::AssocCascades> collisionSliceCascades = aod::assocCascades::collisionId;
 
+  static constexpr std::string_view InvMassRanges[] = {"LeftBg/", "Signal/", "RightBg/"};
   static constexpr std::string_view v0names[] = {"K0Short", "Lambda", "AntiLambda"};
   static constexpr std::string_view cascadenames[] = {"XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
 
@@ -75,10 +78,12 @@ struct correlateStrangeness {
     return deltaPhi;
   }
 
-  void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing)
+  void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing, float pvz, float mult)
   {
     for (auto& triggerTrack : triggers) {
       auto trigg = triggerTrack.track_as<TracksComplete>();
+      if (!mixing)
+        histos.fill(HIST("sameEvent/TriggerParticlesV0"), trigg.pt());
       for (auto& assocCandidate : assocs) {
         auto assoc = assocCandidate.v0Data();
 
@@ -96,19 +101,29 @@ struct correlateStrangeness {
         float ptassoc = assoc.pt();
         static_for<0, 2>([&](auto i) {
           constexpr int index = i.value;
-          if (assocCandidate.compatible(index) && !mixing)
-            histos.fill(HIST("sameEvent/Hadron") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc);
-          if (assocCandidate.compatible(index) && mixing)
-            histos.fill(HIST("mixedEvent/Hadron") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc);
+          if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 1))
+            histos.fill(HIST("sameEvent/LeftBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+          if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 2))
+            histos.fill(HIST("sameEvent/Signal/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+          if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 3))
+            histos.fill(HIST("sameEvent/RightBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+          if (assocCandidate.compatible(index) && mixing && assocCandidate.inMassRegionCheck(index, 1))
+            histos.fill(HIST("mixedEvent/LeftBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+          if (assocCandidate.compatible(index) && mixing && assocCandidate.inMassRegionCheck(index, 2))
+            histos.fill(HIST("mixedEvent/Signal/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+          if (assocCandidate.compatible(index) && mixing && assocCandidate.inMassRegionCheck(index, 3))
+            histos.fill(HIST("mixedEvent/RightBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
         });
       }
     }
   }
 
-  void fillCorrelationsCascade(aod::TriggerTracks const& triggers, aod::AssocCascades const& assocs, bool mixing)
+  void fillCorrelationsCascade(aod::TriggerTracks const& triggers, aod::AssocCascades const& assocs, bool mixing, float pvz, float mult)
   {
     for (auto& triggerTrack : triggers) {
       auto trigg = triggerTrack.track_as<TracksComplete>();
+      if (!mixing)
+        histos.fill(HIST("sameEvent/TriggerParticlesCascade"), trigg.pt());
       for (auto& assocCandidate : assocs) {
         auto assoc = assocCandidate.cascData();
 
@@ -133,10 +148,18 @@ struct correlateStrangeness {
         float ptassoc = assoc.pt();
         static_for<0, 3>([&](auto i) {
           constexpr int index = i.value;
-          if (assocCandidate.compatible(index) && !mixing)
-            histos.fill(HIST("sameEvent/Hadron") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc);
-          if (assocCandidate.compatible(index) && mixing)
-            histos.fill(HIST("mixedEvent/Hadron") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc);
+          if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 1))
+            histos.fill(HIST("sameEvent/LeftBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+          if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 2))
+            histos.fill(HIST("sameEvent/Signal/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+          if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 3))
+            histos.fill(HIST("sameEvent/RightBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+          if (assocCandidate.compatible(index) && mixing && assocCandidate.inMassRegionCheck(index, 1))
+            histos.fill(HIST("mixedEvent/LeftBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+          if (assocCandidate.compatible(index) && mixing && assocCandidate.inMassRegionCheck(index, 2))
+            histos.fill(HIST("mixedEvent/Signal/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
+          if (assocCandidate.compatible(index) && mixing && assocCandidate.inMassRegionCheck(index, 3))
+            histos.fill(HIST("mixedEvent/RightBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
         });
       }
     }
@@ -147,8 +170,6 @@ struct correlateStrangeness {
     // define usual axes to be used
     const AxisSpec axisPhi{nBinsPhi, -0.5 * M_PI, 1.5 * M_PI, "#phi"};
     const AxisSpec axisEta{nBinsEta, -0.8, +0.8, "#eta"};
-    const AxisSpec axisDeltaEta{nBinsDeltaEta, -1.6, 1.6, "#Delta#eta"};
-    const AxisSpec axisDeltaPhi{nBinsDeltaPhi, -0.5 * M_PI, 1.5 * M_PI, "#Delta#phi"};
     const AxisSpec axisPtFine{100, 0, 10, "#it{p}_{T} (GeV/c)"};
     const AxisSpec axisPt{10, 0, 5, "#it{p}_{T} (GeV/c)"};
     const AxisSpec axisK0ShortMass{nBinsMass, 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
@@ -157,13 +178,16 @@ struct correlateStrangeness {
     const AxisSpec axisOmegaMass{nBinsMass, 1.57f, 1.77f, "Inv. Mass (GeV/c^{2})"};
 
     // same-event correlation functions
-    histos.add("sameEvent/HadronK0Short", "HadronK0Short", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
-    histos.add("sameEvent/HadronLambda", "HadronLambda", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
-    histos.add("sameEvent/HadronAntiLambda", "HadronAntiLambda", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
-    histos.add("sameEvent/HadronXiMinus", "HadronXiMinus", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
-    histos.add("sameEvent/HadronXiPlus", "HadronXiPlus", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
-    histos.add("sameEvent/HadronOmegaMinus", "HadronOmegaMinus", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
-    histos.add("sameEvent/HadronOmegaPlus", "HadronOmegaPlus", kTH3F, {axisDeltaPhi, axisDeltaEta, axisPt});
+    histos.add("sameEvent/Signal/K0Short", "K0Short", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
+    histos.add("sameEvent/Signal/Lambda", "Lambda", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
+    histos.add("sameEvent/Signal/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
+    histos.add("sameEvent/Signal/XiMinus", "XiMinus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
+    histos.add("sameEvent/Signal/XiPlus", "XiPlus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
+    histos.add("sameEvent/Signal/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
+    histos.add("sameEvent/Signal/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
+
+    histos.addClone("sameEvent/Signal/", "sameEvent/LeftBg/");
+    histos.addClone("sameEvent/Signal/", "sameEvent/RightBg/");
 
     // mixed-event correlation functions
     histos.addClone("sameEvent/", "mixedEvent/");
@@ -179,8 +203,21 @@ struct correlateStrangeness {
     histos.add("hTrackEtaVsPt", "hTrackEtaVsPt", kTH2F, {axisPt, axisEta});
     histos.add("hV0EtaVsPt", "hV0EtaVsPt", kTH2F, {axisPt, axisEta});
     histos.add("hCascEtaVsPt", "hCascEtaVsPt", kTH2F, {axisPt, axisEta});
-  }
 
+    histos.add("sameEvent/TriggerParticlesV0", "TriggersV0", kTH1F, {{400, 0, 20}});
+    histos.add("sameEvent/TriggerParticlesCascade", "TriggersCascade", kTH1F, {{400, 0, 20}});
+
+    // mixing QA
+    histos.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{140, -0.5, 139.5}});
+    histos.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{140, -0.5, 139.5}});
+    histos.add("MixingQA/hMEpvz1", ";pvz;Entries", kTH1F, {{30, -15, 15}});
+    histos.add("MixingQA/hMEpvz2", ";pvz;Entries", kTH1F, {{30, -15, 15}});
+
+    // Event QA
+    histos.add("EventQA/hMult", "Multiplicity", kTH1F, {ConfMultBins});
+    histos.add("EventQA/hPvz", ";pvz;Entries", kTH1F, {{30, -15, 15}});
+  }
+  BinningType colBinning{{ConfVtxBins, ConfMultBins}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
   void processSameEvent(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision,
                         aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
                         aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
@@ -194,6 +231,9 @@ struct correlateStrangeness {
       return;
     }
     // ________________________________________________
+    histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.multFV0M()}));
+    histos.fill(HIST("EventQA/hMult"), collision.multFV0M());
+    histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     // Do basic QA
     for (auto const& v0 : associatedV0s) {
       auto v0Data = v0.v0Data();
@@ -220,11 +260,11 @@ struct correlateStrangeness {
 
     // ________________________________________________
     // Do hadron - V0 correlations
-    fillCorrelationsV0(triggerTracks, associatedV0s, false);
+    fillCorrelationsV0(triggerTracks, associatedV0s, false, collision.posZ(), collision.multFV0M());
 
     // ________________________________________________
     // Do hadron - cascade correlations
-    fillCorrelationsCascade(triggerTracks, associatedCascades, false);
+    fillCorrelationsCascade(triggerTracks, associatedCascades, false, collision.posZ(), collision.multFV0M());
   }
   PROCESS_SWITCH(correlateStrangeness, processSameEvent, "Process same events", true);
 
@@ -233,16 +273,15 @@ struct correlateStrangeness {
                          aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
   {
 
-    BinningType colBinning{{ConfVtxBins, ConfMultBins}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
-
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, collisions, collisions)) {
       // ________________________________________________
       // Perform basic event selection on both collisions
       if (!collision1.sel8() || !collision2.sel8())
         continue;
-      if (TMath::Abs(collision1.posZ()) > zVertexCut && TMath::Abs(collision2.posZ()) > zVertexCut)
-        continue;
 
+      histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
+      histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
+      histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.multFV0M()}));
       // ________________________________________________
       // Do slicing
       auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
@@ -251,11 +290,11 @@ struct correlateStrangeness {
 
       // ________________________________________________
       // Do hadron - V0 correlations
-      fillCorrelationsV0(slicedTriggerTracks, slicedAssocV0s, true);
+      fillCorrelationsV0(slicedTriggerTracks, slicedAssocV0s, true, collision1.posZ(), collision1.multFV0M());
 
       // ________________________________________________
       // Do hadron - cascade correlations
-      fillCorrelationsCascade(slicedTriggerTracks, slicedAssocCascades, true);
+      fillCorrelationsCascade(slicedTriggerTracks, slicedAssocCascades, true, collision1.posZ(), collision1.multFV0M());
     }
   }
   PROCESS_SWITCH(correlateStrangeness, processMixedEvent, "Process mixed events", true);

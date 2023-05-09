@@ -376,6 +376,7 @@ class VarManager : public TObject
     // Candidate-track correlation variables
     kPairMass,
     kPairMassDau,
+    kMassDau,
     kPairPt,
     kPairPtDau,
     kPairEta,
@@ -516,6 +517,8 @@ class VarManager : public TObject
   static void FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track, float* values);
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
+  template <typename T>
+  static void FillHadron(T const& hadron, float* values = nullptr, float hadronMass = 0.0f);
   template <typename C, typename A>
   static void FillQVectorFromGFW(C const& collision, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
@@ -1137,6 +1140,8 @@ void VarManager::FillTrack(T const& track, float* values)
   // Quantities based on the pair table(s)
   if constexpr ((fillMap & Pair) > 0) {
     values[kMass] = track.mass();
+    ROOT::Math::PtEtaPhiMVector vpair(track.pt(), track.eta(), track.phi(), track.mass());
+    values[kRap] = vpair.Rapidity();
   }
 
   // Derived quantities which can be computed based on already filled variables
@@ -1242,8 +1247,8 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
       values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
 
-      double det1 = t1.cZY() * t1.cZZ() - t1.cZY() * t1.cZY();
-      double det2 = t2.cZY() * t2.cZZ() - t2.cZY() * t2.cZY();
+      double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
+      double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
       if ((det1 < 0) || (det2 < 0)) {
         values[kQuadDCAsigXYZ] = -999;
       } else {
@@ -1883,6 +1888,8 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values[kPairPt] = v12.Pt();
     values[kPairEta] = v12.Eta();
     values[kPairPhi] = v12.Phi();
+    values[kPairMassDau] = dilepton.mass();
+    values[kMassDau] = hadronMass;
   }
   if (fgUsedVars[kDeltaPhi]) {
     double delta = dilepton.phi() - hadron.phi();
@@ -1904,5 +1911,19 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
   if (fgUsedVars[kDeltaEta]) {
     values[kDeltaEta] = dilepton.eta() - hadron.eta();
   }
+}
+template <typename T>
+void VarManager::FillHadron(T const& hadron, float* values, float hadronMass)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  ROOT::Math::PtEtaPhiMVector vhadron(hadron.pt(), hadron.eta(), hadron.phi(), hadronMass);
+  values[kMass] = hadronMass;
+  values[kPt] = hadron.pt();
+  values[kEta] = hadron.eta();
+  values[kPhi] = hadron.phi();
+  values[kRap] = vhadron.Rapidity();
 }
 #endif // PWGDQ_CORE_VARMANAGER_H_

@@ -105,6 +105,8 @@ struct cascadeBuilder {
   Configurable<float> casccospa{"casccospa", 0.95, "casccospa"};
   Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA cascade Daughters"};
   Configurable<float> lambdaMassWindow{"lambdaMassWindow", .01, "Distance from Lambda mass"};
+  Configurable<float> dcaXYCascToPV{"dcaXYCascToPV", 1e+6, "dcaXYCascToPV"};
+  Configurable<float> dcaZCascToPV{"dcaZCascToPV", 1e+6, "dcaZCascToPV"};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -115,6 +117,7 @@ struct cascadeBuilder {
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
   Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
   Configurable<bool> d_doStraTrackQA{"d_doStraTrackQA", false, "do strangeness tracking QA"};
+  Configurable<bool> d_GenerateOnlyTrackedCascades{"d_GenerateOnlyTrackedCascades", false, "Skip cascades that aren't tracked"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -172,6 +175,7 @@ struct cascadeBuilder {
     float cosPA;
     float cascradius;
     float cascDCAxy; // cascade DCA xy (with bending)
+    float cascDCAz;  // cascade DCA z
     std::array<float, 3> v0pos;
     std::array<float, 3> v0mompos;
     std::array<float, 3> v0momneg;
@@ -631,6 +635,7 @@ struct cascadeBuilder {
 
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, matCorrCascade, &dcaInfo);
     cascadecandidate.cascDCAxy = dcaInfo[0];
+    cascadecandidate.cascDCAz = dcaInfo[1];
 
     // Calculate masses a priori
     cascadecandidate.mXi = RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
@@ -727,7 +732,7 @@ struct cascadeBuilder {
                cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
                cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
-               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy); // <--- no corresponding stratrack information available
+               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz); // <--- no corresponding stratrack information available
 
       // populate cascade covariance matrices if required by any other task
       if (createCascCovMats) {
@@ -766,6 +771,15 @@ struct cascadeBuilder {
     statisticsRegistry.eventCounter++;
 
     for (auto& cascade : cascades) {
+      // check if cascade is tracked - sliceBy is our friend!
+      const uint64_t cascIdx = cascade.globalIndex();
+      auto trackedCascadesSliced = trackedCascades.sliceBy(perCascade, cascIdx);
+
+      // if only tracked cascades are desired, skip this candidate before doing anything (speed)
+      if (trackedCascadesSliced.size() == 0 && d_GenerateOnlyTrackedCascades) {
+        continue; // wasn't tracked
+      }
+
       bool validCascadeCandidate = buildCascadeCandidate<TTrackTo>(cascade);
       if (!validCascadeCandidate)
         continue; // doesn't pass cascade selections
@@ -786,7 +800,7 @@ struct cascadeBuilder {
                cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2],
                cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
-               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy);
+               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz);
 
       // populate cascade covariance matrices if required by any other task
       if (createCascCovMats) {
@@ -815,6 +829,7 @@ struct cascadeBuilder {
       }
 
       float lPt = 0.0f;
+
       if (d_doStraTrackQA) {
         // Fill standard DCA histograms for all candidates (irrespectively of strangeness tracking)
         lPt = RecoDecay::sqrtSumOfSquares(cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0] + cascadecandidate.bachP[0], cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1] + cascadecandidate.bachP[1]);
@@ -828,9 +843,6 @@ struct cascadeBuilder {
           registry.fill(HIST("hDCACascadeToPVOmegaPlus"), lPt, cascadecandidate.cascDCAxy);
       }
 
-      // check if cascade is tracked - sliceBy is our friend!
-      const uint64_t cascIdx = cascade.globalIndex();
-      auto trackedCascadesSliced = trackedCascades.sliceBy(perCascade, cascIdx);
       if (trackedCascadesSliced.size() > 0) {
         auto trackedCascade = trackedCascadesSliced.begin(); // first and only element
 
@@ -893,6 +905,7 @@ struct cascadeBuilder {
 
         // Override cascDCAxy with the strangeness-tracked information
         cascadecandidate.cascDCAxy = dcaInfo[0];
+        cascadecandidate.cascDCAz = dcaInfo[1];
 
         std::array<float, 3> cascadeMomentumVector;
         cascadeTrackPar.getPxPyPzGlo(cascadeMomentumVector);
@@ -910,7 +923,7 @@ struct cascadeBuilder {
                         cascadeMomentumVector[0], cascadeMomentumVector[1], cascadeMomentumVector[2], // <--- stratrack momentum
                         cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                         cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
-                        cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy,                                     // <--- stratrack (cascDCAxy)
+                        cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,          // <--- stratrack (cascDCAxy/z)
                         trackedCascade.matchingChi2(), trackedCascade.topologyChi2(), trackedCascade.itsClsSize()); // <--- stratrack fit info
       }
     }
@@ -1210,6 +1223,7 @@ struct cascadePreselector {
 /// Extends the cascdata table with expression columns
 struct cascadeInitializer {
   Spawns<aod::CascData> cascdataext;
+  Spawns<aod::TraCascData> tracascdataext;
   void init(InitContext const&) {}
 };
 

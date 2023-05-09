@@ -59,7 +59,7 @@ struct createEMReducedMCEvent {
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
-  using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::McCollisionLabels>;
+  using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::CentNTPVs, aod::McCollisionLabels>;
 
   template <uint8_t system, typename TTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs>
   void skimmingMC(MyCollisions const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const&, TPCMs const& v0photons, TPCMLegs const& v0legs, TPHOSs const& phosclusters, TEMCs const& emcclusters)
@@ -116,6 +116,7 @@ struct createEMReducedMCEvent {
              collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes(),
              collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
              collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1(),
+             collision.centFV0A(), collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centFDDM(), collision.centNTPV(),
              ng_pcm, ng_phos, ng_emc);
 
       // make an entry for this MC event only if it was not already added to the table
@@ -135,15 +136,16 @@ struct createEMReducedMCEvent {
         if (mctrack.pt() < 1e-2 || abs(mctrack.y()) > 1.5 || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > 260) {
           continue;
         }
-
         int pdg = mctrack.pdgCode();
+
+        // Note that pi0 from weak decay gives producedByGenerator() = false
         if (
           abs(pdg) != 11      // electron
           && (abs(pdg) != 22) // photon
           // light mesons
           && (abs(pdg) != 111) // pi0
           && (abs(pdg) != 113) // rho(770)
-          //&& (abs(pdg) != 211 ) // changed pion
+          // && (abs(pdg) != 211) // changed pion
           && (abs(pdg) != 221) // eta
           && (abs(pdg) != 223) // omega(782)
           && (abs(pdg) != 331) // eta'(958)
@@ -154,28 +156,6 @@ struct createEMReducedMCEvent {
         ) {
           continue;
         }
-
-        // float dx = mctrack.vx() - mcCollision.posX();
-        // float dy = mctrack.vy() - mcCollision.posY();
-        // float dz = mctrack.vz() - mcCollision.posZ();
-        // float r3D = sqrt(dx*dx + dy*dy + dz*dz);
-        // if (
-        //   abs(pdg) != 11                                               // electron
-        //   && (abs(pdg) != 22   || r3D > 1.0f) // photon
-        //   // light mesons
-        //   && (abs(pdg) != 111  || r3D > 1.0f) // pi0
-        //   && (abs(pdg) != 113  || r3D > 1.0f) // rho(770)
-        //   && (abs(pdg) != 211  || r3D > 1.0f) // changed pion
-        //   && (abs(pdg) != 221  || r3D > 1.0f) // eta
-        //   && (abs(pdg) != 223  || r3D > 1.0f) // omega(782)
-        //   && (abs(pdg) != 331  || r3D > 1.0f) // eta'(958)
-        //   && (abs(pdg) != 333  || r3D > 1.0f) // phi(1020)
-        //   //strange hadrons
-        //   && (abs(pdg) != 310  || r3D > 1.0f) // K0S
-        //   && (abs(pdg) != 3122 || r3D > 1.0f) // Lambda
-        //) {
-        //   continue;
-        // }
 
         // LOGF(info,"index = %d , mc track pdg = %d , producedByGenerator =  %d , isPhysicalPrimary = %d", mctrack.index(), mctrack.pdgCode(), mctrack.producedByGenerator(), mctrack.isPhysicalPrimary());
 

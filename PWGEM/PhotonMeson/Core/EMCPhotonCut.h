@@ -20,6 +20,7 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <optional>
 #include "Framework/Logger.h"
 #include "Framework/DataTypes.h"
 #include "Rtypes.h"
@@ -45,25 +46,27 @@ class EMCPhotonCut : public TNamed
   static const char* mCutNames[static_cast<int>(EMCPhotonCuts::kNCuts)];
 
   // Temporary function to check if cluster passes selection criteria. To be replaced by framework filters.
-  template <typename T>
-  bool IsSelected(T const& cluster) const
+  template <typename T, typename Cluster>
+  bool IsSelected(Cluster const& cluster) const
   {
-    if (!IsSelectedEMCal(cluster, EMCPhotonCuts::kEnergy)) {
+    // auto track = cluster.template MatchedTrack_as<T>(); //please implement a column to point matched track index (DECLARE_SOA_ARRAY_INDEX_COLUMN) in SkimEMCClusters table.
+    auto track = nullptr;
+    if (!IsSelectedEMCal(EMCPhotonCuts::kEnergy, cluster, track)) {
       return false;
     }
-    if (!IsSelectedEMCal(cluster, EMCPhotonCuts::kNCell)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kNCell, cluster, track)) {
       return false;
     }
-    if (!IsSelectedEMCal(cluster, EMCPhotonCuts::kM02)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kM02, cluster, track)) {
       return false;
     }
-    if (!IsSelectedEMCal(cluster, EMCPhotonCuts::kTiming)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kTiming, cluster, track)) {
       return false;
     }
-    if (!IsSelectedEMCal(cluster, EMCPhotonCuts::kTM)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kTM, cluster, track)) {
       return false;
     }
-    if (!IsSelectedEMCal(cluster, EMCPhotonCuts::kExotic)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kExotic, cluster, track)) {
       return false;
     }
     return true;
@@ -72,10 +75,8 @@ class EMCPhotonCut : public TNamed
   // Temporary function to check if cluster passes a given selection criteria. To be replaced by framework filters.
   // Returns true if a cluster survives the cuts!
   template <typename Cluster, typename Track>
-  bool IsSelectedEMCal(Cluster const& cluster, Track const& track, const EMCPhotonCuts& cut) const
+  bool IsSelectedEMCal(const EMCPhotonCuts& cut, Cluster const& cluster, Track const& track) const
   {
-    float dEta = fabs(track.tracketa() - cluster.eta());
-    float dPhi = fabs(track.trackphi() - cluster.phi());
     switch (cut) {
       case EMCPhotonCuts::kEnergy:
         return cluster.e() > mMinE;
@@ -89,11 +90,19 @@ class EMCPhotonCut : public TNamed
       case EMCPhotonCuts::kTiming:
         return mMinTime <= cluster.time() && cluster.time() <= mMaxTime;
 
-      case EMCPhotonCuts::kTM:
-        return (dEta > mTrackMatchingEta(track.trackpt())) || (dPhi > mTrackMatchingPhi(track.trackpt())) || (cluster.e() / track.trackp() >= mMinEoverP);
-
+      case EMCPhotonCuts::kTM: {
+        return true;
+        // if (track) {
+        //   float dEta = fabs(track.tracketa() - cluster.eta());
+        //   float dPhi = fabs(track.trackphi() - cluster.phi());
+        //   return (dEta > mTrackMatchingEta(track.trackpt())) || (dPhi > mTrackMatchingPhi(track.trackpt())) || (cluster.e() / track.trackp() >= mMinEoverP);
+        // } else {
+        //   // when we don't have any tracks the cluster should always survive the TM cut!
+        //   return true;
+        // }
+      }
       case EMCPhotonCuts::kExotic:
-        return mUseExoticCut ? cluster.isExotic() : true;
+        return mUseExoticCut ? !cluster.isExotic() : true;
 
       default:
         return false;

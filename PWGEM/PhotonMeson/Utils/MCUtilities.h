@@ -24,13 +24,19 @@ bool IsPhysicalPrimary(TCollision const& mccollision, TTrack const& mctrack, TMC
   // This is to check mctrack is ALICE physical primary.
   // https://inspirehep.net/files/4c26ef5fb432df99bdc1ff847653502f
 
-  if (!mctrack.producedByGenerator())
-    return false;
-  float r3D = sqrt(pow(mctrack.vx() - mccollision.posX(), 2) + pow(mctrack.vy() - mccollision.posY(), 2) + pow(mctrack.vz() - mccollision.posZ(), 2)); // cm
-  if (r3D > 1.0)
-    return false;
+  if (mctrack.isPhysicalPrimary()) { // this is the first priority. In fact, this does not happen to neutral mesons in ALICE.
+    return true;
+  }
 
-  // exclude weak decay. K0S is the most relevant strange particle for neutral mesons.
+  if (!mctrack.producedByGenerator()) {
+    return false;
+  }
+  float r3D = sqrt(pow(mctrack.vx() - mccollision.posX(), 2) + pow(mctrack.vy() - mccollision.posY(), 2) + pow(mctrack.vz() - mccollision.posZ(), 2)); // cm
+  if (r3D > 1.0) {
+    return false;
+  }
+
+  // exclude weak decay. K0S and Lambda are the 2 most relevant strange particles decaying into neutral mesons.
   if (mctrack.has_mothers()) {
     // auto mp = mctrack.template mothers_first_as<TMCs>();
     int motherid = mctrack.mothersIds()[0]; // first mother index
@@ -66,11 +72,12 @@ bool IsPhysicalPrimary(TCollision const& mccollision, TTrack const& mctrack, TMC
 template <typename TCollision, typename T, typename TMCs>
 bool IsFromWD(TCollision const& mccollision, T const& mctrack, TMCs const& mcTracks)
 {
-  // is this particle from weak decay? production vertex of this particle is within 1 cm, but from weak decay
-  float r3D = sqrt(pow(mctrack.vx() - mccollision.posX(), 2) + pow(mctrack.vy() - mccollision.posY(), 2) + pow(mctrack.vz() - mccollision.posZ(), 2)); // cm
-  if (r3D > 1.0) {
-    return false;
-  }
+  // is this particle from weak decay?
+  // production vertex of this particle is within 1 cm, but from weak decay
+  // float r3D = sqrt(pow(mctrack.vx() - mccollision.posX(), 2) + pow(mctrack.vy() - mccollision.posY(), 2) + pow(mctrack.vz() - mccollision.posZ(), 2)); // cm
+  // if (r3D > 1.0) {
+  //   return false;
+  // }
 
   if (mctrack.has_mothers()) {
     // auto mp = mctrack.template mothers_first_as<TMCs>();

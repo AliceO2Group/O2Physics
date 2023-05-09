@@ -46,6 +46,9 @@ DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data);                             //!
 DECLARE_SOA_COLUMN(CompatibleK0Short, compatibleK0Short, bool);       // compatible with K0Short
 DECLARE_SOA_COLUMN(CompatibleLambda, compatibleLambda, bool);         // compatible with Lambda
 DECLARE_SOA_COLUMN(CompatibleAntiLambda, compatibleAntiLambda, bool); // compatible with AntiLambda
+DECLARE_SOA_COLUMN(MassRegionK0Short, massRegionK0Short, int);        //
+DECLARE_SOA_COLUMN(MassRegionLambda, massRegionLambda, int);          //
+DECLARE_SOA_COLUMN(MassRegionAntiLambda, massRegionAntiLambda, int);  //
 DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
                            [](bool cK0Short, bool cLambda, bool cAntiLambda, int value) -> bool {
                              if (value == 0 && cK0Short)
@@ -56,13 +59,27 @@ DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check 
                                return true;
                              return false;
                            });
+DECLARE_SOA_DYNAMIC_COLUMN(InMassRegionCheck, inMassRegionCheck,
+                           [](int rK0Short, int rLambda, int rAntiLambda, int value, int region) -> bool {
+                             if (value == 0 && rK0Short == region)
+                               return true;
+                             if (value == 1 && rLambda == region)
+                               return true;
+                             if (value == 2 && rAntiLambda == region)
+                               return true;
+                             return false;
+                           });
 } // namespace assocV0s
 DECLARE_SOA_TABLE(AssocV0s, "AOD", "ASSOCV0S", o2::soa::Index<>,
                   assocV0s::CollisionId, assocV0s::V0DataId,
                   assocV0s::CompatibleK0Short,
                   assocV0s::CompatibleLambda,
                   assocV0s::CompatibleAntiLambda,
-                  assocV0s::Compatible<assocV0s::CompatibleK0Short, assocV0s::CompatibleLambda, assocV0s::CompatibleAntiLambda>);
+                  assocV0s::MassRegionK0Short,
+                  assocV0s::MassRegionLambda,
+                  assocV0s::MassRegionAntiLambda,
+                  assocV0s::Compatible<assocV0s::CompatibleK0Short, assocV0s::CompatibleLambda, assocV0s::CompatibleAntiLambda>,
+                  assocV0s::InMassRegionCheck<assocV0s::MassRegionK0Short, assocV0s::MassRegionLambda, assocV0s::MassRegionAntiLambda>);
 /// _________________________________________
 /// Table for storing associated casc indices
 namespace assocCascades
@@ -73,6 +90,8 @@ DECLARE_SOA_COLUMN(CompatibleXiMinus, compatibleXiMinus, bool);       // compati
 DECLARE_SOA_COLUMN(CompatibleXiPlus, compatibleXiPlus, bool);         // compatible with XiPlus
 DECLARE_SOA_COLUMN(CompatibleOmegaMinus, compatibleOmegaMinus, bool); // compatible with OmegaMinus
 DECLARE_SOA_COLUMN(CompatibleOmegaPlus, compatibleOmegaPlus, bool);   // compatible with OmegaPlus
+DECLARE_SOA_COLUMN(MassRegionXi, massRegionXi, int);                  //
+DECLARE_SOA_COLUMN(MassRegionOmega, massRegionOmega, int);            //
 DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
                            [](bool cXiMinus, bool cXiPlus, bool cOmegaMinus, bool cOmegaPlus, int value) -> bool {
                              if (value == 0 && cXiMinus)
@@ -85,13 +104,24 @@ DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check 
                                return true;
                              return false;
                            });
+DECLARE_SOA_DYNAMIC_COLUMN(InMassRegionCheck, inMassRegionCheck,
+                           [](int rXi, int rOmega, int value, int region) -> bool {
+                             if (value == 0 && rXi == region)
+                               return true;
+                             if (value == 2 && rOmega == region)
+                               return true;
+                             return false;
+                           });
 } // namespace assocCascades
 DECLARE_SOA_TABLE(AssocCascades, "AOD", "ASSOCCASCADES", o2::soa::Index<>, assocCascades::CollisionId, assocCascades::CascDataId,
                   assocCascades::CompatibleXiMinus,
                   assocCascades::CompatibleXiPlus,
                   assocCascades::CompatibleOmegaMinus,
                   assocCascades::CompatibleOmegaPlus,
-                  assocCascades::Compatible<assocCascades::CompatibleXiMinus, assocCascades::CompatibleXiPlus, assocCascades::CompatibleOmegaMinus, assocCascades::CompatibleOmegaPlus>);
+                  assocCascades::MassRegionXi,
+                  assocCascades::MassRegionOmega,
+                  assocCascades::Compatible<assocCascades::CompatibleXiMinus, assocCascades::CompatibleXiPlus, assocCascades::CompatibleOmegaMinus, assocCascades::CompatibleOmegaPlus>,
+                  assocCascades::InMassRegionCheck<assocCascades::MassRegionXi, assocCascades::MassRegionOmega>);
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_HSTRANGECORRELATIONTABLES_H_

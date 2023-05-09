@@ -81,9 +81,9 @@ struct EventSelectionQaTask {
     const AxisSpec axisTimeSum{100, -10., 10., ""};
     const AxisSpec axisGlobalBCs{nGlobalBCs, 0., static_cast<double>(nGlobalBCs), ""};
     const AxisSpec axisBCs{nBCsPerOrbit, 0., static_cast<double>(nBCsPerOrbit), ""};
-    const AxisSpec axisNcontrib{150, 0., isLowFlux ? 150. : 4500., "n contributors"};
+    const AxisSpec axisNcontrib{200, 0., isLowFlux ? 200. : 4500., "n contributors"};
     const AxisSpec axisEta{100, -1., 1., "track #eta"};
-    const AxisSpec axisColTimeRes{7000, 0., 7000., "collision time resolution (ns)"};
+    const AxisSpec axisColTimeRes{1500, 0., 1500., "collision time resolution (ns)"};
     const AxisSpec axisBcDif{600, -300., 300., "collision bc difference"};
     const AxisSpec axisAliases{kNaliases, 0., static_cast<double>(kNaliases), ""};
     const AxisSpec axisSelections{kNsel, 0., static_cast<double>(kNsel), ""};
@@ -176,6 +176,8 @@ struct EventSelectionQaTask {
     histos.add("hBcZDC", "", kTH1F, {axisBCs});
     histos.add("hBcColTOF", "", kTH1F, {axisBCs});
     histos.add("hBcColTRD", "", kTH1F, {axisBCs});
+    histos.add("hBcTrackTOF", "", kTH1F, {axisBCs});
+    histos.add("hBcTrackTRD", "", kTH1F, {axisBCs});
 
     histos.add("hMultV0Aall", "All bcs", kTH1F, {axisMultV0A});
     histos.add("hMultV0Call", "All bcs", kTH1F, {axisMultV0C});
@@ -451,7 +453,7 @@ struct EventSelectionQaTask {
   PROCESS_SWITCH(EventSelectionQaTask, processRun2, "Process Run2 event selection QA", true);
 
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
-  Preslice<ColEvSels> perFoundBC = aod::evsel::foundBCId;
+  // Preslice<ColEvSels> perFoundBC = aod::evsel::foundBCId;
 
   void processRun3(
     ColEvSels const& cols,
@@ -848,7 +850,13 @@ struct EventSelectionQaTask {
         }
         nTPCtracks += track.hasTPC();
         nTOFtracks += track.hasTOF();
-        nTRDtracks += track.hasTRD();
+        nTRDtracks += track.hasTRD() && !track.hasTOF();
+
+        if (track.hasTOF()) {
+          histos.fill(HIST("hBcTrackTOF"), (globalBC + TMath::FloorNint(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)) % 3564);
+        } else if (track.hasTRD()) {
+          histos.fill(HIST("hBcTrackTRD"), (globalBC + TMath::Nint(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)) % 3564);
+        }
       }
 
       // search for nearest ft0a&ft0c entry
@@ -1020,7 +1028,7 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hMultZNCacc"), multZNC);
       histos.fill(HIST("hNcontribAcc"), nContributors);
     } // collisions
-
+    /*
     // pileup checks
     for (auto const& bc : bcs) {
       auto collisionsGrouped = cols.sliceBy(perFoundBC, bc.globalIndex());
@@ -1035,6 +1043,7 @@ struct EventSelectionQaTask {
       }
       histos.fill(HIST("hMultT0Mpup"), multT0M);
     }
+    */
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
 
