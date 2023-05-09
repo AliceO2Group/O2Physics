@@ -12,6 +12,12 @@
 //  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 //  3-body Hyperhelium 4 builder
 //  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+//
+// with contributions from:
+// --- navneet.kumar@cern.ch
+// --- natasha.sharma@cern.ch
+// --- kumar.lokesh@cern.ch
+// --- david.dobrigkeit.chinellato@cern.ch
 
 #include <cmath>
 #include <array>
@@ -409,6 +415,7 @@ struct hyHe4Preselector {
     auto const& trackProng0 = d3body.template track0_as<TTrackTo>();
     auto const& trackProng1 = d3body.template track1_as<TTrackTo>();
     auto const& trackProng2 = d3body.template track2_as<TTrackTo>();
+    // cout<<"The number of TPC clusters are "<<trackProng1.tpcNClsCrossedRows() <<endl;
     if ((trackProng0.tpcNClsCrossedRows() >= dTPCNCrossedRows) && (trackProng1.tpcNClsCrossedRows() >= dTPCNCrossedRows) && (trackProng2.tpcNClsCrossedRows() >= dTPCNCrossedRows)) {
       lIsInteresting = true;
     }
@@ -426,12 +433,19 @@ struct hyHe4Preselector {
     auto const& trackProng1 = d3body.template track1_as<TTrackTo>();
     auto const& trackProng2 = d3body.template track2_as<TTrackTo>();
 
+    int lPDG0 = -1;
+    int lPDG1 = -1;
+    int lPDG2 = -1;
+
     // Association check
     // Lets do something to identify the PID of particles
     if (trackProng0.has_mcParticle() && trackProng1.has_mcParticle() && trackProng2.has_mcParticle()) {
       auto lMCtrackProng0 = trackProng0.template mcParticle_as<aod::McParticles>();
       auto lMCtrackProng1 = trackProng1.template mcParticle_as<aod::McParticles>();
       auto lMCtrackProng2 = trackProng2.template mcParticle_as<aod::McParticles>();
+      lPDG0 = lMCtrackProng0.pdgCode();
+      lPDG1 = lMCtrackProng1.pdgCode();
+      lPDG2 = lMCtrackProng2.pdgCode();
       if (lMCtrackProng0.has_mothers() && lMCtrackProng1.has_mothers() && lMCtrackProng2.has_mothers()) {
         for (auto& lProng0Mother : lMCtrackProng0.template mothers_as<aod::McParticles>()) {
           for (auto& lProng1Mother : lMCtrackProng1.template mothers_as<aod::McParticles>()) {
@@ -445,11 +459,11 @@ struct hyHe4Preselector {
       }
     } // end association check
 
-    if (lPDG == -1010020040 && dIfMCgenerateAntihyHe4) {
+    if (lPDG == -1010020040 /*&& lPDG0 == -1000020030 && lPDG1 == -2212 && lPDG2 == +211 */ && dIfMCgenerateAntihyHe4) {
       lIsTrueAntiHyHelium4 = true;
       lIsInteresting = true;
     }
-    if (lPDG == 1010020040 && dIfMCgeneratehyHe4) {
+    if (lPDG == 1010020040 /*&& lPDG0 == +1000020030 && lPDG1 == +2212 && lPDG2 == -211 */ && dIfMCgeneratehyHe4) {
       lIsTrueHyHelium4 = true;
       lIsInteresting = true;
     }
@@ -478,7 +492,7 @@ struct hyHe4Preselector {
       bool lIsTrueAntiHyHelium4 = false;
       checkPDG<LabeledTracksExtra>(d3body, lIsInteresting, lIsTrueHyHelium4, lIsTrueAntiHyHelium4);
       checkTrackQuality<LabeledTracksExtra>(d3body, lIsQualityInteresting);
-      hyhetags(lIsQualityInteresting, lIsTrueHyHelium4, lIsTrueAntiHyHelium4, true, true);
+      hyhetags(lIsQualityInteresting * lIsInteresting, lIsTrueHyHelium4, lIsTrueAntiHyHelium4, true, true);
     }
   }
   PROCESS_SWITCH(hyHe4Preselector, processBuildMCAssociated, "Switch to build MC-associated V0s", true);
