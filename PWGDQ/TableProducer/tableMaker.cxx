@@ -616,8 +616,6 @@ struct TableMaker {
     } // end if constexpr (TMuonFillMap)
   }   // end fullSkimming()
 
-  
-
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons, typename AssocTracks, typename AssocMuons>
   void fullSkimmingIndices(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracksBarrel, TMuons const& tracksMuon, AssocTracks const& trackIndices, AssocMuons const& fwdtrackIndices)
@@ -721,9 +719,9 @@ struct TableMaker {
       // loop over tracks
       for (const auto& trackId : trackIndices) { // start loop over tracks
         auto track = trackId.template track_as<TTracks>();
-	if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
+        if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
           if (fIsAmbiguous) {
-	    isAmbiguous = (track.compatibleCollIds().size() != 1);
+            isAmbiguous = (track.compatibleCollIds().size() != 1);
           }
         }
         trackFilteringTag = uint64_t(0);
@@ -859,9 +857,9 @@ struct TableMaker {
       // now let's save the muons with the correct indices and matches
       for (const auto& muonId : fwdtrackIndices) { // start loop over tracks
         auto muon = muonId.template fwdtrack_as<TMuons>();
-	if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
+        if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
           if (fIsAmbiguous) {
-	    isAmbiguous = (muon.compatibleCollIds().size() != 1);
+            isAmbiguous = (muon.compatibleCollIds().size() != 1);
           }
         }
         trackFilteringTag = uint64_t(0);
@@ -929,8 +927,6 @@ struct TableMaker {
       }
     } // end if constexpr (TMuonFillMap)
   }   // end fullSkimming()
-
-
 
   void DefineHistograms(TString histClasses)
   {
@@ -1197,7 +1193,7 @@ struct TableMaker {
 
   // Produce muon tables only based on track-collision association tables --------------------------------------------------------------------------------------
   void processAssociatedMuonOnly(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
-                                soa::Filtered<MyMuonsColl> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd, aod::FwdTrackAssoc const& fwdtrackIndices)
+                                 soa::Filtered<MyMuonsColl> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
@@ -1206,7 +1202,7 @@ struct TableMaker {
   }
 
   void processAssociatedMuonOnlyWithCov(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
-                                       soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd, aod::FwdTrackAssoc const& fwdtrackIndices)
+                                        soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
