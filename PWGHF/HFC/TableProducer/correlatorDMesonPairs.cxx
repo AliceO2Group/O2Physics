@@ -180,41 +180,34 @@ struct HfCorrelatorDMesonPairs {
   bool kinematicCuts(const T& candidate)
   {
     // check decay channel flag for candidate
-    bool cuts = true;
-    if (particlePdgCode == pdg::Code::kD0) {
-      if (!(candidate.hfflag() & 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        cuts = false;
-      }
-    } else if (particlePdgCode == pdg::Code::kDPlus) {
-      if (!(candidate.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
-        cuts = false;
-      }
+    if (particlePdgCode == pdg::Code::kD0 && !(candidate.hfflag() & 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+      return false;
+    } 
+    if (particlePdgCode == pdg::Code::kDPlus && !(candidate.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
+      return false;
     }
     if (yCandMax >= 0. && std::abs(candidate.y(RecoDecay::getMassPDG(particlePdgCode))) > yCandMax) {
-      cuts = false;
+      return false;
     }
     if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
-      cuts = false;
+      return false;
     }
-    return cuts;
   }
 
   // Returns false if the candidate does not pass cuts on pdgCode, y max, and pt min. Used for MC gen.
   template <typename T>
   bool kinematicCutsGen(const T& particle)
   {
-    bool cuts = true;
     // check if the particle is D or Dbar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
     if (std::abs(particle.pdgCode()) != particlePdgCode) {
-      cuts = false;
+      return false;
     }
     if (yCandMax >= 0. && std::abs(particle.y()) > yCandMax) {
-      cuts = false;
+      return false;
     }
     if (ptCandMin >= 0. && particle.pt() < ptCandMin) {
-      cuts = false;
+      return false;
     }
-    return cuts;
   }
 
   // Fills histograms with basic kinematic info.
