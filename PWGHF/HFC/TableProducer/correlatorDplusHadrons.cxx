@@ -473,13 +473,13 @@ struct HfCorrelatorDplusHadrons {
   // Event Mixing for the Data Mode
   using myCollisions = soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>;
   using fullTracks = soa::Join<aod::Tracks, aod::TracksDCA>;
-  Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonsel == true;
-  Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
-  Filter dplusfilter = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= 1;
-
   using mySelCollisions = soa::Filtered<myCollisions>;
   using myTracks = soa::Filtered<fullTracks>;
   using myCandidatesData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
+  
+  Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonsel == true;
+  Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
+  Filter dplusfilter = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= 1;
 
   void processDataMixedEvent(mySelCollisions& collisions, myCandidatesData& candidates, myTracks& tracks)
   {
@@ -526,11 +526,11 @@ struct HfCorrelatorDplusHadrons {
   // Event Mixing for the MCGen Mode
   using myCollisionsMcGen = soa::Join<aod::McCollisions, aod::DmesonSelection>;
   using fullTracksMcGen = aod::McParticles;
-  Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonsel == true;
-  Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
-
   using mySelCollisionsMcGen = soa::Filtered<myCollisionsMcGen>;
   using myTracksMcGen = soa::Filtered<fullTracksMcGen>;
+  
+  Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonsel == true;
+  Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
 
   void processMcGenMixedEvent(mySelCollisionsMcGen& collisions, myTracksMcGen& particlesMc)
   {
@@ -575,7 +575,6 @@ struct HfCorrelatorDplusHadrons {
           continue;
         }
         int poolBin = corrBinningMcGen.getBin(std::make_tuple(c2.posZ(), getTracksSize(c2)));
-        // LOGF(info, "Mixed event collisions: Index = (%d,%d), tracks Size: (%d,%d), Z Vertex: (%f), Pool Bin: (%d)", c1.globalIndex(), c2.globalIndex(), getTracksSize(c1), getTracksSize(c2), c2.posZ(), poolBin); // For debug
         entryDplusHadronPair(getDeltaPhi(t2.phi(), t1.phi()), t2.eta() - t1.eta(), t1.pt(), t2.pt(), poolBin);
       }
     }
