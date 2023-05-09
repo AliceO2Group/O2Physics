@@ -182,7 +182,7 @@ struct HfCorrelatorDMesonPairs {
     // check decay channel flag for candidate
     if (particlePdgCode == pdg::Code::kD0 && !(candidate.hfflag() & 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) {
       return false;
-    } 
+    }
     if (particlePdgCode == pdg::Code::kDPlus && !(candidate.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
       return false;
     }
