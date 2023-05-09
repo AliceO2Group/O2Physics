@@ -414,7 +414,7 @@ int main(int argc, char* argv[])
   for (auto const& tree : trees) {
     outputDir->cd();
     tree.second->Write();
-    
+
     // stats
     sizeCompressed[tree.first] += tree.second->GetZipBytes();
     sizeUncompressed[tree.first] += tree.second->GetTotBytes();
