@@ -476,7 +476,7 @@ struct HfCorrelatorDplusHadrons {
   using mySelCollisions = soa::Filtered<myCollisions>;
   using myTracks = soa::Filtered<fullTracks>;
   using myCandidatesData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
-  
+
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonsel == true;
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
   Filter dplusfilter = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= 1;
@@ -528,7 +528,7 @@ struct HfCorrelatorDplusHadrons {
   using fullTracksMcGen = aod::McParticles;
   using mySelCollisionsMcGen = soa::Filtered<myCollisionsMcGen>;
   using myTracksMcGen = soa::Filtered<fullTracksMcGen>;
-  
+
   Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonsel == true;
   Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
 
