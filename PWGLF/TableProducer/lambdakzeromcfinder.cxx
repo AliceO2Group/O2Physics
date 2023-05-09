@@ -143,7 +143,7 @@ struct lambdakzeromcfinder {
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
       if (daughters.size() >= 2) {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
-          if ( daughter.getProcess() != 4)
+          if (daughter.getProcess() != 4)
             continue; // skip deltarays (if ever), stick to decay products only
           for (auto const& track : trackList) {
             if (track.mcParticleId() == daughter.globalIndex()) {

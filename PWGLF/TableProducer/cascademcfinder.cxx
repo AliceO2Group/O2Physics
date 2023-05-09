@@ -162,7 +162,7 @@ struct cascademcfinder {
           } // end lambda search
           if (TMath::Abs(daughter.pdgCode()) == 211 || TMath::Abs(daughter.pdgCode()) == 321) {
             for (auto const& track : trackList) {
-              if (track.mcParticleId() == daughter.globalIndex() && daughter.getProcess() == 4 ) {
+              if (track.mcParticleId() == daughter.globalIndex() && daughter.getProcess() == 4) {
                 trackIndexBachelor = track.globalIndex();
                 if (track.hasITS())
                   bachelorITS = true;

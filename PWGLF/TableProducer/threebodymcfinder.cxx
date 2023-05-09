@@ -162,7 +162,7 @@ struct threebodymcfinder {
     if (mcParticle.has_daughters()) {
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
       histos.fill(HIST("hNDaughters"), daughters.size());
-      if (daughters.size() >= 3) { //consider also delta-rays
+      if (daughters.size() >= 3) {               // consider also delta-rays
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
           for (auto const& track : trackList) {
             if (track.mcParticleId() == daughter.globalIndex()) {
