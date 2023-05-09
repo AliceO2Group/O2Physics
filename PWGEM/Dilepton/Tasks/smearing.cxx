@@ -51,10 +51,10 @@ struct ApplySmearing {
   Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
   Configurable<std::string> fConfigResPhiNegHistName{"cfgResPhiNegHistName", "PhiEleResArr", "hisogram for phi neg in resolution file"};
 
-  TObjArray* fArrResoPt;
-  TObjArray* fArrResoEta;
-  TObjArray* fArrResoPhi_Pos;
-  TObjArray* fArrResoPhi_Neg;
+  TObjArray* fArrResoPt = nullptr;
+  TObjArray* fArrResoEta = nullptr;
+  TObjArray* fArrResoPhi_Pos = nullptr;
+  TObjArray* fArrResoPhi_Neg = nullptr;
 
   void init(InitContext& context)
   {
@@ -112,6 +112,12 @@ struct ApplySmearing {
       float ptgen = mctrack.pt();
       float etagen = mctrack.eta();
       float phigen = mctrack.phi();
+
+      if (fArrResoPt == nullptr || fArrResoEta == nullptr || fArrResoPhi_Pos == nullptr || fArrResoPhi_Neg == nullptr) {
+        // if resolution map is not loaded, don't apply smearing. But produces table to be Joined later.
+        smearedtrack(ptgen, etagen, phigen);
+        continue;
+      }
 
       if (abs(mctrack.pdgCode()) == fPdgCode) {
         // apply smearing for electrons or muons.
