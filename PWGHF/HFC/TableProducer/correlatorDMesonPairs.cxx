@@ -359,6 +359,87 @@ struct HfCorrelatorDMesonPairs {
     }
   }
 
+  template <typename T>
+  void analyseMcGen(const T& particlesMc)
+  {
+    registry.fill(HIST("hMcEvtCount"), 0);
+    for (const auto& particle1 : particlesMc) {
+      // check if the particle is D0, D0bar, DPlus or DMinus (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
+      if (std::abs(particle1.pdgCode()) == pdg::Code::kD0 || std::abs(particle1.pdgCode()) == pdg::Code::kDPlus) {
+        continue;
+      }
+      double yD = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
+      if (!kinematicCutsGen(particle1)) {
+        continue;
+      }
+
+      registry.fill(HIST("hPtCandMcGen"), particle1.pt());
+      registry.fill(HIST("hEtaMcGen"), particle1.eta());
+      registry.fill(HIST("hPhiMcGen"), particle1.phi());
+      registry.fill(HIST("hYMcGen"), yD);
+
+      auto candidateType1 = assignCandidateTypeGen(particle1); // Candidate sign attribution.
+
+      // check if it's prompt or non-prompt
+      int8_t originGen1 = particle1.originMcGen();
+      registry.fill(HIST("hOriginMcGen"), originGen1);
+      // check if it's MC matched
+      int8_t matchedGen1 = particle1.flagMcMatchGen();
+      registry.fill(HIST("hMatchedMcGen"), matchedGen1);
+
+      for (const auto& particle2 : particlesMc) {
+        // Candidate sign attribution.
+        auto candidateType2 = assignCandidateTypeGen(particle2);
+        if (!kinematicCutsGen(particle2)) {
+          continue;
+        }
+
+        // check if it's prompt or non-prompt
+        int8_t originGen2 = particle2.originMcGen();
+        // check if it's MC matched
+        int8_t matchedGen2 = particle2.flagMcMatchGen();
+
+        // If both particles are D0's, fill D0Pair table
+        if (std::abs(particle1.pdgCode()) == pdg::Code::kD0 && std::abs(particle2.pdgCode()) == pdg::Code::kD0) {
+          entryD0Pair(getDeltaPhi(particle2.phi(), particle1.phi()),
+                      particle2.eta() - particle1.eta(),
+                      particle1.pt(),
+                      particle2.pt(),
+                      particle1.y(),
+                      particle2.y(),
+                      RecoDecay::getMassPDG(pdg::Code::kD0),
+                      RecoDecay::getMassPDG(pdg::Code::kD0),
+                      candidateType1,
+                      candidateType2,
+                      0);
+          entryD0PairRecoInfo(originGen1,
+                              originGen2,
+                              matchedGen1,
+                              matchedGen2,
+                              0);
+        // If both particles are DPlus', fill DPlusPair table
+        } else if (std::abs(particle1.pdgCode()) == pdg::Code::kDPlus && std::abs(particle2.pdgCode()) == pdg::Code::kDPlus) {
+          entryDPlusPair(getDeltaPhi(particle2.phi(), particle1.phi()),
+                         particle2.eta() - particle1.eta(),
+                         particle1.pt(),
+                         particle2.pt(),
+                         particle1.y(),
+                         particle2.y(),
+                         RecoDecay::getMassPDG(pdg::Code::kDPlus),
+                         RecoDecay::getMassPDG(pdg::Code::kDPlus),
+                         candidateType1,
+                         candidateType2,
+                         0);
+          entryDPlusPairRecoInfo(originGen1,
+                                 originGen2,
+                                 matchedGen1,
+                                 matchedGen2,
+                                 0);
+        }
+      } // end inner loop
+    }   // end outer loop
+  }
+
   /// D0(bar)-D0(bar) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processDataD0(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
   {
@@ -638,77 +719,6 @@ struct HfCorrelatorDMesonPairs {
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcGenDPlus, "Process DPlus Mc Gen mode", false);
-
-  ///
-  /// FUNCTIONS
-  ///
-  template <typename T>
-  void analyseMcGen(const T& particlesMc)
-  {
-    registry.fill(HIST("hMcEvtCount"), 0);
-    for (const auto& particle1 : particlesMc) {
-      // check if the particle is D0 or D0bar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
-      if (std::abs(particle1.pdgCode()) != particlePdgCode) {
-        continue;
-      }
-      double yD = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
-      if (!kinematicCutsGen(particle1)) {
-        continue;
-      }
-
-      registry.fill(HIST("hPtCandMcGen"), particle1.pt());
-      registry.fill(HIST("hEtaMcGen"), particle1.eta());
-      registry.fill(HIST("hPhiMcGen"), particle1.phi());
-      registry.fill(HIST("hYMcGen"), yD);
-
-      auto candidateType1 = assignCandidateTypeGen(particle1); // Candidate sign attribution.
-
-      // check if it's prompt or non-prompt
-      int8_t originGen1 = particle1.originMcGen();
-      registry.fill(HIST("hOriginMcGen"), originGen1);
-      // check if it's MC matched
-      int8_t matchedGen1 = particle1.flagMcMatchGen();
-      registry.fill(HIST("hMatchedMcGen"), matchedGen1);
-
-      for (const auto& particle2 : particlesMc) {
-        // Candidate sign attribution.
-        auto candidateType2 = assignCandidateTypeGen(particle2);
-        if (!kinematicCutsGen(particle2)) {
-          continue;
-        }
-
-        // check if it's prompt or non-prompt
-        int8_t originGen2 = particle2.originMcGen();
-        // check if it's MC matched
-        int8_t matchedGen2 = particle2.flagMcMatchGen();
-
-        double mass = 0;
-        if (particlePdgCode == pdg::Code::kD0) {
-          mass = RecoDecay::getMassPDG(pdg::Code::kD0);
-        } else if (particlePdgCode == pdg::Code::kDPlus) {
-          mass = RecoDecay::getMassPDG(pdg::Code::kDPlus);
-        }
-
-        entryD0Pair(getDeltaPhi(particle2.phi(), particle1.phi()),
-                    particle2.eta() - particle1.eta(),
-                    particle1.pt(),
-                    particle2.pt(),
-                    particle1.y(),
-                    particle2.y(),
-                    mass,
-                    mass,
-                    candidateType1,
-                    candidateType2,
-                    0);
-        entryD0PairRecoInfo(originGen1,
-                            originGen2,
-                            matchedGen1,
-                            matchedGen2,
-                            0);
-
-      } // end inner loop
-    }   // end outer loop
-  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
