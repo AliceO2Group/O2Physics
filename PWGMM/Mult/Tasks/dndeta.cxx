@@ -511,90 +511,97 @@ struct MultiplicityCounter {
   Partition<ParticlesI> primariesI = ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) &&
                                      (nabs(aod::mcparticle::eta) < estimatorEta);
 
-  void processTrackEfficiencyIndexed(
-    soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
-    aod::McCollisions const&, ParticlesI const&,
-    soa::Filtered<LabeledTracksEx> const& tracks)
+  template <typename C, typename MC>
+  void processTrackEfficiencyIndexedGeneral(
+    typename soa::Join<C, aod::McCollisionLabels>::iterator const& collision,
+    MC const&, ParticlesI const&,
+    FiLTracks const& tracks)
   {
-    for (auto& collision : collisions) {
-      if (useEvSel && !collision.sel8()) {
-        continue;
-      }
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
-      auto mcCollision = collision.mcCollision();
-      auto particlesI = primariesI->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-      particlesI.bindExternalIndices(&tracks);
+    if (useEvSel && !collision.sel8()) {
+      return;
+    }
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+    auto mcCollision = collision.mcCollision();
+    auto particlesI = primariesI->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+    particlesI.bindExternalIndices(&tracks);
 
-      for (auto& particle : particlesI) {
-        auto charge = 0.;
-        auto p = pdg->GetParticle(particle.pdgCode());
-        if (p != nullptr) {
-          charge = p->Charge();
-        }
-        if (std::abs(charge) < 3.) {
-          continue;
-        }
-        registry.fill(HIST("Tracks/Control/PtGenI"), particle.pt());
-        if (particle.has_tracks()) {
-          auto counted = false;
-          auto countedNoEtaCut = false;
-          auto counter = 0;
-          auto relatedTracks = particle.tracks_as<soa::Filtered<LabeledTracksEx>>();
-          for (auto& track : relatedTracks) {
-            if ((track.trackCutFlag() & TrackSelectionFlags::kDCAz) != TrackSelectionFlags::kDCAz) {
-              continue;
-            }
-            ++counter;
-            if (!countedNoEtaCut) {
-              registry.fill(HIST("Tracks/Control/PtEfficiencyINoEtaCut"), particle.pt());
-              countedNoEtaCut = true;
-            }
-            if (std::abs(track.eta()) < estimatorEta) {
-              if (!counted) {
-                registry.fill(HIST("Tracks/Control/PtEfficiencyI"), particle.pt());
-                counted = true;
-              }
-            }
-            if (counter > 1) {
-              registry.fill(HIST("Tracks/Control/PtEfficiencyISecondaries"), particle.pt());
+    for (auto& particle : particlesI) {
+      auto charge = 0.;
+      auto p = pdg->GetParticle(particle.pdgCode());
+      if (p != nullptr) {
+        charge = p->Charge();
+      }
+      if (std::abs(charge) < 3.) {
+        continue;
+      }
+      registry.fill(HIST("Tracks/Control/PtGenI"), particle.pt());
+      if (particle.has_tracks()) {
+        auto counted = false;
+        auto countedNoEtaCut = false;
+        auto counter = 0;
+        auto relatedTracks = particle.template tracks_as<FiLTracks>();
+        for (auto const& track : relatedTracks) {
+          //          if ((track.trackCutFlag() & TrackSelectionFlags::kDCAz) != TrackSelectionFlags::kDCAz) {
+          //            continue;
+          //          }
+          ++counter;
+          if (!countedNoEtaCut) {
+            registry.fill(HIST("Tracks/Control/PtEfficiencyINoEtaCut"), particle.pt());
+            countedNoEtaCut = true;
+          }
+          if (std::abs(track.eta()) < estimatorEta) {
+            if (!counted) {
+              registry.fill(HIST("Tracks/Control/PtEfficiencyI"), particle.pt());
+              counted = true;
             }
           }
           if (counter > 1) {
-            for (auto& track : relatedTracks) {
-              if ((track.trackCutFlag() & TrackSelectionFlags::kDCAz) != TrackSelectionFlags::kDCAz) {
-                continue;
+            registry.fill(HIST("Tracks/Control/PtEfficiencyISecondaries"), particle.pt());
+          }
+        }
+        if (counter > 1) {
+          for (auto const& track : relatedTracks) {
+            //            if ((track.trackCutFlag() & TrackSelectionFlags::kDCAz) != TrackSelectionFlags::kDCAz) {
+            //              continue;
+            //            }
+            for (auto layer = 0; layer < 7; ++layer) {
+              if (track.itsClusterMap() & (uint8_t(1) << layer)) {
+                registry.fill(HIST("Tracks/Control/ITSClusters"), layer + 1);
               }
-              for (auto layer = 0; layer < 7; ++layer) {
-                if (track.itsClusterMap() & (uint8_t(1) << layer)) {
-                  registry.fill(HIST("Tracks/Control/ITSClusters"), layer + 1);
-                }
+            }
+            auto hasbit = false;
+            for (auto bit = 0; bit < 16; ++bit) {
+              if (track.mcMask() & (uint8_t(1) << bit)) {
+                registry.fill(HIST("Tracks/Control/Mask"), bit);
+                hasbit = true;
               }
-              auto hasbit = false;
-              for (auto bit = 0; bit < 16; ++bit) {
-                if (track.mcMask() & (uint8_t(1) << bit)) {
-                  registry.fill(HIST("Tracks/Control/Mask"), bit);
-                  hasbit = true;
-                }
-              }
-              if (!hasbit) {
-                registry.fill(HIST("Tracks/Control/Mask"), 16);
-              }
+            }
+            if (!hasbit) {
+              registry.fill(HIST("Tracks/Control/Mask"), 16);
             }
           }
-          if (relatedTracks.size() > 1) {
-            registry.fill(HIST("Tracks/Control/PhiEtaGenDuplicates"), particle.phi(), particle.eta());
-            for (auto& track : relatedTracks) {
-              if ((track.trackCutFlag() & TrackSelectionFlags::kDCAz) != TrackSelectionFlags::kDCAz) {
-                continue;
-              }
-              registry.fill(HIST("Tracks/Control/PhiEtaDuplicates"), track.phi(), track.eta());
-            }
+        }
+        if (relatedTracks.size() > 1) {
+          registry.fill(HIST("Tracks/Control/PhiEtaGenDuplicates"), particle.phi(), particle.eta());
+          for (auto const& track : relatedTracks) {
+            //            if ((track.trackCutFlag() & TrackSelectionFlags::kDCAz) != TrackSelectionFlags::kDCAz) {
+            //              continue;
+            //            }
+            registry.fill(HIST("Tracks/Control/PhiEtaDuplicates"), track.phi(), track.eta());
           }
         }
       }
     }
+  }
+
+  void processTrackEfficiencyIndexed(
+    soa::Join<ExCols, aod::McCollisionLabels>::iterator const& collision,
+    aod::McCollisions const& mccollisions, ParticlesI const& particles,
+    FiLTracks const& tracks)
+  {
+    processTrackEfficiencyIndexedGeneral<ExCols, aod::McCollisions>(collision, mccollisions, particles, tracks);
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiencyIndexed, "Calculate tracking efficiency vs pt (indexed)", false);
