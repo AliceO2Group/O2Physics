@@ -66,6 +66,7 @@ struct HfTaskSingleMuonSelection {
   Configurable<float> zVtx{"zVtx", 10., "Z edge of primary vertex [cm]"};
   Configurable<bool> fillMcHist{"fillMcHist", false, "fill MC-related muon histograms"};
   Configurable<bool> reduceAmbMft{"reduceAmbMft", false, "reduce ambiguous MFT tracks"};
+  Configurable<bool> reduceOrphMft{"reduceOrphMft", true, "reduce orphan MFT tracks"};
 
   Filter posZfilter = nabs(aod::collision::posZ) < zVtx;
   Filter mcMaskFilter = aod::mcfwdtracklabel::mcMask == mcMaskSelection;
@@ -135,6 +136,9 @@ struct HfTaskSingleMuonSelection {
       if (reduceAmbMft && trkMFT.has_ambMftTrack()) {
         continue;
       }
+      if (reduceOrphMft && (!reduceAmbMft) && trkMFT.has_ambMftTrack()) {
+        continue;
+      }
       // histograms before the acceptance cuts
       registry.fill(HIST("hMuBeforeCuts"), pt, eta, dcaXY, pDca, charge, chi2);
       if (muon.matchMCHTrackId() > 0.) {
@@ -187,6 +191,9 @@ struct HfTaskSingleMuonSelection {
 
       auto trkMFT = muon.template matchMFTTrack_as<MFTTracksExtra>();
       if (reduceAmbMft && trkMFT.has_ambMftTrack()) {
+        continue;
+      }
+      if (reduceOrphMft && (!reduceAmbMft) && trkMFT.has_ambMftTrack()) {
         continue;
       }
       // histograms before the acceptance cuts
