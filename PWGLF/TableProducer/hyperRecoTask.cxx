@@ -333,10 +333,15 @@ struct hyperRecoTask {
       hypCand.massH3L = std::sqrt(h3lE * h3lE - hypCand.mom[0] * hypCand.mom[0] - hypCand.mom[1] * hypCand.mom[1] - hypCand.mom[2] * hypCand.mom[2]);
       hypCand.massH4L = std::sqrt(h4lE * h4lE - hypCand.mom[0] * hypCand.mom[0] - hypCand.mom[1] * hypCand.mom[1] - hypCand.mom[2] * hypCand.mom[2]);
 
-      if (hypCand.massH3L < o2::constants::physics::MassHyperTriton - masswidth || hypCand.massH3L > o2::constants::physics::MassHyperTriton + masswidth)
-        continue;
+      bool isHypMass = false;
 
-      if (hypCand.massH4L < o2::constants::physics::MassHyperhydrog4 - masswidth || hypCand.massH4L > o2::constants::physics::MassHyperhydrog4 + masswidth)
+      if (hypCand.massH3L > o2::constants::physics::MassHyperTriton - masswidth && hypCand.massH3L < o2::constants::physics::MassHyperTriton + masswidth)
+        isHypMass = true;
+
+      if (hypCand.massH4L > o2::constants::physics::MassHyperhydrog4 - masswidth && hypCand.massH4L < o2::constants::physics::MassHyperhydrog4 + masswidth)
+        isHypMass = true;
+
+      if (!isHypMass)
         continue;
 
       hypCand.dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
