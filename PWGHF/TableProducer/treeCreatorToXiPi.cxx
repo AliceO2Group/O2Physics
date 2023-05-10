@@ -15,12 +15,12 @@
 ///
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University & GSI
 
+#include "Common/Core/trackUtilities.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "ReconstructionDataFormats/DCA.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -169,9 +169,6 @@ struct HfTreeCreatorToXiPi {
   Produces<o2::aod::HfToXiPiFull> rowCandidateFull;
   Produces<o2::aod::HfToXiPiEvents> rowCandidateEvents;
 
-  Configurable<bool> doNotMc{"doNotMc", true, "Process data tree writer"};
-  Configurable<bool> doMc{"doMc", false, "Process MC tree writer"};
-
   void init(InitContext const&)
   {
   }
@@ -289,17 +286,17 @@ struct HfTreeCreatorToXiPi {
 
     // Filling event properties
     rowCandidateEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       fillEvent(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
-      fillCandidate(candidate, -2, -2);
+    for (auto const& candidate : candidates) {
+      fillCandidate(candidate, -7, -7);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processData, "Process data tree writer", doNotMc);
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processData, "Process data tree writer", true);
 
   void processMc(aod::Collisions const& collisions,
                  soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
@@ -307,17 +304,17 @@ struct HfTreeCreatorToXiPi {
 
     // Filling event properties
     rowCandidateEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       fillEvent(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
+    for (auto const& candidate : candidates) {
       fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMc, "Process MC tree writer", doMc);
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMc, "Process MC tree writer", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
