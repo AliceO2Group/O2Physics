@@ -49,8 +49,7 @@ using MyV0Photon = MyV0Photons::iterator;
 struct Pi0EtaToGammaGammaMC {
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
 
-  HistogramRegistry registry{"Pi0EtaToGammaGammaMC"};
-
+  // HistogramRegistry registry{"Pi0EtaToGammaGammaMC"};
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for generated particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
 
@@ -338,24 +337,17 @@ struct Pi0EtaToGammaGammaMC {
   void processPCMEMC(MyCollisions const& collisions) {}
   void processPHOSEMC(MyCollisions const& collisions) {}
 
-  // Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  // Preslice<soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>> rec_perMcCollision = aod::emmceventlabel::emreducedmceventId;
+  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
+  PresliceUnsorted<MyCollisions> rec_perMcCollision = aod::emmceventlabel::emreducedmceventId;
   void processGen(MyCollisions const& collisions, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
-
-    // for (auto& mccollision : mccollisions) {
-    //   int nrec = 0;
-    //   // auto collision_per_mccoll = collisions.sliceBy(rec_perMcCollision, mccollision.globalIndex());
-    //   // int nrec_per_mc = collision_per_mccoll.size();
-    //   for (auto& collision : collisions) {
-    //     if (mccollision.globalIndex() == collision.emreducedmceventId()) {
-    //       nrec++;
-    //     }
-    //   }
-    //   registry.fill(HIST("Generated/hRecCollision"), nrec);
-    // }
+    for (auto& mccollision : mccollisions) {
+      auto collision_per_mccoll = collisions.sliceBy(rec_perMcCollision, mccollision.globalIndex());
+      int nrec_per_mc = collision_per_mccoll.size();
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hNrecPerMCCollision"))->Fill(nrec_per_mc); // all
+    }
 
     for (auto& collision : collisions) {
 
@@ -378,14 +370,8 @@ struct Pi0EtaToGammaGammaMC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
 
-      // auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
-      // for (auto& mctrack : mctracks_coll) {
-      for (auto& mctrack : mcparticles) {
-
-        if (mctrack.emreducedmceventId() != mccollision.globalIndex()) {
-          continue;
-        }
-
+      auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
+      for (auto& mctrack : mctracks_coll) {
         if (abs(mctrack.y()) > maxY) {
           continue;
         }
