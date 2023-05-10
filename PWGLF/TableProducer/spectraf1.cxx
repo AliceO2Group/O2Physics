@@ -562,4 +562,4 @@ struct spectraf1 {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
   return WorkflowSpec{adaptAnalysisTask<spectraf1>(cfg)};
-}
+} 
