@@ -98,6 +98,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
   {                                                                                           \
     DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetGeo, int32_t, _jet_type_##s, "_geo"); \
   }                                                                                           \
+  namespace _name_##matchingPt                                                                \
+  {                                                                                           \
+    DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetPt, int32_t, _jet_type_##s, "_pt");   \
+  }                                                                                           \
   namespace _name_##matchingCand                                                              \
   {                                                                                           \
     DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetCand, int32_t, _jet_type_##s, "_hf"); \
@@ -146,6 +150,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 #define DECLARE_JETMATCHING_TABLE(_jet_type_base_, _jet_type_tag_, _description_)               \
   DECLARE_SOA_TABLE(_jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jets, "AOD", _description_, \
                     _jet_type_tag_##jetmatchingGeo::_jet_type_tag_##JetId,                      \
+                    _jet_type_tag_##jetmatchingPt::_jet_type_tag_##JetId,                       \
                     _jet_type_tag_##jetmatchingCand::_jet_type_tag_##JetId);                    \
   using _jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jet = _jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jets::iterator;
 
