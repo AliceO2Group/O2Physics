@@ -29,7 +29,7 @@ using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::analysis;
 using namespace o2::analysis::hf_cuts_b0_to_d_pi; // from SelectorCuts.h
 
-struct HfReducedCandidateSelectorB0ToDPi {
+struct HfCandidateSelectorB0ToDPiReduced {
   Produces<aod::HfSelB0ToDPi> hfSelB0ToDPiCandidate; // table defined in CandidateSelectionTables.h
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
@@ -257,5 +257,5 @@ struct HfReducedCandidateSelectorB0ToDPi {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfReducedCandidateSelectorB0ToDPi>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorB0ToDPiReduced>(cfgc)};
 }

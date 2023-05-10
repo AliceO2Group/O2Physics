@@ -196,8 +196,7 @@ struct HfDataCreatorDplusPiReduced {
   {
     // store configurables needed for B0 workflow
     if (!isHfCandB0ConfigFilled) {
-      int mySelectionFlagD = selectionFlagD;
-      rowCandidateConfig(mySelectionFlagD);
+      rowCandidateConfig(selectionFlagD.value);
       isHfCandB0ConfigFilled = true;
     }
 
