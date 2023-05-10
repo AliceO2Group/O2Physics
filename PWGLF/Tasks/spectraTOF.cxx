@@ -934,7 +934,7 @@ struct tofSpectra {
     }
     
     
-    
+    //RD ****************************************************
      float multiplicity = 0.f;
 
     switch (multiplicityEstimator) {
@@ -973,7 +973,7 @@ struct tofSpectra {
         break;
       default:
         LOG(fatal) << "Unknown multiplicity estimator: " << multiplicityEstimator;
-    }
+    }       //RD ****************************************************
     
    // if (multiplicityEstimator != kNoMultiplicity){
    
@@ -1101,6 +1101,46 @@ struct tofSpectra {
         }
         break;
     }
+    
+     float multiplicity = 0.f; //RD ****************************************************
+
+    switch (multiplicityEstimator) {
+      case kNoMultiplicity: // No multiplicity
+        multiplicity = 50; //to check if its filled
+        break;
+      case kMultFV0M: // MultFV0M
+
+        multiplicity = collision.multZeqFV0A();
+        break;
+      case kMultFT0M: 
+        multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
+        break;
+      case kMultFDDM: // MultFDDM
+        
+        multiplicity = collision.multZeqFDDA() + collision.multZeqFDDC();
+        break;
+      case kMultTracklets: // MultTracklets
+        multiplicity = collision.multTracklets();
+        break;
+      case kMultTPC: // MultTPC
+        multiplicity = collision.multTPC();
+        break;
+      case kMultNTracksPV: // MultNTracksPV
+        // multiplicity = collision.multNTracksPV();
+        multiplicity = collision.multZeqNTracksPV();
+        break;
+      case kMultNTracksPVeta1: // MultNTracksPVeta1
+        multiplicity = collision.multNTracksPVeta1();
+        break;
+      case kCentralityFT0C: // Centrality FT0C
+        multiplicity = collision.centFT0C();
+        break;
+      case kCentralityFT0M: // Centrality FT0M
+        multiplicity = collision.centFT0M(); //collision.centFT0A()
+        break;
+      default:
+        LOG(fatal) << "Unknown multiplicity estimator: " << multiplicityEstimator;
+    }   //RD ********************************************************************************
 
     if (mcParticle.pdgCode() != PDGs[i]) {
       return;
@@ -1108,12 +1148,12 @@ struct tofSpectra {
 
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST(hpt_den_str[i]), mcParticle.pt(), collision.centFT0C());// RD
+        histos.fill(HIST(hpt_den_str[i]), mcParticle.pt(), multiplicity);// RD
       } else {
-        histos.fill(HIST(hpt_den_mat[i]), mcParticle.pt(), collision.centFT0C());// RD
+        histos.fill(HIST(hpt_den_mat[i]), mcParticle.pt(), multiplicity);// RD
       }
     } else {
-      histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt(), collision.centFT0C());// RD
+      histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt(), multiplicity);// RD
     }
   }
 
