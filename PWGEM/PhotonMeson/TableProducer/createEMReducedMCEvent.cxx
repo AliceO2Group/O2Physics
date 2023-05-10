@@ -152,6 +152,7 @@ struct createEMReducedMCEvent {
           && (abs(pdg) != 333) // phi(1020)
           // strange hadrons
           && (abs(pdg) != 310)  // K0S
+          && (abs(pdg) != 130)  // K0L
           && (abs(pdg) != 3122) // Lambda
         ) {
           continue;
