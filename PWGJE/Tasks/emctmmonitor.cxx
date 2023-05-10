@@ -324,7 +324,7 @@ struct TrackMatchingMonitor {
               mHistManager.fill(HIST("clusterTM_EoverP_p"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
             }
           } else { // without pion rejection
-            mHistManager.fill(HIST("clusterTM_EoverP_electron"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+            mHistManager.fill(HIST("clusterTM_EoverP_ep"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
             if (match.track_as<tracksPID>().eta() >= 0.) {
               mHistManager.fill(HIST("clusterTM_EoverP_electron_ASide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
             } else {

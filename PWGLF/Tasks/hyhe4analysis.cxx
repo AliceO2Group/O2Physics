@@ -12,6 +12,12 @@
 //  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 //  3-body Hyperhelium 4 analysis
 //  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+//
+// with contributions from:
+// --- navneet.kumar@cern.ch
+// --- natasha.sharma@cern.ch
+// --- kumar.lokesh@cern.ch
+// --- david.dobrigkeit.chinellato@cern.ch
 
 #include <cmath>
 #include <array>
@@ -111,6 +117,9 @@ struct hyhefouranalysis {
     histos.fill(HIST("hNCandidates"), hyhe4candidates.size());
     for (auto const& hyhe4cand : hyhe4candidates) {
       // process this particular candidate with existing data model
+      if (fabs(hyhe4cand.yHyHe4()) > 0.5) {
+        continue;
+      }
       if (hyhe4cand.sign() > 0) {
         histos.fill(HIST("hMassVsPtHyHe4"), hyhe4cand.pt(), hyhe4cand.m());
         histos.fill(HIST("hPtHyHe4_Helium3"), hyhe4cand.ptHelium3());

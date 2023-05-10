@@ -91,14 +91,34 @@ struct skimmerGammaCalo {
       }
 
       // Skimmed matched tracks table
+      std::vector<int32_t> vTrackIds;
+      std::vector<float> vEta;
+      std::vector<float> vPhi;
+      std::vector<float> vP;
+      std::vector<float> vPt;
       auto groupedMTs = emcmatchedtracks.sliceBy(MTperCluster, emccluster.globalIndex());
+      vTrackIds.reserve(groupedMTs.size());
+      vEta.reserve(groupedMTs.size());
+      vPhi.reserve(groupedMTs.size());
+      vP.reserve(groupedMTs.size());
+      vPt.reserve(groupedMTs.size());
       for (const auto& emcmatchedtrack : groupedMTs) {
         if (hasPropagatedTracks) { // only temporarily while not every data has the tracks propagated to EMCal/PHOS
           historeg.fill(HIST("hMTEtaPhi"), emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
+          vTrackIds.emplace_back(emcmatchedtrack.trackId());
+          vEta.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal());
+          vPhi.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
+          vP.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().p());
+          vPt.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().pt());
           tableTrackEMCReco(emcmatchedtrack.emcalclusterId(), emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal(),
                             emcmatchedtrack.track_as<aod::FullTracks>().p(), emcmatchedtrack.track_as<aod::FullTracks>().pt());
         } else {
           historeg.fill(HIST("hMTEtaPhi"), emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().eta(), emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().phi());
+          vTrackIds.emplace_back(emcmatchedtrack.trackId());
+          vEta.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().eta());
+          vPhi.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().phi());
+          vP.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().p());
+          vPt.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().pt());
           tableTrackEMCReco(emcmatchedtrack.emcalclusterId(), emcmatchedtrack.track_as<aod::FullTracks>().eta(), emcmatchedtrack.track_as<aod::FullTracks>().phi(),
                             emcmatchedtrack.track_as<aod::FullTracks>().p(), emcmatchedtrack.track_as<aod::FullTracks>().pt());
         }
@@ -110,7 +130,7 @@ struct skimmerGammaCalo {
       tableGammaEMCReco(emccluster.collisionId(), emccluster.id(),
                         emccluster.energy(), emccluster.coreEnergy(), emccluster.eta(), emccluster.phi(), emccluster.m02(),
                         emccluster.m20(), emccluster.nCells(), emccluster.time(), emccluster.isExotic(), emccluster.distanceToBadChannel(), emccluster.nlm(),
-                        emccluster.definition());
+                        emccluster.definition(), vTrackIds, vEta, vPhi, vP, vPt);
     }
   }
   PROCESS_SWITCH(skimmerGammaCalo, processRec, "process only reconstructed info", true);
