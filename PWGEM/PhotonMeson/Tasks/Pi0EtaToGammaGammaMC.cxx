@@ -312,6 +312,9 @@ struct Pi0EtaToGammaGammaMC {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+              if (abs(v12.Rapidity()) > maxY) {
+                continue;
+              }
               reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v12.Pt());
               reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Eta_Primary"))->Fill(v12.M(), v12.Pt());
 

@@ -180,15 +180,6 @@ struct Pi0EtaToGammaGamma {
       }
 
     } // end of pair name loop
-
-    // for (int i = 0; i < 6; i++) {
-    //   registry.add(Form("%s/hCollisionCounter", pairnames[i].data()), "Collision counter", HistType::kTH1F, {{5, 0.5f, 5.5f}});
-    //   registry.add(Form("%s/hNgamma1", pairnames[i].data()), "Number of #gamma1 candidates per collision", HistType::kTH1F, {{101, -0.5f, 100.5f}});
-    //   registry.add(Form("%s/hNgamma2", pairnames[i].data()), "Number of #gamma2 candidates per collision", HistType::kTH1F, {{101, -0.5f, 100.5f}});
-    //   registry.add(Form("%s/h2MggPt_Same", pairnames[i].data()), "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}}, true);
-    //   registry.add(Form("%s/h2MggPt_Mixed", pairnames[i].data()), "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}}, true);
-    // }
-    // registry.add("EMCEMC/h2MggPt_Rotated", "M_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/#it{c}^{2});p_{T,#gamma#gamma} (GeV/#it{c})", HistType::kTH2F, {{400, 0, 0.8}, {400, 0.0f, 40}}, true);
   }
 
   void DefinePCMCuts()
@@ -289,6 +280,13 @@ struct Pi0EtaToGammaGamma {
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TLegs, typename TEMCMTs>
   void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TLegs const& legs, TEMCMTs const& emcmatchedtracks)
   {
+    // THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
+    // THashList* list_ev_pair = reinterpret_cast<THashList*>(list_ev->FindObject(pairnames[pairtype].data()));
+    THashList* list_ev_pair = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data()));
+
+    // THashList* list_pair = reinterpret_cast<THashList*>(fMainList->FindObject("Pair"));
+    // THashList* list_pair_subsys = reinterpret_cast<THashList*>(list_pair->FindObject(pairnames[pairtype].data()));
+
     for (auto& collision : collisions) {
       if ((pairtype == PairType::kPHOSPHOS || pairtype == PairType::kPCMPHOS) && !collision.isPHOSCPVreadout()) {
         continue;
@@ -315,6 +313,8 @@ struct Pi0EtaToGammaGamma {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hZvtx_after"))->Fill(collision.posZ());
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
 
+      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
+
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.collisionId());
       auto photons2_coll = photons2.sliceBy(perCollision2, collision.collisionId());
 
@@ -330,7 +330,6 @@ struct Pi0EtaToGammaGamma {
             if (abs(v12.Rapidity()) > maxY) {
               continue;
             }
-
             reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
             if constexpr (pairtype == PairType::kEMCEMC) {
               RotationBackground<aod::SkimEMCClusters, aod::EMReducedEvent>(v12, v1, v2, photons2_coll, collision, g1.globalIndex(), g2.globalIndex(), cut, emcmatchedtracks);
@@ -434,9 +433,9 @@ struct Pi0EtaToGammaGamma {
         // only combine rotated photons with other photons
         continue;
       }
-      //      if(!cut.template IsSelected<aod::SkimEMCMTs>(photon)){
-      //        continue;
-      //      }
+      if (!cut.template IsSelected<aod::SkimEMCMTs>(photon)) {
+        continue;
+      }
 
       ROOT::Math::PtEtaPhiMVector photon3;
       photon3.SetPt(photon.pt());
@@ -458,11 +457,9 @@ struct Pi0EtaToGammaGamma {
 
       // Fill histograms
       if (openingAngle1 > minOpenAngle) {
-        // registry.fill(HIST("EMCEMC/h2MggPt_Rotated"), mother1.M(), mother1.Pt());
         reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject("EMCEMC")->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hMggPt_Same_RotatedBkg"))->Fill(mother1.M(), mother1.Pt());
       }
       if (openingAngle2 > minOpenAngle) {
-        // registry.fill(HIST("EMCEMC/h2MggPt_Rotated"), mother2.M(), mother2.Pt());
         reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject("EMCEMC")->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject("hMggPt_Same_RotatedBkg"))->Fill(mother2.M(), mother2.Pt());
       }
     }

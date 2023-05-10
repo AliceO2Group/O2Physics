@@ -140,3 +140,8 @@ o2physics_add_dpl_workflow(stqa
                     SOURCES stqa.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hyhefour-analysis
+                    SOURCES hyhe4analysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

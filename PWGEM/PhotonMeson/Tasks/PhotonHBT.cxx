@@ -174,14 +174,8 @@ struct PhotonHBT {
       is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, aod::V0Legs>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPHOSPHOS) {
       is_selected_pair = o2::aod::photonpair::IsSelectedPair<int, int>(g1, g2, cut1, cut2); // dummy, because track matching is not ready.
-    } else if constexpr (pairtype == PairType::kEMCEMC) {
-      is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::SkimEMCMTs, aod::SkimEMCMTs>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPCMPHOS) {
       is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, int>(g1, g2, cut1, cut2);
-    } else if constexpr (pairtype == PairType::kPCMEMC) {
-      is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, aod::SkimEMCMTs>(g1, g2, cut1, cut2);
-    } else if constexpr (pairtype == PairType::kPHOSEMC) {
-      is_selected_pair = o2::aod::photonpair::IsSelectedPair<int, aod::SkimEMCMTs>(g1, g2, cut1, cut2);
     } else {
       is_selected_pair = true;
     }
