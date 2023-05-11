@@ -141,8 +141,10 @@ struct lambdakzeromcfinder {
     int trackIndexNegative = -1;
     if (mcParticle.has_daughters()) {
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
-      if (daughters.size() == 2) {
+      if (daughters.size() >= 2) {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
+          if (daughter.getProcess() != 4)
+            continue; // skip deltarays (if ever), stick to decay products only
           for (auto const& track : trackList) {
             if (track.mcParticleId() == daughter.globalIndex()) {
               // determine which charge this particle has

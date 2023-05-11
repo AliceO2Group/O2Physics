@@ -1135,7 +1135,7 @@ struct CFFilterQA {
     bool keepEvent2N[CFTrigger::kNTwoBodyTriggers] = {false, false};
     int lowKstarPairs[CFTrigger::kNTwoBodyTriggers] = {0, 0};
 
-    int childIDs[2] = {0, 0};
+    std::vector<int> childIDs = {0, 0};
 
     // keep track of proton indices
     std::vector<int> ProtonIndex = {};

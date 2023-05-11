@@ -258,7 +258,7 @@ struct femtoDreamProducerReducedTask {
 
     // these IDs are necessary to keep track of the children
     // since this producer only produces the tables for tracks, there are no children
-    int childIDs[2] = {0, 0};
+    std::vector<int> childIDs = {0, 0};
     for (auto& track : tracks) {
       /// if the most open selection criteria are not fulfilled there is no point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
