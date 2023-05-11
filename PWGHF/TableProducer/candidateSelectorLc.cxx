@@ -49,7 +49,7 @@ struct HfCandidateSelectorLc {
   Configurable<double> ptPidBayesMin{"ptPidBayesMin", 0., "Lower bound of track pT for Bayesian PID"};
   Configurable<double> ptPidBayesMax{"ptPidBayesMax", 100, "Upper bound of track pT for Bayesian PID"};
   // Combined PID options
-  Configurable<bool> useTpcAndTofPID{"useTpcAndTofPID", false, "Bool to decide how to combine TPC and TOF PID: true = both (if present, only one otherwise); false = one is enough"};
+  Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", false, "Bool to decide how to combine TPC and TOF PID: true = both (if present, only one otherwise); false = one is enough"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
@@ -214,7 +214,7 @@ struct HfCandidateSelectorLc {
         int pidTrackPos1Pion = 999;
         int pidTrackPos2Pion = 999;
         int pidTrackNegKaon = 999;
-        if (useTpcAndTofPID) {
+        if (usePidTpcAndTof) {
           pidTrackPos1Proton = selectorProton.getStatusTrackPIDTpcAndTof(trackPos1);
           pidTrackPos2Proton = selectorProton.getStatusTrackPIDTpcAndTof(trackPos2);
           pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos1);
