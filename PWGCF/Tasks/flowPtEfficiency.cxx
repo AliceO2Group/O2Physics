@@ -37,7 +37,7 @@ struct flowPtEfficiency {
 
   // Filter the tracks
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
-  using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection> >;
+  using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 
   // Filter for MCParticle
   Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
@@ -63,7 +63,7 @@ struct flowPtEfficiency {
 
   void processSim(myMcParticles const& mcParticles)
   {
-    //Loop over particles in this mcCollision (first argument of process: iterator)
+    // Loop over particles in this mcCollision (first argument of process: iterator)
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
         registry.fill(HIST("hPtMCGen"), mcParticle.pt());
