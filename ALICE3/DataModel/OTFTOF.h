@@ -17,8 +17,8 @@
 /// \brief  Set of tables for the ALICE3 OTFTOF information
 ///
 
-#ifndef O2_ANALYSIS_ALICE3_OTFTOF_H_
-#define O2_ANALYSIS_ALICE3_OTFTOF_H_
+#ifndef ALICE3_DATAMODEL_OTFTOF_H_
+#define ALICE3_DATAMODEL_OTFTOF_H_
 
 // O2 includes
 #include "Framework/AnalysisDataModel.h"
@@ -54,4 +54,4 @@ using UpgradeTof = UpgradeTofs::iterator;
 
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_ALICE3_OTFTOF_H_
+#endif // ALICE3_DATAMODEL_OTFTOF_H_
