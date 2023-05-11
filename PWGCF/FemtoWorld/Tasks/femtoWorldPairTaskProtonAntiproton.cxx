@@ -38,20 +38,17 @@ using namespace o2::soa;
 
 namespace o2::aod
 {
-// using FemtoWorldParticlesMerged = soa::Join<aod::FemtoWorldParticles,aod::FemtoWorldDebugParticles>;
 using FemtoWorldParticlesMerged = aod::FemtoWorldParticles;
 using FemtoWorldParticleMerged = FemtoWorldParticlesMerged::iterator;
-} // namespace o2::aod
+}
 
 struct femtoWorldPairTaskProtonAntiproton {
-  // for filling phi candidates table
-  // Produces<aod::FemtoWorldCollisions> outputCollision;
-  // Produces<aod::FemtoWorldPhiCandidates> outputPhiCan;
-  // std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
-  /// Particle selection part
+  SliceCache cache;
+  Preslice<aod::FemtoWorldParticlesMerged> perCol = aod::femtoworldparticle::femtoWorldCollisionId;
+  // Particle selection part
   Configurable<float> ConfNsigmaCombinedProton{"ConfNsigmaCombinedProton", 3.0, "TPC and TOF Proton Sigma (combined) for momentum > 0.5"};
   Configurable<float> ConfNsigmaTPCProton{"ConfNsigmaTPCProton", 3.0, "TPC Proton Sigma for momentum < 0.5"};
-
+  
   // Configurables for cuts
   // First particle
   Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.14, "Lower limit for Pt for the first particle"};
@@ -139,7 +136,6 @@ struct femtoWorldPairTaskProtonAntiproton {
   std::vector<int> vPIDPartOne, vPIDPartTwo;
 
   /// Correlation part
-  // ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
@@ -161,7 +157,6 @@ struct femtoWorldPairTaskProtonAntiproton {
   FemtoWorldDetaDphiStar<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::ParticleType::kTrack> pairCloseRejection;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-  // HistogramRegistry qaRegistryFail{"TrackQAFailed", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry MixQaRegistry{"MixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -217,18 +212,13 @@ struct femtoWorldPairTaskProtonAntiproton {
     return false;
   }
 
-  /// This function processes the same event and takes care of all the histogramming
-  /// \todo the trivial loops over the tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
   void processSameEvent(o2::aod::FemtoWorldCollision& col,
                         o2::aod::FemtoWorldParticlesMerged& parts)
   {
-    // Partition<aod::FemtoWorldPhiCandidates> Phiparts = (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2)                // Eta cuts
-    //;
-    // auto groupPhiParts = Phiparts->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    auto groupPartsOneFailed = partsOneFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    auto groupPartsTwoFailed = partsTwoFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsOneFailed = partsOneFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwoFailed = partsTwoFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
 
     const auto& magFieldTesla = col.magField();
     const int multCol = col.multV0M();
@@ -281,7 +271,6 @@ struct femtoWorldPairTaskProtonAntiproton {
   PROCESS_SWITCH(femtoWorldPairTaskProtonAntiproton, processSameEvent, "Enable processing same event", true);
 
   /// This function processes the mixed event
-  /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
   void processMixedEvent(o2::aod::FemtoWorldCollisions& cols,
                          o2::aod::FemtoWorldParticlesMerged& parts)
   {
@@ -290,8 +279,8 @@ struct femtoWorldPairTaskProtonAntiproton {
 
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.multV0M()}));
 
-      auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex());
-      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex());
+      auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -299,9 +288,6 @@ struct femtoWorldPairTaskProtonAntiproton {
       if (magFieldTesla1 != magFieldTesla2) {
         continue;
       }
-
-      /// \todo before mixing we should check whether both collisions contain a pair of particles!
-      // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         if (!(IsProtonNSigma(p1.p(), p1.tpcNSigmaPr(), p1.tofNSigmaPr()))) {
