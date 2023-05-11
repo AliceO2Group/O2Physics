@@ -215,7 +215,7 @@ struct correlateStrangeness {
     histos.add("MixingQA/hMEpvz2", ";pvz;Entries", kTH1F, {{30, -15, 15}});
 
     // Event QA
-    histos.add("EventQA/hMixingQA", "mixing QA", kTH1F, {{2,-0.5,1.5}});
+    histos.add("EventQA/hMixingQA", "mixing QA", kTH1F, {{2, -0.5, 1.5}});
     histos.add("EventQA/hMult", "Multiplicity", kTH1F, {ConfMultBins});
     histos.add("EventQA/hPvz", ";pvz;Entries", kTH1F, {{30, -15, 15}});
   }
@@ -281,8 +281,8 @@ struct correlateStrangeness {
       if (!collision1.sel8() || !collision2.sel8())
         continue;
 
-      if( collision1.globalIndex() == collision2.globalIndex() ) {
-        histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); //same-collision pair counting
+      if (collision1.globalIndex() == collision2.globalIndex()) {
+        histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
       }
 
       histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
