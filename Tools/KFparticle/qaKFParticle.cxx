@@ -694,7 +694,7 @@ struct qaKFParticle {
     histos.fill(HIST("DZeroCandTopo/Selections"), 1.f);
     /// Apply event selection
     if (!isSelectedCollision(collision)) {
-      return;
+      continue;
     }
     /// set KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);

@@ -500,7 +500,7 @@ struct qaKFParticleLc {
     }
     /// Apply event selection
     if (!isSelectedCollision(collision)) {
-      return;
+      continue;
     }
     /// set KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
