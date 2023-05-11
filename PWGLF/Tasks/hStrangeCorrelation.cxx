@@ -282,7 +282,7 @@ struct correlateStrangeness {
         continue;
 
       if( collision1.globalIndex() == collision2.globalIndex() ) {
-        histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); //same-collision pairs
+        histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); //same-collision pair counting
       }
 
       histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
