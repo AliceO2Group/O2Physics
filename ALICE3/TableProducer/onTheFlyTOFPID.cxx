@@ -33,6 +33,7 @@
 #include "CommonConstants/GeomConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "TRandom3.h"
+#include "ALICE3/DataModel/OTFTOF.h"
 
 /// \file onTheFlyTOFPID.cxx
 ///
@@ -48,34 +49,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-
-namespace o2::aod
-{
-namespace upgrade_tof
-{
-DECLARE_SOA_COLUMN(NSigmaElectronInner, nSigmaElectronInner, float); //! NSigma electron InnerTOF
-DECLARE_SOA_COLUMN(NSigmaMuonInner, nSigmaMuonInner, float);         //! NSigma muon InnerTOF
-DECLARE_SOA_COLUMN(NSigmaPionInner, nSigmaPionInner, float);         //! NSigma pion InnerTOF
-DECLARE_SOA_COLUMN(NSigmaKaonInner, nSigmaKaonInner, float);         //! NSigma kaon InnerTOF
-DECLARE_SOA_COLUMN(NSigmaProtonInner, nSigmaProtonInner, float);     //! NSigma proton InnerTOF
-DECLARE_SOA_COLUMN(NSigmaElectronOuter, nSigmaElectronOuter, float); //! NSigma electron OuterTOF
-DECLARE_SOA_COLUMN(NSigmaMuonOuter, nSigmaMuonOuter, float);         //! NSigma muon OuterTOF
-DECLARE_SOA_COLUMN(NSigmaPionOuter, nSigmaPionOuter, float);         //! NSigma pion OuterTOF
-DECLARE_SOA_COLUMN(NSigmaKaonOuter, nSigmaKaonOuter, float);         //! NSigma kaon OuterTOF
-DECLARE_SOA_COLUMN(NSigmaProtonOuter, nSigmaProtonOuter, float);     //! NSigma proton OuterTOF
-} // namespace upgrade_tof
-DECLARE_SOA_TABLE(UpgradeTof, "AOD", "UPGRADETOF",
-                  upgrade_tof::NSigmaElectronInner,
-                  upgrade_tof::NSigmaMuonInner,
-                  upgrade_tof::NSigmaPionInner,
-                  upgrade_tof::NSigmaKaonInner,
-                  upgrade_tof::NSigmaProtonInner,
-                  upgrade_tof::NSigmaElectronOuter,
-                  upgrade_tof::NSigmaMuonOuter,
-                  upgrade_tof::NSigmaPionOuter,
-                  upgrade_tof::NSigmaKaonOuter,
-                  upgrade_tof::NSigmaProtonOuter);
-} // namespace o2::aod
 
 struct OnTheFlyTOFPID {
   Produces<aod::UpgradeTof> upgradeTof;
