@@ -176,7 +176,7 @@ struct TrackToCollisionAssociation {
       auto tracksThisCollision = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
       for (const auto& track : tracksThisCollision) {
         bool hasGoodQuality = true;
-        if (setTrackSelections==1 && !track.isGlobalTrackWoDCA()) {
+        if (setTrackSelections == 1 && !track.isGlobalTrackWoDCA()) {
           hasGoodQuality = false;
         } else if (applyMinimalTrackSelForRun2) {
           unsigned char itsClusterMap = track.itsClusterMap();
