@@ -16,7 +16,6 @@
 
 #include "TDatabasePDG.h"
 #include "TPDGCode.h"
-#include "TRandom.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -53,8 +52,10 @@ struct HfTaskOmegacSt {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int runNumber;
+
   bool bzOnly = true;
+  o2::vertexing::DCAFitterN<2> df2;
+  int runNumber;
 
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels>;
 
@@ -73,6 +74,7 @@ struct HfTaskOmegacSt {
       {"hDecayLengthScaled", "Decay length * M/p;L (#mum / #it{c})", {HistType::kTH1D, {{200, 0., 500.}}}},
       {"hDecayLengthScaledId", "Decay length * M/p (true #Omega_{c});L (#mum / #it{c})", {HistType::kTH1D, {{200, 0., 500.}}}},
       {"hDecayLengthScaledGen", "Decay length * M/p (gen);L (#mum / #it{c})", {HistType::kTH1D, {{200, 0., 500.}}}},
+      {"hDecayLengthScaledMc", "Decay length * M/p (MC);L (#mum / #it{c})", {HistType::kTH1D, {{200, 0., 500.}}}},
       {"hMassOmegac", "inv. mass #Omega + #pi;inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.5, 3.}}}},
       {"hMassOmegacVsPt", "inv. mass #Omega + #pi;inv. mass (GeV/#it{c}^{2});p_{T} (GeV/#it{c})", {HistType::kTH2D, {{400, 1.5, 3.}, {10, 0., 10.}}}},
       {"hMassOmegacGen", "inv. mass #Omega + #pi (from MC);inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.5, 3.}}}},
@@ -91,7 +93,32 @@ struct HfTaskOmegacSt {
       auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
       o2::base::Propagator::Instance(true)->setMatLUT(lut);
     }
+
+    df2.setBz(bz);
+    df2.setPropagateToPCA(propToDCA);
+    df2.setMaxR(maxR);
+    df2.setMaxDZIni(maxDZIni);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setUseAbsDCA(useAbsDCA);
   }
+
+  void processMC(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    for (const auto& mcParticle : mcParticles) {
+      if (mcParticle.pdgCode() != kOmegaMinus) {
+        continue;
+      }
+      if (mcParticle.has_mothers() && mcParticle.mothers_first_as<aod::McParticles>().pdgCode() == analysis::pdg::Code::kOmegaC0) {
+        const auto& mcColl = mcParticle.mcCollision();
+        std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
+        std::array<double, 3> secondaryVertexGen = {mcParticle.vx(), mcParticle.vy(), mcParticle.vz()};
+        const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
+        registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * RecoDecay::getMassPDG(analysis::pdg::Code::kOmegaC0) / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTaskOmegacSt, processMC, "Process MC", true);
 
   void process(aod::Collision const& collision, aod::McCollisions const& mcCollisions,
                aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
@@ -111,15 +138,6 @@ struct HfTaskOmegacSt {
       }
     }
 
-    o2::vertexing::DCAFitterN<2> df2;
-    df2.setBz(bz);
-    df2.setPropagateToPCA(propToDCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
-
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value);
     const auto primaryVertex = getPrimaryVertex(collision);
     o2::dataformats::DCA impactParameterTrk;
@@ -132,12 +150,6 @@ struct HfTaskOmegacSt {
         o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovTrk, 2.f, matCorr, &impactParameterTrk);
       }
 
-      const auto& casc = trackedCascade.cascade();
-      const auto& bachelor = casc.bachelor_as<TracksExt>();
-      const auto& v0 = casc.v0();
-      const auto& ptrack = v0.posTrack_as<TracksExt>();
-      const auto& ntrack = v0.negTrack_as<TracksExt>();
-
       registry.fill(HIST("hDca"), std::sqrt(impactParameterTrk.getR2()));
       registry.fill(HIST("hDcaXY"), impactParameterTrk.getY());
       registry.fill(HIST("hDcaZ"), impactParameterTrk.getZ());
@@ -145,19 +157,25 @@ struct HfTaskOmegacSt {
       registry.fill(HIST("hDcaVsR"), impactParameterTrk.getY(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
       registry.fill(HIST("hMassVsPt"), trackedCascade.omegaMass(), trackCasc.pt());
 
-      if (!ptrack.has_mcParticle() || !ntrack.has_mcParticle() || !bachelor.has_mcParticle()) {
+      const auto& casc = trackedCascade.cascade();
+      const auto& bachelor = casc.bachelor_as<TracksExt>();
+      const auto& v0 = casc.v0();
+      const auto& v0TrackPos = v0.posTrack_as<TracksExt>();
+      const auto& v0TrackNeg = v0.negTrack_as<TracksExt>();
+
+      if (!v0TrackPos.has_mcParticle() || !v0TrackNeg.has_mcParticle() || !bachelor.has_mcParticle()) {
         continue;
       }
 
-      LOGF(debug, "ptrack (id: %d, pdg: %d) has mother %d", ptrack.mcParticleId(),
-           ptrack.mcParticle().pdgCode(), ptrack.mcParticle().has_mothers() ? ptrack.mcParticle().mothersIds()[0] : -1);
-      LOGF(debug, "ntrack (id: %d, pdg: %d) has mother %d", ntrack.mcParticleId(),
-           ntrack.mcParticle().pdgCode(), ntrack.mcParticle().has_mothers() ? ntrack.mcParticle().mothersIds()[0] : -1);
+      LOGF(debug, "v0TrackPos (id: %d, pdg: %d) has mother %d", v0TrackPos.mcParticleId(),
+           v0TrackPos.mcParticle().pdgCode(), v0TrackPos.mcParticle().has_mothers() ? v0TrackPos.mcParticle().mothersIds()[0] : -1);
+      LOGF(debug, "v0TrackNeg (id: %d, pdg: %d) has mother %d", v0TrackNeg.mcParticleId(),
+           v0TrackNeg.mcParticle().pdgCode(), v0TrackNeg.mcParticle().has_mothers() ? v0TrackNeg.mcParticle().mothersIds()[0] : -1);
 
       LOG(debug) << "bachelor with PDG code: " << bachelor.mcParticle().pdgCode();
-      if (ptrack.mcParticle().has_mothers() && ntrack.mcParticle().has_mothers() &&
-          ptrack.mcParticle().mothersIds()[0] == ntrack.mcParticle().mothersIds()[0]) {
-        const auto v0part = ptrack.mcParticle().mothers_as<aod::McParticles>()[0];
+      if (v0TrackPos.mcParticle().has_mothers() && v0TrackNeg.mcParticle().has_mothers() &&
+          v0TrackPos.mcParticle().mothersIds()[0] == v0TrackNeg.mcParticle().mothersIds()[0]) {
+        const auto v0part = v0TrackPos.mcParticle().mothers_first_as<aod::McParticles>();
         LOG(debug) << "v0 with PDG code: " << v0part.pdgCode();
         if (v0part.has_mothers() && bachelor.mcParticle().has_mothers() &&
             v0part.mothersIds()[0] == bachelor.mcParticle().mothersIds()[0]) {
@@ -200,7 +218,6 @@ struct HfTaskOmegacSt {
                     registry.fill(HIST("hDecayLength"), decayLength * 1e4);
                     registry.fill(HIST("hDecayLengthScaled"), decayLength * RecoDecay::getMassPDG(analysis::pdg::Code::kOmegaC0) / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
                   }
-                  primaryVertexPosGen;
                   if (mother.has_mothers()) {
                     const auto& cand = mother.template mothers_first_as<aod::McParticles>();
                     if (std::abs(cand.pdgCode()) == analysis::pdg::Code::kOmegaC0 && mcpart.has_mothers()) {
@@ -218,10 +235,8 @@ struct HfTaskOmegacSt {
                 }
 
                 // MC-based mass
-                float smear = 1.;
-                momenta[0] = {smear * mother.px(), smear * mother.py(), smear * mother.pz()};
-                // smear = gRandom->Gaus(1., 0.02);
-                momenta[1] = {smear * mcpart.px(), smear * mcpart.py(), smear * mcpart.pz()};
+                momenta[0] = {mother.px(), mother.py(), mother.pz()};
+                momenta[1] = {mcpart.px(), mcpart.py(), mcpart.pz()};
                 registry.fill(HIST("hMassOmegacGen"), RecoDecay::m(momenta, masses));
               }
             }
