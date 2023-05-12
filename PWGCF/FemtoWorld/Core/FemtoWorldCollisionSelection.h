@@ -68,7 +68,7 @@ class FemtoWorldCollisionSelection
   /// Print some debug information
   void printCuts()
   {
-    std::cout << "Debug information for FemtoWorldCollisionSelection \n Max. z-vertex: " << mZvtxMax << "\n Check trigger: " << mCheckTrigger << "\n Trigger: " << mTrigger << "\n Check offline: " << mCheckOffline << "\n";
+    LOGF(info, "Debug information for FemtoWorldCollisionSelection \n Max. z-vertex: %f \n Check trigger: %B \n Trigger: %i \n Check offline: %B ", mZvtxMax, mCheckTrigger, mTrigger, mCheckOffline);
   }
 
   /// Check whether the collisions fulfills the specified selections

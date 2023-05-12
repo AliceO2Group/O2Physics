@@ -18,7 +18,9 @@ namespace o2::aod
 namespace idx
 {
 DECLARE_SOA_ARRAY_INDEX_COLUMN(Track, tracks);
-}
+DECLARE_SOA_ARRAY_INDEX_COLUMN(MFTTrack, mfttracks);
+} // namespace idx
 DECLARE_SOA_TABLE(ParticlesToTracks, "AOD", "P2T", idx::TrackIds);
+DECLARE_SOA_TABLE(ParticlesToMftTracks, "AOD", "P2MFTT", idx::MFTTrackIds);
 } // namespace o2::aod
 #endif // O2_ANALYSIS_INDEX_H_

@@ -28,13 +28,17 @@ using namespace o2::framework;
 struct ParticlesToTracks {
   using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
   Produces<aod::ParticlesToTracks> p2t;
+
+  using LabeledMFTTracks = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
+  Produces<aod::ParticlesToMftTracks> p2tmft;
+
   std::vector<int> trackIds;
 
   void init(InitContext&)
   {
   }
 
-  void processIndexing(aod::McParticle const&, soa::SmallGroups<LabeledTracks> const& tracks)
+  void processIndexingCentral(aod::McParticle const&, soa::SmallGroups<LabeledTracks> const& tracks)
   {
     trackIds.clear();
     for (auto& track : tracks) {
@@ -43,7 +47,18 @@ struct ParticlesToTracks {
     p2t(trackIds);
   }
 
-  PROCESS_SWITCH(ParticlesToTracks, processIndexing, "Create reverse index from particles to tracks", false);
+  PROCESS_SWITCH(ParticlesToTracks, processIndexingCentral, "Create reverse index from particles to tracks", false);
+
+  void processIndexingFwd(aod::McParticle const&, soa::SmallGroups<LabeledMFTTracks> const& tracks)
+  {
+    trackIds.clear();
+    for (auto& track : tracks) {
+      trackIds.push_back(track.globalIndex());
+    }
+    p2tmft(trackIds);
+  }
+
+  PROCESS_SWITCH(ParticlesToTracks, processIndexingFwd, "Create reverse index from particles to tracks", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

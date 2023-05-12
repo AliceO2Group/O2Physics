@@ -41,6 +41,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 /// Task to produce the TPC QA plots
 template <o2::track::PID::ID pid_type>
 struct pidTPCTaskQA {
+  SliceCache cache;
 
   static constexpr int Np = 9;
   static constexpr std::string_view hnsigma[Np] = {"nsigma/El", "nsigma/Mu", "nsigma/Pi",
@@ -159,6 +160,9 @@ struct pidTPCTaskQA {
     }
   }
 
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+  Preslice<aod::McParticle> perMCCol = aod::mcparticle::mcCollisionId;
+
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
                soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -175,8 +179,8 @@ struct pidTPCTaskQA {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      const auto tracksInCollision = tracks.sliceByCached(aod::track::collisionId, collision.mcCollision().globalIndex());
-      const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
+      const auto tracksInCollision = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
 
       for (const auto& p : particlesInCollision) {
         histos.fill(HIST("particle/p"), p.p());

@@ -15,9 +15,11 @@
 /// \author Valentina Mantovani Sarti, valentina.mantovani-sarti@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch NOWE
 
-#ifndef FEMTOWORLDCONTAINER_H_
-#define FEMTOWORLDCONTAINER_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCONTAINER_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCONTAINER_H_
 
+#include <vector>
+#include <string>
 #include "Framework/HistogramRegistry.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldMath.h"
 
@@ -27,6 +29,7 @@
 
 #include "TLorentzVector.h"
 #include "CommonConstants/MathConstants.h"
+#include "TRandom.h"
 
 using namespace o2::framework;
 using namespace o2::constants::math;
@@ -84,8 +87,8 @@ class FemtoWorldContainer
     framework::AxisSpec kTAxis = {kTBins, "#it{k}_{T} (GeV/#it{c})"};
     framework::AxisSpec mTAxis = {mTBins, "#it{m}_{T} (GeV/#it{c}^{2})"};
 
-    mPhiLow = (-(int)(phiBins / 4) + 0.5) * 2. * PI / phiBins;
-    mPhiHigh = 2 * PI + (-(int)(phiBins / 4) + 0.5) * 2. * PI / phiBins;
+    mPhiLow = (-static_cast<int>(phiBins / 4) + 0.5) * 2. * PI / phiBins;
+    mPhiHigh = 2 * PI + (-static_cast<int>(phiBins / 4) + 0.5) * 2. * PI / phiBins;
 
     framework::AxisSpec phiAxis = {phiBins, mPhiLow, mPhiHigh};
     framework::AxisSpec etaAxis = {etaBins, -2.0, 2.0};
@@ -130,6 +133,23 @@ class FemtoWorldContainer
     const float kT = FemtoWorldMath::getkT(part1, mMassOne, part2, mMassTwo);
     const float mT = FemtoWorldMath::getmT(part1, mMassOne, part2, mMassTwo);
 
+    // // HERE RANDOMLY CHOOSE PARTICLES
+    // TRandom* rndm = new TRandom(0);
+    // double ran = rndm->Rndm();
+
+    // double delta_eta;
+    // double delta_phi;
+
+    // if (ran < 0.5) {
+    //   delta_eta = part1.eta() - part2.eta();
+    //   delta_phi = part1.phi() - part2.phi();
+    // } else if (ran >= 0.5) {
+    //   delta_eta = part2.eta() - part1.eta();
+    //   delta_phi = part2.phi() - part1.phi();
+    // } else {
+    //   LOGF(error, "-------Error in FemtoWorldContainer (randomly picking particles in a pair) - value %i, not 0 or 1", ran);
+    // }
+
     double delta_eta = part1.eta() - part2.eta();
     double delta_phi = part1.phi() - part2.phi();
 
@@ -146,9 +166,6 @@ class FemtoWorldContainer
 
     TLorentzVector sumVec(part1Vec);
     sumVec += part2Vec;
-    if (mHistogramRegistry) {
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairInvariantMass"), sumVec.M());
-    }
 
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairDist"), femtoObs);
@@ -162,6 +179,7 @@ class FemtoWorldContainer
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("MultPtPart2"), part2.pt(), mult);
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("PtPart1PtPart2"), part1.pt(), part2.pt());
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairDetaDphi"), delta_phi, delta_eta);
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairInvariantMass"), sumVec.M());
     }
   }
 
@@ -178,4 +196,4 @@ class FemtoWorldContainer
 
 } // namespace o2::analysis::femtoWorld
 
-#endif /* FEMTOWORLDCONTAINER_H_ */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCONTAINER_H_

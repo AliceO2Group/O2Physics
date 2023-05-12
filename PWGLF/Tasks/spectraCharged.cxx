@@ -16,6 +16,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -32,7 +33,7 @@ using namespace o2::framework;
 struct chargedSpectra {
 
   HistogramRegistry histos;
-  Service<TDatabasePDG> pdg;
+  Service<O2DatabasePDG> pdg;
 
   // task settings that can be steered via hyperloop
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};

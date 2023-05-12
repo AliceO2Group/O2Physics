@@ -34,6 +34,9 @@ struct ALICE3Centrality {
   Configurable<float> MaxDCA{"MaxDCA", 0.0025f, "Max DCAxy and DCAz for counted tracks"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
+  bool centralityLoaded = false;
+  TH1D* hCumMultALICE3 = nullptr;
+
   void init(InitContext&)
   {
     const AxisSpec axisMult{MaxMult.value > 10000.f ? 10000 : (int)MaxMult, 0, MaxMult, "Reconstructed tracks"};
@@ -50,9 +53,10 @@ struct ALICE3Centrality {
   int nevs = 0;
   void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksDCA>& tracks)
   {
-    TH1D* hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>("Analysis/ALICE3/Centrality", -1);
-    if (!hCumMultALICE3) {
-      LOGF(fatal, "ALICE 3 centrality calibration is not available in CCDB, failed!");
+    if (!centralityLoaded) {
+      hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>("Analysis/ALICE3/Centrality", -1);
+      centralityLoaded = true;
+      LOGF(info, "ALICE 3 centrality calibration loaded!");
     }
 
     int nTracks = 0;

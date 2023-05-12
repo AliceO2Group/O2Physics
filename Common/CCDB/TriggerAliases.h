@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef TriggerAliases_H
-#define TriggerAliases_H
+#ifndef COMMON_CCDB_TRIGGERALIASES_H_
+#define COMMON_CCDB_TRIGGERALIASES_H_
 
 #include <cstdint>
 #include <map>
@@ -40,11 +40,14 @@ enum triggerAliases {
   kDJ1,
   kDG2,
   kDJ2,
+  kTVXinTRD,
+  kTVXinEMC,
+  kTVXinPHOS,
   kALL,
   kNaliases
 };
 
-extern const char* aliasLabels[kNaliases];
+extern std::string aliasLabels[kNaliases];
 
 class TriggerAliases
 {
@@ -63,7 +66,7 @@ class TriggerAliases
   std::map<uint32_t, std::string> mAliasToClassNames;
   std::map<uint32_t, ULong64_t> mAliasToTriggerMask;
   std::map<uint32_t, ULong64_t> mAliasToTriggerMaskNext50;
-  ClassDefNV(TriggerAliases, 5)
+  ClassDefNV(TriggerAliases, 7)
 };
 
-#endif
+#endif // COMMON_CCDB_TRIGGERALIASES_H_

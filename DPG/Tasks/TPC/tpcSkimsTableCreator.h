@@ -14,6 +14,12 @@
 /// \author Christian Sonnabend <christian.sonnabend@cern.ch>
 /// \author Jeremy Wilkinson <jeremy.wilkinson@cern.ch>
 
+#ifndef DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
+#define DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/PIDResponse.h"
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -38,6 +44,7 @@ DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, float);
 DECLARE_SOA_COLUMN(PtV0, ptV0, float);
 DECLARE_SOA_COLUMN(RadiusV0, radiusV0, float);
 DECLARE_SOA_COLUMN(GammaPsiPair, gammaPsiPair, float);
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace tpcskims
 DECLARE_SOA_TABLE(SkimmedTPCV0Tree, "AOD", "TPCSKIMV0TREE",
                   o2::aod::track::TPCSignal,
@@ -60,7 +67,8 @@ DECLARE_SOA_TABLE(SkimmedTPCV0Tree, "AOD", "TPCSKIMV0TREE",
                   tpcskims::CosPAV0,
                   tpcskims::PtV0,
                   tpcskims::RadiusV0,
-                  tpcskims::GammaPsiPair);
+                  tpcskims::GammaPsiPair,
+                  tpcskims::RunNumber);
 
 DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
                   o2::aod::track::TPCSignal,
@@ -77,5 +85,7 @@ DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
                   tpcskims::NormNClustersTPC,
                   tpcskims::PidIndex,
                   tpcskims::NSigTPC,
-                  tpcskims::NSigTOF);
+                  tpcskims::NSigTOF,
+                  tpcskims::RunNumber);
 } // namespace o2::aod
+#endif // DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_

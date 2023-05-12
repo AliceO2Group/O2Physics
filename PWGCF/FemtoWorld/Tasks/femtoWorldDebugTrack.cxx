@@ -42,6 +42,8 @@ static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 } // namespace
 
 struct femtoWorldDebugTrack {
+  SliceCache cache;
+  Preslice<aod::FemtoWorldParticles> perCol = aod::femtoworldparticle::femtoWorldCollisionId;
 
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nCuts, cutNames}, "Particle selections"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
@@ -107,7 +109,7 @@ struct femtoWorldDebugTrack {
   /// Porduce QA plots for sigle track selection in FemtoWorld framework
   void process(o2::aod::FemtoWorldCollision& col, FemtoFullParticles& parts)
   {
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
 
     eventHisto.fillQA(col);
 

@@ -14,13 +14,14 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#ifndef O2_ANALYSIS_RECODECAY_H_
-#define O2_ANALYSIS_RECODECAY_H_
+#ifndef COMMON_CORE_RECODECAY_H_
+#define COMMON_CORE_RECODECAY_H_
 
 #include <tuple>
 #include <vector>
 #include <array>
 #include <cmath>
+#include <utility>
 
 #include <TDatabasePDG.h>
 #include <TPDGCode.h>
@@ -72,7 +73,7 @@ class RecoDecay
   template <typename T>
   static double sq(T num)
   {
-    return (double)num * (double)num;
+    return static_cast<double>(num) * static_cast<double>(num);
   }
 
   /// Sums squares of numbers.
@@ -82,7 +83,7 @@ class RecoDecay
   template <typename... T>
   static double sumOfSquares(const T&... args)
   {
-    return (((double)args * (double)args) + ...);
+    return ((static_cast<double>(args) * static_cast<double>(args)) + ...);
   }
 
   /// Calculates square root of a sum of squares of numbers.
@@ -123,7 +124,7 @@ class RecoDecay
   {
     double res{0};
     for (std::size_t iDim = 0; iDim < N; ++iDim) {
-      res += (double)vec1[iDim] * (double)vec2[iDim];
+      res += static_cast<double>(vec1[iDim]) * static_cast<double>(vec2[iDim]);
     }
     return res;
   }
@@ -136,9 +137,9 @@ class RecoDecay
   template <typename T, typename U>
   static array<double, 3> crossProd(const array<T, 3>& vec1, const array<U, 3>& vec2)
   {
-    return array<double, 3>{((double)vec1[1] * (double)vec2[2]) - ((double)vec1[2] * (double)vec2[1]),
-                            ((double)vec1[2] * (double)vec2[0]) - ((double)vec1[0] * (double)vec2[2]),
-                            ((double)vec1[0] * (double)vec2[1]) - ((double)vec1[1] * (double)vec2[0])};
+    return array<double, 3>{(static_cast<double>(vec1[1]) * static_cast<double>(vec2[2])) - (static_cast<double>(vec1[2]) * static_cast<double>(vec2[1])),
+                            (static_cast<double>(vec1[2]) * static_cast<double>(vec2[0])) - (static_cast<double>(vec1[0]) * static_cast<double>(vec2[2])),
+                            (static_cast<double>(vec1[0]) * static_cast<double>(vec2[1])) - (static_cast<double>(vec1[1]) * static_cast<double>(vec2[0]))};
   }
 
   /// Calculates magnitude squared of a vector.
@@ -179,9 +180,9 @@ class RecoDecay
   {
     // eta = arctanh(pz/p)
     if (std::abs(mom[0]) < Almost0 && std::abs(mom[1]) < Almost0) { // very small px and py
-      return (double)(mom[2] > 0 ? VeryBig : -VeryBig);
+      return static_cast<double>(mom[2] > 0 ? VeryBig : -VeryBig);
     }
-    return (double)(std::atanh(mom[2] / p(mom)));
+    return static_cast<double>(std::atanh(mom[2] / p(mom)));
   }
 
   /// Calculates rapidity.
@@ -202,7 +203,7 @@ class RecoDecay
   static double phi(T x, U y)
   {
     // conversion from [-π, +π] returned by atan2 to [0, 2π]
-    return std::atan2((double)(-y), (double)(-x)) + o2::constants::math::PI;
+    return std::atan2(static_cast<double>(-y), static_cast<double>(-x)) + o2::constants::math::PI;
   }
 
   /// Calculates azimuth of a vector.
@@ -283,7 +284,7 @@ class RecoDecay
   static double ct(const array<T, 3>& mom, U length, V mass)
   {
     // c t = l m c^2/(p c)
-    return (double)length * (double)mass / p(mom);
+    return static_cast<double>(length) * static_cast<double>(mass) / p(mom);
   }
 
   /// Calculates cosine of θ* (theta star).
@@ -464,8 +465,8 @@ class RecoDecay
     // Ported from AliAODRecoDecay::ImpParXY
     auto flightLineXY = array{posSV[0] - point[0], posSV[1] - point[1]};
     auto k = dotProd(flightLineXY, array{mom[0], mom[1]}) / pt2(mom);
-    auto dx = flightLineXY[0] - k * (double)mom[0];
-    auto dy = flightLineXY[1] - k * (double)mom[1];
+    auto dx = flightLineXY[0] - k * static_cast<double>(mom[0]);
+    auto dy = flightLineXY[1] - k * static_cast<double>(mom[1]);
     auto absImpPar = sqrtSumOfSquares(dx, dy);
     auto flightLine = array{posSV[0] - point[0], posSV[1] - point[1], posSV[2] - point[2]};
     auto cross = crossProd(mom, flightLine);
@@ -474,8 +475,8 @@ class RecoDecay
 
   /// Calculates the difference between measured and expected track impact parameter
   /// normalized to its uncertainty
-  /// \param decLenXY decay lenght in {x, y} plane
-  /// \param errDecLenXY error on decay lenght in {x, y} plane
+  /// \param decLenXY decay length in {x, y} plane
+  /// \param errDecLenXY error on decay length in {x, y} plane
   /// \param momMother {x, y, z} or {x, y} candidate momentum array
   /// \param impParProng prong impact parameter
   /// \param errImpParProng error on prong impact parameter
@@ -486,10 +487,10 @@ class RecoDecay
                                             X errImpParProng, const array<Y, M>& momProng)
   {
     // Ported from AliAODRecoDecayHF::Getd0MeasMinusExpProng adding normalization directly in the function
-    auto sinThetaP = ((double)momProng[0] * (double)momMother[1] - (double)momProng[1] * (double)momMother[0]) /
+    auto sinThetaP = (static_cast<double>(momProng[0]) * static_cast<double>(momMother[1]) - static_cast<double>(momProng[1]) * static_cast<double>(momMother[0])) /
                      (pt(momProng) * pt(momMother));
-    auto diff = impParProng - (double)decLenXY * sinThetaP;
-    auto errImpParExpProng = (double)errDecLenXY * sinThetaP;
+    auto diff = impParProng - static_cast<double>(decLenXY) * sinThetaP;
+    auto errImpParExpProng = static_cast<double>(errDecLenXY) * sinThetaP;
     auto errDiff = sqrtSumOfSquares(errImpParProng, errImpParExpProng);
     return (errDiff > 0. ? diff / errDiff : 0.);
   }
@@ -497,7 +498,7 @@ class RecoDecay
   /// Calculates maximum normalized difference between measured and expected impact parameter of candidate prongs
   /// \param posPV {x, y, z} or {x, y} position of primary vertex
   /// \param posSV {x, y, z} or {x, y} position of secondary vertex
-  /// \param errDecLenXY error on decay lenght in {x, y} plane
+  /// \param errDecLenXY error on decay length in {x, y} plane
   /// \param momMother {x, y, z} or {x, y} candidate momentum array
   /// \param arrImpPar array of prong impact parameters
   /// \param arrErrImpPar array of errors on prong impact parameter (same order as arrImpPar)
@@ -552,6 +553,10 @@ class RecoDecay
         mass = 3.87165; // https://pdg.lbl.gov/ (2021)
         break;
       }
+      case 4332: {     // Ω0c (wrong mass in ROOT)
+        mass = 2.6952; // https://pdg.lbl.gov/ (2022)
+        break;
+      }
       // Take the rest from ROOT.
       default: {
         const TParticlePDG* particle = TDatabasePDG::Instance()->GetParticle(pdg);
@@ -591,13 +596,13 @@ class RecoDecay
     }
 
     // vector of vectors with mother indices; each line corresponds to a "stage"
-    std::vector<std::vector<long int>> arrayIds{};
-    std::vector<long int> initVec{particle.globalIndex()};
+    std::vector<std::vector<int64_t>> arrayIds{};
+    std::vector<int64_t> initVec{particle.globalIndex()};
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
 
     while (!motherFound && arrayIds[-stage].size() > 0 && (depthMax < 0 || -stage < depthMax)) {
       // vector of mother indices for the current stage
-      std::vector<long int> arrayIdsStage{};
+      std::vector<int64_t> arrayIdsStage{};
       for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
@@ -655,7 +660,7 @@ class RecoDecay
                            int8_t stage = 0)
   {
     if (!list) {
-      //Printf("getDaughters: Error: No list!");
+      // Printf("getDaughters: Error: No list!");
       return;
     }
     bool isFinal = false;                     // Flag to indicate the end of recursion
@@ -666,7 +671,7 @@ class RecoDecay
     if (!isFinal && !particle.has_daughters()) {
       // If the original particle has no daughters, we do nothing and exit.
       if (stage == 0) {
-        //Printf("getDaughters: No daughters of %d", index);
+        // Printf("getDaughters: No daughters of %d", index);
         return;
       }
       // If this is not the original particle, we are at the end of this branch and this particle is final.
@@ -685,18 +690,18 @@ class RecoDecay
     }
     // If the particle is labelled as final, we add this particle in the list of final daughters and exit.
     if (isFinal) {
-      //printf("getDaughters: ");
-      //for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
-      //  printf(" ");
-      //printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle);
+      // printf("getDaughters: ");
+      // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
+      //   printf(" ");
+      // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle);
       list->push_back(particle.globalIndex());
       return;
     }
     // If we are here, we have to follow the daughter tree.
-    //printf("getDaughters: ");
-    //for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
+    // printf("getDaughters: ");
+    // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
     //  printf(" ");
-    //printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);
+    // printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);
     // Call itself to get daughters of daughters recursively.
     stage++;
     for (auto& dau : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
@@ -722,7 +727,7 @@ class RecoDecay
                              int8_t* sign = nullptr,
                              int depthMax = 1)
   {
-    //Printf("MC Rec: Expected mother PDG: %d", PDGMother);
+    // Printf("MC Rec: Expected mother PDG: %d", PDGMother);
     int8_t sgn = 0;                        // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
     int indexMother = -1;                  // index of the mother particle
     std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters of the mother of the first provided daughter
@@ -744,31 +749,31 @@ class RecoDecay
         indexMother = getMother(particlesMC, particleI, PDGMother, acceptAntiParticles, &sgn, depthMax);
         // Check whether mother was found.
         if (indexMother <= -1) {
-          //Printf("MC Rec: Rejected: bad mother index or PDG");
+          // Printf("MC Rec: Rejected: bad mother index or PDG");
           return -1;
         }
-        //Printf("MC Rec: Good mother: %d", indexMother);
+        // Printf("MC Rec: Good mother: %d", indexMother);
         auto particleMother = particlesMC.rawIteratorAt(indexMother - particlesMC.offset());
         // Check the daughter indices.
         if (!particleMother.has_daughters()) {
-          //Printf("MC Rec: Rejected: bad daughter index range: %d-%d", particleMother.daughtersIds().front(), particleMother.daughtersIds().back());
+          // Printf("MC Rec: Rejected: bad daughter index range: %d-%d", particleMother.daughtersIds().front(), particleMother.daughtersIds().back());
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > int(N)) {
-          //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
+        if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(N)) {
+          // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
           return -1;
         }
         // Get the list of actual final daughters.
         getDaughters(particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
-        //printf("MC Rec: Mother %d has %d final daughters:", indexMother, arrAllDaughtersIndex.size());
-        //for (auto i : arrAllDaughtersIndex) {
-        //  printf(" %d", i);
-        //}
-        //printf("\n");
-        // Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
+        // printf("MC Rec: Mother %d has %d final daughters:", indexMother, arrAllDaughtersIndex.size());
+        // for (auto i : arrAllDaughtersIndex) {
+        //   printf(" %d", i);
+        // }
+        // printf("\n");
+        //  Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
         if (arrAllDaughtersIndex.size() != N) {
-          //Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
+          // Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
           return -1;
         }
       }
@@ -783,12 +788,12 @@ class RecoDecay
         }
       }
       if (!isDaughterFound) {
-        //Printf("MC Rec: Rejected: bad daughter index: %d not in the list of final daughters", arrDaughtersIndex[iProng]);
+        // Printf("MC Rec: Rejected: bad daughter index: %d not in the list of final daughters", arrDaughtersIndex[iProng]);
         return -1;
       }
       // Check daughter's PDG code.
       auto PDGParticleI = particleI.pdgCode(); // PDG code of the ith daughter
-      //Printf("MC Rec: Daughter %d PDG: %d", iProng, PDGParticleI);
+      // Printf("MC Rec: Daughter %d PDG: %d", iProng, PDGParticleI);
       bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
       for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
         if (PDGParticleI == sgn * arrPDGDaughters[iProngCp]) {
@@ -798,11 +803,11 @@ class RecoDecay
         }
       }
       if (!isPDGFound) {
-        //Printf("MC Rec: Rejected: bad daughter PDG: %d", PDGParticleI);
+        // Printf("MC Rec: Rejected: bad daughter PDG: %d", PDGParticleI);
         return -1;
       }
     }
-    //Printf("MC Rec: Accepted: m: %d", indexMother);
+    // Printf("MC Rec: Accepted: m: %d", indexMother);
     if (sign) {
       *sign = sgn;
     }
@@ -847,53 +852,53 @@ class RecoDecay
                              int depthMax = 1,
                              std::vector<int>* listIndexDaughters = nullptr)
   {
-    //Printf("MC Gen: Expected particle PDG: %d", PDGParticle);
+    // Printf("MC Gen: Expected particle PDG: %d", PDGParticle);
     int8_t sgn = 0; // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGParticle)
     if (sign) {
       *sign = sgn;
     }
     // Check the PDG code of the particle.
     auto PDGCandidate = candidate.pdgCode();
-    //Printf("MC Gen: Candidate PDG: %d", PDGCandidate);
+    // Printf("MC Gen: Candidate PDG: %d", PDGCandidate);
     if (PDGCandidate == PDGParticle) { // exact PDG match
       sgn = 1;
     } else if (acceptAntiParticles && PDGCandidate == -PDGParticle) { // antiparticle PDG match
       sgn = -1;
     } else {
-      //Printf("MC Gen: Rejected: bad particle PDG: %s%d != %d", acceptAntiParticles ? "abs " : "", PDGCandidate, std::abs(PDGParticle));
+      // Printf("MC Gen: Rejected: bad particle PDG: %s%d != %d", acceptAntiParticles ? "abs " : "", PDGCandidate, std::abs(PDGParticle));
       return false;
     }
     // Check the PDG codes of the decay products.
     if (N > 0) {
-      //Printf("MC Gen: Checking %d daughters", N);
+      // Printf("MC Gen: Checking %d daughters", N);
       std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters
       // Check the daughter indices.
       if (!candidate.has_daughters()) {
-        //Printf("MC Gen: Rejected: bad daughter index range: %d-%d", candidate.daughtersIds().front(), candidate.daughtersIds().back());
+        // Printf("MC Gen: Rejected: bad daughter index range: %d-%d", candidate.daughtersIds().front(), candidate.daughtersIds().back());
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
-      if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > int(N)) {
-        //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
+      if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > static_cast<int>(N)) {
+        // Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
         return false;
       }
       // Get the list of actual final daughters.
       getDaughters(candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
-      //printf("MC Gen: Mother %ld has %ld final daughters:", candidate.globalIndex(), arrAllDaughtersIndex.size());
-      //for (auto i : arrAllDaughtersIndex) {
-      //  printf(" %d", i);
-      //}
-      //printf("\n");
-      // Check whether the number of final daughters is equal to the required number.
+      // printf("MC Gen: Mother %ld has %ld final daughters:", candidate.globalIndex(), arrAllDaughtersIndex.size());
+      // for (auto i : arrAllDaughtersIndex) {
+      //   printf(" %d", i);
+      // }
+      // printf("\n");
+      //  Check whether the number of final daughters is equal to the required number.
       if (arrAllDaughtersIndex.size() != N) {
-        //Printf("MC Gen: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
+        // Printf("MC Gen: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
         return false;
       }
       // Check daughters' PDG codes.
       for (auto indexDaughterI : arrAllDaughtersIndex) {
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
         auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter
-        //Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
+        // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
         bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
         for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
           if (PDGCandidateDaughterI == sgn * arrPDGDaughters[iProngCp]) {
@@ -903,7 +908,7 @@ class RecoDecay
           }
         }
         if (!isPDGFound) {
-          //Printf("MC Gen: Rejected: bad daughter PDG: %d", PDGCandidateDaughterI);
+          // Printf("MC Gen: Rejected: bad daughter PDG: %d", PDGCandidateDaughterI);
           return false;
         }
       }
@@ -911,17 +916,17 @@ class RecoDecay
         *listIndexDaughters = arrAllDaughtersIndex;
       }
     }
-    //Printf("MC Gen: Accepted: m: %d", candidate.globalIndex());
+    // Printf("MC Gen: Accepted: m: %d", candidate.globalIndex());
     if (sign) {
       *sign = sgn;
     }
     return true;
   }
 
-  /// Finds the origin (from charm hadronisation or beauty-hadron decay) of charm hadrons.
+  /// Finds the origin (from charm hadronisation or beauty-hadron decay) of charm hadrons. It can be used also to verify whether a particle derives from a charm or beauty decay.
   /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
-  /// \param searchUpToQuark if true tag origin based on charm/beauty quark otherwise on b-hadron
+  /// \param searchUpToQuark if true tag origin based on charm/beauty quark otherwise on the presence of a b-hadron or c-hadron, with c-hadrons themselves marked as prompt
   /// \return an integer corresponding to the origin (0: none, 1: prompt, 2: nonprompt) as in OriginType
   template <typename T>
   static int getCharmHadronOrigin(const T& particlesMC,
@@ -931,13 +936,17 @@ class RecoDecay
     int stage = 0; // mother tree level (just for debugging)
 
     // vector of vectors with mother indices; each line corresponds to a "stage"
-    std::vector<std::vector<long int>> arrayIds{};
-    std::vector<long int> initVec{particle.globalIndex()};
+    std::vector<std::vector<int64_t>> arrayIds{};
+    std::vector<int64_t> initVec{particle.globalIndex()};
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
-
+    auto PDGParticle = std::abs(particle.pdgCode());
+    bool couldBePrompt = false;
+    if (PDGParticle / 100 == 4 || PDGParticle / 1000 == 4) {
+      couldBePrompt = true;
+    }
     while (arrayIds[-stage].size() > 0) {
       // vector of mother indices for the current stage
-      std::vector<long int> arrayIdsStage{};
+      std::vector<int64_t> arrayIdsStage{};
       for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
@@ -967,6 +976,12 @@ class RecoDecay
               ) {
                 return OriginType::NonPrompt;
               }
+              if (
+                (PDGParticleIMother / 100 == 4 || // c mesons
+                 PDGParticleIMother / 1000 == 4)  // c baryons
+              ) {
+                couldBePrompt = true;
+              }
             }
             // add mother index in the vector for the current stage
             arrayIdsStage.push_back(iMother);
@@ -977,7 +992,7 @@ class RecoDecay
       arrayIds.push_back(arrayIdsStage);
       stage--;
     }
-    if (!searchUpToQuark) {
+    if (!searchUpToQuark && couldBePrompt) { // Returns prompt if it's a charm hadron or a charm-hadron daughter. Note: 1) LF decay particles from cases like -> Lc -> p K0S, K0S -> pi pi are marked as prompt. 2) if particles from HF parton showers have to be searched, switch to option "search up to quark"
       return OriginType::Prompt;
     }
     return OriginType::None;
@@ -989,4 +1004,4 @@ class RecoDecay
 
 std::vector<std::tuple<int, double>> RecoDecay::mListMass;
 
-#endif // O2_ANALYSIS_RECODECAY_H_
+#endif // COMMON_CORE_RECODECAY_H_

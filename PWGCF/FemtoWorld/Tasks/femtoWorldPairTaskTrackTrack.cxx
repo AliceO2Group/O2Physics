@@ -43,6 +43,8 @@ using FemtoWorldParticleMerged = FemtoWorldParticlesMerged::iterator;
 } // namespace o2::aod
 
 struct femtoWorldPairTaskTrackTrack {
+  SliceCache cache;
+  Preslice<aod::FemtoWorldParticlesMerged> perCol = aod::femtoworldparticle::femtoWorldCollisionId;
   // for filling phi candidates table
   // Produces<aod::FemtoWorldCollisions> outputCollision;
   // Produces<aod::FemtoWorldPhiCandidates> outputPhiCan;
@@ -189,105 +191,44 @@ struct femtoWorldPairTaskTrackTrack {
   }
 
   // PID
-  bool IsKaonTPCdEdxNSigma(float mom, float nsigmaK) // true if accepted, false if rejected
+  bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
-    //  cout<<" AliFemtoKKTrackCut::IsKaonTPCdEdxNSigma "<<mom<<" "<<nsigmaK<<endl;
-    if (mom < 0.4 && TMath::Abs(nsigmaK) < 2.0)
-      return true;
-    if (mom >= 0.4 && mom < 0.5 && TMath::Abs(nsigmaK) < 1.0)
-      return true;
-    if (mom > 0.5 && TMath::Abs(nsigmaK) < 3.0)
-      return true;
-
-    return false;
-  }
-
-  bool IsKaonTOFNSigma(float mom, float nsigmaK) // true if accepted, false if rejected
-  {
-    //  cout<<" AliFemtoKKTrackCut::IsKaonTPCdEdxNSigma "<<mom<<" "<<nsigmaK<<endl;
-    if (mom >= 0.45 && mom < 0.8 && TMath::Abs(nsigmaK) < 2.0)
-      return true;
-    if (mom >= 0.8 && mom < 1.0 && TMath::Abs(nsigmaK) < 1.5)
-      return true;
-    if (mom > 1.0 && TMath::Abs(nsigmaK) < 1.0)
-      return true;
-    return false;
-  }
-
-  /*
-    void processSameEventPhiCand(o2::aod::FemtoWorldCollision& col,
-                          o2::aod::FemtoWorldParticlesMerged& parts){
-
-      auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-      auto groupPartsOneFailed = partsOneFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-      auto groupPartsTwoFailed = partsTwoFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-
-      const auto& magFieldTesla = col.magField();
-        /// Now build the combinations
-      for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
-        if ((p1.p() > (float)0.45)) {
-          if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKaon())))) {
-            continue;
-          }
-
-        } else if ((p1.p() <= (float)0.45)) {
-          if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon()))) {
-            continue;
-          }
-        }
-        if ((p2.p() > (float)0.45)) {
-          if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKaon())))) {
-            continue;
-          }
-
-        } else if ((p2.p() <= (float)0.45)) {
-          if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon()))) {
-            continue;
-          }
-        }
-        if (ConfIsCPR) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
-            continue;
-          }
-        }
-        // track cleaning
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-          continue;
-        }
-        float phiPx = p1.px() + p2.px();
-        float phiPy = p1.py() + p2.py();
-        float phiPz = p1.pz() + p2.pz();
-
-        TLorentzVector part1Vec;
-        TLorentzVector part2Vec;
-        float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
-        float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
-        TLorentzVector sumVec(part1Vec);
-        sumVec += part2Vec;
-
-        part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
-        part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
-
-        //float phiEta = p1.eta() + p2.eta();
-        //float phiPhi = p1.phi() + p2.phi();
-        float phiEta = sumVec.Eta();
-        float phiPhi = sumVec.Phi();
-
-         outputPhiCan(//outputCollision.lastIndex(),
-                    phiPx,
-                    phiPy,
-                    phiPz,
-                    phiEta,
-                    phiPhi);
-        tmpIDtrack.push_back(p1.globalIndex());
-        std::cout<< "phi przeszło" << std::endl;
-        //Partition<aod::FemtoWorldPhiCandidates> Phiparts = (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2);
-        //sameEventCont.setPair(p1, phi multCol);
+    bool fNsigmaTPCTOF = true;
+    double fNsigma = 3;
+    double fNsigma2 = 3;
+    if (fNsigmaTPCTOF) {
+      if (mom > 0.5) {
+        //        if (TMath::Hypot( nsigmaTOFP, nsigmaTPCP )/TMath::Sqrt(2) < 3.0)
+        if (mom < 2.0) {
+          if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma)
+            return true;
+        } else if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma2)
+          return true;
+      } else {
+        if (TMath::Abs(nsigmaTPCK) < fNsigma)
+          return true;
       }
+    } else {
 
+      if (mom < 0.4) {
+        if (nsigmaTOFK < -999.) {
+          if (TMath::Abs(nsigmaTPCK) < 2.0)
+            return true;
+        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          return true;
+      } else if (mom >= 0.4 && mom <= 0.6) {
+        if (nsigmaTOFK < -999.) {
+          if (TMath::Abs(nsigmaTPCK) < 2.0)
+            return true;
+        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          return true;
+      } else if (nsigmaTOFK < -999.) {
+        return false;
+      } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+        return true;
     }
-    PROCESS_SWITCH(femtoWorldPairTaskTrackTrack, processSameEventPhiCand, "Enable processing same event and filling phi candidates", true);*/
+    return false;
+  }
 
   /// This function processes the same event and takes care of all the histogramming
   /// \todo the trivial loops over the tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
@@ -296,11 +237,11 @@ struct femtoWorldPairTaskTrackTrack {
   {
     // Partition<aod::FemtoWorldPhiCandidates> Phiparts = (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2)                // Eta cuts
     //;
-    // auto groupPhiParts = Phiparts->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    auto groupPartsOneFailed = partsOneFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    auto groupPartsTwoFailed = partsTwoFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
+    // auto groupPhiParts = Phiparts->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsOneFailed = partsOneFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwoFailed = partsTwoFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
 
     const auto& magFieldTesla = col.magField();
     const int multCol = col.multV0M();
@@ -308,15 +249,8 @@ struct femtoWorldPairTaskTrackTrack {
     MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
-      if ((part.p() > (float)0.45)) {
-        if (!((IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())) && (IsKaonTOFNSigma(part.p(), part.tofNSigmaKaon())))) {
-          continue;
-        }
-
-      } else if ((part.p() <= (float)0.45)) {
-        if (!(IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon()))) {
-          continue;
-        }
+      if (!(IsKaonNSigma(part.p(), part.tpcNSigmaKa(), part.tofNSigmaKa()))) {
+        continue;
       }
       trackHistoPartOne.fillQA(part);
     }
@@ -326,15 +260,8 @@ struct femtoWorldPairTaskTrackTrack {
     }
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
-        if ((part.p() > (float)0.45)) {
-          if (!((IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())) && (IsKaonTOFNSigma(part.p(), part.tofNSigmaKaon())))) {
-            continue;
-          }
-
-        } else if ((part.p() <= (float)0.45)) {
-          if (!(IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon()))) {
-            continue;
-          }
+        if (!(IsKaonNSigma(part.p(), part.tpcNSigmaKa(), part.tofNSigmaKa()))) {
+          continue;
         }
         trackHistoPartTwo.fillQA(part);
       }
@@ -345,25 +272,11 @@ struct femtoWorldPairTaskTrackTrack {
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
-      if ((p1.p() > (float)0.45)) {
-        if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKaon())))) {
-          continue;
-        }
-
-      } else if ((p1.p() <= (float)0.45)) {
-        if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon()))) {
-          continue;
-        }
+      if (!(IsKaonNSigma(p1.p(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
+        continue;
       }
-      if ((p2.p() > (float)0.45)) {
-        if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKaon())))) {
-          continue;
-        }
-
-      } else if ((p2.p() <= (float)0.45)) {
-        if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon()))) {
-          continue;
-        }
+      if (!(IsKaonNSigma(p2.p(), p2.tpcNSigmaKa(), p2.tofNSigmaKa()))) {
+        continue;
       }
       if (ConfIsCPR) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
@@ -390,8 +303,8 @@ struct femtoWorldPairTaskTrackTrack {
 
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.multV0M()}));
 
-      auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex());
-      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex());
+      auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -404,25 +317,12 @@ struct femtoWorldPairTaskTrackTrack {
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if ((p1.p() > (float)0.45)) {
-          if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKaon())))) {
-            continue;
-          }
-        } else if ((p1.p() <= (float)0.45)) {
-          if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon()))) {
-            continue;
-          }
+        if (!(IsKaonNSigma(p1.p(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
+          continue;
         }
-        if ((p2.p() > (float)0.45)) {
-          if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKaon())))) {
-            continue;
-          }
-        } else if ((p2.p() <= (float)0.45)) {
-          if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon()))) {
-            continue;
-          }
+        if (!(IsKaonNSigma(p2.p(), p2.tpcNSigmaKa(), p2.tofNSigmaKa()))) {
+          continue;
         }
-
         if (ConfIsCPR) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1)) {
             continue;

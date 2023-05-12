@@ -13,8 +13,8 @@
 /// \brief FemtoDreamPairCleaner - Makes sure only proper candidates are paired
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de, Laura Serksnyte <laura.serksnyte@cern.ch>, TU München
 
-#ifndef ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMPAIRCLEANER_H_
-#define ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMPAIRCLEANER_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMPAIRCLEANER_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMPAIRCLEANER_H_
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
@@ -35,7 +35,7 @@ class FemtoDreamPairCleaner
   /// Destructor
   virtual ~FemtoDreamPairCleaner() = default;
 
-  /// Initalization of the QA histograms
+  /// Initialization of the QA histograms
   /// \param registry HistogramRegistry
   void init(HistogramRegistry* registry)
   {
@@ -68,11 +68,9 @@ class FemtoDreamPairCleaner
         LOG(fatal) << "FemtoDreamPairCleaner: passed arguments don't agree with FemtoDreamPairCleaner instantiation! Please provide second argument kV0 candidate.";
         return false;
       }
-      uint64_t id1 = part2.index() - 2;
-      uint64_t id2 = part2.index() - 1;
-      auto daughter1 = particles.begin() + id1;
-      auto daughter2 = particles.begin() + id2;
-      if ((*daughter1).indices()[0] <= 0 && (*daughter1).indices()[1] <= 0 && (*daughter2).indices()[0] <= 0 && (*daughter2).indices()[1] <= 0) {
+      const auto& posChild = particles.iteratorAt(part2.index() - 2);
+      const auto& negChild = particles.iteratorAt(part2.index() - 1);
+      if (part1.globalIndex() != posChild.globalIndex() || part2.globalIndex() != negChild.globalIndex()) {
         return true;
       }
       return false;
@@ -89,4 +87,4 @@ class FemtoDreamPairCleaner
 };
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMPAIRCLEANER_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMPAIRCLEANER_H_

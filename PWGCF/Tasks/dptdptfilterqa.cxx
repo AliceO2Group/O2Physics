@@ -76,7 +76,7 @@ struct DptDptFilterQA {
         createHistograms<kGEN>();
         break;
       default:
-        LOGF(fatal, "Data type %s not supported", cfgDataType);
+        LOGF(fatal, "Data type %s not supported", (std::string)cfgDataType);
         break;
     }
   }

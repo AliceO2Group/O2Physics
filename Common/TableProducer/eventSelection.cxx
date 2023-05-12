@@ -19,21 +19,24 @@ using namespace o2::framework;
 #include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Framework/HistogramRegistry.h"
 #include "DataFormatsFT0/Digit.h"
-#include "TH1F.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "TH1D.h"
 using namespace evsel;
 
 using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 using BCsWithBcSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 
 struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to 294 for apass2/apass3 in LHC22o-t"};
 
   void init(InitContext&)
   {
@@ -42,7 +45,7 @@ struct BcSelectionTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    histos.add("hCounterTVX", "", kTH1F, {{1, 0., 1.}});
+    histos.add("hCounterTVX", "", kTH1D, {{1, 0., 1.}});
   }
 
   void processRun2(
@@ -53,6 +56,7 @@ struct BcSelectionTask {
     aod::FT0s const&,
     aod::FDDs const&)
   {
+    bcsel.reserve(bcs.size());
 
     for (auto& bc : bcs) {
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
@@ -167,6 +171,7 @@ struct BcSelectionTask {
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
       int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
+      int32_t foundZDC = bc.has_zdc() ? bc.zdc().globalIndex() : -1;
 
       // Fill TVX (T0 vertex) counters
       if (selection[kIsTriggerTVX]) {
@@ -177,22 +182,44 @@ struct BcSelectionTask {
       bcsel(alias, selection,
             bbV0A, bbV0C, bgV0A, bgV0C,
             bbFDA, bbFDC, bgFDA, bgFDC,
-            multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0, foundFDD);
+            multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0, foundFDD, foundZDC);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun2, "Process Run2 event selection", true);
 
   void processRun3(BCsWithRun3Matchings const& bcs,
-                   aod::Zdcs const&,
+                   aod::Zdcs const& zdcs,
                    aod::FV0As const&,
                    aod::FT0s const&,
                    aod::FDDs const&)
   {
+    bcsel.reserve(bcs.size());
+
+    // map from GlobalBC to BcId needed to find triggerBc
+    std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
+    for (auto& bc : bcs) {
+      mapGlobalBCtoBcId[bc.globalBC()] = bc.globalIndex();
+    }
+    int triggerBcShift = confTriggerBcShift;
+    if (confTriggerBcShift == 999) {
+      int run = bcs.iteratorAt(0).runNumber();
+      triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734) ? 0 : 294;
+    }
+
     for (auto bc : bcs) {
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
-
-      // TODO: fill fired aliases for run3
+      TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
       int32_t alias[kNaliases] = {0};
+
+      // workaround for pp2022 apass2-apass3 (trigger info is shifted by -294 bcs)
+      int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
+      if (triggerBcId) {
+        auto triggerBc = bcs.iteratorAt(triggerBcId);
+        uint64_t triggerMask = triggerBc.triggerMask();
+        for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
+          alias[al.first] |= (triggerMask & al.second) > 0;
+        }
+      }
       alias[kALL] = 1;
 
       // get timing info from ZDC, FV0, FT0 and FDD
@@ -208,6 +235,8 @@ struct BcSelectionTask {
       float timeT0CBG = -999.f;
       float timeFDABG = -999.f;
       float timeFDCBG = -999.f;
+      float znSum = timeZNA + timeZNC;
+      float znDif = timeZNA - timeZNC;
 
       uint64_t globalBC = bc.globalBC();
       // move to previous bcs to check beam-gas in FT0, FV0 and FDD
@@ -258,6 +287,7 @@ struct BcSelectionTask {
       selection[kIsBBT0C] = timeT0C > par->fT0CBBlower && timeT0C < par->fT0CBBupper;
       selection[kIsBBZNA] = timeZNA > par->fZNABBlower && timeZNA < par->fZNABBupper;
       selection[kIsBBZNC] = timeZNC > par->fZNCBBlower && timeZNC < par->fZNCBBupper;
+      selection[kIsBBZAC] = pow((znSum - par->fZNSumMean) / par->fZNSumSigma, 2) + pow((znDif - par->fZNDifMean) / par->fZNDifSigma, 2) < 1;
       selection[kNoBGZNA] = !(fabs(timeZNA) > par->fZNABGlower && fabs(timeZNA) < par->fZNABGupper);
       selection[kNoBGZNC] = !(fabs(timeZNC) > par->fZNCBGlower && fabs(timeZNC) < par->fZNCBGupper);
       selection[kIsTriggerTVX] = bc.has_ft0() ? (bc.ft0().triggerMask() & BIT(o2::ft0::Triggers::bitVertex)) > 0 : 0;
@@ -280,6 +310,7 @@ struct BcSelectionTask {
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
       int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
+      int32_t foundZDC = bc.has_zdc() ? bc.zdc().globalIndex() : -1;
       LOGP(debug, "foundFT0={}\n", foundFT0);
 
       // Fill TVX (T0 vertex) counters
@@ -291,22 +322,40 @@ struct BcSelectionTask {
       bcsel(alias, selection,
             bbV0A, bbV0C, bgV0A, bgV0C,
             bbFDA, bbFDC, bgFDA, bgFDC,
-            multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0, foundFDD);
+            multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0, foundFDD, foundZDC);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun3, "Process Run3 event selection", false);
 };
 
 struct EventSelectionTask {
+  SliceCache cache;
   Produces<aod::EvSels> evsel;
   Configurable<std::string> syst{"syst", "PbPb", "pp, pPb, Pbp, PbPb, XeXe"}; // TODO determine from AOD metadata or from CCDB
   Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
-  Configurable<int> customDeltaBC{"customDeltaBC", 300, "custom BC delta for FIT-collision matching"};
+  Configurable<int> customDeltaBC{"customDeltaBC", 0, "custom BC delta for FIT-collision matching"};
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  int lastRun = -1;                                          // last run number (needed to access ccdb only if run!=lastRun)
+  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB; // bc pattern of colliding bunches
+
+  int32_t findClosest(int64_t globalBC, std::map<int64_t, int32_t>& bcs)
+  {
+    auto it = bcs.lower_bound(globalBC);
+    int64_t bc1 = it->first;
+    int32_t index1 = it->second;
+    if (it != bcs.begin())
+      --it;
+    int64_t bc2 = it->first;
+    int32_t index2 = it->second;
+    int64_t dbc1 = std::abs(bc1 - globalBC);
+    int64_t dbc2 = std::abs(bc2 - globalBC);
+    return (dbc1 <= dbc2) ? index1 : index2;
+  }
 
   void init(InitContext&)
   {
@@ -315,8 +364,13 @@ struct EventSelectionTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    histos.add("hColCounterAll", "", kTH1F, {{1, 0., 1.}});
-    histos.add("hColCounterAcc", "", kTH1F, {{1, 0., 1.}});
+    histos.add("hColCounterAll", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hColCounterAcc", "", kTH1D, {{1, 0., 1.}});
+  }
+
+  void process(aod::Collisions const& collisions)
+  {
+    evsel.reserve(collisions.size());
   }
 
   void processRun2(aod::Collision const& col, BCsWithBcSels const& bcs, aod::Tracks const& tracks)
@@ -336,6 +390,7 @@ struct EventSelectionTask {
     int32_t foundFT0 = bc.foundFT0Id();
     int32_t foundFV0 = bc.foundFV0Id();
     int32_t foundFDD = bc.foundFDDId();
+    int32_t foundZDC = bc.foundZDCId();
 
     // copy alias decisions from bcsel table
     int32_t alias[kNaliases];
@@ -361,7 +416,7 @@ struct EventSelectionTask {
     float multV0C012 = bc.multRingV0C()[0] + bc.multRingV0C()[1] + bc.multRingV0C()[2];
 
     // applying selections depending on the number of tracklets
-    auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex());
+    auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
     int nTkl = trackletsGrouped.size();
 
     uint32_t spdClusters = bc.spdClusters();
@@ -388,7 +443,7 @@ struct EventSelectionTask {
     bool sel8 = selection[kIsBBT0A] & selection[kIsBBT0C]; // TODO apply other cuts for sel8
     bool sel1 = selection[kIsINT1] & selection[kNoBGV0A] & selection[kNoBGV0C] & selection[kNoTPCLaserWarmUp] & selection[kNoTPCHVdip];
 
-    // INT1 (SPDFO>0 | V0A | V0C) mimimum bias trigger logic used in pp2010 and pp2011
+    // INT1 (SPDFO>0 | V0A | V0C) minimum bias trigger logic used in pp2010 and pp2011
     bool isINT1period = bc.runNumber() <= 136377 || (bc.runNumber() >= 144871 && bc.runNumber() <= 159582);
 
     // fill counters
@@ -403,112 +458,156 @@ struct EventSelectionTask {
           bbV0A, bbV0C, bgV0A, bgV0C,
           bbFDA, bbFDC, bgFDA, bgFDC,
           multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
-          foundBC, foundFT0, foundFV0, foundFDD);
+          foundBC, foundFT0, foundFV0, foundFDD, foundZDC);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
-  void processRun3(aod::Collision const& col, BCsWithBcSels const& bcs)
+  Preslice<FullTracksIU> perCollision = aod::track::collisionId;
+  void processRun3(aod::Collisions const& cols, FullTracksIU const& tracks, BCsWithBcSels const& bcs)
   {
-    auto bc = col.bc_as<BCsWithBcSels>();
-    uint64_t apprBC = bc.globalBC();
-    int64_t meanBC = apprBC - std::lround(col.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
-    int64_t deltaBC = std::ceil(col.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * 4);
-    // use custom delta
-    if (customDeltaBC > 0) {
-      deltaBC = customDeltaBC;
+    int run = bcs.iteratorAt(0).runNumber();
+    // extract bc pattern from CCDB for data or anchored MC only
+    if (run != lastRun && run >= 500000) {
+      lastRun = run;
+      int64_t ts = bcs.iteratorAt(0).timestamp();
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
+      bcPatternB = grplhcif->getBunchFilling().getBCPattern();
     }
 
-    if (!bc.has_foundFT0()) { // search in +/-4 sigma around meanBC
-      // search forward
-      int forwardMoveCount = 0;
-      int64_t forwardBcDist = deltaBC + 1;
-      for (; bc != bcs.end() && int64_t(bc.globalBC()) <= meanBC + deltaBC; ++bc, ++forwardMoveCount) {
-        if (bc.has_foundFT0()) {
-          forwardBcDist = bc.globalBC() - meanBC;
-          break;
+    // create maps from globalBC to bc index for TVX or FT0-OR fired bcs
+    // to be used for closest TVX (FT0-OR) searches
+    std::map<int64_t, int32_t> mapGlobalBcWithTVX;
+    std::map<int64_t, int32_t> mapGlobalBcWithTOR;
+    for (auto& bc : bcs) {
+      int64_t globalBC = bc.globalBC();
+      // skip non-colliding bcs for data and anchored runs
+      if (run >= 500000 && bcPatternB[globalBC % o2::constants::lhc::LHCMaxBunches] == 0) {
+        continue;
+      }
+      if (bc.selection()[kIsBBT0A] || bc.selection()[kIsBBT0C]) {
+        mapGlobalBcWithTOR[globalBC] = bc.globalIndex();
+      }
+      if (bc.selection()[kIsTriggerTVX]) {
+        mapGlobalBcWithTVX[globalBC] = bc.globalIndex();
+      }
+    }
+
+    for (auto& col : cols) {
+      auto bc = col.bc_as<BCsWithBcSels>();
+      int64_t meanBC = bc.globalBC();
+      const double bcNS = o2::constants::lhc::LHCBunchSpacingNS;
+      int64_t deltaBC = std::ceil(col.collisionTimeRes() / bcNS * 4);
+
+      // count tracks of different types
+      int nITStracks = 0;
+      int nTPCtracks = 0;
+      int nTOFtracks = 0;
+      int nTRDtracks = 0;
+      double timeFromTOFtracks = 0;
+      double timeFromTRDtracks = 0;
+      auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
+      for (auto& track : tracksGrouped) {
+        if (!track.isPVContributor()) {
+          continue;
+        }
+        nITStracks += track.hasITS();
+        nTPCtracks += track.hasTPC();
+        nTOFtracks += track.hasTOF();
+        nTRDtracks += track.hasTRD() && !track.hasTOF();
+        // calculate average time using TOF and TRD tracks
+        if (track.hasTOF()) {
+          timeFromTOFtracks += track.trackTime();
+        } else if (track.hasTRD()) {
+          timeFromTRDtracks += track.trackTime();
         }
       }
-      bc.moveByIndex(-forwardMoveCount);
-      // search backward
-      int backwardMoveCount = 0;
-      int64_t backwardBcDist = deltaBC + 1;
-      for (; int64_t(bc.globalBC()) >= meanBC - deltaBC; --bc, ++backwardMoveCount) {
-        if (bc.has_foundFT0()) {
-          backwardBcDist = meanBC - bc.globalBC();
-          break;
-        }
-        if (bc == bcs.begin()) {
-          break;
+      LOGP(debug, "nContrib={} nITStracks={} nTPCtracks={} nTOFtracks={} nTRDtracks={}", col.numContrib(), nITStracks, nTPCtracks, nTOFtracks, nTRDtracks);
+
+      if (nTRDtracks > 0) {
+        meanBC += TMath::Nint(timeFromTRDtracks / nTRDtracks / bcNS); // assign collision bc using TRD-matched tracks
+        deltaBC = 0;                                                  // use precise bc from TRD-matched tracks
+      } else if (nTOFtracks > 0) {
+        meanBC += TMath::FloorNint(timeFromTOFtracks / nTOFtracks / bcNS); // assign collision bc using TOF-matched tracks
+        deltaBC = 4;                                                       // use precise bc from TOF tracks with +/-4 bc margin
+      } else if (nTPCtracks > 0) {
+        deltaBC += 30; // extend deltaBC for collisions built with ITS-TPC tracks only
+      }
+
+      int64_t minBC = meanBC - deltaBC;
+      int64_t maxBC = meanBC + deltaBC;
+
+      int32_t indexClosestTVX = findClosest(meanBC, mapGlobalBcWithTVX);
+      int64_t tvxBC = bcs.iteratorAt(indexClosestTVX).globalBC();
+      if (tvxBC >= minBC && tvxBC <= maxBC) { // closest TVX within search region
+        bc.setCursor(indexClosestTVX);
+      } else { // no TVX within search region, searching for TOR = T0A | T0C
+        int32_t indexClosestTOR = findClosest(meanBC, mapGlobalBcWithTOR);
+        int64_t torBC = bcs.iteratorAt(indexClosestTOR).globalBC();
+        if (torBC >= minBC && torBC <= maxBC) {
+          bc.setCursor(indexClosestTOR);
         }
       }
-      if (forwardBcDist > deltaBC && backwardBcDist > deltaBC) {
-        bc.moveByIndex(backwardMoveCount); // return to nominal bc if neighbouring ft0 is not found
-      } else if (forwardBcDist < backwardBcDist) {
-        bc.moveByIndex(backwardMoveCount + forwardMoveCount); // move forward
-      }                                                       // else keep backward bc
+
+      int32_t foundBC = bc.globalIndex();
+      int32_t foundFT0 = bc.foundFT0Id();
+      int32_t foundFV0 = bc.foundFV0Id();
+      int32_t foundFDD = bc.foundFDDId();
+      int32_t foundZDC = bc.foundZDCId();
+
+      LOGP(debug, "foundFT0 = {} globalBC = {}", foundFT0, bc.globalBC());
+
+      // copy alias decisions from bcsel table
+      int32_t alias[kNaliases];
+      for (int i = 0; i < kNaliases; i++) {
+        alias[i] = bc.alias()[i];
+      }
+
+      // copy selection decisions from bcsel table
+      int32_t selection[kNsel] = {0};
+      for (int i = 0; i < kNsel; i++) {
+        selection[i] = bc.selection()[i];
+      }
+
+      // copy multiplicity per ring
+      float multRingV0A[5] = {0.};
+      float multRingV0C[4] = {0.};
+      for (int i = 0; i < 5; i++) {
+        multRingV0A[i] = bc.multRingV0A()[i];
+      }
+
+      int nTkl = 0;
+      uint32_t spdClusters = 0;
+
+      // copy beam-beam and beam-gas flags from bcsel table
+      bool bbV0A = bc.bbV0A();
+      bool bbV0C = bc.bbV0C();
+      bool bgV0A = bc.bgV0A();
+      bool bgV0C = bc.bgV0C();
+      bool bbFDA = bc.bbFDA();
+      bool bbFDC = bc.bbFDC();
+      bool bgFDA = bc.bgFDA();
+      bool bgFDC = bc.bgFDC();
+
+      // apply int7-like selections
+      bool sel7 = 0;
+
+      // TODO apply other cuts for sel8
+      // TODO introduce sel1 etc?
+      // TODO introduce array of sel[0]... sel[8] or similar?
+      bool sel8 = selection[kIsTriggerTVX];
+
+      // fill counters
+      histos.get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
+      if (sel8) {
+        histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
+      }
+
+      evsel(alias, selection,
+            bbV0A, bbV0C, bgV0A, bgV0C,
+            bbFDA, bbFDC, bgFDA, bgFDC,
+            multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
+            foundBC, foundFT0, foundFV0, foundFDD, foundZDC);
     }
-
-    int32_t foundBC = bc.globalIndex();
-    int32_t foundFT0 = bc.foundFT0Id();
-    int32_t foundFV0 = bc.foundFV0Id();
-    int32_t foundFDD = bc.foundFDDId();
-
-    LOGP(debug, "foundFT0 = {}", foundFT0);
-
-    // copy alias decisions from bcsel table
-    int32_t alias[kNaliases];
-    for (int i = 0; i < kNaliases; i++) {
-      alias[i] = bc.alias()[i];
-    }
-
-    // copy selection decisions from bcsel table
-    int32_t selection[kNsel] = {0};
-    for (int i = 0; i < kNsel; i++) {
-      selection[i] = bc.selection()[i];
-    }
-
-    // copy multiplicity per ring
-    float multRingV0A[5] = {0.};
-    float multRingV0C[4] = {0.};
-    for (int i = 0; i < 5; i++) {
-      multRingV0A[i] = bc.multRingV0A()[i];
-    }
-    for (int i = 0; i < 4; i++) {
-      multRingV0C[i] = bc.multRingV0C()[i];
-    }
-
-    int nTkl = 0;
-    uint32_t spdClusters = 0;
-
-    // copy beam-beam and beam-gas flags from bcsel table
-    bool bbV0A = bc.bbV0A();
-    bool bbV0C = bc.bbV0C();
-    bool bgV0A = bc.bgV0A();
-    bool bgV0C = bc.bgV0C();
-    bool bbFDA = bc.bbFDA();
-    bool bbFDC = bc.bbFDC();
-    bool bgFDA = bc.bgFDA();
-    bool bgFDC = bc.bgFDC();
-
-    // apply int7-like selections
-    bool sel7 = 0;
-
-    // TODO apply other cuts for sel8
-    // TODO introduce sel1 etc?
-    // TODO introduce array of sel[0]... sel[8] or similar?
-    bool sel8 = selection[kIsBBT0A] & selection[kIsBBT0C];
-
-    // fill counters
-    histos.get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
-    if (sel8) {
-      histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
-    }
-
-    evsel(alias, selection,
-          bbV0A, bbV0C, bgV0A, bgV0C,
-          bbFDA, bbFDC, bgFDA, bgFDC,
-          multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
-          foundBC, foundFT0, foundFV0, foundFDD);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun3, "Process Run3 event selection", false);
 };

@@ -13,12 +13,6 @@
 using namespace o2;
 using namespace o2::framework;
 
-// custom configurable for switching between run2 and run3 selection types
-void customize(std::vector<ConfigParamSpec>& workflowOptions)
-{
-  workflowOptions.push_back(ConfigParamSpec{"selection-run", VariantType::Int, 2, {"selection type: 2 - run 2, 3 - run 3"}});
-}
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -28,20 +22,22 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
 #include "iostream"
 
 struct MultiplicityTableTaskIndexed {
+  SliceCache cache;
   Produces<aod::Mults> mult;
   Produces<aod::MultZeqs> multzeq;
 
-  //For vertex-Z corrections in calibration
+  // For vertex-Z corrections in calibration
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  Partition<soa::Join<aod::Tracks, aod::TracksExtra>> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
-  Partition<soa::Join<aod::Tracks, aod::TracksExtra>> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
-  Partition<soa::Join<aod::Tracks, aod::TracksExtra>> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
-  Partition<soa::Join<aod::Tracks, aod::TracksExtra>> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  using Run2Tracks = soa::Join<aod::Tracks, aod::TracksExtra>;
+  Partition<Run2Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
+  Partition<Run2Tracks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<Run2Tracks> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<Run2Tracks> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
-  //Configurable
+  // Configurable
   Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
-  Configurable<int> doDummyZeq{"doDummyZeq", 0, "if 1: do dummy Z vertex Eq (will make non-eq equal to eq)"};
 
   int mRunNumber;
   bool lCalibLoaded;
@@ -75,10 +71,16 @@ struct MultiplicityTableTaskIndexed {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false); //don't fatal, please - exception is caught explicitly (as it should)
+    ccdb->setFatalWhenNull(false); // don't fatal, please - exception is caught explicitly (as it should)
   }
 
-  void processRun2(aod::Run2MatchedSparse::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra, aod::BCs const&, aod::Zdcs const&, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::FT0s const& ft0s)
+  void processRun2(aod::Run2MatchedSparse::iterator const& collision,
+                   Run2Tracks const& tracksExtra,
+                   aod::BCs const&,
+                   aod::Zdcs const&,
+                   aod::FV0As const& fv0as,
+                   aod::FV0Cs const& fv0cs,
+                   aod::FT0s const& ft0s)
   {
     float multFV0A = 0.f;
     float multFV0C = 0.f;
@@ -89,8 +91,8 @@ struct MultiplicityTableTaskIndexed {
     float multZNA = 0.f;
     float multZNC = 0.f;
 
-    auto trackletsGrouped = run2tracklets->sliceByCached(aod::track::collisionId, collision.globalIndex());
-    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto trackletsGrouped = run2tracklets->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     int multTracklets = trackletsGrouped.size();
     int multTPC = tracksGrouped.size();
     int multNContribs = 0;
@@ -126,7 +128,17 @@ struct MultiplicityTableTaskIndexed {
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", true);
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra, soa::Join<aod::BCs, aod::Timestamps> const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
+  using Run3Tracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
+  Partition<Run3Tracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<Run3Tracks> pvContribTracksIU = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<Run3Tracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+                   Run3Tracks const& tracksExtra,
+                   soa::Join<aod::BCs, aod::Timestamps> const& bcs,
+                   aod::Zdcs const& zdcs,
+                   aod::FV0As const& fv0as,
+                   aod::FT0s const& ft0s,
+                   aod::FDDs const& fdds)
   {
     float multFV0A = 0.f;
     float multFV0C = 0.f;
@@ -145,18 +157,18 @@ struct MultiplicityTableTaskIndexed {
     float multZeqFDDC = 0.f;
     float multZeqNContribs = 0.f;
 
-    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
-    auto pvContribsGrouped = pvContribTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());
-    auto pvContribsEta1Grouped = pvContribTracksEta1->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto pvContribsGrouped = pvContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto pvContribsEta1Grouped = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     int multTPC = tracksGrouped.size();
     int multNContribs = pvContribsGrouped.size();
     int multNContribsEta1 = pvContribsEta1Grouped.size();
 
     /* check the previous run number */
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
-    if (doVertexZeq > 0 && doDummyZeq < 1) {
+    if (doVertexZeq > 0) {
       if (bc.runNumber() != mRunNumber) {
-        mRunNumber = bc.runNumber(); //mark this run as at least tried
+        mRunNumber = bc.runNumber(); // mark this run as at least tried
         lCalibObjects = ccdb->getForTimeStamp<TList>("Centrality/Calibration", bc.timestamp());
         if (lCalibObjects) {
           hVtxZFV0A = (TProfile*)lCalibObjects->FindObject("hVtxZFV0A");
@@ -166,11 +178,14 @@ struct MultiplicityTableTaskIndexed {
           hVtxZFDDC = (TProfile*)lCalibObjects->FindObject("hVtxZFDDC");
           hVtxZNTracks = (TProfile*)lCalibObjects->FindObject("hVtxZNTracksPV");
           lCalibLoaded = true;
-          //Capture error
+          // Capture error
           if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
-            LOGF(info, "Problem loading CCDB objects! Please check");
+            LOGF(error, "Problem loading CCDB objects! Please check");
             lCalibLoaded = false;
           }
+        } else {
+          LOGF(error, "Problem loading CCDB object! Please check");
+          lCalibLoaded = false;
         }
       }
     }
@@ -208,14 +223,6 @@ struct MultiplicityTableTaskIndexed {
       multZeqFDDA = hVtxZFDDA->Interpolate(0.0) * multFDDA / hVtxZFDDA->Interpolate(collision.posZ());
       multZeqFDDC = hVtxZFDDC->Interpolate(0.0) * multFDDC / hVtxZFDDC->Interpolate(collision.posZ());
       multZeqNContribs = hVtxZNTracks->Interpolate(0.0) * multNContribs / hVtxZNTracks->Interpolate(collision.posZ());
-    }
-    if (doDummyZeq) {
-      multZeqFV0A = multFV0A;
-      multZeqFT0A = multFT0A;
-      multZeqFT0C = multFT0C;
-      multZeqFDDA = multFDDA;
-      multZeqFDDC = multFDDC;
-      multZeqNContribs = multNContribs;
     }
 
     LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);

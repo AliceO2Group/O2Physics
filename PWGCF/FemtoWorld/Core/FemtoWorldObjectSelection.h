@@ -92,7 +92,7 @@ class FemtoWorldObjectSelection
     }
 
     /// Then, the sorted selections are added to the overall container of cuts
-    for (const auto sel : sels) {
+    for (const auto& sel : sels) {
       mSelections.push_back(sel);
     }
   }

@@ -31,6 +31,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 
 #include "DetectorsVertexing/PVertexer.h"
@@ -39,22 +40,50 @@
 #include "ReconstructionDataFormats/PrimaryVertex.h"
 #include "ReconstructionDataFormats/Vertex.h"
 
-#include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 
+#include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 
-#include "CommonUtils/NameConf.h"
+#include "CommonConstants/GeomConstants.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include "CCDB/CcdbApi.h"
+
+#include "DataFormatsCalibration/MeanVertexObject.h"
+
+namespace o2::aod
+{
+namespace full
+{
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, uint64_t);
+DECLARE_SOA_COLUMN(VertexX, vertexX, double);
+DECLARE_SOA_COLUMN(VertexY, vertexY, double);
+DECLARE_SOA_COLUMN(VertexZ, vertexZ, double);
+
+DECLARE_SOA_COLUMN(VertexXX, vertexXX, double);
+DECLARE_SOA_COLUMN(VertexYY, vertexYY, double);
+DECLARE_SOA_COLUMN(VertexXY, vertexXY, double);
+
+DECLARE_SOA_COLUMN(VertexChi2, vertexChi2, double);
+DECLARE_SOA_COLUMN(NContrib, nContrib, int);
+} // namespace full
+DECLARE_SOA_TABLE(EventInfo, "AOD", "EventInfo", full::TimeStamp, full::VertexX,
+                  full::VertexY, full::VertexZ,
+
+                  full::VertexXX, full::VertexYY, full::VertexXY,
+
+                  full::VertexChi2, full::NContrib);
+} // namespace o2::aod
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct lumiTask {
+  Produces<o2::aod::EventInfo> rowEventInfo;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  const char* ccdbpath_grp = "GLO/GRP/GRP";
+  const char* ccdbpath_grp = "GLO/Config/GRPMagField";
   const char* ccdburl = "http://alice-ccdb.cern.ch";
   int mRunNumber;
 
@@ -105,6 +134,8 @@ struct lumiTask {
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
     mRunNumber = 0;
   }
 
@@ -117,6 +148,7 @@ struct lumiTask {
   {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    uint64_t relTS = bc.timestamp() - ftts;
 
     std::vector<int64_t> vec_globID_contr = {};
     std::vector<o2::track::TrackParCov> vec_TrkContributos = {};
@@ -140,8 +172,7 @@ struct lumiTask {
     std::vector<bool> vec_useTrk_PVrefit(vec_globID_contr.size(), true);
 
     if (mRunNumber != bc.runNumber()) {
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(
-        ccdbpath_grp, bc.timestamp());
+      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbpath_grp, bc.timestamp());
       if (grpo != nullptr) {
         o2::base::Propagator::initFieldFromGRP(grpo);
       } else {
@@ -168,16 +199,27 @@ struct lumiTask {
                                                   // MeanVertex constraint
     vertexer.init();
     bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos, Pvtx);
-    double chi2;
-    double refitX;
-    double refitY;
+    double chi2 = -1.;
+    double refitX = -9999.;
+    double refitY = -9999.;
+    double refitZ = -9999.;
+    double refitXX = -9999.;
+    double refitYY = -9999.;
+    double refitXY = -9999.;
 
     if (doPVrefit && PVrefit_doable) {
       auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx);
       chi2 = Pvtx_refitted.getChi2();
       refitX = Pvtx_refitted.getX();
       refitY = Pvtx_refitted.getY();
+      refitZ = Pvtx_refitted.getZ();
+      refitXX = Pvtx_refitted.getSigmaX2();
+      refitYY = Pvtx_refitted.getSigmaY2();
+      refitXY = Pvtx_refitted.getSigmaXY();
     }
+
+    rowEventInfo(relTS, refitX, refitY, refitZ, refitXX, refitYY, refitXY, chi2,
+                 nContrib);
 
     //    LOGP(info,"chi2: {}, Ncont: {}, nonctr:
     //    {}",chi2,nContrib,nNonContrib);
@@ -188,10 +230,8 @@ struct lumiTask {
       histos.fill(HIST("vertexx_Refitted"), refitX);
       histos.fill(HIST("vertexy_Refitted"), refitY);
 
-      histos.fill(HIST("vertexx_Refitted_timestamp"), bc.timestamp() - ftts,
-                  refitX);
-      histos.fill(HIST("vertexy_Refitted_timestamp"), bc.timestamp() - ftts,
-                  refitY);
+      histos.fill(HIST("vertexx_Refitted_timestamp"), relTS, refitX);
+      histos.fill(HIST("vertexy_Refitted_timestamp"), relTS, refitY);
     }
     histos.fill(HIST("chisquare"), collision.chi2());
     if (collision.chi2() / collision.numContrib() > 4)
@@ -202,12 +242,10 @@ struct lumiTask {
 
     histos.fill(HIST("vertexx"), collision.posX());
     histos.fill(HIST("vertexy"), collision.posY());
-    histos.fill(HIST("timestamp"), bc.timestamp() - ftts);
+    histos.fill(HIST("timestamp"), relTS);
 
-    histos.fill(HIST("vertexx_timestamp"), bc.timestamp() - ftts,
-                collision.posX());
-    histos.fill(HIST("vertexy_timestamp"), bc.timestamp() - ftts,
-                collision.posY());
+    histos.fill(HIST("vertexx_timestamp"), relTS, collision.posX());
+    histos.fill(HIST("vertexy_timestamp"), relTS, collision.posY());
 
     if (nContrib > nContribMin && nContrib < nContribMax &&
         (chi2 / nContrib) < 4.0 && chi2 > 0) {

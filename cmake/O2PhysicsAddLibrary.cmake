@@ -17,7 +17,7 @@ include(O2PhysicsNameTarget)
 # o2physics_add_library(baseTargetName SOURCES c1.cxx c2.cxx .....) defines a new
 # target of type "library" composed of the given sources. It also defines an
 # alias named O2Physics::baseTargetName. The generated library will be called
-# libO2Physics[baseTargetName].(dylib|so|.a) (for exact naming see the 
+# libO2Physics[baseTargetName].(dylib|so|.a) (for exact naming see the
 # o2physics_name_target function). For each source c1.cxx a header c1.h is installed
 # if it exists in the same directory.
 #
@@ -33,7 +33,7 @@ include(O2PhysicsNameTarget)
 #   to use the fully qualified target name (i.e. including the namespace part)
 #   even for internal (O2) targets.
 #
-# * INSTALL_HEADERS (not needed in most cases): the list of additional headers 
+# * INSTALL_HEADERS (not needed in most cases): the list of additional headers
 #   which should be installed with the library. Not needed for each source
 #   c1.cxx where the header c1.h is found in the same folder. Those are installed
 #   automatically.
@@ -78,8 +78,17 @@ function(o2physics_add_library baseTargetName)
   o2physics_name_target(${baseTargetName} NAME targetName)
   set(target ${targetName})
 
+  # If -DSTANDALONE_EXECUTABLES is passed to cmake,
+  # we only build object libraries so that each executable
+  # is fully selfcontained for what concerns O2Physics
+  # code and can be deployed with a simple cp, reusing
+  # a compatible O2 environment
+  if (STANDALONE_EXECUTABLES)
+    add_library(${target} OBJECT ${A_SOURCES})
+  else()
+    add_library(${target} ${A_SOURCES})
+  endif()
   # define the target and its O2Physics:: alias
-  add_library(${target} ${A_SOURCES})
   add_library(O2Physics::${baseTargetName} ALIAS ${target})
 
   # set the export name so that packages using O2Physics can reference the target as
@@ -130,6 +139,11 @@ function(o2physics_add_library baseTargetName)
     target_include_directories(
       ${target}
       PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>)
+
+    # add top level directory so e.g. the #include "Common/Core/xxx.h" will work
+    target_include_directories(
+      ${target}
+      PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>)
   endif()
 
   # set the private include directories if available
@@ -161,11 +175,11 @@ function(o2physics_add_library baseTargetName)
   # The EXPORT must come first in the list of parameters
   #
   install(TARGETS ${target}
-          EXPORT O2Targets
+          EXPORT O2PhysicsTargets
           INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
           LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-  # Install header for each source (if exists) 
+  # Install header for each source (if exists)
   if(A_SOURCES)
     foreach(d IN LISTS A_SOURCES)
       # Replace .cxx -> .h
@@ -183,5 +197,11 @@ function(o2physics_add_library baseTargetName)
     install(FILES ${CMAKE_CURRENT_LIST_DIR}/${A_INSTALL_HEADERS}
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   endif()
+
+  # Link subdirectories
+  install(
+    SCRIPT ${CMAKE_SOURCE_DIR}/cmake/O2PhysicsLinkAllSubDirs.cmake
+    CODE " o2physics_link_all_subdirs(${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}) "
+  )
 
 endfunction()

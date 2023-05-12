@@ -18,7 +18,7 @@ o2physics_add_dpl_workflow(jet-finder
 
 o2physics_add_dpl_workflow(jet-finder-hf
                     SOURCES jetfinderhf.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-hadron-recoil
@@ -36,6 +36,7 @@ o2physics_add_dpl_workflow(jet-matching
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 endif()
+
 
 o2physics_add_dpl_workflow(emcal-correction-task
                     SOURCES emcalCorrectionTask.cxx

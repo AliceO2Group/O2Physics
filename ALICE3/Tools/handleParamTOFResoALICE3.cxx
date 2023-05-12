@@ -18,7 +18,7 @@
 
 #include "CCDB/CcdbApi.h"
 #include <boost/program_options.hpp>
-#include <FairLogger.h>
+#include "Framework/Logger.h"
 #include "TFile.h"
 #include "ALICE3/Core/TOFResoALICE3.h"
 

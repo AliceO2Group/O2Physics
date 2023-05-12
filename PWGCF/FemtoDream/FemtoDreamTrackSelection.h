@@ -14,19 +14,21 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMTRACKSELECTION_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMTRACKSELECTION_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMTRACKSELECTION_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMTRACKSELECTION_H_
+
+#include <string>
+#include <vector>
+#include <cmath>
+#include <iostream>
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "FemtoDreamObjectSelection.h"
-
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
-#include <cmath>
-#include <iostream>
 
 using namespace o2::framework;
 
@@ -89,7 +91,7 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                dcaMin(9999999.),
                                nSigmaPIDMax(9999999.),
                                nSigmaPIDOffsetTPC(0.),
-                               nSigmaPIDOffsetTOF(0.){};
+                               nSigmaPIDOffsetTOF(0.) {}
 
   /// Initializes histograms for the task
   /// \tparam part Type of the particle for proper naming of the folders for QA
@@ -582,4 +584,4 @@ void FemtoDreamTrackSelection::fillQA(T const& track)
 
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMTRACKSELECTION_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMTRACKSELECTION_H_

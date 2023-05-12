@@ -58,20 +58,7 @@ class TOFResoALICE3 : public Parametrization
   ClassDef(TOFResoALICE3, 1);
 };
 
-float TOFResoALICE3Param(const float& momentum, const float& momentumError, const float& evtimereso, const float& length, const float& mass, const Parameters& parameters)
-{
-  if (momentum <= 0) {
-    return -999.f;
-  }
-
-  const float p2 = momentum * momentum;
-  const float Lc = length / 0.0299792458f;
-  const float mass2 = mass * mass;
-  const float ep = momentumError * momentum;
-  // const float ep = momentumError * p2;
-  const float etexp = Lc * mass2 / p2 / sqrt(mass2 + p2) * ep;
-  return sqrt(etexp * etexp + parameters[0] * parameters[0] + evtimereso * evtimereso);
-}
+float TOFResoALICE3Param(const float& momentum, const float& momentumError, const float& evtimereso, const float& length, const float& mass, const Parameters& parameters);
 
 template <o2::track::PID::ID id, typename T>
 float TOFResoALICE3ParamTrack(const T& track, const Parameters& parameters)

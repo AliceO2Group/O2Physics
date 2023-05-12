@@ -31,12 +31,14 @@ namespace dpgcollision
 DECLARE_SOA_INDEX_COLUMN(BC, bc);
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
 } // namespace dpgcollision
 
 DECLARE_SOA_TABLE(DPGCollisions, "AOD", "DPGCollisions", //! Table of the DPG collisions
                   collision::PosZ,
                   dpgcollision::IsEventReject,
-                  dpgcollision::RunNumber);
+                  dpgcollision::RunNumber,
+                  dpgcollision::NumContrib);
 
 namespace dpgtrack
 {
@@ -63,7 +65,7 @@ DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float);                                
 
 DECLARE_SOA_TABLE(DPGTracks, "AOD", "DPGTracks", //! Table of the DPG tracks
                   dpgtrack::DPGCollisionId,
-                  dpgtrack::Pt, dpgtrack::Eta, dpgtrack::Phi, dpgtrack::PtReso,
+                  dpgtrack::Pt, track::TPCInnerParam, dpgtrack::Eta, dpgtrack::Phi, dpgtrack::PtReso,
                   track::Flags, dpgtrack::Sign,
                   track::DcaXY, track::DcaZ, track::Length,
                   track::ITSClusterMap,

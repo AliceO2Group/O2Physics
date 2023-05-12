@@ -25,6 +25,7 @@
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/PIDResponse.h"
 
 #include "EMCALBase/Geometry.h"
 #include "EMCALCalib/BadChannelMap.h"
@@ -53,6 +54,7 @@
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using collisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator;
+using bcEvSelIt = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>::iterator;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 using selectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
 struct ClusterMonitor {
@@ -61,7 +63,6 @@ struct ClusterMonitor {
 
   Preslice<o2::aod::EMCALClusterCells> perCluster = o2::aod::emcalclustercell::emcalclusterId;
   Preslice<o2::aod::EMCALAmbiguousClusterCells> perClusterAmb = o2::aod::emcalclustercell::emcalclusterId;
-  Preslice<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalclustercell::emcalclusterId;
   // configurable parameters
   // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7)
   Configurable<bool> mDoEventSel{"doEventSel", 0, "demand kINT7"};
@@ -69,6 +70,8 @@ struct ClusterMonitor {
   Configurable<std::string> mSelectBCID{"selectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
   Configurable<double> mVertexCut{"vertexCut", -1, "apply z-vertex cut with value in cm"};
   Configurable<int> mClusterDefinition{"clusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
+  ConfigurableAxis mClusterTimeBinning{"clustertime-binning", {1500, -600, 900}, ""};
+  ConfigurableAxis mNumberClusterBinning{"numclusters-binning", {201, -0.5, 200.5}, ""};
 
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
@@ -83,15 +86,14 @@ struct ClusterMonitor {
     // load geometry just in case we need it
     mGeometry = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
 
-    // create histograms for cluster QA
-    Double_t timeMin = -600;
-    Double_t timeMax = 900;
-
     // create common axes
     LOG(info) << "Creating histograms";
     const o2Axis bcAxis{3501, -0.5, 3500.5};
     const o2Axis energyAxis{makeEnergyBinningAliPhysics(), "E_{clus} (GeV)"};
-    const o2Axis timeAxis{800, timeMin, timeMax};
+    const o2Axis amplitudeAxisLarge{1000, 0., 100., "amplitudeLarge", "Amplitude (GeV)"};
+    const o2Axis supermoduleAxis{20, -0.5, 19.5, "Supermodule ID"};
+    o2Axis timeAxis{mClusterTimeBinning, "t_{cl} (ns)"};
+    o2Axis numberClustersAxis{mNumberClusterBinning, "Number of clusters / event"};
 
     // event properties
     mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
@@ -100,10 +102,17 @@ struct ClusterMonitor {
     mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", o2HistType::kTH1F, {{200, -20, 20}});
     mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", o2HistType::kTH1F, {{200, -20, 20}});
+    mHistManager.add("numberOfClustersEvents", "number of clusters per event (selected events)", o2HistType::kTH1F, {numberClustersAxis});
+    mHistManager.add("numberOfClustersBC", "number of clusters per bunch crossing (ambiguous BCs)", o2HistType::kTH1F, {numberClustersAxis});
+    mHistManager.add("numberOfClustersEventsRejected", "number of clusters per event (rejected events)", o2HistType::kTH1F, {numberClustersAxis});
+    mHistManager.add("numberOfClustersSMEvents", "number of clusters per supermodule per event (selected events)", o2HistType::kTH2F, {numberClustersAxis, {20, -0.5, 19.5, "SupermoduleID"}});
+    mHistManager.add("numberOfClustersSMBC", "number of clusters per supermodule per bunch crossing (ambiguous BCs)", o2HistType::kTH2F, {numberClustersAxis, {20, -0.5, 19.5, "SupermoduleID"}});
 
     // cluster properties (matched clusters)
+    int MaxMatched = 20; // maximum number of matched tracks, hardcoded in emcalCorrectionTask.cxx!
     mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("clusterEMatched", "Energy of cluster (with match)", o2HistType::kTH1F, {energyAxis});
+    mHistManager.add("clusterESupermodule", "Energy of the cluster vs. supermoduleID", o2HistType::kTH2F, {energyAxis, supermoduleAxis});
     mHistManager.add("clusterE_SimpleBinning", "Energy of cluster", o2HistType::kTH1F, {{2000, 0, 200}});
     mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1}, {100, 0, 2 * TMath::Pi()}});
     mHistManager.add("clusterM02", "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5}});
@@ -113,8 +122,41 @@ struct ClusterMonitor {
     mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100}});
     mHistManager.add("clusterTimeVsE", "Cluster time vs energy", o2HistType::kTH2F, {timeAxis, energyAxis});
     mHistManager.add("clusterAmpFractionLeadingCell", "Fraction of energy in leading cell", o2HistType::kTH1F, {{100, 0, 1}});
-    mHistManager.add("clusterTM_dEtadPhi", "cluster trackmatching dEta/dPhi", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});
-    mHistManager.add("clusterTM_EoverP_E", "cluster E/p (dEtadPhi<0.05)", o2HistType::kTH2F, {{500, 0, 10}, {200, 0, 100}});
+    mHistManager.add("clusterTM_dEtadPhi", "cluster trackmatching dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", o2HistType::kTH3F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}, {MaxMatched, 0.5, MaxMatched + 0.5}});               // dEta dPhi of only the Nth clostest track
+    mHistManager.add("clusterTM_dEtadPhi_ASide", "cluster trackmatching in A-Side dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});                                    // dEta dPhi of only the clostest track in A-Aside
+    mHistManager.add("clusterTM_dEtadPhi_CSide", "cluster trackmatching in C-Side tracks dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});                             // dEta dPhi of only the clostest track in C-Side
+    mHistManager.add("clusterTM_PosdEtadPhi", "cluster trackmatching positive tracks dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});                                 // dEta dPhi of only the clostest positive track
+    mHistManager.add("clusterTM_NegdEtadPhi", "cluster trackmatching negative tracks dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});                                 // dEta dPhi of only the clostest negative track
+    mHistManager.add("clusterTM_PosdEtadPhi_Pl0_75", "cluster trackmatching positive tracks, p < 0.75 dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});                // dEta dPhi of only the clostest positive track with p < 0.75 GeV/c
+    mHistManager.add("clusterTM_NegdEtadPhi_Pl0_75", "cluster trackmatching negative tracks, p < 0.75 dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});                // dEta dPhi of only the clostest negative track with p < 0.75 GeV/c
+    mHistManager.add("clusterTM_PosdEtadPhi_0_75leqPl1_25", "cluster trackmatching positive tracks, 0.75 <= p < 1.25 dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}}); // dEta dPhi of only the clostest positive track with 0.75 <= p < 1.25 GeV/c
+    mHistManager.add("clusterTM_NegdEtadPhi_0_75leqPl1_25", "cluster trackmatching negative tracks, 0.75 <= p < 1.25 dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}}); // dEta dPhi of only the clostest negative track with 0.75 <= p < 1.25 GeV/c
+    mHistManager.add("clusterTM_PosdEtadPhi_Pgeq1_25", "cluster trackmatching positive tracks, p >= 1.25 dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});             // dEta dPhi of only the clostest positive track with p >= 1.25 GeV/c
+    mHistManager.add("clusterTM_NegdEtadPhi_Pgeq1_25", "cluster trackmatching negative tracks, p >= 1.25 dEta/dPhi;d#it{#eta};d#it{#varphi} (rad)", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});             // dEta dPhi of only the clostest negative track with p >= 1.25 GeV/c
+    mHistManager.add("clusterTM_dEtaPt", "cluster trackmatching dEta/#it{p}_{T};d#it{#eta};#it{p}_{T} (GeV/#it{c})", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, 0.0, 50.}});                                             // dEta vs pT of only the clostest track
+    mHistManager.add("clusterTM_PosdPhiPt", "cluster trackmatching positive tracks dPhi/#it{p}_{T};d#it{#varphi} (rad);#it{p}_{T} (GeV/#it{c})", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, 0.0, 50.}});                 // dPhi vs pT of only the clostest positive track
+    mHistManager.add("clusterTM_NegdPhiPt", "cluster trackmatching negative tracks dPh/#it{p}_{T}i;d#it{#varphi} (rad);#it{p}_{T} (GeV/#it{c})", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, 0.0, 50.}});                 // dPhi vs pT of only the clostest negative track
+    mHistManager.add("clusterTM_dEtaTN", "cluster trackmatching dEta/TN;d#it{#eta};#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, -0.4, 0.4}, {MaxMatched, 0.5, MaxMatched + 0.5}});                                 // dEta compared to the Nth closest track
+    mHistManager.add("clusterTM_dPhiTN", "cluster trackmatching dPhi/TN;d#it{#varphi} (rad);#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, -0.4, 0.4}, {MaxMatched, 0.5, MaxMatched + 0.5}});                        // dPhi compared to the Nth closest track
+    mHistManager.add("clusterTM_dRTN", "cluster trackmatching dR/TN;d#it{R};#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, 0.0, 0.4}, {MaxMatched, 0.5, MaxMatched + 0.5}});                                         // dR compared to the Nth closest track
+    mHistManager.add("clusterTM_NTrack", "cluster trackmatching NMatchedTracks", o2HistType::kTH1I, {{11, -0.5, 10.5}});                                                                                                  // how many tracks are matched
+    mHistManager.add("clusterTM_dEtaTNAli", "cluster trackmatching dEta/TN;d#it{#eta};#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, -0.06, 0.06}, {MaxMatched, 0.5, MaxMatched + 0.5}});                            // dEta compared to the Nth closest track with cuts from latest Pi0 Run2 analysis
+    mHistManager.add("clusterTM_dPhiTNAli", "cluster trackmatching dPhi/TN;d#it{#varphi} (rad);#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, -0.1, 0.1}, {MaxMatched, 0.5, MaxMatched + 0.5}});                     // dPhi compared to the Nth closest track with cuts from latest Pi0 Run2 analysis
+    mHistManager.add("clusterTM_dRTNAli", "cluster trackmatching dR/TN;d#it{R};#it{N}_{matched tracks}", o2HistType::kTH2F, {{100, 0.0, 0.1}, {MaxMatched, 0.5, MaxMatched + 0.5}});                                      // dR compared to the Nth closest track with cuts from latest Pi0 Run2 analysis
+    mHistManager.add("clusterTM_NTrackAli", "cluster trackmatching NMatchedTracks", o2HistType::kTH1I, {{11, -0.5, 10.5}});                                                                                               // how many tracks are matched with cuts from latest Pi0 Run2 analysis
+    mHistManager.add("clusterTM_EoverP_E", "cluster E/p (dEtadPhi<0.05);#it{E}_{cluster}/#it{p}_{track};#it{E}_{cluster} (GeV)", o2HistType::kTH3F, {{500, 0, 10}, {200, 0, 100}, {MaxMatched, 0.5, MaxMatched + 0.5}});  // E/p vs p vs # matched track
+    mHistManager.add("clusterTM_EvsP", "cluster E/track p (dEtadPhi<0.05);#it{E}_{cluster} (GeV);#it{p}_{track} (GeV/#it{c})", o2HistType::kTH2F, {{500, 0, 10}, {200, 0, 100}});                                         // E vs p for closest track with dEta,dPhi<0.05
+    mHistManager.add("clusterTM_EoverP_electron", "cluster E/electron p (dEtadPhi<0.05);#it{E}_{cluster} (GeV);#it{p}_{e^{#pm}} (GeV/#it{c})", o2HistType::kTH2F, {{500, 0, 10}, {200, 0, 100}});                         // E over p vs track pT for closest electron/positron track with dEta,dPhi<0.05
+    mHistManager.add("clusterTM_EoverP_hadron", "cluster E/hadron p (dEtadPhi<0.05);#it{E}_{cluster} (GeV);#it{p}_{e^{#pm}} (GeV/#it{c})", o2HistType::kTH2F, {{500, 0, 10}, {200, 0, 100}});                             // E over p vs track pT for closest hadron track with dEta,dPhi<0.05
+    mHistManager.add("clusterTM_EoverP_Pt", "cluster E/track vs track pT (dEtadPhi<0.05);#it{E}_{cluster}/#it{p}_{track};#it{p}_{T,track} (GeV/#it{c})", o2HistType::kTH2F, {{500, 0, 10}, {200, 0, 100}});               // E vs p vs track pTfor closest track with dEta,dPhi<0.05
+
+    // add histograms per supermodule
+    for (int ism = 0; ism < 20; ++ism) {
+      mHistManager.add(Form("clusterTimeVsESM/clusterTimeVsESM%d", ism), Form("Cluster time vs energy in Supermodule %d", ism), o2HistType::kTH2F, {timeAxis, amplitudeAxisLarge});
+      mHistManager.add(Form("clusterNcellVsESM/clusterNCellVsESM%d", ism), Form("Cluster number of cells vs energy in Supermodule %d", ism), o2HistType::kTH2F, {{50, 0, 50}, amplitudeAxisLarge});
+      mHistManager.add(Form("clusterM02VsESM/clusterM02VsESM%d", ism), Form("Cluster M02 vs energy in Supermodule %d", ism), o2HistType::kTH2F, {{400, 0, 5}, amplitudeAxisLarge});
+      mHistManager.add(Form("clusterM20VsESM/clusterM20VsESM%d", ism), Form("Cluster M20 vs energy in Supermodule %d", ism), o2HistType::kTH2F, {{400, 0, 2.5}, amplitudeAxisLarge});
+    }
 
     if (mVetoBCID->length()) {
       std::stringstream parser(mVetoBCID.value);
@@ -144,15 +186,28 @@ struct ClusterMonitor {
   Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition);
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::Calos const& allcalos, o2::aod::EMCALMatchedTracks const& matchedtracks, o2::aod::Tracks const& alltrack)
+  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::Calos const& allcalos)
   {
     mHistManager.fill(HIST("eventsAll"), 1);
 
     // do event selection if mDoEventSel is specified
     // currently the event selection is hard coded to kINT7
     // but other selections are possible that are defined in TriggerAliases.h
-    if (mDoEventSel && (!theCollision.alias()[kINT7])) {
-      LOG(debug) << "Event not selected because it is not kINT7, skipping";
+    bool isSelected = true;
+    if (mDoEventSel) {
+      if (theCollision.bc().runNumber() < 300000) {
+        if (!theCollision.alias()[kINT7]) {
+          isSelected = false;
+        }
+      } else {
+        if (!theCollision.alias()[kTVXinEMC]) {
+          isSelected = false;
+        }
+      }
+    }
+    if (!isSelected) {
+      LOG(debug) << "Event not selected because it is not kINT7 or does not have EMCAL in readout, skipping";
+      mHistManager.fill(HIST("numberOfClustersEventsRejected"), clusters.size());
       return;
     }
     mHistManager.fill(HIST("eventVertexZAll"), theCollision.posZ());
@@ -162,8 +217,11 @@ struct ClusterMonitor {
     }
     mHistManager.fill(HIST("eventsSelected"), 1);
     mHistManager.fill(HIST("eventVertexZSelected"), theCollision.posZ());
+    mHistManager.fill(HIST("numberOfClustersEvents"), clusters.size());
 
     LOG(debug) << "bunch crossing ID" << theCollision.bcId();
+    std::array<int, 20> numberOfClustersSM;
+    std::fill(numberOfClustersSM.begin(), numberOfClustersSM.end(), 0);
     // loop over all clusters from accepted collision
     // auto eventClusters = clusters.select(o2::aod::emcalcluster::bcId == theCollision.bc().globalBC());
     for (const auto& cluster : clusters) {
@@ -190,6 +248,17 @@ struct ClusterMonitor {
       LOG(debug) << "ncells in cluster: " << cluster.nCells();
       LOG(debug) << "real cluster id" << cluster.id();
 
+      // monitor observables per supermodule
+      try {
+        auto supermoduleID = mGeometry->SuperModuleNumberFromEtaPhi(cluster.eta(), cluster.phi());
+        mHistManager.fill(HIST("clusterESupermodule"), cluster.energy(), supermoduleID);
+        fillSupermoduleHistograms(supermoduleID, cluster.energy(), cluster.time(), cluster.nCells(), cluster.m02(), cluster.m20());
+        numberOfClustersSM[supermoduleID]++;
+      } catch (o2::emcal::InvalidPositionException& e) {
+        // Imprecision of the position at the sector boundaries, mostly due to
+        // vertex imprecision. Skip these clusters for the now.
+      }
+
       // example of loop over all cells of current cluster
       // cell.calo() allows to access the cell properties as defined in AnalysisDataModel
       // In this exammple, we loop over all cells and find the cell of maximum energy and plot the fraction
@@ -206,29 +275,9 @@ struct ClusterMonitor {
       }
       ampfraction = maxamp / cluster.energy();
       mHistManager.fill(HIST("clusterAmpFractionLeadingCell"), ampfraction);
-
-      // Example of loop over tracks matched to cluster within dR=0.4, where only the
-      // 5 most closest tracks are stored. If needed the number of tracks can be later
-      // increased in the correction framework. Access to all track properties via match.track()
-      // In this example the counter t is just used to only look at the closest match
-      double dEta, dPhi;
-      auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, cluster.globalIndex());
-      int t = 0;
-      for (const auto& match : tracksofcluster) {
-        // exmple of how to access any property of the matched tracks (tracks are sorted by how close they are to cluster)
-        LOG(debug) << "Pt of match" << match.track().pt();
-        // only consider closest match
-        if (t == 0) {
-          dEta = match.track().eta() - cluster.eta();
-          dPhi = match.track().phi() - cluster.phi();
-          if (dEta < 0.05 && dPhi < 0.05) {
-            mHistManager.fill(HIST("clusterTM_EoverP_E"), cluster.energy() / match.track().p(), cluster.energy());
-          }
-          mHistManager.fill(HIST("clusterTM_dEtadPhi"), dEta, dPhi);
-        }
-
-        t++;
-      }
+    }
+    for (int supermoduleID = 0; supermoduleID < 20; supermoduleID++) {
+      mHistManager.fill(HIST("numberOfClustersSMEvents"), numberOfClustersSM[supermoduleID], supermoduleID);
     }
   }
   PROCESS_SWITCH(ClusterMonitor, processCollisions, "Process clusters from collision", false);
@@ -236,7 +285,7 @@ struct ClusterMonitor {
   /// \brief Process EMCAL clusters that are not matched to a collision
   /// This is not needed for most users
 
-  void processAmbiguous(o2::aod::BC const& bc, selectedAmbiguousClusters const& clusters)
+  void processAmbiguous(bcEvSelIt const& bc, selectedAmbiguousClusters const& clusters)
   {
     // loop over bc , if requested (mVetoBCID >= 0), reject everything from a certain BC
     // this can be used as alternative to event selection (e.g. for pilot beam data)
@@ -251,7 +300,26 @@ struct ClusterMonitor {
     if (mSelectBCIDs.size() && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
       return;
     }
+    bool isSelected = true;
+    if (mDoEventSel) {
+      if (bc.runNumber() < 300000) {
+        if (!bc.alias()[kINT7]) {
+          isSelected = false;
+        }
+      } else {
+        if (!bc.alias()[kTVXinEMC]) {
+          isSelected = false;
+        }
+      }
+    }
+    if (!isSelected) {
+      return;
+    }
     mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
+    mHistManager.fill(HIST("numberOfClustersBC"), clusters.size());
+
+    std::array<int, 20> numberOfClustersSM;
+    std::fill(numberOfClustersSM.begin(), numberOfClustersSM.end(), 0);
     // loop over ambiguous clusters
     for (const auto& cluster : clusters) {
       mHistManager.fill(HIST("clusterE"), cluster.energy());
@@ -263,13 +331,110 @@ struct ClusterMonitor {
       mHistManager.fill(HIST("clusterNLM"), cluster.nlm());
       mHistManager.fill(HIST("clusterNCells"), cluster.nCells());
       mHistManager.fill(HIST("clusterDistanceToBadChannel"), cluster.distanceToBadChannel());
+
+      try {
+        auto supermoduleID = mGeometry->SuperModuleNumberFromEtaPhi(cluster.eta(), cluster.phi());
+        mHistManager.fill(HIST("clusterESupermodule"), cluster.energy(), supermoduleID);
+        fillSupermoduleHistograms(supermoduleID, cluster.energy(), cluster.time(), cluster.nCells(), cluster.m02(), cluster.m20());
+        numberOfClustersSM[supermoduleID]++;
+      } catch (o2::emcal::InvalidPositionException& e) {
+        // Imprecision of the position at the sector boundaries, mostly due to
+        // vertex imprecision. Skip these clusters for the now.
+      }
+    }
+    for (int supermoduleID = 0; supermoduleID < 20; supermoduleID++) {
+      mHistManager.fill(HIST("numberOfClustersSMBC"), numberOfClustersSM[supermoduleID], supermoduleID);
     }
   }
   PROCESS_SWITCH(ClusterMonitor, processAmbiguous, "Process Ambiguous clusters", false);
 
+  void fillSupermoduleHistograms(int supermoduleID, double energy, double time, int ncell, double m02, double m20)
+  {
+    // workaround to have the histogram names per supermodule
+    // handled as constexpr
+    switch (supermoduleID) {
+      case 0:
+        supermoduleHistHelper<0>(energy, time, ncell, m02, m20);
+        break;
+      case 1:
+        supermoduleHistHelper<1>(energy, time, ncell, m02, m20);
+        break;
+      case 2:
+        supermoduleHistHelper<2>(energy, time, ncell, m02, m20);
+        break;
+      case 3:
+        supermoduleHistHelper<3>(energy, time, ncell, m02, m20);
+        break;
+      case 4:
+        supermoduleHistHelper<4>(energy, time, ncell, m02, m20);
+        break;
+      case 5:
+        supermoduleHistHelper<5>(energy, time, ncell, m02, m20);
+        break;
+      case 6:
+        supermoduleHistHelper<6>(energy, time, ncell, m02, m20);
+        break;
+      case 7:
+        supermoduleHistHelper<7>(energy, time, ncell, m02, m20);
+        break;
+      case 8:
+        supermoduleHistHelper<8>(energy, time, ncell, m02, m20);
+        break;
+      case 9:
+        supermoduleHistHelper<9>(energy, time, ncell, m02, m20);
+        break;
+      case 10:
+        supermoduleHistHelper<10>(energy, time, ncell, m02, m20);
+        break;
+      case 11:
+        supermoduleHistHelper<11>(energy, time, ncell, m02, m20);
+        break;
+      case 12:
+        supermoduleHistHelper<12>(energy, time, ncell, m02, m20);
+        break;
+      case 13:
+        supermoduleHistHelper<13>(energy, time, ncell, m02, m20);
+        break;
+      case 14:
+        supermoduleHistHelper<14>(energy, time, ncell, m02, m20);
+        break;
+      case 15:
+        supermoduleHistHelper<15>(energy, time, ncell, m02, m20);
+        break;
+      case 16:
+        supermoduleHistHelper<16>(energy, time, ncell, m02, m20);
+        break;
+      case 17:
+        supermoduleHistHelper<17>(energy, time, ncell, m02, m20);
+        break;
+      case 18:
+        supermoduleHistHelper<18>(energy, time, ncell, m02, m20);
+        break;
+      case 19:
+        supermoduleHistHelper<19>(energy, time, ncell, m02, m20);
+        break;
+      default:
+        break;
+    }
+  }
+
+  template <int supermoduleID>
+  void supermoduleHistHelper(double energy, double time, int ncells, double m02, double m20)
+  {
+    static constexpr std::string_view clusterEnergyTimeHist[20] = {"clusterTimeVsESM/clusterTimeVsESM0", "clusterTimeVsESM/clusterTimeVsESM1", "clusterTimeVsESM/clusterTimeVsESM2", "clusterTimeVsESM/clusterTimeVsESM3", "clusterTimeVsESM/clusterTimeVsESM4", "clusterTimeVsESM/clusterTimeVsESM5", "clusterTimeVsESM/clusterTimeVsESM6", "clusterTimeVsESM/clusterTimeVsESM7", "clusterTimeVsESM/clusterTimeVsESM8", "clusterTimeVsESM/clusterTimeVsESM9", "clusterTimeVsESM/clusterTimeVsESM10", "clusterTimeVsESM/clusterTimeVsESM11", "clusterTimeVsESM/clusterTimeVsESM12", "clusterTimeVsESM/clusterTimeVsESM13", "clusterTimeVsESM/clusterTimeVsESM14", "clusterTimeVsESM/clusterTimeVsESM15", "clusterTimeVsESM/clusterTimeVsESM16", "clusterTimeVsESM/clusterTimeVsESM17", "clusterTimeVsESM/clusterTimeVsESM18", "clusterTimeVsESM/clusterTimeVsESM19"};
+    static constexpr std::string_view clusterEnergyNcellHistSM[20] = {"clusterNcellVsESM/clusterNCellVsESM0", "clusterNcellVsESM/clusterNCellVsESM1", "clusterNcellVsESM/clusterNCellVsESM2", "clusterNcellVsESM/clusterNCellVsESM3", "clusterNcellVsESM/clusterNCellVsESM4", "clusterNcellVsESM/clusterNCellVsESM5", "clusterNcellVsESM/clusterNCellVsESM6", "clusterNcellVsESM/clusterNCellVsESM7", "clusterNcellVsESM/clusterNCellVsESM8", "clusterNcellVsESM/clusterNCellVsESM9", "clusterNcellVsESM/clusterNCellVsESM10", "clusterNcellVsESM/clusterNCellVsESM11", "clusterNcellVsESM/clusterNCellVsESM12", "clusterNcellVsESM/clusterNCellVsESM13", "clusterNcellVsESM/clusterNCellVsESM14", "clusterNcellVsESM/clusterNCellVsESM15", "clusterNcellVsESM/clusterNCellVsESM16", "clusterNcellVsESM/clusterNCellVsESM17", "clusterNcellVsESM/clusterNCellVsESM18", "clusterNcellVsESM/clusterNCellVsESM19"};
+    static constexpr std::string_view clusterEnergyM02HistSM[20] = {"clusterM02VsESM/clusterM02VsESM0", "clusterM02VsESM/clusterM02VsESM1", "clusterM02VsESM/clusterM02VsESM2", "clusterM02VsESM/clusterM02VsESM3", "clusterM02VsESM/clusterM02VsESM4", "clusterM02VsESM/clusterM02VsESM5", "clusterM02VsESM/clusterM02VsESM6", "clusterM02VsESM/clusterM02VsESM7", "clusterM02VsESM/clusterM02VsESM8", "clusterM02VsESM/clusterM02VsESM9", "clusterM02VsESM/clusterM02VsESM10", "clusterM02VsESM/clusterM02VsESM11", "clusterM02VsESM/clusterM02VsESM12", "clusterM02VsESM/clusterM02VsESM13", "clusterM02VsESM/clusterM02VsESM14", "clusterM02VsESM/clusterM02VsESM15", "clusterM02VsESM/clusterM02VsESM16", "clusterM02VsESM/clusterM02VsESM17", "clusterM02VsESM/clusterM02VsESM18", "clusterM02VsESM/clusterM02VsESM19"};
+    static constexpr std::string_view clusterEnergyM20HistSM[20] = {"clusterM20VsESM/clusterM20VsESM0", "clusterM20VsESM/clusterM20VsESM1", "clusterM20VsESM/clusterM20VsESM2", "clusterM20VsESM/clusterM20VsESM3", "clusterM20VsESM/clusterM20VsESM4", "clusterM20VsESM/clusterM20VsESM5", "clusterM20VsESM/clusterM20VsESM6", "clusterM20VsESM/clusterM20VsESM7", "clusterM20VsESM/clusterM20VsESM8", "clusterM20VsESM/clusterM20VsESM9", "clusterM20VsESM/clusterM20VsESM10", "clusterM20VsESM/clusterM20VsESM11", "clusterM20VsESM/clusterM20VsESM12", "clusterM20VsESM/clusterM20VsESM13", "clusterM20VsESM/clusterM20VsESM14", "clusterM20VsESM/clusterM20VsESM15", "clusterM20VsESM/clusterM20VsESM16", "clusterM20VsESM/clusterM20VsESM17", "clusterM20VsESM/clusterM20VsESM18", "clusterM20VsESM/clusterM20VsESM19"};
+    mHistManager.fill(HIST(clusterEnergyTimeHist[supermoduleID]), time, energy);
+    mHistManager.fill(HIST(clusterEnergyNcellHistSM[supermoduleID]), ncells, energy);
+    mHistManager.fill(HIST(clusterEnergyM02HistSM[supermoduleID]), m02, energy);
+    mHistManager.fill(HIST(clusterEnergyM20HistSM[supermoduleID]), m20, energy);
+  }
+
   /// \brief Create binning for cluster energy axis (variable bin size)
   /// \return vector with bin limits
-  std::vector<double> makeEnergyBinning() const
+  std::vector<double>
+    makeEnergyBinning() const
   {
     auto fillBinLimits = [](std::vector<double>& binlimits, double max, double binwidth) {
       auto current = *binlimits.rbegin();

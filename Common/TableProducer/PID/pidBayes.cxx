@@ -21,10 +21,15 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/Array2D.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/PID/DetectorResponse.h"
+#include "Common/Core/PID/ParamBase.h"
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/PIDResponse.h"
+
 #include "pidTOFBase.h"
 
 using namespace o2;
@@ -73,9 +78,9 @@ struct bayesPid {
   o2::pid::tpc::Response responseTPC;
   o2::pid::tpc::Response* responseTPCptr = nullptr;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paramfileTOF{"param-file-TOF", "", "Path to the TOF parametrization object, if emtpy the parametrization is not taken from file"};
-  Configurable<std::string> paramfileTPC{"param-file-TPC", "", "Path to the TPC parametrization object, if emtpy the parametrization is not taken from file"};
-  Configurable<std::string> TOFsigmaname{"param-tof-sigma", "TOFReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
+  Configurable<std::string> paramfileTOF{"param-file-TOF", "", "Path to the TOF parametrization object, if empty the parametrization is not taken from file"};
+  Configurable<std::string> paramfileTPC{"param-file-TPC", "", "Path to the TPC parametrization object, if empty the parametrization is not taken from file"};
+  Configurable<std::string> TOFsigmaname{"param-tof-sigma", "TOFReso", "Name of the parametrization. Used in both file and CCDB mode"};
   Configurable<bool> enableTOF{"enableTOF", false, "Enabling TOF"};
   Configurable<bool> enableTPC{"enableTPC", false, "Enabling TPC"};
   /// Ordering has to respect the one in ProbType
@@ -83,9 +88,10 @@ struct bayesPid {
   std::array<bool, kNDet> enabledDet{false};
 
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPathTOF{"ccdbPathTOF", "Analysis/PID/TOF", "Path of the TOF parametrization on the CCDB"};
+  Configurable<std::string> ccdbPathTOF{"ccdbPathTOF", "TOF/Calib", "Path of the TOF parametrization on the CCDB"};
   Configurable<std::string> ccdbPathTPC{"ccdbPathTPC", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
-  Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+
   // Configuration flags to include and exclude particle hypotheses
   // Configurable<LabeledArray<int>> pid{"pid",
   //                                     {{-1, -1, -1, -1, -1, -1, -1, -1, -1}, 9, {"el", "mu", "pi", "ka", "pr", "de", "tr", "he", "al"}},
@@ -115,7 +121,7 @@ struct bayesPid {
     LOG(debug) << "Detector " << detectorName[detIndex] << " enabled with " << enabledSpecies.size() << " species";
 
     for (const auto enabledPid : enabledSpecies) { // Checking that the species is enabled
-      LOG(debug) << "Testing " << PID::getName(enabledPid) << " " << (int)enabledPid << " vs " << (int)pid;
+      LOG(debug) << "Testing " << PID::getName(enabledPid) << " " << static_cast<int>(enabledPid) << " vs " << static_cast<int>(pid);
       if (enabledPid == pid) {
         LOG(debug) << "Particle " << PID::getName(enabledPid) << " enabled";
         Probability[detIndex][pid] = 1.f / enabledSpecies.size(); // set flat distribution (no decision yet)
@@ -150,8 +156,8 @@ struct bayesPid {
 
     // Checking the tables are requested in the workflow and enabling them
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      for (auto input : device.inputs) {
+    for (DeviceSpec const& device : workflows.devices) {
+      for (auto const& input : device.inputs) {
         auto enableFlag = [&input](const PID::ID& id, Configurable<int>& flag) {
           const std::string particles[PID::NIDs] = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
           const std::string particle = particles[id];
@@ -186,7 +192,7 @@ struct bayesPid {
                                  const Configurable<int>& flag) {
       if (flag.value == 1) {
         enabledSpecies.push_back(id);
-        LOG(info) << "Enabling particle: " << (int)id << " " << PID::getName(enabledSpecies.back());
+        LOG(info) << "Enabling particle: " << static_cast<int>(id) << " " << PID::getName(enabledSpecies.back());
       }
     };
 
@@ -239,7 +245,7 @@ struct bayesPid {
         responseTPC.SetParameters(responseTPCptr);
       } catch (...) {
         LOGP(info, "Loading the TPC PID Response from file {} failed!", fnameTPC);
-      };
+      }
     } else {
       const std::string pathTPC = ccdbPathTPC.value;
       const auto time = timestamp.value;
@@ -294,7 +300,7 @@ struct bayesPid {
 
   /// Response of the TOF detector
   template <o2::track::PID::ID pid>
-  using respTOF = tof::ExpTimes<Trks::iterator, pid>;
+  using respTOF = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
 
   /// Compute PID probabilities for TOF
   template <o2::track::PID::ID pid>
@@ -314,8 +320,8 @@ struct bayesPid {
     float mismPropagationFactor[10] = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
     // In the O2 this cannot be done because the cluster information is missing in the AOD
     // if (!fNoTOFmism) {                                                                  // this flag allows to disable mismatch for iterative procedure to get prior probabilities
-    //   mismPropagationFactor[3] = 1 + exp(1 - 1.12 * pt);                                // it has to be alligned with the one in AliPIDCombined
-    //   mismPropagationFactor[4] = 1 + 1. / (4.71114 - 5.72372 * pt + 2.94715 * pt * pt); // it has to be alligned with the one in AliPIDCombined
+    //   mismPropagationFactor[3] = 1 + exp(1 - 1.12 * pt);                                // it has to be aligned with the one in AliPIDCombined
+    //   mismPropagationFactor[4] = 1 + 1. / (4.71114 - 5.72372 * pt + 2.94715 * pt * pt); // it has to be aligned with the one in AliPIDCombined
 
     //   int nTOFcluster = 0;
     //   if (track->GetTOFHeader() && track->GetTOFHeader()->GetTriggerMask() && track->GetTOFHeader()->GetNumberOfTOFclusters() > -1) { // N TOF clusters available
@@ -356,10 +362,10 @@ struct bayesPid {
 
     const float meanCorrFactor = 0.07 / fTOFtail; // Correction factor on the mean because of the tail (should be ~ 0.1 with tail = 1.1)
 
-    const float nsigmas = responseTOFPID.GetSeparation(Response[kTOF], track) + meanCorrFactor;
+    const float nsigmas = /*responseTOFPID.GetSeparation(Response[kTOF], track) +*/ meanCorrFactor;
 
     const float expTime = responseTOFPID.GetExpectedSignal(track);
-    const float sig = responseTOFPID.GetExpectedSigma(Response[kTOF], track);
+    const float sig = /*responseTOFPID.GetExpectedSigma(Response[kTOF], track)*/ +0.f;
 
     if (nsigmas < fTOFtail) {
       Probability[kTOF][pid] = exp(-0.5 * nsigmas * nsigmas) / sig;
@@ -412,8 +418,8 @@ struct bayesPid {
       sum += Probability[kMerged][enabledPid] * Probability[kPrior][enabledPid];
     }
     if (sum <= 0) {
-      LOG(warning) << "Invalid probability densities or prior probabilities";
-      for (long unsigned int i = 0; i < Probability[kBayesian].size(); i++) {
+      // LOG(warning) << "Invalid probability densities or prior probabilities";
+      for (uint64_t i = 0; i < Probability[kBayesian].size(); i++) {
         Probability[kBayesian][i] = 1.f / Probability[kBayesian].size();
       }
       return;
@@ -532,20 +538,20 @@ struct bayesPidQa {
     if (logAxis == 0) {
       return;
     }
-    const int nbins = h->GetNbinsX();
-    double binp[nbins + 1];
-    double max = h->GetXaxis()->GetBinUpEdge(nbins);
+    const int kNBins = h->GetNbinsX();
+    double binp[kNBins + 1];
+    double max = h->GetXaxis()->GetBinUpEdge(kNBins);
     double min = h->GetXaxis()->GetBinLowEdge(1);
     if (min <= 0) {
       min = 0.00001;
     }
     double lmin = TMath::Log10(min);
-    double ldelta = (TMath::Log10(max) - lmin) / ((double)nbins);
-    for (int i = 0; i < nbins; i++) {
+    double ldelta = (TMath::Log10(max) - lmin) / (static_cast<double>(kNBins));
+    for (int i = 0; i < kNBins; i++) {
       binp[i] = exp(TMath::Log(10) * (lmin + i * ldelta));
     }
-    binp[nbins] = max + 1;
-    h->GetXaxis()->Set(nbins, binp);
+    binp[kNBins] = max + 1;
+    h->GetXaxis()->Set(kNBins, binp);
   }
 
   template <uint8_t i>

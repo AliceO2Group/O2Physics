@@ -14,18 +14,18 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
+#ifndef PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
+#define PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
 
+#include <iostream>
+#include <string>
+#include <vector>
+#include <bitset>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include "FemtoDreamSelection.h"
 #include "FemtoDreamTrackSelection.h"
 #include "FemtoDreamV0Selection.h"
-
-#include <bitset>
-
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <iostream>
 
 namespace o2::analysis::femtoDream
 {
@@ -39,7 +39,7 @@ class FemtoDreamCutculator
   /// \param configFile Path to the dpl-config.json file from the femtodream-producer task
   void init(const char* configFile)
   {
-    std::cout << "Welcome to the CutCulator!\n";
+    LOG(info) << "Welcome to the CutCulator!";
 
     boost::property_tree::ptree root;
     try {
@@ -47,7 +47,16 @@ class FemtoDreamCutculator
     } catch (const boost::property_tree::ptree_error& e) {
       LOG(fatal) << "Failed to read JSON config file " << configFile << " (" << e.what() << ")";
     }
-    mConfigTree = root.get_child("femto-dream-producer-task");
+
+    // check the config file for all known producer task
+    std::vector<const char*> ProducerTasks = {"femto-dream-producer-task", "femto-dream-producer-reduced-task"};
+    for (auto& Producer : ProducerTasks) {
+      if (root.count(Producer) > 0) {
+        mConfigTree = root.get_child(Producer);
+        LOG(info) << "Found " << Producer << " in " << configFile;
+        break;
+      }
+    }
   };
 
   /// Generic function that retrieves a given selection from the boost ptree and returns an std::vector in the proper format
@@ -108,7 +117,7 @@ class FemtoDreamCutculator
   /// \param prefix Prefix which is added to the name of the Configurable
   void setPIDSelectionFromFile(const char* prefix)
   {
-    std::string PIDnodeName = std::string(prefix) + "TPIDspecies";
+    std::string PIDnodeName = std::string(prefix) + "species";
     try {
       boost::property_tree::ptree& pidNode = mConfigTree.get_child(PIDnodeName);
       boost::property_tree::ptree& pidValues = pidNode.get_child("values");
@@ -177,7 +186,7 @@ class FemtoDreamCutculator
     /// First we check whether the input is actually contained within the options
     bool inputSane = false;
     for (auto sel : selVec) {
-      if (std::abs(sel.getSelectionValue() - input) < std::abs(1.e-6 * input)) {
+      if (std::abs(sel.getSelectionValue() - input) <= std::abs(1.e-6 * input)) {
         inputSane = true;
       }
     }
@@ -201,7 +210,7 @@ class FemtoDreamCutculator
             break;
         }
 
-        /// for upper and lower limit we have to substract/add an epsilon so that the cut is actually fulfilled
+        /// for upper and lower limit we have to subtract/add an epsilon so that the cut is actually fulfilled
         if (sel.isSelected(input + signOffset * 1.e-6 * input)) {
           output |= 1UL << counter;
           for (int i = internal_index; i > 0; i--) {
@@ -234,22 +243,16 @@ class FemtoDreamCutculator
   }
 
   /// This is the function called by the executable that then outputs the full selection bit-wise container incorporating the user choice of selections
-  void analyseCuts()
+  void analyseCuts(std::string choice)
   {
-    std::cout << "Do you want to work with tracks/v0/cascade (T/V/C)?\n";
-    std::cout << " > ";
-    std::string in;
-    std::cin >> in;
     aod::femtodreamparticle::cutContainerType output = -1;
-    if (in.compare("T") == 0) {
+    if (choice == std::string("T")) {
       output = iterateSelection(mTrackSel);
-    } else if (in.compare("V") == 0) {
+    } else if (choice == std::string("V")) {
       output = iterateSelection(mV0Sel);
-    } else if (in.compare("C") == 0) {
-      // output =  iterateSelection(mCascadeSel);
     } else {
-      std::cout << "Option " << in << " not recognized - available options are (T/V/C) \n";
-      analyseCuts();
+      LOG(info) << "Option " << choice << " not recognized - available options are (T/V)";
+      return;
     }
     std::bitset<8 * sizeof(aod::femtodreamparticle::cutContainerType)> bitOutput = output;
     std::cout << "+++++++++++++++++++++++++++++++++\n";
@@ -271,4 +274,4 @@ class FemtoDreamCutculator
 };
 } // namespace o2::analysis::femtoDream
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_ */
+#endif // PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_ */

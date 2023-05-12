@@ -37,7 +37,7 @@ class FemtoWorldDetaDphiStar
  public:
   /// Destructor
   virtual ~FemtoWorldDetaDphiStar() = default;
-  /// Initalization of the histograms and setting required values
+  /// Initialization of the histograms and setting required values
   void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, bool lplotForEveryRadii)
   {
     deltaPhiMax = ldeltaPhiMax;
@@ -67,6 +67,8 @@ class FemtoWorldDetaDphiStar
           }
         }
       }
+    }
+    if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
     }
   }
   ///  Check if pair is close or not
@@ -114,6 +116,9 @@ class FemtoWorldDetaDphiStar
         }
       }
       return pass;
+    } else if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
+      /// Track-Phi combination
+      return true;
     } else {
       LOG(fatal) << "FemtoWorldPairCleaner: Combination of objects not defined - quitting!";
       return false;

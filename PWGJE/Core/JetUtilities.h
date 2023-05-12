@@ -14,8 +14,8 @@
 ///
 /// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
 
-#ifndef O2_ANALYSIS_JETUTILITIES_H
-#define O2_ANALYSIS_JETUTILITIES_H
+#ifndef PWGJE_CORE_JETUTILITIES_H_
+#define PWGJE_CORE_JETUTILITIES_H_
 
 #include <cmath>
 #include <limits>
@@ -122,7 +122,7 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometricallyImpl(
   const std::size_t nJetsBase = jetsBaseEta.size();
   const std::size_t nJetsTag = jetsTagEta.size();
   if (!(nJetsBase && nJetsTag)) {
-    return std::make_tuple(std::vector<int>(nJetsBase), std::vector<int>(nJetsTag));
+    return std::make_tuple(std::vector<int>(nJetsBase, -1), std::vector<int>(nJetsTag, -1));
   }
   // Require that the comparison vectors are greater than or equal to the standard collections.
   if (jetsBasePhiForMatching.size() < jetsBasePhi.size()) {
@@ -213,7 +213,7 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometricallyImpl(
     if (matchIndexTag[iBase] > -1) {
       LOG(debug) << "tag jet " << matchIndexTag[iBase] << ": matched base jet " << matchIndexBase[matchIndexTag[iBase]] << "\n";
     }
-    if (matchIndexTag[iBase] > -1 && matchIndexBase[matchIndexTag[iBase]] == (int)iBase) {
+    if (matchIndexTag[iBase] > -1 && matchIndexBase[matchIndexTag[iBase]] == static_cast<int>(iBase)) {
       LOG(debug) << "True match! base index: " << iBase << ", tag index: " << matchIndexTag[iBase] << "\n";
       baseToTagMap[iBase] = matchIndexTag[iBase];
       tagToBaseMap[matchIndexTag[iBase]] = iBase;
@@ -253,7 +253,7 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometrically(
   const std::size_t nJetsTag = jetsTagEta.size();
   if (!(nJetsBase && nJetsTag)) {
     // There are no jets, so nothing to be done.
-    return std::make_tuple(std::vector<int>(nJetsBase), std::vector<int>(nJetsTag));
+    return std::make_tuple(std::vector<int>(nJetsBase, -1), std::vector<int>(nJetsTag, -1));
   }
   // Input sizes must match
   if (jetsBasePhi.size() != jetsBaseEta.size()) {
@@ -383,6 +383,7 @@ std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> MatchCl
   }
   return std::make_tuple(matchIndexTrack, matchIndexCluster);
 }
+
 }; // namespace JetUtilities
 
-#endif
+#endif // PWGJE_CORE_JETUTILITIES_H_

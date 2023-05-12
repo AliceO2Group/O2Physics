@@ -8,16 +8,16 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <fmt/printf.h>
+#include <map>
 #include "Framework/AnalysisDataModel.h"
-#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include <fmt/printf.h>
-#include <map>
 
 using namespace o2::framework;
 using namespace o2::aod;
@@ -271,9 +271,8 @@ int main(int, char**)
   displayEntity<McParticles>();
   displayEntity<McTrackLabels>();
 
-  displayEntity<Jets>();
-  displayEntity<JetTrackConstituents>();
-  displayEntity<JetClusterConstituents>();
+  displayEntity<ChargedJets>();
+  displayEntity<ChargedJetConstituents>();
 
   displayEntities<V0s, V0Datas>();
 
@@ -281,8 +280,8 @@ int main(int, char**)
 
   displayEntities<MFTTracks, FwdTracks, FwdTracksCov>();
 
-  displayEntities<Hf2Prongs, HfCandProng2>();
-  displayEntities<Hf3Prongs, HfCandProng3>();
+  displayEntities<Hf2Prongs, HfCand2Prong>();
+  displayEntities<Hf3Prongs, HfCand3Prong>();
 
   graphFooter();
   return 0;

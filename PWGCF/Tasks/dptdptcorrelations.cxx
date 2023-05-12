@@ -140,7 +140,7 @@ struct DptDptCorrelationsTask {
     /// \return the zero based bin index
     ///
     /// According to the bining structure, to the track eta will correspond
-    /// a zero based bin index and similarlly for the track phi
+    /// a zero based bin index and similarly for the track phi
     /// The returned index is the composition of both considering eta as
     /// the first index component
     /// WARNING: for performance reasons no checks are done about the consistency
