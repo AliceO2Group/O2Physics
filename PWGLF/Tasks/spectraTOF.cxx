@@ -277,6 +277,8 @@ struct tofSpectra {
     if (doprocessMC) {
       histos.add("MC/fake/pos", "Fake positive tracks", kTH1D, {ptAxis});
       histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
+      histos.add("MC/no_collision/pos", "No collision pos track", kTH1D, {ptAxis});
+      histos.add("MC/no_collision/neg", "No collision neg track", kTH1D, {ptAxis});
     }
 
     for (int i = 0; i < NpCharge; i++) {
@@ -424,6 +426,7 @@ struct tofSpectra {
     }
 
     // Print output histograms statistics
+    LOG(info) << "Size of the histograms in spectraTOF";
     histos.print();
   }
 
@@ -1074,6 +1077,14 @@ struct tofSpectra {
   {
     // LOGF(info, "Enter processMC!");
     for (auto& track : tracks) {
+      if (!track.has_collision()) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("MC/no_collision/pos"), track.pt());
+        } else {
+          histos.fill(HIST("MC/no_collision/neg"), track.pt());
+        }
+        continue;
+      }
       if (!passesCutWoDCA(track)) {
         continue;
       }

@@ -10,9 +10,11 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_library(ALICE3Core
-	       SOURCES TOFResoALICE3.cxx
-               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+                      SOURCES TOFResoALICE3.cxx
+                              DelphesO2TrackSmearer.cxx
+                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(ALICE3Core
-              HEADERS   TOFResoALICE3.h
-              LINKDEF ALICE3CoreLinkDef.h)
+                                 HEADERS TOFResoALICE3.h
+                                         DelphesO2TrackSmearer.h
+                                 LINKDEF ALICE3CoreLinkDef.h)

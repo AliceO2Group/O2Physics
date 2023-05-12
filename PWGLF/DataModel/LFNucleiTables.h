@@ -55,6 +55,7 @@ DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Sign, sign, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,
                            [](float p, float pz, float mass) -> float {
                              const auto energy = sqrt(p * p + mass * mass);
@@ -87,6 +88,7 @@ DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);
 DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);
+DECLARE_SOA_COLUMN(TOFExpMom, tofExpMom, float);
 DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);
 DECLARE_SOA_COLUMN(Beta, beta, float);
 // TPC and ITS QA
@@ -126,6 +128,7 @@ DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   full::HasTOF,
                   full::HasTRD,
                   full::TPCInnerParam,
+                  full::TOFExpMom,
                   full::TPCSignal,
                   full::Beta,
                   full::Px,
@@ -143,6 +146,7 @@ DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   full::TPCChi2Ncl,
                   full::ITSChi2NCl,
                   full::ITSClusterMap,
+                  full::IsPVContributor,
                   full::Rapidity<full::P, full::Pz>);
 DECLARE_SOA_TABLE(LfCandNucleusMC, "AOD", "LFNUCLMC",
                   mcparticle::PdgCode,

@@ -103,6 +103,8 @@ struct CheckFilterBit {
         histos.fill(HIST("Tracks/Reco/histpt3DFB3"), track.pt(), track.eta(), track.phi());
       if (track.trackCutFlagFb4())
         histos.fill(HIST("Tracks/Reco/histpt3DFB4"), track.pt(), track.eta(), track.phi());
+      if (track.trackCutFlagFb5())
+        histos.fill(HIST("Tracks/Reco/histpt3DFB5"), track.pt(), track.eta(), track.phi());
     }
   }
   PROCESS_SWITCH(CheckFilterBit, processData, "process data", true);
@@ -152,6 +154,9 @@ struct CheckFilterBit {
               if (track.trackCutFlagFb4()) {
                 histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
               }
+              if (track.trackCutFlagFb5()) {
+                histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB5"), track.pt(), track.eta(), track.phi());
+              }
               if (isHF == RecoDecay::OriginType::Prompt || isHF == RecoDecay::OriginType::NonPrompt) {
                 if (track.isGlobalTrack()) {
                   histos.fill(HIST("Tracks/RecoMCfromHFdecayCollMatch/histptFB0"), track.pt(), track.eta(), track.phi());
@@ -168,6 +173,9 @@ struct CheckFilterBit {
                 if (track.trackCutFlagFb4()) {
                   histos.fill(HIST("Tracks/RecoMCfromHFdecayCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
                 }
+                if (track.trackCutFlagFb5()) {
+                  histos.fill(HIST("Tracks/RecoMCfromHFdecayCollMatch/histptFB5"), track.pt(), track.eta(), track.phi());
+                }
               }
             } else if (prodRadius2 > 1. && prodRadius2 < 225.) {
               if (track.isGlobalTrack())
@@ -180,6 +188,8 @@ struct CheckFilterBit {
                 histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
               if (track.trackCutFlagFb4())
                 histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
+              if (track.trackCutFlagFb5())
+                histos.fill(HIST("Tracks/RecoMCRad1to15cmCollMatch/histptFB5"), track.pt(), track.eta(), track.phi());
             }
             if (prodRadius2 > 1.e-8 && prodRadius2 < 0.25) {
               if (track.isGlobalTrack())
@@ -192,6 +202,8 @@ struct CheckFilterBit {
                 histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB3"), track.pt(), track.eta(), track.phi());
               if (track.trackCutFlagFb4())
                 histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB4"), track.pt(), track.eta(), track.phi());
+              if (track.trackCutFlagFb5())
+                histos.fill(HIST("Tracks/RecoMCRad1mumto5mmCollMatch/histptFB5"), track.pt(), track.eta(), track.phi());
             }
           }
         }

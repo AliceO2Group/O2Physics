@@ -86,7 +86,9 @@ struct qaEventTrack {
                        ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
-                       ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+                       ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)) ||
+                       ((trackSelection.node() == 6) && requireGlobalTrackWoTPCClusterInFilter()) ||
+                       ((trackSelection.node() == 7) && requireGlobalTrackWoDCATPCClusterInFilter());
 
   using TrackIUTable = soa::Join<aod::TracksIU, aod::TrackSelection, aod::TrackSelectionExtension>;
   Partition<TrackIUTable> tracksIUFiltered = (trackSelection.node() == 0) ||
@@ -94,14 +96,18 @@ struct qaEventTrack {
                                              ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
                                              ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                                              ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
-                                             ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+                                             ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)) ||
+                                             ((trackSelection.node() == 6) && requireGlobalTrackWoTPCClusterInFilter()) ||
+                                             ((trackSelection.node() == 7) && requireGlobalTrackWoDCATPCClusterInFilter());
   using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>;
   Partition<TrackTableData> tracksFilteredCorrIU = (trackSelection.node() == 0) ||
                                                    ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
                                                    ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
                                                    ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                                                    ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
-                                                   ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+                                                   ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)) ||
+                                                   ((trackSelection.node() == 6) && requireGlobalTrackWoTPCClusterInFilter()) ||
+                                                   ((trackSelection.node() == 7) && requireGlobalTrackWoDCATPCClusterInFilter());
 
   HistogramRegistry histos;
 
@@ -300,6 +306,7 @@ struct qaEventTrack {
     histos.add("Tracks/flags", "track flag;flag bit", kTH1D, {{64, -0.5, 63.5}});
     histos.add("Tracks/dcaXY", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{200, -0.15, 0.15}});
     histos.add("Tracks/dcaZ", "distance of closest approach in #it{z};#it{dcaZ} [cm];", kTH1D, {{200, -0.15, 0.15}});
+    histos.add("Tracks/dcaZvsEta", "distance of closest approach in #it{z} vs. eta;#it{dcaZ} [cm];", kTH2D, {{1000, -100, 100}, axisEta});
 
     histos.add("Tracks/dcaXYvsPt", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH2D, {{200, -0.15, 0.15}, axisPt});
     histos.add("Tracks/dcaZvsPt", "distance of closest approach in #it{z};#it{dcaZ} [cm];", kTH2D, {{200, -0.15, 0.15}, axisPt});
@@ -317,6 +324,13 @@ struct qaEventTrack {
     // tpc histograms
     histos.add("Tracks/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {{165, -0.5, 164.5}});
+    auto h2 = histos.add<TH2>("Tracks/TPC/tpcNClsFoundVsEta", "tracks with at least 1 TPC cluster", kTH2D, {axisEta, {165, -0.5, 164.5}});
+    h2->GetXaxis()->SetTitle("#eta");
+    h2->GetYaxis()->SetTitle("# clusters TPC");
+    auto h3 = histos.add<TH3>("Tracks/TPC/tpcNClsFoundVsEtaVtxZ", "tracks with at least 1 TPC cluster", kTH3D, {axisEta, {165, -0.5, 164.5}, axisVertexPosZ});
+    h3->GetXaxis()->SetTitle("#eta");
+    h3->GetYaxis()->SetTitle("# clusters TPC");
+    h3->GetZaxis()->SetTitle("Vtx. Z [cm]");
     histos.add("Tracks/TPC/tpcNClsShared", "number of shared TPC clusters;# shared clusters TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH1D, {{100, 0., 1.}});
@@ -366,6 +380,14 @@ struct qaEventTrack {
       h2 = histos.add<TH2>("Tracks/IU/vsDCA/Phi", "IU vs DCA: Phi", kTH2F, {axisPhi, axisPhi});
       h2->GetXaxis()->SetTitle(Form("%s DCA", h2->GetXaxis()->GetTitle()));
       h2->GetYaxis()->SetTitle(Form("%s IU", h2->GetYaxis()->GetTitle()));
+
+      auto h2IU = histos.add<TH2>("Tracks/IU/TPC/tpcNClsFoundVsEta", "tracks with at least 1 TPC cluster", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      h2IU->GetXaxis()->SetTitle("#eta");
+      h2IU->GetYaxis()->SetTitle("# clusters TPC");
+      auto h22IU = histos.add<TH2>("Tracks/IU/TPC/tpcNClsFoundVsEtaGtr25", "tracks with at least 25 TPC cluster", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      h22IU->GetXaxis()->SetTitle("#eta");
+      h22IU->GetYaxis()->SetTitle("# clusters TPC");
+      histos.add("Tracks/IU/dcaZvsEta", "distance of closest approach in #it{z} vs. eta;#it{dcaZ} [cm];", kTH2D, {{1000, -100, 100}, axisEta});
     }
 
     // filtered tracks @ IU
@@ -532,7 +554,7 @@ struct qaEventTrack {
   // Process function for IU vs DCA track comparison
   using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
   void processDataIU(CollisionTableData::iterator const& collision,
-                     aod::FullTracks const& tracksUnfiltered,
+                     soa::Join<aod::FullTracks, aod::TracksDCA> const& tracksUnfiltered,
                      FullTracksIU const& tracksIU)
   {
     if (!isSelectedCollision<false>(collision)) {
@@ -586,6 +608,16 @@ struct qaEventTrack {
       histos.fill(HIST("Tracks/IU/vsDCA/Pt"), trk.pt(), trkIU.pt());
       histos.fill(HIST("Tracks/IU/vsDCA/Eta"), trk.eta(), trkIU.eta());
       histos.fill(HIST("Tracks/IU/vsDCA/Phi"), trk.phi(), trkIU.phi());
+
+      auto nClstTPC = trkIU.tpcNClsFound();
+      if (nClstTPC > 0) {
+        histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEta"), trkIU.eta(), nClstTPC);
+        if (nClstTPC > 25) {
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaGtr25"), trkIU.eta(), nClstTPC);
+        }
+      }
+
+      histos.fill(HIST("Tracks/IU/dcaZvsEta"), trk.dcaZ(), trkIU.eta());
     }
   }
   PROCESS_SWITCH(qaEventTrack, processDataIU, "process IU vs DCA comparison", true);
@@ -1130,6 +1162,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/dcaZ"), track.dcaZ());
     histos.fill(HIST("Tracks/dcaXYvsPt"), track.dcaXY(), track.pt());
     histos.fill(HIST("Tracks/dcaZvsPt"), track.dcaZ(), track.pt());
+    histos.fill(HIST("Tracks/dcaZvsEta"), track.dcaZ(), track.eta());
     histos.fill(HIST("Tracks/length"), track.length());
 
     // fill ITS variables
@@ -1155,6 +1188,8 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     // fill TPC variables
     histos.fill(HIST("Tracks/TPC/tpcNClsFindable"), track.tpcNClsFindable());
     histos.fill(HIST("Tracks/TPC/tpcNClsFound"), track.tpcNClsFound());
+    histos.fill(HIST("Tracks/TPC/tpcNClsFoundVsEta"), track.eta(), track.tpcNClsFound());
+    histos.fill(HIST("Tracks/TPC/tpcNClsFoundVsEtaVtxZ"), track.eta(), track.tpcNClsFound(), collision.posZ());
     histos.fill(HIST("Tracks/TPC/tpcNClsShared"), track.tpcNClsShared());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
