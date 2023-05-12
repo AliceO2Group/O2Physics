@@ -127,60 +127,59 @@ struct OnTheFlyTOFPID {
   {
     // don't make use of the track parametrization
     float length = -100;
-    
+
     o2::math_utils::CircleXYf_t trcCircle;
     float sna, csa;
-    track.getCircleParams(magneticField, trcCircle, sna, csa );
-    
+    track.getCircleParams(magneticField, trcCircle, sna, csa);
+
     // distance between circle centers (one circle is at origin -> easy)
     float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
-    
+
     // condition of circles touching - if not satisfied returned length will be -100
-    if(centerDistance < trcCircle.rC + radius && centerDistance > fabs(trcCircle.rC - radius)){
+    if (centerDistance < trcCircle.rC + radius && centerDistance > fabs(trcCircle.rC - radius)) {
       length = 0.0f;
-      
+
       // base radical direction
-      float ux = trcCircle.xC/centerDistance;
-      float uy = trcCircle.yC/centerDistance;
+      float ux = trcCircle.xC / centerDistance;
+      float uy = trcCircle.yC / centerDistance;
       // calculate perpendicular vector (normalized) for +/- displacement
       float vx = -uy;
       float vy = +ux;
       // calculate coordinate for radical line
-      float radical = (centerDistance*centerDistance - trcCircle.rC*trcCircle.rC + radius*radius) / (2.0f*centerDistance);
+      float radical = (centerDistance * centerDistance - trcCircle.rC * trcCircle.rC + radius * radius) / (2.0f * centerDistance);
       // calculate absolute displacement from center-to-center axis
-      float displace = (0.5f/centerDistance) * TMath::Sqrt(
-                                                          (-centerDistance + trcCircle.rC - radius) *
-                                                          (-centerDistance - trcCircle.rC + radius) *
-                                                          (-centerDistance + trcCircle.rC + radius) *
-                                                          ( centerDistance + trcCircle.rC + radius)
-                                                          );
-      
+      float displace = (0.5f / centerDistance) * TMath::Sqrt(
+                                                   (-centerDistance + trcCircle.rC - radius) *
+                                                   (-centerDistance - trcCircle.rC + radius) *
+                                                   (-centerDistance + trcCircle.rC + radius) *
+                                                   (centerDistance + trcCircle.rC + radius));
+
       // possible intercept points of track and TOF layer in 2D plane
-      float point1[2] = {radical*ux + displace*vx, radical*uy + displace*vy};
-      float point2[2] = {radical*ux - displace*vx, radical*uy - displace*vy};
-      
+      float point1[2] = {radical * ux + displace * vx, radical * uy + displace * vy};
+      float point2[2] = {radical * ux - displace * vx, radical * uy - displace * vy};
+
       // decide on correct intercept point
       std::array<float, 3> mom;
       track.getPxPyPzGlo(mom);
-      float scalarProduct1 = point1[0]*mom[0] + point1[1]*mom[1];
-      float scalarProduct2 = point2[0]*mom[0] + point2[1]*mom[1];
-      
+      float scalarProduct1 = point1[0] * mom[0] + point1[1] * mom[1];
+      float scalarProduct2 = point2[0] * mom[0] + point2[1] * mom[1];
+
       // get start point
       std::array<float, 3> startPoint;
       track.getXYZGlo(startPoint);
-      
+
       float cosAngle = -1000, modulus = -1000;
-      
-      if(scalarProduct1>scalarProduct2){
+
+      if (scalarProduct1 > scalarProduct2) {
         modulus = std::hypot(point1[0] - trcCircle.xC, point1[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
-        cosAngle =(point1[0] - trcCircle.xC)*(startPoint[0]-trcCircle.xC) + (point1[1] - trcCircle.yC)*(startPoint[0]-trcCircle.yC);
-      }else{
+        cosAngle = (point1[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point1[1] - trcCircle.yC) * (startPoint[0] - trcCircle.yC);
+      } else {
         modulus = std::hypot(point2[0] - trcCircle.xC, point2[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
-        cosAngle =(point2[0] - trcCircle.xC)*(startPoint[0]-trcCircle.xC) + (point2[1] - trcCircle.yC)*(startPoint[0]-trcCircle.yC);
+        cosAngle = (point2[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point2[1] - trcCircle.yC) * (startPoint[0] - trcCircle.yC);
       }
-      cosAngle/=modulus;
-      length = trcCircle.rC*TMath::ACos(cosAngle);
-      length*=sqrt(1.0f + track.getTgl()*track.getTgl());
+      cosAngle /= modulus;
+      length = trcCircle.rC * TMath::ACos(cosAngle);
+      length *= sqrt(1.0f + track.getTgl() * track.getTgl());
     }
     return length;
   }
@@ -222,7 +221,7 @@ struct OnTheFlyTOFPID {
       float xPv = -100, trackLengthInnerTOF = -1, trackLengthOuterTOF = -1;
       if (o2track.propagateToDCA(mcPvVtx, dBz))
         xPv = o2track.getX();
-      if (xPv > -99. ){
+      if (xPv > -99.) {
         trackLengthInnerTOF = trackLength(o2track, innerTOFRadius, dBz);
         trackLengthOuterTOF = trackLength(o2track, outerTOFRadius, dBz);
       }
@@ -245,7 +244,7 @@ struct OnTheFlyTOFPID {
       auto recoTrack = getTrackParCov(track);
       if (recoTrack.propagateToDCA(pvVtx, dBz))
         xPv = recoTrack.getX();
-      if (xPv > -99. ){
+      if (xPv > -99.) {
         trackLengthRecoInnerTOF = trackLength(recoTrack, innerTOFRadius, dBz);
         trackLengthRecoOuterTOF = trackLength(recoTrack, outerTOFRadius, dBz);
       }
