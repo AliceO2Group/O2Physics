@@ -200,36 +200,36 @@ struct HfCorrelatorDsHadrons {
      {"hEta", "Ds,Hadron candidates", {HistType::kTH1F, {axisEta}}},
      {"hPhi", "Ds,Hadron candidates", {HistType::kTH1F, {axisPhi}}},
      {"hY", "Ds,Hadron candidates", {HistType::kTH1F, {axisY}}},
-     {"hPtCandMCRecSig", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisPtD}}},
-     {"hPtCandMCRecSigPrompt", "Ds,Hadron candidates Prompt - MC Reco", {HistType::kTH1F, {axisPtD}}},
-     {"hPtCandMCRecSigNonPrompt", "Ds,Hadron candidates Non Prompt - MC Reco", {HistType::kTH1F, {axisPtD}}},
-     {"hPtProng0MCRecSig", "Ds,Hadron candidates - MC Reco - prong 0", {HistType::kTH1F, {axisPtProng0}}},
-     {"hPtProng1MCRecSig", "Ds,Hadron candidates - MC Reco - prong 1", {HistType::kTH1F, {axisPtProng1}}},
-     {"hPtProng2MCRecSig", "Ds,Hadron candidates - MC Reco - prong 2", {HistType::kTH1F, {axisPtProng2}}},
-     {"hPtCandMCRecBkg", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisPtD}}},
-     {"hPtProng0MCRecBkg", "Ds,Hadron candidates - MC Reco - prong 0", {HistType::kTH1F, {axisPtProng0}}},
-     {"hPtProng1MCRecBkg", "Ds,Hadron candidates - MC Reco - prong 1", {HistType::kTH1F, {axisPtProng1}}},
-     {"hPtProng2MCRecBkg", "Ds,Hadron candidates - MC Reco - prong 2", {HistType::kTH1F, {axisPtProng2}}},
-     {"hSelectionStatusMCRec", "Ds,Hadron candidates - MC Reco;selection status;entries", {HistType::kTH1F, {{8, -0.5, 7.5}}}},
-     {"hEtaMCRecSig", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisEta}}},
-     {"hPhiMCRecSig", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisPhi}}},
-     {"hYMCRecSig", "Ds,Hadron candidates - MC Reco;;entries", {HistType::kTH1F, {axisY}}},
-     {"hEtaMCRecBkg", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisEta}}},
-     {"hPhiMCRecBkg", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisPhi}}},
-     {"hYMCRecBkg", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisY}}},
-     {"hMCEvtCount", "Event counter - MC Gen", {HistType::kTH1F, {{1, -0.5, 0.5}}}},
-     {"hPtCandMCGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisPtD}}},
-     {"hPtCandMCGenPrompt", "Ds,Hadron particles - MC Gen Prompt", {HistType::kTH1F, {axisPtD}}},
-     {"hPtCandMCGenNonPrompt", "Ds,Hadron particles - MC Gen Non Prompt", {HistType::kTH1F, {axisPtD}}},
-     {"hEtaMCGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisEta}}},
-     {"hPhiMCGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisPhi}}},
-     {"hYMCGen", "Ds,Hadron candidates - MC Gen", {HistType::kTH1F, {axisY}}},
+     {"hPtCandMcRecSig", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisPtD}}},
+     {"hPtCandMcRecSigPrompt", "Ds,Hadron candidates Prompt - MC Reco", {HistType::kTH1F, {axisPtD}}},
+     {"hPtCandMcRecSigNonPrompt", "Ds,Hadron candidates Non Prompt - MC Reco", {HistType::kTH1F, {axisPtD}}},
+     {"hPtProng0McRecSig", "Ds,Hadron candidates - MC Reco - prong 0", {HistType::kTH1F, {axisPtProng0}}},
+     {"hPtProng1McRecSig", "Ds,Hadron candidates - MC Reco - prong 1", {HistType::kTH1F, {axisPtProng1}}},
+     {"hPtProng2McRecSig", "Ds,Hadron candidates - MC Reco - prong 2", {HistType::kTH1F, {axisPtProng2}}},
+     {"hPtCandMcRecBkg", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisPtD}}},
+     {"hPtProng0McRecBkg", "Ds,Hadron candidates - MC Reco - prong 0", {HistType::kTH1F, {axisPtProng0}}},
+     {"hPtProng1McRecBkg", "Ds,Hadron candidates - MC Reco - prong 1", {HistType::kTH1F, {axisPtProng1}}},
+     {"hPtProng2McRecBkg", "Ds,Hadron candidates - MC Reco - prong 2", {HistType::kTH1F, {axisPtProng2}}},
+     {"hSelectionStatusMcRec", "Ds,Hadron candidates - MC Reco;selection status;entries", {HistType::kTH1F, {{8, -0.5, 7.5}}}},
+     {"hEtaMcRecSig", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisEta}}},
+     {"hPhiMcRecSig", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisPhi}}},
+     {"hYMcRecSig", "Ds,Hadron candidates - MC Reco;;entries", {HistType::kTH1F, {axisY}}},
+     {"hEtaMcRecBkg", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisEta}}},
+     {"hPhiMcRecBkg", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisPhi}}},
+     {"hYMcRecBkg", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisY}}},
+     {"hMcEvtCount", "Event counter - MC Gen", {HistType::kTH1F, {{1, -0.5, 0.5}}}},
+     {"hPtCandMcGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisPtD}}},
+     {"hPtCandMcGenPrompt", "Ds,Hadron particles - MC Gen Prompt", {HistType::kTH1F, {axisPtD}}},
+     {"hPtCandMcGenNonPrompt", "Ds,Hadron particles - MC Gen Non Prompt", {HistType::kTH1F, {axisPtD}}},
+     {"hEtaMcGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisEta}}},
+     {"hPhiMcGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisPhi}}},
+     {"hYMcGen", "Ds,Hadron candidates - MC Gen", {HistType::kTH1F, {axisY}}},
      {"hCountDsHadronPerEvent", "Ds,Hadron particles - MC Gen;Number per event;entries", {HistType::kTH1F, {{21, -0.5, 20.5}}}},
      {"hMultiplicityPreSelection", "Multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {axisMultiplicity}}},
-     {"hPtVsMultiplicityMCRecPrompt", "Multiplicity V0M - MC Rec Prompt", {HistType::kTH2F, {{axisPtD}, {axisMultiplicity}}}},
-     {"hPtVsMultiplicityMCRecNonPrompt", "Multiplicity V0M - MC Rec Non Prompt", {HistType::kTH2F, {{axisPtD}, {axisMultiplicity}}}},
-     {"hPtVsMultiplicityMCGenPrompt", "Multiplicity V0M - MC Gen Prompt", {HistType::kTH2F, {{axisPtD}, {axisMultiplicity}}}},
-     {"hPtVsMultiplicityMCGenNonPrompt", "Multiplicity V0M - MC Gen Non Prompt", {HistType::kTH2F, {{axisPtD}, {axisMultiplicity}}}},
+     {"hPtVsMultiplicityMcRecPrompt", "Multiplicity V0M - MC Rec Prompt", {HistType::kTH2F, {{axisPtD}, {axisMultiplicity}}}},
+     {"hPtVsMultiplicityMcRecNonPrompt", "Multiplicity V0M - MC Rec Non Prompt", {HistType::kTH2F, {{axisPtD}, {axisMultiplicity}}}},
+     {"hPtVsMultiplicityMcGenPrompt", "Multiplicity V0M - MC Gen Prompt", {HistType::kTH2F, {{axisPtD}, {axisMultiplicity}}}},
+     {"hPtVsMultiplicityMcGenNonPrompt", "Multiplicity V0M - MC Gen Non Prompt", {HistType::kTH2F, {{axisPtD}, {axisMultiplicity}}}},
      {"hMultiplicity", "Multiplicity", {HistType::kTH1F, {axisMultiplicity}}},
      {"hMultV0M", "multiplicity;multiplicity;entries", {HistType::kTH1F, {axisMultiplicity}}},
      {"hZVtx", "z vertex;z vertex;entries", {HistType::kTH1F, {{200, -20., 20.}}}},
@@ -290,21 +290,21 @@ struct HfCorrelatorDsHadrons {
   template <typename T1>
   void fillHistoMcRecSig(const T1& candidate, float multiplicityV0M)
   {
-    registry.fill(HIST("hPtCandMCRecSig"), candidate.pt());
-    registry.fill(HIST("hPtProng0MCRecSig"), candidate.ptProng0());
-    registry.fill(HIST("hPtProng1MCRecSig"), candidate.ptProng1());
-    registry.fill(HIST("hPtProng2MCRecSig"), candidate.ptProng2());
-    registry.fill(HIST("hEtaMCRecSig"), candidate.eta());
-    registry.fill(HIST("hPhiMCRecSig"), RecoDecay::constrainAngle(candidate.phi(), -o2::constants::math::PIHalf));
-    registry.fill(HIST("hYMCRecSig"), yDs(candidate));
+    registry.fill(HIST("hPtCandMcRecSig"), candidate.pt());
+    registry.fill(HIST("hPtProng0McRecSig"), candidate.ptProng0());
+    registry.fill(HIST("hPtProng1McRecSig"), candidate.ptProng1());
+    registry.fill(HIST("hPtProng2McRecSig"), candidate.ptProng2());
+    registry.fill(HIST("hEtaMcRecSig"), candidate.eta());
+    registry.fill(HIST("hPhiMcRecSig"), RecoDecay::constrainAngle(candidate.phi(), -o2::constants::math::PIHalf));
+    registry.fill(HIST("hYMcRecSig"), yDs(candidate));
 
     // prompt and non-prompt division
     if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-      registry.fill(HIST("hPtCandMCRecSigPrompt"), candidate.pt());
-      registry.fill(HIST("hPtVsMultiplicityMCRecPrompt"), candidate.pt(), multiplicityV0M);
+      registry.fill(HIST("hPtCandMcRecSigPrompt"), candidate.pt());
+      registry.fill(HIST("hPtVsMultiplicityMcRecPrompt"), candidate.pt(), multiplicityV0M);
     } else if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-      registry.fill(HIST("hPtCandMCRecSigNonPrompt"), candidate.pt());
-      registry.fill(HIST("hPtVsMultiplicityMCRecNonPrompt"), candidate.pt(), multiplicityV0M);
+      registry.fill(HIST("hPtCandMcRecSigNonPrompt"), candidate.pt());
+      registry.fill(HIST("hPtVsMultiplicityMcRecNonPrompt"), candidate.pt(), multiplicityV0M);
     }
   }
 
@@ -313,13 +313,13 @@ struct HfCorrelatorDsHadrons {
   template <typename T1>
   void fillHistoMcRecBkg(const T1& candidate)
   {
-    registry.fill(HIST("hPtCandMCRecBkg"), candidate.pt());
-    registry.fill(HIST("hPtProng0MCRecBkg"), candidate.ptProng0());
-    registry.fill(HIST("hPtProng1MCRecBkg"), candidate.ptProng1());
-    registry.fill(HIST("hPtProng2MCRecBkg"), candidate.ptProng2());
-    registry.fill(HIST("hEtaMCRecBkg"), candidate.eta());
-    registry.fill(HIST("hPhiMCRecBkg"), RecoDecay::constrainAngle(candidate.phi(), -o2::constants::math::PIHalf));
-    registry.fill(HIST("hYMCRecBkg"), yDs(candidate));
+    registry.fill(HIST("hPtCandMcRecBkg"), candidate.pt());
+    registry.fill(HIST("hPtProng0McRecBkg"), candidate.ptProng0());
+    registry.fill(HIST("hPtProng1McRecBkg"), candidate.ptProng1());
+    registry.fill(HIST("hPtProng2McRecBkg"), candidate.ptProng2());
+    registry.fill(HIST("hEtaMcRecBkg"), candidate.eta());
+    registry.fill(HIST("hPhiMcRecBkg"), RecoDecay::constrainAngle(candidate.phi(), -o2::constants::math::PIHalf));
+    registry.fill(HIST("hYMcRecBkg"), yDs(candidate));
   }
 
   /// Fill histograms of quantities for the Ds signal for MC reco-level
@@ -328,17 +328,17 @@ struct HfCorrelatorDsHadrons {
   template <typename T1>
   void fillHistoMcGen(const T1& particle, double yD)
   {
-    registry.fill(HIST("hPtCandMCGen"), particle.pt());
-    registry.fill(HIST("hEtaMCGen"), particle.eta());
-    registry.fill(HIST("hPhiMCGen"), RecoDecay::constrainAngle(particle.phi(), -o2::constants::math::PIHalf));
-    registry.fill(HIST("hYMCGen"), yD);
+    registry.fill(HIST("hPtCandMcGen"), particle.pt());
+    registry.fill(HIST("hEtaMcGen"), particle.eta());
+    registry.fill(HIST("hPhiMcGen"), RecoDecay::constrainAngle(particle.phi(), -o2::constants::math::PIHalf));
+    registry.fill(HIST("hYMcGen"), yD);
     registry.fill(HIST("hCountDstriggersMCGen"), 0, particle.pt()); // to count trigger Ds for normalisation
 
     // prompt and non-prompt division
     if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-      registry.fill(HIST("hPtCandMCGenPrompt"), particle.pt());
+      registry.fill(HIST("hPtCandMcGenPrompt"), particle.pt());
     } else if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-      registry.fill(HIST("hPtCandMCGenNonPrompt"), particle.pt());
+      registry.fill(HIST("hPtCandMcGenNonPrompt"), particle.pt());
     }
   }
 
@@ -496,12 +496,12 @@ struct HfCorrelatorDsHadrons {
             registry.fill(HIST("hMassDsMCRec"), invMassDsToKKPi(candidate), efficiencyWeight);
             registry.fill(HIST("hMassDsMCRecSig"), invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeight);
             registry.fill(HIST("hMassDsVsPtMCRec"), invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeight);
-            registry.fill(HIST("hSelectionStatusMCRec"), candidate.isSelDsToKKPi());
+            registry.fill(HIST("hSelectionStatusMcRec"), candidate.isSelDsToKKPi());
           } else if (std::abs(prong0McPart.pdgCode()) == kPiPlus) {
             registry.fill(HIST("hMassDsMCRec"), invMassDsToPiKK(candidate), efficiencyWeight);
             registry.fill(HIST("hMassDsMCRecSig"), invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeight);
             registry.fill(HIST("hMassDsVsPtMCRec"), invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeight);
-            registry.fill(HIST("hSelectionStatusMCRec"), candidate.isSelDsToPiKK());
+            registry.fill(HIST("hSelectionStatusMcRec"), candidate.isSelDsToPiKK());
           }
         } else {
           fillHistoMcRecBkg(candidate);
@@ -510,12 +510,12 @@ struct HfCorrelatorDsHadrons {
             registry.fill(HIST("hMassDsMCRec"), invMassDsToKKPi(candidate), efficiencyWeight);
             registry.fill(HIST("hMassDsMCRecBkg"), invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeight);
             registry.fill(HIST("hMassDsVsPtMCRec"), invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeight);
-            registry.fill(HIST("hSelectionStatusMCRec"), candidate.isSelDsToKKPi());
+            registry.fill(HIST("hSelectionStatusMcRec"), candidate.isSelDsToKKPi());
           } else if (std::abs(prong0McPart.pdgCode()) == kPiPlus) {
             registry.fill(HIST("hMassDsMCRec"), invMassDsToPiKK(candidate), efficiencyWeight);
             registry.fill(HIST("hMassDsMCRecBkg"), invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeight);
             registry.fill(HIST("hMassDsVsPtMCRec"), invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeight);
-            registry.fill(HIST("hSelectionStatusMCRec"), candidate.isSelDsToPiKK());
+            registry.fill(HIST("hSelectionStatusMcRec"), candidate.isSelDsToPiKK());
           }
         }
 
@@ -554,7 +554,7 @@ struct HfCorrelatorDsHadrons {
   void processMcGen(SelCollisionsWithDsMc::iterator const& mccollision, CandDsMcGen const& particlesMc)
   {
     int counterDsHadron = 0;
-    registry.fill(HIST("hMCEvtCount"), 0);
+    registry.fill(HIST("hMcEvtCount"), 0);
 
     auto getTracksSize = [&particlesMc](SelCollisionsWithDsMc::iterator const& mccollision) {
       int nTracks = 0;
