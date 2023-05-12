@@ -143,7 +143,7 @@ DECLARE_SOA_TABLE(TracksDCA, "AOD", "TRACKDCA", //! DCA information for the trac
                   track::DcaZ);
 DECLARE_SOA_TABLE(TracksDCACov, "AOD", "TRACKDCACOV",
                   track::SigmaDcaXY2,
-                  track::SigmaDcaZ2);                      //! DCA cov. matrix information for the track
+                  track::SigmaDcaZ2); //! DCA cov. matrix information for the track
 
 DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on the track selection decision + split dynamic information
                   track::IsGlobalTrackSDD,

@@ -244,9 +244,9 @@ struct HfCandidateCreatorSigmac0plusplus {
         } /// end loop over tracks
       }   /// end loop over candidates
 
-    }     /// end loop over collisions
+    } /// end loop over collisions
 
-  }       /// end processWithAmbTracks
+  } /// end processWithAmbTracks
 };
 
 /// Extends the base table with expression columns.
