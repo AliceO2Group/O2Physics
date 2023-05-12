@@ -82,7 +82,7 @@ auto vecEfficiencyDmeson = std::vector<double>{efficiencyDmesonDefault, efficien
 
 /// Ds-Hadron correlation pair filling task, from pair tables - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfTaskCorrelationDsHadrons {
-  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying efficiency weights"};
+  Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying efficiency weights"};
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_ds_to_k_k_pi (i.e. the mass pT bins), but can be redefined via json files
   Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{vecBinsPtCorrelations}, "pT bin limits for correlation plots"};
   Configurable<std::vector<double>> binsPtEfficiency{"binsPtEfficiency", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for efficiency"};
