@@ -396,7 +396,8 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt(),
                             track.pt(),
                             poolBin);
-          entryDsHadronRecoInfo(invMassDsToKKPi(candidate), false, false);
+          entryDsHadronRecoInfo(invMassDsToKKPi(candidate), false);
+          entryDsHadronGenInfo(false);
         }
       }
 
@@ -429,7 +430,8 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt(),
                             track.pt(),
                             poolBin);
-          entryDsHadronRecoInfo(invMassDsToPiKK(candidate), false, false);
+          entryDsHadronRecoInfo(invMassDsToPiKK(candidate), false);
+          entryDsHadronGenInfo(false);
         }
       }
     }
@@ -531,14 +533,16 @@ struct HfCorrelatorDsHadrons {
                               candidate.pt(),
                               track.pt(),
                               poolBin);
-            entryDsHadronRecoInfo(invMassDsToKKPi(candidate), flagDsSignal, flagDsPrompt);
+            entryDsHadronRecoInfo(invMassDsToKKPi(candidate), flagDsSignal);
+            entryDsHadronGenInfo(flagDsPrompt);
           } else if (std::abs(prong0McPart.pdgCode()) == kPiPlus) {
             entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                               track.eta() - candidate.eta(),
                               candidate.pt(),
                               track.pt(),
                               poolBin);
-            entryDsHadronRecoInfo(invMassDsToPiKK(candidate), flagDsSignal, flagDsPrompt);
+            entryDsHadronRecoInfo(invMassDsToPiKK(candidate), flagDsSignal);
+            entryDsHadronGenInfo(flagDsPrompt);
           }
         }
       }
@@ -603,6 +607,7 @@ struct HfCorrelatorDsHadrons {
                             particle.pt(),
                             particleAssoc.pt(),
                             poolBin);
+          entryDsHadronRecoInfo(1.968, true);
           entryDsHadronGenInfo(flagDsPrompt);
         }
       }
@@ -633,7 +638,8 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt(),
                             pAssoc.pt(),
                             poolBin);
-          entryDsHadronRecoInfo(invMassDsToKKPi(candidate), false, false);
+          entryDsHadronRecoInfo(invMassDsToKKPi(candidate), false);
+          entryDsHadronGenInfo(false);
         } else if (candidate.isSelDsToPiKK() == selectionFlagDs) {
           LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", candidate.index(), pAssoc.index(), c1.index(), c2.index(), candidate.collision().index(), pAssoc.collision().index());
           entryDsHadronPair(getDeltaPhi(candidate.phi(), pAssoc.phi()),
@@ -641,7 +647,8 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt(),
                             pAssoc.pt(),
                             poolBin);
-          entryDsHadronRecoInfo(invMassDsToPiKK(candidate), false, false);
+          entryDsHadronRecoInfo(invMassDsToPiKK(candidate), false);
+          entryDsHadronGenInfo(false);
         }
       }
     }
@@ -674,14 +681,16 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt(),
                             pAssoc.pt(),
                             poolBin);
-          entryDsHadronRecoInfo(invMassDsToKKPi(candidate), flagDsSignal, flagDsPrompt);
+          entryDsHadronRecoInfo(invMassDsToKKPi(candidate), flagDsSignal);
+          entryDsHadronGenInfo(flagDsPrompt);
         } else if (std::abs(prong0McPart.pdgCode()) == kPiPlus) {
           entryDsHadronPair(getDeltaPhi(candidate.phi(), pAssoc.phi()),
                             candidate.eta() - pAssoc.eta(),
                             candidate.pt(),
                             pAssoc.pt(),
                             poolBin);
-          entryDsHadronRecoInfo(invMassDsToPiKK(candidate), flagDsSignal, flagDsPrompt);
+          entryDsHadronRecoInfo(invMassDsToPiKK(candidate), flagDsSignal);
+          entryDsHadronGenInfo(flagDsPrompt);
         }
       }
     }

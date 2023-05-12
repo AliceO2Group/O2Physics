@@ -1284,8 +1284,7 @@ DECLARE_SOA_TABLE(DsHadronPair, "AOD", "DSHPAIR", //! Ds-Hadrons pairs Informati
 
 DECLARE_SOA_TABLE(DsHadronRecoInfo, "AOD", "DSHRECOINFO", //! Ds-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_ds_hadron::MD,
-                  aod::hf_correlation_ds_hadron::IsSignalStatus,
-                  aod::hf_correlation_ds_hadron::IsOrigin);
+                  aod::hf_correlation_ds_hadron::IsSignalStatus);
 
 DECLARE_SOA_TABLE(DsHadronGenInfo, "AOD", "DSHGENINFO", //! Ds-Hadrons pairs Generated Informations
                   aod::hf_correlation_ds_hadron::IsOrigin);
