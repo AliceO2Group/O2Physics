@@ -257,11 +257,21 @@ struct k892analysis {
     for (auto& collision : collisions) {
       Partition<aod::ResoTracks> selectedTracks = (o2::aod::track::pt > static_cast<float_t>(cMinPtcut)) && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts
       selectedTracks.bindTable(resotracks);
-      auto colTracks = selectedTracks->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
+      auto colTracks = selectedTracks->sliceByCached(perRCol, collision.globalIndex());
       fillHistograms<false, false>(collision, colTracks, colTracks);
     }
   }
   PROCESS_SWITCH(k892analysis, processData, "Process Event for data", true);
+
+  void processDataLight(aod::ResoCollisions& collisions,
+                        aod::ResoTracks const& resotracks)
+  {
+    for (auto& collision : collisions) {
+      auto colTracks = resotracks->sliceByCached(perRCol, collision.globalIndex());
+      fillHistograms<false, false>(collision, colTracks, colTracks);
+    }
+  }
+  PROCESS_SWITCH(k892analysis, processDataLight, "Process Event for data", false);
 
   void processMC(aod::ResoCollisions& collisions,
                  soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
@@ -270,7 +280,7 @@ struct k892analysis {
     for (auto& collision : collisions) {
       Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> selectedTracks = (o2::aod::track::pt > static_cast<float_t>(cMinPtcut)) && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts
       selectedTracks.bindTable(resotracks);
-      auto colTracks = selectedTracks->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
+      auto colTracks = selectedTracks->sliceByCached(perRCol, collision.globalIndex());
       fillHistograms<true, false>(collision, colTracks, colTracks);
     }
 
@@ -297,6 +307,39 @@ struct k892analysis {
     }
   }
   PROCESS_SWITCH(k892analysis, processMC, "Process Event for MC", false);
+
+  void processMCLight(aod::ResoCollisions& collisions,
+                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
+  {
+    LOGF(debug, "[MC] MC events: %d", collisions.size());
+    for (auto& collision : collisions) {
+      auto colTracks = resotracks->sliceByCached(perRCol, collision.globalIndex());
+      fillHistograms<true, false>(collision, colTracks, colTracks);
+    }
+
+    // Not related to the real collisions
+    for (auto& part : mcParticles) {             // loop over all MC particles
+      if (abs(part.pdgCode()) == 313) {          // K892(0)
+        if (part.y() > 0.5 || part.y() < -0.5) { // rapidity cut
+          continue;
+        }
+        bool pass1 = false;
+        bool pass2 = false;
+        for (auto& dau : part.daughters_as<aod::McParticles>()) {
+          if (abs(dau.pdgCode()) == kKPlus) { // At least one decay to Kaon
+            pass2 = true;
+          }
+          if (abs(dau.pdgCode()) == kPiPlus) { // At least one decay to Pion
+            pass1 = true;
+          }
+        }
+        if (!pass1 || !pass2) // If we have both decay products
+          continue;
+        histos.fill(HIST("truek892pt"), part.pt());
+      }
+    }
+  }
+  PROCESS_SWITCH(k892analysis, processMCLight, "Process Event for MC", false);
 
   // Processing Event Mixing
   using BinningTypeVetZTPCtemp = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultTPCtemp>; // TODO: MultTPCtemp has to be updatde.
