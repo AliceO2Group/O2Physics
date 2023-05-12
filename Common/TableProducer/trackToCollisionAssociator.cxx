@@ -35,12 +35,14 @@ struct TrackToCollisionAssociation {
   Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 4.f, "number of sigmas for time compatibility"};
   Configurable<float> timeMargin{"timeMargin", 0.f, "time margin in ns added to uncertainty because of uncalibrated TPC"};
   Configurable<bool> applyMinimalTrackSelForRun2{"applyMinimalTrackSelForRun2", false, "flag to apply minimal track selection for Run 2 in case of standard association"};
-  Configurable<bool> applyIsGlobalTrackWoDCA{"applyIsGlobalTrackWoDCA", true, "flag to apply global track w/o DCA selection"};
+  Configurable<int> setTrackSelections{"setTrackSelections", 1, "flag to apply track selections: 0=none; 1=global track w/o DCA selection; 2=only ITS quality"};
   Configurable<bool> usePVAssociation{"usePVAssociation", true, "if the track is a PV contributor, use the collision time for it"};
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
   Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
 
-  Filter trackFilter = (applyIsGlobalTrackWoDCA.node() == false) || requireGlobalTrackWoDCAInFilter();
+  Filter trackFilter = (setTrackSelections.node() == 0) ||
+                       ((setTrackSelections.node() == 1) || requireGlobalTrackWoDCAInFilter()) ||
+                       ((setTrackSelections.node() == 2) || requireQualityTracksITSInFilter());
   using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   using TracksWithSelFilter = soa::Filtered<TracksWithSel>;
 
@@ -50,8 +52,8 @@ struct TrackToCollisionAssociation {
       LOGP(fatal, "Exactly one process function should be enabled!");
     }
 
-    if (applyIsGlobalTrackWoDCA && applyMinimalTrackSelForRun2) {
-      LOGP(fatal, "You cannot apply simultaneously Run 2 track selections and applyIsGlobalTrackWoDCA!");
+    if (setTrackSelections > 0 && applyMinimalTrackSelForRun2) {
+      LOGP(fatal, "You cannot apply simultaneously Run 2 track selections and Run 3 track selections!");
     }
   }
 
@@ -174,7 +176,7 @@ struct TrackToCollisionAssociation {
       auto tracksThisCollision = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
       for (const auto& track : tracksThisCollision) {
         bool hasGoodQuality = true;
-        if (applyIsGlobalTrackWoDCA && !track.isGlobalTrackWoDCA()) {
+        if (setTrackSelections==1 && !track.isGlobalTrackWoDCA()) {
           hasGoodQuality = false;
         } else if (applyMinimalTrackSelForRun2) {
           unsigned char itsClusterMap = track.itsClusterMap();
