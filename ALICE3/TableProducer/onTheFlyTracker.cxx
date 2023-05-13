@@ -123,10 +123,12 @@ struct OnTheFlyTracker {
     // Basic QA
     const AxisSpec axisMomentum{static_cast<int>(1000), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
     histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axisMomentum});
+    histos.add("hPtGeneratedEl", "hPtGeneratedEl", kTH1F, {axisMomentum});
     histos.add("hPtGeneratedPi", "hPtGeneratedPi", kTH1F, {axisMomentum});
     histos.add("hPtGeneratedKa", "hPtGeneratedKa", kTH1F, {axisMomentum});
     histos.add("hPtGeneratedPr", "hPtGeneratedPr", kTH1F, {axisMomentum});
     histos.add("hPtReconstructed", "hPtReconstructed", kTH1F, {axisMomentum});
+    histos.add("hPtReconstructedEl", "hPtReconstructedEl", kTH1F, {axisMomentum});
     histos.add("hPtReconstructedPi", "hPtReconstructedPi", kTH1F, {axisMomentum});
     histos.add("hPtReconstructedKa", "hPtReconstructedKa", kTH1F, {axisMomentum});
     histos.add("hPtReconstructedPr", "hPtReconstructedPr", kTH1F, {axisMomentum});
@@ -207,6 +209,8 @@ struct OnTheFlyTracker {
       }
 
       histos.fill(HIST("hPtGenerated"), mcParticle.pt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 11)
+        histos.fill(HIST("hPtGeneratedEl"), mcParticle.pt());
       if (TMath::Abs(mcParticle.pdgCode()) == 211)
         histos.fill(HIST("hPtGeneratedPi"), mcParticle.pt());
       if (TMath::Abs(mcParticle.pdgCode()) == 321)
@@ -231,6 +235,8 @@ struct OnTheFlyTracker {
 
       // Base QA (note: reco pT here)
       histos.fill(HIST("hPtReconstructed"), trackParCov.getPt());
+      if (TMath::Abs(mcParticle.pdgCode()) == 11)
+        histos.fill(HIST("hPtReconstructedEl"), mcParticle.pt());
       if (TMath::Abs(mcParticle.pdgCode()) == 211)
         histos.fill(HIST("hPtReconstructedPi"), mcParticle.pt());
       if (TMath::Abs(mcParticle.pdgCode()) == 321)

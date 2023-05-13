@@ -56,11 +56,9 @@ using MyV0Photon = MyV0Photons::iterator;
 struct TaggingPi0MC {
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
 
+  Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
-
-  Configurable<bool> useRotation{"useRotation", 0, "use rotation method for EMC-EMC background estimation"};
-  Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
   Configurable<std::string> fConfigEMCCuts{"fConfigEMCCuts", "custom,standard,nocut", "Comma separated list of EMCal photon cuts"};
 
   // Configurable for EMCal cuts
@@ -278,6 +276,9 @@ struct TaggingPi0MC {
             ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.); // pcm
             ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.); // phos or emc
             ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+            if (abs(v12.Rapidity()) > maxY) {
+              continue;
+            }
             reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Pi0"))->Fill(v12.M(), v1.Pt());
           } // end of combination
         }   // end of cut2 loop

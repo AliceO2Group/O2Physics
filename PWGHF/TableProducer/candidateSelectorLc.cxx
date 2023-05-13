@@ -48,6 +48,8 @@ struct HfCandidateSelectorLc {
   Configurable<bool> usePidBayes{"usePidBayes", true, "Bool to use or not the PID based on Bayesian probability cut at filtering level"};
   Configurable<double> ptPidBayesMin{"ptPidBayesMin", 0., "Lower bound of track pT for Bayesian PID"};
   Configurable<double> ptPidBayesMax{"ptPidBayesMax", 100, "Upper bound of track pT for Bayesian PID"};
+  // Combined PID options
+  Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", false, "Bool to decide how to combine TPC and TOF PID: true = both (if present, only one otherwise); false = one is enough"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
@@ -207,11 +209,24 @@ struct HfCandidateSelectorLc {
         pidLcToPiKP = 1;
       } else {
         // track-level PID selection
-        int pidTrackPos1Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos1);
-        int pidTrackPos2Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos2);
-        int pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos1);
-        int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
-        int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
+        int pidTrackPos1Proton = 999;
+        int pidTrackPos2Proton = 999;
+        int pidTrackPos1Pion = 999;
+        int pidTrackPos2Pion = 999;
+        int pidTrackNegKaon = 999;
+        if (usePidTpcAndTof) {
+          pidTrackPos1Proton = selectorProton.getStatusTrackPIDTpcAndTof(trackPos1);
+          pidTrackPos2Proton = selectorProton.getStatusTrackPIDTpcAndTof(trackPos2);
+          pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos1);
+          pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos2);
+          pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackNeg);
+        } else {
+          pidTrackPos1Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos1);
+          pidTrackPos2Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos2);
+          pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos1);
+          pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
+          pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
+        }
 
         if (pidTrackPos1Proton == TrackSelectorPID::Status::PIDAccepted &&
             pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&

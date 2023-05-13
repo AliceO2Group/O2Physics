@@ -108,7 +108,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(InMassRegionCheck, inMassRegionCheck,
                            [](int rXi, int rOmega, int value, int region) -> bool {
                              if (value == 0 && rXi == region)
                                return true;
+                             if (value == 1 && rXi == region)
+                               return true;
                              if (value == 2 && rOmega == region)
+                               return true;
+                             if (value == 3 && rOmega == region)
                                return true;
                              return false;
                            });

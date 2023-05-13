@@ -23,9 +23,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct StrangenessTrackingQATask {
-  using TrackedCascades = soa::Join<aod::TrackedCascades, aod::TrackedCascadeColls>;
-  using TrackedV0s = soa::Join<aod::TrackedV0s, aod::TrackedV0Colls>;
-  using Tracked3Bodys = soa::Join<aod::Tracked3Bodys, aod::Tracked3BodyColls>;
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels>;
 
   Configurable<double> bz{"bz", 50., "magnetic field"};
@@ -58,7 +55,7 @@ struct StrangenessTrackingQATask {
   }
 
   void processTrackedCascades(aod::Collision const& collision,
-                              TrackedCascades const& trackedCascades, aod::Cascades const& cascades,
+                              aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
                               aod::V0s const& v0s, TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
     for (const auto& trackedCascade : trackedCascades) {
@@ -87,6 +84,7 @@ struct StrangenessTrackingQATask {
       LOGF(info, "ntrack (id: %d, pdg: %d) has mother %d", ntrack.mcParticleId(),
            ntrack.mcParticle().pdgCode(), ntrack.mcParticle().has_mothers() ? ntrack.mcParticle().mothersIds()[0] : -1);
 
+      LOG(info) << "bachelor with PDG code: " << bachelor.mcParticle().pdgCode();
       if (ptrack.mcParticle().has_mothers() && ntrack.mcParticle().has_mothers() &&
           ptrack.mcParticle().mothersIds()[0] == ntrack.mcParticle().mothersIds()[0]) {
         const auto v0part = ptrack.mcParticle().mothers_as<aod::McParticles>()[0];
@@ -132,7 +130,7 @@ struct StrangenessTrackingQATask {
   PROCESS_SWITCH(StrangenessTrackingQATask, processCascades, "process cascades from builder", true);
 
   void processTrackedV0s(aod::Collision const& collision,
-                         TrackedV0s const& trackedV0s, aod::V0s const& v0s,
+                         aod::AssignedTrackedV0s const& trackedV0s, aod::V0s const& v0s,
                          TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
     for (const auto& trackedV0 : trackedV0s) {
@@ -144,7 +142,7 @@ struct StrangenessTrackingQATask {
   PROCESS_SWITCH(StrangenessTrackingQATask, processTrackedV0s, "process tracked V0s", true);
 
   void processTracked3Bodys(aod::Collision const& collision,
-                            Tracked3Bodys const& tracked3Bodys, aod::Decay3Bodys const& decay3Bodys,
+                            aod::AssignedTracked3Bodys const& tracked3Bodys, aod::Decay3Bodys const& decay3Bodys,
                             TracksExt const& tracks, aod::McParticles const& mcParticles)
   {
     for (const auto& tracked3Body : tracked3Bodys) {

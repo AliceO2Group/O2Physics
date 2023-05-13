@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include "PWGDQ/Core/VarManager.h"
+#include "Tools/KFparticle/KFUtilities.h"
 
 #include <cmath>
 
@@ -51,6 +52,27 @@ void VarManager::SetVariableDependencies()
   if (fgUsedVars[kP]) {
     fgUsedVars[kPt] = kTRUE;
     fgUsedVars[kEta] = kTRUE;
+  }
+
+  if (fgUsedVars[kVertexingLxyOverErr]) {
+    fgUsedVars[kVertexingLxy] = kTRUE;
+    fgUsedVars[kVertexingLxyErr] = kTRUE;
+  }
+  if (fgUsedVars[kVertexingLzOverErr]) {
+    fgUsedVars[kVertexingLz] = kTRUE;
+    fgUsedVars[kVertexingLzErr] = kTRUE;
+  }
+  if (fgUsedVars[kVertexingLxyzOverErr]) {
+    fgUsedVars[kVertexingLxyz] = kTRUE;
+    fgUsedVars[kVertexingLxyzErr] = kTRUE;
+  }
+  if (fgUsedVars[kKFTracksDCAxyzMax]) {
+    fgUsedVars[kKFTrack0DCAxyz] = kTRUE;
+    fgUsedVars[kKFTrack1DCAxyz] = kTRUE;
+  }
+  if (fgUsedVars[kKFTracksDCAxyMax]) {
+    fgUsedVars[kKFTrack0DCAxy] = kTRUE;
+    fgUsedVars[kKFTrack1DCAxy] = kTRUE;
   }
 }
 
@@ -219,6 +241,11 @@ TString VarManager::GetRunPeriod(float runNumber)
     return runperiod;
   }
 };
+//__________________________________________________________________
+float VarManager::calculateCosPA(KFParticle kfp, KFParticle PV)
+{
+  return cpaFromKF(kfp, PV);
+}
 //__________________________________________________________________
 void VarManager::SetDefaultVarNames()
 {
@@ -520,6 +547,11 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kKFDCAxyBetweenProngs] = "DCAxy between two daughters";
   fgVariableUnits[kKFDCAxyBetweenProngs] = "cm";
   fgVariableNames[kKFChi2OverNDFGeo] = "Pair geometrical #chi^{2}/ndf";
+  fgVariableUnits[kKFChi2OverNDFGeo] = "";
+  fgVariableNames[kKFCosPA] = "cosPA";
+  fgVariableUnits[kKFCosPA] = "";
+  fgVariableNames[kKFNContributorsPV] = "Real Number of Trks to PV";
+  fgVariableUnits[kKFNContributorsPV] = "";
   fgVariableNames[kQ2X0A] = "Q_{2,x}^{A} ";
   fgVariableUnits[kQ2X0A] = "";
   fgVariableNames[kQ2Y0A] = "Q_{2,y}^{A} ";
