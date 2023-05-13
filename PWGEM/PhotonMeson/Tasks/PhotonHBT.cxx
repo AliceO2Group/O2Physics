@@ -35,7 +35,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
@@ -52,14 +52,6 @@ using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct PhotonHBT {
-  enum PairType {
-    kPCMPCM = 0,
-    kPHOSPHOS = 1,
-    kEMCEMC = 2,
-    kPCMPHOS = 3,
-    kPCMEMC = 4,
-    kPHOSEMC = 5,
-  };
 
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
@@ -177,24 +169,19 @@ struct PhotonHBT {
   template <PairType pairtype, typename TG1, typename TG2, typename TCut1, typename TCut2>
   bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const& cut2)
   {
-    bool is_g1_passed = false;
-    bool is_g2_passed = false;
+    bool is_selected_pair = false;
     if constexpr (pairtype == PairType::kPCMPCM) {
-      is_g1_passed = cut1.template IsSelected<aod::V0Legs>(g1);
-      is_g2_passed = cut2.template IsSelected<aod::V0Legs>(g2);
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, aod::V0Legs>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPHOSPHOS) {
-      is_g1_passed = cut1.template IsSelected(g1);
-      is_g2_passed = cut2.template IsSelected(g2);
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<int, int>(g1, g2, cut1, cut2); // dummy, because track matching is not ready.
     } else if constexpr (pairtype == PairType::kPCMPHOS) {
-      is_g1_passed = cut1.template IsSelected<aod::V0Legs>(g1);
-      is_g2_passed = cut2.template IsSelected(g2);
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, int>(g1, g2, cut1, cut2);
     } else {
-      return true;
+      is_selected_pair = true;
     }
-    return (is_g1_passed & is_g2_passed);
+    return is_selected_pair;
   }
 
-  // include fPCMCuts as an argument TCuts1, TCuts2 in template function
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TLegs>
   void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TLegs const& legs)
   {

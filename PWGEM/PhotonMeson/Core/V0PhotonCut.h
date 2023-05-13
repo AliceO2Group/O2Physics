@@ -36,7 +36,7 @@ class V0PhotonCut : public TNamed
     // v0 cut
     kMee = 0,
     kPsiPair,
-    kRxyKF,
+    kRxy,
     kCosPA,
     kPCA,
     kRZLine,
@@ -68,7 +68,7 @@ class V0PhotonCut : public TNamed
     if (!IsSelectedV0(v0, V0PhotonCuts::kPsiPair)) {
       return false;
     }
-    if (!IsSelectedV0(v0, V0PhotonCuts::kRxyKF)) {
+    if (!IsSelectedV0(v0, V0PhotonCuts::kRxy)) {
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kCosPA)) {
@@ -160,8 +160,8 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kPsiPair:
         return v0.psipair() >= mMinPsiPair && v0.psipair() <= mMaxPsiPair;
 
-      case V0PhotonCuts::kRxyKF:
-        return v0.recalculatedVtxR() >= mMinRxyKF && v0.recalculatedVtxR() <= mMaxRxyKF;
+      case V0PhotonCuts::kRxy:
+        return v0.recalculatedVtxR() >= mMinRxy && v0.recalculatedVtxR() <= mMaxRxy;
 
       case V0PhotonCuts::kCosPA:
         return v0.cospa() >= mMinCosPA;
@@ -259,7 +259,7 @@ class V0PhotonCut : public TNamed
   // Setters
   void SetMeeRange(float min = 0.f, float max = 0.1);
   void SetPsiPairRange(float min = -3.15, float max = +3.15);
-  void SetRxyKFRange(float min = 0.f, float max = 180.f);
+  void SetRxyRange(float min = 0.f, float max = 180.f);
   void SetMinCosPA(float min = 0.95);
   void SetMaxPCA(float max = 2.f);
   void SetMaxMeePsiPairDep(std::function<float(float)> psiDepCut);
@@ -287,7 +287,7 @@ class V0PhotonCut : public TNamed
   // v0 cuts
   float mMinMee{0.f}, mMaxMee{0.1f};
   float mMinPsiPair{-3.15}, mMaxPsiPair{+3.15};
-  float mMinRxyKF{0.f}, mMaxRxyKF{180.f};
+  float mMinRxy{0.f}, mMaxRxy{180.f};
   float mMinCosPA{0.95};
   float mMaxPCA{2.f};
   std::function<float(float)> mMaxMeePsiPairDep{}; // max mee as a function of psipair

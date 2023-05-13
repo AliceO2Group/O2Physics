@@ -89,6 +89,7 @@ DECLARE_SOA_COLUMN(TrackCutFlagFb1, trackCutFlagFb1, bool);                    /
 DECLARE_SOA_COLUMN(TrackCutFlagFb2, trackCutFlagFb2, bool);                    //! Flag with the single cut passed flagged for the second selection criteria (as general but 2 point2 in ITS IB)
 DECLARE_SOA_COLUMN(TrackCutFlagFb3, trackCutFlagFb3, bool);                    //! Flag with the single cut passed flagged for the third selection criteria (HF-like: global w/o tight DCA selection)
 DECLARE_SOA_COLUMN(TrackCutFlagFb4, trackCutFlagFb4, bool);                    //! Flag with the single cut passed flagged for the fourth selection criteria (nuclei)
+DECLARE_SOA_COLUMN(TrackCutFlagFb5, trackCutFlagFb5, bool);                    //! Flag with the single cut passed flagged for the fith selection criteria (jet validation - reduced set of cuts)
 
 #define DECLARE_DYN_TRKSEL_COLUMN(name, getter, mask) \
   DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](TrackSelectionFlags::flagtype flags) -> bool { return TrackSelectionFlags::checkFlag(flags, mask); });
@@ -148,6 +149,7 @@ DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on th
                   track::TrackCutFlagFb2,
                   track::TrackCutFlagFb3,
                   track::TrackCutFlagFb4,
+                  track::TrackCutFlagFb5,
                   track::IsQualityTrack<track::TrackCutFlag>,
                   track::IsPrimaryTrack<track::TrackCutFlag>,
                   track::IsInAcceptanceTrack<track::TrackCutFlag>,

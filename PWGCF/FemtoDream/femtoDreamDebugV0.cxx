@@ -13,6 +13,10 @@
 /// \brief Tasks that reads the particle tables and fills QA histograms for V0s
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
+#include <fairlogger/Logger.h>
+#include <cstdint>
+#include <iostream>
+#include <vector>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -36,75 +40,73 @@ struct femtoDreamDebugV0 {
   SliceCache cache;
 
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 3122, "Particle 1 - PDG code"};
-  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 338, "Particle 1 - Selection bit from cutCulator"};
+  Configurable<uint32_t> ConfCutV0{"ConfCutV0", 338, "V0 - Selection bit from cutCulator"};
+  ConfigurableAxis ConfV0TempFitVarBins{"ConfV0TempFitVarBins", {300, 0.95, 1.}, "V0: binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfV0TempFitVarpTBins{"ConfV0TempFitVarpTBins", {20, 0.5, 4.05}, "V0: pT binning of the pT vs. TempFitVar plot"};
+
+  Configurable<uint32_t> ConfCutChildPos{"ConfCutChildPos", 150, "Positive Child of V0 - Selection bit from cutCulator"};
+  Configurable<uint32_t> ConfCutChildNeg{"ConfCutChildNeg", 149, "Negative Child of V0 - Selection bit from cutCulator"};
+  Configurable<float> ConfChildPosPidnSigmaMax{"ConfChildPosPidnSigmaMax", 3.f, "Positive Child of V0 - Selection bit from cutCulator"};
+  Configurable<float> ConfChildNegPidnSigmaMax{"ConfChildNegPidnSigmaMax", 3.f, "Negative Child of V0 - Selection bit from cutCulator"};
+  Configurable<int> ConfChildPosIndex{"ConfChildPosIndex", 1, "Positive Child of V0 - Index from cutCulator"};
+  Configurable<int> ConfChildNegIndex{"ConfChildNegIndex", 0, "Negative Child of V0 - Index from cutCulator"};
+  Configurable<std::vector<float>> ConfChildPIDnSigmaMax{"ConfChildPIDnSigmaMax", std::vector<float>{4.f, 3.f}, "V0 child sel: Max. PID nSigma TPC"};
+  Configurable<int> ConfChildnSpecies{"ConfChildnSpecies", 2, "Number of particle spieces (for V0 children) with PID info"};
+  ConfigurableAxis ConfChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
 
   using FemtoFullParticles = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
+  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && ((aod::femtodreamparticle::cut & ConfCutV0) == ConfCutV0);
+  Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
 
-  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
-                                           // (aod::femtodreamparticle::pt < cfgCutTable->get("MaxPt")) &&
-                                           ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
-
-  Preslice<aod::FemtoDreamParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
-
-  /// Histogramming for Event
+  /// Histogramming
   FemtoDreamEventHisto eventHisto;
-
-  /// The configurables need to be passed to an std::vector
-  std::vector<int> vPIDPartOne;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 3> posChildHistos;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 4> negChildHistos;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0> V0Histos;
 
   /// Histogram output
-  HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry FullQaRegistry{"FullV0QA", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry EventRegistry{"Event", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry V0Registry{"FullV0QA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
-    eventHisto.init(&qaRegistry);
-
-    AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "m_{#Lambda} (GeV/#it{c}^{2})"};
-    AxisSpec massAxisAntiLambda = {600, 0.0f, 3.0f, "m_{#bar{#Lambda}} (GeV/#it{c}^{2})"};
-
-    FullQaRegistry.add("FullV0QA/hPt", "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
-    FullQaRegistry.add("FullV0QA/hEta", "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
-    FullQaRegistry.add("FullV0QA/hPhi", "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-    FullQaRegistry.add("FullV0QA/hDaughDCA", "; DCA^{daugh} (cm); Entries", kTH1F, {{1000, 0, 10}});
-    FullQaRegistry.add("FullV0QA/hTransRadius", "; #it{r}_{xy} (cm); Entries", kTH1F, {{1500, 0, 150}});
-    FullQaRegistry.add("FullV0QA/hDecayVtxX", "; #it{Vtx}_{x} (cm); Entries", kTH1F, {{2000, 0, 200}});
-    FullQaRegistry.add("FullV0QA/hDecayVtxY", "; #it{Vtx}_{y} (cm)); Entries", kTH1F, {{2000, 0, 200}});
-    FullQaRegistry.add("FullV0QA/hDecayVtxZ", "; #it{Vtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
-    FullQaRegistry.add("FullV0QA/hCPA", "; #it{cos #theta_{p}}; Entries", kTH1F, {{1000, 0.9, 1.}});
-    FullQaRegistry.add("FullV0QA/hCPAvsPt", "; #it{p}_{T} (GeV/#it{c}); #it{cos #theta_{p}}", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
-    FullQaRegistry.add("FullV0QA/hInvMassLambda", "", kTH1F, {massAxisLambda});
-    FullQaRegistry.add("FullV0QA/hInvMassAntiLambda", "", kTH1F, {massAxisAntiLambda});
-    FullQaRegistry.add("FullV0QA/hInvMassLambdaAntiLambda", "", kTH2F, {massAxisLambda, massAxisAntiLambda});
+    eventHisto.init(&EventRegistry);
+    posChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, true);
+    negChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, true);
+    V0Histos.init(&V0Registry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, false, true);
   }
 
   /// Porduce QA plots for V0 selection in FemtoDream framework
-  void process(o2::aod::FemtoDreamCollision& col, FemtoFullParticles& parts)
+  void process(o2::aod::FemtoDreamCollision const& col, FemtoFullParticles const& parts)
   {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
-
     eventHisto.fillQA(col);
-
     for (auto& part : groupPartsOne) {
-
-      FullQaRegistry.fill(HIST("FullV0QA/hPt"), part.pt());
-      FullQaRegistry.fill(HIST("FullV0QA/hEta"), part.eta());
-      FullQaRegistry.fill(HIST("FullV0QA/hPhi"), part.phi());
-      FullQaRegistry.fill(HIST("FullV0QA/hDaughDCA"), part.daughDCA());
-      FullQaRegistry.fill(HIST("FullV0QA/hTransRadius"), part.transRadius());
-      FullQaRegistry.fill(HIST("FullV0QA/hDecayVtxX"), part.decayVtxX());
-      FullQaRegistry.fill(HIST("FullV0QA/hDecayVtxY"), part.decayVtxY());
-      FullQaRegistry.fill(HIST("FullV0QA/hDecayVtxZ"), part.decayVtxZ());
-      FullQaRegistry.fill(HIST("FullV0QA/hCPA"), part.tempFitVar());
-      FullQaRegistry.fill(HIST("FullV0QA/hCPAvsPt"), part.pt(), part.tempFitVar());
-      FullQaRegistry.fill(HIST("FullV0QA/hInvMassLambda"), part.mLambda());
-      FullQaRegistry.fill(HIST("FullV0QA/hInvMassAntiLambda"), part.mAntiLambda());
-      FullQaRegistry.fill(HIST("FullV0QA/hInvMassLambdaAntiLambda"), part.mLambda(), part.mAntiLambda());
+      if (!part.has_children()) {
+        continue;
+      }
+      const auto& posChild = parts.iteratorAt(part.index() - 2);
+      const auto& negChild = parts.iteratorAt(part.index() - 1);
+      if (posChild.globalIndex() != part.childrenIds()[0] || negChild.globalIndex() != part.childrenIds()[1]) {
+        LOG(warn) << "Indices of V0 children do not match";
+        continue;
+      }
+      // check cuts on V0 children
+      if ((posChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) && (posChild.cut() & ConfCutChildPos) == ConfCutChildPos) &&
+          (negChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) && (negChild.cut() & ConfCutChildNeg) == ConfCutChildNeg) &&
+          isFullPIDSelected(posChild.pidcut(), 0.f, 1.f, std::vector<int>(ConfChildPosIndex.value), ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildPosPidnSigmaMax.value, 1.f) &&
+          isFullPIDSelected(negChild.pidcut(), 0.f, 1.f, std::vector<int>(ConfChildNegIndex.value), ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildNegPidnSigmaMax.value, 1.f)) {
+        V0Histos.fillQA<false, true>(part);
+        posChildHistos.fillQA<false, true>(posChild);
+        negChildHistos.fillQA<false, true>(negChild);
+      }
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec
+  defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
     adaptAnalysisTask<femtoDreamDebugV0>(cfgc),

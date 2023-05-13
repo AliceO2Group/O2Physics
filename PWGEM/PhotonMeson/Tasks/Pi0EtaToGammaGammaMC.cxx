@@ -16,10 +16,6 @@
 
 #include "TString.h"
 #include "Math/Vector4D.h"
-// #include "Math/Vector3D.h"
-// #include "Math/LorentzRotation.h"
-// #include "Math/Rotation3D.h"
-// #include "Math/AxisAngle.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -33,7 +29,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
@@ -51,15 +47,6 @@ using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct Pi0EtaToGammaGammaMC {
-  enum PairType {
-    kPCMPCM = 0,
-    kPHOSPHOS = 1,
-    kEMCEMC = 2,
-    kPCMPHOS = 3,
-    kPCMEMC = 4,
-    kPHOSEMC = 5,
-  };
-
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
 
   HistogramRegistry registry{"Pi0EtaToGammaGammaMC"};
@@ -192,21 +179,23 @@ struct Pi0EtaToGammaGammaMC {
   template <PairType pairtype, typename TG1, typename TG2, typename TCut1, typename TCut2>
   bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const& cut2)
   {
-    bool is_g1_selected = false;
-    bool is_g2_selected = false;
+    bool is_selected_pair = false;
     if constexpr (pairtype == PairType::kPCMPCM) {
-      is_g1_selected = cut1.template IsSelected<MyMCV0Legs>(g1);
-      is_g2_selected = cut2.template IsSelected<MyMCV0Legs>(g2);
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, MyMCV0Legs>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPHOSPHOS) {
-      is_g1_selected = cut1.template IsSelected(g1);
-      is_g2_selected = cut2.template IsSelected(g2);
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<int, int>(g1, g2, cut1, cut2); // dummy, because track matching is not ready.
+    } else if constexpr (pairtype == PairType::kEMCEMC) {
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::SkimEMCMTs, aod::SkimEMCMTs>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPCMPHOS) {
-      is_g1_selected = cut1.template IsSelected<MyMCV0Legs>(g1);
-      is_g2_selected = cut2.template IsSelected(g2);
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, int>(g1, g2, cut1, cut2);
+    } else if constexpr (pairtype == PairType::kPCMEMC) {
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, aod::SkimEMCMTs>(g1, g2, cut1, cut2);
+    } else if constexpr (pairtype == PairType::kPHOSEMC) {
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<int, aod::SkimEMCMTs>(g1, g2, cut1, cut2);
     } else {
-      return true;
+      is_selected_pair = true;
     }
-    return (is_g1_selected & is_g2_selected);
+    return is_selected_pair;
   }
 
   Preslice<MyV0Photons> perCollision_pcm = aod::v0photon::collisionId;
@@ -323,6 +312,9 @@ struct Pi0EtaToGammaGammaMC {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+              if (abs(v12.Rapidity()) > maxY) {
+                continue;
+              }
               reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v12.Pt());
               reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hMggPt_Eta_Primary"))->Fill(v12.M(), v12.Pt());
 
