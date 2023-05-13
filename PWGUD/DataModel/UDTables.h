@@ -12,6 +12,7 @@
 #ifndef PWGUD_DATAMODEL_UDTABLES_H_
 #define PWGUD_DATAMODEL_UDTABLES_H_
 
+#include <vector>
 #include <cmath>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
