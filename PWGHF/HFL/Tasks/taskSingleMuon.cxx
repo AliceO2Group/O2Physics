@@ -47,10 +47,11 @@ using MFTTracksExtra = soa::Join<aod::MFTTracks, aod::MA2T>; // MFT track + inde
 struct ProduceAmbiguousMft {
   // build the index table MA2T
   Builds<aod::MA2T> idx;
+
   void init(InitContext const&) {}
   // Additionnal methods provided:
-  // mfttrack.has_ambMFTtrack()
-  // mfttrack.ambMFTtrack()
+  // mfttrack.has_ambMftTrack()
+  // mfttrack.ambMftTrack()
 };
 
 struct HfTaskSingleMuonSelection {
@@ -126,7 +127,6 @@ struct HfTaskSingleMuonSelection {
         continue;
       }
       const auto eta(muon.eta()), pDca(muon.pDca()), rAbs(muon.rAtAbsorberEnd());
-      //        const auto dcaXY(std::sqrt(std::pow(muon.fwdDcaX(), 2.) + std::pow(muon.fwdDcaY(), 2.)));
       const auto dcaXY(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
       const auto pt(muon.pt());
       const auto charge(muon.sign());
@@ -141,7 +141,7 @@ struct HfTaskSingleMuonSelection {
       }
       // histograms before the acceptance cuts
       registry.fill(HIST("hMuBeforeCuts"), pt, eta, dcaXY, pDca, charge, chi2);
-      if (muon.matchMCHTrackId() > 0.) {
+      if (muon.matchMCHTrackId() > 0) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
         registry.fill(HIST("h3DeltaPtBeforeCuts"), pt, eta, muonType3.pt() - pt);
       }
@@ -158,13 +158,13 @@ struct HfTaskSingleMuonSelection {
       if ((rAbs >= rAbsMid) && (pDca >= pDcaMax)) {
         continue;
       }
-      if ((muon.chi2() >= 1e6) || (muon.chi2() < 0.)) {
+      if ((muon.chi2() >= 1e6) || (muon.chi2() < 0)) {
         continue;
       }
       // histograms after acceptance cuts
       registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, pDca, charge, chi2);
       registry.fill(HIST("h2DCA"), muon.fwdDcaX(), muon.fwdDcaY());
-      if (muon.matchMCHTrackId() > 0.) {
+      if (muon.matchMCHTrackId() > 0) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
         registry.fill(HIST("h3DeltaPtAfterCuts"), pt, eta, muonType3.pt() - pt);
       }
@@ -184,7 +184,7 @@ struct HfTaskSingleMuonSelection {
         continue;
       }
       const auto eta(muon.eta()), pDca(muon.pDca());
-      const auto dcaXY(std::sqrt(std::pow(muon.fwdDcaX(), 2.) + std::pow(muon.fwdDcaY(), 2.)));
+      const auto dcaXY(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
       const auto pt(muon.pt());
       const auto charge(muon.sign());
       const auto chi2(muon.chi2MatchMCHMFT());
@@ -198,7 +198,7 @@ struct HfTaskSingleMuonSelection {
       }
       // histograms before the acceptance cuts
       registry.fill(HIST("hMuBeforeCuts"), pt, eta, dcaXY, pDca, charge, chi2);
-      if (muon.matchMCHTrackId() > 0.) {
+      if (muon.matchMCHTrackId() > 0) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMcMuons>();
         registry.fill(HIST("h3DeltaPtBeforeCuts"), pt, eta, muonType3.pt() - pt);
       }
@@ -214,13 +214,13 @@ struct HfTaskSingleMuonSelection {
       if ((eta >= etaMax) || (eta < etaMin)) {
         continue;
       }
-      if ((muon.chi2() >= 1e6) || (muon.chi2() < 0.)) {
+      if ((muon.chi2() >= 1e6) || (muon.chi2() < 0)) {
         continue;
       }
       // histograms after acceptance cuts
       registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, pDca, charge, chi2);
       registry.fill(HIST("h2DCA"), muon.fwdDcaX(), muon.fwdDcaY());
-      if (muon.matchMCHTrackId() > 0.) {
+      if (muon.matchMCHTrackId() > 0) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMcMuons>();
         registry.fill(HIST("h3DeltaPtAfterCuts"), pt, eta, muonType3.pt() - pt);
       }
