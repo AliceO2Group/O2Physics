@@ -439,8 +439,8 @@ struct DGBCCandProducer {
   // If the BC has an associated collision, the information of this collision is extracted.
   // If the BC is not associated with a collision, then fill the UDtables with information availabl for the BC.
   void processTinBCs(TIBC const& tibc, BCs const& bcs, CCs const& collisions,
-                    TCs const& tracks, aod::FwdTracks const& fwdtracks, FTIBCs const& ftibcs,
-                    aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+                     TCs const& tracks, aod::FwdTracks const& fwdtracks, FTIBCs const& ftibcs,
+                     aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     // fill FITInfo
     auto bcnum = tibc.bcnum();
@@ -630,7 +630,7 @@ struct DGBCCandProducer {
       Partition<CCs> colSlize = aod::evsel::foundBCId == bc.globalIndex();
       colSlize.bindTable(collisions);
       colSlize.bindExternalIndices(&bcs);
-      
+
       if (bc.globalBC() == bcnum) {
         SETBIT(bcFlag, 1);
 
@@ -704,7 +704,7 @@ struct DGBCCandProducer {
             auto rtrwTOF = udhelpers::rPVtrwTOF<false>(tracksArray, tracksArray.size());
             auto nCharge = udhelpers::netCharge<false>(tracksArray);
             auto fitInfo = getFITinfo(bcnum, bcs, ft0s, fv0as, fdds);
-            
+
             // distinguish different cases
             if (bc.globalBC() == bcnum) {
               if (colSlize.size() > 0) {
@@ -721,7 +721,7 @@ struct DGBCCandProducer {
               vpos[1] = 3.;
               vpos[2] = -3.;
             }
-            
+
             updateUDTables(false, bcnum, tibc.runNumber(), vpos[0], vpos[1], vpos[2],
                            tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
 
