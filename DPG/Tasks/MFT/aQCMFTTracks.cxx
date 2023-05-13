@@ -90,3 +90,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<CheckMFT>(cfgc),
   };
 }
+
