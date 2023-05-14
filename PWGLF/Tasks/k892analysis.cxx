@@ -263,6 +263,13 @@ struct k892analysis {
   }
   PROCESS_SWITCH(k892analysis, processData, "Process Event for data", true);
 
+  void processDataLight(aod::ResoCollision& collision,
+                        aod::ResoTracks const& resotracks)
+  {
+    fillHistograms<false, false>(collision, resotracks, resotracks);
+  }
+  PROCESS_SWITCH(k892analysis, processDataLight, "Process Event for data", false);
+
   void processMC(aod::ResoCollisions& collisions,
                  soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
   {
@@ -297,6 +304,39 @@ struct k892analysis {
     }
   }
   PROCESS_SWITCH(k892analysis, processMC, "Process Event for MC", false);
+
+  void processMCLight(aod::ResoCollision& collision,
+                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
+  {
+    fillHistograms<true, false>(collision, resotracks, resotracks);
+  }
+  PROCESS_SWITCH(k892analysis, processMCLight, "Process Event for MC", false);
+
+  void processMCTrue(aod::ResoCollisions& collisions, aod::McParticles const& mcParticles)
+  {
+    // Not related to the real collisions
+    for (auto& part : mcParticles) {             // loop over all MC particles
+      if (abs(part.pdgCode()) == 313) {          // K892(0)
+        if (part.y() > 0.5 || part.y() < -0.5) { // rapidity cut
+          continue;
+        }
+        bool pass1 = false;
+        bool pass2 = false;
+        for (auto& dau : part.daughters_as<aod::McParticles>()) {
+          if (abs(dau.pdgCode()) == kKPlus) { // At least one decay to Kaon
+            pass2 = true;
+          }
+          if (abs(dau.pdgCode()) == kPiPlus) { // At least one decay to Pion
+            pass1 = true;
+          }
+        }
+        if (!pass1 || !pass2) // If we have both decay products
+          continue;
+        histos.fill(HIST("truek892pt"), part.pt());
+      }
+    }
+  }
+  PROCESS_SWITCH(k892analysis, processMCTrue, "Process Event for MC", false);
 
   // Processing Event Mixing
   using BinningTypeVetZTPCtemp = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultTPCtemp>; // TODO: MultTPCtemp has to be updatde.
