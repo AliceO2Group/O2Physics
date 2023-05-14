@@ -236,7 +236,7 @@ struct OnTheFlyTOFPID {
 
       // Smear with expected resolutions
       float measuredTimeInnerTOF = pRandomNumberGenerator.Gaus(expectedTimeInnerTOF, innerTOFTimeReso);
-      float measuredTimeOuterTOF = pRandomNumberGenerator.Gaus(expectedTimeOuterTOF, innerTOFTimeReso);
+      float measuredTimeOuterTOF = pRandomNumberGenerator.Gaus(expectedTimeOuterTOF, outerTOFTimeReso);
 
       // Now we calculate the expected arrival time following certain mass hypotheses
       // and the (imperfect!) reconstructed track parametrizations
