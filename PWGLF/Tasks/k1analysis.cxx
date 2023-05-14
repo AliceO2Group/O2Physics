@@ -98,7 +98,7 @@ struct k1analysis {
   {
     std::vector<double> centBinning = {0., 1., 5., 10., 15., 20., 25., 30., 35., 40., 45., 50., 55., 60., 65., 70., 80., 90., 100.};
     AxisSpec centAxis = {centBinning, "V0M (%)"};
-    AxisSpec multAxis = {0, 0, 100, "V0M (%)"};                                     // for future
+    AxisSpec multAxis = {0, 0, 100, "V0M (%)"}; // for future
     AxisSpec ptAxis = {200, 0, 20, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec invMassAxis = {900, 0.6, 1.5, "Invariant Mass (GeV/#it{c}^2)"};        // K(892)0
     AxisSpec invMassAxisReso = {1600, 0.9f, 2.5f, "Invariant Mass (GeV/#it{c}^2)"}; // K1
