@@ -97,7 +97,72 @@ float rPVtrwTOF(TCs tracks, int nPVTracks)
 // By default a collision is associated with the BC closest in time.
 // Any BC falling within a BC window of meanBC +- deltaBC could potentially be the
 // true BC.
-// The bcIter is ideally placed within [minBC, maxBC], but it does not need to be.
+//
+template <typename T>
+T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs);
+
+template <typename I, typename T>
+T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs);
+
+// In this variant of compatibleBCs the range of compatible BCs is calculated from the
+// collision time and the time resolution dt. Typically the range is +- 4*dt.
+template <typename T>
+T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
+{
+  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
+
+  // return if collisions has no associated BC
+  if (!collision.has_foundBC()) {
+    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+  }
+
+  // get associated BC
+  auto bcIter = collision.foundBC_as<T>();
+
+  // due to the filling scheme the most probable BC may not be the one estimated from the collision time
+  uint64_t mostProbableBC = bcIter.globalBC();
+  uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+
+  // enforce minimum number for deltaBC
+  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
+  if (deltaBC < nMinBCs) {
+    deltaBC = nMinBCs;
+  }
+  LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
+
+  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
+}
+
+// same as above but with an other collision iterator as input
+template <typename T>
+T compatibleBCs1(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
+{
+  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
+
+  // return if collisions has no associated BC
+  if (!collision.has_foundBC()) {
+    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+  }
+
+  // get associated BC
+  auto bcIter = collision.foundBC_as<T>();
+
+  // due to the filling scheme the most probable BC may not be the one estimated from the collision time
+  uint64_t mostProbableBC = bcIter.globalBC();
+  uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+
+  // enforce minimum number for deltaBC
+  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
+  if (deltaBC < nMinBCs) {
+    deltaBC = nMinBCs;
+  }
+  LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
+
+  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
+}
+
+// In this variant of compatibleBCs the bcIter is ideally placed within
+// [minBC, maxBC], but it does not need to be. The range is given by +- delatBC.
 template <typename I, typename T>
 T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
 {
@@ -144,32 +209,13 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
   return slice;
 }
 
-// -----------------------------------------------------------------------------
-// The range of compatible BCs is calculated from the collision time and the time
-// resolution dt. Typically the range is +- 4*dt.
+// In this variant of compatibleBCs the range of compatible BCs is defined by meanBC +- deltaBC.
 template <typename T>
-T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
+T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs)
 {
-  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
-
-  // return if collisions has no associated BC
-  if (!collision.has_foundBC()) {
-    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-  }
-
-  // get associated BC
-  auto bcIter = collision.foundBC_as<T>();
-
-  // due to the filling scheme the most probable BC may not be the one estimated from the collision time
-  uint64_t mostProbableBC = bcIter.globalBC();
-  uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
-
-  // enforce minimum number for deltaBC
-  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
-  if (deltaBC < nMinBCs) {
-    deltaBC = nMinBCs;
-  }
-  LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
+  // find BC with globalBC ~ meanBC
+  uint64_t ind = (uint64_t)(bcs.size() / 2);
+  auto bcIter = bcs.iteratorAt(ind);
 
   return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
 }
@@ -199,18 +245,6 @@ T MCcompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels
   if (deltaBC < nMinBCs) {
     deltaBC = nMinBCs;
   }
-
-  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
-}
-
-// -----------------------------------------------------------------------------
-// In this case the range of compatible BCs is defied by meanBC +- deltaBC.
-template <typename T>
-T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs)
-{
-  // find BC with globalBC ~ meanBC
-  uint64_t ind = (uint64_t)(bcs.size() / 2);
-  auto bcIter = bcs.iteratorAt(ind);
 
   return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
 }
