@@ -154,7 +154,7 @@ struct HfTaskCorrelationDplusHadrons {
       int effBinD = o2::analysis::findBin(binsPtEfficiency, ptD);
       int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
 
-     // reject entries outside pT ranges of interest
+      // reject entries outside pT ranges of interest
       if (pTBinD < 0 || effBinD < 0) {
         continue;
       }
