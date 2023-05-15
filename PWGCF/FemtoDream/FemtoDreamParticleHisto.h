@@ -120,16 +120,19 @@ class FemtoDreamParticleHisto
   void init_MC(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis)
   {
     /// Particle-type specific histograms
-    // TODO Continue here: mHistogramRegistry->add((folderName + folderSuffix + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]).c_str();
+    
+    mHistogramRegistry->add((folderName + folderSuffix + "/hPt_NoFake").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
+   
     if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack || mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
       /// Track histograms
-      mHistogramRegistry->add((folderName + folderSuffix + "/hPt_MC").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hEta_MC").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hPhi_MC").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-      mHistogramRegistry->add((folderName + folderSuffix + "FullTrackQA_MC/hPDG").c_str(), "; PDG; Entries", kTH1I, {{6001, -3000, 3000}});
+      //mHistogramRegistry->add((folderName + folderSuffix + "/hPt_MC").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
+      //mHistogramRegistry->add((folderName + folderSuffix + "/hEta_MC").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
+      //mHistogramRegistry->add((folderName + folderSuffix + "/hPhi_MC").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hPDG").c_str(), "; PDG; Entries", kTH1I, {{6001, -3000, 3000}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hOrigin_MC").c_str(), "; Origin; Entries", kTH1I, {{8, 0, 7}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hNoMCtruthCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
+      //DCA plots 
       mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_Material").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
       //mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_Fake").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_DaughterLambda").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
@@ -156,8 +159,9 @@ class FemtoDreamParticleHisto
   /// \param tempFitVarBins binning of the tempFitVar (DCA_xy in case of tracks, CPA in case of V0s, etc.)
   /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T>
-  void init(HistogramRegistry* registry, T& tempFitVarpTBins, T& tempFitVarBins, bool isMC, bool isDebug = false)
+  void init(HistogramRegistry* registry, T& tempFitVarpTBins, T& tempFitVarBins, bool isMC, int pdgCode, bool isDebug = false)
   {
+    mPDG = pdgCode;
     if (registry) {
       mHistogramRegistry = registry;
       /// The folder names are defined by the type of the object and the suffix (if applicable)
@@ -259,15 +263,26 @@ class FemtoDreamParticleHisto
   /// Filling specialized histograms for Monte Carlo truth
   /// internal function called by init only in case of Monte Carlo truth
   /// \tparam T Data type of the particle
+  /// \tparam TMC Data typ of the Monte Carlo Particle
   /// \param part Particle
+  /// \param partMC Monte Carlo Particle
   /// \param mctruthorigin Origin of the associated mc Truth particle
-  template <typename T>
-  void fillQA_MC(T const& part, int mctruthorigin)
+  template <typename T, typename TMC>
+  //void fillQA_MC(T const& part, int mctruthorigin, int pdgcode)
+  void fillQA_MC(T const& part, TMC const& partMC)
   {
     if (mHistogramRegistry) {
+      //mHistogramRegistry->add((folderName + folderSuffix + "/hPDG").c_str(), "; PDG; Entries", kTH1I, {{6001, -3000, 3000}});
+      //mHistogramRegistry->add((folderName + folderSuffix + "/hOrigin_MC").c_str(), "; Origin; Entries", kTH1I, {{8, 0, 7}});
+      //mHistogramRegistry->add((folderName + folderSuffix + "/hNoMCtruthCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hPDG"), partMC.pdgMCTruth());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hOrigin_MC"), partMC.partOriginMCTruth());
+      if(abs(partMC.pdgMCTruth()) == mPDG){
+        mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hPt_NoFake"), part.pt());
+      }
       if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack || mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
         /// Track histograms
-        switch (mctruthorigin) {
+        switch (partMC.partOriginMCTruth()) {
           case (o2::aod::femtodreamMCparticle::kPrimary):
             mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hDCAxy_Primary"),
                                      part.pt(), part.tempFitVar());
@@ -327,7 +342,10 @@ class FemtoDreamParticleHisto
       if constexpr (isMC) {
         if (part.has_femtoDreamMCParticle()) {
           fillQA_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(part.femtoDreamMCParticle());
-          fillQA_MC(part, (part.femtoDreamMCParticle()).partOriginMCTruth());
+          //fillQA_MC(part, (part.femtoDreamMCParticle()).partOriginMCTruth(), (part.femtoDreamMCParticle()).pdgMCTruth());
+          fillQA_MC(part, part.femtoDreamMCParticle());
+        }else{
+          mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hNoMCtruthCounter"), 0);
         }
       }
     }
@@ -338,6 +356,7 @@ class FemtoDreamParticleHisto
   static constexpr o2::aod::femtodreamparticle::ParticleType mParticleType = particleType;   ///< Type of the particle under analysis
   static constexpr int mFolderSuffixType = suffixType;                                       ///< Counter for the folder suffix specified below
   static constexpr std::string_view mFolderSuffix[5] = {"", "_one", "_two", "_pos", "_neg"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
+  int mPDG = 0;
 };
 } // namespace o2::analysis::femtoDream
 
