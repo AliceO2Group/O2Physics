@@ -70,6 +70,8 @@ struct OnTheFlyTOFPID {
   Configurable<bool> doQAplots{"doQAplots", true, "do basic velocity plot qa"};
   Configurable<int> nBinsBeta{"nBinsBeta", 2200, "number of bins in beta"};
   Configurable<int> nBinsP{"nBinsP", 80, "number of bins in momentum"};
+  Configurable<int> nBinsTrackLengthInner{"nBinsTrackLengthInner", 300, "number of bins in track length"};
+  Configurable<int> nBinsTrackLengthOuter{"nBinsTrackLengthOuter", 300, "number of bins in track length"};
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
@@ -85,9 +87,14 @@ struct OnTheFlyTOFPID {
 
     if (doQAplots) {
       const AxisSpec axisMomentum{static_cast<int>(nBinsP), 0.0f, +4.0f, "#it{p} (GeV/#it{c})"};
+      const AxisSpec axisMomentumSmall{static_cast<int>(nBinsP), 0.0f, +1.0f, "#it{p} (GeV/#it{c})"};
       const AxisSpec axisVelocity{static_cast<int>(nBinsBeta), 0.0f, +1.1f, "Measured #beta"};
+      const AxisSpec axisTrackLengthInner{static_cast<int>(nBinsTrackLengthInner), 0.0f, 60.0f, "Track length (cm)"};
+      const AxisSpec axisTrackLengthOuter{static_cast<int>(nBinsTrackLengthOuter), 0.0f, 300.0f, "Track length (cm)"};
       histos.add("h2dVelocityVsMomentumInner", "h2dVelocityVsMomentumInner", kTH2F, {axisMomentum, axisVelocity});
       histos.add("h2dVelocityVsMomentumOuter", "h2dVelocityVsMomentumOuter", kTH2F, {axisMomentum, axisVelocity});
+      histos.add("h2dTrackLengthInnerVsPt", "h2dTrackLengthInnerVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthInner});
+      histos.add("h2dTrackLengthOuterVsPt", "h2dTrackLengthOuterVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthOuter});
     }
   }
 
@@ -260,10 +267,14 @@ struct OnTheFlyTOFPID {
         // unit conversion: length in cm, time in ps
         float innerBeta = 1e+3 * (trackLengthInnerTOF / measuredTimeInnerTOF) / o2::constants::physics::LightSpeedCm2NS;
         float outerBeta = 1e+3 * (trackLengthOuterTOF / measuredTimeOuterTOF) / o2::constants::physics::LightSpeedCm2NS;
-        if (trackLengthRecoInnerTOF > 0)
+        if (trackLengthRecoInnerTOF > 0) {
           histos.fill(HIST("h2dVelocityVsMomentumInner"), momentum, innerBeta);
-        if (trackLengthRecoOuterTOF > 0)
+          histos.fill(HIST("h2dTrackLengthInnerVsPt"), o2track.getPt(), trackLengthInnerTOF);
+        }
+        if (trackLengthRecoOuterTOF > 0) {
           histos.fill(HIST("h2dVelocityVsMomentumOuter"), momentum, outerBeta);
+          histos.fill(HIST("h2dTrackLengthOuterVsPt"), o2track.getPt(), trackLengthOuterTOF);
+        }
       }
 
       for (int ii = 0; ii < 5; ii++) {
@@ -285,8 +296,8 @@ struct OnTheFlyTOFPID {
       }
 
       // Sigmas have been fully calculated. Please populate the NSigma helper table (once per track)
-      upgradeTof(nSigmaInnerTOF[0], nSigmaInnerTOF[1], nSigmaInnerTOF[2], nSigmaInnerTOF[3], nSigmaInnerTOF[4],
-                 nSigmaOuterTOF[0], nSigmaOuterTOF[1], nSigmaOuterTOF[2], nSigmaOuterTOF[3], nSigmaOuterTOF[4]);
+      upgradeTof(nSigmaInnerTOF[0], nSigmaInnerTOF[1], nSigmaInnerTOF[2], nSigmaInnerTOF[3], nSigmaInnerTOF[4], trackLengthInnerTOF,
+                 nSigmaOuterTOF[0], nSigmaOuterTOF[1], nSigmaOuterTOF[2], nSigmaOuterTOF[3], nSigmaOuterTOF[4], trackLengthOuterTOF);
     }
   }
 };
