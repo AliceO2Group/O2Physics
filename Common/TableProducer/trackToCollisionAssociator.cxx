@@ -41,8 +41,8 @@ struct TrackToCollisionAssociation {
   Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
 
   Filter trackFilter = (setTrackSelections.node() == 0) ||
-                       ((setTrackSelections.node() == 1) || requireGlobalTrackWoDCAInFilter()) ||
-                       ((setTrackSelections.node() == 2) || requireQualityTracksITSInFilter());
+                       ((setTrackSelections.node() == 1) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((setTrackSelections.node() == 2) && requireQualityTracksITSInFilter());
   using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   using TracksWithSelFilter = soa::Filtered<TracksWithSel>;
 
