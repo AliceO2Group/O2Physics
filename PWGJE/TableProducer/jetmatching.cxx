@@ -36,7 +36,11 @@ using namespace o2::framework::expressions;
 template <typename BaseJetCollection, typename TagJetCollection,
           typename BaseToTagMatchingTable, typename TagToBaseMatchingTable, typename HfCandidates>
 struct JetMatching {
+  Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
+  Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
+  Configurable<bool> doMatchingHf{"doMatchingHf", true, "Enable HF matching"};
   Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.4f, "Max matching distance"};
+  Configurable<float> minPtFraction{"minPtFraction", 0.f, "Minimum pt fraction for pt matching"};
 
   Produces<BaseToTagMatchingTable> jetsBaseToTag;
   Produces<TagToBaseMatchingTable> jetsTagToBase;
@@ -88,54 +92,110 @@ struct JetMatching {
     const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, jetsTagIsMC ? collision.mcCollisionId() : collision.globalIndex());
 
     // geometric matching
-    LOGF(info, "performing geometric matching for collision %d (%d / %d jets)",
-         collision.globalIndex(), jetsBasePerColl.size(), jetsTagPerColl.size());
-    std::vector<double> jetsBasePhi;
-    std::vector<double> jetsBaseEta;
-    for (const auto& jet : jetsBasePerColl) {
-      LOGF(info, "base jet index: %d-%d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
-           jet.index(), jet.globalIndex(), jet.collisionId(), jet.pt(), jet.phi(), jet.tracks().size(), jet.hfcandidates().size());
-      jetsBasePhi.emplace_back(jet.phi());
-      jetsBaseEta.emplace_back(jet.eta());
-    }
-    std::vector<double> jetsTagPhi;
-    std::vector<double> jetsTagEta;
-    for (const auto& jet : jetsTagPerColl) {
-      LOGF(info, "tag jet index: %d-%d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
-           jet.index(), jet.globalIndex(), jet.mcCollisionId(), jet.pt(), jet.phi(), jet.tracks().size(), jet.hfcandidates().size());
-      jetsTagPhi.emplace_back(jet.phi());
-      jetsTagEta.emplace_back(jet.eta());
-    }
-    auto&& [baseToTagGeo, tagToBaseGeo] = JetUtilities::MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, maxMatchingDistance);
-    LOGF(debug, "geometric matching: %d - %d jets", baseToTagGeo.size(), tagToBaseGeo.size());
-    for (std::size_t i = 0; i < baseToTagGeo.size(); ++i) {
-      LOGF(debug, "bjet %i -> %i", i, baseToTagGeo[i]);
-    }
-    for (std::size_t i = 0; i < tagToBaseGeo.size(); ++i) {
-      LOGF(debug, "tjet %i -> %i", i, tagToBaseGeo[i]);
+    std::vector<int> baseToTagGeo(jetsBasePerColl.size(), -1);
+    std::vector<int> tagToBaseGeo(jetsTagPerColl.size(), -1);
+    if (doMatchingGeo) {
+      LOGF(info, "performing geometric matching for collision %d (%d / %d jets)",
+           collision.globalIndex(), jetsBasePerColl.size(), jetsTagPerColl.size());
+      std::vector<double> jetsBasePhi;
+      std::vector<double> jetsBaseEta;
+      for (const auto& jet : jetsBasePerColl) {
+        LOGF(debug, "base jet index: %d-%d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
+             jet.index(), jet.globalIndex(), jet.collisionId(), jet.pt(), jet.phi(), jet.tracks().size(), jet.hfcandidates().size());
+        jetsBasePhi.emplace_back(jet.phi());
+        jetsBaseEta.emplace_back(jet.eta());
+      }
+      std::vector<double> jetsTagPhi;
+      std::vector<double> jetsTagEta;
+      for (const auto& jet : jetsTagPerColl) {
+        LOGF(debug, "tag jet index: %d-%d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
+             jet.index(), jet.globalIndex(), jet.mcCollisionId(), jet.pt(), jet.phi(), jet.tracks().size(), jet.hfcandidates().size());
+        jetsTagPhi.emplace_back(jet.phi());
+        jetsTagEta.emplace_back(jet.eta());
+      }
+      std::tie(baseToTagGeo, tagToBaseGeo) = JetUtilities::MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, maxMatchingDistance);
+      LOGF(debug, "geometric matching: %d - %d jets", baseToTagGeo.size(), tagToBaseGeo.size());
+      for (std::size_t i = 0; i < baseToTagGeo.size(); ++i) {
+        LOGF(debug, "bjet %i -> %i", i, baseToTagGeo[i]);
+      }
+      for (std::size_t i = 0; i < tagToBaseGeo.size(); ++i) {
+        LOGF(debug, "tjet %i -> %i", i, tagToBaseGeo[i]);
+      }
     }
 
     // HF matching
     std::vector<int> baseToTagHF(jetsBasePerColl.size(), -1);
     std::vector<int> tagToBaseHF(jetsTagPerColl.size(), -1);
     if constexpr (getHfFlag() > 0) {
-      LOGF(info, "performing HF matching for collision %d", collision.globalIndex());
+      if (doMatchingHf) {
+        LOGF(info, "performing HF matching for collision %d", collision.globalIndex());
+        for (const auto& bjet : jetsBasePerColl) {
+          LOGF(info, "jet index: %d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
+               bjet.index(), bjet.collisionId(), bjet.pt(), bjet.phi(), bjet.tracks().size(), bjet.hfcandidates().size());
+
+          const auto hfcand = bjet.template hfcandidates_first_as<HfCandidates>();
+          if (hfcand.flagMcMatchRec() & getHfFlag()) {
+            const auto hfCandMC = hfcand.template prong0_as<Tracks>().template mcParticle_as<McParticles>();
+            const auto hfCandMcId = hfCandMC.template mothers_first_as<McParticles>().globalIndex();
+            for (const auto& tjet : jetsTagPerColl) {
+              const auto cand = tjet.template hfcandidates_first_as<McParticles>();
+              if (cand.globalIndex() == hfCandMcId) {
+                LOGF(info, "Found HF match: %d (pt %g) <-> %d (pt %g)",
+                     bjet.globalIndex(), bjet.pt(), tjet.globalIndex(), tjet.pt());
+                baseToTagHF[bjet.index()] = tjet.globalIndex();
+                tagToBaseHF[tjet.index()] = bjet.globalIndex();
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // pt matching
+    std::vector<int> baseToTagPt(jetsBasePerColl.size(), -1);
+    std::vector<int> tagToBasePt(jetsTagPerColl.size(), -1);
+    if (doMatchingPt) {
+      LOGF(info, "performing pt matching for collision %d", collision.globalIndex());
       for (const auto& bjet : jetsBasePerColl) {
         LOGF(info, "jet index: %d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
              bjet.index(), bjet.collisionId(), bjet.pt(), bjet.phi(), bjet.tracks().size(), bjet.hfcandidates().size());
-
-        const auto hfcand = bjet.template hfcandidates_first_as<HfCandidates>();
-        if (hfcand.flagMcMatchRec() & getHfFlag()) {
-          const auto hfCandMC = hfcand.template prong0_as<Tracks>().template mcParticle_as<McParticles>();
-          const auto hfCandMcId = hfCandMC.template mothers_first_as<McParticles>().globalIndex();
-          for (const auto& tjet : jetsTagPerColl) {
-            const auto cand = tjet.template hfcandidates_first_as<McParticles>();
-            if (cand.globalIndex() == hfCandMcId) {
-              LOGF(info, "Found HF match: %d (pt %g) <-> %d (pt %g)",
-                   bjet.globalIndex(), bjet.pt(), tjet.globalIndex(), tjet.pt());
-              baseToTagHF[bjet.index()] = tjet.globalIndex();
-              tagToBaseHF[tjet.index()] = bjet.globalIndex();
+        for (const auto& tjet : jetsTagPerColl) {
+          float ptSum = 0;
+          for (const auto& btrack : bjet.template tracks_as<Tracks>()) {
+            for (const auto& ttrack : tjet.template tracks_as<McParticles>()) {
+              if (btrack.has_mcParticle() &&
+                  ttrack.globalIndex() == btrack.template mcParticle_as<McParticles>().globalIndex()) {
+                ptSum += ttrack.pt();
+                break;
+              }
             }
+          }
+          if (ptSum > tjet.pt() * minPtFraction) {
+            LOGF(info, "Found pt match: %d (pt %g) <-> %d (pt %g)",
+                 bjet.globalIndex(), bjet.pt(), tjet.globalIndex(), tjet.pt());
+            baseToTagPt[bjet.index()] = tjet.globalIndex();
+          }
+        }
+      }
+
+      for (const auto& tjet : jetsTagPerColl) {
+        LOGF(info, "jet index: %d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
+             tjet.index(), tjet.mcCollisionId(), tjet.pt(), tjet.phi(), tjet.tracks().size(), tjet.hfcandidates().size());
+        for (const auto& bjet : jetsBasePerColl) {
+          float ptSum = 0;
+          for (const auto& ttrack : tjet.template tracks_as<McParticles>()) {
+            for (const auto& btrack : bjet.template tracks_as<Tracks>()) {
+              if (btrack.has_mcParticle() &&
+                  ttrack.globalIndex() == btrack.template mcParticle_as<McParticles>().globalIndex()) {
+                ptSum += btrack.pt();
+                break;
+              }
+            }
+          }
+          if (ptSum > bjet.pt() * minPtFraction) {
+            LOGF(info, "Found pt match: %d (pt %g) <-> %d (pt %g)",
+                 tjet.globalIndex(), tjet.pt(), bjet.globalIndex(), bjet.pt());
+            tagToBasePt[tjet.index()] = bjet.globalIndex();
           }
         }
       }
@@ -149,7 +209,7 @@ struct JetMatching {
         geojetid = -1;
       LOGF(info, "registering matches for base jet %d (%d): geo -> %d (%d), HF -> %d",
            jet.index(), jet.globalIndex(), geojetid, baseToTagGeo[jet.index()], baseToTagHF[jet.index()]);
-      jetsBaseToTag(geojetid, baseToTagHF[jet.index()]);
+      jetsBaseToTag(geojetid, baseToTagPt[jet.index()], baseToTagHF[jet.index()]);
     }
 
     for (const auto& jet : jetsTagPerColl) {
@@ -160,7 +220,7 @@ struct JetMatching {
         geojetid = -1;
       LOGF(info, "registering matches for tag jet %d (%d): geo -> %d (%d), HF -> %d",
            jet.index(), jet.globalIndex(), geojetid, tagToBaseGeo[jet.index()], tagToBaseHF[jet.index()]);
-      jetsTagToBase(geojetid, tagToBaseHF[jet.index()]);
+      jetsTagToBase(geojetid, tagToBasePt[jet.index()], tagToBaseHF[jet.index()]);
     }
   }
   PROCESS_SWITCH(JetMatching, processJets, "Perform jet matching", true);
