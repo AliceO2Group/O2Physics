@@ -607,7 +607,7 @@ struct HfCorrelatorDsHadrons {
                             particle.pt(),
                             particleAssoc.pt(),
                             poolBin);
-          entryDsHadronRecoInfo(1.968, true);
+          entryDsHadronRecoInfo(RecoDecay::getMassPDG(particle.pdgCode()), true);
           entryDsHadronGenInfo(isDsPrompt);
         }
       }
