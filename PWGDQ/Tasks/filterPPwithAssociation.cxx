@@ -314,7 +314,7 @@ struct DQBarrelTrackSelection {
           trackTime = track.trackTime();
           trackTimeRes = track.trackTimeRes();
         }
-        const float deltaTime = trackTime - collTime + bcOffset * constants::lhc::LHCBunchSpacingNS;
+        const float deltaTime = trackTime - collTime + bcOffset * 25.f;
         float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
 
         // optimization to avoid looping over all collisions in the TF (loop just for +/- bOffsetMax around the track)
@@ -612,9 +612,7 @@ struct DQMuonsSelection {
   }
 
   template <uint32_t TMuonFillMap, typename TMuons>
-  void runMuonSelection(Collisions const& collisions,
-                        TMuons const& muons,
-                        BCs const& bcs)
+  void runMuonSelection(TMuons const& muons)
   {
     fSelectedMuons.clear();
 
@@ -644,11 +642,11 @@ struct DQMuonsSelection {
     } // end loop over muons
   }
 
-  void runCollisionMap(Collisions const& collisions, aod::BCs const& bcs)
+  void runCollisionMap(Collisions const& collisions, aod::BCsWithTimestamps const& bcstimestamp)
   {
     // association of time brackets to each collision
     for (auto& collision : collisions) {
-      auto bc = collision.template bc_as<aod::BCs>();
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       double t0 = bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS - collision.collisionTime();
       double err = collision.collisionTimeRes() * fSigmaVtx + fTimeMarginVtx;
       std::pair<double, double> timeBracket = {t0 - err, t0 + err};
@@ -741,8 +739,8 @@ struct DQMuonsSelection {
       return;
     }
 
-    std::map<int64_t, std::vector<int64_t>> collTrackIds; // map to keep all collision-track associations (ordered based on the key by construction)
-    std::map<uint64_t, uint64_t> collBCmap;               // map to hold collision - BC associations
+    std::map<int64_t, std::vector<int64_t>> collTrackIds;   // map to keep all collision-track associations (ordered based on the key by construction)
+    std::map<uint64_t, uint64_t> collBCmap;                 // map to hold collision - BC associations
 
     // first lets associate all the non-orphan muons to their primary collision Id
     for (auto const& [muonIdx, filterMap] : fSelectedMuons) {
@@ -847,7 +845,7 @@ struct DQMuonsSelection {
   template <typename TMuons>
   void associateMuonsToCollisionsAllTracks(Collisions const& collisions,
                                            TMuons const& muons,
-                                           BCs const& bcs,
+                                           BCsWithTimestamps const& bcstimestamp,
                                            AmbiguousFwdTracks const& ambiTracksFwd)
   {
     // first processing tracks registered in the ambigous tracks table
@@ -912,7 +910,7 @@ struct DQMuonsSelection {
       registry.fill(HIST("Association/AssociationTrackStatus"), 2);
       std::vector<int> vtxList;
       auto collision = collisions.rawIteratorAt(muon.collisionId() - collisions.offset());
-      auto bc = collision.template bc_as<aod::BCs>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       double t0 = muon.trackTime() + bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS - collision.collisionTime() + fTimeBias; // computing track time relative to associated collisino time
       double err = muon.trackTimeRes() * fSigmaTrack + fTimeMarginTrack;
       double tmin = t0 - err;
@@ -950,13 +948,13 @@ struct DQMuonsSelection {
   }
 
   void processSelection(Collisions const& collisions,
+                        BCsWithTimestamps const& bcstimestamp,
                         BCs const& bcs,
                         MyMuons const& muons,
                         soa::Filtered<MyMuons> const& filteredMuons,
                         AmbiguousFwdTracks const& ambFwdTracks)
   {
-    runMuonSelection<gkMuonFillMap>(collisions, filteredMuons, bcs);
-    runCollisionMap(collisions, bcs);
+    runMuonSelection<gkMuonFillMap>(filteredMuons);
     if (fConfigCollisionMuonAssoc.value == 0) {
       associateMuonsToCollisionsStandard(collisions, muons);
     } else if (fConfigCollisionMuonAssoc.value == 1) {
@@ -964,7 +962,8 @@ struct DQMuonsSelection {
     } else if (fConfigCollisionMuonAssoc.value == 2) {
       associateMuonsToCollisionsAmbigous(collisions, muons, bcs, ambFwdTracks);
     } else {
-      associateMuonsToCollisionsAllTracks(collisions, muons, bcs, ambFwdTracks);
+      runCollisionMap(collisions, bcstimestamp);
+      associateMuonsToCollisionsAllTracks(collisions, muons, bcstimestamp, ambFwdTracks);
       isMuonReassigned.clear();
       vtxOrdBrack.clear();
     }
@@ -1378,8 +1377,7 @@ struct DQFilterPPTask {
       } else {
         totalEventsTriggered++;
         for (int i = 0; i < fNBarrelCuts + fNMuonCuts; i++) {
-          if (fFiltersMap[collision.globalIndex()] & (uint32_t(1) << i))
-            fStats->Fill(static_cast<float>(i));
+            if (fFiltersMap[collision.globalIndex()] & (uint32_t(1) << i)) fStats->Fill(static_cast<float>(i));
         }
         eventFilter(fFiltersMap[collision.globalIndex()]);
         auto dqDecisions = fCEFPfilters[collision.globalIndex()];
