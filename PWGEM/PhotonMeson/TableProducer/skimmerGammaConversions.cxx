@@ -181,7 +181,8 @@ struct skimmerGammaConversions {
            theTrack.tpcNClsFindable(), theTrack.tpcNClsFindableMinusFound(), theTrack.tpcNClsFindableMinusCrossedRows(),
            theTrack.tpcChi2NCl(), theTrack.tpcInnerParam(), theTrack.tpcSignal(),
            theTrack.tpcNSigmaEl(), theTrack.tpcNSigmaPi(),
-           theTrack.itsClusterMap(), theTrack.itsChi2NCl(), theTrack.detectorMap());
+           theTrack.itsClusterMap(), theTrack.itsChi2NCl(), theTrack.detectorMap(),
+           theTrack.x(), theTrack.y(), theTrack.z(), theTrack.snp(), theTrack.tgl(), theTrack.alpha(), theTrack.signed1Pt());
   }
 
   template <typename TV0>
@@ -283,6 +284,11 @@ struct skimmerGammaConversions {
 
         recalculatedVertexParameters recalculatedVertex;
         Vtx_recalculation(pos, ele, &recalculatedVertex);
+
+        // float rxy = sqrt(recalculatedVertex.recalculatedConversionPoint[0] * recalculatedVertex.recalculatedConversionPoint[0] + recalculatedVertex.recalculatedConversionPoint[1] * recalculatedVertex.recalculatedConversionPoint[1]);
+        // if (rxy > min(ele.x(), pos.x())) { // conversion point should be smaller than the starting point of each leg.
+        //   continue;
+        // }
 
         v0photons(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   v0.x(), v0.y(), v0.z(),
@@ -545,6 +551,7 @@ struct skimmerGammaConversions {
 
     // TODO: This is still off and needs to be checked...
     recalculatedVertex->recalculatedConversionPoint[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
+
     KFPTrack kFTrackPos = createKFPTrackFromTrackParCov(trackPosInformationCopy, lTrackPos.sign(), lTrackPos.tpcNClsFound(), lTrackPos.tpcChi2NCl());
     int pdg_ePlus = -11; // e+
     KFParticle kFParticleEPlus(kFTrackPos, pdg_ePlus);

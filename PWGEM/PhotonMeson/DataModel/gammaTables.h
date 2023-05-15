@@ -53,10 +53,9 @@ using EMReducedEvent = EMReducedEvents::iterator;
 
 namespace emreducedmcevent
 {
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //!
-DECLARE_SOA_COLUMN(PosX, posX, float);              //!
-DECLARE_SOA_COLUMN(PosY, posY, float);              //!
-DECLARE_SOA_COLUMN(PosZ, posZ, float);              //!
+DECLARE_SOA_COLUMN(PosX, posX, float); //!
+DECLARE_SOA_COLUMN(PosY, posY, float); //!
+DECLARE_SOA_COLUMN(PosZ, posZ, float); //!
 } // namespace emreducedmcevent
 DECLARE_SOA_TABLE(EMReducedMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
                   o2::soa::Index<>, mccollision::GeneratorsID,
@@ -155,6 +154,7 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
                   track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap,
+                  track::X, track::Y, track::Z, track::Snp, track::Tgl, track::Alpha, track::Signed1Pt,
 
                   // dynamic column
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
