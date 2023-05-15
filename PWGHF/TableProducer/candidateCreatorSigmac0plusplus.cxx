@@ -66,6 +66,11 @@ struct HfCandidateCreatorSigmac0plusplus {
   /// Filter the candidate Λc+ used for the Σc0,++ creation
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
+  /// Prepare the slicing of candidate Λc+ and pions to be used for the Σc0,++ creation
+  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
+  // Preslice<CandidatesLc> hf3ProngPerCollision = aod::track_association::collisionId;
+  Preslice<CandidatesLc> hf3ProngPerCollision = aod::hf_cand::collisionId;
+
   /// Cut selection object for soft π-,+
   TrackSelection softPiCuts;
 
@@ -121,10 +126,6 @@ struct HfCandidateCreatorSigmac0plusplus {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
   }
-
-  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  // Preslice<CandidatesLc> hf3ProngPerCollision = aod::track_association::collisionId;
-  Preslice<CandidatesLc> hf3ProngPerCollision = aod::hf_cand::collisionId;
 
   /// @brief process function for Σc0,++ → Λc+(→pK-π+) π- candidate reconstruction considering also reassigned tracks for soft pions
   /// @param collision is a o2::aod::Collision
@@ -244,9 +245,9 @@ struct HfCandidateCreatorSigmac0plusplus {
         } /// end loop over tracks
       }   /// end loop over candidates
 
-    } /// end loop over collisions
+    }     /// end loop over collisions
 
-  } /// end processWithAmbTracks
+  }       /// end processWithAmbTracks
 };
 
 /// Extends the base table with expression columns.
