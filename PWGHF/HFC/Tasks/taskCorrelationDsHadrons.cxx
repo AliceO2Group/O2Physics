@@ -196,7 +196,7 @@ struct HfTaskCorrelationDsHadrons {
       double ptHadron = pairEntry.ptHadron();
       int poolBin = pairEntry.poolBin();
       double massD = pairEntry.mD();
-      int statusDsPrompt = static_cast<int>(pairEntry.isOrigin());
+      int statusDsPrompt = static_cast<int>(pairEntry.isPrompt());
       int effBinD = o2::analysis::findBin(binsPtEfficiency, ptD);
       int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
       // reject entries outside pT ranges of interest
@@ -209,7 +209,7 @@ struct HfTaskCorrelationDsHadrons {
         efficiencyWeight = 1. / (efficiencyD->at(effBinD) * efficiencyHadron);
       }
       // fill correlation plots for signal/bagkground correlations
-      if (pairEntry.isSignalStatus()) {
+      if (pairEntry.isSignal()) {
         registry.fill(HIST("hCorrel2DVsPtSignalMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
       } else {
         registry.fill(HIST("hCorrel2DVsPtBkgMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
@@ -221,7 +221,7 @@ struct HfTaskCorrelationDsHadrons {
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionMcRec"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionMcRec"), deltaPhi, efficiencyWeight);
         // prompt and non-prompt division
-        if (pairEntry.isSignalStatus()) {
+        if (pairEntry.isSignal()) {
           registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRecPromptDivision"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
         }
       }
@@ -247,7 +247,7 @@ struct HfTaskCorrelationDsHadrons {
       double ptD = pairEntry.ptD();
       double ptHadron = pairEntry.ptHadron();
       int poolBin = pairEntry.poolBin();
-      int statusDsPrompt = static_cast<int>(pairEntry.isOrigin());
+      int statusDsPrompt = static_cast<int>(pairEntry.isPrompt());
       // reject entries outside pT ranges of interest
       if (o2::analysis::findBin(binsPtCorrelations, ptD) < 0) {
         continue;

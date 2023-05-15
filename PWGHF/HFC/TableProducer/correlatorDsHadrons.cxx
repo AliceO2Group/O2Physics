@@ -466,15 +466,15 @@ struct HfCorrelatorDsHadrons {
       auto selectedDsMcRecoCandGrouped = selectedDsMcRecoCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
       // MC reco level
-      bool flagDsPrompt;
-      bool flagDsSignal;
+      bool isDsPrompt = false;
+      bool isDsSignal = false;
       float multiplicityV0M = collision.multFV0M();
       for (const auto& candidate : candidates) {
         auto prong0McPart = candidate.prong0_as<MyTracksMc>().mcParticle_as<CandDsMcGen>();
         // prompt and non-prompt division
-        flagDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
+        isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         // Ds Signal
-        flagDsSignal = std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi;
+        isDsSignal = std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi;
 
         if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
           continue;
@@ -489,7 +489,7 @@ struct HfCorrelatorDsHadrons {
         if (applyEfficiency) {
           efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate.pt()));
         }
-        if (flagDsSignal) {
+        if (isDsSignal) {
           fillHistoMcRecSig(candidate, multiplicityV0M);
           // DsToKKPi and DsToPiKK division
           if (std::abs(prong0McPart.pdgCode()) == kKPlus) {
@@ -533,16 +533,16 @@ struct HfCorrelatorDsHadrons {
                               candidate.pt(),
                               track.pt(),
                               poolBin);
-            entryDsHadronRecoInfo(invMassDsToKKPi(candidate), flagDsSignal);
-            entryDsHadronGenInfo(flagDsPrompt);
+            entryDsHadronRecoInfo(invMassDsToKKPi(candidate), isDsSignal);
+            entryDsHadronGenInfo(isDsPrompt);
           } else if (std::abs(prong0McPart.pdgCode()) == kPiPlus) {
             entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                               track.eta() - candidate.eta(),
                               candidate.pt(),
                               track.pt(),
                               poolBin);
-            entryDsHadronRecoInfo(invMassDsToPiKK(candidate), flagDsSignal);
-            entryDsHadronGenInfo(flagDsPrompt);
+            entryDsHadronRecoInfo(invMassDsToPiKK(candidate), isDsSignal);
+            entryDsHadronGenInfo(isDsPrompt);
           }
         }
       }
@@ -568,7 +568,7 @@ struct HfCorrelatorDsHadrons {
     using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
     BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zBins, multBinsMcGen}, true};
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mccollision.posZ(), getTracksSize(mccollision)));
-    bool flagDsPrompt;
+    bool isDsPrompt = false;
 
     // MC gen level
     for (auto const& particle : particlesMc) {
@@ -587,7 +587,7 @@ struct HfCorrelatorDsHadrons {
         fillHistoMcGen(particle, yD);
         counterDsHadron++;
         // prompt and non-prompt division
-        flagDsPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
+        isDsPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
 
         // Ds Hadron correlation dedicated section
         for (auto const& particleAssoc : particlesMc) {
@@ -608,7 +608,7 @@ struct HfCorrelatorDsHadrons {
                             particleAssoc.pt(),
                             poolBin);
           entryDsHadronRecoInfo(1.968, true);
-          entryDsHadronGenInfo(flagDsPrompt);
+          entryDsHadronGenInfo(isDsPrompt);
         }
       }
     }
@@ -660,16 +660,16 @@ struct HfCorrelatorDsHadrons {
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<SelCollisionsWithDs, CandDsMcReco, MyTracksMc, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple, &cache};
 
-    bool flagDsPrompt;
-    bool flagDsSignal;
+    bool isDsPrompt = false;
+    bool isDsSignal = false;
     for (auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
       for (auto& [candidate, pAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         auto prong0McPart = candidate.prong0_as<MyTracksMc>().mcParticle_as<CandDsMcGen>();
         // prompt and non-prompt division
-        flagDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
+        isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         // Ds Signal
-        flagDsSignal = std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi;
+        isDsSignal = std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi;
 
         if (yCandMax >= 0. && std::abs(yDplus(candidate)) > yCandMax) {
           continue;
@@ -681,16 +681,16 @@ struct HfCorrelatorDsHadrons {
                             candidate.pt(),
                             pAssoc.pt(),
                             poolBin);
-          entryDsHadronRecoInfo(invMassDsToKKPi(candidate), flagDsSignal);
-          entryDsHadronGenInfo(flagDsPrompt);
+          entryDsHadronRecoInfo(invMassDsToKKPi(candidate), isDsSignal);
+          entryDsHadronGenInfo(isDsPrompt);
         } else if (std::abs(prong0McPart.pdgCode()) == kPiPlus) {
           entryDsHadronPair(getDeltaPhi(candidate.phi(), pAssoc.phi()),
                             candidate.eta() - pAssoc.eta(),
                             candidate.pt(),
                             pAssoc.pt(),
                             poolBin);
-          entryDsHadronRecoInfo(invMassDsToPiKK(candidate), flagDsSignal);
-          entryDsHadronGenInfo(flagDsPrompt);
+          entryDsHadronRecoInfo(invMassDsToPiKK(candidate), isDsSignal);
+          entryDsHadronGenInfo(isDsPrompt);
         }
       }
     }
