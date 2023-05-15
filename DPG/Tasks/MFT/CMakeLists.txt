@@ -9,9 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Core)
-# add_subdirectory(DataModel)
-add_subdirectory(Tasks)
-add_subdirectory(TableProducer)
-add_subdirectory(AQC)
-
+o2physics_add_dpl_workflow(aqc-mft-tracks
+                    SOURCES aQCMFTTracks.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
