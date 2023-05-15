@@ -63,6 +63,9 @@ struct HfCandidateCreatorSigmac0plusplus {
 
   HistogramRegistry histos;
 
+  using TracksSigmac = soa::Join<aod::FullTracks, aod::TracksDCA>;
+  using CandidatesLc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
+
   /// Filter the candidate Λc+ used for the Σc0,++ creation
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
@@ -73,9 +76,6 @@ struct HfCandidateCreatorSigmac0plusplus {
 
   /// Cut selection object for soft π-,+
   TrackSelection softPiCuts;
-
-  using TracksSigmac = soa::Join<aod::FullTracks, aod::TracksDCA>;
-  using CandidatesLc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
 
   // Needed for dcaXY, dcaZ recalculation of soft pions reassigned to a new collision
   Service<o2::ccdb::BasicCCDBManager> ccdb;
