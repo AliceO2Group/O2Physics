@@ -1025,6 +1025,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("muonHighPt5")) {
+    cut->AddCut(GetAnalysisCut("muonHighPt5"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt6")) {
+    cut->AddCut(GetAnalysisCut("muonHighPt6"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
   if (!nameStr.compare("muonHighPtMatchingOnly2")) {
     cut->AddCut(GetAnalysisCut("muonHighPt2"));
     cut->AddCut(GetAnalysisCut("muonQualityCutsMatchingOnly"));
@@ -2064,6 +2076,16 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("muonHighPt4")) {
+    cut->AddCut(VarManager::kPt, 8.0, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt5")) {
+    cut->AddCut(VarManager::kPt, 10.0, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt6")) {
     cut->AddCut(VarManager::kPt, 20.0, 1000.0);
     return cut;
   }
