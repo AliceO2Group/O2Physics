@@ -518,7 +518,7 @@ struct tofSpectra {
     if (!track.hasTOF()) {
       return;
     }
-    if (requireTrdOnly == True && !track.hasTRD()) {
+    if (requireTrdOnly == true && !track.hasTRD()) {
       return;
     }
     if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
