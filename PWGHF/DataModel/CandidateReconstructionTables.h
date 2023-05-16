@@ -1407,7 +1407,7 @@ DECLARE_SOA_COLUMN(ZDecayVtxCascade, zDecayVtxCascade, float);
 DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
 DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
-DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of pi <- xi
+DECLARE_SOA_COLUMN(SignDecay, signDecay, int); // sign of pi <- xi
 DECLARE_SOA_COLUMN(Chi2PCAOmegac, chi2PcaOmegac, float);
 DECLARE_SOA_COLUMN(CovVtxOmegac0, covVtxOmegac0, float);
 DECLARE_SOA_COLUMN(CovVtxOmegac1, covVtxOmegac1, float);
@@ -1493,9 +1493,9 @@ DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
 DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, float);
 
 // MC matching result:
-DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int); // reconstruction level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int);         // debug flag for mis-association reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int); // generator level
 
 // mapping of decay types
 enum DecayType { DecayToXiPi = 0,

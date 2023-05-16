@@ -427,10 +427,10 @@ struct HfCandidateCreatorToXiPiMc {
                  aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
-    int8_t sign = 0;
-    int8_t flag = 0;
+    int sign = 0;
+    int flag = 0;
     // int8_t origin = 0; //to be used for prompt/non prompt
-    int8_t debug = 0;
+    int debug = 0;
 
     int pdgCodeOmegac0 = pdg::Code::kOmegaC0; // 4332
     int pdgCodeXic0 = pdg::Code::kXiCZero;    // 4132

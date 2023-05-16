@@ -44,7 +44,7 @@ DECLARE_SOA_COLUMN(ZDecayVtxCascade, zDecayVtxCascade, float);
 DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
 DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
-DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of pi <- xi
+DECLARE_SOA_COLUMN(SignDecay, signDecay, int); // sign of pi <- xi
 DECLARE_SOA_COLUMN(Chi2PCAOmegac, chi2PcaOmegac, float);
 DECLARE_SOA_COLUMN(CovVtxOmegacXX, covVtxOmegacXX, float);
 DECLARE_SOA_COLUMN(CovVtxOmegacYY, covVtxOmegacYY, float);
@@ -114,8 +114,8 @@ DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
 DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
 DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, float);
 // from creator - MC
-DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int); // reconstruction level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int);         // debug flag for mis-association reconstruction level
 // from selector
 DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, bool);
 DECLARE_SOA_COLUMN(StatusPidCascade, statusPidCascade, bool);
@@ -184,7 +184,7 @@ struct HfTreeCreatorToXiPi {
   }
 
   template <typename T>
-  void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc)
+  void fillCandidate(const T& candidate, int flagMc, int debugMc)
   {
     rowCandidateFull(
       candidate.xPv(),
