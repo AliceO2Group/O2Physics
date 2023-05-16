@@ -82,7 +82,6 @@ struct lambdakzeromcfinder {
   Configurable<int> qaNbins{"qaNbins", 200, "qa plots: binning"};
   Configurable<float> qaMaxPt{"qaMaxPt", 2, "qa plots: max pt"};
 
-
   Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
 
   std::vector<int> v0collisionId;
@@ -123,7 +122,7 @@ struct lambdakzeromcfinder {
     histos.add("hPtHypertritonGlobalWithPV", "hPtHypertritonGlobalWithPV", kTH1F, {axisPt});
     histos.add("hPtAntiHypertritonGlobalWithPV", "hPtAntiHypertritonGlobalWithPV", kTH1F, {axisPt});
 
-    if(doQA){
+    if (doQA) {
       histos.add("hPtK0ShortDaughters", "hPtK0ShortDaughters", kTH2F, {axisPtQA, axisPtQA});
       histos.add("hPtLambdaDaughters", "hPtLambdaDaughters", kTH2F, {axisPtQA, axisPtQA});
       histos.add("hPtAntiLambdaDaughters", "hPtAntiLambdaDaughters", kTH2F, {axisPtQA, axisPtQA});
@@ -158,18 +157,18 @@ struct lambdakzeromcfinder {
     float posPt = -1.0f;
     float negPt = -1.0f;
 
-    int positivePdg = 211; 
-    int negativePdg = -211; 
-    if(mcParticle.pdgCode() == 3122){ 
+    int positivePdg = 211;
+    int negativePdg = -211;
+    if (mcParticle.pdgCode() == 3122) {
       positivePdg = 2212;
     }
-    if(mcParticle.pdgCode() == -3122){ 
+    if (mcParticle.pdgCode() == -3122) {
       negativePdg = -2212;
     }
-    if(mcParticle.pdgCode() == 1010010030){ 
+    if (mcParticle.pdgCode() == 1010010030) {
       positivePdg = 1000020030;
     }
-    if(mcParticle.pdgCode() == -1010010030){ 
+    if (mcParticle.pdgCode() == -1010010030) {
       negativePdg = -1000020030;
     }
 
@@ -179,12 +178,12 @@ struct lambdakzeromcfinder {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
           if (daughter.getProcess() != 4)
             continue; // skip deltarays (if ever), stick to decay products only
-          if (daughter.pdgCode() == positivePdg){
+          if (daughter.pdgCode() == positivePdg) {
             for (auto const& track : trackList) {
               if (track.mcParticleId() == daughter.globalIndex()) {
                 if (track.hasITS())
                   positiveITS = true;
-                if (track.hasTPC()){
+                if (track.hasTPC()) {
                   positiveTPC = true;
                   trackIndexPositive = track.globalIndex(); // assign only if TPC present
                   posPt = track.pt();
@@ -192,14 +191,14 @@ struct lambdakzeromcfinder {
                     positiveTPCITS = true;
                 }
               } // end daughter ID check
-            } // end track list loop
-          } // end positive pdg check
-          if (daughter.pdgCode() == negativePdg){
+            }   // end track list loop
+          }     // end positive pdg check
+          if (daughter.pdgCode() == negativePdg) {
             for (auto const& track : trackList) {
               if (track.mcParticleId() == daughter.globalIndex()) {
                 if (track.hasITS())
                   negativeITS = true;
-                if (track.hasTPC()){
+                if (track.hasTPC()) {
                   negativeTPC = true;
                   trackIndexNegative = track.globalIndex(); // assign only if TPC present
                   negPt = track.pt();
@@ -207,8 +206,8 @@ struct lambdakzeromcfinder {
                     negativeTPCITS = true;
                 }
               } // end daughter ID check
-            } // end track list loop
-          } // end positive pdg check
+            }   // end track list loop
+          }     // end positive pdg check
         }
       }
     }
@@ -218,16 +217,16 @@ struct lambdakzeromcfinder {
       v0positiveIndex.emplace_back(trackIndexPositive);
       v0negativeIndex.emplace_back(trackIndexNegative);
       v0mcLabel.emplace_back(mcParticle.globalIndex());
-      if( doQA ){
-        if(mcParticle.pdgCode()==310)
+      if (doQA) {
+        if (mcParticle.pdgCode() == 310)
           histos.fill(HIST("hPtK0ShortDaughters"), posPt, negPt);
-        if(mcParticle.pdgCode()==3122)
+        if (mcParticle.pdgCode() == 3122)
           histos.fill(HIST("hPtLambdaDaughters"), posPt, negPt);
-        if(mcParticle.pdgCode()==-3122)
+        if (mcParticle.pdgCode() == -3122)
           histos.fill(HIST("hPtAntiLambdaDaughters"), posPt, negPt);
-        if(mcParticle.pdgCode()==1010010030)
+        if (mcParticle.pdgCode() == 1010010030)
           histos.fill(HIST("hPtHypertritonDaughters"), posPt, negPt);
-        if(mcParticle.pdgCode()==-1010010030)
+        if (mcParticle.pdgCode() == -1010010030)
           histos.fill(HIST("hPtAntiHypertritonDaughters"), posPt, negPt);
       }
     }

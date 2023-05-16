@@ -446,11 +446,11 @@ struct lambdakzeroBuilder {
 
     // for storing whatever is the relevant quantity for the PV
     o2::dataformats::VertexBase primaryVertex;
-    if(V0.has_collision()){
+    if (V0.has_collision()) {
       auto const& collision = V0.collision();
       primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
       primaryVertex.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    }else{
+    } else {
       primaryVertex.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
     }
 
@@ -472,11 +472,11 @@ struct lambdakzeroBuilder {
     gpu::gpustd::array<float, 2> dcaInfo;
 
     auto posTrackPar = getTrackPar(posTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(),primaryVertex.getY(),primaryVertex.getZ()}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     auto posTrackdcaXY = dcaInfo[0];
 
     auto negTrackPar = getTrackPar(negTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(),primaryVertex.getY(),primaryVertex.getZ()}, negTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, negTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     auto negTrackdcaXY = dcaInfo[0];
 
     if (fabs(posTrackdcaXY) < dcapostopv || fabs(negTrackdcaXY) < dcanegtopv) {
@@ -662,7 +662,7 @@ struct lambdakzeroBuilder {
   void processRun2(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExt const&, aod::BCsWithTimestamps const&)
   {
     // Fire up CCDB
-    auto collision = collisions.begin(); 
+    auto collision = collisions.begin();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     buildStrangenessTables<FullTracksExt>(V0s);
@@ -672,7 +672,7 @@ struct lambdakzeroBuilder {
   void processRun3(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
     // Fire up CCDB
-    auto collision = collisions.begin(); 
+    auto collision = collisions.begin();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     buildStrangenessTables<FullTracksExtIU>(V0s);

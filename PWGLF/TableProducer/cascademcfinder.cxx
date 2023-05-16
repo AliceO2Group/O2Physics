@@ -113,7 +113,7 @@ struct cascademcfinder {
     histos.add("hPtOmegaMinusGlobalWithPV", "hPtOmegaMinusGlobalWithPV", kTH1F, {axisPt});
     histos.add("hPtOmegaPlusGlobalWithPV", "hPtOmegaPlusGlobalWithPV", kTH1F, {axisPt});
 
-    if(doQA){
+    if (doQA) {
       histos.add("hPtXiMinusV0Daughters", "hPtXiMinusV0Daughters", kTH2F, {axisPt, axisPt});
       histos.add("hPtXiPlusV0Daughters", "hPtXiPlusV0Daughters", kTH2F, {axisPt, axisPt});
       histos.add("hPtOmegaMinusV0Daughters", "hPtOmegaMinusV0Daughters", kTH2F, {axisPt, axisPt});
@@ -154,12 +154,15 @@ struct cascademcfinder {
     int trackIndexBachelor = -1;
     int trackIndexV0 = -1;
 
-    int desiredBaryon = 3122; 
+    int desiredBaryon = 3122;
     int desiredMeson = -211;
-    if ( TMath::Abs(mcParticle.pdgCode()) == 3334 ) desiredMeson = -321;
-    if ( mcParticle.pdgCode() < 0 ) desiredBaryon = -3122;
-    if ( mcParticle.pdgCode() < 0 ) desiredMeson *= -1;
-    
+    if (TMath::Abs(mcParticle.pdgCode()) == 3334)
+      desiredMeson = -321;
+    if (mcParticle.pdgCode() < 0)
+      desiredBaryon = -3122;
+    if (mcParticle.pdgCode() < 0)
+      desiredMeson *= -1;
+
     float posPt = -1.0f;
     float negPt = -1.0f;
     float bachPt = -1.0f;
@@ -169,7 +172,7 @@ struct cascademcfinder {
       if (daughters.size() >= 2) {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
           // option 1: this is the lambda daughter
-          if(daughter.getProcess() != 4){
+          if (daughter.getProcess() != 4) {
             continue;
           }
           if (daughter.pdgCode() == desiredBaryon) {
@@ -182,13 +185,13 @@ struct cascademcfinder {
                   positiveITS = true;
                 if (negativeTrack.hasITS())
                   negativeITS = true;
-                if (positiveTrack.hasTPC()){
+                if (positiveTrack.hasTPC()) {
                   positiveTPC = true;
                   posPt = positiveTrack.pt();
                   if (positiveTrack.hasITS())
                     positiveTPCITS = true;
                 }
-                if (negativeTrack.hasTPC()){
+                if (negativeTrack.hasTPC()) {
                   negativeTPC = true;
                   negPt = negativeTrack.pt();
                   if (negativeTrack.hasITS())
@@ -199,14 +202,14 @@ struct cascademcfinder {
           } // end lambda search
           if (daughter.pdgCode() == desiredMeson) {
             for (auto const& track : trackList) {
-              if (track.mcParticleId() == daughter.globalIndex() ) {
+              if (track.mcParticleId() == daughter.globalIndex()) {
                 if (track.hasITS())
                   bachelorITS = true;
-                if (track.hasTPC()){
+                if (track.hasTPC()) {
                   bachelorTPC = true;
                   trackIndexBachelor = track.globalIndex(); // assign only if TPC present
                   bachPt = track.pt();
-                  if (track.hasITS()){
+                  if (track.hasITS()) {
                     bachelorTPCITS = true;
                   }
                 }
@@ -221,22 +224,22 @@ struct cascademcfinder {
       casccollisionId.emplace_back(bestCollisionIndex);
       cascbachelorIndex.emplace_back(trackIndexBachelor);
       cascv0Index.emplace_back(trackIndexV0);
-      if( doQA ){
-        if(mcParticle.pdgCode()==3312)
+      if (doQA) {
+        if (mcParticle.pdgCode() == 3312)
           histos.fill(HIST("hPtXiMinusV0Daughters"), posPt, negPt);
-        if(mcParticle.pdgCode()==-3312)
+        if (mcParticle.pdgCode() == -3312)
           histos.fill(HIST("hPtXiPlusV0Daughters"), posPt, negPt);
-        if(mcParticle.pdgCode()==3334)
+        if (mcParticle.pdgCode() == 3334)
           histos.fill(HIST("hPtOmegaMinusV0Daughters"), posPt, negPt);
-        if(mcParticle.pdgCode()==-3334)
+        if (mcParticle.pdgCode() == -3334)
           histos.fill(HIST("hPtOmegaPlusV0Daughters"), posPt, negPt);
-        if(mcParticle.pdgCode()==3312)
+        if (mcParticle.pdgCode() == 3312)
           histos.fill(HIST("hPtXiMinusBachelor"), bachPt);
-        if(mcParticle.pdgCode()==-3312)
+        if (mcParticle.pdgCode() == -3312)
           histos.fill(HIST("hPtXiPlusBachelor"), bachPt);
-        if(mcParticle.pdgCode()==3334)
+        if (mcParticle.pdgCode() == 3334)
           histos.fill(HIST("hPtOmegaMinusBachelor"), bachPt);
-        if(mcParticle.pdgCode()==-3334)
+        if (mcParticle.pdgCode() == -3334)
           histos.fill(HIST("hPtOmegaPlusBachelor"), bachPt);
       }
     }

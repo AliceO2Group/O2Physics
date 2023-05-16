@@ -587,7 +587,7 @@ struct straRecoStudy {
   {
     for (auto& casc : Cascades) {
       // MC association
-      if(!casc.has_collision()){
+      if (!casc.has_collision()) {
         continue;
       }
       auto collision = casc.collision_as<CollisionsWithEvSels>();
@@ -615,9 +615,9 @@ struct straRecoStudy {
       auto negPartTrack = v0.negTrack_as<TracksCompleteIUMC>();
 
       // check collision association switchup
-      if( casc.collisionId() == v0index.collisionId() ){
+      if (casc.collisionId() == v0index.collisionId()) {
         histos.fill(HIST("hMatchCollisionIndexV0Cascade"), 0.0f);
-      }else{
+      } else {
         histos.fill(HIST("hMatchCollisionIndexV0Cascade"), 1.0f);
       }
 
