@@ -109,7 +109,6 @@ struct qaKFEventTrack {
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
-  
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
@@ -220,7 +219,6 @@ struct qaKFEventTrack {
     hSelectionMC->GetXaxis()->SetBinLabel(hSelectionMC->FindBin(4), "Wrong PV");
     hSelectionMC->GetXaxis()->SetBinLabel(hSelectionMC->FindBin(5), "DCA Z > 10cm");
   } /// End init
-
 
   /// Function for single track selection
   template <typename T>

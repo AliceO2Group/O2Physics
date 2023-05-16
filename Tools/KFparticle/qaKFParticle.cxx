@@ -144,9 +144,7 @@ struct qaKFParticle {
   Filter trackFilterEta = (nabs(aod::track::eta) < 0.8f);
   Filter trackFilterPTMin = (aod::track::pt > d_pTMin);
 
-
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
-
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
   using BigTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra>;

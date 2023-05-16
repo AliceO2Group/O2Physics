@@ -144,7 +144,7 @@ struct qaKFParticleLc {
                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
-  
+
   Filter trackFilterEta = (nabs(aod::track::eta) < 0.8f);
   Filter trackFilterPTMin = (aod::track::pt > d_pTMin);
 
