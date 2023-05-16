@@ -54,6 +54,7 @@ AxisSpec axisPtD = {180, 0., 36., "#it{p}_{T}Ds (GeV/#it{c})"};
 AxisSpec axisPtProng0 = {180, 0., 36., "#it{p}_{T} prong0 (GeV/#it{c})"};
 AxisSpec axisPtProng1 = {180, 0., 36., "#it{p}_{T} prong1 (GeV/#it{c})"};
 AxisSpec axisPtProng2 = {180, 0., 36., "#it{p}_{T} prong2 (GeV/#it{c})"};
+AxisSpec axisPtHadron = {11, 0., 11., "#it{p}_{T} Hadron (GeV/#it{c})"};
 AxisSpec axisMultiplicity = {1000, 0., 10000., "Multiplicity"};
 
 // binning type
@@ -221,6 +222,8 @@ struct HfCorrelatorDsHadrons {
      {"hPtCandMcGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisPtD}}},
      {"hPtCandMcGenPrompt", "Ds,Hadron particles - MC Gen Prompt", {HistType::kTH1F, {axisPtD}}},
      {"hPtCandMcGenNonPrompt", "Ds,Hadron particles - MC Gen Non Prompt", {HistType::kTH1F, {axisPtD}}},
+     {"hPtParticleAssocMcRec", "Associated Particle - MC Rec", {HistType::kTH1F, {axisPtHadron}}},
+     {"hPtParticleAssocMcGen", "Associated Particle - MC Gen", {HistType::kTH1F, {axisPtHadron}}},
      {"hEtaMcGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisEta}}},
      {"hPhiMcGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisPhi}}},
      {"hYMcGen", "Ds,Hadron candidates - MC Gen", {HistType::kTH1F, {axisY}}},
@@ -526,6 +529,7 @@ struct HfCorrelatorDsHadrons {
           if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
             continue;
           }
+          registry.fill(HIST("hPtParticleAssocMcRec"), track.pt());
           // DsToKKPi and DsToPiKK division
           if (std::abs(prong0McPart.pdgCode()) == kKPlus) {
             entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
@@ -601,7 +605,7 @@ struct HfCorrelatorDsHadrons {
           if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
             continue;
           }
-
+          registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
           entryDsHadronPair(getDeltaPhi(particleAssoc.phi(), particle.phi()),
                             particleAssoc.eta() - particle.eta(),
                             particle.pt(),
