@@ -241,9 +241,7 @@ struct HfCandidateSelectorD0 {
           pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted) {
         pidD0 = 1; // accept D0
       } else if (pidTrackPosPion == TrackSelectorPID::Status::PIDRejected ||
-                 pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                 pidTrackNegPion == TrackSelectorPID::Status::PIDAccepted ||
-                 pidTrackPosKaon == TrackSelectorPID::Status::PIDAccepted) {
+                 pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected) {
         pidD0 = 0; // exclude D0
       }
 
@@ -251,9 +249,7 @@ struct HfCandidateSelectorD0 {
           pidTrackPosKaon == TrackSelectorPID::Status::PIDAccepted) {
         pidD0bar = 1; // accept D0bar
       } else if (pidTrackPosPion == TrackSelectorPID::Status::PIDAccepted ||
-                 pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted ||
-                 pidTrackNegPion == TrackSelectorPID::Status::PIDRejected ||
-                 pidTrackPosKaon == TrackSelectorPID::Status::PIDRejected) {
+                 pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted) {
         pidD0bar = 0; // exclude D0bar
       }
 

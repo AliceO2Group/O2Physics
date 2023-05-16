@@ -170,7 +170,7 @@ class V0PhotonCut : public TNamed
         return v0.pca() <= mMaxPCA;
 
       case V0PhotonCuts::kRZLine:
-        return TMath::Abs(v0.vz()) < 12.0 + v0.recalculatedVtxR() * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxEta))); // as long as z recalculation is not fixed use this
+        return v0.recalculatedVtxR() > abs(v0.vz()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxEta))) - 12.0; // as long as z recalculation is not fixed use this
 
       case V0PhotonCuts::kOnWwireIB: {
         const float rxy_min = 5.506;          // cm
