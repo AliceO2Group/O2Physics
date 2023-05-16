@@ -200,6 +200,7 @@ struct HfCandidateCreatorToXiPi {
         //-----------------------------reconstruct cascade track-----------------------------
         // pseudorapidity
         double pseudorapPiFromCas = trackXiDauCharged.eta();
+        int signXiDau = trackXiDauCharged.sign();
 
         // pion <- casc track to be processed with DCAfitter
         auto trackParCovXiDauCharged = getTrackParCov(trackXiDauCharged);
@@ -373,7 +374,7 @@ struct HfCandidateCreatorToXiPi {
                        vertexOmegacFromFitter[0], vertexOmegacFromFitter[1], vertexOmegacFromFitter[2],
                        vertexCasc[0], vertexCasc[1], vertexCasc[2],
                        vertexV0[0], vertexV0[1], vertexV0[2],
-                       trackXiDauCharged.sign(),
+                       signXiDau,
                        chi2PCAOmegac, covVtxOmegac[0], covVtxOmegac[1], covVtxOmegac[2], covVtxOmegac[3], covVtxOmegac[4], covVtxOmegac[5],
                        covV0[0], covV0[1], covV0[2], covV0[3], covV0[4], covV0[5],
                        covCasc[0], covCasc[1], covCasc[2], covCasc[3], covCasc[4], covCasc[5],
