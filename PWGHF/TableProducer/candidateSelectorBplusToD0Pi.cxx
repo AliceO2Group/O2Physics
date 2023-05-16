@@ -17,10 +17,11 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Common/Core/TrackSelectorPID.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/TrackSelectorPID.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -30,27 +31,12 @@ using namespace o2::analysis;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_bplus_to_d0_pi;
 
-// FIXME: store BP creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-namespace o2::aod
-{
-namespace hf_cand_bp_config
-{
-DECLARE_SOA_COLUMN(MySelectionFlagD0, mySelectionFlagD0, int);
-DECLARE_SOA_COLUMN(MySelectionFlagD0bar, mySelectionFlagD0bar, int);
-} // namespace hf_cand_bp_config
-
-DECLARE_SOA_TABLE(HfCandBpConfig, "AOD", "HFCANDBPCONFIG", //!
-                  hf_cand_bp_config::MySelectionFlagD0,
-                  hf_cand_bp_config::MySelectionFlagD0bar);
-
-} // namespace o2::aod
-
 struct HfCandidateSelectorBplusToD0Pi {
   Produces<aod::HfSelBplusToD0Pi> hfSelBplusToD0PiCandidate;
 
   // Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   // Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
-  //  Enable PID
+  // Enable PID
   Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID at filtering level"};
   Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
@@ -68,10 +54,8 @@ struct HfCandidateSelectorBplusToD0Pi {
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bplus_to_d0_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B+ candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
-  // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-  int mySelectionFlagD0 = -1;
-  int mySelectionFlagD0bar = -1;
-  // check if selectionFlagD (defined in candidateCreatorB0.cxx) and usePid configurables are in sync
+
+  // check if selectionFlagD (defined in candidateCreatorBplus.cxx) and usePid configurables are in sync
   bool selectionFlagDAndUsePidInSync = true;
 
   TrackSelectorPID selectorPion;
@@ -80,7 +64,7 @@ struct HfCandidateSelectorBplusToD0Pi {
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const& initContext)
+  void init(InitContext& initContext)
   {
     if (usePid) {
       selectorPion.setPDG(kPiPlus);
@@ -106,8 +90,8 @@ struct HfCandidateSelectorBplusToD0Pi {
       }
     }
 
-    // FIXME: will be uncommented once https://alice.its.cern.ch/jira/browse/O2-3582 is solved
-    /*int selectionFlagD0 = -1; int selectionFlagD0bar = -1;
+    int selectionFlagD0 = -1;
+    int selectionFlagD0bar = -1;
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-bplus") == 0) {
@@ -123,15 +107,18 @@ struct HfCandidateSelectorBplusToD0Pi {
         }
       }
     }
-
+    if (TESTBIT(selectionFlagD0, SelectionStep::RecoPID) != TESTBIT(selectionFlagD0bar, SelectionStep::RecoPID)) {
+      selectionFlagDAndUsePidInSync = false;
+      LOG(warning) << "Different SelectionStep required on D0 and D0bar(= B+ prong0). Check selectionFlagD0 && selectionFlagD0bar in hf-candidate-creator-bplus";
+    }
     if ((usePid && !TESTBIT(selectionFlagD0, SelectionStep::RecoPID)) || (usePid && !TESTBIT(selectionFlagD0bar, SelectionStep::RecoPID))) {
       selectionFlagDAndUsePidInSync = false;
       LOG(warning) << "PID selections required on B+ daughters (usePid=true) but no PID selections on D candidates were required a priori.";
     }
-    if ((!usePid && TESTBIT(selectionFlagD, SelectionStep::RecoPID))  || (usePid && !TESTBIT(selectionFlagD0bar, SelectionStep::RecoPID))) {
+    if ((!usePid && TESTBIT(selectionFlagD0, SelectionStep::RecoPID)) || (usePid && !TESTBIT(selectionFlagD0bar, SelectionStep::RecoPID))) {
       selectionFlagDAndUsePidInSync = false;
       LOG(warning) << "No PID selections required on Bp daughters (usePid=false) but PID selections on D candidates were required a priori.";
-    }*/
+    }
   }
 
   // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all cuts
@@ -227,28 +214,8 @@ struct HfCandidateSelectorBplusToD0Pi {
     return true;
   }
 
-  void process(aod::HfCandBplus const& hfCandBs, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, TracksPIDWithSel const&,
-               HfCandBpConfig const& configs)
+  void process(aod::HfCandBplus const& hfCandBs, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, TracksPIDWithSel const&)
   {
-
-    // FIXME: get B+ creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-    for (const auto& config : configs) {
-      mySelectionFlagD0 = config.mySelectionFlagD0();
-      mySelectionFlagD0bar = config.mySelectionFlagD0bar();
-
-      if (TESTBIT(mySelectionFlagD0, SelectionStep::RecoPID) != TESTBIT(mySelectionFlagD0bar, SelectionStep::RecoPID)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "Different SelectionStep required on D0 and D0bar(= B+ prong0). Check selectionFlagD0 && selectionFlagD0bar in hf-candidate-creator-bplus";
-      }
-      if ((usePid && !TESTBIT(mySelectionFlagD0, SelectionStep::RecoPID)) || (usePid && !TESTBIT(mySelectionFlagD0bar, SelectionStep::RecoPID))) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "PID selections required on B+ daughters (usePid=true) but no PID selections on D candidates were required a priori (selectionFlagD0<7)&&(selectionFlagD0bar<7). Set (selectionFlagD0=7 && selectionFlagD0bar=7) in hf-candidate-creator-bplus";
-      }
-      if ((!usePid && TESTBIT(mySelectionFlagD0, SelectionStep::RecoPID)) || (!usePid && TESTBIT(mySelectionFlagD0bar, SelectionStep::RecoPID))) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "No PID selections required on B+ daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD0=7)&&(selectionFlagD0bar=7). Set (selectionFlagD0<7 && selectionFlagD0bar<7) in hf-candidate-creator-bplus";
-      }
-    }
 
     for (auto& hfCandB : hfCandBs) { // looping over Bplus candidates
 
@@ -308,7 +275,6 @@ struct HfCandidateSelectorBplusToD0Pi {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorBplusToD0Pi>(cfgc));
-  return workflow;
+  return WorkflowSpec{
+    adaptAnalysisTask<HfCandidateSelectorBplusToD0Pi>(cfgc)};
 }

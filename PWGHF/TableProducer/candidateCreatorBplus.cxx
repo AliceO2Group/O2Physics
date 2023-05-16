@@ -20,14 +20,14 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "ReconstructionDataFormats/V0.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "Common/DataModel/CollisionAssociation.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/V0.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -38,24 +38,9 @@ using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_cand_bplus;
 using namespace o2::framework::expressions;
 
-// FIXME: store BP creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-namespace o2::aod
-{
-namespace hf_cand_bp_config
-{
-DECLARE_SOA_COLUMN(MySelectionFlagD0, mySelectionFlagD0, int);
-DECLARE_SOA_COLUMN(MySelectionFlagD0bar, mySelectionFlagD0bar, int);
-} // namespace hf_cand_bp_config
-
-DECLARE_SOA_TABLE(HfCandBpConfig, "AOD", "HFCANDBPCONFIG", //!
-                  hf_cand_bp_config::MySelectionFlagD0,
-                  hf_cand_bp_config::MySelectionFlagD0bar);
-} // namespace o2::aod
-
 /// Reconstruction of B± → D0bar(D0) π± → (K± π∓) π±
 struct HfCandidateCreatorBplus {
   Produces<aod::HfCandBplusBase> rowCandidateBase;
-  Produces<aod::HfCandBpConfig> rowCandidateConfig;
 
   // vertexing parameters
   // Configurable<double> bz{"bz", 5., "magnetic field"};
@@ -76,8 +61,6 @@ struct HfCandidateCreatorBplus {
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> etaTrackMax{"etaTrackMax", -1, "max. bach track. pseudorapidity"};
-  // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-  bool isHfCandBpConfigFilled = false;
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -93,16 +76,14 @@ struct HfCandidateCreatorBplus {
 
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
-  double massBp = RecoDecay::getMassPDG(pdg::Code::kBPlus);
+  double massBplus = RecoDecay::getMassPDG(pdg::Code::kBPlus);
   double massD0Pi = 0.;
   double bz = 0.;
 
   using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
-
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
   using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
   Preslice<CandsDFiltered> candsDPerCollision = aod::track_association::collisionId;
-
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
@@ -110,7 +91,6 @@ struct HfCandidateCreatorBplus {
   OutputObj<TH1F> hRapidityD0{TH1F("hRapidityD0", "D0 candidates;#it{y};entries", 100, -2, 2)};
   OutputObj<TH1F> hEtaPi{TH1F("hEtaPi", "Pion track;#it{#eta};entries", 400, 2, 2)};
   OutputObj<TH1F> hMassBplusToD0Pi{TH1F("hMassBplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #bar{D^{0}}#pi^{+}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
-  OutputObj<TH1F> hNEvent{TH1F("hNEvent", "Event description; ;entries", 6, 0., 6.)};
 
   void init(InitContext const&)
   {
@@ -128,7 +108,7 @@ struct HfCandidateCreatorBplus {
   /// \param track is a track
   /// \return true if track passes all cuts
   template <typename T>
-  bool isSelectedTrackDCA(const T& track)
+  bool isSelectedTrack(const T& track)
   {
     auto pTBinTrack = findBin(binsPtPion, track.pt());
     if (pTBinTrack == -1) {
@@ -150,22 +130,15 @@ struct HfCandidateCreatorBplus {
                TracksWithSel const&,
                aod::BCsWithTimestamps const&)
   {
-    // FIXME: store B+ creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-    if (!isHfCandBpConfigFilled) {
-      int mySelectionFlagD0 = selectionFlagD0;
-      int mySelectionFlagD0bar = selectionFlagD0bar;
-      rowCandidateConfig(mySelectionFlagD0, mySelectionFlagD0bar);
-      isHfCandBpConfigFilled = true;
-    }
 
     // Initialise fitter for B vertex
-    o2::vertexing::DCAFitterN<2> bfitter;
-    bfitter.setPropagateToPCA(propagateToPCA);
-    bfitter.setMaxR(maxR);
-    bfitter.setMinParamChange(minParamChange);
-    bfitter.setMinRelChi2Change(minRelChi2Change);
-    bfitter.setUseAbsDCA(useAbsDCA);
-    bfitter.setWeightedFinalPCA(useWeightedFinalPCA);
+    o2::vertexing::DCAFitterN<2> dfB;
+    dfB.setPropagateToPCA(propagateToPCA);
+    dfB.setMaxR(maxR);
+    dfB.setMinParamChange(minParamChange);
+    dfB.setMinRelChi2Change(minRelChi2Change);
+    dfB.setUseAbsDCA(useAbsDCA);
+    dfB.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // Initial fitter to redo D-vertex to get extrapolated daughter tracks
     o2::vertexing::DCAFitterN<2> df;
@@ -176,15 +149,15 @@ struct HfCandidateCreatorBplus {
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    static int ncol = 0;
+    static int nCol = 0;
 
     for (const auto& collision : collisions) {
       auto primaryVertex = getPrimaryVertex(collision);
 
-      if (ncol % 10000 == 0) {
-        LOG(debug) << ncol << " collisions parsed";
+      if (nCol % 10000 == 0) {
+        LOG(debug) << nCol << " collisions parsed";
       }
-      ncol++;
+      nCol++;
 
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -197,7 +170,7 @@ struct HfCandidateCreatorBplus {
         LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
       }
       df.setBz(bz);
-      bfitter.setBz(bz);
+      dfB.setBz(bz);
 
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
@@ -208,7 +181,7 @@ struct HfCandidateCreatorBplus {
         // hPtD->Fill(candD0.pt());
         // hCPAD->Fill(candD0.cpa());
 
-        if (!(candD0.hfflag() & 1 << hf_cand_2prong::DecayType::D0ToPiK)) {
+        if (!TESTBIT(candD0.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           continue;
         }
         if (yCandMax >= 0. && std::abs(yD0(candD0)) > yCandMax) {
@@ -220,29 +193,29 @@ struct HfCandidateCreatorBplus {
         // track0 <-> pi, track1 <-> K
         auto prong0 = candD0.prong0_as<TracksWithSel>();
         auto prong1 = candD0.prong1_as<TracksWithSel>();
-        auto prong0TrackParCov = getTrackParCov(prong0);
-        auto prong1TrackParCov = getTrackParCov(prong1);
+        auto trackParCovProng0 = getTrackParCov(prong0);
+        auto trackParCovProng1 = getTrackParCov(prong1);
 
         auto dca0 = o2::dataformats::DCA(prong0.dcaXY(), prong0.dcaZ(), prong0.cYY(), prong0.cZY(), prong0.cZZ());
         auto dca1 = o2::dataformats::DCA(prong1.dcaXY(), prong1.dcaZ(), prong1.cYY(), prong1.cZY(), prong1.cZZ());
 
         // repropagate tracks to this collision if needed
         if (prong0.collisionId() != thisCollId) {
-          prong0TrackParCov.propagateToDCA(primaryVertex, bz, &dca0);
+          trackParCovProng0.propagateToDCA(primaryVertex, bz, &dca0);
         }
 
         if (prong1.collisionId() != thisCollId) {
-          prong1TrackParCov.propagateToDCA(primaryVertex, bz, &dca1);
+          trackParCovProng1.propagateToDCA(primaryVertex, bz, &dca1);
         }
 
         // reconstruct D0 secondary vertex
-        if (df.process(prong0TrackParCov, prong1TrackParCov) == 0) {
+        if (df.process(trackParCovProng0, trackParCovProng1) == 0) {
           continue;
         }
 
         const auto& vertexD0 = df.getPCACandidatePos();
-        prong0TrackParCov.propagateTo(vertexD0[0], bz);
-        prong1TrackParCov.propagateTo(vertexD0[0], bz);
+        trackParCovProng0.propagateTo(vertexD0[0], bz);
+        trackParCovProng1.propagateTo(vertexD0[0], bz);
         // Get pVec of tracks
         std::array<float, 3> pVec0 = {0};
         std::array<float, 3> pVec1 = {0};
@@ -252,7 +225,7 @@ struct HfCandidateCreatorBplus {
         array<float, 3> pVecD = RecoDecay::pVec(pVec0, pVec1);
 
         // build a D0 neutral track
-        auto trackD0 = o2::dataformats::V0(vertexD0, pVecD, df.calcPCACovMatrixFlat(), prong0TrackParCov, prong1TrackParCov, {0, 0}, {0, 0});
+        auto trackD0 = o2::dataformats::V0(vertexD0, pVecD, df.calcPCACovMatrixFlat(), trackParCovProng0, trackParCovProng1, {0, 0}, {0, 0});
 
         int indexTrack0 = prong0.globalIndex();
         int indexTrack1 = prong1.globalIndex();
@@ -271,13 +244,11 @@ struct HfCandidateCreatorBplus {
           // Select D0pi- and D0(bar)pi+ pairs only
           if (!((candD0.isSelD0() >= selectionFlagD0 && trackPion.sign() < 0) || (candD0.isSelD0bar() >= selectionFlagD0bar && trackPion.sign() > 0))) {
             // Printf("D0: %d, D0bar%d, sign: %d", candD0.isSelD0(), candD0.isSelD0bar(), track.sign());
-            hNEvent->Fill(1);
             continue;
           }
 
           // minimum pT selection
-          if (trackPion.pt() < ptPionMin || !isSelectedTrackDCA(trackPion)) {
-            hNEvent->Fill(2);
+          if (trackPion.pt() < ptPionMin || !isSelectedTrack(trackPion)) {
             continue;
           }
 
@@ -286,7 +257,6 @@ struct HfCandidateCreatorBplus {
           }
 
           if (etaTrackMax >= 0. && std::abs(trackPion.eta()) > etaTrackMax) {
-            hNEvent->Fill(3);
             continue;
           }
 
@@ -298,18 +268,17 @@ struct HfCandidateCreatorBplus {
           std::array<float, 3> pVecBCand = {0., 0., 0.};
 
           // find the DCA between the D0 and the bachelor track, for B+
-          if (bfitter.process(trackD0, trackParCovPi) == 0) {
-            hNEvent->Fill(4);
+          if (dfB.process(trackD0, trackParCovPi) == 0) {
             continue;
           }
 
-          bfitter.propagateTracksToVertex();    // propagate the bachelor and D0 to the B+ vertex
+          dfB.propagateTracksToVertex();        // propagate the bachelor and D0 to the B+ vertex
           trackD0.getPxPyPzGlo(pVecD0);         // momentum of D0 at the B+ vertex
           trackParCovPi.getPxPyPzGlo(pVecBach); // momentum of pi+ at the B+ vertex
 
-          const auto& BSecVertex = bfitter.getPCACandidate();
-          auto chi2PCA = bfitter.getChi2AtPCACandidate();
-          auto covMatrixPCA = bfitter.calcPCACovMatrixFlat();
+          const auto& secVertexBplus = dfB.getPCACandidate();
+          auto chi2PCA = dfB.getChi2AtPCACandidate();
+          auto covMatrixPCA = dfB.calcPCACovMatrixFlat();
           hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
 
           pVecBCand = RecoDecay::pVec(pVecD0, pVecBach);
@@ -325,7 +294,7 @@ struct HfCandidateCreatorBplus {
 
           // get uncertainty of the decay length
           double phi, theta;
-          getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, BSecVertex, phi, theta);
+          getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secVertexBplus, phi, theta);
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
@@ -333,8 +302,7 @@ struct HfCandidateCreatorBplus {
 
           // calculate invariant mass and fill the Invariant Mass control plot
           massD0Pi = RecoDecay::m(array{pVecD0, pVecBach}, array{massD0, massPi});
-          if (std::abs(massD0Pi - massBp) > invMassWindowBplus) {
-            hNEvent->Fill(5);
+          if (std::abs(massD0Pi - massBplus) > invMassWindowBplus) {
             continue;
           }
           hMassBplusToD0Pi->Fill(massD0Pi);
@@ -342,7 +310,7 @@ struct HfCandidateCreatorBplus {
           // fill candidate table rows
           rowCandidateBase(collision.globalIndex(),
                            collision.posX(), collision.posY(), collision.posZ(),
-                           BSecVertex[0], BSecVertex[1], BSecVertex[2],
+                           secVertexBplus[0], secVertexBplus[1], secVertexBplus[2],
                            errorDecayLength, errorDecayLengthXY,
                            chi2PCA,
                            pVecD0[0], pVecD0[1], pVecD0[2],
@@ -357,7 +325,7 @@ struct HfCandidateCreatorBplus {
   }       // process
 };        // struct
 
-/// Extends the base table with expression columns.
+/// Extends the base table with expression columns and performs MC matching
 struct HfCandidateCreatorBplusExpressions {
   Spawns<aod::HfCandBplusExt> rowCandidateBPlus;
   Produces<aod::HfCandBplusMcRec> rowMcMatchRec;
@@ -433,9 +401,7 @@ struct HfCandidateCreatorBplusExpressions {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
+  return WorkflowSpec{
     adaptAnalysisTask<HfCandidateCreatorBplus>(cfgc),
     adaptAnalysisTask<HfCandidateCreatorBplusExpressions>(cfgc)};
-
-  return workflow;
 }
