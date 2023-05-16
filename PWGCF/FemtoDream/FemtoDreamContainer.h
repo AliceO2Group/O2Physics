@@ -151,8 +151,6 @@ class FemtoDreamContainer
   /// \param part1 Particle one
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
-  // template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  // void setPair_base(T const& part1, T const& part2, const int mult)
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
   void setPair_base(const float femtoObs, const float mT, T const& part1, T const& part2, const int mult)
   {
