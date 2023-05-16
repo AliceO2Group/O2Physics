@@ -180,10 +180,10 @@ struct HfCorrelatorDMesonPairs {
   bool kinematicCuts(const T& candidate)
   {
     // check decay channel flag for candidate
-    if (particlePdgCode == pdg::Code::kD0 && !(candidate.hfflag() & 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+    if (particlePdgCode == pdg::Code::kD0 && !(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
       return false;
     }
-    if (particlePdgCode == pdg::Code::kDPlus && !(candidate.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
+    if (particlePdgCode == pdg::Code::kDPlus && !(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi))) {
       return false;
     }
     if (yCandMax >= 0. && std::abs(candidate.y(RecoDecay::getMassPDG(particlePdgCode))) > yCandMax) {
@@ -191,6 +191,9 @@ struct HfCorrelatorDMesonPairs {
     }
     if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
       return false;
+    }
+    else {
+      return true;
     }
   }
 
@@ -207,6 +210,9 @@ struct HfCorrelatorDMesonPairs {
     }
     if (ptCandMin >= 0. && particle.pt() < ptCandMin) {
       return false;
+    }
+    else {
+      return true;
     }
   }
 
@@ -418,12 +424,11 @@ struct HfCorrelatorDMesonPairs {
                       RecoDecay::getMassPDG(pdg::Code::kD0),
                       candidateType1,
                       candidateType2,
-                      0);
+                      2);
           entryD0PairRecoInfo(originGen1,
                               originGen2,
                               matchedGen1,
-                              matchedGen2,
-                              0);
+                              matchedGen2);
         // If both particles are DPlus', fill DPlusPair table
         } else if (std::abs(particle1.pdgCode()) == pdg::Code::kDPlus && std::abs(particle2.pdgCode()) == pdg::Code::kDPlus) {
           entryDPlusPair(getDeltaPhi(particle2.phi(), particle1.phi()),
@@ -436,12 +441,11 @@ struct HfCorrelatorDMesonPairs {
                          RecoDecay::getMassPDG(pdg::Code::kDPlus),
                          candidateType1,
                          candidateType2,
-                         0);
+                         2);
           entryDPlusPairRecoInfo(originGen1,
                                  originGen2,
                                  matchedGen1,
-                                 matchedGen2,
-                                 0);
+                                 matchedGen2);
         }
       } // end inner loop
     }   // end outer loop
@@ -456,10 +460,11 @@ struct HfCorrelatorDMesonPairs {
     analyseMultiplicity(collision, tracks);
     auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (const auto& candidate1 : selectedD0CandidatesGrouped) {
+      fillInfoHists(candidate1, false);
       if (!kinematicCuts(candidate1)) {
         continue;
       }
-      fillInfoHists(candidate1, false);
+
 
       auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), false>(candidate1, true); // Candidate type attribution.
       registry.fill(HIST("hSelectionStatus"), candidateType1);
@@ -486,7 +491,7 @@ struct HfCorrelatorDMesonPairs {
                       invMassD0barToKPi(candidate2),
                       candidateType1,
                       candidateType2,
-                      1);
+                      0);
         } // end if
       }   // end inner loop (Cand2)
     }     // end outer loop (Cand1)
@@ -551,12 +556,11 @@ struct HfCorrelatorDMesonPairs {
                       invMassD0barToKPi(candidate2),
                       candidateType1,
                       candidateType2,
-                      0);
+                      1);
           entryD0PairRecoInfo(origin1,
                               origin2,
                               matchedRec1,
-                              matchedRec2,
-                              1);
+                              matchedRec2);
         }
       } // end inner loop
     }   // end outer loop
@@ -626,7 +630,7 @@ struct HfCorrelatorDMesonPairs {
                          invMassDplusToPiKPi(candidate2),
                          candidateType1,
                          candidateType2,
-                         1);
+                         0);
         } // end if
       }   // end inner loop (cand2)
     }     // end outer loop (cand1)
@@ -703,12 +707,11 @@ struct HfCorrelatorDMesonPairs {
                          invMassDplusToPiKPi(candidate2),
                          candidateType1,
                          candidateType2,
-                         0);
+                         1);
           entryDPlusPairRecoInfo(origin1,
                                  origin2,
                                  matchedRec1,
-                                 matchedRec2,
-                                 1);
+                                 matchedRec2);
         } // end if
       }   // end inner loop (cand2)
     }     // end outer loop (cand1)

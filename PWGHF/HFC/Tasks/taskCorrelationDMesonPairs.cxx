@@ -273,7 +273,7 @@ struct HfTaskCorrelationDMesonPairs {
     else return 0;
   }
 
-  // Fill Mass correlation histograms
+  // Plot Mass correlations
   void fillMassCorrHists(uint const& candLabel1, uint const& candLabel2, double const& massCand1, double const& massCand2, double const& ptCand1, double const& ptCand2)
   {
     if (candLabel1 == 1 && candLabel2 == 1) {
@@ -297,7 +297,7 @@ struct HfTaskCorrelationDMesonPairs {
     }
   }
 
-  // Fill angular correlation histograms in signal region
+  // Plot angular correlations in signal region
   void fillCorrelSignalHists(uint const& candLabel1, uint const& candLabel2, double const& deltaPhi, double const& deltaEta, double const& ptCand1, double const& ptCand2)
   {
     if (candLabel1 == 1 && candLabel2 == 1) {
@@ -321,7 +321,7 @@ struct HfTaskCorrelationDMesonPairs {
     }
   }
 
-  // Fill angular correlation histograms in sideband region
+  // Plot angular correlations in sideband region
   void fillCorrelSidebandsHists(uint const& candLabel1, uint const& candLabel2, double const& deltaPhi, double const& deltaEta, double const& ptCand1, double const& ptCand2)
   {
     if (candLabel1 == 1 && candLabel2 == 1) {
@@ -349,7 +349,7 @@ struct HfTaskCorrelationDMesonPairs {
   void analyseData(const T& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
-      if (pairEntry.isData() == 1) {
+      if (pairEntry.dataType() == 0) {
         // define variables for widely used quantities
         double deltaPhi = pairEntry.deltaPhi();
         double deltaEta = pairEntry.deltaEta();
@@ -404,7 +404,7 @@ struct HfTaskCorrelationDMesonPairs {
   void analyseMcRec(const T& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
-      if (pairEntry.isData() == 0 && pairEntry.isReco() == 1) {
+      if (pairEntry.dataType() == 1) {
         // define variables for widely used quantities
         double deltaPhi = pairEntry.deltaPhi();
         double deltaEta = pairEntry.deltaEta();
@@ -498,7 +498,7 @@ struct HfTaskCorrelationDMesonPairs {
   void analyseMcGen(const T& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
-      if (pairEntry.isData() == 0 && pairEntry.isReco() == 0) {
+      if (pairEntry.dataType() == 2) {
         // define variables for widely used quantities
         double deltaPhi = pairEntry.deltaPhi();
         double deltaEta = pairEntry.deltaEta();
