@@ -181,7 +181,7 @@ struct HfCandidateCreatorBplus {
         // hPtD->Fill(candD0.pt());
         // hCPAD->Fill(candD0.cpa());
 
-        if (!TESTBIT(candD0.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        if (!TESTBIT(candD0.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           continue;
         }
         if (yCandMax >= 0. && std::abs(yD0(candD0)) > yCandMax) {
