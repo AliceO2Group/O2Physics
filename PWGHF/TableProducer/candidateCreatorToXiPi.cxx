@@ -428,7 +428,7 @@ struct HfCandidateCreatorToXiPiMc {
                  aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
-    int sign = 0;
+    int8_t sign = 0;
     int flag = 0;
     // int8_t origin = 0; //to be used for prompt/non prompt
     int debug = 0;
