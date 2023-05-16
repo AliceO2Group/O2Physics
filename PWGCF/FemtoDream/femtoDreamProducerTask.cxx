@@ -348,7 +348,7 @@ struct femtoDreamProducerTask {
       auto pdgCode = particleMC.pdgCode();
       int particleOrigin = 99;
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
-      
+
       if (particleMC.isPhysicalPrimary()) {
         particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
       } else if (motherparticleMC.producedByGenerator()) {

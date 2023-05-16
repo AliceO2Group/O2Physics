@@ -151,8 +151,8 @@ class FemtoDreamContainer
   /// \param part1 Particle one
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
-  //template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  //void setPair_base(T const& part1, T const& part2, const int mult)
+  // template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
+  // void setPair_base(T const& part1, T const& part2, const int mult)
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
   void setPair_base(const float femtoObs, const float mT, T const& part1, T const& part2, const int mult)
   {
@@ -180,7 +180,7 @@ class FemtoDreamContainer
   void setPair_MC(const float femtoObsMC, const float femtoObs, const float mT, const int mult)
   {
     if (mHistogramRegistry) {
-      //Fill the kstar distributions with the reconstructed information but only for particles with the right PDG code
+      // Fill the kstar distributions with the reconstructed information but only for particles with the right PDG code
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/relPairDist_ReconNoFake"), femtoObs);
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/relPairkstarmT_ReconNoFake"), femtoObs, mT);
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/relPairkstarMult_ReconNoFake"), femtoObs, mult);
@@ -200,7 +200,7 @@ class FemtoDreamContainer
   void setPair(T const& part1, T const& part2, const int mult)
   {
     float femtoObs, femtoObsMC;
-    //Calculate femto observable and the mT with reconstructed information
+    // Calculate femto observable and the mT with reconstructed information
     if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
       femtoObs = FemtoDreamMath::getkstar(part1, mMassOne, part2, mMassTwo);
     }
@@ -208,23 +208,23 @@ class FemtoDreamContainer
 
     if (mHistogramRegistry) {
       setPair_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(femtoObs, mT, part1, part2, mult);
-      
+
       if constexpr (isMC) {
         if (part1.has_femtoDreamMCParticle() && part2.has_femtoDreamMCParticle()) {
-          //calculate the femto observable and the mT with MC truth information
+          // calculate the femto observable and the mT with MC truth information
           if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
             femtoObsMC = FemtoDreamMath::getkstar(part1.femtoDreamMCParticle(), mMassOne, part2.femtoDreamMCParticle(), mMassTwo);
           }
           const float mTMC = FemtoDreamMath::getmT(part1.femtoDreamMCParticle(), mMassOne, part2.femtoDreamMCParticle(), mMassTwo);
 
-          if(abs(part1.femtoDreamMCParticle().pdgMCTruth()) == mPDGOne && abs(part2.femtoDreamMCParticle().pdgMCTruth()) == mPDGTwo){ //Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
+          if (abs(part1.femtoDreamMCParticle().pdgMCTruth()) == mPDGOne && abs(part2.femtoDreamMCParticle().pdgMCTruth()) == mPDGTwo) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
             setPair_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(femtoObsMC, mTMC, part1.femtoDreamMCParticle(), part2.femtoDreamMCParticle(), mult);
             setPair_MC(femtoObsMC, femtoObs, mT, mult);
-          }else{
+          } else {
             mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
-          } 
+          }
 
-        }else{
+        } else {
           mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hNoMCtruthPairsCounter"), 0);
         }
       }
