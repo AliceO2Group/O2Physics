@@ -44,7 +44,7 @@ using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 using MyMcMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
 using MFTTracksExtra = soa::Join<aod::MFTTracks, aod::MA2T>; // MFT track + index of ambiguous track
 
-struct ProduceAmbiguousMft {
+struct HfAmbiguousMftIndexBuilder {
   // build the index table MA2T
   Builds<aod::MA2T> idx;
 
@@ -83,12 +83,12 @@ struct HfTaskSingleMuonSelection {
   {
     AxisSpec axisPt{200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisEta{250, -5., 0., "#it{#eta}"};
-    AxisSpec axisDCA{500, 0., 5., "DCA_{xy} (cm)"};
+    AxisSpec axisDCA{500, 0., 5., "#it{DCA}_{xy} (cm)"};
     AxisSpec axisChi2MatchMCHMFT{100, 0., 100., "MCH-MFT matching #chi^{2}"};
     AxisSpec axisSign{5, -2.5, 2.5, "Charge"};
-    AxisSpec axisPDca{100000, 0, 100000, "p #times DCA (GeV/#it{c} * cm)"};
-    AxisSpec axisVtxZ{80, -20., 20., "z_{vtx} (cm)"};
-    AxisSpec axisDCAx{1000, -5., 5., "DCA_{x or y} (cm)"};
+    AxisSpec axisPDca{100000, 0, 100000, "#it{p} #times DCA (GeV/#it{c} * cm)"};
+    AxisSpec axisVtxZ{80, -20., 20., "#it{z}_{vtx} (cm)"};
+    AxisSpec axisDCAx{1000, -5., 5., "#it{DCA}_{x or y} (cm)"};
     AxisSpec axisPtDif{200, -2., 2., "#it{p}_{T} diff (GeV/#it{c})"};
     AxisSpec axisEtaDif{200, -2., 2., "#it{#eta} diff"};
     AxisSpec axisDeltaPt{60, -30, 30, "#Delta #it{p}_{T} (GeV/#it{c})"};
@@ -250,7 +250,7 @@ struct HfTaskSingleMuonSelection {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ProduceAmbiguousMft>(cfgc),
+    adaptAnalysisTask<HfAmbiguousMftIndexBuilder>(cfgc),
     adaptAnalysisTask<HfTaskSingleMuonSelection>(cfgc),
   };
 }
