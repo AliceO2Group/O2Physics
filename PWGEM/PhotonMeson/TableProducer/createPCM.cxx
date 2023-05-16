@@ -73,6 +73,7 @@ struct createPCM {
   Configurable<float> v0Rmax{"v0Rmax", 180.0, "v0Rmax"};
   Configurable<float> dcamin{"dcamin", 0.1, "dcamin"};
   Configurable<float> dcamax{"dcamax", 1e+10, "dcamax"};
+  Configurable<float> maxX{"maxX", 100.0, "maximum X (starting point of track X)"}; // maxX is equal to or smaller than minPropagationDistance in trackPropagation.cxx for DCA
   Configurable<float> minpt{"minpt", 0.01, "min pT for single track in GeV/c"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance for single track"};
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
@@ -235,7 +236,7 @@ struct createPCM {
            v0dca, pos.dcaXY(), ele.dcaXY());
   }
 
-  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& dcamin < nabs(o2::aod::track::dcaXY) && nabs(o2::aod::track::dcaXY) < dcamax&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& min_tpcdEdx < o2::aod::track::tpcSignal&& o2::aod::track::tpcSignal < max_tpcdEdx;
+  Filter trackFilter = o2::aod::track::x < maxX && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& dcamin < nabs(o2::aod::track::dcaXY) && nabs(o2::aod::track::dcaXY) < dcamax&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& min_tpcdEdx < o2::aod::track::tpcSignal&& o2::aod::track::tpcSignal < max_tpcdEdx;
   using MyFilteredTracks = soa::Filtered<FullTracksExtIU>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
@@ -260,7 +261,6 @@ struct createPCM {
         if (ele.tpcNClsCrossedRows() < mincrossedrows || pos.tpcNClsCrossedRows() < mincrossedrows) {
           continue;
         }
-
         if (useTPConly && (!IsTPConlyTrack(ele) || !IsTPConlyTrack(pos))) {
           continue;
         }

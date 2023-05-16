@@ -139,10 +139,10 @@ struct cascademcfinder {
 
     if (mcParticle.has_daughters()) {
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
-      if (daughters.size() == 2) {
+      if (daughters.size() >= 2) {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
           // option 1: this is the lambda daughter
-          if (TMath::Abs(daughter.pdgCode()) == 3122) {
+          if (TMath::Abs(daughter.pdgCode()) == 3122 && daughter.getProcess() == 4) {
             for (auto const& v0 : v0s) {
               if (v0.mcParticleId() == daughter.globalIndex()) {
                 trackIndexV0 = v0.globalIndex();
@@ -162,7 +162,7 @@ struct cascademcfinder {
           } // end lambda search
           if (TMath::Abs(daughter.pdgCode()) == 211 || TMath::Abs(daughter.pdgCode()) == 321) {
             for (auto const& track : trackList) {
-              if (track.mcParticleId() == daughter.globalIndex()) {
+              if (track.mcParticleId() == daughter.globalIndex() && daughter.getProcess() == 4) {
                 trackIndexBachelor = track.globalIndex();
                 if (track.hasITS())
                   bachelorITS = true;

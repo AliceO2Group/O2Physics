@@ -90,6 +90,7 @@ struct threebodymcfinder {
     const AxisSpec axisPt{(int)100, +0.0f, +10.0f, "p_{T} (GeV/c)"};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
+    histos.add("hNDaughters", "hNDaughters", kTH1F, {axisNTimesCollRecoed});
 
     histos.add("hPtHyHe4Generated", "hPtHyHe4Generated", kTH1F, {axisPt});
     histos.add("hPtAntiHyHe4Generated", "hPtAntiHyHe4Generated", kTH1F, {axisPt});
@@ -160,26 +161,27 @@ struct threebodymcfinder {
 
     if (mcParticle.has_daughters()) {
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
-      if (daughters.size() == 3) {
+      histos.fill(HIST("hNDaughters"), daughters.size());
+      if (daughters.size() >= 3) {               // consider also delta-rays
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
           for (auto const& track : trackList) {
             if (track.mcParticleId() == daughter.globalIndex()) {
               // determine which charge this particle has
-              if (daughter.pdgCode() == prong0pdg) {
+              if (daughter.pdgCode() == prong0pdg && daughter.getProcess() == 4) {
                 trackIndexProng0 = track.globalIndex();
                 if (track.hasITS())
                   prong0ITS = true;
                 if (track.hasTPC())
                   prong0TPC = true;
               }
-              if (daughter.pdgCode() == prong1pdg) {
+              if (daughter.pdgCode() == prong1pdg && daughter.getProcess() == 4) {
                 trackIndexProng1 = track.globalIndex();
                 if (track.hasITS())
                   prong1ITS = true;
                 if (track.hasTPC())
                   prong1TPC = true;
               }
-              if (daughter.pdgCode() == prong2pdg) {
+              if (daughter.pdgCode() == prong2pdg && daughter.getProcess() == 4) {
                 trackIndexProng2 = track.globalIndex();
                 if (track.hasITS())
                   prong2ITS = true;

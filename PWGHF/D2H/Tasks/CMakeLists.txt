@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(task-b0
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-b0-reduced
+                    SOURCES taskB0Reduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-bplus
                     SOURCES taskBplus.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -62,4 +67,9 @@ o2physics_add_dpl_workflow(task-xicc
 o2physics_add_dpl_workflow(task-sigmac
                     SOURCES taskSigmac.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-omegac-st
+                    SOURCES taskOmegacSt.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
