@@ -429,13 +429,13 @@ struct HfTaskCorrelationDMesonPairs {
         // fill 2D angular correlations plots
         switch (pairType) {
           case 0: // D0 D0
-            fillCorrelHists(hCorrelSignalArray, dMesonCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+            fillAngularCorrelHists(hCorrelSignalArray, dMesonCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
           case 1: // D0 D0bar
-            fillCorrelHists(hCorrelSignalArray, dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+            fillAngularCorrelHists(hCorrelSignalArray, dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
           case 2: // D0bar D0bar
-            fillCorrelHists(hCorrelSignalArray, dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+            fillAngularCorrelHists(hCorrelSignalArray, dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
         }
       }
@@ -457,13 +457,13 @@ struct HfTaskCorrelationDMesonPairs {
         // fill 2D angular correlations plots
         switch (pairType) {
           case 0: // D0 D0
-            fillCorrelSidebandsHists(hCorrelSidebandsArray, dMesonCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+            fillAngularCorrelHists(hCorrelSidebandsArray, dMesonCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
           case 1: // D0 D0bar
-            fillCorrelSidebandsHists(hCorrelSidebandsArray, dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+            fillAngularCorrelHists(hCorrelSidebandsArray, dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
           case 2: // D0bar D0bar
-            fillCorrelSidebandsHists(hCorrelSidebandsArray, dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+            fillAngularCorrelHists(hCorrelSidebandsArray, dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
         }
       }
