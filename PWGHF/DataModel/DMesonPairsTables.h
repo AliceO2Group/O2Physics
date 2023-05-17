@@ -42,27 +42,27 @@ DECLARE_SOA_COLUMN(DataType, dataType, uint8_t); // 0: data, 1: MC reco, 2: MC g
 } // namespace hf_correlation_d_meson_pair
 
 // Definition of the D meson pair table. Contains the info needed at Data level.
-#define DECLARE_DMESON_PAIR_TABLE(_pair_type_, _marker_value_, _description_)                                      \
-    DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_, o2::soa::Marker<_marker_value_>,                          \
-                      hf_correlation_d_meson_pair::DeltaPhi,                                                       \
-                      hf_correlation_d_meson_pair::DeltaEta,                                                       \
-                      hf_correlation_d_meson_pair::PtCand1,                                                        \
-                      hf_correlation_d_meson_pair::PtCand2,                                                        \
-                      hf_correlation_d_meson_pair::YCand1,                                                         \
-                      hf_correlation_d_meson_pair::YCand2,                                                         \
-                      hf_correlation_d_meson_pair::MCand1,                                                         \
-                      hf_correlation_d_meson_pair::MCand2,                                                         \
-                      hf_correlation_d_meson_pair::CandidateType1,                                                 \
-                      hf_correlation_d_meson_pair::CandidateType2,                                                 \
-                      hf_correlation_d_meson_pair::DataType);
+#define DECLARE_DMESON_PAIR_TABLE(_pair_type_, _marker_value_, _description_)           \
+  DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_, o2::soa::Marker<_marker_value_>, \
+                    hf_correlation_d_meson_pair::DeltaPhi,                              \
+                    hf_correlation_d_meson_pair::DeltaEta,                              \
+                    hf_correlation_d_meson_pair::PtCand1,                               \
+                    hf_correlation_d_meson_pair::PtCand2,                               \
+                    hf_correlation_d_meson_pair::YCand1,                                \
+                    hf_correlation_d_meson_pair::YCand2,                                \
+                    hf_correlation_d_meson_pair::MCand1,                                \
+                    hf_correlation_d_meson_pair::MCand2,                                \
+                    hf_correlation_d_meson_pair::CandidateType1,                        \
+                    hf_correlation_d_meson_pair::CandidateType2,                        \
+                    hf_correlation_d_meson_pair::DataType);
 
 // definition of the D meson pair table with info at MC level.
-#define DECLARE_DMESON_PAIR_RECOINFO_TABLE(_pair_type_, _marker_value_, _description_)                             \
-    DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_ "RECOINFO", o2::soa::Marker<_marker_value_>,               \
-                      hf_correlation_d_meson_pair::Origin1,                                                        \
-                      hf_correlation_d_meson_pair::Origin2,                                                        \
-                      hf_correlation_d_meson_pair::MatchedMc1,                                                     \
-                      hf_correlation_d_meson_pair::MatchedMc2);
+#define DECLARE_DMESON_PAIR_RECOINFO_TABLE(_pair_type_, _marker_value_, _description_)             \
+  DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_ "RECOINFO", o2::soa::Marker<_marker_value_>, \
+                    hf_correlation_d_meson_pair::Origin1,                                          \
+                    hf_correlation_d_meson_pair::Origin2,                                          \
+                    hf_correlation_d_meson_pair::MatchedMc1,                                       \
+                    hf_correlation_d_meson_pair::MatchedMc2);
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_DMESONPAIRTABLES_H_

@@ -1322,9 +1322,9 @@ DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO",
 
 // Creation of tables with D Meson Pairs info.
 DECLARE_DMESON_PAIR_TABLE(D0Pair, 1, "D0PAIR");
-DECLARE_DMESON_PAIR_RECOINFO_TABLE(D0PairRecoInfo, 1, "D0PAIR");  // MC info, D0
+DECLARE_DMESON_PAIR_RECOINFO_TABLE(D0PairRecoInfo, 1, "D0PAIR"); // MC info, D0
 DECLARE_DMESON_PAIR_TABLE(DPlusPair, 2, "DPLUSPAIR");
-DECLARE_DMESON_PAIR_RECOINFO_TABLE(DPlusPairRecoInfo, 2, "DPLUS");// MC info, DPlus
+DECLARE_DMESON_PAIR_RECOINFO_TABLE(DPlusPairRecoInfo, 2, "DPLUS"); // MC info, DPlus
 
 // specific Xicc candidate properties
 namespace hf_cand_xicc
