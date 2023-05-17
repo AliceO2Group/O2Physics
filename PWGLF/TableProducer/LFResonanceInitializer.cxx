@@ -125,7 +125,7 @@ struct reso2initializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
-  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
   using ResoTracks = aod::Reso2TracksPIDExt;
   using ResoTracksMC = soa::Join<ResoTracks, aod::McTrackLabels>;
@@ -623,7 +623,7 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     } else {
       resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     }
@@ -644,7 +644,7 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     } else {
       resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     }
@@ -667,7 +667,7 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     } else {
       resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     }
@@ -689,7 +689,7 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     } else {
       resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     }
@@ -714,7 +714,7 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     } else {
       resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     }
@@ -741,7 +741,7 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     } else {
       resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     }
