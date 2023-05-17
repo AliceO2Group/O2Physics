@@ -39,12 +39,13 @@ double getDeltaPhi(double phiD, double phiDbar)
   return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
 }
 
-namespace{
+namespace
+{
 enum CandidateTypeSel {
-  SelectedD = 0,    // This particle is selected as a D
-  SelectedDbar,     // This particle is selected as a Dbar
-  TrueD,            // This particle is a true D
-  TrueDbar          // This particle is a true Dbar
+  SelectedD = 0, // This particle is selected as a D
+  SelectedDbar,  // This particle is selected as a Dbar
+  TrueD,         // This particle is a true D
+  TrueDbar       // This particle is a true Dbar
 };
 } // namespace
 
@@ -183,8 +184,7 @@ struct HfCorrelatorDMesonPairs {
     }
     if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
       return false;
-    }
-    else {
+    } else {
       return true;
     }
   }
@@ -202,8 +202,7 @@ struct HfCorrelatorDMesonPairs {
     }
     if (ptCandMin >= 0. && particle.pt() < ptCandMin) {
       return false;
-    }
-    else {
+    } else {
       return true;
     }
   }
@@ -229,8 +228,8 @@ struct HfCorrelatorDMesonPairs {
     }
   }
 
-  // Sets bits to select candidate type for D0. 
-  // SelectedD and SelectedDbar bits look at whether the candidate passed the selection flags, and TrueD and TrueDbar check if it is matched with Mc. 
+  // Sets bits to select candidate type for D0.
+  // SelectedD and SelectedDbar bits look at whether the candidate passed the selection flags, and TrueD and TrueDbar check if it is matched with Mc.
   template <typename T, bool isRecoMc>
   uint8_t assignCandidateTypeD0(const T& candidate)
   {
@@ -345,7 +344,7 @@ struct HfCorrelatorDMesonPairs {
                               originGen2,
                               matchedGen1,
                               matchedGen2);
-        // If both particles are DPlus, fill DPlusPair table
+          // If both particles are DPlus, fill DPlusPair table
         } else if (std::abs(particle1.pdgCode()) == pdg::Code::kDPlus && std::abs(particle2.pdgCode()) == pdg::Code::kDPlus) {
           entryDPlusPair(getDeltaPhi(particle2.phi(), particle1.phi()),
                          particle2.eta() - particle1.eta(),
@@ -406,8 +405,8 @@ struct HfCorrelatorDMesonPairs {
                     candidateType1,
                     candidateType2,
                     0);
-      }   // end inner loop (Cand2)
-    }     // end outer loop (Cand1)
+      } // end inner loop (Cand2)
+    }   // end outer loop (Cand1)
   }
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processDataD0, "Process data D0", true);
 
@@ -541,8 +540,8 @@ struct HfCorrelatorDMesonPairs {
                        candidateType1,
                        candidateType2,
                        0);
-      }   // end inner loop (cand2)
-    }     // end outer loop (cand1)
+      } // end inner loop (cand2)
+    }   // end outer loop (cand1)
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processDataDPlus, "Process Data DPlus", false);
@@ -618,8 +617,8 @@ struct HfCorrelatorDMesonPairs {
                                origin2,
                                matchedRec1,
                                matchedRec2);
-      }   // end inner loop (cand2)
-    }     // end outer loop (cand1)
+      } // end inner loop (cand2)
+    }   // end outer loop (cand1)
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcRecDPlus, "Process DPlus Mc Reco", false);
