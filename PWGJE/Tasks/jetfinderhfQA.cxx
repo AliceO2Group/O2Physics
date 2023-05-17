@@ -99,7 +99,8 @@ struct JetFinderHFQATask {
                               {"h3_jet_pt_part_jet_eta_part_jet_eta", "#it{p}_{T,jet}^{part} (GeV/#it{c}); #eta_{jet}^{part}; #eta_{jet}", {HistType::kTH3F, {{200, 0.0, 200}, {100, -1.0, 1.0}, {100, -1.0, 1.0}}}},
                               {"h3_jet_pt_part_jet_phi_part_jet_phi", "#it{p}_{T,jet}^{part} (GeV/#it{c}); #phi_{jet}^{part}; #phi_{jet}", {HistType::kTH3F, {{200, 0.0, 200}, {80, -1.0, 7.}, {80, -1.0, 7.}}}},
                               {"h3_jet_pt_part_jet_ntracks_part_jet_ntracks", "#it{p}_{T,jet}^{part} (GeV/#it{c}); N_{jet tracks}^{part}; N_{jet tracks}", {HistType::kTH3F, {{200, 0.0, 200}, {100, -0.5, 99.5}, {100, -0.5, 99.5}}}},
-                              {"h2_jet_pt_part_jet_pt_diff", "#it{p}_{T,jet}^{part} (GeV/#it{c}); (#it{p}_{T,jet}^{part} (GeV/#it{c}) - #it{p}_{T,jet} (GeV/#it{c})) / #it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {1000, -5.0, 5.0}}}}}};
+                              {"h2_jet_pt_part_jet_pt_diff", "#it{p}_{T,jet}^{part} (GeV/#it{c}); (#it{p}_{T,jet}^{part} (GeV/#it{c}) - #it{p}_{T,jet} (GeV/#it{c})) / #it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {1000, -5.0, 5.0}}}},
+                              {"h_collision_eventweight_part", "event weight;event weight;entries", {HistType::kTH1F, {{1000000000, 0.0, 10.0}}}}}};
 
   void init(o2::framework::InitContext&)
   {
@@ -111,8 +112,186 @@ struct JetFinderHFQATask {
   using JetParticles2Prong = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
   using JetParticles3Prong = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
   using JetParticlesBplus = soa::Join<aod::McParticles, aod::HfCandBplusMcGen>;
-  using D0ChargedDetectorLevelJets = soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>;
-  using D0ChargedParticleLevelJets = soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>;
+
+  template <typename T>
+  void fillDataHistograms(T const& jet, float weight = 1.0)
+  {
+
+    registry.fill(HIST("h_jet_pt"), jet.pt(), weight);
+    registry.fill(HIST("h_jet_eta"), jet.eta(), weight);
+    registry.fill(HIST("h_jet_phi"), jet.phi(), weight);
+    registry.fill(HIST("h_jet_ntracks"), jet.tracks().size() + jet.hfcandidates().size(), weight);
+
+    registry.fill(HIST("h2_jet_pt_jet_eta"), jet.pt(), jet.eta(), weight);
+    registry.fill(HIST("h2_jet_pt_jet_phi"), jet.pt(), jet.phi(), weight);
+    registry.fill(HIST("h2_jet_pt_jet_ntracks"), jet.pt(), jet.tracks().size() + jet.hfcandidates().size(), weight);
+
+    registry.fill(HIST("h2_jet_r_jet_pt"), jet.r() / 100.0, jet.pt(), weight);
+    registry.fill(HIST("h2_jet_r_jet_eta"), jet.r() / 100.0, jet.eta(), weight);
+    registry.fill(HIST("h2_jet_r_jet_phi"), jet.r() / 100.0, jet.phi(), weight);
+    registry.fill(HIST("h2_jet_r_jet_ntracks"), jet.r() / 100.0, jet.tracks().size() + jet.hfcandidates().size(), weight);
+
+    for (auto& constituent : jet.template tracks_as<JetTracks>()) {
+
+      registry.fill(HIST("h2_jet_pt_track_pt"), jet.pt(), constituent.pt(), weight);
+      registry.fill(HIST("h2_jet_pt_track_eta"), jet.pt(), constituent.eta(), weight);
+      registry.fill(HIST("h2_jet_pt_track_phi"), jet.pt(), constituent.phi(), weight);
+      registry.fill(HIST("h_track_pt"), constituent.pt(), weight);
+      registry.fill(HIST("h_track_eta"), constituent.eta(), weight);
+      registry.fill(HIST("h_track_phi"), constituent.phi(), weight);
+    }
+
+    for (auto& hfcandidate : jet.template hfcandidates_as<CandidateD0Data>()) {
+
+      registry.fill(HIST("h2_jet_pt_track_pt"), jet.pt(), hfcandidate.pt(), weight);
+      registry.fill(HIST("h2_jet_pt_track_eta"), jet.pt(), hfcandidate.eta(), weight);
+      registry.fill(HIST("h2_jet_pt_track_phi"), jet.pt(), hfcandidate.phi(), weight);
+      registry.fill(HIST("h_track_pt"), hfcandidate.pt(), weight);
+      registry.fill(HIST("h_track_eta"), hfcandidate.eta(), weight);
+      registry.fill(HIST("h_track_phi"), hfcandidate.phi(), weight);
+
+      registry.fill(HIST("h_candidate_pt"), hfcandidate.pt(), weight);
+      registry.fill(HIST("h_candidate_eta"), hfcandidate.eta(), weight);
+      registry.fill(HIST("h_candidate_phi"), hfcandidate.phi(), weight);
+      registry.fill(HIST("h_candidate_y"), hfcandidate.y(RecoDecay::getMassPDG(421)), weight);
+      registry.fill(HIST("h2_jet_pt_candidate_pt"), jet.pt(), hfcandidate.pt(), weight);
+    }
+  }
+
+  template <typename T>
+  void fillMCDHistograms(T const& jet, float weight = 1.0)
+  {
+
+    registry.fill(HIST("h_jet_pt"), jet.pt(), weight);
+    registry.fill(HIST("h_jet_eta"), jet.eta(), weight);
+    registry.fill(HIST("h_jet_phi"), jet.phi(), weight);
+    registry.fill(HIST("h_jet_ntracks"), jet.tracks().size() + jet.hfcandidates().size(), weight);
+
+    registry.fill(HIST("h2_jet_pt_jet_eta"), jet.pt(), jet.eta(), weight);
+    registry.fill(HIST("h2_jet_pt_jet_phi"), jet.pt(), jet.phi(), weight);
+    registry.fill(HIST("h2_jet_pt_jet_ntracks"), jet.pt(), jet.tracks().size() + jet.hfcandidates().size(), weight);
+
+    registry.fill(HIST("h2_jet_r_jet_pt"), jet.r() / 100.0, jet.pt(), weight);
+    registry.fill(HIST("h2_jet_r_jet_eta"), jet.r() / 100.0, jet.eta(), weight);
+    registry.fill(HIST("h2_jet_r_jet_phi"), jet.r() / 100.0, jet.phi(), weight);
+    registry.fill(HIST("h2_jet_r_jet_ntracks"), jet.r() / 100.0, jet.tracks().size() + jet.hfcandidates().size(), weight);
+
+    for (auto& constituent : jet.template tracks_as<JetTracks>()) {
+
+      registry.fill(HIST("h2_jet_pt_track_pt"), jet.pt(), constituent.pt(), weight);
+      registry.fill(HIST("h2_jet_pt_track_eta"), jet.pt(), constituent.eta(), weight);
+      registry.fill(HIST("h2_jet_pt_track_phi"), jet.pt(), constituent.phi(), weight);
+      registry.fill(HIST("h_track_pt"), constituent.pt(), weight);
+      registry.fill(HIST("h_track_eta"), constituent.eta(), weight);
+      registry.fill(HIST("h_track_phi"), constituent.phi(), weight);
+    }
+
+    for (auto& hfcandidate : jet.template hfcandidates_as<CandidateD0MC>()) {
+
+      registry.fill(HIST("h2_jet_pt_track_pt"), jet.pt(), hfcandidate.pt(), weight);
+      registry.fill(HIST("h2_jet_pt_track_eta"), jet.pt(), hfcandidate.eta(), weight);
+      registry.fill(HIST("h2_jet_pt_track_phi"), jet.pt(), hfcandidate.phi(), weight);
+      registry.fill(HIST("h_track_pt"), hfcandidate.pt(), weight);
+      registry.fill(HIST("h_track_eta"), hfcandidate.eta(), weight);
+      registry.fill(HIST("h_track_phi"), hfcandidate.phi(), weight);
+
+      registry.fill(HIST("h_candidate_pt"), hfcandidate.pt(), weight);
+      registry.fill(HIST("h_candidate_eta"), hfcandidate.eta(), weight);
+      registry.fill(HIST("h_candidate_phi"), hfcandidate.phi(), weight);
+      registry.fill(HIST("h_candidate_y"), hfcandidate.y(RecoDecay::getMassPDG(421)), weight);
+      registry.fill(HIST("h2_jet_pt_candidate_pt"), jet.pt(), hfcandidate.pt(), weight);
+    }
+  }
+
+  template <typename T>
+  void fillMCPHistograms(T const& jet, float weight = 1.0)
+  {
+
+    registry.fill(HIST("h_jet_pt_part"), jet.pt(), weight);
+    registry.fill(HIST("h_jet_eta_part"), jet.eta(), weight);
+    registry.fill(HIST("h_jet_phi_part"), jet.phi(), weight);
+    registry.fill(HIST("h_jet_ntracks_part"), jet.tracks().size() + jet.hfcandidates().size(), weight);
+
+    registry.fill(HIST("h2_jet_pt_part_jet_eta_part"), jet.pt(), jet.eta(), weight);
+    registry.fill(HIST("h2_jet_pt_part_jet_phi_part"), jet.pt(), jet.phi(), weight);
+    registry.fill(HIST("h2_jet_pt_part_jet_ntracks_part"), jet.pt(), jet.tracks().size() + jet.hfcandidates().size(), weight);
+
+    registry.fill(HIST("h2_jet_r_part_jet_pt_part"), jet.r() / 100.0, jet.pt(), weight);
+    registry.fill(HIST("h2_jet_r_part_jet_eta_part"), jet.r() / 100.0, jet.eta(), weight);
+    registry.fill(HIST("h2_jet_r_part_jet_phi_part"), jet.r() / 100.0, jet.phi(), weight);
+    registry.fill(HIST("h2_jet_r_part_jet_ntracks_part"), jet.r() / 100.0, jet.tracks().size() + jet.hfcandidates().size(), weight);
+
+    for (auto& constituent : jet.template tracks_as<JetParticles2Prong>()) {
+
+      registry.fill(HIST("h2_jet_pt_part_track_pt_part"), jet.pt(), constituent.pt(), weight);
+      registry.fill(HIST("h2_jet_pt_part_track_eta_part"), jet.pt(), constituent.eta(), weight);
+      registry.fill(HIST("h2_jet_pt_part_track_phi_part"), jet.pt(), constituent.phi(), weight);
+      registry.fill(HIST("h_track_pt_part"), constituent.pt(), weight);
+      registry.fill(HIST("h_track_eta_part"), constituent.eta(), weight);
+      registry.fill(HIST("h_track_phi_part"), constituent.phi(), weight);
+    }
+
+    for (auto& hfcandidate : jet.template hfcandidates_as<JetParticles2Prong>()) {
+
+      registry.fill(HIST("h2_jet_pt_part_track_pt_part"), jet.pt(), hfcandidate.pt(), weight);
+      registry.fill(HIST("h2_jet_pt_part_track_eta_part"), jet.pt(), hfcandidate.eta(), weight);
+      registry.fill(HIST("h2_jet_pt_part_track_phi_part"), jet.pt(), hfcandidate.phi(), weight);
+      registry.fill(HIST("h_track_pt_part"), hfcandidate.pt(), weight);
+      registry.fill(HIST("h_track_eta_part"), hfcandidate.eta(), weight);
+      registry.fill(HIST("h_track_phi_part"), hfcandidate.phi(), weight);
+
+      registry.fill(HIST("h_candidate_pt_part"), hfcandidate.pt(), weight);
+      registry.fill(HIST("h_candidate_eta_part"), hfcandidate.eta(), weight);
+      registry.fill(HIST("h_candidate_phi_part"), hfcandidate.phi(), weight);
+      registry.fill(HIST("h_candidate_y_part"), hfcandidate.y(), weight);
+      registry.fill(HIST("h2_jet_pt_part_candidate_pt_part"), jet.pt(), hfcandidate.pt(), weight);
+    }
+  }
+
+  template <typename T>
+  void fillMCMatchedHistograms(T const& mcdjet, float weight = 1.0)
+  {
+    if (mcdjet.has_matchedJetCand() && mcdjet.matchedJetCandId() >= 0) {
+      const auto& mcpjet = mcdjet.template matchedJetCand_as<soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>>();
+
+      auto mcdCandPt = 0.0;
+      auto mcdCandPhi = 0.0;
+      auto mcdCandEta = 0.0;
+      auto mcdCandY = 0.0;
+      auto mcpCandPt = 0.0;
+      auto mcpCandPhi = 0.0;
+      auto mcpCandEta = 0.0;
+      auto mcpCandY = 0.0;
+      for (auto& hfcandidate_mcd : mcdjet.template hfcandidates_as<CandidateD0MC>()) {
+
+        mcdCandPt = hfcandidate_mcd.pt();
+        mcdCandPhi = hfcandidate_mcd.phi();
+        mcdCandEta = hfcandidate_mcd.eta();
+        mcdCandY = hfcandidate_mcd.y(RecoDecay::getMassPDG(421));
+      }
+
+      for (auto& hfcandidate_mcp : mcpjet.template hfcandidates_as<JetParticles2Prong>()) {
+
+        mcpCandPt = hfcandidate_mcp.pt();
+        mcpCandPhi = hfcandidate_mcp.phi();
+        mcpCandEta = hfcandidate_mcp.eta();
+        mcpCandY = hfcandidate_mcp.y();
+      }
+
+      registry.fill(HIST("h2_jet_pt_part_jet_pt"), mcpjet.pt(), mcdjet.pt(), weight);
+      registry.fill(HIST("h2_jet_eta_part_jet_eta"), mcpjet.eta(), mcdjet.eta(), weight);
+      registry.fill(HIST("h2_jet_phi_part_jet_phi"), mcpjet.phi(), mcdjet.phi(), weight);
+      registry.fill(HIST("h2_jet_ntracks_part_jet_ntracks"), mcpjet.tracks().size() + mcpjet.hfcandidates().size(), mcdjet.tracks().size() + mcdjet.hfcandidates().size(), weight);
+      registry.fill(HIST("h2_candidate_pt_part_candidate_pt"), mcpCandPt, mcdCandPt, weight);
+      registry.fill(HIST("h2_candidate_eta_part_candidate_eta"), mcpCandEta, mcdCandEta, weight);
+      registry.fill(HIST("h2_candidate_phi_part_candidate_phi"), mcpCandPhi, mcdCandPhi, weight);
+      registry.fill(HIST("h2_candidate_y_part_candidate_y"), mcpCandY, mcdCandY, weight);
+      registry.fill(HIST("h3_jet_pt_part_jet_eta_part_jet_eta"), mcpjet.pt(), mcpjet.eta(), mcdjet.eta(), weight);
+      registry.fill(HIST("h3_jet_pt_part_jet_phi_part_jet_phi"), mcpjet.pt(), mcpjet.phi(), mcdjet.phi(), weight);
+      registry.fill(HIST("h3_jet_pt_part_jet_ntracks_part_jet_ntracks"), mcpjet.pt(), mcpjet.tracks().size() + mcpjet.hfcandidates().size(), mcdjet.tracks().size() + mcdjet.hfcandidates().size(), weight);
+      registry.fill(HIST("h2_jet_pt_part_jet_pt_diff"), mcpjet.pt(), (mcpjet.pt() - mcdjet.pt()) / mcpjet.pt(), weight);
+    }
+  }
 
   void processDummy(aod::Tracks const& track) {}
   PROCESS_SWITCH(JetFinderHFQATask, processDummy, "Dummy process function turned on by default", true);
@@ -120,187 +299,68 @@ struct JetFinderHFQATask {
   void processJetsData(soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents>::iterator const& jet, CandidateD0Data const& candidates, JetTracks const& tracks)
   {
 
-    registry.fill(HIST("h_jet_pt"), jet.pt());
-    registry.fill(HIST("h_jet_eta"), jet.eta());
-    registry.fill(HIST("h_jet_phi"), jet.phi());
-    registry.fill(HIST("h_jet_ntracks"), jet.tracks().size() + jet.hfcandidates().size());
-
-    registry.fill(HIST("h2_jet_pt_jet_eta"), jet.pt(), jet.eta());
-    registry.fill(HIST("h2_jet_pt_jet_phi"), jet.pt(), jet.phi());
-    registry.fill(HIST("h2_jet_pt_jet_ntracks"), jet.pt(), jet.tracks().size() + jet.hfcandidates().size());
-
-    registry.fill(HIST("h2_jet_r_jet_pt"), jet.r() / 100.0, jet.pt());
-    registry.fill(HIST("h2_jet_r_jet_eta"), jet.r() / 100.0, jet.eta());
-    registry.fill(HIST("h2_jet_r_jet_phi"), jet.r() / 100.0, jet.phi());
-    registry.fill(HIST("h2_jet_r_jet_ntracks"), jet.r() / 100.0, jet.tracks().size() + jet.hfcandidates().size());
-
-    for (auto& constituent : jet.tracks_as<JetTracks>()) {
-
-      registry.fill(HIST("h2_jet_pt_track_pt"), jet.pt(), constituent.pt());
-      registry.fill(HIST("h2_jet_pt_track_eta"), jet.pt(), constituent.eta());
-      registry.fill(HIST("h2_jet_pt_track_phi"), jet.pt(), constituent.phi());
-      registry.fill(HIST("h_track_pt"), constituent.pt());
-      registry.fill(HIST("h_track_eta"), constituent.eta());
-      registry.fill(HIST("h_track_phi"), constituent.phi());
-    }
-
-    for (auto& hfcandidate : jet.hfcandidates_as<CandidateD0Data>()) {
-
-      registry.fill(HIST("h2_jet_pt_track_pt"), jet.pt(), hfcandidate.pt());
-      registry.fill(HIST("h2_jet_pt_track_eta"), jet.pt(), hfcandidate.eta());
-      registry.fill(HIST("h2_jet_pt_track_phi"), jet.pt(), hfcandidate.phi());
-      registry.fill(HIST("h_track_pt"), hfcandidate.pt());
-      registry.fill(HIST("h_track_eta"), hfcandidate.eta());
-      registry.fill(HIST("h_track_phi"), hfcandidate.phi());
-
-      registry.fill(HIST("h_candidate_pt"), hfcandidate.pt());
-      registry.fill(HIST("h_candidate_eta"), hfcandidate.eta());
-      registry.fill(HIST("h_candidate_phi"), hfcandidate.phi());
-      registry.fill(HIST("h_candidate_y"), hfcandidate.y(RecoDecay::getMassPDG(421)));
-      registry.fill(HIST("h2_jet_pt_candidate_pt"), jet.pt(), hfcandidate.pt());
-    }
+    fillDataHistograms(jet);
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsData, "jet finder HF QA data", false);
 
   void processJetsMCD(soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>::iterator const& jet, CandidateD0MC const& candidates, JetTracks const& tracks)
   {
-
-    registry.fill(HIST("h_jet_pt"), jet.pt());
-    registry.fill(HIST("h_jet_eta"), jet.eta());
-    registry.fill(HIST("h_jet_phi"), jet.phi());
-    registry.fill(HIST("h_jet_ntracks"), jet.tracks().size() + jet.hfcandidates().size());
-
-    registry.fill(HIST("h2_jet_pt_jet_eta"), jet.pt(), jet.eta());
-    registry.fill(HIST("h2_jet_pt_jet_phi"), jet.pt(), jet.phi());
-    registry.fill(HIST("h2_jet_pt_jet_ntracks"), jet.pt(), jet.tracks().size() + jet.hfcandidates().size());
-
-    registry.fill(HIST("h2_jet_r_jet_pt"), jet.r() / 100.0, jet.pt());
-    registry.fill(HIST("h2_jet_r_jet_eta"), jet.r() / 100.0, jet.eta());
-    registry.fill(HIST("h2_jet_r_jet_phi"), jet.r() / 100.0, jet.phi());
-    registry.fill(HIST("h2_jet_r_jet_ntracks"), jet.r() / 100.0, jet.tracks().size() + jet.hfcandidates().size());
-
-    for (auto& constituent : jet.tracks_as<JetTracks>()) {
-
-      registry.fill(HIST("h2_jet_pt_track_pt"), jet.pt(), constituent.pt());
-      registry.fill(HIST("h2_jet_pt_track_eta"), jet.pt(), constituent.eta());
-      registry.fill(HIST("h2_jet_pt_track_phi"), jet.pt(), constituent.phi());
-      registry.fill(HIST("h_track_pt"), constituent.pt());
-      registry.fill(HIST("h_track_eta"), constituent.eta());
-      registry.fill(HIST("h_track_phi"), constituent.phi());
-    }
-
-    for (auto& hfcandidate : jet.hfcandidates_as<CandidateD0MC>()) {
-
-      registry.fill(HIST("h2_jet_pt_track_pt"), jet.pt(), hfcandidate.pt());
-      registry.fill(HIST("h2_jet_pt_track_eta"), jet.pt(), hfcandidate.eta());
-      registry.fill(HIST("h2_jet_pt_track_phi"), jet.pt(), hfcandidate.phi());
-      registry.fill(HIST("h_track_pt"), hfcandidate.pt());
-      registry.fill(HIST("h_track_eta"), hfcandidate.eta());
-      registry.fill(HIST("h_track_phi"), hfcandidate.phi());
-
-      registry.fill(HIST("h_candidate_pt"), hfcandidate.pt());
-      registry.fill(HIST("h_candidate_eta"), hfcandidate.eta());
-      registry.fill(HIST("h_candidate_phi"), hfcandidate.phi());
-      registry.fill(HIST("h_candidate_y"), hfcandidate.y(RecoDecay::getMassPDG(421)));
-      registry.fill(HIST("h2_jet_pt_candidate_pt"), jet.pt(), hfcandidate.pt());
-    }
+    fillMCDHistograms(jet);
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCD, "jet finder HF QA mcd", false);
 
+  void processJetsMCDWeighted(soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelJetEventWeights>::iterator const& jet, CandidateD0MC const& candidates, JetTracks const& tracks)
+  {
+    fillMCDHistograms(jet, jet.eventWeight());
+  }
+  PROCESS_SWITCH(JetFinderHFQATask, processJetsMCDWeighted, "jet finder HF QA mcd on weighted events", false);
+
   void processJetsMCP(soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>::iterator const& jet, JetParticles2Prong const& particles)
   {
-
-    registry.fill(HIST("h_jet_pt_part"), jet.pt());
-    registry.fill(HIST("h_jet_eta_part"), jet.eta());
-    registry.fill(HIST("h_jet_phi_part"), jet.phi());
-    registry.fill(HIST("h_jet_ntracks_part"), jet.tracks().size() + jet.hfcandidates().size());
-
-    registry.fill(HIST("h2_jet_pt_part_jet_eta_part"), jet.pt(), jet.eta());
-    registry.fill(HIST("h2_jet_pt_part_jet_phi_part"), jet.pt(), jet.phi());
-    registry.fill(HIST("h2_jet_pt_part_jet_ntracks_part"), jet.pt(), jet.tracks().size() + jet.hfcandidates().size());
-
-    registry.fill(HIST("h2_jet_r_part_jet_pt_part"), jet.r() / 100.0, jet.pt());
-    registry.fill(HIST("h2_jet_r_part_jet_eta_part"), jet.r() / 100.0, jet.eta());
-    registry.fill(HIST("h2_jet_r_part_jet_phi_part"), jet.r() / 100.0, jet.phi());
-    registry.fill(HIST("h2_jet_r_part_jet_ntracks_part"), jet.r() / 100.0, jet.tracks().size() + jet.hfcandidates().size());
-
-    for (auto& constituent : jet.tracks_as<JetParticles2Prong>()) {
-
-      registry.fill(HIST("h2_jet_pt_part_track_pt_part"), jet.pt(), constituent.pt());
-      registry.fill(HIST("h2_jet_pt_part_track_eta_part"), jet.pt(), constituent.eta());
-      registry.fill(HIST("h2_jet_pt_part_track_phi_part"), jet.pt(), constituent.phi());
-      registry.fill(HIST("h_track_pt_part"), constituent.pt());
-      registry.fill(HIST("h_track_eta_part"), constituent.eta());
-      registry.fill(HIST("h_track_phi_part"), constituent.phi());
-    }
-
-    for (auto& hfcandidate : jet.hfcandidates_as<JetParticles2Prong>()) {
-
-      registry.fill(HIST("h2_jet_pt_part_track_pt_part"), jet.pt(), hfcandidate.pt());
-      registry.fill(HIST("h2_jet_pt_part_track_eta_part"), jet.pt(), hfcandidate.eta());
-      registry.fill(HIST("h2_jet_pt_part_track_phi_part"), jet.pt(), hfcandidate.phi());
-      registry.fill(HIST("h_track_pt_part"), hfcandidate.pt());
-      registry.fill(HIST("h_track_eta_part"), hfcandidate.eta());
-      registry.fill(HIST("h_track_phi_part"), hfcandidate.phi());
-
-      registry.fill(HIST("h_candidate_pt_part"), hfcandidate.pt());
-      registry.fill(HIST("h_candidate_eta_part"), hfcandidate.eta());
-      registry.fill(HIST("h_candidate_phi_part"), hfcandidate.phi());
-      registry.fill(HIST("h_candidate_y_part"), hfcandidate.y());
-      registry.fill(HIST("h2_jet_pt_part_candidate_pt_part"), jet.pt(), hfcandidate.pt());
-    }
+    fillMCPHistograms(jet);
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCP, "jet finder HF QA mcp", false);
 
+  void processJetsMCPWeighted(soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelJetEventWeights>::iterator const& jet, JetParticles2Prong const& particles)
+  {
+    fillMCPHistograms(jet, jet.eventWeight());
+  }
+  PROCESS_SWITCH(JetFinderHFQATask, processJetsMCPWeighted, "jet finder HF QA mcp on weighted events", false);
+
   void processJetsMCPMCDMatched(aod::Collisions::iterator const& collision,
-                                D0ChargedDetectorLevelJets const& mcdjets, D0ChargedParticleLevelJets const& mcpjets, CandidateD0MC const& candidates, JetTracks const& tracks, JetParticles2Prong const& particles)
+                                soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets> const& mcdjets,
+                                soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets> const& mcpjets,
+                                CandidateD0MC const& candidates,
+                                JetTracks const& tracks, JetParticles2Prong const& particles)
   {
 
     for (const auto& mcdjet : mcdjets) {
 
-      if (mcdjet.has_matchedJetCand() && mcdjet.matchedJetCandId() >= 0) {
-        const auto& mcpjet = mcdjet.template matchedJetCand_as<D0ChargedParticleLevelJets>();
-
-        auto mcdCandPt = 0.0;
-        auto mcdCandPhi = 0.0;
-        auto mcdCandEta = 0.0;
-        auto mcdCandY = 0.0;
-        auto mcpCandPt = 0.0;
-        auto mcpCandPhi = 0.0;
-        auto mcpCandEta = 0.0;
-        auto mcpCandY = 0.0;
-        for (auto& hfcandidate_mcd : mcdjet.hfcandidates_as<CandidateD0MC>()) {
-
-          mcdCandPt = hfcandidate_mcd.pt();
-          mcdCandPhi = hfcandidate_mcd.phi();
-          mcdCandEta = hfcandidate_mcd.eta();
-          mcdCandY = hfcandidate_mcd.y(RecoDecay::getMassPDG(421));
-        }
-
-        for (auto& hfcandidate_mcp : mcpjet.hfcandidates_as<JetParticles2Prong>()) {
-
-          mcpCandPt = hfcandidate_mcp.pt();
-          mcpCandPhi = hfcandidate_mcp.phi();
-          mcpCandEta = hfcandidate_mcp.eta();
-          mcpCandY = hfcandidate_mcp.y();
-        }
-
-        registry.fill(HIST("h2_jet_pt_part_jet_pt"), mcpjet.pt(), mcdjet.pt());
-        registry.fill(HIST("h2_jet_eta_part_jet_eta"), mcpjet.eta(), mcdjet.eta());
-        registry.fill(HIST("h2_jet_phi_part_jet_phi"), mcpjet.phi(), mcdjet.phi());
-        registry.fill(HIST("h2_jet_ntracks_part_jet_ntracks"), mcpjet.tracks().size() + mcpjet.hfcandidates().size(), mcdjet.tracks().size() + mcdjet.hfcandidates().size());
-        registry.fill(HIST("h2_candidate_pt_part_candidate_pt"), mcpCandPt, mcdCandPt);
-        registry.fill(HIST("h2_candidate_eta_part_candidate_eta"), mcpCandEta, mcdCandEta);
-        registry.fill(HIST("h2_candidate_phi_part_candidate_phi"), mcpCandPhi, mcdCandPhi);
-        registry.fill(HIST("h2_candidate_y_part_candidate_y"), mcpCandY, mcdCandY);
-        registry.fill(HIST("h3_jet_pt_part_jet_eta_part_jet_eta"), mcpjet.pt(), mcpjet.eta(), mcdjet.eta());
-        registry.fill(HIST("h3_jet_pt_part_jet_phi_part_jet_phi"), mcpjet.pt(), mcpjet.phi(), mcdjet.phi());
-        registry.fill(HIST("h3_jet_pt_part_jet_ntracks_part_jet_ntracks"), mcpjet.pt(), mcpjet.tracks().size() + mcpjet.hfcandidates().size(), mcdjet.tracks().size() + mcdjet.hfcandidates().size());
-        registry.fill(HIST("h2_jet_pt_part_jet_pt_diff"), mcpjet.pt(), (mcpjet.pt() - mcdjet.pt()) / mcpjet.pt());
-      }
+      fillMCMatchedHistograms(mcdjet);
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCPMCDMatched, "jet finder HF QA matched mcp and mcd", false);
+
+  void processJetsMCPMCDMatchedWeighted(aod::Collisions::iterator const& collision,
+                                        soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets, aod::D0ChargedMCDetectorLevelJetEventWeights> const& mcdjets,
+                                        soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets, aod::D0ChargedMCParticleLevelJetEventWeights> const& mcpjets,
+                                        CandidateD0MC const& candidates,
+                                        JetTracks const& tracks, JetParticles2Prong const& particles)
+  {
+
+    for (const auto& mcdjet : mcdjets) {
+
+      fillMCMatchedHistograms(mcdjet);
+    }
+  }
+  PROCESS_SWITCH(JetFinderHFQATask, processJetsMCPMCDMatchedWeighted, "jet finder HF QA matched mcp and mcd on weighted events", false);
+
+  void processMCCollisionsWeighted(aod::McCollision const& collision)
+  {
+
+    registry.fill(HIST("h_collision_eventweight_part"), collision.weight());
+  }
+  PROCESS_SWITCH(JetFinderHFQATask, processMCCollisionsWeighted, "collision QA for weighted events", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetFinderHFQATask>(cfgc, TaskName{"jet-finder-hf-qa"})}; }
