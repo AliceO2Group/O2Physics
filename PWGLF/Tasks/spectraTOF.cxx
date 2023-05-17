@@ -354,7 +354,7 @@ struct tofSpectra {
       switch (multiplicityEstimator) {
         case kNoMultiplicity: // No multiplicity
           break;
-        case kMultFV0M:       // MultFV0M
+        case kMultFV0M: // MultFV0M
           multAxis.name = "MultFV0M";
           break;
         case kMultFT0M: // MultFT0M
@@ -445,7 +445,7 @@ struct tofSpectra {
     switch (multiplicityEstimator) {
       case kNoMultiplicity: // No multiplicity
         break;
-      case kMultFV0M:       // MultFV0M
+      case kMultFV0M: // MultFV0M
         // multiplicity = collision.multFV0M();
         // multiplicity = collision.multZeqFV0A() + collision.multZeqFV0C();
         multiplicity = collision.multZeqFV0A();
