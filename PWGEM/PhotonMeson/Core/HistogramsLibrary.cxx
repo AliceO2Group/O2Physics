@@ -62,6 +62,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hXY", "X vs. Y;X;Y", 100, 0, 100, 100, -50, 50));
     list->Add(new TH2F("hZX", "Z vs. X;Z;X", 200, -100, 100, 100, 0, 100));
     list->Add(new TH2F("hZY", "Z vs. Y;Z;Y", 200, -100, 100, 100, -50, 50));
+    list->Add(new TH2F("hDCAxyZ", "DCAxy vs. Z;Z (cm);DCA_{xy} (cm)", 200, -100, +100, 100, -50, 50));
   }
   if (TString(histClass) == "V0") {
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
