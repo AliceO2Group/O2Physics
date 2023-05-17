@@ -53,12 +53,12 @@ class V0PhotonCut : public TNamed
     kTPCNsigmaPi,
     kDCAxy,
     kDCAz,
+    kIsWithinBeamPipe,
     kNCuts
   };
 
   static const char* mCutNames[static_cast<int>(V0PhotonCuts::kNCuts)];
 
-  // Temporary function to check if track passes selection criteria. To be replaced by framework filters.
   template <class TLeg, typename TV0>
   bool IsSelected(TV0 const& v0) const
   {
@@ -89,6 +89,13 @@ class V0PhotonCut : public TNamed
 
     auto pos = v0.template posTrack_as<TLeg>();
     auto ele = v0.template negTrack_as<TLeg>();
+
+    // float pos_rxy = sqrt(pos.x() * pos.x() + pos.y()*pos.y());
+    // float ele_rxy = sqrt(ele.x() * ele.x() + ele.y()*ele.y());
+    // if (v0.recalculatedVtxR() > std::min(pos_rxy, ele_rxy)) {
+    //   return false;
+    // }
+
     for (auto& track : {pos, ele}) {
       if (!IsSelectedTrack(track, V0PhotonCuts::kPtRange)) {
         return false;
@@ -120,11 +127,13 @@ class V0PhotonCut : public TNamed
       if (!IsSelectedTrack(track, V0PhotonCuts::kDCAz)) {
         return false;
       }
+      if (mIsWithinBP && !IsSelectedTrack(track, V0PhotonCuts::kIsWithinBeamPipe)) {
+        return false;
+      }
     }
     return true;
   }
 
-  // Temporary function to check if track passes and return a flag. To be replaced by framework filters.
   template <typename T>
   uint32_t IsSelectedMask(T const& track) const
   {
@@ -148,7 +157,6 @@ class V0PhotonCut : public TNamed
     return flag;
   }
 
-  // Temporary function to check if track passes a given selection criteria. To be replaced by framework filters.
   template <typename T>
   bool IsSelectedV0(T const& v0, const V0PhotonCuts& cut) const
   {
@@ -170,7 +178,8 @@ class V0PhotonCut : public TNamed
         return v0.pca() <= mMaxPCA;
 
       case V0PhotonCuts::kRZLine:
-        return v0.recalculatedVtxR() > abs(v0.vz()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxEta))) - 12.0; // as long as z recalculation is not fixed use this
+        // return v0.recalculatedVtxR() > abs(v0.vz()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxEta))) - 12.0; // as long as z recalculation is not fixed use this
+        return v0.recalculatedVtxR() > abs(v0.recalculatedVtxZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxEta))) - 12.0; // as long as z recalculation is not fixed use this
 
       case V0PhotonCuts::kOnWwireIB: {
         const float rxy_min = 5.506;          // cm
@@ -251,6 +260,9 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kDCAz:
         return abs(track.dcaZ()) <= mMaxDcaZ;
 
+      case V0PhotonCuts::kIsWithinBeamPipe:
+        return track.isWithinBeamPipe();
+
       default:
         return false;
     }
@@ -279,6 +291,7 @@ class V0PhotonCut : public TNamed
   void SetMaxDcaXY(float maxDcaXY);
   void SetMaxDcaZ(float maxDcaZ);
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
+  void SetIsWithinBeamPipe(bool flag);
 
   /// @brief Print the track selection
   void print() const;
@@ -311,6 +324,7 @@ class V0PhotonCut : public TNamed
   float mMaxDcaXY{1e10f};                       // max dca in xy plane
   float mMaxDcaZ{1e10f};                        // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
+  bool mIsWithinBP{false};
 
   ClassDef(V0PhotonCut, 1);
 };
