@@ -68,7 +68,7 @@ struct correlateStrangeness {
   Preslice<aod::AssocV0s> collisionSliceV0s = aod::assocV0s::collisionId;
   Preslice<aod::AssocCascades> collisionSliceCascades = aod::assocCascades::collisionId;
 
-  static constexpr std::string_view v0names[] = {"K0Short", "Lambda", "AntiLambda"}; 
+  static constexpr std::string_view v0names[] = {"K0Short", "Lambda", "AntiLambda"};
   static constexpr std::string_view cascadenames[] = {"XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
 
   /// Function to aid in calculating delta-phi
@@ -89,13 +89,13 @@ struct correlateStrangeness {
   void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing, float pvz, float mult)
   {
     bool correlateV0s[3];
-    for(int ip=0;ip<3;ip++)
-      correlateV0s[ip] = false; 
-    if( doCorrelationK0Short )
+    for (int ip = 0; ip < 3; ip++)
+      correlateV0s[ip] = false;
+    if (doCorrelationK0Short)
       correlateV0s[0] = true;
-    if( doCorrelationLambda )
+    if (doCorrelationLambda)
       correlateV0s[1] = true;
-    if( doCorrelationAntiLambda ) 
+    if (doCorrelationAntiLambda)
       correlateV0s[2] = true;
 
     for (auto& triggerTrack : triggers) {
@@ -119,7 +119,7 @@ struct correlateStrangeness {
         float ptassoc = assoc.pt();
         static_for<0, 2>([&](auto i) {
           constexpr int index = i.value;
-          if( correlateV0s[index] ){
+          if (correlateV0s[index]) {
             if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 1))
               histos.fill(HIST("sameEvent/LeftBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
             if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 2))
@@ -141,15 +141,15 @@ struct correlateStrangeness {
   void fillCorrelationsCascade(aod::TriggerTracks const& triggers, aod::AssocCascades const& assocs, bool mixing, float pvz, float mult)
   {
     bool correlateCascades[4];
-    for(int ip=0;ip<4;ip++)
-      correlateCascades[ip] = false; 
-    if( doCorrelationXiMinus ) 
+    for (int ip = 0; ip < 4; ip++)
+      correlateCascades[ip] = false;
+    if (doCorrelationXiMinus)
       correlateCascades[0] = true;
-    if( doCorrelationXiPlus ) 
+    if (doCorrelationXiPlus)
       correlateCascades[1] = true;
-    if( doCorrelationOmegaMinus ) 
+    if (doCorrelationOmegaMinus)
       correlateCascades[2] = true;
-    if( doCorrelationOmegaPlus ) 
+    if (doCorrelationOmegaPlus)
       correlateCascades[3] = true;
 
     for (auto& triggerTrack : triggers) {
@@ -180,7 +180,7 @@ struct correlateStrangeness {
         float ptassoc = assoc.pt();
         static_for<0, 3>([&](auto i) {
           constexpr int index = i.value;
-          if( correlateCascades[index] ){
+          if (correlateCascades[index]) {
             if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 1))
               histos.fill(HIST("sameEvent/LeftBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
             if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 2))
@@ -211,26 +211,26 @@ struct correlateStrangeness {
     const AxisSpec axisXiMass{nBinsMass, 1.22f, 1.42f, "Inv. Mass (GeV/c^{2})"};
     const AxisSpec axisOmegaMass{nBinsMass, 1.57f, 1.77f, "Inv. Mass (GeV/c^{2})"};
 
-    if( doCorrelationK0Short )
+    if (doCorrelationK0Short)
       histos.add("sameEvent/Signal/K0Short", "K0Short", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
-    if( doCorrelationLambda ) 
+    if (doCorrelationLambda)
       histos.add("sameEvent/Signal/Lambda", "Lambda", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
-    if( doCorrelationAntiLambda ) 
+    if (doCorrelationAntiLambda)
       histos.add("sameEvent/Signal/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
-    if( doCorrelationXiMinus ) 
+    if (doCorrelationXiMinus)
       histos.add("sameEvent/Signal/XiMinus", "XiMinus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
-    if( doCorrelationXiPlus ) 
+    if (doCorrelationXiPlus)
       histos.add("sameEvent/Signal/XiPlus", "XiPlus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
-    if( doCorrelationOmegaMinus ) 
+    if (doCorrelationOmegaMinus)
       histos.add("sameEvent/Signal/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
-    if( doCorrelationOmegaPlus ) 
+    if (doCorrelationOmegaPlus)
       histos.add("sameEvent/Signal/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
 
     histos.addClone("sameEvent/Signal/", "sameEvent/LeftBg/");
     histos.addClone("sameEvent/Signal/", "sameEvent/RightBg/");
 
     // mixed-event correlation functions
-    if( doprocessSameEvent ){
+    if (doprocessSameEvent) {
       histos.addClone("sameEvent/", "mixedEvent/");
     }
 
