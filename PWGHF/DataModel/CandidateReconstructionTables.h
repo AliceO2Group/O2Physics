@@ -28,7 +28,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGHF/DataModel/DMesonPairsTables.h"
+#include "PWGHF/HFC/DataModel/DMesonPairsTables.h"
 
 using namespace o2::analysis;
 

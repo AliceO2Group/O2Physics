@@ -39,6 +39,15 @@ double getDeltaPhi(double phiD, double phiDbar)
   return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
 }
 
+namespace{
+enum CandidateTypeSel {
+  SelectedD = 0,    // This particle is selected as a D
+  SelectedDbar,     // This particle is selected as a Dbar
+  TrueD,            // This particle is a true D
+  TrueDbar          // This particle is a true Dbar
+};
+} // namespace
+
 // histogram binning definition
 const int massAxisBins = 120;
 const double massAxisMin = 1.5848;
@@ -132,27 +141,10 @@ struct HfCorrelatorDMesonPairs {
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
-    HistogramConfigSpec hTH2Mass{HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}};
-
-    registry.add("hMass", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassD0", "D0,D0bar candidates;inv. mass D0 only (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassD0bar", "D0,D0bar candidates;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassD0McRecSig", "D0 signal candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassD0McRecRefl", "D0 reflection candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassD0McRecBkg", "D0 background candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassD0barMcRecSig", "D0bar signal candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassD0barMcRecRefl", "D0bar reflection candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassD0barMcRecBkg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", hTH2Mass);
-    // DPlus plots
-    registry.add("hMassDPlus", "Dplus Pair candidates;inv. mass DPlus only (#pi K #pi) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassDMinus", "Dplus Pair candidates;inv. mass DMinus only (#pi K #pi) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassDPlusMcRecSig", "DPlus signal candidates - MC reco;inv. mass DPlus only (#pi K #pi) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassDPlusMcRecBkg", "DPlus background candidates - MC reco;inv. mass DPlus only (#pi K #pi) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassDMinusMcRecSig", "DMinus signal candidates - MC reco;inv. mass DMinus only (#pi K #pi) (GeV/#it{c}^{2});entries", hTH2Mass);
-    registry.add("hMassDMinusMcRecBkg", "DMinus background candidates - MC reco;inv. mass DMinus only (#pi K #pi) (GeV/#it{c}^{2});entries", hTH2Mass);
+    registry.add("hMass", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  // Performs an analysis on multiplicity and fills histograms about it.
+  // Performs an analysis on multiplicity and fills histograms
   template <typename T, typename U>
   void analyseMultiplicity(const T& collision, const U& tracks)
   {
@@ -237,138 +229,62 @@ struct HfCorrelatorDMesonPairs {
     }
   }
 
-  // candidateType assignations. Possible values of candidateType:
-  // |1: Sig D0              |10: Ref D0              |21: Sig D0 + Ref D0bar     |102: Bkg D0 + Sig D0bar      |201: Sig D0 + Bkg D0bar
-  // |2: Sig D0bar           |12: Ref D0 + Sig D0bar  |30: Ref D0 + Ref D0bar     |120: Bkg D0 + Ref D0bar      |210: Ref D0 + Bkg D0bar
-  // |3: Sig D0 + Sig D0bar  |20: Ref D0bar           |100: Bkg D0                |200: Bkg D0bar               |200: Bkg D0 + Bkg D0bar
-
+  // Sets bits to select candidate type for D0. 
+  // SelectedD and SelectedDbar bits look at whether the candidate passed the selection flags, and TrueD and TrueDbar check if it is matched with Mc. 
   template <typename T, bool isRecoMc>
-  uint assignCandidateTypeD0(const T& candidate, bool const& fillMassHists)
+  uint8_t assignCandidateTypeD0(const T& candidate)
   {
-    uint candidateType = 0;
+    uint8_t candidateType(0);
     if (candidate.isSelD0() >= selectionFlagD0) {
-      if constexpr (isRecoMc) {
-        if (candidate.flagMcMatchRec() == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) { // also matched as D0
-          if (fillMassHists) {
-            registry.fill(HIST("hMassD0McRecSig"), invMassD0ToPiK(candidate), candidate.pt());
-          }
-          candidateType += 1;
-        } else if (candidate.flagMcMatchRec() == -(1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-          if (fillMassHists) {
-            registry.fill(HIST("hMassD0McRecRefl"), invMassD0ToPiK(candidate), candidate.pt());
-          }
-          candidateType += 10;
-        } else {
-          if (fillMassHists) {
-            registry.fill(HIST("hMassD0McRecBkg"), invMassD0ToPiK(candidate), candidate.pt());
-          }
-          candidateType += 100;
-        }
-      } else {
-        if (fillMassHists) {
-          registry.fill(HIST("hMass"), invMassD0ToPiK(candidate), candidate.pt());
-          registry.fill(HIST("hMassD0"), invMassD0ToPiK(candidate), candidate.pt()); // only reco as D0
-        }
-        candidateType += 1;
-      }
+      SETBIT(candidateType, SelectedD);
     }
-    if (candidate.isSelD0bar() >= selectionFlagD0bar) { // only reco as D0bar
-      if constexpr (isRecoMc) {
-        if (candidate.flagMcMatchRec() == -(1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) { // also matched as D0bar
-          if (fillMassHists) {
-            registry.fill(HIST("hMassD0barMcRecSig"), invMassD0barToKPi(candidate), candidate.pt());
-          }
-          candidateType += 2;
-        } else if (candidate.flagMcMatchRec() == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) {
-          if (fillMassHists) {
-            registry.fill(HIST("hMassD0barMcRecRefl"), invMassD0barToKPi(candidate), candidate.pt());
-          }
-          candidateType += 20;
-        } else {
-          if (fillMassHists) {
-            registry.fill(HIST("hMassD0barMcRecBkg"), invMassD0barToKPi(candidate), candidate.pt());
-          }
-          candidateType += 200;
-        }
-      } else {
-        if (fillMassHists) {
-          registry.fill(HIST("hMass"), invMassD0barToKPi(candidate), candidate.pt());
-          registry.fill(HIST("hMassD0bar"), invMassD0barToKPi(candidate), candidate.pt());
-        }
-        candidateType += 2;
-      }
+    if (candidate.isSelD0bar() >= selectionFlagD0) {
+      SETBIT(candidateType, SelectedDbar);
     }
-    if (verbose) {
-      // candidateType = 0 -> no candidate, candidateType = 1 -> D0, candidateType1 = 2 -> D0bar, candidateType = 3 -> both selections passed
-      std::cout << "candidateType: " << candidateType << std::endl;
-      std::cout << " ----------------------------- " << std::endl;
-    }
-    return candidateType;
-  }
-
-  template <typename T, bool isRecoMc>
-  uint assignCandidateTypeDPlus(const T& candidate, double const& mDPlus, int const& particleSign, bool const& fillMassHists)
-  {
-    uint candidateType = 0;
     if constexpr (isRecoMc) {
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
-        if (particleSign == 1) { // reco and matched as Dplus
-          if (fillMassHists) {
-            registry.fill(HIST("hMassDplusMcRecSig"), mDPlus, candidate.pt());
-          }
-          candidateType += 1;
-        } else { // reco and matched as Dminus
-          if (fillMassHists) {
-            registry.fill(HIST("hMassDminusMcRecSig"), mDPlus, candidate.pt());
-          }
-          candidateType += 2;
-        }
-      } else {
-        // fill invariant mass plots from Dplus/Dminus background candidates
-        if (particleSign == 1) { // reco as Dplus
-          if (fillMassHists) {
-            registry.fill(HIST("hMassDplusMcRecBkg"), mDPlus, candidate.pt());
-          }
-          candidateType += 100;
-        } else { // matched as Dminus
-          if (fillMassHists) {
-            registry.fill(HIST("hMassDminusMcRecBkg"), mDPlus, candidate.pt());
-          }
-          candidateType += 200;
-        }
+      if (candidate.flagMcMatchRec() == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) { // matched as D0
+        SETBIT(candidateType, TrueD);
       }
-    } else {
-      if (particleSign == 1) {
-        if (fillMassHists) {
-          registry.fill(HIST("hMass"), mDPlus, candidate.pt());
-          registry.fill(HIST("hMassDPlus"), mDPlus, candidate.pt());
-        }
-        candidateType += 1;
-      } else {
-        if (fillMassHists) {
-          registry.fill(HIST("hMass"), mDPlus, candidate.pt());
-          registry.fill(HIST("hMassDMinus"), mDPlus, candidate.pt());
-        }
-        candidateType += 2;
+      if (candidate.flagMcMatchRec() == -(1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) { // matched as D0bar
+        SETBIT(candidateType, TrueDbar);
       }
-    }
-    if (verbose) {
-      std::cout << "candidateType: " << candidateType << std::endl;
-      std::cout << " ----------------------------- " << std::endl;
     }
     return candidateType;
   }
 
-  template <typename T>
-  uint assignCandidateTypeGen(const T& candidate)
+  // Sets bits to select candidate type for D plus
+  template <typename T, bool isRecoMc>
+  uint8_t assignCandidateTypeDPlus(const T& candidate, int const& particleSign)
   {
-    if (candidate.pdgCode() == particlePdgCode) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
-      return 1;
-    } else if (candidate.pdgCode() == -particlePdgCode) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
-      return 2;
+    uint8_t candidateType(0);
+    if (particleSign == 1) {
+      SETBIT(candidateType, SelectedD);
     } else {
-      return 0;
+      SETBIT(candidateType, SelectedDbar);
     }
+    if constexpr (isRecoMc) {
+      if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi) { // matched as DPlus
+        SETBIT(candidateType, TrueD);
+      } else { // matched as D0bar
+        SETBIT(candidateType, TrueDbar);
+      }
+    }
+    return candidateType;
+  }
+
+  // Sets bits to select candidate type at generator level
+  template <typename T>
+  uint8_t assignCandidateTypeGen(const T& candidate)
+  {
+    uint8_t candidateType(0);
+    if (candidate.pdgCode() == particlePdgCode) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
+      SETBIT(candidateType, SelectedD);
+      SETBIT(candidateType, TrueD);
+    } else if (candidate.pdgCode() == -particlePdgCode) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
+      SETBIT(candidateType, SelectedDbar);
+      SETBIT(candidateType, TrueDbar);
+    }
+    return candidateType;
   }
 
   // Common code to analyse D0's and D+'s at Gen level.
@@ -378,7 +294,7 @@ struct HfCorrelatorDMesonPairs {
     registry.fill(HIST("hMcEvtCount"), 0);
     for (const auto& particle1 : particlesMc) {
       // check if the particle is D0, D0bar, DPlus or DMinus (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
-      if (std::abs(particle1.pdgCode()) == pdg::Code::kD0 || std::abs(particle1.pdgCode()) == pdg::Code::kDPlus) {
+      if (std::abs(particle1.pdgCode()) != pdg::Code::kD0 && std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
         continue;
       }
       double yD = RecoDecay::y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
@@ -391,7 +307,7 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hPhiMcGen"), particle1.phi());
       registry.fill(HIST("hYMcGen"), yD);
 
-      auto candidateType1 = assignCandidateTypeGen(particle1); // Candidate sign attribution.
+      auto candidateType1 = assignCandidateTypeGen(particle1); // Candidate sign attribution
 
       // check if it's prompt or non-prompt
       int8_t originGen1 = particle1.originMcGen();
@@ -429,7 +345,7 @@ struct HfCorrelatorDMesonPairs {
                               originGen2,
                               matchedGen1,
                               matchedGen2);
-        // If both particles are DPlus', fill DPlusPair table
+        // If both particles are DPlus, fill DPlusPair table
         } else if (std::abs(particle1.pdgCode()) == pdg::Code::kDPlus && std::abs(particle2.pdgCode()) == pdg::Code::kDPlus) {
           entryDPlusPair(getDeltaPhi(particle2.phi(), particle1.phi()),
                          particle2.eta() - particle1.eta(),
@@ -465,8 +381,8 @@ struct HfCorrelatorDMesonPairs {
         continue;
       }
 
-
-      auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), false>(candidate1, true); // Candidate type attribution.
+      registry.fill(HIST("hMass"), invMassD0ToPiK(candidate1), candidate1.pt());
+      auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), false>(candidate1); // Candidate type attribution.
       registry.fill(HIST("hSelectionStatus"), candidateType1);
 
       for (const auto& candidate2 : selectedD0CandidatesGrouped) {
@@ -477,22 +393,19 @@ struct HfCorrelatorDMesonPairs {
         if (candidate1.mRowIndex == candidate2.mRowIndex) {
           continue;
         }
-        auto candidateType2 = assignCandidateTypeD0<decltype(candidate2), false>(candidate2, false); // Candidate type attribution
-
-        // Register the pair only if we have two candidates that have passed all cuts
-        if (candidateType1 != 0 && candidateType2 != 0) {
-          entryD0Pair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
-                      candidate2.eta() - candidate1.eta(),
-                      candidate1.pt(),
-                      candidate2.pt(),
-                      yD0(candidate1),
-                      yD0(candidate2),
-                      invMassD0ToPiK(candidate1),
-                      invMassD0barToKPi(candidate2),
-                      candidateType1,
-                      candidateType2,
-                      0);
-        } // end if
+        auto candidateType2 = assignCandidateTypeD0<decltype(candidate2), false>(candidate2); // Candidate type attribution
+        // fill tables
+        entryD0Pair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
+                    candidate2.eta() - candidate1.eta(),
+                    candidate1.pt(),
+                    candidate2.pt(),
+                    yD0(candidate1),
+                    yD0(candidate2),
+                    invMassD0ToPiK(candidate1),
+                    invMassD0barToKPi(candidate2),
+                    candidateType1,
+                    candidateType2,
+                    0);
       }   // end inner loop (Cand2)
     }     // end outer loop (Cand1)
   }
@@ -514,10 +427,11 @@ struct HfCorrelatorDMesonPairs {
         fillInfoHists(candidate1, true);
       }
 
-      auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), true>(candidate1, true); // Candidate type attribution
+      registry.fill(HIST("hMass"), invMassD0ToPiK(candidate1), candidate1.pt());
+      auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), true>(candidate1); // Candidate type attribution
       registry.fill(HIST("hSelectionStatusMcRec"), candidateType1);
       int8_t origin1 = 0, matchedRec1 = 0;
-      if (candidateType1 < 100) { // if our event is not bkg
+      if (!(TESTBIT(candidateType1, TrueD) && TESTBIT(candidateType1, TrueDbar))) { // if our event is not bkg
         // check if it's prompt or non-prompt
         origin1 = candidate1.originMcRec();
         registry.fill(HIST("hOriginMcRec"), origin1);
@@ -535,33 +449,30 @@ struct HfCorrelatorDMesonPairs {
           continue;
         }
 
-        auto candidateType2 = assignCandidateTypeD0<decltype(candidate2), true>(candidate2, false); // Candidate type attribution
+        auto candidateType2 = assignCandidateTypeD0<decltype(candidate2), true>(candidate2); // Candidate type attribution
         int8_t origin2 = 0, matchedRec2 = 0;
-        if (candidateType1 < 100) { // if our event is not bkg
+        if (!(TESTBIT(candidateType2, TrueD) && TESTBIT(candidateType2, TrueDbar))) { // if our event is not bkg
           // check if it's prompt or non-prompt
           origin2 = candidate2.originMcRec();
           // check if it's MC matched
           matchedRec2 = candidate2.flagMcMatchRec();
         }
-
-        // Register the pair only if we have two candidates that have passed all cuts
-        if (candidateType1 != 0 && candidateType2 != 0) {
-          entryD0Pair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
-                      candidate2.eta() - candidate1.eta(),
-                      candidate1.pt(),
-                      candidate2.pt(),
-                      yD0(candidate1),
-                      yD0(candidate2),
-                      invMassD0ToPiK(candidate1),
-                      invMassD0barToKPi(candidate2),
-                      candidateType1,
-                      candidateType2,
-                      1);
-          entryD0PairRecoInfo(origin1,
-                              origin2,
-                              matchedRec1,
-                              matchedRec2);
-        }
+        // fill tables
+        entryD0Pair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
+                    candidate2.eta() - candidate1.eta(),
+                    candidate1.pt(),
+                    candidate2.pt(),
+                    yD0(candidate1),
+                    yD0(candidate2),
+                    invMassD0ToPiK(candidate1),
+                    invMassD0barToKPi(candidate2),
+                    candidateType1,
+                    candidateType2,
+                    1);
+        entryD0PairRecoInfo(origin1,
+                            origin2,
+                            matchedRec1,
+                            matchedRec2);
       } // end inner loop
     }   // end outer loop
   }
@@ -597,9 +508,10 @@ struct HfCorrelatorDMesonPairs {
       if (outerSecondTrack.sign() == 1) {
         outerParticleSign = -1; // Dminus (second daughter track is positive)
       }
-      double mDPlus = invMassDplusToPiKPi(candidate1);
-      uint candidateType1 = assignCandidateTypeDPlus<decltype(candidate1), false>(candidate1, mDPlus, outerParticleSign, true);
+
+      auto candidateType1 = assignCandidateTypeDPlus<decltype(candidate1), false>(candidate1, outerParticleSign);
       fillInfoHists(candidate1, false);
+      registry.fill(HIST("hMass"), invMassDplusToPiKPi(candidate1), candidate1.pt());
 
       registry.fill(HIST("hSelectionStatus"), candidateType1);
 
@@ -616,22 +528,19 @@ struct HfCorrelatorDMesonPairs {
         if (innerSecondTrack.sign() == 1) {
           innerParticleSign = -1; // Dminus (second daughter track is positive)
         }
-        uint candidateType2 = assignCandidateTypeDPlus<decltype(candidate2), false>(candidate2, mDPlus, innerParticleSign, false);
-
-        // Register the pair only if we have two candidates that have passed all cuts
-        if (candidateType1 != 0 && candidateType2 != 0) {
-          entryDPlusPair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
-                         candidate2.eta() - candidate1.eta(),
-                         candidate1.pt(),
-                         candidate2.pt(),
-                         yDplus(candidate1),
-                         yDplus(candidate2),
-                         invMassDplusToPiKPi(candidate1),
-                         invMassDplusToPiKPi(candidate2),
-                         candidateType1,
-                         candidateType2,
-                         0);
-        } // end if
+        auto candidateType2 = assignCandidateTypeDPlus<decltype(candidate2), false>(candidate2, innerParticleSign);
+        // fill tables
+        entryDPlusPair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
+                       candidate2.eta() - candidate1.eta(),
+                       candidate1.pt(),
+                       candidate2.pt(),
+                       yDplus(candidate1),
+                       yDplus(candidate2),
+                       invMassDplusToPiKPi(candidate1),
+                       invMassDplusToPiKPi(candidate2),
+                       candidateType1,
+                       candidateType2,
+                       0);
       }   // end inner loop (cand2)
     }     // end outer loop (cand1)
   }
@@ -656,13 +565,13 @@ struct HfCorrelatorDMesonPairs {
       if (outerSecondTrack.sign() == 1) {
         outerParticleSign = -1; // Dminus (second daughter track is positive)
       }
-      double mDPlus = invMassDplusToPiKPi(candidate1);
-      uint candidateType1 = assignCandidateTypeDPlus<decltype(candidate1), true>(candidate1, mDPlus, outerParticleSign, true);
 
+      auto candidateType1 = assignCandidateTypeDPlus<decltype(candidate1), true>(candidate1, outerParticleSign);
       registry.fill(HIST("hSelectionStatusMcRec"), candidateType1);
+      registry.fill(HIST("hMass"), invMassDplusToPiKPi(candidate1), candidate1.pt());
+
       int8_t origin1 = 0, matchedRec1 = 0;
-      // if our event is not bkg
-      if (candidateType1 < 100) {
+      if (!(TESTBIT(candidateType1, TrueD) && TESTBIT(candidateType1, TrueDbar))) { // if our event is not bkg
         // check if it's prompt or non-prompt
         origin1 = candidate1.originMcRec();
         registry.fill(HIST("hOriginMcRec"), origin1);
@@ -685,34 +594,30 @@ struct HfCorrelatorDMesonPairs {
           innerParticleSign = -1; // Dminus (second daughter track is positive)
         }
 
-        uint candidateType2 = assignCandidateTypeDPlus<decltype(candidate2), true>(candidate2, mDPlus, innerParticleSign, false);
+        uint candidateType2 = assignCandidateTypeDPlus<decltype(candidate2), true>(candidate2, innerParticleSign);
         int8_t origin2 = 0, matchedRec2 = 0;
-        // if our event is not bkg
-        if (candidateType2 < 100) {
+        if (!(TESTBIT(candidateType2, TrueD) && TESTBIT(candidateType2, TrueDbar))) { // if our event is not bkg
           // check if it's prompt or non-prompt
           origin2 = candidate1.originMcRec();
           // check if it's MC matched
           matchedRec2 = candidate1.flagMcMatchRec();
         }
-
-        // Register the pair only if we have two candidates that have passed all cuts
-        if (candidateType1 != 0 && candidateType2 != 0) {
-          entryDPlusPair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
-                         candidate2.eta() - candidate1.eta(),
-                         candidate1.pt(),
-                         candidate2.pt(),
-                         yDplus(candidate1),
-                         yDplus(candidate2),
-                         invMassDplusToPiKPi(candidate1),
-                         invMassDplusToPiKPi(candidate2),
-                         candidateType1,
-                         candidateType2,
-                         1);
-          entryDPlusPairRecoInfo(origin1,
-                                 origin2,
-                                 matchedRec1,
-                                 matchedRec2);
-        } // end if
+        // fill tables
+        entryDPlusPair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
+                       candidate2.eta() - candidate1.eta(),
+                       candidate1.pt(),
+                       candidate2.pt(),
+                       yDplus(candidate1),
+                       yDplus(candidate2),
+                       invMassDplusToPiKPi(candidate1),
+                       invMassDplusToPiKPi(candidate2),
+                       candidateType1,
+                       candidateType2,
+                       1);
+        entryDPlusPairRecoInfo(origin1,
+                               origin2,
+                               matchedRec1,
+                               matchedRec2);
       }   // end inner loop (cand2)
     }     // end outer loop (cand1)
   }

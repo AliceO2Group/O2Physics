@@ -43,6 +43,15 @@ double getDeltaPhi(double phiD, double phiDbar)
   return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
 }
 
+namespace{
+enum CandidateTypeSel {
+  SelectedD = 0,    // This particle is selected as a D
+  SelectedDbar,     // This particle is selected as a Dbar
+  TrueD,            // This particle is a true D
+  TrueDbar          // This particle is a true Dbar
+};
+} // namespace
+
 ///
 /// Returns phi of candidate/particle evaluated from x and y components of segment connecting primary and secondary vertices
 ///
@@ -242,296 +251,266 @@ struct HfTaskCorrelationDMesonPairs {
   /// FUNCTIONS
   ///
 
-  // Possible values of candidateType:
-  // |1: Sig D0              |10: Ref D0              |21: Sig D0 + Ref D0bar     |102: Bkg D0 + Sig D0bar      |201: Sig D0 + Bkg D0bar
-  // |2: Sig D0bar           |12: Ref D0 + Sig D0bar  |30: Ref D0 + Ref D0bar     |120: Bkg D0 + Ref D0bar      |210: Ref D0 + Bkg D0bar
-  // |3: Sig D0 + Sig D0bar  |20: Ref D0bar           |100: Bkg D0                |200: Bkg D0bar               |200: Bkg D0 + Bkg D0bar
-
-  // Register whether our D0 candidate is Sig, Ref or Bkg
+  // Register whether our D meson candidate is Sig, Ref or Bkg
   uint getDMesonType(uint const& candidateType)
   {
-    if (candidateType == 1 || candidateType == 3 || candidateType == 21 || candidateType == 201) { // Signal
+    if (TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueD) && !TESTBIT(candidateType, TrueDbar)) { // Signal
       return 1;
-    } else if (candidateType == 10 || candidateType == 12 || candidateType == 30 || candidateType == 210) { // Reflected
+    } else if (TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueDbar)) { // Reflected
       return 2;
-    } else if (candidateType == 100 || candidateType == 102 || candidateType == 120 || candidateType == 300) { // Background
+    } else if (TESTBIT(candidateType, SelectedD) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) { // Background
       return 3;
+    } else {
+      return 0;
     }
-    else return 0;
   }
 
-  // Register whether our D0bar candidate is Sig, Ref or Bkg
+  // Register whether our Dbar meson candidate is Sig, Ref or Bkg
   uint getDMesonBarType(uint const& candidateType)
   {
-    if (candidateType == 2 || candidateType == 3 || candidateType == 12 || candidateType == 102) { // Signal
+    if (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueDbar) && !TESTBIT(candidateType, TrueD)) { // Signal
       return 1;
-    } else if (candidateType == 20 || candidateType == 21 || candidateType == 30 || candidateType == 120) { // Reflected
+    } else if (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueD)) { // Reflected
       return 2;
-    } else if (candidateType == 200 || candidateType == 201 || candidateType == 210 || candidateType == 300) { // Background
+    } else if (TESTBIT(candidateType, SelectedDbar) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) { // Background
       return 3;
+    } else {
+      return 0;
     }
-    else return 0;
   }
 
-  // Plot Mass correlations
-  void fillMassCorrHists(uint const& candLabel1, uint const& candLabel2, double const& massCand1, double const& massCand2, double const& ptCand1, double const& ptCand2)
+  // Fill Mass correlation histograms
+  void fillMassCorrHists(std::shared_ptr<THnSparse> hMassCorrArray[3][3], uint const& candLabel1, uint const& candLabel2, double const& massCand1, double const& massCand2, double const& ptCand1, double const& ptCand2)
   {
-    if (candLabel1 == 1 && candLabel2 == 1) {
-      registry.fill(HIST("hMass2DCcandidateTypeorrelationPairsMCRecSigSig"), massCand1, massCand2, ptCand1, ptCand2);
-    } else if (candLabel1 == 1 && candLabel2 == 2) {
-      registry.fill(HIST("hMass2DCorrelationPairsMCRecSigRef"), massCand1, massCand2, ptCand1, ptCand2);
-    } else if (candLabel1 == 1 && candLabel2 == 3) {
-      registry.fill(HIST("hMass2DCorrelationPairsMCRecSigBkg"), massCand1, massCand2, ptCand1, ptCand2);
-    } else if (candLabel1 == 2 && candLabel2 == 1) {
-      registry.fill(HIST("hMass2DCorrelationPairsMCRecRefSig"), massCand1, massCand2, ptCand1, ptCand2);
-    } else if (candLabel1 == 2 && candLabel2 == 2) {
-      registry.fill(HIST("hMass2DCorrelationPairsMCRecRefRef"), massCand1, massCand2, ptCand1, ptCand2);
-    } else if (candLabel1 == 2 && candLabel2 == 3) {
-      registry.fill(HIST("hMass2DCorrelationPairsMCRecRefBkg"), massCand1, massCand2, ptCand1, ptCand2);
-    } else if (candLabel1 == 3 && candLabel2 == 1) {
-      registry.fill(HIST("hMass2DCorrelationPairsMCRecBkgSig"), massCand1, massCand2, ptCand1, ptCand2);
-    } else if (candLabel1 == 3 && candLabel2 == 2) {
-      registry.fill(HIST("hMass2DCorrelationPairsMCRecBkgRef"), massCand1, massCand2, ptCand1, ptCand2);
-    } else if (candLabel1 == 3 && candLabel2 == 3) {
-      registry.fill(HIST("hMass2DCorrelationPairsMCRecBkgBkg"), massCand1, massCand2, ptCand1, ptCand2);
+    if (candLabel1 != 0 && candLabel2 != 0) { 
+      hMassCorrArray[candLabel1 - 1][candLabel2 - 1]->Fill(massCand1, massCand2, ptCand1, ptCand2);
     }
   }
 
-  // Plot angular correlations in signal region
-  void fillCorrelSignalHists(uint const& candLabel1, uint const& candLabel2, double const& deltaPhi, double const& deltaEta, double const& ptCand1, double const& ptCand2)
+  // Fill angular correlation histograms
+  void fillAngularCorrelHists(std::shared_ptr<THnSparse> hCorrelArray[3][3], uint const& candLabel1, uint const& candLabel2, double const& deltaPhi, double const& deltaEta, double const& ptCand1, double const& ptCand2)
   {
-    if (candLabel1 == 1 && candLabel2 == 1) {
-      registry.fill(HIST("hCorrel2DVsPtSignalRegionMCRecSigSig"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 1 && candLabel2 == 2) {
-      registry.fill(HIST("hCorrel2DVsPtSignalRegionMCRecSigRef"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 1 && candLabel2 == 3) {
-      registry.fill(HIST("hCorrel2DVsPtSignalRegionMCRecSigBkg"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 2 && candLabel2 == 1) {
-      registry.fill(HIST("hCorrel2DVsPtSignalRegionMCRecRefSig"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 2 && candLabel2 == 2) {
-      registry.fill(HIST("hCorrel2DVsPtSignalRegionMCRecRefRef"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 2 && candLabel2 == 3) {
-      registry.fill(HIST("hCorrel2DVsPtSignalRegionMCRecRefBkg"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 3 && candLabel2 == 1) {
-      registry.fill(HIST("hCorrel2DVsPtSignalRegionMCRecBkgSig"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 3 && candLabel2 == 2) {
-      registry.fill(HIST("hCorrel2DVsPtSignalRegionMCRecBkgRef"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 3 && candLabel2 == 3) {
-      registry.fill(HIST("hCorrel2DVsPtSignalRegionMCRecBkgBkg"), deltaPhi, deltaEta, ptCand1, ptCand2);
+    if (candLabel1 != 0 && candLabel2 != 0) { 
+      hCorrelArray[candLabel1 - 1][candLabel2 - 1]->Fill(deltaPhi, deltaEta, ptCand1, ptCand2);
     }
   }
 
-  // Plot angular correlations in sideband region
-  void fillCorrelSidebandsHists(uint const& candLabel1, uint const& candLabel2, double const& deltaPhi, double const& deltaEta, double const& ptCand1, double const& ptCand2)
-  {
-    if (candLabel1 == 1 && candLabel2 == 1) {
-      registry.fill(HIST("hCorrel2DVsPtSidebandsMCRecSigSig"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 1 && candLabel2 == 2) {
-      registry.fill(HIST("hCorrel2DVsPtSidebandsMCRecSigRef"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 1 && candLabel2 == 3) {
-      registry.fill(HIST("hCorrel2DVsPtSidebandsMCRecSigBkg"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 2 && candLabel2 == 1) {
-      registry.fill(HIST("hCorrel2DVsPtSidebandsMCRecRefSig"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 2 && candLabel2 == 2) {
-      registry.fill(HIST("hCorrel2DVsPtSidebandsMCRecRefRef"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 2 && candLabel2 == 3) {
-      registry.fill(HIST("hCorrel2DVsPtSidebandsMCRecRefBkg"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 3 && candLabel2 == 1) {
-      registry.fill(HIST("hCorrel2DVsPtSidebandsMCRecBkgSig"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 3 && candLabel2 == 2) {
-      registry.fill(HIST("hCorrel2DVsPtSidebandsMCRecBkgRef"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    } else if (candLabel1 == 3 && candLabel2 == 3) {
-      registry.fill(HIST("hCorrel2DVsPtSidebandsMCRecBkgBkg"), deltaPhi, deltaEta, ptCand1, ptCand2);
-    }
-  }
-
+  // Common code to analyse correlations at data level
   template <typename T>
   void analyseData(const T& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
-      if (pairEntry.dataType() == 0) {
-        // define variables for widely used quantities
-        double deltaPhi = pairEntry.deltaPhi();
-        double deltaEta = pairEntry.deltaEta();
-        double ptCand1 = pairEntry.ptCand1();
-        double ptCand2 = pairEntry.ptCand2();
-        double massCand1 = pairEntry.mCand1();
-        double massCand2 = pairEntry.mCand2();
-        double yCand1 = pairEntry.yCand1();
-        double yCand2 = pairEntry.yCand2();
+      if (pairEntry.dataType() != 0) {
+        continue;
+      }
+      // define variables for widely used quantities
+      double deltaPhi = pairEntry.deltaPhi();
+      double deltaEta = pairEntry.deltaEta();
+      double ptCand1 = pairEntry.ptCand1();
+      double ptCand2 = pairEntry.ptCand2();
+      double massCand1 = pairEntry.mCand1();
+      double massCand2 = pairEntry.mCand2();
+      double yCand1 = pairEntry.yCand1();
+      double yCand2 = pairEntry.yCand2();
 
-        int pTBinCand1 = o2::analysis::findBin(binsPtCorrelations, ptCand1);
-        int pTBinCand2 = o2::analysis::findBin(binsPtCorrelations, ptCand2);
+      int pTBinCand1 = o2::analysis::findBin(binsPtCorrelations, ptCand1);
+      int pTBinCand2 = o2::analysis::findBin(binsPtCorrelations, ptCand2);
 
-        // fill 2D invariant mass plots
-        registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2);
+      // fill 2D invariant mass plots
+      registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2);
 
-        // reject entries outside pT ranges of interest
-        if (pTBinCand1 == -1 || pTBinCand2 == -1) { // at least one particle outside accepted pT range
-          continue;
-        }
+      // reject entries outside pT ranges of interest
+      if (pTBinCand1 == -1 || pTBinCand2 == -1) { // at least one particle outside accepted pT range
+        continue;
+      }
 
-        // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
-        if (massCand1 > signalRegionInner->at(pTBinCand1) && massCand1 < signalRegionOuter->at(pTBinCand1) && massCand2 > signalRegionInner->at(pTBinCand2) && massCand2 < signalRegionOuter->at(pTBinCand2)) {
-          // in signal region
-          registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptCand1, ptCand2);
-          registry.fill(HIST("hCorrel2DPtIntSignalRegion"), deltaPhi, deltaEta);
-          registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta);
-          registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi);
-          registry.fill(HIST("hDeltaYPtIntSignalRegion"), yCand2 - yCand1);
-          registry.fill(HIST("hDeltaPtDDbarSignalRegion"), ptCand2 - ptCand1);
-          registry.fill(HIST("hDeltaPtMaxMinSignalRegion"), std::abs(ptCand2 - ptCand1));
-        }
+      // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
+      if (massCand1 > signalRegionInner->at(pTBinCand1) && massCand1 < signalRegionOuter->at(pTBinCand1) && massCand2 > signalRegionInner->at(pTBinCand2) && massCand2 < signalRegionOuter->at(pTBinCand2)) {
+        // in signal region
+        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptCand1, ptCand2);
+        registry.fill(HIST("hCorrel2DPtIntSignalRegion"), deltaPhi, deltaEta);
+        registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta);
+        registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi);
+        registry.fill(HIST("hDeltaYPtIntSignalRegion"), yCand2 - yCand1);
+        registry.fill(HIST("hDeltaPtDDbarSignalRegion"), ptCand2 - ptCand1);
+        registry.fill(HIST("hDeltaPtMaxMinSignalRegion"), std::abs(ptCand2 - ptCand1));
+      }
 
-        if ((massCand1 > sidebandLeftInner->at(pTBinCand1) && massCand1 < sidebandLeftOuter->at(pTBinCand1) && massCand2 > sidebandLeftInner->at(pTBinCand2) && massCand2 < sidebandRightOuter->at(pTBinCand2)) ||
-            (massCand1 > sidebandRightInner->at(pTBinCand1) && massCand1 < sidebandRightOuter->at(pTBinCand1) && massCand2 > sidebandLeftInner->at(pTBinCand2) && massCand2 < sidebandRightOuter->at(pTBinCand2)) ||
-            (massCand1 > sidebandLeftInner->at(pTBinCand1) && massCand1 < sidebandRightOuter->at(pTBinCand1) && massCand2 > sidebandLeftInner->at(pTBinCand2) && massCand2 < sidebandLeftOuter->at(pTBinCand2)) ||
-            (massCand1 > sidebandLeftInner->at(pTBinCand1) && massCand1 < sidebandRightOuter->at(pTBinCand1) && massCand2 > sidebandRightInner->at(pTBinCand2) && massCand2 < sidebandRightOuter->at(pTBinCand2))) {
-          // in sideband region
-          registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptCand1, ptCand2);
-          registry.fill(HIST("hCorrel2DPtIntSidebands"), deltaPhi, deltaEta);
-          registry.fill(HIST("hDeltaEtaPtIntSidebands"), deltaEta);
-          registry.fill(HIST("hDeltaPhiPtIntSidebands"), deltaPhi);
-          registry.fill(HIST("hDeltaPtDDbarSidebands"), ptCand2 - ptCand1);
-          registry.fill(HIST("hDeltaYPtIntSidebands"), yCand2 - yCand1);
-          registry.fill(HIST("hDeltaPtMaxMinSidebands"), std::abs(ptCand2 - ptCand1));
-        }
+      bool leftSidebandCand1 = massCand1 > sidebandLeftInner->at(pTBinCand1) && massCand1 < sidebandLeftOuter->at(pTBinCand1);
+      bool rightSidebandCand1 = massCand1 > sidebandRightInner->at(pTBinCand1) && massCand1 < sidebandRightOuter->at(pTBinCand1);
+      bool leftSidebandCand2 = massCand2 > sidebandLeftInner->at(pTBinCand2) && massCand2 < sidebandLeftOuter->at(pTBinCand2);
+      bool rightSidebandCand2 = massCand2 > sidebandRightInner->at(pTBinCand2) && massCand2 < sidebandRightOuter->at(pTBinCand2);
+
+      if ((leftSidebandCand1 && leftSidebandCand2) || (leftSidebandCand1 && rightSidebandCand2) ||
+          (rightSidebandCand1 && leftSidebandCand2) || (rightSidebandCand1 && rightSidebandCand2)) {
+        // in sideband region
+        registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptCand1, ptCand2);
+        registry.fill(HIST("hCorrel2DPtIntSidebands"), deltaPhi, deltaEta);
+        registry.fill(HIST("hDeltaEtaPtIntSidebands"), deltaEta);
+        registry.fill(HIST("hDeltaPhiPtIntSidebands"), deltaPhi);
+        registry.fill(HIST("hDeltaPtDDbarSidebands"), ptCand2 - ptCand1);
+        registry.fill(HIST("hDeltaYPtIntSidebands"), yCand2 - yCand1);
+        registry.fill(HIST("hDeltaPtMaxMinSidebands"), std::abs(ptCand2 - ptCand1));
       }
     }
   }
 
+  // Common code to analyse correlations at Mc reco level
   template <typename T>
   void analyseMcRec(const T& pairEntries)
   {
+    // Array definitions to later be used to fill histograms
+    std::shared_ptr<THnSparse> hMassCorrArray[3][3] = {{registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigBkg"))},
+                        {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefBkg"))},
+                        {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgBkg"))}};
+    
+    std::shared_ptr<THnSparse> hCorrelSignalArray[3][3] = {{registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecSigSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecSigRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecSigBkg"))},
+                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefBkg"))},
+                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgBkg"))}};
+
+    std::shared_ptr<THnSparse> hCorrelSidebandsArray[3][3] = {{registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigBkg"))},
+                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefBkg"))},
+                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgBkg"))}};
+    
     for (const auto& pairEntry : pairEntries) {
-      if (pairEntry.dataType() == 1) {
-        // define variables for widely used quantities
-        double deltaPhi = pairEntry.deltaPhi();
-        double deltaEta = pairEntry.deltaEta();
-        double ptCand1 = pairEntry.ptCand1();
-        double ptCand2 = pairEntry.ptCand2();
-        double massCand1 = pairEntry.mCand1();
-        double massCand2 = pairEntry.mCand2();
-        double yCand1 = pairEntry.yCand1();
-        double yCand2 = pairEntry.yCand2();
+      if (pairEntry.dataType() != 1) { // Assure that we only analyse Mc reco elements
+        continue;
+      }
+      // define variables for widely used quantities
+      double deltaPhi = pairEntry.deltaPhi();
+      double deltaEta = pairEntry.deltaEta();
+      double ptCand1 = pairEntry.ptCand1();
+      double ptCand2 = pairEntry.ptCand2();
+      double massCand1 = pairEntry.mCand1();
+      double massCand2 = pairEntry.mCand2();
+      double yCand1 = pairEntry.yCand1();
+      double yCand2 = pairEntry.yCand2();
 
-        int pTBinCand1 = o2::analysis::findBin(binsPtCorrelations, ptCand1);
-        int pTBinCand2 = o2::analysis::findBin(binsPtCorrelations, ptCand2);
+      int pTBinCand1 = o2::analysis::findBin(binsPtCorrelations, ptCand1);
+      int pTBinCand2 = o2::analysis::findBin(binsPtCorrelations, ptCand2);
 
-        // fill 2D invariant mass plots
-        uint dMesonCand1 = 0, dMesonCand2 = 0;
-        uint dMesonBarCand1 = 0, dMesonBarCand2 = 0;
-        // 0: default; 1: Signal; 2: Reflected; 3: Background
-        dMesonCand1 = getDMesonType(pairEntry.candidateType1());
-        dMesonBarCand1 = getDMesonBarType(pairEntry.candidateType1());
-        dMesonCand2 = getDMesonType(pairEntry.candidateType2());
-        dMesonBarCand2 = getDMesonBarType(pairEntry.candidateType2());
+      uint dMesonCand1 = 0, dMesonCand2 = 0;
+      uint dMesonBarCand1 = 0, dMesonBarCand2 = 0;
+      // 0: default; 1: Signal; 2: Reflected; 3: Background
+      dMesonCand1 = getDMesonType(pairEntry.candidateType1());
+      dMesonBarCand1 = getDMesonBarType(pairEntry.candidateType1());
+      dMesonCand2 = getDMesonType(pairEntry.candidateType2());
+      dMesonBarCand2 = getDMesonBarType(pairEntry.candidateType2());
 
+      // fill 2D invariant mass plots
+      switch (pairType) {
+        case 0: // D0 D0
+          fillMassCorrHists(hMassCorrArray, dMesonCand1, dMesonCand2, massCand1, massCand2, ptCand1, ptCand2);
+          break;
+        case 1: // D0 D0bar
+          fillMassCorrHists(hMassCorrArray, dMesonCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2);
+          break;
+        case 2: // D0bar D0bar
+          fillMassCorrHists(hMassCorrArray, dMesonBarCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2);
+          break;
+      }
+
+      // reject entries outside pT ranges of interest
+      if (pTBinCand1 == -1 || pTBinCand2 == -1) { // at least one particle outside accepted pT range
+        continue;
+      }
+
+      // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
+      if (massCand1 > signalRegionInner->at(pTBinCand1) && massCand1 < signalRegionOuter->at(pTBinCand1) && massCand2 > signalRegionInner->at(pTBinCand2) && massCand2 < signalRegionOuter->at(pTBinCand2)) {
+        // in signal region
+        registry.fill(HIST("hCorrel2DPtIntSignalRegionMCRec"), deltaPhi, deltaEta);
+        registry.fill(HIST("hDeltaEtaPtIntSignalRegionMCRec"), deltaEta);
+        registry.fill(HIST("hDeltaPhiPtIntSignalRegionMCRec"), deltaPhi);
+        registry.fill(HIST("hDeltaYPtIntSignalRegionMCRec"), yCand2 - yCand1);
+        registry.fill(HIST("hDeltaPtDDbarSignalRegionMCRec"), ptCand2 - ptCand1);
+        registry.fill(HIST("hDeltaPtMaxMinSignalRegionMCRec"), std::abs(ptCand2 - ptCand1));
+
+        // fill 2D angular correlations plots
         switch (pairType) {
           case 0: // D0 D0
-            fillMassCorrHists(dMesonCand1, dMesonCand2, massCand1, massCand2, ptCand1, ptCand2);
+            fillCorrelHists(hCorrelSignalArray, dMesonCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
           case 1: // D0 D0bar
-            fillMassCorrHists(dMesonCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2);
+            fillCorrelHists(hCorrelSignalArray, dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
           case 2: // D0bar D0bar
-            fillMassCorrHists(dMesonBarCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2);
+            fillCorrelHists(hCorrelSignalArray, dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
         }
+      }
 
-        // reject entries outside pT ranges of interest
-        if (pTBinCand1 == -1 || pTBinCand2 == -1) { // at least one particle outside accepted pT range
-          continue;
-        }
+      bool leftSidebandCand1 = massCand1 > sidebandLeftInner->at(pTBinCand1) && massCand1 < sidebandLeftOuter->at(pTBinCand1);
+      bool rightSidebandCand1 = massCand1 > sidebandRightInner->at(pTBinCand1) && massCand1 < sidebandRightOuter->at(pTBinCand1);
+      bool leftSidebandCand2 = massCand2 > sidebandLeftInner->at(pTBinCand2) && massCand2 < sidebandLeftOuter->at(pTBinCand2);
+      bool rightSidebandCand2 = massCand2 > sidebandRightInner->at(pTBinCand2) && massCand2 < sidebandRightOuter->at(pTBinCand2);
 
-        // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
-        if (massCand1 > signalRegionInner->at(pTBinCand1) && massCand1 < signalRegionOuter->at(pTBinCand1) && massCand2 > signalRegionInner->at(pTBinCand2) && massCand2 < signalRegionOuter->at(pTBinCand2)) {
-          // in signal region
-          registry.fill(HIST("hCorrel2DPtIntSignalRegionMCRec"), deltaPhi, deltaEta);
-          registry.fill(HIST("hDeltaEtaPtIntSignalRegionMCRec"), deltaEta);
-          registry.fill(HIST("hDeltaPhiPtIntSignalRegionMCRec"), deltaPhi);
-          registry.fill(HIST("hDeltaYPtIntSignalRegionMCRec"), yCand2 - yCand1);
-          registry.fill(HIST("hDeltaPtDDbarSignalRegionMCRec"), ptCand2 - ptCand1);
-          registry.fill(HIST("hDeltaPtMaxMinSignalRegionMCRec"), std::abs(ptCand2 - ptCand1));
+      if ((leftSidebandCand1 && leftSidebandCand2) || (leftSidebandCand1 && rightSidebandCand2) ||
+          (rightSidebandCand1 && leftSidebandCand2) || (rightSidebandCand1 && rightSidebandCand2)) {
+        // in sideband region
+        registry.fill(HIST("hCorrel2DPtIntSidebandsMCRec"), deltaPhi, deltaEta);
+        registry.fill(HIST("hDeltaEtaPtIntSidebandsMCRec"), deltaEta);
+        registry.fill(HIST("hDeltaPhiPtIntSidebandsMCRec"), deltaPhi);
+        registry.fill(HIST("hDeltaPtDDbarSidebandsMCRec"), ptCand2 - ptCand1);
+        registry.fill(HIST("hDeltaPtMaxMinSidebandsMCRec"), std::abs(ptCand2 - ptCand1));
 
-          switch (pairType) {
-            case 0: // D0 D0
-              fillCorrelSignalHists(dMesonCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-              break;
-            case 1: // D0 D0bar
-              fillCorrelSignalHists(dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-              break;
-            case 2: // D0bar D0bar
-              fillCorrelSignalHists(dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-              break;
-          }
-        }
-
-        if ((massCand1 > sidebandLeftInner->at(pTBinCand1) && massCand1 < sidebandLeftOuter->at(pTBinCand1) && massCand2 > sidebandLeftInner->at(pTBinCand2) && massCand2 < sidebandRightOuter->at(pTBinCand2)) ||
-            (massCand1 > sidebandRightInner->at(pTBinCand1) && massCand1 < sidebandRightOuter->at(pTBinCand1) && massCand2 > sidebandLeftInner->at(pTBinCand2) && massCand2 < sidebandRightOuter->at(pTBinCand2)) ||
-            (massCand1 > sidebandLeftInner->at(pTBinCand1) && massCand1 < sidebandRightOuter->at(pTBinCand1) && massCand2 > sidebandLeftInner->at(pTBinCand2) && massCand2 < sidebandLeftOuter->at(pTBinCand2)) ||
-            (massCand1 > sidebandLeftInner->at(pTBinCand1) && massCand1 < sidebandRightOuter->at(pTBinCand1) && massCand2 > sidebandRightInner->at(pTBinCand2) && massCand2 < sidebandRightOuter->at(pTBinCand2))) {
-          // in sideband region
-          registry.fill(HIST("hCorrel2DPtIntSidebandsMCRec"), deltaPhi, deltaEta);
-          registry.fill(HIST("hDeltaEtaPtIntSidebandsMCRec"), deltaEta);
-          registry.fill(HIST("hDeltaPhiPtIntSidebandsMCRec"), deltaPhi);
-          registry.fill(HIST("hDeltaPtDDbarSidebandsMCRec"), ptCand2 - ptCand1);
-          registry.fill(HIST("hDeltaPtMaxMinSidebandsMCRec"), std::abs(ptCand2 - ptCand1));
-
-          switch (pairType) {
-            case 0: // D0 D0
-              fillCorrelSidebandsHists(dMesonCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-              break;
-            case 1: // D0 D0bar
-              fillCorrelSidebandsHists(dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-              break;
-            case 2: // D0bar D0bar
-              fillCorrelSidebandsHists(dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-              break;
-          }
+        // fill 2D angular correlations plots
+        switch (pairType) {
+          case 0: // D0 D0
+            fillCorrelSidebandsHists(hCorrelSidebandsArray, dMesonCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+            break;
+          case 1: // D0 D0bar
+            fillCorrelSidebandsHists(hCorrelSidebandsArray, dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+            break;
+          case 2: // D0bar D0bar
+            fillCorrelSidebandsHists(hCorrelSidebandsArray, dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+            break;
         }
       }
     } // end loop
   }
 
+  // Common code to analyse correlations at Mc gen level
   template <typename T>
   void analyseMcGen(const T& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
-      if (pairEntry.dataType() == 2) {
-        // define variables for widely used quantities
-        double deltaPhi = pairEntry.deltaPhi();
-        double deltaEta = pairEntry.deltaEta();
-        double ptCand1 = pairEntry.ptCand1();
-        double ptCand2 = pairEntry.ptCand2();
-        double yCand1 = pairEntry.yCand1();
-        double yCand2 = pairEntry.yCand2();
-
-        // reject entries outside pT ranges of interest
-        if (o2::analysis::findBin(binsPtCorrelations, ptCand1) == -1 || o2::analysis::findBin(binsPtCorrelations, ptCand2) == -1) {
-          continue;
-        }
-
-        registry.fill(HIST("hCorrel2DVsPtMCGen"), deltaPhi, deltaEta, ptCand1, ptCand2);
-        registry.fill(HIST("hCorrel2DPtIntMCGen"), deltaPhi, deltaEta);
-        registry.fill(HIST("hDeltaEtaPtIntMCGen"), deltaEta);
-        registry.fill(HIST("hDeltaPhiPtIntMCGen"), deltaPhi);
-        registry.fill(HIST("hDeltaYPtIntMCGen"), yCand2 - yCand1);
-        registry.fill(HIST("hDeltaPtDDbarMCGen"), ptCand2 - ptCand1);
-        registry.fill(HIST("hDeltaPtMaxMinMCGen"), std::abs(ptCand2 - ptCand2));
+      if (pairEntry.dataType() != 2) { // Assure that we only have Mc gen elements
+        continue;
       }
+      // define variables for widely used quantities
+      double deltaPhi = pairEntry.deltaPhi();
+      double deltaEta = pairEntry.deltaEta();
+      double ptCand1 = pairEntry.ptCand1();
+      double ptCand2 = pairEntry.ptCand2();
+      double yCand1 = pairEntry.yCand1();
+      double yCand2 = pairEntry.yCand2();
+
+      // reject entries outside pT ranges of interest
+      if (o2::analysis::findBin(binsPtCorrelations, ptCand1) == -1 || o2::analysis::findBin(binsPtCorrelations, ptCand2) == -1) {
+        continue;
+      }
+
+      registry.fill(HIST("hCorrel2DVsPtMCGen"), deltaPhi, deltaEta, ptCand1, ptCand2);
+      registry.fill(HIST("hCorrel2DPtIntMCGen"), deltaPhi, deltaEta);
+      registry.fill(HIST("hDeltaEtaPtIntMCGen"), deltaEta);
+      registry.fill(HIST("hDeltaPhiPtIntMCGen"), deltaPhi);
+      registry.fill(HIST("hDeltaYPtIntMCGen"), yCand2 - yCand1);
+      registry.fill(HIST("hDeltaPtDDbarMCGen"), ptCand2 - ptCand1);
+      registry.fill(HIST("hDeltaPtMaxMinMCGen"), std::abs(ptCand2 - ptCand2));
     }
   } // end loop
 
   ///
   /// PROCESS FUNCTIONS
   ///
+  /// D0-D0bar correlation pair filling task, from pair tables - for data-level analysis (no filter/selection, only true signal)
   void processDataD0(aod::D0Pair const& pairEntries)
   {
     analyseData(pairEntries);
   }
   PROCESS_SWITCH(HfTaskCorrelationDMesonPairs, processDataD0, "Process data D0", true);
 
+  /// DPlus-DMinus correlation pair filling task, from pair tables - for data-level analysis (no filter/selection, only true signal)
   void processDataDPlus(aod::DPlusPair const& pairEntries)
   {
     analyseData(pairEntries);
@@ -539,14 +518,15 @@ struct HfTaskCorrelationDMesonPairs {
 
   PROCESS_SWITCH(HfTaskCorrelationDMesonPairs, processDataDPlus, "Process data Dplus", false);
 
-  /// D-Dbar correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
+  /// D0-D0bar correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
   void processMcRecD0(aod::D0PairFull const& pairEntries)
   {
     analyseMcRec(pairEntries);
   }
 
-  PROCESS_SWITCH(HfTaskCorrelationDMesonPairs, processMcRecD0, "Process MC D0 Rec mode", true);
+  PROCESS_SWITCH(HfTaskCorrelationDMesonPairs, processMcRecD0, "Process MC D0 Rec mode", false);
 
+  /// DPlus-DMinus correlation pair filling task, from pair tables - for MC reco-level analysis (no filter/selection, only true signal)
   void processMcRecDPlus(aod::DPlusPairFull const& pairEntries)
   {
     analyseMcRec(pairEntries);
@@ -554,7 +534,7 @@ struct HfTaskCorrelationDMesonPairs {
 
   PROCESS_SWITCH(HfTaskCorrelationDMesonPairs, processMcRecDPlus, "Process MC Dplus Reco mode", false);
 
-  /// D-Dbar correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal)
+  /// D0-D0bar correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGenD0(aod::D0PairFull const& pairEntries)
   {
     analyseMcGen(pairEntries);
@@ -562,6 +542,7 @@ struct HfTaskCorrelationDMesonPairs {
 
   PROCESS_SWITCH(HfTaskCorrelationDMesonPairs, processMcGenD0, "Process MC D0 Gen mode", false);
 
+  /// DPlus-DMinus correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGenDPlus(aod::DPlusPairFull const& pairEntries)
   {
     analyseMcGen(pairEntries);
