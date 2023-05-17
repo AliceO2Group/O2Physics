@@ -33,7 +33,6 @@
 #include "PWGLF/Utils/collisionCuts.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
