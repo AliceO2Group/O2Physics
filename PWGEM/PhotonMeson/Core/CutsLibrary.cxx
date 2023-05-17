@@ -26,7 +26,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
     cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetMaxDcaXY(15.f);
+    cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetMinCosPA(0.998);
     cut->SetMaxPCA(0.5);
@@ -42,7 +42,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
     cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetMaxDcaXY(15.f);
+    cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetMinCosPA(0.998);
     cut->SetMaxPCA(0.5);
@@ -57,7 +57,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
     cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetMaxDcaXY(15.f);
+    cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
@@ -73,7 +73,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
     cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetMaxDcaXY(15.f);
+    cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
@@ -87,7 +87,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetMinNCrossedRowsTPC(20);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
-    cut->SetMaxDcaXY(15.f);
+    cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
@@ -102,6 +102,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
     cut->SetTPCNsigmaElRange(-3, +3);
+    cut->SetIsWithinBeamPipe(false);
     // for v0
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);

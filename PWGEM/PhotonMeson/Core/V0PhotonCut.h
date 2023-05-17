@@ -260,9 +260,13 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kDCAz:
         return abs(track.dcaZ()) <= mMaxDcaZ;
 
-      case V0PhotonCuts::kIsWithinBeamPipe:
-        return track.isWithinBeamPipe();
-
+      case V0PhotonCuts::kIsWithinBeamPipe: {
+        // return track.isWithinBeamPipe();
+        if (abs(abs(track.z()) - 43.f) < 3.f && abs(track.dcaXY()) > 15.f)
+          return false;
+        else
+          return true;
+      }
       default:
         return false;
     }
