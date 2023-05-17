@@ -13,8 +13,8 @@
 /// \brief D meson pair table definition.
 /// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab Orsay
 
-#ifndef PWGHF_DATAMODEL_DMESONPAIRTABLES_H_
-#define PWGHF_DATAMODEL_DMESONPAIRTABLES_H_
+#ifndef PWGHF_HFC_DATAMODEL_DMESONPAIRSTABLES_H_
+#define PWGHF_HFC_DATAMODEL_DMESONPAIRSTABLES_H_
 
 #include "Common/Core/RecoDecay.h"
 #include "Framework/AnalysisDataModel.h"
@@ -65,4 +65,4 @@ DECLARE_SOA_COLUMN(DataType, dataType, uint8_t); // 0: data, 1: MC reco, 2: MC g
                     hf_correlation_d_meson_pair::MatchedMc2);
 } // namespace o2::aod
 
-#endif // PWGHF_DATAMODEL_DMESONPAIRTABLES_H_
+#endif // PWGHF_HFC_DATAMODEL_DMESONPAIRSTABLES_H_
