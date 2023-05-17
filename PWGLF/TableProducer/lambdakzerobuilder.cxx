@@ -61,6 +61,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -117,6 +118,7 @@ struct lambdakzeroBuilder {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
 
   // generate and fill extra QA histograms is requested
   Configurable<bool> d_doQA{"d_doQA", false, "Do basic QA"};
@@ -132,6 +134,7 @@ struct lambdakzeroBuilder {
   float maxSnp;  // max sine phi for propagation
   float maxStep; // max step size (cm) for propagation
   o2::base::MatLayerCylSet* lut = nullptr;
+  o2::dataformats::MeanVertexObject* mVtx = nullptr;
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -399,6 +402,7 @@ struct lambdakzeroBuilder {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
+      mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
       mRunNumber = bc.runNumber();
       return;
     }
@@ -421,6 +425,7 @@ struct lambdakzeroBuilder {
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
+    mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
     fitter.setBz(d_bz);
@@ -438,7 +443,16 @@ struct lambdakzeroBuilder {
     // Get tracks
     auto const& posTrack = V0.template posTrack_as<TTrackTo>();
     auto const& negTrack = V0.template negTrack_as<TTrackTo>();
-    auto const& collision = V0.collision();
+
+    // for storing whatever is the relevant quantity for the PV
+    o2::dataformats::VertexBase primaryVertex;
+    if (V0.has_collision()) {
+      auto const& collision = V0.collision();
+      primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
+      primaryVertex.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+    } else {
+      primaryVertex.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
+    }
 
     // value 0.5: any considered V0
     statisticsRegistry.v0stats[kV0All]++;
@@ -458,11 +472,11 @@ struct lambdakzeroBuilder {
     gpu::gpustd::array<float, 2> dcaInfo;
 
     auto posTrackPar = getTrackPar(posTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     auto posTrackdcaXY = dcaInfo[0];
 
     auto negTrackPar = getTrackPar(negTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, negTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     auto negTrackdcaXY = dcaInfo[0];
 
     if (fabs(posTrackdcaXY) < dcapostopv || fabs(negTrackdcaXY) < dcanegtopv) {
@@ -518,7 +532,7 @@ struct lambdakzeroBuilder {
     // Passes DCA between daughters check
     statisticsRegistry.v0stats[kV0DCADau]++;
 
-    v0candidate.cosPA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, array{v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2]}, array{v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1], v0candidate.posP[2] + v0candidate.negP[2]});
+    v0candidate.cosPA = RecoDecay::cpa(array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, array{v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2]}, array{v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1], v0candidate.posP[2] + v0candidate.negP[2]});
     if (v0candidate.cosPA < v0cospa) {
       return false;
     }
@@ -647,29 +661,21 @@ struct lambdakzeroBuilder {
 
   void processRun2(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExt const&, aod::BCsWithTimestamps const&)
   {
-    for (const auto& collision : collisions) {
-      // Fire up CCDB
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-      // Do analysis with collision-grouped V0s, retain full collision information
-      const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
-      buildStrangenessTables<FullTracksExt>(V0Table_thisCollision);
-    }
+    // Fire up CCDB
+    auto collision = collisions.begin();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+    buildStrangenessTables<FullTracksExt>(V0s);
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun2, "Produce Run 2 V0 tables", false);
 
   void processRun3(aod::Collisions const& collisions, soa::Filtered<TaggedV0s> const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
-    for (const auto& collision : collisions) {
-      // Fire up CCDB
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-      // Do analysis with collision-grouped V0s, retain full collision information
-      const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
-      buildStrangenessTables<FullTracksExtIU>(V0Table_thisCollision);
-    }
+    // Fire up CCDB
+    auto collision = collisions.begin();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+    buildStrangenessTables<FullTracksExtIU>(V0s);
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun3, "Produce Run 3 V0 tables", true);
 };
@@ -832,7 +838,7 @@ struct lambdakzeroPreselector {
   }
   PROCESS_SWITCH(lambdakzeroPreselector, processBuildAll, "Switch to build all V0s", true);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collision const& collision, aod::V0s const& v0table, LabeledTracksExtra const&, aod::McParticles const& particlesMC)
+  void processBuildMCAssociated(aod::Collisions const& collisions, aod::V0s const& v0table, LabeledTracksExtra const&, aod::McParticles const& particlesMC)
   {
     for (auto& v0 : v0table) {
       bool lIsInteresting = false;
@@ -854,7 +860,7 @@ struct lambdakzeroPreselector {
   }
   PROCESS_SWITCH(lambdakzeroPreselector, processBuildMCAssociated, "Switch to build MC-associated V0s", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdx(aod::Collision const& collision, aod::V0s const& v0table, TracksExtraWithPID const&)
+  void processBuildValiddEdx(aod::Collisions const& collisions, aod::V0s const& v0table, TracksExtraWithPID const&)
   {
     for (auto& v0 : v0table) {
       bool lIsInteresting = false;
@@ -876,7 +882,7 @@ struct lambdakzeroPreselector {
   }
   PROCESS_SWITCH(lambdakzeroPreselector, processBuildValiddEdx, "Switch to build V0s with dE/dx preselection", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&)
+  void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&)
   {
     for (auto& v0 : v0table) {
       bool lIsTrueInteresting = false;

@@ -627,6 +627,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand2Prong, "_0"); // D0 in
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       // particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       // particle origin, generator level
 
 enum DecayType { BplusToD0Pi = 0 };
 
@@ -706,11 +708,13 @@ using HfCandBplus = HfCandBplusExt;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandBplusMcRec, "AOD", "HFCANDBPMCREC",
-                  hf_cand_bplus::FlagMcMatchRec);
+                  hf_cand_bplus::FlagMcMatchRec,
+                  hf_cand_bplus::OriginMcRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandBplusMcGen, "AOD", "HFCANDBPMCGEN",
-                  hf_cand_bplus::FlagMcMatchGen);
+                  hf_cand_bplus::FlagMcMatchGen,
+                  hf_cand_bplus::OriginMcGen);
 
 // specific 3-prong decay properties
 namespace hf_cand_3prong

@@ -284,12 +284,6 @@ struct skimmerGammaConversions {
 
         recalculatedVertexParameters recalculatedVertex;
         Vtx_recalculation(pos, ele, &recalculatedVertex);
-
-        // float rxy = sqrt(recalculatedVertex.recalculatedConversionPoint[0] * recalculatedVertex.recalculatedConversionPoint[0] + recalculatedVertex.recalculatedConversionPoint[1] * recalculatedVertex.recalculatedConversionPoint[1]);
-        // if (rxy > min(ele.x(), pos.x())) { // conversion point should be smaller than the starting point of each leg.
-        //   continue;
-        // }
-
         v0photons(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   v0.x(), v0.y(), v0.z(),
                   v0.pxpos(), v0.pypos(), v0.pzpos(),
