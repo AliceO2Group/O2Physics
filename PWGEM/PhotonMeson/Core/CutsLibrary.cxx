@@ -80,51 +80,6 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetOnWwireIB(true);
     return cut;
   }
-  if (!nameStr.compare("testdca20")) {
-    // for track
-    cut->SetPtRange(0.01f, 1e10f);
-    cut->SetEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
-    cut->SetMaxChi2PerClusterTPC(4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetMaxDcaXY(20.f);
-    // for v0
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.5);
-    cut->SetRxyRange(1, 180);
-    return cut;
-  }
-  if (!nameStr.compare("testdca15")) {
-    // for track
-    cut->SetPtRange(0.01f, 1e10f);
-    cut->SetEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
-    cut->SetMaxChi2PerClusterTPC(4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetMaxDcaXY(15.f);
-    // for v0
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.5);
-    cut->SetRxyRange(1, 180);
-    return cut;
-  }
-  if (!nameStr.compare("testdca10")) {
-    // for track
-    cut->SetPtRange(0.01f, 1e10f);
-    cut->SetEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
-    cut->SetMaxChi2PerClusterTPC(4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetMaxDcaXY(10.f);
-    // for v0
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.5);
-    cut->SetRxyRange(1, 180);
-    return cut;
-  }
   if (!nameStr.compare("nopid")) {
     // for track
     cut->SetPtRange(0.01f, 1e10f);
