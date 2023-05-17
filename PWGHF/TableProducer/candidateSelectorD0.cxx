@@ -248,8 +248,8 @@ struct HfCandidateSelectorD0 {
       if (pidTrackNegPion == TrackSelectorPID::Status::PIDAccepted &&
           pidTrackPosKaon == TrackSelectorPID::Status::PIDAccepted) {
         pidD0bar = 1; // accept D0bar
-      } else if (pidTrackPosPion == TrackSelectorPID::Status::PIDAccepted ||
-                 pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted) {
+      } else if (pidTrackNegPion == TrackSelectorPID::Status::PIDRejected ||
+                 pidTrackPosKaon == TrackSelectorPID::Status::PIDRejected) {
         pidD0bar = 0; // exclude D0bar
       }
 
