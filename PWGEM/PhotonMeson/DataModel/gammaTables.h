@@ -157,6 +157,7 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
                   track::X, track::Y, track::Z, track::Snp, track::Tgl, track::Alpha, track::Signed1Pt,
 
                   // dynamic column
+                  track::IsWithinBeamPipe<track::X>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,

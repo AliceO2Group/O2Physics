@@ -18,7 +18,7 @@
 
 ClassImp(V0PhotonCut);
 
-const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "PsiPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "PtRange", "EtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz"};
+const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "PsiPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "PtRange", "EtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz", "IsWithinBeamPipe"};
 
 void V0PhotonCut::SetMeeRange(float min, float max)
 {
@@ -122,6 +122,12 @@ void V0PhotonCut::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
 {
   mMaxDcaXYPtDep = ptDepCut;
   LOG(info) << "V0 Photon Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
+}
+
+void V0PhotonCut::SetIsWithinBeamPipe(bool flag)
+{
+  mIsWithinBP = flag;
+  LOG(info) << "V0 Photon Cut, propagated to within beam pipe: " << mIsWithinBP;
 }
 
 void V0PhotonCut::print() const
