@@ -44,13 +44,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("pionPrimaryFromHc")) {
     MCProng prong(2, {211, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);                      // set source to be ALICE primary particles
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);
     signal = new MCSignal(name, "Primary pions from open charmed hadron decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("pionPrimaryFromHb")) {
     MCProng prong(2, {211, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);                      // set source to be ALICE primary particles
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);
     signal = new MCSignal(name, "Primary pions from open beauty hadron decays", {prong}, {-1});
     return signal;
   }

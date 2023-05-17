@@ -754,7 +754,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  // Prefilter tests
   for (int i = 1; i <= 8; i++) {
     if (!nameStr.compare(Form("lmee_eNSigmaRun3_tight_Prefilter%d", i))) {
       cut->AddCut(GetAnalysisCut(Form("notDalitzLeg%d", i)));
