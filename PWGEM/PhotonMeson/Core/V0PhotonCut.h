@@ -35,6 +35,8 @@ class V0PhotonCut : public TNamed
   enum class V0PhotonCuts : int {
     // v0 cut
     kMee = 0,
+    kV0PtRange,
+    kV0EtaRange,
     kPsiPair,
     kRxy,
     kCosPA,
@@ -43,8 +45,8 @@ class V0PhotonCut : public TNamed
     kOnWwireIB,
     kOnWwireOB,
     // leg cut
-    kPtRange,
-    kEtaRange,
+    kTrackPtRange,
+    kTrackEtaRange,
     kTPCNCls,
     kTPCCrossedRows,
     kTPCCrossedRowsOverNCls,
@@ -62,6 +64,12 @@ class V0PhotonCut : public TNamed
   template <class TLeg, typename TV0>
   bool IsSelected(TV0 const& v0) const
   {
+    if (!IsSelectedV0(v0, V0PhotonCuts::kV0PtRange)) {
+      return false;
+    }
+    if (!IsSelectedV0(v0, V0PhotonCuts::kV0EtaRange)) {
+      return false;
+    }
     if (!IsSelectedV0(v0, V0PhotonCuts::kMee)) {
       return false;
     }
@@ -97,10 +105,10 @@ class V0PhotonCut : public TNamed
     // }
 
     for (auto& track : {pos, ele}) {
-      if (!IsSelectedTrack(track, V0PhotonCuts::kPtRange)) {
+      if (!IsSelectedTrack(track, V0PhotonCuts::kTrackPtRange)) {
         return false;
       }
-      if (!IsSelectedTrack(track, V0PhotonCuts::kEtaRange)) {
+      if (!IsSelectedTrack(track, V0PhotonCuts::kTrackEtaRange)) {
         return false;
       }
       if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNCls)) {
@@ -145,8 +153,10 @@ class V0PhotonCut : public TNamed
       }
     };
 
-    setFlag(V0PhotonCuts::kPtRange);
-    setFlag(V0PhotonCuts::kEtaRange);
+    setFlag(V0PhotonCuts::kV0PtRange);
+    setFlag(V0PhotonCuts::kV0EtaRange);
+    setFlag(V0PhotonCuts::kTrackPtRange);
+    setFlag(V0PhotonCuts::kTrackEtaRange);
     setFlag(V0PhotonCuts::kTPCNCls);
     setFlag(V0PhotonCuts::kTPCCrossedRows);
     setFlag(V0PhotonCuts::kTPCCrossedRowsOverNCls);
@@ -162,6 +172,12 @@ class V0PhotonCut : public TNamed
   {
     const float margin = 1.0; // cm
     switch (cut) {
+      case V0PhotonCuts::kV0PtRange:
+        return v0.pt() >= mMinV0Pt && v0.pt() <= mMaxV0Pt;
+
+      case V0PhotonCuts::kV0EtaRange:
+        return v0.eta() >= mMinV0Eta && v0.eta() <= mMaxV0Eta;
+
       case V0PhotonCuts::kMee:
         return v0.mGamma() <= ((mMaxMeePsiPairDep) ? mMaxMeePsiPairDep(abs(v0.psipair())) : mMaxMee);
 
@@ -178,8 +194,8 @@ class V0PhotonCut : public TNamed
         return v0.pca() <= mMaxPCA;
 
       case V0PhotonCuts::kRZLine:
-        // return v0.recalculatedVtxR() > abs(v0.vz()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxEta))) - 12.0; // as long as z recalculation is not fixed use this
-        return v0.recalculatedVtxR() > abs(v0.recalculatedVtxZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxEta))) - 12.0; // as long as z recalculation is not fixed use this
+        // return v0.recalculatedVtxR() > abs(v0.vz()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxV0Eta))) - 12.0; // as long as z recalculation is not fixed use this
+        return v0.recalculatedVtxR() > abs(v0.recalculatedVtxZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxV0Eta))) - 12.0; // as long as z recalculation is not fixed use this
 
       case V0PhotonCuts::kOnWwireIB: {
         const float rxy_min = 5.506;          // cm
@@ -230,11 +246,11 @@ class V0PhotonCut : public TNamed
   bool IsSelectedTrack(T const& track, const V0PhotonCuts& cut) const
   {
     switch (cut) {
-      case V0PhotonCuts::kPtRange:
-        return track.pt() >= mMinPt && track.pt() <= mMaxPt;
+      case V0PhotonCuts::kTrackPtRange:
+        return track.pt() >= mMinTrackPt && track.pt() <= mMaxTrackPt;
 
-      case V0PhotonCuts::kEtaRange:
-        return track.eta() >= mMinEta && track.eta() <= mMaxEta;
+      case V0PhotonCuts::kTrackEtaRange:
+        return track.eta() >= mMinTrackEta && track.eta() <= mMaxTrackEta;
 
       case V0PhotonCuts::kTPCNCls:
         return track.tpcNClsFound() >= mMinNClustersTPC;
@@ -262,10 +278,13 @@ class V0PhotonCut : public TNamed
 
       case V0PhotonCuts::kIsWithinBeamPipe: {
         // return track.isWithinBeamPipe();
-        if (abs(abs(track.z()) - 43.f) < 3.f && abs(track.dcaXY()) > 15.f)
+        if (15.f < abs(track.dcaXY()) && abs(track.dcaXY()) < 100.f) {
           return false;
-        else
-          return true;
+        }
+        if (abs(abs(track.z()) - 44.f) < 2.f && 15.f < abs(track.dcaXY())) {
+          return false;
+        }
+        return true;
       }
       default:
         return false;
@@ -273,6 +292,8 @@ class V0PhotonCut : public TNamed
   }
 
   // Setters
+  void SetV0PtRange(float minPt = 0.f, float maxPt = 1e10f);
+  void SetV0EtaRange(float minEta = -1e10f, float maxEta = 1e10f);
   void SetMeeRange(float min = 0.f, float max = 0.1);
   void SetPsiPairRange(float min = -3.15, float max = +3.15);
   void SetRxyRange(float min = 0.f, float max = 180.f);
@@ -282,8 +303,8 @@ class V0PhotonCut : public TNamed
   void SetOnWwireIB(bool flag = false);
   void SetOnWwireOB(bool flag = false);
 
-  void SetPtRange(float minPt = 0.f, float maxPt = 1e10f);
-  void SetEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
+  void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
+  void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
   void SetMinNClustersTPC(int minNClustersTPC);
   void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC);
   void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC);
@@ -303,6 +324,8 @@ class V0PhotonCut : public TNamed
  private:
   // v0 cuts
   float mMinMee{0.f}, mMaxMee{0.1f};
+  float mMinV0Pt{0.f}, mMaxV0Pt{1e10f};      // range in pT
+  float mMinV0Eta{-1e10f}, mMaxV0Eta{1e10f}; // range in eta
   float mMinPsiPair{-3.15}, mMaxPsiPair{+3.15};
   float mMinRxy{0.f}, mMaxRxy{180.f};
   float mMinCosPA{0.95};
@@ -316,8 +339,8 @@ class V0PhotonCut : public TNamed
   float mMinTPCNsigmaPi{-1e+10}, mMaxTPCNsigmaPi{+1e+10};
 
   // kinematic cuts
-  float mMinPt{0.f}, mMaxPt{1e10f};      // range in pT
-  float mMinEta{-1e10f}, mMaxEta{1e10f}; // range in eta
+  float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};      // range in pT
+  float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f}; // range in eta
 
   // track quality cuts
   int mMinNClustersTPC{0};                            // min number of TPC clusters
