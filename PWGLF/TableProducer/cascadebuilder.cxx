@@ -913,6 +913,7 @@ struct cascadeBuilder {
         trackedcascdata(cascadecandidate.v0Id,
                         cascade.globalIndex(),
                         cascadecandidate.bachelorId,
+                        trackedCascade.trackId(),
                         cascade.collisionId(),
                         cascadecandidate.charge, trackedCascade.xiMass(), trackedCascade.omegaMass(), // <--- stratrack masses
                         trackedCascade.decayX(), trackedCascade.decayY(), trackedCascade.decayZ(),    // <--- stratrack position
@@ -998,17 +999,28 @@ struct cascadePreselector {
   // context-aware selections
   Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
 
+  std::vector<char> trackQualityMask;
+  std::vector<char> mcLabelMaskXiMinus;
+  std::vector<char> mcLabelMaskXiPlus;
+  std::vector<char> mcLabelMaskOmegaMinus;
+  std::vector<char> mcLabelMaskOmegaPlus;
+  std::vector<char> dEdxMaskXiMinus;
+  std::vector<char> dEdxMaskXiPlus;
+  std::vector<char> dEdxMaskOmegaMinus;
+  std::vector<char> dEdxMaskOmegaPlus;
+  std::vector<char> usedInTrackedCascadeMask;
+
   void init(InitContext const&) {}
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
   template <class TTrackTo, typename TCascadeObject>
-  void checkTrackQuality(TCascadeObject const& lCascadeCandidate, bool& lIsInteresting, bool lIsXiMinus, bool lIsXiPlus, bool lIsOmegaMinus, bool lIsOmegaPlus)
+  void checkTrackQuality(TCascadeObject const& lCascadeCandidate, char& lIsInteresting, char lIsXiMinus, char lIsXiPlus, char lIsOmegaMinus, char lIsOmegaPlus)
   {
-    lIsInteresting = false;
+    lIsInteresting = 0;
     auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
-      lIsInteresting = false;
+      lIsInteresting = 0;
       return;
     }
     auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
@@ -1019,22 +1031,21 @@ struct cascadePreselector {
     auto lPosTrack = v0data.template posTrack_as<TTrackTo>();
 
     if ((lIsXiMinus || lIsOmegaMinus) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = true;
+      lIsInteresting = 1;
     if ((lIsXiPlus || lIsOmegaPlus) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = true;
+      lIsInteresting = 1;
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTrackTo, typename TCascadeObject>
-  void checkPDG(TCascadeObject const& lCascadeCandidate, bool& lIsInteresting, bool& lIsXiMinus, bool& lIsXiPlus, bool& lIsOmegaMinus, bool& lIsOmegaPlus)
+  void checkPDG(TCascadeObject const& lCascadeCandidate, char& lIsXiMinus, char& lIsXiPlus, char& lIsOmegaMinus, char& lIsOmegaPlus)
   {
     auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
-      lIsInteresting = false;
-      lIsXiMinus = false;
-      lIsXiPlus = false;
-      lIsOmegaMinus = false;
-      lIsOmegaPlus = false;
+      lIsXiMinus = 0;
+      lIsXiPlus = 0;
+      lIsOmegaMinus = 0;
+      lIsOmegaPlus = 0;
       return;
     }
     auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
@@ -1072,35 +1083,26 @@ struct cascadePreselector {
       }   // end conditional of mothers existing
     }     // end association check
     // Construct tag table (note: this will be joinable with CascDatas)
-    if (lPDG == 3312 && dIfMCgenerateXiMinus) {
-      lIsXiMinus = true;
-      lIsInteresting = true;
-    }
-    if (lPDG == -3312 && dIfMCgenerateXiPlus) {
-      lIsXiPlus = true;
-      lIsInteresting = true;
-    }
-    if (lPDG == 3334 && dIfMCgenerateOmegaMinus) {
-      lIsOmegaMinus = true;
-      lIsInteresting = true;
-    }
-    if (lPDG == -3334 && dIfMCgenerateOmegaPlus) {
-      lIsOmegaPlus = true;
-      lIsInteresting = true;
-    }
+    if (lPDG == 3312)
+      lIsXiMinus = 1;
+    if (lPDG == -3312)
+      lIsXiPlus = 1;
+    if (lPDG == 3334)
+      lIsOmegaMinus = 1;
+    if (lPDG == -3334)
+      lIsOmegaPlus = 1;
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check early dE/dx selection
   template <class TTrackTo, typename TCascadeObject>
-  void checkdEdx(TCascadeObject const& lCascadeCandidate, bool& lIsInteresting, bool& lIsXiMinus, bool& lIsXiPlus, bool& lIsOmegaMinus, bool& lIsOmegaPlus)
+  void checkdEdx(TCascadeObject const& lCascadeCandidate, char& lIsXiMinus, char& lIsXiPlus, char& lIsOmegaMinus, char& lIsOmegaPlus)
   {
     auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
-      lIsInteresting = false;
-      lIsXiMinus = false;
-      lIsXiPlus = false;
-      lIsOmegaMinus = false;
-      lIsOmegaPlus = false;
+      lIsXiMinus = 0;
+      lIsXiPlus = 0;
+      lIsOmegaMinus = 0;
+      lIsOmegaPlus = 0;
       return;
     }
     auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
@@ -1113,111 +1115,147 @@ struct cascadePreselector {
     // dEdx check with LF PID
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        ddEdxPreSelectXiMinus) {
+        TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
       lIsXiMinus = 1;
-      lIsInteresting = 1;
-    }
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        ddEdxPreSelectXiPlus) {
+        TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
       lIsXiPlus = 1;
-      lIsInteresting = 1;
-    }
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow &&
-        ddEdxPreSelectOmegaMinus) {
+        TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow)
       lIsOmegaMinus = 1;
-      lIsInteresting = 1;
-    }
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow &&
-        ddEdxPreSelectOmegaPlus) {
+        TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow)
       lIsOmegaPlus = 1;
-      lIsInteresting = 1;
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// Initialization of mask vectors if uninitialized
+  void initializeMasks(int size)
+  {
+    if (trackQualityMask.size() < 1) {
+      // reserve // FIXME check speed / optimise
+      trackQualityMask.resize(size, 0);
+      mcLabelMaskXiMinus.resize(size, 0);
+      mcLabelMaskXiPlus.resize(size, 0);
+      mcLabelMaskOmegaMinus.resize(size, 0);
+      mcLabelMaskOmegaPlus.resize(size, 0);
+      dEdxMaskXiMinus.resize(size, 0);
+      dEdxMaskXiPlus.resize(size, 0);
+      dEdxMaskOmegaMinus.resize(size, 0);
+      dEdxMaskOmegaPlus.resize(size, 0);
+      usedInTrackedCascadeMask.resize(size, 0);
     }
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// Clear mask vectors
+  void resetMasks()
+  {
+    trackQualityMask.clear();
+    mcLabelMaskXiMinus.clear();
+    mcLabelMaskXiPlus.clear();
+    mcLabelMaskOmegaMinus.clear();
+    mcLabelMaskOmegaPlus.clear();
+    dEdxMaskXiMinus.clear();
+    dEdxMaskXiPlus.clear();
+    dEdxMaskOmegaMinus.clear();
+    dEdxMaskOmegaPlus.clear();
+    usedInTrackedCascadeMask.clear();
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// checks and publishes tags if last
+  void checkAndFinalize()
+  {
+    // parse + publish tag table now
+    for (int ii = 0; ii < trackQualityMask.size(); ii++) {
+      bool validCascade = trackQualityMask[ii];
+      if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
+        validCascade = validCascade && ((mcLabelMaskXiMinus[ii] && dIfMCgenerateXiMinus) ||
+                                        (mcLabelMaskXiPlus[ii] && dIfMCgenerateXiPlus) ||
+                                        (mcLabelMaskOmegaMinus[ii] && dIfMCgenerateOmegaMinus) ||
+                                        (mcLabelMaskOmegaPlus[ii] && dIfMCgenerateOmegaPlus));
+      if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
+        validCascade = validCascade && ((dEdxMaskXiMinus[ii] && ddEdxPreSelectXiMinus) ||
+                                        (dEdxMaskXiPlus[ii] && ddEdxPreSelectXiPlus) ||
+                                        (dEdxMaskOmegaMinus[ii] && ddEdxPreSelectOmegaMinus) ||
+                                        (dEdxMaskOmegaPlus[ii] && ddEdxPreSelectOmegaPlus));
+      if (doprocessSkipCascadesNotUsedInTrackedCascades)
+        validCascade = validCascade && usedInTrackedCascadeMask[ii];
+      casctags(validCascade,
+               mcLabelMaskXiMinus[ii], mcLabelMaskXiPlus[ii], mcLabelMaskOmegaPlus[ii], mcLabelMaskOmegaPlus[ii],
+               dEdxMaskXiMinus[ii], dEdxMaskXiPlus[ii], dEdxMaskOmegaPlus[ii], dEdxMaskOmegaPlus[ii]);
+    }
+    resetMasks();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all cascades are built. It will simply tag everything as true.
   void processBuildAll(aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, aod::TracksExtra const&)
   {
+    initializeMasks(cascades.size());
     for (auto& casc : cascades) {
-      bool lIsQualityInteresting = false;
-      checkTrackQuality<aod::TracksExtra>(casc, lIsQualityInteresting, true, true, true, true);
-      casctags(lIsQualityInteresting,
-               true, true, true, true,
-               true, true, true, true);
+      checkTrackQuality<aod::TracksExtra>(casc, trackQualityMask[casc.globalIndex()], 1, 1, 1, 1);
     }
+    if (!doprocessSkipCascadesNotUsedInTrackedCascades)
+      checkAndFinalize();
   }
-  PROCESS_SWITCH(cascadePreselector, processBuildAll, "Switch to build all cascades", true);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processBuildMCAssociated(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracksExtra const&, aod::McParticles const&)
   {
+    initializeMasks(cascades.size());
     for (auto& casc : cascades) {
-      bool lIsInteresting = false;
-      bool lIsQualityInteresting = false;
-      bool lIsTrueXiMinus = false;
-      bool lIsTrueXiPlus = false;
-      bool lIsTrueOmegaMinus = false;
-      bool lIsTrueOmegaPlus = false;
-
-      checkPDG<LabeledTracksExtra>(casc, lIsInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
-      checkTrackQuality<LabeledTracksExtra>(casc, lIsQualityInteresting, true, true, true, true);
-      casctags(lIsInteresting * lIsQualityInteresting,
-               lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus,
-               true, true, true, true);
+      int cai = casc.globalIndex();
+      checkPDG<LabeledTracksExtra>(casc, mcLabelMaskXiMinus[cai], mcLabelMaskXiPlus[cai], mcLabelMaskOmegaPlus[cai], mcLabelMaskOmegaPlus[cai]);
+      checkTrackQuality<LabeledTracksExtra>(casc, trackQualityMask[casc.globalIndex()], 1, 1, 1, 1);
     } // end cascades loop
+    if (!doprocessSkipCascadesNotUsedInTrackedCascades)
+      checkAndFinalize();
   }
-  PROCESS_SWITCH(cascadePreselector, processBuildMCAssociated, "Switch to build MC-associated cascades", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processBuildValiddEdx(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPID const&)
   {
+    initializeMasks(cascades.size());
     for (auto& casc : cascades) {
-      bool lIsInteresting = false;
-      bool lIsQualityInteresting = false;
-      bool lIsdEdxXiMinus = false;
-      bool lIsdEdxXiPlus = false;
-      bool lIsdEdxOmegaMinus = false;
-      bool lIsdEdxOmegaPlus = false;
-
-      checkdEdx<TracksExtraWithPID>(casc, lIsInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-      checkTrackQuality<TracksExtraWithPID>(casc, lIsQualityInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-      casctags(lIsInteresting * lIsQualityInteresting,
-               true, true, true, true,
-               lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+      int cai = casc.globalIndex();
+      checkdEdx<TracksExtraWithPID>(casc, dEdxMaskXiMinus[cai], dEdxMaskXiPlus[cai], dEdxMaskOmegaPlus[cai], dEdxMaskOmegaPlus[cai]);
+      checkTrackQuality<TracksExtraWithPID>(casc, trackQualityMask[casc.globalIndex()], dEdxMaskXiMinus[cai], dEdxMaskXiPlus[cai], dEdxMaskOmegaPlus[cai], dEdxMaskOmegaPlus[cai]);
     }
+    if (!doprocessSkipCascadesNotUsedInTrackedCascades)
+      checkAndFinalize();
   }
-  PROCESS_SWITCH(cascadePreselector, processBuildValiddEdx, "Switch to build cascades with dE/dx preselection", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPIDandLabels const&)
   {
+    initializeMasks(cascades.size());
     for (auto& casc : cascades) {
-      bool lIsdEdxInteresting = false;
-      bool lIsQualityInteresting = false;
-      bool lIsdEdxXiMinus = false;
-      bool lIsdEdxXiPlus = false;
-      bool lIsdEdxOmegaMinus = false;
-      bool lIsdEdxOmegaPlus = false;
-
-      bool lIsTrueInteresting = false;
-      bool lIsTrueXiMinus = false;
-      bool lIsTrueXiPlus = false;
-      bool lIsTrueOmegaMinus = false;
-      bool lIsTrueOmegaPlus = false;
-
-      checkPDG<TracksExtraWithPIDandLabels>(casc, lIsTrueInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
-      checkdEdx<TracksExtraWithPIDandLabels>(casc, lIsdEdxInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-      checkTrackQuality<TracksExtraWithPIDandLabels>(casc, lIsQualityInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-      casctags(lIsTrueInteresting * lIsdEdxInteresting * lIsQualityInteresting,
-               lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus,
-               lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
+      int cai = casc.globalIndex();
+      checkPDG<TracksExtraWithPIDandLabels>(casc, mcLabelMaskXiMinus[cai], mcLabelMaskXiPlus[cai], mcLabelMaskOmegaPlus[cai], mcLabelMaskOmegaPlus[cai]);
+      checkdEdx<TracksExtraWithPIDandLabels>(casc, dEdxMaskXiMinus[cai], dEdxMaskXiPlus[cai], dEdxMaskOmegaPlus[cai], dEdxMaskOmegaPlus[cai]);
+      checkTrackQuality<TracksExtraWithPIDandLabels>(casc, trackQualityMask[casc.globalIndex()], dEdxMaskXiMinus[cai], dEdxMaskXiPlus[cai], dEdxMaskOmegaPlus[cai], dEdxMaskOmegaPlus[cai]);
     }
+    if (!doprocessSkipCascadesNotUsedInTrackedCascades)
+      checkAndFinalize();
   }
-  PROCESS_SWITCH(cascadePreselector, processBuildValiddEdxMCAssociated, "Switch to build MC-associated cascades with dE/dx preselection", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// This process function checks for the use of Cascades in strangeness tracked cascades
+  /// They are then marked appropriately; the user could then operate
+  /// the cascadebuilder to construct only those Cascades.
+  void processSkipCascadesNotUsedInTrackedCascades(aod::TrackedCascades const& tracasctable, aod::Cascades const& casctable)
+  {
+    for (auto const& tracasc : tracasctable) {
+      usedInTrackedCascadeMask[tracasc.cascadeId()] = true; // tag V0s needed by tracked cascades
+    }
+    checkAndFinalize();
+  }
+  //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
+  /// basic building options (one of them must be chosen)
+  PROCESS_SWITCH(cascadePreselector, processBuildAll, "Switch to build all cascades", true);
+  PROCESS_SWITCH(cascadePreselector, processBuildMCAssociated, "Switch to build MC-associated cascades", false);
+  PROCESS_SWITCH(cascadePreselector, processBuildValiddEdx, "Switch to build cascades with dE/dx preselection", false);
+  PROCESS_SWITCH(cascadePreselector, processBuildValiddEdxMCAssociated, "Switch to build MC-associated cascades with dE/dx preselection", false);
+  /// skipper option (choose in addition to a processBuild if you like)
+  PROCESS_SWITCH(cascadePreselector, processSkipCascadesNotUsedInTrackedCascades, "Switch to skip cascades not used in cascade tracking", false);
+  //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
 };
 
 /// Extends the cascdata table with expression columns

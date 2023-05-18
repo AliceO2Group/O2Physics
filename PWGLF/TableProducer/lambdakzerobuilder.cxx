@@ -707,32 +707,48 @@ struct lambdakzeroPreselector {
   // context-aware selections
   Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
 
+  std::vector<char> trackQualityMask;
+  std::vector<char> mcLabelMaskGamma;
+  std::vector<char> mcLabelMaskK0Short;
+  std::vector<char> mcLabelMaskLambda;
+  std::vector<char> mcLabelMaskAntiLambda;
+  std::vector<char> mcLabelMaskHypertriton;
+  std::vector<char> mcLabelMaskAntiHypertriton;
+  std::vector<char> dEdxMaskGamma;
+  std::vector<char> dEdxMaskK0Short;
+  std::vector<char> dEdxMaskLambda;
+  std::vector<char> dEdxMaskAntiLambda;
+  std::vector<char> dEdxMaskHypertriton;
+  std::vector<char> dEdxMaskAntiHypertriton;
+  std::vector<char> usedInCascadeMask;
+  std::vector<char> usedInTrackedCascadeMask;
+
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
   template <class TTrackTo, typename TV0Object>
-  void checkTrackQuality(TV0Object const& lV0Candidate, bool& lIsInteresting, bool lIsGamma, bool lIsK0Short, bool lIsLambda, bool lIsAntiLambda, bool lIsHypertriton, bool lIsAntiHypertriton)
+  void checkTrackQuality(TV0Object const& lV0Candidate, char& lIsInteresting, char lIsGamma, char lIsK0Short, char lIsLambda, char lIsAntiLambda, char lIsHypertriton, char lIsAntiHypertriton)
   {
-    lIsInteresting = false;
+    lIsInteresting = 0;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
     // No baryons in decay
     if ((lIsGamma || lIsK0Short) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows))
-      lIsInteresting = true;
+      lIsInteresting = 1;
     // With baryons in decay
     if (lIsLambda && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = true;
+      lIsInteresting = 1;
     if (lIsAntiLambda && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = true;
+      lIsInteresting = 1;
     if (lIsHypertriton && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = true;
+      lIsInteresting = 1;
     if (lIsHypertriton && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = true;
+      lIsInteresting = 1;
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTrackTo, typename TV0Object>
-  void checkPDG(TV0Object const& lV0Candidate, bool& lIsInteresting, bool& lIsGamma, bool& lIsK0Short, bool& lIsLambda, bool& lIsAntiLambda, bool& lIsHypertriton, bool& lIsAntiHypertriton)
+  void checkPDG(TV0Object const& lV0Candidate, char& lIsGamma, char& lIsK0Short, char& lIsLambda, char& lIsAntiLambda, char& lIsHypertriton, char& lIsAntiHypertriton)
   {
     int lPDG = -1;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
@@ -754,165 +770,202 @@ struct lambdakzeroPreselector {
         }
       }
     } // end association check
-    if (lPDG == 310 && dIfMCgenerateK0Short) {
-      lIsK0Short = true;
-      lIsInteresting = true;
-    }
-    if (lPDG == 3122 && dIfMCgenerateLambda) {
-      lIsLambda = true;
-      lIsInteresting = true;
-    }
-    if (lPDG == -3122 && dIfMCgenerateAntiLambda) {
-      lIsAntiLambda = true;
-      lIsInteresting = true;
-    }
-    if (lPDG == 22 && dIfMCgenerateGamma) {
-      lIsGamma = true;
-      lIsInteresting = true;
-    }
-    if (lPDG == 1010010030 && dIfMCgenerateHypertriton) {
-      lIsHypertriton = true;
-      lIsInteresting = true;
-    }
-    if (lPDG == -1010010030 && dIfMCgenerateAntiHypertriton) {
-      lIsAntiHypertriton = true;
-      lIsInteresting = true;
-    }
+    if (lPDG == 310)
+      lIsK0Short = 1;
+    if (lPDG == 3122)
+      lIsLambda = 1;
+    if (lPDG == -3122)
+      lIsAntiLambda = 1;
+    if (lPDG == 22)
+      lIsGamma = 1;
+    if (lPDG == 1010010030)
+      lIsHypertriton = 1;
+    if (lPDG == -1010010030)
+      lIsAntiHypertriton = 1;
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   template <class TTrackTo, typename TV0Object>
-  void checkdEdx(TV0Object const& lV0Candidate, bool& lIsInteresting, bool& lIsGamma, bool& lIsK0Short, bool& lIsLambda, bool& lIsAntiLambda, bool& lIsHypertriton, bool& lIsAntiHypertriton)
+  void checkdEdx(TV0Object const& lV0Candidate, char& lIsGamma, char& lIsK0Short, char& lIsLambda, char& lIsAntiLambda, char& lIsHypertriton, char& lIsAntiHypertriton)
   {
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
     // dEdx check with LF PID
     if (TMath::Abs(lNegTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lPosTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow &&
-        ddEdxPreSelectGamma) {
+        TMath::Abs(lPosTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow)
       lIsGamma = 1;
-      lIsInteresting = 1;
-    }
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        ddEdxPreSelectK0Short) {
+        TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
       lIsK0Short = 1;
-      lIsInteresting = 1;
-    }
     if ((TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons) &&
-        TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
-        ddEdxPreSelectLambda) {
+        TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow)
       lIsLambda = 1;
-      lIsInteresting = 1;
-    }
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
-        (TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons) &&
-        ddEdxPreSelectAntiLambda) {
+        (TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons))
       lIsAntiLambda = 1;
-      lIsInteresting = 1;
-    }
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        (TMath::Abs(lPosTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons) &&
-        ddEdxPreSelectHypertriton) {
+        (TMath::Abs(lPosTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons))
       lIsHypertriton = 1;
-      lIsInteresting = 1;
-    }
     if ((TMath::Abs(lNegTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons) &&
-        TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        ddEdxPreSelectAntiHypertriton) {
+        TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
       lIsAntiHypertriton = 1;
-      lIsInteresting = 1;
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// Initialization of mask vectors if uninitialized
+  void initializeMasks(int size)
+  {
+    if (trackQualityMask.size() < 1) {
+      // reserve // FIXME check speed / optimise
+      trackQualityMask.resize(size, 0);
+      mcLabelMaskGamma.resize(size, 0);
+      mcLabelMaskK0Short.resize(size, 0);
+      mcLabelMaskLambda.resize(size, 0);
+      mcLabelMaskAntiLambda.resize(size, 0);
+      ;
+      mcLabelMaskHypertriton.resize(size, 0);
+      mcLabelMaskAntiHypertriton.resize(size, 0);
+      dEdxMaskGamma.resize(size, 0);
+      dEdxMaskK0Short.resize(size, 0);
+      dEdxMaskLambda.resize(size, 0);
+      dEdxMaskAntiLambda.resize(size, 0);
+      dEdxMaskHypertriton.resize(size, 0);
+      dEdxMaskAntiHypertriton.resize(size, 0);
+      usedInCascadeMask.resize(size, 0);
+      usedInTrackedCascadeMask.resize(size, 0);
     }
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// Clear mask vectors
+  void resetMasks()
+  {
+    trackQualityMask.clear();
+    mcLabelMaskGamma.clear();
+    mcLabelMaskK0Short.clear();
+    mcLabelMaskLambda.clear();
+    mcLabelMaskAntiLambda.clear();
+    mcLabelMaskHypertriton.clear();
+    mcLabelMaskAntiHypertriton.clear();
+    dEdxMaskGamma.clear();
+    dEdxMaskK0Short.clear();
+    dEdxMaskLambda.clear();
+    dEdxMaskAntiLambda.clear();
+    dEdxMaskHypertriton.clear();
+    dEdxMaskAntiHypertriton.clear();
+    usedInCascadeMask.clear();
+    usedInTrackedCascadeMask.clear();
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// checks and publishes tags if last
+  void checkAndFinalize()
+  {
+    // parse + publish tag table now
+    for (int ii = 0; ii < trackQualityMask.size(); ii++) {
+      bool validV0 = trackQualityMask[ii];
+      if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
+        validV0 = validV0 && ((mcLabelMaskK0Short[ii] && dIfMCgenerateK0Short) ||
+                              (mcLabelMaskLambda[ii] && dIfMCgenerateLambda) ||
+                              (mcLabelMaskAntiLambda[ii] && dIfMCgenerateAntiLambda) ||
+                              (mcLabelMaskGamma[ii] && dIfMCgenerateGamma) ||
+                              (mcLabelMaskHypertriton[ii] && dIfMCgenerateHypertriton) ||
+                              (mcLabelMaskAntiHypertriton[ii] && dIfMCgenerateAntiHypertriton));
+      if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
+        validV0 = validV0 && ((dEdxMaskK0Short[ii] && ddEdxPreSelectK0Short) ||
+                              (dEdxMaskLambda[ii] && ddEdxPreSelectLambda) ||
+                              (dEdxMaskAntiLambda[ii] && ddEdxPreSelectAntiLambda) ||
+                              (dEdxMaskGamma[ii] && ddEdxPreSelectGamma) ||
+                              (dEdxMaskHypertriton[ii] && ddEdxPreSelectHypertriton) ||
+                              (dEdxMaskAntiHypertriton[ii] && ddEdxPreSelectAntiHypertriton));
+      if (doprocessSkipV0sNotUsedInCascades)
+        validV0 = validV0 && usedInCascadeMask[ii];
+      if (doprocessSkipV0sNotUsedInTrackedCascades)
+        validV0 = validV0 && usedInTrackedCascadeMask[ii];
+      v0tags(validV0,
+             mcLabelMaskGamma[ii], mcLabelMaskK0Short[ii], mcLabelMaskLambda[ii], mcLabelMaskAntiLambda[ii], mcLabelMaskHypertriton[ii], mcLabelMaskAntiHypertriton[ii],
+             dEdxMaskGamma[ii], dEdxMaskK0Short[ii], dEdxMaskLambda[ii], dEdxMaskAntiLambda[ii], dEdxMaskHypertriton[ii], dEdxMaskAntiHypertriton[ii]);
+    }
+    resetMasks();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all V0s are built. It will simply tag everything as true.
   void processBuildAll(aod::V0s const& v0table, aod::TracksExtra const&)
   {
-    for (auto& v0 : v0table) {
-      bool lIsQualityInteresting = false;
-      checkTrackQuality<aod::TracksExtra>(v0, lIsQualityInteresting, true, true, true, true, true, true);
-      v0tags(lIsQualityInteresting,
-             true, true, true, true, true, true,
-             true, true, true, true, true, true);
+    initializeMasks(v0table.size());
+    for (auto const& v0 : v0table) {
+      checkTrackQuality<aod::TracksExtra>(v0, trackQualityMask[v0.globalIndex()], 1, 1, 1, 1, 1, 1);
     }
+    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInCascades)
+      checkAndFinalize();
   }
-  PROCESS_SWITCH(lambdakzeroPreselector, processBuildAll, "Switch to build all V0s", true);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processBuildMCAssociated(aod::Collisions const& collisions, aod::V0s const& v0table, LabeledTracksExtra const&, aod::McParticles const& particlesMC)
   {
-    for (auto& v0 : v0table) {
-      bool lIsInteresting = false;
-      bool lIsTrueGamma = false;
-      bool lIsTrueK0Short = false;
-      bool lIsTrueLambda = false;
-      bool lIsTrueAntiLambda = false;
-      bool lIsTrueHypertriton = false;
-      bool lIsTrueAntiHypertriton = false;
-
-      bool lIsQualityInteresting = false;
-
-      checkPDG<LabeledTracksExtra>(v0, lIsInteresting, lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton);
-      checkTrackQuality<LabeledTracksExtra>(v0, lIsQualityInteresting, true, true, true, true, true, true);
-      v0tags(lIsInteresting * lIsQualityInteresting,
-             lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton,
-             true, true, true, true, true, true);
+    initializeMasks(v0table.size());
+    for (auto const& v0 : v0table) {
+      int v0i = v0.globalIndex();
+      checkPDG<LabeledTracksExtra>(v0, mcLabelMaskGamma[v0i], mcLabelMaskK0Short[v0i], mcLabelMaskLambda[v0i], mcLabelMaskAntiLambda[v0i], mcLabelMaskHypertriton[v0i], mcLabelMaskAntiHypertriton[v0i]);
+      checkTrackQuality<LabeledTracksExtra>(v0, trackQualityMask[v0i], 1, 1, 1, 1, 1, 1);
     }
+    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInCascades)
+      checkAndFinalize();
   }
-  PROCESS_SWITCH(lambdakzeroPreselector, processBuildMCAssociated, "Switch to build MC-associated V0s", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processBuildValiddEdx(aod::Collisions const& collisions, aod::V0s const& v0table, TracksExtraWithPID const&)
   {
-    for (auto& v0 : v0table) {
-      bool lIsInteresting = false;
-      bool lIsdEdxGamma = false;
-      bool lIsdEdxK0Short = false;
-      bool lIsdEdxLambda = false;
-      bool lIsdEdxAntiLambda = false;
-      bool lIsdEdxHypertriton = false;
-      bool lIsdEdxAntiHypertriton = false;
-
-      bool lIsQualityInteresting = false;
-
-      checkdEdx<TracksExtraWithPID>(v0, lIsInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
-      checkTrackQuality<TracksExtraWithPID>(v0, lIsQualityInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
-      v0tags(lIsInteresting * lIsQualityInteresting,
-             true, true, true, true, true, true,
-             lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
+    initializeMasks(v0table.size());
+    for (auto const& v0 : v0table) {
+      int v0i = v0.globalIndex();
+      checkdEdx<TracksExtraWithPID>(v0, dEdxMaskGamma[v0i], dEdxMaskK0Short[v0i], dEdxMaskLambda[v0i], dEdxMaskAntiLambda[v0i], dEdxMaskHypertriton[v0i], dEdxMaskAntiHypertriton[v0i]);
+      checkTrackQuality<TracksExtraWithPID>(v0, trackQualityMask[v0.globalIndex()], dEdxMaskGamma[v0i], dEdxMaskK0Short[v0i], dEdxMaskLambda[v0i], dEdxMaskAntiLambda[v0i], dEdxMaskHypertriton[v0i], dEdxMaskAntiHypertriton[v0i]);
     }
+    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInCascades)
+      checkAndFinalize();
   }
-  PROCESS_SWITCH(lambdakzeroPreselector, processBuildValiddEdx, "Switch to build V0s with dE/dx preselection", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&)
   {
-    for (auto& v0 : v0table) {
-      bool lIsTrueInteresting = false;
-      bool lIsTrueGamma = false;
-      bool lIsTrueK0Short = false;
-      bool lIsTrueLambda = false;
-      bool lIsTrueAntiLambda = false;
-      bool lIsTrueHypertriton = false;
-      bool lIsTrueAntiHypertriton = false;
-
-      bool lIsdEdxInteresting = false;
-      bool lIsdEdxGamma = false;
-      bool lIsdEdxK0Short = false;
-      bool lIsdEdxLambda = false;
-      bool lIsdEdxAntiLambda = false;
-      bool lIsdEdxHypertriton = false;
-      bool lIsdEdxAntiHypertriton = false;
-
-      bool lIsQualityInteresting = false;
-
-      checkPDG<TracksExtraWithPIDandLabels>(v0, lIsTrueInteresting, lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton);
-      checkdEdx<TracksExtraWithPIDandLabels>(v0, lIsdEdxInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
-      checkTrackQuality<TracksExtraWithPIDandLabels>(v0, lIsQualityInteresting, lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
-      v0tags(lIsTrueInteresting * lIsdEdxInteresting * lIsQualityInteresting,
-             lIsTrueGamma, lIsTrueK0Short, lIsTrueLambda, lIsTrueAntiLambda, lIsTrueHypertriton, lIsTrueAntiHypertriton,
-             lIsdEdxGamma, lIsdEdxK0Short, lIsdEdxLambda, lIsdEdxAntiLambda, lIsdEdxHypertriton, lIsdEdxAntiHypertriton);
+    initializeMasks(v0table.size());
+    for (auto const& v0 : v0table) {
+      int v0i = v0.globalIndex();
+      checkPDG<TracksExtraWithPIDandLabels>(v0, mcLabelMaskGamma[v0i], mcLabelMaskK0Short[v0i], mcLabelMaskLambda[v0i], mcLabelMaskAntiLambda[v0i], mcLabelMaskHypertriton[v0i], mcLabelMaskAntiHypertriton[v0i]);
+      checkdEdx<TracksExtraWithPIDandLabels>(v0, dEdxMaskGamma[v0i], dEdxMaskK0Short[v0i], dEdxMaskLambda[v0i], dEdxMaskAntiLambda[v0i], dEdxMaskHypertriton[v0i], dEdxMaskAntiHypertriton[v0i]);
+      checkTrackQuality<TracksExtraWithPIDandLabels>(v0, trackQualityMask[v0i], dEdxMaskGamma[v0i], dEdxMaskK0Short[v0i], dEdxMaskLambda[v0i], dEdxMaskAntiLambda[v0i], dEdxMaskHypertriton[v0i], dEdxMaskAntiHypertriton[v0i]);
     }
+    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInCascades)
+      checkAndFinalize();
   }
-  PROCESS_SWITCH(lambdakzeroPreselector, processBuildValiddEdxMCAssociated, "Switch to build MC-associated V0s with dE/dx preselection", false);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// This process function checks for the use of V0s in cascades
+  /// They are then marked appropriately; the user could then operate
+  /// the lambdakzerobuilder to construct only those V0s.
+  void processSkipV0sNotUsedInCascades(aod::Cascades const& casctable)
+  {
+    for (auto const& casc : casctable) {
+      usedInCascadeMask[casc.v0Id()] = true; // tag V0s needed by cascades
+    }
+    checkAndFinalize();
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// This process function checks for the use of V0s in strangeness tracked cascades
+  /// They are then marked appropriately; the user could then operate
+  /// the lambdakzerobuilder to construct only those V0s.
+  void processSkipV0sNotUsedInTrackedCascades(aod::TrackedCascades const& tracasctable, aod::Cascades const& casctable)
+  {
+    for (auto const& tracasc : tracasctable) {
+      auto casc = tracasc.cascade();
+      usedInTrackedCascadeMask[casc.v0Id()] = true; // tag V0s needed by tracked cascades
+    }
+    checkAndFinalize();
+  }
+  //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
+  /// basic building options (one of them must be chosen)
+  PROCESS_SWITCH(lambdakzeroPreselector, processBuildAll, "Switch to build all V0s", true);
+  PROCESS_SWITCH(lambdakzeroPreselector, processBuildMCAssociated, "Switch to build MC-associated V0s", false);
+  PROCESS_SWITCH(lambdakzeroPreselector, processBuildValiddEdx, "Switch to build V0s with dE/dx preselection", false);
+  PROCESS_SWITCH(lambdakzeroPreselector, processBuildValiddEdxMCAssociated, "Switch to build MC-associated V0s with dE/dx preselection", false);
+  /// skippers options (choose one in addition to a processBuild if you like)
+  PROCESS_SWITCH(lambdakzeroPreselector, processSkipV0sNotUsedInCascades, "skip all V0s not used in cascades", false);
+  PROCESS_SWITCH(lambdakzeroPreselector, processSkipV0sNotUsedInTrackedCascades, "skip all V0s not used in tracked cascades", false);
+  //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
 };
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*

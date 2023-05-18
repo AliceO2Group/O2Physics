@@ -287,10 +287,11 @@ DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
 namespace cascdata
 {
 // Necessary for full filtering functionality
-DECLARE_SOA_INDEX_COLUMN(V0, v0);                                   //!
-DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);                         //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, ""); //!
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
+DECLARE_SOA_INDEX_COLUMN(V0, v0);                                           //!
+DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);                                 //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, "");         //!
+DECLARE_SOA_INDEX_COLUMN_FULL(StrangeTrack, strangeTrack, int, Tracks, ""); //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                             //!
 // General cascade properties: position, momentum
 DECLARE_SOA_COLUMN(Sign, sign, int);         //!
 DECLARE_SOA_COLUMN(MXi, mXi, float);         //!
@@ -414,7 +415,7 @@ DECLARE_SOA_TABLE(StoredCascDatas, "AOD", "CASCDATA", //!
                   cascdata::Phi<cascdata::Px, cascdata::Py>);
 
 DECLARE_SOA_TABLE(StoredTraCascDatas, "AOD", "TRACASCDATA", //!
-                  o2::soa::Index<>, cascdata::V0Id, cascdata::CascadeId, cascdata::BachelorId, cascdata::CollisionId,
+                  o2::soa::Index<>, cascdata::V0Id, cascdata::CascadeId, cascdata::BachelorId, cascdata::StrangeTrackId, cascdata::CollisionId,
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,
                   cascdata::X, cascdata::Y, cascdata::Z,
                   cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda,
