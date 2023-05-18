@@ -22,15 +22,19 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/ASoAHelpers.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "PWGLF/Utils/collisionCuts.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -40,6 +44,9 @@ using namespace o2::soa;
 /// Initializer for the resonance candidate producers
 struct reso2initializer {
   float cXiMass = RecoDecay::getMassPDG(3312);
+  int mRunNumber;
+  float d_bz;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Produces<aod::ResoCollisions> resoCollisions;
   Produces<aod::ResoTracks> reso2trks;
@@ -50,8 +57,16 @@ struct reso2initializer {
   Produces<aod::ResoMCV0s> reso2mcv0s;
   Produces<aod::ResoMCCascades> reso2mccascades;
 
+  // CCDB options
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+
   // Configurables
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Pilot beam"}; // Choose if running on converted data or pilot beam
+  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
@@ -608,8 +623,52 @@ struct reso2initializer {
 
   void init(InitContext&)
   {
+    mRunNumber = 0;
+    d_bz = 0;
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&qaRegistry);
+  }
+
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc) // Simple copy from LambdaKzeroFinder.cxx
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      ;
+      o2::parameters::GRPMagField grpmag;
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
+      mRunNumber = bc.runNumber();
+      return;
+    }
+
+    auto run3grp_timestamp = bc.timestamp();
+    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
+    mRunNumber = bc.runNumber();
+    // Set magnetic field value once known
+    LOGF(info, "Bz set to %f for run: ", d_bz, mRunNumber);
   }
 
   void processTrackData(soa::Filtered<ResoEvents>::iterator const& collision,
@@ -617,15 +676,16 @@ struct reso2initializer {
                         aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    initCCDB(bc);
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -638,15 +698,16 @@ struct reso2initializer {
                           aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    initCCDB(bc);
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -661,15 +722,16 @@ struct reso2initializer {
                               aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    initCCDB(bc);
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -684,14 +746,15 @@ struct reso2initializer {
                       aod::McParticles const& mcParticles, aod::BCsWithTimestamps const& bcs)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    initCCDB(bc);
     if (!colCuts.isSelected(collision))
       return;
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
@@ -709,14 +772,15 @@ struct reso2initializer {
                         aod::McParticles const& mcParticles, aod::BCsWithTimestamps const& bcs)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    initCCDB(bc);
     if (!colCuts.isSelected(collision))
       return;
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
@@ -736,14 +800,15 @@ struct reso2initializer {
                             aod::McParticles const& mcParticles, aod::BCsWithTimestamps const& bcs)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    initCCDB(bc);
     if (!colCuts.isSelected(collision))
       return;
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
