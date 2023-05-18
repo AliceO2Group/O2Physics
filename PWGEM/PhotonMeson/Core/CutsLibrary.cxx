@@ -20,14 +20,16 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
 
   if (!nameStr.compare("analysis")) {
     // for track
-    cut->SetPtRange(0.01f, 1e10f);
-    cut->SetEtaRange(-0.9, +0.9);
+    cut->SetTrackPtRange(0.01f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
     cut->SetMinNCrossedRowsTPC(20);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetIsWithinBeamPipe(true);
     // for v0
+    cut->SetV0PtRange(0.01f, 1e10f);
+    cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.998);
     cut->SetMaxPCA(0.5);
     cut->SetRxyRange(1, 90);
@@ -36,14 +38,16 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
   }
   if (!nameStr.compare("analysis_wo_mee")) {
     // for track
-    cut->SetPtRange(0.01f, 1e10f);
-    cut->SetEtaRange(-0.9, +0.9);
+    cut->SetTrackPtRange(0.01f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
     cut->SetMinNCrossedRowsTPC(20);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetIsWithinBeamPipe(true);
     // for v0
+    cut->SetV0PtRange(0.01f, 1e10f);
+    cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.998);
     cut->SetMaxPCA(0.5);
     cut->SetRxyRange(1, 90);
@@ -51,14 +55,16 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
   }
   if (!nameStr.compare("qc")) {
     // for track
-    cut->SetPtRange(0.01f, 1e10f);
-    cut->SetEtaRange(-0.9, +0.9);
+    cut->SetTrackPtRange(0.01f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
     cut->SetMinNCrossedRowsTPC(20);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetIsWithinBeamPipe(true);
     // for v0
+    cut->SetV0PtRange(0.01f, 1e10f);
+    cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
     cut->SetRxyRange(1, 180);
@@ -67,14 +73,16 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
   }
   if (!nameStr.compare("wwire")) { // conversion only on tungstate wire
     // for track
-    cut->SetPtRange(0.01f, 1e10f);
-    cut->SetEtaRange(-0.9, +0.9);
+    cut->SetTrackPtRange(0.01f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
     cut->SetMinNCrossedRowsTPC(20);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetIsWithinBeamPipe(true);
     // for v0
+    cut->SetV0PtRange(0.01f, 1e10f);
+    cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
     cut->SetOnWwireIB(true);
@@ -82,13 +90,15 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
   }
   if (!nameStr.compare("nopid")) {
     // for track
-    cut->SetPtRange(0.01f, 1e10f);
-    cut->SetEtaRange(-0.9, +0.9);
+    cut->SetTrackPtRange(0.01f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
     cut->SetMinNCrossedRowsTPC(20);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
     cut->SetIsWithinBeamPipe(true);
     // for v0
+    cut->SetV0PtRange(0.01f, 1e10f);
+    cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
     cut->SetRxyRange(1, 180);
@@ -96,14 +106,16 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
   }
   if (!nameStr.compare("nocut")) {
     // for track
-    cut->SetPtRange(0.01f, 1e10f);
-    cut->SetEtaRange(-0.9, +0.9);
+    cut->SetTrackPtRange(0.01f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
     cut->SetMinNCrossedRowsTPC(20);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
     cut->SetMaxChi2PerClusterTPC(4.0);
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetIsWithinBeamPipe(false);
     // for v0
+    cut->SetV0PtRange(0.01f, 1e10f);
+    cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
     cut->SetRxyRange(1, 180);
