@@ -44,7 +44,7 @@ using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 using MyMcMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
 using MFTTracksExtra = soa::Join<aod::MFTTracks, aod::MA2T>; // MFT track + index of ambiguous track
 
-struct HfAmbiguousMftIndexBuilder {
+struct HfTaskSingleMuonSelectionAmbiguousMftIndexBuilder {
   // build the index table MA2T
   Builds<aod::MA2T> idx;
 
@@ -250,7 +250,7 @@ struct HfTaskSingleMuonSelection {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfAmbiguousMftIndexBuilder>(cfgc),
+    adaptAnalysisTask<HfTaskSingleMuonSelectionAmbiguousMftIndexBuilder>(cfgc),
     adaptAnalysisTask<HfTaskSingleMuonSelection>(cfgc),
   };
 }
