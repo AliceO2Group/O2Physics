@@ -11,7 +11,7 @@
 
 // jet finder task
 //
-// Author: Jochen Klein, Nima Zardoshti
+// Author: Jochen Klein, Nima Zardoshti, Hadi Hassan
 #include "PWGJE/Core/JetFinder.h"
 #include "Framework/Logger.h"
 
@@ -33,9 +33,6 @@ void JetFinder::setParams()
   jetDef = fastjet::JetDefinition(algorithm, jetR, recombScheme, strategy);
   areaDef = fastjet::AreaDefinition(areaType, ghostAreaSpec);
   selJets = fastjet::SelectorPtRange(jetPtMin, jetPtMax) && fastjet::SelectorEtaRange(jetEtaMin, jetEtaMax) && fastjet::SelectorPhiRange(jetPhiMin, jetPhiMax);
-
-  subUtils = std::make_unique<JetBkgSubUtils>(jetBkgR, constSubAlpha, constSubRMax, bkgEtaMin, bkgEtaMax, bkgPhiMin, bkgPhiMax, ghostAreaSpec);
-  subUtils->setJetAlgorithmAndScheme(algorithmBkg, recombSchemeBkg);
 }
 
 /// Performs jet finding
@@ -48,23 +45,9 @@ fastjet::ClusterSequenceArea JetFinder::findJets(std::vector<fastjet::PseudoJet>
   setParams();
   jets.clear();
 
-  std::vector<fastjet::PseudoJet> inclusiveJets;
-
-  // In case of constituentsub the subtraction is already done here in this line
-  sub = subUtils->setSub(inputParticles, inclusiveJets, bkgRho, bkgRhoM, bkgSubEst, bkgSubMode);
-
   fastjet::ClusterSequenceArea clusterSeq(inputParticles, jetDef, areaDef);
-  inclusiveJets = clusterSeq.inclusive_jets();
+  std::vector<fastjet::PseudoJet> inclusiveJets = clusterSeq.inclusive_jets();
 
-  // The perp cone method and jet constituent sub, both require a vector of jets
-  if (bkgSubEst == BkgSubEstimator::perpCone || bkgSubMode == BkgSubMode::jetConstSub) {
-    if (bkgSubEst == BkgSubEstimator::perpCone) {
-      subUtils->setJetBkgR(jetR);
-    }
-    sub = subUtils->setSub(inputParticles, inclusiveJets, bkgRho, bkgRhoM, bkgSubEst, bkgSubMode);
-  }
-
-  jets = (bkgSubMode == BkgSubMode::rhoAreaSub) ? (sub)(inclusiveJets) : inclusiveJets;
   jets = selJets(jets);
   if (isReclustering) {
     jetR = jetR / 5.0;

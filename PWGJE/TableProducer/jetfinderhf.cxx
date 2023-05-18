@@ -28,9 +28,6 @@ struct JetFinderHFTask {
   Produces<ConstituentTable> constituentsTable;
   Produces<ConstituentSubTable> constituentsSubTable;
 
-  Configurable<int> bkgSubEstimator{"BkgSubEstimator", 0, "background subtraction estimator. 0 = none, 1 = medianRho, 2 = medianRhoSparse, 3 = perpCone"};
-  Configurable<int> bkgSubMode{"BkgSubMode", 0, "background subtraction method. 0 = none, 1 = rhoAreaSub, 2 = eventConstSub, 3 = jetConstSub"};
-
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
@@ -59,7 +56,6 @@ struct JetFinderHFTask {
   Configurable<float> candYMax{"candYMax", 0.8, "maximum candidate eta"};
   // HF candidiate selection configurables
   Configurable<bool> rejectBackgroundMCCandidates{"rejectBackgroundMCCandidates", true, "reject background HF candidates at MC detector level"};
-  Configurable<bool> removeHFCadBkgSub{"removeHFCadBkgSub", false, "Remove HF candidate from the background estimation (when doing background subtraction)"};
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc->PKPi"};
@@ -82,9 +78,6 @@ struct JetFinderHFTask {
   JetFinder jetFinder;
   std::vector<fastjet::PseudoJet> inputParticles;
 
-  BkgSubEstimator _bkgSubEst;
-  BkgSubMode _bkgSubMode;
-
   bool doConstSub = false;
 
   int candPDG;
@@ -93,19 +86,6 @@ struct JetFinderHFTask {
   void init(InitContext const&)
   {
     trackSelection = static_cast<std::string>(trackSelections);
-
-    _bkgSubEst = static_cast<BkgSubEstimator>(static_cast<int>(bkgSubEstimator));
-    _bkgSubMode = static_cast<BkgSubMode>(static_cast<int>(bkgSubMode));
-
-    if (_bkgSubMode == BkgSubMode::eventConstSub || _bkgSubMode == BkgSubMode::jetConstSub) {
-      doConstSub = true;
-    }
-
-    jetFinder.setBkgSubEstimator(_bkgSubEst);
-    jetFinder.setBkgSubMode(_bkgSubMode);
-    if (removeHFCadBkgSub) {
-      jetFinder.setRemoveHFCand(removeHFCadBkgSub);
-    }
 
     jetFinder.etaMin = trackEtaMin;
     jetFinder.etaMax = trackEtaMax;
