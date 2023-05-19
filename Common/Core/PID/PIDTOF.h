@@ -262,7 +262,7 @@ class ExpTimes
   /// Gets the expected resolution of the t-texp-t0
   /// \param parameters Detector response parameters
   /// \param track Track of interest
-  static float GetExpectedSigma(const TOFResoParamsV2& parameters, const TrackType& track) { return GetExpectedSigma(parameters, track, track.tofSignal(), track.tofEvTime()); }
+  static float GetExpectedSigma(const TOFResoParamsV2& parameters, const TrackType& track) { return GetExpectedSigma(parameters, track, track.tofSignal(), track.tofEvTimeErr()); }
 
   /// Gets the expected resolution of the time measurement, uses the expected time and no event time resolution
   /// \param parameters Parameters to use to compute the expected resolution
@@ -274,7 +274,12 @@ class ExpTimes
   /// \param track Track of interest
   /// \param collisionTime Collision time
   /// \param collisionTimeRes Collision time resolution of the track of interest
-  static float GetSeparation(const TOFResoParamsV2& parameters, const TrackType& track, const float collisionTime, const float collisionTimeRes) { return track.hasTOF() ? (track.tofSignal() - collisionTime - GetCorrectedExpectedSignal(parameters, track)) / GetExpectedSigma(parameters, track, track.tofSignal(), collisionTimeRes) : defaultReturnValue; }
+  static float GetSeparation(const TOFResoParamsV2& parameters, const TrackType& track, const float collisionTime, const float resolution) { return track.hasTOF() ? (track.tofSignal() - collisionTime - GetCorrectedExpectedSignal(parameters, track)) / resolution : defaultReturnValue; }
+
+  /// Gets the number of sigmas with respect the expected time
+  /// \param parameters Detector response parameters
+  /// \param track Track of interest
+  static float GetSeparation(const TOFResoParamsV2& parameters, const TrackType& track, const float resolution) { return GetSeparation(parameters, track, track.tofEvTime(), resolution); }
 
   /// Gets the number of sigmas with respect the expected time
   /// \param parameters Detector response parameters
