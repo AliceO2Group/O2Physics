@@ -52,6 +52,8 @@ struct tofSpectra {
   Configurable<bool> enableTPCTOFHistograms{"enableTPCTOFHistograms", true, "Enables TPC TOF histograms"};
   Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to require in TRD for track selection. -1 does not require any TRD cluster"};
   Configurable<bool> requireTrdOnly{"requireTrdOnly", false, "Require only tracks from TRD"};
+  Configurable<bool> requireNoTrd{"requireNoTrd", false, "Require tracks without TRD"};
+  Configurable<int> selectEvTime{"selectEvTime", 0, "Select event time flags; 0: any event time, 1: isEvTimeDefined, 2: IsEvTimeTOF, 3: IsEvTimeT0AC, 4: IsEvTimeTOFT0AV"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
   ConfigurableAxis binsnsigmaTPC{"binsnsigmaTPC", {200, -10, 10}, "Binning of the nsigmaTPC axis"};
   ConfigurableAxis binsnsigmaTOF{"binsnsigmaTOF", {200, -10, 10}, "Binning of the nsigmaTOF axis"};
@@ -192,6 +194,13 @@ struct tofSpectra {
     h->GetXaxis()->SetBinLabel(2, "Eta passed");
     h->GetXaxis()->SetBinLabel(3, "Quality passed");
     h->GetXaxis()->SetBinLabel(4, "TOF passed (partial)");
+
+    h = histos.add<TH1>("evtime_tof", "event time selections from pidEvTimeFlags", kTH1D, {{5, 0, 4}});
+    h->GetXaxis()->SetBinLabel(1, "AnyEvTime");
+    h->GetXaxis()->SetBinLabel(2, "EvTimeDefined");
+    h->GetXaxis()->SetBinLabel(3, "EvTimeTOF");
+    h->GetXaxis()->SetBinLabel(4, "EvTimeT0AC");
+    h->GetXaxis()->SetBinLabel(5, "EvTimeTOFT0AV");
 
     histos.add("Centrality/FT0M", "FT0M", HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
     histos.add("Centrality/FT0A", "FT0A", HistType::kTH1D, {{binsPercentile, "Centrality FT0A"}});
@@ -425,7 +434,6 @@ struct tofSpectra {
         }
       }
     }
-
     // Print output histograms statistics
     LOG(info) << "Size of the histograms in spectraTOF";
     histos.print();
@@ -521,6 +529,49 @@ struct tofSpectra {
     if (requireTrdOnly == true && !track.hasTRD()) {
       return;
     }
+    if (requireNoTrd == true && track.hasTRD()) {
+      return;
+    }
+    switch (selectEvTime) {
+      case 0:
+        break;
+      case 1:
+        if (!track.isEvTimeDefined()) {
+          return;
+        }
+        break;
+      case 2:
+        if (!track.isEvTimeTOF()) {
+          return;
+        }
+        break;
+      case 3:
+        if (!track.isEvTimeT0AC()) {
+          return;
+        }
+        break;
+      case 4:
+        if (!track.isEvTimeTOFT0AC()) {
+          return;
+        }
+        break;
+      default:
+        LOG(fatal) << "Fatal did not recognise value select event time" << selectEvTime;
+    }
+    histos.fill(HIST("evtime_tof"), 0);
+    if (track.isEvTimeDefined()) {
+      histos.fill(HIST("evtime_tof"), 1);
+    }
+    if (track.isEvTimeTOF()) {
+      histos.fill(HIST("evtime_tof"), 2);
+    }
+    if (track.isEvTimeT0AC()) {
+      histos.fill(HIST("evtime_tof"), 3);
+    }
+    if (track.isEvTimeTOFT0AC()) {
+      histos.fill(HIST("evtime_tof"), 4);
+    }
+
     if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
       int lastLayer = 0;
       for (int l = 7; l >= 0; l--) {
@@ -623,8 +674,8 @@ struct tofSpectra {
       histos.fill(HIST("event/vertexz"), collision.posZ());
 
       if constexpr (fillMultiplicity) {
-        // histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
-        // histos.fill(HIST("Centrality/FT0A"), collision.centFT0A());
+        histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
+        histos.fill(HIST("Centrality/FT0A"), collision.centFT0A());
         histos.fill(HIST("Centrality/FT0C"), collision.centFT0C());
 
         histos.fill(HIST("Mult/FV0M"), collision.multZeqFV0A());
