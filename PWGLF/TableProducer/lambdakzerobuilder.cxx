@@ -943,7 +943,7 @@ struct lambdakzeroPreselector {
   void processSkipV0sNotUsedInCascades(aod::Cascades const& casctable)
   {
     for (auto const& casc : casctable) {
-      usedInCascadeMask[casc.v0Id()] = true; // tag V0s needed by cascades
+      usedInCascadeMask[casc.v0Id()] = 1; // tag V0s needed by cascades
     }
     checkAndFinalize();
   }
@@ -955,7 +955,7 @@ struct lambdakzeroPreselector {
   {
     for (auto const& tracasc : tracasctable) {
       auto casc = tracasc.cascade();
-      usedInTrackedCascadeMask[casc.v0Id()] = true; // tag V0s needed by tracked cascades
+      usedInTrackedCascadeMask[casc.v0Id()] = 1; // tag V0s needed by tracked cascades
     }
     checkAndFinalize();
   }

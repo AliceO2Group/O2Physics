@@ -1317,7 +1317,7 @@ struct cascadePreselector {
   void processSkipCascadesNotUsedInTrackedCascades(aod::TrackedCascades const& tracasctable, aod::Cascades const& casctable)
   {
     for (auto const& tracasc : tracasctable) {
-      usedInTrackedCascadeMask[tracasc.cascadeId()] = true; // tag V0s needed by tracked cascades
+      usedInTrackedCascadeMask[tracasc.cascadeId()] = 1; // tag V0s needed by tracked cascades
     }
     checkAndFinalize();
   }
