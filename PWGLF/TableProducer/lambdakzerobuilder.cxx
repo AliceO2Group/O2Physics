@@ -710,26 +710,26 @@ struct lambdakzeroPreselector {
   // context-aware selections
   Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
 
-  std::vector<char> trackQualityMask;
-  std::vector<char> mcLabelMaskGamma;
-  std::vector<char> mcLabelMaskK0Short;
-  std::vector<char> mcLabelMaskLambda;
-  std::vector<char> mcLabelMaskAntiLambda;
-  std::vector<char> mcLabelMaskHypertriton;
-  std::vector<char> mcLabelMaskAntiHypertriton;
-  std::vector<char> dEdxMaskGamma;
-  std::vector<char> dEdxMaskK0Short;
-  std::vector<char> dEdxMaskLambda;
-  std::vector<char> dEdxMaskAntiLambda;
-  std::vector<char> dEdxMaskHypertriton;
-  std::vector<char> dEdxMaskAntiHypertriton;
-  std::vector<char> usedInCascadeMask;
-  std::vector<char> usedInTrackedCascadeMask;
+  std::vector<uint8_t> trackQualityMask;
+  std::vector<uint8_t> mcLabelMaskGamma;
+  std::vector<uint8_t> mcLabelMaskK0Short;
+  std::vector<uint8_t> mcLabelMaskLambda;
+  std::vector<uint8_t> mcLabelMaskAntiLambda;
+  std::vector<uint8_t> mcLabelMaskHypertriton;
+  std::vector<uint8_t> mcLabelMaskAntiHypertriton;
+  std::vector<uint8_t> dEdxMaskGamma;
+  std::vector<uint8_t> dEdxMaskK0Short;
+  std::vector<uint8_t> dEdxMaskLambda;
+  std::vector<uint8_t> dEdxMaskAntiLambda;
+  std::vector<uint8_t> dEdxMaskHypertriton;
+  std::vector<uint8_t> dEdxMaskAntiHypertriton;
+  std::vector<uint8_t> usedInCascadeMask;
+  std::vector<uint8_t> usedInTrackedCascadeMask;
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
   template <class TTrackTo, typename TV0Object>
-  void checkTrackQuality(TV0Object const& lV0Candidate, char& lIsInteresting, char lIsGamma, char lIsK0Short, char lIsLambda, char lIsAntiLambda, char lIsHypertriton, char lIsAntiHypertriton)
+  void checkTrackQuality(TV0Object const& lV0Candidate, uint8_t& lIsInteresting, uint8_t lIsGamma, uint8_t lIsK0Short, uint8_t lIsLambda, uint8_t lIsAntiLambda, uint8_t lIsHypertriton, uint8_t lIsAntiHypertriton)
   {
     lIsInteresting = 0;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
@@ -751,7 +751,7 @@ struct lambdakzeroPreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTrackTo, typename TV0Object>
-  void checkPDG(TV0Object const& lV0Candidate, char& lIsGamma, char& lIsK0Short, char& lIsLambda, char& lIsAntiLambda, char& lIsHypertriton, char& lIsAntiHypertriton)
+  void checkPDG(TV0Object const& lV0Candidate, uint8_t& lIsGamma, uint8_t& lIsK0Short, uint8_t& lIsLambda, uint8_t& lIsAntiLambda, uint8_t& lIsHypertriton, uint8_t& lIsAntiHypertriton)
   {
     int lPDG = -1;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
@@ -788,7 +788,7 @@ struct lambdakzeroPreselector {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   template <class TTrackTo, typename TV0Object>
-  void checkdEdx(TV0Object const& lV0Candidate, char& lIsGamma, char& lIsK0Short, char& lIsLambda, char& lIsAntiLambda, char& lIsHypertriton, char& lIsAntiHypertriton)
+  void checkdEdx(TV0Object const& lV0Candidate, uint8_t& lIsGamma, uint8_t& lIsK0Short, uint8_t& lIsLambda, uint8_t& lIsAntiLambda, uint8_t& lIsHypertriton, uint8_t& lIsAntiHypertriton)
   {
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
@@ -896,7 +896,7 @@ struct lambdakzeroPreselector {
     for (auto const& v0 : v0table) {
       checkTrackQuality<aod::TracksExtra>(v0, trackQualityMask[v0.globalIndex()], 1, 1, 1, 1, 1, 1);
     }
-    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInCascades)
+    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInTrackedCascades)
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -908,7 +908,7 @@ struct lambdakzeroPreselector {
       checkPDG<LabeledTracksExtra>(v0, mcLabelMaskGamma[v0i], mcLabelMaskK0Short[v0i], mcLabelMaskLambda[v0i], mcLabelMaskAntiLambda[v0i], mcLabelMaskHypertriton[v0i], mcLabelMaskAntiHypertriton[v0i]);
       checkTrackQuality<LabeledTracksExtra>(v0, trackQualityMask[v0i], 1, 1, 1, 1, 1, 1);
     }
-    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInCascades)
+    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInTrackedCascades)
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -920,7 +920,7 @@ struct lambdakzeroPreselector {
       checkdEdx<TracksExtraWithPID>(v0, dEdxMaskGamma[v0i], dEdxMaskK0Short[v0i], dEdxMaskLambda[v0i], dEdxMaskAntiLambda[v0i], dEdxMaskHypertriton[v0i], dEdxMaskAntiHypertriton[v0i]);
       checkTrackQuality<TracksExtraWithPID>(v0, trackQualityMask[v0.globalIndex()], dEdxMaskGamma[v0i], dEdxMaskK0Short[v0i], dEdxMaskLambda[v0i], dEdxMaskAntiLambda[v0i], dEdxMaskHypertriton[v0i], dEdxMaskAntiHypertriton[v0i]);
     }
-    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInCascades)
+    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInTrackedCascades)
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -933,7 +933,7 @@ struct lambdakzeroPreselector {
       checkdEdx<TracksExtraWithPIDandLabels>(v0, dEdxMaskGamma[v0i], dEdxMaskK0Short[v0i], dEdxMaskLambda[v0i], dEdxMaskAntiLambda[v0i], dEdxMaskHypertriton[v0i], dEdxMaskAntiHypertriton[v0i]);
       checkTrackQuality<TracksExtraWithPIDandLabels>(v0, trackQualityMask[v0i], dEdxMaskGamma[v0i], dEdxMaskK0Short[v0i], dEdxMaskLambda[v0i], dEdxMaskAntiLambda[v0i], dEdxMaskHypertriton[v0i], dEdxMaskAntiHypertriton[v0i]);
     }
-    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInCascades)
+    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInTrackedCascades)
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -943,7 +943,7 @@ struct lambdakzeroPreselector {
   void processSkipV0sNotUsedInCascades(aod::Cascades const& casctable)
   {
     for (auto const& casc : casctable) {
-      usedInCascadeMask[casc.v0Id()] = true; // tag V0s needed by cascades
+      usedInCascadeMask[casc.v0Id()] = 1; // tag V0s needed by cascades
     }
     checkAndFinalize();
   }
@@ -955,7 +955,7 @@ struct lambdakzeroPreselector {
   {
     for (auto const& tracasc : tracasctable) {
       auto casc = tracasc.cascade();
-      usedInTrackedCascadeMask[casc.v0Id()] = true; // tag V0s needed by tracked cascades
+      usedInTrackedCascadeMask[casc.v0Id()] = 1; // tag V0s needed by tracked cascades
     }
     checkAndFinalize();
   }

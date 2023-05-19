@@ -1073,23 +1073,23 @@ struct cascadePreselector {
   // context-aware selections
   Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
 
-  std::vector<char> trackQualityMask;
-  std::vector<char> mcLabelMaskXiMinus;
-  std::vector<char> mcLabelMaskXiPlus;
-  std::vector<char> mcLabelMaskOmegaMinus;
-  std::vector<char> mcLabelMaskOmegaPlus;
-  std::vector<char> dEdxMaskXiMinus;
-  std::vector<char> dEdxMaskXiPlus;
-  std::vector<char> dEdxMaskOmegaMinus;
-  std::vector<char> dEdxMaskOmegaPlus;
-  std::vector<char> usedInTrackedCascadeMask;
+  std::vector<uint8_t> trackQualityMask;
+  std::vector<uint8_t> mcLabelMaskXiMinus;
+  std::vector<uint8_t> mcLabelMaskXiPlus;
+  std::vector<uint8_t> mcLabelMaskOmegaMinus;
+  std::vector<uint8_t> mcLabelMaskOmegaPlus;
+  std::vector<uint8_t> dEdxMaskXiMinus;
+  std::vector<uint8_t> dEdxMaskXiPlus;
+  std::vector<uint8_t> dEdxMaskOmegaMinus;
+  std::vector<uint8_t> dEdxMaskOmegaPlus;
+  std::vector<uint8_t> usedInTrackedCascadeMask;
 
   void init(InitContext const&) {}
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
   template <class TTrackTo, typename TCascadeObject>
-  void checkTrackQuality(TCascadeObject const& lCascadeCandidate, char& lIsInteresting, char lIsXiMinus, char lIsXiPlus, char lIsOmegaMinus, char lIsOmegaPlus)
+  void checkTrackQuality(TCascadeObject const& lCascadeCandidate, uint8_t& lIsInteresting, uint8_t lIsXiMinus, uint8_t lIsXiPlus, uint8_t lIsOmegaMinus, uint8_t lIsOmegaPlus)
   {
     lIsInteresting = 0;
     auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
@@ -1112,7 +1112,7 @@ struct cascadePreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTrackTo, typename TCascadeObject>
-  void checkPDG(TCascadeObject const& lCascadeCandidate, char& lIsXiMinus, char& lIsXiPlus, char& lIsOmegaMinus, char& lIsOmegaPlus)
+  void checkPDG(TCascadeObject const& lCascadeCandidate, uint8_t& lIsXiMinus, uint8_t& lIsXiPlus, uint8_t& lIsOmegaMinus, uint8_t& lIsOmegaPlus)
   {
     auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
@@ -1169,7 +1169,7 @@ struct cascadePreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check early dE/dx selection
   template <class TTrackTo, typename TCascadeObject>
-  void checkdEdx(TCascadeObject const& lCascadeCandidate, char& lIsXiMinus, char& lIsXiPlus, char& lIsOmegaMinus, char& lIsOmegaPlus)
+  void checkdEdx(TCascadeObject const& lCascadeCandidate, uint8_t& lIsXiMinus, uint8_t& lIsXiPlus, uint8_t& lIsOmegaMinus, uint8_t& lIsOmegaPlus)
   {
     auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
@@ -1317,7 +1317,7 @@ struct cascadePreselector {
   void processSkipCascadesNotUsedInTrackedCascades(aod::TrackedCascades const& tracasctable, aod::Cascades const& casctable)
   {
     for (auto const& tracasc : tracasctable) {
-      usedInTrackedCascadeMask[tracasc.cascadeId()] = true; // tag V0s needed by tracked cascades
+      usedInTrackedCascadeMask[tracasc.cascadeId()] = 1; // tag V0s needed by tracked cascades
     }
     checkAndFinalize();
   }
