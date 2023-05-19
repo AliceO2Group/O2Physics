@@ -307,6 +307,13 @@ struct Pi0EtaToGammaGammaMC {
               if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
                 continue;
               }
+              if constexpr (pairtype == PairType::kPCMPHOS || pairtype == PairType::kPCMEMC) {
+                auto pos = g1.template posTrack_as<MyMCV0Legs>();
+                auto ele = g1.template negTrack_as<MyMCV0Legs>();
+                if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.4) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.4)) {
+                  continue;
+                }
+              }
 
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
