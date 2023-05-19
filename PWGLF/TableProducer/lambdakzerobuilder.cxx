@@ -111,6 +111,8 @@ struct lambdakzeroBuilder {
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
   Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
+  Configurable<bool> d_QA_checkMC{"d_QA_checkMC", true, "check MC truth in QA"};
+  Configurable<bool> d_QA_checkdEdx{"d_QA_checkdEdx", false, "check dEdx in QA"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -556,6 +558,9 @@ struct lambdakzeroBuilder {
     }
 
     if (d_doQA) {
+      bool mcUnchecked = !d_QA_checkMC;
+      bool dEdxUnchecked = !d_QA_checkdEdx;
+
       // Calculate masses
       auto lGammaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
       auto lK0ShortMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
@@ -569,35 +574,33 @@ struct lambdakzeroBuilder {
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
 
       // Fill basic mass histograms
-      // Note: all presel bools are true if unchecked
-      if (V0.isGammaCandidate() && V0.isTrueGamma())
+      if ((V0.isGammaCandidate() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
         registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
-      if (V0.isK0ShortCandidate() && V0.isTrueK0Short())
+      if ((V0.isK0ShortCandidate() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))
         registry.fill(HIST("h2dK0ShortMass"), lPt, lK0ShortMass);
-      if (V0.isLambdaCandidate() && V0.isTrueLambda())
+      if ((V0.isLambdaCandidate() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))
         registry.fill(HIST("h2dLambdaMass"), lPt, lLambdaMass);
-      if (V0.isAntiLambdaCandidate() && V0.isTrueAntiLambda())
+      if ((V0.isAntiLambdaCandidate() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))
         registry.fill(HIST("h2dAntiLambdaMass"), lPt, lAntiLambdaMass);
-      if (V0.isHypertritonCandidate() && V0.isTrueHypertriton())
+      if ((V0.isHypertritonCandidate() || dEdxUnchecked) && (V0.isTrueHypertriton() || mcUnchecked))
         registry.fill(HIST("h2dHypertritonMass"), lPtHy, lHypertritonMass);
-      if (V0.isAntiHypertritonCandidate() && V0.isTrueAntiHypertriton())
+      if ((V0.isAntiHypertritonCandidate() || dEdxUnchecked) && (V0.isTrueAntiHypertriton() || mcUnchecked))
         registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
 
       // Fill ITS cluster maps with specific mass cuts
-      if (TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow && V0.isK0ShortCandidate() && V0.isTrueK0Short()) {
+      if (TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow && ((V0.isK0ShortCandidate() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_K0ShortPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
         registry.fill(HIST("h2dITSCluMap_K0ShortNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
       }
-      if (TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow && V0.isLambdaCandidate() && V0.isTrueLambda()) {
+      if (TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isLambdaCandidate() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_LambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
         registry.fill(HIST("h2dITSCluMap_LambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
       }
-      if (TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow && V0.isAntiLambdaCandidate() && V0.isTrueAntiLambda()) {
+      if (TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isAntiLambdaCandidate() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_AntiLambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
         registry.fill(HIST("h2dITSCluMap_AntiLambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
       }
     }
-
     return true;
   }
 
@@ -880,8 +883,8 @@ struct lambdakzeroPreselector {
       if (doprocessSkipV0sNotUsedInTrackedCascades)
         validV0 = validV0 && usedInTrackedCascadeMask[ii];
       v0tags(validV0,
-             mcLabelMaskGamma[ii], mcLabelMaskK0Short[ii], mcLabelMaskLambda[ii], mcLabelMaskAntiLambda[ii], mcLabelMaskHypertriton[ii], mcLabelMaskAntiHypertriton[ii],
-             dEdxMaskGamma[ii], dEdxMaskK0Short[ii], dEdxMaskLambda[ii], dEdxMaskAntiLambda[ii], dEdxMaskHypertriton[ii], dEdxMaskAntiHypertriton[ii]);
+             mcLabelMaskGamma[ii] == 1, mcLabelMaskK0Short[ii] == 1, mcLabelMaskLambda[ii] == 1, mcLabelMaskAntiLambda[ii] == 1, mcLabelMaskHypertriton[ii] == 1, mcLabelMaskAntiHypertriton[ii] == 1,
+             dEdxMaskGamma[ii] == 1, dEdxMaskK0Short[ii] == 1, dEdxMaskLambda[ii] == 1, dEdxMaskAntiLambda[ii] == 1, dEdxMaskHypertriton[ii] == 1, dEdxMaskAntiHypertriton[ii] == 1);
     }
     resetMasks();
   }

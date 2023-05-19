@@ -118,6 +118,8 @@ struct cascadeBuilder {
   Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
   Configurable<bool> d_doStraTrackQA{"d_doStraTrackQA", false, "do strangeness tracking QA"};
   Configurable<bool> d_GenerateOnlyTrackedCascades{"d_GenerateOnlyTrackedCascades", false, "Skip cascades that aren't tracked"};
+  Configurable<bool> d_QA_checkMC{"d_QA_checkMC", true, "check MC truth in QA"};
+  Configurable<bool> d_QA_checkdEdx{"d_QA_checkdEdx", false, "check dEdx in QA"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -131,9 +133,13 @@ struct cascadeBuilder {
   Configurable<int> dQANBinsRadius{"dQANBinsRadius", 500, "Number of radius bins in QA histo"};
   Configurable<int> dQANBinsPtCoarse{"dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
   Configurable<int> dQANBinsMass{"dQANBinsMass", 400, "Number of mass bins for QA histograms"};
-  Configurable<int> dQANBinsDCAxy{"dQANBinsDCAxy", 200, "DCAxy of cascade to PV"};
+  Configurable<int> dQANBinsDCAxy{"dQANBinsDCAxy", 200, "DCAxy of cascade to PV Nbins"};
+  Configurable<int> dQANBinsChi2{"dQANBinsChi2", 200, "Chi2 Nbins"};
+  Configurable<int> dQANBinsCluSize{"dQANBinsCluSize", 200, "Cluster size Nbins"};
   Configurable<float> dQAMaxPt{"dQAMaxPt", 5, "max pT in QA histo"};
   Configurable<float> dQAMaxDCA{"dQAMaxDCA", 1, "max DCAxy QA histo"};
+  Configurable<float> dQAMaxChi2{"dQAMaxChi2", 20, "max chi2"};
+  Configurable<float> dQAMaxCluSize{"dQAMaxCluSize", 10, "max ITS clu size"};
   Configurable<float> dQAXiMassWindow{"dQAXiMassWindow", 0.005, "Xi mass window for ITS cluster map QA"};
   Configurable<float> dQAOmegaMassWindow{"dQAOmegaMassWindow", 0.005, "Omega mass window for ITS cluster map QA"};
 
@@ -184,6 +190,8 @@ struct cascadeBuilder {
     float v0dcanegtopv;
     float mXi;
     float mOmega;
+    float yXi;
+    float yOmega;
   } cascadecandidate;
 
   o2::track::TrackParCov lBachelorTrack;
@@ -274,9 +282,19 @@ struct cascadeBuilder {
 
       // if basic strangeness tracking QA is desired, do it here
       // convenience: equivalence between regular cascade and tracked cascade is easy to check here
-      //              -> completely automatic, easy comparison of 'trackable' candidates (<< all)ß
+      //              -> completely automatic, easy comparison of 'trackable' candidates (<< all)
 
       if (d_doStraTrackQA) {
+        // Radius QA
+        registry.add("hRadius_XiMinus_All", "hRadius_XiMinus_All", kTH1D, {axisRadius});
+        registry.add("hRadius_XiPlus_All", "hRadius_XiPlus_All", kTH1D, {axisRadius});
+        registry.add("hRadius_OmegaMinus_All", "hRadius_OmegaMinus_All", kTH1D, {axisRadius});
+        registry.add("hRadius_OmegaPlus_All", "hRadius_OmegaPlus_All", kTH1D, {axisRadius});
+        registry.add("hRadius_XiMinus_Tracked", "hRadius_XiMinus_Tracked", kTH1D, {axisRadius});
+        registry.add("hRadius_XiPlus_Tracked", "hRadius_XiPlus_Tracked", kTH1D, {axisRadius});
+        registry.add("hRadius_OmegaMinus_Tracked", "hRadius_OmegaMinus_Tracked", kTH1D, {axisRadius});
+        registry.add("hRadius_OmegaPlus_Tracked", "hRadius_OmegaPlus_Tracked", kTH1D, {axisRadius});
+
         // Step 1: mass versus transverse momentum, original variety (given it was tracked)
         registry.add("h2dTrackableXiMinusMass", "h2dTrackableXiMinusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
         registry.add("h2dTrackableXiPlusMass", "h2dTrackableXiPlusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
@@ -301,7 +319,34 @@ struct cascadeBuilder {
         registry.add("hDCATrackedCascadeToPVOmegaMinus", "hDCATrackedCascadeToPVOmegaMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
         registry.add("hDCATrackedCascadeToPVOmegaPlus", "hDCATrackedCascadeToPVOmegaPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
 
-        // work in progress: more to be added!
+        registry.add("hDCAzCascadeToPVXiMinus", "hDCAzCascadeToPVXiMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzCascadeToPVXiPlus", "hDCAzCascadeToPVXiPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzCascadeToPVOmegaMinus", "hDCAzCascadeToPVOmegaMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzCascadeToPVOmegaPlus", "hDCAzCascadeToPVOmegaPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackableCascadeToPVXiMinus", "hDCAzTrackableCascadeToPVXiMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackableCascadeToPVXiPlus", "hDCAzTrackableCascadeToPVXiPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackableCascadeToPVOmegaMinus", "hDCAzTrackableCascadeToPVOmegaMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackableCascadeToPVOmegaPlus", "hDCAzTrackableCascadeToPVOmegaPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackedCascadeToPVXiMinus", "hDCAzTrackedCascadeToPVXiMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackedCascadeToPVXiPlus", "hDCAzTrackedCascadeToPVXiPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackedCascadeToPVOmegaMinus", "hDCAzTrackedCascadeToPVOmegaMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackedCascadeToPVOmegaPlus", "hDCAzTrackedCascadeToPVOmegaPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+
+        // specific variables associated to strangeness tracking
+        const AxisSpec axisChi2{(int)dQANBinsChi2, 0.0f, dQAMaxChi2, "#chi^{2}"};
+        const AxisSpec axisCluSize{(int)dQANBinsCluSize, 0.0f, dQAMaxCluSize, "Mean ITS cluster size"};
+        registry.add("hMatchingChi2_XiMinus", "hMatchingChi2_XiMinus", kTH1D, {axisChi2});
+        registry.add("hMatchingChi2_XiPlus", "hMatchingChi2_XiPlus", kTH1D, {axisChi2});
+        registry.add("hMatchingChi2_OmegaMinus", "hMatchingChi2_OmegaMinus", kTH1D, {axisChi2});
+        registry.add("hMatchingChi2_OmegaPlus", "hMatchingChi2_OmegaPlus", kTH1D, {axisChi2});
+        registry.add("hTopologyChi2_XiMinus", "hTopologyChi2_XiMinus", kTH1D, {axisChi2});
+        registry.add("hTopologyChi2_XiPlus", "hTopologyChi2_XiPlus", kTH1D, {axisChi2});
+        registry.add("hTopologyChi2_OmegaMinus", "hTopologyChi2_OmegaMinus", kTH1D, {axisChi2});
+        registry.add("hTopologyChi2_OmegaPlus", "hTopologyChi2_OmegaPlus", kTH1D, {axisChi2});
+        registry.add("hCluSize_XiMinus", "hCluSize_XiMinus", kTH1D, {axisCluSize});
+        registry.add("hCluSize_XiPlus", "hCluSize_XiPlus", kTH1D, {axisCluSize});
+        registry.add("hCluSize_OmegaMinus", "hCluSize_OmegaMinus", kTH1D, {axisCluSize});
+        registry.add("hCluSize_OmegaPlus", "hCluSize_OmegaPlus", kTH1D, {axisCluSize});
       }
     }
 
@@ -640,6 +685,8 @@ struct cascadeBuilder {
     // Calculate masses a priori
     cascadecandidate.mXi = RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
     cascadecandidate.mOmega = RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassLambda});
+    cascadecandidate.yXi = RecoDecay::y(array{cascadecandidate.bachP[0] + v0.pxpos() + v0.pxneg(), cascadecandidate.bachP[1] + v0.pypos() + v0.pyneg(), cascadecandidate.bachP[2] + v0.pzpos() + v0.pzneg()}, o2::constants::physics::MassXiMinus);
+    cascadecandidate.yOmega = RecoDecay::y(array{cascadecandidate.bachP[0] + v0.pxpos() + v0.pxneg(), cascadecandidate.bachP[1] + v0.pypos() + v0.pyneg(), cascadecandidate.bachP[2] + v0.pzpos() + v0.pzneg()}, o2::constants::physics::MassOmegaMinus);
 
     // Populate information
     cascadecandidate.v0Id = v0index.globalIndex();
@@ -667,43 +714,45 @@ struct cascadeBuilder {
     }
 
     if (d_doQA) {
+      bool mcUnchecked = !d_QA_checkMC;
+      bool dEdxUnchecked = !d_QA_checkdEdx;
+
       // Calculate masses
       auto lPt = RecoDecay::sqrtSumOfSquares(v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[1]);
 
       // Fill basic mass histograms
       // Note: all presel bools are true if unchecked
-      if (cascade.isXiMinusCandidate() && cascade.isTrueXiMinus())
+      if ((cascade.isXiMinusCandidate() || dEdxUnchecked) && (cascade.isTrueXiMinus() || mcUnchecked))
         registry.fill(HIST("h2dXiMinusMass"), lPt, cascadecandidate.mXi);
-      if (cascade.isXiPlusCandidate() && cascade.isTrueXiPlus())
+      if ((cascade.isXiPlusCandidate() || dEdxUnchecked) && (cascade.isTrueXiPlus() || mcUnchecked))
         registry.fill(HIST("h2dXiPlusMass"), lPt, cascadecandidate.mXi);
-      if (cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus())
+      if ((cascade.isOmegaMinusCandidate() || dEdxUnchecked) && (cascade.isTrueOmegaMinus() || mcUnchecked))
         registry.fill(HIST("h2dOmegaMinusMass"), lPt, cascadecandidate.mOmega);
-      if (cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus())
+      if ((cascade.isOmegaPlusCandidate() || dEdxUnchecked) && (cascade.isTrueOmegaPlus() || mcUnchecked))
         registry.fill(HIST("h2dOmegaPlusMass"), lPt, cascadecandidate.mOmega);
 
       // Fill ITS cluster maps with specific mass cuts
-      if (TMath::Abs(cascadecandidate.mXi - 1.322) < dQAXiMassWindow && cascade.isXiMinusCandidate() && cascade.isTrueXiMinus()) {
+      if (TMath::Abs(cascadecandidate.mXi - 1.322) < dQAXiMassWindow && ((cascade.isXiMinusCandidate() || dEdxUnchecked) && (cascade.isTrueXiMinus() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_XiMinusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_XiMinusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_XiMinusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
       }
-      if (TMath::Abs(cascadecandidate.mXi - 1.322) < dQAXiMassWindow && cascade.isXiPlusCandidate() && cascade.isTrueXiPlus()) {
+      if (TMath::Abs(cascadecandidate.mXi - 1.322) < dQAXiMassWindow && ((cascade.isXiPlusCandidate() || dEdxUnchecked) && (cascade.isTrueXiPlus() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_XiPlusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_XiPlusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_XiPlusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
       }
-      if (TMath::Abs(cascadecandidate.mOmega - 1.672) < dQAOmegaMassWindow && cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus()) {
+      if (TMath::Abs(cascadecandidate.mOmega - 1.672) < dQAOmegaMassWindow && ((cascade.isOmegaMinusCandidate() || dEdxUnchecked) && (cascade.isTrueOmegaMinus() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_OmegaMinusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_OmegaMinusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_OmegaMinusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
       }
-      if (TMath::Abs(cascadecandidate.mOmega - 1.672) < dQAOmegaMassWindow && cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus()) {
+      if (TMath::Abs(cascadecandidate.mOmega - 1.672) < dQAOmegaMassWindow && ((cascade.isOmegaPlusCandidate() || dEdxUnchecked) && (cascade.isTrueOmegaPlus() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_OmegaPlusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_OmegaPlusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_OmegaPlusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
       }
     }
-
     return true;
   }
 
@@ -829,18 +878,33 @@ struct cascadeBuilder {
       }
 
       float lPt = 0.0f;
+      bool mcUnchecked = !d_QA_checkMC;
+      bool dEdxUnchecked = !d_QA_checkdEdx;
 
       if (d_doStraTrackQA) {
         // Fill standard DCA histograms for all candidates (irrespectively of strangeness tracking)
         lPt = RecoDecay::sqrtSumOfSquares(cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0] + cascadecandidate.bachP[0], cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1] + cascadecandidate.bachP[1]);
-        if (cascade.isXiMinusCandidate() && cascade.isTrueXiMinus())
+
+        if ((cascade.isXiMinusCandidate() || dEdxUnchecked) && (cascade.isTrueXiMinus() || mcUnchecked) && fabs(cascadecandidate.yXi) < 0.5) {
           registry.fill(HIST("hDCACascadeToPVXiMinus"), lPt, cascadecandidate.cascDCAxy);
-        if (cascade.isXiPlusCandidate() && cascade.isTrueXiPlus())
+          registry.fill(HIST("hDCAzCascadeToPVXiMinus"), lPt, cascadecandidate.cascDCAz);
+          registry.fill(HIST("hRadius_XiMinus_All"), cascadecandidate.cascradius);
+        }
+        if ((cascade.isXiPlusCandidate() || dEdxUnchecked) && (cascade.isTrueXiPlus() || mcUnchecked) && fabs(cascadecandidate.yXi) < 0.5) {
           registry.fill(HIST("hDCACascadeToPVXiPlus"), lPt, cascadecandidate.cascDCAxy);
-        if (cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus())
+          registry.fill(HIST("hDCAzCascadeToPVXiPlus"), lPt, cascadecandidate.cascDCAz);
+          registry.fill(HIST("hRadius_XiPlus_All"), cascadecandidate.cascradius);
+        }
+        if ((cascade.isOmegaMinusCandidate() || dEdxUnchecked) && (cascade.isTrueOmegaMinus() || mcUnchecked) && fabs(cascadecandidate.yOmega) < 0.5) {
           registry.fill(HIST("hDCACascadeToPVOmegaMinus"), lPt, cascadecandidate.cascDCAxy);
-        if (cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus())
+          registry.fill(HIST("hDCAzCascadeToPVOmegaMinus"), lPt, cascadecandidate.cascDCAz);
+          registry.fill(HIST("hRadius_OmegaMinus_All"), cascadecandidate.cascradius);
+        }
+        if ((cascade.isOmegaPlusCandidate() || dEdxUnchecked) && (cascade.isTrueOmegaPlus() || mcUnchecked) && fabs(cascadecandidate.yOmega) < 0.5) {
           registry.fill(HIST("hDCACascadeToPVOmegaPlus"), lPt, cascadecandidate.cascDCAxy);
+          registry.fill(HIST("hDCAzCascadeToPVOmegaPlus"), lPt, cascadecandidate.cascDCAz);
+          registry.fill(HIST("hRadius_OmegaPlus_All"), cascadecandidate.cascradius);
+        }
       }
 
       if (trackedCascadesSliced.size() > 0) {
@@ -862,45 +926,55 @@ struct cascadeBuilder {
 
         if (d_doStraTrackQA) {
           // do QA, compare with non-tracked
-
           // Fill standard DCA histograms for all tracked candidates with ORIGINAL properties
-          if (cascade.isXiMinusCandidate() && cascade.isTrueXiMinus())
+          if ((cascade.isXiMinusCandidate() || dEdxUnchecked) && (cascade.isTrueXiMinus() || mcUnchecked) && fabs(cascadecandidate.yXi) < 0.5) {
             registry.fill(HIST("hDCATrackableCascadeToPVXiMinus"), lPt, cascadecandidate.cascDCAxy);
-          if (cascade.isXiPlusCandidate() && cascade.isTrueXiPlus())
-            registry.fill(HIST("hDCATrackableCascadeToPVXiPlus"), lPt, cascadecandidate.cascDCAxy);
-          if (cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus())
-            registry.fill(HIST("hDCATrackableCascadeToPVOmegaMinus"), lPt, cascadecandidate.cascDCAxy);
-          if (cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus())
-            registry.fill(HIST("hDCATrackableCascadeToPVOmegaPlus"), lPt, cascadecandidate.cascDCAxy);
-
-          // Fill standard DCA histograms for all tracked candidates with ORIGINAL properties
-          if (cascade.isXiMinusCandidate() && cascade.isTrueXiMinus())
             registry.fill(HIST("hDCATrackedCascadeToPVXiMinus"), lPt, dcaInfo[0]);
-          if (cascade.isXiPlusCandidate() && cascade.isTrueXiPlus())
-            registry.fill(HIST("hDCATrackedCascadeToPVXiPlus"), lPt, dcaInfo[0]);
-          if (cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus())
-            registry.fill(HIST("hDCATrackedCascadeToPVOmegaMinus"), lPt, dcaInfo[0]);
-          if (cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus())
-            registry.fill(HIST("hDCATrackedCascadeToPVOmegaPlus"), lPt, dcaInfo[0]);
-
-          // Invariant mass check
-          if (cascade.isXiMinusCandidate() && cascade.isTrueXiMinus())
+            registry.fill(HIST("hDCAzTrackableCascadeToPVXiMinus"), lPt, cascadecandidate.cascDCAz);
+            registry.fill(HIST("hDCAzTrackedCascadeToPVXiMinus"), lPt, dcaInfo[1]);
             registry.fill(HIST("h2dTrackableXiMinusMass"), lPt, cascadecandidate.mXi);
-          if (cascade.isXiPlusCandidate() && cascade.isTrueXiPlus())
-            registry.fill(HIST("h2dTrackableXiPlusMass"), lPt, cascadecandidate.mXi);
-          if (cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus())
-            registry.fill(HIST("h2dTrackableOmegaMinusMass"), lPt, cascadecandidate.mOmega);
-          if (cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus())
-            registry.fill(HIST("h2dTrackableOmegaPlusMass"), lPt, cascadecandidate.mOmega);
-
-          if (cascade.isXiMinusCandidate() && cascade.isTrueXiMinus())
             registry.fill(HIST("h2dTrackedXiMinusMass"), lPt, trackedCascade.xiMass());
-          if (cascade.isXiPlusCandidate() && cascade.isTrueXiPlus())
+            registry.fill(HIST("hRadius_XiMinus_Tracked"), cascadecandidate.cascradius);
+            registry.fill(HIST("hMatchingChi2_XiMinus"), trackedCascade.matchingChi2());
+            registry.fill(HIST("hTopologyChi2_XiMinus"), trackedCascade.topologyChi2());
+            registry.fill(HIST("hCluSize_XiMinus"), trackedCascade.itsClsSize());
+          }
+          if ((cascade.isXiPlusCandidate() || dEdxUnchecked) && (cascade.isTrueXiPlus() || mcUnchecked) && fabs(cascadecandidate.yXi) < 0.5) {
+            registry.fill(HIST("hDCATrackableCascadeToPVXiPlus"), lPt, cascadecandidate.cascDCAxy);
+            registry.fill(HIST("hDCATrackedCascadeToPVXiPlus"), lPt, dcaInfo[0]);
+            registry.fill(HIST("hDCAzTrackableCascadeToPVXiPlus"), lPt, cascadecandidate.cascDCAz);
+            registry.fill(HIST("hDCAzTrackedCascadeToPVXiPlus"), lPt, dcaInfo[1]);
+            registry.fill(HIST("h2dTrackableXiPlusMass"), lPt, cascadecandidate.mXi);
             registry.fill(HIST("h2dTrackedXiPlusMass"), lPt, trackedCascade.xiMass());
-          if (cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus())
+            registry.fill(HIST("hRadius_XiPlus_Tracked"), cascadecandidate.cascradius);
+            registry.fill(HIST("hMatchingChi2_XiPlus"), trackedCascade.matchingChi2());
+            registry.fill(HIST("hTopologyChi2_XiPlus"), trackedCascade.topologyChi2());
+            registry.fill(HIST("hCluSize_XiPlus"), trackedCascade.itsClsSize());
+          }
+          if ((cascade.isOmegaMinusCandidate() || dEdxUnchecked) && (cascade.isTrueOmegaMinus() || mcUnchecked) && fabs(cascadecandidate.yOmega) < 0.5) {
+            registry.fill(HIST("hDCATrackableCascadeToPVOmegaMinus"), lPt, cascadecandidate.cascDCAxy);
+            registry.fill(HIST("hDCATrackedCascadeToPVOmegaMinus"), lPt, dcaInfo[0]);
+            registry.fill(HIST("hDCAzTrackableCascadeToPVOmegaMinus"), lPt, cascadecandidate.cascDCAz);
+            registry.fill(HIST("hDCAzTrackedCascadeToPVOmegaMinus"), lPt, dcaInfo[1]);
+            registry.fill(HIST("h2dTrackableOmegaMinusMass"), lPt, cascadecandidate.mOmega);
             registry.fill(HIST("h2dTrackedOmegaMinusMass"), lPt, trackedCascade.omegaMass());
-          if (cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus())
+            registry.fill(HIST("hRadius_OmegaMinus_Tracked"), cascadecandidate.cascradius);
+            registry.fill(HIST("hMatchingChi2_OmegaMinus"), trackedCascade.matchingChi2());
+            registry.fill(HIST("hTopologyChi2_OmegaMinus"), trackedCascade.topologyChi2());
+            registry.fill(HIST("hCluSize_OmegaMinus"), trackedCascade.itsClsSize());
+          }
+          if ((cascade.isOmegaPlusCandidate() || dEdxUnchecked) && (cascade.isTrueOmegaPlus() || mcUnchecked) && fabs(cascadecandidate.yOmega) < 0.5) {
+            registry.fill(HIST("hDCATrackableCascadeToPVOmegaPlus"), lPt, cascadecandidate.cascDCAxy);
+            registry.fill(HIST("hDCATrackedCascadeToPVOmegaPlus"), lPt, dcaInfo[0]);
+            registry.fill(HIST("hDCAzTrackableCascadeToPVOmegaPlus"), lPt, cascadecandidate.cascDCAz);
+            registry.fill(HIST("hDCAzTrackedCascadeToPVOmegaPlus"), lPt, dcaInfo[1]);
+            registry.fill(HIST("h2dTrackableOmegaPlusMass"), lPt, cascadecandidate.mOmega);
             registry.fill(HIST("h2dTrackedOmegaPlusMass"), lPt, trackedCascade.omegaMass());
+            registry.fill(HIST("hRadius_OmegaPlus_Tracked"), cascadecandidate.cascradius);
+            registry.fill(HIST("hMatchingChi2_OmegaPlus"), trackedCascade.matchingChi2());
+            registry.fill(HIST("hTopologyChi2_OmegaPlus"), trackedCascade.topologyChi2());
+            registry.fill(HIST("hCluSize_OmegaPlus"), trackedCascade.itsClsSize());
+          }
         }
 
         // Override cascDCAxy with the strangeness-tracked information
@@ -1183,8 +1257,8 @@ struct cascadePreselector {
       if (doprocessSkipCascadesNotUsedInTrackedCascades)
         validCascade = validCascade && usedInTrackedCascadeMask[ii];
       casctags(validCascade,
-               mcLabelMaskXiMinus[ii], mcLabelMaskXiPlus[ii], mcLabelMaskOmegaPlus[ii], mcLabelMaskOmegaPlus[ii],
-               dEdxMaskXiMinus[ii], dEdxMaskXiPlus[ii], dEdxMaskOmegaPlus[ii], dEdxMaskOmegaPlus[ii]);
+               mcLabelMaskXiMinus[ii] == 1, mcLabelMaskXiPlus[ii] == 1, mcLabelMaskOmegaPlus[ii] == 1, mcLabelMaskOmegaPlus[ii] == 1,
+               dEdxMaskXiMinus[ii] == 1, dEdxMaskXiPlus[ii] == 1, dEdxMaskOmegaPlus[ii] == 1, dEdxMaskOmegaPlus[ii] == 1);
     }
     resetMasks();
   }
