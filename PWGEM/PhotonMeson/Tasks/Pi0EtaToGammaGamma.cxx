@@ -338,6 +338,30 @@ struct Pi0EtaToGammaGamma {
               if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
                 continue;
               }
+
+              if constexpr (pairtype == PairType::kPCMPHOS || pairtype == PairType::kPCMEMC) {
+                auto pos = g1.template posTrack_as<aod::V0Legs>();
+                auto ele = g1.template negTrack_as<aod::V0Legs>();
+
+                for (auto& v0leg : {pos, ele}) {
+                  float deta = v0leg.eta() - g2.eta();
+                  float dphi = TVector2::Phi_mpi_pi(TVector2::Phi_0_2pi(v0leg.phi()) - TVector2::Phi_0_2pi(g2.phi()));
+                  float dR = sqrt(deta * deta + dphi * dphi);
+                  float Ep = g2.e() / v0leg.p();
+                  reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hdEtadPhi"))->Fill(dphi, deta);
+                  reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hdEtaPt"))->Fill(v0leg.pt(), deta);
+                  reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hdPhiPt"))->Fill(v0leg.pt(), dphi);
+                  reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hdRPt"))->Fill(v0leg.pt(), dR);
+                  if (dR < 0.4) {
+                    reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hEp_E"))->Fill(g2.e(), Ep);
+                  }
+                }
+
+                if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.4) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.4)) {
+                  continue;
+                }
+              }
+
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;

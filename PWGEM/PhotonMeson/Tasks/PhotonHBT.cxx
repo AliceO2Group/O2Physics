@@ -218,6 +218,13 @@ struct PhotonHBT {
             if (!IsSelectedPair<pairtype>(g1, g2, cut, cut)) {
               continue;
             }
+            if constexpr (pairtype == PairType::kPCMPHOS) {
+              auto pos = g1.template posTrack_as<aod::V0Legs>();
+              auto ele = g1.template negTrack_as<aod::V0Legs>();
+              if (o2::aod::photonpair::DoesV0LegMatchWithCluster<pairtype>(pos, g2) || o2::aod::photonpair::DoesV0LegMatchWithCluster<pairtype>(ele, g2)) {
+                continue;
+              }
+            }
             // longitudinally co-moving system (LCMS)
             ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
             ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
@@ -242,6 +249,13 @@ struct PhotonHBT {
             for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_coll, photons2_coll))) {
               if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
                 continue;
+              }
+              if constexpr (pairtype == PairType::kPCMPHOS) {
+                auto pos = g1.template posTrack_as<aod::V0Legs>();
+                auto ele = g1.template negTrack_as<aod::V0Legs>();
+                if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.4) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.4)) {
+                  continue;
+                }
               }
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);

@@ -15,6 +15,7 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_
 
+#include <TVector2.h>
 #include "Framework/AnalysisTask.h"
 
 //_______________________________________________________________________
@@ -40,9 +41,19 @@ bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const
   is_g2_selected = cut2.template IsSelected<U2>(g2);
   return (is_g1_selected & is_g2_selected);
 }
+//_______________________________________________________________________
+template <typename TV0Leg, typename TCluster>
+bool DoesV0LegMatchWithCluster(TV0Leg const& v0leg, TCluster const& cluster, const float maxR)
+{
+  float deta = v0leg.eta() - cluster.eta();
+  float dphi = TVector2::Phi_mpi_pi(TVector2::Phi_0_2pi(v0leg.phi()) - TVector2::Phi_0_2pi(cluster.phi()));
+  float dR = sqrt(deta * deta + dphi * dphi);
+  float Ep = cluster.e() / v0leg.p();
+  return (dR < maxR) & (abs(Ep - 1) < 0.5);
+}
+//_______________________________________________________________________
 } // namespace photonpair
 } // namespace o2::aod
-
 //_______________________________________________________________________
 //_______________________________________________________________________
 //_______________________________________________________________________
