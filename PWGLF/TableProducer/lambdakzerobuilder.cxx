@@ -69,8 +69,8 @@ using namespace o2::framework::expressions;
 using std::array;
 
 // simple checkers
-#define bitset(var,nbit)   ((var) |=  (1<<(nbit)))
-#define bitcheck(var,nbit) ((var) &   (1<<(nbit)))
+#define bitset(var, nbit) ((var) |= (1 << (nbit)))
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
@@ -730,8 +730,8 @@ struct lambdakzeroPreselector {
                bitdEdxAntiLambda,
                bitdEdxHypertriton,
                bitdEdxAntiHypertriton,
-               bitUsedInCascade, 
-               bitUsedInTrackedCascade};
+               bitUsedInCascade,
+               bitUsedInTrackedCascade };
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
@@ -742,17 +742,17 @@ struct lambdakzeroPreselector {
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
     // No baryons in decay
-    if ( ((bitcheck(maskElement,bitdEdxGamma) || bitcheck(maskElement,bitdEdxK0Short) )||passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows))
-      bitset(maskElement,bitTrackQuality);
+    if (((bitcheck(maskElement, bitdEdxGamma) || bitcheck(maskElement, bitdEdxK0Short)) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows))
+      bitset(maskElement, bitTrackQuality);
     // With baryons in decay
-    if ((bitcheck(maskElement,bitdEdxLambda)||passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      bitset(maskElement,bitTrackQuality);
-    if ((bitcheck(maskElement,bitdEdxAntiLambda)||passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      bitset(maskElement,bitTrackQuality);
-    if ((bitcheck(maskElement,bitdEdxHypertriton)||passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      bitset(maskElement,bitTrackQuality);
-    if ((bitcheck(maskElement,bitdEdxAntiHypertriton)||passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      bitset(maskElement,bitTrackQuality);
+    if ((bitcheck(maskElement, bitdEdxLambda) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
+    if ((bitcheck(maskElement, bitdEdxAntiLambda) || passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
+    if ((bitcheck(maskElement, bitdEdxHypertriton) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
+    if ((bitcheck(maskElement, bitdEdxAntiHypertriton) || passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
@@ -780,17 +780,17 @@ struct lambdakzeroPreselector {
       }
     } // end association check
     if (lPDG == 310)
-      bitset(maskElement,bitTrueK0Short);
+      bitset(maskElement, bitTrueK0Short);
     if (lPDG == 3122)
-      bitset(maskElement,bitTrueLambda);
+      bitset(maskElement, bitTrueLambda);
     if (lPDG == -3122)
-      bitset(maskElement,bitTrueAntiLambda);
+      bitset(maskElement, bitTrueAntiLambda);
     if (lPDG == 22)
-      bitset(maskElement,bitTrueGamma);
+      bitset(maskElement, bitTrueGamma);
     if (lPDG == 1010010030)
-      bitset(maskElement,bitTrueHypertriton);
+      bitset(maskElement, bitTrueHypertriton);
     if (lPDG == -1010010030)
-      bitset(maskElement,bitTrueAntiHypertriton);
+      bitset(maskElement, bitTrueAntiHypertriton);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   template <class TTrackTo, typename TV0Object>
@@ -802,22 +802,22 @@ struct lambdakzeroPreselector {
     // dEdx check with LF PID
     if (TMath::Abs(lNegTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow)
-      bitset(maskElement,bitdEdxGamma);
+      bitset(maskElement, bitdEdxGamma);
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
-      bitset(maskElement,bitdEdxK0Short);
+      bitset(maskElement, bitdEdxK0Short);
     if ((TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons) &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow)
-      bitset(maskElement,bitdEdxLambda);
+      bitset(maskElement, bitdEdxLambda);
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         (TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons))
-      bitset(maskElement,bitdEdxAntiLambda);
+      bitset(maskElement, bitdEdxAntiLambda);
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         (TMath::Abs(lPosTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons))
-      bitset(maskElement,bitdEdxHypertriton);
+      bitset(maskElement, bitdEdxHypertriton);
     if ((TMath::Abs(lNegTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons) &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
-      bitset(maskElement,bitdEdxAntiHypertriton);
+      bitset(maskElement, bitdEdxAntiHypertriton);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// Initialization of mask vectors if uninitialized
@@ -840,31 +840,31 @@ struct lambdakzeroPreselector {
   {
     // parse + publish tag table now
     for (int ii = 0; ii < selectionMask.size(); ii++) {
-      bool validV0 = bitcheck(selectionMask[ii],bitTrackQuality);
+      bool validV0 = bitcheck(selectionMask[ii], bitTrackQuality);
       if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
-        validV0 = validV0 && ((bitcheck(selectionMask[ii],bitTrueK0Short) && dIfMCgenerateK0Short) ||
-                              (bitcheck(selectionMask[ii],bitTrueLambda) && dIfMCgenerateLambda) ||
-                              (bitcheck(selectionMask[ii],bitTrueAntiLambda) && dIfMCgenerateAntiLambda) ||
-                              (bitcheck(selectionMask[ii],bitTrueGamma) && dIfMCgenerateGamma) ||
-                              (bitcheck(selectionMask[ii],bitTrueHypertriton) && dIfMCgenerateHypertriton) ||
-                              (bitcheck(selectionMask[ii],bitTrueAntiHypertriton) && dIfMCgenerateAntiHypertriton));
+        validV0 = validV0 && ((bitcheck(selectionMask[ii], bitTrueK0Short) && dIfMCgenerateK0Short) ||
+                              (bitcheck(selectionMask[ii], bitTrueLambda) && dIfMCgenerateLambda) ||
+                              (bitcheck(selectionMask[ii], bitTrueAntiLambda) && dIfMCgenerateAntiLambda) ||
+                              (bitcheck(selectionMask[ii], bitTrueGamma) && dIfMCgenerateGamma) ||
+                              (bitcheck(selectionMask[ii], bitTrueHypertriton) && dIfMCgenerateHypertriton) ||
+                              (bitcheck(selectionMask[ii], bitTrueAntiHypertriton) && dIfMCgenerateAntiHypertriton));
       if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
-        validV0 = validV0 && ((bitcheck(selectionMask[ii],bitdEdxK0Short) && ddEdxPreSelectK0Short) ||
-                              (bitcheck(selectionMask[ii],bitdEdxLambda) && ddEdxPreSelectLambda) ||
-                              (bitcheck(selectionMask[ii],bitdEdxAntiLambda) && ddEdxPreSelectAntiLambda) ||
-                              (bitcheck(selectionMask[ii],bitdEdxGamma) && ddEdxPreSelectGamma) ||
-                              (bitcheck(selectionMask[ii],bitdEdxHypertriton) && ddEdxPreSelectHypertriton) ||
-                              (bitcheck(selectionMask[ii],bitdEdxAntiHypertriton) && ddEdxPreSelectAntiHypertriton));
+        validV0 = validV0 && ((bitcheck(selectionMask[ii], bitdEdxK0Short) && ddEdxPreSelectK0Short) ||
+                              (bitcheck(selectionMask[ii], bitdEdxLambda) && ddEdxPreSelectLambda) ||
+                              (bitcheck(selectionMask[ii], bitdEdxAntiLambda) && ddEdxPreSelectAntiLambda) ||
+                              (bitcheck(selectionMask[ii], bitdEdxGamma) && ddEdxPreSelectGamma) ||
+                              (bitcheck(selectionMask[ii], bitdEdxHypertriton) && ddEdxPreSelectHypertriton) ||
+                              (bitcheck(selectionMask[ii], bitdEdxAntiHypertriton) && ddEdxPreSelectAntiHypertriton));
       if (doprocessSkipV0sNotUsedInCascades)
-        validV0 = validV0 && bitcheck(selectionMask[ii],bitUsedInCascade);
+        validV0 = validV0 && bitcheck(selectionMask[ii], bitUsedInCascade);
       if (doprocessSkipV0sNotUsedInTrackedCascades)
-        validV0 = validV0 && bitcheck(selectionMask[ii],bitUsedInTrackedCascade);
+        validV0 = validV0 && bitcheck(selectionMask[ii], bitUsedInTrackedCascade);
       v0tags(validV0,
-             bitcheck(selectionMask[ii],bitTrueGamma), bitcheck(selectionMask[ii],bitTrueK0Short), bitcheck(selectionMask[ii],bitTrueLambda),
-             bitcheck(selectionMask[ii],bitTrueAntiLambda), bitcheck(selectionMask[ii],bitTrueHypertriton), bitcheck(selectionMask[ii],bitTrueAntiHypertriton),
-             bitcheck(selectionMask[ii],bitdEdxGamma), bitcheck(selectionMask[ii],bitdEdxK0Short), bitcheck(selectionMask[ii],bitdEdxLambda),
-             bitcheck(selectionMask[ii],bitdEdxAntiLambda), bitcheck(selectionMask[ii],bitdEdxHypertriton), bitcheck(selectionMask[ii],bitdEdxAntiHypertriton),
-             bitcheck(selectionMask[ii],bitUsedInCascade), bitcheck(selectionMask[ii],bitUsedInTrackedCascade));
+             bitcheck(selectionMask[ii], bitTrueGamma), bitcheck(selectionMask[ii], bitTrueK0Short), bitcheck(selectionMask[ii], bitTrueLambda),
+             bitcheck(selectionMask[ii], bitTrueAntiLambda), bitcheck(selectionMask[ii], bitTrueHypertriton), bitcheck(selectionMask[ii], bitTrueAntiHypertriton),
+             bitcheck(selectionMask[ii], bitdEdxGamma), bitcheck(selectionMask[ii], bitdEdxK0Short), bitcheck(selectionMask[ii], bitdEdxLambda),
+             bitcheck(selectionMask[ii], bitdEdxAntiLambda), bitcheck(selectionMask[ii], bitdEdxHypertriton), bitcheck(selectionMask[ii], bitdEdxAntiHypertriton),
+             bitcheck(selectionMask[ii], bitUsedInCascade), bitcheck(selectionMask[ii], bitUsedInTrackedCascade));
     }
     resetMasks();
   }
@@ -920,7 +920,7 @@ struct lambdakzeroPreselector {
   void processSkipV0sNotUsedInCascades(aod::Cascades const& casctable)
   {
     for (auto const& casc : casctable) {
-      bitset(selectionMask[casc.v0Id()],bitUsedInCascade); // tag V0s needed by cascades
+      bitset(selectionMask[casc.v0Id()], bitUsedInCascade); // tag V0s needed by cascades
     }
     checkAndFinalize();
   }
@@ -932,7 +932,7 @@ struct lambdakzeroPreselector {
   {
     for (auto const& tracasc : tracasctable) {
       auto casc = tracasc.cascade();
-      bitset(selectionMask[casc.v0Id()],bitUsedInTrackedCascade); // tag V0s needed by tracked cascades
+      bitset(selectionMask[casc.v0Id()], bitUsedInTrackedCascade); // tag V0s needed by tracked cascades
     }
     checkAndFinalize();
   }

@@ -68,8 +68,8 @@ using namespace o2::framework::expressions;
 using std::array;
 
 // simple checkers
-#define bitset(var,nbit)   ((var) |=  (1<<(nbit)))
-#define bitcheck(var,nbit) ((var) &   (1<<(nbit)))
+#define bitset(var, nbit) ((var) |= (1 << (nbit)))
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
@@ -1088,8 +1088,8 @@ struct cascadePreselector {
                bitdEdxXiMinus,
                bitdEdxXiPlus,
                bitdEdxOmegaMinus,
-               bitdEdxOmegaPlus, 
-               bitUsedInTrackedCascade};
+               bitdEdxOmegaPlus,
+               bitUsedInTrackedCascade };
 
   void init(InitContext const&) {}
 
@@ -1109,10 +1109,10 @@ struct cascadePreselector {
     auto lNegTrack = v0data.template negTrack_as<TTrackTo>();
     auto lPosTrack = v0data.template posTrack_as<TTrackTo>();
 
-    if ((bitcheck(maskElement,bitdEdxXiMinus)|| bitcheck(maskElement,bitdEdxOmegaMinus) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      bitset(maskElement,bitTrackQuality);
-    if ((bitcheck(maskElement,bitdEdxXiPlus)|| bitcheck(maskElement,bitdEdxOmegaPlus) || passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      bitset(maskElement,bitTrackQuality);
+    if ((bitcheck(maskElement, bitdEdxXiMinus) || bitcheck(maskElement, bitdEdxOmegaMinus) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
+    if ((bitcheck(maskElement, bitdEdxXiPlus) || bitcheck(maskElement, bitdEdxOmegaPlus) || passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
@@ -1159,13 +1159,13 @@ struct cascadePreselector {
     }     // end association check
     // Construct tag table (note: this will be joinable with CascDatas)
     if (lPDG == 3312)
-      bitset(maskElement,bitTrueXiMinus);
+      bitset(maskElement, bitTrueXiMinus);
     if (lPDG == -3312)
-      bitset(maskElement,bitTrueXiPlus);
+      bitset(maskElement, bitTrueXiPlus);
     if (lPDG == 3334)
-      bitset(maskElement,bitTrueOmegaMinus);
+      bitset(maskElement, bitTrueOmegaMinus);
     if (lPDG == -3334)
-      bitset(maskElement,bitTrueOmegaPlus);
+      bitset(maskElement, bitTrueOmegaPlus);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check early dE/dx selection
@@ -1187,19 +1187,19 @@ struct cascadePreselector {
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
-      bitset(maskElement,bitdEdxXiMinus);
+      bitset(maskElement, bitdEdxXiMinus);
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
-      bitset(maskElement,bitdEdxOmegaPlus);
+      bitset(maskElement, bitdEdxOmegaPlus);
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow)
-      bitset(maskElement,bitdEdxOmegaMinus);
+      bitset(maskElement, bitdEdxOmegaMinus);
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow)
-      bitset(maskElement,bitdEdxOmegaPlus);
+      bitset(maskElement, bitdEdxOmegaPlus);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// Initialization of mask vectors if uninitialized
@@ -1222,24 +1222,24 @@ struct cascadePreselector {
   {
     // parse + publish tag table now
     for (int ii = 0; ii < selectionMask.size(); ii++) {
-      bool validCascade = bitcheck(selectionMask[ii],bitTrackQuality);
+      bool validCascade = bitcheck(selectionMask[ii], bitTrackQuality);
       if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
-        validCascade = validCascade && ((bitcheck(selectionMask[ii],bitTrueXiMinus) && dIfMCgenerateXiMinus) ||
-                                        (bitcheck(selectionMask[ii],bitTrueXiPlus) && dIfMCgenerateXiPlus) ||
-                                        (bitcheck(selectionMask[ii],bitTrueOmegaMinus) && dIfMCgenerateOmegaMinus) ||
-                                        (bitcheck(selectionMask[ii],bitTrueOmegaPlus) && dIfMCgenerateOmegaPlus));
+        validCascade = validCascade && ((bitcheck(selectionMask[ii], bitTrueXiMinus) && dIfMCgenerateXiMinus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueXiPlus) && dIfMCgenerateXiPlus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueOmegaMinus) && dIfMCgenerateOmegaMinus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueOmegaPlus) && dIfMCgenerateOmegaPlus));
       if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
-        validCascade = validCascade && ((bitcheck(selectionMask[ii],bitTrueXiMinus) && ddEdxPreSelectXiMinus) ||
-                                        (bitcheck(selectionMask[ii],bitTrueXiPlus) && ddEdxPreSelectXiPlus) ||
-                                        (bitcheck(selectionMask[ii],bitTrueOmegaMinus) && ddEdxPreSelectOmegaMinus) ||
-                                        (bitcheck(selectionMask[ii],bitTrueOmegaPlus) && ddEdxPreSelectOmegaPlus));
+        validCascade = validCascade && ((bitcheck(selectionMask[ii], bitTrueXiMinus) && ddEdxPreSelectXiMinus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueXiPlus) && ddEdxPreSelectXiPlus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueOmegaMinus) && ddEdxPreSelectOmegaMinus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueOmegaPlus) && ddEdxPreSelectOmegaPlus));
       if (doprocessSkipCascadesNotUsedInTrackedCascades)
-        validCascade = validCascade && bitcheck(selectionMask[ii],bitUsedInTrackedCascade);
+        validCascade = validCascade && bitcheck(selectionMask[ii], bitUsedInTrackedCascade);
       casctags(validCascade,
-               bitcheck(selectionMask[ii],bitTrueXiMinus), bitcheck(selectionMask[ii],bitTrueXiPlus), 
-               bitcheck(selectionMask[ii],bitTrueOmegaMinus), bitcheck(selectionMask[ii],bitTrueOmegaPlus),
-               bitcheck(selectionMask[ii],bitTrueXiMinus), bitcheck(selectionMask[ii],bitTrueXiPlus), 
-               bitcheck(selectionMask[ii],bitTrueOmegaMinus), bitcheck(selectionMask[ii],bitTrueOmegaPlus));
+               bitcheck(selectionMask[ii], bitTrueXiMinus), bitcheck(selectionMask[ii], bitTrueXiPlus),
+               bitcheck(selectionMask[ii], bitTrueOmegaMinus), bitcheck(selectionMask[ii], bitTrueOmegaPlus),
+               bitcheck(selectionMask[ii], bitTrueXiMinus), bitcheck(selectionMask[ii], bitTrueXiPlus),
+               bitcheck(selectionMask[ii], bitTrueOmegaMinus), bitcheck(selectionMask[ii], bitTrueOmegaPlus));
     }
     resetMasks();
   }
@@ -1295,7 +1295,7 @@ struct cascadePreselector {
   void processSkipCascadesNotUsedInTrackedCascades(aod::TrackedCascades const& tracasctable, aod::Cascades const& casctable)
   {
     for (auto const& tracasc : tracasctable) {
-      bitset(selectionMask[tracasc.cascadeId()],bitUsedInTrackedCascade); // tag V0s needed by tracked cascades
+      bitset(selectionMask[tracasc.cascadeId()], bitUsedInTrackedCascade); // tag V0s needed by tracked cascades
     }
     checkAndFinalize();
   }

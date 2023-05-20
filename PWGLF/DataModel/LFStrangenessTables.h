@@ -269,8 +269,8 @@ DECLARE_SOA_COLUMN(IsAntiLambdaCandidate, isAntiLambdaCandidate, bool);         
 DECLARE_SOA_COLUMN(IsHypertritonCandidate, isHypertritonCandidate, bool);         //! compatible with dE/dx hypotheses
 DECLARE_SOA_COLUMN(IsAntiHypertritonCandidate, isAntiHypertritonCandidate, bool); //! compatible with dE/dx hypotheses
 
-// used in cascades (potentially useful in general, make available as tags) 
-DECLARE_SOA_COLUMN(IsFromCascade, isFromCascade, bool); //! compatible with dE/dx hypotheses
+// used in cascades (potentially useful in general, make available as tags)
+DECLARE_SOA_COLUMN(IsFromCascade, isFromCascade, bool);               //! compatible with dE/dx hypotheses
 DECLARE_SOA_COLUMN(IsFromTrackedCascade, isFromTrackedCascade, bool); //! compatible with dE/dx hypotheses
 } // namespace v0tag
 DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
