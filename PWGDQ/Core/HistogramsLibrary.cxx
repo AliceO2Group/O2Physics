@@ -350,6 +350,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "DCAsigZ", "DCA_{Z} [#sigma]", false, 100, -10.0, 10.0, VarManager::kTrackDCAsigZ);
       hm->AddHistogram(histClass, "Pt_DCAxy", "p_{T} vs DCA_{xy}", false, 200, 0.0, 20.0, VarManager::kPt, 400, -2.0, 2.0, VarManager::kTrackDCAxy);
       hm->AddHistogram(histClass, "Pt_DCAz", "p_{T} vs DCA_{z}", false, 200, 0.0, 20.0, VarManager::kPt, 800, -4.0, 4.0, VarManager::kTrackDCAz);
+      hm->AddHistogram(histClass, "Eta_DCAxy", "#eta vs DCA_{xy}", false, 20, -1.0, 1.0, VarManager::kEta, 400, -2.0, 2.0, VarManager::kTrackDCAxy);
+      hm->AddHistogram(histClass, "Eta_DCAz", "#eta vs DCA_{z}", false, 20, -1.0, 1.0, VarManager::kEta, 800, -4.0, 4.0, VarManager::kTrackDCAz);
       hm->AddHistogram(histClass, "Pt_DCAsigXY", "p_{T} vs DCA_{XY} [#sigma]", false, 200, 0.0, 20.0, VarManager::kPt, 100, -10.0, 10.0, VarManager::kTrackDCAsigXY); // JJ:edit
       hm->AddHistogram(histClass, "Pt_DCAsigZ", "p_{T} vs DCA_{Z} [#sigma]", false, 200, 0.0, 20.0, VarManager::kPt, 100, -10.0, 10.0, VarManager::kTrackDCAsigZ);
       hm->AddHistogram(histClass, "Pt_DCAresXY", "p_{T} vs #DeltaDCA_{XY}", false, 200, 0.0, 10.0, VarManager::kPt, 100, -0.03, 0.03, VarManager::kTrackDCAresXY);
