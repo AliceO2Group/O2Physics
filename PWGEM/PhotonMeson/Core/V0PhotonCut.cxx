@@ -18,7 +18,7 @@
 
 ClassImp(V0PhotonCut);
 
-const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "V0PtRange", "V0EtaRange", "PsiPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz", "IsWithinBeamPipe", "RequireITS"};
+const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "V0PtRange", "V0EtaRange", "PsiPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz", "IsWithinBeamPipe", "RequireITS", "TPConly", "AntiTPConly"};
 
 void V0PhotonCut::SetV0PtRange(float minPt, float maxPt)
 {
@@ -146,6 +146,18 @@ void V0PhotonCut::SetRequireITS(bool flag)
 {
   mRequireITS = flag;
   LOG(info) << "V0 Photon Cut, require ITS hit: " << mRequireITS;
+}
+
+void V0PhotonCut::SetRequireTPConly(bool flag)
+{
+  mRequireTPConly = flag;
+  LOG(info) << "V0 Photon Cut, require TPConly: " << mRequireTPConly;
+}
+
+void V0PhotonCut::SetRequireAntiTPConly(bool flag)
+{
+  mRequireAntiTPConly = flag;
+  LOG(info) << "V0 Photon Cut, require AntiTPConly: " << mRequireAntiTPConly;
 }
 
 void V0PhotonCut::print() const

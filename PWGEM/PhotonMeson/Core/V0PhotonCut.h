@@ -57,6 +57,8 @@ class V0PhotonCut : public TNamed
     kDCAz,
     kIsWithinBeamPipe,
     kRequireITS,
+    kTPConly,
+    kAntiTPConly,
     kNCuts
   };
 
@@ -140,6 +142,12 @@ class V0PhotonCut : public TNamed
         return false;
       }
       if (mRequireITS && !IsSelectedTrack(track, V0PhotonCuts::kRequireITS)) {
+        return false;
+      }
+      if (mRequireTPConly && !IsSelectedTrack(track, V0PhotonCuts::kTPConly)) {
+        return false;
+      }
+      if (mRequireAntiTPConly && !IsSelectedTrack(track, V0PhotonCuts::kAntiTPConly)) {
         return false;
       }
     }
@@ -292,6 +300,13 @@ class V0PhotonCut : public TNamed
       }
       case V0PhotonCuts::kRequireITS:
         return track.hasITS();
+
+      case V0PhotonCuts::kTPConly:
+        return track.hasTPC() & (!track.hasITS() & !track.hasTOF() & !track.hasTRD());
+
+      case V0PhotonCuts::kAntiTPConly:
+        return track.hasTPC() & (track.hasITS() | track.hasTOF() | track.hasTRD());
+
       default:
         return false;
     }
@@ -324,6 +339,8 @@ class V0PhotonCut : public TNamed
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void SetIsWithinBeamPipe(bool flag);
   void SetRequireITS(bool flag);
+  void SetRequireTPConly(bool flag);
+  void SetRequireAntiTPConly(bool flag);
 
   /// @brief Print the track selection
   void print() const;
@@ -360,6 +377,8 @@ class V0PhotonCut : public TNamed
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
   bool mIsWithinBP{false};
   bool mRequireITS{false};
+  bool mRequireTPConly{false};
+  bool mRequireAntiTPConly{false};
 
   ClassDef(V0PhotonCut, 1);
 };
