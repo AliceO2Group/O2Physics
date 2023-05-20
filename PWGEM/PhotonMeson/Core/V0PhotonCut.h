@@ -56,6 +56,7 @@ class V0PhotonCut : public TNamed
     kDCAxy,
     kDCAz,
     kIsWithinBeamPipe,
+    kRequireITS,
     kNCuts
   };
 
@@ -136,6 +137,9 @@ class V0PhotonCut : public TNamed
         return false;
       }
       if (mIsWithinBP && !IsSelectedTrack(track, V0PhotonCuts::kIsWithinBeamPipe)) {
+        return false;
+      }
+      if (mRequireITS && !IsSelectedTrack(track, V0PhotonCuts::kRequireITS)) {
         return false;
       }
     }
@@ -286,6 +290,8 @@ class V0PhotonCut : public TNamed
         }
         return true;
       }
+      case V0PhotonCuts::kRequireITS:
+        return track.hasITS();
       default:
         return false;
     }
@@ -317,6 +323,7 @@ class V0PhotonCut : public TNamed
   void SetMaxDcaZ(float maxDcaZ);
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void SetIsWithinBeamPipe(bool flag);
+  void SetRequireITS(bool flag);
 
   /// @brief Print the track selection
   void print() const;
@@ -352,6 +359,7 @@ class V0PhotonCut : public TNamed
   float mMaxDcaZ{1e10f};                        // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
   bool mIsWithinBP{false};
+  bool mRequireITS{false};
 
   ClassDef(V0PhotonCut, 1);
 };
