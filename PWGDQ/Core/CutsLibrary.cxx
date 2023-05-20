@@ -224,6 +224,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("PIDCalibKaon")) {
+    cut->AddCut(GetAnalysisCut("pidcalib_kaon"));
+    return cut;
+  }
+
   if (!nameStr.compare("PIDCalibProton")) {
     cut->AddCut(GetAnalysisCut("pidcalib_proton"));
     return cut;
@@ -1701,6 +1706,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pidcalib_proton")) {
     cut->AddCut(VarManager::kIsProtonFromLambdaAndAntiLambda, 0.5, 1.5, false);
+    return cut;
+  }
+
+  if (!nameStr.compare("pidcalib_kaon")) {
+    cut->AddCut(VarManager::kTOFnSigmaKa, -2.0, 2.0);
+    cut->AddCut(VarManager::kTOFnSigmaPi, -2.0, 2.0, true);
+    cut->AddCut(VarManager::kITSncls, 1.5, 7.5);
     return cut;
   }
 
