@@ -67,6 +67,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
+// simple checkers
+#define bitset(var, nbit) ((var) |= (1 << (nbit)))
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
+
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
@@ -1073,28 +1077,29 @@ struct cascadePreselector {
   // context-aware selections
   Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
 
-  std::vector<uint8_t> trackQualityMask;
-  std::vector<uint8_t> mcLabelMaskXiMinus;
-  std::vector<uint8_t> mcLabelMaskXiPlus;
-  std::vector<uint8_t> mcLabelMaskOmegaMinus;
-  std::vector<uint8_t> mcLabelMaskOmegaPlus;
-  std::vector<uint8_t> dEdxMaskXiMinus;
-  std::vector<uint8_t> dEdxMaskXiPlus;
-  std::vector<uint8_t> dEdxMaskOmegaMinus;
-  std::vector<uint8_t> dEdxMaskOmegaPlus;
-  std::vector<uint8_t> usedInTrackedCascadeMask;
+  // for bit-packed maps
+  std::vector<uint16_t> selectionMask;
+  enum v0bit { bitInteresting = 0,
+               bitTrackQuality,
+               bitTrueXiMinus,
+               bitTrueXiPlus,
+               bitTrueOmegaMinus,
+               bitTrueOmegaPlus,
+               bitdEdxXiMinus,
+               bitdEdxXiPlus,
+               bitdEdxOmegaMinus,
+               bitdEdxOmegaPlus,
+               bitUsedInTrackedCascade };
 
   void init(InitContext const&) {}
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
   template <class TTrackTo, typename TCascadeObject>
-  void checkTrackQuality(TCascadeObject const& lCascadeCandidate, uint8_t& lIsInteresting, uint8_t lIsXiMinus, uint8_t lIsXiPlus, uint8_t lIsOmegaMinus, uint8_t lIsOmegaPlus)
+  void checkTrackQuality(TCascadeObject const& lCascadeCandidate, uint16_t& maskElement, bool passdEdx = false)
   {
-    lIsInteresting = 0;
     auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
-      lIsInteresting = 0;
       return;
     }
     auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
@@ -1104,22 +1109,18 @@ struct cascadePreselector {
     auto lNegTrack = v0data.template negTrack_as<TTrackTo>();
     auto lPosTrack = v0data.template posTrack_as<TTrackTo>();
 
-    if ((lIsXiMinus || lIsOmegaMinus) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = 1;
-    if ((lIsXiPlus || lIsOmegaPlus) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = 1;
+    if ((bitcheck(maskElement, bitdEdxXiMinus) || bitcheck(maskElement, bitdEdxOmegaMinus) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
+    if ((bitcheck(maskElement, bitdEdxXiPlus) || bitcheck(maskElement, bitdEdxOmegaPlus) || passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTrackTo, typename TCascadeObject>
-  void checkPDG(TCascadeObject const& lCascadeCandidate, uint8_t& lIsXiMinus, uint8_t& lIsXiPlus, uint8_t& lIsOmegaMinus, uint8_t& lIsOmegaPlus)
+  void checkPDG(TCascadeObject const& lCascadeCandidate, uint16_t& maskElement)
   {
     auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
-      lIsXiMinus = 0;
-      lIsXiPlus = 0;
-      lIsOmegaMinus = 0;
-      lIsOmegaPlus = 0;
       return;
     }
     auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
@@ -1158,25 +1159,21 @@ struct cascadePreselector {
     }     // end association check
     // Construct tag table (note: this will be joinable with CascDatas)
     if (lPDG == 3312)
-      lIsXiMinus = 1;
+      bitset(maskElement, bitTrueXiMinus);
     if (lPDG == -3312)
-      lIsXiPlus = 1;
+      bitset(maskElement, bitTrueXiPlus);
     if (lPDG == 3334)
-      lIsOmegaMinus = 1;
+      bitset(maskElement, bitTrueOmegaMinus);
     if (lPDG == -3334)
-      lIsOmegaPlus = 1;
+      bitset(maskElement, bitTrueOmegaPlus);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check early dE/dx selection
   template <class TTrackTo, typename TCascadeObject>
-  void checkdEdx(TCascadeObject const& lCascadeCandidate, uint8_t& lIsXiMinus, uint8_t& lIsXiPlus, uint8_t& lIsOmegaMinus, uint8_t& lIsOmegaPlus)
+  void checkdEdx(TCascadeObject const& lCascadeCandidate, uint16_t& maskElement)
   {
     auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
-      lIsXiMinus = 0;
-      lIsXiPlus = 0;
-      lIsOmegaMinus = 0;
-      lIsOmegaPlus = 0;
       return;
     }
     auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
@@ -1190,75 +1187,59 @@ struct cascadePreselector {
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
-      lIsXiMinus = 1;
+      bitset(maskElement, bitdEdxXiMinus);
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
-      lIsXiPlus = 1;
+      bitset(maskElement, bitdEdxOmegaPlus);
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow)
-      lIsOmegaMinus = 1;
+      bitset(maskElement, bitdEdxOmegaMinus);
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow)
-      lIsOmegaPlus = 1;
+      bitset(maskElement, bitdEdxOmegaPlus);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// Initialization of mask vectors if uninitialized
   void initializeMasks(int size)
   {
-    if (trackQualityMask.size() < 1) {
+    if (selectionMask.size() < 1) {
       // reserve // FIXME check speed / optimise
-      trackQualityMask.resize(size, 0);
-      mcLabelMaskXiMinus.resize(size, 0);
-      mcLabelMaskXiPlus.resize(size, 0);
-      mcLabelMaskOmegaMinus.resize(size, 0);
-      mcLabelMaskOmegaPlus.resize(size, 0);
-      dEdxMaskXiMinus.resize(size, 0);
-      dEdxMaskXiPlus.resize(size, 0);
-      dEdxMaskOmegaMinus.resize(size, 0);
-      dEdxMaskOmegaPlus.resize(size, 0);
-      usedInTrackedCascadeMask.resize(size, 0);
+      selectionMask.resize(size, 0);
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// Clear mask vectors
   void resetMasks()
   {
-    trackQualityMask.clear();
-    mcLabelMaskXiMinus.clear();
-    mcLabelMaskXiPlus.clear();
-    mcLabelMaskOmegaMinus.clear();
-    mcLabelMaskOmegaPlus.clear();
-    dEdxMaskXiMinus.clear();
-    dEdxMaskXiPlus.clear();
-    dEdxMaskOmegaMinus.clear();
-    dEdxMaskOmegaPlus.clear();
-    usedInTrackedCascadeMask.clear();
+    selectionMask.clear();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// checks and publishes tags if last
   void checkAndFinalize()
   {
     // parse + publish tag table now
-    for (int ii = 0; ii < trackQualityMask.size(); ii++) {
-      bool validCascade = trackQualityMask[ii];
+    for (int ii = 0; ii < selectionMask.size(); ii++) {
+      bool validCascade = bitcheck(selectionMask[ii], bitTrackQuality);
       if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
-        validCascade = validCascade && ((mcLabelMaskXiMinus[ii] && dIfMCgenerateXiMinus) ||
-                                        (mcLabelMaskXiPlus[ii] && dIfMCgenerateXiPlus) ||
-                                        (mcLabelMaskOmegaMinus[ii] && dIfMCgenerateOmegaMinus) ||
-                                        (mcLabelMaskOmegaPlus[ii] && dIfMCgenerateOmegaPlus));
+        validCascade = validCascade && ((bitcheck(selectionMask[ii], bitTrueXiMinus) && dIfMCgenerateXiMinus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueXiPlus) && dIfMCgenerateXiPlus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueOmegaMinus) && dIfMCgenerateOmegaMinus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueOmegaPlus) && dIfMCgenerateOmegaPlus));
       if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
-        validCascade = validCascade && ((dEdxMaskXiMinus[ii] && ddEdxPreSelectXiMinus) ||
-                                        (dEdxMaskXiPlus[ii] && ddEdxPreSelectXiPlus) ||
-                                        (dEdxMaskOmegaMinus[ii] && ddEdxPreSelectOmegaMinus) ||
-                                        (dEdxMaskOmegaPlus[ii] && ddEdxPreSelectOmegaPlus));
+        validCascade = validCascade && ((bitcheck(selectionMask[ii], bitTrueXiMinus) && ddEdxPreSelectXiMinus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueXiPlus) && ddEdxPreSelectXiPlus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueOmegaMinus) && ddEdxPreSelectOmegaMinus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueOmegaPlus) && ddEdxPreSelectOmegaPlus));
       if (doprocessSkipCascadesNotUsedInTrackedCascades)
-        validCascade = validCascade && usedInTrackedCascadeMask[ii];
+        validCascade = validCascade && bitcheck(selectionMask[ii], bitUsedInTrackedCascade);
       casctags(validCascade,
-               mcLabelMaskXiMinus[ii] == 1, mcLabelMaskXiPlus[ii] == 1, mcLabelMaskOmegaPlus[ii] == 1, mcLabelMaskOmegaPlus[ii] == 1,
-               dEdxMaskXiMinus[ii] == 1, dEdxMaskXiPlus[ii] == 1, dEdxMaskOmegaPlus[ii] == 1, dEdxMaskOmegaPlus[ii] == 1);
+               bitcheck(selectionMask[ii], bitTrueXiMinus), bitcheck(selectionMask[ii], bitTrueXiPlus),
+               bitcheck(selectionMask[ii], bitTrueOmegaMinus), bitcheck(selectionMask[ii], bitTrueOmegaPlus),
+               bitcheck(selectionMask[ii], bitTrueXiMinus), bitcheck(selectionMask[ii], bitTrueXiPlus),
+               bitcheck(selectionMask[ii], bitTrueOmegaMinus), bitcheck(selectionMask[ii], bitTrueOmegaPlus));
     }
     resetMasks();
   }
@@ -1268,7 +1249,7 @@ struct cascadePreselector {
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
-      checkTrackQuality<aod::TracksExtra>(casc, trackQualityMask[casc.globalIndex()], 1, 1, 1, 1);
+      checkTrackQuality<aod::TracksExtra>(casc, selectionMask[casc.globalIndex()], true);
     }
     if (!doprocessSkipCascadesNotUsedInTrackedCascades)
       checkAndFinalize();
@@ -1278,9 +1259,8 @@ struct cascadePreselector {
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
-      int cai = casc.globalIndex();
-      checkPDG<LabeledTracksExtra>(casc, mcLabelMaskXiMinus[cai], mcLabelMaskXiPlus[cai], mcLabelMaskOmegaPlus[cai], mcLabelMaskOmegaPlus[cai]);
-      checkTrackQuality<LabeledTracksExtra>(casc, trackQualityMask[casc.globalIndex()], 1, 1, 1, 1);
+      checkPDG<LabeledTracksExtra>(casc, selectionMask[casc.globalIndex()]);
+      checkTrackQuality<LabeledTracksExtra>(casc, selectionMask[casc.globalIndex()], true);
     } // end cascades loop
     if (!doprocessSkipCascadesNotUsedInTrackedCascades)
       checkAndFinalize();
@@ -1290,9 +1270,8 @@ struct cascadePreselector {
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
-      int cai = casc.globalIndex();
-      checkdEdx<TracksExtraWithPID>(casc, dEdxMaskXiMinus[cai], dEdxMaskXiPlus[cai], dEdxMaskOmegaPlus[cai], dEdxMaskOmegaPlus[cai]);
-      checkTrackQuality<TracksExtraWithPID>(casc, trackQualityMask[casc.globalIndex()], dEdxMaskXiMinus[cai], dEdxMaskXiPlus[cai], dEdxMaskOmegaPlus[cai], dEdxMaskOmegaPlus[cai]);
+      checkdEdx<TracksExtraWithPID>(casc, selectionMask[casc.globalIndex()]);
+      checkTrackQuality<TracksExtraWithPID>(casc, selectionMask[casc.globalIndex()]);
     }
     if (!doprocessSkipCascadesNotUsedInTrackedCascades)
       checkAndFinalize();
@@ -1302,10 +1281,9 @@ struct cascadePreselector {
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
-      int cai = casc.globalIndex();
-      checkPDG<TracksExtraWithPIDandLabels>(casc, mcLabelMaskXiMinus[cai], mcLabelMaskXiPlus[cai], mcLabelMaskOmegaPlus[cai], mcLabelMaskOmegaPlus[cai]);
-      checkdEdx<TracksExtraWithPIDandLabels>(casc, dEdxMaskXiMinus[cai], dEdxMaskXiPlus[cai], dEdxMaskOmegaPlus[cai], dEdxMaskOmegaPlus[cai]);
-      checkTrackQuality<TracksExtraWithPIDandLabels>(casc, trackQualityMask[casc.globalIndex()], dEdxMaskXiMinus[cai], dEdxMaskXiPlus[cai], dEdxMaskOmegaPlus[cai], dEdxMaskOmegaPlus[cai]);
+      checkPDG<TracksExtraWithPIDandLabels>(casc, selectionMask[casc.globalIndex()]);
+      checkdEdx<TracksExtraWithPIDandLabels>(casc, selectionMask[casc.globalIndex()]);
+      checkTrackQuality<TracksExtraWithPIDandLabels>(casc, selectionMask[casc.globalIndex()]);
     }
     if (!doprocessSkipCascadesNotUsedInTrackedCascades)
       checkAndFinalize();
@@ -1317,7 +1295,7 @@ struct cascadePreselector {
   void processSkipCascadesNotUsedInTrackedCascades(aod::TrackedCascades const& tracasctable, aod::Cascades const& casctable)
   {
     for (auto const& tracasc : tracasctable) {
-      usedInTrackedCascadeMask[tracasc.cascadeId()] = 1; // tag V0s needed by tracked cascades
+      bitset(selectionMask[tracasc.cascadeId()], bitUsedInTrackedCascade); // tag V0s needed by tracked cascades
     }
     checkAndFinalize();
   }
