@@ -568,8 +568,6 @@ class VarManager : public TObject
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
-  static float GetTPCPostCalibMap(float pin, float eta, int particle_type, TString period);
-  static TString GetRunPeriod(float runNumber);
   template <typename T, typename U, typename V>
   static auto getRotatedCovMatrixXX(const T& matrix, U phi, V theta);
   template <typename T>
