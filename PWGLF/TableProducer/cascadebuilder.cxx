@@ -1229,17 +1229,17 @@ struct cascadePreselector {
                                         (bitcheck(selectionMask[ii], bitTrueOmegaMinus) && dIfMCgenerateOmegaMinus) ||
                                         (bitcheck(selectionMask[ii], bitTrueOmegaPlus) && dIfMCgenerateOmegaPlus));
       if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
-        validCascade = validCascade && ((bitcheck(selectionMask[ii],bitdEdxXiMinus) && ddEdxPreSelectXiMinus) ||
-                                        (bitcheck(selectionMask[ii],bitdEdxXiPlus) && ddEdxPreSelectXiPlus) ||
-                                        (bitcheck(selectionMask[ii],bitdEdxOmegaMinus) && ddEdxPreSelectOmegaMinus) ||
-                                        (bitcheck(selectionMask[ii],bitdEdxOmegaPlus) && ddEdxPreSelectOmegaPlus));
+        validCascade = validCascade && ((bitcheck(selectionMask[ii], bitdEdxXiMinus) && ddEdxPreSelectXiMinus) ||
+                                        (bitcheck(selectionMask[ii], bitdEdxXiPlus) && ddEdxPreSelectXiPlus) ||
+                                        (bitcheck(selectionMask[ii], bitdEdxOmegaMinus) && ddEdxPreSelectOmegaMinus) ||
+                                        (bitcheck(selectionMask[ii], bitdEdxOmegaPlus) && ddEdxPreSelectOmegaPlus));
       if (doprocessSkipCascadesNotUsedInTrackedCascades)
         validCascade = validCascade && bitcheck(selectionMask[ii], bitUsedInTrackedCascade);
       casctags(validCascade,
-               bitcheck(selectionMask[ii],bitTrueXiMinus), bitcheck(selectionMask[ii],bitTrueXiPlus), 
-               bitcheck(selectionMask[ii],bitTrueOmegaMinus), bitcheck(selectionMask[ii],bitTrueOmegaPlus),
-               bitcheck(selectionMask[ii],bitdEdxXiMinus), bitcheck(selectionMask[ii],bitdEdxXiPlus), 
-               bitcheck(selectionMask[ii],bitdEdxOmegaMinus), bitcheck(selectionMask[ii],bitdEdxOmegaPlus));
+               bitcheck(selectionMask[ii], bitTrueXiMinus), bitcheck(selectionMask[ii], bitTrueXiPlus),
+               bitcheck(selectionMask[ii], bitTrueOmegaMinus), bitcheck(selectionMask[ii], bitTrueOmegaPlus),
+               bitcheck(selectionMask[ii], bitdEdxXiMinus), bitcheck(selectionMask[ii], bitdEdxXiPlus),
+               bitcheck(selectionMask[ii], bitdEdxOmegaMinus), bitcheck(selectionMask[ii], bitdEdxOmegaPlus));
     }
     resetMasks();
   }

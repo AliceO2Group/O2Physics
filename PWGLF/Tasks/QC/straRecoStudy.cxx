@@ -476,11 +476,11 @@ struct straRecoStudy {
       return;
     }
     evselstats[kEvSelVtxZ]++;
-    for(auto const& track : tracks){
-      if(track.has_mcParticle()){ 
+    for (auto const& track : tracks) {
+      if (track.has_mcParticle()) {
         auto mcParticle = track.mcParticle();
-        if( mcParticle.isPhysicalPrimary() && track.itsNCls()>=7)
-        histos.fill(HIST("hDCAxyVsPt"), track.pt(), track.dcaXY());
+        if (mcParticle.isPhysicalPrimary() && track.itsNCls() >= 7)
+          histos.fill(HIST("hDCAxyVsPt"), track.pt(), track.dcaXY());
         histos.fill(HIST("hDCAzVsPt"), track.pt(), track.dcaXY());
       }
     }
