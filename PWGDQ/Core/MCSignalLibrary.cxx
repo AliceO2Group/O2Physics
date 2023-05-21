@@ -42,6 +42,18 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Primary pions", {prong}, {-1}); // define the signal using the full constructor
     return signal;
   }
+  if (!nameStr.compare("pionPrimaryFromHc")) {
+    MCProng prong(2, {211, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);
+    signal = new MCSignal(name, "Primary pions from open charmed hadron decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("pionPrimaryFromHb")) {
+    MCProng prong(2, {211, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);
+    signal = new MCSignal(name, "Primary pions from open beauty hadron decays", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("photon")) {
     MCProng prong(1, {22}, {true}, {false}, {0}, {0}, {false}); // define 1-generation prong using the full constructor
     signal = new MCSignal(name, "Photon", {prong}, {-1});       // define the signal using the full constructor
@@ -542,6 +554,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
+  // ee from HF in general
+  if (!nameStr.compare("eeFromHF")) {
+    MCProng prong(2, {11, 902}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "ee pairs from b,c->e and b,c->e without check", {prong, prong}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
   // c->e and c->e (prompt)
   if (!nameStr.compare("eeFromCC")) {
     MCProng prong(3, {11, 402, 502}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
@@ -553,6 +572,22 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eeFromBB")) {
     MCProng prong(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from b->e and b->e", {prong, prong}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // b->e and c->e no check
+  if (!nameStr.compare("eeFromBandFromC")) {
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "ee pairs from b->e and c->e", {prongB, prongC}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // b->e and c->e no check
+  if (!nameStr.compare("eeFromBandFromCBis")) {
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "ee pairs from b->e and c->e", {prongC, prongB}, {-1, -1}); // signal at pair level
     return signal;
   }
 

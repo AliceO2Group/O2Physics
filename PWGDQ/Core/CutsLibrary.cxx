@@ -754,6 +754,27 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  for (int i = 1; i <= 8; i++) {
+    if (!nameStr.compare(Form("lmee_eNSigmaRun3_tight_Prefilter%d", i))) {
+      cut->AddCut(GetAnalysisCut(Form("notDalitzLeg%d", i)));
+      cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+      cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+      cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+
+      AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+      cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_tight"));
+
+      AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+      cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_tight"));
+
+      AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+      cut_pid_OR->AddCut(cut_tpc_nSigma);
+      cut_pid_OR->AddCut(cut_tof_nSigma);
+      cut->AddCut(cut_pid_OR);
+      return cut;
+    }
+  }
+
   // 4 cuts to separate pos & neg tracks in pos & neg eta range
   if (!nameStr.compare("lmee_posTrack_posEta_selection")) {
     cut->AddCut(GetAnalysisCut("posTrack"));
@@ -1021,6 +1042,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("muonHighPt4")) {
     cut->AddCut(GetAnalysisCut("muonHighPt4"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt5")) {
+    cut->AddCut(GetAnalysisCut("muonHighPt5"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt6")) {
+    cut->AddCut(GetAnalysisCut("muonHighPt6"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
   }
@@ -2064,6 +2097,16 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("muonHighPt4")) {
+    cut->AddCut(VarManager::kPt, 8.0, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt5")) {
+    cut->AddCut(VarManager::kPt, 10.0, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt6")) {
     cut->AddCut(VarManager::kPt, 20.0, 1000.0);
     return cut;
   }

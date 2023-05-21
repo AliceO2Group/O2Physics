@@ -57,7 +57,7 @@ enum ParticleType {
 };
 
 static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/DCAxy", "/CPA", "/DCAxy", "/CPA", "/DCAxy"};
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -190,7 +190,6 @@ enum ParticleOriginMCTruth {
   kDaughter,          //! Particle from a decay
   kMaterial,          //! Particle from a material
   kNotPrimary,        //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
-  kFake,              //! particle, that has NOT the PDG code of the current analysed particle
   kDaughterLambda,    //! Daughter from a Lambda decay
   kDaughterSigmaplus, //! Daughter from a Sigma^plus decay
   kNOriginMCTruthTypes
@@ -202,7 +201,6 @@ static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes
   "_Daughter",
   "_Material",
   "_NotPrimary",
-  "_Fake",
   "_DaughterLambda",
   "DaughterSigmaPlus"};
 

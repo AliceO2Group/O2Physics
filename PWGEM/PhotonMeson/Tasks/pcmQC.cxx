@@ -141,6 +141,11 @@ struct PCMQC {
     reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hTPCdEdx"))->Fill(leg.tpcInnerParam(), leg.tpcSignal());
     reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hTPCNsigmaEl"))->Fill(leg.tpcInnerParam(), leg.tpcNSigmaEl());
     reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hTPCNsigmaPi"))->Fill(leg.tpcInnerParam(), leg.tpcNSigmaPi());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hXY"))->Fill(leg.x(), leg.y());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hZX"))->Fill(leg.z(), leg.x());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hZY"))->Fill(leg.z(), leg.y());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hDCAxyEta"))->Fill(leg.eta(), leg.dcaXY());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hDCAxyZ"))->Fill(leg.z(), leg.dcaXY());
   }
 
   template <typename T>

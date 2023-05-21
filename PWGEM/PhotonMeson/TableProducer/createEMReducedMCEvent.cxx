@@ -42,7 +42,7 @@ struct createEMReducedMCEvent {
   };
   Produces<o2::aod::EMReducedEvents> events;
   Produces<o2::aod::EMReducedMCEvents> mcevents;
-  Produces<o2::aod::EMReducedMCEventLabels> mclabels;
+  Produces<o2::aod::EMReducedMCEventLabels> mceventlabels;
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::EMMCParticleLabels> emmcparticlelabels;
 
@@ -127,7 +127,7 @@ struct createEMReducedMCEvent {
         fCounters[1]++;
       }
 
-      mclabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
+      mceventlabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
 
       // store mc particles
       auto groupedMcTracks = mcTracks.sliceBy(perMcCollision, mcCollision.globalIndex());
@@ -152,6 +152,7 @@ struct createEMReducedMCEvent {
           && (abs(pdg) != 333) // phi(1020)
           // strange hadrons
           && (abs(pdg) != 310)  // K0S
+          && (abs(pdg) != 130)  // K0L
           && (abs(pdg) != 3122) // Lambda
         ) {
           continue;
@@ -275,7 +276,7 @@ struct createEMReducedMCEvent {
     fCounters[1] = 0;
   } //  end of skimmingMC
 
-  void processMC_PCM(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs)
+  void processMC_PCM(soa::SmallGroups<MyCollisions> const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs)
   {
     skimmingMC<kPCM>(collisions, bcs, mccollisions, mcTracks, tracks, v0photons, v0legs, nullptr, nullptr);
   }

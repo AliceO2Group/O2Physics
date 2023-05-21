@@ -242,6 +242,18 @@ struct qaMatchEff {
     histos.add("data/pthist_tpcits", "#it{p}_{T} distribution - data TPC+ITS tag", kTH1D, {axisPt}, true);
     histos.add("data/etahist_tpcits", "#eta distribution - data TPC+ITS tag", kTH1D, {axisEta}, true);
     histos.add("data/phihist_tpcits", "#phi distribution - data TPC+ITS tag", kTH1D, {axisPhi}, true);
+
+    // pt, phi, eta TOF tagged
+    histos.add("data/pthist_toftpc", "#it{p}_{T} distribution - data TOF+TPC tag", kTH1D, {axisPt}, true);
+    histos.add("data/etahist_toftpc", "#eta distribution - data TOF+TPC tag", kTH1D, {axisEta}, true);
+    histos.add("data/phihist_toftpc", "#phi distribution - data TOF+TPC tag", kTH1D, {axisPhi}, true);
+    histos.add("data/pthist_tofits", "#it{p}_{T} distribution - TOF+data ITS tag", kTH1D, {axisPt}, true);
+    histos.add("data/etahist_tofits", "#eta distribution - data TOF+ITS tag", kTH1D, {axisEta}, true);
+    histos.add("data/phihist_tofits", "#phi distribution - data TOF+ITS tag", kTH1D, {axisPhi}, true);
+
+    histos.add("data/pthist_toftpcits", "#it{p}_{T} distribution - data TOF+TPC+ITS tag", kTH1D, {axisPt}, true);
+    histos.add("data/etahist_toftpcits", "#eta distribution - data TOF+TPC+ITS tag", kTH1D, {axisEta}, true);
+    histos.add("data/phihist_toftpcits", "#phi distribution - data TOF+TPC+ITS tag", kTH1D, {axisPhi}, true);
     //
     // if you want just pions
     if (isPIDPionRequired) {
@@ -256,6 +268,30 @@ struct qaMatchEff {
       histos.add("data/pthist_tpcits_pi", "#it{p}_{T} distribution - data TPC+ITS tag - pions", kTH1D, {axisPt}, true);
       histos.add("data/etahist_tpcits_pi", "#eta distribution - data TPC+ITS tag - pions", kTH1D, {axisEta}, true);
       histos.add("data/phihist_tpcits_pi", "#phi distribution - data TPC+ITS tag - pions", kTH1D, {axisPhi}, true);
+      // plus
+      histos.add("data/pthist_tpc_piplus", "#it{p}_{T} distribution - data TPC tag - pos. pions", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpc_piplus", "#eta distribution - data TPC tag - pos. pions", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpc_piplus", "#phi distribution - data TPC tag - pos. pions", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_its_piplus", "#it{p}_{T} distribution - data ITS tag - pos. pions", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_its_piplus", "#eta distribution - data ITS tag - pos. pions", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_its_piplus", "#phi distribution - data ITS tag - pos. pions", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_tpcits_piplus", "#it{p}_{T} distribution - data TPC+ITS tag - pos. pions", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpcits_piplus", "#eta distribution - data TPC+ITS tag - pos. pions", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpcits_piplus", "#phi distribution - data TPC+ITS tag - pos. pions", kTH1D, {axisPhi}, true);
+      // minus
+      histos.add("data/pthist_tpc_piminus", "#it{p}_{T} distribution - data TPC tag - neg. pions", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpc_piminus", "#eta distribution - data TPC tag - neg. pions", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpc_piminus", "#phi distribution - data TPC tag - neg. pions", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_its_piminus", "#it{p}_{T} distribution - data ITS tag - neg. pions", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_its_piminus", "#eta distribution - data ITS tag - neg. pions", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_its_piminus", "#phi distribution - data ITS tag - neg. pions", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_tpcits_piminus", "#it{p}_{T} distribution - data TPC+ITS tag - neg. pions", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpcits_piminus", "#eta distribution - data TPC+ITS tag - neg. pions", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpcits_piminus", "#phi distribution - data TPC+ITS tag - neg. pions", kTH1D, {axisPhi}, true);
     }
     //
     // if you want just kaons
@@ -271,6 +307,30 @@ struct qaMatchEff {
       histos.add("data/pthist_tpcits_ka", "#it{p}_{T} distribution - data TPC+ITS tag - kaons", kTH1D, {axisPt}, true);
       histos.add("data/etahist_tpcits_ka", "#eta distribution - data TPC+ITS tag - kaons", kTH1D, {axisEta}, true);
       histos.add("data/phihist_tpcits_ka", "#phi distribution - data TPC+ITS tag - kaons", kTH1D, {axisPhi}, true);
+      // plus
+      histos.add("data/pthist_tpc_kaplus", "#it{p}_{T} distribution - data TPC tag - pos. kaons", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpc_kaplus", "#eta distribution - data TPC tag - pos. kaons", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpc_kaplus", "#phi distribution - data TPC tag - pos. kaons", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_its_kaplus", "#it{p}_{T} distribution - data ITS tag - pos. kaons", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_its_kaplus", "#eta distribution - data ITS tag - pos. kaons", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_its_kaplus", "#phi distribution - data ITS tag - pos. kaons", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_tpcits_kaplus", "#it{p}_{T} distribution - data TPC+ITS tag - pos. kaons", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpcits_kaplus", "#eta distribution - data TPC+ITS tag - pos. kaons", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpcits_kaplus", "#phi distribution - data TPC+ITS tag - pos. kaons", kTH1D, {axisPhi}, true);
+      // minus
+      histos.add("data/pthist_tpc_kaminus", "#it{p}_{T} distribution - data TPC tag - neg. kaons", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpc_kaminus", "#eta distribution - data TPC tag - neg. kaons", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpc_kaminus", "#phi distribution - data TPC tag - neg. kaons", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_its_kaminus", "#it{p}_{T} distribution - data ITS tag - neg. kaons", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_its_kaminus", "#eta distribution - data ITS tag - neg. kaons", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_its_kaminus", "#phi distribution - data ITS tag - neg. kaons", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_tpcits_kaminus", "#it{p}_{T} distribution - data TPC+ITS tag - neg. kaons", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpcits_kaminus", "#eta distribution - data TPC+ITS tag - neg. kaons", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpcits_kaminus", "#phi distribution - data TPC+ITS tag - neg. kaons", kTH1D, {axisPhi}, true);
     }
     //
     // if you want just protons
@@ -286,7 +346,71 @@ struct qaMatchEff {
       histos.add("data/pthist_tpcits_pr", "#it{p}_{T} distribution - data TPC+ITS tag - protons", kTH1D, {axisPt}, true);
       histos.add("data/etahist_tpcits_pr", "#eta distribution - data TPC+ITS tag - protons", kTH1D, {axisEta}, true);
       histos.add("data/phihist_tpcits_pr", "#phi distribution - data TPC+ITS tag - protons", kTH1D, {axisPhi}, true);
+      // plus
+      histos.add("data/pthist_tpc_prplus", "#it{p}_{T} distribution - data TPC tag - pos. protons", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpc_prplus", "#eta distribution - data TPC tag - pos. protons", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpc_prplus", "#phi distribution - data TPC tag - pos. protons", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_its_prplus", "#it{p}_{T} distribution - data ITS tag - pos. protons", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_its_prplus", "#eta distribution - data ITS tag - pos. protons", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_its_prplus", "#phi distribution - data ITS tag - pos. protons", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_tpcits_prplus", "#it{p}_{T} distribution - data TPC+ITS tag - pos. protons", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpcits_prplus", "#eta distribution - data TPC+ITS tag - pos. protons", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpcits_prplus", "#phi distribution - data TPC+ITS tag - pos. protons", kTH1D, {axisPhi}, true);
+      // minus
+      histos.add("data/pthist_tpc_prminus", "#it{p}_{T} distribution - data TPC tag - neg. protons", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpc_prminus", "#eta distribution - data TPC tag - neg. protons", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpc_prminus", "#phi distribution - data TPC tag - neg. protons", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_its_prminus", "#it{p}_{T} distribution - data ITS tag - neg. protons", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_its_prminus", "#eta distribution - data ITS tag - neg. protons", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_its_prminus", "#phi distribution - data ITS tag - neg. protons", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_tpcits_prminus", "#it{p}_{T} distribution - data TPC+ITS tag - neg. protons", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpcits_prminus", "#eta distribution - data TPC+ITS tag - neg. protons", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpcits_prminus", "#phi distribution - data TPC+ITS tag - neg. protons ", kTH1D, {axisPhi}, true);
     }
+    //
+    // if PID is required, build also non-identified spectra
+    if (isPIDPionRequired || isPIDKaonRequired || isPIDProtonRequired) {
+      histos.add("data/pthist_tpc_noid", "#it{p}_{T} distribution - data TPC tag - no ident.", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpc_noid", "#eta distribution - data TPC tag - no ident.", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpc_noid", "#phi distribution - data TPC tag - no ident.", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_its_noid", "#it{p}_{T} distribution - data ITS tag - no ident.", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_its_noid", "#eta distribution - data ITS tag - no ident.", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_its_noid", "#phi distribution - data ITS tag - no ident.", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_tpcits_noid", "#it{p}_{T} distribution - data TPC+ITS tag - no ident.", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpcits_noid", "#eta distribution - data TPC+ITS tag - no ident.", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpcits_noid", "#phi distribution - data TPC+ITS tag - no ident.", kTH1D, {axisPhi}, true);
+      // plus
+      histos.add("data/pthist_tpc_noidplus", "#it{p}_{T} distribution - data TPC tag - pos. no ident.", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpc_noidplus", "#eta distribution - data TPC tag - pos. no ident.", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpc_noidplus", "#phi distribution - data TPC tag - pos. no ident.", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_its_noidplus", "#it{p}_{T} distribution - data ITS tag - pos. no ident.", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_its_noidplus", "#eta distribution - data ITS tag - pos. no ident.", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_its_noidplus", "#phi distribution - data ITS tag - pos. no ident.", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_tpcits_noidplus", "#it{p}_{T} distribution - data TPC+ITS tag - pos. no ident.", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpcits_noidplus", "#eta distribution - data TPC+ITS tag - pos. no ident.", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpcits_noidplus", "#phi distribution - data TPC+ITS tag - pos. no ident.", kTH1D, {axisPhi}, true);
+      // minus
+      histos.add("data/pthist_tpc_noidminus", "#it{p}_{T} distribution - data TPC tag - neg. no ident.", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpc_noidminus", "#eta distribution - data TPC tag - neg. no ident.", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpc_noidminus", "#phi distribution - data TPC tag - neg. no ident.", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_its_noidminus", "#it{p}_{T} distribution - data ITS tag - neg. no ident.", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_its_noidminus", "#eta distribution - data ITS tag - neg. no ident.", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_its_noidminus", "#phi distribution - data ITS tag - neg. no ident.", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_tpcits_noidminus", "#it{p}_{T} distribution - data TPC+ITS tag - neg. no ident.", kTH1D, {axisPt}, true);
+      histos.add("data/etahist_tpcits_noidminus", "#eta distribution - data TPC+ITS tag - neg. no ident.", kTH1D, {axisEta}, true);
+      histos.add("data/phihist_tpcits_noidminus", "#phi distribution - data TPC+ITS tag - neg. no ident. ", kTH1D, {axisPhi}, true);
+    }
+    //
 
     histos.add("data/pthist_tpc_pos", "#it{p}_{T} distribution - data q>0 TPC tag", kTH1D, {axisPt}, true);
     histos.add("data/etahist_tpc_pos", "#eta distribution - data q>0 TPC tag", kTH1D, {axisEta}, true);
@@ -361,7 +485,21 @@ struct qaMatchEff {
     histos.add("MC/qopthist_tpc", "Q/#it{p}_{T} distribution - MC TPC tag", kTH1D, {axisQoPt}, true);
     histos.add("MC/qopthist_its", "Q/#it{p}_{T} distribution - MC ITS tag", kTH1D, {axisQoPt}, true);
     histos.add("MC/qopthist_tpcits", "Q/#it{p}_{T} distribution - MC TPC+ITS tag", kTH1D, {axisQoPt}, true);
+    //
+    //  TOF tag
+    histos.add("MC/pthist_toftpc", "#it{p}_{T} distribution - MC TOF+TPC tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_toftpc", "#eta distribution - MC TOF+TPC tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_toftpc", "#phi distribution - MC TOF+TPC tag", kTH1D, {axisPhi}, true);
 
+    histos.add("MC/pthist_tofits", "#it{p}_{T} distribution - MC TOF+ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tofits", "#eta distribution - MC TOF+ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tofits", "#phi distribution - MC TOF+ITS tag", kTH1D, {axisPhi}, true);
+
+    histos.add("MC/pthist_toftpcits", "#it{p}_{T} distribution - MC TOF+TPC+ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_toftpcits", "#eta distribution - MC TOF+TPC+ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_toftpcits", "#phi distribution - MC TOF+TPC+ITS tag", kTH1D, {axisPhi}, true);
+    //
+    //
     histos.add("MC/pthist_tpc", "#it{p}_{T} distribution - MC TPC tag", kTH1D, {axisPt}, true);
     histos.add("MC/etahist_tpc", "#eta distribution - MC TPC tag", kTH1D, {axisEta}, true);
     histos.add("MC/phihist_tpc", "#phi distribution - MC TPC tag", kTH1D, {axisPhi}, true);
@@ -466,6 +604,32 @@ struct qaMatchEff {
     histos.add("MC/etahist_tpcits_pi", "#eta distribution - #pi MC TPC+ITS tag", kTH1D, {axisEta}, true);
     histos.add("MC/phihist_tpcits_pi", "#phi distribution - #pi MC TPC+ITS tag", kTH1D, {axisPhi}, true);
 
+    // plus
+    histos.add("MC/pthist_tpc_piplus", "#it{p}_{T} distribution -pos. #pi MC TPC tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpc_piplus", "#eta distribution -pos. #pi MC TPC tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpc_piplus", "#phi distribution -pos. #pi MC TPC tag", kTH1D, {axisPhi}, true);
+
+    histos.add("MC/pthist_its_piplus", "#it{p}_{T} distribution -pos. #pi MC ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_its_piplus", "#eta distribution -pos. #pi MC ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_its_piplus", "#phi distribution -pos. #pi MC ITS tag", kTH1D, {axisPhi}, true);
+
+    histos.add("MC/pthist_tpcits_piplus", "#it{p}_{T} distribution -pos. #pi MC TPC+ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_piplus", "#eta distribution -pos. #pi MC TPC+ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_piplus", "#phi distribution -pos. #pi MC TPC+ITS tag", kTH1D, {axisPhi}, true);
+
+    // minus
+    histos.add("MC/pthist_tpc_piminus", "#it{p}_{T} distribution -neg. #pi MC TPC tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpc_piminus", "#eta distribution -neg. #pi MC TPC tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpc_piminus", "#phi distribution -neg. #pi MC TPC tag", kTH1D, {axisPhi}, true);
+
+    histos.add("MC/pthist_its_piminus", "#it{p}_{T} distribution -neg. #pi MC ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_its_piminus", "#eta distribution -neg. #pi MC ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_its_piminus", "#phi distribution -neg. #pi MC ITS tag", kTH1D, {axisPhi}, true);
+
+    histos.add("MC/pthist_tpcits_piminus", "#it{p}_{T} distribution -neg. #pi MC TPC+ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_piminus", "#eta distribution -neg. #pi MC TPC+ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_piminus", "#phi distribution -neg. #pi MC TPC+ITS tag", kTH1D, {axisPhi}, true);
+
     // pions only
     // split in prim secd secm
     histos.add("MC/pthist_tpc_pi_prim", "#it{p}_{T} distribution - #pi MC prim TPC tag", kTH1D, {axisPt}, true);
@@ -506,31 +670,81 @@ struct qaMatchEff {
 
     // protons only
     // all
-    histos.add("MC/pthist_tpc_P", "#it{p}_{T} distribution - prot MC TPC tag", kTH1D, {axisPt}, true);
-    histos.add("MC/etahist_tpc_P", "#eta distribution - prot MC TPC tag", kTH1D, {axisEta}, true);
-    histos.add("MC/phihist_tpc_P", "#phi distribution - prot MC TPC tag", kTH1D, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_pr", "#it{p}_{T} distribution - prot MC TPC tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpc_pr", "#eta distribution - prot MC TPC tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpc_pr", "#phi distribution - prot MC TPC tag", kTH1D, {axisPhi}, true);
 
-    histos.add("MC/pthist_its_P", "#it{p}_{T} distribution - prot MC ITS tag", kTH1D, {axisPt}, true);
-    histos.add("MC/etahist_its_P", "#eta distribution - prot MC ITS tag", kTH1D, {axisEta}, true);
-    histos.add("MC/phihist_its_P", "#phi distribution - prot MC ITS tag", kTH1D, {axisPhi}, true);
+    histos.add("MC/pthist_its_pr", "#it{p}_{T} distribution - prot MC ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_its_pr", "#eta distribution - prot MC ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_its_pr", "#phi distribution - prot MC ITS tag", kTH1D, {axisPhi}, true);
 
-    histos.add("MC/pthist_tpcits_P", "#it{p}_{T} distribution - prot MC TPC+ITS tag", kTH1D, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_P", "#eta distribution - prot MC TPC+ITS tag", kTH1D, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_P", "#phi distribution - prot MC TPC+ITS tag", kTH1D, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_pr", "#it{p}_{T} distribution - prot MC TPC+ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_pr", "#eta distribution - prot MC TPC+ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_pr", "#phi distribution - prot MC TPC+ITS tag", kTH1D, {axisPhi}, true);
+    // plus
+    histos.add("MC/pthist_tpc_prplus", "#it{p}_{T} distribution - pos. prot MC TPC tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpc_prplus", "#eta distribution - pos. prot MC TPC tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpc_prplus", "#phi distribution - pos. prot MC TPC tag", kTH1D, {axisPhi}, true);
 
+    histos.add("MC/pthist_its_prplus", "#it{p}_{T} distribution - pos. prot MC ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_its_prplus", "#eta distribution - pos. prot MC ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_its_prplus", "#phi distribution - pos. prot MC ITS tag", kTH1D, {axisPhi}, true);
+
+    histos.add("MC/pthist_tpcits_prplus", "#it{p}_{T} distribution - pos. prot MC TPC+ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_prplus", "#eta distribution - pos. prot MC TPC+ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_prplus", "#phi distribution - pos. prot MC TPC+ITS tag", kTH1D, {axisPhi}, true);
+    // minus
+    histos.add("MC/pthist_tpc_prminus", "#it{p}_{T} distribution - neg. prot MC TPC tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpc_prminus", "#eta distribution - neg. prot MC TPC tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpc_prminus", "#phi distribution - neg. prot MC TPC tag", kTH1D, {axisPhi}, true);
+
+    histos.add("MC/pthist_its_prminus", "#it{p}_{T} distribution - neg. prot MC ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_its_prminus", "#eta distribution - neg. prot MC ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_its_prminus", "#phi distribution - neg. prot MC ITS tag", kTH1D, {axisPhi}, true);
+
+    histos.add("MC/pthist_tpcits_prminus", "#it{p}_{T} distribution - neg. prot MC TPC+ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_prminus", "#eta distribution - neg. prot MC TPC+ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_prminus", "#phi distribution - neg. prot MC TPC+ITS tag", kTH1D, {axisPhi}, true);
+    //
     // kaons only
     // all
-    histos.add("MC/pthist_tpc_K", "#it{p}_{T} distribution - kaons MC TPC tag", kTH1D, {axisPt}, true);
-    histos.add("MC/etahist_tpc_K", "#eta distribution - kaons MC TPC tag", kTH1D, {axisEta}, true);
-    histos.add("MC/phihist_tpc_K", "#phi distribution - kaons MC TPC tag", kTH1D, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_ka", "#it{p}_{T} distribution - kaons MC TPC tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpc_ka", "#eta distribution - kaons MC TPC tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpc_ka", "#phi distribution - kaons MC TPC tag", kTH1D, {axisPhi}, true);
 
-    histos.add("MC/pthist_its_K", "#it{p}_{T} distribution - kaons MC ITS tag", kTH1D, {axisPt}, true);
-    histos.add("MC/etahist_its_K", "#eta distribution - kaons MC ITS tag", kTH1D, {axisEta}, true);
-    histos.add("MC/phihist_its_K", "#phi distribution - kaons MC ITS tag", kTH1D, {axisPhi}, true);
+    histos.add("MC/pthist_its_ka", "#it{p}_{T} distribution - kaons MC ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_its_ka", "#eta distribution - kaons MC ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_its_ka", "#phi distribution - kaons MC ITS tag", kTH1D, {axisPhi}, true);
 
-    histos.add("MC/pthist_tpcits_K", "#it{p}_{T} distribution - kaons MC TPC+ITS tag", kTH1D, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_K", "#eta distribution - kaons MC TPC+ITS tag", kTH1D, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_K", "#phi distribution - kaons MC TPC+ITS tag", kTH1D, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_ka", "#it{p}_{T} distribution - kaons MC TPC+ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_ka", "#eta distribution - kaons MC TPC+ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_ka", "#phi distribution - kaons MC TPC+ITS tag", kTH1D, {axisPhi}, true);
+
+    // plus
+    histos.add("MC/pthist_tpc_kaplus", "#it{p}_{T} distribution - pos. kaons MC TPC tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpc_kaplus", "#eta distribution - pos. kaons MC TPC tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpc_kaplus", "#phi distribution - pos. kaons MC TPC tag", kTH1D, {axisPhi}, true);
+
+    histos.add("MC/pthist_its_kaplus", "#it{p}_{T} distribution - pos. kaons MC ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_its_kaplus", "#eta distribution - pos. kaons MC ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_its_kaplus", "#phi distribution - pos. kaons MC ITS tag", kTH1D, {axisPhi}, true);
+
+    histos.add("MC/pthist_tpcits_kaplus", "#it{p}_{T} distribution - pos. kaons MC TPC+ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_kaplus", "#eta distribution - pos. kaons MC TPC+ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_kaplus", "#phi distribution - pos. kaons MC TPC+ITS tag", kTH1D, {axisPhi}, true);
+
+    // minus
+    histos.add("MC/pthist_tpc_kaminus", "#it{p}_{T} distribution - neg. kaons MC TPC tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpc_kaminus", "#eta distribution - neg. kaons MC TPC tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpc_kaminus", "#phi distribution - neg. kaons MC TPC tag", kTH1D, {axisPhi}, true);
+
+    histos.add("MC/pthist_its_kaminus", "#it{p}_{T} distribution - neg. kaons MC ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_its_kaminus", "#eta distribution - neg. kaons MC ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_its_kaminus", "#phi distribution - neg. kaons MC ITS tag", kTH1D, {axisPhi}, true);
+
+    histos.add("MC/pthist_tpcits_kaminus", "#it{p}_{T} distribution - neg. kaons MC TPC+ITS tag", kTH1D, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_kaminus", "#eta distribution - neg. kaons MC TPC+ITS tag", kTH1D, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_kaminus", "#phi distribution - neg. kaons MC TPC+ITS tag", kTH1D, {axisPhi}, true);
 
     // pions+kaons
     // all
@@ -679,6 +893,10 @@ struct qaMatchEff {
       if ((isTRDThere == 0) && track.hasTRD())
         continue;
 
+      // kinematic track seletions for all tracks
+      if (!isTrackSelectedKineCuts(track))
+        continue;
+
       if constexpr (IS_MC) {
         if (!track.has_mcParticle()) {
           countNoMC++;
@@ -710,11 +928,12 @@ struct qaMatchEff {
       else
         ITStrackPt = reco_pt;
 
-      // kinematic track seletions for all tracks
-      if (!isTrackSelectedKineCuts(track))
-        continue;
-
       countData++;
+      //
+      //  keep sign of track as boolean
+      bool positiveTrack = false;
+      if (track.signed1Pt() > 0)
+        positiveTrack = true;
       //
       // PID sigmas
       if constexpr (!IS_MC) {
@@ -796,7 +1015,7 @@ struct qaMatchEff {
       //
       // all tracks, no conditions
       if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-        if constexpr (IS_MC) {
+        if constexpr (IS_MC) { // MC
           // pt comparison plot
           if (makept2d) {
             histos.fill(HIST("MC/ptptconfITSall"), reco_pt, tpcinner_pt);
@@ -808,6 +1027,11 @@ struct qaMatchEff {
           histos.get<TH1>(HIST("MC/pthist_its"))->Fill(ITStrackPt);
           histos.get<TH1>(HIST("MC/phihist_its"))->Fill(track.phi());
           histos.get<TH1>(HIST("MC/etahist_its"))->Fill(track.eta());
+          if (trkWithTOF) {
+            histos.get<TH1>(HIST("MC/pthist_tofits"))->Fill(ITStrackPt);
+            histos.get<TH1>(HIST("MC/phihist_tofits"))->Fill(track.phi());
+            histos.get<TH1>(HIST("MC/etahist_tofits"))->Fill(track.eta());
+          }
         } else { // DATA
           // pt comparison plot
           if (makept2d) {
@@ -821,26 +1045,60 @@ struct qaMatchEff {
           histos.get<TH1>(HIST("data/phihist_its"))->Fill(track.phi());
           histos.get<TH1>(HIST("data/etahist_its"))->Fill(track.eta());
           //
+          // with TOF tag
+          if (trkWithTOF) {
+            histos.get<TH1>(HIST("data/pthist_tofits"))->Fill(ITStrackPt);
+            histos.get<TH1>(HIST("data/phihist_tofits"))->Fill(track.phi());
+            histos.get<TH1>(HIST("data/etahist_tofits"))->Fill(track.eta());
+          }
+          //
           // PID is applied
           if (isPion) {
             histos.get<TH1>(HIST("data/pthist_its_pi"))->Fill(ITStrackPt);
             histos.get<TH1>(HIST("data/phihist_its_pi"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_its_pi"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("data/pthist_its_piplus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("data/phihist_its_piplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_its_piplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("data/pthist_its_piminus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("data/phihist_its_piminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_its_piminus"))->Fill(track.eta());
+            }
           }
           if (isKaon) {
             histos.get<TH1>(HIST("data/pthist_its_ka"))->Fill(ITStrackPt);
             histos.get<TH1>(HIST("data/phihist_its_ka"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_its_ka"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("data/pthist_its_kaplus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("data/phihist_its_kaplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_its_kaplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("data/pthist_its_kaminus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("data/phihist_its_kaminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_its_kaminus"))->Fill(track.eta());
+            }
           }
           if (isProton) {
             histos.get<TH1>(HIST("data/pthist_its_pr"))->Fill(ITStrackPt);
             histos.get<TH1>(HIST("data/phihist_its_pr"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_its_pr"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("data/pthist_its_prplus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("data/phihist_its_prplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_its_prplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("data/pthist_its_prminus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("data/phihist_its_prminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_its_prminus"))->Fill(track.eta());
+            }
           }
         }
       }
       if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
-        if constexpr (IS_MC) {
+        if constexpr (IS_MC) { // MC
           if (makept2d) {
             histos.fill(HIST("MC/ptptconfTPCall"), reco_pt, tpcinner_pt);
             if (!track.hasITS())
@@ -850,6 +1108,11 @@ struct qaMatchEff {
           histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(track.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc"))->Fill(track.eta());
+          if (trkWithTOF) {
+            histos.get<TH1>(HIST("MC/pthist_toftpc"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_toftpc"))->Fill(track.phi());
+            histos.get<TH1>(HIST("MC/etahist_toftpc"))->Fill(track.eta());
+          }
         } else { // DATA
           if (makept2d) {
             histos.fill(HIST("data/ptptconfTPCall"), reco_pt, tpcinner_pt);
@@ -861,31 +1124,70 @@ struct qaMatchEff {
           histos.get<TH1>(HIST("data/phihist_tpc"))->Fill(track.phi());
           histos.get<TH1>(HIST("data/etahist_tpc"))->Fill(track.eta());
           //
+          // with TOF tag
+          if (trkWithTOF) {
+            histos.get<TH1>(HIST("data/pthist_toftpc"))->Fill(trackPt);
+            histos.get<TH1>(HIST("data/phihist_toftpc"))->Fill(track.phi());
+            histos.get<TH1>(HIST("data/etahist_toftpc"))->Fill(track.eta());
+          }
+          //
           // PID is applied
           if (isPion) {
             histos.get<TH1>(HIST("data/pthist_tpc_pi"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpc_pi"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_tpc_pi"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("data/pthist_tpc_piplus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("data/phihist_tpc_piplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_tpc_piplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("data/pthist_tpc_piminus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("data/phihist_tpc_piminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_tpc_piminus"))->Fill(track.eta());
+            }
           }
           if (isKaon) {
             histos.get<TH1>(HIST("data/pthist_tpc_ka"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpc_ka"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_tpc_ka"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("data/pthist_tpc_kaplus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("data/phihist_tpc_kaplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_tpc_kaplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("data/pthist_tpc_kaminus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("data/phihist_tpc_kaminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_tpc_kaminus"))->Fill(track.eta());
+            }
           }
           if (isProton) {
             histos.get<TH1>(HIST("data/pthist_tpc_pr"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpc_pr"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_tpc_pr"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("data/pthist_tpc_prplus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("data/phihist_tpc_prplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_tpc_prplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("data/pthist_tpc_prminus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("data/phihist_tpc_prminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_tpc_prminus"))->Fill(track.eta());
+            }
           }
         }
         if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-          if constexpr (IS_MC) {
+          if constexpr (IS_MC) { // MC
             if (makept2d)
               histos.fill(HIST("MC/ptptconfTPCITS"), reco_pt, tpcinner_pt);
             histos.get<TH1>(HIST("MC/qopthist_tpcits"))->Fill(track.signed1Pt());
             histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(track.eta());
+            if (trkWithTOF) {
+              histos.get<TH1>(HIST("MC/pthist_toftpcits"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_toftpcits"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_toftpcits"))->Fill(track.eta());
+            }
           } else { // DATA
             if (makept2d)
               histos.fill(HIST("data/ptptconfTPCITS"), reco_pt, tpcinner_pt);
@@ -896,20 +1198,70 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/pthist_tpcits_pi"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/phihist_tpcits_pi"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/etahist_tpcits_pi"))->Fill(track.eta());
+              if (positiveTrack) {
+                histos.get<TH1>(HIST("data/pthist_tpcits_piplus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("data/phihist_tpcits_piplus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("data/etahist_tpcits_piplus"))->Fill(track.eta());
+              } else {
+                histos.get<TH1>(HIST("data/pthist_tpcits_piminus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("data/phihist_tpcits_piminus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("data/etahist_tpcits_piminus"))->Fill(track.eta());
+              }
             }
             if (isKaon) {
               histos.get<TH1>(HIST("data/pthist_tpcits_ka"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/phihist_tpcits_ka"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/etahist_tpcits_ka"))->Fill(track.eta());
+              if (positiveTrack) {
+                histos.get<TH1>(HIST("data/pthist_tpcits_kaplus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("data/phihist_tpcits_kaplus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("data/etahist_tpcits_kaplus"))->Fill(track.eta());
+              } else {
+                histos.get<TH1>(HIST("data/pthist_tpcits_kaminus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("data/phihist_tpcits_kaminus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("data/etahist_tpcits_kaminus"))->Fill(track.eta());
+              }
             }
             if (isProton) {
               histos.get<TH1>(HIST("data/pthist_tpcits_pr"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/phihist_tpcits_pr"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/etahist_tpcits_pr"))->Fill(track.eta());
+              if (positiveTrack) {
+                histos.get<TH1>(HIST("data/pthist_tpcits_prplus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("data/phihist_tpcits_prplus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("data/etahist_tpcits_prplus"))->Fill(track.eta());
+              } else {
+                histos.get<TH1>(HIST("data/pthist_tpcits_prminus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("data/phihist_tpcits_prminus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("data/etahist_tpcits_prminus"))->Fill(track.eta());
+              }
             }
             histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpcits"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_tpcits"))->Fill(track.eta());
+            //
+            // not identified
+            if (!isPion && !isKaon && !isProton) {
+              histos.get<TH1>(HIST("data/pthist_tpcits_noid"))->Fill(trackPt);
+              histos.get<TH1>(HIST("data/phihist_tpcits_noid"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_tpcits_noid"))->Fill(track.eta());
+              if (positiveTrack) {
+                histos.get<TH1>(HIST("data/pthist_tpcits_noidplus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("data/phihist_tpcits_noidplus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("data/etahist_tpcits_noidplus"))->Fill(track.eta());
+              } else {
+                histos.get<TH1>(HIST("data/pthist_tpcits_noidminus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("data/phihist_tpcits_noidminus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("data/etahist_tpcits_noidminus"))->Fill(track.eta());
+              }
+            }
+            //
+            // with TOF tag
+            if (trkWithTOF) {
+              histos.get<TH1>(HIST("data/pthist_toftpcits"))->Fill(trackPt);
+              histos.get<TH1>(HIST("data/phihist_toftpcits"))->Fill(track.phi());
+              histos.get<TH1>(HIST("data/etahist_toftpcits"))->Fill(track.eta());
+            }
           }
           /// control plot: correlation # ITS its vs ITS layer
           int itsNhits = 0;
@@ -979,11 +1331,11 @@ struct qaMatchEff {
       // positive only
       if (track.signed1Pt() > 0) {
         if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-          if constexpr (IS_MC) {
+          if constexpr (IS_MC) { // MC
             histos.get<TH1>(HIST("MC/pthist_its_pos"))->Fill(ITStrackPt);
             histos.get<TH1>(HIST("MC/phihist_its_pos"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_its_pos"))->Fill(track.eta());
-          } else {
+          } else { // DATA
             histos.get<TH1>(HIST("data/pthist_its_pos"))->Fill(ITStrackPt);
             histos.get<TH1>(HIST("data/phihist_its_pos"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/etahist_its_pos"))->Fill(track.eta());
@@ -1052,7 +1404,7 @@ struct qaMatchEff {
             //
       }     // end negative
 
-      if constexpr (IS_MC) {
+      if constexpr (IS_MC) { // MC
         auto mcpart = track.mcParticle();
         //
         // only primaries
@@ -1124,18 +1476,45 @@ struct qaMatchEff {
         // protons only
         if (tpPDGCode == 2212) {
           if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-            histos.get<TH1>(HIST("MC/pthist_its_P"))->Fill(ITStrackPt);
-            histos.get<TH1>(HIST("MC/phihist_its_P"))->Fill(track.phi());
-            histos.get<TH1>(HIST("MC/etahist_its_P"))->Fill(track.eta());
+            histos.get<TH1>(HIST("MC/pthist_its_pr"))->Fill(ITStrackPt);
+            histos.get<TH1>(HIST("MC/phihist_its_pr"))->Fill(track.phi());
+            histos.get<TH1>(HIST("MC/etahist_its_pr"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("MC/pthist_its_prplus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("MC/phihist_its_prplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_its_prplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("MC/pthist_its_prminus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("MC/phihist_its_prminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_its_prminus"))->Fill(track.eta());
+            }
           } //  end if ITS
           if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_P"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpc_P"))->Fill(track.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpc_P"))->Fill(track.eta());
+            histos.get<TH1>(HIST("MC/pthist_tpc_pr"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_pr"))->Fill(track.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_pr"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("MC/pthist_tpc_prplus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpc_prplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpc_prplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("MC/pthist_tpc_prminus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpc_prminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpc_prminus"))->Fill(track.eta());
+            }
             if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_P"))->Fill(trackPt);
-              histos.get<TH1>(HIST("MC/phihist_tpcits_P"))->Fill(track.phi());
-              histos.get<TH1>(HIST("MC/etahist_tpcits_P"))->Fill(track.eta());
+              histos.get<TH1>(HIST("MC/pthist_tpcits_pr"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_pr"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_pr"))->Fill(track.eta());
+              if (positiveTrack) {
+                histos.get<TH1>(HIST("MC/pthist_tpcits_prplus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/phihist_tpcits_prplus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("MC/etahist_tpcits_prplus"))->Fill(track.eta());
+              } else {
+                histos.get<TH1>(HIST("MC/pthist_tpcits_prminus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/phihist_tpcits_prminus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("MC/etahist_tpcits_prminus"))->Fill(track.eta());
+              }
             } //  end if ITS
           }   //  end if TPC
         }
@@ -1143,20 +1522,47 @@ struct qaMatchEff {
         // pions only
         if (tpPDGCode == 211) {
           //
-          // all tracks
+          // ITS tracks
           if (track.hasITS() && isTrackSelectedITSCuts(track)) {
             histos.get<TH1>(HIST("MC/pthist_its_pi"))->Fill(ITStrackPt);
             histos.get<TH1>(HIST("MC/phihist_its_pi"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_its_pi"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("MC/pthist_its_piplus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("MC/phihist_its_piplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_its_piplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("MC/pthist_its_piminus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("MC/phihist_its_piminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_its_piminus"))->Fill(track.eta());
+            }
           } //  end if ITS
           if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
             histos.get<TH1>(HIST("MC/pthist_tpc_pi"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpc_pi"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_tpc_pi"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("MC/pthist_tpc_piplus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpc_piplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpc_piplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("MC/pthist_tpc_piminus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpc_piminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpc_piminus"))->Fill(track.eta());
+            }
             if (track.hasITS() && isTrackSelectedITSCuts(track)) {
               histos.get<TH1>(HIST("MC/pthist_tpcits_pi"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_pi"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_pi"))->Fill(track.eta());
+              if (positiveTrack) {
+                histos.get<TH1>(HIST("MC/pthist_tpcits_piplus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/phihist_tpcits_piplus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("MC/etahist_tpcits_piplus"))->Fill(track.eta());
+              } else {
+                histos.get<TH1>(HIST("MC/pthist_tpcits_piminus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/phihist_tpcits_piminus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("MC/etahist_tpcits_piminus"))->Fill(track.eta());
+              }
             } //  end if ITS
           }   //  end if TPC
           //
@@ -1252,18 +1658,45 @@ struct qaMatchEff {
         // kaons only
         if (tpPDGCode == 321) {
           if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-            histos.get<TH1>(HIST("MC/pthist_its_K"))->Fill(ITStrackPt);
-            histos.get<TH1>(HIST("MC/phihist_its_K"))->Fill(track.phi());
-            histos.get<TH1>(HIST("MC/etahist_its_K"))->Fill(track.eta());
+            histos.get<TH1>(HIST("MC/pthist_its_ka"))->Fill(ITStrackPt);
+            histos.get<TH1>(HIST("MC/phihist_its_ka"))->Fill(track.phi());
+            histos.get<TH1>(HIST("MC/etahist_its_ka"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("MC/pthist_its_kaplus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("MC/phihist_its_kaplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_its_kaplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("MC/pthist_its_kaminus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("MC/phihist_its_kaminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_its_kaminus"))->Fill(track.eta());
+            }
           } //  end if ITS
           if (track.hasTPC() && isTrackSelectedTPCCuts(track)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_K"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpc_K"))->Fill(track.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpc_K"))->Fill(track.eta());
+            histos.get<TH1>(HIST("MC/pthist_tpc_ka"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/phihist_tpc_ka"))->Fill(track.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpc_ka"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("MC/pthist_tpc_kaplus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpc_kaplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpc_kaplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("MC/pthist_tpc_kaminus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpc_kaminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpc_kaminus"))->Fill(track.eta());
+            }
             if (track.hasITS() && isTrackSelectedITSCuts(track)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_K"))->Fill(trackPt);
-              histos.get<TH1>(HIST("MC/phihist_tpcits_K"))->Fill(track.phi());
-              histos.get<TH1>(HIST("MC/etahist_tpcits_K"))->Fill(track.eta());
+              histos.get<TH1>(HIST("MC/pthist_tpcits_ka"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/phihist_tpcits_ka"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/etahist_tpcits_ka"))->Fill(track.eta());
+              if (positiveTrack) {
+                histos.get<TH1>(HIST("MC/pthist_tpcits_kaplus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/phihist_tpcits_kaplus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("MC/etahist_tpcits_kaplus"))->Fill(track.eta());
+              } else {
+                histos.get<TH1>(HIST("MC/pthist_tpcits_kaminus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/phihist_tpcits_kaminus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("MC/etahist_tpcits_kaminus"))->Fill(track.eta());
+              }
             } //  end if ITS
           }   //  end if TPC
         }

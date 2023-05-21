@@ -64,6 +64,7 @@ using TracksCompleteIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::Track
 using V0DataLabeled = soa::Join<aod::V0Datas, aod::McV0Labels>;
 using CascMC = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 using RecoedMCCollisions = soa::Join<aod::McCollisions, aod::McCollsExtra>;
+using CollisionsWithEvSels = soa::Join<aod::Collisions, aod::EvSels>;
 
 struct preProcessMCcollisions {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -459,6 +460,8 @@ struct straRecoStudy {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "Sel8 cut");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
+
+    histos.add("hMatchCollisionIndexV0Cascade", "hMatchCollisionIndexV0Cascade", kTH1F, {{2, -0.5f, 1.5f}});
   }
 
   void processV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<V0DataLabeled> const& fullV0s, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
@@ -580,18 +583,23 @@ struct straRecoStudy {
   }
   PROCESS_SWITCH(straRecoStudy, processV0RealData, "Regular V0 analysis in real data", false);
 
-  void processCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const&, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
+  void processCascade(CollisionsWithEvSels const& collisions, aod::V0Datas const&, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
   {
-    if (event_sel8_selection && !collision.sel8()) {
-      return;
-    }
-    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
-      return;
-    }
     for (auto& casc : Cascades) {
       // MC association
+      if (!casc.has_collision()) {
+        continue;
+      }
+      auto collision = casc.collision_as<CollisionsWithEvSels>();
+      if (event_sel8_selection && !collision.sel8()) {
+        continue;
+      }
+      if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+        continue;
+      }
+
       if (!casc.has_mcParticle())
-        return;
+        continue;
       auto cascmc = casc.mcParticle();
       if (TMath::Abs(cascmc.y()) > 0.5)
         continue;
@@ -605,6 +613,13 @@ struct straRecoStudy {
       auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
       auto posPartTrack = v0.posTrack_as<TracksCompleteIUMC>();
       auto negPartTrack = v0.negTrack_as<TracksCompleteIUMC>();
+
+      // check collision association switchup
+      if (casc.collisionId() == v0index.collisionId()) {
+        histos.fill(HIST("hMatchCollisionIndexV0Cascade"), 0.0f);
+      } else {
+        histos.fill(HIST("hMatchCollisionIndexV0Cascade"), 1.0f);
+      }
 
       if (cascmc.pdgCode() == 3312) {
         histos.fill(HIST("h3dTrackPtsXiMinusP"), casc.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
@@ -629,7 +644,7 @@ struct straRecoStudy {
 
       if (posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters || bachPartTrack.itsNCls() < itsminclusters)
         continue;
-      if (posPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || negPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || bachPartTrack.itsNCls() < tpcmincrossedrows)
+      if (posPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || negPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows || bachPartTrack.tpcNClsCrossedRows() < tpcmincrossedrows)
         continue;
 
       if (cascmc.pdgCode() == 3312) {

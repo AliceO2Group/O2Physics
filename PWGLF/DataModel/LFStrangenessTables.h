@@ -268,6 +268,10 @@ DECLARE_SOA_COLUMN(IsLambdaCandidate, isLambdaCandidate, bool);                 
 DECLARE_SOA_COLUMN(IsAntiLambdaCandidate, isAntiLambdaCandidate, bool);           //! compatible with dE/dx hypotheses
 DECLARE_SOA_COLUMN(IsHypertritonCandidate, isHypertritonCandidate, bool);         //! compatible with dE/dx hypotheses
 DECLARE_SOA_COLUMN(IsAntiHypertritonCandidate, isAntiHypertritonCandidate, bool); //! compatible with dE/dx hypotheses
+
+// used in cascades (potentially useful in general, make available as tags)
+DECLARE_SOA_COLUMN(IsFromCascade, isFromCascade, bool);               //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsFromTrackedCascade, isFromTrackedCascade, bool); //! compatible with dE/dx hypotheses
 } // namespace v0tag
 DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
                   v0tag::IsInteresting,
@@ -282,15 +286,18 @@ DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
                   v0tag::IsLambdaCandidate,
                   v0tag::IsAntiLambdaCandidate,
                   v0tag::IsHypertritonCandidate,
-                  v0tag::IsAntiHypertritonCandidate);
+                  v0tag::IsAntiHypertritonCandidate,
+                  v0tag::IsFromCascade,
+                  v0tag::IsFromTrackedCascade);
 
 namespace cascdata
 {
 // Necessary for full filtering functionality
-DECLARE_SOA_INDEX_COLUMN(V0, v0);                                   //!
-DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);                         //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, ""); //!
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
+DECLARE_SOA_INDEX_COLUMN(V0, v0);                                           //!
+DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);                                 //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, "");         //!
+DECLARE_SOA_INDEX_COLUMN_FULL(StrangeTrack, strangeTrack, int, Tracks, ""); //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                             //!
 // General cascade properties: position, momentum
 DECLARE_SOA_COLUMN(Sign, sign, int);         //!
 DECLARE_SOA_COLUMN(MXi, mXi, float);         //!
@@ -414,7 +421,7 @@ DECLARE_SOA_TABLE(StoredCascDatas, "AOD", "CASCDATA", //!
                   cascdata::Phi<cascdata::Px, cascdata::Py>);
 
 DECLARE_SOA_TABLE(StoredTraCascDatas, "AOD", "TRACASCDATA", //!
-                  o2::soa::Index<>, cascdata::V0Id, cascdata::CascadeId, cascdata::BachelorId, cascdata::CollisionId,
+                  o2::soa::Index<>, cascdata::V0Id, cascdata::CascadeId, cascdata::BachelorId, cascdata::StrangeTrackId, cascdata::CollisionId,
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,
                   cascdata::X, cascdata::Y, cascdata::Z,
                   cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda,
