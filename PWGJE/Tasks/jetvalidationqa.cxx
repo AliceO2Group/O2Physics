@@ -72,7 +72,7 @@ struct jetTrackCollisionQa {
   Configurable<float> etaup{"etaUp", 0.9f, "highest eta"};
 
   HistogramRegistry mHistManager{"JetCollisionQAHistograms"};
-  Configurable<int> nBins{"nBins", 200, "N bins in histos"};// keep nBins for vertex and special 2D's
+  Configurable<int> nBins{"nBins", 200, "N bins in histos"}; // keep nBins for vertex and special 2D's
   // change the binning for pT in config file depending on AliPhysics status
   ConfigurableAxis BinsPhi{"BinsPhi", {200, -3.2, 6.4}, "Binning of the phi axis"};
   ConfigurableAxis BinsEta{"BinsEta", {200, -0.9, 0.9}, "Binning of the eta axis"};
@@ -83,12 +83,12 @@ struct jetTrackCollisionQa {
   std::string trackSelection;
 
   void init(InitContext const&)
-  {    
+  {
     // histograms
-    const AxisSpec vtxZAxis{nBins, -20, 20, "Vtx_{z} (cm)"}; 
+    const AxisSpec vtxZAxis{nBins, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec phiAxis{BinsPhi, "#phi "};
     const AxisSpec etaAxis{BinsEta, "#eta "};
-    const AxisSpec ptAxis{BinsPt, "#it{p}_{T} (GeV/#it{c})"}; 
+    const AxisSpec ptAxis{BinsPt, "#it{p}_{T} (GeV/#it{c})"};
 
     // set trackselections
     trackSelection = static_cast<std::string>(trackSelections);
@@ -173,12 +173,11 @@ struct jetTrackCollisionQa {
     mHistManager.fill(HIST("leadJetConstEta"), leadingConstTrackEta);
   } // end of fillLeadingJetConstQA template
 
-
   Filter etafilter = (aod::track::eta < etaup) && (aod::track::eta > etalow);
   Filter ptfilter = (aod::track::pt < ptUp) && (aod::track::pt > ptLow);
-  
+
   using TracksJE = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
-  
+
   void processESD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks)
   {
     if (!collision.sel7() || abs(collision.posZ()) > 10) {
@@ -190,10 +189,10 @@ struct jetTrackCollisionQa {
     double leadingTrackPhi = -1;
     double leadingTrackEta = -1;
     // qa histograms for selected tracks in collision
-    //Partition<aod::Tracks> groupedTracks = aod::track::collisionId == collision.globalIndex();//could be Tracks instead of TracksJE
-    //groupedTracks.bindTable(tracks);
+    // Partition<aod::Tracks> groupedTracks = aod::track::collisionId == collision.globalIndex();//could be Tracks instead of TracksJE
+    // groupedTracks.bindTable(tracks);
     for (const auto& t : tracks) {
-      if(t.collisionId() == collision.globalIndex()){
+      if (t.collisionId() == collision.globalIndex()) {
         fillTrackQA(t);
         if (t.pt() > leadingTrackPt) {
           leadingTrackPt = t.pt();
@@ -298,10 +297,10 @@ struct jetTrackCollisionQa {
 
 // MC validation for run2 and run3 on AO2D's
 struct mcJetTrackCollisionQa {
-  
+
   HistogramRegistry mHistManager{"JetCollisionQAHistograms"};
-  Configurable<int> nBins{"nBins", 200, "N bins in histos"};// keep nBins for vertex and special 2D's
-  
+  Configurable<int> nBins{"nBins", 200, "N bins in histos"}; // keep nBins for vertex and special 2D's
+
   ConfigurableAxis BinsPhi{"BinsPhi", {200, -3.2, 6.4}, "Binning of the phi axis"};
   ConfigurableAxis BinsEta{"BinsEta", {200, -0.9, 0.9}, "Binning of the eta axis"};
   ConfigurableAxis BinsPt{"BinsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
@@ -317,7 +316,7 @@ struct mcJetTrackCollisionQa {
 
     // histograms
     const AxisSpec vtxZAxis{nBins, -20, 20, "Vtx_{z} (cm)"};
-    const AxisSpec ptAxis{BinsPt, "#it{p}_{T} (GeV/#it{c})"}; 
+    const AxisSpec ptAxis{BinsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec phiAxis{BinsPhi, "#phi "};
     const AxisSpec etaAxis{BinsEta, "#eta "};
 
