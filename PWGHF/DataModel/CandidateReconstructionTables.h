@@ -1324,9 +1324,9 @@ DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO", //! D+-Hadrons p
 // Table for selection of Dmeson in a collision
 namespace hf_selection_dmeson_collision
 {
-DECLARE_SOA_COLUMN(DmesonSel, dmesonSel, bool); //! Selection flag for D+ in a collision
+DECLARE_SOA_COLUMN(DmesonSel, dmesonSel, bool); //! Selection flag for D meson in a collision
 } // namespace hf_selection_dmeson_collision
-DECLARE_SOA_TABLE(DmesonSelection, "AOD", "DINCOLL", // Selection of D+ in collisions
+DECLARE_SOA_TABLE(DmesonSelection, "AOD", "DINCOLL", // Selection of D meson in collisions
                   aod::hf_selection_dmeson_collision::DmesonSel);
 
 // specific Xicc candidate properties
