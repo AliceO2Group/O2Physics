@@ -456,7 +456,7 @@ struct HfCorrelatorDplusHadrons {
         if ((std::abs(particle2.pdgCode()) != 11) && (std::abs(particle2.pdgCode()) != 13) && (std::abs(particle2.pdgCode()) != 211) && (std::abs(particle2.pdgCode()) != 321) && (std::abs(particle2.pdgCode()) != 2212)) {
           continue;
         }
-        int poolBin = corrBinningMcGen.getBin(std::make_tuple(mccollision.posZ(), getTracksSize(mccollision)));
+        int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), getTracksSize(mcCollision)));
         entryDplusHadronPair(getDeltaPhi(particle2.phi(), particle1.phi()),
                              particle2.eta() - particle1.eta(),
                              particle1.pt(),
@@ -465,8 +465,8 @@ struct HfCorrelatorDplusHadrons {
       } // end inner loop
     }   // end outer loop
     registry.fill(HIST("hcountDplusHadronPerEvent"), counterDplusHadron);
-    registry.fill(HIST("hZvtx"), mccollision.posZ());
-    registry.fill(HIST("hMultiplicity"), getTracksSize(mccollision));
+    registry.fill(HIST("hZvtx"), mcCollision.posZ());
+    registry.fill(HIST("hMultiplicity"), getTracksSize(mcCollision));
   }
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcGen, "Process MC Gen mode", false);
 
