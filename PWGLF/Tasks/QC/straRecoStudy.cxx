@@ -597,7 +597,7 @@ struct straRecoStudy {
   template <typename TCascCandidate>
   void processCascadeCandidate(TCascCandidate casc)
   {
-        // MC association
+    // MC association
     if (!casc.has_collision()) {
       return;
     }
