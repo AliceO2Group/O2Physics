@@ -461,7 +461,8 @@ struct straRecoStudy {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "Sel8 cut");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
 
-    histos.add("hMatchCollisionIndexV0Cascade", "hMatchCollisionIndexV0Cascade", kTH1F, {{2, -0.5f, 1.5f}});
+    histos.add("hDCAxyVsPt", "hDCAxyVsPt", kTH2F, {{20, 0.0f, 10.0f}, {10000, -0.5f, 0.5f}});
+    histos.add("hDCAzVsPt", "hDCAzVsPt", kTH2F, {{20, 0.0f, 10.0f}, {10000, -0.5f, 0.5f}});
   }
 
   void processV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<V0DataLabeled> const& fullV0s, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
@@ -475,6 +476,15 @@ struct straRecoStudy {
       return;
     }
     evselstats[kEvSelVtxZ]++;
+    for (auto const& track : tracks) {
+      if (track.has_mcParticle()) {
+        auto mcParticle = track.mcParticle();
+        if (mcParticle.isPhysicalPrimary() && track.itsNCls() >= 7)
+          histos.fill(HIST("hDCAxyVsPt"), track.pt(), track.dcaXY());
+        histos.fill(HIST("hDCAzVsPt"), track.pt(), track.dcaXY());
+      }
+    }
+
     for (auto& v0 : fullV0s) {
       // MC association
       auto posPartTrack = v0.posTrack_as<TracksCompleteIUMC>();
@@ -613,13 +623,6 @@ struct straRecoStudy {
       auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
       auto posPartTrack = v0.posTrack_as<TracksCompleteIUMC>();
       auto negPartTrack = v0.negTrack_as<TracksCompleteIUMC>();
-
-      // check collision association switchup
-      if (casc.collisionId() == v0index.collisionId()) {
-        histos.fill(HIST("hMatchCollisionIndexV0Cascade"), 0.0f);
-      } else {
-        histos.fill(HIST("hMatchCollisionIndexV0Cascade"), 1.0f);
-      }
 
       if (cascmc.pdgCode() == 3312) {
         histos.fill(HIST("h3dTrackPtsXiMinusP"), casc.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());

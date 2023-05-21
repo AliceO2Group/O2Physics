@@ -578,29 +578,29 @@ struct lambdakzeroBuilder {
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
 
       // Fill basic mass histograms
-      if ((V0.isGammaCandidate() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
+      if ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
         registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
-      if ((V0.isK0ShortCandidate() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))
+      if ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))
         registry.fill(HIST("h2dK0ShortMass"), lPt, lK0ShortMass);
-      if ((V0.isLambdaCandidate() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))
+      if ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))
         registry.fill(HIST("h2dLambdaMass"), lPt, lLambdaMass);
-      if ((V0.isAntiLambdaCandidate() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))
+      if ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))
         registry.fill(HIST("h2dAntiLambdaMass"), lPt, lAntiLambdaMass);
-      if ((V0.isHypertritonCandidate() || dEdxUnchecked) && (V0.isTrueHypertriton() || mcUnchecked))
+      if ((V0.isdEdxHypertriton() || dEdxUnchecked) && (V0.isTrueHypertriton() || mcUnchecked))
         registry.fill(HIST("h2dHypertritonMass"), lPtHy, lHypertritonMass);
-      if ((V0.isAntiHypertritonCandidate() || dEdxUnchecked) && (V0.isTrueAntiHypertriton() || mcUnchecked))
+      if ((V0.isdEdxAntiHypertriton() || dEdxUnchecked) && (V0.isTrueAntiHypertriton() || mcUnchecked))
         registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
 
       // Fill ITS cluster maps with specific mass cuts
-      if (TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow && ((V0.isK0ShortCandidate() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))) {
+      if (TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow && ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_K0ShortPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
         registry.fill(HIST("h2dITSCluMap_K0ShortNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
       }
-      if (TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isLambdaCandidate() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))) {
+      if (TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_LambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
         registry.fill(HIST("h2dITSCluMap_LambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
       }
-      if (TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isAntiLambdaCandidate() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))) {
+      if (TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_AntiLambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
         registry.fill(HIST("h2dITSCluMap_AntiLambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
       }
