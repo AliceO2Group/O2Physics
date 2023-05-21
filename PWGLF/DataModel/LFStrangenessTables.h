@@ -262,12 +262,12 @@ DECLARE_SOA_COLUMN(IsTrueHypertriton, isTrueHypertriton, bool);         //! PDG 
 DECLARE_SOA_COLUMN(IsTrueAntiHypertriton, isTrueAntiHypertriton, bool); //! PDG checked correctly in MC
 
 // dE/dx compatibility bools
-DECLARE_SOA_COLUMN(IsGammaCandidate, isGammaCandidate, bool);                     //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsK0ShortCandidate, isK0ShortCandidate, bool);                 //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsLambdaCandidate, isLambdaCandidate, bool);                   //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsAntiLambdaCandidate, isAntiLambdaCandidate, bool);           //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsHypertritonCandidate, isHypertritonCandidate, bool);         //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsAntiHypertritonCandidate, isAntiHypertritonCandidate, bool); //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxGamma, isdEdxGamma, bool);                     //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxK0Short, isdEdxK0Short, bool);                 //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxLambda, isdEdxLambda, bool);                   //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxAntiLambda, isdEdxAntiLambda, bool);           //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxHypertriton, isdEdxHypertriton, bool);         //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxAntiHypertriton, isdEdxAntiHypertriton, bool); //! compatible with dE/dx hypotheses
 
 // used in cascades (potentially useful in general, make available as tags)
 DECLARE_SOA_COLUMN(IsFromCascade, isFromCascade, bool);               //! compatible with dE/dx hypotheses
@@ -281,12 +281,12 @@ DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
                   v0tag::IsTrueAntiLambda,
                   v0tag::IsTrueHypertriton,
                   v0tag::IsTrueAntiHypertriton,
-                  v0tag::IsGammaCandidate,
-                  v0tag::IsK0ShortCandidate,
-                  v0tag::IsLambdaCandidate,
-                  v0tag::IsAntiLambdaCandidate,
-                  v0tag::IsHypertritonCandidate,
-                  v0tag::IsAntiHypertritonCandidate,
+                  v0tag::IsdEdxGamma,
+                  v0tag::IsdEdxK0Short,
+                  v0tag::IsdEdxLambda,
+                  v0tag::IsdEdxAntiLambda,
+                  v0tag::IsdEdxHypertriton,
+                  v0tag::IsdEdxAntiHypertriton,
                   v0tag::IsFromCascade,
                   v0tag::IsFromTrackedCascade);
 
@@ -489,10 +489,10 @@ DECLARE_SOA_COLUMN(IsTrueOmegaMinus, isTrueOmegaMinus, bool); //! PDG checked co
 DECLARE_SOA_COLUMN(IsTrueOmegaPlus, isTrueOmegaPlus, bool);   //! PDG checked correctly in MC
 
 // dE/dx compatibility bools
-DECLARE_SOA_COLUMN(IsXiMinusCandidate, isXiMinusCandidate, bool);       //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsXiPlusCandidate, isXiPlusCandidate, bool);         //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsOmegaMinusCandidate, isOmegaMinusCandidate, bool); //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsOmegaPlusCandidate, isOmegaPlusCandidate, bool);   //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxXiMinus, isdEdxXiMinus, bool);       //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxXiPlus, isdEdxXiPlus, bool);         //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxOmegaMinus, isdEdxOmegaMinus, bool); //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxOmegaPlus, isdEdxOmegaPlus, bool);   //! compatible with dE/dx hypotheses
 } // namespace casctag
 DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
                   casctag::IsInteresting,
@@ -500,10 +500,10 @@ DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
                   casctag::IsTrueXiPlus,
                   casctag::IsTrueOmegaMinus,
                   casctag::IsTrueOmegaPlus,
-                  casctag::IsXiMinusCandidate,
-                  casctag::IsXiPlusCandidate,
-                  casctag::IsOmegaMinusCandidate,
-                  casctag::IsOmegaPlusCandidate);
+                  casctag::IsdEdxXiMinus,
+                  casctag::IsdEdxXiPlus,
+                  casctag::IsdEdxOmegaMinus,
+                  casctag::IsdEdxOmegaPlus);
 
 // Definition of labels for V0s
 namespace mcv0label
