@@ -15,7 +15,7 @@
 //
 // This code loops over a V0Data table and produces some
 // standard analysis output. It requires either
-// the hypertritonfinder or the hypertritonbuilder tasks
+// the hypertritonbuilder or hypertritonfinder tasks
 // to have been executed in the workflow (before).
 //
 

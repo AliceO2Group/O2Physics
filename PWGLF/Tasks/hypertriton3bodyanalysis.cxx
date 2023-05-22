@@ -14,12 +14,9 @@
 //
 // This code loops over a V0Data table and produces some
 // standard analysis output. It requires either
-// the hypertritonfinder or the hypertritonproducer tasks
+// the hypertriton3bodybuilder or hypertriton3bodyfinder (not recommaended) tasks
 // to have been executed in the workflow (before).
 //
-//    Comments, questions, complaints, suggestions?
-//    Please write to:
-//    david.dobrigkeit.chinellato@cern.ch
 //
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"

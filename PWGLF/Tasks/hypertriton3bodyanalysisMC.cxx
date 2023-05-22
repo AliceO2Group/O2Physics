@@ -14,7 +14,7 @@
 //
 // This code loops over a V0Data table and produces some
 // standard analysis output. It requires either
-// the hypertritonfinder or the hypertritonproducer tasks
+// the hypertriton3bodybuilder or hypertriton3bodyfinder (not recommaended) tasks
 // to have been executed in the workflow (before).
 //
 //
@@ -360,6 +360,7 @@ struct hypertriton3bodyAnalysisMc {
   //PROCESS_SWITCH(hypertriton3bodyAnalysis, processRun3, "Process Run 3 data", true);
 };
 
+//check the properties of daughters candidates and true daughters
 struct hypertriton3bodyTrackMcinfo{
   //Basic checks
   HistogramRegistry registry{
@@ -387,6 +388,8 @@ struct hypertriton3bodyTrackMcinfo{
         {"hHypertritonMcPt", "hHypertritonMcPt", {HistType::kTH1F, {{300, 0.0f, 15.0f}}}},
         {"hProtonEta", "hProtonEta", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
         {"hProtonMcRapidity", "hProtonMcRapidity", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
+        {"hPionEta", "hPionEta", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
+        {"hPionMcRapidity", "hPionMcRapidity", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
         {"hDeuteronEta", "hDeuteronEta", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
         {"hDeuteronMcRapidity", "hDeuteronMcRapidity", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
 
@@ -401,6 +404,7 @@ struct hypertriton3bodyTrackMcinfo{
         {"hProtonNsigmaProton", "hProtonNsigmaProton", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
         {"hProtonTPCNClsCrossedRows", "hProtonTPCNClsCrossedRows", {HistType::kTH1F, {{240, 0.0f, 240.0f}}}},
         {"hProtonTPCBB", "hProtonTPCBB", {HistType::kTH2F, {{320, -8.0f, 8.0f, "p/z(GeV/c)"}, {200, 0.0f, 1000.0f, "TPCSignal" }}}},
+        {"hProtonTPCBBAfterTPCNclsCut", "hProtonTPCBBAfterTPCNclsCut", {HistType::kTH2F, {{320, -8.0f, 8.0f, "p/z(GeV/c)"}, {200, 0.0f, 1000.0f, "TPCSignal" }}}},
 
         {"hDauPionPt", "hDauPionPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
         {"hDauPionMcPt", "hDauPionMcPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
@@ -412,6 +416,8 @@ struct hypertriton3bodyTrackMcinfo{
         {"hPionMcP", "hPionMcP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
         {"hPionNsigmaPion", "hPionNsigmaPion", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
         {"hPionTPCNClsCrossedRows", "hPionTPCNClsCrossedRows", {HistType::kTH1F, {{240, 0.0f, 240.0f}}}},
+        {"hPionTPCBB", "hPionTPCBB", {HistType::kTH2F, {{320, -8.0f, 8.0f, "p/z(GeV/c)"}, {200, 0.0f, 1000.0f, "TPCSignal" }}}},
+        {"hPionTPCBBAfterTPCNclsCut", "hPionTPCBBAfterTPCNclsCut", {HistType::kTH2F, {{320, -8.0f, 8.0f, "p/z(GeV/c)"}, {200, 0.0f, 1000.0f, "TPCSignal" }}}},
 
         {"hDauDeuteronPt", "hDauDeuteronPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
         {"hDauDeuteronMcPt", "hDauDeuteronMcPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
@@ -496,6 +502,7 @@ struct hypertriton3bodyTrackMcinfo{
       }
       registry.fill(HIST("hTPCNClsCrossedRows"), track.tpcNClsCrossedRows());
       registry.fill(HIST("hTrackNsigmaDeuteron"), track.tpcNSigmaDe() );
+      registry.fill(HIST("hTrackNsigmaProton"), track.tpcNSigmaPr() );
       registry.fill(HIST("hTrackNsigmaPion"), track.tpcNSigmaPi());
 
       if(!track.has_mcParticle()){
@@ -532,6 +539,7 @@ struct hypertriton3bodyTrackMcinfo{
         registry.fill(HIST("hParticleCount"), 4.5);
         if (track.tpcNClsCrossedRows() > 70){
           registry.fill(HIST("hParticleCount2"), 4.5);
+          registry.fill(HIST("hProtonTPCBBAfterTPCNclsCut"), track.p()*track.sign(), track.tpcSignal());
         }
 
         if (mcparticle.has_mothers()){
@@ -597,6 +605,7 @@ struct hypertriton3bodyTrackMcinfo{
         registry.fill(HIST("hParticleCount"), 5.5);
         if (track.tpcNClsCrossedRows() > 70){
           registry.fill(HIST("hParticleCount2"), 5.5);
+          registry.fill(HIST("hPionTPCBBAfterTPCNclsCut"), track.p()*track.sign(), track.tpcSignal());
         }
 
         if (mcparticle.has_mothers()){
@@ -682,7 +691,12 @@ struct hypertriton3bodyTrackMcinfo{
         registry.fill(HIST("hPionMcP"), mcparticle.p());
         registry.fill(HIST("hPionPt"), track.pt());
         registry.fill(HIST("hPionP"), track.p());
+
         registry.fill(HIST("hPionNsigmaPion"), track.tpcNSigmaPi());
+        registry.fill(HIST("hPionTPCNClsCrossedRows"), track.tpcNClsCrossedRows());
+        registry.fill(HIST("hPionEta"), track.eta());
+        registry.fill(HIST("hPionMcRapidity"), mcparticle.y());
+        registry.fill(HIST("hPionTPCBB"), track.p()*track.sign(), track.tpcSignal());
       }
 
       //Deuteron
@@ -764,7 +778,7 @@ namespace o2::aod
 }
 
 
-
+//check the performance of mcparticle
 struct hypertriton3bodyMcParticleCount {
   //Basic checks
   Produces<aod::McHypertritonCheck> hypertrtitonCheckTable;
