@@ -472,7 +472,7 @@ struct HfCorrelatorDsHadrons {
       bool isDsPrompt = false;
       bool isDsSignal = false;
       float multiplicityV0M = collision.multFV0M();
-      for (const auto& candidate : candidates) {
+      for (const auto& candidate : selectedDsMcRecoCandGrouped) {
         auto prong0McPart = candidate.prong0_as<MyTracksMc>().mcParticle_as<CandDsMcGen>();
         // prompt and non-prompt division
         isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
