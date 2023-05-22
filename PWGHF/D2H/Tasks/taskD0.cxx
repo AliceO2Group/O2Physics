@@ -119,6 +119,7 @@ struct HfTaskD0 {
   {
     auto vbins = (std::vector<double>)binsPt;
     registry.add("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassVsPhi", "2-prong candidates vs phi;inv. mass (#pi K) (GeV/#it{c}^{2});phi (rad);entries", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {32, 0, o2::constants::math::TwoPI}}});
     registry.add("hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthxy", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{800, 0., 0.2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -156,41 +157,47 @@ struct HfTaskD0 {
         continue;
       }
 
+      auto massD0 = invMassD0ToPiK(candidate);
+      auto massD0bar = invMassD0barToKPi(candidate);
+      auto ptCandidate = candidate.pt();
+
       if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("hMass"), invMassD0ToPiK(candidate), candidate.pt());
-        registry.fill(HIST("hMassFinerBinning"), invMassD0ToPiK(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), massD0, ptCandidate);
+        registry.fill(HIST("hMassFinerBinning"), massD0, ptCandidate);
+        registry.fill(HIST("hMassVsPhi"), massD0, ptCandidate, candidate.phi());
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), invMassD0barToKPi(candidate), candidate.pt());
-        registry.fill(HIST("hMassFinerBinning"), invMassD0barToKPi(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), massD0bar, ptCandidate);
+        registry.fill(HIST("hMassFinerBinning"), massD0bar, ptCandidate);
+        registry.fill(HIST("hMassVsPhi"), massD0bar, ptCandidate, candidate.phi());
       }
-      registry.fill(HIST("hPtCand"), candidate.pt());
+      registry.fill(HIST("hPtCand"), ptCandidate);
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
-      registry.fill(HIST("hDecLength"), candidate.decayLength(), candidate.pt());
-      registry.fill(HIST("hDecLengthxy"), candidate.decayLengthXY(), candidate.pt());
-      registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
-      registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
-      registry.fill(HIST("hNormalisedDecLength"), candidate.decayLengthNormalised(), candidate.pt());
-      registry.fill(HIST("hNormalisedDecLengthxy"), candidate.decayLengthXYNormalised(), candidate.pt());
-      registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
-      registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
-      registry.fill(HIST("hd0ErrProng0"), candidate.errorImpactParameter0(), candidate.pt());
-      registry.fill(HIST("hd0ErrProng1"), candidate.errorImpactParameter1(), candidate.pt());
-      registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("hCTS"), cosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("hCt"), ctD0(candidate), candidate.pt());
-      registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
-      registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
-      registry.fill(HIST("hDecLengthFinerBinning"), candidate.decayLength(), candidate.pt());
-      registry.fill(HIST("hDecLengthxyFinerBinning"), candidate.decayLengthXY(), candidate.pt());
-      registry.fill(HIST("hd0Prong0FinerBinning"), candidate.impactParameter0(), candidate.pt());
-      registry.fill(HIST("hd0Prong1FinerBinning"), candidate.impactParameter1(), candidate.pt());
-      registry.fill(HIST("hd0d0FinerBinning"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("hCTSFinerBinning"), cosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("hCtFinerBinning"), ctD0(candidate), candidate.pt());
-      registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), candidate.pt());
+      registry.fill(HIST("hDecLength"), candidate.decayLength(), ptCandidate);
+      registry.fill(HIST("hDecLengthxy"), candidate.decayLengthXY(), ptCandidate);
+      registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), ptCandidate);
+      registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), ptCandidate);
+      registry.fill(HIST("hNormalisedDecLength"), candidate.decayLengthNormalised(), ptCandidate);
+      registry.fill(HIST("hNormalisedDecLengthxy"), candidate.decayLengthXYNormalised(), ptCandidate);
+      registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), ptCandidate);
+      registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), ptCandidate);
+      registry.fill(HIST("hd0ErrProng0"), candidate.errorImpactParameter0(), ptCandidate);
+      registry.fill(HIST("hd0ErrProng1"), candidate.errorImpactParameter1(), ptCandidate);
+      registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), ptCandidate);
+      registry.fill(HIST("hCTS"), cosThetaStarD0(candidate), ptCandidate);
+      registry.fill(HIST("hCt"), ctD0(candidate), ptCandidate);
+      registry.fill(HIST("hCPA"), candidate.cpa(), ptCandidate);
+      registry.fill(HIST("hEta"), candidate.eta(), ptCandidate);
+      registry.fill(HIST("hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), ptCandidate);
+      registry.fill(HIST("hDecLengthFinerBinning"), candidate.decayLength(), ptCandidate);
+      registry.fill(HIST("hDecLengthxyFinerBinning"), candidate.decayLengthXY(), ptCandidate);
+      registry.fill(HIST("hd0Prong0FinerBinning"), candidate.impactParameter0(), ptCandidate);
+      registry.fill(HIST("hd0Prong1FinerBinning"), candidate.impactParameter1(), ptCandidate);
+      registry.fill(HIST("hd0d0FinerBinning"), candidate.impactParameterProduct(), ptCandidate);
+      registry.fill(HIST("hCTSFinerBinning"), cosThetaStarD0(candidate), ptCandidate);
+      registry.fill(HIST("hCtFinerBinning"), ctD0(candidate), ptCandidate);
+      registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), ptCandidate);
     }
   }
 

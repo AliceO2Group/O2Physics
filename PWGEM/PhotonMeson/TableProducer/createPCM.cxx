@@ -38,12 +38,13 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 
-using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA>;
-using FullTrackExt = FullTracksExt::iterator;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
+// using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA>;
+using FullTrackExtIU = FullTracksExtIU::iterator;
 
 struct createPCM {
   SliceCache cache;
-  Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
+  Preslice<aod::TracksIU> perCol = o2::aod::track::collisionId;
   Produces<aod::StoredV0Datas> v0data;
 
   // Basic checks
@@ -72,11 +73,15 @@ struct createPCM {
   Configurable<float> v0Rmax{"v0Rmax", 180.0, "v0Rmax"};
   Configurable<float> dcamin{"dcamin", 0.1, "dcamin"};
   Configurable<float> dcamax{"dcamax", 1e+10, "dcamax"};
+  Configurable<float> maxX{"maxX", 100.0, "maximum X (starting point of track X)"}; // maxX is equal to or smaller than minPropagationDistance in trackPropagation.cxx for DCA
   Configurable<float> minpt{"minpt", 0.01, "min pT for single track in GeV/c"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance for single track"};
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
+  Configurable<float> min_tpcdEdx{"min_tpcdEdx", 30.0, "min TPC dE/dx"};
+  Configurable<float> max_tpcdEdx{"max_tpcdEdx", 110.0, "max TPC dE/dx"};
   Configurable<bool> useTPConly{"useTPConly", false, "Use truly TPC only tracks for V0 finder"};
+  Configurable<bool> rejectTPConly{"rejectTPConly", false, "Reject truly TPC only tracks for V0 finder"};
 
   int mRunNumber;
   float d_bz;
@@ -171,6 +176,16 @@ struct createPCM {
     }
   }
 
+  template <typename TTrack>
+  bool IsTPConlyTrack(TTrack const& track)
+  {
+    if (track.hasTPC() && (!track.hasITS() && !track.hasTOF() && !track.hasTRD())) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   template <typename TCollision, typename TTrack>
   void fillV0Table(TCollision const& collision, TTrack const& ele, TTrack const& pos)
   {
@@ -221,8 +236,8 @@ struct createPCM {
            v0dca, pos.dcaXY(), ele.dcaXY());
   }
 
-  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& dcamin < nabs(o2::aod::track::dcaXY) && nabs(o2::aod::track::dcaXY) < dcamax&& o2::aod::track::tpcChi2NCl < maxchi2tpc;
-  using MyFilteredTracks = soa::Filtered<FullTracksExt>;
+  Filter trackFilter = o2::aod::track::x < maxX && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& dcamin < nabs(o2::aod::track::dcaXY) && nabs(o2::aod::track::dcaXY) < dcamax&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& min_tpcdEdx < o2::aod::track::tpcSignal&& o2::aod::track::tpcSignal < max_tpcdEdx;
+  using MyFilteredTracks = soa::Filtered<FullTracksExtIU>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
 
@@ -237,23 +252,21 @@ struct createPCM {
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
 
+      // LOGF(info, "collision.globalIndex() = %d , negTracks_coll.size() = %d , posTracks_coll.size() = %d", collision.globalIndex(), negTracks_coll.size(), posTracks_coll.size());
+
       for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
-        if (ele.tpcNClsCrossedRows() < mincrossedrows) {
+        if (!ele.hasTPC() || !pos.hasTPC()) {
           continue;
         }
-        if (pos.tpcNClsCrossedRows() < mincrossedrows) {
+        if (ele.tpcNClsCrossedRows() < mincrossedrows || pos.tpcNClsCrossedRows() < mincrossedrows) {
           continue;
         }
-
-        if (useTPConly) {
-          if ((ele.hasITS() || ele.hasTOF() || ele.hasTRD())) {
-            continue;
-          }
-          if ((pos.hasITS() || pos.hasTOF() || pos.hasTRD())) {
-            continue;
-          }
+        if (useTPConly && (!IsTPConlyTrack(ele) || !IsTPConlyTrack(pos))) {
+          continue;
         }
-
+        if (rejectTPConly && (IsTPConlyTrack(ele) || IsTPConlyTrack(pos))) {
+          continue;
+        }
         fillV0Table(collision, ele, pos);
       }
     } // end of collision loop
@@ -261,7 +274,7 @@ struct createPCM {
   PROCESS_SWITCH(createPCM, processSA, "create V0s with stand-alone way", true);
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  void processTrkCollAsso(aod::TrackAssoc const& trackIndices, FullTracksExt const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
+  void processTrkCollAsso(aod::TrackAssoc const& trackIndices, FullTracksExtIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
@@ -272,14 +285,17 @@ struct createPCM {
 
       // LOGF(info,"%d tracks in collision %d", trackIdsThisCollision.size(), collision.globalIndex());
       for (auto& [eleId, posId] : combinations(CombinationsStrictlyUpperIndexPolicy(trackIdsThisCollision, trackIdsThisCollision))) {
-        auto ele = eleId.track_as<FullTracksExt>();
-        auto pos = posId.track_as<FullTracksExt>();
+        auto ele = eleId.track_as<FullTracksExtIU>();
+        auto pos = posId.track_as<FullTracksExtIU>();
         // LOGF(info,"eleId = %d , posId = %d", ele.globalIndex(), pos.globalIndex());
 
         if (ele.sign() * pos.sign() > 0) { // reject same sign combination
           continue;
         }
         if ((abs(ele.dcaXY()) < dcamin || dcamax < abs(ele.dcaXY())) || (abs(pos.dcaXY()) < dcamin || dcamax < abs(pos.dcaXY()))) {
+          continue;
+        }
+        if (!ele.hasTPC() || !pos.hasTPC()) {
           continue;
         }
         if (ele.tpcNClsCrossedRows() < mincrossedrows || pos.tpcNClsCrossedRows() < mincrossedrows) {
@@ -294,14 +310,18 @@ struct createPCM {
         if (ele.pt() < minpt || pos.pt() < minpt) {
           continue;
         }
+        if (ele.tpcSignal() < min_tpcdEdx || max_tpcdEdx < ele.tpcSignal()) {
+          continue;
+        }
+        if (pos.tpcSignal() < min_tpcdEdx || max_tpcdEdx < pos.tpcSignal()) {
+          continue;
+        }
 
-        if (useTPConly) {
-          if ((ele.hasITS() || ele.hasTOF() || ele.hasTRD())) {
-            continue;
-          }
-          if ((pos.hasITS() || pos.hasTOF() || pos.hasTRD())) {
-            continue;
-          }
+        if (useTPConly && (!IsTPConlyTrack(ele) || !IsTPConlyTrack(pos))) {
+          continue;
+        }
+        if (rejectTPConly && (IsTPConlyTrack(ele) || IsTPConlyTrack(pos))) {
+          continue;
         }
 
         if (ele.sign() < 0) {

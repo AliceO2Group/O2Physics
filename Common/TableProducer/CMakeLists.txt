@@ -109,3 +109,8 @@ o2physics_add_dpl_workflow(zdc-converter
                     SOURCES zdcConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(fwdtrack-to-collision-associator
+                    SOURCES fwdtrackToCollisionAssociator.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

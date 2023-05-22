@@ -15,11 +15,21 @@
 ///
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
+#include "CCDB/BasicCCDBManager.h" // for dca recalculation
+#include "Common/DataModel/CollisionAssociation.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "DataFormatsParameters/GRPMagField.h" // for dca recalculation
+#include "DataFormatsParameters/GRPObject.h"   // for dca recalculation
+#include "DetectorsBase/GeometryManager.h"     // for dca recalculation
+#include "DetectorsBase/Propagator.h"          // for dca recalculation
+#include "DetectorsVertexing/PVertexer.h"      // for dca recalculation
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "Common/Core/TrackSelection.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h" // for dca recalculation
+// #include "ReconstructionDataFormats/Vertex.h" // for dca recalculation
 
 using namespace o2;
 using namespace o2::framework;
@@ -44,27 +54,55 @@ struct HfCandidateCreatorSigmac0plusplus {
   Configurable<float> softPiDcaXYMax{"softPiDcaXYMax", 0.065, "Soft pion max dcaXY (cm)"};
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
 
+  // CCDB
+  Configurable<bool> isRun2Ccdb{"isRun2Ccdb", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  HistogramRegistry histos;
+
+  using TracksSigmac = soa::Join<aod::FullTracks, aod::TracksDCA>;
+  using CandidatesLc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
+
   /// Filter the candidate Λc+ used for the Σc0,++ creation
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
+
+  /// Prepare the slicing of candidate Λc+ and pions to be used for the Σc0,++ creation
+  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
+  // Preslice<CandidatesLc> hf3ProngPerCollision = aod::track_association::collisionId;
+  Preslice<CandidatesLc> hf3ProngPerCollision = aod::hf_cand::collisionId;
 
   /// Cut selection object for soft π-,+
   TrackSelection softPiCuts;
 
-  using TracksSigmac = soa::Join<aod::FullTracks, aod::TracksDCA>;
+  // Needed for dcaXY, dcaZ recalculation of soft pions reassigned to a new collision
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  int runNumber;
 
   /// @brief init function, to define the soft pion selections and histograms
   /// @param
   void init(InitContext&)
   {
+    auto h = histos.add<TH1>("hCounter", "", kTH1D, {{6, 0.5, 6.5}});
+    h->GetXaxis()->SetBinLabel(1, "collisions");
+    h->GetXaxis()->SetBinLabel(2, "Lc (before cuts)");
+    h->GetXaxis()->SetBinLabel(3, "Lc (after cuts)");
+    h->GetXaxis()->SetBinLabel(4, "Soft #pi (before cuts)");
+    h->GetXaxis()->SetBinLabel(5, "Soft #pi (after cuts)");
+    h->GetXaxis()->SetBinLabel(6, "#Sigma_{c}");
 
     ////////////////////////////////////////
     /// set the selections for soft pion ///
     ////////////////////////////////////////
     // softPiCuts.SetPtRange(0.001, 1000.); // pt
     softPiCuts.SetEtaRange(-softPiEtaMax, softPiEtaMax); // eta
-    softPiCuts.SetMaxDcaXY(softPiDcaXYMax);              // dcaXY
-    softPiCuts.SetMaxDcaZ(softPiDcaZMax);                // dcaZ
-    // ITS hitmap
+    // softPiCuts.SetMaxDcaXY(softPiDcaXYMax);              // dcaXY
+    // softPiCuts.SetMaxDcaZ(softPiDcaZMax);                // dcaZ
+    //  ITS hitmap
     std::set<uint8_t> setSoftPiItsHitMap; // = {};
     for (int idItsLayer = 0; idItsLayer < 7; idItsLayer++) {
       if (TESTBIT(softPiItsHitMap, idItsLayer)) {
@@ -80,94 +118,136 @@ struct HfCandidateCreatorSigmac0plusplus {
     LOG(info) << "############";
     softPiCuts.SetRequireITSRefit();
     softPiCuts.SetRequireHitsInITSLayers(softPiItsHitsMin, setSoftPiItsHitMap);
+
+    /// CCDB for dcaXY, dcaZ recalculation of soft pions reassigned to another collision
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    runNumber = 0;
   }
 
-  /// @brief process function for Σc0,++ → Λc+(→pK-π+) π- candidate reconstruction
+  /// @brief process function for Σc0,++ → Λc+(→pK-π+) π- candidate reconstruction considering also reassigned tracks for soft pions
   /// @param collision is a o2::aod::Collision
   /// @param tracks are the tracks (with dcaXY, dcaZ information) in the collision → soft-pion candidate tracks
   /// @param candidates are 3-prong candidates satisfying the analysis selections for Λc+ → pK-π+ (and charge conj.)
-  void process(const o2::aod::Collision& collision, const TracksSigmac& tracks, soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
+  void process(const o2::aod::Collisions& collisions, aod::TrackAssoc const& trackIndices, const TracksSigmac& tracks, CandidatesLc const& candidates, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
 
-    /// loop over Λc+ → pK-π+ (and charge conj.) candidates
-    for (auto const& candLc : candidates) {
+    for (auto const& collision : collisions) {
+      histos.fill(HIST("hCounter"), 1);
+      auto thisCollId = collision.globalIndex();
 
-      /// keep only the candidates flagged as possible Λc+ (and charge conj.) decaying into a charged pion, kaon and proton
-      /// if not selected, skip it and go to the next one
-      if (!(candLc.hfflag() & 1 << DecayType::LcToPKPi)) {
-        continue;
-      }
-      /// keep only the candidates Λc+ (and charge conj.) within the desired rapidity
-      /// if not selected, skip it and go to the next one
-      if (yCandLcMax >= 0. && std::abs(yLc(candLc)) > yCandLcMax) {
-        continue;
-      }
+      /// loop over Λc+ → pK-π+ (and charge conj.) candidates
+      auto candidatesThisColl = candidates.sliceBy(hf3ProngPerCollision, thisCollId);
+      for (auto const& candLc : candidatesThisColl) {
+        histos.fill(HIST("hCounter"), 2);
 
-      /// selection on the Λc+ inv. mass window we want to consider for Σc0,++ candidate creation
-      auto statusSpreadMinvPKPiFromPDG = 0;
-      auto statusSpreadMinvPiKPFromPDG = 0;
-      if (candLc.isSelLcToPKPi() >= 1 && std::abs(invMassLcToPKPi(candLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) <= mPKPiCandLcMax) {
-        statusSpreadMinvPKPiFromPDG = 1;
-      }
-      if (candLc.isSelLcToPiKP() >= 1 && std::abs(invMassLcToPiKP(candLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) <= mPiKPCandLcMax) {
-        statusSpreadMinvPiKPFromPDG = 1;
-      }
-      if (statusSpreadMinvPKPiFromPDG == 0 && statusSpreadMinvPiKPFromPDG == 0) {
-        /// none of the two possibilities are satisfied, therefore this candidate Lc can be skipped
-        continue;
-      }
-
-      /// loop over tracks
-      for (auto const& trackSoftPi : tracks) {
-
-        /////////////////////////////////////////////////////////////////////////////////
-        ///                       Σc0,++ candidate creation                           ///
-        ///                                                                           ///
-        /// For each candidate Λc, let's loop over all the candidate soft-pion tracks ///
-        /////////////////////////////////////////////////////////////////////////////////
-
-        /// keep only soft-pion candidate tracks
+        /// keep only the candidates flagged as possible Λc+ (and charge conj.) decaying into a charged pion, kaon and proton
         /// if not selected, skip it and go to the next one
-        if (!softPiCuts.IsSelected(trackSoftPi)) {
+        if (!(candLc.hfflag() & 1 << DecayType::LcToPKPi)) {
+          continue;
+        }
+        /// keep only the candidates Λc+ (and charge conj.) within the desired rapidity
+        /// if not selected, skip it and go to the next one
+        if (yCandLcMax >= 0. && std::abs(yLc(candLc)) > yCandLcMax) {
           continue;
         }
 
-        /// Exclude the current candidate soft pion if it corresponds already to a candidate Lc prong
-        int indexProng0 = candLc.prong0_as<aod::Tracks>().globalIndex();
-        int indexProng1 = candLc.prong1_as<aod::Tracks>().globalIndex();
-        int indexProng2 = candLc.prong2_as<aod::Tracks>().globalIndex();
-        int indexSoftPi = trackSoftPi.globalIndex();
-        if (indexSoftPi == indexProng0 || indexSoftPi == indexProng1 || indexSoftPi == indexProng2) {
+        /// selection on the Λc+ inv. mass window we want to consider for Σc0,++ candidate creation
+        auto statusSpreadMinvPKPiFromPDG = 0;
+        auto statusSpreadMinvPiKPFromPDG = 0;
+        if (candLc.isSelLcToPKPi() >= 1 && std::abs(invMassLcToPKPi(candLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) <= mPKPiCandLcMax) {
+          statusSpreadMinvPKPiFromPDG = 1;
+        }
+        if (candLc.isSelLcToPiKP() >= 1 && std::abs(invMassLcToPiKP(candLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) <= mPiKPCandLcMax) {
+          statusSpreadMinvPiKPFromPDG = 1;
+        }
+        if (statusSpreadMinvPKPiFromPDG == 0 && statusSpreadMinvPiKPFromPDG == 0) {
+          /// none of the two possibilities are satisfied, therefore this candidate Lc can be skipped
           continue;
         }
+        histos.fill(HIST("hCounter"), 3);
 
-        /// determine the Σc candidate charge
-        int chargeLc = candLc.prong0_as<TracksSigmac>().sign() + candLc.prong1_as<TracksSigmac>().sign() + candLc.prong2_as<TracksSigmac>().sign();
-        int chargeSoftPi = trackSoftPi.sign();
-        int8_t chargeSigmac = chargeLc + chargeSoftPi;
-        if (std::abs(chargeSigmac) != 0 && std::abs(chargeSigmac) != 2) {
-          /// this shall never happen
-          LOG(fatal) << ">>> Sc candidate with charge +1 built, not possible! Charge Lc: " << chargeLc << ", charge soft pion: " << chargeSoftPi;
-          continue;
-        }
+        /// loop over tracks
+        auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+        for (auto const& trackId : trackIdsThisCollision) {
 
-        /// fill the Σc0,++ candidate table
-        rowScCandidates(/* general columns */
-                        candLc.collisionId(),
-                        /* 2-prong specific columns */
-                        candLc.px(), candLc.py(), candLc.pz(),
-                        trackSoftPi.px(), trackSoftPi.py(), trackSoftPi.pz(),
-                        candLc.globalIndex(), trackSoftPi.globalIndex(),
-                        candLc.hfflag(),
-                        /* Σc0,++ specific columns */
-                        chargeSigmac,
-                        statusSpreadMinvPKPiFromPDG, statusSpreadMinvPiKPFromPDG);
+          auto trackSoftPi = trackId.track_as<TracksSigmac>();
+          // auto trackSoftPi = tracks.rawIteratorAt(trackId.trackId());
+          histos.fill(HIST("hCounter"), 4);
 
-      } /// end loop over tracks
+          /////////////////////////////////////////////////////////////////////////////////
+          ///                       Σc0,++ candidate creation                           ///
+          ///                                                                           ///
+          /// For each candidate Λc, let's loop over all the candidate soft-pion tracks ///
+          /////////////////////////////////////////////////////////////////////////////////
 
-    } /// end loop over candidtes
+          /// keep only soft-pion candidate tracks
+          /// if not selected, skip it and go to the next one
+          if (!softPiCuts.IsSelected(trackSoftPi)) {
+            continue;
+          }
+          /// dcaXY, dcaZ selections
+          /// To be done separately from the others, because for reassigned tracks the dca must be recalculated
+          /// TODO: to be properly adapted in case of PV refit usage
+          if (trackSoftPi.collisionId() == thisCollId) {
+            /// this is a track originally assigned to the current collision
+            /// therefore, the dcaXY, dcaZ are those already calculated in the track-propagation workflow
+            if (std::abs(trackSoftPi.dcaXY()) > softPiDcaXYMax || std::abs(trackSoftPi.dcaZ()) > softPiDcaZMax) {
+              continue;
+            }
+          } else {
+            /// this is a reassigned track
+            /// therefore we need to calculate the dcaXY, dcaZ with respect to this new primary vertex
+            auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+            initCCDB(bc, runNumber, ccdb, isRun2Ccdb ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2Ccdb);
+            auto trackParSoftPi = getTrackPar(trackSoftPi);
+            o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaInfo);
+            if (std::abs(dcaInfo[0]) > softPiDcaXYMax || std::abs(dcaInfo[1]) > softPiDcaZMax) {
+              continue;
+            }
+          }
 
-  } /// end process
+          /// Exclude the current candidate soft pion if it corresponds already to a candidate Lc prong
+          int indexProng0 = candLc.prong0_as<aod::Tracks>().globalIndex();
+          int indexProng1 = candLc.prong1_as<aod::Tracks>().globalIndex();
+          int indexProng2 = candLc.prong2_as<aod::Tracks>().globalIndex();
+          int indexSoftPi = trackSoftPi.globalIndex();
+          if (indexSoftPi == indexProng0 || indexSoftPi == indexProng1 || indexSoftPi == indexProng2) {
+            continue;
+          }
+          histos.fill(HIST("hCounter"), 5);
+
+          /// determine the Σc candidate charge
+          int chargeLc = candLc.prong0_as<TracksSigmac>().sign() + candLc.prong1_as<TracksSigmac>().sign() + candLc.prong2_as<TracksSigmac>().sign();
+          int chargeSoftPi = trackSoftPi.sign();
+          int8_t chargeSigmac = chargeLc + chargeSoftPi;
+          if (std::abs(chargeSigmac) != 0 && std::abs(chargeSigmac) != 2) {
+            /// this shall never happen
+            LOG(fatal) << ">>> Sc candidate with charge +1 built, not possible! Charge Lc: " << chargeLc << ", charge soft pion: " << chargeSoftPi;
+            continue;
+          }
+          histos.fill(HIST("hCounter"), 6);
+
+          /// fill the Σc0,++ candidate table
+          rowScCandidates(/* general columns */
+                          candLc.collisionId(),
+                          /* 2-prong specific columns */
+                          candLc.px(), candLc.py(), candLc.pz(),
+                          trackSoftPi.px(), trackSoftPi.py(), trackSoftPi.pz(),
+                          candLc.globalIndex(), trackSoftPi.globalIndex(),
+                          candLc.hfflag(),
+                          /* Σc0,++ specific columns */
+                          chargeSigmac,
+                          statusSpreadMinvPKPiFromPDG, statusSpreadMinvPiKPFromPDG);
+        } /// end loop over tracks
+      }   /// end loop over candidates
+
+    } /// end loop over collisions
+
+  } /// end processWithAmbTracks
 };
 
 /// Extends the base table with expression columns.

@@ -28,7 +28,6 @@ struct caloLabelConverter {
       // Repopulate new table
       McCaloLabels_001(
         particleId,
-        mccalolabel.mcMask(),
         amplitude);
     }
   }
