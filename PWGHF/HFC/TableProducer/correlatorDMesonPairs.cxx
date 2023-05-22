@@ -39,13 +39,12 @@ double getDeltaPhi(double phiD, double phiDbar)
   return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
 }
 
-namespace
-{
+namespace{
 enum CandidateTypeSel {
-  SelectedD = 0, // This particle is selected as a D
-  SelectedDbar,  // This particle is selected as a Dbar
-  TrueD,         // This particle is a true D
-  TrueDbar       // This particle is a true Dbar
+  SelectedD = 0,    // This particle is selected as a D
+  SelectedDbar,     // This particle is selected as a Dbar
+  TrueD,            // This particle is a true D
+  TrueDbar          // This particle is a true Dbar
 };
 } // namespace
 
@@ -77,7 +76,6 @@ struct HfCorrelatorDMesonPairs {
   Produces<aod::DPlusPairRecoInfo> entryDPlusPairRecoInfo;
 
   Configurable<bool> verbose{"verbose", false, "Enable debug mode"};
-  Configurable<int> particlePdgCode{"particlePdgCode", 421, "PDG code of particle to analyse"};
   // Selection Flags
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -169,22 +167,29 @@ struct HfCorrelatorDMesonPairs {
   }
 
   // Returns false if the candidate does not pass cuts on decay type, y max, and pt min. Used for data and MC reco.
-  template <typename T>
+  template <typename T, bool isD0>
   bool kinematicCuts(const T& candidate)
   {
     // check decay channel flag for candidate
-    if (particlePdgCode == pdg::Code::kD0 && !(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
-      return false;
-    }
-    if (particlePdgCode == pdg::Code::kDPlus && !(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi))) {
-      return false;
-    }
-    if (yCandMax >= 0. && std::abs(candidate.y(RecoDecay::getMassPDG(particlePdgCode))) > yCandMax) {
-      return false;
+    if constexpr (isD0) {
+      if(!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
+        return false;
+      }
+      if (yCandMax >= 0. && std::abs(candidate.y(RecoDecay::getMassPDG(pdg::Code::kD0))) > yCandMax) {
+        return false;
+      }
+    } else {
+      if (!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi))) {
+        return false;
+      }
+      if (yCandMax >= 0. && std::abs(candidate.y(RecoDecay::getMassPDG(pdg::Code::kDPlus))) > yCandMax) {
+        return false;
+      }
     }
     if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
       return false;
-    } else {
+    }
+    else {
       return true;
     }
   }
@@ -194,7 +199,7 @@ struct HfCorrelatorDMesonPairs {
   bool kinematicCutsGen(const T& particle)
   {
     // check if the particle is D or Dbar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
-    if (std::abs(particle.pdgCode()) != particlePdgCode) {
+    if (std::abs(particle.pdgCode()) != pdg::Code::kDPlus && std::abs(particle.pdgCode()) != pdg::Code::kD0) {
       return false;
     }
     if (yCandMax >= 0. && std::abs(particle.y()) > yCandMax) {
@@ -202,14 +207,15 @@ struct HfCorrelatorDMesonPairs {
     }
     if (ptCandMin >= 0. && particle.pt() < ptCandMin) {
       return false;
-    } else {
+    }
+    else {
       return true;
     }
   }
 
   // Fills histograms with basic kinematic info.
   template <typename T>
-  void fillInfoHists(const T& candidate, bool const& isReco)
+  void fillInfoHists(const T& candidate, bool const& isReco, bool const& isD0)
   {
     if (isReco) {
       registry.fill(HIST("hPtCandMcRec"), candidate.pt());
@@ -217,14 +223,22 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hPtProng1McRec"), candidate.ptProng1());
       registry.fill(HIST("hEtaMcRec"), candidate.eta());
       registry.fill(HIST("hPhiMcRec"), candidate.phi());
-      registry.fill(HIST("hYMcRec"), candidate.y(RecoDecay::getMassPDG(particlePdgCode)));
+      if (isD0) {
+        registry.fill(HIST("hYMcRec"), candidate.y(RecoDecay::getMassPDG(pdg::Code::kD0)));
+      } else {
+        registry.fill(HIST("hYMcRec"), candidate.y(RecoDecay::getMassPDG(pdg::Code::kDPlus)));
+      }
     } else {
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
       registry.fill(HIST("hEta"), candidate.eta());
       registry.fill(HIST("hPhi"), candidate.phi());
-      registry.fill(HIST("hY"), candidate.y(RecoDecay::getMassPDG(particlePdgCode)));
+      if (isD0) {
+        registry.fill(HIST("hY"), candidate.y(RecoDecay::getMassPDG(pdg::Code::kD0)));
+      } else {
+        registry.fill(HIST("hY"), candidate.y(RecoDecay::getMassPDG(pdg::Code::kDPlus)));
+      }
     }
   }
 
@@ -276,10 +290,10 @@ struct HfCorrelatorDMesonPairs {
   uint8_t assignCandidateTypeGen(const T& candidate)
   {
     uint8_t candidateType(0);
-    if (candidate.pdgCode() == particlePdgCode) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
+    if (candidate.pdgCode() == pdg::Code::kDPlus || candidate.pdgCode() == pdg::Code::kD0) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
       SETBIT(candidateType, SelectedD);
       SETBIT(candidateType, TrueD);
-    } else if (candidate.pdgCode() == -particlePdgCode) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
+    } else if (candidate.pdgCode() == -pdg::Code::kDPlus || candidate.pdgCode() == -pdg::Code::kD0) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
       SETBIT(candidateType, SelectedDbar);
       SETBIT(candidateType, TrueDbar);
     }
@@ -344,7 +358,7 @@ struct HfCorrelatorDMesonPairs {
                               originGen2,
                               matchedGen1,
                               matchedGen2);
-          // If both particles are DPlus, fill DPlusPair table
+        // If both particles are DPlus, fill DPlusPair table
         } else if (std::abs(particle1.pdgCode()) == pdg::Code::kDPlus && std::abs(particle2.pdgCode()) == pdg::Code::kDPlus) {
           entryDPlusPair(getDeltaPhi(particle2.phi(), particle1.phi()),
                          particle2.eta() - particle1.eta(),
@@ -369,14 +383,11 @@ struct HfCorrelatorDMesonPairs {
   /// D0(bar)-D0(bar) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processDataD0(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
   {
-    if (particlePdgCode != pdg::Code::kD0) {
-      LOGF(fatal, "Wrong PDG code. Change it to 421 (D0)."); // Assure that we have the right PDG code
-    }
     analyseMultiplicity(collision, tracks);
     auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (const auto& candidate1 : selectedD0CandidatesGrouped) {
-      fillInfoHists(candidate1, false);
-      if (!kinematicCuts(candidate1)) {
+      fillInfoHists(candidate1, false, true);
+      if (!kinematicCuts<decltype(candidate1), true>(candidate1)) {
         continue;
       }
 
@@ -385,7 +396,7 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hSelectionStatus"), candidateType1);
 
       for (const auto& candidate2 : selectedD0CandidatesGrouped) {
-        if (!kinematicCuts(candidate2)) {
+        if (!kinematicCuts<decltype(candidate2), true>(candidate2)) {
           continue;
         }
         // excluding trigger self-correlations (possible in case of both mass hypotheses accepted)
@@ -405,25 +416,22 @@ struct HfCorrelatorDMesonPairs {
                     candidateType1,
                     candidateType2,
                     0);
-      } // end inner loop (Cand2)
-    }   // end outer loop (Cand1)
+      }   // end inner loop (Cand2)
+    }     // end outer loop (Cand1)
   }
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processDataD0, "Process data D0", true);
 
   /// D0(bar)-D0(bar) correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRecD0(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const&)
   {
-    if (particlePdgCode != pdg::Code::kD0) {
-      LOGF(fatal, "Wrong PDG code. Change it to 421 (D0)."); // Assure that we have the right PDG code
-    }
     analyseMultiplicity(collision, tracks);
     auto selectedD0CandidatesGroupedMc = selectedD0candidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (const auto& candidate1 : selectedD0CandidatesGroupedMc) {
-      if (!kinematicCuts(candidate1)) {
+      if (!kinematicCuts<decltype(candidate1), true>(candidate1)) {
         continue;
       }
       if (std::abs(candidate1.flagMcMatchRec()) == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) {
-        fillInfoHists(candidate1, true);
+        fillInfoHists(candidate1, true, true);
       }
 
       registry.fill(HIST("hMass"), invMassD0ToPiK(candidate1), candidate1.pt());
@@ -440,7 +448,7 @@ struct HfCorrelatorDMesonPairs {
       }
 
       for (const auto& candidate2 : selectedD0CandidatesGroupedMc) {
-        if (!kinematicCuts(candidate2)) {
+        if (!kinematicCuts<decltype(candidate2), true>(candidate2)) {
           continue;
         }
         // Excluding trigger self-correlations (possible in case of both mass hypotheses accepted)
@@ -481,9 +489,6 @@ struct HfCorrelatorDMesonPairs {
   /// D0(bar)-D0(bar) correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGenD0(aod::McCollision const&, McParticlesPlus2Prong const& particlesMc)
   {
-    if (particlePdgCode != pdg::Code::kD0) {
-      LOGF(fatal, "Wrong PDG code. Change it to 421 (D0)."); // Assure that we have the right PDG code
-    }
     analyseMcGen(particlesMc);
   }
 
@@ -492,13 +497,10 @@ struct HfCorrelatorDMesonPairs {
   /// Dplus(minus)-Dplus(minus) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processDataDPlus(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, aod::BigTracks const&)
   {
-    if (particlePdgCode != pdg::Code::kDPlus) {
-      LOGF(fatal, "Wrong PDG code. Change it to 431 (DPlus)."); // Assure that we have the right PDG code
-    }
     analyseMultiplicity(collision, tracks);
     auto selectedDPlusCandidatesGrouped = selectedDPlusCandidates->sliceByCached(o2::aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (const auto& candidate1 : selectedDPlusCandidatesGrouped) {
-      if (!kinematicCuts(candidate1)) {
+      if (!kinematicCuts<decltype(candidate1), false>(candidate1)) {
         continue;
       }
 
@@ -509,13 +511,13 @@ struct HfCorrelatorDMesonPairs {
       }
 
       auto candidateType1 = assignCandidateTypeDPlus<decltype(candidate1), false>(candidate1, outerParticleSign);
-      fillInfoHists(candidate1, false);
+      fillInfoHists(candidate1, false, false);
       registry.fill(HIST("hMass"), invMassDplusToPiKPi(candidate1), candidate1.pt());
 
       registry.fill(HIST("hSelectionStatus"), candidateType1);
 
       for (const auto& candidate2 : selectedDPlusCandidatesGrouped) {
-        if (!kinematicCuts(candidate2)) {
+        if (!kinematicCuts<decltype(candidate2), false>(candidate2)) {
           continue;
         }
         if (candidate1.mRowIndex == candidate2.mRowIndex) {
@@ -540,8 +542,8 @@ struct HfCorrelatorDMesonPairs {
                        candidateType1,
                        candidateType2,
                        0);
-      } // end inner loop (cand2)
-    }   // end outer loop (cand1)
+      }   // end inner loop (cand2)
+    }     // end outer loop (cand1)
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processDataDPlus, "Process Data DPlus", false);
@@ -549,13 +551,10 @@ struct HfCorrelatorDMesonPairs {
   /// Dplus(minus)-Dplus(minus) correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRecDPlus(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const&, aod::BigTracks const&)
   {
-    if (particlePdgCode != pdg::Code::kDPlus) {
-      LOGF(fatal, "Wrong PDG code. Change it to 431 (DPlus)."); // Assure that we have the right PDG code
-    }
     analyseMultiplicity(collision, tracks);
     auto selectedDPlusCandidatesGroupedMc = selectedDPlusCandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (const auto& candidate1 : selectedDPlusCandidatesGroupedMc) {
-      if (!kinematicCuts(candidate1)) {
+      if (!kinematicCuts<decltype(candidate1), false>(candidate1)) {
         continue;
       }
 
@@ -580,7 +579,7 @@ struct HfCorrelatorDMesonPairs {
       }
 
       for (const auto& candidate2 : selectedDPlusCandidatesGroupedMc) {
-        if (!kinematicCuts(candidate2)) {
+        if (!kinematicCuts<decltype(candidate2), false>(candidate2)) {
           continue;
         }
         if (candidate1.mRowIndex == candidate2.mRowIndex) {
@@ -617,8 +616,8 @@ struct HfCorrelatorDMesonPairs {
                                origin2,
                                matchedRec1,
                                matchedRec2);
-      } // end inner loop (cand2)
-    }   // end outer loop (cand1)
+      }   // end inner loop (cand2)
+    }     // end outer loop (cand1)
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcRecDPlus, "Process DPlus Mc Reco", false);
@@ -626,9 +625,6 @@ struct HfCorrelatorDMesonPairs {
   /// Dplus(minus)-Dplus(minus) correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGenDPlus(aod::McCollision const&, McParticlesPlus3Prong const& particlesMc)
   {
-    if (particlePdgCode != pdg::Code::kDPlus) {
-      LOGF(fatal, "Wrong PDG code. Change it to 431 (DPlus)."); // Assure that we have the right PDG code
-    }
     analyseMcGen(particlesMc);
   }
 
