@@ -178,7 +178,7 @@ struct HfCorrelatorDsHadrons {
   Filter trackFilter = (aod::track::eta < std::abs(etaTrackMax)) && (aod::track::pt > ptTrackMin) && (aod::track::dcaXY < std::abs(dcaXYTrackMax)) && (aod::track::dcaZ < std::abs(dcaZTrackMax));
 
   using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DsSelCollision>>;       // collisionFilter applied
-  using SelCollisionsWithDsMc = soa::Join<aod::McCollisions, aod::Mults, aod::DsSelCollision>;                  // collisionFilter applied
+  using SelCollisionsWithDsMc = soa::Join<aod::McCollisions, aod::DsSelCollision>;                              // collisionFilter applied
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;                           // flagDsFilter applied
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>; // flagDsFilter applied
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;                                      // flagDsFilter applied
