@@ -31,9 +31,7 @@ using namespace o2::analysis::hf_cuts_xic_to_p_k_pi;
 #include "Framework/runDataProcessing.h"
 
 /// Ξc± analysis task
-
 struct HfTaskXic {
-
   Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<float> trackEtaCut{"trackEtaCut", 4.0, "eta cuts for tracks"};
