@@ -37,4 +37,20 @@ DECLARE_SOA_TABLE(TrainingTree, "AOD", "TRTR", o2::soa::Index<>,
                   vars::FMV0);
 } // namespace o2::aod
 
+namespace o2::analysis {
+template <typename Tracks>
+auto meanPt(Tracks const& tracks)
+{
+  auto apt = 0.f;
+  auto npt = 0;
+  for (auto& track : tracks) {
+    if (isfinite(track.pt()) && (std::abs(track.pt()) > 1e-3)) {
+      ++npt;
+      apt += track.pt();
+    }
+  }
+  return apt / (float)npt;
+}
+}
+
 #endif // TRAININGTREE_H

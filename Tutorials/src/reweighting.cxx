@@ -31,6 +31,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "TrainingTree.h"
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 
 using namespace o2;
@@ -52,22 +53,6 @@ DECLARE_SOA_TABLE(Weights, "AOD", "WGHTS",
                   weights::Weight);
 } // namespace o2::aod
 
-template <typename Tracks>
-auto meanPt(Tracks const& tracks)
-{
-  auto apt = 0.f;
-  auto npt = 0;
-  auto cm = 0;
-  for (auto& track : tracks) {
-    ++cm;
-    if (isfinite(track.pt()) && (std::abs(track.pt()) > 1e-3)) {
-      ++npt;
-      apt += track.pt();
-    }
-  }
-  return apt;
-}
-
 /// function to extract collision properties for feeding the model
 /// note that this version returns a fixed-size array which is not necessary and
 /// for real-life applications the input array should be created dynamically
@@ -75,7 +60,7 @@ auto meanPt(Tracks const& tracks)
 template <typename C, typename T>
 std::array<float, 6> collect(C const& collision, T const& tracks)
 {
-  return {collision.posZ(), collision.posX(), collision.posY(), meanPt(tracks), (float)tracks.size(), collision.multFT0M()};
+  return {collision.posZ(), collision.posX(), collision.posY(), analysis::meanPt(tracks), (float)tracks.size(), collision.multFT0M()};
 }
 
 /// Task to process collisions and create weighting information by applying the
