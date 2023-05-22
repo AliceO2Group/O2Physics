@@ -80,7 +80,7 @@ struct HfCorrelatorDsHadronsSelCollision {
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
   Partition<CandDsData> selectedDsAllCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>> recoFlagDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
+  Partition<CandDsMcReco> recoFlagDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
   /// Code to select collisions with at least one Ds meson - for real data and data-like analysis
   void processDsSelCollisionsData(aod::Collision const& collision, CandDsData const& candidates)
@@ -110,10 +110,6 @@ struct HfCorrelatorDsHadronsSelCollision {
     if (recoFlagDsCandidates.size() > 0) {
       auto selectedDsCandidatesGroupedMc = recoFlagDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       for (auto const& candidate : selectedDsCandidatesGroupedMc) {
-        // check decay channel flag for candidate
-        if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
-          continue;
-        }
         if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
           continue;
         }
