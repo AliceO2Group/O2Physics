@@ -508,8 +508,6 @@ struct MultiplicityCounter {
   using ParticlesI = soa::Join<aod::McParticles, aod::ParticlesToTracks>;
   expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
   Partition<Particles> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
-  Partition<ParticlesI> primariesI = ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) &&
-                                     (nabs(aod::mcparticle::eta) < estimatorEta);
 
   template <typename C, typename MC>
   void processTrackEfficiencyIndexedGeneral(
@@ -524,8 +522,6 @@ struct MultiplicityCounter {
       return;
     }
     auto mcCollision = collision.mcCollision();
-    //    auto particlesI = primariesI->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-    //    particlesI.bindExternalIndices(&tracks);
     auto sample = particles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
     for (auto& particle : sample) {
@@ -542,11 +538,8 @@ struct MultiplicityCounter {
         auto counted = false;
         auto countedNoEtaCut = false;
         auto counter = 0;
-        auto relatedTracks = particle.template tracks_as<FiLTracks>();
+        auto relatedTracks = particle.template filtered_tracks_as<FiLTracks>();
         for (auto const& track : relatedTracks) {
-          //          if ((track.trackCutFlag() & TrackSelectionFlags::kDCAz) != TrackSelectionFlags::kDCAz) {
-          //            continue;
-          //          }
           ++counter;
           if (!countedNoEtaCut) {
             registry.fill(HIST("Tracks/Control/PtEfficiencyINoEtaCut"), particle.pt());
@@ -564,9 +557,6 @@ struct MultiplicityCounter {
         }
         if (counter > 1) {
           for (auto const& track : relatedTracks) {
-            //            if ((track.trackCutFlag() & TrackSelectionFlags::kDCAz) != TrackSelectionFlags::kDCAz) {
-            //              continue;
-            //            }
             for (auto layer = 0; layer < 7; ++layer) {
               if (track.itsClusterMap() & (uint8_t(1) << layer)) {
                 registry.fill(HIST("Tracks/Control/ITSClusters"), layer + 1);
@@ -587,9 +577,6 @@ struct MultiplicityCounter {
         if (relatedTracks.size() > 1) {
           registry.fill(HIST("Tracks/Control/PhiEtaGenDuplicates"), particle.phi(), particle.eta());
           for (auto const& track : relatedTracks) {
-            //            if ((track.trackCutFlag() & TrackSelectionFlags::kDCAz) != TrackSelectionFlags::kDCAz) {
-            //              continue;
-            //            }
             registry.fill(HIST("Tracks/Control/PhiEtaDuplicates"), track.phi(), track.eta());
           }
         }

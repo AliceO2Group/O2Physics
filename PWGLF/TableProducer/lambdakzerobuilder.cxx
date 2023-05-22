@@ -68,6 +68,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
+// simple checkers
+#define bitset(var, nbit) ((var) |= (1 << (nbit)))
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
+
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
@@ -111,6 +115,8 @@ struct lambdakzeroBuilder {
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
   Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
+  Configurable<bool> d_QA_checkMC{"d_QA_checkMC", true, "check MC truth in QA"};
+  Configurable<bool> d_QA_checkdEdx{"d_QA_checkdEdx", false, "check dEdx in QA"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -556,6 +562,9 @@ struct lambdakzeroBuilder {
     }
 
     if (d_doQA) {
+      bool mcUnchecked = !d_QA_checkMC;
+      bool dEdxUnchecked = !d_QA_checkdEdx;
+
       // Calculate masses
       auto lGammaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
       auto lK0ShortMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
@@ -569,35 +578,33 @@ struct lambdakzeroBuilder {
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
 
       // Fill basic mass histograms
-      // Note: all presel bools are true if unchecked
-      if (V0.isGammaCandidate() && V0.isTrueGamma())
+      if ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
         registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
-      if (V0.isK0ShortCandidate() && V0.isTrueK0Short())
+      if ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))
         registry.fill(HIST("h2dK0ShortMass"), lPt, lK0ShortMass);
-      if (V0.isLambdaCandidate() && V0.isTrueLambda())
+      if ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))
         registry.fill(HIST("h2dLambdaMass"), lPt, lLambdaMass);
-      if (V0.isAntiLambdaCandidate() && V0.isTrueAntiLambda())
+      if ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))
         registry.fill(HIST("h2dAntiLambdaMass"), lPt, lAntiLambdaMass);
-      if (V0.isHypertritonCandidate() && V0.isTrueHypertriton())
+      if ((V0.isdEdxHypertriton() || dEdxUnchecked) && (V0.isTrueHypertriton() || mcUnchecked))
         registry.fill(HIST("h2dHypertritonMass"), lPtHy, lHypertritonMass);
-      if (V0.isAntiHypertritonCandidate() && V0.isTrueAntiHypertriton())
+      if ((V0.isdEdxAntiHypertriton() || dEdxUnchecked) && (V0.isTrueAntiHypertriton() || mcUnchecked))
         registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
 
       // Fill ITS cluster maps with specific mass cuts
-      if (TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow && V0.isK0ShortCandidate() && V0.isTrueK0Short()) {
+      if (TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow && ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_K0ShortPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
         registry.fill(HIST("h2dITSCluMap_K0ShortNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
       }
-      if (TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow && V0.isLambdaCandidate() && V0.isTrueLambda()) {
+      if (TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_LambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
         registry.fill(HIST("h2dITSCluMap_LambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
       }
-      if (TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow && V0.isAntiLambdaCandidate() && V0.isTrueAntiLambda()) {
+      if (TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_AntiLambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
         registry.fill(HIST("h2dITSCluMap_AntiLambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
       }
     }
-
     return true;
   }
 
@@ -707,48 +714,50 @@ struct lambdakzeroPreselector {
   // context-aware selections
   Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
 
-  std::vector<char> trackQualityMask;
-  std::vector<char> mcLabelMaskGamma;
-  std::vector<char> mcLabelMaskK0Short;
-  std::vector<char> mcLabelMaskLambda;
-  std::vector<char> mcLabelMaskAntiLambda;
-  std::vector<char> mcLabelMaskHypertriton;
-  std::vector<char> mcLabelMaskAntiHypertriton;
-  std::vector<char> dEdxMaskGamma;
-  std::vector<char> dEdxMaskK0Short;
-  std::vector<char> dEdxMaskLambda;
-  std::vector<char> dEdxMaskAntiLambda;
-  std::vector<char> dEdxMaskHypertriton;
-  std::vector<char> dEdxMaskAntiHypertriton;
-  std::vector<char> usedInCascadeMask;
-  std::vector<char> usedInTrackedCascadeMask;
+  // for bit-packed maps
+  std::vector<uint16_t> selectionMask;
+  enum v0bit { bitInteresting = 0,
+               bitTrackQuality,
+               bitTrueGamma,
+               bitTrueK0Short,
+               bitTrueLambda,
+               bitTrueAntiLambda,
+               bitTrueHypertriton,
+               bitTrueAntiHypertriton,
+               bitdEdxGamma,
+               bitdEdxK0Short,
+               bitdEdxLambda,
+               bitdEdxAntiLambda,
+               bitdEdxHypertriton,
+               bitdEdxAntiHypertriton,
+               bitUsedInCascade,
+               bitUsedInTrackedCascade };
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
   template <class TTrackTo, typename TV0Object>
-  void checkTrackQuality(TV0Object const& lV0Candidate, char& lIsInteresting, char lIsGamma, char lIsK0Short, char lIsLambda, char lIsAntiLambda, char lIsHypertriton, char lIsAntiHypertriton)
+  void checkTrackQuality(TV0Object const& lV0Candidate, uint16_t& maskElement, bool passdEdx = false)
   {
-    lIsInteresting = 0;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
     // No baryons in decay
-    if ((lIsGamma || lIsK0Short) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows))
-      lIsInteresting = 1;
+    if (((bitcheck(maskElement, bitdEdxGamma) || bitcheck(maskElement, bitdEdxK0Short)) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows))
+      bitset(maskElement, bitTrackQuality);
     // With baryons in decay
-    if (lIsLambda && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = 1;
-    if (lIsAntiLambda && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = 1;
-    if (lIsHypertriton && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = 1;
-    if (lIsHypertriton && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = 1;
+    if ((bitcheck(maskElement, bitdEdxLambda) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
+    if ((bitcheck(maskElement, bitdEdxAntiLambda) || passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
+    if ((bitcheck(maskElement, bitdEdxHypertriton) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
+    if ((bitcheck(maskElement, bitdEdxAntiHypertriton) || passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTrackTo, typename TV0Object>
-  void checkPDG(TV0Object const& lV0Candidate, char& lIsGamma, char& lIsK0Short, char& lIsLambda, char& lIsAntiLambda, char& lIsHypertriton, char& lIsAntiHypertriton)
+  void checkPDG(TV0Object const& lV0Candidate, uint16_t& maskElement)
   {
     int lPDG = -1;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
@@ -760,7 +769,6 @@ struct lambdakzeroPreselector {
       auto lMCNegTrack = lNegTrack.template mcParticle_as<aod::McParticles>();
       auto lMCPosTrack = lPosTrack.template mcParticle_as<aod::McParticles>();
       if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
-
         for (auto& lNegMother : lMCNegTrack.template mothers_as<aod::McParticles>()) {
           for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
             if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
@@ -771,21 +779,21 @@ struct lambdakzeroPreselector {
       }
     } // end association check
     if (lPDG == 310)
-      lIsK0Short = 1;
+      bitset(maskElement, bitTrueK0Short);
     if (lPDG == 3122)
-      lIsLambda = 1;
+      bitset(maskElement, bitTrueLambda);
     if (lPDG == -3122)
-      lIsAntiLambda = 1;
+      bitset(maskElement, bitTrueAntiLambda);
     if (lPDG == 22)
-      lIsGamma = 1;
+      bitset(maskElement, bitTrueGamma);
     if (lPDG == 1010010030)
-      lIsHypertriton = 1;
+      bitset(maskElement, bitTrueHypertriton);
     if (lPDG == -1010010030)
-      lIsAntiHypertriton = 1;
+      bitset(maskElement, bitTrueAntiHypertriton);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   template <class TTrackTo, typename TV0Object>
-  void checkdEdx(TV0Object const& lV0Candidate, char& lIsGamma, char& lIsK0Short, char& lIsLambda, char& lIsAntiLambda, char& lIsHypertriton, char& lIsAntiHypertriton)
+  void checkdEdx(TV0Object const& lV0Candidate, uint16_t& maskElement)
   {
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
@@ -793,95 +801,69 @@ struct lambdakzeroPreselector {
     // dEdx check with LF PID
     if (TMath::Abs(lNegTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow)
-      lIsGamma = 1;
+      bitset(maskElement, bitdEdxGamma);
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
-      lIsK0Short = 1;
+      bitset(maskElement, bitdEdxK0Short);
     if ((TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons) &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow)
-      lIsLambda = 1;
+      bitset(maskElement, bitdEdxLambda);
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         (TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons))
-      lIsAntiLambda = 1;
+      bitset(maskElement, bitdEdxAntiLambda);
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         (TMath::Abs(lPosTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons))
-      lIsHypertriton = 1;
+      bitset(maskElement, bitdEdxHypertriton);
     if ((TMath::Abs(lNegTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow || dPreselectOnlyBaryons) &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
-      lIsAntiHypertriton = 1;
+      bitset(maskElement, bitdEdxAntiHypertriton);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// Initialization of mask vectors if uninitialized
   void initializeMasks(int size)
   {
-    if (trackQualityMask.size() < 1) {
+    if (selectionMask.size() < 1) {
       // reserve // FIXME check speed / optimise
-      trackQualityMask.resize(size, 0);
-      mcLabelMaskGamma.resize(size, 0);
-      mcLabelMaskK0Short.resize(size, 0);
-      mcLabelMaskLambda.resize(size, 0);
-      mcLabelMaskAntiLambda.resize(size, 0);
-      ;
-      mcLabelMaskHypertriton.resize(size, 0);
-      mcLabelMaskAntiHypertriton.resize(size, 0);
-      dEdxMaskGamma.resize(size, 0);
-      dEdxMaskK0Short.resize(size, 0);
-      dEdxMaskLambda.resize(size, 0);
-      dEdxMaskAntiLambda.resize(size, 0);
-      dEdxMaskHypertriton.resize(size, 0);
-      dEdxMaskAntiHypertriton.resize(size, 0);
-      usedInCascadeMask.resize(size, 0);
-      usedInTrackedCascadeMask.resize(size, 0);
+      selectionMask.resize(size, 0);
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// Clear mask vectors
   void resetMasks()
   {
-    trackQualityMask.clear();
-    mcLabelMaskGamma.clear();
-    mcLabelMaskK0Short.clear();
-    mcLabelMaskLambda.clear();
-    mcLabelMaskAntiLambda.clear();
-    mcLabelMaskHypertriton.clear();
-    mcLabelMaskAntiHypertriton.clear();
-    dEdxMaskGamma.clear();
-    dEdxMaskK0Short.clear();
-    dEdxMaskLambda.clear();
-    dEdxMaskAntiLambda.clear();
-    dEdxMaskHypertriton.clear();
-    dEdxMaskAntiHypertriton.clear();
-    usedInCascadeMask.clear();
-    usedInTrackedCascadeMask.clear();
+    selectionMask.clear();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// checks and publishes tags if last
   void checkAndFinalize()
   {
     // parse + publish tag table now
-    for (int ii = 0; ii < trackQualityMask.size(); ii++) {
-      bool validV0 = trackQualityMask[ii];
+    for (int ii = 0; ii < selectionMask.size(); ii++) {
+      bool validV0 = bitcheck(selectionMask[ii], bitTrackQuality);
       if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
-        validV0 = validV0 && ((mcLabelMaskK0Short[ii] && dIfMCgenerateK0Short) ||
-                              (mcLabelMaskLambda[ii] && dIfMCgenerateLambda) ||
-                              (mcLabelMaskAntiLambda[ii] && dIfMCgenerateAntiLambda) ||
-                              (mcLabelMaskGamma[ii] && dIfMCgenerateGamma) ||
-                              (mcLabelMaskHypertriton[ii] && dIfMCgenerateHypertriton) ||
-                              (mcLabelMaskAntiHypertriton[ii] && dIfMCgenerateAntiHypertriton));
+        validV0 = validV0 && ((bitcheck(selectionMask[ii], bitTrueK0Short) && dIfMCgenerateK0Short) ||
+                              (bitcheck(selectionMask[ii], bitTrueLambda) && dIfMCgenerateLambda) ||
+                              (bitcheck(selectionMask[ii], bitTrueAntiLambda) && dIfMCgenerateAntiLambda) ||
+                              (bitcheck(selectionMask[ii], bitTrueGamma) && dIfMCgenerateGamma) ||
+                              (bitcheck(selectionMask[ii], bitTrueHypertriton) && dIfMCgenerateHypertriton) ||
+                              (bitcheck(selectionMask[ii], bitTrueAntiHypertriton) && dIfMCgenerateAntiHypertriton));
       if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
-        validV0 = validV0 && ((dEdxMaskK0Short[ii] && ddEdxPreSelectK0Short) ||
-                              (dEdxMaskLambda[ii] && ddEdxPreSelectLambda) ||
-                              (dEdxMaskAntiLambda[ii] && ddEdxPreSelectAntiLambda) ||
-                              (dEdxMaskGamma[ii] && ddEdxPreSelectGamma) ||
-                              (dEdxMaskHypertriton[ii] && ddEdxPreSelectHypertriton) ||
-                              (dEdxMaskAntiHypertriton[ii] && ddEdxPreSelectAntiHypertriton));
+        validV0 = validV0 && ((bitcheck(selectionMask[ii], bitdEdxK0Short) && ddEdxPreSelectK0Short) ||
+                              (bitcheck(selectionMask[ii], bitdEdxLambda) && ddEdxPreSelectLambda) ||
+                              (bitcheck(selectionMask[ii], bitdEdxAntiLambda) && ddEdxPreSelectAntiLambda) ||
+                              (bitcheck(selectionMask[ii], bitdEdxGamma) && ddEdxPreSelectGamma) ||
+                              (bitcheck(selectionMask[ii], bitdEdxHypertriton) && ddEdxPreSelectHypertriton) ||
+                              (bitcheck(selectionMask[ii], bitdEdxAntiHypertriton) && ddEdxPreSelectAntiHypertriton));
       if (doprocessSkipV0sNotUsedInCascades)
-        validV0 = validV0 && usedInCascadeMask[ii];
+        validV0 = validV0 && bitcheck(selectionMask[ii], bitUsedInCascade);
       if (doprocessSkipV0sNotUsedInTrackedCascades)
-        validV0 = validV0 && usedInTrackedCascadeMask[ii];
+        validV0 = validV0 && bitcheck(selectionMask[ii], bitUsedInTrackedCascade);
       v0tags(validV0,
-             mcLabelMaskGamma[ii], mcLabelMaskK0Short[ii], mcLabelMaskLambda[ii], mcLabelMaskAntiLambda[ii], mcLabelMaskHypertriton[ii], mcLabelMaskAntiHypertriton[ii],
-             dEdxMaskGamma[ii], dEdxMaskK0Short[ii], dEdxMaskLambda[ii], dEdxMaskAntiLambda[ii], dEdxMaskHypertriton[ii], dEdxMaskAntiHypertriton[ii]);
+             bitcheck(selectionMask[ii], bitTrueGamma), bitcheck(selectionMask[ii], bitTrueK0Short), bitcheck(selectionMask[ii], bitTrueLambda),
+             bitcheck(selectionMask[ii], bitTrueAntiLambda), bitcheck(selectionMask[ii], bitTrueHypertriton), bitcheck(selectionMask[ii], bitTrueAntiHypertriton),
+             bitcheck(selectionMask[ii], bitdEdxGamma), bitcheck(selectionMask[ii], bitdEdxK0Short), bitcheck(selectionMask[ii], bitdEdxLambda),
+             bitcheck(selectionMask[ii], bitdEdxAntiLambda), bitcheck(selectionMask[ii], bitdEdxHypertriton), bitcheck(selectionMask[ii], bitdEdxAntiHypertriton),
+             bitcheck(selectionMask[ii], bitUsedInCascade), bitcheck(selectionMask[ii], bitUsedInTrackedCascade));
     }
     resetMasks();
   }
@@ -891,9 +873,9 @@ struct lambdakzeroPreselector {
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {
-      checkTrackQuality<aod::TracksExtra>(v0, trackQualityMask[v0.globalIndex()], 1, 1, 1, 1, 1, 1);
+      checkTrackQuality<aod::TracksExtra>(v0, selectionMask[v0.globalIndex()], true);
     }
-    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInCascades)
+    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInTrackedCascades)
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -901,11 +883,10 @@ struct lambdakzeroPreselector {
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {
-      int v0i = v0.globalIndex();
-      checkPDG<LabeledTracksExtra>(v0, mcLabelMaskGamma[v0i], mcLabelMaskK0Short[v0i], mcLabelMaskLambda[v0i], mcLabelMaskAntiLambda[v0i], mcLabelMaskHypertriton[v0i], mcLabelMaskAntiHypertriton[v0i]);
-      checkTrackQuality<LabeledTracksExtra>(v0, trackQualityMask[v0i], 1, 1, 1, 1, 1, 1);
+      checkPDG<LabeledTracksExtra>(v0, selectionMask[v0.globalIndex()]);
+      checkTrackQuality<LabeledTracksExtra>(v0, selectionMask[v0.globalIndex()], true);
     }
-    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInCascades)
+    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInTrackedCascades)
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -913,11 +894,10 @@ struct lambdakzeroPreselector {
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {
-      int v0i = v0.globalIndex();
-      checkdEdx<TracksExtraWithPID>(v0, dEdxMaskGamma[v0i], dEdxMaskK0Short[v0i], dEdxMaskLambda[v0i], dEdxMaskAntiLambda[v0i], dEdxMaskHypertriton[v0i], dEdxMaskAntiHypertriton[v0i]);
-      checkTrackQuality<TracksExtraWithPID>(v0, trackQualityMask[v0.globalIndex()], dEdxMaskGamma[v0i], dEdxMaskK0Short[v0i], dEdxMaskLambda[v0i], dEdxMaskAntiLambda[v0i], dEdxMaskHypertriton[v0i], dEdxMaskAntiHypertriton[v0i]);
+      checkdEdx<TracksExtraWithPID>(v0, selectionMask[v0.globalIndex()]);
+      checkTrackQuality<TracksExtraWithPID>(v0, selectionMask[v0.globalIndex()]);
     }
-    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInCascades)
+    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInTrackedCascades)
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -925,12 +905,11 @@ struct lambdakzeroPreselector {
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {
-      int v0i = v0.globalIndex();
-      checkPDG<TracksExtraWithPIDandLabels>(v0, mcLabelMaskGamma[v0i], mcLabelMaskK0Short[v0i], mcLabelMaskLambda[v0i], mcLabelMaskAntiLambda[v0i], mcLabelMaskHypertriton[v0i], mcLabelMaskAntiHypertriton[v0i]);
-      checkdEdx<TracksExtraWithPIDandLabels>(v0, dEdxMaskGamma[v0i], dEdxMaskK0Short[v0i], dEdxMaskLambda[v0i], dEdxMaskAntiLambda[v0i], dEdxMaskHypertriton[v0i], dEdxMaskAntiHypertriton[v0i]);
-      checkTrackQuality<TracksExtraWithPIDandLabels>(v0, trackQualityMask[v0i], dEdxMaskGamma[v0i], dEdxMaskK0Short[v0i], dEdxMaskLambda[v0i], dEdxMaskAntiLambda[v0i], dEdxMaskHypertriton[v0i], dEdxMaskAntiHypertriton[v0i]);
+      checkPDG<TracksExtraWithPIDandLabels>(v0, selectionMask[v0.globalIndex()]);
+      checkdEdx<TracksExtraWithPIDandLabels>(v0, selectionMask[v0.globalIndex()]);
+      checkTrackQuality<TracksExtraWithPIDandLabels>(v0, selectionMask[v0.globalIndex()]);
     }
-    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInCascades)
+    if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInTrackedCascades)
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -940,7 +919,7 @@ struct lambdakzeroPreselector {
   void processSkipV0sNotUsedInCascades(aod::Cascades const& casctable)
   {
     for (auto const& casc : casctable) {
-      usedInCascadeMask[casc.v0Id()] = true; // tag V0s needed by cascades
+      bitset(selectionMask[casc.v0Id()], bitUsedInCascade); // tag V0s needed by cascades
     }
     checkAndFinalize();
   }
@@ -952,7 +931,7 @@ struct lambdakzeroPreselector {
   {
     for (auto const& tracasc : tracasctable) {
       auto casc = tracasc.cascade();
-      usedInTrackedCascadeMask[casc.v0Id()] = true; // tag V0s needed by tracked cascades
+      bitset(selectionMask[casc.v0Id()], bitUsedInTrackedCascade); // tag V0s needed by tracked cascades
     }
     checkAndFinalize();
   }
