@@ -89,7 +89,7 @@ struct HfCorrelatorDsHadronsSelCollision {
     if (selectedDsAllCand.size() > 0) {
       auto selectedDsAllCandGrouped = selectedDsAllCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       for (auto const& candidate : selectedDsAllCandGrouped) {
-        if (yCandMax >= 0. && std::abs(yDplus(candidate)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
