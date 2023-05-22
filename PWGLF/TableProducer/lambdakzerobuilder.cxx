@@ -769,7 +769,6 @@ struct lambdakzeroPreselector {
       auto lMCNegTrack = lNegTrack.template mcParticle_as<aod::McParticles>();
       auto lMCPosTrack = lPosTrack.template mcParticle_as<aod::McParticles>();
       if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
-
         for (auto& lNegMother : lMCNegTrack.template mothers_as<aod::McParticles>()) {
           for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
             if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
