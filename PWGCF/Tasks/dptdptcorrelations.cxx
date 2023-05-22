@@ -868,15 +868,70 @@ struct DptDptCorrelationsTask {
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevel, "Process reco level correlations", true);
+  PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevel, "Process reco level correlations", false);
 
-  void processGenLevel(soa::Filtered<aod::DptDptCFAcceptedTrueCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks>& tracks)
+  void processRecLevelCheck(aod::Collisions const &collisions, aod::Tracks &tracks)
+  {
+    int nAssignedTracks = 0;
+    int nNotAssignedTracks = 0;
+    int64_t firstNotAssignedIndex = -1;
+    int64_t lastNotAssignedIndex = -1;
+
+    for (auto track : tracks) {
+      if (track.has_collision()) {
+        nAssignedTracks++;
+      } else {
+        nNotAssignedTracks++;
+        if (firstNotAssignedIndex < 0) {
+          firstNotAssignedIndex = track.globalIndex();
+        } else {
+          lastNotAssignedIndex = track.globalIndex();
+        }
+      }
+    }
+    LOGF(info, "Received %d collisions and %d tracks.", collisions.size(), tracks.size());
+    LOGF(info, "  Assigned tracks %d", nAssignedTracks);
+    LOGF(info, "  Not assigned tracks %d", nNotAssignedTracks);
+    LOGF(info, "  First not assigned track index %d", firstNotAssignedIndex);
+    LOGF(info, "  Last not assigned track index %d", lastNotAssignedIndex);
+  }
+  PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevelCheck, "Process reco level checks", true);
+
+  void processRecLevelNotStored(
+      soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const
+          &collision,
+      aod::BCsWithTimestamps const &,
+      soa::Filtered<soa::Join<aod::Tracks, aod::DptDptCFTracksInfo>> &tracks)
+  {
+    processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
+  }
+  PROCESS_SWITCH(DptDptCorrelationsTask,
+                 processRecLevelNotStored,
+                 "Process reco level correlations for not stored derived data",
+                 true);
+
+  void processGenLevel(
+      soa::Filtered<aod::DptDptCFAcceptedTrueCollisions>::iterator const &collision,
+      soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>> &tracks)
   {
     processSame<true>(collision, tracks);
   }
   PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevel, "Process generator level correlations", false);
 
-  std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -7.0f, -5.0f, -3.0f, -1.0f, 1.0f, 3.0f, 5.0f, 7.0f};
+  void processGenLevelNotStored(
+      soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>::iterator const
+          &collision,
+      soa::Filtered<aod::ScannedTrueTracks> &tracks)
+  {
+    processSame<true>(collision, tracks);
+  }
+  PROCESS_SWITCH(DptDptCorrelationsTask,
+                 processGenLevelNotStored,
+                 "Process generator level correlations for not stored derived data",
+                 false);
+
+  std::vector<double>
+      vtxBinsEdges{VARIABLE_WIDTH, -7.0f, -5.0f, -3.0f, -1.0f, 1.0f, 3.0f, 5.0f, 7.0f};
   std::vector<double> multBinsEdges{VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0, 100.1f};
   SliceCache cache;
   using BinningZVtxMultRec = ColumnBinningPolicy<aod::collision::PosZ, aod::dptdptfilter::DptDptCFCollisionCentMult>;
@@ -906,6 +961,61 @@ struct DptDptCorrelationsTask {
   }
   PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevelMixed, "Process reco level mixed events correlations", false);
 
+  void processRecLevelMixedNotStored(
+      soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>> &collisions,
+      aod::BCsWithTimestamps const &,
+      soa::Filtered<soa::Join<aod::Tracks, aod::DptDptCFTracksInfo>> &tracks)
+  {
+    auto tracksTuple = std::make_tuple(tracks);
+    SameKindPair<soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>,
+                 soa::Filtered<soa::Join<aod::Tracks, aod::DptDptCFTracksInfo>>,
+                 BinningZVtxMultRec>
+        pairreco{bindingOnVtxAndMultRec,
+                 5,
+                 -1,
+                 collisions,
+                 tracksTuple,
+                 &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+
+    LOGF(DPTDPTLOGCOLLISIONS, "Received %d collisions", collisions.size());
+    int logcomb = 0;
+    for (auto &[collision1, tracks1, collision2, tracks2] : pairreco) {
+      if (logcomb < 10) {
+        LOGF(DPTDPTLOGCOLLISIONS,
+             "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
+             collision1.globalIndex(),
+             collision1.posZ(),
+             collision1.centmult(),
+             collision1.collisionaccepted() ? "accepted" : "not accepted",
+             collision2.globalIndex(),
+             collision2.posZ(),
+             collision2.centmult(),
+             collision2.collisionaccepted() ? "accepted" : "not accepted");
+        logcomb++;
+      }
+      if (!collision1.collisionaccepted() || !collision2.collisionaccepted()) {
+        LOGF(error,
+             "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
+             collision1.globalIndex(),
+             collision1.posZ(),
+             collision1.centmult(),
+             collision1.collisionaccepted() ? "accepted" : "not accepted",
+             collision2.globalIndex(),
+             collision2.posZ(),
+             collision2.centmult(),
+             collision2.collisionaccepted() ? "accepted" : "not accepted");
+      }
+      processMixed<false>(collision1,
+                          tracks1,
+                          tracks2,
+                          collision1.bc_as<aod::BCsWithTimestamps>().timestamp());
+    }
+  }
+  PROCESS_SWITCH(DptDptCorrelationsTask,
+                 processRecLevelMixedNotStored,
+                 "Process reco level mixed events correlations for not stored derived data",
+                 false);
+
   using BinningZVtxMultGen = ColumnBinningPolicy<aod::mccollision::PosZ, aod::dptdptfilter::DptDptCFCollisionCentMult>;
   BinningZVtxMultGen bindingOnVtxAndMultGen{{vtxBinsEdges, multBinsEdges}, true}; // true is for 'ignore overflows' (true by default)
 
@@ -932,6 +1042,55 @@ struct DptDptCorrelationsTask {
   }
   PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevelMixed, "Process generator level mixed events correlations", false);
 
+  void processGenLevelMixedNotStored(
+      soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>> &collisions,
+      soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>> &tracks)
+  {
+    auto tracksTuple = std::make_tuple(tracks);
+    SameKindPair<soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>,
+                 soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>>,
+                 BinningZVtxMultGen>
+        pairgen{bindingOnVtxAndMultGen,
+                5,
+                -1,
+                collisions,
+                tracksTuple,
+                &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+
+    LOGF(DPTDPTLOGCOLLISIONS, "Received %d generated collisions", collisions.size());
+    int logcomb = 0;
+    for (auto &[collision1, tracks1, collision2, tracks2] : pairgen) {
+      if (logcomb < 10) {
+        LOGF(DPTDPTLOGCOLLISIONS,
+             "Received generated collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
+             collision1.globalIndex(),
+             collision1.posZ(),
+             collision1.centmult(),
+             collision1.collisionaccepted() ? "accepted" : "not accepted",
+             collision2.globalIndex(),
+             collision2.posZ(),
+             collision2.centmult(),
+             collision2.collisionaccepted() ? "accepted" : "not accepted");
+      }
+      if (!collision1.collisionaccepted() || !collision2.collisionaccepted()) {
+        LOGF(error,
+             "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
+             collision1.globalIndex(),
+             collision1.posZ(),
+             collision1.centmult(),
+             collision1.collisionaccepted() ? "accepted" : "not accepted",
+             collision2.globalIndex(),
+             collision2.posZ(),
+             collision2.centmult(),
+             collision2.collisionaccepted() ? "accepted" : "not accepted");
+      }
+      processMixed<true>(collision1, tracks1, tracks2);
+    }
+  }
+  PROCESS_SWITCH(DptDptCorrelationsTask,
+                 processGenLevelMixedNotStored,
+                 "Process generator level mixed events correlations for not stored derived data",
+                 false);
 
   /// cleans the output object when the task is not used
   void processCleaner(soa::Filtered<aod::DptDptCFAcceptedCollisions> const& colls)

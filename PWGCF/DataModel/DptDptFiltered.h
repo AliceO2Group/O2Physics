@@ -104,7 +104,6 @@ DECLARE_SOA_TABLE(ScannedTrueTracks, "AOD", "SCANTRUETRACKS", //! The generated 
                   dptdptfilter::Sign<dptdptfilter::TrackacceptedId>);
 DECLARE_SOA_TABLE(DptDptCFTracksInfo, "AOD", "SCANDTRCKINF", //! The additional information Tracks joinable table
                   dptdptfilter::TrackacceptedId,
-                  dptdptfilter::Sign<dptdptfilter::TrackacceptedId>,
                   dptdptfilter::TrkID<dptdptfilter::TrackacceptedId>);
 DECLARE_SOA_TABLE(DptDptCFGenTracksInfo, "AOD", "SCANDGENTRCKINF", //! The additional information mcParticle joinable table
                   dptdptfilter::TrackacceptedId,
