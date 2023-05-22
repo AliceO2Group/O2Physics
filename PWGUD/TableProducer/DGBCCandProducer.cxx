@@ -251,25 +251,25 @@ struct DGBCCandProducer {
 
       // 0 <= bit <= 31
       auto bit = bc2u.globalBC() - minbc;
-      if (!bc2u.selection()[evsel::kNoBGT0A])
+      if (!bc2u.selection_bit(evsel::kNoBGT0A))
         SETBIT(info.BGFT0Apf, bit);
-      if (!bc2u.selection()[evsel::kNoBGT0C])
+      if (!bc2u.selection_bit(evsel::kNoBGT0C))
         SETBIT(info.BGFT0Cpf, bit);
-      if (bc2u.selection()[evsel::kIsBBT0A])
+      if (bc2u.selection_bit(evsel::kIsBBT0A))
         SETBIT(info.BBFT0Apf, bit);
-      if (bc2u.selection()[evsel::kIsBBT0C])
+      if (bc2u.selection_bit(evsel::kIsBBT0C))
         SETBIT(info.BBFT0Cpf, bit);
-      if (!bc2u.selection()[evsel::kNoBGV0A])
+      if (!bc2u.selection_bit(evsel::kNoBGV0A))
         SETBIT(info.BGFV0Apf, bit);
-      if (bc2u.selection()[evsel::kIsBBV0A])
+      if (bc2u.selection_bit(evsel::kIsBBV0A))
         SETBIT(info.BBFV0Apf, bit);
-      if (!bc2u.selection()[evsel::kNoBGFDA])
+      if (!bc2u.selection_bit(evsel::kNoBGFDA))
         SETBIT(info.BGFDDApf, bit);
-      if (!bc2u.selection()[evsel::kNoBGFDC])
+      if (!bc2u.selection_bit(evsel::kNoBGFDC))
         SETBIT(info.BGFDDCpf, bit);
-      if (bc2u.selection()[evsel::kIsBBFDA])
+      if (bc2u.selection_bit(evsel::kIsBBFDA))
         SETBIT(info.BBFDDApf, bit);
-      if (bc2u.selection()[evsel::kIsBBFDC])
+      if (bc2u.selection_bit(evsel::kIsBBFDC))
         SETBIT(info.BBFDDCpf, bit);
     }
   }

@@ -258,7 +258,7 @@ struct strangenessFilter {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     bool keepEvent[7]{false, false, false, false, false, false, false};
 
-    if (kint7 && !collision.alias()[kINT7]) {
+    if (kint7 && !collision.alias_bit(kINT7)) {
       strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
       return;
     }

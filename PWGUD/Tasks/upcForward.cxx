@@ -88,8 +88,8 @@ struct UPCForward {
     bool isFDSelection = isBeamBeamFDA || isBeamGasFDA || isBeamBeamFDC || isBeamGasFDC;
 
     // CCUP10 and CCUP11 information
-    bool iskMUP11fired = bc.alias()[kMUP11];
-    bool iskMUP10fired = bc.alias()[kMUP10];
+    bool iskMUP11fired = bc.alias_bit(kMUP11);
+    bool iskMUP10fired = bc.alias_bit(kMUP10);
     // cout << iskMUP11fired << iskMUP10fired<< endl;
     //  selecting kMUP10 and 11 triggers
     if (!iskMUP11fired && !iskMUP10fired) {

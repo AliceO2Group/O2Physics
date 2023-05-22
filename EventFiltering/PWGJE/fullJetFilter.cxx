@@ -222,12 +222,12 @@ struct fullJetFilter {
     bool keepEvent[kCategories]{false};
     double maxClusterObservableEMCAL = -1., maxClusterObservableDCAL = -1., maxSelectedJetPt = -1.;
 
-    if (!b_IgnoreEmcalFlag && !collision.alias()[kTVXinEMC]) {
+    if (!b_IgnoreEmcalFlag && !collision.alias_bit(kTVXinEMC)) {
       tags(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
       return; // Skip events where EMCAL is not live
     }
 
-    if (b_PublishReadoutTrigger && collision.alias()[kTVXinEMC]) {
+    if (b_PublishReadoutTrigger && collision.alias_bit(kTVXinEMC)) {
       keepEvent[kEMCALReadout] = true;
     }
 

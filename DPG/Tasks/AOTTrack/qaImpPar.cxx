@@ -341,7 +341,7 @@ struct QaImpactPar {
     /// trigger selection
     if (useTriggerkINT7) {
       // from Tutorial/src/multiplicityEventTrackSelection.cxx
-      if (!collision.alias()[kINT7]) {
+      if (!collision.alias_bit(kINT7)) {
         return;
       }
     }
