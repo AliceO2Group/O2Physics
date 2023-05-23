@@ -80,7 +80,7 @@ struct DptDptCorrelationsTask {
     // The DptDptCorrelationsAnalysisTask output objects
     //============================================================================================
     /* histograms */
-    TH1F* fhVertexZA;                 //!<! the z vertex distribution for the current multiplicity/centrality class
+    TH1F* fhVertexZA;                                                             //!<! the z vertex distribution for the current multiplicity/centrality class
     std::vector<TH1F*> fhN1_vsPt{nch, nullptr};                                   //!<! weighted single particle distribution vs \f$p_T\f$, for the different species
     std::vector<TH2F*> fhN1_vsEtaPhi{nch, nullptr};                               //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$, for the different species
     std::vector<TH2F*> fhSum1Pt_vsEtaPhi{nch, nullptr};                           //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
@@ -672,7 +672,7 @@ struct DptDptCorrelationsTask {
           DataCollectingEngine* dce = new DataCollectingEngine();
           /* crete the output list for the passed centrality/multiplicity range */
           TList* fOutputList = new TList();
-          fOutputList->SetName(TString::Format("DptDptCorrelationsData%s-%s", me? "ME" : "", rg));
+          fOutputList->SetName(TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg));
           fOutputList->SetOwner(true);
           /* init the data collection instance */
           dce->init(fOutputList);
@@ -810,7 +810,7 @@ struct DptDptCorrelationsTask {
         bfield = (fUseConversionCuts or fUseTwoTrackCut) ? getMagneticField(timestamp) : 0;
       }
       dataCE[ixDCE]->processCollision<false>(tracks, tracks, collision.posZ(), collision.centmult(), bfield);
-    }  
+    }
   }
 
   template <bool gen, typename FilterdCollision, typename FilteredTracks1, typename FilteredTracks2>
@@ -858,7 +858,7 @@ struct DptDptCorrelationsTask {
         bfield = (fUseConversionCuts or fUseTwoTrackCut) ? getMagneticField(timestamp) : 0;
       }
       dataCEME[ixDCE]->processCollision<true>(tracks1, tracks2, collision.posZ(), collision.centmult(), bfield);
-    }  
+    }
   }
 
   Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
@@ -870,7 +870,7 @@ struct DptDptCorrelationsTask {
   }
   PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevel, "Process reco level correlations", false);
 
-  void processRecLevelCheck(aod::Collisions const &collisions, aod::Tracks &tracks)
+  void processRecLevelCheck(aod::Collisions const& collisions, aod::Tracks& tracks)
   {
     int nAssignedTracks = 0;
     int nNotAssignedTracks = 0;
@@ -898,10 +898,9 @@ struct DptDptCorrelationsTask {
   PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevelCheck, "Process reco level checks", true);
 
   void processRecLevelNotStored(
-      soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const
-          &collision,
-      aod::BCsWithTimestamps const &,
-      soa::Filtered<soa::Join<aod::Tracks, aod::DptDptCFTracksInfo>> &tracks)
+    soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
+    aod::BCsWithTimestamps const&,
+    soa::Filtered<soa::Join<aod::Tracks, aod::DptDptCFTracksInfo>>& tracks)
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
@@ -911,17 +910,16 @@ struct DptDptCorrelationsTask {
                  true);
 
   void processGenLevel(
-      soa::Filtered<aod::DptDptCFAcceptedTrueCollisions>::iterator const &collision,
-      soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>> &tracks)
+    soa::Filtered<aod::DptDptCFAcceptedTrueCollisions>::iterator const& collision,
+    soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>>& tracks)
   {
     processSame<true>(collision, tracks);
   }
   PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevel, "Process generator level correlations", false);
 
   void processGenLevelNotStored(
-      soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>::iterator const
-          &collision,
-      soa::Filtered<aod::ScannedTrueTracks> &tracks)
+    soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>::iterator const& collision,
+    soa::Filtered<aod::ScannedTrueTracks>& tracks)
   {
     processSame<true>(collision, tracks);
   }
@@ -931,7 +929,7 @@ struct DptDptCorrelationsTask {
                  false);
 
   std::vector<double>
-      vtxBinsEdges{VARIABLE_WIDTH, -7.0f, -5.0f, -3.0f, -1.0f, 1.0f, 3.0f, 5.0f, 7.0f};
+    vtxBinsEdges{VARIABLE_WIDTH, -7.0f, -5.0f, -3.0f, -1.0f, 1.0f, 3.0f, 5.0f, 7.0f};
   std::vector<double> multBinsEdges{VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0, 100.1f};
   SliceCache cache;
   using BinningZVtxMultRec = ColumnBinningPolicy<aod::collision::PosZ, aod::dptdptfilter::DptDptCFCollisionCentMult>;
@@ -962,24 +960,24 @@ struct DptDptCorrelationsTask {
   PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevelMixed, "Process reco level mixed events correlations", false);
 
   void processRecLevelMixedNotStored(
-      soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>> &collisions,
-      aod::BCsWithTimestamps const &,
-      soa::Filtered<soa::Join<aod::Tracks, aod::DptDptCFTracksInfo>> &tracks)
+    soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>& collisions,
+    aod::BCsWithTimestamps const&,
+    soa::Filtered<soa::Join<aod::Tracks, aod::DptDptCFTracksInfo>>& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>,
                  soa::Filtered<soa::Join<aod::Tracks, aod::DptDptCFTracksInfo>>,
                  BinningZVtxMultRec>
-        pairreco{bindingOnVtxAndMultRec,
-                 5,
-                 -1,
-                 collisions,
-                 tracksTuple,
-                 &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+      pairreco{bindingOnVtxAndMultRec,
+               5,
+               -1,
+               collisions,
+               tracksTuple,
+               &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
     LOGF(DPTDPTLOGCOLLISIONS, "Received %d collisions", collisions.size());
     int logcomb = 0;
-    for (auto &[collision1, tracks1, collision2, tracks2] : pairreco) {
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairreco) {
       if (logcomb < 10) {
         LOGF(DPTDPTLOGCOLLISIONS,
              "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
@@ -1043,23 +1041,23 @@ struct DptDptCorrelationsTask {
   PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevelMixed, "Process generator level mixed events correlations", false);
 
   void processGenLevelMixedNotStored(
-      soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>> &collisions,
-      soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>> &tracks)
+    soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>& collisions,
+    soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>>& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>,
                  soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>>,
                  BinningZVtxMultGen>
-        pairgen{bindingOnVtxAndMultGen,
-                5,
-                -1,
-                collisions,
-                tracksTuple,
-                &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+      pairgen{bindingOnVtxAndMultGen,
+              5,
+              -1,
+              collisions,
+              tracksTuple,
+              &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
     LOGF(DPTDPTLOGCOLLISIONS, "Received %d generated collisions", collisions.size());
     int logcomb = 0;
-    for (auto &[collision1, tracks1, collision2, tracks2] : pairgen) {
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairgen) {
       if (logcomb < 10) {
         LOGF(DPTDPTLOGCOLLISIONS,
              "Received generated collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",

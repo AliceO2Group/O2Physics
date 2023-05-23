@@ -66,20 +66,20 @@ DECLARE_SOA_TABLE(
   dptdptfilter::IsGenCollisionAccepted<dptdptfilter::DptDptCFCollisionAccepted>);
 namespace dptdptfilter
 {
-DECLARE_SOA_INDEX_COLUMN(DptDptCFAcceptedCollision, event);          //! Reconstructed collision/event
-DECLARE_SOA_INDEX_COLUMN(DptDptCFAcceptedTrueCollision, mcevent);    //! Generated collision/event
+DECLARE_SOA_INDEX_COLUMN(DptDptCFAcceptedCollision, event);       //! Reconstructed collision/event
+DECLARE_SOA_INDEX_COLUMN(DptDptCFAcceptedTrueCollision, mcevent); //! Generated collision/event
 DECLARE_SOA_COLUMN(TrackacceptedId,
                    trackacceptedid,
-                   int8_t); //! Id of accepted track, criteria: even (+) odd (-)
-DECLARE_SOA_COLUMN(Pt, pt, float);                                   //! The track transverse momentum
-DECLARE_SOA_COLUMN(Eta, eta, float);                                 //! The track pseudorapidity
-DECLARE_SOA_COLUMN(Phi, phi, float);                                 //! The track azimuthal angle
+                   int8_t);          //! Id of accepted track, criteria: even (+) odd (-)
+DECLARE_SOA_COLUMN(Pt, pt, float);   //! The track transverse momentum
+DECLARE_SOA_COLUMN(Eta, eta, float); //! The track pseudorapidity
+DECLARE_SOA_COLUMN(Phi, phi, float); //! The track azimuthal angle
 DECLARE_SOA_DYNAMIC_COLUMN(Sign,
                            sign, //! Charge: positive: 1, negative: -1
                            [](int8_t trackacceptedid) -> short {
-                               return (trackacceptedid % 2 == 0
-                                           ? 1
-                                           : (trackacceptedid % 2 == 1 ? -1 : 0));
+                             return (trackacceptedid % 2 == 0
+                                       ? 1
+                                       : (trackacceptedid % 2 == 1 ? -1 : 0));
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(TrkID,
                            trkid, //! The track id

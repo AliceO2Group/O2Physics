@@ -161,7 +161,7 @@ struct DptDptFilter {
   Produces<aod::DptDptCFAcceptedTrueCollisions> acceptedtrueevents;
   Produces<aod::DptDptCFGenCollisionsInfo> gencollisionsinfo;
 
-  void init(InitContext const &)
+  void init(InitContext const&)
   {
     using namespace dptdptfilter;
 
@@ -853,8 +853,8 @@ struct DptDptFilterTracks {
     LOGF(DPTDPTFILTERLOGCOLLISIONS, "Accepted %d generated particles", acceptedparticles);
   }
 
-  void filterRecoWithPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> &collisions,
-                         DptDptFullTracksPID const &tracks)
+  void filterRecoWithPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions,
+                         DptDptFullTracksPID const& tracks)
   {
     filterTracks(collisions, tracks);
   }
@@ -863,8 +863,8 @@ struct DptDptFilterTracks {
                  "Not stored derived data track filtering",
                  false)
 
-  void filterRecoWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const &collisions,
-                            DptDptFullTracks const &tracks)
+  void filterRecoWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions,
+                            DptDptFullTracks const& tracks)
   {
     filterTracks(collisions, tracks);
   }
