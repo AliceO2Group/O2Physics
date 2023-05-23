@@ -161,7 +161,7 @@ DECLARE_SOA_TABLE(HfToXiPiFull, "AOD", "HFTOXIPIFULL",
                   full::DcaZToPvV0Dau0, full::DcaZToPvV0Dau1, full::DcaZToPvCascDau,
                   full::DcaCascDau, full::DcaV0Dau, full::DcaOmegacDau,
                   full::StatusPidLambda, full::StatusPidCascade, full::StatusPidOmegac,
-                  full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassOmegac, full::ResultSelections, 
+                  full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassOmegac, full::ResultSelections,
                   full::TpcNSigmaPiFromOmega, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
                   full::TofNSigmaPiFromOmega, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
                   full::FlagMcMatchRec, full::DebugMcRec);
