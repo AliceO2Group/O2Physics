@@ -272,7 +272,7 @@ struct HfCandidateCreatorCascadeMc {
 
     // Match reconstructed candidates.
     rowCandidateCasc->bindExternalIndices(&tracks);
-    for (auto& candidate : *rowCandidateCasc) {
+    for (const auto& candidate : *rowCandidateCasc) {
 
       origin = 0;
 
@@ -318,7 +318,7 @@ struct HfCandidateCreatorCascadeMc {
     //}
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       origin = 0;
       // checking if I have a Lc --> K0S + p
       RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaCPlus, array{+kProton, +kK0Short}, true, &sign, 2);
