@@ -384,7 +384,7 @@ struct DptDptCorrelationsTask {
         corrs2 = getTrackCorrections(Tracks2, zvtx);
       }
 
-      if (not processpairs) {
+      if (!processpairs) {
         /* process single tracks */
         fhVertexZA->Fill(zvtx);
         processSingles(Tracks1, corrs1, zvtx);
@@ -723,7 +723,7 @@ struct DptDptCorrelationsTask {
     }
     /* two-track cut and conversion suppression */
     fPairCuts.SetHistogramRegistry(nullptr); // not histogram registry for the time being, incompatible with TList when it is empty
-    if (processpairs and (cfgPairCut->get("Photon") > 0 || cfgPairCut->get("K0") > 0 || cfgPairCut->get("Lambda") > 0 || cfgPairCut->get("Phi") > 0 || cfgPairCut->get("Rho") > 0)) {
+    if (processpairs && ((cfgPairCut->get("Photon") > 0) || (cfgPairCut->get("K0") > 0) || (cfgPairCut->get("Lambda") > 0) || (cfgPairCut->get("Phi") > 0) || (cfgPairCut->get("Rho") > 0))) {
       fPairCuts.SetPairCut(PairCuts::Photon, cfgPairCut->get("Photon"));
       fPairCuts.SetPairCut(PairCuts::K0, cfgPairCut->get("K0"));
       fPairCuts.SetPairCut(PairCuts::Lambda, cfgPairCut->get("Lambda"));
@@ -822,12 +822,12 @@ struct DptDptCorrelationsTask {
                                 .Data()))});
         if constexpr (gen) {
           dataCE[ixDCE]->storePtAverages(
-            std::vector<TH2*>{reinterpret_cast<TH3*>(ccdblst->FindObject(
+            std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
                                 TString::Format("trueptavgetaphi_%02d-%02d_p",
                                                 static_cast<int>(fCentMultMin[ixDCE]),
                                                 static_cast<int>(fCentMultMax[ixDCE]))
                                   .Data())),
-                              reinterpret_cast<TH3*>(ccdblst->FindObject(
+                              reinterpret_cast<TH2*>(ccdblst->FindObject(
                                 TString::Format("trueptavgetaphi_%02d-%02d_m",
                                                 static_cast<int>(fCentMultMin[ixDCE]),
                                                 static_cast<int>(fCentMultMax[ixDCE]))
