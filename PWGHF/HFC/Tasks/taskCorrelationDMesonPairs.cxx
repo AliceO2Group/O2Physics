@@ -43,13 +43,32 @@ double getDeltaPhi(double phiD, double phiDbar)
   return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
 }
 
-namespace
-{
+namespace{
 enum CandidateTypeSel {
-  SelectedD = 0, // This particle is selected as a D
-  SelectedDbar,  // This particle is selected as a Dbar
-  TrueD,         // This particle is a true D
-  TrueDbar       // This particle is a true Dbar
+  SelectedD = 0,    // This particle is selected as a D
+  SelectedDbar,     // This particle is selected as a Dbar
+  TrueD,            // This particle is a true D
+  TrueDbar          // This particle is a true Dbar
+};
+
+enum DMesonType {
+  DefaultD = 0,   // Default value
+  SignalD,        // This particle is a signal D
+  ReflectedD,     // This particle is a reflected D
+  BkgD            // This particle is background of D
+};
+
+enum DBarMesonType {
+  DefaultDBar = 0,   // Default value
+  SignalDBar,        // This particle is a signal Dbar
+  ReflectedDBar,     // This particle is a reflected Dbar
+  BkgDBar            // This particle is background of Dbar
+};
+
+enum PairTypeSel {
+  DD = 0,            // Analyse D0-D0 or DPlus-DPlus correlations
+  DDBar,             // Analyse D0-D0bar or DPlus-DMinus correlations
+  DBarDBar           // Analyse D0bar-D0bar or DMinus-DMinus correlations
 };
 } // namespace
 
@@ -76,25 +95,25 @@ const TString stringMCParticles = "MC gen - D,Dbar particles;";
 const TString stringMCReco = "MC reco - D,Dbar candidates ";
 
 // definition of vectors for standard ptbin and invariant mass configurables
-const int npTBinsCorrelations = 8;
-const double pTBinsCorrelations[npTBinsCorrelations + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 99.};
-auto vecPTBinsCorrelations = std::vector<double>{pTBinsCorrelations, pTBinsCorrelations + npTBinsCorrelations + 1};
-const double signalRegionInnerDefault[npTBinsCorrelations] = {1.810, 1.810, 1.810, 1.810, 1.810, 1.810, 1.810, 1.810};
-const double signalRegionOuterDefault[npTBinsCorrelations] = {1.922, 1.922, 1.922, 1.922, 1.922, 1.922, 1.922, 1.922};
-const double sidebandLeftInnerDefault[npTBinsCorrelations] = {1.642, 1.642, 1.642, 1.642, 1.642, 1.642, 1.642, 1.642};
-const double sidebandLeftOuterDefault[npTBinsCorrelations] = {1.754, 1.754, 1.754, 1.754, 1.754, 1.754, 1.754, 1.754};
-const double sidebandRightInnerDefault[npTBinsCorrelations] = {1.978, 1.978, 1.978, 1.978, 1.978, 1.978, 1.978, 1.978};
-const double sidebandRightOuterDefault[npTBinsCorrelations] = {2.090, 2.090, 2.090, 2.090, 2.090, 2.090, 2.090, 2.090};
-auto vecSignalRegionInner = std::vector<double>{signalRegionInnerDefault, signalRegionInnerDefault + npTBinsCorrelations};
-auto vecSignalRegionOuter = std::vector<double>{signalRegionOuterDefault, signalRegionOuterDefault + npTBinsCorrelations};
-auto vecSidebandLeftInner = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + npTBinsCorrelations};
-auto vecSidebandLeftOuter = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + npTBinsCorrelations};
-auto vecSidebandRightInner = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + npTBinsCorrelations};
-auto vecSidebandRightOuter = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + npTBinsCorrelations};
+const int nPtBinsCorrelations = 8;
+const double ptBinsCorrelations[nPtBinsCorrelations + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 99.};
+auto vecPtBinsCorrelations = std::vector<double>{ptBinsCorrelations, ptBinsCorrelations + nPtBinsCorrelations + 1};
+const double signalRegionInnerDefault[nPtBinsCorrelations] = {1.810, 1.810, 1.810, 1.810, 1.810, 1.810, 1.810, 1.810};
+const double signalRegionOuterDefault[nPtBinsCorrelations] = {1.922, 1.922, 1.922, 1.922, 1.922, 1.922, 1.922, 1.922};
+const double sidebandLeftInnerDefault[nPtBinsCorrelations] = {1.642, 1.642, 1.642, 1.642, 1.642, 1.642, 1.642, 1.642};
+const double sidebandLeftOuterDefault[nPtBinsCorrelations] = {1.754, 1.754, 1.754, 1.754, 1.754, 1.754, 1.754, 1.754};
+const double sidebandRightInnerDefault[nPtBinsCorrelations] = {1.978, 1.978, 1.978, 1.978, 1.978, 1.978, 1.978, 1.978};
+const double sidebandRightOuterDefault[nPtBinsCorrelations] = {2.090, 2.090, 2.090, 2.090, 2.090, 2.090, 2.090, 2.090};
+auto vecSignalRegionInner = std::vector<double>{signalRegionInnerDefault, signalRegionInnerDefault + nPtBinsCorrelations};
+auto vecSignalRegionOuter = std::vector<double>{signalRegionOuterDefault, signalRegionOuterDefault + nPtBinsCorrelations};
+auto vecSidebandLeftInner = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + nPtBinsCorrelations};
+auto vecSidebandLeftOuter = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + nPtBinsCorrelations};
+auto vecSidebandRightInner = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + nPtBinsCorrelations};
+auto vecSidebandRightOuter = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + nPtBinsCorrelations};
 
 struct HfTaskCorrelationDMesonPairs {
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_d0_to_pi_k (i.e. the mass pT bins), but can be redefined via json files
-  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{vecPTBinsCorrelations}, "pT bin limits for correlation plots"};
+  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{vecPtBinsCorrelations}, "pT bin limits for correlation plots"};
   // signal and sideband region edges, to be defined via json file (initialised to empty)
   Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{vecSignalRegionInner}, "Inner values of signal region vs pT"};
   Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{vecSignalRegionOuter}, "Outer values of signal region vs pT"};
@@ -102,10 +121,10 @@ struct HfTaskCorrelationDMesonPairs {
   Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", std::vector<double>{vecSidebandLeftOuter}, "Outer values of left sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{vecSidebandRightInner}, "Inner values of right sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{vecSidebandRightOuter}, "Outer values of right sideband vs pT"};
-  Configurable<int> pairType{"pairType", 0, "Pair type: 0 = D0D0, 1=D0D0bar, 2 = D0barD0bar"};
+  Configurable<int> pairType{"pairType", 0, "Pair type: 0 = DD, 1=DDbar, 2 = DbarDbar"};
 
   // HistoTypes
-  HistogramConfigSpec hTHnMass2DCorrPairs{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {10, 0., 10.}, {10, 0., 10.}}};                                                  // note: axes 3 and 4 (the pT) are updated in the init();
+  HistogramConfigSpec hTHnMass2DCorrPairs{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {10, 0., 10.}, {10, 0., 10.}}}; // note: axes 3 and 4 (the pT) are updated in the init();
   HistogramConfigSpec hTHnCorrel2DVsPt{HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {120, -6., 6.}, {10, 0., 10.}, {10, 0., 10.}}}; // note: axes 3 and 4 (the pT) are updated in the init()
   HistogramConfigSpec hTH1Y{HistType::kTH1F, {{200, -10., 10.}}};
   HistogramConfigSpec hTH1DeltaPtDDbar{HistType::kTH1F, {{144, -36., 36.}}};
@@ -256,13 +275,13 @@ struct HfTaskCorrelationDMesonPairs {
   uint getDMesonType(uint const& candidateType)
   {
     if (TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueD) && !TESTBIT(candidateType, TrueDbar)) { // Signal
-      return 1;
+      return SignalD;
     } else if (TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueDbar)) { // Reflected
-      return 2;
+      return ReflectedD;
     } else if (TESTBIT(candidateType, SelectedD) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) { // Background
-      return 3;
+      return BkgD;
     } else {
-      return 0;
+      return DefaultD;
     }
   }
 
@@ -270,20 +289,20 @@ struct HfTaskCorrelationDMesonPairs {
   uint getDMesonBarType(uint const& candidateType)
   {
     if (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueDbar) && !TESTBIT(candidateType, TrueD)) { // Signal
-      return 1;
+      return SignalDBar;
     } else if (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueD)) { // Reflected
-      return 2;
+      return ReflectedDBar;
     } else if (TESTBIT(candidateType, SelectedDbar) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) { // Background
-      return 3;
+      return BkgDBar;
     } else {
-      return 0;
+      return DefaultDBar;
     }
   }
 
   // Fill Mass correlation histograms
   void fillMassCorrHists(std::shared_ptr<THnSparse> hMassCorrArray[3][3], uint const& candLabel1, uint const& candLabel2, double const& massCand1, double const& massCand2, double const& ptCand1, double const& ptCand2)
   {
-    if (candLabel1 != 0 && candLabel2 != 0) {
+    if (candLabel1 != 0 && candLabel2 != 0) { 
       hMassCorrArray[candLabel1 - 1][candLabel2 - 1]->Fill(massCand1, massCand2, ptCand1, ptCand2);
     }
   }
@@ -291,7 +310,7 @@ struct HfTaskCorrelationDMesonPairs {
   // Fill angular correlation histograms
   void fillAngularCorrelHists(std::shared_ptr<THnSparse> hCorrelArray[3][3], uint const& candLabel1, uint const& candLabel2, double const& deltaPhi, double const& deltaEta, double const& ptCand1, double const& ptCand2)
   {
-    if (candLabel1 != 0 && candLabel2 != 0) {
+    if (candLabel1 != 0 && candLabel2 != 0) { 
       hCorrelArray[candLabel1 - 1][candLabel2 - 1]->Fill(deltaPhi, deltaEta, ptCand1, ptCand2);
     }
   }
@@ -342,8 +361,7 @@ struct HfTaskCorrelationDMesonPairs {
       bool leftSidebandCand2 = massCand2 > sidebandLeftInner->at(pTBinCand2) && massCand2 < sidebandLeftOuter->at(pTBinCand2);
       bool rightSidebandCand2 = massCand2 > sidebandRightInner->at(pTBinCand2) && massCand2 < sidebandRightOuter->at(pTBinCand2);
 
-      if ((leftSidebandCand1 && leftSidebandCand2) || (leftSidebandCand1 && rightSidebandCand2) ||
-          (rightSidebandCand1 && leftSidebandCand2) || (rightSidebandCand1 && rightSidebandCand2)) {
+      if ((leftSidebandCand1 || rightSidebandCand1) && (leftSidebandCand2 || rightSidebandCand2)) {
         // in sideband region
         registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptCand1, ptCand2);
         registry.fill(HIST("hCorrel2DPtIntSidebands"), deltaPhi, deltaEta);
@@ -362,17 +380,17 @@ struct HfTaskCorrelationDMesonPairs {
   {
     // Array definitions to later be used to fill histograms
     std::shared_ptr<THnSparse> hMassCorrArray[3][3] = {{registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigBkg"))},
-                                                       {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefBkg"))},
-                                                       {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgBkg"))}};
-
+                        {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefBkg"))},
+                        {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgBkg"))}};
+    
     std::shared_ptr<THnSparse> hCorrelSignalArray[3][3] = {{registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecSigSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecSigRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecSigBkg"))},
-                                                           {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefBkg"))},
-                                                           {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgBkg"))}};
+                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefBkg"))},
+                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgBkg"))}};
 
     std::shared_ptr<THnSparse> hCorrelSidebandsArray[3][3] = {{registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigBkg"))},
-                                                              {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefBkg"))},
-                                                              {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgBkg"))}};
-
+                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefBkg"))},
+                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgBkg"))}};
+    
     for (const auto& pairEntry : pairEntries) {
       if (pairEntry.dataType() != 1) { // Assure that we only analyse Mc reco elements
         continue;
@@ -400,13 +418,13 @@ struct HfTaskCorrelationDMesonPairs {
 
       // fill 2D invariant mass plots
       switch (pairType) {
-        case 0: // D0 D0
+        case DD: // D0 D0
           fillMassCorrHists(hMassCorrArray, dMesonCand1, dMesonCand2, massCand1, massCand2, ptCand1, ptCand2);
           break;
-        case 1: // D0 D0bar
+        case DDBar: // D0 D0bar
           fillMassCorrHists(hMassCorrArray, dMesonCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2);
           break;
-        case 2: // D0bar D0bar
+        case DBarDBar: // D0bar D0bar
           fillMassCorrHists(hMassCorrArray, dMesonBarCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2);
           break;
       }
@@ -428,13 +446,13 @@ struct HfTaskCorrelationDMesonPairs {
 
         // fill 2D angular correlations plots
         switch (pairType) {
-          case 0: // D0 D0
+          case DD: // D0 D0
             fillAngularCorrelHists(hCorrelSignalArray, dMesonCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
-          case 1: // D0 D0bar
+          case DDBar: // D0 D0bar
             fillAngularCorrelHists(hCorrelSignalArray, dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
-          case 2: // D0bar D0bar
+          case DBarDBar: // D0bar D0bar
             fillAngularCorrelHists(hCorrelSignalArray, dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
         }
@@ -445,8 +463,7 @@ struct HfTaskCorrelationDMesonPairs {
       bool leftSidebandCand2 = massCand2 > sidebandLeftInner->at(pTBinCand2) && massCand2 < sidebandLeftOuter->at(pTBinCand2);
       bool rightSidebandCand2 = massCand2 > sidebandRightInner->at(pTBinCand2) && massCand2 < sidebandRightOuter->at(pTBinCand2);
 
-      if ((leftSidebandCand1 && leftSidebandCand2) || (leftSidebandCand1 && rightSidebandCand2) ||
-          (rightSidebandCand1 && leftSidebandCand2) || (rightSidebandCand1 && rightSidebandCand2)) {
+      if ((leftSidebandCand1 || rightSidebandCand1) && (leftSidebandCand2 || rightSidebandCand2)) {
         // in sideband region
         registry.fill(HIST("hCorrel2DPtIntSidebandsMCRec"), deltaPhi, deltaEta);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsMCRec"), deltaEta);
@@ -456,13 +473,13 @@ struct HfTaskCorrelationDMesonPairs {
 
         // fill 2D angular correlations plots
         switch (pairType) {
-          case 0: // D0 D0
+          case DD: // D0 D0
             fillAngularCorrelHists(hCorrelSidebandsArray, dMesonCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
-          case 1: // D0 D0bar
+          case DDBar: // D0 D0bar
             fillAngularCorrelHists(hCorrelSidebandsArray, dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
-          case 2: // D0bar D0bar
+          case DBarDBar: // D0bar D0bar
             fillAngularCorrelHists(hCorrelSidebandsArray, dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
         }

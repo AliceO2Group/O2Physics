@@ -39,13 +39,12 @@ double getDeltaPhi(double phiD, double phiDbar)
   return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
 }
 
-namespace
-{
+namespace{
 enum CandidateTypeSel {
-  SelectedD = 0, // This particle is selected as a D
-  SelectedDbar,  // This particle is selected as a Dbar
-  TrueD,         // This particle is a true D
-  TrueDbar       // This particle is a true Dbar
+  SelectedD = 0,    // This particle is selected as a D
+  SelectedDbar,     // This particle is selected as a Dbar
+  TrueD,            // This particle is a true D
+  TrueDbar          // This particle is a true Dbar
 };
 } // namespace
 
@@ -82,15 +81,15 @@ struct HfCorrelatorDMesonPairs {
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<int> selectionFlagDplus{"selectionFlagDPlus", 1, "Selection Flag for DPlus"};
   // Kinematics
-  Configurable<double> etaCutMax{"etaCutMax", 4.0, "max. eta accepted"};
-  Configurable<double> etaCutMin{"etaCutMin", -4.0, "min. eta accepted"};
-  Configurable<double> dcaXYCut{"dcaXYCut", 0.0025, "cut in dcaXY"};
-  Configurable<double> dcaZCut{"dcaZCut", 0.0025, "cut in dcaZ"};
+  Configurable<float> etaCandMax{"etaCandMax", 4.0, "max. eta accepted"};
+  Configurable<float> etaCandMin{"etaCandMin", -4.0, "min. eta accepted"};
+  Configurable<float> dcaXYMax{"dcaXYMax", 0.0025, "max. dcaXY accepted"};
+  Configurable<float> dcaZMax{"dcaZMax", 0.0025, "max. dcaZ accepted"};
 
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
-  Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
-  Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
+  Configurable<float> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<float> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
+  Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
+  Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots"};
 
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
@@ -151,10 +150,10 @@ struct HfCorrelatorDMesonPairs {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
       for (const auto& track : tracks) {
-        if (track.eta() < etaCutMin || track.eta() > etaCutMax) {
+        if (track.eta() < etaCandMin || track.eta() > etaCandMax) {
           continue;
         }
-        if (std::abs(track.dcaXY()) > dcaXYCut || std::abs(track.dcaZ()) > dcaZCut) {
+        if (std::abs(track.dcaXY()) > dcaXYMax || std::abs(track.dcaZ()) > dcaZMax) {
           continue;
         }
         nTracks++;
@@ -173,7 +172,7 @@ struct HfCorrelatorDMesonPairs {
   {
     // check decay channel flag for candidate
     if constexpr (isD0) {
-      if (!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
+      if(!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
         return false;
       }
       if (yCandMax >= 0. && std::abs(candidate.y(RecoDecay::getMassPDG(pdg::Code::kD0))) > yCandMax) {
@@ -189,9 +188,8 @@ struct HfCorrelatorDMesonPairs {
     }
     if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
       return false;
-    } else {
-      return true;
     }
+    return true;
   }
 
   // Returns false if the candidate does not pass cuts on pdgCode, y max, and pt min. Used for MC gen.
@@ -207,9 +205,8 @@ struct HfCorrelatorDMesonPairs {
     }
     if (ptCandMin >= 0. && particle.pt() < ptCandMin) {
       return false;
-    } else {
-      return true;
     }
+    return true;
   }
 
   // Fills histograms with basic kinematic info.
@@ -357,7 +354,7 @@ struct HfCorrelatorDMesonPairs {
                               originGen2,
                               matchedGen1,
                               matchedGen2);
-          // If both particles are DPlus, fill DPlusPair table
+        // If both particles are DPlus, fill DPlusPair table
         } else if (std::abs(particle1.pdgCode()) == pdg::Code::kDPlus && std::abs(particle2.pdgCode()) == pdg::Code::kDPlus) {
           entryDPlusPair(getDeltaPhi(particle2.phi(), particle1.phi()),
                          particle2.eta() - particle1.eta(),
@@ -415,8 +412,8 @@ struct HfCorrelatorDMesonPairs {
                     candidateType1,
                     candidateType2,
                     0);
-      } // end inner loop (Cand2)
-    }   // end outer loop (Cand1)
+      }   // end inner loop (Cand2)
+    }     // end outer loop (Cand1)
   }
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processDataD0, "Process data D0", true);
 
@@ -541,8 +538,8 @@ struct HfCorrelatorDMesonPairs {
                        candidateType1,
                        candidateType2,
                        0);
-      } // end inner loop (cand2)
-    }   // end outer loop (cand1)
+      }   // end inner loop (cand2)
+    }     // end outer loop (cand1)
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processDataDPlus, "Process Data DPlus", false);
@@ -615,8 +612,8 @@ struct HfCorrelatorDMesonPairs {
                                origin2,
                                matchedRec1,
                                matchedRec2);
-      } // end inner loop (cand2)
-    }   // end outer loop (cand1)
+      }   // end inner loop (cand2)
+    }     // end outer loop (cand1)
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcRecDPlus, "Process DPlus Mc Reco", false);

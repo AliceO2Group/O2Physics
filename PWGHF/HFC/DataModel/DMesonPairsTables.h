@@ -24,6 +24,7 @@ namespace o2::aod
 // definition of columns and tables for D(bar) Meson correlation pair studies
 namespace hf_correlation_d_meson_pair
 {
+// Definition of columns with data info. Column DataType is used to distinguish data, MC reco and MC gen tables.
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
 DECLARE_SOA_COLUMN(PtCand1, ptCand1, float);
@@ -32,13 +33,14 @@ DECLARE_SOA_COLUMN(YCand1, yCand1, float);
 DECLARE_SOA_COLUMN(YCand2, yCand2, float);
 DECLARE_SOA_COLUMN(MCand1, mCand1, float);
 DECLARE_SOA_COLUMN(MCand2, mCand2, float);
-DECLARE_SOA_COLUMN(CandidateType1, candidateType1, int);
-DECLARE_SOA_COLUMN(CandidateType2, candidateType2, int);
+DECLARE_SOA_COLUMN(CandidateType1, candidateType1, uint8_t);
+DECLARE_SOA_COLUMN(CandidateType2, candidateType2, uint8_t);
+DECLARE_SOA_COLUMN(DataType, dataType, uint8_t); // 0: data, 1: MC reco, 2: MC gen
+// Definition of columns with MC info
 DECLARE_SOA_COLUMN(Origin1, origin1, uint8_t);
 DECLARE_SOA_COLUMN(Origin2, origin2, uint8_t);
 DECLARE_SOA_COLUMN(MatchedMc1, matchedMc1, uint8_t);
 DECLARE_SOA_COLUMN(MatchedMc2, matchedMc2, uint8_t);
-DECLARE_SOA_COLUMN(DataType, dataType, uint8_t); // 0: data, 1: MC reco, 2: MC gen
 } // namespace hf_correlation_d_meson_pair
 
 // Definition of the D meson pair table. Contains the info needed at Data level.
