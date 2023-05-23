@@ -535,6 +535,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtV0Neg, ptV0Neg, //!
                            [](float px, float py) { return RecoDecay::pt(px, py); });
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
 DECLARE_SOA_COLUMN(V0X, v0x, float);
 DECLARE_SOA_COLUMN(V0Y, v0y, float);
 DECLARE_SOA_COLUMN(V0Z, v0z, float);
@@ -614,11 +616,13 @@ using HfCandCascade = HfCandCascExt;
 
 // table with results of reconstruction level MC matching for Cascade
 DECLARE_SOA_TABLE(HfCandCascadeMcRec, "AOD", "HFCANDCASCMCREC", //!
-                  hf_cand_casc::FlagMcMatchRec);
+                  hf_cand_casc::FlagMcMatchRec,
+                  hf_cand_casc::OriginMcRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandCascadeMcGen, "AOD", "HFCANDCASCMCGEN", //!
-                  hf_cand_casc::FlagMcMatchGen);
+                  hf_cand_casc::FlagMcMatchGen,
+                  hf_cand_casc::OriginMcGen);
 
 // specific BPlus candidate properties
 namespace hf_cand_bplus
