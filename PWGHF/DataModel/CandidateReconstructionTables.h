@@ -1514,6 +1514,9 @@ DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, float);
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
+DECLARE_SOA_COLUMN(DebugGenCharmBar, debugGenCharmBar, int8_t);
+DECLARE_SOA_COLUMN(DebugGenXi, debugGennXi, int8_t);
+DECLARE_SOA_COLUMN(DebugGenLambda, debugGenLambda, int8_t);
 
 // mapping of decay types
 enum DecayType { DecayToXiPi = 0,
@@ -1562,7 +1565,7 @@ DECLARE_SOA_TABLE(HfToXiPiMCRec, "AOD", "HFTOXIPIMCREC", //!
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfToXiPiMCGen, "AOD", "HFTOXIPIMCGEN", //!
-                  hf_cand_toxipi::FlagMcMatchGen);
+                  hf_cand_toxipi::FlagMcMatchGen, hf_cand_toxipi::DebugGenCharmBar, hf_cand_toxipi::DebugGenXi, hf_cand_toxipi::DebugGenLambda);
 
 // specific chic candidate properties
 namespace hf_cand_chic
