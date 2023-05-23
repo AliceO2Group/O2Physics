@@ -431,6 +431,9 @@ struct HfCandidateCreatorToXiPiMc {
     int8_t flag = 0;
     // int8_t origin = 0; //to be used for prompt/non prompt
     int8_t debug = 0;
+    int8_t debugGenOmegac = 0;
+    int8_t debugGenXi = 0;
+    int8_t debugGenLambda = 0;
 
     int pdgCodeOmegac0 = pdg::Code::kOmegaC0; // 4332
     int pdgCodeXic0 = pdg::Code::kXiCZero;    // 4132
@@ -529,13 +532,16 @@ struct HfCandidateCreatorToXiPiMc {
       if (matchOmegacMc) {
         //  Omegac → Xi pi
         if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true)) {
+          debugGenOmegac = 1;
           // Match Xi -> lambda pi
           auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking cascade → lambda pi");
           if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+            debugGenXi = 1;
             // lambda -> p pi
             auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
             if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign)) {
+              debugGenLambda = 1;
               flag = sign * (1 << DecayType::OmegaczeroToXiPi);
             }
           }
@@ -558,7 +564,7 @@ struct HfCandidateCreatorToXiPiMc {
       }
 
       // rowMCMatchGen(flag, origin);
-      rowMCMatchGen(flag);
+      rowMCMatchGen(flag, debugGenOmegac, debugGenXi, debugGenLambda);
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processMc, "Process MC", false);
