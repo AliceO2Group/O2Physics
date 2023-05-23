@@ -172,7 +172,7 @@ struct HfCorrelatorDMesonPairs {
   {
     // check decay channel flag for candidate
     if constexpr (isD0) {
-      if(!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
+      if (!(TESTBIT(candidate.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
         return false;
       }
       if (yCandMax >= 0. && std::abs(candidate.y(RecoDecay::getMassPDG(pdg::Code::kD0))) > yCandMax) {
