@@ -328,7 +328,7 @@ struct JetTriggerQA {
     setTrigger(TriggerType_t::kMinBias);
 
     // fill event counters and correlation matrix without constraint on the EMCAL trigger flag
-    if (collision.alias()[kTVXinEMC]) {
+    if (collision.alias_bit(kTVXinEMC)) {
       fillEventSelectionCounter(1);
       setTrigger(TriggerType_t::kEmcal);
     }
@@ -397,7 +397,7 @@ struct JetTriggerQA {
     // Discard collisions without EMCAL if it is not respecifically required to discard the the EMCAL flag
     // If ignore is true, we don't check for the flag and accept all events
     if (!b_IgnoreEmcalFlag) {
-      if (!collision.alias()[kTVXinEMC]) {
+      if (!collision.alias_bit(kTVXinEMC)) {
         return; // Only consider events where EMCAL is live
       }
     }

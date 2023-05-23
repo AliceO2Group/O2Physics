@@ -70,7 +70,7 @@ struct NucleiSpectraReferenceTask {
     // collision process loop
     //
     bool keepEvent = kFALSE;
-    if (!collision.alias()[kINT7]) {
+    if (!collision.alias_bit(kINT7)) {
       return;
     }
     if (!collision.sel7()) {

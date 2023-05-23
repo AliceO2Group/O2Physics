@@ -81,8 +81,6 @@ struct qaKFParticle {
   /// Histogram Configurables
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 24., 36., 50.0}, ""};
 
-  /// option to select good events
-  Configurable<bool> eventSelection{"eventSelection", true, "select good events"}; // currently only sel8 is defined for run3
   /// options to select only specific tracks
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
 
@@ -142,6 +140,11 @@ struct qaKFParticle {
                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+
+  Filter trackFilterEta = (nabs(aod::track::eta) < 0.8f);
+  Filter trackFilterPTMin = (aod::track::pt > d_pTMin);
+
+  Filter eventFilter = (o2::aod::evsel::sel8 == true);
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
   using BigTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra>;
@@ -326,43 +329,10 @@ struct qaKFParticle {
     histos.print();
   } /// End init
 
-  /// Function to select collisions
-  template <typename T>
-  bool isSelectedCollision(const T& collision)
-  {
-    /// Trigger selection
-    if (eventSelection && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
-      return false;
-    }
-    /// Reject collisions with negative covariance matrix elemts on the digonal
-    if (collision.covXX() < 0. || collision.covYY() < 0. || collision.covZZ() < 0.) {
-      histos.fill(HIST("DZeroCandTopo/Selections"), 2.f);
-      return false;
-    }
-    return true;
-  }
-
   /// Function for single track selection
   template <typename T>
   bool isSelectedTracks(const T& track1, const T& track2)
   {
-    if (track1.p() < d_pTMin) {
-      histos.fill(HIST("DZeroCandTopo/Selections"), 4.f);
-      return false;
-    }
-    if (track2.p() < d_pTMin) {
-      histos.fill(HIST("DZeroCandTopo/Selections"), 4.f);
-      return false;
-    }
-    /// Eta range
-    if (abs(track1.eta()) > d_etaRange) {
-      histos.fill(HIST("DZeroCandTopo/Selections"), 5.f);
-      return false;
-    }
-    if (abs(track2.eta()) > d_etaRange) {
-      histos.fill(HIST("DZeroCandTopo/Selections"), 5.f);
-      return false;
-    }
     /// DCA XY of the daughter tracks to the primaty vertex
     if (track1.dcaXY() > d_dcaXYTrackPV) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 6.f);
@@ -679,7 +649,7 @@ struct qaKFParticle {
   }
 
   /// Process function for data
-  void processData(CollisionTableData::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
+  void processData(soa::Filtered<CollisionTableData>::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
@@ -692,10 +662,6 @@ struct qaKFParticle {
     }
 
     histos.fill(HIST("DZeroCandTopo/Selections"), 1.f);
-    /// Apply event selection
-    if (!isSelectedCollision(collision)) {
-      return;
-    }
     /// set KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
     KFParticle KFPV(kfpVertex);
@@ -885,7 +851,7 @@ struct qaKFParticle {
   using CollisionTableDataMult = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using TrackTableMC = soa::Join<TrackTableData, aod::McTrackLabels>;
   // Preslice<o2::aod::McCollisionLabels> perMcCollision = o2::aod::mccollisionlabel::mcCollisionId;
-  void processMC(CollisionTableMC::iterator const& collision, CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions, aod::BCsWithTimestamps const&)
+  void processMC(soa::Filtered<CollisionTableMC>::iterator const& collision, soa::Filtered<CollisionTableMC> const& collisions, soa::Filtered<TrackTableMC> const& tracks, aod::McParticles const& mcParticles, soa::Filtered<aod::McCollisions> const& mcCollisions, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
@@ -901,10 +867,6 @@ struct qaKFParticle {
       return;
     }
     histos.fill(HIST("DZeroCandTopo/Selections"), 1.f);
-    /// Apply event selection
-    if (!isSelectedCollision(collision)) {
-      return;
-    }
     /// set KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
     KFParticle KFPV(kfpVertex);

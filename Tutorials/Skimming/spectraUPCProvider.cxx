@@ -43,7 +43,7 @@ struct UPCSpectraProviderTask {
     if (checkFDD) {
       return;
     }
-    if (!collision.alias()[kCUP9]) {
+    if (!collision.alias_bit(kCUP9)) {
       return;
     }
     if (tracks.size() != 2) {

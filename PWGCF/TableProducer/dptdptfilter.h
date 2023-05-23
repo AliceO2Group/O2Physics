@@ -285,7 +285,7 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
         case kMB:
           switch (fDataType) {
             case kData:
-              if (collision.alias()[kINT7]) {
+              if (collision.alias_bit(kINT7)) {
                 if (collision.sel7()) {
                   trigsel = true;
                 }
