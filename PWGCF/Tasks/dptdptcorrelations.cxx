@@ -9,33 +9,33 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/Core/TrackSelection.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/DataModel/DptDptFiltered.h"
-#include "PWGCF/TableProducer/dptdptfilter.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/runDataProcessing.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include <CCDB/BasicCCDBManager.h>
-#include <TROOT.h>
 #include <TDatabasePDG.h>
-#include <TParameter.h>
-#include <TList.h>
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <TList.h>
+#include <TParameter.h>
 #include <TProfile3D.h>
-
+#include <TROOT.h>
 #include <cmath>
 #include <ctime>
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/Core/PairCuts.h"
+#include "PWGCF/DataModel/DptDptFiltered.h"
+#include "PWGCF/TableProducer/dptdptfilter.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,11 +49,11 @@ namespace correlationstask
 {
 using namespace o2::analysis::dptdptfilter;
 float phibinshift = 0.5;
-float etabinwidth = (etaup - etalow) / float(etabins);
-float phibinwidth = (phiup - philow) / float(phibins);
+float etabinwidth = (etaup - etalow) / static_cast<float>(etabins);
+float phibinwidth = (phiup - philow) / static_cast<float>(phibins);
 int deltaetabins = etabins * 2 - 1;
 float deltaetalow = etalow - etaup, deltaetaup = etaup - etalow;
-float deltaetabinwidth = (deltaetaup - deltaetalow) / float(deltaetabins);
+float deltaetabinwidth = (deltaetaup - deltaetalow) / static_cast<float>(deltaetabins);
 int deltaphibins = phibins;
 float deltaphibinwidth = constants::math::TwoPI / deltaphibins;
 float deltaphilow = 0.0 - deltaphibinwidth / 2.0;
@@ -61,7 +61,6 @@ float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
 bool processpairs = false;
 bool processmixedevents = false;
-std::string fTaskConfigurationString = "PendingToConfigure";
 
 PairCuts fPairCuts;              // pair suppression engine
 bool fUseConversionCuts = false; // suppress resonances and conversions
@@ -132,7 +131,7 @@ struct DptDptCorrelationsTask {
     {
       using namespace correlationstask;
       using namespace o2::analysis::dptdptfilter;
-      if (not(phi < phiup)) {
+      if (!(phi < phiup)) {
         return phi - constants::math::TwoPI;
       } else {
         return phi;
@@ -157,10 +156,10 @@ struct DptDptCorrelationsTask {
       using namespace correlationstask;
       using namespace o2::analysis::dptdptfilter;
 
-      int etaix = int((t.eta() - etalow) / etabinwidth);
+      int etaix = static_cast<int>((t.eta() - etalow) / etabinwidth);
       /* consider a potential phi origin shift */
       float phi = GetShiftedPhi(t.phi());
-      int phiix = int((phi - philow) / phibinwidth);
+      int phiix = static_cast<int>((phi - philow) / phibinwidth);
       return etaix * phibins + phiix;
     }
 
@@ -180,14 +179,14 @@ struct DptDptCorrelationsTask {
       using namespace o2::analysis::dptdptfilter;
 
       /* rule: ix are always zero based while bins are always one based */
-      int etaix_1 = int((t1.eta() - etalow) / etabinwidth);
+      int etaix_1 = static_cast<int>((t1.eta() - etalow) / etabinwidth);
       /* consider a potential phi origin shift */
       float phi = GetShiftedPhi(t1.phi());
-      int phiix_1 = int((phi - philow) / phibinwidth);
-      int etaix_2 = int((t2.eta() - etalow) / etabinwidth);
+      int phiix_1 = static_cast<int>((phi - philow) / phibinwidth);
+      int etaix_2 = static_cast<int>((t2.eta() - etalow) / etabinwidth);
       /* consider a potential phi origin shift */
       phi = GetShiftedPhi(t2.phi());
-      int phiix_2 = int((phi - philow) / phibinwidth);
+      int phiix_2 = static_cast<int>((phi - philow) / phibinwidth);
 
       int deltaeta_ix = etaix_1 - etaix_2 + etabins - 1;
       int deltaphi_ix = phiix_1 - phiix_2;
@@ -335,7 +334,7 @@ struct DptDptCorrelationsTask {
 
           /* get the global bin for filling the differential histograms */
           int globalbin = GetDEtaDPhiGlobalIndex(track1, track2);
-          if ((fUseConversionCuts and fPairCuts.conversionCuts(track1, track2)) or (fUseTwoTrackCut and fPairCuts.twoTrackCut(track1, track2, bfield))) {
+          if ((fUseConversionCuts && fPairCuts.conversionCuts(track1, track2)) || (fUseTwoTrackCut && fPairCuts.twoTrackCut(track1, track2, bfield))) {
             /* suppress the pair */
             fhSupN1N1_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, corr);
             fhSupPt1Pt1_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
@@ -444,12 +443,40 @@ struct DptDptCorrelationsTask {
           /* we don't want the Sumw2 structure being created here */
           bool defSumw2 = TH1::GetDefaultSumw2();
           TH1::SetDefaultSumw2(false);
-          fhN1_vsZEtaPhiPt[i] = new TH3F(TString::Format("n1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
-                                         TString::Format("#LT n_{1} #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)", tname[i].c_str(), tname[i].c_str(), tname[i].c_str()).Data(),
-                                         zvtxbins, zvtxlow, zvtxup, etabins * phibins, 0.0, double(etabins * phibins), ptbins, ptlow, ptup);
-          fhSum1Pt_vsZEtaPhiPt[i] = new TH3F(TString::Format("sumPt1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
-                                             TString::Format("#LT #Sigma p_{t,%s}#GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)", tname[i].c_str(), tname[i].c_str(), tname[i].c_str(), tname[i].c_str()).Data(),
-                                             zvtxbins, zvtxlow, zvtxup, etabins * phibins, 0.0, double(etabins * phibins), ptbins, ptlow, ptup);
+          fhN1_vsZEtaPhiPt[i] = new TH3F(
+            TString::Format("n1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
+            TString::Format("#LT n_{1} #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
+                            tname[i].c_str(),
+                            tname[i].c_str(),
+                            tname[i].c_str())
+              .Data(),
+            zvtxbins,
+            zvtxlow,
+            zvtxup,
+            etabins * phibins,
+            0.0,
+            static_cast<double>(etabins * phibins),
+            ptbins,
+            ptlow,
+            ptup);
+          fhSum1Pt_vsZEtaPhiPt[i] = new TH3F(
+            TString::Format("sumPt1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
+            TString::Format(
+              "#LT #Sigma p_{t,%s}#GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
+              tname[i].c_str(),
+              tname[i].c_str(),
+              tname[i].c_str(),
+              tname[i].c_str())
+              .Data(),
+            zvtxbins,
+            zvtxlow,
+            zvtxup,
+            etabins * phibins,
+            0.0,
+            static_cast<double>(etabins * phibins),
+            ptbins,
+            ptlow,
+            ptup);
           /* we return it back to previuos state */
           TH1::SetDefaultSumw2(defSumw2);
 
@@ -619,13 +646,13 @@ struct DptDptCorrelationsTask {
     processmixedevents = cfgProcessME.value;
     loadfromccdb = cfginputfile.cfgCCDBPathName->length() > 0;
     /* update the potential binning change */
-    etabinwidth = (etaup - etalow) / float(etabins);
-    phibinwidth = (phiup - philow) / float(phibins);
+    etabinwidth = (etaup - etalow) / static_cast<float>(etabins);
+    phibinwidth = (phiup - philow) / static_cast<float>(phibins);
 
     /* the differential bining */
     deltaetabins = etabins * 2 - 1;
     deltaetalow = etalow - etaup, deltaetaup = etaup - etalow;
-    deltaetabinwidth = (deltaetaup - deltaetalow) / float(deltaetabins);
+    deltaetabinwidth = (deltaetaup - deltaetalow) / static_cast<float>(deltaetabins);
     deltaphibins = phibins;
     deltaphibinwidth = constants::math::TwoPI / deltaphibins;
     deltaphilow = 0.0 - deltaphibinwidth / 2.0;
@@ -696,7 +723,7 @@ struct DptDptCorrelationsTask {
     }
     /* two-track cut and conversion suppression */
     fPairCuts.SetHistogramRegistry(nullptr); // not histogram registry for the time being, incompatible with TList when it is empty
-    if (processpairs and (cfgPairCut->get("Photon") > 0 or cfgPairCut->get("K0") > 0 or cfgPairCut->get("Lambda") > 0 or cfgPairCut->get("Phi") > 0 or cfgPairCut->get("Rho") > 0)) {
+    if (processpairs and (cfgPairCut->get("Photon") > 0 || cfgPairCut->get("K0") > 0 || cfgPairCut->get("Lambda") > 0 || cfgPairCut->get("Phi") > 0 || cfgPairCut->get("Rho") > 0)) {
       fPairCuts.SetPairCut(PairCuts::Photon, cfgPairCut->get("Photon"));
       fPairCuts.SetPairCut(PairCuts::K0, cfgPairCut->get("K0"));
       fPairCuts.SetPairCut(PairCuts::Lambda, cfgPairCut->get("Lambda"));
@@ -704,7 +731,7 @@ struct DptDptCorrelationsTask {
       fPairCuts.SetPairCut(PairCuts::Rho, cfgPairCut->get("Rho"));
       fUseConversionCuts = true;
     }
-    if (processpairs and (cfgTwoTrackCut > 0)) {
+    if (processpairs && (cfgTwoTrackCut > 0)) {
       fPairCuts.SetTwoTrackCuts(cfgTwoTrackCut, cfgTwoTrackCutMinRadius);
       fUseTwoTrackCut = true;
     }
@@ -741,7 +768,7 @@ struct DptDptCorrelationsTask {
     std::stringstream ss(ccdbdate);
     ss >> std::get_time(&cfgtm, "%Y%m%d");
     cfgtm.tm_hour = 12;
-    long timestamp = std::mktime(&cfgtm) * 1000;
+    int64_t timestamp = std::mktime(&cfgtm) * 1000;
 
     TList* lst = ccdb->getForTimeStamp<TList>(ccdbpath, timestamp);
     if (lst != nullptr) {
@@ -780,16 +807,43 @@ struct DptDptCorrelationsTask {
 
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
-    if (not(ixDCE < 0)) {
-      if (ccdblst != nullptr and not dataCE[ixDCE]->isCCDBstored()) {
-        dataCE[ixDCE]->storeTrackCorrections(std::vector<TH3*>{(TH3*)ccdblst->FindObject(TString::Format("correction_%02d-%02d_p1", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
-                                                               (TH3*)ccdblst->FindObject(TString::Format("correction_%02d-%02d_m1", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data())});
+    if (!(ixDCE < 0)) {
+      if (ccdblst != nullptr && !(dataCE[ixDCE]->isCCDBstored())) {
+        dataCE[ixDCE]->storeTrackCorrections(
+          std::vector<TH3*>{reinterpret_cast<TH3*>(ccdblst->FindObject(
+                              TString::Format("correction_%02d-%02d_p1",
+                                              static_cast<int>(fCentMultMin[ixDCE]),
+                                              static_cast<int>(fCentMultMax[ixDCE]))
+                                .Data())),
+                            reinterpret_cast<TH3*>(ccdblst->FindObject(
+                              TString::Format("correction_%02d-%02d_m1",
+                                              static_cast<int>(fCentMultMin[ixDCE]),
+                                              static_cast<int>(fCentMultMax[ixDCE]))
+                                .Data()))});
         if constexpr (gen) {
-          dataCE[ixDCE]->storePtAverages(std::vector<TH2*>{(TH2*)ccdblst->FindObject(TString::Format("trueptavgetaphi_%02d-%02d_p", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
-                                                           (TH2*)ccdblst->FindObject(TString::Format("trueptavgetaphi_%02d-%02d_m", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data())});
+          dataCE[ixDCE]->storePtAverages(
+            std::vector<TH2*>{reinterpret_cast<TH3*>(ccdblst->FindObject(
+                                TString::Format("trueptavgetaphi_%02d-%02d_p",
+                                                static_cast<int>(fCentMultMin[ixDCE]),
+                                                static_cast<int>(fCentMultMax[ixDCE]))
+                                  .Data())),
+                              reinterpret_cast<TH3*>(ccdblst->FindObject(
+                                TString::Format("trueptavgetaphi_%02d-%02d_m",
+                                                static_cast<int>(fCentMultMin[ixDCE]),
+                                                static_cast<int>(fCentMultMax[ixDCE]))
+                                  .Data()))});
         } else {
-          dataCE[ixDCE]->storePtAverages(std::vector<TH2*>{(TH2*)ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_p", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
-                                                           (TH2*)ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_m", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data())});
+          dataCE[ixDCE]->storePtAverages(
+            std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
+                                TString::Format("ptavgetaphi_%02d-%02d_p",
+                                                static_cast<int>(fCentMultMin[ixDCE]),
+                                                static_cast<int>(fCentMultMax[ixDCE]))
+                                  .Data())),
+                              reinterpret_cast<TH2*>(ccdblst->FindObject(
+                                TString::Format("ptavgetaphi_%02d-%02d_m",
+                                                static_cast<int>(fCentMultMin[ixDCE]),
+                                                static_cast<int>(fCentMultMax[ixDCE]))
+                                  .Data()))});
         }
       }
 
@@ -807,7 +861,7 @@ struct DptDptCorrelationsTask {
            ixDCE);
       int bfield = 0;
       if constexpr (!gen) {
-        bfield = (fUseConversionCuts or fUseTwoTrackCut) ? getMagneticField(timestamp) : 0;
+        bfield = (fUseConversionCuts || fUseTwoTrackCut) ? getMagneticField(timestamp) : 0;
       }
       dataCE[ixDCE]->processCollision<false>(tracks, tracks, collision.posZ(), collision.centmult(), bfield);
     }
@@ -826,16 +880,43 @@ struct DptDptCorrelationsTask {
 
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
-    if (not(ixDCE < 0)) {
-      if (ccdblst != nullptr and not dataCEME[ixDCE]->isCCDBstored()) {
-        dataCEME[ixDCE]->storeTrackCorrections(std::vector<TH3*>{(TH3*)ccdblst->FindObject(TString::Format("correction_%02d-%02d_p1", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
-                                                                 (TH3*)ccdblst->FindObject(TString::Format("correction_%02d-%02d_m1", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data())});
+    if (!(ixDCE < 0)) {
+      if (ccdblst != nullptr && !(dataCEME[ixDCE]->isCCDBstored())) {
+        dataCEME[ixDCE]->storeTrackCorrections(
+          std::vector<TH3*>{reinterpret_cast<TH3*>(ccdblst->FindObject(
+                              TString::Format("correction_%02d-%02d_p1",
+                                              static_cast<int>(fCentMultMin[ixDCE]),
+                                              static_cast<int>(fCentMultMax[ixDCE]))
+                                .Data())),
+                            reinterpret_cast<TH3*>(ccdblst->FindObject(
+                              TString::Format("correction_%02d-%02d_m1",
+                                              static_cast<int>(fCentMultMin[ixDCE]),
+                                              static_cast<int>(fCentMultMax[ixDCE]))
+                                .Data()))});
         if constexpr (gen) {
-          dataCEME[ixDCE]->storePtAverages(std::vector<TH2*>{(TH2*)ccdblst->FindObject(TString::Format("trueptavgetaphi_%02d-%02d_p", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
-                                                             (TH2*)ccdblst->FindObject(TString::Format("trueptavgetaphi_%02d-%02d_m", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data())});
+          dataCEME[ixDCE]->storePtAverages(
+            std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
+                                TString::Format("trueptavgetaphi_%02d-%02d_p",
+                                                static_cast<int>(fCentMultMin[ixDCE]),
+                                                static_cast<int>(fCentMultMax[ixDCE]))
+                                  .Data())),
+                              reinterpret_cast<TH2*>(ccdblst->FindObject(
+                                TString::Format("trueptavgetaphi_%02d-%02d_m",
+                                                static_cast<int>(fCentMultMin[ixDCE]),
+                                                static_cast<int>(fCentMultMax[ixDCE]))
+                                  .Data()))});
         } else {
-          dataCEME[ixDCE]->storePtAverages(std::vector<TH2*>{(TH2*)ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_p", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
-                                                             (TH2*)ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_m", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data())});
+          dataCEME[ixDCE]->storePtAverages(
+            std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
+                                TString::Format("ptavgetaphi_%02d-%02d_p",
+                                                static_cast<int>(fCentMultMin[ixDCE]),
+                                                static_cast<int>(fCentMultMax[ixDCE]))
+                                  .Data())),
+                              reinterpret_cast<TH2*>(ccdblst->FindObject(
+                                TString::Format("ptavgetaphi_%02d-%02d_m",
+                                                static_cast<int>(fCentMultMin[ixDCE]),
+                                                static_cast<int>(fCentMultMax[ixDCE]))
+                                  .Data()))});
         }
       }
 
@@ -855,7 +936,7 @@ struct DptDptCorrelationsTask {
            ixDCE);
       int bfield = 0;
       if constexpr (!gen) {
-        bfield = (fUseConversionCuts or fUseTwoTrackCut) ? getMagneticField(timestamp) : 0;
+        bfield = (fUseConversionCuts || fUseTwoTrackCut) ? getMagneticField(timestamp) : 0;
       }
       dataCEME[ixDCE]->processCollision<true>(tracks1, tracks2, collision.posZ(), collision.centmult(), bfield);
     }

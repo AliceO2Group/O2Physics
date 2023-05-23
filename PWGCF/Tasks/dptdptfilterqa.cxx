@@ -9,14 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
+#include <cmath>
+
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"
 #include "PWGCF/TableProducer/dptdptfilter.h"
-
-#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -101,7 +101,7 @@ struct DptDptFilterQA {
       if (!(track.trackacceptedid() < 0) && !(track.trackacceptedid() < 2)) {
         LOGF(fatal, "Task not prepared for identified particles");
       }
-      if (track.trackacceptedid() != 0 and track.trackacceptedid() != 1) {
+      if (track.trackacceptedid() != 0 && track.trackacceptedid() != 1) {
         ntracks_none++;
       }
       if (track.trackacceptedid() == 0) {

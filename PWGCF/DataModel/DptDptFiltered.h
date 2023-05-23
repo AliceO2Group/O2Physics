@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_DPTDPTFILTERED_H
-#define O2_ANALYSIS_DPTDPTFILTERED_H
+#ifndef PWGCF_DATAMODEL_DPTDPTFILTERED_H_
+#define PWGCF_DATAMODEL_DPTDPTFILTERED_H_
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -25,10 +25,10 @@ DECLARE_SOA_COLUMN(DptDptCFCollisionAccepted, collisionaccepted, uint8_t); //! I
 DECLARE_SOA_COLUMN(DptDptCFCollisionCentMult, centmult, float);            //! The centrality/multiplicity pecentile
 DECLARE_SOA_DYNAMIC_COLUMN(IsCollisionAccepted,                            //! Is the collision/event accepted
                            iscollisionaccepted,
-                           [](uint8_t _collisionaccepted) -> short { return _collisionaccepted; });
+                           [](uint8_t _collisionaccepted) -> uint8_t { return _collisionaccepted; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsGenCollisionAccepted, //! Is the generated collision/event accepted
                            isgencollisionaccepted,
-                           [](uint8_t _collisionaccepted) -> short { return _collisionaccepted; });
+                           [](uint8_t _collisionaccepted) -> uint8_t { return _collisionaccepted; });
 } // namespace dptdptfilter
 DECLARE_SOA_TABLE(DptDptCFAcceptedCollisions,
                   "AOD",
@@ -76,17 +76,17 @@ DECLARE_SOA_COLUMN(Eta, eta, float); //! The track pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float); //! The track azimuthal angle
 DECLARE_SOA_DYNAMIC_COLUMN(Sign,
                            sign, //! Charge: positive: 1, negative: -1
-                           [](int8_t trackacceptedid) -> short {
+                           [](int8_t trackacceptedid) -> int8_t {
                              return (trackacceptedid % 2 == 0
                                        ? 1
                                        : (trackacceptedid % 2 == 1 ? -1 : 0));
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(TrkID,
                            trkid, //! The track id
-                           [](int8_t trackacceptedid) -> short { return trackacceptedid; });
+                           [](int8_t trackacceptedid) -> int8_t { return trackacceptedid; });
 DECLARE_SOA_DYNAMIC_COLUMN(PartID,
                            partid, //! The generated particle id
-                           [](int8_t trackacceptedid) -> short { return trackacceptedid; });
+                           [](int8_t trackacceptedid) -> int8_t { return trackacceptedid; });
 } // namespace dptdptfilter
 DECLARE_SOA_TABLE(ScannedTracks, "AOD", "SCANNEDTRACKS", //! The reconstructed tracks filtered table
                   dptdptfilter::DptDptCFAcceptedCollisionId,
@@ -112,4 +112,4 @@ DECLARE_SOA_TABLE(DptDptCFGenTracksInfo, "AOD", "SCANDGENTRCKINF", //! The addit
 } // namespace aod
 } // namespace o2
 
-#endif // O2_ANALYSIS_DPTDPTFILTERED_H
+#endif // PWGCF_DATAMODEL_DPTDPTFILTERED_H_
