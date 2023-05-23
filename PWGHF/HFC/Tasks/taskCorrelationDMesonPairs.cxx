@@ -43,32 +43,33 @@ double getDeltaPhi(double phiD, double phiDbar)
   return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
 }
 
-namespace{
+namespace
+{
 enum CandidateTypeSel {
-  SelectedD = 0,    // This particle is selected as a D
-  SelectedDbar,     // This particle is selected as a Dbar
-  TrueD,            // This particle is a true D
-  TrueDbar          // This particle is a true Dbar
+  SelectedD = 0, // This particle is selected as a D
+  SelectedDbar,  // This particle is selected as a Dbar
+  TrueD,         // This particle is a true D
+  TrueDbar       // This particle is a true Dbar
 };
 
 enum DMesonType {
-  DefaultD = 0,   // Default value
-  SignalD,        // This particle is a signal D
-  ReflectedD,     // This particle is a reflected D
-  BkgD            // This particle is background of D
+  DefaultD = 0, // Default value
+  SignalD,      // This particle is a signal D
+  ReflectedD,   // This particle is a reflected D
+  BkgD          // This particle is background of D
 };
 
 enum DBarMesonType {
-  DefaultDBar = 0,   // Default value
-  SignalDBar,        // This particle is a signal Dbar
-  ReflectedDBar,     // This particle is a reflected Dbar
-  BkgDBar            // This particle is background of Dbar
+  DefaultDBar = 0, // Default value
+  SignalDBar,      // This particle is a signal Dbar
+  ReflectedDBar,   // This particle is a reflected Dbar
+  BkgDBar          // This particle is background of Dbar
 };
 
 enum PairTypeSel {
-  DD = 0,            // Analyse D0-D0 or DPlus-DPlus correlations
-  DDBar,             // Analyse D0-D0bar or DPlus-DMinus correlations
-  DBarDBar           // Analyse D0bar-D0bar or DMinus-DMinus correlations
+  DD = 0,  // Analyse D0-D0 or DPlus-DPlus correlations
+  DDBar,   // Analyse D0-D0bar or DPlus-DMinus correlations
+  DBarDBar // Analyse D0bar-D0bar or DMinus-DMinus correlations
 };
 } // namespace
 
@@ -124,7 +125,7 @@ struct HfTaskCorrelationDMesonPairs {
   Configurable<int> pairType{"pairType", 0, "Pair type: 0 = DD, 1=DDbar, 2 = DbarDbar"};
 
   // HistoTypes
-  HistogramConfigSpec hTHnMass2DCorrPairs{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {10, 0., 10.}, {10, 0., 10.}}}; // note: axes 3 and 4 (the pT) are updated in the init();
+  HistogramConfigSpec hTHnMass2DCorrPairs{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {10, 0., 10.}, {10, 0., 10.}}};                                                  // note: axes 3 and 4 (the pT) are updated in the init();
   HistogramConfigSpec hTHnCorrel2DVsPt{HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {120, -6., 6.}, {10, 0., 10.}, {10, 0., 10.}}}; // note: axes 3 and 4 (the pT) are updated in the init()
   HistogramConfigSpec hTH1Y{HistType::kTH1F, {{200, -10., 10.}}};
   HistogramConfigSpec hTH1DeltaPtDDbar{HistType::kTH1F, {{144, -36., 36.}}};
@@ -380,16 +381,16 @@ struct HfTaskCorrelationDMesonPairs {
   {
     // Array definitions to later be used to fill histograms
     std::shared_ptr<THnSparse> hMassCorrArray[3][3] = {{registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigBkg"))},
-                        {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefBkg"))},
-                        {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgBkg"))}};
+                                                       {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefBkg"))},
+                                                       {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgBkg"))}};
 
     std::shared_ptr<THnSparse> hCorrelSignalArray[3][3] = {{registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecSigSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecSigRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecSigBkg"))},
-                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefBkg"))},
-                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgBkg"))}};
+                                                           {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefBkg"))},
+                                                           {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgBkg"))}};
 
     std::shared_ptr<THnSparse> hCorrelSidebandsArray[3][3] = {{registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigBkg"))},
-                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefBkg"))},
-                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgBkg"))}};
+                                                              {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefBkg"))},
+                                                              {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgBkg"))}};
 
     for (const auto& pairEntry : pairEntries) {
       if (pairEntry.dataType() != 1) { // Assure that we only analyse Mc reco elements
