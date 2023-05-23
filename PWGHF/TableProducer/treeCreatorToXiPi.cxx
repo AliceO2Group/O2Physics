@@ -124,6 +124,14 @@ DECLARE_SOA_COLUMN(StatusInvMassLambda, statusInvMassLambda, bool);
 DECLARE_SOA_COLUMN(StatusInvMassCascade, statusInvMassCascade, bool);
 DECLARE_SOA_COLUMN(StatusInvMassOmegac, statusInvMassOmegac, bool);
 DECLARE_SOA_COLUMN(ResultSelections, resultSelections, bool);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromOmega, tpcNSigmaPiFromOmega, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromCasc, tpcNSigmaPiFromCasc, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromLambda, tpcNSigmaPiFromLambda, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPrFromLambda, tpcNSigmaPrFromLambda, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromOmega, tofNSigmaPiFromOmega, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromCasc, tofNSigmaPiFromCasc, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
+DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiFull, "AOD", "HFTOXIPIFULL",
@@ -154,6 +162,8 @@ DECLARE_SOA_TABLE(HfToXiPiFull, "AOD", "HFTOXIPIFULL",
                   full::DcaCascDau, full::DcaV0Dau, full::DcaOmegacDau,
                   full::StatusPidLambda, full::StatusPidCascade, full::StatusPidOmegac,
                   full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassOmegac, full::ResultSelections,
+                  full::TpcNSigmaPiFromOmega, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
+                  full::TofNSigmaPiFromOmega, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
                   full::FlagMcMatchRec, full::DebugMcRec);
 
 DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENTS",
@@ -276,6 +286,14 @@ struct HfTreeCreatorToXiPi {
       candidate.statusInvMassCascade(),
       candidate.statusInvMassOmegac(),
       candidate.resultSelections(),
+      candidate.tpcNSigmaPiFromOmega(),
+      candidate.tpcNSigmaPiFromCasc(),
+      candidate.tpcNSigmaPiFromLambda(),
+      candidate.tpcNSigmaPrFromLambda(),
+      candidate.tofNSigmaPiFromOmega(),
+      candidate.tofNSigmaPiFromCasc(),
+      candidate.tofNSigmaPiFromLambda(),
+      candidate.tofNSigmaPrFromLambda(),
       flagMc,
       debugMc);
   }

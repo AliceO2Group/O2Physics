@@ -395,7 +395,7 @@ struct cascadefinderQA {
   /// Connect to CascFinderData: newly indexed, note: CascDataExt table incompatible with standard V0 table!
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
   {
-    if (!collision.alias()[kINT7]) {
+    if (!collision.alias_bit(kINT7)) {
       return;
     }
     if (!collision.sel7()) {

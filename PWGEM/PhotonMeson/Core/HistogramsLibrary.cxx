@@ -138,10 +138,9 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
 
     if (TString(subGroup) == "PCMPHOS" || TString(subGroup) == "PCMEMC") {
-      list->Add(new TH2F("hdEtadPhi", "#Delta#eta vs. #Delta#varphi;#Delta#varphi (rad.);#Delta#eta", 200, -TMath::Pi(), +TMath::Pi(), 400, -2, +2));
-      list->Add(new TH2F("hdEtaPt", "#Delta#eta vs. p_{T}^{leg};p_{T}^{leg} (GeV/c);#Delta#eta", 100, 0, 10, 400, -2, +2));
-      list->Add(new TH2F("hdPhiPt", "#Delta#varphi vs. p_{T}^{leg};p_{T}^{leg} (GeV/c);#Delta#varphi", 100, 0, 10, 200, -TMath::Pi(), +TMath::Pi()));
-      list->Add(new TH2F("hdRPt", "#DeltaR vs. p_{T}^{leg};p_{T}^{leg} (GeV/c);#DeltaR", 100, 0, 10, 400, 0, 4));
+      list->Add(new TH2F("hdEtadPhi", "#Delta#eta vs. #Delta#varphi;#Delta#varphi (rad.);#Delta#eta", 200, -1, +1, 200, -1, +1));
+      list->Add(new TH2F("hdEtaPt", "#Delta#eta vs. p_{T}^{leg};p_{T}^{leg} (GeV/c);#Delta#eta", 100, 0, 10, 200, -1, +1));
+      list->Add(new TH2F("hdPhiPt", "#Delta#varphi vs. p_{T}^{leg};p_{T}^{leg} (GeV/c);#Delta#varphi", 100, 0, 10, 200, -1, +1));
       list->Add(new TH2F("hEp_E", "E/p vs. matched E_{cluster};E_{cluster} (GeV);E/p", 100, 0, 10, 200, 0, 2));
     }
 

@@ -119,7 +119,7 @@ struct JCatalyst {
 
     if (cbin < 0)
       return;
-    if (!collision.alias()[kINT7] || !collision.sel7())
+    if (!collision.alias_bit(kINT7) || !collision.sel7())
       return;
     if (std::abs(collision.posZ()) > zvertex)
       return;

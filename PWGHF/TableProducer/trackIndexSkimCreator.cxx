@@ -194,7 +194,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     }
 
     // trigger selection
-    if ((!useSel8Trigger && !collision.alias()[triggerClass]) || (useSel8Trigger && !collision.sel8())) {
+    if ((!useSel8Trigger && !collision.alias_bit(triggerClass)) || (useSel8Trigger && !collision.sel8())) {
       SETBIT(statusCollision, EventRejection::Trigger);
       if (fillHistograms) {
         registry.fill(HIST("hEvents"), 3 + EventRejection::Trigger);

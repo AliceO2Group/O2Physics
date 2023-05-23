@@ -37,10 +37,9 @@
 //
 //============== 3) prepare plotting macros for Run3 and MCrun2, MCrun3 !
 //
-//============== 4) add logarithmic x-axis for pt plots and improve overall binning via arrays - also in AliPhysics !
-// look here https://github.com/AliceO2Group/QualityControl/blob/17798501ac1cbc9a9f25797ed15c68244c0a36f0/Modules/MUON/MCH/src/RofsTask.cxx#L58
+//============== 4) improve binning - also in AliPhysics !
 //
-//============== 3) add explicit filters for collision and tracks (?)
+//============== 3) add explicit filters for collision and tracks to mc and make use in run3
 ////////////////=============================================////////////////
 
 #include "Framework/runDataProcessing.h"
@@ -61,54 +60,66 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // tracks for 1) validation on ESD 2) Run2 MC validatio on AO2D's 3) Run2 MC validation on AO2D's
-using TracksJE = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 using MCTracksRun3JE = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
 using MCTracksRun2JE = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>; // for now the same
 
 // struct for jetfinder validation on run2 ESD's and run3 data
 struct jetTrackCollisionQa {
+  // Track filter configs
+  Configurable<float> ptLow{"ptLow", 0.15f, "lowest pt"};
+  Configurable<float> ptUp{"ptUp", 10e10f, "highest pt"};
+  Configurable<float> etalow{"etaLow", -0.9f, "lowest eta"};
+  Configurable<float> etaup{"etaUp", 0.9f, "highest eta"};
 
   HistogramRegistry mHistManager{"JetCollisionQAHistograms"};
-  Configurable<int> nBins{"nBins", 200, "N bins in histos"};
-  Configurable<int> nBinsPt{"nBinsPt", 200, "N bins in pT histos"};
-  Configurable<int> nBinsEta{"nBinsEta", 200, "N bins in Eta histos"};
-  Configurable<int> nBinsPhi{"nBinsPhi", 200, "N bins in Phi histos"};
+  Configurable<int> nBins{"nBins", 200, "N bins in histos"}; // keep nBins for vertex and special 2D's
+  // change the binning for pT in config file depending on AliPhysics status
+  ConfigurableAxis BinsPhi{"BinsPhi", {200, -3.2, 6.4}, "Binning of the phi axis"};
+  ConfigurableAxis BinsEta{"BinsEta", {200, -0.9, 0.9}, "Binning of the eta axis"};
+  ConfigurableAxis BinsPt{"BinsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
+
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
   std::string trackSelection;
 
   void init(InitContext const&)
   {
+    // histograms
+    const AxisSpec vtxZAxis{nBins, -20, 20, "Vtx_{z} (cm)"};
+    const AxisSpec phiAxis{BinsPhi, "#phi "};
+    const AxisSpec etaAxis{BinsEta, "#eta "};
+    const AxisSpec ptAxis{BinsPt, "#it{p}_{T} (GeV/#it{c})"};
+
     // set trackselections
     trackSelection = static_cast<std::string>(trackSelections);
     // histograms
     // 1)Jetvalidation on data
-    mHistManager.add("collisionVtxZ", "control collsion VtxZ ; z [cm]", HistType::kTH1F, {{nBins, -15, 15}});
+    mHistManager.add("collisionVtxZ", "control collsion VtxZ ", HistType::kTH1D, {vtxZAxis});
     // process jet qa
-    mHistManager.add("jetPt", "inclusive jetPt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("jetPhi", "inclusive jet #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, -3.2, 6.4}});
-    mHistManager.add("jetEta", "inclusive jet #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
+    mHistManager.add("jetPt", "inclusive jetPt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("jetPhi", "inclusive jet #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("jetEta", "inclusive jet #eta ", HistType::kTH1F, {etaAxis});
     // process jet constituent qa - constituents as tracks
-    mHistManager.add("jetConstTrackPt", "inclusive jet constituent Pt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("jetConstTrackPhi", "inclusive jet constituent #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, 0, 6.4}});
-    mHistManager.add("jetConstTrackEta", "inclusive jet constituent #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
+    mHistManager.add("jetConstTrackPt", "inclusive jet constituent Pt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("jetConstTrackPhi", "inclusive jet constituent #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("jetConstTrackEta", "inclusive jet constituent #eta ", HistType::kTH1F, {etaAxis});
     // cross check the cuts from Run2Hybrid selection
-    mHistManager.add("selectedTrackPt", "hybrid track Pt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("selectedTrackPhi", "hybrid track #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, 0, 6.4}});
-    mHistManager.add("selectedTrackEta", "hybrid track #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
+    mHistManager.add("selectedTrackPt", "hybrid track Pt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("selectedTrackPhi", "hybrid track #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("selectedTrackEta", "hybrid track #eta ", HistType::kTH1F, {etaAxis});
 
     // leading jets per collision
-    mHistManager.add("leadJetPt", "track Pt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("leadJetPhi", "track constituent #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, 0, 6.4}});
-    mHistManager.add("leadJetEta", "track constituent #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
+    mHistManager.add("leadJetPt", "track Pt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("leadJetPhi", "track constituent #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("leadJetEta", "track constituent #eta ", HistType::kTH1F, {etaAxis});
     // leading constituents per jet in collision
-    mHistManager.add("leadJetConstPt", "leading jet constituent Pt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("leadJetConstPhi", "leading jet constituent #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, 0, 6.4}});
-    mHistManager.add("leadJetConstEta", "leading jet constituent #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
+    mHistManager.add("leadJetConstPt", "leading jet constituent Pt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("leadJetConstPhi", "leading jet constituent #phi", HistType::kTH1F, {phiAxis});
+    mHistManager.add("leadJetConstEta", "leading jet constituent #eta", HistType::kTH1F, {etaAxis});
     // leading selected tracks per collision
-    mHistManager.add("leadTrackPt", "leading selected track Pt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("leadTrackPhi", "leading selected track #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, 0, 6.4}});
-    mHistManager.add("leadTrackEta", "leading selected track #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
+    mHistManager.add("leadTrackPt", "leading selected track Pt", HistType::kTH1F, {ptAxis});
+    mHistManager.add("leadTrackPhi", "leading selected track #phi", HistType::kTH1F, {phiAxis});
+    mHistManager.add("leadTrackEta", "leading selected track #eta", HistType::kTH1F, {etaAxis});
   }
 
   template <typename validationTracks>
@@ -162,6 +173,11 @@ struct jetTrackCollisionQa {
     mHistManager.fill(HIST("leadJetConstEta"), leadingConstTrackEta);
   } // end of fillLeadingJetConstQA template
 
+  Filter etafilter = (aod::track::eta < etaup) && (aod::track::eta > etalow);
+  Filter ptfilter = (aod::track::pt < ptUp) && (aod::track::pt > ptLow);
+
+  using TracksJE = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
+
   void processESD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks)
   {
     if (!collision.sel7() || abs(collision.posZ()) > 10) {
@@ -173,12 +189,16 @@ struct jetTrackCollisionQa {
     double leadingTrackPhi = -1;
     double leadingTrackEta = -1;
     // qa histograms for selected tracks in collision
+    // Partition<aod::Tracks> groupedTracks = aod::track::collisionId == collision.globalIndex();//could be Tracks instead of TracksJE
+    // groupedTracks.bindTable(tracks);
     for (const auto& t : tracks) {
-      fillTrackQA(t);
-      if (t.pt() > leadingTrackPt) {
-        leadingTrackPt = t.pt();
-        leadingTrackPhi = t.phi();
-        leadingTrackEta = t.eta();
+      if (t.collisionId() == collision.globalIndex()) {
+        fillTrackQA(t);
+        if (t.pt() > leadingTrackPt) {
+          leadingTrackPt = t.pt();
+          leadingTrackPhi = t.phi();
+          leadingTrackEta = t.eta();
+        }
       }
     } // end of tracks loop
     // fill leading track
@@ -279,10 +299,12 @@ struct jetTrackCollisionQa {
 struct mcJetTrackCollisionQa {
 
   HistogramRegistry mHistManager{"JetCollisionQAHistograms"};
-  Configurable<int> nBins{"nBins", 200, "N bins in histos"};
-  Configurable<int> nBinsPt{"nBinsPt", 200, "N bins in pT histos"};
-  Configurable<int> nBinsEta{"nBinsEta", 200, "N bins in Eta histos"};
-  Configurable<int> nBinsPhi{"nBinsPhi", 200, "N bins in Phi histos"};
+  Configurable<int> nBins{"nBins", 200, "N bins in histos"}; // keep nBins for vertex and special 2D's
+
+  ConfigurableAxis BinsPhi{"BinsPhi", {200, -3.2, 6.4}, "Binning of the phi axis"};
+  ConfigurableAxis BinsEta{"BinsEta", {200, -0.9, 0.9}, "Binning of the eta axis"};
+  ConfigurableAxis BinsPt{"BinsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
+
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
   std::string trackSelection;
@@ -293,57 +315,62 @@ struct mcJetTrackCollisionQa {
     trackSelection = static_cast<std::string>(trackSelections);
 
     // histograms
+    const AxisSpec vtxZAxis{nBins, -20, 20, "Vtx_{z} (cm)"};
+    const AxisSpec ptAxis{BinsPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec phiAxis{BinsPhi, "#phi "};
+    const AxisSpec etaAxis{BinsEta, "#eta "};
+
     // 2)Jetvalidation on MC: generator = particle = mcTruth and reconstruction = detector (=tracks)
-    mHistManager.add("collisionVtxZ", "Control collsion VtxZ ; z [cm]", HistType::kTH1F, {{nBins, -15, 15}});
-    mHistManager.add("genMCcollisionVtxZ", "MC control gen.collsion VtxZ ; z [cm]", HistType::kTH1F, {{nBins, -15, 15}});
-    mHistManager.add("recMCcollisionVtxZ", "MC control rec.collsion VtxZ ; z [cm]", HistType::kTH1F, {{nBins, -15, 15}});
+    mHistManager.add("collisionVtxZ", "Control collsion VtxZ ", HistType::kTH1F, {vtxZAxis});
+    mHistManager.add("genMCcollisionVtxZ", "MC control gen.collsion VtxZ ", HistType::kTH1F, {vtxZAxis});
+    mHistManager.add("recMCcollisionVtxZ", "MC control rec.collsion VtxZ ", HistType::kTH1F, {vtxZAxis});
     // 2D for reco vs. truth level
     mHistManager.add("collMatchPosZ", "MC reco vs truth; MC truth posZ (cm); MC reco posZ (cm)", {HistType::kTH2F, {{nBins, -15, 15}, {nBins, -15, 15}}});
     // 2D for 'relative resolution figure'
-    mHistManager.add("collResolutionPt", "Collision reso #Delta posZ = (MC reco - MC truth)/ MC truth; MC truth posZ (cm); #Delta posZ (cm)", {HistType::kTH2F, {{nBinsPt, -15, 15}, {nBins, -5, 5}}});
+    mHistManager.add("collResolutionPt", "Collision reso #Delta posZ = (MC reco - MC truth)/ MC truth; MC truth posZ (cm); #Delta posZ (cm)", {HistType::kTH2F, {{nBins, -15, 15}, {nBins, -5, 5}}});
 
     // process jet qa
-    mHistManager.add("genMCjetPt", "MC inclusive gen jetPt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("genMCjetPhi", "MC inclusive gen jet #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, -3.2, 6.4}});
-    mHistManager.add("genMCjetEta", "MC inclusive gen jet #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
-    mHistManager.add("recMCjetPt", "MC inclusive rec jetPt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("recMCjetPhi", "MC inclusive rec jet #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, -3.2, 6.4}});
-    mHistManager.add("recMCjetEta", "MC inclusive rec jet #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
+    mHistManager.add("genMCjetPt", "MC inclusive gen jetPt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("genMCjetPhi", "MC inclusive gen jet #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("genMCjetEta", "MC inclusive gen jet #eta ", HistType::kTH1F, {etaAxis});
+    mHistManager.add("recMCjetPt", "MC inclusive rec jetPt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("recMCjetPhi", "MC inclusive rec jet #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("recMCjetEta", "MC inclusive rec jet #eta ", HistType::kTH1F, {etaAxis});
     // process mc matching from particle to det
-    mHistManager.add("genRecMCjetPt", "MC rec to part jetPt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("genRecMCjetPhi", "MC reco to part jet #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, -3.2, 6.4}});
-    mHistManager.add("genRecMCjetEta", "MC rec to part jet #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
+    mHistManager.add("genRecMCjetPt", "MC rec to part jetPt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("genRecMCjetPhi", "MC reco to part jet #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("genRecMCjetEta", "MC rec to part jet #eta ", HistType::kTH1F, {etaAxis});
     // process jet constituent qa - constituents as tracks
-    mHistManager.add("genMCjetConstTrackPt", "MC inclusive part jet constituent Pt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("genMCjetConstTrackPhi", "MC inclusive part jet constituent #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, 0, 6.4}});
-    mHistManager.add("genMCjetConstTrackEta", "MC inclusive part jet constituent #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
-    mHistManager.add("recMCjetConstTrackPt", "MC inclusive reco jet constituent Pt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("recMCjetConstTrackPhi", "MC inclusive reco jet constituent #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, 0, 6.4}});
-    mHistManager.add("recMCjetConstTrackEta", "MC inclusive reco jet constituent #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
+    mHistManager.add("genMCjetConstTrackPt", "MC inclusive part jet constituent Pt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("genMCjetConstTrackPhi", "MC inclusive part jet constituent #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("genMCjetConstTrackEta", "MC inclusive part jet constituent #eta ", HistType::kTH1F, {etaAxis});
+    mHistManager.add("recMCjetConstTrackPt", "MC inclusive reco jet constituent Pt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("recMCjetConstTrackPhi", "MC inclusive reco jet constituent #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("recMCjetConstTrackEta", "MC inclusive reco jet constituent #eta ", HistType::kTH1F, {etaAxis});
     // process mc matching from partice to detector - needs matching from nime / aimeric has something for it
-    mHistManager.add("genRecMCjetConstTrackPt", "MC rec to part jet constituent Pt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("genRecMCjetConstTrackPhi", "MC rec to part inclusive part jet constituent #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, 0, 6.4}});
-    mHistManager.add("genRecMCjetConstTrackEta", "MC rec to part part jet constituent #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
+    mHistManager.add("genRecMCjetConstTrackPt", "MC rec to part jet constituent Pt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("genRecMCjetConstTrackPhi", "MC rec to part inclusive part jet constituent #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("genRecMCjetConstTrackEta", "MC rec to part part jet constituent #eta ", HistType::kTH1F, {etaAxis});
 
     // cross check the cuts from Run2Hybrid selection
-    mHistManager.add("genMCselectedTrackPt", "MC track Pt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("genMCselectedTrackPhi", "MC track #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, 0, 6.4}});
-    mHistManager.add("genMCselectedTrackEta", "MC track #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
-    mHistManager.add("recMCselectedTrackPt", "reconstructed MC track Pt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("recMCselectedTrackPhi", "reconstructed MC track #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, 0, 6.4}});
-    mHistManager.add("recMCselectedTrackEta", "reconstructed MC track #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
+    mHistManager.add("genMCselectedTrackPt", "MC track Pt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("genMCselectedTrackPhi", "MC track #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("genMCselectedTrackEta", "MC track #eta ", HistType::kTH1F, {etaAxis});
+    mHistManager.add("recMCselectedTrackPt", "reconstructed MC track Pt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("recMCselectedTrackPhi", "reconstructed MC track #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("recMCselectedTrackEta", "reconstructed MC track #eta ", HistType::kTH1F, {etaAxis});
     // tracks from mc data not mc associated
-    mHistManager.add("selectedTrackPt", "selected collission tracks Pt ; p_{T} (GeV/#it{c})", HistType::kTH1F, {{nBinsPt, 0, 100}});
-    mHistManager.add("selectedTrackPhi", "selected collission tracks #phi ; #phi ", HistType::kTH1F, {{nBinsPhi, 0, 6.4}});
-    mHistManager.add("selectedTrackEta", "selected collission tracks #eta ; #eta ", HistType::kTH1F, {{nBinsEta, -0.9, 0.9}});
+    mHistManager.add("selectedTrackPt", "selected collission tracks Pt ", HistType::kTH1F, {ptAxis});
+    mHistManager.add("selectedTrackPhi", "selected collission tracks #phi ", HistType::kTH1F, {phiAxis});
+    mHistManager.add("selectedTrackEta", "selected collission tracks #eta ", HistType::kTH1F, {etaAxis});
     // 2D for reco vs. truth level - we want this for jets too, but first we need proper matching there !
-    mHistManager.add("trackMatchPt", "MC reco vs truth; MC truth p_{T} (GeV/#it{c}); MC reco p_{T} (GeV/#it{c})", {HistType::kTH2F, {{nBinsPt, 0, 20}, {nBinsPt, 0, 20}}});
-    mHistManager.add("trackMatchEta", "MC reco vs truth; MC truth #eta; MC reco  #eta", {HistType::kTH2F, {{nBinsPt, -0.9, 0.9}, {nBins, -0.9, 0.9}}});
-    mHistManager.add("trackMatchPhi", "MC reco vs truth; MC truth #phi; MC reco #phi", {HistType::kTH2F, {{nBinsPt, 0, 6.32}, {nBins, 0, 6.32}}});
+    mHistManager.add("trackMatchPt", "MC reco vs truth; MC truth p_{T} (GeV/#it{c}); MC reco p_{T} (GeV/#it{c})", {HistType::kTH2F, {{nBins, 0, 20}, {nBins, 0, 20}}});
+    mHistManager.add("trackMatchEta", "MC reco vs truth; MC truth #eta; MC reco  #eta", {HistType::kTH2F, {{nBins, -0.9, 0.9}, {nBins, -0.9, 0.9}}});
+    mHistManager.add("trackMatchPhi", "MC reco vs truth; MC truth #phi; MC reco #phi", {HistType::kTH2F, {{nBins, 0, 6.32}, {nBins, 0, 6.32}}});
     // 2D for 'relative resolution figure'
-    mHistManager.add("trackResolutionPt", "Track reso #Delta p_{T} = (MC reco - MC truth)/ MC truth; MC truth p_{T} (GeV/#it{c}); #Delta p_{T}", {HistType::kTH2F, {{nBinsPt, 0, 20}, {nBins, -3, 3}}});
-    mHistManager.add("trackResolutionEta", "Track reso #Delta #eta = (MC reco - MC truth)/ MC truth; MC truth #Delta #eta", {HistType::kTH2F, {{nBinsPt, -0.9, 0.9}, {nBins, -1, 1}}});
-    mHistManager.add("trackResolutionPhi", "Track reso #Delta #phi = (MC reco - MC truth)/ MC truth; MC truth #phi (GeV/#it{c}); #Delta #phi", {HistType::kTH2F, {{nBinsPt, 0, 6.32}, {nBins, -5, 5}}});
+    mHistManager.add("trackResolutionPt", "Track reso #Delta p_{T} = (MC reco - MC truth)/ MC truth; MC truth p_{T} (GeV/#it{c}); #Delta p_{T}", {HistType::kTH2F, {{nBins, 0, 20}, {nBins, -3, 3}}});
+    mHistManager.add("trackResolutionEta", "Track reso #Delta #eta = (MC reco - MC truth)/ MC truth; MC truth #Delta #eta", {HistType::kTH2F, {{nBins, -0.9, 0.9}, {nBins, -1, 1}}});
+    mHistManager.add("trackResolutionPhi", "Track reso #Delta #phi = (MC reco - MC truth)/ MC truth; MC truth #phi (GeV/#it{c}); #Delta #phi", {HistType::kTH2F, {{nBins, 0, 6.32}, {nBins, -5, 5}}});
   }
 
   // fill collision qa histograms

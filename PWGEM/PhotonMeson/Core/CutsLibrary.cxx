@@ -103,7 +103,6 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
     cut->SetRxyRange(1, 180);
-    cut->SetMaxMeePsiPairDep([](float psipair) { return psipair < 0.4 ? 0.06 : 0.015; });
     return cut;
   }
   if (!nameStr.compare("qc_eta12")) {
@@ -121,7 +120,60 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.5);
     cut->SetRxyRange(1, 180);
-    cut->SetMaxMeePsiPairDep([](float psipair) { return psipair < 0.4 ? 0.06 : 0.015; });
+    return cut;
+  }
+  if (!nameStr.compare("qc_ITS")) {
+    // for track
+    cut->SetTrackPtRange(0.01f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(20);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
+    cut->SetMaxChi2PerClusterTPC(4.0);
+    cut->SetTPCNsigmaElRange(-3, +3);
+    cut->SetIsWithinBeamPipe(true);
+    cut->SetRequireITS(true);
+    // for v0
+    cut->SetV0PtRange(0.01f, 1e10f);
+    cut->SetV0EtaRange(-0.9, +0.9);
+    cut->SetMinCosPA(0.99);
+    cut->SetMaxPCA(1.5);
+    cut->SetRxyRange(1, 180);
+    return cut;
+  }
+  if (!nameStr.compare("qc_TPConly")) {
+    // for track
+    cut->SetTrackPtRange(0.01f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(20);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
+    cut->SetMaxChi2PerClusterTPC(4.0);
+    cut->SetTPCNsigmaElRange(-3, +3);
+    cut->SetIsWithinBeamPipe(true);
+    cut->SetRequireTPConly(true);
+    // for v0
+    cut->SetV0PtRange(0.01f, 1e10f);
+    cut->SetV0EtaRange(-0.9, +0.9);
+    cut->SetMinCosPA(0.99);
+    cut->SetMaxPCA(1.5);
+    cut->SetRxyRange(1, 180);
+    return cut;
+  }
+  if (!nameStr.compare("qc_AntiTPConly")) {
+    // for track
+    cut->SetTrackPtRange(0.01f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(20);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
+    cut->SetMaxChi2PerClusterTPC(4.0);
+    cut->SetTPCNsigmaElRange(-3, +3);
+    cut->SetIsWithinBeamPipe(true);
+    cut->SetRequireAntiTPConly(true);
+    // for v0
+    cut->SetV0PtRange(0.01f, 1e10f);
+    cut->SetV0EtaRange(-0.9, +0.9);
+    cut->SetMinCosPA(0.99);
+    cut->SetMaxPCA(1.5);
+    cut->SetRxyRange(1, 180);
     return cut;
   }
   if (!nameStr.compare("wwire")) { // conversion only on tungstate wire

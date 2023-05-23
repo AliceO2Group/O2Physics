@@ -346,18 +346,16 @@ struct Pi0EtaToGammaGamma {
                 for (auto& v0leg : {pos, ele}) {
                   float deta = v0leg.eta() - g2.eta();
                   float dphi = TVector2::Phi_mpi_pi(TVector2::Phi_0_2pi(v0leg.phi()) - TVector2::Phi_0_2pi(g2.phi()));
-                  float dR = sqrt(deta * deta + dphi * dphi);
                   float Ep = g2.e() / v0leg.p();
                   reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hdEtadPhi"))->Fill(dphi, deta);
                   reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hdEtaPt"))->Fill(v0leg.pt(), deta);
                   reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hdPhiPt"))->Fill(v0leg.pt(), dphi);
-                  reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hdRPt"))->Fill(v0leg.pt(), dR);
-                  if (dR < 0.4) {
+                  if (pow(deta / 0.02, 2) + pow(dphi / 0.4, 2) < 1) {
                     reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data())->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject("hEp_E"))->Fill(g2.e(), Ep);
                   }
                 }
 
-                if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.4) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.4)) {
+                if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.02, 0.4) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.02, 0.4)) {
                   continue;
                 }
               }

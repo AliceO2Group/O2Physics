@@ -109,6 +109,8 @@ struct qaKFEventTrack {
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
+  Filter eventFilter = (o2::aod::evsel::sel8 == true);
+
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using TrackTableData = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
 
@@ -218,17 +220,6 @@ struct qaKFEventTrack {
     hSelectionMC->GetXaxis()->SetBinLabel(hSelectionMC->FindBin(5), "DCA Z > 10cm");
   } /// End init
 
-  /// Function to select collisions
-  template <typename T>
-  bool isSelectedCollision(const T& collision)
-  {
-    /// Trigger selection
-    if (eventSelection && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
-      return false;
-    }
-    return true;
-  }
-
   /// Function for single track selection
   template <typename T>
   bool isSelectedTracks(const T& track1)
@@ -294,7 +285,7 @@ struct qaKFEventTrack {
   }
 
   /// Process function for data
-  void processData(CollisionTableData::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
+  void processData(soa::Filtered<CollisionTableData>::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
@@ -312,10 +303,6 @@ struct qaKFEventTrack {
       histos.fill(HIST("Events/covYY"), collision.covYY());
       histos.fill(HIST("Events/covYZ"), collision.covYZ());
       histos.fill(HIST("Events/covZZ"), collision.covZZ());
-    }
-    /// Apply event selection
-    if (!isSelectedCollision(collision)) {
-      return;
     }
     /// set KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
@@ -382,7 +369,7 @@ struct qaKFEventTrack {
   using CollisionTableDataMult = soa::Join<aod::Collisions, aod::Mults, aod::McCollisionLabels>;
   using TrackTableMC = soa::Join<TrackTableData, aod::McTrackLabels>;
   // Preslice<aod::McCollisionLabels> perMcCollision = aod::mccollisionlabel::mcCollisionId;
-  void processMC(CollisionTableMC::iterator const& collision, CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions, aod::BCsWithTimestamps const&)
+  void processMC(soa::Filtered<CollisionTableMC>::iterator const& collision, soa::Filtered<CollisionTableMC> const& collisions, soa::Filtered<TrackTableMC> const& tracks, aod::McParticles const& mcParticles, soa::Filtered<aod::McCollisions> const& mcCollisions, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
@@ -405,11 +392,6 @@ struct qaKFEventTrack {
       histos.fill(HIST("Events/covYY"), collision.covYY());
       histos.fill(HIST("Events/covYZ"), collision.covYZ());
       histos.fill(HIST("Events/covZZ"), collision.covZZ());
-    }
-
-    /// Apply event selection
-    if (!isSelectedCollision(collision)) {
-      return;
     }
     /// set KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);

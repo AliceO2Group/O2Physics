@@ -212,7 +212,7 @@ struct HfTaskFlow {
       if (fillHistograms)
         registry.fill(HIST("hEventCounter"), 1);
       if (!processMc) {
-        if (!collision.alias()[kINT7]) {
+        if (!collision.alias_bit(kINT7)) {
           return false;
         }
       }

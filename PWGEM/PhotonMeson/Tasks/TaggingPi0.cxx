@@ -275,7 +275,7 @@ struct TaggingPi0 {
             if constexpr (pairtype == PairType::kPCMPHOS || pairtype == PairType::kPCMEMC) {
               auto pos = g1.template posTrack_as<aod::V0Legs>();
               auto ele = g1.template negTrack_as<aod::V0Legs>();
-              if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.4) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.4)) {
+              if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.02, 0.4) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.02, 0.4)) {
                 continue;
               }
             }
