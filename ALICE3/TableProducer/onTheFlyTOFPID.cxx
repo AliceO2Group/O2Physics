@@ -33,6 +33,8 @@
 #include "CommonConstants/GeomConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "TRandom3.h"
+#include "ALICE3/DataModel/OTFTOF.h"
+#include "DetectorsVertexing/HelixHelper.h"
 
 /// \file onTheFlyTOFPID.cxx
 ///
@@ -48,34 +50,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-
-namespace o2::aod
-{
-namespace upgrade_tof
-{
-DECLARE_SOA_COLUMN(NSigmaElectronInner, nSigmaElectronInner, float); //! NSigma electron InnerTOF
-DECLARE_SOA_COLUMN(NSigmaMuonInner, nSigmaMuonInner, float);         //! NSigma muon InnerTOF
-DECLARE_SOA_COLUMN(NSigmaPionInner, nSigmaPionInner, float);         //! NSigma pion InnerTOF
-DECLARE_SOA_COLUMN(NSigmaKaonInner, nSigmaKaonInner, float);         //! NSigma kaon InnerTOF
-DECLARE_SOA_COLUMN(NSigmaProtonInner, nSigmaProtonInner, float);     //! NSigma proton InnerTOF
-DECLARE_SOA_COLUMN(NSigmaElectronOuter, nSigmaElectronOuter, float); //! NSigma electron OuterTOF
-DECLARE_SOA_COLUMN(NSigmaMuonOuter, nSigmaMuonOuter, float);         //! NSigma muon OuterTOF
-DECLARE_SOA_COLUMN(NSigmaPionOuter, nSigmaPionOuter, float);         //! NSigma pion OuterTOF
-DECLARE_SOA_COLUMN(NSigmaKaonOuter, nSigmaKaonOuter, float);         //! NSigma kaon OuterTOF
-DECLARE_SOA_COLUMN(NSigmaProtonOuter, nSigmaProtonOuter, float);     //! NSigma proton OuterTOF
-} // namespace upgrade_tof
-DECLARE_SOA_TABLE(UpgradeTof, "AOD", "UPGRADETOF",
-                  upgrade_tof::NSigmaElectronInner,
-                  upgrade_tof::NSigmaMuonInner,
-                  upgrade_tof::NSigmaPionInner,
-                  upgrade_tof::NSigmaKaonInner,
-                  upgrade_tof::NSigmaProtonInner,
-                  upgrade_tof::NSigmaElectronOuter,
-                  upgrade_tof::NSigmaMuonOuter,
-                  upgrade_tof::NSigmaPionOuter,
-                  upgrade_tof::NSigmaKaonOuter,
-                  upgrade_tof::NSigmaProtonOuter);
-} // namespace o2::aod
 
 struct OnTheFlyTOFPID {
   Produces<aod::UpgradeTof> upgradeTof;
@@ -96,6 +70,8 @@ struct OnTheFlyTOFPID {
   Configurable<bool> doQAplots{"doQAplots", true, "do basic velocity plot qa"};
   Configurable<int> nBinsBeta{"nBinsBeta", 2200, "number of bins in beta"};
   Configurable<int> nBinsP{"nBinsP", 80, "number of bins in momentum"};
+  Configurable<int> nBinsTrackLengthInner{"nBinsTrackLengthInner", 300, "number of bins in track length"};
+  Configurable<int> nBinsTrackLengthOuter{"nBinsTrackLengthOuter", 300, "number of bins in track length"};
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
@@ -111,9 +87,14 @@ struct OnTheFlyTOFPID {
 
     if (doQAplots) {
       const AxisSpec axisMomentum{static_cast<int>(nBinsP), 0.0f, +4.0f, "#it{p} (GeV/#it{c})"};
+      const AxisSpec axisMomentumSmall{static_cast<int>(nBinsP), 0.0f, +1.0f, "#it{p} (GeV/#it{c})"};
       const AxisSpec axisVelocity{static_cast<int>(nBinsBeta), 0.0f, +1.1f, "Measured #beta"};
+      const AxisSpec axisTrackLengthInner{static_cast<int>(nBinsTrackLengthInner), 0.0f, 60.0f, "Track length (cm)"};
+      const AxisSpec axisTrackLengthOuter{static_cast<int>(nBinsTrackLengthOuter), 0.0f, 300.0f, "Track length (cm)"};
       histos.add("h2dVelocityVsMomentumInner", "h2dVelocityVsMomentumInner", kTH2F, {axisMomentum, axisVelocity});
       histos.add("h2dVelocityVsMomentumOuter", "h2dVelocityVsMomentumOuter", kTH2F, {axisMomentum, axisVelocity});
+      histos.add("h2dTrackLengthInnerVsPt", "h2dTrackLengthInnerVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthInner});
+      histos.add("h2dTrackLengthOuterVsPt", "h2dTrackLengthOuterVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthOuter});
     }
   }
 
@@ -145,23 +126,67 @@ struct OnTheFlyTOFPID {
     new (&o2track)(o2::track::TrackParCov)(x, particle.phi(), params, covm);
   }
 
-  /// function to calculate track length
+  /// function to calculate track length of this track up to a certain radius
   /// \param track the input track
-  /// \param x0 the initial position
-  /// \param x1 the final position
+  /// \param radius the radius of the layer you're calculating the length to
   /// \param magneticField the magnetic field to use when propagating
-  float trackLength(o2::track::TrackParCov track, float x0, float x1, float magneticField)
+  float trackLength(o2::track::TrackParCov track, float radius, float magneticField)
   {
-    std::array<float, 3> pointN;
-    std::array<float, 3> pointNplus;
-    float length = 0.0;
-    track.propagateTo(x0, magneticField);
-    for (int iStep = 1; iStep < nStepsLIntegrator; iStep++) {
-      track.getXYZGlo(pointN);
-      float position = x0 + (x1 - x0) * (static_cast<float>(iStep)) / (static_cast<float>(nStepsLIntegrator - 1));
-      track.propagateTo(position, magneticField);
-      track.getXYZGlo(pointNplus);
-      length += std::hypot(pointNplus[0] - pointN[0], pointNplus[1] - pointN[1], pointNplus[2] - pointN[2]);
+    // don't make use of the track parametrization
+    float length = -100;
+
+    o2::math_utils::CircleXYf_t trcCircle;
+    float sna, csa;
+    track.getCircleParams(magneticField, trcCircle, sna, csa);
+
+    // distance between circle centers (one circle is at origin -> easy)
+    float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
+
+    // condition of circles touching - if not satisfied returned length will be -100
+    if (centerDistance < trcCircle.rC + radius && centerDistance > fabs(trcCircle.rC - radius)) {
+      length = 0.0f;
+
+      // base radical direction
+      float ux = trcCircle.xC / centerDistance;
+      float uy = trcCircle.yC / centerDistance;
+      // calculate perpendicular vector (normalized) for +/- displacement
+      float vx = -uy;
+      float vy = +ux;
+      // calculate coordinate for radical line
+      float radical = (centerDistance * centerDistance - trcCircle.rC * trcCircle.rC + radius * radius) / (2.0f * centerDistance);
+      // calculate absolute displacement from center-to-center axis
+      float displace = (0.5f / centerDistance) * TMath::Sqrt(
+                                                   (-centerDistance + trcCircle.rC - radius) *
+                                                   (-centerDistance - trcCircle.rC + radius) *
+                                                   (-centerDistance + trcCircle.rC + radius) *
+                                                   (centerDistance + trcCircle.rC + radius));
+
+      // possible intercept points of track and TOF layer in 2D plane
+      float point1[2] = {radical * ux + displace * vx, radical * uy + displace * vy};
+      float point2[2] = {radical * ux - displace * vx, radical * uy - displace * vy};
+
+      // decide on correct intercept point
+      std::array<float, 3> mom;
+      track.getPxPyPzGlo(mom);
+      float scalarProduct1 = point1[0] * mom[0] + point1[1] * mom[1];
+      float scalarProduct2 = point2[0] * mom[0] + point2[1] * mom[1];
+
+      // get start point
+      std::array<float, 3> startPoint;
+      track.getXYZGlo(startPoint);
+
+      float cosAngle = -1000, modulus = -1000;
+
+      if (scalarProduct1 > scalarProduct2) {
+        modulus = std::hypot(point1[0] - trcCircle.xC, point1[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
+        cosAngle = (point1[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point1[1] - trcCircle.yC) * (startPoint[0] - trcCircle.yC);
+      } else {
+        modulus = std::hypot(point2[0] - trcCircle.xC, point2[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
+        cosAngle = (point2[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point2[1] - trcCircle.yC) * (startPoint[0] - trcCircle.yC);
+      }
+      cosAngle /= modulus;
+      length = trcCircle.rC * TMath::ACos(cosAngle);
+      length *= sqrt(1.0f + track.getTgl() * track.getTgl());
     }
     return length;
   }
@@ -200,17 +225,13 @@ struct OnTheFlyTOFPID {
       auto mcParticle = track.mcParticle();
       convertMCParticleToO2Track(mcParticle, o2track);
 
-      float xPv = -100, xInnerTOF = -100, xOuterTOF = -100, trackLengthInnerTOF = -1, trackLengthOuterTOF = -1;
+      float xPv = -100, trackLengthInnerTOF = -1, trackLengthOuterTOF = -1;
       if (o2track.propagateToDCA(mcPvVtx, dBz))
         xPv = o2track.getX();
-      if (!o2track.getXatLabR(innerTOFRadius, xInnerTOF, dBz, o2::track::DirOutward))
-        xInnerTOF = -100;
-      if (!o2track.getXatLabR(outerTOFRadius, xOuterTOF, dBz, o2::track::DirOutward))
-        xOuterTOF = -100;
-      if (xPv > -99. && xInnerTOF > -99.)
-        trackLengthInnerTOF = trackLength(o2track, xPv, xInnerTOF, dBz);
-      if (xPv > -99. && xOuterTOF > -99.)
-        trackLengthOuterTOF = trackLength(o2track, xPv, xOuterTOF, dBz);
+      if (xPv > -99.) {
+        trackLengthInnerTOF = trackLength(o2track, innerTOFRadius, dBz);
+        trackLengthOuterTOF = trackLength(o2track, outerTOFRadius, dBz);
+      }
 
       // get mass to calculate velocity
       auto pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
@@ -222,7 +243,7 @@ struct OnTheFlyTOFPID {
 
       // Smear with expected resolutions
       float measuredTimeInnerTOF = pRandomNumberGenerator.Gaus(expectedTimeInnerTOF, innerTOFTimeReso);
-      float measuredTimeOuterTOF = pRandomNumberGenerator.Gaus(expectedTimeOuterTOF, innerTOFTimeReso);
+      float measuredTimeOuterTOF = pRandomNumberGenerator.Gaus(expectedTimeOuterTOF, outerTOFTimeReso);
 
       // Now we calculate the expected arrival time following certain mass hypotheses
       // and the (imperfect!) reconstructed track parametrizations
@@ -230,14 +251,10 @@ struct OnTheFlyTOFPID {
       auto recoTrack = getTrackParCov(track);
       if (recoTrack.propagateToDCA(pvVtx, dBz))
         xPv = recoTrack.getX();
-      if (!recoTrack.getXatLabR(innerTOFRadius, xInnerTOF, dBz, o2::track::DirOutward))
-        xInnerTOF = -100;
-      if (!recoTrack.getXatLabR(outerTOFRadius, xOuterTOF, dBz, o2::track::DirOutward))
-        xOuterTOF = -100;
-      if (xPv > -99. && xInnerTOF > -99.)
-        trackLengthRecoInnerTOF = trackLength(recoTrack, xPv, xInnerTOF, dBz);
-      if (xPv > -99. && xOuterTOF > -99.)
-        trackLengthRecoOuterTOF = trackLength(recoTrack, xPv, xOuterTOF, dBz);
+      if (xPv > -99.) {
+        trackLengthRecoInnerTOF = trackLength(recoTrack, innerTOFRadius, dBz);
+        trackLengthRecoOuterTOF = trackLength(recoTrack, outerTOFRadius, dBz);
+      }
 
       // Straight to Nsigma
       float deltaTimeInnerTOF[5], nSigmaInnerTOF[5];
@@ -250,10 +267,14 @@ struct OnTheFlyTOFPID {
         // unit conversion: length in cm, time in ps
         float innerBeta = 1e+3 * (trackLengthInnerTOF / measuredTimeInnerTOF) / o2::constants::physics::LightSpeedCm2NS;
         float outerBeta = 1e+3 * (trackLengthOuterTOF / measuredTimeOuterTOF) / o2::constants::physics::LightSpeedCm2NS;
-        if (trackLengthRecoInnerTOF > 0)
+        if (trackLengthRecoInnerTOF > 0) {
           histos.fill(HIST("h2dVelocityVsMomentumInner"), momentum, innerBeta);
-        if (trackLengthRecoOuterTOF > 0)
+          histos.fill(HIST("h2dTrackLengthInnerVsPt"), o2track.getPt(), trackLengthInnerTOF);
+        }
+        if (trackLengthRecoOuterTOF > 0) {
           histos.fill(HIST("h2dVelocityVsMomentumOuter"), momentum, outerBeta);
+          histos.fill(HIST("h2dTrackLengthOuterVsPt"), o2track.getPt(), trackLengthOuterTOF);
+        }
       }
 
       for (int ii = 0; ii < 5; ii++) {
@@ -268,15 +289,15 @@ struct OnTheFlyTOFPID {
         // Fixme: assumes dominant resolution effect is the TOF resolution
         // and not the tracking itself. It's *probably* a fair assumption
         // but it should be tested further!
-        if (trackLengthInnerTOF > 0 && trackLengthRecoInnerTOF)
+        if (trackLengthInnerTOF > 0 && trackLengthRecoInnerTOF > 0)
           nSigmaInnerTOF[ii] = deltaTimeInnerTOF[ii] / innerTOFTimeReso;
-        if (trackLengthOuterTOF > 0 && trackLengthRecoOuterTOF)
+        if (trackLengthOuterTOF > 0 && trackLengthRecoOuterTOF > 0)
           nSigmaOuterTOF[ii] = deltaTimeOuterTOF[ii] / outerTOFTimeReso;
       }
 
       // Sigmas have been fully calculated. Please populate the NSigma helper table (once per track)
-      upgradeTof(nSigmaInnerTOF[0], nSigmaInnerTOF[1], nSigmaInnerTOF[2], nSigmaInnerTOF[3], nSigmaInnerTOF[4],
-                 nSigmaOuterTOF[0], nSigmaOuterTOF[1], nSigmaOuterTOF[2], nSigmaOuterTOF[3], nSigmaOuterTOF[4]);
+      upgradeTof(nSigmaInnerTOF[0], nSigmaInnerTOF[1], nSigmaInnerTOF[2], nSigmaInnerTOF[3], nSigmaInnerTOF[4], trackLengthInnerTOF,
+                 nSigmaOuterTOF[0], nSigmaOuterTOF[1], nSigmaOuterTOF[2], nSigmaOuterTOF[3], nSigmaOuterTOF[4], trackLengthOuterTOF);
     }
   }
 };

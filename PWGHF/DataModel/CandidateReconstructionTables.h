@@ -627,6 +627,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand2Prong, "_0"); // D0 in
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       // particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       // particle origin, generator level
 
 enum DecayType { BplusToD0Pi = 0 };
 
@@ -706,11 +708,13 @@ using HfCandBplus = HfCandBplusExt;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandBplusMcRec, "AOD", "HFCANDBPMCREC",
-                  hf_cand_bplus::FlagMcMatchRec);
+                  hf_cand_bplus::FlagMcMatchRec,
+                  hf_cand_bplus::OriginMcRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandBplusMcGen, "AOD", "HFCANDBPMCGEN",
-                  hf_cand_bplus::FlagMcMatchGen);
+                  hf_cand_bplus::FlagMcMatchGen,
+                  hf_cand_bplus::OriginMcGen);
 
 // specific 3-prong decay properties
 namespace hf_cand_3prong
@@ -1266,21 +1270,35 @@ DECLARE_SOA_TABLE(DHadronRecoInfo, "AOD", "DHADRONRECOINFO",
 // definition of columns and tables for Ds-Hadron correlation pairs
 namespace hf_correlation_ds_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);        //! DeltaPhi between Ds and Hadrons
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);        //! DeltaEta between Ds and Hadrons
-DECLARE_SOA_COLUMN(PtD, ptD, float);                  //! Transverse momentum of Ds
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);        //! Transverse momentum of Hadron
-DECLARE_SOA_COLUMN(MD, mD, float);                    //! Invariant mass of Ds
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, bool); //! Used in MC-Rec, Ds Signal
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float); //! DeltaPhi between Ds and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float); //! DeltaEta between Ds and Hadrons
+DECLARE_SOA_COLUMN(PtD, ptD, float);           //! Transverse momentum of Ds
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float); //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MD, mD, float);             //! Invariant mass of Ds
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);     //! Pool Bin for the MixedEvent
+DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);  //! Used in MC-Rec, Ds Signal
+DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);  //! Used in MC-Rec, Ds Prompt or Non-Prompt
 } // namespace hf_correlation_ds_hadron
 DECLARE_SOA_TABLE(DsHadronPair, "AOD", "DSHPAIR", //! Ds-Hadrons pairs Informations
                   aod::hf_correlation_ds_hadron::DeltaPhi,
                   aod::hf_correlation_ds_hadron::DeltaEta,
                   aod::hf_correlation_ds_hadron::PtD,
-                  aod::hf_correlation_ds_hadron::PtHadron);
+                  aod::hf_correlation_ds_hadron::PtHadron,
+                  aod::hf_correlation_ds_hadron::PoolBin);
+
 DECLARE_SOA_TABLE(DsHadronRecoInfo, "AOD", "DSHRECOINFO", //! Ds-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_ds_hadron::MD,
-                  aod::hf_correlation_ds_hadron::SignalStatus);
+                  aod::hf_correlation_ds_hadron::IsSignal);
+
+DECLARE_SOA_TABLE(DsHadronGenInfo, "AOD", "DSHGENINFO", //! Ds-Hadrons pairs Generated Informations
+                  aod::hf_correlation_ds_hadron::IsPrompt);
+
+// table for selection of collisions with at least one Ds meson
+namespace hf_sel_collision_ds
+{
+DECLARE_SOA_COLUMN(DsFound, dsFound, bool); //! Ds found in a collision
+} // namespace hf_sel_collision_ds
+DECLARE_SOA_TABLE(DsSelCollision, "AOD", "DSCOLL", aod::hf_sel_collision_ds::DsFound);
 
 // definition of columns and tables for Dplus-Hadron correlation pairs
 namespace hf_correlation_dplus_hadron
