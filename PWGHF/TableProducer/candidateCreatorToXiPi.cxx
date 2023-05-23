@@ -470,14 +470,14 @@ struct HfCandidateCreatorToXiPiMc {
         if (indexRec > -1) {
           // cascade → lambda pi
           // Printf("Checking cascade → pi pi p");
-          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, 2);
+          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 2);
           if (indexRec == -1) {
             debug = 2;
           }
           if (indexRec > -1) {
             // v0 → p pi
             // Printf("Checking v0 → p pi");
-            indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, 1);
+            indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign, 1);
             if (indexRec == -1) {
               debug = 3;
             }
@@ -499,14 +499,14 @@ struct HfCandidateCreatorToXiPiMc {
         if (indexRec > -1) {
           // cascade → lambda pi
           // Printf("Checking cascade → pi pi p");
-          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, 2);
+          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 2);
           if (indexRec == -1) {
             debug = 2;
           }
           if (indexRec > -1) {
             // v0 → p pi
             // Printf("Checking v0 → p pi");
-            indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, 1);
+            indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign, 1);
             if (indexRec == -1) {
               debug = 3;
             }
@@ -528,6 +528,7 @@ struct HfCandidateCreatorToXiPiMc {
     for (auto& particle : particlesMC) {
       // Printf("New gen. candidate");
       flag = -9;
+      sign = -9;
       // origin = 0;
       if (matchOmegacMc) {
         //  Omegac → Xi pi
@@ -567,7 +568,7 @@ struct HfCandidateCreatorToXiPiMc {
       }
 
       // rowMCMatchGen(flag, origin);
-      rowMCMatchGen(flag, debugGenOmegac, debugGenXi, debugGenLambda);
+      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda);
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processMc, "Process MC", false);
