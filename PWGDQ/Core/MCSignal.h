@@ -159,7 +159,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
         LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
       }*/
       if (currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
-        //currentMCParticle = currentMCParticle.template mothers_first_as<U>();
+        // currentMCParticle = currentMCParticle.template mothers_first_as<U>();
         currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
         // currentMCParticle = currentMCParticle.template mother0_as<U>();
       }
@@ -172,7 +172,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
         const auto& daughtersSlice = currentMCParticle.template daughters_as<U>();
         for (auto& d : daughtersSlice) {
           if (fProngs[i].TestPDG(j + 1, d.pdgCode())) {
-            //currentMCParticle = d;
+            // currentMCParticle = d;
             currentMCParticle = mcStack.iteratorAt(currentMCParticle.daughtersIds()[0]);
             break;
           }
@@ -235,7 +235,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
           /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
             LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
           }*/
-          //currentMCParticle = currentMCParticle.template mothers_first_as<U>();
+          // currentMCParticle = currentMCParticle.template mothers_first_as<U>();
           currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
           // currentMCParticle = currentMCParticle.template mother0_as<U>();
         }
@@ -254,7 +254,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
           const auto& daughtersSlice = currentMCParticle.template daughters_as<U>();
           for (auto& d : daughtersSlice) {
             if (fProngs[i].TestPDG(j + 1, d.pdgCode())) {
-              //currentMCParticle = d;
+              // currentMCParticle = d;
               currentMCParticle = mcStack.iteratorAt(currentMCParticle.daughtersIds()[0]);
               break;
             }
