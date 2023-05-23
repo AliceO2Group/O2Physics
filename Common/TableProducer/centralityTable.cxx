@@ -435,7 +435,7 @@ struct CentralityTable {
       if (estNTPV == 1) {
         populateTable(centNTPV, NTPVInfo, collision.multZeqNTracksPV());
       }
-      }
+    }
   }
   PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", false);
 };

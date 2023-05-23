@@ -139,7 +139,7 @@ struct MultiplicityTableTaskIndexed {
                    aod::FV0As const& fv0as,
                    aod::FT0s const& ft0s,
                    aod::FDDs const& fdds)
-  {    
+  {
     // reserve memory
     mult.reserve(collisions.size());
     multzeq.reserve(collisions.size());
