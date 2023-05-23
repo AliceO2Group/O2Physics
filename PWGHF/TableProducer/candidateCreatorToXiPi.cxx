@@ -428,7 +428,7 @@ struct HfCandidateCreatorToXiPiMc {
   {
     int indexRec = -1;
     int8_t sign = 0;
-    int8_t flag = 0;
+    int8_t flag = -9;
     // int8_t origin = 0; //to be used for prompt/non prompt
     int8_t debug = 0;
     int8_t debugGenOmegac = 0;
@@ -527,7 +527,7 @@ struct HfCandidateCreatorToXiPiMc {
     // Match generated particles.
     for (auto& particle : particlesMC) {
       // Printf("New gen. candidate");
-      flag = 0;
+      flag = -9;
       // origin = 0;
       if (matchOmegacMc) {
         //  Omegac → Xi pi
