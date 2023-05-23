@@ -249,8 +249,8 @@ struct MultiplicityCounter {
     constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>();
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
-      if (!useEvSel || (bc.selection()[evsel::kIsBBT0A] &
-                        bc.selection()[evsel::kIsBBT0C]) != 0) {
+      if (!useEvSel || (bc.selection_bit(evsel::kIsBBT0A) &
+                        bc.selection_bit(evsel::kIsBBT0C)) != 0) {
         registry.fill(HIST("Events/BCSelection"), 1.);
         cols.clear();
         for (auto& collision : collisions) {
