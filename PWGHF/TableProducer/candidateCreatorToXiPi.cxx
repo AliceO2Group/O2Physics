@@ -529,6 +529,9 @@ struct HfCandidateCreatorToXiPiMc {
       // Printf("New gen. candidate");
       flag = -9;
       sign = -9;
+      debugGenCharmBar = 0;
+      debugGenXi = 0;
+      debugGenLambda = 0;
       // origin = 0;
       if (matchOmegacMc) {
         //  Omegac → Xi pi
