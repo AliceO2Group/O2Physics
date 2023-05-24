@@ -533,7 +533,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtV0Pos, ptV0Pos, //! pt of the positive V0 daughter
                            [](float px, float py) { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtV0Neg, ptV0Neg, //! pt of the negative V0 daughter
                            [](float px, float py) { return RecoDecay::pt(px, py); });
-DECLARE_SOA_DYNAMIC_COLUMN(CtV0, ctv0, //! c*t of the V0
+DECLARE_SOA_DYNAMIC_COLUMN(CtV0, ctV0, //! c*t of the V0
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz, double m) -> float { return RecoDecay::ct(array{px, py, pz}, RecoDecay::distance(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}), m); });
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
@@ -558,13 +558,13 @@ auto invMassGammaToEE(const T& candidate)
 template <typename T>
 auto ctV0K0Short(const T& candidate)
 {
-  return candidate.ctv0(RecoDecay::getMassPDG(kK0Short));
+  return candidate.ctV0(RecoDecay::getMassPDG(kK0Short));
 }
 
 template <typename T>
 auto ctV0Lambda(const T& candidate)
 {
-  return candidate.ctv0(RecoDecay::getMassPDG(kLambda0));
+  return candidate.ctV0(RecoDecay::getMassPDG(kLambda0));
 }
 
 } // namespace hf_cand_casc
