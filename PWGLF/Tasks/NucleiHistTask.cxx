@@ -1255,7 +1255,7 @@ struct NucleiHistTask {
         MC_proton_track_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPr());
       }
 
-      //AntiProton
+      // AntiProton
       if (particle.pdgCode() == -2212) {
         MC_aproton_track_reg.fill(HIST("histPt"), track.pt());
         MC_aproton_track_reg.fill(HIST("histTpcNsigmaData"), track.pt(), track.tpcNSigmaPr());
@@ -1301,7 +1301,7 @@ struct NucleiHistTask {
         continue;
       }
 
-       if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNCls()) < minReqClusterITS) {
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNCls()) < minReqClusterITS) {
         continue;
       }
 
@@ -1319,10 +1319,10 @@ struct NucleiHistTask {
       lorentzVector_He4.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
 
       if (lorentzVector_proton.Rapidity() < yMin || lorentzVector_proton.Rapidity() > yMax ||
-        lorentzVector_deuteron.Rapidity() < yMin || lorentzVector_deuteron.Rapidity() > yMax ||
-        lorentzVector_triton.Rapidity() < yMin || lorentzVector_triton.Rapidity() > yMax ||
-        lorentzVector_He3.Rapidity() < yMin || lorentzVector_He3.Rapidity() > yMax ||
-        lorentzVector_He4.Rapidity() < yMin || lorentzVector_He4.Rapidity() > yMax) {
+          lorentzVector_deuteron.Rapidity() < yMin || lorentzVector_deuteron.Rapidity() > yMax ||
+          lorentzVector_triton.Rapidity() < yMin || lorentzVector_triton.Rapidity() > yMax ||
+          lorentzVector_He3.Rapidity() < yMin || lorentzVector_He3.Rapidity() > yMax ||
+          lorentzVector_He4.Rapidity() < yMin || lorentzVector_He4.Rapidity() > yMax) {
         continue;
       }
 
@@ -1382,7 +1382,7 @@ struct NucleiHistTask {
             }
 
             MC_deuteron_rec_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
-            if (nSigmaDeuteronTOF < (nsigmacutHigh-1) && nSigmaDeuteronTOF > (nsigmacutLow+1)) {
+            if (nSigmaDeuteronTOF < (nsigmacutHigh - 1) && nSigmaDeuteronTOF > (nsigmacutLow + 1)) {
               MC_deuteron_rec_reg.fill(HIST("histPt_tof"), track.pt());
             }
           }
@@ -1440,7 +1440,7 @@ struct NucleiHistTask {
             }
 
             MC_adeuteron_rec_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
-            if (nSigmaDeuteronTOF < (nsigmacutHigh-1) && nSigmaDeuteronTOF > (nsigmacutLow+1)) {
+            if (nSigmaDeuteronTOF < (nsigmacutHigh - 1) && nSigmaDeuteronTOF > (nsigmacutLow + 1)) {
               MC_adeuteron_rec_reg.fill(HIST("histPt_tof"), track.pt());
             }
           }
@@ -1449,7 +1449,6 @@ struct NucleiHistTask {
     }
   }
   PROCESS_SWITCH(NucleiHistTask, processMC_reconstructed, "process reconstructed MC data", false);
-
 };
 
 //****************************************************************************************************
