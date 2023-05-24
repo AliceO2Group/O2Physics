@@ -227,15 +227,13 @@ struct BCInfo {
     registry.get<TH1>(HIST("numberCollisionsGT"))->Fill(nColGT);
 
     // update Aliases
-    auto aliases = bc.alias();
     for (auto ii = 0; ii < kNaliases; ii++) {
-      registry.get<TH1>(HIST("Aliases"))->Fill(ii, aliases[ii]);
+      registry.get<TH1>(HIST("Aliases"))->Fill(ii, bc.alias_bit(ii));
     }
 
     // update Selection
-    auto selections = bc.selection();
     for (auto ii = 0; ii < evsel::kNsel; ii++) {
-      registry.get<TH1>(HIST("Selection"))->Fill(ii, selections[ii]);
+      registry.get<TH1>(HIST("Selection"))->Fill(ii, bc.selection_bit(ii));
     }
 
     // FIT detector signals

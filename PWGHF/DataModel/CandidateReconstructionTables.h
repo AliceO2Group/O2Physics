@@ -535,6 +535,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtV0Neg, ptV0Neg, //!
                            [](float px, float py) { return RecoDecay::pt(px, py); });
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
 DECLARE_SOA_COLUMN(V0X, v0x, float);
 DECLARE_SOA_COLUMN(V0Y, v0y, float);
 DECLARE_SOA_COLUMN(V0Z, v0z, float);
@@ -614,11 +616,13 @@ using HfCandCascade = HfCandCascExt;
 
 // table with results of reconstruction level MC matching for Cascade
 DECLARE_SOA_TABLE(HfCandCascadeMcRec, "AOD", "HFCANDCASCMCREC", //!
-                  hf_cand_casc::FlagMcMatchRec);
+                  hf_cand_casc::FlagMcMatchRec,
+                  hf_cand_casc::OriginMcRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandCascadeMcGen, "AOD", "HFCANDCASCMCGEN", //!
-                  hf_cand_casc::FlagMcMatchGen);
+                  hf_cand_casc::FlagMcMatchGen,
+                  hf_cand_casc::OriginMcGen);
 
 // specific BPlus candidate properties
 namespace hf_cand_bplus
@@ -1303,21 +1307,31 @@ DECLARE_SOA_TABLE(DsSelCollision, "AOD", "DSCOLL", aod::hf_sel_collision_ds::DsF
 // definition of columns and tables for Dplus-Hadron correlation pairs
 namespace hf_correlation_dplus_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
-DECLARE_SOA_COLUMN(PtD, ptD, float);
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);
-DECLARE_SOA_COLUMN(MD, mD, float);
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);        //! DeltaPhi between D+ and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);        //! DeltaEta between D+ and Hadrons
+DECLARE_SOA_COLUMN(PtD, ptD, float);                  //! Transverse momentum of D+
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);        //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MD, mD, float);                    //! Invariant mass of D+
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, bool); //! Used in MC-Rec, D+ Signal
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);            //! Pool Bin of event defined using zvtx and multiplicity
 } // namespace hf_correlation_dplus_hadron
-DECLARE_SOA_TABLE(DplusHadronPair, "AOD", "DPLUSHPAIR",
+DECLARE_SOA_TABLE(DplusHadronPair, "AOD", "DPLUSHPAIR", //! D+-Hadrons pairs Informations
                   aod::hf_correlation_dplus_hadron::DeltaPhi,
                   aod::hf_correlation_dplus_hadron::DeltaEta,
                   aod::hf_correlation_dplus_hadron::PtD,
-                  aod::hf_correlation_dplus_hadron::PtHadron);
-DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO",
+                  aod::hf_correlation_dplus_hadron::PtHadron,
+                  aod::hf_correlation_dplus_hadron::PoolBin);
+DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO", //! D+-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_dplus_hadron::MD,
                   aod::hf_correlation_dplus_hadron::SignalStatus);
+
+// Table for selection of Dmeson in a collision
+namespace hf_selection_dmeson_collision
+{
+DECLARE_SOA_COLUMN(DmesonSel, dmesonSel, bool); //! Selection flag for D meson in a collision
+} // namespace hf_selection_dmeson_collision
+DECLARE_SOA_TABLE(DmesonSelection, "AOD", "DINCOLL", // Selection of D meson in collisions
+                  aod::hf_selection_dmeson_collision::DmesonSel);
 
 // specific Xicc candidate properties
 namespace hf_cand_xicc
@@ -1514,6 +1528,9 @@ DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, float);
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
+DECLARE_SOA_COLUMN(DebugGenCharmBar, debugGenCharmBar, int8_t);
+DECLARE_SOA_COLUMN(DebugGenXi, debugGennXi, int8_t);
+DECLARE_SOA_COLUMN(DebugGenLambda, debugGenLambda, int8_t);
 
 // mapping of decay types
 enum DecayType { DecayToXiPi = 0,
@@ -1562,7 +1579,7 @@ DECLARE_SOA_TABLE(HfToXiPiMCRec, "AOD", "HFTOXIPIMCREC", //!
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfToXiPiMCGen, "AOD", "HFTOXIPIMCGEN", //!
-                  hf_cand_toxipi::FlagMcMatchGen);
+                  hf_cand_toxipi::FlagMcMatchGen, hf_cand_toxipi::DebugGenCharmBar, hf_cand_toxipi::DebugGenXi, hf_cand_toxipi::DebugGenLambda);
 
 // specific chic candidate properties
 namespace hf_cand_chic

@@ -66,6 +66,8 @@ DECLARE_SOA_COLUMN(V0MAntiLambda, v0MAntiLambda, float);
 DECLARE_SOA_COLUMN(V0MK0Short, v0MK0Short, float);
 DECLARE_SOA_COLUMN(V0MGamma, v0MGamma, float);
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -136,7 +138,8 @@ DECLARE_SOA_TABLE(HfCandCascFull, "AOD", "HFCANDCASCFull",
                   full::Phi,
                   full::Y,
                   full::E,
-                  full::FlagMc);
+                  full::FlagMc,
+                  full::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCandCascFullEvents, "AOD", "HFCANDCASCFullE",
                   collision::BCId,
@@ -151,7 +154,8 @@ DECLARE_SOA_TABLE(HfCandCascFullParticles, "AOD", "HFCANDCASCFullP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::FlagMc);
+                  full::FlagMc,
+                  full::OriginMcGen);
 
 } // namespace o2::aod
 
@@ -168,7 +172,7 @@ struct HfTreeCreatorLcToK0sP {
   }
 
   template <typename T, typename U>
-  void fillCandidate(const T& candidate, const U& bach, int8_t flagMc)
+  void fillCandidate(const T& candidate, const U& bach, int8_t flagMc, int8_t originMcRec)
   {
     rowCandidateFull(
       bach.collision().bcId(),
@@ -235,7 +239,8 @@ struct HfTreeCreatorLcToK0sP {
       candidate.phi(),
       o2::aod::hf_cand_3prong::yLc(candidate),
       o2::aod::hf_cand_3prong::eLc(candidate),
-      flagMc);
+      flagMc,
+      originMcRec);
   }
 
   template <typename T>
@@ -268,7 +273,7 @@ struct HfTreeCreatorLcToK0sP {
       auto bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor
       double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
-        fillCandidate(candidate, bach, candidate.flagMcMatchRec());
+        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec());
       }
     }
 
@@ -281,8 +286,10 @@ struct HfTreeCreatorLcToK0sP {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
-          particle.flagMcMatchGen());
+          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()},
+                       RecoDecay::getMassPDG(particle.pdgCode())),
+          particle.flagMcMatchGen(),
+          particle.originMcGen());
       }
     }
   }
@@ -305,7 +312,7 @@ struct HfTreeCreatorLcToK0sP {
       auto bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor
       double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
-        fillCandidate(candidate, bach, 0);
+        fillCandidate(candidate, bach, 0, 0);
       }
     }
   }

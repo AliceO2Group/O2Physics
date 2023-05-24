@@ -36,7 +36,7 @@ struct CentralityQa {
 
   void processRun2PP(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2SPDClss, aod::Mults>::iterator const& col)
   {
-    if (!col.alias()[kINT7]) {
+    if (!col.alias_bit(kINT7)) {
       return;
     }
     if (!col.sel7()) {
@@ -57,7 +57,7 @@ struct CentralityQa {
 
   void processRun2PbPb(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2CL0s, aod::CentRun2CL1s, aod::Mults>::iterator const& col)
   {
-    if (!col.alias()[kINT7]) {
+    if (!col.alias_bit(kINT7)) {
       return;
     }
     if (!col.sel7()) {
