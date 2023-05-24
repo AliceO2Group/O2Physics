@@ -103,6 +103,23 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     }
   }
 
+  if (TString(histClass) == "Cluster") {
+    list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
+    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 400, -2.0f, 2.0f));
+    list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
+
+    if (TString(subGroup) == "PHOS") {
+      list->Add(new TH2F("hEvsNcell", "E_{cluster} vs. M02;E_{cluster} (GeV);N_{cell}", 200, 0, 20, 51, -0.5, 50.5f));
+      list->Add(new TH2F("hEvsM02", "E_{cluster} vs. M02;E_{cluster} (GeV);M02 (cm)", 200, 0, 20, 100, 0, 10));
+      list->Add(new TH2F("hEvsM20", "E_{cluster} vs. M20;E_{cluster} (GeV);M20 (cm)", 200, 0, 20, 100, 0, 10));
+
+      const int nmod = 4;
+      for (int i = 1; i <= nmod; i++) {
+        list->Add(new TH2F(Form("hClusterXZM%d", i), Form("cluster (X,Z) on M%d;X;Z", i), 64, 0.5, 64.5, 56, 0.5, 56.5));
+      } // end of module loop
+    }
+  }
+
   if (TString(histClass) == "singlephoton") {
     list->Add(new TH1F("hPt", "pT of photon;p_{T} (GeV/c)", 1000, 0.0f, 10));
     list->Add(new TH1F("hY", "rapidity of photon;y", 40, -2.0f, 2.0f));
