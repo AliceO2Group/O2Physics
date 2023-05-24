@@ -43,33 +43,32 @@ double getDeltaPhi(double phiD, double phiDbar)
   return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
 }
 
-namespace
-{
+namespace{
 enum CandidateTypeSel {
-  SelectedD = 0, // This particle is selected as a D
-  SelectedDbar,  // This particle is selected as a Dbar
-  TrueD,         // This particle is a true D
-  TrueDbar       // This particle is a true Dbar
+  SelectedD = 0,    // This particle is selected as a D
+  SelectedDBar,     // This particle is selected as a Dbar
+  TrueD,            // This particle is a true D
+  TrueDBar          // This particle is a true Dbar
 };
 
 enum DMesonType {
-  DefaultD = 0, // Default value
-  SignalD,      // This particle is a signal D
-  ReflectedD,   // This particle is a reflected D
-  BkgD          // This particle is background of D
+  DefaultD = 0,   // Default value
+  SignalD,        // This particle is a signal D
+  ReflectedD,     // This particle is a reflected D
+  BkgD            // This particle is background of D
 };
 
 enum DBarMesonType {
-  DefaultDBar = 0, // Default value
-  SignalDBar,      // This particle is a signal Dbar
-  ReflectedDBar,   // This particle is a reflected Dbar
-  BkgDBar          // This particle is background of Dbar
+  DefaultDBar = 0,   // Default value
+  SignalDBar,        // This particle is a signal Dbar
+  ReflectedDBar,     // This particle is a reflected Dbar
+  BkgDBar            // This particle is background of Dbar
 };
 
 enum PairTypeSel {
-  DD = 0,  // Analyse D0-D0 or DPlus-DPlus correlations
-  DDBar,   // Analyse D0-D0bar or DPlus-DMinus correlations
-  DBarDBar // Analyse D0bar-D0bar or DMinus-DMinus correlations
+  DD = 0,            // Analyse D0-D0 or DPlus-DPlus correlations
+  DDBar,             // Analyse D0-D0bar or DPlus-DMinus correlations
+  DBarDBar           // Analyse D0bar-D0bar or DMinus-DMinus correlations
 };
 } // namespace
 
@@ -125,7 +124,7 @@ struct HfTaskCorrelationDMesonPairs {
   Configurable<int> pairType{"pairType", 0, "Pair type: 0 = DD, 1=DDbar, 2 = DbarDbar"};
 
   // HistoTypes
-  HistogramConfigSpec hTHnMass2DCorrPairs{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {10, 0., 10.}, {10, 0., 10.}}};                                                  // note: axes 3 and 4 (the pT) are updated in the init();
+  HistogramConfigSpec hTHnMass2DCorrPairs{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {10, 0., 10.}, {10, 0., 10.}}}; // note: axes 3 and 4 (the pT) are updated in the init();
   HistogramConfigSpec hTHnCorrel2DVsPt{HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {120, -6., 6.}, {10, 0., 10.}, {10, 0., 10.}}}; // note: axes 3 and 4 (the pT) are updated in the init()
   HistogramConfigSpec hTH1Y{HistType::kTH1F, {{200, -10., 10.}}};
   HistogramConfigSpec hTH1DeltaPtDDbar{HistType::kTH1F, {{144, -36., 36.}}};
@@ -275,11 +274,11 @@ struct HfTaskCorrelationDMesonPairs {
   // Register whether our D meson candidate is Sig, Ref or Bkg
   uint getDMesonType(uint const& candidateType)
   {
-    if (TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueD) && !TESTBIT(candidateType, TrueDbar)) { // Signal
+    if (TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueD) && !TESTBIT(candidateType, TrueDBar)) { // Signal
       return SignalD;
-    } else if (TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueDbar)) { // Reflected
+    } else if (TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueDBar)) { // Reflected
       return ReflectedD;
-    } else if (TESTBIT(candidateType, SelectedD) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) { // Background
+    } else if (TESTBIT(candidateType, SelectedD) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDBar))) { // Background
       return BkgD;
     } else {
       return DefaultD;
@@ -289,11 +288,11 @@ struct HfTaskCorrelationDMesonPairs {
   // Register whether our Dbar meson candidate is Sig, Ref or Bkg
   uint getDMesonBarType(uint const& candidateType)
   {
-    if (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueDbar) && !TESTBIT(candidateType, TrueD)) { // Signal
+    if (TESTBIT(candidateType, SelectedDBar) && TESTBIT(candidateType, TrueDBar) && !TESTBIT(candidateType, TrueD)) { // Signal
       return SignalDBar;
-    } else if (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueD)) { // Reflected
+    } else if (TESTBIT(candidateType, SelectedDBar) && TESTBIT(candidateType, TrueD)) { // Reflected
       return ReflectedDBar;
-    } else if (TESTBIT(candidateType, SelectedDbar) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) { // Background
+    } else if (TESTBIT(candidateType, SelectedDBar) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDBar))) { // Background
       return BkgDBar;
     } else {
       return DefaultDBar;
@@ -316,6 +315,55 @@ struct HfTaskCorrelationDMesonPairs {
     }
   }
 
+  // Fill kinematic pair info histograms in signal region
+  void fillKinematicSignalHists(int const& dataType, double const& yCand1, double const& yCand2, double const& deltaPhi, double const& deltaEta, double const& ptCand1, double const& ptCand2)
+  {
+    if (dataType == 0) { // Data
+      registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptCand1, ptCand2);
+      registry.fill(HIST("hCorrel2DPtIntSignalRegion"), deltaPhi, deltaEta);
+      registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta);
+      registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi);
+      registry.fill(HIST("hDeltaYPtIntSignalRegion"), yCand2 - yCand1);
+      registry.fill(HIST("hDeltaPtDDbarSignalRegion"), ptCand2 - ptCand1);
+      registry.fill(HIST("hDeltaPtMaxMinSignalRegion"), std::abs(ptCand2 - ptCand1));
+    } else if (dataType == 1) { // MC Reco
+      registry.fill(HIST("hCorrel2DPtIntSignalRegionMCRec"), deltaPhi, deltaEta);
+      registry.fill(HIST("hDeltaEtaPtIntSignalRegionMCRec"), deltaEta);
+      registry.fill(HIST("hDeltaPhiPtIntSignalRegionMCRec"), deltaPhi);
+      registry.fill(HIST("hDeltaYPtIntSignalRegionMCRec"), yCand2 - yCand1);
+      registry.fill(HIST("hDeltaPtDDbarSignalRegionMCRec"), ptCand2 - ptCand1);
+      registry.fill(HIST("hDeltaPtMaxMinSignalRegionMCRec"), std::abs(ptCand2 - ptCand1));
+    } else { // MC gen
+      registry.fill(HIST("hCorrel2DVsPtMCGen"), deltaPhi, deltaEta, ptCand1, ptCand2);
+      registry.fill(HIST("hCorrel2DPtIntMCGen"), deltaPhi, deltaEta);
+      registry.fill(HIST("hDeltaEtaPtIntMCGen"), deltaEta);
+      registry.fill(HIST("hDeltaPhiPtIntMCGen"), deltaPhi);
+      registry.fill(HIST("hDeltaYPtIntMCGen"), yCand2 - yCand1);
+      registry.fill(HIST("hDeltaPtDDbarMCGen"), ptCand2 - ptCand1);
+      registry.fill(HIST("hDeltaPtMaxMinMCGen"), std::abs(ptCand2 - ptCand2));
+    }
+  }
+
+  // Fill kinematic pair info histograms in sideband region
+  void fillKinematicSidebandHists(int const& dataType, double const& yCand1, double const& yCand2, double const& deltaPhi, double const& deltaEta, double const& ptCand1, double const& ptCand2)
+  {
+    if (dataType == 0) { // Data
+      registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptCand1, ptCand2);
+      registry.fill(HIST("hCorrel2DPtIntSidebands"), deltaPhi, deltaEta);
+      registry.fill(HIST("hDeltaEtaPtIntSidebands"), deltaEta);
+      registry.fill(HIST("hDeltaPhiPtIntSidebands"), deltaPhi);
+      registry.fill(HIST("hDeltaPtDDbarSidebands"), ptCand2 - ptCand1);
+      registry.fill(HIST("hDeltaYPtIntSidebands"), yCand2 - yCand1);
+      registry.fill(HIST("hDeltaPtMaxMinSidebands"), std::abs(ptCand2 - ptCand1));
+    } else { // MC Reco
+      registry.fill(HIST("hCorrel2DPtIntSidebandsMCRec"), deltaPhi, deltaEta);
+      registry.fill(HIST("hDeltaEtaPtIntSidebandsMCRec"), deltaEta);
+      registry.fill(HIST("hDeltaPhiPtIntSidebandsMCRec"), deltaPhi);
+      registry.fill(HIST("hDeltaPtDDbarSidebandsMCRec"), ptCand2 - ptCand1);
+      registry.fill(HIST("hDeltaPtMaxMinSidebandsMCRec"), std::abs(ptCand2 - ptCand1));
+    }
+  }
+
   // Common code to analyse correlations at data level
   template <typename T>
   void analyseData(const T& pairEntries)
@@ -334,43 +382,43 @@ struct HfTaskCorrelationDMesonPairs {
       double yCand1 = pairEntry.yCand1();
       double yCand2 = pairEntry.yCand2();
 
-      int pTBinCand1 = o2::analysis::findBin(binsPtCorrelations, ptCand1);
-      int pTBinCand2 = o2::analysis::findBin(binsPtCorrelations, ptCand2);
+      int ptBinCand1 = o2::analysis::findBin(binsPtCorrelations, ptCand1);
+      int ptBinCand2 = o2::analysis::findBin(binsPtCorrelations, ptCand2);
 
       // fill 2D invariant mass plots
       registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2);
 
       // reject entries outside pT ranges of interest
-      if (pTBinCand1 == -1 || pTBinCand2 == -1) { // at least one particle outside accepted pT range
+      if (ptBinCand1 == -1 || ptBinCand2 == -1) { // at least one particle outside accepted pT range
         continue;
       }
 
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
-      if (massCand1 > signalRegionInner->at(pTBinCand1) && massCand1 < signalRegionOuter->at(pTBinCand1) && massCand2 > signalRegionInner->at(pTBinCand2) && massCand2 < signalRegionOuter->at(pTBinCand2)) {
+      if (massCand1 > signalRegionInner->at(ptBinCand1) && massCand1 < signalRegionOuter->at(ptBinCand1) && massCand2 > signalRegionInner->at(ptBinCand2) && massCand2 < signalRegionOuter->at(ptBinCand2)) {
         // in signal region
-        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptCand1, ptCand2);
-        registry.fill(HIST("hCorrel2DPtIntSignalRegion"), deltaPhi, deltaEta);
-        registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta);
-        registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi);
-        registry.fill(HIST("hDeltaYPtIntSignalRegion"), yCand2 - yCand1);
-        registry.fill(HIST("hDeltaPtDDbarSignalRegion"), ptCand2 - ptCand1);
-        registry.fill(HIST("hDeltaPtMaxMinSignalRegion"), std::abs(ptCand2 - ptCand1));
+        if (pairType == DD && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedD))) {
+          fillKinematicSignalHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+        } else if (pairType == DDBar && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDBar))) {
+          fillKinematicSignalHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+        } else if (pairType == DBarDBar && (TESTBIT(pairEntry.candidateType1(), SelectedDBar) && TESTBIT(pairEntry.candidateType2(), SelectedDBar))) {
+          fillKinematicSignalHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+        }
       }
 
-      bool leftSidebandCand1 = massCand1 > sidebandLeftInner->at(pTBinCand1) && massCand1 < sidebandLeftOuter->at(pTBinCand1);
-      bool rightSidebandCand1 = massCand1 > sidebandRightInner->at(pTBinCand1) && massCand1 < sidebandRightOuter->at(pTBinCand1);
-      bool leftSidebandCand2 = massCand2 > sidebandLeftInner->at(pTBinCand2) && massCand2 < sidebandLeftOuter->at(pTBinCand2);
-      bool rightSidebandCand2 = massCand2 > sidebandRightInner->at(pTBinCand2) && massCand2 < sidebandRightOuter->at(pTBinCand2);
+      bool leftSidebandCand1 = massCand1 > sidebandLeftInner->at(ptBinCand1) && massCand1 < sidebandLeftOuter->at(ptBinCand1);
+      bool rightSidebandCand1 = massCand1 > sidebandRightInner->at(ptBinCand1) && massCand1 < sidebandRightOuter->at(ptBinCand1);
+      bool leftSidebandCand2 = massCand2 > sidebandLeftInner->at(ptBinCand2) && massCand2 < sidebandLeftOuter->at(ptBinCand2);
+      bool rightSidebandCand2 = massCand2 > sidebandRightInner->at(ptBinCand2) && massCand2 < sidebandRightOuter->at(ptBinCand2);
 
       if ((leftSidebandCand1 || rightSidebandCand1) && (leftSidebandCand2 || rightSidebandCand2)) {
         // in sideband region
-        registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptCand1, ptCand2);
-        registry.fill(HIST("hCorrel2DPtIntSidebands"), deltaPhi, deltaEta);
-        registry.fill(HIST("hDeltaEtaPtIntSidebands"), deltaEta);
-        registry.fill(HIST("hDeltaPhiPtIntSidebands"), deltaPhi);
-        registry.fill(HIST("hDeltaPtDDbarSidebands"), ptCand2 - ptCand1);
-        registry.fill(HIST("hDeltaYPtIntSidebands"), yCand2 - yCand1);
-        registry.fill(HIST("hDeltaPtMaxMinSidebands"), std::abs(ptCand2 - ptCand1));
+        if (pairType == DD && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedD))) {
+          fillKinematicSidebandHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+        } else if (pairType == DDBar && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDBar))) {
+          fillKinematicSidebandHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+        } else if (pairType == DBarDBar && (TESTBIT(pairEntry.candidateType1(), SelectedDBar) && TESTBIT(pairEntry.candidateType2(), SelectedDBar))) {
+          fillKinematicSidebandHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+        }
       }
     }
   }
@@ -381,16 +429,16 @@ struct HfTaskCorrelationDMesonPairs {
   {
     // Array definitions to later be used to fill histograms
     std::shared_ptr<THnSparse> hMassCorrArray[3][3] = {{registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigBkg"))},
-                                                       {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefBkg"))},
-                                                       {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgBkg"))}};
+                        {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefBkg"))},
+                        {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgSig")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgRef")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgBkg"))}};
 
     std::shared_ptr<THnSparse> hCorrelSignalArray[3][3] = {{registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecSigSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecSigRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecSigBkg"))},
-                                                           {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefBkg"))},
-                                                           {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgBkg"))}};
+                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefBkg"))},
+                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgBkg"))}};
 
     std::shared_ptr<THnSparse> hCorrelSidebandsArray[3][3] = {{registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigBkg"))},
-                                                              {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefBkg"))},
-                                                              {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgBkg"))}};
+                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefBkg"))},
+                                  {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgBkg"))}};
 
     for (const auto& pairEntry : pairEntries) {
       if (pairEntry.dataType() != 1) { // Assure that we only analyse Mc reco elements
@@ -406,8 +454,8 @@ struct HfTaskCorrelationDMesonPairs {
       double yCand1 = pairEntry.yCand1();
       double yCand2 = pairEntry.yCand2();
 
-      int pTBinCand1 = o2::analysis::findBin(binsPtCorrelations, ptCand1);
-      int pTBinCand2 = o2::analysis::findBin(binsPtCorrelations, ptCand2);
+      int ptBinCand1 = o2::analysis::findBin(binsPtCorrelations, ptCand1);
+      int ptBinCand2 = o2::analysis::findBin(binsPtCorrelations, ptCand2);
 
       uint dMesonCand1 = 0, dMesonCand2 = 0;
       uint dMesonBarCand1 = 0, dMesonBarCand2 = 0;
@@ -431,19 +479,21 @@ struct HfTaskCorrelationDMesonPairs {
       }
 
       // reject entries outside pT ranges of interest
-      if (pTBinCand1 == -1 || pTBinCand2 == -1) { // at least one particle outside accepted pT range
+      if (ptBinCand1 == -1 || ptBinCand2 == -1) { // at least one particle outside accepted pT range
         continue;
       }
 
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
-      if (massCand1 > signalRegionInner->at(pTBinCand1) && massCand1 < signalRegionOuter->at(pTBinCand1) && massCand2 > signalRegionInner->at(pTBinCand2) && massCand2 < signalRegionOuter->at(pTBinCand2)) {
+      if (massCand1 > signalRegionInner->at(ptBinCand1) && massCand1 < signalRegionOuter->at(ptBinCand1) && massCand2 > signalRegionInner->at(ptBinCand2) && massCand2 < signalRegionOuter->at(ptBinCand2)) {
         // in signal region
-        registry.fill(HIST("hCorrel2DPtIntSignalRegionMCRec"), deltaPhi, deltaEta);
-        registry.fill(HIST("hDeltaEtaPtIntSignalRegionMCRec"), deltaEta);
-        registry.fill(HIST("hDeltaPhiPtIntSignalRegionMCRec"), deltaPhi);
-        registry.fill(HIST("hDeltaYPtIntSignalRegionMCRec"), yCand2 - yCand1);
-        registry.fill(HIST("hDeltaPtDDbarSignalRegionMCRec"), ptCand2 - ptCand1);
-        registry.fill(HIST("hDeltaPtMaxMinSignalRegionMCRec"), std::abs(ptCand2 - ptCand1));
+        // Fill histograms depending on the type of pair we are analysing
+        if (pairType == DD && (dMesonCand1 != 0 && dMesonCand2 != 0)) {
+          fillKinematicSignalHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+        } else if (pairType == DDBar && (dMesonCand1 != 0 && dMesonBarCand2 != 0)) {
+          fillKinematicSignalHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+        } else if (pairType == DBarDBar && (dMesonBarCand1 != 0 && dMesonBarCand2 != 0)) {
+          fillKinematicSignalHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+        }
 
         // fill 2D angular correlations plots
         switch (pairType) {
@@ -459,18 +509,21 @@ struct HfTaskCorrelationDMesonPairs {
         }
       }
 
-      bool leftSidebandCand1 = massCand1 > sidebandLeftInner->at(pTBinCand1) && massCand1 < sidebandLeftOuter->at(pTBinCand1);
-      bool rightSidebandCand1 = massCand1 > sidebandRightInner->at(pTBinCand1) && massCand1 < sidebandRightOuter->at(pTBinCand1);
-      bool leftSidebandCand2 = massCand2 > sidebandLeftInner->at(pTBinCand2) && massCand2 < sidebandLeftOuter->at(pTBinCand2);
-      bool rightSidebandCand2 = massCand2 > sidebandRightInner->at(pTBinCand2) && massCand2 < sidebandRightOuter->at(pTBinCand2);
+      bool leftSidebandCand1 = massCand1 > sidebandLeftInner->at(ptBinCand1) && massCand1 < sidebandLeftOuter->at(ptBinCand1);
+      bool rightSidebandCand1 = massCand1 > sidebandRightInner->at(ptBinCand1) && massCand1 < sidebandRightOuter->at(ptBinCand1);
+      bool leftSidebandCand2 = massCand2 > sidebandLeftInner->at(ptBinCand2) && massCand2 < sidebandLeftOuter->at(ptBinCand2);
+      bool rightSidebandCand2 = massCand2 > sidebandRightInner->at(ptBinCand2) && massCand2 < sidebandRightOuter->at(ptBinCand2);
 
       if ((leftSidebandCand1 || rightSidebandCand1) && (leftSidebandCand2 || rightSidebandCand2)) {
         // in sideband region
-        registry.fill(HIST("hCorrel2DPtIntSidebandsMCRec"), deltaPhi, deltaEta);
-        registry.fill(HIST("hDeltaEtaPtIntSidebandsMCRec"), deltaEta);
-        registry.fill(HIST("hDeltaPhiPtIntSidebandsMCRec"), deltaPhi);
-        registry.fill(HIST("hDeltaPtDDbarSidebandsMCRec"), ptCand2 - ptCand1);
-        registry.fill(HIST("hDeltaPtMaxMinSidebandsMCRec"), std::abs(ptCand2 - ptCand1));
+        // Fill histograms depending on the type of pair we are analysing
+        if (pairType == DD && (dMesonCand1 != 0 && dMesonCand2 != 0)) {
+          fillKinematicSidebandHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+        } else if (pairType == DDBar && (dMesonCand1 != 0 && dMesonBarCand2 != 0)) {
+          fillKinematicSidebandHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+        } else if (pairType == DBarDBar && (dMesonBarCand1 != 0 && dMesonBarCand2 != 0)) {
+          fillKinematicSidebandHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+        }
 
         // fill 2D angular correlations plots
         switch (pairType) {
@@ -504,18 +557,27 @@ struct HfTaskCorrelationDMesonPairs {
       double yCand1 = pairEntry.yCand1();
       double yCand2 = pairEntry.yCand2();
 
+      uint dMesonCand1 = 0, dMesonCand2 = 0;
+      uint dMesonBarCand1 = 0, dMesonBarCand2 = 0;
+      // 0: default; 1: Signal; 2: Reflected; 3: Background
+      dMesonCand1 = getDMesonType(pairEntry.candidateType1());
+      dMesonBarCand1 = getDMesonBarType(pairEntry.candidateType1());
+      dMesonCand2 = getDMesonType(pairEntry.candidateType2());
+      dMesonBarCand2 = getDMesonBarType(pairEntry.candidateType2());
+
       // reject entries outside pT ranges of interest
       if (o2::analysis::findBin(binsPtCorrelations, ptCand1) == -1 || o2::analysis::findBin(binsPtCorrelations, ptCand2) == -1) {
         continue;
       }
 
-      registry.fill(HIST("hCorrel2DVsPtMCGen"), deltaPhi, deltaEta, ptCand1, ptCand2);
-      registry.fill(HIST("hCorrel2DPtIntMCGen"), deltaPhi, deltaEta);
-      registry.fill(HIST("hDeltaEtaPtIntMCGen"), deltaEta);
-      registry.fill(HIST("hDeltaPhiPtIntMCGen"), deltaPhi);
-      registry.fill(HIST("hDeltaYPtIntMCGen"), yCand2 - yCand1);
-      registry.fill(HIST("hDeltaPtDDbarMCGen"), ptCand2 - ptCand1);
-      registry.fill(HIST("hDeltaPtMaxMinMCGen"), std::abs(ptCand2 - ptCand2));
+      // Fill histograms depending on the type of pair we are analysing
+      if (pairType == DD && (dMesonCand1 != 0 && dMesonCand2 != 0)) {
+        fillKinematicSignalHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+      } else if (pairType == DDBar && (dMesonCand1 != 0 && dMesonBarCand2 != 0)) {
+        fillKinematicSignalHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+      } else if (pairType == DBarDBar && (dMesonBarCand1 != 0 && dMesonBarCand2 != 0)) {
+        fillKinematicSignalHists( pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+      }
     }
   } // end loop
 

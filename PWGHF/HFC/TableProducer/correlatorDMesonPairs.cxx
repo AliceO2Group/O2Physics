@@ -43,9 +43,9 @@ namespace
 {
 enum CandidateTypeSel {
   SelectedD = 0, // This particle is selected as a D
-  SelectedDbar,  // This particle is selected as a Dbar
+  SelectedDBar,  // This particle is selected as a Dbar
   TrueD,         // This particle is a true D
-  TrueDbar       // This particle is a true Dbar
+  TrueDBar       // This particle is a true Dbar
 };
 } // namespace
 
@@ -240,7 +240,7 @@ struct HfCorrelatorDMesonPairs {
   }
 
   // Sets bits to select candidate type for D0.
-  // SelectedD and SelectedDbar bits look at whether the candidate passed the selection flags, and TrueD and TrueDbar check if it is matched with Mc.
+  // SelectedD and SelectedDBar bits look at whether the candidate passed the selection flags, and TrueD and TrueDBar check if it is matched with Mc.
   template <typename T, bool isRecoMc>
   uint8_t assignCandidateTypeD0(const T& candidate)
   {
@@ -249,14 +249,14 @@ struct HfCorrelatorDMesonPairs {
       SETBIT(candidateType, SelectedD);
     }
     if (candidate.isSelD0bar() >= selectionFlagD0) {
-      SETBIT(candidateType, SelectedDbar);
+      SETBIT(candidateType, SelectedDBar);
     }
     if constexpr (isRecoMc) {
       if (candidate.flagMcMatchRec() == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) { // matched as D0
         SETBIT(candidateType, TrueD);
       }
       if (candidate.flagMcMatchRec() == -(1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) { // matched as D0bar
-        SETBIT(candidateType, TrueDbar);
+        SETBIT(candidateType, TrueDBar);
       }
     }
     return candidateType;
@@ -270,13 +270,13 @@ struct HfCorrelatorDMesonPairs {
     if (particleSign == 1) {
       SETBIT(candidateType, SelectedD);
     } else {
-      SETBIT(candidateType, SelectedDbar);
+      SETBIT(candidateType, SelectedDBar);
     }
     if constexpr (isRecoMc) {
       if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi) { // matched as DPlus
         SETBIT(candidateType, TrueD);
       } else { // matched as D0bar
-        SETBIT(candidateType, TrueDbar);
+        SETBIT(candidateType, TrueDBar);
       }
     }
     return candidateType;
@@ -291,8 +291,8 @@ struct HfCorrelatorDMesonPairs {
       SETBIT(candidateType, SelectedD);
       SETBIT(candidateType, TrueD);
     } else if (candidate.pdgCode() == -pdg::Code::kDPlus || candidate.pdgCode() == -pdg::Code::kD0) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
-      SETBIT(candidateType, SelectedDbar);
-      SETBIT(candidateType, TrueDbar);
+      SETBIT(candidateType, SelectedDBar);
+      SETBIT(candidateType, TrueDBar);
     }
     return candidateType;
   }
@@ -435,7 +435,7 @@ struct HfCorrelatorDMesonPairs {
       auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), true>(candidate1); // Candidate type attribution
       registry.fill(HIST("hSelectionStatusMcRec"), candidateType1);
       int8_t origin1 = 0, matchedRec1 = 0;
-      if (!(TESTBIT(candidateType1, TrueD) && TESTBIT(candidateType1, TrueDbar))) { // if our event is not bkg
+      if (!(TESTBIT(candidateType1, TrueD) && TESTBIT(candidateType1, TrueDBar))) { // if our event is not bkg
         // check if it's prompt or non-prompt
         origin1 = candidate1.originMcRec();
         registry.fill(HIST("hOriginMcRec"), origin1);
@@ -455,7 +455,7 @@ struct HfCorrelatorDMesonPairs {
 
         auto candidateType2 = assignCandidateTypeD0<decltype(candidate2), true>(candidate2); // Candidate type attribution
         int8_t origin2 = 0, matchedRec2 = 0;
-        if (!(TESTBIT(candidateType2, TrueD) && TESTBIT(candidateType2, TrueDbar))) { // if our event is not bkg
+        if (!(TESTBIT(candidateType2, TrueD) && TESTBIT(candidateType2, TrueDBar))) { // if our event is not bkg
           // check if it's prompt or non-prompt
           origin2 = candidate2.originMcRec();
           // check if it's MC matched
@@ -566,7 +566,7 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hMass"), invMassDplusToPiKPi(candidate1), candidate1.pt());
 
       int8_t origin1 = 0, matchedRec1 = 0;
-      if (!(TESTBIT(candidateType1, TrueD) && TESTBIT(candidateType1, TrueDbar))) { // if our event is not bkg
+      if (!(TESTBIT(candidateType1, TrueD) && TESTBIT(candidateType1, TrueDBar))) { // if our event is not bkg
         // check if it's prompt or non-prompt
         origin1 = candidate1.originMcRec();
         registry.fill(HIST("hOriginMcRec"), origin1);
@@ -591,7 +591,7 @@ struct HfCorrelatorDMesonPairs {
 
         uint candidateType2 = assignCandidateTypeDPlus<decltype(candidate2), true>(candidate2, innerParticleSign);
         int8_t origin2 = 0, matchedRec2 = 0;
-        if (!(TESTBIT(candidateType2, TrueD) && TESTBIT(candidateType2, TrueDbar))) { // if our event is not bkg
+        if (!(TESTBIT(candidateType2, TrueD) && TESTBIT(candidateType2, TrueDBar))) { // if our event is not bkg
           // check if it's prompt or non-prompt
           origin2 = candidate1.originMcRec();
           // check if it's MC matched
