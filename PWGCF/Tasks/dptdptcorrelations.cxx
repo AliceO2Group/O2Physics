@@ -882,17 +882,6 @@ struct DptDptCorrelationsTask {
     int ixDCE = getDCEindex(collision);
     if (!(ixDCE < 0)) {
       if (ccdblst != nullptr && !(dataCEME[ixDCE]->isCCDBstored())) {
-        dataCEME[ixDCE]->storeTrackCorrections(
-          std::vector<TH3*>{reinterpret_cast<TH3*>(ccdblst->FindObject(
-                              TString::Format("correction_%02d-%02d_p1",
-                                              static_cast<int>(fCentMultMin[ixDCE]),
-                                              static_cast<int>(fCentMultMax[ixDCE]))
-                                .Data())),
-                            reinterpret_cast<TH3*>(ccdblst->FindObject(
-                              TString::Format("correction_%02d-%02d_m1",
-                                              static_cast<int>(fCentMultMin[ixDCE]),
-                                              static_cast<int>(fCentMultMax[ixDCE]))
-                                .Data()))});
         if constexpr (gen) {
           dataCEME[ixDCE]->storePtAverages(
             std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
@@ -906,6 +895,17 @@ struct DptDptCorrelationsTask {
                                                 static_cast<int>(fCentMultMax[ixDCE]))
                                   .Data()))});
         } else {
+          dataCEME[ixDCE]->storeTrackCorrections(
+            std::vector<TH3*>{reinterpret_cast<TH3*>(ccdblst->FindObject(
+                                TString::Format("correction_%02d-%02d_p1",
+                                                static_cast<int>(fCentMultMin[ixDCE]),
+                                                static_cast<int>(fCentMultMax[ixDCE]))
+                                  .Data())),
+                              reinterpret_cast<TH3*>(ccdblst->FindObject(
+                                TString::Format("correction_%02d-%02d_m1",
+                                                static_cast<int>(fCentMultMin[ixDCE]),
+                                                static_cast<int>(fCentMultMax[ixDCE]))
+                                  .Data()))});
           dataCEME[ixDCE]->storePtAverages(
             std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
                                 TString::Format("ptavgetaphi_%02d-%02d_p",
