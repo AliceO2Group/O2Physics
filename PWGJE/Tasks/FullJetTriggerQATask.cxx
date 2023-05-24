@@ -444,7 +444,7 @@ struct JetTriggerQA {
 
       // auto clustersInJet = jetClusterConstituents.sliceBy(perJetClusterConstituents, jet.globalIndex());
       // for (const auto& clusterList : clustersInJet) {
-      for (auto& cluster : jet.tracks_as<selectedClusters>()) {
+      for (auto& cluster : jet.clusters_as<selectedClusters>()) {
         auto clusterPt = cluster.energy() / std::cosh(cluster.eta());
         neutralEnergyFraction += cluster.energy();
         auto z = clusterPt / jetPt;
