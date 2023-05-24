@@ -266,8 +266,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       for (int i = 0; i <= kTPCnsigmaNbins; ++i)
         tpcNsigmaBinLims[i] = -7.0 + 0.2 * i;
 
-      const int kPinEleNbins = 15;
-      double pinEleBinLims[kPinEleNbins + 1] = {0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10.0, 15.0};
+      const int kPinEleNbins = 18;
+      double pinEleBinLims[kPinEleNbins + 1] = {0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10.0, 15.0};
+
+      const int kPinKaNbins = 15;
+      double pinKaBinLims[kPinKaNbins + 1] = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0};
 
       const int kEtaNbins = 9;
       double etaBinLimsI[kEtaNbins + 1] = {-0.9, -0.7, -0.5, -0.3, -0.1, 0.1, 0.3, 0.5, 0.7, 0.9};
@@ -283,6 +286,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       nSigBinLimits[2] = TArrayD(kPinEleNbins + 1, pinEleBinLims);
       nSigBinLimits[3] = TArrayD(kEtaNbins + 1, etaBinLimsI);
 
+      TArrayD nSigBinLimitsKa[kNvarsPID];
+      nSigBinLimitsKa[0] = TArrayD(kTPCnsigmaNbins + 1, tpcNsigmaBinLims);
+      nSigBinLimitsKa[1] = TArrayD(kTPCnClusterbins + 1, tpcNclusterBinLims);
+      nSigBinLimitsKa[2] = TArrayD(kPinKaNbins + 1, pinKaBinLims);
+      nSigBinLimitsKa[3] = TArrayD(kEtaNbins + 1, etaBinLimsI);
+
       if (subGroupStr.Contains("electron")) {
         int varsPIDnSigEle[kNvarsPID] = {VarManager::kTPCnSigmaEl, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
         int varsPIDnSigEle_Corr[kNvarsPID] = {VarManager::kTPCnSigmaEl_Corr, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
@@ -294,6 +303,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         int varsPIDnSigPion_Corr[kNvarsPID] = {VarManager::kTPCnSigmaPi_Corr, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
         hm->AddHistogram(histClass, "nSigmaTPCpion", "TPC n_{#sigma}(pion) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigPion, nSigBinLimits);
         hm->AddHistogram(histClass, "nSigmaTPCpion_Corr", "TPC n_{#sigma}^{Corr}(pion) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigPion_Corr, nSigBinLimits);
+      }
+      if (subGroupStr.Contains("kaon")) {
+        int varsPIDnSigKaon[kNvarsPID] = {VarManager::kTPCnSigmaKa, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
+        // int varsPIDnSigKaon_Corr[kNvarsPID] = {VarManager::kTPCnSigmaKa_Corr, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};//to do
+        hm->AddHistogram(histClass, "nSigmaTPCkaon", "TPC n_{#sigma}(kaon) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigKaon, nSigBinLimitsKa);
+        // hm->AddHistogram(histClass, "nSigmaTPCkaon_Corr", "TPC n_{#sigma}^{Corr}(kaon) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigKaon_Corr, nSigBinLimits);
       }
       if (subGroupStr.Contains("proton")) {
         int varsPIDnSigProton[kNvarsPID] = {VarManager::kTPCnSigmaPr, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
@@ -350,6 +365,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "DCAsigZ", "DCA_{Z} [#sigma]", false, 100, -10.0, 10.0, VarManager::kTrackDCAsigZ);
       hm->AddHistogram(histClass, "Pt_DCAxy", "p_{T} vs DCA_{xy}", false, 200, 0.0, 20.0, VarManager::kPt, 400, -2.0, 2.0, VarManager::kTrackDCAxy);
       hm->AddHistogram(histClass, "Pt_DCAz", "p_{T} vs DCA_{z}", false, 200, 0.0, 20.0, VarManager::kPt, 800, -4.0, 4.0, VarManager::kTrackDCAz);
+      hm->AddHistogram(histClass, "Eta_DCAxy", "#eta vs DCA_{xy}", false, 20, -1.0, 1.0, VarManager::kEta, 400, -2.0, 2.0, VarManager::kTrackDCAxy);
+      hm->AddHistogram(histClass, "Eta_DCAz", "#eta vs DCA_{z}", false, 20, -1.0, 1.0, VarManager::kEta, 800, -4.0, 4.0, VarManager::kTrackDCAz);
       hm->AddHistogram(histClass, "Pt_DCAsigXY", "p_{T} vs DCA_{XY} [#sigma]", false, 200, 0.0, 20.0, VarManager::kPt, 100, -10.0, 10.0, VarManager::kTrackDCAsigXY); // JJ:edit
       hm->AddHistogram(histClass, "Pt_DCAsigZ", "p_{T} vs DCA_{Z} [#sigma]", false, 200, 0.0, 20.0, VarManager::kPt, 100, -10.0, 10.0, VarManager::kTrackDCAsigZ);
       hm->AddHistogram(histClass, "Pt_DCAresXY", "p_{T} vs #DeltaDCA_{XY}", false, 200, 0.0, 10.0, VarManager::kPt, 100, -0.03, 0.03, VarManager::kTrackDCAresXY);
