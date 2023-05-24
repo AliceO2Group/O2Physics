@@ -137,7 +137,7 @@ struct HfCandidateCreatorBplus {
     dfB.setMaxR(maxR);
     dfB.setMinParamChange(minParamChange);
     dfB.setMinRelChi2Change(minRelChi2Change);
-    dfB.setUseAbsDCA(useAbsDCA);
+    dfB.setUseAbsDCA(true);
     dfB.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // Initial fitter to redo D-vertex to get extrapolated daughter tracks

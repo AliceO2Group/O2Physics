@@ -38,8 +38,9 @@ enum EMHistType {
   kEvent = 0,
   kV0 = 1,
   kTrack = 2,
-  kCluster = 3,
-  kPhoton = 4, // photon candidates
+  kPHOSCluster = 3,
+  kEMCCluster = 4,
+  kPhoton = 5, // photon candidates
 };
 
 namespace o2::aod
@@ -65,6 +66,13 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH1F*>(list->FindObject("hPhi"))->Fill(obj.Phi() < 0.f ? obj.Phi() + TMath::TwoPi() : obj.Phi());
   } else if constexpr (htype == EMHistType::kV0) {
     reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.pt());
+  } else if constexpr (htype == EMHistType::kPHOSCluster) {
+    reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.pt());
+    reinterpret_cast<TH2F*>(list->FindObject("hEtaPhi"))->Fill(obj.phi(), obj.eta());
+    reinterpret_cast<TH2F*>(list->FindObject("hEvsNcell"))->Fill(obj.e(), obj.nCells());
+    reinterpret_cast<TH2F*>(list->FindObject("hEvsM02"))->Fill(obj.e(), obj.m02());
+    reinterpret_cast<TH2F*>(list->FindObject("hEvsM20"))->Fill(obj.e(), obj.m20());
+    reinterpret_cast<TH2F*>(list->FindObject(Form("hClusterXZM%d", obj.mod())))->Fill(obj.cellx(), obj.cellz());
   }
 }
 } // namespace emphotonhistograms
