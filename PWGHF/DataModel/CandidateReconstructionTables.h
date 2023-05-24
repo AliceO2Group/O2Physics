@@ -1307,21 +1307,31 @@ DECLARE_SOA_TABLE(DsSelCollision, "AOD", "DSCOLL", aod::hf_sel_collision_ds::DsF
 // definition of columns and tables for Dplus-Hadron correlation pairs
 namespace hf_correlation_dplus_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
-DECLARE_SOA_COLUMN(PtD, ptD, float);
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);
-DECLARE_SOA_COLUMN(MD, mD, float);
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);        //! DeltaPhi between D+ and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);        //! DeltaEta between D+ and Hadrons
+DECLARE_SOA_COLUMN(PtD, ptD, float);                  //! Transverse momentum of D+
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);        //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MD, mD, float);                    //! Invariant mass of D+
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, bool); //! Used in MC-Rec, D+ Signal
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);            //! Pool Bin of event defined using zvtx and multiplicity
 } // namespace hf_correlation_dplus_hadron
-DECLARE_SOA_TABLE(DplusHadronPair, "AOD", "DPLUSHPAIR",
+DECLARE_SOA_TABLE(DplusHadronPair, "AOD", "DPLUSHPAIR", //! D+-Hadrons pairs Informations
                   aod::hf_correlation_dplus_hadron::DeltaPhi,
                   aod::hf_correlation_dplus_hadron::DeltaEta,
                   aod::hf_correlation_dplus_hadron::PtD,
-                  aod::hf_correlation_dplus_hadron::PtHadron);
-DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO",
+                  aod::hf_correlation_dplus_hadron::PtHadron,
+                  aod::hf_correlation_dplus_hadron::PoolBin);
+DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO", //! D+-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_dplus_hadron::MD,
                   aod::hf_correlation_dplus_hadron::SignalStatus);
+
+// Table for selection of Dmeson in a collision
+namespace hf_selection_dmeson_collision
+{
+DECLARE_SOA_COLUMN(DmesonSel, dmesonSel, bool); //! Selection flag for D meson in a collision
+} // namespace hf_selection_dmeson_collision
+DECLARE_SOA_TABLE(DmesonSelection, "AOD", "DINCOLL", // Selection of D meson in collisions
+                  aod::hf_selection_dmeson_collision::DmesonSel);
 
 // specific Xicc candidate properties
 namespace hf_cand_xicc
