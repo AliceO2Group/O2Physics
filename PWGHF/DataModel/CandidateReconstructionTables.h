@@ -539,9 +539,9 @@ DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction l
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
-DECLARE_SOA_COLUMN(V0X, v0x, float); //! X position of V0 decay
-DECLARE_SOA_COLUMN(V0Y, v0y, float); //! Y position of V0 decay
-DECLARE_SOA_COLUMN(V0Z, v0z, float); //! Z position of V0 decay
+DECLARE_SOA_COLUMN(V0X, v0x, float);                        //! X position of V0 decay
+DECLARE_SOA_COLUMN(V0Y, v0y, float);                        //! Y position of V0 decay
+DECLARE_SOA_COLUMN(V0Z, v0z, float);                        //! Z position of V0 decay
 
 template <typename T>
 auto invMassLcToK0sP(const T& candidate)
