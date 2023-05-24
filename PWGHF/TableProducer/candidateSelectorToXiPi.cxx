@@ -292,13 +292,13 @@ struct HfCandidateSelectorToXiPi {
       }
 
       // cut on cascade dcaXY and dcaZ
-      if ((candidate.impactParCascXY() < impactParameterXYCascMin) || (candidate.impactParCascXY() > impactParameterXYCascMax)) {
+      if ((std::abs(candidate.impactParCascXY()) < impactParameterXYCascMin) || (std::abs(candidate.impactParCascXY()) > impactParameterXYCascMax)) {
         resultSelections = false;
         hSelDCAXYCasc->Fill(0);
       } else {
         hSelDCAXYCasc->Fill(1);
       }
-      if ((candidate.impactParCascZ() < impactParameterZCascMin) || (candidate.impactParCascZ() > impactParameterZCascMax)) {
+      if ((std::abs(candidate.impactParCascZ()) < impactParameterZCascMin) || (std::abs(candidate.impactParCascZ()) > impactParameterZCascMax)) {
         resultSelections = false;
         hSelDCAZCasc->Fill(0);
       } else {
