@@ -533,6 +533,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtV0Pos, ptV0Pos, //!
                            [](float px, float py) { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtV0Neg, ptV0Neg, //!
                            [](float px, float py) { return RecoDecay::pt(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(V0Ct, v0ct, //!
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz, double m) -> float { return RecoDecay::ct(array{px, py, pz}, RecoDecay::distance(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}), m); });
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin, reconstruction level
@@ -551,6 +553,18 @@ template <typename T>
 auto invMassGammaToEE(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)});
+}
+
+template <typename T>
+auto ctV0K0Short(const T& candidate)
+{
+  return candidate.v0ct(RecoDecay::getMassPDG(kK0Short));
+}
+
+template <typename T>
+auto ctV0Lambda(const T& candidate)
+{
+  return candidate.v0ct(RecoDecay::getMassPDG(kLambda0));
 }
 
 } // namespace hf_cand_casc
@@ -602,7 +616,8 @@ DECLARE_SOA_TABLE(HfCandCascBase, "AOD", "HFCANDCASCBASE", //!
                   v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                   v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                   v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                  v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>);
+                  v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                  hf_cand_casc::V0Ct<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_casc::V0X, hf_cand_casc::V0Y, hf_cand_casc::V0Z, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>);
 //                  ,
 //                  v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
 //                  v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
