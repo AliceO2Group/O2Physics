@@ -140,7 +140,7 @@ struct MultiplicityTableTaskIndexed {
                    aod::FV0As const& fv0as,
                    aod::FT0s const& ft0s,
                    aod::FDDs const& fdds)
-  {    
+  {
     // reserve memory
     mult.reserve(collisions.size());
     multzeq.reserve(collisions.size());
@@ -161,7 +161,7 @@ struct MultiplicityTableTaskIndexed {
       float multZeqFDDA = 0.f;
       float multZeqFDDC = 0.f;
       float multZeqNContribs = 0.f;
-      
+
       auto tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto pvContribsGrouped = pvContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto pvContribsEta1Grouped = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
