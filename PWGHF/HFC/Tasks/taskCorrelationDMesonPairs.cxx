@@ -47,29 +47,22 @@ namespace
 {
 enum CandidateTypeSel {
   SelectedD = 0, // This particle is selected as a D
-  SelectedDBar,  // This particle is selected as a Dbar
+  SelectedDbar,  // This particle is selected as a Dbar
   TrueD,         // This particle is a true D
-  TrueDBar       // This particle is a true Dbar
+  TrueDbar       // This particle is a true Dbar
 };
 
 enum DMesonType {
-  DefaultD = 0, // Default value
-  SignalD,      // This particle is a signal D
-  ReflectedD,   // This particle is a reflected D
-  BkgD          // This particle is background of D
-};
-
-enum DBarMesonType {
-  DefaultDBar = 0, // Default value
-  SignalDBar,      // This particle is a signal Dbar
-  ReflectedDBar,   // This particle is a reflected Dbar
-  BkgDBar          // This particle is background of Dbar
+  Default = 0, // Default value
+  Signal,      // This particle is a signal D meson
+  Reflected,   // This particle is a reflected D meson
+  Bkg          // This particle is background of D meson
 };
 
 enum PairTypeSel {
   DD = 0,  // Analyse D0-D0 or DPlus-DPlus correlations
-  DDBar,   // Analyse D0-D0bar or DPlus-DMinus correlations
-  DBarDBar // Analyse D0bar-D0bar or DMinus-DMinus correlations
+  DDbar,   // Analyse D0-D0bar or DPlus-DMinus correlations
+  DbarDbar // Analyse D0bar-D0bar or DMinus-DMinus correlations
 };
 } // namespace
 
@@ -275,28 +268,28 @@ struct HfTaskCorrelationDMesonPairs {
   // Register whether our D meson candidate is Sig, Ref or Bkg
   uint getDMesonType(uint const& candidateType)
   {
-    if (TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueD) && !TESTBIT(candidateType, TrueDBar)) { // Signal
-      return SignalD;
-    } else if (TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueDBar)) { // Reflected
-      return ReflectedD;
-    } else if (TESTBIT(candidateType, SelectedD) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDBar))) { // Background
-      return BkgD;
+    if (TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueD) && !TESTBIT(candidateType, TrueDbar)) { // Signal
+      return Signal;
+    } else if (TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueDbar)) { // Reflected
+      return Reflected;
+    } else if (TESTBIT(candidateType, SelectedD) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) { // Background
+      return Bkg;
     } else {
-      return DefaultD;
+      return Default;
     }
   }
 
   // Register whether our Dbar meson candidate is Sig, Ref or Bkg
   uint getDMesonBarType(uint const& candidateType)
   {
-    if (TESTBIT(candidateType, SelectedDBar) && TESTBIT(candidateType, TrueDBar) && !TESTBIT(candidateType, TrueD)) { // Signal
-      return SignalDBar;
-    } else if (TESTBIT(candidateType, SelectedDBar) && TESTBIT(candidateType, TrueD)) { // Reflected
-      return ReflectedDBar;
-    } else if (TESTBIT(candidateType, SelectedDBar) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDBar))) { // Background
-      return BkgDBar;
+    if (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueDbar) && !TESTBIT(candidateType, TrueD)) { // Signal
+      return Signal;
+    } else if (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueD)) { // Reflected
+      return Reflected;
+    } else if (TESTBIT(candidateType, SelectedDbar) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) { // Background
+      return Bkg;
     } else {
-      return DefaultDBar;
+      return Default;
     }
   }
 
@@ -399,9 +392,9 @@ struct HfTaskCorrelationDMesonPairs {
         // in signal region
         if (pairType == DD && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedD))) {
           fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-        } else if (pairType == DDBar && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDBar))) {
+        } else if (pairType == DDbar && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDbar))) {
           fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-        } else if (pairType == DBarDBar && (TESTBIT(pairEntry.candidateType1(), SelectedDBar) && TESTBIT(pairEntry.candidateType2(), SelectedDBar))) {
+        } else if (pairType == DbarDbar && (TESTBIT(pairEntry.candidateType1(), SelectedDbar) && TESTBIT(pairEntry.candidateType2(), SelectedDbar))) {
           fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
         }
       }
@@ -415,9 +408,9 @@ struct HfTaskCorrelationDMesonPairs {
         // in sideband region
         if (pairType == DD && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedD))) {
           fillKinematicSidebandHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-        } else if (pairType == DDBar && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDBar))) {
+        } else if (pairType == DDbar && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDbar))) {
           fillKinematicSidebandHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-        } else if (pairType == DBarDBar && (TESTBIT(pairEntry.candidateType1(), SelectedDBar) && TESTBIT(pairEntry.candidateType2(), SelectedDBar))) {
+        } else if (pairType == DbarDbar && (TESTBIT(pairEntry.candidateType1(), SelectedDbar) && TESTBIT(pairEntry.candidateType2(), SelectedDbar))) {
           fillKinematicSidebandHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
         }
       }
@@ -471,10 +464,10 @@ struct HfTaskCorrelationDMesonPairs {
         case DD: // D0 D0
           fillMassCorrHists(hMassCorrArray, dMesonCand1, dMesonCand2, massCand1, massCand2, ptCand1, ptCand2);
           break;
-        case DDBar: // D0 D0bar
+        case DDbar: // D0 D0bar
           fillMassCorrHists(hMassCorrArray, dMesonCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2);
           break;
-        case DBarDBar: // D0bar D0bar
+        case DbarDbar: // D0bar D0bar
           fillMassCorrHists(hMassCorrArray, dMesonBarCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2);
           break;
       }
@@ -490,9 +483,9 @@ struct HfTaskCorrelationDMesonPairs {
         // Fill histograms depending on the type of pair we are analysing
         if (pairType == DD && (dMesonCand1 != 0 && dMesonCand2 != 0)) {
           fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-        } else if (pairType == DDBar && (dMesonCand1 != 0 && dMesonBarCand2 != 0)) {
+        } else if (pairType == DDbar && (dMesonCand1 != 0 && dMesonBarCand2 != 0)) {
           fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-        } else if (pairType == DBarDBar && (dMesonBarCand1 != 0 && dMesonBarCand2 != 0)) {
+        } else if (pairType == DbarDbar && (dMesonBarCand1 != 0 && dMesonBarCand2 != 0)) {
           fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
         }
 
@@ -501,10 +494,10 @@ struct HfTaskCorrelationDMesonPairs {
           case DD: // D0 D0
             fillAngularCorrelHists(hCorrelSignalArray, dMesonCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
-          case DDBar: // D0 D0bar
+          case DDbar: // D0 D0bar
             fillAngularCorrelHists(hCorrelSignalArray, dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
-          case DBarDBar: // D0bar D0bar
+          case DbarDbar: // D0bar D0bar
             fillAngularCorrelHists(hCorrelSignalArray, dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
         }
@@ -520,9 +513,9 @@ struct HfTaskCorrelationDMesonPairs {
         // Fill histograms depending on the type of pair we are analysing
         if (pairType == DD && (dMesonCand1 != 0 && dMesonCand2 != 0)) {
           fillKinematicSidebandHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-        } else if (pairType == DDBar && (dMesonCand1 != 0 && dMesonBarCand2 != 0)) {
+        } else if (pairType == DDbar && (dMesonCand1 != 0 && dMesonBarCand2 != 0)) {
           fillKinematicSidebandHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-        } else if (pairType == DBarDBar && (dMesonBarCand1 != 0 && dMesonBarCand2 != 0)) {
+        } else if (pairType == DbarDbar && (dMesonBarCand1 != 0 && dMesonBarCand2 != 0)) {
           fillKinematicSidebandHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
         }
 
@@ -531,10 +524,10 @@ struct HfTaskCorrelationDMesonPairs {
           case DD: // D0 D0
             fillAngularCorrelHists(hCorrelSidebandsArray, dMesonCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
-          case DDBar: // D0 D0bar
+          case DDbar: // D0 D0bar
             fillAngularCorrelHists(hCorrelSidebandsArray, dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
-          case DBarDBar: // D0bar D0bar
+          case DbarDbar: // D0bar D0bar
             fillAngularCorrelHists(hCorrelSidebandsArray, dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
         }
@@ -574,9 +567,9 @@ struct HfTaskCorrelationDMesonPairs {
       // Fill histograms depending on the type of pair we are analysing
       if (pairType == DD && (dMesonCand1 != 0 && dMesonCand2 != 0)) {
         fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-      } else if (pairType == DDBar && (dMesonCand1 != 0 && dMesonBarCand2 != 0)) {
+      } else if (pairType == DDbar && (dMesonCand1 != 0 && dMesonBarCand2 != 0)) {
         fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-      } else if (pairType == DBarDBar && (dMesonBarCand1 != 0 && dMesonBarCand2 != 0)) {
+      } else if (pairType == DbarDbar && (dMesonBarCand1 != 0 && dMesonBarCand2 != 0)) {
         fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
       }
     }
