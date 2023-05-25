@@ -47,13 +47,14 @@ enum ParticleType {
 };
 } // namespace
 
-namespace o2::aod {
+namespace o2::aod
+{
 namespace muon_source
 {
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(Source, source, uint8_t);
-}
+} // namespace muon_source
 DECLARE_SOA_TABLE(HfMuonSource, "AOD","MUONSOURCE", muon_source::Pt, muon_source::DcaXY, muon_source::Source);
 } // namespace o2::aod
 
@@ -229,7 +230,7 @@ struct HfTaskMuonSource {
     const auto pt(muon.pt()), chi2(muon.chi2MatchMCHMFT());
     const auto dca(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
 
-    singleMuonSource(pt,dca,mask);
+    singleMuonSource(pt, dca, mask);
 
     if (isBeautyDecayMu(mask)) {
       registry.fill(HIST("h2BeautyDecayMuPtDCA"), pt, dca);
