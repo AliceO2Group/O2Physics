@@ -27,20 +27,20 @@ namespace hf_correlation_d_meson_pair
 // Kinematic info
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float); //!
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float); //!
-DECLARE_SOA_COLUMN(PtCand1, ptCand1, float); //!
-DECLARE_SOA_COLUMN(PtCand2, ptCand2, float); //!
-DECLARE_SOA_COLUMN(YCand1, yCand1, float); //!
-DECLARE_SOA_COLUMN(YCand2, yCand2, float); //!
+DECLARE_SOA_COLUMN(PtCand1, ptCand1, float);   //!
+DECLARE_SOA_COLUMN(PtCand2, ptCand2, float);   //!
+DECLARE_SOA_COLUMN(YCand1, yCand1, float);     //!
+DECLARE_SOA_COLUMN(YCand2, yCand2, float);     //!
 // Invariant mass
 DECLARE_SOA_COLUMN(MCand1, mCand1, float); //!
 DECLARE_SOA_COLUMN(MCand2, mCand2, float); //!
 // Type of candidate: candidate charge and whether it is signal, reflected, or bkg
 DECLARE_SOA_COLUMN(CandidateType1, candidateType1, uint8_t); //!
 DECLARE_SOA_COLUMN(CandidateType2, candidateType2, uint8_t); //!
-DECLARE_SOA_COLUMN(DataType, dataType, uint8_t); //! 0: data, 1: MC reco, 2: MC gen
+DECLARE_SOA_COLUMN(DataType, dataType, uint8_t);             //! 0: data, 1: MC reco, 2: MC gen
 // MC info
-DECLARE_SOA_COLUMN(Origin1, origin1, uint8_t); //! candidate 1 origin
-DECLARE_SOA_COLUMN(Origin2, origin2, uint8_t); //! candidate 2 origin
+DECLARE_SOA_COLUMN(Origin1, origin1, uint8_t);       //! candidate 1 origin
+DECLARE_SOA_COLUMN(Origin2, origin2, uint8_t);       //! candidate 2 origin
 DECLARE_SOA_COLUMN(MatchedMc1, matchedMc1, uint8_t); //! MC matching of candidate 1
 DECLARE_SOA_COLUMN(MatchedMc2, matchedMc2, uint8_t); //! MC matching of candidate 2
 } // namespace hf_correlation_d_meson_pair
