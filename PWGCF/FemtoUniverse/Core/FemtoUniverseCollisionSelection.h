@@ -86,7 +86,7 @@ class FemtoUniverseCollisionSelection
         return false;
       }
     } else {
-      if (mCheckTrigger && !col.alias()[mTrigger]) {
+      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
         return false;
       }
       if (mCheckOffline && !col.sel7()) {

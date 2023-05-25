@@ -273,7 +273,7 @@ void chargedSpectra::initEvent(const C& collision, const T& tracks)
   vars.isAcceptedEvent = false;
   if (std::abs(collision.posZ()) < 10.f) {
     if (isRun3 ? collision.sel8() : collision.sel7()) {
-      if ((isRun3 || doprocessMC) ? true : collision.alias()[kINT7]) {
+      if ((isRun3 || doprocessMC) ? true : collision.alias_bit(kINT7)) {
         vars.isAcceptedEvent = true;
       }
     }

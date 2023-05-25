@@ -89,12 +89,12 @@ class CollisonCuts
         return false;
       }
     } else {
-      if (mCheckTrigger && !col.alias()[mTrigger]) {
+      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
         LOGF(debug, "Trigger selection failed");
         if (mInitialTriggerScan) {
           LOGF(debug, "Trigger scan initialized");
           for (int i = 0; i < kNaliases; i++) {
-            if (col.alias()[i]) {
+            if (col.alias_bit(i)) {
               LOGF(debug, "Trigger %d fired", i);
             }
           }

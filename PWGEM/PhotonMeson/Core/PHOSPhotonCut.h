@@ -54,6 +54,16 @@ class PHOSPhotonCut : public TNamed
     if (!IsSelectedCluster(cluster, PHOSPhotonCuts::kCPV)) {
       return false;
     }
+
+    // only temporary solution to avoid noisy channels.
+    if (cluster.e() * 20.f < cluster.nCells()) {
+      return false;
+    }
+
+    if (cluster.m20() < 0.1) {
+      return false;
+    }
+
     return true;
   }
 

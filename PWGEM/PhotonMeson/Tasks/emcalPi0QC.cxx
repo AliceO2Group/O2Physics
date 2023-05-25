@@ -230,7 +230,7 @@ struct Pi0QCTask {
     // do event selection if mDoEventSel is specified
     // currently the event selection is hard coded to kINT7
     // but other selections are possible that are defined in TriggerAliases.h
-    if (mDoEventSel && (!collision.alias()[kINT7])) {
+    if (mDoEventSel && (!collision.alias_bit(kINT7))) {
       LOG(debug) << "Event not selected becaus it is not kINT7, skipping";
       return;
     }
@@ -425,7 +425,7 @@ struct Pi0QCTask {
     if (mPhotons.size() < 3) {
       return;
     }
-    const double rotationAngle = M_PI / 2.0; //0.78539816339; // rotaion angle 90°
+    const double rotationAngle = M_PI / 2.0; // 0.78539816339; // rotaion angle 90°
 
     TLorentzVector lvRotationPhoton1; // photon candidates which get rotated
     TLorentzVector lvRotationPhoton2; // photon candidates which get rotated
