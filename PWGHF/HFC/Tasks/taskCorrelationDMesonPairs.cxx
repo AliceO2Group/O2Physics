@@ -428,9 +428,9 @@ struct HfTaskCorrelationDMesonPairs {
                                                            {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecRefBkg"))},
                                                            {registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRecBkgBkg"))}};
 
-    std::shared_ptr<THnSparse> hCorrelSidebandsArray[3][3] = {{registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecSigBkg"))},
-                                                              {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecRefBkg"))},
-                                                              {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRegionMCRecBkgBkg"))}};
+    std::shared_ptr<THnSparse> hCorrelSidebandsArray[3][3] = {{registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecSigSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecSigRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecSigBkg"))},
+                                                              {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecRefBkg"))},
+                                                              {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecBkgBkg"))}};
 
     for (const auto& pairEntry : pairEntries) {
       if (pairEntry.dataType() != 1) { // Assure that we only analyse Mc reco elements
