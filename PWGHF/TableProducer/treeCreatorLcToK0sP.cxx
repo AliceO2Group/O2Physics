@@ -220,7 +220,7 @@ struct HfTreeCreatorLcToK0sP {
       candidate.mAntiLambda(),
       candidate.mK0Short(),
       candidate.mGamma(),
-      o2::aod::hf_cand_casc::ctV0K0Short(candidate),
+      o2::aod::hf_cand_casc::ctV0K0s(candidate),
       o2::aod::hf_cand_casc::ctV0Lambda(candidate),
       candidate.dcaV0daughters(),
       candidate.pxpos(),

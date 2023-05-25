@@ -274,7 +274,7 @@ struct HfTaskLcToK0sP {
       auto mLambda = candidate.mLambda();
       auto mAntiLambda = candidate.mAntiLambda();
       auto mGamma = candidate.mGamma();
-      auto ctV0K0Short = o2::aod::hf_cand_casc::ctV0K0Short(candidate);
+      auto ctV0K0Short = o2::aod::hf_cand_casc::ctV0K0s(candidate);
       auto ctV0Lambda = o2::aod::hf_cand_casc::ctV0Lambda(candidate);
       auto cpa = candidate.cpa();
       auto cpaXY = candidate.cpaXY();
@@ -378,7 +378,7 @@ struct HfTaskLcToK0sP {
       auto mLambda = candidate.mLambda();
       auto mAntiLambda = candidate.mAntiLambda();
       auto mGamma = candidate.mGamma();
-      auto ctV0K0Short = o2::aod::hf_cand_casc::ctV0K0Short(candidate);
+      auto ctV0K0Short = o2::aod::hf_cand_casc::ctV0K0s(candidate);
       auto ctV0Lambda = o2::aod::hf_cand_casc::ctV0Lambda(candidate);
       auto cpa = candidate.cpa();
       auto cpaXY = candidate.cpaXY();

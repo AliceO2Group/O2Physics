@@ -556,7 +556,7 @@ auto invMassGammaToEE(const T& candidate)
 }
 
 template <typename T>
-auto ctV0K0Short(const T& candidate)
+auto ctV0K0s(const T& candidate)
 {
   return candidate.ctV0(RecoDecay::getMassPDG(kK0Short));
 }
