@@ -37,7 +37,7 @@ struct MultiplicityEventTrackSelection {
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
   {
-    if (!collision.alias()[kINT7]) {
+    if (!collision.alias_bit(kINT7)) {
       return;
     }
     if (!collision.sel7()) {

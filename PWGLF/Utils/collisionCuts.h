@@ -58,8 +58,8 @@ class CollisonCuts
     }
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultFV0M", "; vMultV0M; Entries", kTH1F, {{600, 0, 600}});
-    mHistogramRegistry->add("Event/MultFT0M", "; vMultT0M; Entries", kTH1F, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/MultFV0M", "; vMultV0M; Entries", kTH1F, {{120, 0, 120}});
+    mHistogramRegistry->add("Event/MultFT0M", "; vMultT0M; Entries", kTH1F, {{120, 0, 120}});
     mHistogramRegistry->add("Event/MultTPC", "; vMultTPC; Entries", kTH1F, {{300, 0, 3000}});
   }
 
@@ -89,12 +89,12 @@ class CollisonCuts
         return false;
       }
     } else {
-      if (mCheckTrigger && !col.alias()[mTrigger]) {
+      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
         LOGF(debug, "Trigger selection failed");
         if (mInitialTriggerScan) {
           LOGF(debug, "Trigger scan initialized");
           for (int i = 0; i < kNaliases; i++) {
-            if (col.alias()[i]) {
+            if (col.alias_bit(i)) {
               LOGF(debug, "Trigger %d fired", i);
             }
           }
@@ -119,7 +119,7 @@ class CollisonCuts
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/posZ"), col.posZ());
       mHistogramRegistry->fill(HIST("Event/MultFV0M"), col.multFV0M());
-      mHistogramRegistry->fill(HIST("Event/MultFT0M"), col.multFT0M());
+      mHistogramRegistry->fill(HIST("Event/MultFT0M"), col.centFT0M());
       mHistogramRegistry->fill(HIST("Event/MultTPC"), col.multTPC());
     }
   }

@@ -264,13 +264,17 @@ struct HfCandidateCreatorCascadeMc {
                  aod::McParticles const& particlesMC)
   {
     int8_t sign = 0;
+    int8_t origin = 0;
+    int indexRec = -1;
     std::vector<int> arrDaughLcIndex;
     std::array<int, 3> arrDaughLcPDG;
     std::array<int, 3> arrDaughLcPDGRef = {2212, 211, -211};
 
     // Match reconstructed candidates.
     rowCandidateCasc->bindExternalIndices(&tracks);
-    for (auto& candidate : *rowCandidateCasc) {
+    for (const auto& candidate : *rowCandidateCasc) {
+
+      origin = 0;
 
       const auto& bach = candidate.prong0_as<aod::BigTracksMC>();
       const auto& trackV0DaughPos = candidate.posTrack_as<aod::BigTracksMC>();
@@ -299,16 +303,23 @@ struct HfCandidateCreatorCascadeMc {
         // then we check the Lc
         MY_DEBUG_MSG(sign, LOG(info) << "K0S was correct! now we check the Lc");
         MY_DEBUG_MSG(sign, LOG(info) << "index proton = " << indexBach);
-        RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
         MY_DEBUG_MSG(sign, LOG(info) << "Lc found with sign " << sign; printf("\n"));
       }
 
-      rowMcMatchRec(sign);
+      // Check whether the particle is non-prompt (from a b quark).
+      if (sign != 0) {
+        auto particle = particlesMC.rawIteratorAt(indexRec);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+      }
+
+      rowMcMatchRec(sign, origin);
     }
     //}
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
+      origin = 0;
       // checking if I have a Lc --> K0S + p
       RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaCPlus, array{+kProton, +kK0Short}, true, &sign, 2);
       if (sign != 0) {
@@ -329,7 +340,11 @@ struct HfCandidateCreatorCascadeMc {
           MY_DEBUG_MSG(sign == 0, LOG(info) << "Pity, the three final daughters are not p, pi+, pi-, but " << arrDaughLcPDG[0] << ", " << arrDaughLcPDG[1] << ", " << arrDaughLcPDG[2]);
         }
       }
-      rowMcMatchGen(sign);
+      // Check whether the particle is non-prompt (from a b quark).
+      if (sign != 0) {
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+      }
+      rowMcMatchGen(sign, origin);
     }
   }
 

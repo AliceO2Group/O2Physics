@@ -348,17 +348,15 @@ struct femtoDreamProducerTask {
       auto pdgCode = particleMC.pdgCode();
       int particleOrigin = 99;
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
-      if (abs(pdgCode) == abs(ConfPDGCodeTrack.value)) {
-        if (particleMC.isPhysicalPrimary()) {
-          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
-        } else if (motherparticleMC.producedByGenerator()) {
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
-        } else {
-          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
-        }
+
+      if (particleMC.isPhysicalPrimary()) {
+        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
+      } else if (motherparticleMC.producedByGenerator()) {
+        particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
       } else {
-        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
+        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
       }
+
       outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
       outputPartsMCLabels(outputPartsMC.lastIndex());
     } else {

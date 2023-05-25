@@ -53,10 +53,9 @@ using EMReducedEvent = EMReducedEvents::iterator;
 
 namespace emreducedmcevent
 {
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //!
-DECLARE_SOA_COLUMN(PosX, posX, float);              //!
-DECLARE_SOA_COLUMN(PosY, posY, float);              //!
-DECLARE_SOA_COLUMN(PosZ, posZ, float);              //!
+DECLARE_SOA_COLUMN(PosX, posX, float); //!
+DECLARE_SOA_COLUMN(PosY, posY, float); //!
+DECLARE_SOA_COLUMN(PosZ, posZ, float); //!
 } // namespace emreducedmcevent
 DECLARE_SOA_TABLE(EMReducedMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
                   o2::soa::Index<>, mccollision::GeneratorsID,
@@ -155,8 +154,10 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
                   track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap,
+                  track::X, track::Y, track::Z, track::Snp, track::Tgl, track::Alpha, track::Signed1Pt,
 
                   // dynamic column
+                  track::IsWithinBeamPipe<track::X>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
@@ -362,6 +363,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(MatchedTrack, matchedTrack, int, Tracks, "_Matched
 DECLARE_SOA_COLUMN(X, x, float);                                                    //! cluster hit position in ALICE global coordinate
 DECLARE_SOA_COLUMN(Y, y, float);                                                    //! cluster hit position in ALICE global coordinate
 DECLARE_SOA_COLUMN(Z, z, float);                                                    //! cluster hit position in ALICE global coordinate
+DECLARE_SOA_COLUMN(CellX, cellx, int);                                              //! cell index x of cluster hit position
+DECLARE_SOA_COLUMN(CellZ, cellz, int);                                              //! cell index z of cluster hit position
 // DECLARE_SOA_COLUMN(TrackEta, tracketa, float);                                      //! eta of the matched track
 // DECLARE_SOA_COLUMN(TrackPhi, trackphi, float);                                      //! phi of the matched track
 // DECLARE_SOA_COLUMN(TrackP, trackp, float);                                          //! momentum of the matched track
@@ -379,6 +382,7 @@ DECLARE_SOA_TABLE(PHOSClusters, "AOD", "PHOSCLUSTERS", //!
                   skimmedcluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z,
                   skimmedcluster::M02, skimmedcluster::M20, skimmedcluster::NCells,
                   skimmedcluster::Time, skimmedcluster::DistanceToBadChannel, skimmedcluster::NLM,
+                  calocluster::Module, phoscluster::CellX, phoscluster::CellZ,
                   // phoscluster::TrackEta, phoscluster::TrackPhi, phoscluster::TrackP, phoscluster::TrackPt,
                   // dynamic column
                   phoscluster::Px<skimmedcluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,
