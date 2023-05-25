@@ -274,7 +274,7 @@ struct correlateStrangeness {
       return;
     }
     // ________________________________________________
-    if( !doprocessSameEventHCascades ){ 
+    if (!doprocessSameEventHCascades) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
       histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
       histos.fill(HIST("EventQA/hPvz"), collision.posZ());
@@ -289,7 +289,7 @@ struct correlateStrangeness {
           histos.fill(HIST("h2dMass") + HIST(v0names[index]), v0Data.pt(), v0Data.m(index));
       });
     }
-    if( !doprocessSameEventHCascades ){ 
+    if (!doprocessSameEventHCascades) {
       for (auto const& triggerTrack : triggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
         histos.fill(HIST("hTrackEtaVsPt"), track.pt(), track.eta());
@@ -301,8 +301,8 @@ struct correlateStrangeness {
     fillCorrelationsV0(triggerTracks, associatedV0s, false, collision.posZ(), collision.centFT0M());
   }
   void processSameEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
-                            aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
-                            aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
+                                 aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
+                                 aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
   {
     // ________________________________________________
     // Perform basic event selection
@@ -344,7 +344,7 @@ struct correlateStrangeness {
       // Perform basic event selection on both collisions
       if (!collision1.sel8() || !collision2.sel8())
         continue;
-      if( !doprocessMixedEventHCascades ){
+      if (!doprocessMixedEventHCascades) {
         if (collision1.globalIndex() == collision2.globalIndex()) {
           histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
         }
@@ -362,8 +362,8 @@ struct correlateStrangeness {
     }
   }
   void processMixedEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
-                             aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
-                             aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
+                                  aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
+                                  aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, collisions, collisions)) {
       // ________________________________________________
