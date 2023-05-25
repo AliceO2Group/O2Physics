@@ -170,7 +170,7 @@ struct HfCandidateSelectorD0 {
     }
 
     // in case only sideband candidates have to be stored, additional invariant-mass cut
-    if(keepOnlySidebandCandidates) {
+    if (keepOnlySidebandCandidates) {
       if (trackPion.sign() > 0) {
         if (std::abs(invMassD0ToPiK(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) < distanceFromD0MassForSidebands) {
           return false;
