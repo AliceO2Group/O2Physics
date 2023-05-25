@@ -73,8 +73,8 @@ struct HfCorrelatorDMesonPairs {
 
   Produces<aod::D0Pair> entryD0Pair;
   Produces<aod::D0PairRecoInfo> entryD0PairRecoInfo;
-  Produces<aod::DPlusPair> entryDPlusPair;
-  Produces<aod::DPlusPairRecoInfo> entryDPlusPairRecoInfo;
+  Produces<aod::DplusPair> entryDplusPair;
+  Produces<aod::DplusPairRecoInfo> entryDplusPairRecoInfo;
 
   Configurable<bool> verbose{"verbose", false, "Enable debug mode"};
   // Selection Flags
@@ -355,9 +355,9 @@ struct HfCorrelatorDMesonPairs {
                               originGen2,
                               matchedGen1,
                               matchedGen2);
-          // If both particles are DPlus, fill DPlusPair table
+          // If both particles are DPlus, fill DplusPair table
         } else if (std::abs(particle1.pdgCode()) == pdg::Code::kDPlus && std::abs(particle2.pdgCode()) == pdg::Code::kDPlus) {
-          entryDPlusPair(getDeltaPhi(particle2.phi(), particle1.phi()),
+          entryDplusPair(getDeltaPhi(particle2.phi(), particle1.phi()),
                          particle2.eta() - particle1.eta(),
                          particle1.pt(),
                          particle2.pt(),
@@ -368,7 +368,7 @@ struct HfCorrelatorDMesonPairs {
                          candidateType1,
                          candidateType2,
                          2);
-          entryDPlusPairRecoInfo(originGen1,
+          entryDplusPairRecoInfo(originGen1,
                                  originGen2,
                                  matchedGen1,
                                  matchedGen2);
@@ -528,7 +528,7 @@ struct HfCorrelatorDMesonPairs {
         }
         auto candidateType2 = assignCandidateTypeDPlus<decltype(candidate2), false>(candidate2, innerParticleSign);
         // fill tables
-        entryDPlusPair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
+        entryDplusPair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
                        candidate2.eta() - candidate1.eta(),
                        candidate1.pt(),
                        candidate2.pt(),
@@ -598,7 +598,7 @@ struct HfCorrelatorDMesonPairs {
           matchedRec2 = candidate1.flagMcMatchRec();
         }
         // fill tables
-        entryDPlusPair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
+        entryDplusPair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
                        candidate2.eta() - candidate1.eta(),
                        candidate1.pt(),
                        candidate2.pt(),
@@ -609,7 +609,7 @@ struct HfCorrelatorDMesonPairs {
                        candidateType1,
                        candidateType2,
                        1);
-        entryDPlusPairRecoInfo(origin1,
+        entryDplusPairRecoInfo(origin1,
                                origin2,
                                matchedRec1,
                                matchedRec2);

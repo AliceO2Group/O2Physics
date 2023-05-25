@@ -1333,12 +1333,6 @@ DECLARE_SOA_COLUMN(DmesonSel, dmesonSel, bool); //! Selection flag for D meson i
 DECLARE_SOA_TABLE(DmesonSelection, "AOD", "DINCOLL", // Selection of D meson in collisions
                   aod::hf_selection_dmeson_collision::DmesonSel);
 
-// Creation of tables with D Meson Pairs info
-DECLARE_DMESON_PAIR_TABLE(D0Pair, 1, "D0PAIR");                    //! D0 pairs Info
-DECLARE_DMESON_PAIR_RECOINFO_TABLE(D0PairRecoInfo, 1, "D0PAIR");   //! D0 pairs Reconstructed Info
-DECLARE_DMESON_PAIR_TABLE(DPlusPair, 2, "DPLUSPAIR");              //! DPlus pairs Info
-DECLARE_DMESON_PAIR_RECOINFO_TABLE(DPlusPairRecoInfo, 2, "DPLUS"); //! DPlus pairs Reconstructed Info
-
 // specific Xicc candidate properties
 namespace hf_cand_xicc
 {

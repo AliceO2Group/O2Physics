@@ -32,7 +32,7 @@ using namespace o2::constants::math;
 namespace o2::aod
 {
 using D0PairFull = soa::Join<aod::D0Pair, aod::D0PairRecoInfo>;
-using DPlusPairFull = soa::Join<aod::DPlusPair, aod::DPlusPairRecoInfo>;
+using DplusPairFull = soa::Join<aod::DplusPair, aod::DplusPairRecoInfo>;
 } // namespace o2::aod
 
 ///
@@ -274,9 +274,8 @@ struct HfTaskCorrelationDMesonPairs {
       return Reflected;
     } else if (TESTBIT(candidateType, SelectedD) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) { // Background
       return Bkg;
-    } else {
-      return Default;
     }
+    return Default;
   }
 
   // Register whether our Dbar meson candidate is Sig, Ref or Bkg
@@ -288,9 +287,8 @@ struct HfTaskCorrelationDMesonPairs {
       return Reflected;
     } else if (TESTBIT(candidateType, SelectedDbar) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) { // Background
       return Bkg;
-    } else {
-      return Default;
     }
+    return Default;
   }
 
   // Fill Mass correlation histograms
@@ -586,7 +584,7 @@ struct HfTaskCorrelationDMesonPairs {
   PROCESS_SWITCH(HfTaskCorrelationDMesonPairs, processDataD0, "Process data D0", true);
 
   /// DPlus-DMinus correlation pair filling task, from pair tables - for data-level analysis (no filter/selection, only true signal)
-  void processDataDPlus(aod::DPlusPair const& pairEntries)
+  void processDataDPlus(aod::DplusPair const& pairEntries)
   {
     analyseData(pairEntries);
   }
@@ -602,7 +600,7 @@ struct HfTaskCorrelationDMesonPairs {
   PROCESS_SWITCH(HfTaskCorrelationDMesonPairs, processMcRecD0, "Process MC D0 Rec mode", false);
 
   /// DPlus-DMinus correlation pair filling task, from pair tables - for MC reco-level analysis (no filter/selection, only true signal)
-  void processMcRecDPlus(aod::DPlusPairFull const& pairEntries)
+  void processMcRecDPlus(aod::DplusPairFull const& pairEntries)
   {
     analyseMcRec(pairEntries);
   }
@@ -618,7 +616,7 @@ struct HfTaskCorrelationDMesonPairs {
   PROCESS_SWITCH(HfTaskCorrelationDMesonPairs, processMcGenD0, "Process MC D0 Gen mode", false);
 
   /// DPlus-DMinus correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGenDPlus(aod::DPlusPairFull const& pairEntries)
+  void processMcGenDPlus(aod::DplusPairFull const& pairEntries)
   {
     analyseMcGen(pairEntries);
   }

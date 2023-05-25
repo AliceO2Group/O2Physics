@@ -16,7 +16,6 @@
 #ifndef PWGHF_HFC_DATAMODEL_DMESONPAIRSTABLES_H_
 #define PWGHF_HFC_DATAMODEL_DMESONPAIRSTABLES_H_
 
-#include "Common/Core/RecoDecay.h"
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
@@ -25,18 +24,18 @@ namespace o2::aod
 namespace hf_correlation_d_meson_pair
 {
 // Kinematic info
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float); //!
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float); //!
-DECLARE_SOA_COLUMN(PtCand1, ptCand1, float);   //!
-DECLARE_SOA_COLUMN(PtCand2, ptCand2, float);   //!
-DECLARE_SOA_COLUMN(YCand1, yCand1, float);     //!
-DECLARE_SOA_COLUMN(YCand2, yCand2, float);     //!
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float); //! Delta phi of the pair
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float); //! Delta eta of the pair
+DECLARE_SOA_COLUMN(PtCand1, ptCand1, float);   //! Transverse momentum of first candidate
+DECLARE_SOA_COLUMN(PtCand2, ptCand2, float);   //! Transverse momentum of second candidate
+DECLARE_SOA_COLUMN(YCand1, yCand1, float);     //! Rapidity of first candidate
+DECLARE_SOA_COLUMN(YCand2, yCand2, float);     //! Rapidity of second candidate
 // Invariant mass
-DECLARE_SOA_COLUMN(MCand1, mCand1, float); //!
-DECLARE_SOA_COLUMN(MCand2, mCand2, float); //!
+DECLARE_SOA_COLUMN(MCand1, mCand1, float); //! Invariant mass of first candidate
+DECLARE_SOA_COLUMN(MCand2, mCand2, float); //! Invariant mass of second candidate
 // Type of candidate: candidate charge and whether it is signal, reflected, or bkg
-DECLARE_SOA_COLUMN(CandidateType1, candidateType1, uint8_t); //!
-DECLARE_SOA_COLUMN(CandidateType2, candidateType2, uint8_t); //!
+DECLARE_SOA_COLUMN(CandidateType1, candidateType1, uint8_t); //! Type of first candidate
+DECLARE_SOA_COLUMN(CandidateType2, candidateType2, uint8_t); //! Type of second candidate
 DECLARE_SOA_COLUMN(DataType, dataType, uint8_t);             //! 0: data, 1: MC reco, 2: MC gen
 // MC info
 DECLARE_SOA_COLUMN(Origin1, origin1, uint8_t);       //! candidate 1 origin
@@ -67,6 +66,13 @@ DECLARE_SOA_COLUMN(MatchedMc2, matchedMc2, uint8_t); //! MC matching of candidat
                     hf_correlation_d_meson_pair::Origin2,                                          \
                     hf_correlation_d_meson_pair::MatchedMc1,                                       \
                     hf_correlation_d_meson_pair::MatchedMc2);
+
+// Creation of tables with D Meson Pairs info
+DECLARE_DMESON_PAIR_TABLE(D0Pair, 1, "D0PAIR");                    //! D0 pairs Info
+DECLARE_DMESON_PAIR_RECOINFO_TABLE(D0PairRecoInfo, 1, "D0PAIR");   //! D0 pairs Reconstructed Info
+DECLARE_DMESON_PAIR_TABLE(DplusPair, 2, "DPLUSPAIR");              //! D+ pairs Info
+DECLARE_DMESON_PAIR_RECOINFO_TABLE(DplusPairRecoInfo, 2, "DPLUS"); //! D+ pairs Reconstructed Info
+
 } // namespace o2::aod
 
 #endif // PWGHF_HFC_DATAMODEL_DMESONPAIRSTABLES_H_
