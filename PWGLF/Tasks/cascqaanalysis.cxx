@@ -13,7 +13,6 @@
 ///
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 
-#include <iostream>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
