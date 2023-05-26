@@ -127,8 +127,10 @@ struct cascqaanalysis {
     registry.add("hZCollision", "hZCollision", {HistType::kTH1F, {{200, -20.f, 20.f}}});
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
-    registry.add("hPtXiTrue", "hPtXiTrue", {HistType::kTH1F, {{ptAxis}}});
-    registry.add("hPtOmegaTrue", "hPtOmegaTrue", {HistType::kTH1F, {{ptAxis}}});
+    registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH1F, {{ptAxis}}});
+    registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH1F, {{ptAxis}}});
+    registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH1F, {{ptAxis}}});
+    registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH1F, {{ptAxis}}});
 
     registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{2, 0.0f, 2.0f}}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
@@ -389,11 +391,17 @@ struct cascqaanalysis {
     registry.fill(HIST("hNEventsMC"), 1.5);
 
     for (const auto& mcParticle : mcParticles) {
-      if (TMath::Abs(mcParticle.pdgCode()) == 3312){
-        registry.fill(HIST("hPtXiTrue"), mcParticle.pt());
+      if (mcParticle.pdgCode() == -3312){
+        registry.fill(HIST("hPtXiPlusTrue"), mcParticle.pt());
       }
-      if (TMath::Abs(mcParticle.pdgCode()) == 3334){
-        registry.fill(HIST("hPtOmegaTrue"), mcParticle.pt());
+      if (mcParticle.pdgCode() == 3312){
+        registry.fill(HIST("hPtXiMinusTrue"), mcParticle.pt());
+      }
+      if (mcParticle.pdgCode() == -3334){
+        registry.fill(HIST("hPtOmegaPlusTrue"), mcParticle.pt());
+      }
+      if (mcParticle.pdgCode() == 3334){
+        registry.fill(HIST("hPtOmegaMinusTrue"), mcParticle.pt());
       }
     }
   }
