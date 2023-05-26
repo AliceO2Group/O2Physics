@@ -120,13 +120,25 @@ struct cascqaanalysis {
 
   void init(InitContext const&)
   {
+    TString CandidateCounterLabels[5] = {"All candidates", "v0data exists", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
+    TString hNEventsMCLabels[2] = {"All", "Selected"};
+
     registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{1, 0.f, 1.f}}});
     registry.add("hZCollision", "hZCollision", {HistType::kTH1F, {{200, -20.f, 20.f}}});
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
-    registry.add("hCandidateCounter", "hCandidateCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}});
     registry.add("hPtXiTrue", "hPtXiTrue", {HistType::kTH1F, {{ptAxis}}});
     registry.add("hPtOmegaTrue", "hPtOmegaTrue", {HistType::kTH1F, {{ptAxis}}});
+
+    registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{2, 0.0f, 2.0f}}});
+    for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
+      registry.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
+    }
+
+    registry.add("hCandidateCounter", "hCandidateCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}});
+    for (Int_t n = 1; n <= registry.get<TH1>(HIST("hCandidateCounter"))->GetNbinsX(); n++) {
+      registry.get<TH1>(HIST("hCandidateCounter"))->GetXaxis()->SetBinLabel(n, CandidateCounterLabels[n - 1]);
+    }
   }
 
   // Event selection criteria
@@ -181,7 +193,7 @@ struct cascqaanalysis {
   }
 
   template<typename TCollision>
-  bool AcceptEvent(TCollision const& coll){
+  bool AcceptEvent(TCollision const& coll, bool isFillEventSelectionQA){
     // Event selection if required
     if (sel8 && !coll.sel8()) {
       return false;
@@ -190,10 +202,13 @@ struct cascqaanalysis {
       return false;
     }
 
-    registry.fill(HIST("hNEvents"), 0.5);
-    registry.fill(HIST("hZCollision"), coll.posZ());
-    registry.fill(HIST("hCentFT0M"), coll.centFT0M());
-    registry.fill(HIST("hCentFV0A"), coll.centFV0A());
+    if(isFillEventSelectionQA){
+      registry.fill(HIST("hNEvents"), 0.5);
+      registry.fill(HIST("hZCollision"), coll.posZ());
+      registry.fill(HIST("hCentFT0M"), coll.centFT0M());
+      registry.fill(HIST("hCentFV0A"), coll.centFV0A());
+    }
+
     return true;
   }
 
@@ -203,7 +218,7 @@ struct cascqaanalysis {
   aod::V0Datas const&,
   DauTracks const& tracks)
   {
-    if(!AcceptEvent(collision)){
+    if(!AcceptEvent(collision, 1)){
       return;
     }
 
@@ -273,7 +288,7 @@ struct cascqaanalysis {
   DauTracks const& tracks,
   aod::McParticles const&) // centrality-table is not ready for MC yet.
   {
-    if(!AcceptEvent(collision)){
+    if(!AcceptEvent(collision, 1)){
       return;
     }
 
@@ -348,12 +363,31 @@ struct cascqaanalysis {
 
   PROCESS_SWITCH(cascqaanalysis, processMCrec, "Process Run 3 mc, reconstructed", false);
 
-  void processMCgen( // soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision, 
-    aod::McParticles const& mcParticles) // MC particle could be possibly associated with several collisions (now generated cascades are filled w/o event selection)
+
+  void processMCgen(aod::McCollision const& mcCollision, 
+  aod::McParticles const& mcParticles, 
+  const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>>& collisions)
   {
-    // if(!AcceptEvent(collision)){
-    //   return;
-    // }
+    registry.fill(HIST("hNEventsMC"), 0.5);
+
+    std::vector<int64_t> SelectedEvents(collisions.size());
+    int nevts = 0;
+    for (const auto& collision : collisions) {
+      if(!AcceptEvent(collision, 0)){
+        continue;
+      }
+      SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+    }
+    SelectedEvents.resize(nevts);
+
+    const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end(); // at least 1 selected reconstructed event has the same global index as mcCollision
+
+    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+      return;
+    }
+
+    registry.fill(HIST("hNEventsMC"), 1.5);
+
     for (const auto& mcParticle : mcParticles) {
       if (TMath::Abs(mcParticle.pdgCode()) == 3312){
         registry.fill(HIST("hPtXiTrue"), mcParticle.pt());
@@ -372,6 +406,7 @@ struct myCascades {
 
   void init(InitContext const&)
   {
+    TString PGDlabels[3] = {"Unknown", "3312", "3334"};
     registry.add("hPt", "hPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}});
     registry.add("hMassXi", "hMassXi", {HistType::kTH1F, {{3000, 0.0f, 3.0f}}});
     registry.add("hMassOmega", "hMassOmega", {HistType::kTH1F, {{3000, 0.0f, 3.0f}}});
@@ -401,6 +436,9 @@ struct myCascades {
     registry.add("hBachITSHits", "hBachITSHits", {HistType::kTH1F, {{8, -0.5f, 7.5f}}});
     registry.add("hIsPrimary", "hIsPrimary", {HistType::kTH1F, {{3, -1.5f, 1.5f}}});
     registry.add("hPDGcode", "hPDGcode", {HistType::kTH1F, {{3, -1.5f, 1.5f}}});
+    for (Int_t n = 1; n <= registry.get<TH1>(HIST("hPDGcode"))->GetNbinsX(); n++) {
+      registry.get<TH1>(HIST("hPDGcode"))->GetXaxis()->SetBinLabel(n, PGDlabels[n - 1]);
+    }
   }
 
   void process(aod::MyCascades const& mycascades)
@@ -435,8 +473,9 @@ struct myCascades {
       registry.fill(HIST("hNegITSHits"), candidate.negitshits());
       registry.fill(HIST("hBachITSHits"), candidate.bachitshits());
       registry.fill(HIST("hIsPrimary"), candidate.isPrimary());
+
       if(TMath::Abs(candidate.mcPdgCode()) == 3312 || TMath::Abs(candidate.mcPdgCode()) == 3334){
-        registry.fill(HIST("hPDGcode"), TMath::Abs(candidate.mcPdgCode()) == 3312 ? 1 : 0); // 1 if Xi, 0 if Omega
+        registry.fill(HIST("hPDGcode"), TMath::Abs(candidate.mcPdgCode()) == 3312 ? 0 : 1); // 0 if Xi, 1 if Omega
       }
       else{
         registry.fill(HIST("hPDGcode"), -1); // -1 if unknown

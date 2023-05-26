@@ -88,22 +88,23 @@ DECLARE_SOA_COLUMN(BachHasTOF, bachhastof, float);
 DECLARE_SOA_COLUMN(PosPt, pospt, float);
 DECLARE_SOA_COLUMN(NegPt, negpt, float);
 DECLARE_SOA_COLUMN(BachPt, bachpt, float);
+DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, float); // -1 unknown
+DECLARE_SOA_COLUMN(IsPrimary, isPrimary, float); // -1 unknown, 0 not primary, 1 primary
 
 } // namespace mycascades
 
 DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
-                  mycascades::CollisionId, mycascades::CollisionZ, mycascades::MultFT0M, mycascades::MultFV0A, mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega, mycascades::Eta,
-                  mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
+                  mycascades::CollisionId, mycascades::CollisionZ, mycascades::MultFT0M, mycascades::MultFV0A, mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega, mycascades::Eta, mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
                   mycascades::CascCosPA, mycascades::V0CosPA, mycascades::DCAPosToPV, mycascades::DCANegToPV,
                   mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::PosEta, mycascades::NegEta,
                   mycascades::BachEta, mycascades::PosITSHits, mycascades::NegITSHits, mycascades::BachITSHits,
                   mycascades::CtauXi, mycascades::CtauOmega,
-                  mycascades::NTPCSigmaNegPr, mycascades::NTPCSigmaPosPr, mycascades::NTPCSigmaNegPi, mycascades::NTPCSigmaPosPi,
-                  mycascades::NTPCSigmaBachPi, mycascades::NTPCSigmaBachKa, mycascades::NTOFSigmaNegPr, mycascades::NTOFSigmaPosPr, mycascades::NTOFSigmaNegPi,
+                  mycascades::NTPCSigmaNegPr, mycascades::NTPCSigmaPosPr, mycascades::NTPCSigmaNegPi, mycascades::NTPCSigmaPosPi, mycascades::NTPCSigmaBachPi, mycascades::NTPCSigmaBachKa,
+                  mycascades::NTOFSigmaNegPr, mycascades::NTOFSigmaPosPr, mycascades::NTOFSigmaNegPi,
                   mycascades::NTOFSigmaPosPi, mycascades::NTOFSigmaBachPi, mycascades::NTOFSigmaBachKa,
                   mycascades::PosNTPCClusters, mycascades::NegNTPCClusters, mycascades::BachNTPCClusters,
                   mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF,
-                  mycascades::PosPt, mycascades::NegPt, mycascades::BachPt);
+                  mycascades::PosPt, mycascades::NegPt, mycascades::BachPt, mycascades::McPdgCode, mycascades::IsPrimary);
 
 } // namespace o2::aod
 
