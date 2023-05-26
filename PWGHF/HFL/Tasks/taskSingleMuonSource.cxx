@@ -55,7 +55,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(Source, source, uint8_t);
 } // namespace muon_source
-DECLARE_SOA_TABLE(HfMuonSource, "AOD","MUONSOURCE", muon_source::Pt, muon_source::DcaXY, muon_source::Source);
+DECLARE_SOA_TABLE(HfMuonSource, "AOD", "MUONSOURCE", muon_source::Pt, muon_source::DcaXY, muon_source::Source);
 } // namespace o2::aod
 
 struct HfTaskMuonSource {
