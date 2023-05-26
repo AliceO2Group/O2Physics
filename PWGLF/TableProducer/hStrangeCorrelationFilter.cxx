@@ -154,7 +154,7 @@ struct hstrangecorrelationfilter {
     fOmegaWidth->SetParameters(omegaWidthAngular, omegaWidthLinear);
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const& tracks, soa::Filtered<aod::V0Datas> const& V0s, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&)
+  void processTriggers(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const& tracks)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -190,9 +190,20 @@ struct hstrangecorrelationfilter {
       registry.fill(HIST("hTrackSign"), track.sign());
       registry.fill(HIST("hID"), track.collisionId());
     }
+  }
 
+  void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const& tracks, soa::Filtered<aod::V0Datas> const& V0s, aod::V0sLinked const&)
+  {
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (TMath::Abs(collision.posZ()) > 10.0) {
+      return;
+    }
     /// _________________________________________________
-    /// Step 2: Populate table with associated V0s
+    /// Populate table with associated V0s
     for (auto const& v0 : V0s) {
       if (v0.v0radius() < v0RadiusMin || v0.v0radius() > v0RadiusMax || v0.eta() > assocEtaMax || v0.eta() < assocEtaMin || v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0Cospa) {
         continue;
@@ -282,7 +293,17 @@ struct hstrangecorrelationfilter {
       }
       assocV0(v0.collisionId(), v0.globalIndex(), compatibleK0Short, compatibleLambda, compatibleAntiLambda, massRegK0Short, massRegLambda, massRegAntiLambda);
     }
-
+  }
+  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const& tracks, soa::Filtered<aod::V0Datas> const& V0s, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&)
+  {
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (TMath::Abs(collision.posZ()) > 10.0) {
+      return;
+    }
     /// _________________________________________________
     /// Step 3: Populate table with associated Cascades
     for (auto const& casc : Cascades) {
@@ -362,6 +383,10 @@ struct hstrangecorrelationfilter {
       assocCascades(casc.collisionId(), casc.globalIndex(), compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus, massRegXi, massRegOmega);
     }
   }
+
+  PROCESS_SWITCH(hstrangecorrelationfilter, processTriggers, "Produce trigger tables", true);
+  PROCESS_SWITCH(hstrangecorrelationfilter, processV0s, "Produce associated V0 tables", true);
+  PROCESS_SWITCH(hstrangecorrelationfilter, processCascades, "Produce associated cascade tables", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
