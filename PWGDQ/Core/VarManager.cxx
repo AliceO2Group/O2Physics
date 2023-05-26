@@ -359,6 +359,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTPCnSigmaPi_Corr] = "";
   fgVariableNames[kTPCnSigmaKa] = "n #sigma_{K}^{TPC}";
   fgVariableUnits[kTPCnSigmaKa] = "";
+  fgVariableNames[kTPCnSigmaKa_Corr] = "n #sigma_{K}^{TPC} Corr.";
+  fgVariableUnits[kTPCnSigmaKa_Corr] = "";
   fgVariableNames[kTPCnSigmaPr] = "n #sigma_{p}^{TPC}";
   fgVariableUnits[kTPCnSigmaPr] = "";
   fgVariableNames[kTPCnSigmaPr_Corr] = "n #sigma_{p}^{TPC} Corr.";

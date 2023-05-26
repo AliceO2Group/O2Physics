@@ -244,10 +244,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "TPCnSigPr_pIN", "TPC n-#sigma(p) vs pIN", false, 100, 0.0, 10.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTPCnSigmaPr);
         hm->AddHistogram(histClass, "TPCnSigEl_Corr_pIN", "TPC n-#sigma(e) Corr. vs pIN", false, 100, 0.0, 10.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTPCnSigmaEl_Corr);
         hm->AddHistogram(histClass, "TPCnSigPi_Corr_pIN", "TPC n-#sigma(#pi) Corr. vs pIN", false, 100, 0.0, 10.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTPCnSigmaPi_Corr);
+        hm->AddHistogram(histClass, "TPCnSigKa_Corr_pIN", "TPC n-#sigma(K) Corr. vs pIN", false, 100, 0.0, 10.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTPCnSigmaKa_Corr);
         hm->AddHistogram(histClass, "TPCnSigPr_Corr_pIN", "TPC n-#sigma(p) Corr. vs pIN", false, 100, 0.0, 10.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTPCnSigmaPr_Corr);
       }
       hm->AddHistogram(histClass, "TPCnSigEl_Corr_Eta", "TPC n-#sigma(e) Corr. vs Eta", false, 20, -1.0, 1.0, VarManager::kEta, 100, -5.0, 5.0, VarManager::kTPCnSigmaEl_Corr);
       hm->AddHistogram(histClass, "TPCnSigPi_Corr_Eta", "TPC n-#sigma(#pi) Corr. vs Eta", false, 20, -1.0, 1.0, VarManager::kEta, 100, -5.0, 5.0, VarManager::kTPCnSigmaPi_Corr);
+      hm->AddHistogram(histClass, "TPCnSigKa_Corr_Eta", "TPC n-#sigma(K) Corr. vs Eta", false, 20, -1.0, 1.0, VarManager::kEta, 100, -5.0, 5.0, VarManager::kTPCnSigmaKa_Corr);
       hm->AddHistogram(histClass, "TPCnSigPr_Corr_Eta", "TPC n-#sigma(p) Corr. vs Eta", false, 20, -1.0, 1.0, VarManager::kEta, 100, -5.0, 5.0, VarManager::kTPCnSigmaPr_Corr);
       hm->AddHistogram(histClass, "TPCdedxRandomized_pIN", "TPC dE/dx (randomized) vs pIN", false, 200, 0.0, 10.0, VarManager::kPin, 200, 0.0, 200., VarManager::kTPCsignalRandomized);
       hm->AddHistogram(histClass, "TPCdedxRandomizedDelta_pIN", "TPC dE/dx (randomized - delta) vs pIN", false, 200, 0.0, 10.0, VarManager::kPin, 100, 0.0, 10., VarManager::kTPCsignalRandomizedDelta);
@@ -269,9 +271,6 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       const int kPinEleNbins = 18;
       double pinEleBinLims[kPinEleNbins + 1] = {0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10.0, 15.0};
 
-      const int kPinKaNbins = 15;
-      double pinKaBinLims[kPinKaNbins + 1] = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0};
-
       const int kEtaNbins = 9;
       double etaBinLimsI[kEtaNbins + 1] = {-0.9, -0.7, -0.5, -0.3, -0.1, 0.1, 0.3, 0.5, 0.7, 0.9};
 
@@ -285,6 +284,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       nSigBinLimits[1] = TArrayD(kTPCnClusterbins + 1, tpcNclusterBinLims);
       nSigBinLimits[2] = TArrayD(kPinEleNbins + 1, pinEleBinLims);
       nSigBinLimits[3] = TArrayD(kEtaNbins + 1, etaBinLimsI);
+
+      const int kPinKaNbins = 15;
+      double pinKaBinLims[kPinKaNbins + 1] = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0};
 
       TArrayD nSigBinLimitsKa[kNvarsPID];
       nSigBinLimitsKa[0] = TArrayD(kTPCnsigmaNbins + 1, tpcNsigmaBinLims);
@@ -306,9 +308,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("kaon")) {
         int varsPIDnSigKaon[kNvarsPID] = {VarManager::kTPCnSigmaKa, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
-        // int varsPIDnSigKaon_Corr[kNvarsPID] = {VarManager::kTPCnSigmaKa_Corr, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};//to do
+        int varsPIDnSigKaon_Corr[kNvarsPID] = {VarManager::kTPCnSigmaKa_Corr, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
         hm->AddHistogram(histClass, "nSigmaTPCkaon", "TPC n_{#sigma}(kaon) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigKaon, nSigBinLimitsKa);
-        // hm->AddHistogram(histClass, "nSigmaTPCkaon_Corr", "TPC n_{#sigma}^{Corr}(kaon) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigKaon_Corr, nSigBinLimits);
+        hm->AddHistogram(histClass, "nSigmaTPCkaon_Corr", "TPC n_{#sigma}^{Corr}(kaon) Vs normNcluster Vs Pin Vs Eta", kNvarsPID, varsPIDnSigKaon_Corr, nSigBinLimitsKa);
       }
       if (subGroupStr.Contains("proton")) {
         int varsPIDnSigProton[kNvarsPID] = {VarManager::kTPCnSigmaPr, VarManager::kTPCncls, VarManager::kPin, VarManager::kEta};
