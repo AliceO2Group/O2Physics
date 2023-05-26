@@ -125,6 +125,7 @@ struct taskJpsiHf {
   Configurable<int> selectionTopol{"selectionTopol", 1, "Selection Flag for topologically selected candidates"};
   Configurable<int> selectionCand{"selectionCand", 1, "Selection Flag for conj. topol. selected candidates"};
   Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
+  Configurable<bool> configDebug{"configDebug", false, "If true, fill D0 - J/psi histograms separately"};
 
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
   Filter dileptonFilter = aod::reducedpair::mass > 2.5f && aod::reducedpair::mass < 3.5f && aod::reducedpair::sign == 0;
@@ -229,15 +230,19 @@ struct taskJpsiHf {
         }
       }
     }
-    // std::cout << "------------------------" << std::endl;
   }
 
   void processSkimmedJpsiD0(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyPairCandidatesSelected> const& dileptons, soa::Filtered<MyD0CandidatesSelected> const& dmesons)
   {
-    if (dileptons.size() > 0) {
+    if (configDebug) {
+      auto groupedDmesonCandidates = dmesons.sliceBy(perCollision, event.globalIndex());
+      runDileptonDmeson<gkEventFillMapWithCov>(event, dileptons, groupedDmesonCandidates);
+    } 
+    if (dileptons.size() > 0 && !configDebug) {
       auto groupedDmesonCandidates = dmesons.sliceBy(perCollision, event.globalIndex());
       runDileptonDmeson<gkEventFillMapWithCov>(event, dileptons, groupedDmesonCandidates);
     }
+
   }
   void processDummy(MyEvents&)
   {
