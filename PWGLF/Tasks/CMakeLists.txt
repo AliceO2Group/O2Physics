@@ -146,8 +146,8 @@ o2physics_add_dpl_workflow(hypertriton2bodyanalysis
                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                    COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hypertriton2bodyanalysis-mc
-                   SOURCES hypertriton2bodyanalysisMC.cxx
+o2physics_add_dpl_workflow(hypertriton2bodymcqa
+                   SOURCES hypertriton2bodyMCQA.cxx
                    PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
                    COMPONENT_NAME Analysis)
 
@@ -156,7 +156,7 @@ o2physics_add_dpl_workflow(hypertriton3bodyanalysis
                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore 
                    COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hypertriton3bodyanalysis-mc
-                   SOURCES hypertriton3bodyanalysisMC.cxx
+o2physics_add_dpl_workflow(hypertriton3bodymcqa
+                   SOURCES hypertriton3bodyMCQA.cxx
                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore 
                    COMPONENT_NAME Analysis)
