@@ -287,9 +287,9 @@ struct femtoDreamProducerTask {
       // taken from GRP onject definition of getNominalL3Field; update later to something smarter (mNominalL3Field = std::lround(5.f * mL3Current / 30000.f);)
       auto NominalL3Field = std::lround(5.f * grpo->getL3Current() / 30000.f);
       output = 0.1 * (NominalL3Field);
-    
-    }else{
-    
+
+    } else {
+
       static o2::parameters::GRPObject* grpo = nullptr;
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
       if (grpo == nullptr) {
