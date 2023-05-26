@@ -64,7 +64,9 @@ struct HfTaskOmegacSt {
     {
       {"hDca", "DCA;DCA (cm)", {HistType::kTH1D, {{200, 0., .5}}}},
       {"hDcaXY", "DCA;DCA_{xy} (cm)", {HistType::kTH1D, {{200, -.5, .5}}}},
+      {"hDcaXYVsPt", "DCA;p_{T} (GeV/#it{c};DCA_{xy} (cm)", {HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}}}},
       {"hDcaZ", "DCA;DCA_{z} (cm)", {HistType::kTH1D, {{200, -.5, .5}}}},
+      {"hDcaZVsPt", "DCA;p_{T} (GeV/#it{c};DCA_{z} (cm)", {HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}}}},
       {"hDcaVsPt", "DCA;DCA (cm);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, 0., .5}, {200, 0., 10.}}}},
       {"hDcaVsR", "DCA;DCA (cm);R (cm)", {HistType::kTH2D, {{200, 0., .5}, {200, 0., 10.}}}},
       {"hDecayLength", "Decay length;L (#mum)", {HistType::kTH1D, {{200, 0., 500.}}}},
@@ -103,7 +105,7 @@ struct HfTaskOmegacSt {
     df2.setUseAbsDCA(useAbsDCA);
   }
 
-  void processMC(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  void processMc(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.pdgCode() != kOmegaMinus) {
@@ -118,7 +120,7 @@ struct HfTaskOmegacSt {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskOmegacSt, processMC, "Process MC", true);
+  PROCESS_SWITCH(HfTaskOmegacSt, processMc, "Process MC", true);
 
   void process(aod::Collision const& collision, aod::McCollisions const& mcCollisions,
                aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
@@ -152,7 +154,9 @@ struct HfTaskOmegacSt {
 
       registry.fill(HIST("hDca"), std::sqrt(impactParameterTrk.getR2()));
       registry.fill(HIST("hDcaXY"), impactParameterTrk.getY());
+      registry.fill(HIST("hDcaXYVsPt"), trackParCovTrk.getPt(), impactParameterTrk.getY());
       registry.fill(HIST("hDcaZ"), impactParameterTrk.getZ());
+      registry.fill(HIST("hDcaZVsPt"), trackParCovTrk.getPt(), impactParameterTrk.getZ());
       registry.fill(HIST("hDcaVsPt"), impactParameterTrk.getY(), trackCasc.pt());
       registry.fill(HIST("hDcaVsR"), impactParameterTrk.getY(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
       registry.fill(HIST("hMassVsPt"), trackedCascade.omegaMass(), trackCasc.pt());
