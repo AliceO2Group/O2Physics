@@ -237,12 +237,11 @@ struct taskJpsiHf {
     if (configDebug) {
       auto groupedDmesonCandidates = dmesons.sliceBy(perCollision, event.globalIndex());
       runDileptonDmeson<gkEventFillMapWithCov>(event, dileptons, groupedDmesonCandidates);
-    } 
+    }
     if (dileptons.size() > 0 && !configDebug) {
       auto groupedDmesonCandidates = dmesons.sliceBy(perCollision, event.globalIndex());
       runDileptonDmeson<gkEventFillMapWithCov>(event, dileptons, groupedDmesonCandidates);
     }
-
   }
   void processDummy(MyEvents&)
   {
