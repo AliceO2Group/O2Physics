@@ -374,7 +374,7 @@ struct HfCandidateCreatorB0Expressions {
           flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
         } else {
           debug = 1;
-          LOGF(info, "WARNING: B0 in decays in the expected final state but the condition on the intermediate state is not fulfilled");
+          LOGF(debug, "WARNING: B0 in decays in the expected final state but the condition on the intermediate state is not fulfilled");
         }
       }
 
@@ -393,10 +393,10 @@ struct HfCandidateCreatorB0Expressions {
       // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
       // convention: final state particles are prong0,1,2,3
       if (!flag) {
-        auto particleProng0 = arrayDaughtersB0[0].mcParticle_as<aod::McParticles>();
-        auto particleProng1 = arrayDaughtersB0[1].mcParticle_as<aod::McParticles>();
-        auto particleProng2 = arrayDaughtersB0[2].mcParticle_as<aod::McParticles>();
-        auto particleProng3 = arrayDaughtersB0[3].mcParticle_as<aod::McParticles>();
+        auto particleProng0 = arrayDaughtersB0[0].mcParticle();
+        auto particleProng1 = arrayDaughtersB0[1].mcParticle();
+        auto particleProng2 = arrayDaughtersB0[2].mcParticle();
+        auto particleProng3 = arrayDaughtersB0[3].mcParticle();
         // b-hadron hypothesis
         std::array<int, 3> bHadronMotherHypos = {pdg::Code::kB0, pdg::Code::kBS, pdg::Code::kLambdaB0};
         int indexProng0BMother = -1;
