@@ -81,6 +81,7 @@ struct HfTaskBplus {
     registry.add("hd0Prong0", bPlusCandTitle + "prong 0 DCAxy to prim. vertex (cm);" + stringPt, {HistType::kTH2F, {axisD0Prong, axisPtB}});
     registry.add("hd0Prong1", bPlusCandTitle + "prong 1 DCAxy to prim. vertex (cm);" + stringPt, {HistType::kTH2F, {axisD0Prong, axisPtB}});
     registry.add("hCPA", bPlusCandTitle + "candidate cosine of pointing angle;" + stringPt, {HistType::kTH2F, {axisCPA, axisPtB}});
+    registry.add("hCPAxy", bPlusCandTitle + "candidate cosine of pointing angle xy;" + stringPt, {HistType::kTH2F, {axisCPA, axisPtB}});
     registry.add("hEta", bPlusCandTitle + "candidate #it{#eta};" + stringPt, {HistType::kTH2F, {axisEta, axisPtB}});
     registry.add("hRapidity", bPlusCandTitle + "candidate #it{y};" + stringPt, {HistType::kTH2F, {axisRapidity, axisPtB}});
     registry.add("hImpParErr", bPlusCandTitle + "candidate impact parameter error (cm);" + stringPt, {HistType::kTH2F, {{100, -1., 1.}, axisPtB}});
@@ -128,7 +129,7 @@ struct HfTaskBplus {
   {
 
     for (const auto& candidate : selectedBPlusCandidates) {
-      if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BplusToD0Pi)) {
+      if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(yBplus(candidate)) > yCandMax) {
@@ -148,6 +149,7 @@ struct HfTaskBplus {
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
       registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
+      registry.fill(HIST("hCPAxy"), candidate.cpaXY(), candidate.pt());
       registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
       registry.fill(HIST("hRapidity"), yBplus(candidate), candidate.pt());
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
@@ -167,20 +169,20 @@ struct HfTaskBplus {
   {
     // MC rec
     for (const auto& candidate : selectedBPlusCandidatesMC) {
-      if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BplusToD0Pi)) {
+      if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(yBplus(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << hf_cand_bplus::DecayType::BplusToD0Pi) {
+      if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>(), pdg::Code::kBPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), candidate.pt());
-        registry.fill(HIST("hCPAxyRecSig"), candidate.cpa(), candidate.pt());
+        registry.fill(HIST("hCPAxyRecSig"), candidate.cpaXY(), candidate.pt());
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), candidate.pt());
         registry.fill(HIST("hRapidityRecSig"), yBplus(candidate), candidate.pt());
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), candidate.pt());
@@ -195,7 +197,7 @@ struct HfTaskBplus {
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
-        registry.fill(HIST("hCPAxyRecBg"), candidate.cpa(), candidate.pt());
+        registry.fill(HIST("hCPAxyRecBg"), candidate.cpaXY(), candidate.pt());
         registry.fill(HIST("hEtaRecBg"), candidate.eta(), candidate.pt());
         registry.fill(HIST("hRapidityRecBg"), yBplus(candidate), candidate.pt());
         registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), candidate.pt());
@@ -213,7 +215,7 @@ struct HfTaskBplus {
     // MC gen. level
     // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_bplus::DecayType::BplusToD0Pi) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kBPlus));
         if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
