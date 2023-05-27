@@ -56,11 +56,17 @@ class PHOSPhotonCut : public TNamed
     }
 
     // only temporary solution to avoid noisy channels.
-    if (cluster.e() * 20.f < cluster.nCells()) {
+    if (-1.20 + 10.2 * sqrt(cluster.e()) < cluster.nCells()) {
+      return false;
+    }
+    if (cluster.nCells() < -3.04 + 3.14 * sqrt(cluster.e())) {
       return false;
     }
 
-    if (cluster.m20() < 0.1) {
+    if (cluster.m20() < 0.1 || 2.0 < cluster.m20()) {
+      return false;
+    }
+    if (cluster.m02() > 4.0) {
       return false;
     }
 
