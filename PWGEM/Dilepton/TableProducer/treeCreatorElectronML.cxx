@@ -124,7 +124,7 @@ DECLARE_SOA_COLUMN(PairDCAxy, pairDCAxy, float); //!
 DECLARE_SOA_COLUMN(PairDCAz, pairDCAz, float);   //!
 
 DECLARE_SOA_COLUMN(IsSM, isSM, bool); //!
-DECLARE_SOA_COLUMN(IsHF, isHF, bool); //!
+DECLARE_SOA_COLUMN(IsHF, isHF, int);  //!
 } // namespace mypair
 
 // reconstructed track information
@@ -148,6 +148,15 @@ using MyPair = MyPairs::iterator;
 } // namespace o2::aod
 
 struct TreeCreatorElectronML {
+  enum EM_HFeeType {
+    kUndef = -1,
+    kCe_Ce = 0,        // ULS
+    kBe_Be = 1,        // ULS
+    kBCe_BCe = 2,      // ULS
+    kBCe_Be_SameB = 3, // ULS
+    kBCe_Be_DiffB = 4, // LS
+  };
+
   SliceCache cache;
   Produces<o2::aod::MyCollisions> mycollision;
   Produces<o2::aod::MyPairs> mypair;
@@ -209,6 +218,7 @@ struct TreeCreatorElectronML {
     }
     mRunNumber = bc.runNumber();
   }
+
   template <typename TTrack>
   float get_phiv(TTrack const& t1, TTrack const& t2)
   {
@@ -346,22 +356,22 @@ struct TreeCreatorElectronML {
   }
 
   template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
-  bool IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcparticles)
+  int IsHFULS(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcparticles)
   {
     // in total, 4 cases for ULS pairs
-    // 1. prompt c->e+ and cbar->e-
-    // 2. b->e- and bbar->e+ (different b and bbar)
-    // 3. b->c->e+ and bbar->cbar->e- (different b and bbar)
-    // 4. b->c->e+ and b->e- (1 same b (or bbar))
+    // 0. prompt c->e+ and cbar->e-
+    // 1. b->e- and bbar->e+ (different b and bbar)
+    // 2. b->c->e+ and bbar->cbar->e- (different b and bbar)
+    // 3. b->c->e+ and b->e- (1 same b (or bbar))
     if (!p1.has_mothers())
-      return false;
+      return EM_HFeeType::kUndef;
     if (!p2.has_mothers())
-      return false;
+      return EM_HFeeType::kUndef;
 
     int motherid_p1 = p1.mothersIds()[0];
     int motherid_p2 = p2.mothersIds()[0];
     if (motherid_p1 == motherid_p2) { // different mother
-      return false;                   // this never happens in correlated HF->ee decays
+      return EM_HFeeType::kUndef;     // this never happens in correlated HF->ee decays
     }
 
     auto mother_p1 = mcparticles.iteratorAt(motherid_p1);
@@ -370,7 +380,7 @@ struct TreeCreatorElectronML {
     int mother2_pdg = mother_p2.pdgCode();
 
     if (((500 < abs(mother1_pdg) && abs(mother1_pdg) < 599) || (5000 < abs(mother1_pdg) && abs(mother1_pdg) < 5999)) && ((500 < abs(mother2_pdg) && abs(mother2_pdg) < 599) || (5000 < abs(mother2_pdg) && abs(mother2_pdg) < 5999))) {
-      return true; // bb->ee, decay type = 2
+      return EM_HFeeType::kBe_Be; // bb->ee, decay type = 2
     }
 
     if (mother_p1.has_mothers() && mother_p2.has_mothers()) { // search for decay type 1,3,4
@@ -384,9 +394,9 @@ struct TreeCreatorElectronML {
       if (((400 < abs(mother1_pdg) && abs(mother1_pdg) < 499) || (4000 < abs(mother1_pdg) && abs(mother1_pdg) < 4999)) && ((400 < abs(mother2_pdg) && abs(mother2_pdg) < 499) || (4000 < abs(mother2_pdg) && abs(mother2_pdg) < 4999))) { // mother is charm
 
         if (((500 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 599) || (5000 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 5999)) && ((500 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 599) || (5000 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 5999))) { // grand mother is beauty
-          return true;                                                                                                                                                                                                                                                                      // b->c->e and b->c->e, decay type = 3
+          return kBCe_BCe;                                                                                                                                                                                                                                                                  // b->c->e and b->c->e, decay type = 1
         } else {
-          return true; // prompt cc->ee, decay type = 1
+          return kCe_Ce; // prompt cc->ee, decay type = 0
         }
       }
 
@@ -394,14 +404,54 @@ struct TreeCreatorElectronML {
         if (
           (((500 < abs(mother1_pdg) && abs(mother1_pdg) < 599) || (5000 < abs(mother1_pdg) && abs(mother1_pdg) < 5999)) && ((500 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 599) || (5000 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 5999))) ||
           (((500 < abs(mother2_pdg) && abs(mother2_pdg) < 599) || (5000 < abs(mother2_pdg) && abs(mother2_pdg) < 5999)) && ((500 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 599) || (5000 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 5999)))) {
-          return true; // prompt b->c->e and c->e, decay type = 4
+          return EM_HFeeType::kBCe_Be_SameB; // b->c->e and c->e, decay type = 3
         }
       }
     }
-    return false;
+    return EM_HFeeType::kUndef;
   }
 
-  Filter trackFilter = nabs(o2::aod::track::eta) < maxeta && o2::aod::track::tpcChi2NCl < maxchi2tpc;
+  template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
+  int IsHFLS(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcparticles)
+  {
+    // in total, 1 case for LS pairs
+    // 4. b->c->e+ and bbar->e+
+    if (!p1.has_mothers())
+      return EM_HFeeType::kUndef;
+    if (!p2.has_mothers())
+      return EM_HFeeType::kUndef;
+
+    int motherid_p1 = p1.mothersIds()[0];
+    int motherid_p2 = p2.mothersIds()[0];
+    if (motherid_p1 == motherid_p2) { // different mother
+      return EM_HFeeType::kUndef;     // this never happens in correlated HF->ee decays
+    }
+
+    auto mother_p1 = mcparticles.iteratorAt(motherid_p1);
+    auto mother_p2 = mcparticles.iteratorAt(motherid_p2);
+    int mother1_pdg = mother_p1.pdgCode();
+    int mother2_pdg = mother_p2.pdgCode();
+
+    if (mother_p1.has_mothers() && mother_p2.has_mothers()) { // search for decay type 4
+      int grand_motherid_p1 = mother_p1.mothersIds()[0];
+      int grand_motherid_p2 = mother_p2.mothersIds()[0];
+      auto grand_mother_p1 = mcparticles.iteratorAt(grand_motherid_p1);
+      auto grand_mother_p2 = mcparticles.iteratorAt(grand_motherid_p2);
+      int grand_mother1_pdg = grand_mother_p1.pdgCode();
+      int grand_mother2_pdg = grand_mother_p2.pdgCode();
+
+      if (motherid_p1 != grand_motherid_p2 && grand_motherid_p1 != motherid_p2) { // different mother and grand mother
+        if (
+          (((500 < abs(mother1_pdg) && abs(mother1_pdg) < 599) || (5000 < abs(mother1_pdg) && abs(mother1_pdg) < 5999)) && ((500 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 599) || (5000 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 5999))) ||
+          (((500 < abs(mother2_pdg) && abs(mother2_pdg) < 599) || (5000 < abs(mother2_pdg) && abs(mother2_pdg) < 5999)) && ((500 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 599) || (5000 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 5999)))) {
+          return EM_HFeeType::kBCe_Be_DiffB; // b->c->e and c->e, decay type = 4
+        }
+      }
+    }
+    return EM_HFeeType::kUndef;
+  }
+
+  Filter trackFilter = nabs(o2::aod::track::eta) < maxeta && o2::aod::track::tpcChi2NCl < maxchi2tpc && nabs(o2::aod::track::dcaXY) < 3.f;
   using MyFilteredTracksMC = soa::Filtered<FullTracksExtMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
 
@@ -501,6 +551,7 @@ struct TreeCreatorElectronML {
         ROOT::Math::PtEtaPhiMVector v2(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
+        float phiv = get_phiv(ele, pos);
         float pair_dca_xy = sqrt((pow(pos.dcaXY() / sqrt(pos.cYY()), 2) + pow(ele.dcaXY() / sqrt(ele.cYY()), 2)) / 2.);
         float pair_dca_z = sqrt((pow(pos.dcaZ() / sqrt(pos.cZZ()), 2) + pow(ele.dcaZ() / sqrt(ele.cZZ()), 2)) / 2.);
 
@@ -510,24 +561,26 @@ struct TreeCreatorElectronML {
           isSM = true;
         }
 
-        bool isHF = IsHF(mcpos, mcele, mctracks); // if isHF == true, pdgCode is set to 0, because this pair is correlated HF ee pair decayed from different 2 mothers. Check pdg code of legs.
+        int isHF = IsHFULS(mcpos, mcele, mctracks); // if isHF == true, pdgCode is set to 0, because this pair is correlated HF ee pair decayed from different 2 mothers. Check pdg code of legs.
 
         if (isSM) {
           auto mcpair = mctracks.iteratorAt(common_mother_id);
-          float phiv = get_phiv(ele, pos);
           mypair(mycollision.lastIndex(), mytrack.lastIndex() + 1, mytrack.lastIndex() + 2,
                  v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
                  isSM, isHF, mcpair.pdgCode(), mcpair.statusCode(), mcpair.flags(),
                  mcpair.vx(), mcpair.vy(), mcpair.vz());
           // LOGF(info, "mcpair.pdgCode() = %d", mcpair.pdgCode());
-        } else if (isHF) {
+        } else if (isHF > -1) {
           // isSM and isHF are not satisfied at the same time.
           mypair(mycollision.lastIndex(), mytrack.lastIndex() + 1, mytrack.lastIndex() + 2,
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), -1, pair_dca_xy, pair_dca_z,
+                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
                  isSM, isHF, 0, 0, 0,
                  0, 0, 0);
-        } else {
-          continue;
+        } else { // this is combinatorial bkg
+          mypair(mycollision.lastIndex(), mytrack.lastIndex() + 1, mytrack.lastIndex() + 2,
+                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                 isSM, isHF, 0, 0, 0,
+                 0, 0, 0);
         }
 
         int mother_pdg_pos = 0;
