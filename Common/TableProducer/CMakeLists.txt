@@ -28,42 +28,42 @@ o2physics_add_dpl_workflow(trackselection
 
 o2physics_add_dpl_workflow(event-selection
                     SOURCES eventSelection.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsBase O2::CCDB O2::CommonConstants
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(multiplicity-table
                     SOURCES multiplicityTable.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(centrality-table
                     SOURCES centralityTable.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::CCDB
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(timestamp
                     SOURCES timestamp.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsRaw O2Physics::AnalysisCore O2::CommonDataFormat O2::CCDB
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(weak-decay-indices
                     SOURCES weakDecayIndices.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(ft0-corrected-table
                     SOURCES ft0CorrectedTable.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore  O2Physics::AnalysisCCDB O2::DetectorsBase O2::CCDB O2::CommonConstants
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                 COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(track-propagation
                     SOURCES trackPropagation.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(track-propagation-tester
                     SOURCES trackPropagationTester.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::trackSelectionRequest
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::trackSelectionRequest
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mc-converter
