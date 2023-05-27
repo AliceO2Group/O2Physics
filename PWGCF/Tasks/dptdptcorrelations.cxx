@@ -20,6 +20,7 @@
 #include <TParameter.h>
 #include <TProfile3D.h>
 #include <TROOT.h>
+#include <TVector2.h>
 #include <cmath>
 #include <ctime>
 
@@ -89,6 +90,7 @@ struct DptDptCorrelationsTask {
     std::vector<TH2*> fhPtAvg_vsEtaPhi{nch, nullptr};                             //!<! average \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
     std::vector<std::vector<TH2F*>> fhN2_vsPtPt{nch, {nch, nullptr}};             //!<! weighted two particle distribution vs \f${p_T}_1, {p_T}_2\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhN2_vsDEtaDPhi{nch, {nch, nullptr}};         //!<! two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhN2cont_vsDEtaDPhi{nch, {nch, nullptr}};     //!<! two-particle distribution continuous vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhSum2PtPt_vsDEtaDPhi{nch, {nch, nullptr}};   //!<! two-particle  \f$\sum {p_T}_1 {p_T}_2\f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhSum2DptDpt_vsDEtaDPhi{nch, {nch, nullptr}}; //!<! two-particle  \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhSupN1N1_vsDEtaDPhi{nch, {nch, nullptr}};    //!<! suppressed n1n1 two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
@@ -334,6 +336,8 @@ struct DptDptCorrelationsTask {
 
           /* get the global bin for filling the differential histograms */
           int globalbin = GetDEtaDPhiGlobalIndex(track1, track2);
+          float deltaeta = track1.eta() - track2.eta();
+          float deltaphi = TVector2::Phi_0_2pi(track1.phi() - track2.phi());
           if ((fUseConversionCuts && fPairCuts.conversionCuts(track1, track2)) || (fUseTwoTrackCut && fPairCuts.twoTrackCut(track1, track2, bfield))) {
             /* suppress the pair */
             fhSupN1N1_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, corr);
@@ -349,6 +353,7 @@ struct DptDptCorrelationsTask {
             sum2DptDptnw[track1.trackacceptedid()][track2.trackacceptedid()] += dptdptnw;
 
             fhN2_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, corr);
+            fhN2cont_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(deltaeta, deltaphi, corr);
             fhSum2DptDpt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, dptdptw);
             fhSum2PtPt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
           }
@@ -533,6 +538,8 @@ struct DptDptCorrelationsTask {
             const char* pname = trackPairsNames[i][j].c_str();
             fhN2_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
                                              deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+            fhN2cont_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12cont_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
+                                                 deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             fhSum2PtPt_vsDEtaDPhi[i][j] = new TH2F(TString::Format("sumPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma p_{t,1}p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma p_{t,1}p_{t,2} #GT (GeV^{2})", pname),
                                                    deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             fhSum2DptDpt_vsDEtaDPhi[i][j] = new TH2F(TString::Format("sumDptDpt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (GeV^{2})", pname),
@@ -557,6 +564,8 @@ struct DptDptCorrelationsTask {
             /* the statistical uncertainties will be estimated by the subsamples method so let's get rid of the error tracking */
             fhN2_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
             fhN2_vsDEtaDPhi[i][j]->Sumw2(false);
+            fhN2cont_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
+            fhN2cont_vsDEtaDPhi[i][j]->Sumw2(false);
             fhSum2PtPt_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
             fhSum2PtPt_vsDEtaDPhi[i][j]->Sumw2(false);
             fhSum2DptDpt_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
@@ -567,6 +576,7 @@ struct DptDptCorrelationsTask {
             fhSupPt1Pt1_vsDEtaDPhi[i][j]->Sumw2(false);
 
             fOutputList->Add(fhN2_vsDEtaDPhi[i][j]);
+            fOutputList->Add(fhN2cont_vsDEtaDPhi[i][j]);
             fOutputList->Add(fhSum2PtPt_vsDEtaDPhi[i][j]);
             fOutputList->Add(fhSum2DptDpt_vsDEtaDPhi[i][j]);
             fOutputList->Add(fhSupN1N1_vsDEtaDPhi[i][j]);
