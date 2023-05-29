@@ -255,6 +255,10 @@ struct cascpostprocessing {
     registry.add("hCascMinusEtaPos", "hCascMinusEtaPos", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
     registry.add("hCascMinusEtaNeg", "hCascMinusEtaNeg", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
     registry.add("hCascMinusEtaBach", "hCascMinusEtaBach", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
+
+    // Info for eff x acc from MC
+    registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F,  {ptAxis, rapidityAxis, centFT0MAxis}});
+    registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F,  {ptAxis, rapidityAxis, centFT0MAxis}});
   }
 
   void process(aod::MyCascades const& mycascades)
@@ -264,6 +268,7 @@ struct cascpostprocessing {
     float rapidity = 0;
     bool isCandidate = 0;
     int counter = -1;
+    bool isCorrectlyRec = 0;
 
     for (auto& candidate : mycascades) {
 
@@ -424,11 +429,15 @@ struct cascpostprocessing {
       }
 
       if (isXi) {
-        if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) < masswintpc)
+        isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == 3312) && (candidate.isPrimary() == 1)) ? 1 : 0;
+        if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) < masswintpc){
           isCandidate = 1;
+        }
       } else if (!isXi) {
-        if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) < masswintpc)
+        isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == 3334) && (candidate.isPrimary() == 1)) ? 1 : 0;
+        if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) < masswintpc){
           isCandidate = 1;
+        }
       }
       if (isCandidate) {
         if (candidate.sign() < 0) {
@@ -458,11 +467,17 @@ struct cascpostprocessing {
       // registry.fill(HIST("hBachITSHits"), candidate.bachitshits());
 
       if (candidate.sign() < 0) {
+        if(isCorrectlyRec){
+          registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, candidate.multFT0M());
+        }
         registry.fill(HIST("hCascMinusInvMassvsPt"), candidate.pt(), invmass);
         registry.fill(HIST("hCascMinusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
         registry.fill(HIST("hCascMinusInvMassvsPt_FV0A"), candidate.multFV0A(), candidate.pt(), invmass);
       }
       if (candidate.sign() > 0) {
+        if(isCorrectlyRec){
+          registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, candidate.multFT0M());
+        }
         registry.fill(HIST("hCascPlusInvMassvsPt"), candidate.pt(), invmass);
         registry.fill(HIST("hCascPlusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
         registry.fill(HIST("hCascPlusInvMassvsPt_FV0A"), candidate.multFV0A(), candidate.pt(), invmass);

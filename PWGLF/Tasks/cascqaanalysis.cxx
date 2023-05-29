@@ -116,7 +116,9 @@ struct cascqaanalysis {
 
   HistogramRegistry registry{"registry"};
 
-  AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"}; // Definition of axis
+  AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+  AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
+  AxisSpec centFT0MAxis = {100, 0.0f, 100.0f, "FT0M (%)"};
 
   void init(InitContext const&)
   {
@@ -127,10 +129,10 @@ struct cascqaanalysis {
     registry.add("hZCollision", "hZCollision", {HistType::kTH1F, {{200, -20.f, 20.f}}});
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
-    registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH1F, {{ptAxis}}});
-    registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH1F, {{ptAxis}}});
-    registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH1F, {{ptAxis}}});
-    registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH1F, {{ptAxis}}});
+    registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F,  {ptAxis, rapidityAxis, centFT0MAxis}});
+    registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F,  {ptAxis, rapidityAxis, centFT0MAxis}});
+    registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F,  {ptAxis, rapidityAxis, centFT0MAxis}});
+    registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH3F,  {ptAxis, rapidityAxis, centFT0MAxis}});
 
     registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{2, 0.0f, 2.0f}}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
@@ -392,16 +394,16 @@ struct cascqaanalysis {
 
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.pdgCode() == -3312){
-        registry.fill(HIST("hPtXiPlusTrue"), mcParticle.pt());
+        registry.fill(HIST("hPtXiPlusTrue"), mcParticle.pt(), mcParticle.y(), 0);
       }
       if (mcParticle.pdgCode() == 3312){
-        registry.fill(HIST("hPtXiMinusTrue"), mcParticle.pt());
+        registry.fill(HIST("hPtXiMinusTrue"), mcParticle.pt(), mcParticle.y(), 0);
       }
       if (mcParticle.pdgCode() == -3334){
-        registry.fill(HIST("hPtOmegaPlusTrue"), mcParticle.pt());
+        registry.fill(HIST("hPtOmegaPlusTrue"), mcParticle.pt(), mcParticle.y(), 0);
       }
       if (mcParticle.pdgCode() == 3334){
-        registry.fill(HIST("hPtOmegaMinusTrue"), mcParticle.pt());
+        registry.fill(HIST("hPtOmegaMinusTrue"), mcParticle.pt(), mcParticle.y(), 0);
       }
     }
   }
