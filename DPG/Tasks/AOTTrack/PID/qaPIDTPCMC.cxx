@@ -195,6 +195,7 @@ struct pidTPCTaskQAMC {
 
   Configurable<int> checkPrimaries{"checkPrimaries", 1,
                                    "Whether to check physical primary and secondaries particles for the resolution."};
+  Configurable<int> pdgSign{"pdgSign", 0, "Sign of the PDG, -1 0 or 1"};
   Configurable<int> doEl{"doEl", 0, "Process electrons"};
   Configurable<int> doMu{"doMu", 0, "Process muons"};
   Configurable<int> doPi{"doPi", 0, "Process pions"};
@@ -272,30 +273,32 @@ struct pidTPCTaskQAMC {
     const AxisSpec nSigmaAxis{binsNsigma, Form("N_{#sigma}^{TPC}(%s)", pT[massID])};
 
     // Particle info
-    histos.add(hparticlept[mcID], "", kTH1F, {pAxis});
-    histos.add(hparticlep[mcID], "", kTH1F, {pAxis});
-    histos.add(hparticleeta[mcID], "", kTH1F, {pAxis});
+    histos.add(hparticlept[mcID].data(), "", kTH1F, {pAxis});
+    histos.add(hparticlep[mcID].data(), "", kTH1F, {pAxis});
+    histos.add(hparticleeta[mcID].data(), "", kTH1F, {pAxis});
 
     // Track info
-    histos.add(htrackpt[mcID], "", kTH1F, {pAxis});
-    histos.add(htrackp[mcID], "", kTH1F, {pAxis});
-    histos.add(htracketa[mcID], "", kTH1F, {pAxis});
-    histos.add(htracklength[mcID], "", kTH1F, {pAxis});
+    histos.add(htrackpt[mcID].data(), "", kTH1F, {pAxis});
+    histos.add(htrackp[mcID].data(), "", kTH1F, {pAxis});
+    histos.add(htracketa[mcID].data(), "", kTH1F, {pAxis});
+    histos.add(htracklength[mcID].data(), "", kTH1F, {pAxis});
 
     // NSigma
-    histos.add(hnsigma[pid_type].data(), pT[pid_type], HistType::kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigma[mcID].data(), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
     histos.add(hnsigmaMC[mcID * Np + massID].data(), Form("True %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
     if (!checkPrimaries) {
       return;
     }
     histos.add(hnsigmaprm[mcID].data(), Form("Primary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmasec[mcID].data(), Form("Secondary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmastr[mcID].data(), Form("Secondary %s from decay", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmamat[mcID].data(), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
     histos.add(hnsigmaMCprm[mcID * Np + massID].data(), Form("True Primary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmaMCsec[mcID * Np + massID].data(), Form("True Secondary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmaMCstr[mcID * Np + massID].data(), Form("True Secondary %s from decay", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmaMCmat[mcID * Np + massID].data(), Form("True Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
 
-    histos.add(hsignalMCprm[mcID], Form("Primary %s", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
-    histos.add(hsignalMCstr[mcID], Form("Secondary %s from weak decay", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
-    histos.add(hsignalMCmat[mcID], Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
+    histos.add(hsignalMCprm[mcID].data(), Form("Primary %s", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
+    histos.add(hsignalMCstr[mcID].data(), Form("Secondary %s from decay", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
+    histos.add(hsignalMCmat[mcID].data(), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
   }
 
   void init(o2::framework::InitContext&)
@@ -327,8 +330,24 @@ struct pidTPCTaskQAMC {
   template <uint8_t mcID, typename T>
   void fillParticleInfoForPdg(const T& particle)
   {
-    if (abs(particle.pdgCode()) != PDGs[mcID]) {
-      return;
+    switch (pdgSign.value) {
+      case 0:
+        if (abs(particle.pdgCode()) != PDGs[mcID]) {
+          return;
+        }
+        break;
+      case 1:
+        if (particle.pdgCode() != PDGs[mcID]) {
+          return;
+        }
+        break;
+      case 2:
+        if (particle.pdgCode() != -PDGs[mcID]) {
+          return;
+        }
+        break;
+      default:
+        LOG(fatal) << "Can't interpret pdgSign";
     }
     switch (mcID) {
       case 0:
@@ -385,8 +404,8 @@ struct pidTPCTaskQAMC {
     histos.fill(HIST(hparticleeta[mcID]), particle.eta());
   }
 
-  template <uint8_t mcID, typename T>
-  void fillTrackInfoForPdg(const T& track)
+  template <uint8_t mcID, typename T, typename TT>
+  void fillTrackInfoForPdg(const T& track, const TT& particle)
   {
 
     switch (mcID) {
@@ -439,47 +458,62 @@ struct pidTPCTaskQAMC {
         LOG(fatal) << "Can't interpret index";
     }
 
-    const float nsigma = o2::aod::pidutils::tpcNSigma<mcID>(t);
+    const float nsigma = o2::aod::pidutils::tpcNSigma<mcID>(track);
 
     // Fill for all
-    histos.fill(HIST(hnsigma[mcID]), t.pt(), nsigma);
+    histos.fill(HIST(hnsigma[mcID]), track.pt(), nsigma);
 
-    const auto& particle = track.mcParticle();
     if (checkPrimaries) {
       if (!particle.isPhysicalPrimary()) {
         if (particle.getProcess() == 4) {
-          histos.fill(HIST(hnsigmastr[mcID]), t.pt(), nsigma);
+          histos.fill(HIST(hnsigmastr[mcID]), track.pt(), nsigma);
         } else {
-          histos.fill(HIST(hnsigmamat[mcID]), t.pt(), nsigma);
+          histos.fill(HIST(hnsigmamat[mcID]), track.pt(), nsigma);
         }
       } else {
-        histos.fill(HIST(hnsigmaprm[mcID]), t.pt(), nsigma);
+        histos.fill(HIST(hnsigmaprm[mcID]), track.pt(), nsigma);
       }
     }
 
-    if (abs(particle.pdgCode()) != PDGs[mcID]) { // PDG selection
-      return;
+    switch (pdgSign.value) {
+      case 0:
+        if (abs(particle.pdgCode()) != PDGs[mcID]) {
+          return;
+        }
+        break;
+      case 1:
+        if (particle.pdgCode() != PDGs[mcID]) {
+          return;
+        }
+        break;
+      case 2:
+        if (particle.pdgCode() != -PDGs[mcID]) {
+          return;
+        }
+        break;
+      default:
+        LOG(fatal) << "Can't interpret pdgSign";
     }
 
     // Track info
-    histos.fill(HIST(htrackp[mcID]), trk.p());
-    histos.fill(HIST(htrackpt[mcID]), trk.pt());
-    histos.fill(HIST(htracketa[mcID]), trk.eta());
-    histos.fill(HIST(htracklength[mcID]), trk.length());
+    histos.fill(HIST(htrackp[mcID]), track.p());
+    histos.fill(HIST(htrackpt[mcID]), track.pt());
+    histos.fill(HIST(htracketa[mcID]), track.eta());
+    histos.fill(HIST(htracklength[mcID]), track.length());
 
     // PID info
-    histos.fill(HIST(hsignalMC[mcID]), t.tpcInnerParam(), t.tpcSignal());
+    histos.fill(HIST(hsignalMC[mcID]), track.tpcInnerParam(), track.tpcSignal());
     histos.fill(HIST(hnsigmaMC[mcID]), track.pt(), nsigma);
     if (!particle.isPhysicalPrimary()) {
       if (particle.getProcess() == 4) {
-        histos.fill(HIST(hsignalMCstr[mcID]), t.tpcInnerParam(), t.tpcSignal());
+        histos.fill(HIST(hsignalMCstr[mcID]), track.tpcInnerParam(), track.tpcSignal());
         histos.fill(HIST(hnsigmaMCstr[mcID]), track.pt(), nsigma);
       } else {
-        histos.fill(HIST(hsignalMCmat[mcID]), t.tpcInnerParam(), t.tpcSignal());
+        histos.fill(HIST(hsignalMCmat[mcID]), track.tpcInnerParam(), track.tpcSignal());
         histos.fill(HIST(hnsigmaMCmat[mcID]), track.pt(), nsigma);
       }
     } else {
-      histos.fill(HIST(hsignalMCprm[mcID]), t.tpcInnerParam(), t.tpcSignal());
+      histos.fill(HIST(hsignalMCprm[mcID]), track.tpcInnerParam(), track.tpcSignal());
       histos.fill(HIST(hnsigmaMCprm[mcID]), track.pt(), nsigma);
     }
   }
@@ -523,7 +557,7 @@ struct pidTPCTaskQAMC {
           continue;
         }
 
-        const auto& particle = track.mcParticle();
+        const auto& particle = t.mcParticle();
 
         if (!particle.isPhysicalPrimary()) {
           if (particle.getProcess() == 4) {
@@ -537,7 +571,7 @@ struct pidTPCTaskQAMC {
 
         // Fill with PDG codes
         static_for<0, 8>([&](auto i) {
-          fillTrackInfoForPdg<i>(t);
+          fillTrackInfoForPdg<i>(t, particle);
         });
       }
       histos.fill(HIST("event/vertexz"), collision.posZ());
