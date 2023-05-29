@@ -27,7 +27,7 @@
 ////TODO: remove redundant:
 #include "Framework/HistogramRegistry.h"
 
-#include "DetectorsVertexing/DCAFitterN.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -119,7 +119,7 @@ struct JCatalyst {
 
     if (cbin < 0)
       return;
-    if (!collision.alias()[kINT7] || !collision.sel7())
+    if (!collision.alias_bit(kINT7) || !collision.sel7())
       return;
     if (std::abs(collision.posZ()) > zvertex)
       return;

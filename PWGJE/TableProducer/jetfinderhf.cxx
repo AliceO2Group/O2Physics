@@ -9,374 +9,318 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet finder task
+// jet finder hf task
 //
 // Authors: Nima Zardoshti, Jochen Klein
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "TDatabasePDG.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
-#include "fastjet/PseudoJet.hh"
-#include "fastjet/ClusterSequenceArea.hh"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/TableProducer/jetfinder.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec hfjetMode = {
-    "hfjetMode",
-    VariantType::String,
-    "",
-    {"HF jet finder mode."},
-  };
-  workflowOptions.push_back(hfjetMode);
-}
-
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-template <typename JetTable, typename TrackConstituentTable>
+template <typename JetTable, typename ConstituentTable, typename ConstituentSubTable>
 struct JetFinderHFTask {
   Produces<JetTable> jetsTable;
-  Produces<TrackConstituentTable> trackConstituents;
-  OutputObj<TH1F> hJetPt{"h_jet_pt"};
-  OutputObj<TH1F> hJetPhi{"h_jet_phi"};
-  OutputObj<TH1F> hJetEta{"h_jet_eta"};
-  OutputObj<TH1F> hJetNTracks{"h_jet_ntracks"};
-  OutputObj<TH1F> hD0Pt{"h_D0_pt"};
+  Produces<ConstituentTable> constituentsTable;
+  Produces<ConstituentSubTable> constituentsSubTable;
 
-  Service<O2DatabasePDG> pdg;
+  // event level configurables
+  Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
-  TrackSelection globalTracks;
-
-  std::vector<fastjet::PseudoJet> jets;
-  std::vector<fastjet::PseudoJet> inputParticles;
-  JetFinder jetFinder;
-
-  Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
-  Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
-  Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  // track level configurables
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
   Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum track pT"};
   Configurable<float> trackEtaMin{"trackEtaMin", -0.8, "minimum track eta"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.8, "maximum track eta"};
+  Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
+  Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+
+  // cluster level configurables
+  Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
+  Configurable<float> clusterEtaMin{"clusterEtaMin", -0.7, "minimum cluster eta"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  Configurable<float> clusterEtaMax{"clusterEtaMax", 0.7, "maximum cluster eta"};  // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  Configurable<float> clusterPhiMin{"clusterPhiMin", -999, "minimum cluster phi"};
+  Configurable<float> clusterPhiMax{"clusterPhiMax", 999, "maximum cluster phi"};
+
+  // HF candidate level configurables
+  Configurable<std::string> candSpecie_s{"candSpecie_s", "D0", "options are D0, Lc, Bplus"};
+  Configurable<std::string> candDecayChannel_s{"candDecayChannel_s", "default", "look up in task"};
   Configurable<float> candPtMin{"candPtMin", 0.0, "minimum candidate pT"};
   Configurable<float> candPtMax{"candPtMax", 100.0, "maximum candidate pT"};
   Configurable<float> candYMin{"candYMin", -0.8, "minimum candidate eta"};
   Configurable<float> candYMax{"candYMax", 0.8, "maximum candidate eta"};
+  // HF candidiate selection configurables
+  Configurable<bool> rejectBackgroundMCCandidates{"rejectBackgroundMCCandidates", true, "reject background HF candidates at MC detector level"};
+  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
+  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
+  Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc->PKPi"};
+  Configurable<int> selectionFlagLcToPiPK{"selectionFlagLcToPiPK", 1, "Selection Flag for Lc->PiPK"};
+  Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
+
+  // jet level configurables
+  Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
+  Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
+  Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  Configurable<int> jetTypeParticleLevel{"jetTypeParticleLevel", 1, "Type of stored jets. 0 = full, 1 = charged, 2 = neutral"};
+  Configurable<int> jetAlgorithm{"jetAlgorithm", 2, "jet clustering algorithm. 0 = kT, 1 = C/A, 2 = Anti-kT"};
+  Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "jet recombination scheme. 0 = E-scheme, 1 = pT-scheme, 2 = pT2-scheme"};
+  Configurable<float> jetGhostArea{"jetGhostArea", 0.005, "jet ghost area"};
+  Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
+  Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
+  Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
+
+  Service<O2DatabasePDG> pdg;
+  std::string trackSelection;
+
+  JetFinder jetFinder;
+  std::vector<fastjet::PseudoJet> inputParticles;
+
+  int candPDG;
+  int candDecay;
 
   void init(InitContext const&)
   {
-    // set up global tracks and adjust as necessary
-    globalTracks = getGlobalTrackSelection();
-    globalTracks.SetEtaRange(trackEtaMin, trackEtaMax);
+    trackSelection = static_cast<std::string>(trackSelections);
 
-    hJetPt.setObject(new TH1F("h_jet_pt", "jet p_{T};p_{T} (GeV/#it{c})",
-                              100, 0., 100.));
-    hJetPhi.setObject(new TH1F("h_jet_phi", "jet #phi; #phi",
-                               140, -7.0, 7.0));
-    hJetEta.setObject(new TH1F("h_jet_eta", "jet #eta; #eta",
-                               30, -1.5, 1.5));
-    hJetNTracks.setObject(new TH1F("h_jet_ntracks", "jet N tracks ; N tracks",
-                                   150, -0.5, 99.5));
-    hD0Pt.setObject(new TH1F("h_D0_pt", "jet p_{T,D};p_{T,D} (GeV/#it{c})",
-                             100, 0., 100.));
+    if (DoRhoAreaSub) {
+      jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
+    }
+    if (DoConstSub) {
+      jetFinder.setBkgSubMode(JetFinder::BkgSubMode::constSub);
+    }
 
     jetFinder.etaMin = trackEtaMin;
     jetFinder.etaMax = trackEtaMax;
     jetFinder.jetPtMin = jetPtMin;
     jetFinder.jetPtMax = jetPtMax;
-    jetFinder.jetR = jetR;
+    jetFinder.algorithm = static_cast<fastjet::JetAlgorithm>(static_cast<int>(jetAlgorithm));
+    jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(static_cast<int>(jetRecombScheme));
+    jetFinder.ghostArea = jetGhostArea;
+    jetFinder.ghostRepeatN = ghostRepeat;
+
+    auto candSpecie = static_cast<std::string>(candSpecie_s);
+    auto candDecayChannel = static_cast<std::string>(candDecayChannel_s);
+    if (candSpecie == "D0") {
+      candPDG = static_cast<int>(pdg::Code::kD0);
+      candDecay = static_cast<int>(aod::hf_cand_2prong::DecayType::D0ToPiK);
+    }
+    if (candSpecie == "Bplus") {
+      candPDG = static_cast<int>(pdg::Code::kBPlus);
+      candDecay = static_cast<int>(aod::hf_cand_bplus::DecayType::BplusToD0Pi);
+    }
+    if (candSpecie == "Lc") {
+      candPDG = static_cast<int>(pdg::Code::kLambdaCPlus);
+      candDecay = static_cast<int>(aod::hf_cand_3prong::DecayType::LcToPKPi);
+    }
+    if (candSpecie == "JPsi") {
+      candPDG = static_cast<int>(pdg::Code::kJPsi);
+      if (candDecayChannel == "default" || candDecayChannel == "ee") {
+        candDecay = static_cast<int>(aod::hf_cand_2prong::DecayType::JpsiToEE);
+      }
+      if (candDecayChannel == "mumu") {
+        candDecay = static_cast<int>(aod::hf_cand_2prong::DecayType::JpsiToMuMu);
+      }
+    }
   }
 
-  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-
-  //need enum as configurable
-  enum pdgCode { pdgD0 = 421 };
-
-  Filter trackCuts = (aod::track::pt >= trackPtMin && aod::track::pt < trackPtMax && aod::track::eta > trackEtaMin && aod::track::eta < trackEtaMax);
+  o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
+  Filter collisionFilter = (nabs(aod::collision::posZ) < vertexZCut);
+  Filter trackCuts = (aod::track::pt >= trackPtMin && aod::track::pt < trackPtMax && aod::track::eta > trackEtaMin && aod::track::eta < trackEtaMax && aod::track::phi >= trackPhiMin && aod::track::phi <= trackPhiMax);
   Filter partCuts = (aod::mcparticle::pt >= trackPtMin && aod::mcparticle::pt < trackPtMax);
-  Filter candCuts = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
+  Filter clusterFilter = (o2::aod::emcalcluster::definition == static_cast<int>(clusterDefinition) && aod::emcalcluster::eta > clusterEtaMin && aod::emcalcluster::eta < clusterEtaMax && aod::emcalcluster::phi >= clusterPhiMin && aod::emcalcluster::phi <= clusterPhiMax);
+  // Filter candidateCuts = (aod::hfcand::pt >= candPtMin && aod::hfcand::pt < candPtMax && aod::hfcand::y >= candYMin && aod::hfcand::y < candYMax);
+  Filter candidateCutsD0 = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
+  Filter candidateCutsLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPiPK);
+  Filter candidateCutsBplus = (aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus);
 
-  using JetTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
-
-  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                   JetTracks const& tracks,
-                   soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> const& candidates)
+  // function that processes data for all 2Prong candidates
+  template <typename T, typename U, typename M>
+  void analyseData(T const& collision, U const& tracks, M const& candidates)
   {
-    // TODO: retrieve pion mass from somewhere
-    bool isHFJet;
-
-    if (!collision.sel8())
+    if (!selectCollision(collision)) {
       return;
+    }
 
-    //this loop should be made more efficient
     for (auto& candidate : candidates) {
-      if (yD0(candidate) < candYMin || yD0(candidate) > candYMax) {
-        continue;
-      }
-      if (candidate.pt() < candPtMin || candidate.pt() >= candPtMax) {
-        continue;
-      }
-      jets.clear();
       inputParticles.clear();
-      for (auto& track : tracks) {
-        if (!globalTracks.IsSelected(track)) {
-          continue;
-        }
-        if (candidate.prong0_as<JetTracks>().globalIndex() == track.globalIndex() || candidate.prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
-          continue;
-        }
-        fillConstituents(track, inputParticles, track.globalIndex());
+      if (!analyseCandidate(inputParticles, candPDG, candPtMin, candPtMax, candYMin, candYMax, candidate)) {
+        continue;
       }
-      fillConstituents(candidate, inputParticles, -1, RecoDecay::getMassPDG(pdgD0));
-      fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
-      for (const auto& jet : jets) {
-        isHFJet = false;
-        if (jet.eta() < trackEtaMin + jetR || jet.eta() > trackEtaMax - jetR) {
-          continue;
-        }
-        if (jet.perp() < jetPtMin || jet.perp() >= jetPtMax) {
-          continue;
-        }
-        std::vector<int> trackconst;
-        std::vector<int> candconst;
-        for (const auto& constituent : jet.constituents()) {
-          if (constituent.user_index() == -1) {
-            isHFJet = true;
-            break;
-          }
-        }
-
-        if (isHFJet) {
-          jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
-                    jet.E(), jet.m(), jet.area(), jetFinder.jetR);
-          const auto& constituents = sorted_by_pt(jet.constituents());
-          for (const auto& constituent : constituents) {
-            if (constituent.user_index() != -1) {
-              // auto track = tracks.rawIteratorAt(constituent.user_index() - tracks.offset());
-              trackconst.push_back(constituent.user_index());
-            }
-          }
-          candconst.push_back(candidate.globalIndex()); // is this grouped per collision too?
-          trackConstituents(jetsTable.lastIndex(), trackconst, std::vector<int>(), candconst);
-          hJetPt->Fill(jet.pt());
-          hJetPhi->Fill(jet.phi());
-          hJetEta->Fill(jet.rap());
-          hJetNTracks->Fill(jet.constituents().size());
-          hD0Pt->Fill(candidate.pt());
-          break;
-        }
-      }
+      analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
+      findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub, true);
     }
   }
-  PROCESS_SWITCH(JetFinderHFTask, processData, "HF jet finding on data", true);
 
-  void processMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                  JetTracks const& tracks,
-                  soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> const& candidates)
+  // function that processes MC det for all 2Prong candidates
+  template <typename T, typename U, typename M>
+  void analyseMCD(T const& collision, U const& tracks, M const& candidates)
   {
-    // TODO: retrieve pion mass from somewhere
-    bool isHFJet;
-    //this loop should be made more efficient
-    // TODO: should probably refine the candidate selection
+    if (!selectCollision(collision)) {
+      return;
+    }
+
     for (auto& candidate : candidates) {
-      if (yD0(candidate) < candYMin || yD0(candidate) > candYMax) {
-        continue;
-      }
-      if (candidate.pt() < candPtMin || candidate.pt() >= candPtMax) {
-        continue;
-      }
-      // are the next two ifs needed?
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        continue;
-      }
-      if (!(std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        continue;
-      }
-      jets.clear();
       inputParticles.clear();
-      for (auto& track : tracks) {
-        if (!globalTracks.IsSelected(track)) {
-          continue;
-        }
-        if (candidate.prong0_as<JetTracks>().globalIndex() == track.globalIndex() || candidate.prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
-          continue;
-        }
-        fillConstituents(track, inputParticles, track.globalIndex());
+      if (!analyseCandidateMC(inputParticles, candPDG, candDecay, candPtMin, candPtMax, candYMin, candYMax, candidate, rejectBackgroundMCCandidates)) {
+        continue;
       }
-      fillConstituents(candidate, inputParticles, -1, RecoDecay::getMassPDG(pdgD0));
-      fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
-      for (const auto& jet : jets) {
-        isHFJet = false;
-        if (jet.eta() < trackEtaMin + jetR || jet.eta() > trackEtaMax - jetR) { // is this needed?
-          continue;
-        }
-        if (jet.perp() < jetPtMin || jet.perp() >= jetPtMax) {
-          continue;
-        }
-        std::vector<int> trackconst;
-        std::vector<int> candconst;
-        for (const auto& constituent : jet.constituents()) {
-          if (constituent.user_index() == -1) {
-            isHFJet = true;
-            break;
-          }
-        }
-        if (isHFJet) {
-          jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
-                    jet.E(), jet.m(), jet.area(), jetFinder.jetR);
-          const auto& constituents = sorted_by_pt(jet.constituents());
-          for (const auto& constituent : constituents) {
-            if (constituent.user_index() != -1) {
-              // auto track = tracks.rawIteratorAt(constituent.user_index() - tracks.offset());
-              trackconst.push_back(constituent.user_index());
-            }
-          }
-          candconst.push_back(candidate.globalIndex()); // check if its correct
-          trackConstituents(jetsTable.lastIndex(), trackconst, std::vector<int>(), candconst);
-          hJetPt->Fill(jet.pt());
-          hJetPhi->Fill(jet.phi());
-          hJetEta->Fill(jet.rap());
-          hJetNTracks->Fill(jet.constituents().size());
-          hD0Pt->Fill(candidate.pt());
-          break;
-        }
-      }
+      analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
+      findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub, true);
     }
   }
-  PROCESS_SWITCH(JetFinderHFTask, processMCD, "HF jet finding on MC detector level", false);
 
-  void processMCP(aod::McCollision const& collision,
-                  soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>> const& particles)
+  // function that generalically processes gen level events
+  template <typename T, typename U, typename M>
+  void analyseMCGenParticles(T const& collision, U const& particles, M& candidates)
   {
-    LOG(debug) << "Per Event MCP";
-    // TODO: retrieve pion mass from somewhere
-    bool isHFJet;
-
-    // TODO: probably should do this as a filter
-    std::vector<soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>::iterator> candidates;
-    for (auto const& part : particles) {
-      // TODO: generalise to any D0
-      if (std::abs(part.flagMcMatchGen()) & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        auto partY = RecoDecay::y(array{part.px(), part.py(), part.pz()}, RecoDecay::getMassPDG(part.pdgCode()));
-        if (partY < candYMin || partY > candYMax) {
+    for (auto const& particle : particles) {
+      if (std::abs(particle.flagMcMatchGen()) & (1 << candDecay)) {
+        auto particleY = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        if (particleY < candYMin || particleY > candYMax) {
           continue;
         }
-        if (part.pt() < candPtMin || part.pt() >= candPtMax) {
+        if (particle.pt() < candPtMin || particle.pt() >= candPtMax) {
           continue;
         }
-        candidates.push_back(part);
+        candidates.push_back(particle);
       }
     }
-
-    //this loop should be made more efficient
     for (auto& candidate : candidates) {
-      jets.clear();
-      inputParticles.clear();
-      for (auto& track : particles) {
-        // exclude neutral particles
-        // TODO: can we do this through the filter?
-        if (track.eta() < trackEtaMin || track.eta() > trackEtaMax) {
-          continue;
-        }
-        auto p = pdg->GetParticle(track.pdgCode());
-        //   track.globalIndex(), track.getGenStatusCode(), p ? std::abs(p->Charge()) : -999.);
-        if ((track.getGenStatusCode() != 1) || (p ? std::abs(p->Charge()) : 0.) < 3.) {
-          continue;
-        }
-        // TODO: check what mass to use?
-        const auto daughters = candidate.daughtersIds();
-        if (std::find(std::begin(daughters), std::end(daughters), track.globalIndex()) != std::end(daughters)) {
-          continue;
-        }
-        fillConstituents(track, inputParticles, track.globalIndex(), RecoDecay::getMassPDG(track.pdgCode()));
-      }
-      fillConstituents(candidate, inputParticles, -1, RecoDecay::getMassPDG(candidate.pdgCode()));
-
-      fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
-
-      for (const auto& jet : jets) {
-        if (jet.eta() < trackEtaMin + jetR || jet.eta() > trackEtaMax - jetR) {
-          continue;
-        }
-        if (jet.perp() < jetPtMin || jet.perp() >= jetPtMax) {
-          continue;
-        }
-        isHFJet = false;
-        std::vector<int> trackconst;
-        std::vector<int> candconst;
-        for (const auto& constituent : jet.constituents()) {
-          if (constituent.user_index() == -1) {
-            isHFJet = true;
-            break;
-          }
-        }
-        if (isHFJet) {
-          jetsTable(collision, jet.pt(), jet.eta(), jet.phi(),
-                    jet.E(), jet.m(), jet.area(), jetFinder.jetR);
-          for (const auto& constituent : jet.constituents()) {
-            if (constituent.user_index() == -1)
-              continue;
-            trackconst.push_back(constituent.user_index());
-          }
-
-          candconst.push_back(candidate.globalIndex());
-          trackConstituents(jetsTable.lastIndex(), trackconst, std::vector<int>(), candconst);
-          hJetPt->Fill(jet.pt());
-          hJetPhi->Fill(jet.phi());
-          hJetEta->Fill(jet.rap());
-          hJetNTracks->Fill(jet.constituents().size());
-          hD0Pt->Fill(candidate.pt());
-          break;
-        }
-      }
+      analyseParticles(inputParticles, trackEtaMin, trackEtaMax, jetTypeParticleLevel, particles, pdg->Instance(), std::optional{candidate});
+      FastJetUtilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candidate.pdgCode()));
+      findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub, true);
     }
   }
-  PROCESS_SWITCH(JetFinderHFTask, processMCP, "HF jet finding on MC particle level", false);
+
+  // check if type JetParticles2Prong can be templated. then you can just use one function everywhere
+  // function that is called for gen level events with 2 prong candidates
+  template <typename T, typename U>
+  void analyseMCGen2Prong(T const& collision, U const& particles)
+  {
+    inputParticles.clear();
+    std::vector<JetParticles2Prong::iterator> candidates;
+    candidates.clear();
+    analyseMCGenParticles(collision, particles, candidates);
+  }
+  // function that is called for gen level events with 3 prong candidates
+  template <typename T, typename U>
+  void analyseMCGen3Prong(T const& collision, U const& particles)
+  {
+    inputParticles.clear();
+    std::vector<JetParticles3Prong::iterator> candidates;
+    analyseMCGenParticles(collision, particles, candidates);
+  }
+  // function that is called for gen level events with B+ candidates
+  template <typename T, typename U>
+  void analyseMCGenBplus(T const& collision, U const& particles)
+  {
+    inputParticles.clear();
+    std::vector<JetParticlesBplus::iterator> candidates;
+    candidates.clear();
+    analyseMCGenParticles(collision, particles, candidates);
+  }
+
+  void processDummy(aod::Collisions const& collision)
+  {
+  }
+  PROCESS_SWITCH(JetFinderHFTask, processDummy, "Dummy process function turned on by default", true);
+
+  void processD0ChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, JetTracks const& tracks, CandidateD0Data const& candidates) { analyseData(collision, tracks, candidates); }
+  PROCESS_SWITCH(JetFinderHFTask, processD0ChargedJetsData, "D0 jet finding on data", false);
+
+  void processD0ChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, JetTracks const& tracks, CandidateD0MC const& candidates) { analyseMCD(collision, tracks, candidates); }
+  PROCESS_SWITCH(JetFinderHFTask, processD0ChargedJetsMCD, "D0 finding on MC detector level", false);
+
+  void processBplusChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, JetTracks const& tracks, CandidateBplusData const& candidates, aod::HfCand2Prong const& HFdaughters) { analyseData(collision, tracks, candidates); }
+  PROCESS_SWITCH(JetFinderHFTask, processBplusChargedJetsData, "B+ jet finding on data", false);
+
+  void processBplusChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, JetTracks const& tracks, CandidateBplusMC const& candidates, aod::HfCand2Prong const& HFdaughters) { analyseMCD(collision, tracks, candidates); }
+  PROCESS_SWITCH(JetFinderHFTask, processBplusChargedJetsMCD, "B+ finding on MC detector level", false);
+
+  void processLcChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, JetTracks const& tracks, CandidateLcData const& candidates) { analyseData(collision, tracks, candidates); }
+  PROCESS_SWITCH(JetFinderHFTask, processLcChargedJetsData, "Lc jet finding on data", false);
+
+  void processLcChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, JetTracks const& tracks, CandidateLcMC const& candidates) { analyseMCD(collision, tracks, candidates); }
+  PROCESS_SWITCH(JetFinderHFTask, processLcChargedJetsMCD, "Lc finding on MC detector level", false);
+
+  void process2ProngJetsMCP(aod::McCollision const& collision,
+                            JetParticles2Prong const& particles)
+  {
+    analyseMCGen2Prong(collision, particles);
+  }
+  PROCESS_SWITCH(JetFinderHFTask, process2ProngJetsMCP, "2-prong HF jet finding on MC particle level", false);
+
+  void process3ProngJetsMCP(aod::McCollision const& collision,
+                            JetParticles3Prong const& particles)
+  {
+    analyseMCGen3Prong(collision, particles);
+  }
+  PROCESS_SWITCH(JetFinderHFTask, process3ProngJetsMCP, "3-prong HF jet finding on MC particle level", false);
+
+  void processBplusJetsMCP(aod::McCollision const& collision,
+                           JetParticlesBplus const& particles)
+  {
+    analyseMCGenBplus(collision, particles);
+  }
+  PROCESS_SWITCH(JetFinderHFTask, processBplusJetsMCP, "B+ HF jet finding on MC particle level", false);
 };
 
-using JetFinderHF = JetFinderHFTask<o2::aod::HFJets, o2::aod::HFJetConstituents>;
-using MCParticleLevelJetFinderHF = JetFinderHFTask<o2::aod::MCParticleLevelHFJets, o2::aod::MCParticleLevelHFJetConstituents>;
-using MCDetectorLevelJetFinderHF = JetFinderHFTask<o2::aod::MCDetectorLevelHFJets, o2::aod::MCDetectorLevelHFJetConstituents>;
+using JetFinderD0DataCharged = JetFinderHFTask<o2::aod::D0ChargedJets, o2::aod::D0ChargedJetConstituents, o2::aod::D0ChargedJetConstituentsSub>;
+using JetFinderD0MCDetectorLevelCharged = JetFinderHFTask<o2::aod::D0ChargedMCDetectorLevelJets, o2::aod::D0ChargedMCDetectorLevelJetConstituents, o2::aod::D0ChargedMCDetectorLevelJetConstituentsSub>;
+using JetFinderD0MCParticleLevelCharged = JetFinderHFTask<o2::aod::D0ChargedMCParticleLevelJets, o2::aod::D0ChargedMCParticleLevelJetConstituents, o2::aod::D0ChargedMCParticleLevelJetConstituentsSub>;
+
+using JetFinderBplusDataCharged = JetFinderHFTask<o2::aod::BplusChargedJets, o2::aod::BplusChargedJetConstituents, o2::aod::BplusChargedJetConstituentsSub>;
+using JetFinderBplusMCDetectorLevelCharged = JetFinderHFTask<o2::aod::BplusChargedMCDetectorLevelJets, o2::aod::BplusChargedMCDetectorLevelJetConstituents, o2::aod::BplusChargedMCDetectorLevelJetConstituentsSub>;
+using JetFinderBplusMCParticleLevelCharged = JetFinderHFTask<o2::aod::BplusChargedMCParticleLevelJets, o2::aod::BplusChargedMCParticleLevelJetConstituents, o2::aod::BplusChargedMCParticleLevelJetConstituentsSub>;
+
+using JetFinderLcDataCharged = JetFinderHFTask<o2::aod::LcChargedJets, o2::aod::LcChargedJetConstituents, o2::aod::LcChargedJetConstituentsSub>;
+using JetFinderLcMCDetectorLevelCharged = JetFinderHFTask<o2::aod::LcChargedMCDetectorLevelJets, o2::aod::LcChargedMCDetectorLevelJetConstituents, o2::aod::LcChargedMCDetectorLevelJetConstituentsSub>;
+using JetFinderLcMCParticleLevelCharged = JetFinderHFTask<o2::aod::LcChargedMCParticleLevelJets, o2::aod::LcChargedMCParticleLevelJetConstituents, o2::aod::LcChargedMCParticleLevelJetConstituentsSub>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
-  auto hfjetMode = cfgc.options().get<std::string>("hfjetMode");
+  tasks.emplace_back(adaptAnalysisTask<JetFinderD0DataCharged>(cfgc,
+                                                               SetDefaultProcesses{},
+                                                               TaskName{"jet-finder-d0-data-charged"}));
 
-  if (hfjetMode.find("data") != std::string::npos || hfjetMode.empty())
-    tasks.emplace_back(adaptAnalysisTask<JetFinderHF>(cfgc,
-                                                      SetDefaultProcesses{{{"processData", true}, {"processMCP", false}, {"processMCD", false}}},
-                                                      TaskName{"jet-finder-hf-data"}));
+  tasks.emplace_back(adaptAnalysisTask<JetFinderD0MCDetectorLevelCharged>(cfgc,
+                                                                          SetDefaultProcesses{},
+                                                                          TaskName{"jet-finder-d0-mcd-charged"}));
 
-  if (hfjetMode.find("mcp") != std::string::npos || hfjetMode.empty())
-    tasks.emplace_back(adaptAnalysisTask<MCParticleLevelJetFinderHF>(cfgc,
-                                                                     SetDefaultProcesses{{{"processData", false}, {"processMCP", true}, {"processMCD", false}}},
-                                                                     TaskName{"jet-finder-hf-mcp"}));
+  tasks.emplace_back(adaptAnalysisTask<JetFinderD0MCParticleLevelCharged>(cfgc,
+                                                                          SetDefaultProcesses{},
+                                                                          TaskName{"jet-finder-d0-mcp-charged"}));
 
-  if (hfjetMode.find("mcd") != std::string::npos || hfjetMode.empty())
-    tasks.emplace_back(adaptAnalysisTask<MCDetectorLevelJetFinderHF>(cfgc,
-                                                                     SetDefaultProcesses{{{"processData", false}, {"processMCP", false}, {"processMCD", true}}},
-                                                                     TaskName{"jet-finder-hf-mcd"}));
+  tasks.emplace_back(adaptAnalysisTask<JetFinderBplusDataCharged>(cfgc,
+                                                                  SetDefaultProcesses{},
+                                                                  TaskName{"jet-finder-bplus-data-charged"}));
+
+  tasks.emplace_back(adaptAnalysisTask<JetFinderBplusMCDetectorLevelCharged>(cfgc,
+                                                                             SetDefaultProcesses{},
+                                                                             TaskName{"jet-finder-bplus-mcd-charged"}));
+
+  tasks.emplace_back(adaptAnalysisTask<JetFinderBplusMCParticleLevelCharged>(cfgc,
+                                                                             SetDefaultProcesses{},
+                                                                             TaskName{"jet-finder-bplus-mcp-charged"}));
+
+  tasks.emplace_back(adaptAnalysisTask<JetFinderLcDataCharged>(cfgc,
+                                                               SetDefaultProcesses{},
+                                                               TaskName{"jet-finder-lc-data-charged"}));
+
+  tasks.emplace_back(adaptAnalysisTask<JetFinderLcMCDetectorLevelCharged>(cfgc,
+                                                                          SetDefaultProcesses{},
+                                                                          TaskName{"jet-finder-lc-mcd-charged"}));
+
+  tasks.emplace_back(adaptAnalysisTask<JetFinderLcMCParticleLevelCharged>(cfgc,
+                                                                          SetDefaultProcesses{},
+                                                                          TaskName{"jet-finder-lc-mcp-charged"}));
 
   return WorkflowSpec{tasks};
 }

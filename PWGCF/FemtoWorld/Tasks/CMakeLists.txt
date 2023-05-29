@@ -28,3 +28,18 @@ o2physics_add_dpl_workflow(femto-world-pion-all-pair-track-track
           SOURCES femtoWorldPionAllPairTask.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-world-pair-track-d0
+          SOURCES femtoWorldPairTaskTrackD0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-world-pair-pion-pion
+          SOURCES femtoWorldPairTaskPionPion.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-world-pair-proton-antiproton
+          SOURCES femtoWorldPairTaskProtonAntiproton.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)

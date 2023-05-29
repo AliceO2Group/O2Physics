@@ -298,7 +298,7 @@ struct UpcCandProducer {
         colId = track.collisionId();
       }
       udTracks(candID, track.px(), track.py(), track.pz(), track.sign(), bc, trTime, track.trackTimeRes());
-      udTracksExtra(track.itsClusterMap(), track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
+      udTracksExtra(track.tpcInnerParam(), track.itsClusterMap(), track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                     track.tpcNClsShared(), track.trdPattern(), track.itsChi2NCl(), track.tpcChi2NCl(), track.trdChi2(), track.tofChi2(),
                     track.tpcSignal(), track.tofSignal(), track.trdSignal(), track.length(), track.tofExpMom(), track.detectorMap());
       udTracksPID(track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
@@ -379,13 +379,13 @@ struct UpcCandProducer {
         for (auto amp : ampsC)
           fitInfo.ampFT0C += amp;
         fitInfo.triggerMaskFT0 = ft0.triggerMask();
-        if (!bc.selection()[evsel::kNoBGT0A])
+        if (!bc.selection_bit(evsel::kNoBGT0A))
           SETBIT(fitInfo.BGFT0Apf, bit);
-        if (!bc.selection()[evsel::kNoBGT0C])
+        if (!bc.selection_bit(evsel::kNoBGT0C))
           SETBIT(fitInfo.BGFT0Cpf, bit);
-        if (bc.selection()[evsel::kIsBBT0A])
+        if (bc.selection_bit(evsel::kIsBBT0A))
           SETBIT(fitInfo.BBFT0Apf, bit);
-        if (bc.selection()[evsel::kIsBBT0C])
+        if (bc.selection_bit(evsel::kIsBBT0C))
           SETBIT(fitInfo.BBFT0Cpf, bit);
       }
       if (bc.has_foundFV0()) {
@@ -396,9 +396,9 @@ struct UpcCandProducer {
         for (auto amp : amps)
           fitInfo.ampFV0A += amp;
         fitInfo.triggerMaskFV0A = fv0a.triggerMask();
-        if (!bc.selection()[evsel::kNoBGV0A])
+        if (!bc.selection_bit(evsel::kNoBGV0A))
           SETBIT(fitInfo.BGFV0Apf, bit);
-        if (bc.selection()[evsel::kIsBBV0A])
+        if (bc.selection_bit(evsel::kIsBBV0A))
           SETBIT(fitInfo.BBFV0Apf, bit);
       }
       if (bc.has_foundFDD()) {
@@ -416,13 +416,13 @@ struct UpcCandProducer {
           fitInfo.ampFDDC += amp;
         }
         fitInfo.triggerMaskFDD = fdd.triggerMask();
-        if (!bc.selection()[evsel::kNoBGFDA])
+        if (!bc.selection_bit(evsel::kNoBGFDA))
           SETBIT(fitInfo.BGFDDApf, bit);
-        if (!bc.selection()[evsel::kNoBGFDC])
+        if (!bc.selection_bit(evsel::kNoBGFDC))
           SETBIT(fitInfo.BGFDDCpf, bit);
-        if (bc.selection()[evsel::kIsBBFDA])
+        if (bc.selection_bit(evsel::kIsBBFDA))
           SETBIT(fitInfo.BBFDDApf, bit);
-        if (bc.selection()[evsel::kIsBBFDC])
+        if (bc.selection_bit(evsel::kIsBBFDC))
           SETBIT(fitInfo.BBFDDCpf, bit);
       }
       ++curit;

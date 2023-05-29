@@ -29,7 +29,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_2prong;
 
-//#define MY_DEBUG
+// #define MY_DEBUG
 
 #ifdef MY_DEBUG
 using MyBigTracks = aod::BigTracksMC;
@@ -49,6 +49,8 @@ struct HfCandidateCreatorCascade {
   // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", true, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
@@ -119,6 +121,8 @@ struct HfCandidateCreatorCascade {
     df.setMaxDZIni(maxDZIni);
     df.setMinParamChange(minParamChange);
     df.setMinRelChi2Change(minRelChi2Change);
+    df.setUseAbsDCA(useAbsDCA);
+    df.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // loop over pairs of track indeces
     for (const auto& casc : rowsTrackIndexCasc) {
@@ -140,7 +144,7 @@ struct HfCandidateCreatorCascade {
       const auto& trackV0DaughPos = v0.posTrack_as<MyBigTracks>();
       const auto& trackV0DaughNeg = v0.negTrack_as<MyBigTracks>();
 
-      auto collision = bach.collision();
+      auto collision = casc.collision();
 
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -260,13 +264,17 @@ struct HfCandidateCreatorCascadeMc {
                  aod::McParticles const& particlesMC)
   {
     int8_t sign = 0;
+    int8_t origin = 0;
+    int indexRec = -1;
     std::vector<int> arrDaughLcIndex;
     std::array<int, 3> arrDaughLcPDG;
     std::array<int, 3> arrDaughLcPDGRef = {2212, 211, -211};
 
     // Match reconstructed candidates.
     rowCandidateCasc->bindExternalIndices(&tracks);
-    for (auto& candidate : *rowCandidateCasc) {
+    for (const auto& candidate : *rowCandidateCasc) {
+
+      origin = 0;
 
       const auto& bach = candidate.prong0_as<aod::BigTracksMC>();
       const auto& trackV0DaughPos = candidate.posTrack_as<aod::BigTracksMC>();
@@ -295,16 +303,23 @@ struct HfCandidateCreatorCascadeMc {
         // then we check the Lc
         MY_DEBUG_MSG(sign, LOG(info) << "K0S was correct! now we check the Lc");
         MY_DEBUG_MSG(sign, LOG(info) << "index proton = " << indexBach);
-        RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
         MY_DEBUG_MSG(sign, LOG(info) << "Lc found with sign " << sign; printf("\n"));
       }
 
-      rowMcMatchRec(sign);
+      // Check whether the particle is non-prompt (from a b quark).
+      if (sign != 0) {
+        auto particle = particlesMC.rawIteratorAt(indexRec);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+      }
+
+      rowMcMatchRec(sign, origin);
     }
     //}
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
+      origin = 0;
       // checking if I have a Lc --> K0S + p
       RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaCPlus, array{+kProton, +kK0Short}, true, &sign, 2);
       if (sign != 0) {
@@ -325,7 +340,11 @@ struct HfCandidateCreatorCascadeMc {
           MY_DEBUG_MSG(sign == 0, LOG(info) << "Pity, the three final daughters are not p, pi+, pi-, but " << arrDaughLcPDG[0] << ", " << arrDaughLcPDG[1] << ", " << arrDaughLcPDG[2]);
         }
       }
-      rowMcMatchGen(sign);
+      // Check whether the particle is non-prompt (from a b quark).
+      if (sign != 0) {
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+      }
+      rowMcMatchGen(sign, origin);
     }
   }
 

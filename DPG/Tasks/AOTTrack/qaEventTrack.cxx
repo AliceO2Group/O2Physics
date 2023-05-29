@@ -50,6 +50,7 @@ using namespace o2::dataformats;
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 struct qaEventTrack {
+  SliceCache cache;
 
   // general steering settings
   Configurable<bool> isRun3{"isRun3", false, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
@@ -85,7 +86,9 @@ struct qaEventTrack {
                        ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
-                       ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+                       ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)) ||
+                       ((trackSelection.node() == 6) && requireGlobalTrackWoTPCClusterInFilter()) ||
+                       ((trackSelection.node() == 7) && requireGlobalTrackWoDCATPCClusterInFilter());
 
   using TrackIUTable = soa::Join<aod::TracksIU, aod::TrackSelection, aod::TrackSelectionExtension>;
   Partition<TrackIUTable> tracksIUFiltered = (trackSelection.node() == 0) ||
@@ -93,14 +96,18 @@ struct qaEventTrack {
                                              ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
                                              ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                                              ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
-                                             ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+                                             ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)) ||
+                                             ((trackSelection.node() == 6) && requireGlobalTrackWoTPCClusterInFilter()) ||
+                                             ((trackSelection.node() == 7) && requireGlobalTrackWoDCATPCClusterInFilter());
   using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>;
   Partition<TrackTableData> tracksFilteredCorrIU = (trackSelection.node() == 0) ||
                                                    ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
                                                    ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
                                                    ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                                                    ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
-                                                   ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+                                                   ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)) ||
+                                                   ((trackSelection.node() == 6) && requireGlobalTrackWoTPCClusterInFilter()) ||
+                                                   ((trackSelection.node() == 7) && requireGlobalTrackWoDCATPCClusterInFilter());
 
   HistogramRegistry histos;
 
@@ -195,7 +202,11 @@ struct qaEventTrack {
       histos.add<TH2>("Tracks/Kine/resoEta", "", kTH2D, {axisDeltaEta, axisEta})->GetYaxis()->SetTitle("#eta_{rec}");
       histos.add<TH2>("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, axisPhi})->GetYaxis()->SetTitle("#varphi_{rec}");
     }
-    histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution;#sigma{#it{p}}/#it{p}_{T};#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution;#sigma{#it{p}_{T}}/#it{p}_{T};#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaPlus", "relative #it{p}_{T} resolution positive #eta;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta>0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaMinus", "relative #it{p}_{T} resolution negative #eta;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta<0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaWithin04", "relative #it{p}_{T} resolution for |#eta| < 0.4;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta>0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+    histos.add("Tracks/Kine/relativeResoPtEtaAbove04", "relative #it{p}_{T} resolution for |#eta| > 0.4;#sigma{#it{p}_{T}}/#it{p}_{T} (#eta<0);#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
     histos.add("Tracks/Kine/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT#sigma{#it{p}}/#it{p}_{T}#GT;#it{p}_{T}", kTProfile, {{axisPt}});
 
     // count filtered tracks matched to a collision
@@ -295,6 +306,7 @@ struct qaEventTrack {
     histos.add("Tracks/flags", "track flag;flag bit", kTH1D, {{64, -0.5, 63.5}});
     histos.add("Tracks/dcaXY", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{200, -0.15, 0.15}});
     histos.add("Tracks/dcaZ", "distance of closest approach in #it{z};#it{dcaZ} [cm];", kTH1D, {{200, -0.15, 0.15}});
+    histos.add("Tracks/dcaZvsEta", "distance of closest approach in #it{z} vs. eta;#it{dcaZ} [cm];", kTH2D, {{1000, -100, 100}, axisEta});
 
     histos.add("Tracks/dcaXYvsPt", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH2D, {{200, -0.15, 0.15}, axisPt});
     histos.add("Tracks/dcaZvsPt", "distance of closest approach in #it{z};#it{dcaZ} [cm];", kTH2D, {{200, -0.15, 0.15}, axisPt});
@@ -312,6 +324,13 @@ struct qaEventTrack {
     // tpc histograms
     histos.add("Tracks/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {{165, -0.5, 164.5}});
+    auto h2 = histos.add<TH2>("Tracks/TPC/tpcNClsFoundVsEta", "tracks with at least 1 TPC cluster", kTH2D, {axisEta, {165, -0.5, 164.5}});
+    h2->GetXaxis()->SetTitle("#eta");
+    h2->GetYaxis()->SetTitle("# clusters TPC");
+    auto h3 = histos.add<TH3>("Tracks/TPC/tpcNClsFoundVsEtaVtxZ", "tracks with at least 1 TPC cluster", kTH3D, {axisEta, {165, -0.5, 164.5}, axisVertexPosZ});
+    h3->GetXaxis()->SetTitle("#eta");
+    h3->GetYaxis()->SetTitle("# clusters TPC");
+    h3->GetZaxis()->SetTitle("Vtx. Z [cm]");
     histos.add("Tracks/TPC/tpcNClsShared", "number of shared TPC clusters;# shared clusters TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH1D, {{100, 0., 1.}});
@@ -321,6 +340,9 @@ struct qaEventTrack {
 
     // tracks vs tracks @ IU
     if (doprocessDataIU) {
+      // Events
+      histos.add("Events/nContribTracksIUWithTOFvsWithTRD", ";PV contrib. with TOF; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
+
       // Full distributions
       auto h1 = histos.add<TH1>("Tracks/IU/Pt", "IU: Pt", kTH1F, {axisPt});
       h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
@@ -358,6 +380,85 @@ struct qaEventTrack {
       h2 = histos.add<TH2>("Tracks/IU/vsDCA/Phi", "IU vs DCA: Phi", kTH2F, {axisPhi, axisPhi});
       h2->GetXaxis()->SetTitle(Form("%s DCA", h2->GetXaxis()->GetTitle()));
       h2->GetYaxis()->SetTitle(Form("%s IU", h2->GetYaxis()->GetTitle()));
+
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEta", "tracks with at least 1 TPC cluster; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaGtr25", "tracks with at least 25 TPC cluster; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/dcaZvsEta", "distance of closest approach in #it{z} vs. eta;#it{dcaZ} [cm];", kTH2D, {{1000, -100, 100}, axisEta});
+
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPt", "tracks with at least 1 TPC cluster; #eta; #it{p}_{T}^{IU}; # clusters TPC", kTH3D, {axisEta, axisPt, {165, -0.5, 164.5}});
+
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut1", "tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.0,0.2) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut2", "tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.2,0.3) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut3", "tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.0,0.3) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut4", "tracks with at least 1 TPC cluster,#it{p}_{T}^{IU} #in (0.3,0.4) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut5", "tracks with at least 1 TPC cluster,#it{p}_{T}^{IU} #in (0.4,0.5) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut6", "tracks with at least 1 TPC cluster,#it{p}_{T}^{IU} #in (0.3,0.5) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut7", "tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.5,0.6) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut8", "tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.6,0.8) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut9", "tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.5,0.8) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut10", "tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.8,1) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut11", "tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (1,2) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut12", "tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (2,3) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut13", "tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (3,6) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut14", "tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (6,10) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut15", "tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (10,15) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut1Postive", "positive charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.0,0.2) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut2Postive", "positive charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.2,0.3) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut3Postive", "positive charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.0,0.3) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut4Postive", "positive charged tracks with at least 1 TPC cluster,#it{p}_{T}^{IU} #in (0.3,0.4) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut5Postive", "positive charged tracks with at least 1 TPC cluster,#it{p}_{T}^{IU} #in (0.4,0.5) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut6Postive", "positive charged tracks with at least 1 TPC cluster,#it{p}_{T}^{IU} #in (0.3,0.5) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut7Postive", "positive charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.5,0.6) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut8Postive", "positive charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.6,0.8) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut9Postive", "positive charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.5,0.8) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut10Postive", "positive charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.8,1) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut11Postive", "positive charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (1,2) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut12Postive", "positive charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (2,3) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut13Postive", "positive charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (3,6) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut14Postive", "positive charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (6,10) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut15Postive", "positive charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (10,15) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut1Negative", "negative charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.0,0.2) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut2Negative", "negative charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.2,0.3) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut3Negative", "negative charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.0,0.3) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut4Negative", "negative charged tracks with at least 1 TPC cluster,#it{p}_{T}^{IU} #in (0.3,0.4) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut5Negative", "negative charged tracks with at least 1 TPC cluster,#it{p}_{T}^{IU} #in (0.4,0.5) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut6Negative", "negative charged tracks with at least 1 TPC cluster,#it{p}_{T}^{IU} #in (0.3,0.5) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut7Negative", "negative charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.5,0.6) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut8Negative", "negative charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.6,0.8) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut9Negative", "negative charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.5,0.8) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut10Negative", "negative charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (0.8,1) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut11Negative", "negative charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (1,2) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut12Negative", "negative charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (2,3) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut13Negative", "negative charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (3,6) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut14Negative", "negative charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (6,10) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut15Negative", "negative charged tracks with at least 1 TPC cluster, #it{p}_{T}^{IU} #in (10,15) GeV/#it{c}; #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsNcontribCut1", "tracks with at least 1 TPC cluster, nContrib #in (0,20); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsNcontribCut2", "tracks with at least 1 TPC cluster, nContrib #in (20,60); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsNcontribCut3", "tracks with at least 1 TPC cluster, nContrib #in (60,100); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsNcontribCut4", "tracks with at least 1 TPC cluster, nContrib #in (100,150); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsNcontribCut5", "tracks with at least 1 TPC cluster, nContrib #in (150,200); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut1", "tracks with at least 1 TPC cluster, #phi #in (#pi,5#pi/4); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut2", "tracks with at least 1 TPC cluster, #phi #in (5#pi/4,3#pi/2); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut3", "tracks with at least 1 TPC cluster, #phi #in (3#pi/2,7#pi/4); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut4", "tracks with at least 1 TPC cluster, #phi #in (7#pi/4,2#pi); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut5", "tracks with at least 1 TPC cluster, #phi #in (0,#pi/4); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut6", "tracks with at least 1 TPC cluster, #phi #in (#pi/4,#pi/2); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut7", "tracks with at least 1 TPC cluster, #phi #in (#pi/2,3#pi/4); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut8", "tracks with at least 1 TPC cluster, #phi #in (3#pi/4,#pi); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut1", "tracks with at least 1 TPC cluster, #sigma (#it{p}_{T}^{IU})/#it{p}_{T}^{IU} #in (0.01,0.02); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut2", "tracks with at least 1 TPC cluster, #sigma (#it{p}_{T}^{IU})/#it{p}_{T}^{IU} #in (0.02,0.03); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut3", "tracks with at least 1 TPC cluster, #sigma (#it{p}_{T}^{IU})/#it{p}_{T}^{IU} #in (0.03,0.04); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut4", "tracks with at least 1 TPC cluster, #sigma (#it{p}_{T}^{IU})/#it{p}_{T}^{IU} #in (0.04,0.05); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut5", "tracks with at least 1 TPC cluster, #sigma (#it{p}_{T}^{IU})/#it{p}_{T}^{IU} #in (0.05,0.06); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut6", "tracks with at least 1 TPC cluster, #sigma (#it{p}_{T}^{IU})/#it{p}_{T}^{IU} #in (0.06,0.07); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut7", "tracks with at least 1 TPC cluster, #sigma (#it{p}_{T}^{IU})/#it{p}_{T}^{IU} #in (0.07,0.08); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut8", "tracks with at least 1 TPC cluster, #sigma (#it{p}_{T}^{IU})/#it{p}_{T}^{IU} #in (0.08,0.09); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
+      histos.add("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut9", "tracks with at least 1 TPC cluster, #sigma (#it{p}_{T}^{IU})/#it{p}_{T}^{IU} #in (0.09,0.1); #eta; # clusters TPC", kTH2D, {axisEta, {165, -0.5, 164.5}});
     }
 
     // filtered tracks @ IU
@@ -522,9 +623,10 @@ struct qaEventTrack {
   PROCESS_SWITCH(qaEventTrack, processRun2ConvertedData, "process for run 2 converted data", false);
 
   // Process function for IU vs DCA track comparison
+  using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCov>;
   void processDataIU(CollisionTableData::iterator const& collision,
-                     aod::FullTracks const& tracksUnfiltered,
-                     aod::TracksIU const& tracksIU)
+                     soa::Join<aod::FullTracks, aod::TracksDCA> const& tracksUnfiltered,
+                     FullTracksIU const& tracksIU)
   {
     if (!isSelectedCollision<false>(collision)) {
       return;
@@ -533,6 +635,22 @@ struct qaEventTrack {
     if (tracksUnfiltered.size() != tracksIU.size()) {
       LOG(fatal) << "Tables are of different size!!!!!!!!! " << tracksUnfiltered.size() << " vs " << tracksIU.size();
     }
+
+    /// look for PV contributors and check correlation between TRD and TOF
+    /// to check if TRD time shift creates issues or not
+    int nPvContrWithTOF = 0;
+    int nPvContrWithTRD = 0;
+    for (const auto& trk : tracksIU) {
+      if (trk.isPVContributor()) {
+        if (trk.hasTOF()) {
+          nPvContrWithTOF++;
+        }
+        if (trk.hasTRD()) {
+          nPvContrWithTRD++;
+        }
+      }
+    }
+    histos.fill(HIST("Events/nContribTracksIUWithTOFvsWithTRD"), nPvContrWithTOF, nPvContrWithTRD);
 
     uint64_t trackIndex = 0;
     for (const auto& trk : tracksUnfiltered) {
@@ -561,6 +679,171 @@ struct qaEventTrack {
       histos.fill(HIST("Tracks/IU/vsDCA/Pt"), trk.pt(), trkIU.pt());
       histos.fill(HIST("Tracks/IU/vsDCA/Eta"), trk.eta(), trkIU.eta());
       histos.fill(HIST("Tracks/IU/vsDCA/Phi"), trk.phi(), trkIU.phi());
+
+      auto nClstTPC = trkIU.tpcNClsFound();
+      if (nClstTPC > 0) {
+        histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEta"), trkIU.eta(), nClstTPC);
+        histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPt"), trkIU.eta(), trkIU.pt(), nClstTPC);
+
+        if (trkIU.pt() > 0. && trkIU.pt() <= .2) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut1Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut1Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut1"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > .2 && trkIU.pt() <= .3) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut2Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut2Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut2"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > 0. && trkIU.pt() <= .3) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut3Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut3Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut3"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > .3 && trkIU.pt() <= .4) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut4Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut4Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut4"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > .4 && trkIU.pt() <= .5) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut5Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut5Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut5"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > .3 && trkIU.pt() <= .5) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut6Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut6Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut6"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > .5 && trkIU.pt() <= .6) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut7Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut7Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut7"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > .6 && trkIU.pt() <= .8) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut8Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut8Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut8"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > .5 && trkIU.pt() <= .8) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut9Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut9Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut9"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > .8 && trkIU.pt() <= 1.) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut10Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut10Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut10"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > 1. && trkIU.pt() <= 2.) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut11Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut11Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut11"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > 2. && trkIU.pt() <= 3.) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut12Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut12Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut12"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > 3. && trkIU.pt() <= 6.) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut13Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut13Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut13"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > 6. && trkIU.pt() <= 10.) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut14Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut14Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut14"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+        if (trkIU.pt() > 10. && trkIU.pt() <= 15.) {
+          if (trkIU.sign() > 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut15Postive"), trkIU.eta(), trkIU.tpcNClsFound());
+          else if (trkIU.sign() < 0)
+            histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut15Negative"), trkIU.eta(), trkIU.tpcNClsFound());
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaPtcut15"), trkIU.eta(), trkIU.tpcNClsFound());
+        }
+
+        if (collision.numContrib() > 0. && collision.numContrib() <= 20.)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsNcontribCut1"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (collision.numContrib() > 20. && collision.numContrib() <= 60.)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsNcontribCut2"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (collision.numContrib() > 60. && collision.numContrib() <= 100.)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsNcontribCut3"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (collision.numContrib() > 100. && collision.numContrib() <= 150.)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsNcontribCut4"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (collision.numContrib() > 150. && collision.numContrib() <= 200.)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsNcontribCut5"), trkIU.eta(), trkIU.tpcNClsFound());
+
+        if (trkIU.phi() > 0. && trkIU.phi() <= 3.1415 / 4)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut5"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkIU.phi() > 3.1415 / 4 && trkIU.phi() <= 3.1415 / 2)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut6"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkIU.phi() > 3.1415 / 2 && trkIU.phi() <= 3 * 3.1415 / 4)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut7"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkIU.phi() > 3 * 3.1415 / 4 && trkIU.phi() <= 3.1415)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut8"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkIU.phi() > 3.1415 && trkIU.phi() <= 5 * 3.1415 / 4)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut1"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkIU.phi() > 5 * 3.1415 / 4 && trkIU.phi() <= 6 * 3.1415 / 4)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut2"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkIU.phi() > 6 * 3.1415 / 4 && trkIU.phi() <= 7 * 3.1415 / 4)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut3"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkIU.phi() > 7 * 3.1415 / 4 && trkIU.phi() <= 2 * 3.1415)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPhiCut4"), trkIU.eta(), trkIU.tpcNClsFound());
+
+        auto trkReso = trkIU.pt() * std::sqrt(trkIU.c1Pt21Pt2());
+        if (trkReso > .01 && trkReso <= .02)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut1"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkReso > .02 && trkReso <= .03)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut2"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkReso > .03 && trkReso <= .04)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut3"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkReso > .04 && trkReso <= .05)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut4"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkReso > .05 && trkReso <= .06)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut5"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkReso > .06 && trkReso <= .07)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut6"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkReso > .07 && trkReso <= .08)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut7"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkReso > .08 && trkReso <= .09)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut8"), trkIU.eta(), trkIU.tpcNClsFound());
+        if (trkReso > .09 && trkReso <= .1)
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaVsPtResoCut9"), trkIU.eta(), trkIU.tpcNClsFound());
+
+        if (nClstTPC > 25) {
+          histos.fill(HIST("Tracks/IU/TPC/tpcNClsFoundVsEtaGtr25"), trkIU.eta(), nClstTPC);
+        }
+      }
+      histos.fill(HIST("Tracks/IU/dcaZvsEta"), trk.dcaZ(), trkIU.eta());
     }
   }
   PROCESS_SWITCH(qaEventTrack, processDataIU, "process IU vs DCA comparison", true);
@@ -572,8 +855,8 @@ struct qaEventTrack {
       return;
     }
 
-    auto tracksIU = tracksIUFiltered->sliceByCached(aod::track::collisionId, collision.globalIndex());
-    auto tracksDCA = tracksFilteredCorrIU->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto tracksIU = tracksIUFiltered->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksDCA = tracksFilteredCorrIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     // LOG(info) << "===> tracksIU.size()=" << tracksIU.size() << "===> tracksDCA.size()" << tracksDCA.size();
 
     uint64_t trackIndex = 0;
@@ -1071,6 +1354,22 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/Kine/phivspt"), track.pt(), track.phi());
     histos.fill(HIST("Tracks/Kine/relativeResoPt"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
     histos.fill(HIST("Tracks/Kine/relativeResoPtMean"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+    auto eta = track.eta();
+    if (eta > 0) { /// positive eta
+      histos.fill(HIST("Tracks/Kine/relativeResoPtEtaPlus"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      if (eta < 0.4) { /// |eta| < 0.4
+        histos.fill(HIST("Tracks/Kine/relativeResoPtEtaWithin04"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      } else { /// |eta| > 0.4
+        histos.fill(HIST("Tracks/Kine/relativeResoPtEtaAbove04"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      }
+    } else { /// negative eta
+      histos.fill(HIST("Tracks/Kine/relativeResoPtEtaMinus"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      if (eta > -0.4) { /// |eta| < 0.4
+        histos.fill(HIST("Tracks/Kine/relativeResoPtEtaWithin04"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      } else { /// |eta| > 0.4
+        histos.fill(HIST("Tracks/Kine/relativeResoPtEtaAbove04"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+      }
+    }
 
     // fill track parameters
     histos.fill(HIST("Tracks/alpha"), track.alpha());
@@ -1089,6 +1388,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/dcaZ"), track.dcaZ());
     histos.fill(HIST("Tracks/dcaXYvsPt"), track.dcaXY(), track.pt());
     histos.fill(HIST("Tracks/dcaZvsPt"), track.dcaZ(), track.pt());
+    histos.fill(HIST("Tracks/dcaZvsEta"), track.dcaZ(), track.eta());
     histos.fill(HIST("Tracks/length"), track.length());
 
     // fill ITS variables
@@ -1114,6 +1414,8 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     // fill TPC variables
     histos.fill(HIST("Tracks/TPC/tpcNClsFindable"), track.tpcNClsFindable());
     histos.fill(HIST("Tracks/TPC/tpcNClsFound"), track.tpcNClsFound());
+    histos.fill(HIST("Tracks/TPC/tpcNClsFoundVsEta"), track.eta(), track.tpcNClsFound());
+    histos.fill(HIST("Tracks/TPC/tpcNClsFoundVsEtaVtxZ"), track.eta(), track.tpcNClsFound(), collision.posZ());
     histos.fill(HIST("Tracks/TPC/tpcNClsShared"), track.tpcNClsShared());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());

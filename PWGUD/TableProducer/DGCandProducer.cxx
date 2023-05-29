@@ -40,8 +40,9 @@ struct DGCandProducer {
   // data tables
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
+  Produces<aod::UDZdcs> outputZdcs;
   Produces<aod::UDTracks> outputTracks;
-  // Produces<aod::UDTracksCov> outputTracksCov;
+  Produces<aod::UDTracksCov> outputTracksCov;
   Produces<aod::UDTracksDCA> outputTracksDCA;
   Produces<aod::UDTracksPID> outputTracksPID;
   Produces<aod::UDTracksExtra> outputTracksExtra;
@@ -51,6 +52,16 @@ struct DGCandProducer {
   Produces<aod::UDMcCollisions> outputMcCollisions;
   Produces<aod::UDMcParticles> outputMcParticles;
   Produces<aod::UDMcTrackLabels> outputMcTrackLabels;
+
+  // define histograms
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"pt1Vspt2", "#pt1Vspt2", {HistType::kTH2F, {{100, -3., 3.}, {100, -3., 3.0}}}},
+      {"TPCsignal1", "#TPCsignal1", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}}},
+      {"TPCsignal2", "#TPCsignal2", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}}},
+      {"sig1VsSig2TPC", "#sig1VsSig2TPC", {HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}}}},
+    }};
 
   // data inputs
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
@@ -65,18 +76,15 @@ struct DGCandProducer {
   // MC inputs
   using MCCCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using MCCC = MCCCs::iterator;
-  using MCTCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+  using MCTCs = soa::Join<aod::Tracks, aod::TracksExtra, /*aod::TracksCov,*/ aod::TracksDCA, aod::TrackSelection,
                           aod::McTrackLabels,
                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                           aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using MCTC = MCTCs::iterator;
 
   // extract FIT information
-  upchelpers::FITInfo getFITinfo(uint64_t const& bcnum, BCs const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+  void getFITinfo(upchelpers::FITInfo& info, uint64_t const& bcnum, BCs const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
-    // FITinfo
-    upchelpers::FITInfo info{};
-
     // find bc with globalBC = bcnum
     Partition<BCs> selbc = aod::bc::globalBC == bcnum;
     selbc.bindTable(bcs);
@@ -146,29 +154,27 @@ struct DGCandProducer {
 
       // 0 <= bit <= 31
       auto bit = bc2u.globalBC() - minbc;
-      if (!bc2u.selection()[evsel::kNoBGT0A])
+      if (!bc2u.selection_bit(evsel::kNoBGT0A))
         SETBIT(info.BGFT0Apf, bit);
-      if (!bc2u.selection()[evsel::kNoBGT0C])
+      if (!bc2u.selection_bit(evsel::kNoBGT0C))
         SETBIT(info.BGFT0Cpf, bit);
-      if (bc2u.selection()[evsel::kIsBBT0A])
+      if (bc2u.selection_bit(evsel::kIsBBT0A))
         SETBIT(info.BBFT0Apf, bit);
-      if (bc2u.selection()[evsel::kIsBBT0C])
+      if (bc2u.selection_bit(evsel::kIsBBT0C))
         SETBIT(info.BBFT0Cpf, bit);
-      if (!bc2u.selection()[evsel::kNoBGV0A])
+      if (!bc2u.selection_bit(evsel::kNoBGV0A))
         SETBIT(info.BGFV0Apf, bit);
-      if (bc2u.selection()[evsel::kIsBBV0A])
+      if (bc2u.selection_bit(evsel::kIsBBV0A))
         SETBIT(info.BBFV0Apf, bit);
-      if (!bc2u.selection()[evsel::kNoBGFDA])
+      if (!bc2u.selection_bit(evsel::kNoBGFDA))
         SETBIT(info.BGFDDApf, bit);
-      if (!bc2u.selection()[evsel::kNoBGFDC])
+      if (!bc2u.selection_bit(evsel::kNoBGFDC))
         SETBIT(info.BGFDDCpf, bit);
-      if (bc2u.selection()[evsel::kIsBBFDA])
+      if (bc2u.selection_bit(evsel::kIsBBFDA))
         SETBIT(info.BBFDDApf, bit);
-      if (bc2u.selection()[evsel::kIsBBFDC])
+      if (bc2u.selection_bit(evsel::kIsBBFDC))
         SETBIT(info.BBFDDCpf, bit);
     }
-
-    return info;
   }
 
   // function to update UDTracks, UDTracksCov, UDTracksDCA, UDTracksPID, UDTracksExtra, UDTracksFlag,
@@ -176,9 +182,16 @@ struct DGCandProducer {
   template <typename TTrack>
   void updateUDTrackTables(TTrack const& track, uint64_t const& bcnum)
   {
-    outputTracks(outputCollisions.lastIndex(), track.px(), track.py(), track.pz(), track.sign(),
+    outputTracks(outputCollisions.lastIndex(),
+                 track.px(), track.py(), track.pz(), track.sign(),
                  bcnum, track.trackTime(), track.trackTimeRes());
-    // outputTracksCov(track.x(), track.y(), track.z(), track.sigmaY(), track.sigmaZ());
+
+    // float sigmaY = track.sigmaY();
+    // float sigmaZ = track.sigmaZ();
+    float sigmaY = -1.;
+    float sigmaZ = -1.;
+    outputTracksCov(track.x(), track.y(), track.z(), sigmaY, sigmaZ);
+
     outputTracksDCA(track.dcaZ(), track.dcaXY());
     outputTracksPID(track.tpcNSigmaEl(),
                     track.tpcNSigmaMu(),
@@ -190,7 +203,8 @@ struct DGCandProducer {
                     track.tofNSigmaPi(),
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
-    outputTracksExtra(track.itsClusterMap(),
+    outputTracksExtra(track.tpcInnerParam(),
+                      track.itsClusterMap(),
                       track.tpcNClsFindable(),
                       track.tpcNClsFindableMinusFound(),
                       track.tpcNClsFindableMinusCrossedRows(),
@@ -208,6 +222,8 @@ struct DGCandProducer {
                       track.detectorMap());
     outputTracksFlag(track.has_collision(),
                      track.isPVContributor());
+    LOGF(debug, "<DGCandProducer> %d %d  %d %f %f %f %f %f",
+         track.isPVContributor(), track.isQualityTrack(), track.isGlobalTrack(), track.px(), track.py(), track.pz(), track.pt(), track.p());
   }
 
   // this function properly updates UDMcCollisions and UDMcParticles and returns the value
@@ -278,25 +294,27 @@ struct DGCandProducer {
   void processData(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
                    aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
-
     // nominal BC
     if (!collision.has_foundBC()) {
       return;
     }
     auto bc = collision.foundBC_as<BCs>();
+    LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
 
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
+    LOGF(debug, "<DGCandProducer>  Size of bcRange %d", bcRange.size());
 
     // apply DG selection
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
     // save DG candidates
     if (isDGEvent == 0) {
-      LOGF(debug, "  Data: good collision!");
+      LOGF(debug, "<DGCandProducer>  Data: good collision!");
 
       // fill FITInfo
-      upchelpers::FITInfo fitInfo = getFITinfo(bc.globalBC(), bcs, ft0s, fv0as, fdds);
+      upchelpers::FITInfo fitInfo{};
+      getFITinfo(fitInfo, bc.globalBC(), bcs, ft0s, fv0as, fdds);
 
       // update DG candidates tables
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
@@ -312,14 +330,51 @@ struct DGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
+      // fill UDZdcs
+      if (bc.has_zdc()) {
+        LOGF(debug, "Found ZDC");
+        auto zdc = bc.zdc();
+        std::vector<float> enes(zdc.energy()[0]);
+        std::vector<uint8_t> chEs(zdc.channelE()[0]);
+        std::vector<float> amps(zdc.amplitude()[0]);
+        std::vector<float> times(zdc.time()[0]);
+        std::vector<uint8_t> chTs(zdc.channelT()[0]);
+        outputZdcs(outputCollisions.lastIndex(), enes, chEs, amps, times, chTs);
+      }
 
       // update DGTracks tables
       for (auto& track : tracks) {
         updateUDTrackTables(track, bc.globalBC());
       }
+
+      // produce TPC signal histograms for 2-track events
+      if (collision.numContrib() == 2) {
+        auto cnt = 0;
+        float pt1 = 0., pt2 = 0.;
+        float signalTPC1 = 0., signalTPC2 = 0.;
+        for (auto tr : tracks) {
+          if (tr.isPVContributor()) {
+            cnt++;
+            switch (cnt) {
+              case 1:
+                pt1 = tr.pt() * tr.sign();
+                signalTPC1 = tr.tpcSignal();
+                break;
+              case 2:
+                pt2 = tr.pt() * tr.sign();
+                signalTPC2 = tr.tpcSignal();
+            }
+            LOGF(debug, "<DGCandProducer>    track[%d] %d pT %f ITS %d TPC %d TRD %d TOF %d",
+                 cnt, tr.isGlobalTrack(), tr.pt(), tr.itsNCls(), tr.tpcNClsCrossedRows(), tr.hasTRD(), tr.hasTOF());
+          }
+        }
+        registry.get<TH2>(HIST("pt1Vspt2"))->Fill(pt1, pt2);
+        registry.get<TH2>(HIST("TPCsignal1"))->Fill(pt1, signalTPC1);
+        registry.get<TH2>(HIST("TPCsignal2"))->Fill(pt2, signalTPC2);
+        registry.get<TH2>(HIST("sig1VsSig2TPC"))->Fill(signalTPC1, signalTPC2);
+      }
     }
   }
-
   PROCESS_SWITCH(DGCandProducer, processData, "Process real data", false);
 
   Preslice<MCTCs> tracksPerCollision = aod::track::collisionId;
@@ -389,7 +444,7 @@ struct DGCandProducer {
 
       // save information of DG events
       if (isDGEvent == 0) {
-        LOGF(info, "  MC: good collision!");
+        LOGF(debug, "  MC: good collision!");
 
         // update UDMcCollisions and UDMcParticles if not already done
         if (!mcColIsSaved) {
@@ -421,7 +476,6 @@ struct DGCandProducer {
       }
     }
   }
-
   PROCESS_SWITCH(DGCandProducer, processMc, "Process MC data", false);
 };
 

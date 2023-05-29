@@ -29,25 +29,14 @@
 #include "Field/MagneticField.h"
 #include "TGeoGlobalMagField.h"
 
+#include "Common/DataModel/CollisionAssociation.h"
 #include "bestCollisionTable.h"
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
 
-// The Run 3 AO2D stores the tracks at the point of innermost update. For a
-// track with ITS this is the innermost (or second innermost) ITS layer. For a
-// track without ITS, this is the TPC inner wall or for loopers in the TPC even
-// a radius beyond that. In order to use the track parameters, the tracks have
-// to be propagated to the collision vertex which is done by this task. The task
-// consumes the TracksIU and TracksCovIU tables and produces Tracks and
-// TracksCov to which then the user analysis can subscribe.
-//
-// This task is not needed for Run 2 converted data.
-// There are two versions of the task (see process flags), one producing also
-// the covariance matrix and the other only the tracks table.
-
-// This is an alternative version of the propagation task with special treatment
-// of ambiguous tracks
+// This is a special version of the propagation task chosing the closest vertex
+// among the compatible, which is defined by track-to-collision-associator
 
 using namespace o2;
 using namespace o2::framework;
@@ -113,27 +102,24 @@ struct AmbiguousTrackPropagation {
     TrackSelectionFlags::kTPCCrossedRowsOverNCls |
     TrackSelectionFlags::kTPCChi2NDF;
 
-  using ExTracksSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
+  using ExTracksSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackCompColls>;
 
-  void processCentral(ExTracksSel const&,
-                      aod::Collisions const&, ExtBCs const& bcs,
-                      aod::AmbiguousTracks const& atracks)
+  void processCentral(ExTracksSel const& tracks,
+                      aod::Collisions const& collisions,
+                      ExtBCs const&)
   {
-    if (bcs.size() == 0) {
-      return;
-    }
-    initCCDB(bcs.begin());
+    auto bc = collisions.begin().bc_as<ExtBCs>();
+    initCCDB(bc);
 
     gpu::gpustd::array<float, 2> dcaInfo;
     float bestDCA[2];
     o2::track::TrackParametrization<float> bestTrackPar;
-    for (auto& atrack : atracks) {
-      dcaInfo[0] = 999; // DCAxy
-      dcaInfo[1] = 999; // DCAz
-      bestDCA[0] = 999;
-      bestDCA[1] = 999;
+    for (auto& track : tracks) {
+      dcaInfo[0] = track.dcaXY(); // DCAxy
+      dcaInfo[1] = track.dcaZ();  // DCAz
+      bestDCA[0] = dcaInfo[0];
+      bestDCA[1] = dcaInfo[1];
 
-      auto track = atrack.track_as<ExTracksSel>();
       auto bestCol = track.has_collision() ? track.collisionId() : -1;
       if ((track.trackCutFlag() & trackSelectionITS) != trackSelectionITS) {
         continue;
@@ -147,20 +133,18 @@ struct AmbiguousTrackPropagation {
       // TPC (e.g. skipping loopers etc).
       auto trackPar = getTrackPar(track);
       if (track.x() < o2::constants::geom::XTPCInnerRef + 0.1) {
-        auto compatibleBCs = atrack.bc_as<ExtBCs>();
-        for (auto& bc : compatibleBCs) {
-          if (!bc.has_collisions()) {
-            continue;
-          }
-          auto collisions = bc.collisions();
-          for (auto const& collision : collisions) {
-            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
-            if ((std::abs(dcaInfo[0]) < std::abs(bestDCA[0])) && (std::abs(dcaInfo[1]) < std::abs(bestDCA[1]))) {
-              bestCol = collision.globalIndex();
-              bestDCA[0] = dcaInfo[0];
-              bestDCA[1] = dcaInfo[1];
-              bestTrackPar = trackPar;
-            }
+        auto ids = track.compatibleCollIds();
+        if (ids.empty() || (ids.size() == 1 && bestCol == ids[0])) {
+          continue;
+        }
+        auto compatibleColls = track.compatibleColl();
+        for (auto& collision : compatibleColls) {
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
+          if ((std::abs(dcaInfo[0]) < std::abs(bestDCA[0])) && (std::abs(dcaInfo[1]) < std::abs(bestDCA[1]))) {
+            bestCol = collision.globalIndex();
+            bestDCA[0] = dcaInfo[0];
+            bestDCA[1] = dcaInfo[1];
+            bestTrackPar = trackPar;
           }
         }
       }
@@ -244,6 +228,5 @@ struct AmbiguousTrackPropagation {
 //****************************************************************************************
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc)};
-  return workflow;
+  return {adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc)};
 }

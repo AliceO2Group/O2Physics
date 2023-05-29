@@ -25,7 +25,8 @@
 TrackSelection getGlobalTrackSelection();
 
 // Default track selection requiring a particular Run 3 ITS matching
-TrackSelection getGlobalTrackSelectionRun3ITSMatch(int matching);
+TrackSelection getGlobalTrackSelectionRun3ITSMatch(int matching,
+                                                   TrackSelection::GlobalTrackRun3DCAxyCut passFlag = TrackSelection::GlobalTrackRun3DCAxyCut::Default);
 
 // Default track selection requiring no hit in the SPD and one in the innermost
 // SDD -> complementary tracks to global selection
@@ -36,5 +37,8 @@ TrackSelection getGlobalTrackSelectionRun3Nuclei();
 
 // Default track selection for HF analysis (global tracks, with its points, but no tight selection for primary) in run3
 TrackSelection getGlobalTrackSelectionRun3HF();
+
+// Global track selection for Run2 JE Hybrid tracks requiring one hit in the SPD and reduced set of cuts
+TrackSelection getJEGlobalTrackSelectionRun2();
 
 #endif // COMMON_CORE_TRACKSELECTIONDEFAULTS_H_

@@ -28,7 +28,7 @@ using namespace evsel;
 using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
-
+using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 struct EventSelectionQaTask {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Configurable<int> nGlobalBCs{"nGlobalBCs", 100000, "number of global bcs"};
@@ -81,9 +81,9 @@ struct EventSelectionQaTask {
     const AxisSpec axisTimeSum{100, -10., 10., ""};
     const AxisSpec axisGlobalBCs{nGlobalBCs, 0., static_cast<double>(nGlobalBCs), ""};
     const AxisSpec axisBCs{nBCsPerOrbit, 0., static_cast<double>(nBCsPerOrbit), ""};
-    const AxisSpec axisNcontrib{150, 0., isLowFlux ? 150. : 4500., "n contributors"};
+    const AxisSpec axisNcontrib{200, 0., isLowFlux ? 200. : 4500., "n contributors"};
     const AxisSpec axisEta{100, -1., 1., "track #eta"};
-    const AxisSpec axisColTimeRes{7000, 0., 7000., "collision time resolution (ns)"};
+    const AxisSpec axisColTimeRes{1500, 0., 1500., "collision time resolution (ns)"};
     const AxisSpec axisBcDif{600, -300., 300., "collision bc difference"};
     const AxisSpec axisAliases{kNaliases, 0., static_cast<double>(kNaliases), ""};
     const AxisSpec axisSelections{kNsel, 0., static_cast<double>(kNsel), ""};
@@ -176,6 +176,8 @@ struct EventSelectionQaTask {
     histos.add("hBcZDC", "", kTH1F, {axisBCs});
     histos.add("hBcColTOF", "", kTH1F, {axisBCs});
     histos.add("hBcColTRD", "", kTH1F, {axisBCs});
+    histos.add("hBcTrackTOF", "", kTH1F, {axisBCs});
+    histos.add("hBcTrackTRD", "", kTH1F, {axisBCs});
 
     histos.add("hMultV0Aall", "All bcs", kTH1F, {axisMultV0A});
     histos.add("hMultV0Call", "All bcs", kTH1F, {axisMultV0C});
@@ -291,17 +293,16 @@ struct EventSelectionQaTask {
     // bc-based event selection qa
     for (auto& bc : bcs) {
       for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
-        histos.fill(HIST("hBcCounterAll"), iAlias, bc.alias()[iAlias]);
+        histos.fill(HIST("hBcCounterAll"), iAlias, bc.alias_bit(iAlias));
       }
     }
 
     // collision-based event selection qa
     for (auto& col : cols) {
-      auto selection = col.selection();
-      bool sel1 = selection[kIsINT1] & selection[kNoBGV0A] & selection[kNoBGV0C] & selection[kNoTPCLaserWarmUp] & selection[kNoTPCHVdip];
+      bool sel1 = col.selection_bit(kIsINT1) & col.selection_bit(kNoBGV0A) & col.selection_bit(kNoBGV0C) & col.selection_bit(kNoTPCLaserWarmUp) & col.selection_bit(kNoTPCHVdip);
 
       for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
-        if (!col.alias()[iAlias]) {
+        if (!col.alias_bit(iAlias)) {
           continue;
         }
         histos.fill(HIST("hColCounterAll"), iAlias, 1);
@@ -311,14 +312,14 @@ struct EventSelectionQaTask {
       }
 
       bool mb = isMC;
-      mb |= !isINT1period && col.alias()[kINT7];
-      mb |= isINT1period && col.alias()[kINT1];
+      mb |= !isINT1period && col.alias_bit(kINT7);
+      mb |= isINT1period && col.alias_bit(kINT1);
       // further checks just on minimum bias triggers
       if (!mb) {
         continue;
       }
       for (int i = 0; i < kNsel; i++) {
-        histos.fill(HIST("hSelCounter"), i, col.selection()[i]);
+        histos.fill(HIST("hSelCounter"), i, col.selection_bit(i));
       }
 
       auto bc = col.bc_as<BCsRun2>();
@@ -328,17 +329,17 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hGlobalBcAll"), globalBC - minGlobalBC);
       // histos.fill(HIST("hOrbitAll"), orbit - minOrbit);
       histos.fill(HIST("hBcAll"), localBC);
-      if (col.selection()[kIsBBV0A] || col.selection()[kIsBBV0C]) {
+      if (col.selection_bit(kIsBBV0A) || col.selection_bit(kIsBBV0C)) {
         histos.fill(HIST("hGlobalBcFV0"), globalBC - minGlobalBC);
         // histos.fill(HIST("hOrbitFV0"), orbit - minOrbit);
         histos.fill(HIST("hBcFV0"), localBC);
       }
-      if (col.selection()[kIsBBT0A] || col.selection()[kIsBBT0C]) {
+      if (col.selection_bit(kIsBBT0A) || col.selection_bit(kIsBBT0C)) {
         histos.fill(HIST("hGlobalBcFT0"), globalBC - minGlobalBC);
         // histos.fill(HIST("hOrbitFT0"), orbit - minOrbit);
         histos.fill(HIST("hBcFT0"), localBC);
       }
-      if (col.selection()[kIsBBFDA] || col.selection()[kIsBBFDC]) {
+      if (col.selection_bit(kIsBBFDA) || col.selection_bit(kIsBBFDC)) {
         histos.fill(HIST("hGlobalBcFDD"), globalBC - minGlobalBC);
         // histos.fill(HIST("hOrbitFDD"), orbit - minOrbit);
         histos.fill(HIST("hBcFDD"), localBC);
@@ -450,12 +451,12 @@ struct EventSelectionQaTask {
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun2, "Process Run2 event selection QA", true);
 
-  Preslice<aod::FullTracks> perCollision = aod::track::collisionId;
-  Preslice<ColEvSels> perFoundBC = aod::evsel::foundBCId;
+  Preslice<FullTracksIU> perCollision = aod::track::collisionId;
+  // Preslice<ColEvSels> perFoundBC = aod::evsel::foundBCId;
 
   void processRun3(
     ColEvSels const& cols,
-    aod::FullTracks const& tracks,
+    FullTracksIU const& tracks,
     aod::AmbiguousTracks const& ambTracks,
     BCsRun3 const& bcs,
     aod::Zdcs const& zdcs,
@@ -618,12 +619,12 @@ struct EventSelectionQaTask {
         multT0C += amplitude;
       }
       histos.fill(HIST("hMultT0Mref"), multT0A + multT0C);
-      if (!bc.selection()[kIsTriggerTVX])
+      if (!bc.selection_bit(kIsTriggerTVX))
         continue;
       histos.fill(HIST("hMultT0Mtvx"), multT0A + multT0C);
       histos.fill(HIST("hMultT0Atvx"), multT0A);
       histos.fill(HIST("hMultT0Ctvx"), multT0C);
-      if (!bc.selection()[kIsBBZAC])
+      if (!bc.selection_bit(kIsBBZAC))
         continue;
       histos.fill(HIST("hMultT0Mzac"), multT0A + multT0C);
       histos.fill(HIST("hMultT0Azac"), multT0A);
@@ -633,7 +634,7 @@ struct EventSelectionQaTask {
     // bc-based event selection qa
     for (auto& bc : bcs) {
       for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
-        histos.fill(HIST("hBcCounterAll"), iAlias, bc.alias()[iAlias]);
+        histos.fill(HIST("hBcCounterAll"), iAlias, bc.alias_bit(iAlias));
       }
       uint64_t globalBC = bc.globalBC();
       uint64_t orbit = globalBC / nBCsPerOrbit;
@@ -666,7 +667,7 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hOrbitAll"), orbit - minOrbit);
       histos.fill(HIST("hBcAll"), localBC);
 
-      if (bc.selection()[kIsTriggerTVX]) {
+      if (bc.selection_bit(kIsTriggerTVX)) {
         histos.fill(HIST("hOrbitTVX"), orbit - minOrbit);
         histos.fill(HIST("hBcTVX"), localBC);
       }
@@ -706,11 +707,11 @@ struct EventSelectionQaTask {
           histos.fill(HIST("hMultT0Cref"), multT0C);
         }
 
-        if (!bc.selection()[kNoBGFDA] && bc.selection()[kIsTriggerTVX]) {
+        if (!bc.selection_bit(kNoBGFDA) && bc.selection_bit(kIsTriggerTVX)) {
           histos.fill(HIST("hMultT0Abga"), multT0A);
           histos.fill(HIST("hMultT0Cbga"), multT0C);
         }
-        if (!bc.selection()[kNoBGFDC] && bc.selection()[kIsTriggerTVX]) {
+        if (!bc.selection_bit(kNoBGFDC) && bc.selection_bit(kIsTriggerTVX)) {
           histos.fill(HIST("hMultT0Abgc"), multT0A);
           histos.fill(HIST("hMultT0Cbgc"), multT0C);
         }
@@ -754,7 +755,7 @@ struct EventSelectionQaTask {
 
       // fill TVX flags for past-future searches
       int indexBc = bc.globalIndex();
-      vIsTVX[indexBc] = bc.selection()[kIsTriggerTVX];
+      vIsTVX[indexBc] = bc.selection_bit(kIsTriggerTVX);
       vGlobalBCs[indexBc] = globalBC;
     }
 
@@ -812,7 +813,7 @@ struct EventSelectionQaTask {
     // collision-based event selection qa
     for (auto& col : cols) {
       for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
-        if (!col.alias()[iAlias]) {
+        if (!col.alias_bit(iAlias)) {
           continue;
         }
         histos.fill(HIST("hColCounterAll"), iAlias, 1);
@@ -823,7 +824,7 @@ struct EventSelectionQaTask {
       }
 
       for (int i = 0; i < kNsel; i++) {
-        histos.fill(HIST("hSelCounter"), i, col.selection()[i]);
+        histos.fill(HIST("hSelCounter"), i, col.selection_bit(i));
       }
 
       auto bc = col.bc_as<BCsRun3>();
@@ -848,7 +849,13 @@ struct EventSelectionQaTask {
         }
         nTPCtracks += track.hasTPC();
         nTOFtracks += track.hasTOF();
-        nTRDtracks += track.hasTRD();
+        nTRDtracks += track.hasTRD() && !track.hasTOF();
+
+        if (track.hasTOF()) {
+          histos.fill(HIST("hBcTrackTOF"), (globalBC + TMath::FloorNint(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)) % 3564);
+        } else if (track.hasTRD()) {
+          histos.fill(HIST("hBcTrackTRD"), (globalBC + TMath::Nint(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)) % 3564);
+        }
       }
 
       // search for nearest ft0a&ft0c entry
@@ -1020,7 +1027,7 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hMultZNCacc"), multZNC);
       histos.fill(HIST("hNcontribAcc"), nContributors);
     } // collisions
-
+    /*
     // pileup checks
     for (auto const& bc : bcs) {
       auto collisionsGrouped = cols.sliceBy(perFoundBC, bc.globalIndex());
@@ -1035,6 +1042,7 @@ struct EventSelectionQaTask {
       }
       histos.fill(HIST("hMultT0Mpup"), multT0M);
     }
+    */
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
 

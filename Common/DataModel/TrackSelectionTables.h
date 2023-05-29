@@ -25,8 +25,10 @@ DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float); //! Impact parameter in Y of forwar
 namespace track
 {
 // Columns to store the DCA to the primary vertex
-DECLARE_SOA_COLUMN(DcaXY, dcaXY, float); //! Impact parameter in XY of the track to the primary vertex
-DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);   //! Impact parameter in Z of the track to the primary vertex
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);             //! Impact parameter in XY of the track to the primary vertex
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);               //! Impact parameter in Z of the track to the primary vertex
+DECLARE_SOA_COLUMN(SigmaDcaXY2, sigmaDcaXY2, float); //! Impact parameter sigma^2 in XY of the track to the primary vertex
+DECLARE_SOA_COLUMN(SigmaDcaZ2, sigmaDcaZ2, float);   //! Impact parameter sigma^2 in Z of the track to the primary vertex
 
 struct TrackSelectionFlags {
  public:
@@ -49,11 +51,15 @@ struct TrackSelectionFlags {
   static constexpr flagtype kDCAz = 1 << 14;
   // Combo masks
   static constexpr flagtype kQualityTracks = kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits;
+  static constexpr flagtype kQualityTracksITS = kTrackType | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits;
+  static constexpr flagtype kQualityTracksWoTPCCluster = kQualityTracksITS | kTPCChi2NDF | kTPCRefit;
   static constexpr flagtype kPrimaryTracks = kGoldenChi2 | kDCAxy | kDCAz;
   static constexpr flagtype kInAcceptanceTracks = kPtRange | kEtaRange;
   static constexpr flagtype kGlobalTrack = kQualityTracks | kPrimaryTracks | kInAcceptanceTracks;
+  static constexpr flagtype kGlobalTrackWoTPCCluster = kQualityTracksWoTPCCluster | kPrimaryTracks | kInAcceptanceTracks;
   static constexpr flagtype kGlobalTrackWoPtEta = kQualityTracks | kPrimaryTracks;
   static constexpr flagtype kGlobalTrackWoDCA = kQualityTracks | kInAcceptanceTracks;
+  static constexpr flagtype kGlobalTrackWoDCATPCCluster = kQualityTracksWoTPCCluster | kInAcceptanceTracks;
 
   /// @brief Function to check flag content
   /// @param flags bitmask contained in the track
@@ -68,11 +74,14 @@ struct TrackSelectionFlags {
 
 #define requireTrackCutInFilter(mask) ((aod::track::trackCutFlag & aod::track::mask) == aod::track::mask)
 #define requireQualityTracksInFilter() requireTrackCutInFilter(TrackSelectionFlags::kQualityTracks)
+#define requireQualityTracksITSInFilter() requireTrackCutInFilter(TrackSelectionFlags::kQualityTracksITS)
 #define requirePrimaryTracksInFilter() requireTrackCutInFilter(TrackSelectionFlags::kPrimaryTracks)
 #define requireInAcceptanceTracksInFilter() requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)
 #define requireGlobalTrackInFilter() requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrack)
+#define requireGlobalTrackWoTPCClusterInFilter() requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrackWoTPCCluster)
 #define requireGlobalTrackWoPtEtaInFilter() requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrackWoPtEta)
 #define requireGlobalTrackWoDCAInFilter() requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrackWoDCA)
+#define requireGlobalTrackWoDCATPCClusterInFilter() requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrackWoDCATPCCluster)
 #define requireTrackWithinBeamPipe (nabs(aod::track::x) < o2::constants::geom::XBeamPipeOuterRef)
 
 // Columns to store track filter decisions
@@ -82,6 +91,7 @@ DECLARE_SOA_COLUMN(TrackCutFlagFb1, trackCutFlagFb1, bool);                    /
 DECLARE_SOA_COLUMN(TrackCutFlagFb2, trackCutFlagFb2, bool);                    //! Flag with the single cut passed flagged for the second selection criteria (as general but 2 point2 in ITS IB)
 DECLARE_SOA_COLUMN(TrackCutFlagFb3, trackCutFlagFb3, bool);                    //! Flag with the single cut passed flagged for the third selection criteria (HF-like: global w/o tight DCA selection)
 DECLARE_SOA_COLUMN(TrackCutFlagFb4, trackCutFlagFb4, bool);                    //! Flag with the single cut passed flagged for the fourth selection criteria (nuclei)
+DECLARE_SOA_COLUMN(TrackCutFlagFb5, trackCutFlagFb5, bool);                    //! Flag with the single cut passed flagged for the fith selection criteria (jet validation - reduced set of cuts)
 
 #define DECLARE_DYN_TRKSEL_COLUMN(name, getter, mask) \
   DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](TrackSelectionFlags::flagtype flags) -> bool { return TrackSelectionFlags::checkFlag(flags, mask); });
@@ -91,12 +101,15 @@ DECLARE_SOA_DYNAMIC_COLUMN(CheckFlag, checkFlag,
                            [](TrackSelectionFlags::flagtype flags,
                               TrackSelectionFlags::flagtype mask) -> bool { return TrackSelectionFlags::checkFlag(flags, mask); }); //! Checks the single cut
 // Combo selections
-DECLARE_DYN_TRKSEL_COLUMN(IsQualityTrack, isQualityTrack, TrackSelectionFlags::kQualityTracks);                  //! Passed the combined track cut: kQualityTracks
-DECLARE_DYN_TRKSEL_COLUMN(IsPrimaryTrack, isPrimaryTrack, TrackSelectionFlags::kPrimaryTracks);                  //! Passed the combined track cut: kPrimaryTracks
-DECLARE_DYN_TRKSEL_COLUMN(IsInAcceptanceTrack, isInAcceptanceTrack, TrackSelectionFlags::kInAcceptanceTracks);   //! Passed the combined track cut: kInAcceptanceTracks
-DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrack, isGlobalTrack, TrackSelectionFlags::kGlobalTrack);                      //! Passed the combined track cut: kGlobalTrack
-DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, TrackSelectionFlags::kGlobalTrackWoPtEta); //! Passed the combined track cut: kGlobalTrackWoPtEta
-DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, TrackSelectionFlags::kGlobalTrackWoDCA);       //! Passed the combined track cut: kGlobalTrackWoDCA
+DECLARE_DYN_TRKSEL_COLUMN(IsQualityTrack, isQualityTrack, TrackSelectionFlags::kQualityTracks);                                          //! Passed the combined track cut: kQualityTracks
+DECLARE_DYN_TRKSEL_COLUMN(IsQualityTrackITS, isQualityTrackITS, TrackSelectionFlags::kQualityTracksITS);                                 //! Passed the combined track cut: kQualityTracksITS
+DECLARE_DYN_TRKSEL_COLUMN(IsPrimaryTrack, isPrimaryTrack, TrackSelectionFlags::kPrimaryTracks);                                          //! Passed the combined track cut: kPrimaryTracks
+DECLARE_DYN_TRKSEL_COLUMN(IsInAcceptanceTrack, isInAcceptanceTrack, TrackSelectionFlags::kInAcceptanceTracks);                           //! Passed the combined track cut: kInAcceptanceTracks
+DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrack, isGlobalTrack, TrackSelectionFlags::kGlobalTrack);                                              //! Passed the combined track cut: kGlobalTrack
+DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoTPCCluster, isGlobalTrackWoTPCCluster, TrackSelectionFlags::kGlobalTrackWoTPCCluster);          //! Passed the combined track cut: kGlobalTrackWoTPCCluster
+DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, TrackSelectionFlags::kGlobalTrackWoPtEta);                         //! Passed the combined track cut: kGlobalTrackWoPtEta
+DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, TrackSelectionFlags::kGlobalTrackWoDCA);                               //! Passed the combined track cut: kGlobalTrackWoDCA
+DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrackWoDCATPCCluster, isGlobalTrackWoDCATPCCluster, TrackSelectionFlags::kGlobalTrackWoDCATPCCluster); //! Passed the combined track cut: kGlobalTrackWoDCATPCCluster
 
 #undef DECLARE_DYN_TRKSEL_COLUMN
 
@@ -128,6 +141,9 @@ DECLARE_SOA_COLUMN(PassedITSHitsFB2, passedITSHitsFB2, bool);                   
 DECLARE_SOA_TABLE(TracksDCA, "AOD", "TRACKDCA", //! DCA information for the track
                   track::DcaXY,
                   track::DcaZ);
+DECLARE_SOA_TABLE(TracksDCACov, "AOD", "TRACKDCACOV",
+                  track::SigmaDcaXY2,
+                  track::SigmaDcaZ2); //! DCA cov. matrix information for the track
 
 DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on the track selection decision + split dynamic information
                   track::IsGlobalTrackSDD,
@@ -136,12 +152,16 @@ DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on th
                   track::TrackCutFlagFb2,
                   track::TrackCutFlagFb3,
                   track::TrackCutFlagFb4,
+                  track::TrackCutFlagFb5,
                   track::IsQualityTrack<track::TrackCutFlag>,
+                  track::IsQualityTrackITS<track::TrackCutFlag>,
                   track::IsPrimaryTrack<track::TrackCutFlag>,
                   track::IsInAcceptanceTrack<track::TrackCutFlag>,
                   track::IsGlobalTrack<track::TrackCutFlag>,
+                  track::IsGlobalTrackWoTPCCluster<track::TrackCutFlag>,
                   track::IsGlobalTrackWoPtEta<track::TrackCutFlag>,
-                  track::IsGlobalTrackWoDCA<track::TrackCutFlag>);
+                  track::IsGlobalTrackWoDCA<track::TrackCutFlag>,
+                  track::IsGlobalTrackWoDCATPCCluster<track::TrackCutFlag>);
 
 DECLARE_SOA_TABLE(TrackSelectionExtension, "AOD", "TRACKSELEXTRA", //! Information on the track selections set by each Filter Bit
                   track::PassedTrackType,

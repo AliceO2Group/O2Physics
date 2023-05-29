@@ -36,7 +36,7 @@ o2physics_add_dpl_workflow(diff-qa
 
 o2physics_add_dpl_workflow(dgcand-analyzer
                            SOURCES DGCandAnalyzer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::UDGoodRunSelector O2Physics::DGPIDSelector
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::UDGoodRunSelector O2Physics::DGPIDSelector O2Physics::UDFSParser
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upccand-analyzer
@@ -47,4 +47,9 @@ o2physics_add_dpl_workflow(upccand-analyzer
 o2physics_add_dpl_workflow(upccand-producer-qa
                            SOURCES UPCCandidateProducerQa.cpp
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-mft
+                           SOURCES upcMft.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsBase O2::DetectorsCommonDataFormats
                            COMPONENT_NAME Analysis)

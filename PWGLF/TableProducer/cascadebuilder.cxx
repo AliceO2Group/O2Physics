@@ -67,35 +67,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-namespace o2::aod
-{
-namespace casctag
-{
-DECLARE_SOA_COLUMN(IsInteresting, isInteresting, bool); //! will this be built or not?
-
-// MC association bools
-DECLARE_SOA_COLUMN(IsTrueXiMinus, isTrueXiMinus, bool);       //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueXiPlus, isTrueXiPlus, bool);         //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueOmegaMinus, isTrueOmegaMinus, bool); //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueOmegaPlus, isTrueOmegaPlus, bool);   //! PDG checked correctly in MC
-
-// dE/dx compatibility bools
-DECLARE_SOA_COLUMN(IsXiMinusCandidate, isXiMinusCandidate, bool);       //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsXiPlusCandidate, isXiPlusCandidate, bool);         //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsOmegaMinusCandidate, isOmegaMinusCandidate, bool); //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsOmegaPlusCandidate, isOmegaPlusCandidate, bool);   //! compatible with dE/dx hypotheses
-}
-DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
-                  casctag::IsInteresting,
-                  casctag::IsTrueXiMinus,
-                  casctag::IsTrueXiPlus,
-                  casctag::IsTrueOmegaMinus,
-                  casctag::IsTrueOmegaPlus,
-                  casctag::IsXiMinusCandidate,
-                  casctag::IsXiPlusCandidate,
-                  casctag::IsOmegaMinusCandidate,
-                  casctag::IsOmegaPlusCandidate);
-} // namespace o2::aod
+// simple checkers
+#define bitset(var, nbit) ((var) |= (1 << (nbit)))
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
@@ -118,11 +92,12 @@ using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 // Builder task: rebuilds multi-strange candidates
 struct cascadeBuilder {
-  Produces<aod::CascData> cascdata;
+  Produces<aod::StoredCascDatas> cascdata;
+  Produces<aod::StoredTraCascDatas> trackedcascdata;
   Produces<aod::CascCovs> casccovs; // if requested by someone
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", true, "Autodetect requested topo sels"};
+  Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
 
   // Configurables related to table creation
   Configurable<int> createCascCovMats{"createCascCovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
@@ -134,15 +109,21 @@ struct cascadeBuilder {
   Configurable<float> casccospa{"casccospa", 0.95, "casccospa"};
   Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA cascade Daughters"};
   Configurable<float> lambdaMassWindow{"lambdaMassWindow", .01, "Distance from Lambda mass"};
+  Configurable<float> dcaXYCascToPV{"dcaXYCascToPV", 1e+6, "dcaXYCascToPV"};
+  Configurable<float> dcaZCascToPV{"dcaZCascToPV", 1e+6, "dcaZCascToPV"};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
-  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
-  Configurable<int> useMatCorrTypeCasc{"useMatCorrTypeCasc", 0, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> useMatCorrTypeCasc{"useMatCorrTypeCasc", 2, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
   Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
+  Configurable<bool> d_doStraTrackQA{"d_doStraTrackQA", false, "do strangeness tracking QA"};
+  Configurable<bool> d_GenerateOnlyTrackedCascades{"d_GenerateOnlyTrackedCascades", false, "Skip cascades that aren't tracked"};
+  Configurable<bool> d_QA_checkMC{"d_QA_checkMC", true, "check MC truth in QA"};
+  Configurable<bool> d_QA_checkdEdx{"d_QA_checkdEdx", false, "check dEdx in QA"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -156,7 +137,13 @@ struct cascadeBuilder {
   Configurable<int> dQANBinsRadius{"dQANBinsRadius", 500, "Number of radius bins in QA histo"};
   Configurable<int> dQANBinsPtCoarse{"dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
   Configurable<int> dQANBinsMass{"dQANBinsMass", 400, "Number of mass bins for QA histograms"};
+  Configurable<int> dQANBinsDCAxy{"dQANBinsDCAxy", 200, "DCAxy of cascade to PV Nbins"};
+  Configurable<int> dQANBinsChi2{"dQANBinsChi2", 200, "Chi2 Nbins"};
+  Configurable<int> dQANBinsCluSize{"dQANBinsCluSize", 200, "Cluster size Nbins"};
   Configurable<float> dQAMaxPt{"dQAMaxPt", 5, "max pT in QA histo"};
+  Configurable<float> dQAMaxDCA{"dQAMaxDCA", 1, "max DCAxy QA histo"};
+  Configurable<float> dQAMaxChi2{"dQAMaxChi2", 20, "max chi2"};
+  Configurable<float> dQAMaxCluSize{"dQAMaxCluSize", 10, "max ITS clu size"};
   Configurable<float> dQAXiMassWindow{"dQAXiMassWindow", 0.005, "Xi mass window for ITS cluster map QA"};
   Configurable<float> dQAOmegaMassWindow{"dQAOmegaMassWindow", 0.005, "Omega mass window for ITS cluster map QA"};
 
@@ -172,6 +159,7 @@ struct cascadeBuilder {
 
   // For manual sliceBy
   Preslice<aod::Cascades> perCollision = o2::aod::cascade::collisionId;
+  Preslice<aod::TrackedCascades> perCascade = o2::aod::strangenesstracking::cascadeId;
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -182,6 +170,7 @@ struct cascadeBuilder {
                   kCascDCADau,
                   kCascCosPA,
                   kCascRadius,
+                  kCascTracked,
                   kNCascSteps };
 
   // Helper struct to pass cascade information
@@ -196,12 +185,17 @@ struct cascadeBuilder {
     float cosPA;
     float cascradius;
     float cascDCAxy; // cascade DCA xy (with bending)
+    float cascDCAz;  // cascade DCA z
     std::array<float, 3> v0pos;
     std::array<float, 3> v0mompos;
     std::array<float, 3> v0momneg;
     float v0dcadau;
     float v0dcapostopv;
     float v0dcanegtopv;
+    float mXi;
+    float mOmega;
+    float yXi;
+    float yOmega;
   } cascadecandidate;
 
   o2::track::TrackParCov lBachelorTrack;
@@ -265,6 +259,7 @@ struct cascadeBuilder {
       const AxisSpec axisVsPtCoarse{(int)dQANBinsPtCoarse, 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
       const AxisSpec axisXiMass{(int)dQANBinsMass, 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
       const AxisSpec axisOmegaMass{(int)dQANBinsMass, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisCascadeDCAtoPV{(int)dQANBinsDCAxy, -dQAMaxDCA, dQAMaxDCA, "DCA_{xy} (cm)"};
 
       registry.add("h2dXiMinusMass", "h2dXiMinusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
       registry.add("h2dXiPlusMass", "h2dXiPlusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
@@ -288,6 +283,75 @@ struct cascadeBuilder {
       registry.add("h2dITSCluMap_OmegaPlusPositive", "h2dITSCluMap_OmegaPlusPositive", kTH2D, {axisITSCluMap, axisRadius});
       registry.add("h2dITSCluMap_OmegaPlusNegative", "h2dITSCluMap_OmegaPlusNegative", kTH2D, {axisITSCluMap, axisRadius});
       registry.add("h2dITSCluMap_OmegaPlusBachelor", "h2dITSCluMap_OmegaPlusBachelor", kTH2D, {axisITSCluMap, axisRadius});
+
+      // if basic strangeness tracking QA is desired, do it here
+      // convenience: equivalence between regular cascade and tracked cascade is easy to check here
+      //              -> completely automatic, easy comparison of 'trackable' candidates (<< all)
+
+      if (d_doStraTrackQA) {
+        // Radius QA
+        registry.add("hRadius_XiMinus_All", "hRadius_XiMinus_All", kTH1D, {axisRadius});
+        registry.add("hRadius_XiPlus_All", "hRadius_XiPlus_All", kTH1D, {axisRadius});
+        registry.add("hRadius_OmegaMinus_All", "hRadius_OmegaMinus_All", kTH1D, {axisRadius});
+        registry.add("hRadius_OmegaPlus_All", "hRadius_OmegaPlus_All", kTH1D, {axisRadius});
+        registry.add("hRadius_XiMinus_Tracked", "hRadius_XiMinus_Tracked", kTH1D, {axisRadius});
+        registry.add("hRadius_XiPlus_Tracked", "hRadius_XiPlus_Tracked", kTH1D, {axisRadius});
+        registry.add("hRadius_OmegaMinus_Tracked", "hRadius_OmegaMinus_Tracked", kTH1D, {axisRadius});
+        registry.add("hRadius_OmegaPlus_Tracked", "hRadius_OmegaPlus_Tracked", kTH1D, {axisRadius});
+
+        // Step 1: mass versus transverse momentum, original variety (given it was tracked)
+        registry.add("h2dTrackableXiMinusMass", "h2dTrackableXiMinusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
+        registry.add("h2dTrackableXiPlusMass", "h2dTrackableXiPlusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
+        registry.add("h2dTrackableOmegaMinusMass", "h2dTrackableOmegaMinusMass", kTH2F, {axisVsPtCoarse, axisOmegaMass});
+        registry.add("h2dTrackableOmegaPlusMass", "h2dTrackableOmegaPlusMass", kTH2F, {axisVsPtCoarse, axisOmegaMass});
+        registry.add("h2dTrackedXiMinusMass", "h2dTrackedXiMinusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
+        registry.add("h2dTrackedXiPlusMass", "h2dTrackedXiPlusMass", kTH2F, {axisVsPtCoarse, axisXiMass});
+        registry.add("h2dTrackedOmegaMinusMass", "h2dTrackedOmegaMinusMass", kTH2F, {axisVsPtCoarse, axisOmegaMass});
+        registry.add("h2dTrackedOmegaPlusMass", "h2dTrackedOmegaPlusMass", kTH2F, {axisVsPtCoarse, axisOmegaMass});
+
+        // Step 2: DCA, original variety (all) / trackable / tracked
+        registry.add("hDCACascadeToPVXiMinus", "hDCACascadeToPVXiMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCACascadeToPVXiPlus", "hDCACascadeToPVXiPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCACascadeToPVOmegaMinus", "hDCACascadeToPVOmegaMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCACascadeToPVOmegaPlus", "hDCACascadeToPVOmegaPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCATrackableCascadeToPVXiMinus", "hDCATrackableCascadeToPVXiMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCATrackableCascadeToPVXiPlus", "hDCATrackableCascadeToPVXiPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCATrackableCascadeToPVOmegaMinus", "hDCATrackableCascadeToPVOmegaMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCATrackableCascadeToPVOmegaPlus", "hDCATrackableCascadeToPVOmegaPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCATrackedCascadeToPVXiMinus", "hDCATrackedCascadeToPVXiMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCATrackedCascadeToPVXiPlus", "hDCATrackedCascadeToPVXiPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCATrackedCascadeToPVOmegaMinus", "hDCATrackedCascadeToPVOmegaMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCATrackedCascadeToPVOmegaPlus", "hDCATrackedCascadeToPVOmegaPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+
+        registry.add("hDCAzCascadeToPVXiMinus", "hDCAzCascadeToPVXiMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzCascadeToPVXiPlus", "hDCAzCascadeToPVXiPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzCascadeToPVOmegaMinus", "hDCAzCascadeToPVOmegaMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzCascadeToPVOmegaPlus", "hDCAzCascadeToPVOmegaPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackableCascadeToPVXiMinus", "hDCAzTrackableCascadeToPVXiMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackableCascadeToPVXiPlus", "hDCAzTrackableCascadeToPVXiPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackableCascadeToPVOmegaMinus", "hDCAzTrackableCascadeToPVOmegaMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackableCascadeToPVOmegaPlus", "hDCAzTrackableCascadeToPVOmegaPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackedCascadeToPVXiMinus", "hDCAzTrackedCascadeToPVXiMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackedCascadeToPVXiPlus", "hDCAzTrackedCascadeToPVXiPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackedCascadeToPVOmegaMinus", "hDCAzTrackedCascadeToPVOmegaMinus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+        registry.add("hDCAzTrackedCascadeToPVOmegaPlus", "hDCAzTrackedCascadeToPVOmegaPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
+
+        // specific variables associated to strangeness tracking
+        const AxisSpec axisChi2{(int)dQANBinsChi2, 0.0f, dQAMaxChi2, "#chi^{2}"};
+        const AxisSpec axisCluSize{(int)dQANBinsCluSize, 0.0f, dQAMaxCluSize, "Mean ITS cluster size"};
+        registry.add("hMatchingChi2_XiMinus", "hMatchingChi2_XiMinus", kTH1D, {axisChi2});
+        registry.add("hMatchingChi2_XiPlus", "hMatchingChi2_XiPlus", kTH1D, {axisChi2});
+        registry.add("hMatchingChi2_OmegaMinus", "hMatchingChi2_OmegaMinus", kTH1D, {axisChi2});
+        registry.add("hMatchingChi2_OmegaPlus", "hMatchingChi2_OmegaPlus", kTH1D, {axisChi2});
+        registry.add("hTopologyChi2_XiMinus", "hTopologyChi2_XiMinus", kTH1D, {axisChi2});
+        registry.add("hTopologyChi2_XiPlus", "hTopologyChi2_XiPlus", kTH1D, {axisChi2});
+        registry.add("hTopologyChi2_OmegaMinus", "hTopologyChi2_OmegaMinus", kTH1D, {axisChi2});
+        registry.add("hTopologyChi2_OmegaPlus", "hTopologyChi2_OmegaPlus", kTH1D, {axisChi2});
+        registry.add("hCluSize_XiMinus", "hCluSize_XiMinus", kTH1D, {axisCluSize});
+        registry.add("hCluSize_XiPlus", "hCluSize_XiPlus", kTH1D, {axisCluSize});
+        registry.add("hCluSize_OmegaMinus", "hCluSize_OmegaMinus", kTH1D, {axisCluSize});
+        registry.add("hCluSize_OmegaPlus", "hCluSize_OmegaPlus", kTH1D, {axisCluSize});
+      }
     }
 
     mRunNumber = 0;
@@ -311,11 +375,17 @@ struct cascadeBuilder {
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
 
-    if (doprocessRun2 == false && doprocessRun3 == false) {
-      LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
+    if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3withStrangenessTracking == false) {
+      LOGF(fatal, "Neither processRun2 nor processRun3 nor processRun3withstrangenesstracking enabled. Please choose one!");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
+    }
+    if (doprocessRun3 == true && doprocessRun3withStrangenessTracking == true) {
+      LOGF(fatal, "Cannot enable processRun3 and processRun3withstrangenesstracking at the same time. Please choose one.");
+    }
+    if (doprocessRun2 == true && doprocessRun3withStrangenessTracking == true) {
+      LOGF(fatal, "Cannot enable processRun2 and processRun3withstrangenesstracking at the same time. Please choose one.");
     }
 
     if (d_UseAutodetectMode) {
@@ -614,6 +684,13 @@ struct cascadeBuilder {
 
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, matCorrCascade, &dcaInfo);
     cascadecandidate.cascDCAxy = dcaInfo[0];
+    cascadecandidate.cascDCAz = dcaInfo[1];
+
+    // Calculate masses a priori
+    cascadecandidate.mXi = RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
+    cascadecandidate.mOmega = RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassLambda});
+    cascadecandidate.yXi = RecoDecay::y(array{cascadecandidate.bachP[0] + v0.pxpos() + v0.pxneg(), cascadecandidate.bachP[1] + v0.pypos() + v0.pyneg(), cascadecandidate.bachP[2] + v0.pzpos() + v0.pzneg()}, o2::constants::physics::MassXiMinus);
+    cascadecandidate.yOmega = RecoDecay::y(array{cascadecandidate.bachP[0] + v0.pxpos() + v0.pxneg(), cascadecandidate.bachP[1] + v0.pypos() + v0.pyneg(), cascadecandidate.bachP[2] + v0.pzpos() + v0.pzneg()}, o2::constants::physics::MassOmegaMinus);
 
     // Populate information
     cascadecandidate.v0Id = v0index.globalIndex();
@@ -641,46 +718,45 @@ struct cascadeBuilder {
     }
 
     if (d_doQA) {
-      // Calculate masses
-      auto lXiMass = RecoDecay::m(array{array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}, array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}}, array{o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged});
-      auto lOmegaMass = RecoDecay::m(array{array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}, array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}}, array{o2::constants::physics::MassLambda, o2::constants::physics::MassKaonCharged});
+      bool mcUnchecked = !d_QA_checkMC;
+      bool dEdxUnchecked = !d_QA_checkdEdx;
 
-      auto lPt = RecoDecay::sqrtSumOfSquares(v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[0]);
+      // Calculate masses
+      auto lPt = RecoDecay::sqrtSumOfSquares(v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[1]);
 
       // Fill basic mass histograms
       // Note: all presel bools are true if unchecked
-      if (cascade.isXiMinusCandidate() && cascade.isTrueXiMinus())
-        registry.fill(HIST("h2dXiMinusMass"), lPt, lXiMass);
-      if (cascade.isXiPlusCandidate() && cascade.isTrueXiPlus())
-        registry.fill(HIST("h2dXiPlusMass"), lPt, lXiMass);
-      if (cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus())
-        registry.fill(HIST("h2dOmegaMinusMass"), lPt, lOmegaMass);
-      if (cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus())
-        registry.fill(HIST("h2dOmegaPlusMass"), lPt, lOmegaMass);
+      if ((cascade.isdEdxXiMinus() || dEdxUnchecked) && (cascade.isTrueXiMinus() || mcUnchecked) && cascadecandidate.charge < 0)
+        registry.fill(HIST("h2dXiMinusMass"), lPt, cascadecandidate.mXi);
+      if ((cascade.isdEdxXiPlus() || dEdxUnchecked) && (cascade.isTrueXiPlus() || mcUnchecked) && cascadecandidate.charge > 0)
+        registry.fill(HIST("h2dXiPlusMass"), lPt, cascadecandidate.mXi);
+      if ((cascade.isdEdxOmegaMinus() || dEdxUnchecked) && (cascade.isTrueOmegaMinus() || mcUnchecked) && cascadecandidate.charge < 0)
+        registry.fill(HIST("h2dOmegaMinusMass"), lPt, cascadecandidate.mOmega);
+      if ((cascade.isdEdxOmegaPlus() || dEdxUnchecked) && (cascade.isTrueOmegaPlus() || mcUnchecked) && cascadecandidate.charge > 0)
+        registry.fill(HIST("h2dOmegaPlusMass"), lPt, cascadecandidate.mOmega);
 
       // Fill ITS cluster maps with specific mass cuts
-      if (TMath::Abs(lXiMass - 1.322) < dQAXiMassWindow && cascade.isXiMinusCandidate() && cascade.isTrueXiMinus()) {
+      if (TMath::Abs(cascadecandidate.mXi - 1.322) < dQAXiMassWindow && ((cascade.isdEdxXiMinus() || dEdxUnchecked) && (cascade.isTrueXiMinus() || mcUnchecked)) && cascadecandidate.charge < 0) {
         registry.fill(HIST("h2dITSCluMap_XiMinusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_XiMinusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_XiMinusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
       }
-      if (TMath::Abs(lXiMass - 1.322) < dQAXiMassWindow && cascade.isXiPlusCandidate() && cascade.isTrueXiPlus()) {
+      if (TMath::Abs(cascadecandidate.mXi - 1.322) < dQAXiMassWindow && ((cascade.isdEdxXiPlus() || dEdxUnchecked) && (cascade.isTrueXiPlus() || mcUnchecked)) && cascadecandidate.charge > 0) {
         registry.fill(HIST("h2dITSCluMap_XiPlusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_XiPlusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_XiPlusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
       }
-      if (TMath::Abs(lXiMass - 1.672) < dQAOmegaMassWindow && cascade.isOmegaMinusCandidate() && cascade.isTrueOmegaMinus()) {
+      if (TMath::Abs(cascadecandidate.mOmega - 1.672) < dQAOmegaMassWindow && ((cascade.isdEdxOmegaMinus() || dEdxUnchecked) && (cascade.isTrueOmegaMinus() || mcUnchecked)) && cascadecandidate.charge < 0) {
         registry.fill(HIST("h2dITSCluMap_OmegaMinusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_OmegaMinusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_OmegaMinusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
       }
-      if (TMath::Abs(lXiMass - 1.672) < dQAOmegaMassWindow && cascade.isOmegaPlusCandidate() && cascade.isTrueOmegaPlus()) {
+      if (TMath::Abs(cascadecandidate.mOmega - 1.672) < dQAOmegaMassWindow && ((cascade.isdEdxOmegaPlus() || dEdxUnchecked) && (cascade.isTrueOmegaPlus() || mcUnchecked)) && cascadecandidate.charge > 0) {
         registry.fill(HIST("h2dITSCluMap_OmegaPlusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_OmegaPlusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_OmegaPlusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
       }
     }
-
     return true;
   }
 
@@ -695,17 +771,21 @@ struct cascadeBuilder {
         continue; // doesn't pass cascade selections
 
       cascdata(cascadecandidate.v0Id,
+               cascade.globalIndex(),
                cascadecandidate.bachelorId,
                cascade.collisionId(),
-               cascadecandidate.charge,
+               cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
                cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
                cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
                cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
                cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
                cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
+               cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0], // <--- redundant but ok
+               cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1], // <--- redundant but ok
+               cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
                cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
-               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy);
+               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz); // <--- no corresponding stratrack information available
 
       // populate cascade covariance matrices if required by any other task
       if (createCascCovMats) {
@@ -731,6 +811,199 @@ struct cascadeBuilder {
           momentumCovariance[i] = covTv0[MomInd[i]] + covTbachelor[MomInd[i]];
         }
         casccovs(positionCovariance, momentumCovariance);
+      }
+    }
+    // En masse filling at end of process call
+    fillHistos();
+    resetHistos();
+  }
+
+  template <class TTrackTo, typename TCascTable, typename TStraTrack>
+  void buildStrangenessTablesWithStrangenessTracking(TCascTable const& cascades, TStraTrack const& trackedCascades)
+  {
+    statisticsRegistry.eventCounter++;
+
+    for (auto& cascade : cascades) {
+      // check if cascade is tracked - sliceBy is our friend!
+      const uint64_t cascIdx = cascade.globalIndex();
+      auto trackedCascadesSliced = trackedCascades.sliceBy(perCascade, cascIdx);
+
+      // if only tracked cascades are desired, skip this candidate before doing anything (speed)
+      if (trackedCascadesSliced.size() == 0 && d_GenerateOnlyTrackedCascades) {
+        continue; // wasn't tracked
+      }
+
+      bool validCascadeCandidate = buildCascadeCandidate<TTrackTo>(cascade);
+      if (!validCascadeCandidate)
+        continue; // doesn't pass cascade selections
+
+      // fill regular table (no strangeness tracking)
+      cascdata(cascadecandidate.v0Id,
+               cascade.globalIndex(),
+               cascadecandidate.bachelorId,
+               cascade.collisionId(),
+               cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
+               cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
+               cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
+               cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
+               cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
+               cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
+               cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0],
+               cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1],
+               cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2],
+               cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
+               cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
+               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz);
+
+      // populate cascade covariance matrices if required by any other task
+      if (createCascCovMats) {
+        // Calculate position covariance matrix
+        auto covVtxV = fitter.calcPCACovMatrix(0);
+        // std::array<float, 6> positionCovariance;
+        float positionCovariance[6];
+        positionCovariance[0] = covVtxV(0, 0);
+        positionCovariance[1] = covVtxV(1, 0);
+        positionCovariance[2] = covVtxV(1, 1);
+        positionCovariance[3] = covVtxV(2, 0);
+        positionCovariance[4] = covVtxV(2, 1);
+        positionCovariance[5] = covVtxV(2, 2);
+        // store momentum covariance matrix
+        std::array<float, 21> covTv0 = {0.};
+        std::array<float, 21> covTbachelor = {0.};
+        // std::array<float, 6> momentumCovariance;
+        float momentumCovariance[6];
+        lV0Track.getCovXYZPxPyPzGlo(covTv0);
+        lBachelorTrack.getCovXYZPxPyPzGlo(covTbachelor);
+        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+        for (int i = 0; i < 6; i++) {
+          momentumCovariance[i] = covTv0[MomInd[i]] + covTbachelor[MomInd[i]];
+        }
+        casccovs(positionCovariance, momentumCovariance);
+      }
+
+      float lPt = 0.0f;
+      bool mcUnchecked = !d_QA_checkMC;
+      bool dEdxUnchecked = !d_QA_checkdEdx;
+
+      if (d_doStraTrackQA) {
+        // Fill standard DCA histograms for all candidates (irrespectively of strangeness tracking)
+        lPt = RecoDecay::sqrtSumOfSquares(cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0] + cascadecandidate.bachP[0], cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1] + cascadecandidate.bachP[1]);
+
+        if ((cascade.isdEdxXiMinus() || dEdxUnchecked) && (cascade.isTrueXiMinus() || mcUnchecked) && fabs(cascadecandidate.yXi) < 0.5 && cascadecandidate.charge < 0) {
+          registry.fill(HIST("hDCACascadeToPVXiMinus"), lPt, cascadecandidate.cascDCAxy);
+          registry.fill(HIST("hDCAzCascadeToPVXiMinus"), lPt, cascadecandidate.cascDCAz);
+          registry.fill(HIST("hRadius_XiMinus_All"), cascadecandidate.cascradius);
+        }
+        if ((cascade.isdEdxXiPlus() || dEdxUnchecked) && (cascade.isTrueXiPlus() || mcUnchecked) && fabs(cascadecandidate.yXi) < 0.5 && cascadecandidate.charge > 0) {
+          registry.fill(HIST("hDCACascadeToPVXiPlus"), lPt, cascadecandidate.cascDCAxy);
+          registry.fill(HIST("hDCAzCascadeToPVXiPlus"), lPt, cascadecandidate.cascDCAz);
+          registry.fill(HIST("hRadius_XiPlus_All"), cascadecandidate.cascradius);
+        }
+        if ((cascade.isdEdxOmegaMinus() || dEdxUnchecked) && (cascade.isTrueOmegaMinus() || mcUnchecked) && fabs(cascadecandidate.yOmega) < 0.5 && cascadecandidate.charge < 0) {
+          registry.fill(HIST("hDCACascadeToPVOmegaMinus"), lPt, cascadecandidate.cascDCAxy);
+          registry.fill(HIST("hDCAzCascadeToPVOmegaMinus"), lPt, cascadecandidate.cascDCAz);
+          registry.fill(HIST("hRadius_OmegaMinus_All"), cascadecandidate.cascradius);
+        }
+        if ((cascade.isdEdxOmegaPlus() || dEdxUnchecked) && (cascade.isTrueOmegaPlus() || mcUnchecked) && fabs(cascadecandidate.yOmega) < 0.5 && cascadecandidate.charge > 0) {
+          registry.fill(HIST("hDCACascadeToPVOmegaPlus"), lPt, cascadecandidate.cascDCAxy);
+          registry.fill(HIST("hDCAzCascadeToPVOmegaPlus"), lPt, cascadecandidate.cascDCAz);
+          registry.fill(HIST("hRadius_OmegaPlus_All"), cascadecandidate.cascradius);
+        }
+      }
+
+      if (trackedCascadesSliced.size() > 0) {
+        auto trackedCascade = trackedCascadesSliced.begin(); // first and only element
+
+        // cascade track exists in AO2D, prefer information from that source!
+        statisticsRegistry.cascstats[kCascTracked]++; // bookkeep how many we tracked overall
+
+        // Initialize trackParCov
+        if (!trackedCascade.has_track())
+          continue; // safety (should be fine but depends on future stratrack dev)
+        // Track casting to <TTracksTo>
+        auto cascadeTrack = trackedCascade.template track_as<TTrackTo>();
+        auto cascadeTrackPar = getTrackPar(cascadeTrack);
+        auto const& collision = cascade.collision();
+        gpu::gpustd::array<float, 2> dcaInfo;
+        lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, cascadeTrackPar, 2.f, matCorrCascade, &dcaInfo);
+
+        if (d_doStraTrackQA) {
+          // do QA, compare with non-tracked
+          // Fill standard DCA histograms for all tracked candidates with ORIGINAL properties
+          if ((cascade.isdEdxXiMinus() || dEdxUnchecked) && (cascade.isTrueXiMinus() || mcUnchecked) && fabs(cascadecandidate.yXi) < 0.5 && cascadecandidate.charge < 0) {
+            registry.fill(HIST("hDCATrackableCascadeToPVXiMinus"), lPt, cascadecandidate.cascDCAxy);
+            registry.fill(HIST("hDCATrackedCascadeToPVXiMinus"), lPt, dcaInfo[0]);
+            registry.fill(HIST("hDCAzTrackableCascadeToPVXiMinus"), lPt, cascadecandidate.cascDCAz);
+            registry.fill(HIST("hDCAzTrackedCascadeToPVXiMinus"), lPt, dcaInfo[1]);
+            registry.fill(HIST("h2dTrackableXiMinusMass"), lPt, cascadecandidate.mXi);
+            registry.fill(HIST("h2dTrackedXiMinusMass"), lPt, trackedCascade.xiMass());
+            registry.fill(HIST("hRadius_XiMinus_Tracked"), cascadecandidate.cascradius);
+            registry.fill(HIST("hMatchingChi2_XiMinus"), trackedCascade.matchingChi2());
+            registry.fill(HIST("hTopologyChi2_XiMinus"), trackedCascade.topologyChi2());
+            registry.fill(HIST("hCluSize_XiMinus"), trackedCascade.itsClsSize());
+          }
+          if ((cascade.isdEdxXiPlus() || dEdxUnchecked) && (cascade.isTrueXiPlus() || mcUnchecked) && fabs(cascadecandidate.yXi) < 0.5 && cascadecandidate.charge > 0) {
+            registry.fill(HIST("hDCATrackableCascadeToPVXiPlus"), lPt, cascadecandidate.cascDCAxy);
+            registry.fill(HIST("hDCATrackedCascadeToPVXiPlus"), lPt, dcaInfo[0]);
+            registry.fill(HIST("hDCAzTrackableCascadeToPVXiPlus"), lPt, cascadecandidate.cascDCAz);
+            registry.fill(HIST("hDCAzTrackedCascadeToPVXiPlus"), lPt, dcaInfo[1]);
+            registry.fill(HIST("h2dTrackableXiPlusMass"), lPt, cascadecandidate.mXi);
+            registry.fill(HIST("h2dTrackedXiPlusMass"), lPt, trackedCascade.xiMass());
+            registry.fill(HIST("hRadius_XiPlus_Tracked"), cascadecandidate.cascradius);
+            registry.fill(HIST("hMatchingChi2_XiPlus"), trackedCascade.matchingChi2());
+            registry.fill(HIST("hTopologyChi2_XiPlus"), trackedCascade.topologyChi2());
+            registry.fill(HIST("hCluSize_XiPlus"), trackedCascade.itsClsSize());
+          }
+          if ((cascade.isdEdxOmegaMinus() || dEdxUnchecked) && (cascade.isTrueOmegaMinus() || mcUnchecked) && fabs(cascadecandidate.yOmega) < 0.5 && cascadecandidate.charge < 0) {
+            registry.fill(HIST("hDCATrackableCascadeToPVOmegaMinus"), lPt, cascadecandidate.cascDCAxy);
+            registry.fill(HIST("hDCATrackedCascadeToPVOmegaMinus"), lPt, dcaInfo[0]);
+            registry.fill(HIST("hDCAzTrackableCascadeToPVOmegaMinus"), lPt, cascadecandidate.cascDCAz);
+            registry.fill(HIST("hDCAzTrackedCascadeToPVOmegaMinus"), lPt, dcaInfo[1]);
+            registry.fill(HIST("h2dTrackableOmegaMinusMass"), lPt, cascadecandidate.mOmega);
+            registry.fill(HIST("h2dTrackedOmegaMinusMass"), lPt, trackedCascade.omegaMass());
+            registry.fill(HIST("hRadius_OmegaMinus_Tracked"), cascadecandidate.cascradius);
+            registry.fill(HIST("hMatchingChi2_OmegaMinus"), trackedCascade.matchingChi2());
+            registry.fill(HIST("hTopologyChi2_OmegaMinus"), trackedCascade.topologyChi2());
+            registry.fill(HIST("hCluSize_OmegaMinus"), trackedCascade.itsClsSize());
+          }
+          if ((cascade.isdEdxOmegaPlus() || dEdxUnchecked) && (cascade.isTrueOmegaPlus() || mcUnchecked) && fabs(cascadecandidate.yOmega) < 0.5 && cascadecandidate.charge > 0) {
+            registry.fill(HIST("hDCATrackableCascadeToPVOmegaPlus"), lPt, cascadecandidate.cascDCAxy);
+            registry.fill(HIST("hDCATrackedCascadeToPVOmegaPlus"), lPt, dcaInfo[0]);
+            registry.fill(HIST("hDCAzTrackableCascadeToPVOmegaPlus"), lPt, cascadecandidate.cascDCAz);
+            registry.fill(HIST("hDCAzTrackedCascadeToPVOmegaPlus"), lPt, dcaInfo[1]);
+            registry.fill(HIST("h2dTrackableOmegaPlusMass"), lPt, cascadecandidate.mOmega);
+            registry.fill(HIST("h2dTrackedOmegaPlusMass"), lPt, trackedCascade.omegaMass());
+            registry.fill(HIST("hRadius_OmegaPlus_Tracked"), cascadecandidate.cascradius);
+            registry.fill(HIST("hMatchingChi2_OmegaPlus"), trackedCascade.matchingChi2());
+            registry.fill(HIST("hTopologyChi2_OmegaPlus"), trackedCascade.topologyChi2());
+            registry.fill(HIST("hCluSize_OmegaPlus"), trackedCascade.itsClsSize());
+          }
+        }
+
+        // Override cascDCAxy with the strangeness-tracked information
+        cascadecandidate.cascDCAxy = dcaInfo[0];
+        cascadecandidate.cascDCAz = dcaInfo[1];
+
+        std::array<float, 3> cascadeMomentumVector;
+        cascadeTrackPar.getPxPyPzGlo(cascadeMomentumVector);
+
+        trackedcascdata(cascadecandidate.v0Id,
+                        cascade.globalIndex(),
+                        cascadecandidate.bachelorId,
+                        trackedCascade.trackId(),
+                        cascade.collisionId(),
+                        cascadecandidate.charge, trackedCascade.xiMass(), trackedCascade.omegaMass(), // <--- stratrack masses
+                        trackedCascade.decayX(), trackedCascade.decayY(), trackedCascade.decayZ(),    // <--- stratrack position
+                        cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
+                        cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
+                        cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
+                        cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
+                        cascadeMomentumVector[0], cascadeMomentumVector[1], cascadeMomentumVector[2], // <--- stratrack momentum
+                        cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
+                        cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
+                        cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,          // <--- stratrack (cascDCAxy/z)
+                        trackedCascade.matchingChi2(), trackedCascade.topologyChi2(), trackedCascade.itsClsSize()); // <--- stratrack fit info
       }
     }
     // En masse filling at end of process call
@@ -765,6 +1038,20 @@ struct cascadeBuilder {
     }
   }
   PROCESS_SWITCH(cascadeBuilder, processRun3, "Produce Run 3 cascade tables", false);
+
+  void processRun3withStrangenessTracking(aod::Collisions const& collisions, aod::V0sLinked const&, V0full const&, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, aod::TrackedCascades const& trackedCascades)
+  {
+    for (const auto& collision : collisions) {
+      // Fire up CCDB
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      // Do analysis with collision-grouped V0s, retain full collision information
+      const uint64_t collIdx = collision.globalIndex();
+      auto CascadeTable_thisCollision = cascades.sliceBy(perCollision, collIdx);
+      buildStrangenessTablesWithStrangenessTracking<FullTracksExtIU>(CascadeTable_thisCollision, trackedCascades);
+    }
+  }
+  PROCESS_SWITCH(cascadeBuilder, processRun3withStrangenessTracking, "Produce Run 3 cascade tables with strangeness tracking", false);
 };
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -790,17 +1077,29 @@ struct cascadePreselector {
   // context-aware selections
   Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
 
+  // for bit-packed maps
+  std::vector<uint16_t> selectionMask;
+  enum v0bit { bitInteresting = 0,
+               bitTrackQuality,
+               bitTrueXiMinus,
+               bitTrueXiPlus,
+               bitTrueOmegaMinus,
+               bitTrueOmegaPlus,
+               bitdEdxXiMinus,
+               bitdEdxXiPlus,
+               bitdEdxOmegaMinus,
+               bitdEdxOmegaPlus,
+               bitUsedInTrackedCascade };
+
   void init(InitContext const&) {}
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
   template <class TTrackTo, typename TCascadeObject>
-  void checkTrackQuality(TCascadeObject const& lCascadeCandidate, bool& lIsInteresting, bool lIsXiMinus, bool lIsXiPlus, bool lIsOmegaMinus, bool lIsOmegaPlus)
+  void checkTrackQuality(TCascadeObject const& lCascadeCandidate, uint16_t& maskElement, bool passdEdx = false)
   {
-    lIsInteresting = false;
     auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
-      lIsInteresting = false;
       return;
     }
     auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
@@ -810,23 +1109,18 @@ struct cascadePreselector {
     auto lNegTrack = v0data.template negTrack_as<TTrackTo>();
     auto lPosTrack = v0data.template posTrack_as<TTrackTo>();
 
-    if ((lIsXiMinus || lIsOmegaMinus) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = true;
-    if ((lIsXiPlus || lIsOmegaPlus) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
-      lIsInteresting = true;
+    if ((bitcheck(maskElement, bitdEdxXiMinus) || bitcheck(maskElement, bitdEdxOmegaMinus) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
+    if ((bitcheck(maskElement, bitdEdxXiPlus) || bitcheck(maskElement, bitdEdxOmegaPlus) || passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons) && (lBachTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+      bitset(maskElement, bitTrackQuality);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTrackTo, typename TCascadeObject>
-  void checkPDG(TCascadeObject const& lCascadeCandidate, bool& lIsInteresting, bool& lIsXiMinus, bool& lIsXiPlus, bool& lIsOmegaMinus, bool& lIsOmegaPlus)
+  void checkPDG(TCascadeObject const& lCascadeCandidate, uint16_t& maskElement)
   {
     auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
-      lIsInteresting = false;
-      lIsXiMinus = false;
-      lIsXiPlus = false;
-      lIsOmegaMinus = false;
-      lIsOmegaPlus = false;
       return;
     }
     auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
@@ -864,35 +1158,22 @@ struct cascadePreselector {
       }   // end conditional of mothers existing
     }     // end association check
     // Construct tag table (note: this will be joinable with CascDatas)
-    if (lPDG == 3312 && dIfMCgenerateXiMinus) {
-      lIsXiMinus = true;
-      lIsInteresting = true;
-    }
-    if (lPDG == -3312 && dIfMCgenerateXiPlus) {
-      lIsXiPlus = true;
-      lIsInteresting = true;
-    }
-    if (lPDG == 3334 && dIfMCgenerateOmegaMinus) {
-      lIsOmegaMinus = true;
-      lIsInteresting = true;
-    }
-    if (lPDG == -3334 && dIfMCgenerateOmegaPlus) {
-      lIsOmegaPlus = true;
-      lIsInteresting = true;
-    }
+    if (lPDG == 3312)
+      bitset(maskElement, bitTrueXiMinus);
+    if (lPDG == -3312)
+      bitset(maskElement, bitTrueXiPlus);
+    if (lPDG == 3334)
+      bitset(maskElement, bitTrueOmegaMinus);
+    if (lPDG == -3334)
+      bitset(maskElement, bitTrueOmegaPlus);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check early dE/dx selection
   template <class TTrackTo, typename TCascadeObject>
-  void checkdEdx(TCascadeObject const& lCascadeCandidate, bool& lIsInteresting, bool& lIsXiMinus, bool& lIsXiPlus, bool& lIsOmegaMinus, bool& lIsOmegaPlus)
+  void checkdEdx(TCascadeObject const& lCascadeCandidate, uint16_t& maskElement)
   {
     auto v0 = lCascadeCandidate.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
-      lIsInteresting = false;
-      lIsXiMinus = false;
-      lIsXiPlus = false;
-      lIsOmegaMinus = false;
-      lIsOmegaPlus = false;
       return;
     }
     auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
@@ -905,117 +1186,156 @@ struct cascadePreselector {
     // dEdx check with LF PID
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        ddEdxPreSelectXiMinus) {
-      lIsXiMinus = 1;
-      lIsInteresting = 1;
-    }
+        TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
+      bitset(maskElement, bitdEdxXiMinus);
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        ddEdxPreSelectXiPlus) {
-      lIsXiPlus = 1;
-      lIsInteresting = 1;
-    }
+        TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
+      bitset(maskElement, bitdEdxOmegaPlus);
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow &&
-        ddEdxPreSelectOmegaMinus) {
-      lIsOmegaMinus = 1;
-      lIsInteresting = 1;
-    }
+        TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow)
+      bitset(maskElement, bitdEdxOmegaMinus);
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
-        TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow &&
-        ddEdxPreSelectOmegaPlus) {
-      lIsOmegaPlus = 1;
-      lIsInteresting = 1;
+        TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow)
+      bitset(maskElement, bitdEdxOmegaPlus);
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// Initialization of mask vectors if uninitialized
+  void initializeMasks(int size)
+  {
+    if (selectionMask.size() < 1) {
+      // reserve // FIXME check speed / optimise
+      selectionMask.resize(size, 0);
     }
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// Clear mask vectors
+  void resetMasks()
+  {
+    selectionMask.clear();
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// checks and publishes tags if last
+  void checkAndFinalize()
+  {
+    // parse + publish tag table now
+    for (int ii = 0; ii < selectionMask.size(); ii++) {
+      bool validCascade = bitcheck(selectionMask[ii], bitTrackQuality);
+      if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated)
+        validCascade = validCascade && ((bitcheck(selectionMask[ii], bitTrueXiMinus) && dIfMCgenerateXiMinus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueXiPlus) && dIfMCgenerateXiPlus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueOmegaMinus) && dIfMCgenerateOmegaMinus) ||
+                                        (bitcheck(selectionMask[ii], bitTrueOmegaPlus) && dIfMCgenerateOmegaPlus));
+      if (doprocessBuildValiddEdx || doprocessBuildValiddEdxMCAssociated)
+        validCascade = validCascade && ((bitcheck(selectionMask[ii], bitdEdxXiMinus) && ddEdxPreSelectXiMinus) ||
+                                        (bitcheck(selectionMask[ii], bitdEdxXiPlus) && ddEdxPreSelectXiPlus) ||
+                                        (bitcheck(selectionMask[ii], bitdEdxOmegaMinus) && ddEdxPreSelectOmegaMinus) ||
+                                        (bitcheck(selectionMask[ii], bitdEdxOmegaPlus) && ddEdxPreSelectOmegaPlus));
+      if (doprocessSkipCascadesNotUsedInTrackedCascades)
+        validCascade = validCascade && bitcheck(selectionMask[ii], bitUsedInTrackedCascade);
+      casctags(validCascade,
+               bitcheck(selectionMask[ii], bitTrueXiMinus), bitcheck(selectionMask[ii], bitTrueXiPlus),
+               bitcheck(selectionMask[ii], bitTrueOmegaMinus), bitcheck(selectionMask[ii], bitTrueOmegaPlus),
+               bitcheck(selectionMask[ii], bitdEdxXiMinus), bitcheck(selectionMask[ii], bitdEdxXiPlus),
+               bitcheck(selectionMask[ii], bitdEdxOmegaMinus), bitcheck(selectionMask[ii], bitdEdxOmegaPlus));
+    }
+    resetMasks();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all cascades are built. It will simply tag everything as true.
   void processBuildAll(aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, aod::TracksExtra const&)
   {
+    initializeMasks(cascades.size());
     for (auto& casc : cascades) {
-      bool lIsQualityInteresting = false;
-      checkTrackQuality<aod::TracksExtra>(casc, lIsQualityInteresting, true, true, true, true);
-      casctags(lIsQualityInteresting,
-               true, true, true, true,
-               true, true, true, true);
+      checkTrackQuality<aod::TracksExtra>(casc, selectionMask[casc.globalIndex()], true);
     }
+    if (!doprocessSkipCascadesNotUsedInTrackedCascades)
+      checkAndFinalize();
   }
-  PROCESS_SWITCH(cascadePreselector, processBuildAll, "Switch to build all cascades", true);
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracksExtra const&, aod::McParticles const&)
+  void processBuildMCAssociated(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracksExtra const&, aod::McParticles const&)
   {
+    initializeMasks(cascades.size());
     for (auto& casc : cascades) {
-      bool lIsInteresting = false;
-      bool lIsQualityInteresting = false;
-      bool lIsTrueXiMinus = false;
-      bool lIsTrueXiPlus = false;
-      bool lIsTrueOmegaMinus = false;
-      bool lIsTrueOmegaPlus = false;
-
-      checkPDG<LabeledTracksExtra>(casc, lIsInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
-      checkTrackQuality<LabeledTracksExtra>(casc, lIsQualityInteresting, true, true, true, true);
-      casctags(lIsInteresting * lIsQualityInteresting,
-               lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus,
-               true, true, true, true);
+      checkPDG<LabeledTracksExtra>(casc, selectionMask[casc.globalIndex()]);
+      checkTrackQuality<LabeledTracksExtra>(casc, selectionMask[casc.globalIndex()], true);
     } // end cascades loop
+    if (!doprocessSkipCascadesNotUsedInTrackedCascades)
+      checkAndFinalize();
   }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  void processBuildValiddEdx(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPID const&)
+  {
+    initializeMasks(cascades.size());
+    for (auto& casc : cascades) {
+      checkdEdx<TracksExtraWithPID>(casc, selectionMask[casc.globalIndex()]);
+      checkTrackQuality<TracksExtraWithPID>(casc, selectionMask[casc.globalIndex()]);
+    }
+    if (!doprocessSkipCascadesNotUsedInTrackedCascades)
+      checkAndFinalize();
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPIDandLabels const&)
+  {
+    initializeMasks(cascades.size());
+    for (auto& casc : cascades) {
+      checkPDG<TracksExtraWithPIDandLabels>(casc, selectionMask[casc.globalIndex()]);
+      checkdEdx<TracksExtraWithPIDandLabels>(casc, selectionMask[casc.globalIndex()]);
+      checkTrackQuality<TracksExtraWithPIDandLabels>(casc, selectionMask[casc.globalIndex()]);
+    }
+    if (!doprocessSkipCascadesNotUsedInTrackedCascades)
+      checkAndFinalize();
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// This process function checks for the use of Cascades in strangeness tracked cascades
+  /// They are then marked appropriately; the user could then operate
+  /// the cascadebuilder to construct only those Cascades.
+  void processSkipCascadesNotUsedInTrackedCascades(aod::TrackedCascades const& tracasctable, aod::Cascades const& casctable)
+  {
+    for (auto const& tracasc : tracasctable) {
+      bitset(selectionMask[tracasc.cascadeId()], bitUsedInTrackedCascade); // tag V0s needed by tracked cascades
+    }
+    checkAndFinalize();
+  }
+  //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
+  /// basic building options (one of them must be chosen)
+  PROCESS_SWITCH(cascadePreselector, processBuildAll, "Switch to build all cascades", true);
   PROCESS_SWITCH(cascadePreselector, processBuildMCAssociated, "Switch to build MC-associated cascades", false);
-  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdx(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPID const&)
-  {
-    for (auto& casc : cascades) {
-      bool lIsInteresting = false;
-      bool lIsQualityInteresting = false;
-      bool lIsdEdxXiMinus = false;
-      bool lIsdEdxXiPlus = false;
-      bool lIsdEdxOmegaMinus = false;
-      bool lIsdEdxOmegaPlus = false;
-
-      checkdEdx<TracksExtraWithPID>(casc, lIsInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-      checkTrackQuality<TracksExtraWithPID>(casc, lIsQualityInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-      casctags(lIsInteresting * lIsQualityInteresting,
-               true, true, true, true,
-               lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-    }
-  }
   PROCESS_SWITCH(cascadePreselector, processBuildValiddEdx, "Switch to build cascades with dE/dx preselection", false);
-  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collision const& collision, aod::Cascades const& cascades, aod::V0sLinked const&, aod::V0Datas const&, TracksExtraWithPIDandLabels const&)
-  {
-    for (auto& casc : cascades) {
-      bool lIsdEdxInteresting = false;
-      bool lIsQualityInteresting = false;
-      bool lIsdEdxXiMinus = false;
-      bool lIsdEdxXiPlus = false;
-      bool lIsdEdxOmegaMinus = false;
-      bool lIsdEdxOmegaPlus = false;
-
-      bool lIsTrueInteresting = false;
-      bool lIsTrueXiMinus = false;
-      bool lIsTrueXiPlus = false;
-      bool lIsTrueOmegaMinus = false;
-      bool lIsTrueOmegaPlus = false;
-
-      checkPDG<TracksExtraWithPIDandLabels>(casc, lIsTrueInteresting, lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus);
-      checkdEdx<TracksExtraWithPIDandLabels>(casc, lIsdEdxInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-      checkTrackQuality<TracksExtraWithPIDandLabels>(casc, lIsQualityInteresting, lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-      casctags(lIsTrueInteresting * lIsdEdxInteresting * lIsQualityInteresting,
-               lIsTrueXiMinus, lIsTrueXiPlus, lIsTrueOmegaMinus, lIsTrueOmegaPlus,
-               lIsdEdxXiMinus, lIsdEdxXiPlus, lIsdEdxOmegaMinus, lIsdEdxOmegaPlus);
-    }
-  }
   PROCESS_SWITCH(cascadePreselector, processBuildValiddEdxMCAssociated, "Switch to build MC-associated cascades with dE/dx preselection", false);
-  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// skipper option (choose in addition to a processBuild if you like)
+  PROCESS_SWITCH(cascadePreselector, processSkipCascadesNotUsedInTrackedCascades, "Switch to skip cascades not used in cascade tracking", false);
+  //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
 };
 
 /// Extends the cascdata table with expression columns
 struct cascadeInitializer {
-  Spawns<aod::CascDataExt> cascdataext;
+  Spawns<aod::CascData> cascdataext;
+  Spawns<aod::TraCascData> tracascdataext;
   void init(InitContext const&) {}
+};
+
+struct cascadeLinkBuilder {
+  Produces<aod::CascDataLink> cascdataLink;
+
+  void init(InitContext const&) {}
+
+  // build Cascade -> CascData link table
+  void process(aod::Cascades const& casctable, aod::CascDatas const& cascdatatable)
+  {
+    std::vector<int> lIndices;
+    lIndices.reserve(casctable.size());
+    for (int ii = 0; ii < casctable.size(); ii++)
+      lIndices[ii] = -1;
+    for (auto& cascdata : cascdatatable) {
+      lIndices[cascdata.cascadeId()] = cascdata.globalIndex();
+    }
+    for (int ii = 0; ii < casctable.size(); ii++) {
+      cascdataLink(lIndices[ii]);
+    }
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -1023,5 +1343,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<cascadeBuilder>(cfgc),
     adaptAnalysisTask<cascadePreselector>(cfgc),
-    adaptAnalysisTask<cascadeInitializer>(cfgc)};
+    adaptAnalysisTask<cascadeInitializer>(cfgc),
+    adaptAnalysisTask<cascadeLinkBuilder>(cfgc)};
 }

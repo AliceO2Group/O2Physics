@@ -12,6 +12,7 @@
 #ifndef PWGUD_DATAMODEL_UDTABLES_H_
 #define PWGUD_DATAMODEL_UDTABLES_H_
 
+#include <vector>
 #include <cmath>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -213,6 +214,7 @@ DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
                   pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr);
 
 DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
+                  track::TPCInnerParam,
                   track::ITSClusterMap,
                   track::TPCNClsFindable,
                   track::TPCNClsFindableMinusFound,
@@ -322,6 +324,48 @@ DECLARE_SOA_TABLE(UDMcFwdTrackLabels, "AOD", "UDMCFWDTRLABEL",
                   udmcfwdtracklabel::McMask);
 
 using UDMcFwdTrackLabel = UDMcFwdTrackLabels::iterator;
+
+namespace udzdc
+{
+DECLARE_SOA_INDEX_COLUMN(UDCollision, udCollision);           //! Index into table UDCollisions
+DECLARE_SOA_COLUMN(Energy, energy, std::vector<float>);       //! Energy of non-zero channels. The channel IDs are given in ChannelE (at the same index)
+DECLARE_SOA_COLUMN(ChannelE, channelE, std::vector<uint8_t>); //! Channel IDs which have reconstructed energy. There are at maximum 26 channels.
+DECLARE_SOA_COLUMN(Amplitude, amplitude, std::vector<float>); //! Amplitudes of non-zero channels. The channel IDs are given in ChannelT (at the same index)
+DECLARE_SOA_COLUMN(Time, time, std::vector<float>);           //! Times of non-zero channels. The channel IDs are given in ChannelT (at the same index)
+DECLARE_SOA_COLUMN(ChannelT, channelT, std::vector<uint8_t>); //! Channel IDs which had non-zero amplitudes. There are at maximum 26 channels.
+} // namespace udzdc
+
+DECLARE_SOA_TABLE(UDZdcs, "AOD", "UDZDC", //! ZDC information
+                  udzdc::UDCollisionId,
+                  udzdc::Energy,
+                  udzdc::ChannelE,
+                  udzdc::Amplitude,
+                  udzdc::Time,
+                  udzdc::ChannelT,
+                  zdc::DyEnergyZEM1<udzdc::ChannelE, udzdc::Energy>,
+                  zdc::DyEnergyZEM2<udzdc::ChannelE, udzdc::Energy>,
+                  zdc::DyEnergyCommonZNA<udzdc::ChannelE, udzdc::Energy>,
+                  zdc::DyEnergyCommonZNC<udzdc::ChannelE, udzdc::Energy>,
+                  zdc::DyEnergyCommonZPA<udzdc::ChannelE, udzdc::Energy>,
+                  zdc::DyEnergyCommonZPC<udzdc::ChannelE, udzdc::Energy>,
+                  zdc::DyEnergySectorZNA<udzdc::ChannelE, udzdc::Energy>,
+                  zdc::DyEnergySectorZNC<udzdc::ChannelE, udzdc::Energy>,
+                  zdc::DyEnergySectorZPA<udzdc::ChannelE, udzdc::Energy>,
+                  zdc::DyEnergySectorZPC<udzdc::ChannelE, udzdc::Energy>,
+                  zdc::DyTimeZEM1<udzdc::ChannelT, udzdc::Time>,
+                  zdc::DyTimeZEM2<udzdc::ChannelT, udzdc::Time>,
+                  zdc::DyTimeZNA<udzdc::ChannelT, udzdc::Time>,
+                  zdc::DyTimeZNC<udzdc::ChannelT, udzdc::Time>,
+                  zdc::DyTimeZPA<udzdc::ChannelT, udzdc::Time>,
+                  zdc::DyTimeZPC<udzdc::ChannelT, udzdc::Time>,
+                  zdc::DyAmplitudeZEM1<udzdc::ChannelT, udzdc::Amplitude>,
+                  zdc::DyAmplitudeZEM2<udzdc::ChannelT, udzdc::Amplitude>,
+                  zdc::DyAmplitudeZNA<udzdc::ChannelT, udzdc::Amplitude>,
+                  zdc::DyAmplitudeZNC<udzdc::ChannelT, udzdc::Amplitude>,
+                  zdc::DyAmplitudeZPA<udzdc::ChannelT, udzdc::Amplitude>,
+                  zdc::DyAmplitudeZPC<udzdc::ChannelT, udzdc::Amplitude>);
+
+using UDZdc = UDZdcs::iterator;
 
 } // namespace o2::aod
 

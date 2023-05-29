@@ -183,9 +183,9 @@ struct identifiedraaTask {
       }
     }
     for (auto& particle : mcParticles) {
-      //if (std::abs(particle.eta()) > 0.8) {
-      //   continue;
-      // }
+      // if (std::abs(particle.eta()) > 0.8) {
+      //    continue;
+      //  }
       if (std::abs(0.5f * std::log((particle.e() + particle.pz()) / (particle.e() - particle.pz()))) > 0.5) {
         continue;
       }
@@ -285,7 +285,7 @@ struct identifiedraaTask {
   {
     // LOGF(info, "Enter processData!");
     histos.fill(HIST(num_events), 1);
-    if (!collision.alias()[kINT7]) {
+    if (!collision.alias_bit(kINT7)) {
       return;
     }
     if (!collision.sel7()) {

@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(skimmergammaconversions
                     SOURCES skimmerGammaConversions.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(skimmergammaconversionstruthonlymc
@@ -29,6 +29,11 @@ o2physics_add_dpl_workflow(create-emreduced-event
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(create-emreduced-mc-event
+                    SOURCES createEMReducedMCEvent.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(skimmergammacalo
                     SOURCES skimmerGammaCalo.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -36,7 +41,7 @@ o2physics_add_dpl_workflow(skimmergammacalo
 
 o2physics_add_dpl_workflow(skimmer-phos
                     SOURCES skimmerPHOS.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::PHOSBase
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(gamma-table-producer

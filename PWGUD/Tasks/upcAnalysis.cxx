@@ -43,7 +43,7 @@ struct UPCAnalysis {
     if (checkFDD) {
       return;
     }
-    if (!col.alias()[kCUP9]) {
+    if (!col.alias_bit(kCUP9)) {
       return;
     }
     if (tracks.size() != 2) {
