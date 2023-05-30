@@ -117,6 +117,18 @@ struct femtoDreamProducerTaskV0Only {
     std::vector<float>{0.3f},
     FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0pTMin,
                                               "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0PtMax{
+    FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0pTMax,
+                                            "ConfV0"),
+    std::vector<float>{6.f},
+    FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0pTMax,
+                                              "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0EtaMax{
+    FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0etaMax,
+                                            "ConfV0"),
+    std::vector<float>{6.f},
+    FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0etaMax,
+                                              "V0 selection: ")};
   Configurable<std::vector<float>> ConfDCAV0DaughMax{
     FemtoDreamV0Selection::getSelectionName(
       femtoDreamV0Selection::kV0DCADaughMax, "ConfV0"),
@@ -214,6 +226,10 @@ struct femtoDreamProducerTaskV0Only {
                           femtoDreamSelection::kEqual);
       v0Cuts.setSelection(ConfV0PtMin, femtoDreamV0Selection::kV0pTMin,
                           femtoDreamSelection::kLowerLimit);
+      v0Cuts.setSelection(ConfV0PtMax, femtoDreamV0Selection::kV0pTMax,
+                          femtoDreamSelection::kUpperLimit);
+      v0Cuts.setSelection(ConfV0EtaMax, femtoDreamV0Selection::kV0etaMax,
+                          femtoDreamSelection::kUpperLimit);
       v0Cuts.setSelection(ConfDCAV0DaughMax,
                           femtoDreamV0Selection::kV0DCADaughMax,
                           femtoDreamSelection::kUpperLimit);

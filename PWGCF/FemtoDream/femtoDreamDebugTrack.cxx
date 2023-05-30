@@ -73,7 +73,6 @@ struct femtoDreamDebugTrack {
 
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry FullQaRegistry{"FullTrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
