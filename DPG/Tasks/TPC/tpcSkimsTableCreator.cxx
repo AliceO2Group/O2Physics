@@ -202,7 +202,7 @@ struct TreeWriterTpcV0 {
 };  /// struct TreeWriterTpcV0
 
 struct TreeWriterTPCTOF {
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::TrackSelection>;
   using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
 
   /// Tables to be produced
@@ -324,6 +324,7 @@ struct TreeWriterTPCTOF {
   void init(o2::framework::InitContext& initContext)
   {
   }
+
   void process(Coll::iterator const& collision, soa::Filtered<Trks> const& tracks, aod::BCsWithTimestamps const&)
   {
     /// Check event selection
@@ -335,7 +336,20 @@ struct TreeWriterTPCTOF {
     const int runnumber = bc.runNumber();
     rowTPCTOFTree.reserve(tracks.size());
     for (auto const& trk : tracks) {
-
+      /// Fill tree for tritons
+      if (trk.tpcInnerParam() < 1.5 && std::abs(trk.tpcNSigmaTr()) < nSigmaTOF_TPCTOF_Pr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, 1.0);
+      }
+      else if(trk.tpcInnerParam() > 1.5 && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Pr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Pr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, 1.0);
+      }
+      /// Fill tree for deuterons
+      if (trk.tpcInnerParam() < 1.0 && std::abs(trk.tpcNSigmaDe()) < nSigmaTOF_TPCTOF_Pr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, 1.0);
+      }
+      else if(trk.tpcInnerParam() > 1.0 && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_Pr && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_Pr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, 1.0);
+      }
       /// Fill tree for protons
       if (trk.tpcInnerParam() < maxMomTPCOnlyPr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPCOnlyPr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton])) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(trk.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr);
