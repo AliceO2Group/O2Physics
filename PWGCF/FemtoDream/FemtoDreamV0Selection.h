@@ -547,13 +547,10 @@ void FemtoDreamV0Selection::fillLambdaQA(C const& col, V const& v0,
 /// to pass the collsion as well
 template <typename cutContainerType, typename C, typename V, typename T>
 std::array<cutContainerType, 5>
-  FemtoDreamV0Selection::getCutContainer(C const& col, V const& v0,
-                                         T const& posTrack, T const& negTrack)
+  FemtoDreamV0Selection::getCutContainer(C const& col, V const& v0, T const& posTrack, T const& negTrack)
 {
-  auto outputPosTrack =
-    PosDaughTrack.getCutContainer<cutContainerType>(posTrack);
-  auto outputNegTrack =
-    NegDaughTrack.getCutContainer<cutContainerType>(negTrack);
+  auto outputPosTrack = PosDaughTrack.getCutContainer<cutContainerType>(posTrack);
+  auto outputNegTrack = NegDaughTrack.getCutContainer<cutContainerType>(negTrack);
   cutContainerType output = 0;
   size_t counter = 0;
 
@@ -570,21 +567,15 @@ std::array<cutContainerType, 5>
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
   // check the mass and the PID of daughters
-  if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-      abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-      diffAntiLambda > diffLambda) {
+  if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda > diffLambda) {
     sign = -1.;
-  } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-             abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-             diffAntiLambda < diffLambda) {
+  } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
     sign = 1.;
   } else {
     // if it happens that none of these are true, ignore the invariant mass
-    if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-        abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
+    if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
       sign = -1.;
-    } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-               abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
+    } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
       sign = 1.;
     }
   }
@@ -599,7 +590,6 @@ std::array<cutContainerType, 5>
   float observable = 0.;
   for (auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
-
     if (selVariable == femtoDreamV0Selection::kV0DecVtxMax) {
       for (size_t i = 0; i < decVtx.size(); ++i) {
         auto decVtxValue = decVtx.at(i);

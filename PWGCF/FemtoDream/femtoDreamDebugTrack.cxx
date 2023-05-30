@@ -35,8 +35,7 @@ using namespace o2::soa;
 namespace
 {
 static constexpr int nCuts = 5;
-static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC",
-                                               "nSigmaTPCTOF", "MaxP"};
+static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
 static const float cutsTable[1][nCuts] = {{4.05f, 0.75f, 3.f, 3.f, 100.f}};
 
 } // namespace
@@ -77,7 +76,7 @@ struct femtoDreamDebugTrack {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    trackHisto.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfIsMC, true);
+    trackHisto.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfIsMC, ConfPDGCodePartOne.value, true);
     vPIDPartOne = ConfPIDPartOne.value;
     kNsigma = ConfTrkPIDnSigmaMax.value;
   }
