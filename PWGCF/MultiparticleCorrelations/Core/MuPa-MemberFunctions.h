@@ -1254,8 +1254,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* variable)
       exit(1);
     }
     weightsFile = TFile::Open(Form("alien://%s", filePath), "READ");
-  }    // if(bFileIsInAliEn)
-  else // if(bFileIsInAliEn)
+  } else // if(bFileIsInAliEn)
   {
     // e) Handle the local case:
 
@@ -1335,8 +1334,7 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
       exit(1);
     }
     oaFile = TFile::Open(Form("alien://%s", filePath), "READ");
-  }    // if(bFileIsInAliEn)
-  else // if(bFileIsInAliEn)
+  } else // if(bFileIsInAliEn)
   {
     // d) Handle the local case:
     // Check if the external ROOT file exists at specified path:
