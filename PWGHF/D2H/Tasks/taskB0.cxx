@@ -51,7 +51,7 @@ struct HfTaskB0 {
      {"hPtProng1", "B0 candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 10.}}}},
      {"hPtCand", "B0 candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext const&)
   {
     static const AxisSpec axisMassB0 = {300, 4.5, 6.0, "inv. mass (GeV/#it{c}^{2})"};
     static const AxisSpec axisPt = {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"};
