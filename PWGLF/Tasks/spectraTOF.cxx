@@ -218,6 +218,7 @@ struct tofSpectra {
     const AxisSpec dcaXyAxis{binsDca, "DCA_{xy} (cm)"};
     const AxisSpec phiAxis{200, 0, 7, "#it{#varphi} (rad)"};
     const AxisSpec dcaZAxis{binsDca, "DCA_{z} (cm)"};
+    const AxisSpec lengthAxis{100, 0, 600, "Track length (cm)"};
 
     if (enableTrackCutHistograms) {
       const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
@@ -246,6 +247,8 @@ struct tofSpectra {
 
       // trd histograms
       histos.add("track/TRD/trdSignal", "", HistType::kTH2D, {pAxis, {1000, 0, 1000, "TRD signal (a.u.)"}});
+      histos.add("event/TRD/length", "", HistType::kTH1D, {lengthAxis});
+      histos.add("event/TRD/lengthnotrd", "", HistType::kTH1D, {lengthAxis});
     }
 
     // 4 detectors
@@ -289,6 +292,7 @@ struct tofSpectra {
       histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
       histos.add("MC/no_collision/pos", "No collision pos track", kTH1D, {ptAxis});
       histos.add("MC/no_collision/neg", "No collision neg track", kTH1D, {ptAxis});
+      histos.add("MC/GenRecoCollisions", "Generated and Reconstructed MC Collisions", kTH1D, {{2, 0, 2}});
     }
 
     for (int i = 0; i < NpCharge; i++) {
@@ -753,6 +757,11 @@ struct tofSpectra {
           histos.fill(HIST("track/TPC/tpcChi2NCl"), track.tpcChi2NCl(), track.sign());
 
           histos.fill(HIST("track/TRD/trdSignal"), track.p(), track.trdSignal(), track.sign());
+          if (track.hasTRD()) {
+            histos.fill(HIST("track/TRD/length"), track.length());
+          } else {
+            histos.fill(HIST("track/TRD/lengthnotrd"), track.length());
+          }
         }
       }
     }
@@ -1129,6 +1138,9 @@ struct tofSpectra {
                  aod::McCollisions const& mcCollisions,
                  CollisionCandidateMC const& collisions)
   {
+    // Fill number of generated and reconstructed collisions for normalization
+    histos.fill(HIST("MC/GenRecoCollisions"), 0.5, mcCollisions.size());
+    histos.fill(HIST("MC/GenRecoCollisions"), 1.5, collisions.size());
     // LOGF(info, "Enter processMC!");
     for (auto& track : tracks) {
       if (!track.has_collision()) {
