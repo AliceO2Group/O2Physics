@@ -8,6 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_CONFIGURABLES_H_
+#define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_CONFIGURABLES_H_
+
+#include <string>
 
 // Task configuration:
 Configurable<string> cfTaskName{"cfTaskName", "Default task name", "set task name - use eventually to determine weights for this task"};
@@ -24,3 +28,5 @@ Configurable<float> Vz_max{"Vz_max", 10.0, "maximum vertex z range [cm]"};
 // Particle cuts:
 Configurable<float> pt_min{"pt_min", 0.2, "minimum track pt value [GeV/c]"};
 Configurable<float> pt_max{"pt_max", 5.0, "maximum track pt value [GeV/c]"};
+
+#endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_CONFIGURABLES_H_
