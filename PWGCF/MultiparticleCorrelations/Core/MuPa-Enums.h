@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+enum eConfiguration { eTaskName = 1,
+                      eVerbose = 2,
+                      eConfiguration_N };
+
 enum eRecoSim { eRec = 0,
                 eSim = 1 };
 

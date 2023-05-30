@@ -11,3 +11,4 @@
 
 const Int_t gMaxCorrelator = 8;
 const Int_t gMaxHarmonic = 6;
+const Int_t gMaxIndex = 300; // per order, used only in Test0
