@@ -101,7 +101,7 @@ struct correlateStrangeness {
     for (auto& triggerTrack : triggers) {
       auto trigg = triggerTrack.track_as<TracksComplete>();
       if (!mixing)
-        histos.fill(HIST("sameEvent/TriggerParticlesV0"), trigg.pt());
+        histos.fill(HIST("sameEvent/TriggerParticlesV0"), trigg.pt(), mult);
       for (auto& assocCandidate : assocs) {
         auto assoc = assocCandidate.v0Data();
 
@@ -155,7 +155,7 @@ struct correlateStrangeness {
     for (auto& triggerTrack : triggers) {
       auto trigg = triggerTrack.track_as<TracksComplete>();
       if (!mixing)
-        histos.fill(HIST("sameEvent/TriggerParticlesCascade"), trigg.pt());
+        histos.fill(HIST("sameEvent/TriggerParticlesCascade"), trigg.pt(), mult);
       for (auto& assocCandidate : assocs) {
         auto assoc = assocCandidate.cascData();
 
@@ -246,8 +246,8 @@ struct correlateStrangeness {
     histos.add("hV0EtaVsPt", "hV0EtaVsPt", kTH2F, {axisPt, axisEta});
     histos.add("hCascEtaVsPt", "hCascEtaVsPt", kTH2F, {axisPt, axisEta});
 
-    histos.add("sameEvent/TriggerParticlesV0", "TriggersV0", kTH1F, {{400, 0, 20}});
-    histos.add("sameEvent/TriggerParticlesCascade", "TriggersCascade", kTH1F, {{400, 0, 20}});
+    histos.add("sameEvent/TriggerParticlesV0", "TriggersV0", kTH2F, {{400, 0, 20}, {10, 0, 100}});
+    histos.add("sameEvent/TriggerParticlesCascade", "TriggersCascade", kTH2F, {{400, 0, 20}, {10, 0, 100}});
 
     // mixing QA
     histos.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{140, -0.5, 139.5}});
