@@ -207,7 +207,7 @@ struct AnalysisEventQa {
     registry.add("RecEvent", "", HistType::kTH1D, {{1, 0., 1.}}, true);
   }
 
-  Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackMCFillMap, typename TEvents, typename TEventsMC, typename TTracksMC>
@@ -609,7 +609,7 @@ struct AnalysisTrackSelection {
     fOutputQA.setObject(fQASingleElectronList);
   }
 
-  Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
   Preslice<MyBarrelTracks> perReducedEventTracks = aod::reducedtrack::reducedeventId;
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
@@ -1049,7 +1049,7 @@ struct AnalysisSameEventPairing {
     }
   }
 
-  Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
   Preslice<MyBarrelTracks> perReducedEventTracks = aod::reducedtrack::reducedeventId;
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;

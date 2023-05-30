@@ -230,7 +230,7 @@ struct correlateStrangeness {
     histos.addClone("sameEvent/Signal/", "sameEvent/RightBg/");
 
     // mixed-event correlation functions
-    if (doprocessSameEvent) {
+    if (doprocessMixedEventHV0s || doprocessMixedEventHCascades) {
       histos.addClone("sameEvent/", "mixedEvent/");
     }
 
@@ -261,9 +261,48 @@ struct correlateStrangeness {
     histos.add("EventQA/hPvz", ";pvz;Entries", kTH1F, {{30, -15, 15}});
   }
   BinningType colBinning{{ConfVtxBins, ConfMultBins}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
-  void processSameEvent(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
-                        aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
-                        aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
+  void processSameEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
+                            aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
+                            aod::V0Datas const&, aod::V0sLinked const&, TracksComplete const&)
+  {
+    // ________________________________________________
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    if (TMath::Abs(collision.posZ()) > zVertexCut) {
+      return;
+    }
+    // ________________________________________________
+    if (!doprocessSameEventHCascades) {
+      histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
+      histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
+      histos.fill(HIST("EventQA/hPvz"), collision.posZ());
+    }
+    // Do basic QA
+    for (auto const& v0 : associatedV0s) {
+      auto v0Data = v0.v0Data();
+      histos.fill(HIST("hV0EtaVsPt"), v0Data.pt(), v0Data.eta());
+      static_for<0, 2>([&](auto i) {
+        constexpr int index = i.value;
+        if (v0.compatible(index))
+          histos.fill(HIST("h2dMass") + HIST(v0names[index]), v0Data.pt(), v0Data.m(index));
+      });
+    }
+    if (!doprocessSameEventHCascades) {
+      for (auto const& triggerTrack : triggerTracks) {
+        auto track = triggerTrack.track_as<TracksComplete>();
+        histos.fill(HIST("hTrackEtaVsPt"), track.pt(), track.eta());
+      }
+    }
+
+    // ________________________________________________
+    // Do hadron - V0 correlations
+    fillCorrelationsV0(triggerTracks, associatedV0s, false, collision.posZ(), collision.centFT0M());
+  }
+  void processSameEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
+                                 aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
+                                 aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
   {
     // ________________________________________________
     // Perform basic event selection
@@ -278,15 +317,6 @@ struct correlateStrangeness {
     histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
     histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     // Do basic QA
-    for (auto const& v0 : associatedV0s) {
-      auto v0Data = v0.v0Data();
-      histos.fill(HIST("hV0EtaVsPt"), v0Data.pt(), v0Data.eta());
-      static_for<0, 2>([&](auto i) {
-        constexpr int index = i.value;
-        if (v0.compatible(index))
-          histos.fill(HIST("h2dMass") + HIST(v0names[index]), v0Data.pt(), v0Data.m(index));
-      });
-    }
     for (auto const& casc : associatedCascades) {
       auto cascData = casc.cascData();
       histos.fill(HIST("hCascEtaVsPt"), cascData.pt(), cascData.eta());
@@ -302,18 +332,38 @@ struct correlateStrangeness {
     }
 
     // ________________________________________________
-    // Do hadron - V0 correlations
-    fillCorrelationsV0(triggerTracks, associatedV0s, false, collision.posZ(), collision.centFT0M());
-
-    // ________________________________________________
     // Do hadron - cascade correlations
     fillCorrelationsCascade(triggerTracks, associatedCascades, false, collision.posZ(), collision.centFT0M());
   }
-  PROCESS_SWITCH(correlateStrangeness, processSameEvent, "Process same events", true);
-
-  void processMixedEvent(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
-                         aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
-                         aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
+  void processMixedEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+                             aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
+                             aod::V0Datas const&, aod::V0sLinked const&, TracksComplete const&)
+  {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, collisions, collisions)) {
+      // ________________________________________________
+      // Perform basic event selection on both collisions
+      if (!collision1.sel8() || !collision2.sel8())
+        continue;
+      if (!doprocessMixedEventHCascades) {
+        if (collision1.globalIndex() == collision2.globalIndex()) {
+          histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
+        }
+        histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
+        histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
+        histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.centFT0M()}));
+      }
+      // ________________________________________________
+      // Do slicing
+      auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
+      auto slicedAssocV0s = associatedV0s.sliceBy(collisionSliceV0s, collision2.globalIndex());
+      // ________________________________________________
+      // Do hadron - V0 correlations
+      fillCorrelationsV0(slicedTriggerTracks, slicedAssocV0s, true, collision1.posZ(), collision1.centFT0M());
+    }
+  }
+  void processMixedEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+                                  aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
+                                  aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, collisions, collisions)) {
       // ________________________________________________
@@ -331,19 +381,17 @@ struct correlateStrangeness {
       // ________________________________________________
       // Do slicing
       auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
-      auto slicedAssocV0s = associatedV0s.sliceBy(collisionSliceV0s, collision2.globalIndex());
       auto slicedAssocCascades = associatedCascades.sliceBy(collisionSliceCascades, collision2.globalIndex());
-
-      // ________________________________________________
-      // Do hadron - V0 correlations
-      fillCorrelationsV0(slicedTriggerTracks, slicedAssocV0s, true, collision1.posZ(), collision1.centFT0M());
-
       // ________________________________________________
       // Do hadron - cascade correlations
       fillCorrelationsCascade(slicedTriggerTracks, slicedAssocCascades, true, collision1.posZ(), collision1.centFT0M());
     }
   }
-  PROCESS_SWITCH(correlateStrangeness, processMixedEvent, "Process mixed events", true);
+
+  PROCESS_SWITCH(correlateStrangeness, processSameEventHV0s, "Process same events, h-V0s", true);
+  PROCESS_SWITCH(correlateStrangeness, processSameEventHCascades, "Process same events, h-Cascades", true);
+  PROCESS_SWITCH(correlateStrangeness, processMixedEventHV0s, "Process mixed events, h-V0s", true);
+  PROCESS_SWITCH(correlateStrangeness, processMixedEventHCascades, "Process mixed events, h-Cascades", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

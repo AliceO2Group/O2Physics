@@ -232,7 +232,7 @@ struct HfTaskD0 {
         if (candidate.isRecoPid() >= selectionPid) {
           registry.fill(HIST("hPtVsYRecSig_RecoPID"), ptRec, yRec);
         }
-        if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0) {
+        if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0bar) {
           registry.fill(HIST("hPtVsYRecSigReco"), ptRec, yRec); // rec. level pT
           registry.fill(HIST("hPtRecSig"), ptRec);
         }
@@ -249,7 +249,7 @@ struct HfTaskD0 {
           if (candidate.isRecoPid() >= selectionPid) {
             registry.fill(HIST("hPtVsYRecSigPromptRecoPID"), ptRec, yRec);
           }
-          if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0) {
+          if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0bar) {
             registry.fill(HIST("hPtVsYRecSigPromptReco"), ptRec, yRec); // rec. level pT, prompt
             registry.fill(HIST("hPtRecSigPrompt"), ptRec);
           }
@@ -266,7 +266,7 @@ struct HfTaskD0 {
           if (candidate.isRecoPid() >= selectionPid) {
             registry.fill(HIST("hPtVsYRecSigNonPromptRecoPID"), ptRec, yRec);
           }
-          if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0) {
+          if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0bar) {
             registry.fill(HIST("hPtVsYRecSigNonPromptReco"), ptRec, yRec); // rec. level pT, non-prompt
             registry.fill(HIST("hPtRecSigNonPrompt"), ptRec);
           }
@@ -332,7 +332,7 @@ struct HfTaskD0 {
           }
         }
       }
-      if (candidate.isSelD0bar() >= selectionFlagD0) {
+      if (candidate.isSelD0bar() >= selectionFlagD0bar) {
         registry.fill(HIST("hMassSigBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
         if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);

@@ -339,19 +339,9 @@ struct TableMakerMC {
         continue;
       }
       // get the trigger aliases
-      uint32_t triggerAliases = 0;
-      for (int i = 0; i < kNaliases; i++) {
-        if (collision.alias()[i] > 0) {
-          triggerAliases |= (uint32_t(1) << i);
-        }
-      }
-      uint64_t tag = 0;
+      uint32_t triggerAliases = collision.alias_raw();
       // store the selection decisions
-      for (int i = 0; i < kNsel; i++) {
-        if (collision.selection()[i] > 0) {
-          tag |= (uint64_t(1) << i);
-        }
-      }
+      uint64_t tag = collision.selection_raw();
       if (collision.sel7()) {
         tag |= (uint64_t(1) << kNsel); //! SEL7 stored at position kNsel in the tag bit map
       }
@@ -1006,7 +996,7 @@ struct TableMakerMC {
   void processOnlyBCs(soa::Join<aod::BCs, aod::BcSels>::iterator const& bc)
   {
     for (int i = 0; i < kNaliases; i++) {
-      if (bc.alias()[i] > 0) {
+      if (bc.alias_bit(i) > 0) {
         (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, static_cast<float>(i));
       }
     }

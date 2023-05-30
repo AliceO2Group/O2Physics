@@ -62,7 +62,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-//use parameters + cov mat non-propagated, aux info + (extension propagated)
+// use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
 using FullTracksExtWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
@@ -92,12 +92,12 @@ struct cascadeGenerated {
 
   void process(aod::McCollision const& collision, aod::McParticles const& mcparts)
   {
-    //Count monte carlo events
-    //WARNING: MC collision <-> real collision association has to be understood
+    // Count monte carlo events
+    // WARNING: MC collision <-> real collision association has to be understood
     registry.fill(HIST("hEventCounter"), 0.5f);
 
-    //Count all generated MC particles
-    //WARNING: event-level losses have to be understood too
+    // Count all generated MC particles
+    // WARNING: event-level losses have to be understood too
     for (auto& particle : mcparts) {
       if (TMath::Abs(particle.y()) > 0.5)
         continue;
@@ -222,12 +222,12 @@ struct cascadeAnalysisMC {
   Configurable<bool> allowITSSApion{"allowITSSApion", false, "allow for pion <- lambda track to be via ITS tracking only "};
   Configurable<bool> assocMC{"assocMC", true, "fill histograms only for MC associated candidates"};
 
-  //Track identification configurables
+  // Track identification configurables
   Configurable<float> tpcNsigmaBachelor{"tpcNsigmaBachelor", 4, "TPC NSigma bachelor (>10 is no cut)"};
   Configurable<float> tpcNsigmaProton{"tpcNsigmaProton", 4, "TPC NSigma proton <- lambda (>10 is no cut)"};
   Configurable<float> tpcNsigmaPion{"tpcNsigmaPion", 4, "TPC NSigma pion <- lambda (>10 is no cut)"};
 
-  //Switch for centrality
+  // Switch for centrality
   Configurable<bool> doCentralityStudy{"doCentralityStudy", false, "do centrality percentile selection (yes/no)"};
 
   Filter preFilter =
@@ -235,49 +235,49 @@ struct cascadeAnalysisMC {
 
   template <class TCascTracksTo, typename TCascade>
   int checkCascadeTPCPID(TCascade& lCascade)
-  //function to check PID of a certain cascade candidate for a hypothesis
+  // function to check PID of a certain cascade candidate for a hypothesis
   {
     bool lConsistentWithLambda = true;
     bool lConsistentWithXi = true;
     bool lConsistentWithOm = true;
     auto v0 = lCascade.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
-      return 0; //reject
+      return 0; // reject
     }
     auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
     auto bachTrack = lCascade.template bachelor_as<TCascTracksTo>();
     auto posTrack = v0data.template posTrack_as<TCascTracksTo>();
     auto negTrack = v0data.template negTrack_as<TCascTracksTo>();
 
-    //Bachelor: depends on type
+    // Bachelor: depends on type
     if (TMath::Abs(bachTrack.tpcNSigmaPi()) > tpcNsigmaBachelor && tpcNsigmaBachelor < 9.99)
       lConsistentWithXi = false;
     if (TMath::Abs(bachTrack.tpcNSigmaKa()) > tpcNsigmaBachelor && tpcNsigmaBachelor < 9.99)
       lConsistentWithOm = false;
 
-    //Proton check: depends on cascade sign
+    // Proton check: depends on cascade sign
     if (lCascade.sign() < 0 && TMath::Abs(posTrack.tpcNSigmaPr()) > tpcNsigmaProton && tpcNsigmaProton < 9.99)
       lConsistentWithLambda = false;
     if (lCascade.sign() > 0 && TMath::Abs(negTrack.tpcNSigmaPr()) > tpcNsigmaProton && tpcNsigmaProton < 9.99)
       lConsistentWithLambda = false;
 
-    //Pion check: depends on cascade sign
+    // Pion check: depends on cascade sign
     if (lCascade.sign() < 0 && TMath::Abs(negTrack.tpcNSigmaPi()) > tpcNsigmaPion && tpcNsigmaPion < 9.99)
       lConsistentWithLambda = false;
     if (lCascade.sign() > 0 && TMath::Abs(posTrack.tpcNSigmaPi()) > tpcNsigmaPion && tpcNsigmaPion < 9.99)
       lConsistentWithLambda = false;
 
-    //bit-packing (first bit -> consistent with Xi, second bit -> consistent with Omega)
+    // bit-packing (first bit -> consistent with Xi, second bit -> consistent with Omega)
     return lConsistentWithLambda * lConsistentWithXi + 2 * lConsistentWithLambda * lConsistentWithOm;
   }
 
   template <class TCascTracksTo, typename TCascade>
   void processCascadeCandidate(TCascade const& casc, float const& pvx, float const& pvy, float const& pvz, float lPercentile = 999.0f, int lPIDvalue = 3)
-  //function to process cascades and generate corresponding invariant mass distributions
+  // function to process cascades and generate corresponding invariant mass distributions
   {
-    registry.fill(HIST("hCandidateCounter"), 0.5); //all candidates
+    registry.fill(HIST("hCandidateCounter"), 0.5); // all candidates
 
-    //check mc association if requested
+    // check mc association if requested
     Int_t lPDG = 0;
     if (assocMC) {
       if (!casc.has_mcParticle())
@@ -288,15 +288,15 @@ struct cascadeAnalysisMC {
     }
     auto v0 = casc.template v0_as<o2::aod::V0sLinked>();
     if (!(v0.has_v0Data())) {
-      return; //skip those cascades for which V0 doesn't exist
+      return; // skip those cascades for which V0 doesn't exist
     }
-    registry.fill(HIST("hCandidateCounter"), 1.5); //v0data exists
+    registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists
     auto v0data = v0.v0Data();                     // de-reference index to correct v0data in case it exists
     auto bachTrackCast = casc.template bachelor_as<TCascTracksTo>();
     auto posTrackCast = v0data.template posTrack_as<TCascTracksTo>();
     auto negTrackCast = v0data.template negTrack_as<TCascTracksTo>();
 
-    //track-level selections
+    // track-level selections
     Bool_t lEnoughTPCNClsBac = kTRUE;
     Bool_t lEnoughTPCNClsPos = kTRUE;
     Bool_t lEnoughTPCNClsNeg = kTRUE;
@@ -317,33 +317,33 @@ struct cascadeAnalysisMC {
     if (negTrackCast.itsNCls() < itsClusters)
       lEnoughITSNClsNeg = kFALSE;
 
-    //Logic: either you have enough TPC clusters, OR you enabled ITSSA and have enough ITS clusters as requested
-    //N.B.: This will require dedicated studies!
+    // Logic: either you have enough TPC clusters, OR you enabled ITSSA and have enough ITS clusters as requested
+    // N.B.: This will require dedicated studies!
 
     Bool_t lGoodCandidate = kFALSE;
     if (casc.sign() < 0) {
       if (
-        (lEnoughTPCNClsBac || (allowITSSAbachelor && lEnoughITSNClsBac)) && //bachelor conditional
-        (lEnoughTPCNClsPos || (allowITSSAproton && lEnoughITSNClsPos)) &&   //bachelor conditional
-        (lEnoughTPCNClsNeg || (allowITSSApion && lEnoughITSNClsNeg))        //bachelor conditional
+        (lEnoughTPCNClsBac || (allowITSSAbachelor && lEnoughITSNClsBac)) && // bachelor conditional
+        (lEnoughTPCNClsPos || (allowITSSAproton && lEnoughITSNClsPos)) &&   // bachelor conditional
+        (lEnoughTPCNClsNeg || (allowITSSApion && lEnoughITSNClsNeg))        // bachelor conditional
       ) {
         lGoodCandidate = kTRUE;
       }
     }
     if (casc.sign() > 0) {
       if (
-        (lEnoughTPCNClsBac || (allowITSSAbachelor && lEnoughITSNClsBac)) && //bachelor conditional
-        (lEnoughTPCNClsPos || (allowITSSApion && lEnoughITSNClsPos)) &&     //bachelor conditional
-        (lEnoughTPCNClsNeg || (allowITSSAproton && lEnoughITSNClsNeg))      //bachelor conditional
+        (lEnoughTPCNClsBac || (allowITSSAbachelor && lEnoughITSNClsBac)) && // bachelor conditional
+        (lEnoughTPCNClsPos || (allowITSSApion && lEnoughITSNClsPos)) &&     // bachelor conditional
+        (lEnoughTPCNClsNeg || (allowITSSAproton && lEnoughITSNClsNeg))      // bachelor conditional
       ) {
         lGoodCandidate = kTRUE;
       }
     }
     if (!lGoodCandidate)
       return;
-    registry.fill(HIST("hCandidateCounter"), 2.5); //okay track quality
+    registry.fill(HIST("hCandidateCounter"), 2.5); // okay track quality
 
-    //assign TPC PID compatibility booleans
+    // assign TPC PID compatibility booleans
     bool lCompatiblePID_Xi = (lPIDvalue >> 0 & 1);
     bool lCompatiblePID_Om = (lPIDvalue >> 1 & 1);
 
@@ -353,7 +353,7 @@ struct cascadeAnalysisMC {
         casc.casccosPA(pvx, pvy, pvz) > cascadesetting_cospa &&
         casc.dcav0topv(pvx, pvy, pvz) > cascadesetting_mindcav0topv &&
         TMath::Abs(casc.mLambda() - 1.115683) < cascadesetting_v0masswindow) {
-      registry.fill(HIST("hCandidateCounter"), 3.5); //pass cascade selections
+      registry.fill(HIST("hCandidateCounter"), 3.5); // pass cascade selections
       if (casc.sign() < 0) {                         // FIXME: could be done better...
         if (TMath::Abs(casc.yXi()) < 0.5 && lCompatiblePID_Xi && ((!assocMC) || (lPDG == 3312))) {
           if (!doCentralityStudy) {
@@ -389,13 +389,13 @@ struct cascadeAnalysisMC {
   }
 
   void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&, aod::McParticles const&)
-  //process function subscribing to Run 3-like analysis objects
+  // process function subscribing to Run 3-like analysis objects
   {
-    //Run 3 event selection criteria
+    // Run 3 event selection criteria
     if (eventSelection && !collision.sel8()) {
       return;
     }
-    //fill cascade information with tracksIU typecast (Run 3)
+    // fill cascade information with tracksIU typecast (Run 3)
     for (auto& casc : Cascades) {
       processCascadeCandidate<FullTracksExtIU>(casc, collision.posX(), collision.posY(), collision.posZ());
     }
@@ -403,16 +403,16 @@ struct cascadeAnalysisMC {
   PROCESS_SWITCH(cascadeAnalysisMC, processRun3, "Process Run 3 data", true);
 
   void processRun2(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExt const&, aod::McParticles const&)
-  //process function subscribing to Run 3-like analysis objects
+  // process function subscribing to Run 3-like analysis objects
   {
-    //Run 2 event selection criteria
-    if (eventSelection && !collision.alias()[kINT7]) {
+    // Run 2 event selection criteria
+    if (eventSelection && !collision.alias_bit(kINT7)) {
       return;
     }
     if (eventSelection && !collision.sel7()) {
       return;
     }
-    //fill cascade information with tracks typecast (Run 2)
+    // fill cascade information with tracks typecast (Run 2)
     for (auto& casc : Cascades) {
       processCascadeCandidate<FullTracksExt>(casc, collision.posX(), collision.posY(), collision.posZ());
     }
@@ -420,13 +420,13 @@ struct cascadeAnalysisMC {
   PROCESS_SWITCH(cascadeAnalysisMC, processRun2, "Process Run 2 data", false);
 
   void processRun3VsMultiplicity(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&, aod::McParticles const&)
-  //process function subscribing to Run 3-like analysis objects
+  // process function subscribing to Run 3-like analysis objects
   {
-    //Run 3 event selection criteria
+    // Run 3 event selection criteria
     if (eventSelection && !collision.sel8()) {
       return;
     }
-    //fill cascade information with tracksIU typecast (Run 3)
+    // fill cascade information with tracksIU typecast (Run 3)
     for (auto& casc : Cascades) {
       processCascadeCandidate<FullTracksExtIU>(casc, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M());
     }
@@ -434,16 +434,16 @@ struct cascadeAnalysisMC {
   PROCESS_SWITCH(cascadeAnalysisMC, processRun3VsMultiplicity, "Process Run 3 data vs multiplicity", false);
 
   void processRun2VsMultiplicity(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExt const&, aod::McParticles const&)
-  //process function subscribing to Run 3-like analysis objects
+  // process function subscribing to Run 3-like analysis objects
   {
-    //Run 2 event selection criteria
-    if (eventSelection && !collision.alias()[kINT7]) {
+    // Run 2 event selection criteria
+    if (eventSelection && !collision.alias_bit(kINT7)) {
       return;
     }
     if (eventSelection && !collision.sel7()) {
       return;
     }
-    //fill cascade information with tracks typecast (Run 2)
+    // fill cascade information with tracks typecast (Run 2)
     for (auto& casc : Cascades) {
       processCascadeCandidate<FullTracksExt>(casc, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M());
     }
@@ -451,13 +451,13 @@ struct cascadeAnalysisMC {
   PROCESS_SWITCH(cascadeAnalysisMC, processRun2VsMultiplicity, "Process Run 2 data vs multiplicity", false);
 
   void processRun3WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIUWithPID const&, aod::McParticles const&)
-  //process function subscribing to Run 3-like analysis objects
+  // process function subscribing to Run 3-like analysis objects
   {
-    //Run 3 event selection criteria
+    // Run 3 event selection criteria
     if (eventSelection && !collision.sel8()) {
       return;
     }
-    //fill cascade information with tracksIU typecast (Run 3)
+    // fill cascade information with tracksIU typecast (Run 3)
     for (auto& casc : Cascades) {
       int lPIDvalue = checkCascadeTPCPID<FullTracksExtWithPID>(casc);
       processCascadeCandidate<FullTracksExtIUWithPID>(casc, collision.posX(), collision.posY(), collision.posZ(), -999, lPIDvalue);
@@ -466,16 +466,16 @@ struct cascadeAnalysisMC {
   PROCESS_SWITCH(cascadeAnalysisMC, processRun3WithPID, "Process Run 3 data  with PID", false);
 
   void processRun2WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtWithPID const&, aod::McParticles const&)
-  //process function subscribing to Run 3-like analysis objects
+  // process function subscribing to Run 3-like analysis objects
   {
-    //Run 2 event selection criteria
-    if (eventSelection && !collision.alias()[kINT7]) {
+    // Run 2 event selection criteria
+    if (eventSelection && !collision.alias_bit(kINT7)) {
       return;
     }
     if (eventSelection && !collision.sel7()) {
       return;
     }
-    //fill cascade information with tracks typecast (Run 2)
+    // fill cascade information with tracks typecast (Run 2)
     for (auto& casc : Cascades) {
       int lPIDvalue = checkCascadeTPCPID<FullTracksExtWithPID>(casc);
       processCascadeCandidate<FullTracksExtWithPID>(casc, collision.posX(), collision.posY(), collision.posZ(), -999, lPIDvalue);
@@ -484,13 +484,13 @@ struct cascadeAnalysisMC {
   PROCESS_SWITCH(cascadeAnalysisMC, processRun2WithPID, "Process Run 2 data  with PID", false);
 
   void processRun3VsMultiplicityWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIUWithPID const&, aod::McParticles const&)
-  //process function subscribing to Run 3-like analysis objects
+  // process function subscribing to Run 3-like analysis objects
   {
-    //Run 3 event selection criteria
+    // Run 3 event selection criteria
     if (eventSelection && !collision.sel8()) {
       return;
     }
-    //fill cascade information with tracksIU typecast (Run 3)
+    // fill cascade information with tracksIU typecast (Run 3)
     for (auto& casc : Cascades) {
       int lPIDvalue = checkCascadeTPCPID<FullTracksExtIUWithPID>(casc);
       processCascadeCandidate<FullTracksExtIUWithPID>(casc, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), lPIDvalue);
@@ -499,16 +499,16 @@ struct cascadeAnalysisMC {
   PROCESS_SWITCH(cascadeAnalysisMC, processRun3VsMultiplicityWithPID, "Process Run 3 data vs multiplicity with PID", false);
 
   void processRun2VsMultiplicityWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtWithPID const&, aod::McParticles const&)
-  //process function subscribing to Run 3-like analysis objects
+  // process function subscribing to Run 3-like analysis objects
   {
-    //Run 2 event selection criteria
-    if (eventSelection && !collision.alias()[kINT7]) {
+    // Run 2 event selection criteria
+    if (eventSelection && !collision.alias_bit(kINT7)) {
       return;
     }
     if (eventSelection && !collision.sel7()) {
       return;
     }
-    //fill cascade information with tracks typecast (Run 2)
+    // fill cascade information with tracks typecast (Run 2)
     for (auto& casc : Cascades) {
       int lPIDvalue = checkCascadeTPCPID<FullTracksExtWithPID>(casc);
       processCascadeCandidate<FullTracksExtWithPID>(casc, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), lPIDvalue);
