@@ -111,11 +111,6 @@ o2physics_add_dpl_workflow(lambda1520analysis
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(v0qaanalysis
-                    SOURCES v0qaanalysis.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(cascqaanalysis
                     SOURCES cascqaanalysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
