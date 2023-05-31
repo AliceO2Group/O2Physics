@@ -213,6 +213,18 @@ struct TreeWriterTPCTOF {
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> applyTrkSel{"applyTrkSel", 1, "Flag to apply track selection: 0 -> no track selection, 1 -> track selection"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  /// Triton
+  Configurable<float> maxMomTPCOnlyTr{"maxMomTPCOnlyTr", 1.5, "Maximum momentum for TPC only cut triton"};
+  Configurable<float> nSigmaTPCOnlyTr{"nSigmaTPCOnlyTr", 4., "number of sigma for TPC only cut triton"};
+  Configurable<float> nSigmaTPC_TPCTOF_Tr{"nSigmaTPC_TPCTOF_Tr", 4., "number of sigma for TPC cut for TPC and TOF combined triton"};
+  Configurable<float> nSigmaTOF_TPCTOF_Tr{"nSigmaTOF_TPCTOF_Tr", 3., "number of sigma for TOF cut for TPC and TOF combined triton"};
+  Configurable<double> dwnSmplFactor_Tr{"dwnSmplFactor_Tr", 1., "downsampling factor for triton, default fraction to keep is 1."};
+  /// Deuteron
+  Configurable<float> maxMomTPCOnlyDe{"maxMomTPCOnlyDe", 1.0, "Maximum momentum for TPC only cut deuteron"};
+  Configurable<float> nSigmaTPCOnlyDe{"nSigmaTPCOnlyDe", 4., "number of sigma for TPC only cut deuteron"};
+  Configurable<float> nSigmaTPC_TPCTOF_De{"nSigmaTPC_TPCTOF_De", 4., "number of sigma for TPC cut for TPC and TOF combined deuteron"};
+  Configurable<float> nSigmaTOF_TPCTOF_De{"nSigmaTOF_TPCTOF_De", 3., "number of sigma for TOF cut for TPC and TOF combined deuteron"};
+  Configurable<double> dwnSmplFactor_De{"dwnSmplFactor_De", 1., "downsampling factor for deuteron, default fraction to keep is 1."};
   /// Proton
   Configurable<float> maxMomTPCOnlyPr{"maxMomTPCOnlyPr", 0.6, "Maximum momentum for TPC only cut proton"};
   Configurable<float> nSigmaTPCOnlyPr{"nSigmaTPCOnlyPr", 4., "number of sigma for TPC only cut proton"};
@@ -233,6 +245,8 @@ struct TreeWriterTPCTOF {
   Configurable<double> dwnSmplFactor_Pi{"dwnSmplFactor_Pi", 1., "downsampling factor for pions, default fraction to keep is 1."};
   /// pT dependent downsampling
   Configurable<float> sqrtSNN{"sqrt_s_NN", 0., "sqrt(s_NN), used for downsampling with the Tsallis distribution"};
+  Configurable<float> downsamplingTsalisTritons{"downsamplingTsalisTritons", -1., "Downsampling factor to reduce the number of tritons"};
+  Configurable<float> downsamplingTsalisDeuterons{"downsamplingTsalisDeuterons", -1., "Downsampling factor to reduce the number of deuterons"};
   Configurable<float> downsamplingTsalisProtons{"downsamplingTsalisProtons", -1., "Downsampling factor to reduce the number of protons"};
   Configurable<float> downsamplingTsalisKaons{"downsamplingTsalisKaons", -1., "Downsampling factor to reduce the number of kaons"};
   Configurable<float> downsamplingTsalisPions{"downsamplingTsalisPions", -1., "Downsampling factor to reduce the number of pions"};
@@ -337,16 +351,16 @@ struct TreeWriterTPCTOF {
     rowTPCTOFTree.reserve(tracks.size());
     for (auto const& trk : tracks) {
       /// Fill tree for tritons
-      if (trk.tpcInnerParam() <= 1.5 && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyPr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, 1.0);
-      } else if(trk.tpcInnerParam() > 1.5 && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Pr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Pr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, 1.0);
+      if (trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr);
+      } else if(trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr);
       }
       /// Fill tree for deuterons
-      if (trk.tpcInnerParam() <= 1.0 && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyPr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, 1.0);
-      } else if(trk.tpcInnerParam() > 1.0 && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_Pr && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_Pr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, 1.0);
+      if (trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De);
+      } else if(trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De);
       }
       /// Fill tree for protons
       if (trk.tpcInnerParam() <= maxMomTPCOnlyPr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPCOnlyPr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton])) {
