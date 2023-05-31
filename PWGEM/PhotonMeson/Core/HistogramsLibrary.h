@@ -72,6 +72,7 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hEvsNcell"))->Fill(obj.e(), obj.nCells());
     reinterpret_cast<TH2F*>(list->FindObject("hEvsM02"))->Fill(obj.e(), obj.m02());
     reinterpret_cast<TH2F*>(list->FindObject("hEvsM20"))->Fill(obj.e(), obj.m20());
+    reinterpret_cast<TH1F*>(list->FindObject("hDistToBC"))->Fill(obj.distanceToBadChannel());
     reinterpret_cast<TH2F*>(list->FindObject(Form("hClusterXZM%d", obj.mod())))->Fill(obj.cellx(), obj.cellz());
   }
 }
