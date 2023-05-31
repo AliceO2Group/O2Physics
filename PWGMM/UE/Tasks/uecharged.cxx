@@ -393,7 +393,7 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
 
   bool isAcceptedEvent = false;
   if (isRun3 ? collision.sel8() : collision.sel7()) {
-    if ((isRun3 || doprocessMC) ? true : collision.alias()[kINT7]) {
+    if ((isRun3 || doprocessMC) ? true : collision.alias_bit(kINT7)) {
       isAcceptedEvent = true;
     }
   }
@@ -410,7 +410,7 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
   isAcceptedEvent = false;
   if (std::abs(collision.posZ()) < 10.f) {
     if (isRun3 ? collision.sel8() : collision.sel7()) {
-      if ((isRun3 || doprocessMC) ? true : collision.alias()[kINT7]) {
+      if ((isRun3 || doprocessMC) ? true : collision.alias_bit(kINT7)) {
         isAcceptedEvent = true;
       }
     }
@@ -598,7 +598,7 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
 
   bool isAcceptedEvent = false;
   if (isRun3 ? collision.sel8() : collision.sel7()) {
-    if ((isRun3 || doprocessMC) ? true : collision.alias()[kINT7]) {
+    if ((isRun3 || doprocessMC) ? true : collision.alias_bit(kINT7)) {
       isAcceptedEvent = true;
     }
   }
@@ -712,7 +712,7 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
   isAcceptedEvent = false;
   if (std::abs(collision.posZ()) < 10.f) {
     if (isRun3 ? collision.sel8() : collision.sel7()) {
-      if ((isRun3 || doprocessMC) ? true : collision.alias()[kINT7]) {
+      if ((isRun3 || doprocessMC) ? true : collision.alias_bit(kINT7)) {
         isAcceptedEvent = true;
       }
     }

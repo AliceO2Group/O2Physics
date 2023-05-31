@@ -99,25 +99,7 @@ struct hstrangecorrelationfilter {
   // histogram defined with HistogramRegistry
   HistogramRegistry registry{
     "registry",
-    {{"correlationHadronHadron", "correlationHadronHadron", {HistType::kTH1F, {{40, -0.5 * M_PI, 1.5 * M_PI, "#Phi"}}}},
-     {"correlationHadronV0", "correlationHadronV0", {HistType::kTH1F, {{40, -0.5 * M_PI, 1.5 * M_PI, "#Phi"}}}},
-     {"hVertexZ", "hVertexZ", {HistType::kTH1F, {{100, -15., 15.}}}},
-     {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{250, 0, 250}}}},
-     {"hV0Eta", "hV0Eta", {HistType::kTH1F, {{200, -1, 1, "#Eta"}}}},
-     {"hTrackEta", "hTrackEta", {HistType::kTH1F, {{200, -1, 1, "#Eta"}}}},
-     {"hTrackSign", "hTrackSign", {HistType::kTH1F, {{5, -2, 2}}}},
-     {"hV0dauDCA", "hV0dauDCA", {HistType::kTH1F, {{200, -1, 1}}}},
-     {"hID", "hID", {HistType::kTH1F, {{20000, 0, 20000}}}},
-     {"hV0CPA", "hV0CPA", {HistType::kTH1F, {{100, 0, 1}}}},
-     {"hPosDCAtoPV", "hPosDCAtoPV", {HistType::kTH1F, {{400, 0.05, 0.45}}}},
-     {"hNegDCAtoPV", "hNegDCAtoPV", {HistType::kTH1F, {{400, 0.05, 0.45}}}},
-     {"hMassK0Short", "hMassK0Short", {HistType::kTH1F, {{200, 0.450f, 0.550f}}}},
-     {"hMassLambda", "hMassLambda", {HistType::kTH1F, {{200, 1.0f, 1.550f}}}},
-     {"hMassAntiLambda", "hMassAntiLambda", {HistType::kTH1F, {{200, 1.0f, 1.550f}}}},
-     {"hMassXiMinus", "hMassXiMinus", {HistType::kTH1F, {{200, 1.0f, 1.550f}}}},
-     {"hMassXiPlus", "hMassXiPlus", {HistType::kTH1F, {{200, 1.0f, 1.550f}}}},
-     {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH1F, {{200, 1.57f, 1.77f}}}},
-     {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH1F, {{200, 1.57f, 1.77f}}}}}};
+    {}};
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
   Produces<aod::TriggerTracks> triggerTrack;
@@ -154,13 +136,12 @@ struct hstrangecorrelationfilter {
     fOmegaWidth->SetParameters(omegaWidthAngular, omegaWidthLinear);
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const& tracks, soa::Filtered<aod::V0Datas> const& V0s, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&)
+  void processTriggers(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const& tracks)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
     }
-    registry.get<TH1>(HIST("hVertexZ"))->Fill(collision.posZ());
     // No need to correlate stuff that's in far collisions
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
@@ -185,25 +166,25 @@ struct hstrangecorrelationfilter {
       triggerTrack(
         track.collisionId(),
         track.globalIndex());
-
-      registry.fill(HIST("hTrackEta"), track.eta());
-      registry.fill(HIST("hTrackSign"), track.sign());
-      registry.fill(HIST("hID"), track.collisionId());
     }
+  }
 
+  void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const& tracks, soa::Filtered<aod::V0Datas> const& V0s, aod::V0sLinked const&)
+  {
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (TMath::Abs(collision.posZ()) > 10.0) {
+      return;
+    }
     /// _________________________________________________
-    /// Step 2: Populate table with associated V0s
+    /// Populate table with associated V0s
     for (auto const& v0 : V0s) {
       if (v0.v0radius() < v0RadiusMin || v0.v0radius() > v0RadiusMax || v0.eta() > assocEtaMax || v0.eta() < assocEtaMin || v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0Cospa) {
         continue;
       }
-      registry.fill(HIST("hV0Radius"), v0.v0radius());
-      registry.fill(HIST("hV0Eta"), v0.eta());
-      registry.fill(HIST("hV0dauDCA"), v0.dcaV0daughters());
-      registry.fill(HIST("hPosDCAtoPV"), v0.dcapostopv());
-      registry.fill(HIST("hNegDCAtoPV"), v0.dcanegtopv());
-      registry.fill(HIST("hV0CPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
-
       // check dE/dx compatibility
       bool compatibleK0Short = false;
       bool compatibleLambda = false;
@@ -218,15 +199,12 @@ struct hstrangecorrelationfilter {
         continue;
 
       if (TMath::Abs(posdau.tpcNSigmaPi()) < 5 && TMath::Abs(negdau.tpcNSigmaPi()) < 5) {
-        registry.fill(HIST("hMassK0Short"), v0.mK0Short());
         compatibleK0Short = true;
       }
       if (TMath::Abs(posdau.tpcNSigmaPr()) < 5 && TMath::Abs(negdau.tpcNSigmaPi()) < 5) {
-        registry.fill(HIST("hMassLambda"), v0.mLambda());
         compatibleLambda = true;
       }
       if (TMath::Abs(posdau.tpcNSigmaPi()) < 5 && TMath::Abs(negdau.tpcNSigmaPr()) < 5) {
-        registry.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
         compatibleAntiLambda = true;
       }
       // check whether V0s are in the regin
@@ -282,7 +260,17 @@ struct hstrangecorrelationfilter {
       }
       assocV0(v0.collisionId(), v0.globalIndex(), compatibleK0Short, compatibleLambda, compatibleAntiLambda, massRegK0Short, massRegLambda, massRegAntiLambda);
     }
-
+  }
+  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const& tracks, soa::Filtered<aod::V0Datas> const& V0s, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&)
+  {
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (TMath::Abs(collision.posZ()) > 10.0) {
+      return;
+    }
     /// _________________________________________________
     /// Step 3: Populate table with associated Cascades
     for (auto const& casc : Cascades) {
@@ -310,19 +298,15 @@ struct hstrangecorrelationfilter {
       bool compatibleOmegaPlus = false;
 
       if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < 5 && TMath::Abs(negTrackCast.tpcNSigmaPi()) < 5 && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < 5) {
-        registry.fill(HIST("hMassXiMinus"), casc.mXi());
         compatibleXiMinus = true;
       }
       if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < 5 && TMath::Abs(negTrackCast.tpcNSigmaPr()) < 5 && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < 5) {
-        registry.fill(HIST("hMassXiPlus"), casc.mXi());
         compatibleXiPlus = true;
       }
       if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < 5 && TMath::Abs(negTrackCast.tpcNSigmaPi()) < 5 && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < 5) {
-        registry.fill(HIST("hMassOmegaMinus"), casc.mOmega());
         compatibleOmegaMinus = true;
       }
       if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < 5 && TMath::Abs(negTrackCast.tpcNSigmaPr()) < 5 && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < 5) {
-        registry.fill(HIST("hMassOmegaPlus"), casc.mOmega());
         compatibleOmegaPlus = true;
       }
 
@@ -362,6 +346,10 @@ struct hstrangecorrelationfilter {
       assocCascades(casc.collisionId(), casc.globalIndex(), compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus, massRegXi, massRegOmega);
     }
   }
+
+  PROCESS_SWITCH(hstrangecorrelationfilter, processTriggers, "Produce trigger tables", true);
+  PROCESS_SWITCH(hstrangecorrelationfilter, processV0s, "Produce associated V0 tables", true);
+  PROCESS_SWITCH(hstrangecorrelationfilter, processCascades, "Produce associated cascade tables", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -157,6 +157,7 @@ std::shared_ptr<TH3> hNsigmaEta[2][4][2];
 std::shared_ptr<TH3> hTOFmassEta[4][2];
 std::shared_ptr<TH3> hDCAxy[2][4][2];
 std::shared_ptr<TH3> hDCAz[2][4][2];
+std::shared_ptr<TH2> hGloTOFtracks[2];
 o2::base::MatLayerCylSet* lut = nullptr;
 
 std::vector<NucleusCandidate> candidates;
@@ -292,6 +293,8 @@ struct nucleiSpectra {
     spectra.add("hTpcSignalDataSelected", "Specific energy loss for selected particles", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTofSignalData", "TOF beta", HistType::kTH2F, {{500, 0., 5., "#it{p} (GeV/#it{c})"}, {750, 0, 1.5, "TOF #beta"}});
     for (int iC{0}; iC < 2; ++iC) {
+      nuclei::hGloTOFtracks[iC] = spectra.add<TH2>(fmt::format("hTPCTOFtracks{}", nuclei::matter[iC]).data(), fmt::format("Global vs TOF matched {} tracks in a collision", nuclei::chargeLabelNames[iC]).data(), HistType::kTH2D, {{300, -0.5, 300.5, "Number of global tracks"}, {300, -0.5, 300.5, "Number of TOF matched tracks"}});
+
       for (int iS{0}; iS < nuclei::species; ++iS) {
         nuclei::hNsigma[0][iS][iC] = spectra.add<TH3>(fmt::format("h{}nsigma{}_{}", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("n#sigma_{{}} {} {}", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], nSigmaAxes[0]});
         nuclei::hNsigmaEta[0][iS][iC] = spectra.add<TH3>(fmt::format("h{}nsigmaEta{}_{}", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("n#sigma_{{}} {} {} vs #eta", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {etaAxis, ptAxes[iS], nSigmaAxes[0]});
@@ -339,6 +342,7 @@ struct nucleiSpectra {
       {nuclei::charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / nuclei::masses[2], nuclei::charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / nuclei::masses[2]},
       {nuclei::charges[3] * cfgMomentumScalingBetheBloch->get(3u, 0u) / nuclei::masses[3], nuclei::charges[3] * cfgMomentumScalingBetheBloch->get(3u, 1u) / nuclei::masses[3]}};
 
+    int nGloTracks[2]{0, 0}, nTOFTracks[2]{0, 0};
     for (auto& track : tracks) { // start loop over tracks
       if (track.itsNCls() < cfgCutNclusITS ||
           track.tpcNClsFound() < cfgCutNclusTPC ||
@@ -353,6 +357,13 @@ struct nucleiSpectra {
         {-10., -10., -10., -10.},
         {0.f, 0.f, 0.f, 0.f}}; /// then we will calibrate the TOF mass for the He3 and Alpha
       const int iC{track.sign() < 0};
+
+      /// Checking if we have outliers in the TPC-TOF correlation
+      nGloTracks[iC]++;
+      if (track.hasTOF()) {
+        nTOFTracks[iC]++;
+      }
+
       bool selectedTPC[4]{false}, goodToAnalyse{false};
       for (int iS{0}; iS < nuclei::species; ++iS) {
         double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScalings[iS][iC]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
@@ -426,6 +437,9 @@ struct nucleiSpectra {
         }
       }
     } // end loop over tracks
+
+    nuclei::hGloTOFtracks[0]->Fill(nGloTracks[0], nTOFTracks[0]);
+    nuclei::hGloTOFtracks[1]->Fill(nGloTracks[1], nTOFTracks[1]);
   }
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)

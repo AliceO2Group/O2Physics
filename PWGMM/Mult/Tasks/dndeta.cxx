@@ -219,7 +219,7 @@ struct MultiplicityCounter {
       }
 
       auto heff = registry.get<TH2>(HIST("Events/Centrality/Efficiency"));
-      auto* x = heff->GetXaxis();
+      x = heff->GetXaxis();
       x->SetBinLabel(1, "Generated");
       x->SetBinLabel(2, "Generated INEL>0");
       x->SetBinLabel(3, "Reconstructed");
@@ -229,14 +229,18 @@ struct MultiplicityCounter {
 
     if (doprocessTrackEfficiency) {
       registry.add({"Tracks/Control/PtGen", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtGenNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiency", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
-      registry.add({"Tracks/Control/PtEfficiencySecondaries", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtEfficiencyNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtEfficiencyFakes", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
     }
     if (doprocessTrackEfficiencyIndexed) {
       registry.add({"Tracks/Control/PtGenI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtGenINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyISecondaries", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtEfficiencyISecondariesNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/Mask", " ; bit", {HistType::kTH1F, {{17, -0.5, 16.5}}}});
       registry.add({"Tracks/Control/ITSClusters", " ; layer", {HistType::kTH1F, {{8, 0.5, 8.5}}}});
     }
@@ -249,8 +253,8 @@ struct MultiplicityCounter {
     constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>();
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
-      if (!useEvSel || (bc.selection()[evsel::kIsBBT0A] &
-                        bc.selection()[evsel::kIsBBT0C]) != 0) {
+      if (!useEvSel || (bc.selection_bit(evsel::kIsBBT0A) &&
+                        bc.selection_bit(evsel::kIsBBT0C)) != 0) {
         registry.fill(HIST("Events/BCSelection"), 1.);
         cols.clear();
         for (auto& collision : collisions) {
@@ -331,7 +335,7 @@ struct MultiplicityCounter {
 
   expressions::Filter atrackFilter = (aod::track::bestCollisionId >= 0) &&
                                      (nabs(aod::track::bestDCAZ) <= 2.f) &&
-                                     (nabs(aod::track::bestDCAXY) <= ((0.0105f + 0.0350f / npow(aod::track::pts, 1.1f))));
+                                     (nabs(aod::track::bestDCAXY) <= ((0.004f + 0.013f / npow(aod::track::pts, 1.1f))));
 
   using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   using FiTracks = soa::Filtered<ExTracks>;
@@ -504,15 +508,13 @@ struct MultiplicityCounter {
   using Particles = soa::Filtered<aod::McParticles>;
   using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   using FiLTracks = soa::Filtered<LabeledTracksEx>;
-  using Particle = Particles::iterator;
-  using ParticlesI = soa::Join<aod::McParticles, aod::ParticlesToTracks>;
+  using ParticlesI = soa::Filtered<soa::Join<aod::McParticles, aod::ParticlesToTracks>>;
   expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
-  Partition<Particles> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
 
   template <typename C, typename MC>
   void processTrackEfficiencyIndexedGeneral(
     typename soa::Join<C, aod::McCollisionLabels>::iterator const& collision,
-    MC const&, soa::Filtered<ParticlesI> const& particles,
+    MC const&, ParticlesI const& particles,
     FiLTracks const& tracks)
   {
     if (useEvSel && !collision.sel8()) {
@@ -533,7 +535,10 @@ struct MultiplicityCounter {
       if (std::abs(charge) < 3.) {
         continue;
       }
-      registry.fill(HIST("Tracks/Control/PtGenI"), particle.pt());
+      registry.fill(HIST("Tracks/Control/PtGenINoEtaCut"), particle.pt());
+      if (std::abs(particle.eta()) < estimatorEta) {
+        registry.fill(HIST("Tracks/Control/PtGenI"), particle.pt());
+      }
       if (particle.has_tracks()) {
         auto counted = false;
         auto countedNoEtaCut = false;
@@ -552,7 +557,10 @@ struct MultiplicityCounter {
             }
           }
           if (counter > 1) {
-            registry.fill(HIST("Tracks/Control/PtEfficiencyISecondaries"), particle.pt());
+            registry.fill(HIST("Tracks/Control/PtEfficiencyISecondariesNoEtaCut"), particle.pt());
+            if (std::abs(track.eta()) < estimatorEta) {
+              registry.fill(HIST("Tracks/Control/PtEfficiencyISecondaries"), particle.pt());
+            }
           }
         }
         if (counter > 1) {
@@ -586,7 +594,7 @@ struct MultiplicityCounter {
 
   void processTrackEfficiencyIndexed(
     soa::Join<ExCols, aod::McCollisionLabels>::iterator const& collision,
-    aod::McCollisions const& mccollisions, soa::Filtered<ParticlesI> const& particles,
+    aod::McCollisions const& mccollisions, ParticlesI const& particles,
     FiLTracks const& tracks)
   {
     processTrackEfficiencyIndexedGeneral<ExCols, aod::McCollisions>(collision, mccollisions, particles, tracks);
@@ -594,11 +602,10 @@ struct MultiplicityCounter {
 
   PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiencyIndexed, "Calculate tracking efficiency vs pt (indexed)", false);
 
-  Partition<FiLTracks> lsample = nabs(aod::track::eta) < estimatorEta;
   template <typename C, typename MC>
   void processTrackEfficiencyGeneral(
     typename soa::Join<C, aod::McCollisionLabels>::iterator const& collision,
-    MC const&, Particles const& mcParticles,
+    MC const&, Particles const& particles,
     FiLTracks const& tracks,
     soa::SmallGroups<ReTracks> const& atracks)
   {
@@ -624,7 +631,7 @@ struct MultiplicityCounter {
       c_gen = mcCollision.centrality();
     }
 
-    auto particles = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+    auto particlesPerCol = particles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
     usedTracksIds.clear();
     for (auto const& track : atracks) {
@@ -634,9 +641,13 @@ struct MultiplicityCounter {
         usedTracksIdsDFMCEff.emplace_back(track.trackId());
       }
       if (otrack.has_mcParticle()) {
-        registry.fill(HIST("Tracks/Control/PtEfficiency"), otrack.mcParticle_as<Particles>().pt());
+        auto particle = otrack.mcParticle_as<Particles>();
+        registry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
+        if (std::abs(otrack.eta()) < estimatorEta) {
+          registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
+        }
       } else {
-        registry.fill(HIST("Tracks/Control/PtEfficiencySecondaries"), otrack.pt());
+        registry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), otrack.pt());
       }
     }
     for (auto const& track : tracks) {
@@ -647,16 +658,17 @@ struct MultiplicityCounter {
         continue;
       }
       if (track.has_mcParticle()) {
-        registry.fill(HIST("Tracks/Control/PtEfficiency"), track.template mcParticle_as<Particles>().pt());
+        auto particle = track.template mcParticle_as<Particles>();
+        registry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
+        if (std::abs(track.eta()) < estimatorEta) {
+          registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
+        }
       } else {
-        registry.fill(HIST("Tracks/Control/PtEfficiencySecondaries"), track.pt());
+        registry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), track.pt());
       }
     }
 
-    for (auto& particle : particles) {
-      if (!particle.producedByGenerator()) {
-        continue;
-      }
+    for (auto& particle : particlesPerCol) {
       auto charge = 0.;
       auto p = pdg->GetParticle(particle.pdgCode());
       if (p != nullptr) {
@@ -665,7 +677,10 @@ struct MultiplicityCounter {
       if (std::abs(charge) < 3.) {
         continue;
       }
-      registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
+      registry.fill(HIST("Tracks/Control/PtGenNoEtaCut"), particle.pt());
+      if (std::abs(particle.eta()) < estimatorEta) {
+        registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
+      }
     }
   }
 
@@ -695,15 +710,17 @@ struct MultiplicityCounter {
       c_gen = mcCollision.centrality();
     }
 
-    auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nCharged = 0;
-    for (auto& particle : perCollisionMCSample) {
+    for (auto& particle : particles) {
       auto charge = 0.;
       auto p = pdg->GetParticle(particle.pdgCode());
       if (p != nullptr) {
         charge = p->Charge();
       }
       if (std::abs(charge) < 3.) {
+        continue;
+      }
+      if (std::abs(particle.eta()) >= estimatorEta) {
         continue;
       }
       nCharged++;
@@ -842,7 +859,7 @@ struct MultiplicityCounter {
         registry.fill(HIST("Tracks/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
         registry.fill(HIST("Tracks/Control/PtEtaGen"), particle.pt(), particle.eta());
       }
-      if (perCollisionMCSample.size() > 0) {
+      if (nCharged > 0) {
         if constexpr (hasCentrality) {
           registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ(), c_gen);
         } else {

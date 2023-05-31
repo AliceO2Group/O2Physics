@@ -107,15 +107,11 @@ struct HfCandidateSelectorBplusToD0Pi {
         }
       }
     }
-    if (TESTBIT(selectionFlagD0, SelectionStep::RecoPID) != TESTBIT(selectionFlagD0bar, SelectionStep::RecoPID)) {
-      selectionFlagDAndUsePidInSync = false;
-      LOG(warning) << "Different SelectionStep required on D0 and D0bar(= B+ prong0). Check selectionFlagD0 && selectionFlagD0bar in hf-candidate-creator-bplus";
-    }
-    if ((usePid && !TESTBIT(selectionFlagD0, SelectionStep::RecoPID)) || (usePid && !TESTBIT(selectionFlagD0bar, SelectionStep::RecoPID))) {
+    if ((usePid && !selectionFlagD0) || (usePid && !selectionFlagD0bar)) {
       selectionFlagDAndUsePidInSync = false;
       LOG(warning) << "PID selections required on B+ daughters (usePid=true) but no PID selections on D candidates were required a priori.";
     }
-    if ((!usePid && TESTBIT(selectionFlagD0, SelectionStep::RecoPID)) || (usePid && !TESTBIT(selectionFlagD0bar, SelectionStep::RecoPID))) {
+    if ((!usePid && selectionFlagD0) || (!usePid && selectionFlagD0bar)) {
       selectionFlagDAndUsePidInSync = false;
       LOG(warning) << "No PID selections required on Bp daughters (usePid=false) but PID selections on D candidates were required a priori.";
     }

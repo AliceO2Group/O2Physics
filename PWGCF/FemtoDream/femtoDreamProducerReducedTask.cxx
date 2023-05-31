@@ -85,6 +85,7 @@ struct femtoDreamProducerReducedTask {
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   Configurable<bool> ConfRejectITSHitandTOFMissing{"ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
 
+  Configurable<bool> ConfForceGRP{"ConfForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
   Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "PDG code of the selected track for Monte Carlo truth"};
   // Track cuts
   FemtoDreamTrackSelection trackCuts;
@@ -156,32 +157,27 @@ struct femtoDreamProducerReducedTask {
     auto timestamp = bc.timestamp();
     float output = -999;
 
-    if (ConfIsRun3 && !ConfIsMC) {
+    if (ConfIsRun3 && !ConfForceGRP) {
       static o2::parameters::GRPMagField* grpo = nullptr;
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
       if (grpo == nullptr) {
-        grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
-        if (grpo == nullptr) {
-          LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-          return;
-        }
-        LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return;
       }
+      LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
       // taken from GRP onject definition of getNominalL3Field; update later to something smarter (mNominalL3Field = std::lround(5.f * mL3Current / 30000.f);)
       auto NominalL3Field = std::lround(5.f * grpo->getL3Current() / 30000.f);
       output = 0.1 * (NominalL3Field);
-    }
 
-    if (!ConfIsRun3 || (ConfIsRun3 && ConfIsMC)) {
+    } else {
 
       static o2::parameters::GRPObject* grpo = nullptr;
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
       if (grpo == nullptr) {
-        grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-        if (grpo == nullptr) {
-          LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-          return;
-        }
-        LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return;
       }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
       output = 0.1 * (grpo->getNominalL3Field());
     }
     mMagField = output;
@@ -199,12 +195,19 @@ struct femtoDreamProducerReducedTask {
       int particleOrigin = 99;
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
 
-      if (particleMC.isPhysicalPrimary()) {
-        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
-      } else if (motherparticleMC.producedByGenerator()) {
-        particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+      if (abs(pdgCode) == abs(ConfPDGCodeTrack.value)) {
+
+        if (particleMC.isPhysicalPrimary()) {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
+        } else if (motherparticleMC.producedByGenerator()) {
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+        } else {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+        }
+
       } else {
-        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+
+        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
       }
 
       outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());

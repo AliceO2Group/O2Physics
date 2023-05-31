@@ -194,7 +194,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     }
 
     // trigger selection
-    if ((!useSel8Trigger && !collision.alias()[triggerClass]) || (useSel8Trigger && !collision.sel8())) {
+    if ((!useSel8Trigger && !collision.alias_bit(triggerClass)) || (useSel8Trigger && !collision.sel8())) {
       SETBIT(statusCollision, EventRejection::Trigger);
       if (fillHistograms) {
         registry.fill(HIST("hEvents"), 3 + EventRejection::Trigger);
@@ -2438,6 +2438,12 @@ struct HfTrackIndexSkimCreatorCascades {
           // selections on the V0 daughters
           const auto& trackV0DaughPos = v0.posTrack_as<TracksWithPVRefitAndDCA>();
           const auto& trackV0DaughNeg = v0.negTrack_as<TracksWithPVRefitAndDCA>();
+
+          // check not to take the same track twice (as bachelor and V0 daughter)
+          if (trackV0DaughPos.globalIndex() == bach.globalIndex() || trackV0DaughNeg.globalIndex() == bach.globalIndex()) {
+            continue;
+          }
+
 #ifdef MY_DEBUG
           auto indexV0DaughPos = trackV0DaughPos.mcParticleId();
           auto indexV0DaughNeg = trackV0DaughNeg.mcParticleId();

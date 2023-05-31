@@ -355,8 +355,14 @@ struct Pi0EtaToGammaGamma {
                   }
                 }
 
-                if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.02, 0.4) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.02, 0.4)) {
-                  continue;
+                if constexpr (pairtype == PairType::kPCMPHOS) {
+                  if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.02, 0.4, 0.2) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.02, 0.4, 0.2)) {
+                    continue;
+                  }
+                } else if constexpr (pairtype == PairType::kPCMEMC) {
+                  if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.02, 0.4, 0.5) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.02, 0.4, 0.5)) {
+                    continue;
+                  }
                 }
               }
 

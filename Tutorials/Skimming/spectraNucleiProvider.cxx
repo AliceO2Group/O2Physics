@@ -57,8 +57,8 @@ struct NucleiSpectraProviderTask {
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
   {
     bool keepEvent = false;
-    if (!collision.alias()[kINT7]) {
-      return; //is this correct?
+    if (!collision.alias_bit(kINT7)) {
+      return; // is this correct?
     }
     if (!collision.sel7()) {
       return;
@@ -76,22 +76,22 @@ struct NucleiSpectraProviderTask {
     }
     if (keepEvent) {
       outputCollisions(collision.posZ());
-      uint32_t pNsigma = 0xFFFFFF00; //15 bit precision for Nsigma - does this respect the sign?
+      uint32_t pNsigma = 0xFFFFFF00; // 15 bit precision for Nsigma - does this respect the sign?
       outputTracks.reserve(tracks.size());
       for (auto track : tracks) {
         outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(),
-                     //truncateFloatFraction(track.tpcNSigmaEl(), pNsigma), truncateFloatFraction(track.tpcNSigmaMu(), pNsigma),
+                     // truncateFloatFraction(track.tpcNSigmaEl(), pNsigma), truncateFloatFraction(track.tpcNSigmaMu(), pNsigma),
                      truncateFloatFraction(track.tpcNSigmaPi(), pNsigma), truncateFloatFraction(track.tpcNSigmaKa(), pNsigma),
-                     truncateFloatFraction(track.tpcNSigmaPr(), pNsigma), //truncateFloatFraction(track.tpcNSigmaDe(), pNsigma),
-                     //truncateFloatFraction(track.tpcNSigmaTr(), pNsigma),
+                     truncateFloatFraction(track.tpcNSigmaPr(), pNsigma), // truncateFloatFraction(track.tpcNSigmaDe(), pNsigma),
+                     // truncateFloatFraction(track.tpcNSigmaTr(), pNsigma),
                      truncateFloatFraction(track.tpcNSigmaHe(), pNsigma),
-                     //truncateFloatFraction(track.tpcNSigmaAl(), pNsigma),
-                     //truncateFloatFraction(track.tofNSigmaEl(), pNsigma), truncateFloatFraction(track.tofNSigmaMu(), pNsigma),
+                     // truncateFloatFraction(track.tpcNSigmaAl(), pNsigma),
+                     // truncateFloatFraction(track.tofNSigmaEl(), pNsigma), truncateFloatFraction(track.tofNSigmaMu(), pNsigma),
                      truncateFloatFraction(track.tofNSigmaPi(), pNsigma), truncateFloatFraction(track.tofNSigmaKa(), pNsigma),
-                     truncateFloatFraction(track.tofNSigmaPr(), pNsigma), //truncateFloatFraction(track.tofNSigmaDe(), pNsigma),
-                     //truncateFloatFraction(track.tofNSigmaTr(), pNsigma),
+                     truncateFloatFraction(track.tofNSigmaPr(), pNsigma), // truncateFloatFraction(track.tofNSigmaDe(), pNsigma),
+                     // truncateFloatFraction(track.tofNSigmaTr(), pNsigma),
                      truncateFloatFraction(track.tofNSigmaHe(), pNsigma));
-        //truncateFloatFraction(track.tofNSigmaAl(), pNsigma));
+        // truncateFloatFraction(track.tofNSigmaAl(), pNsigma));
       }
     }
   }

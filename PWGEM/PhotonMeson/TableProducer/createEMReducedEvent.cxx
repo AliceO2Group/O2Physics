@@ -73,8 +73,8 @@ struct createEMReducedEvent {
       registry.fill(HIST("hEventCounter"), 1);
 
       // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      bool is_phoscpv_readout = collision.alias()[kTVXinPHOS];
-      bool is_emc_readout = collision.alias()[kTVXinEMC];
+      bool is_phoscpv_readout = collision.alias_bit(kTVXinPHOS);
+      bool is_emc_readout = collision.alias_bit(kTVXinEMC);
 
       int ng_pcm = 0;
       int ng_phos = 0;
@@ -115,13 +115,8 @@ struct createEMReducedEvent {
         registry.fill(HIST("hEventCounter"), 6);
       }
 
-      uint64_t tag = 0;
       // store event selection decisions
-      for (int i = 0; i < kNsel; i++) {
-        if (collision.selection()[i] > 0) {
-          tag |= (uint64_t(1) << i);
-        }
-      }
+      uint64_t tag = collision.selection_raw();
       event(collision.globalIndex(), tag, collision.bc().runNumber(), collision.bc().triggerMask(), collision.sel8(),
             is_phoscpv_readout, is_emc_readout,
             collision.posX(), collision.posY(), collision.posZ(),

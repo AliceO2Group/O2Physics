@@ -310,8 +310,14 @@ struct Pi0EtaToGammaGammaMC {
               if constexpr (pairtype == PairType::kPCMPHOS || pairtype == PairType::kPCMEMC) {
                 auto pos = g1.template posTrack_as<MyMCV0Legs>();
                 auto ele = g1.template negTrack_as<MyMCV0Legs>();
-                if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.02, 0.4) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.02, 0.4)) {
-                  continue;
+                if constexpr (pairtype == PairType::kPCMPHOS) {
+                  if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.02, 0.4, 0.2) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.02, 0.4, 0.2)) {
+                    continue;
+                  }
+                } else if constexpr (pairtype == PairType::kPCMEMC) {
+                  if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos, g2, 0.02, 0.4, 0.5) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele, g2, 0.02, 0.4, 0.5)) {
+                    continue;
+                  }
                 }
               }
 
