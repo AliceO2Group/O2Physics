@@ -12,9 +12,10 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 
-#ifndef O2_Analysis_ReducedInfoTables_H_
-#define O2_Analysis_ReducedInfoTables_H_
+#ifndef PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
+#define PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
 
+#include <cmath>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Centrality.h"
@@ -22,7 +23,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "MathUtils/Utils.h"
-#include <cmath>
 
 namespace o2::aod
 {
@@ -527,4 +527,4 @@ DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint8_t); //!
 DECLARE_SOA_TABLE(DalitzBits, "AOD", "DALITZBITS", DalBits::DALITZBits);
 } // namespace o2::aod
 
-#endif // O2_Analysis_ReducedInfoTables_H_
+#endif // PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
