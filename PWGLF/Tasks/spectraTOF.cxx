@@ -247,8 +247,8 @@ struct tofSpectra {
 
       // trd histograms
       histos.add("track/TRD/trdSignal", "", HistType::kTH2D, {pAxis, {1000, 0, 1000, "TRD signal (a.u.)"}});
-      histos.add("event/TRD/length", "", HistType::kTH1D, {lengthAxis});
-      histos.add("event/TRD/lengthnotrd", "", HistType::kTH1D, {lengthAxis});
+      histos.add("track/TRD/length", "", HistType::kTH1D, {lengthAxis});
+      histos.add("track/TRD/lengthnotrd", "", HistType::kTH1D, {lengthAxis});
     }
 
     // 4 detectors
