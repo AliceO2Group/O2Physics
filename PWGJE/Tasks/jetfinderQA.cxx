@@ -89,39 +89,37 @@ struct JetFinderQATask {
                               {"h3_jet_pt_part_jet_phi_part_jet_phi", "#it{p}_{T,jet}^{part} (GeV/#it{c}); #phi_{jet}^{part}; #phi_{jet}", {HistType::kTH3F, {{200, 0.0, 200}, {80, -1.0, 7.}, {80, -1.0, 7.}}}, true},
                               {"h3_jet_pt_part_jet_ntracks_part_jet_ntracks", "#it{p}_{T,jet}^{part} (GeV/#it{c}); N_{jet tracks}^{part}; N_{jet tracks}", {HistType::kTH3F, {{200, 0.0, 200}, {100, -0.5, 99.5}, {100, -0.5, 99.5}}}, true},
                               {"h2_jet_pt_part_jet_pt_diff", "#it{p}_{T,jet}^{part} (GeV/#it{c}); (#it{p}_{T,jet}^{part} (GeV/#it{c}) - #it{p}_{T,jet} (GeV/#it{c})) / #it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {1000, -5.0, 5.0}}}, true},
-                              {"h_collision_eventweight_part", "event weight;event weight;entries", {HistType::kTH1F, {weightAxis}}},
-                              {"h_collision_trigger_events", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}}},
+                              {"h_collision_trigger_events", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}}, true},
                               {"h_track_pt_MB", "track pT for MB events;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0.0, 200.0}}}, true},
                               {"h_track_eta_MB", "track #eta for MB events;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}, true},
                               {"h_track_phi_MB", "track #phi for MB events;#phi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}, true},
                               {"h_track_pt_Triggered", "track pT for Triggered events;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0.0, 200.0}}}, true},
                               {"h_track_eta_Triggered", "track #eta for Triggered events;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}, true},
-                              {"h_track_phi_Triggered", "track #phi for Triggered events;#phi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}, true}}};
+                              {"h_track_phi_Triggered", "track #phi for Triggered events;#phi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}, true},
+                              {"h_collision_eventweight_part", "event weight;event weight;entries", {HistType::kTH1F, {weightAxis}}}}};
 
   Configurable<float> triggeredJetsRadius{"triggeredJetsRadius", 0.6, "resolution parameter for triggered jets"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-  Configurable<std::vector<double>> jetRadii{"jetRadii", {0.2, 0.3, 0.4, 0.5, 0.6}, "jet resolution parameters"};
+  Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.2, 0.3, 0.4, 0.5, 0.6}, "jet resolution parameters"};
   Configurable<float> etaMin{"etaMin", -0.9, "minimum eta acceptance"};
   Configurable<float> etaMax{"etaMax", 0.9, "maximum eta acceptance"};
 
   void init(o2::framework::InitContext&)
   {
     auto jetRadiiBins = (std::vector<double>)jetRadii;
-    registry.add("h3_jet_radius_jet_pt_collision", "jet radius;#it{p}_{T,jet} (GeV/#it{c});collision trigger status", {HistType::kTH3F, {{jetRadiiBins}, {200, 0., 200.}, {2, 0.0, 2.0}}});
-    registry.add("h3_jet_radius_jet_eta_collision", "jet radius;#eta_{jet};collision trigger status", {HistType::kTH3F, {{jetRadiiBins}, {100, -1.0, 1.0}, {2, 0.0, 2.0}}});
-    registry.add("h3_jet_radius_jet_phi_collision", "jet radius;#phi_{jet};collision trigger status", {HistType::kTH3F, {{jetRadiiBins}, {80, -1.0, 7.}, {2, 0.0, 2.0}}});
-    registry.add("h2_jet_radius_jet_pT_triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{jetRadiiBins}, {200, 0., 200.}}});
-    registry.add("h3_jet_radius_jet_pt_track_pt_MB", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins}, {200, 0., 200.}, {200, 0., 200.}}});
-    registry.add("h3_jet_radius_jet_pt_track_eta_MB", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins}, {200, 0., 200.}, {100, -1.0, 1.0}}});
-    registry.add("h3_jet_radius_jet_pt_track_phi_MB", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins}, {200, 0., 200.}, {80, -1.0, 7.}}});
-    registry.add("h3_jet_radius_jet_pt_track_pt_Triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins}, {200, 0., 200.}, {200, 0., 200.}}});
-    registry.add("h3_jet_radius_jet_pt_track_eta_Triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins}, {200, 0., 200.}, {100, -1.0, 1.0}}});
-    registry.add("h3_jet_radius_jet_pt_track_phi_Triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins}, {200, 0., 200.}, {80, -1.0, 7.}}});
+    registry.add("h3_jet_radius_jet_pt_collision", "jet radius;#it{p}_{T,jet} (GeV/#it{c});collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {2, 0.0, 2.0}}});
+    registry.add("h3_jet_radius_jet_eta_collision", "jet radius;#eta_{jet};collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {100, -1.0, 1.0}, {2, 0.0, 2.0}}});
+    registry.add("h3_jet_radius_jet_phi_collision", "jet radius;#phi_{jet};collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {80, -1.0, 7.}, {2, 0.0, 2.0}}});
+    registry.add("h2_jet_radius_jet_pT_triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{jetRadiiBins, ""}, {200, 0., 200.}}});
+    registry.add("h3_jet_radius_jet_pt_track_pt_MB", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {200, 0., 200.}}});
+    registry.add("h3_jet_radius_jet_pt_track_eta_MB", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
+    registry.add("h3_jet_radius_jet_pt_track_phi_MB", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
+    registry.add("h3_jet_radius_jet_pt_track_pt_Triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {200, 0., 200.}}});
+    registry.add("h3_jet_radius_jet_pt_track_eta_Triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
+    registry.add("h3_jet_radius_jet_pt_track_phi_Triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
   }
 
   using JetTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
-
-  Filter jetRadiusSelection = o2::aod::jet::r == nround(triggeredJetsRadius.node() * 100.0f);
 
   template <typename T>
   void fillHistograms(T const& jet, float weight = 1.0)
@@ -260,10 +258,6 @@ struct JetFinderQATask {
   {
 
     registry.fill(HIST("h_collision_eventweight_part"), collision.weight());
-    registry.fill(HIST("h_collision_eventweight_part"), 0.000000003);
-    registry.fill(HIST("h_collision_eventweight_part"), 0.0000003);
-    registry.fill(HIST("h_collision_eventweight_part"), 0.0003);
-    registry.fill(HIST("h_collision_eventweight_part"), 0.03);
   }
   PROCESS_SWITCH(JetFinderQATask, processMCCollisionsWeighted, "collision QA for weighted events", false);
 
