@@ -114,10 +114,6 @@ struct cascpostprocessing {
   Configurable<bool> hastof{"hastof", 0, "Apply nsigmaTOF to daughter tracks of cascade"};
   Configurable<float> ptthrtof{"ptthrtof", 2, "NsigmaTOF selection is only applied if the track has pt larger than ptthr"};
 
-  // Event selection criteria
-  Configurable<float> cutzvertex{"cutzvertex", 15.0f, "Accepted z-vertex range (cm)"};
-  Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
-
   // Selection criteria
   Configurable<float> minpt{"minpt", 0.0, "Min p_{T} (GeV/c)"};
   Configurable<float> rap{"rap", 0.5, "Rapidity"};

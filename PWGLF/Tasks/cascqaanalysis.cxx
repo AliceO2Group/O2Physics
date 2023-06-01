@@ -393,8 +393,9 @@ struct cascqaanalysis {
     registry.fill(HIST("hNEventsMC"), 1.5);
 
     for (const auto& mcParticle : mcParticles) {
+      if (mcParticle.isPhysicalPrimary() == 0) continue; // Consider only primaries
       if (mcParticle.pdgCode() == -3312){
-        registry.fill(HIST("hPtXiPlusTrue"), mcParticle.pt(), mcParticle.y(), 0);
+        registry.fill(HIST("hPtXiPlusTrue"), mcParticle.pt(), mcParticle.y(), 0); // MB will be used for the efficiency
       }
       if (mcParticle.pdgCode() == 3312){
         registry.fill(HIST("hPtXiMinusTrue"), mcParticle.pt(), mcParticle.y(), 0);
