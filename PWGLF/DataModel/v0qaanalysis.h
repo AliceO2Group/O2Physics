@@ -85,4 +85,4 @@ DECLARE_SOA_TABLE(MyV0Candidates, "AOD", "MYV0CANDIDATES", o2::soa::Index<>,
 
 } // namespace o2::aod
 
-#endif
+#endif  // PWGLF_DATAMODEL_V0QAANALYSIS_H_
