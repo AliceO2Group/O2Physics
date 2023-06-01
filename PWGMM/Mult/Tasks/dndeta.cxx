@@ -240,6 +240,7 @@ struct MultiplicityCounter {
       registry.add({"Tracks/Control/PtEfficiencyI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyISecondaries", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtEfficiencyISecondariesNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/Mask", " ; bit", {HistType::kTH1F, {{17, -0.5, 16.5}}}});
       registry.add({"Tracks/Control/ITSClusters", " ; layer", {HistType::kTH1F, {{8, 0.5, 8.5}}}});
     }
@@ -334,7 +335,7 @@ struct MultiplicityCounter {
 
   expressions::Filter atrackFilter = (aod::track::bestCollisionId >= 0) &&
                                      (nabs(aod::track::bestDCAZ) <= 2.f) &&
-                                     (nabs(aod::track::bestDCAXY) <= ((0.0105f + 0.0350f / npow(aod::track::pts, 1.1f))));
+                                     (nabs(aod::track::bestDCAXY) <= ((0.004f + 0.013f / npow(aod::track::pts, 1.1f))));
 
   using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   using FiTracks = soa::Filtered<ExTracks>;
@@ -556,7 +557,10 @@ struct MultiplicityCounter {
             }
           }
           if (counter > 1) {
-            registry.fill(HIST("Tracks/Control/PtEfficiencyISecondaries"), particle.pt());
+            registry.fill(HIST("Tracks/Control/PtEfficiencyISecondariesNoEtaCut"), particle.pt());
+            if (std::abs(track.eta()) < estimatorEta) {
+              registry.fill(HIST("Tracks/Control/PtEfficiencyISecondaries"), particle.pt());
+            }
           }
         }
         if (counter > 1) {

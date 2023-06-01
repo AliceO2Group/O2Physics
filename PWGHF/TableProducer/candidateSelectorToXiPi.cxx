@@ -143,7 +143,7 @@ struct HfCandidateSelectorToXiPi {
   OutputObj<TH1F> hSelNCrossRowsTPCPiFromLam{TH1F("hSelNCrossRowsTPCPiFromLam", "hSelNCrossRowsTPCPiFromLam;status;entries", 5, 0., 5.)};
   OutputObj<TH1F> hSelNCrossRowsTPCPrFromLam{TH1F("hSelNCrossRowsTPCPrFromLam", "hSelNCrossRowsTPCPrFromLam;status;entries", 5, 0., 5.)};
   OutputObj<TH1F> hSelNCrossRowsTPCPiFromCasc{TH1F("hSelNCrossRowsTPCPiFromCasc", "hSelNCrossRowsTPCPiFromCasc;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelCrossRowsOverFindClsTPCPiFromOme{TH1F("hSelCrossRowsOverFindClsTPCPiFromOme", "hSelCrossRowsOverFindClsTPCPiFromOme;status;entries", 5, 0., 5.)};
+  OutputObj<TH1F> hSelCrossRowsOverFindClsTPCAllTracks{TH1F("hSelCrossRowsOverFindClsTPCAllTracks", "hSelCrossRowsOverFindClsTPCAllTracks;status;entries", 10, 0., 10.)};
   OutputObj<TH1F> hSelNClsITSPiFromOme{TH1F("hSelNClsITSPiFromOme", "hSelNClsITSPiFromOme;status;entries", 5, 0., 5.)};
   OutputObj<TH1F> hSelNClsITSInnerPiFromOme{TH1F("hSelNClsITSInnerPiFromOme", "hSelNClsITSInnerPiFromOme;status;entries", 5, 0., 5.)};
   OutputObj<TH1F> hSelMassLam{TH1F("hSelMassLam", "hSelMassLam;status;entries", 5, 0., 5.)};
@@ -292,13 +292,13 @@ struct HfCandidateSelectorToXiPi {
       }
 
       // cut on cascade dcaXY and dcaZ
-      if ((candidate.impactParCascXY() < impactParameterXYCascMin) || (candidate.impactParCascXY() > impactParameterXYCascMax)) {
+      if ((std::abs(candidate.impactParCascXY()) < impactParameterXYCascMin) || (std::abs(candidate.impactParCascXY()) > impactParameterXYCascMax)) {
         resultSelections = false;
         hSelDCAXYCasc->Fill(0);
       } else {
         hSelDCAXYCasc->Fill(1);
       }
-      if ((candidate.impactParCascZ() < impactParameterZCascMin) || (candidate.impactParCascZ() > impactParameterZCascMax)) {
+      if ((std::abs(candidate.impactParCascZ()) < impactParameterZCascMin) || (std::abs(candidate.impactParCascZ()) > impactParameterZCascMax)) {
         resultSelections = false;
         hSelDCAZCasc->Fill(0);
       } else {
@@ -376,9 +376,27 @@ struct HfCandidateSelectorToXiPi {
       // further TPC selectiion
       if (trackPiFromOmeg.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
         resultSelections = false;
-        hSelCrossRowsOverFindClsTPCPiFromOme->Fill(0);
+        hSelCrossRowsOverFindClsTPCAllTracks->Fill(0);
       } else {
-        hSelCrossRowsOverFindClsTPCPiFromOme->Fill(1);
+        hSelCrossRowsOverFindClsTPCAllTracks->Fill(1);
+      }
+      if (trackPiFromCasc.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
+        resultSelections = false;
+        hSelCrossRowsOverFindClsTPCAllTracks->Fill(2);
+      } else {
+        hSelCrossRowsOverFindClsTPCAllTracks->Fill(3);
+      }
+      if (trackPiFromLam.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
+        resultSelections = false;
+        hSelCrossRowsOverFindClsTPCAllTracks->Fill(4);
+      } else {
+        hSelCrossRowsOverFindClsTPCAllTracks->Fill(5);
+      }
+      if (trackPrFromLam.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
+        resultSelections = false;
+        hSelCrossRowsOverFindClsTPCAllTracks->Fill(6);
+      } else {
+        hSelCrossRowsOverFindClsTPCAllTracks->Fill(7);
       }
 
       //  ITS clusters selection

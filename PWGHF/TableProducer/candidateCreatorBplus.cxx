@@ -89,7 +89,7 @@ struct HfCandidateCreatorBplus {
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   OutputObj<TH1F> hRapidityD0{TH1F("hRapidityD0", "D0 candidates;#it{y};entries", 100, -2, 2)};
-  OutputObj<TH1F> hEtaPi{TH1F("hEtaPi", "Pion track;#it{#eta};entries", 400, 2, 2)};
+  OutputObj<TH1F> hEtaPi{TH1F("hEtaPi", "Pion track;#it{#eta};entries", 400, -2., 2.)};
   OutputObj<TH1F> hMassBplusToD0Pi{TH1F("hMassBplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #bar{D^{0}}#pi^{+}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
 
   void init(InitContext const&)
@@ -177,9 +177,6 @@ struct HfCandidateCreatorBplus {
 
       // loop over pairs of track indices
       for (const auto& candD0 : candsDThisColl) {
-        // hMassDToPiKPi->Fill(invMassDplusToPiKPi(candD0), candD0.pt());
-        // hPtD->Fill(candD0.pt());
-        // hCPAD->Fill(candD0.cpa());
 
         if (!TESTBIT(candD0.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           continue;

@@ -102,6 +102,8 @@ struct femtoDreamProducerTask {
   Configurable<bool> ConfIsMC{"ConfIsMC", false,
                               "Running on MC; implemented only for Run3"};
 
+  Configurable<bool> ConfForceGRP{"ConfForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
+
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
   Configurable<bool> ConfUseTPCmult{"ConfUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
@@ -264,49 +266,37 @@ struct femtoDreamProducerTask {
     ccdb->setCreatedNotAfter(now);
   }
 
-  /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it
-  /// directly to T
+  /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
   void getMagneticFieldTesla(aod::BCsWithTimestamps::iterator bc)
   {
-    // TODO done only once (and not per run). Will be replaced by
-    // CCDBConfigurable get magnetic field for run
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    // get magnetic field for run
     if (mRunNumber == bc.runNumber())
       return;
     auto timestamp = bc.timestamp();
     float output = -999;
 
-    if (ConfIsRun3 && !ConfIsMC) {
+    if (ConfIsRun3 && !ConfForceGRP) {
       static o2::parameters::GRPMagField* grpo = nullptr;
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
       if (grpo == nullptr) {
-        grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(
-          "GLO/Config/GRPMagField", timestamp);
-        if (grpo == nullptr) {
-          LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-          return;
-        }
-        LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp,
-             grpo->getL3Current());
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return;
       }
-      // taken from GRP onject definition of getNominalL3Field; update later to
-      // something smarter (mNominalL3Field = std::lround(5.f * mL3Current /
-      // 30000.f);)
+      LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
+      // taken from GRP onject definition of getNominalL3Field; update later to something smarter (mNominalL3Field = std::lround(5.f * mL3Current / 30000.f);)
       auto NominalL3Field = std::lround(5.f * grpo->getL3Current() / 30000.f);
       output = 0.1 * (NominalL3Field);
-    }
 
-    if (!ConfIsRun3 || (ConfIsRun3 && ConfIsMC)) {
+    } else {
+
       static o2::parameters::GRPObject* grpo = nullptr;
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
       if (grpo == nullptr) {
-        grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP",
-                                                                timestamp);
-        if (grpo == nullptr) {
-          LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-          return;
-        }
-        LOGF(info,
-             "Retrieved GRP for timestamp %llu with magnetic field of %d kG",
-             timestamp, grpo->getNominalL3Field());
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return;
       }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
       output = 0.1 * (grpo->getNominalL3Field());
     }
     mMagField = output;
@@ -349,12 +339,19 @@ struct femtoDreamProducerTask {
       int particleOrigin = 99;
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
 
-      if (particleMC.isPhysicalPrimary()) {
-        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
-      } else if (motherparticleMC.producedByGenerator()) {
-        particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+      if (abs(pdgCode) == abs(ConfPDGCodeTrack.value)) {
+
+        if (particleMC.isPhysicalPrimary()) {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
+        } else if (motherparticleMC.producedByGenerator()) {
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+        } else {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+        }
+
       } else {
-        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+
+        particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
       }
 
       outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());

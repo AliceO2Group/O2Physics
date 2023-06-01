@@ -12,9 +12,10 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 
-#ifndef O2_Analysis_ReducedInfoTables_H_
-#define O2_Analysis_ReducedInfoTables_H_
+#ifndef PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
+#define PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
 
+#include <cmath>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Centrality.h"
@@ -22,7 +23,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "MathUtils/Utils.h"
-#include <cmath>
 
 namespace o2::aod
 {
@@ -390,6 +390,11 @@ DECLARE_SOA_COLUMN(Vt2, vt2, float); //! Production vertex time
 DECLARE_SOA_COLUMN(IsAmbig1, isAmbig1, int); //!
 DECLARE_SOA_COLUMN(IsAmbig2, isAmbig2, int); //!
 
+DECLARE_SOA_COLUMN(FwdDcaX1, fwdDcaX1, float); //! X component of forward DCA
+DECLARE_SOA_COLUMN(FwdDcaY1, fwdDcaY1, float); //! Y component of forward DCA
+DECLARE_SOA_COLUMN(FwdDcaX2, fwdDcaX2, float); //! X component of forward DCA
+DECLARE_SOA_COLUMN(FwdDcaY2, fwdDcaY2, float); //! Y component of forward DCA
+
 } // namespace dilepton_track_index
 
 // pair information
@@ -451,7 +456,7 @@ DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
                   reducedpair::Cos3DeltaPhi);
 
 DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
-                  collision::PosX, collision::PosY, collision::PosZ,
+                  collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib, dilepton_track_index::FwdDcaX1, dilepton_track_index::FwdDcaY1, dilepton_track_index::FwdDcaX2, dilepton_track_index::FwdDcaY2,
                   reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
                   reducedpair::Mass,
                   reducedpair::McDecision,
@@ -522,4 +527,4 @@ DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint8_t); //!
 DECLARE_SOA_TABLE(DalitzBits, "AOD", "DALITZBITS", DalBits::DALITZBits);
 } // namespace o2::aod
 
-#endif // O2_Analysis_ReducedInfoTables_H_
+#endif // PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_

@@ -65,6 +65,8 @@ DECLARE_SOA_COLUMN(V0MLambda, v0MLambda, float);
 DECLARE_SOA_COLUMN(V0MAntiLambda, v0MAntiLambda, float);
 DECLARE_SOA_COLUMN(V0MK0Short, v0MK0Short, float);
 DECLARE_SOA_COLUMN(V0MGamma, v0MGamma, float);
+DECLARE_SOA_COLUMN(V0CtK0Short, v0CtK0Short, float);
+DECLARE_SOA_COLUMN(V0CtLambda, v0CtLambda, float);
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
@@ -115,6 +117,8 @@ DECLARE_SOA_TABLE(HfCandCascFull, "AOD", "HFCANDCASCFull",
                   full::V0MAntiLambda,
                   full::V0MK0Short,
                   full::V0MGamma,
+                  full::V0CtK0Short,
+                  full::V0CtLambda,
                   v0data::DCAV0Daughters,
                   v0data::PxPos,
                   v0data::PyPos,
@@ -216,6 +220,8 @@ struct HfTreeCreatorLcToK0sP {
       candidate.mAntiLambda(),
       candidate.mK0Short(),
       candidate.mGamma(),
+      o2::aod::hf_cand_casc::ctV0K0s(candidate),
+      o2::aod::hf_cand_casc::ctV0Lambda(candidate),
       candidate.dcaV0daughters(),
       candidate.pxpos(),
       candidate.pypos(),

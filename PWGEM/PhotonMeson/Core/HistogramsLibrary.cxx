@@ -109,9 +109,10 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
 
     if (TString(subGroup) == "PHOS") {
-      list->Add(new TH2F("hEvsNcell", "E_{cluster} vs. M02;E_{cluster} (GeV);N_{cell}", 200, 0, 20, 51, -0.5, 50.5f));
+      list->Add(new TH2F("hEvsNcell", "E_{cluster} vs. N_{cell};E_{cluster} (GeV);N_{cell}", 200, 0, 20, 51, -0.5, 50.5f));
       list->Add(new TH2F("hEvsM02", "E_{cluster} vs. M02;E_{cluster} (GeV);M02 (cm)", 200, 0, 20, 100, 0, 10));
       list->Add(new TH2F("hEvsM20", "E_{cluster} vs. M20;E_{cluster} (GeV);M20 (cm)", 200, 0, 20, 100, 0, 10));
+      list->Add(new TH1F("hDistToBC", "distance to bad channel", 100, 0, 10));
 
       const int nmod = 4;
       for (int i = 1; i <= nmod; i++) {
