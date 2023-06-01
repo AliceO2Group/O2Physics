@@ -11,7 +11,7 @@
 
 /// \file taskXic.cxx
 /// \brief Ξc± analysis task
-/// \note Inspired from taskLc.cxx and SigmaC.cxx 
+/// \note Inspired from taskLc.cxx and SigmaC.cxx
 ///
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 /// \author Anton Alkin <anton.alkin@cern.ch>, CERN
@@ -40,10 +40,10 @@ struct HfTaskXic {
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 0.0025, "max. DCAxy for track"};
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 0.0025, "max. DCAz for track"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_p_k_pi::vecBinsPt}, "pT bin limits"};
- 
+
   float etaMaxAcceptance = 0.8;
   float ptMinAcceptance = 0.1;
-  
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> selectedMCXicCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
@@ -51,20 +51,20 @@ struct HfTaskXic {
   HistogramRegistry registry{
     "registry", // histo not in pt bins
     {
-      {"Data/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},   // pt Xic
-      {"Data/hEta", "3-prong candidates;candidate #it{eta};entries", {HistType::kTH1F, {{100, -5., 5.}}}},                 // eta Xic
-      {"Data/hPhi", "3-prong candidates;candidate #varphi;entries", {HistType::kTH1F, {{72, 0., constants::math::TwoPI}}}},// phi Xic
-      {"Data/hMass", "3-prong candidates; inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1F, {{600, 2.18, 2.58}}}},  // mass Xic
+      {"Data/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},    // pt Xic
+      {"Data/hEta", "3-prong candidates;candidate #it{eta};entries", {HistType::kTH1F, {{100, -5., 5.}}}},                  // eta Xic
+      {"Data/hPhi", "3-prong candidates;candidate #varphi;entries", {HistType::kTH1F, {{72, 0., constants::math::TwoPI}}}}, // phi Xic
+      {"Data/hMass", "3-prong candidates; inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1F, {{600, 2.18, 2.58}}}},   // mass Xic
       {"Data/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{1000, 0., 1000.}}}},
 
-      {"MC/reconstructed/signal/hPtRecSig", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},                    // pt Xic
+      {"MC/reconstructed/signal/hPtRecSig", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}}, // pt Xic
       {"MC/reconstructed/background/hPtRecBg", "3-prong candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
       {"MC/generated/hPtGen", "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
       {"MC/generated/hPtGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance); #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
       {"MC/generated/hEtaGen", "MC particles; #it{eta}^{gen} ;#it{p}_{T}^{gen.};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
       {"MC/generated/hYGen", "MC particles;  #it{y}^{gen} ;#it{p}_{T}^{gen.} ;entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      //add generated in acceptance!!
-      
+      // add generated in acceptance!!
+
     }};
 
   void init(o2::framework::InitContext&)
@@ -123,12 +123,11 @@ struct HfTaskXic {
     registry.add("Data/hPVsTOFNSigmaPi_Prong2", "3-prong candidates;#it{p} bachelor (GeV/#it{c}) ;n#it{#sigma}_{#pi} TOF", {HistType::kTH2F, {axisPPid, axisNSigmaPi}});
     registry.add("Data/hPVsTOFNSigmaKa_Prong2", "3-prong candidates;#it{p} bachelor (GeV/#it{c}) ;n#it{#sigma}_{K} TOF", {HistType::kTH2F, {axisPPid, axisNSigmaKa}});
 
+    // MC generated
+    registry.add("MC/generated/hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/generated/hEtaGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
 
- //MC generated
-    registry.add("MC/generated/hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, - 2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/generated/hEtaGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{#eta}^{gen};entries", {HistType::kTH2F,{{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-
-//MC reconstructed:signal
+    // MC reconstructed:signal
     registry.add("MC/reconstructed/signal/hMassSig", "Invariant mass (matched);m (p K #pi) (GeV/#it{c}^{2});;entries", {HistType::kTH2F, {{500, 1.6, 3.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hDecLengthRecSig", "3-prong candidates;decay length (cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hDecLengtXYRecSig", "3-prong candidates;decay length XY (cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -147,7 +146,7 @@ struct HfTaskXic {
     registry.add("MC/reconstructed/signal/hPtProng2RecSig", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hChi2PCARecSig", "3-prong candidates;prong Chi2PCA to sec.  vertex (cm);; entries", {HistType::kTH2F, {{100, 0, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
-    //background
+    // background
     registry.add("MC/reconstructed/background/hMassBg", "Invariant mass (unmatched);m (p K #pi) (GeV/#it{c}^{2});;entries", {HistType::kTH2F, {{500, 1.6, 3.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hDecLengthRecBg", "3-prong candidates;decay length (cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hDecLengtXYRecBg", "3-prong candidates;decay length xy(cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -164,7 +163,7 @@ struct HfTaskXic {
     registry.add("MC/reconstructed/background/hPtProng0RecBg", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hPtProng1RecBg", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hPtProng2RecBg", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/background/hChi2PCARecBg", "3-prong candidates;prong    Chi2PCA to sec.  vertex (cm);; entries", {HistType::kTH2F, {{100, 0, 0.5}, {vbins,  "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/reconstructed/background/hChi2PCARecBg", "3-prong candidates;prong    Chi2PCA to sec.  vertex (cm);; entries", {HistType::kTH2F, {{100, 0, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
   /// Selection of Xic daughters in geometrical acceptanc
@@ -177,18 +176,16 @@ struct HfTaskXic {
     return std::abs(etaProng) <= etaMaxAcceptance && ptProng >= ptMinAcceptance;
   }
 
-
-
   void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA> const& tracks, soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& candidates, aod::BigTracksPID const&)
   {
     int nTracks = 0;
 
     if (collision.numContrib() > 1) {
       for (auto const& track : tracks) {
-        if (std::abs(track.eta()) > etaTrackMax) { 
+        if (std::abs(track.eta()) > etaTrackMax) {
           continue;
         }
-        if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) { 
+        if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
           continue;
         }
         nTracks++;
@@ -205,7 +202,7 @@ struct HfTaskXic {
       if (yCandMax >= 0. && std::abs(yXic(candidate)) > yCandMax) {
         continue;
       }
- 
+
       if (candidate.isSelXicToPKPi() >= selectionFlagXic) { // pKpi
         registry.fill(HIST("Data/hMassVsPt"), invMassXicToPKPi(candidate), ptCandidate);
         registry.fill(HIST("Data/hMass"), invMassXicToPKPi(candidate));
@@ -237,7 +234,7 @@ struct HfTaskXic {
       registry.fill(HIST("Data/hDecLenErr"), candidate.errorDecayLength(), ptCandidate);
       registry.fill(HIST("Data/hChi2PCA"), candidate.chi2PCA(), ptCandidate);
 
-      //PID histos
+      // PID histos
       const auto& trackProng0 = candidate.prong0_as<aod::BigTracksPID>(); // bachelor track
       const auto& trackProng1 = candidate.prong1_as<aod::BigTracksPID>(); // bachelor track
       const auto& trackProng2 = candidate.prong2_as<aod::BigTracksPID>(); // bachelor track
@@ -339,7 +336,7 @@ struct HfTaskXic {
 
         registry.fill(HIST("MC/reconstructed/background/hDecLengthRecBg"), candidate.decayLength(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hDecLengthXYRecSig"), candidate.decayLengthXY(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/background/hNormalisedDecayLengthXYRecBg"),candidate.decayLengthXYNormalised(), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/background/hNormalisedDecayLengthXYRecBg"), candidate.decayLengthXYNormalised(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hPtProng0RecBg"), candidate.ptProng0(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hPtProng1RecBg"), candidate.ptProng1(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hPtProng2RecBg"), candidate.ptProng2(), ptCandidate);
@@ -358,7 +355,7 @@ struct HfTaskXic {
     // MC gen.
     for (auto const& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XicToPKPi) {
-          auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
           continue;
         }
@@ -370,7 +367,7 @@ struct HfTaskXic {
         for (auto const& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(array{daught.px(), daught.py(), daught. pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
           counter++;
         }
 
