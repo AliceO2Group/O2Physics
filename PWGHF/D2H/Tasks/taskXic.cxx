@@ -51,17 +51,20 @@ struct HfTaskXic {
   HistogramRegistry registry{
     "registry", // histo not in pt bins
     {
-      {"Data/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},    // pt Xic
-      {"Data/hEta", "3-prong candidates;candidate #it{eta};entries", {HistType::kTH1F, {{100, -5., 5.}}}},                  // eta Xic
-      {"Data/hPhi", "3-prong candidates;candidate #varphi;entries", {HistType::kTH1F, {{72, 0., constants::math::TwoPI}}}}, // phi Xic
-      {"Data/hMass", "3-prong candidates; inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1F, {{600, 2.18, 2.58}}}},   // mass Xic
+      {"Data/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},   // pt Xic
+      {"Data/hEta", "3-prong candidates;candidate #it{eta};entries", {HistType::kTH1F, {{100, -5., 5.}}}},                 // eta Xic
+      {"Data/hPhi", "3-prong candidates;candidate #varphi;entries", {HistType::kTH1F, {{72, 0., constants::math::TwoPI}}}},// phi Xic
+      {"Data/hMass", "3-prong candidates; inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1F, {{600, 2.18, 2.58}}}},  // mass Xic
       {"Data/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{1000, 0., 1000.}}}},
 
-      {"MC/reconstructed/signal/hMassRecSig", "3-prong candidates (matched, prompt); inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1F, {{600, 2.18, 2.58}}}}, // mass Xic
       {"MC/reconstructed/signal/hPtRecSig", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},                    // pt Xic
       {"MC/reconstructed/background/hPtRecBg", "3-prong candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
       {"MC/generated/hPtGen", "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
       {"MC/generated/hPtGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance); #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
+      {"MC/generated/hEtaGen", "MC particles; #it{eta}^{gen} ;#it{p}_{T}^{gen.};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"MC/generated/hYGen", "MC particles;  #it{y}^{gen} ;#it{p}_{T}^{gen.} ;entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      //add generated in acceptance!!
+      
     }};
 
   void init(o2::framework::InitContext&)
@@ -122,8 +125,6 @@ struct HfTaskXic {
 
 
  //MC generated
-    registry.add("MC/generated/hEtaGen", "3-prong candidates;candidate #it{#eta};;entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/generated/hYGen", "3-prong candidates;candidate #it{y};;entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/generated/hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, - 2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/generated/hEtaGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{#eta}^{gen};entries", {HistType::kTH2F,{{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
 
@@ -138,9 +139,9 @@ struct HfTaskXic {
     registry.add("MC/reconstructed/signal/hCtRecSig", "3-prong candidates;proper lifetime (#Xi_{c}) * #it{c} (cm);;entries", {HistType::kTH2F, {{120, -20., 100.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hCPARecSig", "3-prong candidates;cosine of pointing angle;;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hCPAXYRecSig", "3-prong candidates;cosine of pointing angle XY;;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/reconstructed/signal/hEtaRecSig", "3-prong candidates;candidate #it{#eta};;entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hImpParErrSig", "3-prong candidates;impact parameter error (cm);;entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hDecLenErrSig", "3-prong candidates;decay length error (cm);;entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hEtaRecSig", "3-prong candidates;candidate #it{#eta};;entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hPtProng0RecSig", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hPtProng1RecSig", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hPtProng2RecSig", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -157,13 +158,13 @@ struct HfTaskXic {
     registry.add("MC/reconstructed/background/hCtRecBg", "3-prong candidates;proper lifetime (#Xi_{c}) * #it{c} (cm);;entries", {HistType::kTH2F, {{120, -20., 100.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hCPARecBg", "3-prong candidates;cosine of pointing angle;;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hCPAXYRecBg", "3-prong candidates;cosine of pointing angle XY;;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/reconstructed/background/hEtaRecBg", "3-prong candidates;candidate #it{#eta};;entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hImpParErrBg", "3-prong candidates;impact parameter error (cm);;entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hDecLenErrBg", "3-prong candidates;decay length error (cm);;entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/background/hEtaRecBg", "3-prong candidates;candidate #it{#eta};;entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hPtProng0RecBg", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hPtProng1RecBg", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hPtProng2RecBg", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/background/hChi2PCARecBg", "3-prong candidates;prong    Chi2PCA to sec.  vertex (cm);; entries", {HistType::kTH2F, {{100, 0, 0.5}, {vbins,         "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/reconstructed/background/hChi2PCARecBg", "3-prong candidates;prong    Chi2PCA to sec.  vertex (cm);; entries", {HistType::kTH2F, {{100, 0, 0.5}, {vbins,  "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
   /// Selection of Xic daughters in geometrical acceptanc
@@ -230,7 +231,6 @@ struct HfTaskXic {
       registry.fill(HIST("Data/hCPAXY"), candidate.cpaXY(), ptCandidate);
       registry.fill(HIST("Data/hEtaVsPt"), candidate.eta(), ptCandidate);
       registry.fill(HIST("Data/hSelectionStatus"), candidate.isSelXicToPKPi(), ptCandidate);
-      registry.fill(HIST("Data/hSelectionStatus"), candidate.isSelXicToPiKP(), ptCandidate);
       registry.fill(HIST("Data/hImpParErr0"), candidate.errorImpactParameter0(), ptCandidate);
       registry.fill(HIST("Data/hImpParErr1"), candidate.errorImpactParameter1(), ptCandidate);
       registry.fill(HIST("Data/hImpParErr2"), candidate.errorImpactParameter2(), ptCandidate);
@@ -322,10 +322,10 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/signal/hCtRecSig"), ctXic(candidate), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hCPARecSig"), candidate.cpa(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hCPAXYRecSig"), candidate.cpaXY(), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/signal/hEtaRecSig"), candidate.eta(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hImpParErrSig"), candidate.errorImpactParameter0(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hDecLenErrSig"), candidate.errorDecayLength(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hChi2PCAsig"), candidate.chi2PCA(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/signal/hEtaRecSig"), candidate.eta(), ptCandidate);
       } else {
         // Background
         registry.fill(HIST("MC/reconstructed/background/hPtRecBg"), ptCandidate);
@@ -349,10 +349,10 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/background/hCtRecBg"), ctXic(candidate), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hCPARecBg"), candidate.cpa(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hCPAXYRecSig"), candidate.cpaXY(), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/background/hEtaRecBg"), candidate.eta(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hImpParErrSig"), candidate.errorImpactParameter0(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hDecLenErrSig"), candidate.errorDecayLength(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hChi2PCAsig"), candidate.chi2PCA(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/background/hEtaRecBg"), candidate.eta(), ptCandidate);
       }
     }
     // MC gen.
