@@ -671,7 +671,7 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
     }
     if (fgUsedVars[kIsINT8]) {
-      values[kIsINT8] = (event.alias_bit(kINT8) > 0);
+      values[kIsINT8] = (event.sel8() > 0);
     }
     if (fgUsedVars[kIsEMC7]) {
       values[kIsEMC7] = (event.alias_bit(kEMC7) > 0);
