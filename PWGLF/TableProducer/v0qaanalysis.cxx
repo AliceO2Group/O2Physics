@@ -68,7 +68,7 @@ struct v0qaanalysis {
                                                          nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
   void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
-  soa::Filtered<aod::V0Datas> const& V0s, DauTracks const& tracks)
+                   soa::Filtered<aod::V0Datas> const& V0s, DauTracks const& tracks)
   {
     // Event selection
     if (sel8 && !collision.sel8()) {
@@ -196,7 +196,7 @@ struct v0qaanalysis {
 
       if (mcparticle.isPhysicalPrimary() && TMath::Abs(mcparticle.y()) < rapidity) {
         if (mcparticle.pdgCode() == 310)
-          registry.fill(HIST("GeneratedK0Short"), mcparticle.pt() ); // K0s
+          registry.fill(HIST("GeneratedK0Short"), mcparticle.pt()); // K0s
         if (mcparticle.pdgCode() == 3122)
           registry.fill(HIST("GeneratedLambda"), mcparticle.pt()); // Lambda
         if (mcparticle.pdgCode() == -3122)
