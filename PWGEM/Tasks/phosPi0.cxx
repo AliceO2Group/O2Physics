@@ -44,15 +44,15 @@ using namespace o2::framework::expressions;
 
 struct phosPi0 {
 
-  Configurable<float> mMinCluE{"mMinCluE", 0.3, "Minimum cluster energy for analysis"};
+  Configurable<float> mMinCluE{"minCluE", 0.3, "Minimum cluster energy for analysis"};
   Configurable<float> mMinCluTime{"minCluTime", -50.e-9, "Min. cluster time"};
-  Configurable<float> mMaxCluTime{"mMinCluTime", 100.e-9, "Max. cluster time"};
-  Configurable<int> mMinCluNcell{"mMinCluNcell", 2, "min cells in cluster"};
+  Configurable<float> mMaxCluTime{"maxCluTime", 100.e-9, "Max. cluster time"};
+  Configurable<int> mMinCluNcell{"minCluNcell", 2, "min cells in cluster"};
   Configurable<int> mMixedEvents{"mixedEvents", 10, "number of events to mix"};
-  Configurable<bool> mEventSelection{"mEventSelection", true, "to apply event selection"};
-  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
-
+  Configurable<bool> mEventSelection{"eventSelection", true, "to apply event selection"};
+  Configurable<int> mEvSelTrig{"evSelTrig", kTVXinPHOS, "Select events with this trigger"}; // kTVXinPHOS=24 (May2023)
   Configurable<float> mOccE{"minOccE", 0.6, "Minimum cluster energy to fill occupancy"};
+  Configurable<bool> mMC{"isMC", false, "use MC info"};
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -74,16 +74,18 @@ struct phosPi0 {
     const AxisSpec
       bcAxis{3501, -0.5, 3500.5},
       zAxis{56, -63., 63., "z", "z (cm)"},
-      phiAxis{64, -72., 72., "x", "x (cm)"},
+      xAxis{64, -72., 72., "x", "x (cm)"},
       modAxis{4, 1., 5., "module", "Module"},
       amplitudeAxisLarge{100, 0., 20., "amplitude", "Amplutude (GeV)"},
       timeAxisLarge{500, -1500.e-9, 3500.e-9, "celltime", "cell time (ns)"},
       multAxis{100, 0., 100.},
-      mggAxis{250, 0., 1., "mgg", "m_{#gamma#gamma} (GeV/c^{2})"},
+      mggAxis{500, 0., 1., "mgg", "m_{#gamma#gamma} (GeV/c^{2})"},
       vertexAxis{100, -20., 20., "z", "z (cm)"},
       modCombAxis{10, 0., 10.},
       centAxis{10, 0., 10.},
-      centralityAxis{100, 0., 100., "centrality", "centrality"};
+      centralityAxis{100, 0., 100., "centrality", "centrality"},
+      rapidityAxis{50, -1., 1., "y", "rapidity"},
+      phiAxis{100, 0., 3.1415926, "#phi (rad)", "#phi"};
 
     auto h{std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsCol", "Number of events", HistType::kTH1F, {{9, 0., 9.}}))};
     h->GetXaxis()->SetBinLabel(1, "All");
@@ -163,16 +165,46 @@ struct phosPi0 {
     mHistManager.add("mggMiAmbBoth", "inv mass for centrality",
                      HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
 
-    mHistManager.add("cluOcc", "Cluster occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-    mHistManager.add("cluCPVOcc", "Cluster with CPV occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-    mHistManager.add("cluDispOcc", "Cluster with Disp occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-    mHistManager.add("cluBothOcc", "Cluster with Both occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-    mHistManager.add("cluE", "Cluster energy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-    mHistManager.add("ambcluOcc", "Cluster occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-    mHistManager.add("ambcluCPVOcc", "Cluster with CPV occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-    mHistManager.add("ambcluDispOcc", "Cluster with Disp occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-    mHistManager.add("ambcluBothOcc", "Cluster with Both occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-    mHistManager.add("ambcluE", "Cluster energy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
+    mHistManager.add("cluOcc", "Cluster occupancy", HistType::kTH3F, {xAxis, zAxis, modAxis});
+    mHistManager.add("cluCPVOcc", "Cluster with CPV occupancy", HistType::kTH3F, {xAxis, zAxis, modAxis});
+    mHistManager.add("cluDispOcc", "Cluster with Disp occupancy", HistType::kTH3F, {xAxis, zAxis, modAxis});
+    mHistManager.add("cluBothOcc", "Cluster with Both occupancy", HistType::kTH3F, {xAxis, zAxis, modAxis});
+    mHistManager.add("cluE", "Cluster energy", HistType::kTH3F, {xAxis, zAxis, modAxis});
+    mHistManager.add("ambcluOcc", "Cluster occupancy", HistType::kTH3F, {xAxis, zAxis, modAxis});
+    mHistManager.add("ambcluCPVOcc", "Cluster with CPV occupancy", HistType::kTH3F, {xAxis, zAxis, modAxis});
+    mHistManager.add("ambcluDispOcc", "Cluster with Disp occupancy", HistType::kTH3F, {xAxis, zAxis, modAxis});
+    mHistManager.add("ambcluBothOcc", "Cluster with Both occupancy", HistType::kTH3F, {xAxis, zAxis, modAxis});
+    mHistManager.add("ambcluE", "Cluster energy", HistType::kTH3F, {xAxis, zAxis, modAxis});
+
+    if (mMC) { // Monte-Carlo part
+      mHistManager.add("primPi0", "primary pi0",
+                       HistType::kTH2F, {amplitudeAxisLarge, rapidityAxis});
+      mHistManager.add("primPi0phi", "primary pi0",
+                       HistType::kTH1F, {phiAxis});
+      mHistManager.add("primPi0Sp", "primary pi0 spectrum",
+                       HistType::kTH1F, {amplitudeAxisLarge});
+      mHistManager.add("primPi0SpSel", "primary pi0 spectrum in selected events",
+                       HistType::kTH1F, {amplitudeAxisLarge});
+
+      mHistManager.add("primEta", "primary eta",
+                       HistType::kTH2F, {amplitudeAxisLarge, rapidityAxis});
+      mHistManager.add("mggRePi0", "inv mass for centrality",
+                       HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
+      mHistManager.add("mggReEta", "inv mass for centrality",
+                       HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
+      mHistManager.add("mggRePi0CPV", "inv mass for centrality",
+                       HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
+      mHistManager.add("mggReEtaCPV", "inv mass for centrality",
+                       HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
+      mHistManager.add("mggRePi0Disp", "inv mass for centrality",
+                       HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
+      mHistManager.add("mggReEtaDisp", "inv mass for centrality",
+                       HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
+      mHistManager.add("mggRePi0Both", "inv mass for centrality",
+                       HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
+      mHistManager.add("mggReEtaBoth", "inv mass for centrality",
+                       HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
+    }
   }
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
@@ -214,16 +246,16 @@ struct phosPi0 {
         mHistManager.fill(HIST("evBCkTVXinPHOS"), ir.bc);
       }
       mHistManager.fill(HIST("eventsCol"), 0.);
-      if (col.selection_bit(kIsBBT0A) || col.selection_bit(kIsBBT0C)) {
+      if (col.alias_bit(kIsBBT0A) || col.alias_bit(kIsBBT0C)) {
         mHistManager.fill(HIST("eventsCol"), 1);
       }
-      if (col.selection_bit(kIsBBT0A) && col.selection_bit(kIsBBT0C)) {
+      if (col.alias_bit(kIsBBT0A) && col.alias_bit(kIsBBT0C)) {
         mHistManager.fill(HIST("eventsCol"), 2);
       }
-      if (col.selection_bit(kIsBBV0A)) {
+      if (col.alias_bit(kIsBBV0A)) {
         mHistManager.fill(HIST("eventsCol"), 3);
       }
-      if (col.selection_bit(kIsTriggerTVX)) {
+      if (col.alias_bit(kIsTriggerTVX)) {
         mHistManager.fill(HIST("eventsCol"), 4);
       }
       if (col.alias_bit(kTVXinPHOS)) {
@@ -245,7 +277,7 @@ struct phosPi0 {
       if (bc.selection_bit(kIsTriggerTVX)) {
         mHistManager.fill(HIST("eventsBC"), 4);
       }
-      if (bc.alias_bit(kTVXinPHOS)) {
+      if (bc.selection_bit(kTVXinPHOS)) {
         mHistManager.fill(HIST("eventsBC"), 5);
       }
     }
@@ -460,6 +492,351 @@ struct phosPi0 {
       }
     }
   }
+  PROCESS_SWITCH(phosPi0, process, "Process real data", true);
+  //_____________________________________________________________________________
+  /// \brief Process PHOS data
+
+  using ClusterMCs = soa::Join<aod::CaloClusters, aod::PHOSMcLabels>;
+  using ClusterMC = ClusterMCs::iterator;
+  using ClusterAmbMCs = soa::Join<aod::CaloAmbiguousClusters, aod::PHOSAmbMcLabels>;
+  using ClusterAmbMC = ClusterAmbMCs::iterator;
+
+  void processMC(BCsWithBcSels const& bcs,
+                 SelCollisions const& collisions,
+                 ClusterMCs const& clusters,
+                 ClusterAmbMCs const& ambclusters,
+                 aod::McParticles const& mcparticles)
+  {
+
+    // Filll BC map
+    if (fillBCmap && bcs.begin() != bcs.end()) {
+      auto rl = ccdb->getRunDuration(bcs.begin().runNumber());
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", rl.first);
+      std::bitset<nBCsPerOrbit> beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
+      std::bitset<nBCsPerOrbit> beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
+      mbcPatternB = beamPatternA & beamPatternC;
+      mbcPatternA = beamPatternA & ~beamPatternC;
+      mbcPatternC = ~beamPatternA & beamPatternC;
+      for (int i = 0; i < nBCsPerOrbit; i++) {
+        if (mbcPatternB[i])
+          mHistManager.fill(HIST("BCB"), i);
+        if (mbcPatternA[i])
+          mHistManager.fill(HIST("BCA"), i);
+        if (mbcPatternC[i])
+          mHistManager.fill(HIST("BCC"), i);
+      }
+      fillBCmap = false;
+    }
+    o2::InteractionRecord ir;
+    for (const auto& col : collisions) {
+      mHistManager.fill(HIST("contributors"), col.numContrib());
+      mHistManager.fill(HIST("vertex"), col.posZ());
+      ir.setFromLong(col.bc_as<BCsWithBcSels>().globalBC());
+      mHistManager.fill(HIST("cluBCAll"), ir.bc);
+      if (col.alias_bit(kTVXinPHOS)) {
+        mHistManager.fill(HIST("evBCkTVXinPHOS"), ir.bc);
+      }
+      mHistManager.fill(HIST("eventsCol"), 0.);
+      if (col.alias_bit(kIsBBT0A) || col.alias_bit(kIsBBT0C)) {
+        mHistManager.fill(HIST("eventsCol"), 1);
+      }
+      if (col.alias_bit(kIsBBT0A) && col.alias_bit(kIsBBT0C)) {
+        mHistManager.fill(HIST("eventsCol"), 2);
+      }
+      if (col.alias_bit(kIsBBV0A)) {
+        mHistManager.fill(HIST("eventsCol"), 3);
+      }
+      if (col.alias_bit(kIsTriggerTVX)) {
+        mHistManager.fill(HIST("eventsCol"), 4);
+      }
+      if (col.alias_bit(kTVXinPHOS)) {
+        mHistManager.fill(HIST("eventsCol"), 5);
+      }
+    }
+
+    for (const auto& bc : bcs) {
+      mHistManager.fill(HIST("eventsBC"), 0);
+      if (bc.selection_bit(kIsBBT0A) || bc.selection_bit(kIsBBT0C)) {
+        mHistManager.fill(HIST("eventsBC"), 1);
+      }
+      if (bc.selection_bit(kIsBBT0A) && bc.selection_bit(kIsBBT0C)) {
+        mHistManager.fill(HIST("eventsBC"), 2);
+      }
+      if (bc.selection_bit(kIsBBV0A)) {
+        mHistManager.fill(HIST("eventsBC"), 3);
+      }
+      if (bc.selection_bit(kIsTriggerTVX)) {
+        mHistManager.fill(HIST("eventsBC"), 4);
+      }
+      if (bc.selection_bit(kTVXinPHOS)) {
+        mHistManager.fill(HIST("eventsBC"), 5);
+      }
+    }
+
+    // Scan MC particles in all and selected events
+    for (auto& mctrack : mcparticles) {
+      if (pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2) < 1.) { // primary particle
+        if (mctrack.pdgCode() == 111) {
+          mHistManager.fill(HIST("primPi0"), mctrack.pt(), mctrack.y());
+          mHistManager.fill(HIST("primPi0phi"), mctrack.phi());
+          if (abs(mctrack.y()) < 0.5) {
+            mHistManager.fill(HIST("primPi0Sp"), mctrack.pt());
+            if (mctrack.mcCollision_as<SelCollisions>().alias_bit(mEvSelTrig)) {
+              mHistManager.fill(HIST("primPi0SpSel"), mctrack.pt());
+            }
+          }
+        }
+        if (mctrack.pdgCode() == 221) {
+          mHistManager.fill(HIST("primEta"), mctrack.pt(), mctrack.y());
+          mHistManager.fill(HIST("primEtaphi"), mctrack.phi());
+          if (abs(mctrack.y()) < 0.5) {
+            mHistManager.fill(HIST("primEtaSp"), mctrack.pt());
+            if (mctrack.mcCollision_as<SelCollisions>().alias_bit(mEvSelTrig)) {
+              mHistManager.fill(HIST("primEtaSpSel"), mctrack.pt());
+            }
+          }
+        }
+      }
+    }
+
+    uint64_t bcevent = 0;
+    for (const auto& clu : clusters) {
+      if (clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC() != bcevent) { // New BC
+        bcevent = clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC();
+        ir.setFromLong(bcevent);
+        mHistManager.fill(HIST("eventsCol"), 6.);
+        if (clu.collision_as<SelCollisions>().alias_bit(mEvSelTrig)) {
+          mHistManager.fill(HIST("eventsCol"), 7.);
+          if (mbcPatternB[ir.bc]) {
+            mHistManager.fill(HIST("eventsCol"), 8.);
+            mHistManager.fill(HIST("vertex2"), clu.collision_as<SelCollisions>().posZ());
+          }
+        }
+        mHistManager.fill(HIST("cluBCAll2"), ir.bc);
+        if (clu.collision_as<SelCollisions>().alias_bit(kTVXinPHOS)) {
+          mHistManager.fill(HIST("cluBCkTVXinPHOS"), ir.bc);
+        }
+      }
+
+      if (mEventSelection) {
+        if (!clu.collision_as<SelCollisions>().alias_bit(mEvSelTrig) || !mbcPatternB[ir.bc]) {
+          continue;
+        }
+      }
+
+      mHistManager.fill(HIST("cluETime"), clu.e(), clu.time(), clu.mod());
+
+      if (clu.e() < mMinCluE || clu.ncell() < mMinCluNcell ||
+          clu.time() > mMaxCluTime || clu.time() < mMinCluTime) {
+        continue;
+      }
+
+      mHistManager.fill(HIST("cluSp"), clu.e(), clu.mod());
+      if (clu.e() > mOccE) {
+        mHistManager.fill(HIST("cluOcc"), clu.x(), clu.z(), clu.mod());
+        if (clu.trackdist() > 2.) {
+          mHistManager.fill(HIST("cluCPVOcc"), clu.x(), clu.z(), clu.mod());
+          if (TestLambda(clu.e(), clu.m02(), clu.m20())) {
+            mHistManager.fill(HIST("cluBothOcc"), clu.x(), clu.z(), clu.mod());
+          }
+        }
+        if (TestLambda(clu.e(), clu.m02(), clu.m20())) {
+          mHistManager.fill(HIST("cluDispOcc"), clu.x(), clu.z(), clu.mod());
+        }
+        mHistManager.fill(HIST("cluE"), clu.x(), clu.z(), clu.mod(), clu.e());
+      }
+
+      // inv mass
+      auto clu2 = clu;
+      ++clu2;
+      int nMix = mMixedEvents; // Number of events to mix
+      bool skipMix = false;
+      uint64_t bcurrentMix = 0;
+      for (; clu2 != clusters.end() && nMix > 0; clu2++) {
+        if (clu2.e() < mMinCluE || clu2.ncell() < mMinCluNcell ||
+            clu2.time() > mMaxCluTime || clu2.time() < mMinCluTime) {
+          continue;
+        }
+        double m = pow(clu.e() + clu2.e(), 2) - pow(clu.px() + clu2.px(), 2) -
+                   pow(clu.py() + clu2.py(), 2) - pow(clu.pz() + clu2.pz(), 2);
+        if (m > 0) {
+          m = sqrt(m);
+        }
+        double pt = sqrt(pow(clu.px() + clu2.px(), 2) +
+                         pow(clu.py() + clu2.py(), 2));
+        int modComb = ModuleCombination(clu.mod(), clu2.mod());
+        int commonParent = commonParentPdg(clu, clu2, mcparticles);
+
+        if (clu.collision() == clu2.collision()) { // Real
+          mHistManager.fill(HIST("mggRe"), m, pt, modComb);
+          if (commonParent == 111) {
+            mHistManager.fill(HIST("mggRePi0"), m, pt, modComb);
+          }
+          if (commonParent == 221) {
+            mHistManager.fill(HIST("mggReEta"), m, pt, modComb);
+          }
+          if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+            mHistManager.fill(HIST("mggReCPV"), m, pt, modComb);
+            if (commonParent == 111) {
+              mHistManager.fill(HIST("mggReCPVPi0"), m, pt, modComb);
+            }
+            if (commonParent == 221) {
+              mHistManager.fill(HIST("mggReCPVEta"), m, pt, modComb);
+            }
+          }
+          if (TestLambda(clu.e(), clu.m02(), clu.m20()) && TestLambda(clu2.e(), clu2.m02(), clu2.m20())) {
+            mHistManager.fill(HIST("mggReDisp"), m, pt, modComb);
+            if (commonParent == 111) {
+              mHistManager.fill(HIST("mggReDispPi0"), m, pt, modComb);
+            }
+            if (commonParent == 221) {
+              mHistManager.fill(HIST("mggReDispEta"), m, pt, modComb);
+            }
+            if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+              mHistManager.fill(HIST("mggReBoth"), m, pt, modComb);
+              if (commonParent == 111) {
+                mHistManager.fill(HIST("mggReBothPi0"), m, pt, modComb);
+              }
+              if (commonParent == 221) {
+                mHistManager.fill(HIST("mggReBothEta"), m, pt, modComb);
+              }
+            }
+          }
+        } else { // Mixed
+          if (clu2.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC() != bcurrentMix) {
+            bcurrentMix = clu2.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC();
+            o2::InteractionRecord irMix;
+            irMix.setFromLong(bcurrentMix);
+            if (mEventSelection) {
+              skipMix = !clu2.collision_as<SelCollisions>().alias_bit(mEvSelTrig) || !mbcPatternB[irMix.bc];
+            }
+            if (!skipMix) {
+              --nMix;
+            }
+          }
+          if (skipMix) {
+            continue;
+          }
+          mHistManager.fill(HIST("mggMi"), m, pt, modComb);
+          if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+            mHistManager.fill(HIST("mggMiCPV"), m, pt, modComb);
+          }
+          if (TestLambda(clu.e(), clu.m02(), clu.m20()) && TestLambda(clu2.e(), clu2.m02(), clu2.m20())) {
+            mHistManager.fill(HIST("mggMiDisp"), m, pt, modComb);
+            if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+              mHistManager.fill(HIST("mggMiBoth"), m, pt, modComb);
+            }
+          }
+        }
+      }
+    }
+    // }
+
+    // same for amb clusters
+    bcevent = 0;
+    for (const auto& clu : ambclusters) {
+      if (clu.bc_as<BCsWithBcSels>().globalBC() != bcevent) {
+        bcevent = clu.bc_as<BCsWithBcSels>().globalBC();
+        ir.setFromLong(bcevent);
+        mHistManager.fill(HIST("eventsBC"), 6.);
+        if (clu.bc_as<BCsWithBcSels>().selection_bit(mEvSelTrig)) {
+          mHistManager.fill(HIST("eventsBC"), 7.);
+          if (mbcPatternB[ir.bc]) {
+            mHistManager.fill(HIST("eventsBC"), 8.);
+          }
+        }
+        mHistManager.fill(HIST("ambcluBCAll"), ir.bc);
+        if (clu.bc_as<BCsWithBcSels>().selection_bit(kIsTriggerTVX)) {
+          mHistManager.fill(HIST("ambCluBCkTVXinPHOS"), ir.bc);
+        }
+      }
+
+      if (mEventSelection && (!clu.bc_as<BCsWithBcSels>().selection_bit(mEvSelTrig) || !mbcPatternB[ir.bc])) {
+        continue;
+      }
+
+      mHistManager.fill(HIST("ambcluETime"), clu.e(), clu.time(), clu.mod());
+      if (clu.e() < mMinCluE || clu.ncell() < mMinCluNcell ||
+          clu.time() > mMaxCluTime || clu.time() < mMinCluTime) {
+        continue;
+      }
+
+      mHistManager.fill(HIST("ambcluSp"), clu.e(), clu.mod());
+      if (clu.e() > mOccE) {
+        mHistManager.fill(HIST("ambcluOcc"), clu.x(), clu.z(), clu.mod());
+        if (clu.trackdist() > 2.) {
+          mHistManager.fill(HIST("ambcluCPVOcc"), clu.x(), clu.z(), clu.mod());
+          if (TestLambda(clu.e(), clu.m02(), clu.m20())) {
+            mHistManager.fill(HIST("ambcluBothOcc"), clu.x(), clu.z(), clu.mod());
+          }
+        }
+        if (TestLambda(clu.e(), clu.m02(), clu.m20())) {
+          mHistManager.fill(HIST("ambcluDispOcc"), clu.x(), clu.z(), clu.mod());
+        }
+        mHistManager.fill(HIST("ambcluE"), clu.x(), clu.z(), clu.mod(), clu.e());
+      }
+
+      // inv mass
+      auto clu2 = clu;
+      ++clu2;
+      int nMix = mMixedEvents; // Number of events to mix
+      uint64_t bcurrentMix = 0;
+      bool skipMix = false;
+      for (; clu2 != ambclusters.end() && nMix > 0; clu2++) {
+        if (clu2.e() < mMinCluE || clu2.ncell() < mMinCluNcell ||
+            clu2.time() > mMaxCluTime || clu2.time() < mMinCluTime) {
+          continue;
+        }
+        double m = pow(clu.e() + clu2.e(), 2) - pow(clu.px() + clu2.px(), 2) -
+                   pow(clu.py() + clu2.py(), 2) - pow(clu.pz() + clu2.pz(), 2);
+        if (m > 0) {
+          m = sqrt(m);
+        }
+        double pt = sqrt(pow(clu.px() + clu2.px(), 2) +
+                         pow(clu.py() + clu2.py(), 2));
+        int modComb = ModuleCombination(clu.mod(), clu2.mod());
+        if (clu.bc_as<BCsWithBcSels>() == clu2.bc_as<BCsWithBcSels>()) { // Real
+          mHistManager.fill(HIST("mggReAmb"), m, pt, modComb);
+          if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+            mHistManager.fill(HIST("mggReAmbCPV"), m, pt, modComb);
+          }
+          if (TestLambda(clu.e(), clu.m02(), clu.m20()) && TestLambda(clu2.e(), clu2.m02(), clu2.m20())) {
+            mHistManager.fill(HIST("mggReAmbDisp"), m, pt, modComb);
+            if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+              mHistManager.fill(HIST("mggReAmbBoth"), m, pt, modComb);
+            }
+          }
+        } else { // Mixed
+          if (clu2.bc_as<BCsWithBcSels>().globalBC() != bcurrentMix) {
+            bcurrentMix = clu2.bc_as<BCsWithBcSels>().globalBC();
+            o2::InteractionRecord irMix;
+            irMix.setFromLong(bcevent);
+            if (mEventSelection) {
+              skipMix = !clu2.bc_as<BCsWithBcSels>().selection_bit(mEvSelTrig) || !mbcPatternB[irMix.bc];
+            }
+            if (!skipMix) {
+              --nMix;
+            }
+          }
+          if (skipMix) {
+            continue;
+          }
+          mHistManager.fill(HIST("mggMiAmb"), m, pt, modComb);
+          if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+            mHistManager.fill(HIST("mggMiAmbCPV"), m, pt, modComb);
+          }
+          if (TestLambda(clu.e(), clu.m02(), clu.m20()) && TestLambda(clu2.e(), clu2.m02(), clu2.m20())) {
+            mHistManager.fill(HIST("mggMiAmbDisp"), m, pt, modComb);
+            if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
+              mHistManager.fill(HIST("mggMiAmbBoth"), m, pt, modComb);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(phosPi0, processMC, "Process MC data", false);
 
   //_____________________________________________________________________________
   int ModuleCombination(int m1, int m2)
@@ -494,6 +871,25 @@ struct phosPi0 {
              0.5 * (l2 - l2Mean) * (l2 - l2Mean) / l2Sigma / l2Sigma +
              0.5 * c * (l1 - l1Mean) * (l2 - l2Mean) / l1Sigma / l2Sigma <
            4.;
+  }
+
+  //_________________________________________________________________________________________
+  int commonParentPdg(ClusterMC const& p1, ClusterMC const& p2, aod::McParticles const& mcparticles) const
+  {
+    // Looks through parents and finds if there was commont parent among ancestors
+    // int prim1 = p1.McParticleIds();
+    // while (prim1 != -1) {
+    //   int prim2 = p2.McParticleIds();
+    //   while (prim2 != -1) {
+    //     if (prim1 == prim2) {
+    //       auto mother = mcparticles.iteratorAt(prim1);
+    //       return mother.pdgCode();
+    //     }
+    //     prim2 = mcparticles.iteratorAt(prim2).MothersIds()[0];
+    //   }
+    //   prim1 = mcparticles.iteratorAt(prim1).MothersIds()[0];
+    // }
+    return 0;
   }
 };
 

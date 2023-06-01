@@ -57,7 +57,7 @@ struct phosCluQA {
     LOG(info) << "Initializing PHOS Cluster QA monitor task ...";
 
     const o2Axis
-      amplitudeAxisLarge{1000, 0., 10., "amplitude", "Amplutude (GeV)"},
+      amplitudeAxisLarge{200, 0., 20., "amplitude", "Amplutude (GeV)"},
       timeAxisLarge{1000, -1500.e-9, 3500.e-9, "celltime", "cell time (ns)"},
       multAxis{100, 0., 100.},
       mggAxis{250, 0., 1.},
