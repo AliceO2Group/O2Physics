@@ -253,8 +253,8 @@ struct cascpostprocessing {
     registry.add("hCascMinusEtaBach", "hCascMinusEtaBach", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
 
     // Info for eff x acc from MC
-    registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F,  {ptAxis, rapidityAxis, centFT0MAxis}});
-    registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F,  {ptAxis, rapidityAxis, centFT0MAxis}});
+    registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
+    registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
   }
 
   void process(aod::MyCascades const& mycascades)
@@ -426,12 +426,12 @@ struct cascpostprocessing {
 
       if (isXi) {
         isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == 3312) && (candidate.isPrimary() == 1)) ? 1 : 0;
-        if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) < masswintpc){
+        if (TMath::Abs(candidate.massxi() - RecoDecay::getMassPDG(3312)) < masswintpc) {
           isCandidate = 1;
         }
       } else if (!isXi) {
         isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == 3334) && (candidate.isPrimary() == 1)) ? 1 : 0;
-        if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) < masswintpc){
+        if (TMath::Abs(candidate.massomega() - RecoDecay::getMassPDG(3334)) < masswintpc) {
           isCandidate = 1;
         }
       }
@@ -463,7 +463,7 @@ struct cascpostprocessing {
       // registry.fill(HIST("hBachITSHits"), candidate.bachitshits());
 
       if (candidate.sign() < 0) {
-        if(isCorrectlyRec){
+        if (isCorrectlyRec) {
           registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, candidate.multFT0M());
         }
         registry.fill(HIST("hCascMinusInvMassvsPt"), candidate.pt(), invmass);
@@ -471,7 +471,7 @@ struct cascpostprocessing {
         registry.fill(HIST("hCascMinusInvMassvsPt_FV0A"), candidate.multFV0A(), candidate.pt(), invmass);
       }
       if (candidate.sign() > 0) {
-        if(isCorrectlyRec){
+        if (isCorrectlyRec) {
           registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, candidate.multFT0M());
         }
         registry.fill(HIST("hCascPlusInvMassvsPt"), candidate.pt(), invmass);
