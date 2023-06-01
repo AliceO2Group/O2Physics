@@ -197,21 +197,21 @@ struct cascqaanalysis {
   }
 
   template <typename TCollision>
-  bool AcceptEvent(TCollision const& coll, bool isFillEventSelectionQA)
+  bool AcceptEvent(TCollision const& collision, bool isFillEventSelectionQA)
   {
     // Event selection if required
-    if (sel8 && !coll.sel8()) {
+    if (sel8 && !collision.sel8()) {
       return false;
     }
-    if (TMath::Abs(coll.posZ()) > cutzvertex) {
+    if (TMath::Abs(collision.posZ()) > cutzvertex) {
       return false;
     }
 
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hNEvents"), 0.5);
-      registry.fill(HIST("hZCollision"), coll.posZ());
-      registry.fill(HIST("hCentFT0M"), coll.centFT0M());
-      registry.fill(HIST("hCentFV0A"), coll.centFV0A());
+      registry.fill(HIST("hZCollision"), collision.posZ());
+      registry.fill(HIST("hCentFT0M"), collision.centFT0M());
+      registry.fill(HIST("hCentFV0A"), collision.centFV0A());
     }
 
     return true;
