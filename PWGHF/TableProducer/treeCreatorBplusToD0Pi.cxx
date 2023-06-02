@@ -178,7 +178,7 @@ DECLARE_SOA_TABLE(HfCandBplusFullParticles, "AOD", "HFCANDBPFullP",
                   full::Phi,
                   full::Y,
                   full::MCflag,
-                  full::HFGlobalIndex);
+                  full::GlobalIndex);
 
 } // namespace o2::aod
 
