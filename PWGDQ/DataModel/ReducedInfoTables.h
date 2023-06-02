@@ -255,7 +255,6 @@ DECLARE_SOA_TABLE(ReducedTracksBarrelLabels, "AOD", "RTBARRELLABELS", //!
 
 using ReducedTrackBarrelLabel = ReducedTracksBarrelLabels::iterator;
 
-
 // MFT track quantities
 namespace reducedmft
 {
@@ -272,10 +271,8 @@ DECLARE_SOA_TABLE(ReducedMFTTracks, "AOD", "RMFTTR", //!
                   o2::soa::Index<>, reducedmft::ReducedEventId, reducedmft::FilteringFlags,
                   reducedmft::Pt, reducedmft::Eta, reducedmft::Phi);
 
-//iterator
+// iterator
 using ReducedMFTTrack = ReducedMFTTracks::iterator;
-
-
 
 // muon quantities
 namespace reducedmuon
@@ -308,7 +305,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh3, midBoardCh3, //!
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh4, midBoardCh4, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 24) & 0xFF); });
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "RTMuons_MatchMCHTrack");
-DECLARE_SOA_INDEX_COLUMN(ReducedMFTTrack, matchMFTTrack);        //!  matching index pointing to the ReducedMFTTrack table if filled
+DECLARE_SOA_INDEX_COLUMN(ReducedMFTTrack, matchMFTTrack); //!  matching index pointing to the ReducedMFTTrack table if filled
 } // namespace reducedmuon
 
 // Muon track kinematics
