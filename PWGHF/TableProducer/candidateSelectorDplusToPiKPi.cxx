@@ -21,6 +21,8 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "PWGHF/Core/HFMLResponse.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_3prong;
@@ -47,6 +49,14 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_dplus_to_pi_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Dplus candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
+  // ML inference
+  Configurable<bool> b_applyML{"b_applyML", false, "Flag to apply ML selections"};
+  Configurable<std::vector<double>> pTBinsML{"pTBinsML", std::vector<double>{hf_cuts_ml::pTBins_v}, "pT bin limits for ML application"};
+  Configurable<std::vector<std::string>> modelPathsML{"modelPathsML", std::vector<std::string>{hf_cuts_ml::modelPaths}, "Paths of the ML models, one for each pT bin"};
+  Configurable<std::vector<int>> cutDirML{"cutDirML", std::vector<int>{hf_cuts_ml::cutDir_v}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsML{"ml_cuts", {hf_cuts_ml::cuts[0], hf_cuts_ml::npTBins, hf_cuts_ml::nCutScores, hf_cuts_ml::pTBinLabels, hf_cuts_ml::cutScoreLabels}, "ML selections per pT bin"};
+
+  o2::analysis::HFMLResponse<1, float> hfMLResponse; // FIXME : default template of class does not work
 
   TrackSelectorPID selectorPion;
   TrackSelectorPID selectorKaon;
@@ -76,6 +86,10 @@ struct HfCandidateSelectorDplusToPiKPi {
       for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
         registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
+    }
+
+    if (b_applyML) {
+      hfMLResponse.init(modelPathsML, false);
     }
   }
 
@@ -220,6 +234,17 @@ struct HfCandidateSelectorDplusToPiKPi {
       SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoPID);
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoPID, ptCand);
+      }
+
+      if (b_applyML) {
+        int pTBin = findBin(binsPt, candidate.pt());
+        // ML selections
+        std::vector<float> inputFeatures{candidate.cpa(), candidate.cpaXY(), candidate.decayLength(), candidate.decayLengthXY()};
+        auto outputValues = hfMLResponse.getModelOutputValues(pTBin, inputFeatures);
+        LOG(info) << outputValues[0]; // FIXME: just here to use outputValues variable
+
+        bool isSelectedML = hfMLResponse.isSelectedML(pTBin, cutDirML, cutsML);
+        LOG(info) << isSelectedML << "hello"; 
       }
 
       hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
