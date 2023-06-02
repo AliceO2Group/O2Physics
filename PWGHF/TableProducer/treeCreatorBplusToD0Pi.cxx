@@ -160,7 +160,7 @@ DECLARE_SOA_TABLE(HfCandBplusFull, "AOD", "HFCANDBPFull",
                   full::NSigmaTOFTrk1Ka,
                   full::NSigmaTPCTrk1Pi,
                   full::NSigmaTPCTrk1Ka,
-                  full::HFGlobalIndex);
+                  full::GlobalIndex);
 
 DECLARE_SOA_TABLE(HfCandBplusFullEvents, "AOD", "HFCANDBPFullE",
                   collision::BCId,
