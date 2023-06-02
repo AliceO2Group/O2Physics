@@ -11,7 +11,7 @@
 //
 // Contact: daiki.sekihata@cern.ch
 //
-
+#include "Framework/Logger.h"
 #include <iostream>
 #include <memory>
 #include <fstream>
@@ -248,11 +248,11 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
 void o2::aod::emphotonhistograms::AddHistClass(THashList* list, const char* histClass)
 {
   if (list->FindObject(histClass)) {
-    std::cout << "Warning in HistogramsLibrary::AddHistClass(): Cannot add histogram class " << histClass << " because it already exists." << std::endl;
+    LOG(warn) << "HistogramsLibrary::AddHistClass(): Cannot add histogram class " << histClass << " because it already exists.";
     return;
   }
 
-  THashList* sublist = new THashList();
+  auto* sublist = new THashList();
   sublist->SetOwner(true);
   sublist->SetName(histClass);
   list->Add(sublist);
