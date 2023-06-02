@@ -29,6 +29,7 @@ using namespace o2::aod::hf_cand_3prong;
 
 /// Ds± analysis task
 struct HfTaskDs {
+  Configurable<int> DsChannelCase{"DsChannelCase", 1, "Int to consider the decay channel: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
@@ -231,6 +232,9 @@ struct HfTaskDs {
         continue;
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
+        if (candidate.flagMcDecayChanRec() != DsChannelCase) {
+          continue;
+        }
         auto prong0McPart = candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>();
         auto indexMother = RecoDecay::getMother(particlesMC, prong0McPart, pdg::Code::kDS, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
@@ -257,6 +261,9 @@ struct HfTaskDs {
     // MC gen.
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DsToKKPi) {
+        if (particle.flagMcDecayChanGen() != DsChannelCase) {
+          continue;
+        }
         auto pt = particle.pt();
         auto y = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         if (yCandMax >= 0. && std::abs(y) > yCandMax) {
