@@ -13,6 +13,8 @@
 //
 // Authors: Nima Zardoshti
 
+#include <string>
+
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -101,12 +103,24 @@ struct JetFinderQATask {
   Configurable<float> triggeredJetsRadius{"triggeredJetsRadius", 0.6, "resolution parameter for triggered jets"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.2, 0.3, 0.4, 0.5, 0.6}, "jet resolution parameters"};
-  Configurable<float> etaMin{"etaMin", -0.9, "minimum eta acceptance"};
-  Configurable<float> etaMax{"etaMax", 0.9, "maximum eta acceptance"};
+  Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
+  Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
+  Configurable<float> trackPtMin{"trackPtMin", -0.9, "minimum pT acceptance for tracks"};
+  Configurable<float> trackPtMax{"trackPtMax", 0.9, "maximum pT acceptance for tracks"};
+  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  std::string trackSelection;
+  std::vector<double> minJetPt;
+  std::vector<double> jetRadiiValues;
 
   void init(o2::framework::InitContext&)
   {
+    trackSelection = static_cast<std::string>(trackSelections);
+    jetRadiiValues = (std::vector<double>)jetRadii;
+    for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
+      minJetPt.push_back(0.0);
+    }
     auto jetRadiiBins = (std::vector<double>)jetRadii;
+    jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + 0.1);
     registry.add("h3_jet_radius_jet_pt_collision", "jet radius;#it{p}_{T,jet} (GeV/#it{c});collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {2, 0.0, 2.0}}});
     registry.add("h3_jet_radius_jet_eta_collision", "jet radius;#eta_{jet};collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {100, -1.0, 1.0}, {2, 0.0, 2.0}}});
     registry.add("h3_jet_radius_jet_phi_collision", "jet radius;#phi_{jet};collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {80, -1.0, 7.}, {2, 0.0, 2.0}}});
@@ -121,6 +135,23 @@ struct JetFinderQATask {
 
   using JetTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
 
+  template <typename T>
+  bool selectTrack(T const& track)
+  {
+    if (trackSelection == "globalTracks" && !track.isGlobalTrackWoPtEta()) {
+      return false;
+    }
+    if (trackSelection == "globalTracks" && (track.pt() < trackPtMin || track.pt() >= trackPtMax || track.eta() < trackEtaMin || track.eta() >= trackEtaMax)) {
+      return false;
+    }
+    if (trackSelection == "QualityTracks" && !track.isQualityTrack()) {
+      return false;
+    }
+    if (trackSelection == "hybridTracksJE" && !track.trackCutFlagFb5()) { // isQualityTrack
+      return false;
+    }
+    return true;
+  }
   template <typename T>
   void fillHistograms(T const& jet, float weight = 1.0)
   {
@@ -275,36 +306,52 @@ struct JetFinderQATask {
     if (collision.hasJetChHighPt() >= 1)
       registry.fill(HIST("h_collision_trigger_events"), 3.5); // events with triggered jets
 
+    for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
+      minJetPt[iJetRadius] = 0.0;
+    }
     for (auto& jet : jets) {
-      for (float pt = jet.pt(); pt < 200.0; pt += 1.0) {
-        registry.fill(HIST("h2_jet_radius_jet_pT_triggered"), jet.r() / 100.0, pt); // print out this line
+      for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
+        if (jet.r() == round(jetRadiiValues[iJetRadius] * 100.0f)) {
+          for (double pt = jet.pt(); pt > minJetPt[iJetRadius]; pt -= 1.0) {
+            registry.fill(HIST("h2_jet_radius_jet_pT_triggered"), jet.r() / 100.0, pt);
+          }
+          if (jet.pt() > minJetPt[iJetRadius]) {
+            minJetPt[iJetRadius] = jet.pt();
+          }
+          break;
+        }
       }
-      if ((jet.eta() < (etaMin + jet.r() / 100.0)) || (jet.eta() < (etaMax - jet.r() / 100.0)))
+
+      if ((jet.eta() < (trackEtaMin + jet.r() / 100.0)) || (jet.eta() > (trackEtaMax - jet.r() / 100.0))) {
         continue;
-      registry.fill(HIST("h3_jet_radius_jet_pt_collision"), jet.r() / 100.0, jet.pt(), collision.hasJetChHighPt());   // print out this line
-      registry.fill(HIST("h3_jet_radius_jet_eta_collision"), jet.r() / 100.0, jet.eta(), collision.hasJetChHighPt()); // print out this line
-      registry.fill(HIST("h3_jet_radius_jet_phi_collision"), jet.r() / 100.0, jet.phi(), collision.hasJetChHighPt()); // print out this line
+      }
+      registry.fill(HIST("h3_jet_radius_jet_pt_collision"), jet.r() / 100.0, jet.pt(), collision.hasJetChHighPt());
+      registry.fill(HIST("h3_jet_radius_jet_eta_collision"), jet.r() / 100.0, jet.eta(), collision.hasJetChHighPt());
+      registry.fill(HIST("h3_jet_radius_jet_phi_collision"), jet.r() / 100.0, jet.phi(), collision.hasJetChHighPt());
 
       for (auto& constituent : jet.template tracks_as<JetTracks>()) {
-        registry.fill(HIST("h3_jet_radius_jet_pt_track_pt_MB"), jet.r() / 100.0, jet.pt(), constituent.pt());   // print out this line
-        registry.fill(HIST("h3_jet_radius_jet_pt_track_eta_MB"), jet.r() / 100.0, jet.pt(), constituent.eta()); // print out this line
-        registry.fill(HIST("h3_jet_radius_jet_pt_track_phi_MB"), jet.r() / 100.0, jet.pt(), constituent.phi()); // print out this line
+        registry.fill(HIST("h3_jet_radius_jet_pt_track_pt_MB"), jet.r() / 100.0, jet.pt(), constituent.pt());
+        registry.fill(HIST("h3_jet_radius_jet_pt_track_eta_MB"), jet.r() / 100.0, jet.pt(), constituent.eta());
+        registry.fill(HIST("h3_jet_radius_jet_pt_track_phi_MB"), jet.r() / 100.0, jet.pt(), constituent.phi());
         if (collision.hasJetChHighPt() >= 1) {
-          registry.fill(HIST("h3_jet_radius_jet_pt_track_pt_Triggered"), jet.r() / 100.0, jet.pt(), constituent.pt());   // print out this line
-          registry.fill(HIST("h3_jet_radius_jet_pt_track_eta_Triggered"), jet.r() / 100.0, jet.pt(), constituent.eta()); // print out this line
-          registry.fill(HIST("h3_jet_radius_jet_pt_track_phi_Triggered"), jet.r() / 100.0, jet.pt(), constituent.phi()); // print out this line
+          registry.fill(HIST("h3_jet_radius_jet_pt_track_pt_Triggered"), jet.r() / 100.0, jet.pt(), constituent.pt());
+          registry.fill(HIST("h3_jet_radius_jet_pt_track_eta_Triggered"), jet.r() / 100.0, jet.pt(), constituent.eta());
+          registry.fill(HIST("h3_jet_radius_jet_pt_track_phi_Triggered"), jet.r() / 100.0, jet.pt(), constituent.phi());
         }
       }
     }
 
     for (auto& track : tracks) {
-      registry.fill(HIST("h_track_pt_MB"), track.pt());   // print out this line
-      registry.fill(HIST("h_track_eta_MB"), track.eta()); // print out this line
-      registry.fill(HIST("h_track_phi_MB"), track.phi()); // print out this line
+      if (!selectTrack(track)) {
+        continue;
+      }
+      registry.fill(HIST("h_track_pt_MB"), track.pt());
+      registry.fill(HIST("h_track_eta_MB"), track.eta());
+      registry.fill(HIST("h_track_phi_MB"), track.phi());
       if (collision.hasJetChHighPt() >= 1) {
-        registry.fill(HIST("h_track_pt_Triggered"), track.pt());   // print out this line
-        registry.fill(HIST("h_track_eta_Triggered"), track.eta()); // print out this line
-        registry.fill(HIST("h_track_phi_Triggered"), track.phi()); // print out this line
+        registry.fill(HIST("h_track_pt_Triggered"), track.pt());
+        registry.fill(HIST("h_track_eta_Triggered"), track.eta());
+        registry.fill(HIST("h_track_phi_Triggered"), track.phi());
       }
     }
   }
