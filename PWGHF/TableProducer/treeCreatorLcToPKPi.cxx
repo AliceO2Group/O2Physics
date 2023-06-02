@@ -81,7 +81,7 @@ DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-DECLARE_SOA_COLUMN(HFGlobalIndex, hfGlobalIndex, int);
+DECLARE_SOA_COLUMN(GlobalIndex, globalIndex, int);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
