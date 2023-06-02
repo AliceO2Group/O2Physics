@@ -57,9 +57,9 @@ struct femtoDreamDebugV0 {
   ConfigurableAxis ConfChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
 
-  using FemtoFullParticles = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
+  using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && ((aod::femtodreamparticle::cut & ConfCutV0) == ConfCutV0);
-  Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
+  Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
   /// Histogramming
   FemtoDreamEventHisto eventHisto;
@@ -80,9 +80,9 @@ struct femtoDreamDebugV0 {
   }
 
   /// Porduce QA plots for V0 selection in FemtoDream framework
-  void process(o2::aod::FemtoDreamCollision const& col, FemtoFullParticles const& parts)
+  void process(o2::aod::FDCollision const& col, FemtoFullParticles const& parts)
   {
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     eventHisto.fillQA(col);
     for (auto& part : groupPartsOne) {
       if (!part.has_children()) {

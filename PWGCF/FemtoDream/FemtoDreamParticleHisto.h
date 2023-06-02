@@ -326,9 +326,9 @@ class FemtoDreamParticleHisto
         fillQA_debug<o2::aod::femtodreamMCparticle::MCType::kRecon>(part);
       }
       if constexpr (isMC) {
-        if (part.has_femtoDreamMCParticle()) {
-          fillQA_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(part.femtoDreamMCParticle());
-          fillQA_MC(part, (part.femtoDreamMCParticle()).partOriginMCTruth(), (part.femtoDreamMCParticle()).pdgMCTruth());
+        if (part.has_fdMCParticle()) {
+          fillQA_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(part.fdMCParticle());
+          fillQA_MC(part, (part.fdMCParticle()).partOriginMCTruth(), (part.fdMCParticle()).pdgMCTruth());
         } else {
           mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hNoMCtruthCounter"), 0);
         }

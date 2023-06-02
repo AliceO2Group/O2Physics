@@ -40,7 +40,7 @@ struct femtoDreamPairHashTask {
     CastCfgMultBins = (std::vector<float>)CfgMultBins;
   }
 
-  void process(o2::aod::FemtoDreamCollision const& col)
+  void process(o2::aod::FDCollision const& col)
   {
     /// the hash of the collision is computed and written to table
     hashes(eventmixing::getMixingBin(CastCfgVtxBins, CastCfgMultBins, col.posZ(), col.multV0M()));

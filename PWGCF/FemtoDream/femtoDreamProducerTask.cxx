@@ -81,12 +81,12 @@ int getRowDaughters(int daughID, T const& vecID)
 
 struct femtoDreamProducerTask {
 
-  Produces<aod::FemtoDreamCollisions> outputCollision;
-  Produces<aod::FemtoDreamParticles> outputParts;
-  Produces<aod::FemtoDreamMCParticles> outputPartsMC;
-  Produces<aod::FemtoDreamDebugParticles> outputDebugParts;
-  Produces<aod::FemtoDreamMCLabels> outputPartsMCLabels;
-  Produces<aod::FemtoDreamDebugMCParticles> outputDebugPartsMC;
+  Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FDParticles> outputParts;
+  Produces<aod::FDMCParticles> outputPartsMC;
+  Produces<aod::FDExtParticles> outputDebugParts;
+  Produces<aod::FDMCLabels> outputPartsMCLabels;
+  Produces<aod::FDExtMCParticles> outputDebugPartsMC;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
 

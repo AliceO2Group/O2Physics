@@ -151,8 +151,8 @@ using FemtoFullTracks =
 
 struct CFFilterQA {
 
-  Produces<aod::FemtoDreamCollisions> outputCollision;
-  Produces<aod::FemtoDreamParticles> outputParts;
+  Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FDParticles> outputParts;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
