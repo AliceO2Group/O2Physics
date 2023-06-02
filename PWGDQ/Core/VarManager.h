@@ -757,7 +757,7 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kIsINT7] = (event.triggerAlias() & (uint32_t(1) << kINT7)) > 0;
     }
     if (fgUsedVars[kIsINT8]) {
-      values[kIsINT8] = (event.triggerAlias() & (uint32_t(1) <<kIsTriggerTVX)) > 0;
+      values[kIsINT8] = (event.triggerAlias() & (uint32_t(1) << kIsTriggerTVX)) > 0;
     }
     if (fgUsedVars[kIsEMC7]) {
       values[kIsEMC7] = (event.triggerAlias() & (uint32_t(1) << kEMC7)) > 0;
