@@ -70,7 +70,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t); // is prompt or non-prompt, reco level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); // is prompt or non-prompt, Gen level
-DECLARE_SOA_COLUMN(HFGlobalIndex, hfGlobalIndex, int);
+DECLARE_SOA_COLUMN(GlobalIndex, globalIndex, int);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
