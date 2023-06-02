@@ -9,14 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
+#include <cmath>
+
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"
 #include "PWGCF/TableProducer/dptdptfilter.h"
-
-#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -98,16 +98,16 @@ struct DptDptFilterQA {
     int ntracks_one_and_two = 0;
     int ntracks_none = 0;
     for (auto& track : tracks) {
-      if (track.trackacceptedasone() != uint8_t(true) and track.trackacceptedastwo() != uint8_t(true)) {
+      if (!(track.trackacceptedid() < 0) && !(track.trackacceptedid() < 2)) {
+        LOGF(fatal, "Task not prepared for identified particles");
+      }
+      if (track.trackacceptedid() != 0 && track.trackacceptedid() != 1) {
         ntracks_none++;
       }
-      if (track.trackacceptedasone() == uint8_t(true) and track.trackacceptedastwo() == uint8_t(true)) {
-        ntracks_one_and_two++;
-      }
-      if (track.trackacceptedasone() == uint8_t(true)) {
+      if (track.trackacceptedid() == 0) {
         ntracks_one++;
       }
-      if (track.trackacceptedastwo() == uint8_t(true)) {
+      if (track.trackacceptedid() == 1) {
         ntracks_two++;
       }
     }
@@ -126,7 +126,7 @@ struct DptDptFilterQA {
   }
 
   Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
-  Filter onlyacceptedtracks = ((aod::dptdptfilter::trackacceptedasone == uint8_t(true)) or (aod::dptdptfilter::trackacceptedastwo == uint8_t(true)));
+  Filter onlyacceptedtracks = (int8_t(0) <= aod::dptdptfilter::trackacceptedid);
 
   void processGeneratorLevel(soa::Filtered<aod::DptDptCFAcceptedTrueCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks> const& tracks)
   {

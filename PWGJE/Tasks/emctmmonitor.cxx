@@ -193,11 +193,11 @@ struct TrackMatchingMonitor {
     bool isSelected = true;
     if (mDoEventSel) {
       if (theCollision.bc().runNumber() < 300000) {
-        if (!theCollision.alias()[kINT7]) {
+        if (!theCollision.alias_bit(kINT7)) {
           isSelected = false;
         }
       } else {
-        if (!theCollision.alias()[kTVXinEMC]) {
+        if (!theCollision.alias_bit(kTVXinEMC)) {
           isSelected = false;
         }
       }
@@ -324,7 +324,7 @@ struct TrackMatchingMonitor {
               mHistManager.fill(HIST("clusterTM_EoverP_p"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
             }
           } else { // without pion rejection
-            mHistManager.fill(HIST("clusterTM_EoverP_electron"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
+            mHistManager.fill(HIST("clusterTM_EoverP_ep"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
             if (match.track_as<tracksPID>().eta() >= 0.) {
               mHistManager.fill(HIST("clusterTM_EoverP_electron_ASide"), cluster.energy() / abs_p, match.track_as<tracksPID>().pt(), t);
             } else {

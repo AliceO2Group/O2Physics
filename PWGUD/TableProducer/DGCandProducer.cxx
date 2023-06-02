@@ -40,8 +40,9 @@ struct DGCandProducer {
   // data tables
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
+  Produces<aod::UDZdcs> outputZdcs;
   Produces<aod::UDTracks> outputTracks;
-  // Produces<aod::UDTracksCov> outputTracksCov;
+  Produces<aod::UDTracksCov> outputTracksCov;
   Produces<aod::UDTracksDCA> outputTracksDCA;
   Produces<aod::UDTracksPID> outputTracksPID;
   Produces<aod::UDTracksExtra> outputTracksExtra;
@@ -75,7 +76,7 @@ struct DGCandProducer {
   // MC inputs
   using MCCCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using MCCC = MCCCs::iterator;
-  using MCTCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+  using MCTCs = soa::Join<aod::Tracks, aod::TracksExtra, /*aod::TracksCov,*/ aod::TracksDCA, aod::TrackSelection,
                           aod::McTrackLabels,
                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                           aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -153,25 +154,25 @@ struct DGCandProducer {
 
       // 0 <= bit <= 31
       auto bit = bc2u.globalBC() - minbc;
-      if (!bc2u.selection()[evsel::kNoBGT0A])
+      if (!bc2u.selection_bit(evsel::kNoBGT0A))
         SETBIT(info.BGFT0Apf, bit);
-      if (!bc2u.selection()[evsel::kNoBGT0C])
+      if (!bc2u.selection_bit(evsel::kNoBGT0C))
         SETBIT(info.BGFT0Cpf, bit);
-      if (bc2u.selection()[evsel::kIsBBT0A])
+      if (bc2u.selection_bit(evsel::kIsBBT0A))
         SETBIT(info.BBFT0Apf, bit);
-      if (bc2u.selection()[evsel::kIsBBT0C])
+      if (bc2u.selection_bit(evsel::kIsBBT0C))
         SETBIT(info.BBFT0Cpf, bit);
-      if (!bc2u.selection()[evsel::kNoBGV0A])
+      if (!bc2u.selection_bit(evsel::kNoBGV0A))
         SETBIT(info.BGFV0Apf, bit);
-      if (bc2u.selection()[evsel::kIsBBV0A])
+      if (bc2u.selection_bit(evsel::kIsBBV0A))
         SETBIT(info.BBFV0Apf, bit);
-      if (!bc2u.selection()[evsel::kNoBGFDA])
+      if (!bc2u.selection_bit(evsel::kNoBGFDA))
         SETBIT(info.BGFDDApf, bit);
-      if (!bc2u.selection()[evsel::kNoBGFDC])
+      if (!bc2u.selection_bit(evsel::kNoBGFDC))
         SETBIT(info.BGFDDCpf, bit);
-      if (bc2u.selection()[evsel::kIsBBFDA])
+      if (bc2u.selection_bit(evsel::kIsBBFDA))
         SETBIT(info.BBFDDApf, bit);
-      if (bc2u.selection()[evsel::kIsBBFDC])
+      if (bc2u.selection_bit(evsel::kIsBBFDC))
         SETBIT(info.BBFDDCpf, bit);
     }
   }
@@ -181,9 +182,16 @@ struct DGCandProducer {
   template <typename TTrack>
   void updateUDTrackTables(TTrack const& track, uint64_t const& bcnum)
   {
-    outputTracks(outputCollisions.lastIndex(), track.px(), track.py(), track.pz(), track.sign(),
+    outputTracks(outputCollisions.lastIndex(),
+                 track.px(), track.py(), track.pz(), track.sign(),
                  bcnum, track.trackTime(), track.trackTimeRes());
-    // outputTracksCov(track.x(), track.y(), track.z(), track.sigmaY(), track.sigmaZ());
+
+    // float sigmaY = track.sigmaY();
+    // float sigmaZ = track.sigmaZ();
+    float sigmaY = -1.;
+    float sigmaZ = -1.;
+    outputTracksCov(track.x(), track.y(), track.z(), sigmaY, sigmaZ);
+
     outputTracksDCA(track.dcaZ(), track.dcaXY());
     outputTracksPID(track.tpcNSigmaEl(),
                     track.tpcNSigmaMu(),
@@ -322,6 +330,17 @@ struct DGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
+      // fill UDZdcs
+      if (bc.has_zdc()) {
+        LOGF(debug, "Found ZDC");
+        auto zdc = bc.zdc();
+        std::vector<float> enes(zdc.energy()[0]);
+        std::vector<uint8_t> chEs(zdc.channelE()[0]);
+        std::vector<float> amps(zdc.amplitude()[0]);
+        std::vector<float> times(zdc.time()[0]);
+        std::vector<uint8_t> chTs(zdc.channelT()[0]);
+        outputZdcs(outputCollisions.lastIndex(), enes, chEs, amps, times, chTs);
+      }
 
       // update DGTracks tables
       for (auto& track : tracks) {

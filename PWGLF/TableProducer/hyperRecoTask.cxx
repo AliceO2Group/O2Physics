@@ -85,6 +85,7 @@ struct hyperCandidate {
   bool isMatter = false;
   bool isSignal = false; // true MC signal
   bool isReco = false;   // true if the candidate is actually reconstructed
+  int pdgCode = 0;       // PDG code of the hypernucleus
 };
 
 struct hyperRecoTask {
@@ -332,10 +333,15 @@ struct hyperRecoTask {
       hypCand.massH3L = std::sqrt(h3lE * h3lE - hypCand.mom[0] * hypCand.mom[0] - hypCand.mom[1] * hypCand.mom[1] - hypCand.mom[2] * hypCand.mom[2]);
       hypCand.massH4L = std::sqrt(h4lE * h4lE - hypCand.mom[0] * hypCand.mom[0] - hypCand.mom[1] * hypCand.mom[1] - hypCand.mom[2] * hypCand.mom[2]);
 
-      if (hypCand.massH3L < o2::constants::physics::MassHyperTriton - masswidth || hypCand.massH3L > o2::constants::physics::MassHyperTriton + masswidth)
-        continue;
+      bool isHypMass = false;
 
-      if (hypCand.massH4L < o2::constants::physics::MassHyperhydrog4 - masswidth || hypCand.massH4L > o2::constants::physics::MassHyperhydrog4 + masswidth)
+      if (hypCand.massH3L > o2::constants::physics::MassHyperTriton - masswidth && hypCand.massH3L < o2::constants::physics::MassHyperTriton + masswidth)
+        isHypMass = true;
+
+      if (hypCand.massH4L > o2::constants::physics::MassHyperhydrog4 - masswidth && hypCand.massH4L < o2::constants::physics::MassHyperhydrog4 + masswidth)
+        isHypMass = true;
+
+      if (!isHypMass)
         continue;
 
       hypCand.dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
@@ -403,6 +409,7 @@ struct hyperRecoTask {
                 hypCand.gMom[i] = posMom[i];
               }
               hypCand.isSignal = true;
+              hypCand.pdgCode = posMother.pdgCode();
               filledMothers.push_back(posMother.globalIndex());
             }
           }
@@ -451,6 +458,7 @@ struct hyperRecoTask {
       hypCand.posTrackID = -1;
       hypCand.negTrackID = -1;
       hypCand.isSignal = true;
+      hypCand.pdgCode = mcPart.pdgCode();
       hyperCandidates.push_back(hypCand);
     }
   }
@@ -523,13 +531,14 @@ struct hyperRecoTask {
     for (auto& hypCand : hyperCandidates) {
       if (!hypCand.isSignal && mcSignalOnly)
         continue;
+      int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       outputMCTable(hypCand.isMatter, hypCand.recoPt(), hypCand.recoPhi(), hypCand.recoEta(),
                     hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2], hypCand.massH3L, hypCand.massH4L,
                     hypCand.dcaV0dau, hypCand.cosPA, hypCand.nSigmaHe3,
                     hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi, hypCand.momHe3,
                     hypCand.momPi, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
                     hypCand.he3DCAXY, hypCand.piDCAXY,
-                    hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(),
+                    chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
     }
   }

@@ -81,7 +81,7 @@ struct FilterCF {
     if (cfgTrigger == 0) {
       return true;
     } else if (cfgTrigger == 7) {
-      return collision.alias()[kINT7] && collision.sel7();
+      return collision.alias_bit(kINT7) && collision.sel7();
     } else if (cfgTrigger == 8) {
       return collision.sel8();
     }

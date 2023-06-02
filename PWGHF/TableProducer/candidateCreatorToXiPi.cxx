@@ -81,7 +81,7 @@ struct HfCandidateCreatorToXiPi {
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
   using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
-  using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>;
+  using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
@@ -403,8 +403,8 @@ struct HfCandidateCreatorToXiPi {
         } // loop over pions
       }   // loop over cascades
     }     // close loop collisions
-  }     // end of process
-};      // end of struct
+  }       // end of process
+};        // end of struct
 
 /// Performs MC matching.
 struct HfCandidateCreatorToXiPiMc {
@@ -427,10 +427,13 @@ struct HfCandidateCreatorToXiPiMc {
                  aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
-    int8_t sign = 0;
-    int8_t flag = 0;
+    int8_t sign = -9;
+    int8_t flag = -9;
     // int8_t origin = 0; //to be used for prompt/non prompt
     int8_t debug = 0;
+    int8_t debugGenCharmBar = 0;
+    int8_t debugGenXi = 0;
+    int8_t debugGenLambda = 0;
 
     int pdgCodeOmegac0 = pdg::Code::kOmegaC0; // 4332
     int pdgCodeXic0 = pdg::Code::kXiCZero;    // 4132
@@ -524,18 +527,25 @@ struct HfCandidateCreatorToXiPiMc {
     // Match generated particles.
     for (auto& particle : particlesMC) {
       // Printf("New gen. candidate");
-      flag = 0;
+      flag = -9;
+      sign = -9;
+      debugGenCharmBar = 0;
+      debugGenXi = 0;
+      debugGenLambda = 0;
       // origin = 0;
       if (matchOmegacMc) {
         //  Omegac → Xi pi
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+          debugGenCharmBar = 1;
           // Match Xi -> lambda pi
           auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking cascade → lambda pi");
           if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+            debugGenXi = 1;
             // lambda -> p pi
             auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
-            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign)) {
+            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+              debugGenLambda = 1;
               flag = sign * (1 << DecayType::OmegaczeroToXiPi);
             }
           }
@@ -543,14 +553,17 @@ struct HfCandidateCreatorToXiPiMc {
       }
       if (matchXicMc) {
         //  Xic → Xi pi
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+          debugGenCharmBar = 1;
           // Match Xi -> lambda pi
           auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking cascade → lambda pi");
           if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+            debugGenXi = 1;
             // lambda -> p pi
             auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
-            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign)) {
+            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+              debugGenLambda = 1;
               flag = sign * (1 << DecayType::XiczeroToXiPi);
             }
           }
@@ -558,7 +571,7 @@ struct HfCandidateCreatorToXiPiMc {
       }
 
       // rowMCMatchGen(flag, origin);
-      rowMCMatchGen(flag);
+      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda);
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processMc, "Process MC", false);

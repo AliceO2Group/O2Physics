@@ -42,6 +42,11 @@ struct HfCandidateSelectorD0 {
   Configurable<double> ptPidTofMax{"ptPidTofMax", 5., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
+  // AND logic for TOF+TPC PID (as in Run2)
+  Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", false, "Use AND logic for TPC and TOF PID"};
+  // selecting only background candidates
+  Configurable<bool> keepOnlySidebandCandidates{"keepOnlySidebandCandidates", false, "Select only sideband candidates, for studying background cut variable distributions"};
+  Configurable<double> distanceFromD0MassForSidebands{"distanceFromD0MassForSidebands", 0.15, "Minimum distance from nominal D0 mass value for sideband region"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_d0_to_pi_k::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "D0 candidate selection per pT bin"};
@@ -164,6 +169,19 @@ struct HfCandidateSelectorD0 {
       }
     }
 
+    // in case only sideband candidates have to be stored, additional invariant-mass cut
+    if (keepOnlySidebandCandidates) {
+      if (trackPion.sign() > 0) {
+        if (std::abs(invMassD0ToPiK(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) < distanceFromD0MassForSidebands) {
+          return false;
+        }
+      } else {
+        if (std::abs(invMassD0barToKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) < distanceFromD0MassForSidebands) {
+          return false;
+        }
+      }
+    }
+
     return true;
   }
 
@@ -229,10 +247,22 @@ struct HfCandidateSelectorD0 {
       statusCand = 1;
 
       // track-level PID selection
-      int pidTrackPosKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos);
-      int pidTrackPosPion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
-      int pidTrackNegPion = selectorPion.getStatusTrackPIDTpcOrTof(trackNeg);
+      int pidTrackPosKaon = -1;
+      int pidTrackPosPion = -1;
+      int pidTrackNegKaon = -1;
+      int pidTrackNegPion = -1;
+
+      if (usePidTpcAndTof) {
+        pidTrackPosKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackPos);
+        pidTrackPosPion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos);
+        pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackNeg);
+        pidTrackNegPion = selectorPion.getStatusTrackPIDTpcAndTof(trackNeg);
+      } else {
+        pidTrackPosKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos);
+        pidTrackPosPion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos);
+        pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
+        pidTrackNegPion = selectorPion.getStatusTrackPIDTpcOrTof(trackNeg);
+      }
 
       int pidD0 = -1;
       int pidD0bar = -1;
@@ -241,18 +271,14 @@ struct HfCandidateSelectorD0 {
           pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted) {
         pidD0 = 1; // accept D0
       } else if (pidTrackPosPion == TrackSelectorPID::Status::PIDRejected ||
-                 pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                 pidTrackNegPion == TrackSelectorPID::Status::PIDAccepted ||
-                 pidTrackPosKaon == TrackSelectorPID::Status::PIDAccepted) {
+                 pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected) {
         pidD0 = 0; // exclude D0
       }
 
       if (pidTrackNegPion == TrackSelectorPID::Status::PIDAccepted &&
           pidTrackPosKaon == TrackSelectorPID::Status::PIDAccepted) {
         pidD0bar = 1; // accept D0bar
-      } else if (pidTrackPosPion == TrackSelectorPID::Status::PIDAccepted ||
-                 pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted ||
-                 pidTrackNegPion == TrackSelectorPID::Status::PIDRejected ||
+      } else if (pidTrackNegPion == TrackSelectorPID::Status::PIDRejected ||
                  pidTrackPosKaon == TrackSelectorPID::Status::PIDRejected) {
         pidD0bar = 0; // exclude D0bar
       }

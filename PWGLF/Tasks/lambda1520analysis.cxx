@@ -252,7 +252,7 @@ struct lambda1520analysis {
     // axes
     AxisSpec axisvtxZ{100, -20, 20};
     AxisSpec axisPt{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisMassLambda1520{500, 1.3, 1.8, "Invariant Mass (GeV/#it{c}^2)"};
+    AxisSpec axisMassLambda1520{500, 1.3, 3.0, "Invariant Mass (GeV/#it{c}^2)"};
     AxisSpec axisNSigma{nBinsNSigma, -10, 10};
     AxisSpec axisMult{nBinsMult, 0.0f, 1000.0f, "mult_{TPC}"};
     AxisSpec axisDCA{1000, -5, 5};

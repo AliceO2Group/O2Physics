@@ -362,7 +362,7 @@ struct AnalysisMuonSelection {
     // Add histogram classes for each track cut and for each requested MC signal (reconstructed tracks with MC truth)
     TString histClasses = "Muon_BeforeCuts;";
     for (auto& cut : fTrackCuts) {
-      TString nameStr = Form("Muon_%s;", cut.GetName());
+      TString nameStr = Form("Muon_%s", cut.GetName());
       fHistNamesReco.push_back(nameStr);
       histClasses += Form("%s;", nameStr.Data());
       std::vector<TString> mcnames;
@@ -780,7 +780,7 @@ struct AnalysisSameEventPairing {
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
       if constexpr ((TPairType == VarManager::kDecayToMuMu) && muonHasCov) {
         if (fConfigFlatTables.value) {
-          dimuonAllList(event.posX(), event.posY(), event.posZ(), event.reducedMCevent().mcPosX(), event.reducedMCevent().mcPosY(), event.reducedMCevent().mcPosZ(), VarManager::fgValues[VarManager::kMass], dileptonMcDecision, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], t1.pt(), t1.eta(), t1.phi(), t1.sign(), t2.pt(), t2.eta(), t2.phi(), t2.sign(), t1.mcMask(), t2.mcMask(), t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(), t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(), t1.chi2(), t2.chi2(), t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(), t1.reducedMCTrack().e(), t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(), t2.reducedMCTrack().e(), t1.reducedMCTrack().vx(), t1.reducedMCTrack().vy(), t1.reducedMCTrack().vz(), t1.reducedMCTrack().vt(), t2.reducedMCTrack().vx(), t2.reducedMCTrack().vy(), t2.reducedMCTrack().vz(), t2.reducedMCTrack().vt(), t1.isAmbiguous(), t2.isAmbiguous());
+          dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(), t1.fwdDcaX(), t1.fwdDcaY(), t2.fwdDcaX(), t2.fwdDcaY(), event.reducedMCevent().mcPosX(), event.reducedMCevent().mcPosY(), event.reducedMCevent().mcPosZ(), VarManager::fgValues[VarManager::kMass], dileptonMcDecision, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], t1.pt(), t1.eta(), t1.phi(), t1.sign(), t2.pt(), t2.eta(), t2.phi(), t2.sign(), t1.mcMask(), t2.mcMask(), t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(), t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(), t1.chi2(), t2.chi2(), t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(), t1.reducedMCTrack().e(), t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(), t2.reducedMCTrack().e(), t1.reducedMCTrack().vx(), t1.reducedMCTrack().vy(), t1.reducedMCTrack().vz(), t1.reducedMCTrack().vt(), t2.reducedMCTrack().vx(), t2.reducedMCTrack().vy(), t2.reducedMCTrack().vz(), t2.reducedMCTrack().vt(), t1.isAmbiguous(), t2.isAmbiguous());
         }
       }
 
@@ -841,7 +841,8 @@ struct AnalysisSameEventPairing {
     } // end of true pairing loop
   }   // end runMCGen
 
-  Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  // Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
 
   void processDecayToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
                                soa::Filtered<MyBarrelTracksSelected> const& tracks,
@@ -1154,7 +1155,8 @@ struct AnalysisDileptonTrack {
     }
   }
 
-  Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  // Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
 
   void processDimuonMuonSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyMuonTracksSelectedWithCov const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {

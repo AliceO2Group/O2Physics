@@ -243,22 +243,16 @@ class FemtoDreamCutculator
   }
 
   /// This is the function called by the executable that then outputs the full selection bit-wise container incorporating the user choice of selections
-  void analyseCuts()
+  void analyseCuts(std::string choice)
   {
-    std::cout << "Do you want to work with tracks/v0/cascade (T/V/C)?\n";
-    std::cout << " > ";
-    std::string in;
-    std::cin >> in;
     aod::femtodreamparticle::cutContainerType output = -1;
-    if (in.compare("T") == 0) {
+    if (choice == std::string("T")) {
       output = iterateSelection(mTrackSel);
-    } else if (in.compare("V") == 0) {
+    } else if (choice == std::string("V")) {
       output = iterateSelection(mV0Sel);
-    } else if (in.compare("C") == 0) {
-      // output =  iterateSelection(mCascadeSel);
     } else {
-      std::cout << "Option " << in << " not recognized - available options are (T/V/C) \n";
-      analyseCuts();
+      LOG(info) << "Option " << choice << " not recognized - available options are (T/V)";
+      return;
     }
     std::bitset<8 * sizeof(aod::femtodreamparticle::cutContainerType)> bitOutput = output;
     std::cout << "+++++++++++++++++++++++++++++++++\n";

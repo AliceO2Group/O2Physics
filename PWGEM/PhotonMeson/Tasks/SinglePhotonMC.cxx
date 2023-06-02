@@ -349,16 +349,13 @@ struct SinglePhotonMC {
   //   FillTruePhoton<EMDetType::kEMC>(grouped_collisions, emcclusters, perCollision_emc, fEMCCuts, nullptr, emcmatchedtracks, mcparticles, mccollisions);
   // }
 
-  // Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  // Preslice<soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels>> rec_perMcCollision = aod::emmceventlabel::emreducedmceventId;
-  void processGen(MyCollisions const& collisions, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
+  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
+  void processGen(MyCollisions const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
-
     for (auto& collision : collisions) {
       auto mccollision = collision.emreducedmcevent();
-      // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
 
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
@@ -378,13 +375,8 @@ struct SinglePhotonMC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
 
-      // auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
-      // for (auto& mctrack : mctracks_coll) {
-      for (auto& mctrack : mcparticles) {
-        if (mctrack.emreducedmceventId() != mccollision.globalIndex()) {
-          continue;
-        }
-        // LOGF(info, "mctrack.emreducedmceventId() = %d", mctrack.emreducedmceventId());
+      auto mctracks_coll = mcparticles.sliceBy(perMcCollision, collision.emreducedmceventId());
+      for (auto& mctrack : mctracks_coll) {
         if (abs(mctrack.y()) > maxY) {
           continue;
         }
