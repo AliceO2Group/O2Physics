@@ -215,7 +215,6 @@ enum MCType {
 
 static constexpr std::string_view MCTypeName[kNMCTypes] = {"", "_MC"};
 
-// DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
 DECLARE_SOA_COLUMN(PartOriginMCTruth, partOriginMCTruth, uint8_t); //! Origin of the particle, according to femtodreamparticle::ParticleOriginMCTruth
 DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle PDG
 
@@ -242,7 +241,6 @@ DECLARE_SOA_INDEX_COLUMN(FDMCParticle, fdMCParticle); //! MC particle for femtod
 } // namespace mcfdlabel
 DECLARE_SOA_TABLE(FDMCLabels, "AOD", "FDMCLabel", //! Table joinable to FemtoDreamParticle containing the MC labels
                   mcfdlabel::FDMCParticleId);
-// using FDMCLabel = FDMCLabels::iterator;
 
 /// Hash
 namespace hash
