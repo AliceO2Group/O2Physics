@@ -27,6 +27,8 @@
 #include <memory>
 #include <map>
 
+#include <CCDB/BasicCCDBManager.h>
+
 // ROOT includes
 #include "TSystem.h"
 
@@ -46,8 +48,12 @@ class OnnxModel
   OnnxModel() = default;
   ~OnnxModel() = default;
 
+  // Access model from CCDB
+  void accessModelFromCCDB(std::string, o2::ccdb::CcdbApi&, std::string, long);
+
   // Inferencing
   void initModel(std::string, bool = false, int = 0, uint64_t = 0, uint64_t = 0);
+  void initModel(bool = false, int = 0, uint64_t = 0, uint64_t = 0); // in case modelPath already initialized in accessModelFromCCDB
 
   // template methods -- best to define them in header
   template <typename T>
