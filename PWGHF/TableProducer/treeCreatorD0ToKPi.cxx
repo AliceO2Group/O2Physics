@@ -129,7 +129,7 @@ DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
                   full::E,
                   full::FlagMc,
                   full::OriginMcRec,
-                  full::HFGlobalIndex);
+                  full::GlobalIndex);
 
 DECLARE_SOA_TABLE(HfCand2ProngFullEvents, "AOD", "HFCAND2PFullE",
                   collision::BCId,
