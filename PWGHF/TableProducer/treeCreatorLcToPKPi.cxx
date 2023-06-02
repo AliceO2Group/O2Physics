@@ -157,7 +157,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
                   full::MCflag,
                   full::OriginMcRec,
                   full::IsCandidateSwapped,
-                  full::HFGlobalIndex);
+                  full::GlobalIndex);
 
 DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
                   collision::BCId,
