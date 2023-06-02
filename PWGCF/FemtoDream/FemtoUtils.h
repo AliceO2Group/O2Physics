@@ -1,4 +1,4 @@
-// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -38,9 +38,7 @@ int getPIDselection(const float nSigma, const std::vector<float>& vNsigma)
       return static_cast<int>(i);
     }
   }
-  LOG(warn) << "Invalid value of nSigma: " << nSigma
-            << ". Return the first value of the vector: " << vNsigma[0]
-            << std::endl;
+  LOG(warn) << "Invalid value of nSigma: " << nSigma << ". Return the first value of the vector: " << vNsigma[0];
   return 0;
 }
 
@@ -64,8 +62,8 @@ bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut,
     //\todo we also need the possibility to specify whether the bit is
     // true/false ->std>>vector<std::pair<int, int>>
     // if (!((pidcut >> it.first) & it.second)) {
-    int bit_to_check = nSpecies * kDetector::kNdetectors * iNsigma +
-                       iSpecies * kDetector::kNdetectors + iDet;
+    int bit_to_check = nSpecies * kDetector::kNdetectors * iNsigma + iSpecies * kDetector::kNdetectors + iDet;
+    LOG(info) << "Check bit: " << bit_to_check;
     if (!(pidcut & (1UL << bit_to_check))) {
       pidSelection = false;
     }
