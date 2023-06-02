@@ -310,11 +310,10 @@ struct JetFinderQATask {
       minJetPt[iJetRadius] = 0.0;
     }
     for (auto& jet : jets) {
-
       for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
         if (jet.r() == round(jetRadiiValues[iJetRadius] * 100.0f)) {
           for (double pt = jet.pt(); pt > minJetPt[iJetRadius]; pt -= 1.0) {
-            registry.fill(HIST("h2_jet_radius_jet_pT_triggered"), jet.r() / 100.0, pt); // print out this line
+            registry.fill(HIST("h2_jet_radius_jet_pT_triggered"), jet.r() / 100.0, pt);
           }
           if (jet.pt() > minJetPt[iJetRadius]) {
             minJetPt[iJetRadius] = jet.pt();
@@ -323,21 +322,21 @@ struct JetFinderQATask {
         }
       }
 
-      if ((jet.eta() < (trackEtaMin + jet.r() / 100.0)) || (jet.eta() < (trackEtaMax - jet.r() / 100.0))) {
+      if ((jet.eta() < (trackEtaMin + jet.r() / 100.0)) || (jet.eta() > (trackEtaMax - jet.r() / 100.0))) {
         continue;
       }
-      registry.fill(HIST("h3_jet_radius_jet_pt_collision"), jet.r() / 100.0, jet.pt(), collision.hasJetChHighPt());   // print out this line
-      registry.fill(HIST("h3_jet_radius_jet_eta_collision"), jet.r() / 100.0, jet.eta(), collision.hasJetChHighPt()); // print out this line
-      registry.fill(HIST("h3_jet_radius_jet_phi_collision"), jet.r() / 100.0, jet.phi(), collision.hasJetChHighPt()); // print out this line
+      registry.fill(HIST("h3_jet_radius_jet_pt_collision"), jet.r() / 100.0, jet.pt(), collision.hasJetChHighPt());
+      registry.fill(HIST("h3_jet_radius_jet_eta_collision"), jet.r() / 100.0, jet.eta(), collision.hasJetChHighPt());
+      registry.fill(HIST("h3_jet_radius_jet_phi_collision"), jet.r() / 100.0, jet.phi(), collision.hasJetChHighPt());
 
       for (auto& constituent : jet.template tracks_as<JetTracks>()) {
-        registry.fill(HIST("h3_jet_radius_jet_pt_track_pt_MB"), jet.r() / 100.0, jet.pt(), constituent.pt());   // print out this line
-        registry.fill(HIST("h3_jet_radius_jet_pt_track_eta_MB"), jet.r() / 100.0, jet.pt(), constituent.eta()); // print out this line
-        registry.fill(HIST("h3_jet_radius_jet_pt_track_phi_MB"), jet.r() / 100.0, jet.pt(), constituent.phi()); // print out this line
+        registry.fill(HIST("h3_jet_radius_jet_pt_track_pt_MB"), jet.r() / 100.0, jet.pt(), constituent.pt());
+        registry.fill(HIST("h3_jet_radius_jet_pt_track_eta_MB"), jet.r() / 100.0, jet.pt(), constituent.eta());
+        registry.fill(HIST("h3_jet_radius_jet_pt_track_phi_MB"), jet.r() / 100.0, jet.pt(), constituent.phi());
         if (collision.hasJetChHighPt() >= 1) {
-          registry.fill(HIST("h3_jet_radius_jet_pt_track_pt_Triggered"), jet.r() / 100.0, jet.pt(), constituent.pt());   // print out this line
-          registry.fill(HIST("h3_jet_radius_jet_pt_track_eta_Triggered"), jet.r() / 100.0, jet.pt(), constituent.eta()); // print out this line
-          registry.fill(HIST("h3_jet_radius_jet_pt_track_phi_Triggered"), jet.r() / 100.0, jet.pt(), constituent.phi()); // print out this line
+          registry.fill(HIST("h3_jet_radius_jet_pt_track_pt_Triggered"), jet.r() / 100.0, jet.pt(), constituent.pt());
+          registry.fill(HIST("h3_jet_radius_jet_pt_track_eta_Triggered"), jet.r() / 100.0, jet.pt(), constituent.eta());
+          registry.fill(HIST("h3_jet_radius_jet_pt_track_phi_Triggered"), jet.r() / 100.0, jet.pt(), constituent.phi());
         }
       }
     }
@@ -346,13 +345,13 @@ struct JetFinderQATask {
       if (!selectTrack(track)) {
         continue;
       }
-      registry.fill(HIST("h_track_pt_MB"), track.pt());   // print out this line
-      registry.fill(HIST("h_track_eta_MB"), track.eta()); // print out this line
-      registry.fill(HIST("h_track_phi_MB"), track.phi()); // print out this line
+      registry.fill(HIST("h_track_pt_MB"), track.pt());
+      registry.fill(HIST("h_track_eta_MB"), track.eta());
+      registry.fill(HIST("h_track_phi_MB"), track.phi());
       if (collision.hasJetChHighPt() >= 1) {
-        registry.fill(HIST("h_track_pt_Triggered"), track.pt());   // print out this line
-        registry.fill(HIST("h_track_eta_Triggered"), track.eta()); // print out this line
-        registry.fill(HIST("h_track_phi_Triggered"), track.phi()); // print out this line
+        registry.fill(HIST("h_track_pt_Triggered"), track.pt());
+        registry.fill(HIST("h_track_eta_Triggered"), track.eta());
+        registry.fill(HIST("h_track_phi_Triggered"), track.phi());
       }
     }
   }
