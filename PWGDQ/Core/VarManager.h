@@ -102,7 +102,8 @@ class VarManager : public TObject
     AmbiTrack = BIT(19),
     AmbiMuon = BIT(20),
     DalitzBits = BIT(21),
-    TrackTPCPID = BIT(22)
+    TrackTPCPID = BIT(22),
+    TrackMFT = BIT(23)
   };
 
   enum PairCandidateType {
