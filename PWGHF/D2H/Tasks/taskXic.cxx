@@ -130,7 +130,7 @@ struct HfTaskXic {
     // MC reconstructed:signal
     registry.add("MC/reconstructed/signal/hMassSig", "Invariant mass (matched);m (p K #pi) (GeV/#it{c}^{2});;entries", {HistType::kTH2F, {{500, 1.6, 3.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hDecLengthRecSig", "3-prong candidates;decay length (cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hDecLengtXYRecSig", "3-prong candidates;decay length XY (cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/reconstructed/signal/hDecLengthXYRecSig", "3-prong candidates;decay length XY (cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hNormalisedDecayLengthXYRecSig", "3-prong candidates;norm. decay length XY (cm);;entries", {HistType::kTH2F, {{80, 0., 80.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hd0Prong0RecSig", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);;entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hd0Prong1RecSig", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);;entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -149,7 +149,7 @@ struct HfTaskXic {
     // background
     registry.add("MC/reconstructed/background/hMassBg", "Invariant mass (unmatched);m (p K #pi) (GeV/#it{c}^{2});;entries", {HistType::kTH2F, {{500, 1.6, 3.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hDecLengthRecBg", "3-prong candidates;decay length (cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/background/hDecLengtXYRecBg", "3-prong candidates;decay length xy(cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/reconstructed/background/hDecLengthXYRecBg", "3-prong candidates;decay length xy(cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hNormalisedDecayLengthXYRecBg", "3-prong candidates;norm. decay length XY (cm);;entries", {HistType::kTH2F, {{80, 0., 80.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hd0Prong0RecBg", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);;entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hd0Prong1RecBg", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);;entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -335,7 +335,7 @@ struct HfTaskXic {
         }
 
         registry.fill(HIST("MC/reconstructed/background/hDecLengthRecBg"), candidate.decayLength(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/background/hDecLengthXYRecSig"), candidate.decayLengthXY(), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/background/hDecLengthXYRecBg"), candidate.decayLengthXY(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hNormalisedDecayLengthXYRecBg"), candidate.decayLengthXYNormalised(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hPtProng0RecBg"), candidate.ptProng0(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hPtProng1RecBg"), candidate.ptProng1(), ptCandidate);
