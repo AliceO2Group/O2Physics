@@ -105,8 +105,8 @@ struct JetFinderQATask {
   Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.2, 0.3, 0.4, 0.5, 0.6}, "jet resolution parameters"};
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
-  Configurable<float> trackPtMin{"trackPtMin", -0.9, "minimum pT acceptance for tracks"};
-  Configurable<float> trackPtMax{"trackPtMax", 0.9, "maximum pT acceptance for tracks"};
+  Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum pT acceptance for tracks"};
+  Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   std::string trackSelection;
   std::vector<double> minJetPt;
@@ -116,6 +116,7 @@ struct JetFinderQATask {
   {
     trackSelection = static_cast<std::string>(trackSelections);
     jetRadiiValues = (std::vector<double>)jetRadii;
+
     for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
       minJetPt.push_back(0.0);
     }
