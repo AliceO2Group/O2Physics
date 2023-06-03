@@ -1793,8 +1793,8 @@ DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mi
 // mapping of decay types
 enum DecayType { B0ToDPi };
 
-enum DecayTypeMc : uint8_t { B0ToDPiAndDToPiKPi = 0,
-                             B0ToDsPiAndDsToKKPi,
+enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
+                             B0ToDsPiToKKPiPi,
                              PartlyRecoDecay,
                              OtherDecay,
                              NDecayTypeMc };

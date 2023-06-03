@@ -117,7 +117,7 @@ struct HfTaskB0 {
 
     registry.add("hPtRecSig", "B0 candidates (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hPtRecBg", "B0 candidates (unmatched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
-    registry.add("hPtGenSig", "B0 candidates (gen+rec);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 10.}}});
+    registry.add("hPtGenSig", "B0 candidates (gen+rec);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hPtGen", "MC particles (generated);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hPtGenWithRapidityBelowHalf", "MC particles (generated - |#it{y}^{gen}|<0.5);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hPtGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
@@ -125,8 +125,8 @@ struct HfTaskB0 {
     if (checkDecayTypeMc) {
       constexpr uint8_t kNBinsDecayTypeMc = DecayTypeMc::NDecayTypeMc;
       TString labels[kNBinsDecayTypeMc];
-      labels[DecayTypeMc::B0ToDPiAndDToPiKPi] = "B^{0} #rightarrow (D^{#minus} #rightarrow #pi^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
-      labels[DecayTypeMc::B0ToDsPiAndDsToKKPi] = "B^{0} #rightarrow (D^{#minus}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
+      labels[DecayTypeMc::B0ToDplusPiToPiKPiPi] = "B^{0} #rightarrow (D^{#minus} #rightarrow #pi^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
+      labels[DecayTypeMc::B0ToDsPiToKKPiPi] = "B^{0} #rightarrow (D^{#minus}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
       labels[DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
       labels[DecayTypeMc::OtherDecay] = "Other decays";
       static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
@@ -202,7 +202,7 @@ struct HfTaskB0 {
       auto invMassCandB0 = invMassB0ToDPi(candidate);
       int flagMcMatchRecB0 = std::abs(candidate.flagMcMatchRec());
 
-      if (TESTBIT(flagMcMatchRecB0, hf_cand_b0::DecayTypeMc::B0ToDPiAndDToPiKPi)) {
+      if (TESTBIT(flagMcMatchRecB0, hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi)) {
         auto indexMother = RecoDecay::getMother(particlesMc, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0McGen>>(), pdg::Code::kB0, true);
         auto particleMother = particlesMc.rawIteratorAt(indexMother);
 
@@ -226,7 +226,7 @@ struct HfTaskB0 {
         registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), ptCandB0);
 
         if (checkDecayTypeMc) {
-          registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::B0ToDPiAndDToPiKPi, invMassCandB0, ptCandB0);
+          registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::B0ToDplusPiToPiKPiPi, invMassCandB0, ptCandB0);
         }
       } else {
         registry.fill(HIST("hPtRecBg"), ptCandB0);
@@ -248,12 +248,12 @@ struct HfTaskB0 {
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), ptCandB0);
 
         if (checkDecayTypeMc) {
-          if (TESTBIT(flagMcMatchRecB0, DecayTypeMc::B0ToDsPiAndDsToKKPi)) { // B0 → Ds- π+ → (K- K+ π-) π+
-            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::B0ToDsPiAndDsToKKPi, invMassCandB0, ptCandB0);
+          if (TESTBIT(flagMcMatchRecB0, DecayTypeMc::B0ToDsPiToKKPiPi)) { // B0 → Ds- π+ → (K- K+ π-) π+
+            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::B0ToDsPiToKKPiPi, invMassCandB0, ptCandB0);
           } else if (TESTBIT(flagMcMatchRecB0, DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::PartlyRecoDecay, invMassCandB0, ptCandB0);
           } else {
-            registry.fill(HIST("hDecayTypeMc"), 1 + OtherDecay, invMassCandB0, ptCandB0);
+            registry.fill(HIST("hDecayTypeMc"), 1 + DecayTypeMc::OtherDecay, invMassCandB0, ptCandB0);
           }
         }
       }
