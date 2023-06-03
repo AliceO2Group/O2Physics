@@ -218,13 +218,13 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   for (int i = 50; i < npTgg10; i++)
     pTgg10[i] = 0.5 * (i - 50) + 5.0; // from 5 to 10 GeV/c, evety 0.5 GeV/c
 
-  if (TString(histClass) == "tagged_photon") {
+  if (TString(histClass) == "tagging_pi0") {
     list->Add(new TH2F("hMggPt_Same", "m_{ee#gamma} vs. p_{T,ee};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
     list->Add(new TH2F("hMggPt_Mixed", "m_{ee#gamma} vs. p_{T,ee};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
   }
-  if (TString(histClass) == "tagged_photon_mc") {
+  if (TString(histClass) == "tagging_pi0_mc") {
     list->Add(new TH1F("hPt_v0photon_Pi0", "reconstructed v0 photon from pi0;p_{T,ee} (GeV/c);N_{ee}^{#pi^{0}}", npTgg10 - 1, pTgg10));                                                              // denominator for conditional probability
     list->Add(new TH2F("hMggPt_Pi0", "reconstructed m_{ee#gamma} vs. p_{T,ee} from pi0;m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c);N_{ee}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
     reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0"))->Sumw2();

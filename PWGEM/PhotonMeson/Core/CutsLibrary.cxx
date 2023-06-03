@@ -305,3 +305,22 @@ EMCPhotonCut* o2::aod::emccuts::GetCut(const char* cutName)
   LOGF(info, Form("Did not find cut %s", cutName));
   return nullptr;
 }
+
+PairCut* o2::aod::paircuts::GetCut(const char* cutName)
+{
+  PairCut* cut = new PairCut(cutName, cutName);
+  std::string nameStr = cutName;
+
+  if (!nameStr.compare("nocut")) {
+    cut->SetAsymRange(-1e+10f, +1e+10f);
+    return cut;
+  }
+  if (!nameStr.compare("asym08")) {
+    cut->SetAsymRange(0, 0.8);
+    return cut;
+  }
+
+  delete cut;
+  LOGF(info, Form("Did not find cut %s", cutName));
+  return nullptr;
+}
