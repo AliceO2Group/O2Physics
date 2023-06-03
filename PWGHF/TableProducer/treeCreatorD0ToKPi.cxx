@@ -70,6 +70,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t); // is prompt or non-prompt, reco level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); // is prompt or non-prompt, Gen level
+DECLARE_SOA_COLUMN(GlobalIndex, globalIndex, int);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
@@ -127,7 +128,8 @@ DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
                   full::Y,
                   full::E,
                   full::FlagMc,
-                  full::OriginMcRec);
+                  full::OriginMcRec,
+                  full::GlobalIndex);
 
 DECLARE_SOA_TABLE(HfCand2ProngFullEvents, "AOD", "HFCAND2PFullE",
                   collision::BCId,
@@ -145,7 +147,8 @@ DECLARE_SOA_TABLE(HfCand2ProngFullParticles, "AOD", "HFCAND2PFullP",
                   full::Phi,
                   full::Y,
                   full::FlagMc,
-                  full::OriginMcGen);
+                  full::OriginMcGen,
+                  full::GlobalIndex);
 
 } // namespace o2::aod
 
@@ -232,7 +235,8 @@ struct HfTreeCreatorD0ToKPi {
         y,
         e,
         flagMc,
-        origin);
+        origin,
+        candidate.globalIndex());
     }
   }
 
@@ -296,7 +300,8 @@ struct HfTreeCreatorD0ToKPi {
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
           particle.flagMcMatchGen(),
-          particle.originMcGen());
+          particle.originMcGen(),
+          particle.globalIndex());
       }
     }
   }
