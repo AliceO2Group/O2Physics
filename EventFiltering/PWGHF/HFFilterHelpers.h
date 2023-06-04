@@ -1092,4 +1092,4 @@ DECLARE_SOA_TABLE(HFOptimisationTreeCollisions, "AOD", "HFOPTIMTREECOLL", //!
                   hfoptimisationTree::CollisionIndex)
 } // namespace o2::aod
 
-#endif  // EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_
+#endif // EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_
