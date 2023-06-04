@@ -152,7 +152,7 @@ struct jetTrackCollisionQa {
   Filter etafilter = (aod::track::eta < etaup) && (aod::track::eta > etalow);
   Filter ptfilter = (aod::track::pt < ptUp) && (aod::track::pt > ptLow);
   using TracksJE = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
-  
+
   void processESD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks)
   {
     if (!collision.sel7() || fabs(collision.posZ()) > 10) {
@@ -364,7 +364,7 @@ struct mcJetTrackCollisionQa {
     mHistManager.fill(HIST("collResolutionPt"), collision.mcCollision().posZ(), (collision.posZ() - collision.mcCollision().posZ()) / collision.mcCollision().posZ());
   } // end of collision template
 
-  // fill qa histograms for selected tracks in collision 
+  // fill qa histograms for selected tracks in collision
   template <class ValidationTracks, typename coll>
   void fillMcTrackHistos(ValidationTracks const& mct, coll collision, bool mc) // could give collision as argument for additional association
   {
@@ -374,7 +374,7 @@ struct mcJetTrackCollisionQa {
       }
       if (mc == true) {
         if (track.has_mcParticle()) {
-          auto mcParticle = track.mcParticle(); 
+          auto mcParticle = track.mcParticle();
           mHistManager.fill(HIST("genMCselectedTrackPt"), mcParticle.pt());
           mHistManager.fill(HIST("genMCselectedTrackPhi"), mcParticle.phi());
           mHistManager.fill(HIST("genMCselectedTrackEta"), mcParticle.eta());
@@ -450,7 +450,7 @@ struct mcJetTrackCollisionQa {
       fillMcCollisionHistos(collision);
       fillMcTrackHistos(tracks, collision, true);
       for (const auto& genJet : mcPartJets) {
-        if (genJet.mcCollisionId() == collision.globalIndex()){
+        if (genJet.mcCollisionId() == collision.globalIndex()) {
           fillMcPartJets(genJet);
           for (auto& mcParticle : genJet.tracks_as<aod::McParticles>()) {
             fillMcPartJetConstituents(mcParticle);
@@ -460,16 +460,15 @@ struct mcJetTrackCollisionQa {
     } // end if has mc collision
     fillMcTrackHistos(tracks, collision, false);
     for (const auto& detJet : mcDetJets) {
-      if (detJet.collisionId() == collision.globalIndex()){
+      if (detJet.collisionId() == collision.globalIndex()) {
         fillMcDetJets(detJet);
         for (auto& detConst : detJet.tracks_as<MCTracksJE>()) {
           fillMcDetJetConstituents(detConst);
-        } 
+        }
       }
-    }// end of loop detector level jets
-  } // end processMcRun2
+    } // end of loop detector level jets
+  }   // end processMcRun2
   PROCESS_SWITCH(mcJetTrackCollisionQa, processMcRun2, "validate jet-finder output on converted run2 mc AOD's", false);
-
 
   void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
                      soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& mcPartJets,
@@ -485,24 +484,24 @@ struct mcJetTrackCollisionQa {
       fillMcCollisionHistos(collision);
       fillMcTrackHistos(tracks, collision, true);
       for (const auto& genJet : mcPartJets) {
-        if (genJet.mcCollisionId() == collision.globalIndex()){
+        if (genJet.mcCollisionId() == collision.globalIndex()) {
           fillMcPartJets(genJet);
           for (auto& mcParticle : genJet.tracks_as<aod::McParticles>()) {
             fillMcPartJetConstituents(mcParticle);
           }
-        } 
-      }  // end of loop particle level jets
+        }
+      } // end of loop particle level jets
     } // end of loop if mc collision
     fillMcTrackHistos(tracks, collision, false);
     for (const auto& detJet : mcDetJets) {
-      if (detJet.collisionId() == collision.globalIndex()){
+      if (detJet.collisionId() == collision.globalIndex()) {
         fillMcDetJets(detJet);
         for (auto& detConst : detJet.tracks_as<MCTracksJE>()) {
           fillMcDetJetConstituents(detConst);
         }
       }
     } // end of loop detector level jets
-  } // end processMcRun3
+  }   // end processMcRun3
   PROCESS_SWITCH(mcJetTrackCollisionQa, processMcRun3, "validate jet-finder output on run3 mc AOD's", false);
 
   // dummy process to run jetfinder validation code on AO2D's, but MC validation for run3 on hyperloop
