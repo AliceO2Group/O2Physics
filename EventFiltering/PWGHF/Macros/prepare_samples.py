@@ -127,7 +127,8 @@ def divide_df_for_origin(input_df, cols_to_remove=None, channel=None):
     return df_prompt, df_nonprompt, df_bkg
 
 
-# pylint: disable=too-many-locals,too-many-branches,too-many-nested-blocks,too-many-statements
+# pylint: disable=too-many-locals,too-many-branches
+# pylint: disable=too-many-nested-blocks,too-many-statements
 def main(input_dir, max_files=1000, downscale_bkg=1., force=False, do_smearing=False):
     """
     Main function
@@ -177,10 +178,8 @@ def main(input_dir, max_files=1000, downscale_bkg=1., force=False, do_smearing=F
                 if do_smearing:
                     df_2p = do_dca_smearing(df_2p, 2)
 
-                df_2p_prompt, df_2p_nonprompt, df_2p_bkg = divide_df_for_origin(
-                    df_2p)
-                df_2p_bkg = df_2p_bkg.sample(
-                    frac=downscale_bkg, random_state=42)
+                df_2p_prompt, df_2p_nonprompt, df_2p_bkg = divide_df_for_origin(df_2p)
+                df_2p_bkg = df_2p_bkg.sample(frac=downscale_bkg, random_state=42)
                 df_2p_prompt.to_parquet(
                     os.path.join(indir, "Prompt_D0ToKPi.parquet.gzip"),
                     compression="gzip"
