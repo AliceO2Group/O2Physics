@@ -251,7 +251,7 @@ struct HfCandidateCreator3ProngExpressions {
     std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};  // Λc± → Δ(1232)±± K∓
     std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus}; // Λc± → Λ(1520) π±
     std::array<int, 2> arrPDGResonantDsPhiPi = {333, kPiPlus}; // Ds± → Phi π±
-    std::array<int, 2> arrPDGResonantDsKstarK = {313, kKPlus};   // Ds± → K*(892)0bar K±
+    std::array<int, 2> arrPDGResonantDsKstarK = {313, kKPlus}; // Ds± → K*(892)0bar K±
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -291,7 +291,7 @@ struct HfCandidateCreator3ProngExpressions {
             } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
               channel = DecayChannelDs::K0starK;
             }
-          } 
+          }
         }
       }
 
