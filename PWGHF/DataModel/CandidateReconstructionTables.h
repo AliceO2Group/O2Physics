@@ -800,7 +800,7 @@ auto invMassDplusToPiKPi(const T& candidate)
 
 enum DecayChannelDs {
   PhiPi = 1,
-  K0stK
+  K0starK
 };
 
 template <typename T>
