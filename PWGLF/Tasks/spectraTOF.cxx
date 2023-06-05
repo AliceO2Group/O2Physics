@@ -425,6 +425,11 @@ struct tofSpectra {
         histos.add(hpt_den_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
         histos.add(hpt_den_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
         histos.add(hpt_den_mat[i].data(), pTCharge[i], kTH1D, {ptAxis});
+        histos.add(hpt_den_prm_recoev[i].data(), pTCharge[i], kTH1D, {ptAxis});
+        histos.add(hpt_den_prm_evsel[i].data(), pTCharge[i], kTH1D, {ptAxis});
+        histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
+        histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
+        histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH1D, {ptAxis});
 
         histos.add(hdcaxyprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
         histos.add(hdcazprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
@@ -1135,6 +1140,160 @@ struct tofSpectra {
     }
   }
 
+  template <std::size_t i, typename ParticleType>
+  void fillParticleHistograms_MCRecoEvs(ParticleType const& mcParticle, CollisionCandidateMC::iterator const& collision)
+  {
+
+    switch (i) {
+      case 0:
+      case Np:
+        if (doprocessFullEl == false && doprocessLfFullEl == false) {
+          return;
+        }
+        break;
+      case 1:
+      case Np + 1:
+        if (doprocessFullMu == false && doprocessLfFullMu == false) {
+          return;
+        }
+        break;
+      case 2:
+      case Np + 2:
+        if (doprocessFullPi == false && doprocessLfFullPi == false) {
+          return;
+        }
+        break;
+      case 3:
+      case Np + 3:
+        if (doprocessFullKa == false && doprocessLfFullKa == false) {
+          return;
+        }
+        break;
+      case 4:
+      case Np + 4:
+        if (doprocessFullPr == false && doprocessLfFullPr == false) {
+          return;
+        }
+        break;
+      case 5:
+      case Np + 5:
+        if (doprocessFullDe == false && doprocessLfFullDe == false) {
+          return;
+        }
+        break;
+      case 6:
+      case Np + 6:
+        if (doprocessFullTr == false && doprocessLfFullTr == false) {
+          return;
+        }
+        break;
+      case 7:
+      case Np + 7:
+        if (doprocessFullHe == false && doprocessLfFullHe == false) {
+          return;
+        }
+        break;
+      case 8:
+      case Np + 8:
+        if (doprocessFullAl == false && doprocessLfFullAl == false) {
+          return;
+        }
+        break;
+    }
+
+    if (mcParticle.pdgCode() != PDGs[i]) {
+      return;
+    }
+
+    if (mcParticle.isPhysicalPrimary()) {
+      if (collision.sel8()) {
+        if (abs(collision.posZ()) < cfgCutVertex) {
+          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt());
+        } else {
+          histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt());
+        }
+      } else {
+        histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt());
+      }
+    }
+  }
+
+  template <std::size_t i, typename ParticleType>
+  void fillParticleHistograms_MCGenEvs(ParticleType const& mcParticle, aod::McCollision const& mcCollision)
+  {
+
+    switch (i) {
+      case 0:
+      case Np:
+        if (doprocessFullEl == false && doprocessLfFullEl == false) {
+          return;
+        }
+        break;
+      case 1:
+      case Np + 1:
+        if (doprocessFullMu == false && doprocessLfFullMu == false) {
+          return;
+        }
+        break;
+      case 2:
+      case Np + 2:
+        if (doprocessFullPi == false && doprocessLfFullPi == false) {
+          return;
+        }
+        break;
+      case 3:
+      case Np + 3:
+        if (doprocessFullKa == false && doprocessLfFullKa == false) {
+          return;
+        }
+        break;
+      case 4:
+      case Np + 4:
+        if (doprocessFullPr == false && doprocessLfFullPr == false) {
+          return;
+        }
+        break;
+      case 5:
+      case Np + 5:
+        if (doprocessFullDe == false && doprocessLfFullDe == false) {
+          return;
+        }
+        break;
+      case 6:
+      case Np + 6:
+        if (doprocessFullTr == false && doprocessLfFullTr == false) {
+          return;
+        }
+        break;
+      case 7:
+      case Np + 7:
+        if (doprocessFullHe == false && doprocessLfFullHe == false) {
+          return;
+        }
+        break;
+      case 8:
+      case Np + 8:
+        if (doprocessFullAl == false && doprocessLfFullAl == false) {
+          return;
+        }
+        break;
+    }
+
+    if (mcParticle.pdgCode() != PDGs[i]) {
+      return;
+    }
+
+    if (mcParticle.isPhysicalPrimary()) {
+      if (abs(mcCollision.posZ()) < cfgCutVertex) {
+        histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt());
+      } else {
+        histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt());
+      }
+    }
+  }
+
+  Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
+  SliceCache cache;
   void processMC(soa::Join<aod::Tracks, aod::TracksExtra,
                            aod::TracksDCA, aod::McTrackLabels,
                            aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
@@ -1147,7 +1306,7 @@ struct tofSpectra {
     histos.fill(HIST("MC/GenRecoCollisions"), 0.5, mcCollisions.size());
     histos.fill(HIST("MC/GenRecoCollisions"), 1.5, collisions.size());
     // LOGF(info, "Enter processMC!");
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (!track.has_collision()) {
         if (track.sign() > 0) {
           histos.fill(HIST("MC/no_collision/pos"), track.pt());
@@ -1174,19 +1333,45 @@ struct tofSpectra {
       });
     }
 
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       // if (std::abs(mcParticle.eta()) > cfgCutEta) {
       //   continue;
       // }
       if (std::abs(mcParticle.y()) > cfgCutY) {
         continue;
       }
-      if (!mcParticle.isPhysicalPrimary()) {
-        continue;
-      }
       static_for<0, 17>([&](auto i) {
         fillParticleHistograms_MC<i>(mcParticle);
       });
+    }
+
+    // Loop on reconstructed collisions
+    for (const auto& collision : collisions) {
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+      const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
+      for (const auto& mcParticle : particlesInCollision) {
+        if (std::abs(mcParticle.y()) > cfgCutY) {
+          continue;
+        }
+        static_for<0, 17>([&](auto i) {
+          fillParticleHistograms_MCRecoEvs<i>(mcParticle, collision);
+        });
+      }
+    }
+
+    // Loop on generated collisions
+    for (const auto& mcCollision : mcCollisions) {
+      const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      for (const auto& mcParticle : particlesInCollision) {
+        if (std::abs(mcParticle.y()) > cfgCutY) {
+          continue;
+        }
+        static_for<0, 17>([&](auto i) {
+          fillParticleHistograms_MCGenEvs<i>(mcParticle, mcCollision);
+        });
+      }
     }
   }
   PROCESS_SWITCH(tofSpectra, processMC, "Process MC", false);
