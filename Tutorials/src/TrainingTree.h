@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef TRAININGTREE_H
-#define TRAININGTREE_H
+#ifndef TUTORIALS_SRC_TRAININGTREE_H_
+#define TUTORIALS_SRC_TRAININGTREE_H_
 #include "Framework/AnalysisDataModel.h"
 
 /// Definition of output table to store the flat tree for re-weighting model
@@ -49,8 +49,8 @@ auto meanPt(Tracks const& tracks)
       apt += track.pt();
     }
   }
-  return apt / (float)npt;
+  return apt / static_cast<float>(npt);
 }
-}
+} // namespace o2::analysis
 
-#endif // TRAININGTREE_H
+#endif // TUTORIALS_SRC_TRAININGTREE_H_

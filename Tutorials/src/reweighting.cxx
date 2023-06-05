@@ -31,8 +31,8 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "TrainingTree.h"
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+#include "TrainingTree.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -60,7 +60,7 @@ DECLARE_SOA_TABLE(Weights, "AOD", "WGHTS",
 template <typename C, typename T>
 std::array<float, 6> collect(C const& collision, T const& tracks)
 {
-  return {collision.posZ(), collision.posX(), collision.posY(), analysis::meanPt(tracks), (float)tracks.size(), collision.multFT0M()};
+  return {collision.posZ(), collision.posX(), collision.posY(), analysis::meanPt(tracks), static_cast<float>(tracks.size()), collision.multFT0M()};
 }
 
 /// Task to process collisions and create weighting information by applying the
