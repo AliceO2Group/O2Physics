@@ -64,11 +64,11 @@ def get_list_input_files(indirs, channel):
     - file_lists: dictionary with lists of input files for prompt, nonprompt, and bkg
     """
 
-    file_lists = 
     if channel not in ["D0ToKPi", "DplusToPiKPi", "DsToKKPi", "LcToPKPi", "XicToPKPi"]:
         print(f"ERROR: channel {channel} not implemented, return None")
         return {"Prompt": None, "Nonprompt": None, "Bkg": None}
 
+    file_lists = {}
     for cand_type in indirs:  # pylint: disable=too-many-nested-blocks
         file_lists[cand_type] = []
         for indir in indirs[cand_type]:
