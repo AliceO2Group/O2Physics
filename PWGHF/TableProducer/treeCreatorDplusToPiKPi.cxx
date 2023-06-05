@@ -359,11 +359,12 @@ struct HfTreeCreatorDplusToPiKPi {
       auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
       auto prong2 = candidate.prong2_as<aod::BigTracksPID>();
       double yD = yDplus(candidate);
-      double eD = eDplus(candidate);
-      double ctD = ctDplus(candidate);
-      fillTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), ctD, yD, eD, 0, 0);
       if (fillCandidateLiteTable) {
         fillLiteTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), yD, 0, 0);
+      } else {
+        double eD = eDplus(candidate);
+        double ctD = ctDplus(candidate);
+        fillTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), ctD, yD, eD, 0, 0);
       }
     }
   }
@@ -392,11 +393,12 @@ struct HfTreeCreatorDplusToPiKPi {
       auto prong1 = candidate.prong0_as<aod::BigTracksPID>();
       auto prong2 = candidate.prong0_as<aod::BigTracksPID>();
       double yD = yDplus(candidate);
-      double eD = eDplus(candidate);
-      double ctD = ctDplus(candidate);
-      fillTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
       if (fillCandidateLiteTable) {
         fillLiteTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), yD, candidate.flagMcMatchRec(), candidate.originMcRec());
+      } else {
+        double eD = eDplus(candidate);
+        double ctD = ctDplus(candidate);
+        fillTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
       }
     }
 
