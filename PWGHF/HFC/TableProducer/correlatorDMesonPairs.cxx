@@ -114,7 +114,6 @@ struct HfCorrelatorDMesonPairs {
     {{"hPtCand", "D Meson pair candidates;candidate #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hPtProng0", "D Meson pair candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hPtProng1", "D Meson pair candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
-     {"hSelectionStatus", "D Meson pair candidates;selection status;entries", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
      {"hEta", "D Meson pair candidates;candidate #it{#eta};entries", hTH1Y},
      {"hPhi", "D Meson pair candidates;candidate #it{#varphi};entries", hTH1Phi},
      {"hY", "D Meson pair candidates;candidate #it{y};entries", hTH1Y},
@@ -124,7 +123,6 @@ struct HfCorrelatorDMesonPairs {
      {"hPtCandMcRec", "D Meson pair candidates - MC reco;candidate #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hPtProng0McRec", "D Meson pair candidates - MC reco;prong 0 #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hPtProng1McRec", "D Meson pair candidates - MC reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
-     {"hSelectionStatusMcRec", "D Meson pair candidates - MC reco;selection status;entries", {HistType::kTH1F, {{301, -0.5, 300.5}}}},
      {"hEtaMcRec", "D Meson pair candidates - MC reco;candidate #it{#eta};entries", hTH1Y},
      {"hPhiMcRec", "D Meson pair candidates - MC reco;candidate #it{#varphi};entries", hTH1Phi},
      {"hYMcRec", "D Meson pair candidates - MC reco;candidate #it{y};entries", hTH1Y},
@@ -142,6 +140,19 @@ struct HfCorrelatorDMesonPairs {
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)binsPt;
+    constexpr int kNBinsSelStatus = 6;
+    std::string labels[kNBinsSelStatus];
+    labels[0] = "total # of Selected pairs";
+    labels[1] = "# of Selected D + Dbar";
+    labels[2] = "# of Selected D";
+    labels[3] = "# of Selected Dbar";
+    labels[4] = "# of True D";
+    labels[5] = "# of True Dbar";
+    AxisSpec axisSelStatus = {kNBinsSelStatus, 0.5, kNBinsSelStatus + 0.5, ""};
+    registry.add("hSelectionStatus", "D Meson candidates;selection status;entries", HistType::kTH1F, {axisSelStatus});
+    for (int iBin = 0; iBin < kNBinsSelStatus; iBin++) {
+      registry.get<TH1>(HIST("hSelectionStatus"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+    }
     registry.add("hMass", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
@@ -248,16 +259,22 @@ struct HfCorrelatorDMesonPairs {
     uint8_t candidateType(0);
     if (candidate.isSelD0() >= selectionFlagD0) {
       SETBIT(candidateType, SelectedD);
+      registry.fill(HIST("hSelectionStatus"), 2);
+      registry.fill(HIST("hSelectionStatus"), 3);
     }
-    if (candidate.isSelD0bar() >= selectionFlagD0) {
+    if (candidate.isSelD0bar() >= selectionFlagD0bar) {
       SETBIT(candidateType, SelectedDbar);
+      registry.fill(HIST("hSelectionStatus"), 2);
+      registry.fill(HIST("hSelectionStatus"), 4);
     }
     if constexpr (isRecoMc) {
       if (candidate.flagMcMatchRec() == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) { // matched as D0
         SETBIT(candidateType, TrueD);
+        registry.fill(HIST("hSelectionStatus"), 5);
       }
       if (candidate.flagMcMatchRec() == -(1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) { // matched as D0bar
         SETBIT(candidateType, TrueDbar);
+        registry.fill(HIST("hSelectionStatus"), 6);
       }
     }
     return candidateType;
@@ -270,14 +287,20 @@ struct HfCorrelatorDMesonPairs {
     uint8_t candidateType(0);
     if (particleSign == 1) {
       SETBIT(candidateType, SelectedD);
+      registry.fill(HIST("hSelectionStatus"), 2);
+      registry.fill(HIST("hSelectionStatus"), 3);
     } else {
       SETBIT(candidateType, SelectedDbar);
+      registry.fill(HIST("hSelectionStatus"), 2);
+      registry.fill(HIST("hSelectionStatus"), 4);
     }
     if constexpr (isRecoMc) {
       if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi) { // matched as DPlus
         SETBIT(candidateType, TrueD);
+        registry.fill(HIST("hSelectionStatus"), 5);
       } else { // matched as D0bar
         SETBIT(candidateType, TrueDbar);
+        registry.fill(HIST("hSelectionStatus"), 6);
       }
     }
     return candidateType;
@@ -391,7 +414,6 @@ struct HfCorrelatorDMesonPairs {
 
       registry.fill(HIST("hMass"), invMassD0ToPiK(candidate1), candidate1.pt());
       auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), false>(candidate1); // Candidate type attribution.
-      registry.fill(HIST("hSelectionStatus"), candidateType1);
 
       for (const auto& candidate2 : selectedD0CandidatesGrouped) {
         if (!kinematicCuts<decltype(candidate2), true>(candidate2)) {
@@ -402,6 +424,7 @@ struct HfCorrelatorDMesonPairs {
           continue;
         }
         auto candidateType2 = assignCandidateTypeD0<decltype(candidate2), false>(candidate2); // Candidate type attribution
+        registry.fill(HIST("hSelectionStatus"), 1);
         // fill tables
         entryD0Pair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
                     candidate2.eta() - candidate1.eta(),
@@ -434,7 +457,7 @@ struct HfCorrelatorDMesonPairs {
 
       registry.fill(HIST("hMass"), invMassD0ToPiK(candidate1), candidate1.pt());
       auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), true>(candidate1); // Candidate type attribution
-      registry.fill(HIST("hSelectionStatusMcRec"), candidateType1);
+
       int8_t origin1 = 0, matchedRec1 = 0;
       if (!(TESTBIT(candidateType1, TrueD) && TESTBIT(candidateType1, TrueDbar))) { // if our event is not bkg
         // check if it's prompt or non-prompt
@@ -462,6 +485,7 @@ struct HfCorrelatorDMesonPairs {
           // check if it's MC matched
           matchedRec2 = candidate2.flagMcMatchRec();
         }
+        registry.fill(HIST("hSelectionStatus"), 1);
         // fill tables
         entryD0Pair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
                     candidate2.eta() - candidate1.eta(),
@@ -512,8 +536,6 @@ struct HfCorrelatorDMesonPairs {
       fillInfoHists(candidate1, false, false);
       registry.fill(HIST("hMass"), invMassDplusToPiKPi(candidate1), candidate1.pt());
 
-      registry.fill(HIST("hSelectionStatus"), candidateType1);
-
       for (const auto& candidate2 : selectedDPlusCandidatesGrouped) {
         if (!kinematicCuts<decltype(candidate2), false>(candidate2)) {
           continue;
@@ -528,6 +550,7 @@ struct HfCorrelatorDMesonPairs {
           innerParticleSign = -1; // Dminus (second daughter track is positive)
         }
         auto candidateType2 = assignCandidateTypeDPlus<decltype(candidate2), false>(candidate2, innerParticleSign);
+        registry.fill(HIST("hSelectionStatus"), 1);
         // fill tables
         entryDplusPair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
                        candidate2.eta() - candidate1.eta(),
@@ -563,7 +586,6 @@ struct HfCorrelatorDMesonPairs {
       }
 
       auto candidateType1 = assignCandidateTypeDPlus<decltype(candidate1), true>(candidate1, outerParticleSign);
-      registry.fill(HIST("hSelectionStatusMcRec"), candidateType1);
       registry.fill(HIST("hMass"), invMassDplusToPiKPi(candidate1), candidate1.pt());
 
       int8_t origin1 = 0, matchedRec1 = 0;
@@ -598,6 +620,7 @@ struct HfCorrelatorDMesonPairs {
           // check if it's MC matched
           matchedRec2 = candidate1.flagMcMatchRec();
         }
+        registry.fill(HIST("hSelectionStatus"), 1);
         // fill tables
         entryDplusPair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
                        candidate2.eta() - candidate1.eta(),
