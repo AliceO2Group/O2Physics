@@ -380,11 +380,11 @@ struct HfTaskCorrelationDMesonPairs {
 
       // fill 2D invariant mass plots
       if (pairType == DD && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedD))) {
-          registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+        registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
       } else if (pairType == DDbar && ((TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDbar)) || (TESTBIT(pairEntry.candidateType1(), SelectedDbar) && TESTBIT(pairEntry.candidateType2(), SelectedD)))) {
-          registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+        registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
       } else if (pairType == DbarDbar && (TESTBIT(pairEntry.candidateType1(), SelectedDbar) && TESTBIT(pairEntry.candidateType2(), SelectedDbar))) {
-          registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+        registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
       }
 
       // reject entries outside pT ranges of interest
