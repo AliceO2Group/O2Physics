@@ -30,7 +30,7 @@ namespace o2::aod
 {
 namespace full
 {
-DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                     //! Sum of (non-weighted) distances of the secondary vertex to its prongs
+DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                     //! Radius of secondary vertex (cm)
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                                     //! Transverse momentum of prong0 (GeV/c)
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);                                       //! Momentum of prong0 (GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float); //! Normalised impact parameter of prong0
@@ -225,118 +225,120 @@ struct HfTreeCreatorDplusToPiKPi {
       runNumber);
   }
 
-  template <typename T, typename U>
-  void fillLiteTable(const T& candidate, const U& prong0, const U& prong1, const U& prong2,
-                     int selectionFlag, double invMass, double y, int8_t flagMc, int8_t origin)
+  template <bool doMc = false, typename T, typename U>
+  void fillCandidateTable(const T& candidate, const U& prong0, const U& prong1, const U& prong2)
   {
-    rowCandidateLite(
-      candidate.chi2PCA(),
-      candidate.decayLength(),
-      candidate.decayLengthXY(),
-      candidate.decayLengthNormalised(),
-      candidate.decayLengthXYNormalised(),
-      candidate.ptProng0(),
-      candidate.ptProng1(),
-      candidate.ptProng2(),
-      candidate.impactParameter0(),
-      candidate.impactParameter1(),
-      candidate.impactParameter2(),
-      prong0.tpcNSigmaPi(),
-      prong0.tpcNSigmaKa(),
-      prong0.tofNSigmaPi(),
-      prong0.tofNSigmaKa(),
-      prong1.tpcNSigmaPi(),
-      prong1.tpcNSigmaKa(),
-      prong1.tofNSigmaPi(),
-      prong1.tofNSigmaKa(),
-      prong2.tpcNSigmaPi(),
-      prong2.tpcNSigmaKa(),
-      prong2.tofNSigmaPi(),
-      prong2.tofNSigmaKa(),
-      selectionFlag,
-      invMass,
-      candidate.pt(),
-      candidate.cpa(),
-      candidate.cpaXY(),
-      candidate.maxNormalisedDeltaIP(),
-      candidate.eta(),
-      candidate.phi(),
-      y,
-      flagMc,
-      origin);
-  }
-
-  template <typename T, typename U>
-  void fillTable(const T& candidate, const U& prong0, const U& prong1, const U& prong2, int selectionFlag, double invMass,
-                 double ct, double y, double e, int8_t flagMc, int8_t origin)
-  {
-    rowCandidateFull(
-      prong0.collision().bcId(),
-      prong0.collision().numContrib(),
-      candidate.posX(),
-      candidate.posY(),
-      candidate.posZ(),
-      candidate.xSecondaryVertex(),
-      candidate.ySecondaryVertex(),
-      candidate.zSecondaryVertex(),
-      candidate.errorDecayLength(),
-      candidate.errorDecayLengthXY(),
-      candidate.chi2PCA(),
-      candidate.rSecondaryVertex(),
-      candidate.decayLength(),
-      candidate.decayLengthXY(),
-      candidate.decayLengthNormalised(),
-      candidate.decayLengthXYNormalised(),
-      candidate.impactParameterNormalised0(),
-      candidate.ptProng0(),
-      RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-      candidate.impactParameterNormalised1(),
-      candidate.ptProng1(),
-      RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-      candidate.impactParameterNormalised2(),
-      candidate.ptProng2(),
-      RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
-      candidate.pxProng0(),
-      candidate.pyProng0(),
-      candidate.pzProng0(),
-      candidate.pxProng1(),
-      candidate.pyProng1(),
-      candidate.pzProng1(),
-      candidate.pxProng2(),
-      candidate.pyProng2(),
-      candidate.pzProng2(),
-      candidate.impactParameter0(),
-      candidate.impactParameter1(),
-      candidate.impactParameter2(),
-      candidate.errorImpactParameter0(),
-      candidate.errorImpactParameter1(),
-      candidate.errorImpactParameter2(),
-      prong0.tpcNSigmaPi(),
-      prong0.tpcNSigmaKa(),
-      prong0.tofNSigmaPi(),
-      prong0.tofNSigmaKa(),
-      prong1.tpcNSigmaPi(),
-      prong1.tpcNSigmaKa(),
-      prong1.tofNSigmaPi(),
-      prong1.tofNSigmaKa(),
-      prong2.tpcNSigmaPi(),
-      prong2.tpcNSigmaKa(),
-      prong2.tofNSigmaPi(),
-      prong2.tofNSigmaKa(),
-      selectionFlag,
-      invMass,
-      candidate.pt(),
-      candidate.p(),
-      candidate.cpa(),
-      candidate.cpaXY(),
-      candidate.maxNormalisedDeltaIP(),
-      ct,
-      candidate.eta(),
-      candidate.phi(),
-      y,
-      e,
-      flagMc,
-      origin);
+    int8_t flagMc = 0;
+    int8_t originMc = 0;
+    if constexpr (doMc) {
+      flagMc = candidate.flagMcMatchRec();
+      originMc = candidate.originMcRec();
+    }
+    if (fillCandidateLiteTable) {
+      rowCandidateLite(
+        candidate.chi2PCA(),
+        candidate.decayLength(),
+        candidate.decayLengthXY(),
+        candidate.decayLengthNormalised(),
+        candidate.decayLengthXYNormalised(),
+        candidate.ptProng0(),
+        candidate.ptProng1(),
+        candidate.ptProng2(),
+        candidate.impactParameter0(),
+        candidate.impactParameter1(),
+        candidate.impactParameter2(),
+        prong0.tpcNSigmaPi(),
+        prong0.tpcNSigmaKa(),
+        prong0.tofNSigmaPi(),
+        prong0.tofNSigmaKa(),
+        prong1.tpcNSigmaPi(),
+        prong1.tpcNSigmaKa(),
+        prong1.tofNSigmaPi(),
+        prong1.tofNSigmaKa(),
+        prong2.tpcNSigmaPi(),
+        prong2.tpcNSigmaKa(),
+        prong2.tofNSigmaPi(),
+        prong2.tofNSigmaKa(),
+        candidate.isSelDplusToPiKPi(),
+        invMassDplusToPiKPi(candidate),
+        candidate.pt(),
+        candidate.cpa(),
+        candidate.cpaXY(),
+        candidate.maxNormalisedDeltaIP(),
+        candidate.eta(),
+        candidate.phi(),
+        yDplus(candidate),
+        flagMc,
+        originMc);
+    } else {
+      rowCandidateFull(
+        prong0.collision().bcId(),
+        prong0.collision().numContrib(),
+        candidate.posX(),
+        candidate.posY(),
+        candidate.posZ(),
+        candidate.xSecondaryVertex(),
+        candidate.ySecondaryVertex(),
+        candidate.zSecondaryVertex(),
+        candidate.errorDecayLength(),
+        candidate.errorDecayLengthXY(),
+        candidate.chi2PCA(),
+        candidate.rSecondaryVertex(),
+        candidate.decayLength(),
+        candidate.decayLengthXY(),
+        candidate.decayLengthNormalised(),
+        candidate.decayLengthXYNormalised(),
+        candidate.impactParameterNormalised0(),
+        candidate.ptProng0(),
+        RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+        candidate.impactParameterNormalised1(),
+        candidate.ptProng1(),
+        RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+        candidate.impactParameterNormalised2(),
+        candidate.ptProng2(),
+        RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
+        candidate.pxProng0(),
+        candidate.pyProng0(),
+        candidate.pzProng0(),
+        candidate.pxProng1(),
+        candidate.pyProng1(),
+        candidate.pzProng1(),
+        candidate.pxProng2(),
+        candidate.pyProng2(),
+        candidate.pzProng2(),
+        candidate.impactParameter0(),
+        candidate.impactParameter1(),
+        candidate.impactParameter2(),
+        candidate.errorImpactParameter0(),
+        candidate.errorImpactParameter1(),
+        candidate.errorImpactParameter2(),
+        prong0.tpcNSigmaPi(),
+        prong0.tpcNSigmaKa(),
+        prong0.tofNSigmaPi(),
+        prong0.tofNSigmaKa(),
+        prong1.tpcNSigmaPi(),
+        prong1.tpcNSigmaKa(),
+        prong1.tofNSigmaPi(),
+        prong1.tofNSigmaKa(),
+        prong2.tpcNSigmaPi(),
+        prong2.tpcNSigmaKa(),
+        prong2.tofNSigmaPi(),
+        prong2.tofNSigmaKa(),
+        candidate.isSelDplusToPiKPi(),
+        invMassDplusToPiKPi(candidate),
+        candidate.pt(),
+        candidate.p(),
+        candidate.cpa(),
+        candidate.cpaXY(),
+        candidate.maxNormalisedDeltaIP(),
+        ctDplus(candidate),
+        candidate.eta(),
+        candidate.phi(),
+        yDplus(candidate),
+        eDplus(candidate),
+        flagMc,
+        originMc);
+    }
   }
 
   void processData(aod::Collisions const& collisions,
@@ -358,14 +360,7 @@ struct HfTreeCreatorDplusToPiKPi {
       auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
       auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
       auto prong2 = candidate.prong2_as<aod::BigTracksPID>();
-      double yD = yDplus(candidate);
-      if (fillCandidateLiteTable) {
-        fillLiteTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), yD, 0, 0);
-      } else {
-        double eD = eDplus(candidate);
-        double ctD = ctDplus(candidate);
-        fillTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), ctD, yD, eD, 0, 0);
-      }
+      fillCandidateTable(candidate, prong0, prong1, prong2);
     }
   }
 
@@ -390,16 +385,9 @@ struct HfTreeCreatorDplusToPiKPi {
     }
     for (auto const& candidate : candidates) {
       auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-      auto prong1 = candidate.prong0_as<aod::BigTracksPID>();
-      auto prong2 = candidate.prong0_as<aod::BigTracksPID>();
-      double yD = yDplus(candidate);
-      if (fillCandidateLiteTable) {
-        fillLiteTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), yD, candidate.flagMcMatchRec(), candidate.originMcRec());
-      } else {
-        double eD = eDplus(candidate);
-        double ctD = ctDplus(candidate);
-        fillTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
-      }
+      auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+      auto prong2 = candidate.prong2_as<aod::BigTracksPID>();
+      fillCandidateTable<true>(candidate, prong0, prong1, prong2);
     }
 
     // Filling particle properties
@@ -423,7 +411,5 @@ struct HfTreeCreatorDplusToPiKPi {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<HfTreeCreatorDplusToPiKPi>(cfgc));
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<HfTreeCreatorDplusToPiKPi>(cfgc)};
 }
