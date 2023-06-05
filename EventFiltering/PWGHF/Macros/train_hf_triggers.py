@@ -66,7 +66,7 @@ def get_list_input_files(indirs, channel):
 
     if channel not in ["D0ToKPi", "DplusToPiKPi", "DsToKKPi", "LcToPKPi", "XicToPKPi"]:
         print(f"ERROR: channel {channel} not implemented, return None")
-        return None, None, None
+        return {"Prompt": None, "Nonprompt": None, "Bkg": None}
 
     file_lists = {}
     for cand_type in indirs:  # pylint: disable=too-many-nested-blocks
@@ -115,6 +115,9 @@ def data_prep(config):
         os.mkdir(out_dir)
 
     file_lists = get_list_input_files(input_dirs, channel)
+    for file_list in file_lists:
+        if file_list is None:
+            sys.exit()
 
     hdl_prompt = TreeHandler(file_lists["Prompt"])
     hdl_nonprompt = TreeHandler(file_lists["Nonprompt"])
