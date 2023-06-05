@@ -37,7 +37,8 @@ DECLARE_SOA_TABLE(TrainingTree, "AOD", "TRTR", o2::soa::Index<>,
                   vars::FMV0);
 } // namespace o2::aod
 
-namespace o2::analysis {
+namespace o2::analysis
+{
 template <typename Tracks>
 auto meanPt(Tracks const& tracks)
 {
