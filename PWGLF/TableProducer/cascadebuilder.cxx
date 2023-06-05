@@ -197,7 +197,7 @@ struct cascadeBuilder {
     float mOmega;
     float yXi;
     float yOmega;
-    float bachBaryonCosPA; 
+    float bachBaryonCosPA;
     float bachBaryonDCAxyToPV;
   } cascadecandidate;
 
@@ -522,9 +522,9 @@ struct cascadeBuilder {
     if (useMatCorrTypeCasc == 2)
       matCorrCascade = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
-    // initialize bach baryon variables just in case 
-    cascadecandidate.bachBaryonCosPA = 1; // would ordinarily reject all  
-    cascadecandidate.bachBaryonDCAxyToPV = 0; // would ordinarily reject all  
+    // initialize bach baryon variables just in case
+    cascadecandidate.bachBaryonCosPA = 1;     // would ordinarily reject all
+    cascadecandidate.bachBaryonDCAxyToPV = 0; // would ordinarily reject all
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -578,8 +578,8 @@ struct cascadeBuilder {
   template <typename TCollision, typename TTrack>
   void processBachBaryonVariables(TCollision const& collision, TTrack const& track1, TTrack const& track2)
   {
-    cascadecandidate.bachBaryonCosPA = 0; // would ordinarily accept all
-    cascadecandidate.bachBaryonDCAxyToPV = 1e+3; // would ordinarily accept all 
+    cascadecandidate.bachBaryonCosPA = 0;        // would ordinarily accept all
+    cascadecandidate.bachBaryonDCAxyToPV = 1e+3; // would ordinarily accept all
 
     // create tracks from table rows
     o2::track::TrackParCov tr1 = getTrackParCov(track1);
@@ -609,9 +609,9 @@ struct cascadeBuilder {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, wrongV0, 2.f, matCorr, &dcaInfo);
     cascadecandidate.bachBaryonDCAxyToPV = dcaInfo[0];
 
-    const auto& vtx = fitter.getPCACandidate();    
-    if(!fitter.isPropagateTracksToVertexDone())
-      return; 
+    const auto& vtx = fitter.getPCACandidate();
+    if (!fitter.isPropagateTracksToVertexDone())
+      return;
 
     std::array<float, 3> tr1p;
     std::array<float, 3> tr2p;
@@ -619,13 +619,13 @@ struct cascadeBuilder {
     fitter.getTrack(1).getPxPyPzGlo(tr1p);
     fitter.getTrack(2).getPxPyPzGlo(tr2p);
 
-    // bachelor-baryon CosPA 
+    // bachelor-baryon CosPA
     cascadecandidate.bachBaryonCosPA = RecoDecay::cpa(
       array{collision.posX(), collision.posY(), collision.posZ()},
       array{vtx[0], vtx[1], vtx[2]},
-      array{tr1p[0]+tr2p[0], tr1p[1]+tr2p[1], tr1p[2]+tr2p[2]});
+      array{tr1p[0] + tr2p[0], tr1p[1] + tr2p[1], tr1p[2] + tr2p[2]});
 
-    // Potentially also to be considered: bachelor-baryon DCA (between the two tracks) 
+    // Potentially also to be considered: bachelor-baryon DCA (between the two tracks)
     // to be added here as complementary information in the future
   }
 
@@ -643,13 +643,13 @@ struct cascadeBuilder {
     auto negTrack = v0.template negTrack_as<TTrackTo>();
     auto const& collision = cascade.collision();
 
-    if(calculateBachBaryonVars){ 
-      // Calculates properties of the V0 comprised of bachelor and baryon in the cascade 
+    if (calculateBachBaryonVars) {
+      // Calculates properties of the V0 comprised of bachelor and baryon in the cascade
       // baryon: distinguished via bachelor charge
-      if(bachTrack.sign()<0){ 
-        processBachBaryonVariables(collision, bachTrack, posTrack); 
-      }else{
-        processBachBaryonVariables(collision, bachTrack, negTrack); 
+      if (bachTrack.sign() < 0) {
+        processBachBaryonVariables(collision, bachTrack, posTrack);
+      } else {
+        processBachBaryonVariables(collision, bachTrack, negTrack);
       }
     }
 
@@ -857,7 +857,7 @@ struct cascadeBuilder {
                cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz, // <--- no corresponding stratrack information available
-               cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV); 
+               cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
 
       // populate cascade covariance matrices if required by any other task
       if (createCascCovMats) {
@@ -925,7 +925,7 @@ struct cascadeBuilder {
                cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2],
                cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
-               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz, 
+               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,
                cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
 
       // populate cascade covariance matrices if required by any other task

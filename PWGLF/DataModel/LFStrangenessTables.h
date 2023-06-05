@@ -334,9 +334,9 @@ DECLARE_SOA_COLUMN(DCAZCascToPV, dcaZCascToPV, float);         //!
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
 
-// Selection to avoid spurious invariant mass correlation 
-// bachelor-baryon cosine of pointing angle / DCA to PV 
-DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float); //! avoid bach-baryon correlated inv mass structure in analysis
+// Selection to avoid spurious invariant mass correlation
+// bachelor-baryon cosine of pointing angle / DCA to PV
+DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
 DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
 
 // Saved from strangeness tracking
@@ -406,7 +406,7 @@ DECLARE_SOA_TABLE(StoredCascDatas, "AOD", "CASCDATA", //!
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
                   cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
-                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV, 
+                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV,
 
                   // Dynamic columns
                   cascdata::Pt<cascdata::Px, cascdata::Py>,
@@ -437,7 +437,7 @@ DECLARE_SOA_TABLE(StoredTraCascDatas, "AOD", "TRACASCDATA", //!
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
                   cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
-                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV, 
+                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV,
                   cascdata::MatchingChi2, cascdata::TopologyChi2, cascdata::ItsClsSize,
 
                   // Dynamic columns
