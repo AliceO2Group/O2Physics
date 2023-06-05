@@ -11,7 +11,7 @@
 
 /// \file treeCreatorDplusToPiKPi.cxx
 /// \brief Writer of D+ → π+ K- π+ candidates in the form of flat tables to be stored in TTrees.
-///        Intended for debug, local optimization of analysis on small samples or BDT training.
+///        Intended for debug, local optimization of analysis on small samples or ML training.
 ///        In this file are defined and filled the output tables
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
@@ -73,7 +73,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
 } // namespace full
 
-DECLARE_SOA_TABLE(HfTrain3Prong, "AOD", "HFTRAIN3P",
+DECLARE_SOA_TABLE(HfCand3ProngLite, "AOD", "HFCAND3PLite",
                   hf_cand::Chi2PCA,
                   full::DecayLength,
                   full::DecayLengthXY,
@@ -201,9 +201,10 @@ struct HfTreeCreatorDplusToPiKPi {
   Produces<o2::aod::HfCand3ProngFull> rowCandidateFull;
   Produces<o2::aod::HfCand3ProngFullEvents> rowCandidateFullEvents;
   Produces<o2::aod::HfCand3ProngFullParticles> rowCandidateFullParticles;
-  Produces<o2::aod::HfTrain3Prong> rowTrain3Prong;
+  Produces<o2::aod::HfCand3ProngLite> rowCandidateLite;
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
+  Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
@@ -225,10 +226,10 @@ struct HfTreeCreatorDplusToPiKPi {
   }
 
   template <typename T, typename U>
-  void fillTrainTable(const T& candidate, const U& prong0, const U& prong1, const U& prong2,
-                      int selectionFlag, double invMass, double y, int8_t flagMc, int8_t origin)
+  void fillLiteTable(const T& candidate, const U& prong0, const U& prong1, const U& prong2,
+                     int selectionFlag, double invMass, double y, int8_t flagMc, int8_t origin)
   {
-    rowTrain3Prong(
+    rowCandidateLite(
       candidate.chi2PCA(),
       candidate.decayLength(),
       candidate.decayLengthXY(),
@@ -350,6 +351,9 @@ struct HfTreeCreatorDplusToPiKPi {
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
+    if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(candidates.size());
+    }
     for (auto const& candidate : candidates) {
       auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
       auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
@@ -358,6 +362,9 @@ struct HfTreeCreatorDplusToPiKPi {
       double eD = eDplus(candidate);
       double ctD = ctDplus(candidate);
       fillTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), ctD, yD, eD, 0, 0);
+      if (fillCandidateLiteTable) {
+        fillLiteTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), yD, 0, 0);
+      }
     }
   }
 
@@ -377,6 +384,9 @@ struct HfTreeCreatorDplusToPiKPi {
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
+    if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(candidates.size());
+    }
     for (auto const& candidate : candidates) {
       auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
       auto prong1 = candidate.prong0_as<aod::BigTracksPID>();
@@ -385,6 +395,9 @@ struct HfTreeCreatorDplusToPiKPi {
       double eD = eDplus(candidate);
       double ctD = ctDplus(candidate);
       fillTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+      if (fillCandidateLiteTable) {
+        fillLiteTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), yD, candidate.flagMcMatchRec(), candidate.originMcRec());
+      }
     }
 
     // Filling particle properties
@@ -404,22 +417,6 @@ struct HfTreeCreatorDplusToPiKPi {
   }
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMc, "Process MC", false);
-
-  void processForMLTraining(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>> const& candidates,
-                            aod::BigTracksPID const&)
-  {
-    // Filling candidate properties for ML training
-    rowTrain3Prong.reserve(candidates.size());
-    for (auto const& candidate : candidates) {
-      auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-      auto prong1 = candidate.prong0_as<aod::BigTracksPID>();
-      auto prong2 = candidate.prong0_as<aod::BigTracksPID>();
-      double yD = yDplus(candidate);
-      fillTrainTable(candidate, prong0, prong1, prong2, candidate.isSelDplusToPiKPi(), invMassDplusToPiKPi(candidate), yD, candidate.flagMcMatchRec(), candidate.originMcRec());
-    }
-  }
-
-  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processForMLTraining, "Process to produce ML training samples", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
