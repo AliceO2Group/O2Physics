@@ -189,6 +189,7 @@ DECLARE_SOA_COLUMN(PCA, pca, float);                                    //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pxpos, float pxneg) -> float { return pxpos + pxneg; });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pypos, float pyneg) -> float { return pypos + pyneg; });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pzpos, float pzneg) -> float { return pzpos + pzneg; });
+DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float pxpos, float pxneg, float pypos, float pyneg, float pzpos, float pzneg, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg, m); }); //! energy of v0 photn, mass to be given as argument when getter is called!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::eta(array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::phi(pxpos + pxneg, pypos + pyneg); });
@@ -209,6 +210,7 @@ DECLARE_SOA_TABLE(V0Photons, "AOD", "V0PHOTON", //!
                   v0photon::Px<v0photon::PxPosAtSV, v0photon::PxNegAtSV>,
                   v0photon::Py<v0photon::PyPosAtSV, v0photon::PyNegAtSV>,
                   v0photon::Pz<v0photon::PzPosAtSV, v0photon::PzNegAtSV>,
+                  v0photon::E<v0photon::PxPosAtSV, v0photon::PxNegAtSV, v0photon::PyPosAtSV, v0photon::PyNegAtSV, v0photon::PzPosAtSV, v0photon::PzNegAtSV>,
                   v0photon::Pt<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV>,
                   v0photon::Eta<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PzPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV, v0photon::PzNegAtSV>,
                   v0photon::Phi<v0photon::PxPosAtSV, v0photon::PyPosAtSV, v0photon::PxNegAtSV, v0photon::PyNegAtSV>,
@@ -363,6 +365,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(MatchedTrack, matchedTrack, int, Tracks, "_Matched
 DECLARE_SOA_COLUMN(X, x, float);                                                    //! cluster hit position in ALICE global coordinate
 DECLARE_SOA_COLUMN(Y, y, float);                                                    //! cluster hit position in ALICE global coordinate
 DECLARE_SOA_COLUMN(Z, z, float);                                                    //! cluster hit position in ALICE global coordinate
+DECLARE_SOA_COLUMN(CellX, cellx, int);                                              //! cell index x of cluster hit position
+DECLARE_SOA_COLUMN(CellZ, cellz, int);                                              //! cell index z of cluster hit position
 // DECLARE_SOA_COLUMN(TrackEta, tracketa, float);                                      //! eta of the matched track
 // DECLARE_SOA_COLUMN(TrackPhi, trackphi, float);                                      //! phi of the matched track
 // DECLARE_SOA_COLUMN(TrackP, trackp, float);                                          //! momentum of the matched track
@@ -380,6 +384,7 @@ DECLARE_SOA_TABLE(PHOSClusters, "AOD", "PHOSCLUSTERS", //!
                   skimmedcluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z,
                   skimmedcluster::M02, skimmedcluster::M20, skimmedcluster::NCells,
                   skimmedcluster::Time, skimmedcluster::DistanceToBadChannel, skimmedcluster::NLM,
+                  calocluster::Module, phoscluster::CellX, phoscluster::CellZ,
                   // phoscluster::TrackEta, phoscluster::TrackPhi, phoscluster::TrackP, phoscluster::TrackPt,
                   // dynamic column
                   phoscluster::Px<skimmedcluster::E, phoscluster::X, phoscluster::Y, phoscluster::Z>,

@@ -65,10 +65,11 @@ struct HfTaskBplus {
   void init(o2::framework::InitContext&)
   {
     const AxisSpec axisMass{150, 4.5, 6.0};
-    const AxisSpec axisCPA{110, -1.1, 1.1};
+    const AxisSpec axisCPA{120, -1.1, 1.1};
+    const AxisSpec axisCPAFiner{300, 0.85, 1.0};
     const AxisSpec axisPtProng{100, 0., 10.};
     const AxisSpec axisD0Prong{200, -0.05, 0.05};
-    const AxisSpec axisImpParProd{100, -0.5, 0.5};
+    const AxisSpec axisImpParProd{200, -0.001, 0.001};
     const AxisSpec axisDecLength{100, 0., 0.5};
     const AxisSpec axisNormDecLength{40, 0., 20};
     const AxisSpec axisEta{100, -2., 2.};
@@ -81,6 +82,7 @@ struct HfTaskBplus {
     registry.add("hd0Prong0", bPlusCandTitle + "prong 0 DCAxy to prim. vertex (cm);" + stringPt, {HistType::kTH2F, {axisD0Prong, axisPtB}});
     registry.add("hd0Prong1", bPlusCandTitle + "prong 1 DCAxy to prim. vertex (cm);" + stringPt, {HistType::kTH2F, {axisD0Prong, axisPtB}});
     registry.add("hCPA", bPlusCandTitle + "candidate cosine of pointing angle;" + stringPt, {HistType::kTH2F, {axisCPA, axisPtB}});
+    registry.add("hCPAxy", bPlusCandTitle + "candidate cosine of pointing angle xy;" + stringPt, {HistType::kTH2F, {axisCPA, axisPtB}});
     registry.add("hEta", bPlusCandTitle + "candidate #it{#eta};" + stringPt, {HistType::kTH2F, {axisEta, axisPtB}});
     registry.add("hRapidity", bPlusCandTitle + "candidate #it{y};" + stringPt, {HistType::kTH2F, {axisRapidity, axisPtB}});
     registry.add("hImpParErr", bPlusCandTitle + "candidate impact parameter error (cm);" + stringPt, {HistType::kTH2F, {{100, -1., 1.}, axisPtB}});
@@ -88,6 +90,8 @@ struct HfTaskBplus {
     registry.add("hDecLenXYErr", bPlusCandTitle + "candidate decay length xy error (cm);" + stringPt, {HistType::kTH2F, {{100, 0., 1.}, axisPtB}});
     registry.add("hd0d0", bPlusCandTitle + "candidate product of DCAxy to prim. vertex (cm^{2});" + stringPt, {HistType::kTH2F, {axisImpParProd, axisPtB}});
     registry.add("hInvMassD0", bPlusCandTitle + "prong0, D0 inv. mass (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {{500, 1.4, 2.4}, axisPtB}});
+    registry.add("hCPAFinerBinning", bPlusCandTitle + "candidate cosine of pointing angle;" + stringPt, {HistType::kTH2F, {axisCPAFiner, axisPtB}});
+    registry.add("hCPAxyFinerBinning", bPlusCandTitle + "candidate cosine of pointing angle xy;" + stringPt, {HistType::kTH2F, {axisCPAFiner, axisPtB}});
     registry.add("hEtaGen", mcParticleMatched + "candidate #it{#eta}^{gen};" + stringPt, {HistType::kTH2F, {axisEta, axisPtB}});
     registry.add("hYGen", mcParticleMatched + "candidate #it{y}^{gen};" + stringPt, {HistType::kTH2F, {axisRapidity, axisPtB}});
     registry.add("hPtProng0Gen", mcParticleMatched + "prong 0 #it{p}_{T}^{gen} (GeV/#it{c});" + stringPt, {HistType::kTH2F, {axisPtProng, axisPtB}});
@@ -122,13 +126,18 @@ struct HfTaskBplus {
     registry.add("hDecLengthNormRecBg", bPlusCandUnmatch + "candidate normalized decay length (cm);" + stringPt, {HistType::kTH2F, {axisNormDecLength, axisPtB}});
     registry.add("hd0d0RecSig", bPlusCandMatch + "product of DCAxy to prim. vertex (cm^{2});" + stringPt, {HistType::kTH2F, {axisImpParProd, axisPtB}});
     registry.add("hd0d0RecBg", bPlusCandUnmatch + "product of DCAxy to prim. vertex (cm^{2});" + stringPt, {HistType::kTH2F, {axisImpParProd, axisPtB}});
+    // MC histograms with finer binning
+    registry.add("hCPAFinerBinningRecSig", bPlusCandMatch + "candidate cosine of pointing angle;" + stringPt, {HistType::kTH2F, {axisCPAFiner, axisPtB}});
+    registry.add("hCPAFinerBinningRecBg", bPlusCandMatch + "candidate cosine of pointing angle;" + stringPt, {HistType::kTH2F, {axisCPAFiner, axisPtB}});
+    registry.add("hCPAxyFinerBinningRecSig", bPlusCandMatch + "candidate cosine of pointing angle;" + stringPt, {HistType::kTH2F, {axisCPAFiner, axisPtB}});
+    registry.add("hCPAxyFinerBinningRecBg", bPlusCandMatch + "candidate cosine of pointing angle;" + stringPt, {HistType::kTH2F, {axisCPAFiner, axisPtB}});
   }
 
   void process(aod::Collisions const& collision, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const&, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, aod::BigTracks const&)
   {
 
     for (const auto& candidate : selectedBPlusCandidates) {
-      if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BplusToD0Pi)) {
+      if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(yBplus(candidate)) > yCandMax) {
@@ -148,6 +157,7 @@ struct HfTaskBplus {
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
       registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
+      registry.fill(HIST("hCPAxy"), candidate.cpaXY(), candidate.pt());
       registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
       registry.fill(HIST("hRapidity"), yBplus(candidate), candidate.pt());
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
@@ -159,6 +169,8 @@ struct HfTaskBplus {
       } else {
         registry.fill(HIST("hInvMassD0"), invMassD0ToPiK(candD0), candidate.pt());
       }
+      registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), candidate.pt());
+      registry.fill(HIST("hCPAxyFinerBinning"), candidate.cpaXY(), candidate.pt());
     } // candidate loop
   }   // process
 
@@ -167,20 +179,22 @@ struct HfTaskBplus {
   {
     // MC rec
     for (const auto& candidate : selectedBPlusCandidatesMC) {
-      if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BplusToD0Pi)) {
+      if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(yBplus(candidate)) > yCandMax) {
         continue;
       }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << hf_cand_bplus::DecayType::BplusToD0Pi) {
+      if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>(), pdg::Code::kBPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), candidate.pt());
-        registry.fill(HIST("hCPAxyRecSig"), candidate.cpa(), candidate.pt());
+        registry.fill(HIST("hCPAxyRecSig"), candidate.cpaXY(), candidate.pt());
+        registry.fill(HIST("hCPAFinerBinningRecSig"), candidate.cpa(), candidate.pt());
+        registry.fill(HIST("hCPAxyFinerBinningRecSig"), candidate.cpaXY(), candidate.pt());
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), candidate.pt());
         registry.fill(HIST("hRapidityRecSig"), yBplus(candidate), candidate.pt());
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), candidate.pt());
@@ -195,7 +209,9 @@ struct HfTaskBplus {
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
-        registry.fill(HIST("hCPAxyRecBg"), candidate.cpa(), candidate.pt());
+        registry.fill(HIST("hCPAxyRecBg"), candidate.cpaXY(), candidate.pt());
+        registry.fill(HIST("hCPAFinerBinningRecBg"), candidate.cpa(), candidate.pt());
+        registry.fill(HIST("hCPAxyFinerBinningRecBg"), candidate.cpaXY(), candidate.pt());
         registry.fill(HIST("hEtaRecBg"), candidate.eta(), candidate.pt());
         registry.fill(HIST("hRapidityRecBg"), yBplus(candidate), candidate.pt());
         registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), candidate.pt());
@@ -213,7 +229,7 @@ struct HfTaskBplus {
     // MC gen. level
     // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_bplus::DecayType::BplusToD0Pi) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kBPlus));
         if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {

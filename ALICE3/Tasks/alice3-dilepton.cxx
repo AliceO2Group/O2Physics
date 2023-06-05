@@ -275,128 +275,179 @@ struct Alice3Dilepton {
     return HFllType::kUndef;
   }
 
-  template <typename TTracks, typename TMCTracks>
-  void FillPairRec(PairType pairtype, TTracks const& tracks1, TTracks const& tracks2, TMCTracks const& mcParticles)
+  template <PairType pairtype, typename TTracks, typename TMCTracks>
+  void FillPairRec(TTracks const& tracks1, TTracks const& tracks2, TMCTracks const& mcParticles)
   {
-    for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+    if constexpr (pairtype == PairType::kULS) {
+      for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        if (!t1.has_mcParticle() || !t2.has_mcParticle()) {
+          continue;
+        }
 
-      if (!t1.has_mcParticle() || !t2.has_mcParticle()) {
-        continue;
-      }
+        auto mct1 = t1.template mcParticle_as<aod::McParticles>();
+        if (abs(mct1.pdgCode()) != pdg || !mct1.isPhysicalPrimary()) {
+          continue;
+        }
 
-      auto mct1 = t1.template mcParticle_as<aod::McParticles>();
-      if (abs(mct1.pdgCode()) != pdg || !mct1.isPhysicalPrimary()) {
-        continue;
-      }
+        auto mct2 = t2.template mcParticle_as<aod::McParticles>();
+        if (abs(mct2.pdgCode()) != pdg || !mct2.isPhysicalPrimary()) {
+          continue;
+        }
 
-      auto mct2 = t2.template mcParticle_as<aod::McParticles>();
-      if (abs(mct2.pdgCode()) != pdg || !mct2.isPhysicalPrimary()) {
-        continue;
-      }
+        int motherid = IsSameMother(mct1, mct2, mcParticles);
+        int hfee_type = IsHFULS(mct1, mct2, mcParticles);
 
-      int motherid = -1;
-      int hfee_type = -1;
-      if (pairtype == PairType::kULS) {
-        motherid = IsSameMother(mct1, mct2, mcParticles);
-        hfee_type = IsHFULS(mct1, mct2, mcParticles);
-      } else { // LS
-        hfee_type = IsHFLS(mct1, mct2, mcParticles);
-      }
+        if (motherid < 0 && hfee_type == HFllType::kUndef) {
+          continue;
+        }
+        // auto mother = mcparticles.iteratorAt(motherid);
 
-      if (motherid < 0 && hfee_type == HFllType::kUndef) {
-        continue;
-      }
-      // auto mother = mcparticles.iteratorAt(motherid);
+        // float dcaXY_t1 = t1.dcaXY();
+        // float dcaXY_t2 = t2.dcaXY();
+        // float dcaXY_res_t1 = sqrt(t1.cYY());
+        // float dcaXY_res_t2 = sqrt(t2.cYY());
 
-      // float dcaXY_t1 = t1.dcaXY();
-      // float dcaXY_t2 = t2.dcaXY();
-      // float dcaXY_res_t1 = sqrt(t1.cYY());
-      // float dcaXY_res_t2 = sqrt(t2.cYY());
+        float pair_dca_xy = sqrt((pow(t2.dcaXY() / sqrt(t2.cYY()), 2) + pow(t1.dcaXY() / sqrt(t1.cYY()), 2)) / 2.);
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-      float pair_dca_xy = sqrt((pow(t2.dcaXY() / sqrt(t2.cYY()), 2) + pow(t1.dcaXY() / sqrt(t1.cYY()), 2)) / 2.);
-      ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
-      ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
-      ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-
-      if (pairtype == PairType::kULS) {
         registry.fill(HIST("Reconstructed/Pair/ULS/Mass"), v12.M());
         registry.fill(HIST("Reconstructed/Pair/ULS/Pt"), v12.Pt());
         registry.fill(HIST("Reconstructed/Pair/ULS/Eta"), v12.Eta());
         registry.fill(HIST("Reconstructed/Pair/ULS/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
         registry.fill(HIST("Reconstructed/Pair/ULS/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
-      } else if (pairtype == PairType::kLSpp) {
-        registry.fill(HIST("Reconstructed/Pair/LSpp/Mass"), v12.M());
-        registry.fill(HIST("Reconstructed/Pair/LSpp/Pt"), v12.Pt());
-        registry.fill(HIST("Reconstructed/Pair/LSpp/Eta"), v12.Eta());
-        registry.fill(HIST("Reconstructed/Pair/LSpp/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
-        registry.fill(HIST("Reconstructed/Pair/LSpp/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
+      } // end of unlike-sign pair loop
 
-      } else if (pairtype == PairType::kLSnn) {
-        registry.fill(HIST("Reconstructed/Pair/LSnn/Mass"), v12.M());
-        registry.fill(HIST("Reconstructed/Pair/LSnn/Pt"), v12.Pt());
-        registry.fill(HIST("Reconstructed/Pair/LSnn/Eta"), v12.Eta());
-        registry.fill(HIST("Reconstructed/Pair/LSnn/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
-        registry.fill(HIST("Reconstructed/Pair/LSnn/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
-      }
-    } // end of pair loop
+    } else if constexpr (pairtype == PairType::kLSpp || pairtype == PairType::kLSnn) {
+      for (auto& [t1, t2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
+        if (!t1.has_mcParticle() || !t2.has_mcParticle()) {
+          continue;
+        }
+
+        auto mct1 = t1.template mcParticle_as<aod::McParticles>();
+        if (abs(mct1.pdgCode()) != pdg || !mct1.isPhysicalPrimary()) {
+          continue;
+        }
+
+        auto mct2 = t2.template mcParticle_as<aod::McParticles>();
+        if (abs(mct2.pdgCode()) != pdg || !mct2.isPhysicalPrimary()) {
+          continue;
+        }
+
+        int motherid = -1;
+        int hfee_type = IsHFLS(mct1, mct2, mcParticles);
+
+        if (motherid < 0 && hfee_type == HFllType::kUndef) {
+          continue;
+        }
+        // auto mother = mcparticles.iteratorAt(motherid);
+
+        // float dcaXY_t1 = t1.dcaXY();
+        // float dcaXY_t2 = t2.dcaXY();
+        // float dcaXY_res_t1 = sqrt(t1.cYY());
+        // float dcaXY_res_t2 = sqrt(t2.cYY());
+
+        float pair_dca_xy = sqrt((pow(t2.dcaXY() / sqrt(t2.cYY()), 2) + pow(t1.dcaXY() / sqrt(t1.cYY()), 2)) / 2.);
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+        if constexpr (pairtype == PairType::kLSpp) {
+          registry.fill(HIST("Reconstructed/Pair/LSpp/Mass"), v12.M());
+          registry.fill(HIST("Reconstructed/Pair/LSpp/Pt"), v12.Pt());
+          registry.fill(HIST("Reconstructed/Pair/LSpp/Eta"), v12.Eta());
+          registry.fill(HIST("Reconstructed/Pair/LSpp/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
+          registry.fill(HIST("Reconstructed/Pair/LSpp/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
+        } else if constexpr (pairtype == PairType::kLSnn) {
+          registry.fill(HIST("Reconstructed/Pair/LSnn/Mass"), v12.M());
+          registry.fill(HIST("Reconstructed/Pair/LSnn/Pt"), v12.Pt());
+          registry.fill(HIST("Reconstructed/Pair/LSnn/Eta"), v12.Eta());
+          registry.fill(HIST("Reconstructed/Pair/LSnn/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
+          registry.fill(HIST("Reconstructed/Pair/LSnn/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
+        }
+      } // end of like-sign pair loop
+    }
   }
 
-  template <typename TTracks, typename TMCTracks>
-  void FillPairGen(PairType pairtype, TTracks const& tracks1, TTracks const& tracks2, TMCTracks const& mcParticles)
+  template <PairType pairtype, typename TTracks, typename TMCTracks>
+  void FillPairGen(TTracks const& tracks1, TTracks const& tracks2, TMCTracks const& mcParticles)
   {
-    for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-      if (abs(t1.pdgCode()) != pdg || abs(t2.pdgCode()) != pdg) {
-        continue;
-      }
+    if constexpr (pairtype == PairType::kULS) {
+      for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        if (abs(t1.pdgCode()) != pdg || abs(t2.pdgCode()) != pdg) {
+          continue;
+        }
 
-      if (!t1.isPhysicalPrimary() || !t2.isPhysicalPrimary()) {
-        continue;
-      }
+        if (!t1.isPhysicalPrimary() || !t2.isPhysicalPrimary()) {
+          continue;
+        }
 
-      if (!IsInAcceptance(t1) || !IsInAcceptance(t2)) {
-        continue;
-      }
+        if (!IsInAcceptance(t1) || !IsInAcceptance(t2)) {
+          continue;
+        }
 
-      int motherid = -1;
-      int hfee_type = -1;
-      if (pairtype == PairType::kULS) {
-        motherid = IsSameMother(t1, t2, mcParticles);
-        hfee_type = IsHFULS(t1, t2, mcParticles);
-      } else { // LS
-        hfee_type = IsHFLS(t1, t2, mcParticles);
-      }
+        int motherid = IsSameMother(t1, t2, mcParticles);
+        int hfee_type = IsHFULS(t1, t2, mcParticles);
 
-      if (motherid < 0 && hfee_type == HFllType::kUndef) {
-        continue;
-      }
-      // auto mother = mcparticles.iteratorAt(motherid);
+        if (motherid < 0 && hfee_type == HFllType::kUndef) {
+          continue;
+        }
+        // auto mother = mcparticles.iteratorAt(motherid);
 
-      ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
-      ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
-      ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-      if (pairtype == PairType::kULS) {
         registry.fill(HIST("Generated/Pair/ULS/Mass"), v12.M());
         registry.fill(HIST("Generated/Pair/ULS/Pt"), v12.Pt());
         registry.fill(HIST("Generated/Pair/ULS/Eta"), v12.Eta());
         registry.fill(HIST("Generated/Pair/ULS/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
         registry.fill(HIST("Generated/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
-      } else if (pairtype == PairType::kLSpp) {
-        registry.fill(HIST("Generated/Pair/LSpp/Mass"), v12.M());
-        registry.fill(HIST("Generated/Pair/LSpp/Pt"), v12.Pt());
-        registry.fill(HIST("Generated/Pair/LSpp/Eta"), v12.Eta());
-        registry.fill(HIST("Generated/Pair/LSpp/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
-        registry.fill(HIST("Generated/Pair/LSpp/Mass_Pt"), v12.M(), v12.Pt());
+      } // end of unlike-sign pair loop
 
-      } else if (pairtype == PairType::kLSnn) {
-        registry.fill(HIST("Generated/Pair/LSnn/Mass"), v12.M());
-        registry.fill(HIST("Generated/Pair/LSnn/Pt"), v12.Pt());
-        registry.fill(HIST("Generated/Pair/LSnn/Eta"), v12.Eta());
-        registry.fill(HIST("Generated/Pair/LSnn/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
-        registry.fill(HIST("Generated/Pair/LSnn/Mass_Pt"), v12.M(), v12.Pt());
-      }
+    } else if constexpr (pairtype == PairType::kLSpp || pairtype == PairType::kLSnn) {
+      for (auto& [t1, t2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
+        if (abs(t1.pdgCode()) != pdg || abs(t2.pdgCode()) != pdg) {
+          continue;
+        }
 
-    } // end of pair loop
+        if (!t1.isPhysicalPrimary() || !t2.isPhysicalPrimary()) {
+          continue;
+        }
+
+        if (!IsInAcceptance(t1) || !IsInAcceptance(t2)) {
+          continue;
+        }
+
+        int motherid = -1;
+        int hfee_type = IsHFLS(t1, t2, mcParticles);
+
+        if (motherid < 0 && hfee_type == HFllType::kUndef) {
+          continue;
+        }
+        // auto mother = mcparticles.iteratorAt(motherid);
+
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+        if constexpr (pairtype == PairType::kLSpp) {
+          registry.fill(HIST("Generated/Pair/LSpp/Mass"), v12.M());
+          registry.fill(HIST("Generated/Pair/LSpp/Pt"), v12.Pt());
+          registry.fill(HIST("Generated/Pair/LSpp/Eta"), v12.Eta());
+          registry.fill(HIST("Generated/Pair/LSpp/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
+          registry.fill(HIST("Generated/Pair/LSpp/Mass_Pt"), v12.M(), v12.Pt());
+        } else if constexpr (pairtype == PairType::kLSnn) {
+          registry.fill(HIST("Generated/Pair/LSnn/Mass"), v12.M());
+          registry.fill(HIST("Generated/Pair/LSnn/Pt"), v12.Pt());
+          registry.fill(HIST("Generated/Pair/LSnn/Eta"), v12.Eta());
+          registry.fill(HIST("Generated/Pair/LSnn/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
+          registry.fill(HIST("Generated/Pair/LSnn/Mass_Pt"), v12.M(), v12.Pt());
+        }
+
+      } // end of like-sign pair loop
+    }
   }
 
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
@@ -435,9 +486,9 @@ struct Alice3Dilepton {
       auto neg_mcParticles_coll = neg_mcParticles->sliceByCached(o2::aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache_mc);
       auto pos_mcParticles_coll = pos_mcParticles->sliceByCached(o2::aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache_mc);
 
-      FillPairGen(PairType::kULS, neg_mcParticles_coll, pos_mcParticles_coll, mcParticles);
-      FillPairGen(PairType::kLSpp, pos_mcParticles_coll, pos_mcParticles_coll, mcParticles);
-      FillPairGen(PairType::kLSnn, neg_mcParticles_coll, neg_mcParticles_coll, mcParticles);
+      FillPairGen<PairType::kULS>(neg_mcParticles_coll, pos_mcParticles_coll, mcParticles);
+      FillPairGen<PairType::kLSpp>(pos_mcParticles_coll, pos_mcParticles_coll, mcParticles);
+      FillPairGen<PairType::kLSnn>(neg_mcParticles_coll, neg_mcParticles_coll, mcParticles);
 
     } // end of mc collision loop
   }   // end of processGen
@@ -486,9 +537,9 @@ struct Alice3Dilepton {
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
       auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
 
-      FillPairRec(PairType::kULS, negTracks_coll, posTracks_coll, mcParticles);
-      FillPairRec(PairType::kLSpp, posTracks_coll, posTracks_coll, mcParticles);
-      FillPairRec(PairType::kLSnn, negTracks_coll, negTracks_coll, mcParticles);
+      FillPairRec<PairType::kULS>(negTracks_coll, posTracks_coll, mcParticles);
+      FillPairRec<PairType::kLSpp>(posTracks_coll, posTracks_coll, mcParticles);
+      FillPairRec<PairType::kLSnn>(negTracks_coll, negTracks_coll, mcParticles);
 
     } // end of collision loop
   }   // end of processRec

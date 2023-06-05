@@ -11,7 +11,7 @@
 //
 // Contact: daiki.sekihata@cern.ch
 //
-
+#include "Framework/Logger.h"
 #include <iostream>
 #include <memory>
 #include <fstream>
@@ -100,6 +100,24 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(new TH2F("hConvPoint_diffX_recalc", "conversion point diff X MC;X_{MC} (cm);X_{rec}^{recalc} - X_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
       list->Add(new TH2F("hConvPoint_diffY_recalc", "conversion point diff Y MC;Y_{MC} (cm);Y_{rec}^{recalc} - Y_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
       list->Add(new TH2F("hConvPoint_diffZ_recalc", "conversion point diff Z MC;Z_{MC} (cm);Z_{rec}^{recalc} - Z_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
+    }
+  }
+
+  if (TString(histClass) == "Cluster") {
+    list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
+    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 400, -2.0f, 2.0f));
+    list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
+
+    if (TString(subGroup) == "PHOS") {
+      list->Add(new TH2F("hEvsNcell", "E_{cluster} vs. N_{cell};E_{cluster} (GeV);N_{cell}", 200, 0, 20, 51, -0.5, 50.5f));
+      list->Add(new TH2F("hEvsM02", "E_{cluster} vs. M02;E_{cluster} (GeV);M02 (cm)", 200, 0, 20, 100, 0, 10));
+      list->Add(new TH2F("hEvsM20", "E_{cluster} vs. M20;E_{cluster} (GeV);M20 (cm)", 200, 0, 20, 100, 0, 10));
+      list->Add(new TH1F("hDistToBC", "distance to bad channel", 100, 0, 10));
+
+      const int nmod = 4;
+      for (int i = 1; i <= nmod; i++) {
+        list->Add(new TH2F(Form("hClusterXZM%d", i), Form("cluster (X,Z) on M%d;X;Z", i), 64, 0.5, 64.5, 56, 0.5, 56.5));
+      } // end of module loop
     }
   }
 
@@ -200,13 +218,13 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   for (int i = 50; i < npTgg10; i++)
     pTgg10[i] = 0.5 * (i - 50) + 5.0; // from 5 to 10 GeV/c, evety 0.5 GeV/c
 
-  if (TString(histClass) == "tagged_photon") {
+  if (TString(histClass) == "tagging_pi0") {
     list->Add(new TH2F("hMggPt_Same", "m_{ee#gamma} vs. p_{T,ee};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
     list->Add(new TH2F("hMggPt_Mixed", "m_{ee#gamma} vs. p_{T,ee};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
   }
-  if (TString(histClass) == "tagged_photon_mc") {
+  if (TString(histClass) == "tagging_pi0_mc") {
     list->Add(new TH1F("hPt_v0photon_Pi0", "reconstructed v0 photon from pi0;p_{T,ee} (GeV/c);N_{ee}^{#pi^{0}}", npTgg10 - 1, pTgg10));                                                              // denominator for conditional probability
     list->Add(new TH2F("hMggPt_Pi0", "reconstructed m_{ee#gamma} vs. p_{T,ee} from pi0;m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c);N_{ee}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
     reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0"))->Sumw2();
@@ -230,11 +248,11 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
 void o2::aod::emphotonhistograms::AddHistClass(THashList* list, const char* histClass)
 {
   if (list->FindObject(histClass)) {
-    std::cout << "Warning in HistogramsLibrary::AddHistClass(): Cannot add histogram class " << histClass << " because it already exists." << std::endl;
+    LOG(warn) << "HistogramsLibrary::AddHistClass(): Cannot add histogram class " << histClass << " because it already exists.";
     return;
   }
 
-  THashList* sublist = new THashList();
+  auto* sublist = new THashList();
   sublist->SetOwner(true);
   sublist->SetName(histClass);
   list->Add(sublist);

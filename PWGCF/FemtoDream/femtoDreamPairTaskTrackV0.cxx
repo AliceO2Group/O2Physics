@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -51,7 +51,7 @@ static const float cutsTableV0Children[nV0Children][nCuts]{
 
 struct femtoDreamPairTaskTrackV0 {
   SliceCache cache;
-  Preslice<aod::FemtoDreamParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
+  Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
   /// Particle 1 (track)
   Configurable<LabeledArray<float>> ConfTrkCutTable{"ConfTrkCutTable", {cutsTableTrack[0], nTrack, nCuts, TrackName, cutNames}, "Particle selections"};
@@ -64,7 +64,7 @@ struct femtoDreamPairTaskTrackV0 {
   ConfigurableAxis ConfTrkTempFitVarpTBins{"ConfTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
 
   /// Partition for particle 1
-  Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfTrkCutPartOne) == ConfTrkCutPartOne);
+  Partition<aod::FDParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfTrkCutPartOne) == ConfTrkCutPartOne);
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -86,7 +86,7 @@ struct femtoDreamPairTaskTrackV0 {
   ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
 
   /// Partition for particle 2
-  Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && ((aod::femtodreamparticle::cut & ConfV0CutPartTwo) == ConfV0CutPartTwo);
+  Partition<aod::FDParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && ((aod::femtodreamparticle::cut & ConfV0CutPartTwo) == ConfV0CutPartTwo);
 
   /// Histogramming for particle 2
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0, 2> trackHistoPartTwo;
@@ -102,6 +102,7 @@ struct femtoDreamPairTaskTrackV0 {
 
   /// Correlation part
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
+  Configurable<bool> ConfUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
   ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
@@ -112,6 +113,9 @@ struct femtoDreamPairTaskTrackV0 {
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+
+  ConfigurableAxis ConfmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfUse3D>> to true in order to use)"};
+  ConfigurableAxis ConfmultBins3D{"ConfMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfUse3D>> to true in order to use)"};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -129,9 +133,9 @@ struct femtoDreamPairTaskTrackV0 {
     posChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, false);
     negChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, false);
 
-    sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfIsMC);
+    sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D);
     sameEventCont.setPDGCodes(ConfTrkPDGCodePartOne, ConfV0PDGCodePartTwo);
-    mixedEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfIsMC);
+    mixedEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D);
     mixedEventCont.setPDGCodes(ConfTrkPDGCodePartOne, ConfV0PDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
@@ -143,12 +147,12 @@ struct femtoDreamPairTaskTrackV0 {
 
   /// This function processes the same event and takes care of all the histogramming
   /// \todo the trivial loops over the tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
-  void processSameEvent(o2::aod::FemtoDreamCollision& col, o2::aod::FemtoDreamParticles& parts)
+  void processSameEvent(o2::aod::FDCollision& col, o2::aod::FDParticles& parts)
   {
     const auto& magFieldTesla = col.magField();
 
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
-    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     const int multCol = col.multNtr();
 
     eventHisto.fillQA(col);
@@ -199,7 +203,7 @@ struct femtoDreamPairTaskTrackV0 {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      sameEventCont.setPair<false>(p1, p2, multCol);
+      sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
     }
   }
 
@@ -207,7 +211,7 @@ struct femtoDreamPairTaskTrackV0 {
 
   /// This function processes the mixed event
   /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
-  void processMixedEvent(o2::aod::FemtoDreamCollisions& cols, o2::aod::FemtoDreamParticles& parts)
+  void processMixedEvent(o2::aod::FDCollisions& cols, o2::aod::FDParticles& parts)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
 
@@ -215,8 +219,8 @@ struct femtoDreamPairTaskTrackV0 {
 
       const int multCol = collision1.multNtr();
 
-      auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex(), cache);
-      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex(), cache);
+      auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -247,7 +251,7 @@ struct femtoDreamPairTaskTrackV0 {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        mixedEventCont.setPair<false>(p1, p2, multCol);
+        mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
       }
     }
   }

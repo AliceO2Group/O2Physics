@@ -24,6 +24,7 @@
 #include "PWGUD/Core/DGPIDSelector.h"
 #include "PWGUD/Core/UDGoodRunSelector.h"
 #include "PWGUD/Core/UDFSParser.h"
+#include <set>
 
 using namespace o2;
 using namespace o2::framework;

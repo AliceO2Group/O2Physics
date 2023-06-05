@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -40,7 +40,7 @@ struct femtoDreamPairHashTask {
     CastCfgMultBins = (std::vector<float>)CfgMultBins;
   }
 
-  void process(o2::aod::FemtoDreamCollision const& col)
+  void process(o2::aod::FDCollision const& col)
   {
     /// the hash of the collision is computed and written to table
     hashes(eventmixing::getMixingBin(CastCfgVtxBins, CastCfgMultBins, col.posZ(), col.multV0M()));
