@@ -52,7 +52,7 @@ struct EmcEventSelectionQA {
     mHistManager.add("hBCEmcalCellContent", "Bunch crossings with non-0 EMCAL cell content", o2HistType::kTH1F, {bcAxis});
   }
 
-  Preslice<collEventSels> perFoundBC = aod::evsel::foundBCId;
+  PresliceUnsorted<collEventSels> perFoundBC = aod::evsel::foundBCId;
 
   void process(bcEvSels const& bcs, collEventSels const& collisions, soa::Filtered<aod::Calos> const& cells)
   {
