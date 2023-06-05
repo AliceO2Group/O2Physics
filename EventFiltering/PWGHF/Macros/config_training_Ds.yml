@@ -1,0 +1,70 @@
+---
+data_prep:
+  dirs:
+    Prompt: [training_samples/LHC22b1b/31003, training_samples/LHC22b1a/31002]
+    Nonprompt:
+      [training_samples/LHC22b1a/31002, training_samples/LHC22b1b/31003]
+    Bkg: [training_samples/LHC21k6/31202]
+  # options: D0ToKPi, DplusToPiKPi, DsToKKPi, LcToPKPi, XicToPKPi
+  channel: DsToKKPi
+  preselection:
+    enable: true # preselection possible only for Ds and baryons
+    nsigma_tpc_proton: 1000. # nsigma cut for proton
+    nsigma_tof_proton: 1000. # nsigma cut for proton
+    delta_mass_kk: 0.020 # mass difference between KK and phi in GeV/c2
+  class_balance:
+    share: all_signal # options: equal, all_signal
+    bkg_factor: 1 # factor to be applied to bkg compared to signal sample
+  test_fraction: 0.5
+  seed_split: 42
+
+ml:
+  raw_output: false
+  roc_auc_approach: ovo
+  roc_auc_average: macro
+  training_vars:
+    [
+      fPT1,
+      fDCAPrimXY1,
+      fDCAPrimZ1,
+      fPT2,
+      fDCAPrimXY2,
+      fDCAPrimZ2,
+      fPT3,
+      fDCAPrimXY3,
+      fDCAPrimZ3,
+    ]
+  hyper_pars:
+    {
+      "max_depth": 4,
+      "learning_rate": 0.09849808014809752,
+      "n_estimators": 1198,
+      "min_child_weight": 7,
+      "n_jobs": 4,
+      "tree_method": "hist",
+      "subsample": 0.8012697244903896,
+      "colsample_bytree": 0.9309143772778852,
+    }
+  hyper_pars_opt:
+    activate: true
+    ntrials: 25
+    njobs: 4
+    timeout: 3600
+    hyper_par_ranges:
+      {
+        "max_depth": !!python/tuple [3, 4],
+        "learning_rate": !!python/tuple [0.01, 0.1],
+        "n_estimators": !!python/tuple [300, 1200],
+        "min_child_weight": !!python/tuple [1, 10],
+        "subsample": !!python/tuple [0.8, 1.],
+        "colsample_bytree": !!python/tuple [0.8, 1.],
+      }
+
+output:
+  directory: trainings/Ds
+  out_labels: # output labels, keep the right number of classes
+    Bkg: Bkg
+    Prompt: Prompt
+    Nonprompt: Nonprompt
+  # list of variables saved in the dataframes with the applied models
+  column_to_save_list: ["fPT3Prong"]
