@@ -52,6 +52,7 @@ struct jetTrackCollisionQa {
   Configurable<float> ptUp{"ptUp", 10e10f, "highest pt"};
   Configurable<float> etalow{"etaLow", -0.9f, "lowest eta"};
   Configurable<float> etaup{"etaUp", 0.9f, "highest eta"};
+  Configurable<bool> evSel{"evSel", false, "to use event selection 7 for run2 (or 8 for run3)"};
 
   HistogramRegistry mHistManager{"JetCollisionQAHistograms"};
   Configurable<int> nBins{"nBins", 200, "N bins in histos"}; // keep nBins for vertex and special 2D's
@@ -155,9 +156,17 @@ struct jetTrackCollisionQa {
 
   void processESD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks)
   {
-    if (!collision.sel7() || fabs(collision.posZ()) > 10) {
+    if (evSel == true){
+      if (!collision.sel7() || fabs(collision.posZ()) > 10) {
       return;
+      }
     }
+    else{
+      if (fabs(collision.posZ()) > 10) {
+      return;
+      }
+    }
+
     mHistManager.fill(HIST("collisionVtxZ"), collision.posZ());
 
     double leadingTrackPt = -1;
@@ -165,7 +174,7 @@ struct jetTrackCollisionQa {
     double leadingTrackEta = -1;
     // qa histograms for selected tracks in collision
     for (const auto& t : tracks) {
-      if (t.collisionId() == collision.globalIndex() & selectTrack(t, trackSelection) == true) {
+      if ( (t.collisionId() == collision.globalIndex()) & (selectTrack(t, trackSelection) == true) ) {
         fillTrackQA(t);
         if (t.pt() > leadingTrackPt) {
           leadingTrackPt = t.pt();
@@ -211,8 +220,15 @@ struct jetTrackCollisionQa {
   // process for run3 AOD's
   void processRun3AOD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks)
   {
-    if (!collision.sel8() || fabs(collision.posZ()) > 10) {
+    if (evSel == true){
+      if (!collision.sel8() || fabs(collision.posZ()) > 10) {
       return;
+      }
+    }
+    else{
+      if (fabs(collision.posZ()) > 10) {
+      return;
+      }
     }
     mHistManager.fill(HIST("collisionVtxZ"), collision.posZ());
     double leadingTrackPt = -1;
@@ -220,7 +236,7 @@ struct jetTrackCollisionQa {
     double leadingTrackEta = -1;
     // qa histograms for selected tracks in collision
     for (const auto& t : tracks) {
-      if (t.collisionId() == collision.globalIndex() & selectTrack(t, trackSelection) == true) {
+      if ( (t.collisionId() == collision.globalIndex()) & (selectTrack(t, trackSelection) == true)) {
         fillTrackQA(t);
         if (t.pt() > leadingTrackPt) {
           leadingTrackPt = t.pt();
@@ -369,7 +385,7 @@ struct mcJetTrackCollisionQa {
   void fillMcTrackHistos(ValidationTracks const& mct, coll collision, bool mc) // could give collision as argument for additional association
   {
     for (const auto& track : mct) {
-      if (!selectTrack(track, trackSelection) || track.collisionId() == collision.globalIndex()) {
+      if ( (!selectTrack(track, trackSelection)) || (track.collisionId() == collision.globalIndex()) ) {
         return;
       }
       if (mc == true) {
