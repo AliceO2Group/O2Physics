@@ -1366,11 +1366,11 @@ struct tofSpectra {
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
       for (const auto& mcParticle : particlesInCollision) {
         if (std::abs(mcParticle.y()) > cfgCutY) {
-        continue;
-      }
-      static_for<0, 17>([&](auto i) {
+          continue;
+        }
+        static_for<0, 17>([&](auto i) {
           fillParticleHistograms_MCRecoEvs<i>(mcParticle, collision);
-      });
+        });
       }
     }
 
