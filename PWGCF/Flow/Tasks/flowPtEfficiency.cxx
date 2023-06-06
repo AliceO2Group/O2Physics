@@ -47,7 +47,8 @@ struct flowPtEfficiency {
   // Define the output
   HistogramRegistry registry{"registry"};
 
-  bool isStable(int pdg) {
+  bool isStable(int pdg)
+  {
     if (abs(pdg) == 211)
       return true;
     if (abs(pdg) == 321)
@@ -81,8 +82,8 @@ struct flowPtEfficiency {
       if (track.has_mcParticle()) {
         auto mcParticle = track.mcParticle();
         if (isStable(mcParticle.pdgCode())) {
-            registry.fill(HIST("hPtMCRec"), track.pt());
-          }
+          registry.fill(HIST("hPtMCRec"), track.pt());
+        }
       }
     }
   }
