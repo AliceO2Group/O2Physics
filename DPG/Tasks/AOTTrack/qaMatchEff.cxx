@@ -1208,9 +1208,9 @@ struct qaMatchEff {
             if (pionPIDwithTPC && !pionPIDwithTOF) {
               histos.get<TH1>(HIST("data/pthist_tpc_pi_PIDTPC_O"))->Fill(trackPt);
             }
-	    if (pionPIDwithTPC) {
+            if (pionPIDwithTPC) {
               histos.get<TH1>(HIST("data/pthist_tpc_pi_PIDTPC"))->Fill(trackPt);
-            }	    
+            }       
             if (!pionPIDwithTPC && pionPIDwithTOF) {
               histos.get<TH1>(HIST("data/pthist_tpc_pi_PIDTOF_O"))->Fill(trackPt);
             }
@@ -1237,9 +1237,9 @@ struct qaMatchEff {
             if (kaonPIDwithTPC && !kaonPIDwithTOF) {
               histos.get<TH1>(HIST("data/pthist_tpc_ka_PIDTPC_O"))->Fill(trackPt);
             }
-	    if (kaonPIDwithTPC) {
+            if (kaonPIDwithTPC) {
               histos.get<TH1>(HIST("data/pthist_tpc_ka_PIDTPC"))->Fill(trackPt);
-            }	    
+            }       
             if (!kaonPIDwithTPC && kaonPIDwithTOF) {
               histos.get<TH1>(HIST("data/pthist_tpc_ka_PIDTOF_O"))->Fill(trackPt);
             }
@@ -1266,9 +1266,9 @@ struct qaMatchEff {
             if (protonPIDwithTPC && !protonPIDwithTOF) {
               histos.get<TH1>(HIST("data/pthist_tpc_pr_PIDTPC_O"))->Fill(trackPt);
             }
-	    if (protonPIDwithTPC) {
+            if (protonPIDwithTPC) {
               histos.get<TH1>(HIST("data/pthist_tpc_pr_PIDTPC"))->Fill(trackPt);
-            }	    
+            }       
             if (!protonPIDwithTPC && protonPIDwithTOF) {
               histos.get<TH1>(HIST("data/pthist_tpc_pr_PIDTOF_O"))->Fill(trackPt);
             }
