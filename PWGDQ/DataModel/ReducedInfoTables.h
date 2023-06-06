@@ -268,6 +268,7 @@ DECLARE_SOA_COLUMN(Sign, sign, int);               //!
 DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float);       //!  Impact parameter in X of forward track to the primary vertex
 DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float);       //!  Impact parameter in Y of forward track to the primary vertex
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int); //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                 //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
@@ -291,7 +292,7 @@ DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "RTMuons_MatchM
 // Muon track kinematics
 DECLARE_SOA_TABLE(ReducedMuons, "AOD", "RTMUON", //!
                   o2::soa::Index<>, reducedmuon::ReducedEventId, reducedmuon::FilteringFlags,
-                  reducedmuon::Pt, reducedmuon::Eta, reducedmuon::Phi, reducedmuon::Sign, reducedmuon::IsAmbiguous,
+                  reducedmuon::Pt, reducedmuon::Eta, reducedmuon::Phi, reducedmuon::Sign, reducedmuon::IsAmbiguous, reducedmuon::CollisionId,
                   reducedmuon::Px<reducedmuon::Pt, reducedmuon::Phi>,
                   reducedmuon::Py<reducedmuon::Pt, reducedmuon::Phi>,
                   reducedmuon::Pz<reducedmuon::Pt, reducedmuon::Eta>,
@@ -418,6 +419,7 @@ DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                 //! Scalar product betwee
 DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                 //! Scalar product between unitary vector with event flow vector (harmonic 3)
 DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float); //! Cosinus term using event plane angle (harmonic 2)
 DECLARE_SOA_COLUMN(Cos3DeltaPhi, cos3deltaphi, float); //! Cosinus term using event plane angle (harmonic 3)
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);               //!
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -447,7 +449,8 @@ DECLARE_SOA_TABLE(DileptonsExtra, "AOD", "RTDILEPTONEXTRA", //!
                   dilepton_track_index::Index0Id, dilepton_track_index::Index1Id,
                   reducedpair::Tauz,
                   reducedpair::Lz,
-                  reducedpair::Lxy);
+                  reducedpair::Lxy,
+                  reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
 
 DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
                   reducedpair::U2Q2,
