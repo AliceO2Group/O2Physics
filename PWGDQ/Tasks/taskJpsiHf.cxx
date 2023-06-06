@@ -131,7 +131,7 @@ struct taskJpsiHf {
   //       and the associated hadrons (n+1 bit) --> see the barrel track selection task
   //      The current condition should be replaced when bitwise operators will become available in Filter expressions
 
-  //int fNHadronCutBit;
+  // int fNHadronCutBit;
 
   void init(o2::framework::InitContext& context)
   {
