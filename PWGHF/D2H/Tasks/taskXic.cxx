@@ -322,7 +322,7 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/signal/hEtaRecSig"), candidate.eta(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hImpParErrSig"), candidate.errorImpactParameter0(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hDecLenErrSig"), candidate.errorDecayLength(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/signal/hChi2PCAsig"), candidate.chi2PCA(), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/signal/hChi2PCARecSig"), candidate.chi2PCA(), ptCandidate);
       } else {
         // Background
         registry.fill(HIST("MC/reconstructed/background/hPtRecBg"), ptCandidate);
@@ -345,11 +345,11 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/background/hd0Prong2RecBg"), candidate.impactParameter2(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hCtRecBg"), ctXic(candidate), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hCPARecBg"), candidate.cpa(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/background/hCPAXYRecSig"), candidate.cpaXY(), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/background/hCPAXYRecBg"), candidate.cpaXY(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hEtaRecBg"), candidate.eta(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/background/hImpParErrSig"), candidate.errorImpactParameter0(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/background/hDecLenErrSig"), candidate.errorDecayLength(), ptCandidate);
-        registry.fill(HIST("MC/reconstructed/background/hChi2PCAsig"), candidate.chi2PCA(), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/background/hImpParErrBg"), candidate.errorImpactParameter0(), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/background/hDecLenErrBg"), candidate.errorDecayLength(), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/background/hChi2PCARecBg"), candidate.chi2PCA(), ptCandidate);
       }
     }
     // MC gen.
