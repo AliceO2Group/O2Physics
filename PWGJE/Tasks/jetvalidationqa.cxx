@@ -156,14 +156,13 @@ struct jetTrackCollisionQa {
 
   void processESD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks)
   {
-    if (evSel == true){
+    if (evSel == true) {
       if (!collision.sel7() || fabs(collision.posZ()) > 10) {
-      return;
+        return;
       }
-    }
-    else{
+    } else {
       if (fabs(collision.posZ()) > 10) {
-      return;
+        return;
       }
     }
 
@@ -174,7 +173,7 @@ struct jetTrackCollisionQa {
     double leadingTrackEta = -1;
     // qa histograms for selected tracks in collision
     for (const auto& t : tracks) {
-      if ( (t.collisionId() == collision.globalIndex()) & (selectTrack(t, trackSelection) == true) ) {
+      if ((t.collisionId() == collision.globalIndex()) & (selectTrack(t, trackSelection) == true)) {
         fillTrackQA(t);
         if (t.pt() > leadingTrackPt) {
           leadingTrackPt = t.pt();
@@ -220,14 +219,13 @@ struct jetTrackCollisionQa {
   // process for run3 AOD's
   void processRun3AOD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks)
   {
-    if (evSel == true){
+    if (evSel == true) {
       if (!collision.sel8() || fabs(collision.posZ()) > 10) {
-      return;
+        return;
       }
-    }
-    else{
+    } else {
       if (fabs(collision.posZ()) > 10) {
-      return;
+        return;
       }
     }
     mHistManager.fill(HIST("collisionVtxZ"), collision.posZ());
@@ -236,7 +234,7 @@ struct jetTrackCollisionQa {
     double leadingTrackEta = -1;
     // qa histograms for selected tracks in collision
     for (const auto& t : tracks) {
-      if ( (t.collisionId() == collision.globalIndex()) & (selectTrack(t, trackSelection) == true)) {
+      if ((t.collisionId() == collision.globalIndex()) & (selectTrack(t, trackSelection) == true)) {
         fillTrackQA(t);
         if (t.pt() > leadingTrackPt) {
           leadingTrackPt = t.pt();
@@ -385,7 +383,7 @@ struct mcJetTrackCollisionQa {
   void fillMcTrackHistos(ValidationTracks const& mct, coll collision, bool mc) // could give collision as argument for additional association
   {
     for (const auto& track : mct) {
-      if ( (!selectTrack(track, trackSelection)) || (track.collisionId() == collision.globalIndex()) ) {
+      if ((!selectTrack(track, trackSelection)) || (track.collisionId() == collision.globalIndex())) {
         return;
       }
       if (mc == true) {
