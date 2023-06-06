@@ -1,4 +1,4 @@
-// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -10,11 +10,12 @@
 // or submit itself to any jurisdiction.
 
 /// \file femtoDreamCutCulator.cxx
-/// \brief Executable that encodes physical selection criteria in a bit-wise selection
-/// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \brief Executable that encodes physical selection criteria in a bit-wise
+/// selection \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
 #include <filesystem>
 #include <iostream>
+#include <random>
 #include "FemtoDreamCutculator.h"
 #include "FemtoDreamSelection.h"
 #include "FemtoDreamTrackSelection.h"
@@ -34,31 +35,52 @@ int main(int argc, char* argv[])
     FemtoDreamCutculator cut;
     cut.init(argv[1]);
 
-    LOG(info) << "Do you want to work with tracks or V0s (T/V)?";
+    std::cout
+      << "Do you want to work with tracks or V0s (T/V)?";
     std::string choice;
     std::cin >> choice;
 
     if (choice == std::string("T")) {
       cut.setTrackSelectionFromFile("ConfTrk");
-      cut.setPIDSelectionFromFile("ConfPIDTrk");
+      cut.setPIDSelectionFromFile("ConfPIDTrk", "ConfTrk");
     } else if (choice == std::string("V")) {
-      LOG(info) << "Do you want to select V0s or one of its children (V/T)?";
+      std::cout << "Do you want to select V0s or one of its children (V/T)?";
       std::cin >> choice;
       cut.setV0SelectionFromFile("ConfV0");
       cut.setTrackSelectionFromFile("ConfChild");
-      cut.setPIDSelectionFromFile("ConfPIDChild");
+      cut.setPIDSelectionFromFile("ConfPIDChild", "ConfChild");
     } else {
-      LOG(info) << "Option not recognized. Break...";
-      return 1;
+      std::cout << "Option not recognized. Break...";
+      return 2;
+    }
+    /// \todo factor out the pid here
+    /// cut.setTrackSelection(femtoDreamTrackSelection::kPIDnSigmaMax,
+    /// femtoDreamSelection::kAbsUpperLimit, "ConfTrk");
+
+    std::cout << "Do you want to manually select cuts or create systematic "
+                 "variations(M/V)?";
+    std::string manual;
+    std::cin >> manual;
+
+    if (manual == std::string("M")) {
+      cut.analyseCuts(choice);
+    } else if (manual == std::string("V")) {
+      std::ofstream out("CutCulator.txt");
+      std::streambuf* coutbuf = std::cout.rdbuf(); // save old buf
+      std::cout.rdbuf(out.rdbuf());                // redirect std::cout to out.txt!
+      for (int i = 0; i < 20; i++) {
+        cut.analyseCuts(choice, true, 1);
+      }
+      std::cout.rdbuf(coutbuf); // reset to standard output again
+    } else {
+      std::cout << "Option not recognized. Break...";
+      return 2;
     }
 
-    /// \todo factor out the pid here
-    // cut.setTrackSelection(femtoDreamTrackSelection::kPIDnSigmaMax,
-    // femtoDreamSelection::kAbsUpperLimit, "ConfTrk");
-    cut.analyseCuts(choice);
-
   } else {
-    LOG(info) << "The configuration file " << configFileName
+    std::cout << "The configuration file " << configFileName
               << " could not be found.";
   }
+
+  return 0;
 }
