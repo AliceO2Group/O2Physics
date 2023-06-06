@@ -467,7 +467,6 @@ struct femtoDreamProducerTask {
                     childIDs,
                     0,
                     0);
-        LOG(info) << "PosChild: " << cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosPID);
         const int rowOfPosTrack = outputParts.lastIndex();
         if constexpr (isMC) {
           fillMCParticle(postrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
@@ -488,7 +487,6 @@ struct femtoDreamProducerTask {
                     childIDs,
                     0,
                     0);
-        LOG(info) << "NegChild: " << cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegPID);
         const int rowOfNegTrack = outputParts.lastIndex();
         if constexpr (isMC) {
           fillMCParticle(negtrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
