@@ -212,10 +212,10 @@ struct HfTreeCreatorDplusToPiKPi {
   Configurable<float> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  using selectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
+  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
 
-  Partition<selectedCandidatesMc> recSig = (aod::hf_cand_3prong::flagMcMatchRec == (int8_t)BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) || (aod::hf_cand_3prong::flagMcMatchRec == -(int8_t)BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
-  Partition<selectedCandidatesMc> recBg = (aod::hf_cand_3prong::flagMcMatchRec != (int8_t)BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && (aod::hf_cand_3prong::flagMcMatchRec != -(int8_t)BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
+  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == (int8_t)BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != (int8_t)BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi);
 
   void init(InitContext const&)
   {
@@ -383,7 +383,7 @@ struct HfTreeCreatorDplusToPiKPi {
 
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
-                 selectedCandidatesMc const& candidates,
+                 SelectedCandidatesMc const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                  aod::BigTracksPID const&)
   {
