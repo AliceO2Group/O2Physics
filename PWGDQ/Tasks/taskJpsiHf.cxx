@@ -208,18 +208,18 @@ struct taskJpsiHf {
       auto groupedDileptonCandidates = dileptons.sliceBy(perCollisionDilepton, collision.globalIndex());
 
       if (configDebug & (groupedDmesonCandidates.size() > 0 || groupedDileptonCandidates.size() > 0)) {
-        LOGP(info, "D-meson size = {} ; Dilepton size = {}", groupedDmesonCandidates.size(), groupedDileptonCandidates.size());
-        LOGP(info, "collision global index = {} ({}, {}, {})", collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ());
+        LOGP(debug, "D-meson size = {} ; Dilepton size = {}", groupedDmesonCandidates.size(), groupedDileptonCandidates.size());
+        LOGP(debug, "collision global index = {} ({}, {}, {})", collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ());
         runDileptonDmeson(groupedDileptonCandidates, groupedDmesonCandidates);
       }
       if (groupedDileptonCandidates.size() > 0 && !configDebug) {
-        LOGP(info, "D-meson size = {} ; Dilepton size = {}", groupedDmesonCandidates.size(), groupedDileptonCandidates.size());
-        LOGP(info, "collision global index = {} ({}, {}, {})", collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ());
+        LOGP(debug, "D-meson size = {} ; Dilepton size = {}", groupedDmesonCandidates.size(), groupedDileptonCandidates.size());
+        LOGP(debug, "collision global index = {} ({}, {}, {})", collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ());
         for (auto& dmeson : groupedDmesonCandidates) {
-          LOGP(info, "D meson collision index = {} ({}, {}, {})", dmeson.collisionId(), dmeson.posX(), dmeson.posY(), dmeson.posZ());
+          LOGP(debug, "D meson collision index = {} ({}, {}, {})", dmeson.collisionId(), dmeson.posX(), dmeson.posY(), dmeson.posZ());
         }
         for (auto& dilepton : groupedDileptonCandidates) {
-          LOGP(info, "Dilepton collision index = {} ({}, {}, {})", dilepton.collisionId(), dilepton.posX(), dilepton.posY(), dilepton.posZ());
+          LOGP(debug, "Dilepton collision index = {} ({}, {}, {})", dilepton.collisionId(), dilepton.posX(), dilepton.posY(), dilepton.posZ());
         }
         runDileptonDmeson(groupedDileptonCandidates, groupedDmesonCandidates);
       }
