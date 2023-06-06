@@ -72,8 +72,9 @@ struct tofSpectra {
   static constexpr int kMultNTracksPVeta1 = 7;
   static constexpr int kCentralityFT0C = 8;
   static constexpr int kCentralityFT0M = 9;
+  static constexpr int kCentralityFV0A = 10;
   static constexpr int kNMults = 10;
-  Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1, 8 CentralityFT0C, 9 CentralityFT0M"};
+  Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1, 8 CentralityFT0C, 9 CentralityFT0M, 10 CentralityFV0A"};
   // Custom track cuts for the cut variation study
   TrackSelection customTrackCuts;
   Configurable<bool> useCustomTrackCuts{"useCustomTrackCuts", false, "Flag to use custom track cuts"};
@@ -202,9 +203,12 @@ struct tofSpectra {
     h->GetXaxis()->SetBinLabel(4, "EvTimeT0AC");
     h->GetXaxis()->SetBinLabel(5, "EvTimeTOFT0AV");
 
+    histos.add("Centrality/FV0A", "FV0A", HistType::kTH1D, {{binsPercentile, "Centrality FV0A"}});
     histos.add("Centrality/FT0M", "FT0M", HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
     histos.add("Centrality/FT0A", "FT0A", HistType::kTH1D, {{binsPercentile, "Centrality FT0A"}});
     histos.add("Centrality/FT0C", "FT0C", HistType::kTH1D, {{binsPercentile, "Centrality FT0C"}});
+    histos.add("Centrality/FDDM", "FDDM", HistType::kTH1D, {{binsPercentile, "Centrality FDDM"}});
+    histos.add("Centrality/NTPV", "NTPV", HistType::kTH1D, {{binsPercentile, "Centrality NTPV"}});
 
     histos.add("Mult/FV0M", "MultFV0M", HistType::kTH1D, {{binsMultiplicity, "MultFV0M"}});
     histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {{binsMultiplicity, "MultFT0M"}});
@@ -292,7 +296,7 @@ struct tofSpectra {
       histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
       histos.add("MC/no_collision/pos", "No collision pos track", kTH1D, {ptAxis});
       histos.add("MC/no_collision/neg", "No collision neg track", kTH1D, {ptAxis});
-      histos.add("MC/GenRecoCollisions", "Generated and Reconstructed MC Collisions", kTH1D, {{2, 0, 2}});
+      histos.add("MC/GenRecoCollisions", "Generated and Reconstructed MC Collisions", kTH1D, {{3, 0, 3}});
     }
 
     for (int i = 0; i < NpCharge; i++) {
@@ -394,6 +398,9 @@ struct tofSpectra {
         case kCentralityFT0M: // Centrality FT0M
           multAxis = {binsPercentile, "Centrality FT0M"};
           break;
+        case kCentralityFV0A: // Centrality FV0A
+          multAxis = {binsPercentile, "Centrality FV0A"};
+          break;
         default:
           LOG(fatal) << "Unrecognized option for multiplicity " << multiplicityEstimator;
       }
@@ -493,6 +500,9 @@ struct tofSpectra {
         break;
       case kCentralityFT0M: // Centrality FT0M
         multiplicity = collision.centFT0M();
+        break;
+      case kCentralityFV0A: // Centrality FT0M
+        multiplicity = collision.centFV0A();
         break;
       default:
         LOG(fatal) << "Unknown multiplicity estimator: " << multiplicityEstimator;
@@ -688,9 +698,12 @@ struct tofSpectra {
       histos.fill(HIST("event/vertexz"), collision.posZ());
 
       if constexpr (fillMultiplicity) {
+        histos.fill(HIST("Centrality/FV0A"), collision.centFV0A());
         histos.fill(HIST("Centrality/FT0M"), collision.centFT0M());
         histos.fill(HIST("Centrality/FT0A"), collision.centFT0A());
         histos.fill(HIST("Centrality/FT0C"), collision.centFT0C());
+        // histos.fill(HIST("Centrality/FDDM"), collision.centFDDM());
+        // histos.fill(HIST("Centrality/NTPV"), collision.centNTPV());
 
         histos.fill(HIST("Mult/FV0M"), collision.multZeqFV0A());
         histos.fill(HIST("Mult/FT0M"), collision.multZeqFT0A() + collision.multZeqFT0C());
@@ -880,7 +893,7 @@ struct tofSpectra {
     return true;
   }
 
-  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   // using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
@@ -1364,13 +1377,29 @@ struct tofSpectra {
     // Loop on generated collisions
     for (const auto& mcCollision : mcCollisions) {
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      bool hasParticleInFT0C = false;
+      bool hasParticleInFT0A = false;
       for (const auto& mcParticle : particlesInCollision) {
+        if (mcParticle.isPhysicalPrimary()) {
+          if (TMath::Abs(mcParticle.pdgCode()) == 211) {
+            if (mcParticle.eta() >= -3.4 && mcParticle.eta() <= -2.3) { // Acceptance of the FT0C
+              hasParticleInFT0C = true;
+            }
+            if (mcParticle.eta() >= 3.8 && mcParticle.eta() <= 5.0) { // Acceptance of the FT0A
+              hasParticleInFT0A = true;
+            }
+          }
+        }
+
         if (std::abs(mcParticle.y()) > cfgCutY) {
           continue;
         }
         static_for<0, 17>([&](auto i) {
           fillParticleHistograms_MCGenEvs<i>(mcParticle, mcCollision);
         });
+      }
+      if (hasParticleInFT0C && hasParticleInFT0A) {
+        histos.fill(HIST("MC/GenRecoCollisions"), 2.5);
       }
     }
   }
