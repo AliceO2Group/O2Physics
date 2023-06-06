@@ -261,10 +261,6 @@ struct qaMatchEff {
       histos.add("data/etahist_tpc_pi", "#eta distribution - data TPC tag - pions", kTH1D, {axisEta}, true);
       histos.add("data/phihist_tpc_pi", "#phi distribution - data TPC tag - pions", kTH1D, {axisPhi}, true);
 
-      histos.add("data/pthist_tpc_pi_PIDTPC", "#it{p}_{T} distribution - data TPC tag - pions PID TPC only", kTH1D, {axisPt}, true);
-      histos.add("data/pthist_tpc_pi_PIDTOF", "#it{p}_{T} distribution - data TPC tag - pions PID TOF only", kTH1D, {axisPt}, true);
-      histos.add("data/pthist_tpc_pi_PIDTPCTOF", "#it{p}_{T} distribution - data TPC tag - pions PID TPC+TOF", kTH1D, {axisPt}, true);
-
       histos.add("data/pthist_its_pi", "#it{p}_{T} distribution - data ITS tag - pions", kTH1D, {axisPt}, true);
       histos.add("data/etahist_its_pi", "#eta distribution - data ITS tag - pions", kTH1D, {axisEta}, true);
       histos.add("data/phihist_its_pi", "#phi distribution - data ITS tag - pions", kTH1D, {axisPhi}, true);
@@ -273,9 +269,19 @@ struct qaMatchEff {
       histos.add("data/etahist_tpcits_pi", "#eta distribution - data TPC+ITS tag - pions", kTH1D, {axisEta}, true);
       histos.add("data/phihist_tpcits_pi", "#phi distribution - data TPC+ITS tag - pions", kTH1D, {axisPhi}, true);
 
-      histos.add("data/pthist_tpcits_pi_PIDTPC", "#it{p}_{T} distribution - data TPC+ITS tag - pions PID TPC only", kTH1D, {axisPt}, true);
-      histos.add("data/pthist_tpcits_pi_PIDTOF", "#it{p}_{T} distribution - data TPC+ITS tag - pions PID TOF only", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpcits_pi_PIDTPC", "#it{p}_{T} distribution - data TPC+ITS tag - pions PID w/TPC at least", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpcits_pi_PIDTOF", "#it{p}_{T} distribution - data TPC+ITS tag - pions PID w/TOF at least", kTH1D, {axisPt}, true);
       histos.add("data/pthist_tpcits_pi_PIDTPCTOF", "#it{p}_{T} distribution - data TPC+ITS tag - pions PID TPC+TOF", kTH1D, {axisPt}, true);
+
+      histos.add("data/pthist_tpcits_pi_PIDTPC_O", "#it{p}_{T} distribution - data TPC+ITS tag - pions PID TPC only", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpcits_pi_PIDTOF_O", "#it{p}_{T} distribution - data TPC+ITS tag - pions PID TOF only", kTH1D, {axisPt}, true);
+
+      histos.add("data/pthist_tpc_pi_PIDTPC", "#it{p}_{T} distribution - data TPC tag - pions PID w/TPC at least", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpc_pi_PIDTOF", "#it{p}_{T} distribution - data TPC tag - pions PID w/TOF at least", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpc_pi_PIDTPCTOF", "#it{p}_{T} distribution - data TPC tag - pions PID TPC+TOF", kTH1D, {axisPt}, true);
+
+      histos.add("data/pthist_tpc_pi_PIDTPC_O",    "#it{p}_{T} distribution - data TPC tag - pions PID TPC only", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpc_pi_PIDTOF_O",    "#it{p}_{T} distribution - data TPC tag - pions PID TOF only", kTH1D, {axisPt}, true);
 
       // plus
       histos.add("data/pthist_tpc_piplus", "#it{p}_{T} distribution - data TPC tag - pos. pions", kTH1D, {axisPt}, true);
@@ -316,6 +322,21 @@ struct qaMatchEff {
       histos.add("data/pthist_tpcits_ka", "#it{p}_{T} distribution - data TPC+ITS tag - kaons", kTH1D, {axisPt}, true);
       histos.add("data/etahist_tpcits_ka", "#eta distribution - data TPC+ITS tag - kaons", kTH1D, {axisEta}, true);
       histos.add("data/phihist_tpcits_ka", "#phi distribution - data TPC+ITS tag - kaons", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_tpcits_ka_PIDTPC", "#it{p}_{T} distribution - data TPC+ITS tag - kaons PID w/TPC at least", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpcits_ka_PIDTOF", "#it{p}_{T} distribution - data TPC+ITS tag - kaons PID w/TOF at least", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpcits_ka_PIDTPCTOF", "#it{p}_{T} distribution - data TPC+ITS tag - kaons PID TPC+TOF", kTH1D, {axisPt}, true);
+
+      histos.add("data/pthist_tpcits_ka_PIDTPC_O", "#it{p}_{T} distribution - data TPC+ITS tag - kaons PID TPC only", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpcits_ka_PIDTOF_O", "#it{p}_{T} distribution - data TPC+ITS tag - kaons PID TOF only", kTH1D, {axisPt}, true);
+
+      histos.add("data/pthist_tpc_ka_PIDTPC", "#it{p}_{T} distribution - data TPC tag - kaons PID w/TPC at least", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpc_ka_PIDTOF", "#it{p}_{T} distribution - data TPC tag - kaons PID w/TOF at least", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpc_ka_PIDTPCTOF", "#it{p}_{T} distribution - data TPC tag - kaons PID TPC+TOF", kTH1D, {axisPt}, true);
+
+      histos.add("data/pthist_tpc_ka_PIDTPC_O",    "#it{p}_{T} distribution - data TPC tag - kaons PID TPC only", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpc_ka_PIDTOF_O",    "#it{p}_{T} distribution - data TPC tag - kaons PID TOF only", kTH1D, {axisPt}, true);
+
       // plus
       histos.add("data/pthist_tpc_kaplus", "#it{p}_{T} distribution - data TPC tag - pos. kaons", kTH1D, {axisPt}, true);
       histos.add("data/etahist_tpc_kaplus", "#eta distribution - data TPC tag - pos. kaons", kTH1D, {axisEta}, true);
@@ -355,6 +376,21 @@ struct qaMatchEff {
       histos.add("data/pthist_tpcits_pr", "#it{p}_{T} distribution - data TPC+ITS tag - protons", kTH1D, {axisPt}, true);
       histos.add("data/etahist_tpcits_pr", "#eta distribution - data TPC+ITS tag - protons", kTH1D, {axisEta}, true);
       histos.add("data/phihist_tpcits_pr", "#phi distribution - data TPC+ITS tag - protons", kTH1D, {axisPhi}, true);
+
+      histos.add("data/pthist_tpcits_pr_PIDTPC", "#it{p}_{T} distribution - data TPC+ITS tag - protons PID w/TPC at least", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpcits_pr_PIDTOF", "#it{p}_{T} distribution - data TPC+ITS tag - protons PID w/TOF at least", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpcits_pr_PIDTPCTOF", "#it{p}_{T} distribution - data TPC+ITS tag - protons PID TPC+TOF", kTH1D, {axisPt}, true);
+
+      histos.add("data/pthist_tpcits_pr_PIDTPC_O", "#it{p}_{T} distribution - data TPC+ITS tag - protons PID TPC only", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpcits_pr_PIDTOF_O", "#it{p}_{T} distribution - data TPC+ITS tag - protons PID TOF only", kTH1D, {axisPt}, true);
+
+      histos.add("data/pthist_tpc_pr_PIDTPC", "#it{p}_{T} distribution - data TPC tag - protons PID w/TPC at least", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpc_pr_PIDTOF", "#it{p}_{T} distribution - data TPC tag - protons PID w/TOF at least", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpc_pr_PIDTPCTOF", "#it{p}_{T} distribution - data TPC tag - protons PID TPC+TOF", kTH1D, {axisPt}, true);
+
+      histos.add("data/pthist_tpc_pr_PIDTPC_O",    "#it{p}_{T} distribution - data TPC tag - protons PID TPC only", kTH1D, {axisPt}, true);
+      histos.add("data/pthist_tpc_pr_PIDTOF_O",    "#it{p}_{T} distribution - data TPC tag - protons PID TOF only", kTH1D, {axisPt}, true);
+
       // plus
       histos.add("data/pthist_tpc_prplus", "#it{p}_{T} distribution - data TPC tag - pos. protons", kTH1D, {axisPt}, true);
       histos.add("data/etahist_tpc_prplus", "#eta distribution - data TPC tag - pos. protons", kTH1D, {axisEta}, true);
@@ -1170,9 +1206,15 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/etahist_tpc_piminus"))->Fill(track.eta());
             }
             if (pionPIDwithTPC && !pionPIDwithTOF) {
-              histos.get<TH1>(HIST("data/pthist_tpc_pi_PIDTPC"))->Fill(trackPt);
+              histos.get<TH1>(HIST("data/pthist_tpc_pi_PIDTPC_O"))->Fill(trackPt);
             }
+	    if (pionPIDwithTPC) {
+              histos.get<TH1>(HIST("data/pthist_tpc_pi_PIDTPC"))->Fill(trackPt);
+            }	    
             if (!pionPIDwithTPC && pionPIDwithTOF) {
+              histos.get<TH1>(HIST("data/pthist_tpc_pi_PIDTOF_O"))->Fill(trackPt);
+            }
+            if (pionPIDwithTOF) {
               histos.get<TH1>(HIST("data/pthist_tpc_pi_PIDTOF"))->Fill(trackPt);
             }
             if (pionPIDwithTPC && pionPIDwithTOF) {
@@ -1192,6 +1234,21 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/phihist_tpc_kaminus"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/etahist_tpc_kaminus"))->Fill(track.eta());
             }
+            if (kaonPIDwithTPC && !kaonPIDwithTOF) {
+              histos.get<TH1>(HIST("data/pthist_tpc_ka_PIDTPC_O"))->Fill(trackPt);
+            }
+	    if (kaonPIDwithTPC) {
+              histos.get<TH1>(HIST("data/pthist_tpc_ka_PIDTPC"))->Fill(trackPt);
+            }	    
+            if (!kaonPIDwithTPC && kaonPIDwithTOF) {
+              histos.get<TH1>(HIST("data/pthist_tpc_ka_PIDTOF_O"))->Fill(trackPt);
+            }
+            if (kaonPIDwithTOF) {
+              histos.get<TH1>(HIST("data/pthist_tpc_ka_PIDTOF"))->Fill(trackPt);
+            }
+            if (kaonPIDwithTPC && kaonPIDwithTOF) {
+              histos.get<TH1>(HIST("data/pthist_tpc_ka_PIDTPCTOF"))->Fill(trackPt);
+            }
           } // end kaons
           if (isProton) {
             histos.get<TH1>(HIST("data/pthist_tpc_pr"))->Fill(trackPt);
@@ -1205,6 +1262,21 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/pthist_tpc_prminus"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/phihist_tpc_prminus"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/etahist_tpc_prminus"))->Fill(track.eta());
+            }
+            if (protonPIDwithTPC && !protonPIDwithTOF) {
+              histos.get<TH1>(HIST("data/pthist_tpc_pr_PIDTPC_O"))->Fill(trackPt);
+            }
+	    if (protonPIDwithTPC) {
+              histos.get<TH1>(HIST("data/pthist_tpc_pr_PIDTPC"))->Fill(trackPt);
+            }	    
+            if (!protonPIDwithTPC && protonPIDwithTOF) {
+              histos.get<TH1>(HIST("data/pthist_tpc_pr_PIDTOF_O"))->Fill(trackPt);
+            }
+            if (protonPIDwithTOF) {
+              histos.get<TH1>(HIST("data/pthist_tpc_pr_PIDTOF"))->Fill(trackPt);
+            }
+            if (protonPIDwithTPC && protonPIDwithTOF) {
+              histos.get<TH1>(HIST("data/pthist_tpc_pr_PIDTPCTOF"))->Fill(trackPt);
             }
           } // end protons
           if (!isPion && !isKaon && !isProton) {
@@ -1256,9 +1328,15 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("data/etahist_tpcits_piminus"))->Fill(track.eta());
               }
               if (pionPIDwithTPC && !pionPIDwithTOF) {
+                histos.get<TH1>(HIST("data/pthist_tpcits_pi_PIDTPC_O"))->Fill(trackPt);
+              }
+              if (pionPIDwithTPC) {
                 histos.get<TH1>(HIST("data/pthist_tpcits_pi_PIDTPC"))->Fill(trackPt);
               }
               if (!pionPIDwithTPC && pionPIDwithTOF) {
+                histos.get<TH1>(HIST("data/pthist_tpcits_pi_PIDTOF_O"))->Fill(trackPt);
+              }
+              if (pionPIDwithTOF) {
                 histos.get<TH1>(HIST("data/pthist_tpcits_pi_PIDTOF"))->Fill(trackPt);
               }
               if (pionPIDwithTPC && pionPIDwithTOF) {
