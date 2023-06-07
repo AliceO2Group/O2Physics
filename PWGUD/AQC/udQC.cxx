@@ -20,6 +20,7 @@
 #include "ReconstructionDataFormats/BCRange.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "PWGUD/Core/UDHelpers.h"
+#include "Framework/StaticFor.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -31,10 +32,8 @@ struct UDQC {
   Preslice<aod::Zdcs> perBCzdc = aod::zdc::bcId;
   Preslice<aod::Calos> perBCcalo = aod::calo::bcId;
 
-  // constants
-  static const int nBCpOrbit = 3564;
-  static const int ns = 20;    // number of BCs to save (used in processF[V0, T0, DD])
-  static const int ncmin = 20; // minimum length of series of empty BCs  (used in processF[V0, T0, DD])
+  static constexpr std::string_view hcFIT1s[5] = {"cleanFIT1FV0A", "cleanFIT1FT0A", "cleanFIT1FT0C", "cleanFIT1FDDA", "cleanFIT1FDDC"};
+  static constexpr std::string_view hcFIT2s[5] = {"cleanFIT2FV0A", "cleanFIT2FT0A", "cleanFIT2FT0C", "cleanFIT2FDDA", "cleanFIT2FDDC"};
 
   // global variables
   float maxdEdxTPC;
@@ -110,6 +109,10 @@ struct UDQC {
       registry.add("cF1FT0Camp", "#cF1FT0Camp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
       registry.add("cF1FDDAamp", "#cF1FDDAamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
       registry.add("cF1FDDCamp", "#cF1FDDCamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
+
+      for (auto n{0}; n < 5; n++) {
+        registry.add(hcFIT1s[n].data(), hcFIT1s[n].data(), {HistType::kTH2F, {{20, -0.5, 19.5}, {2, -0.5, 1.5}}});
+      }
     }
     if (context.mOptions.get<bool>("processCleanFIT2")) {
       registry.add("cleanFIT2", "#cleanFIT2", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
@@ -118,6 +121,10 @@ struct UDQC {
       registry.add("cF2FT0Camp", "#cF2FT0Camp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
       registry.add("cF2FDDAamp", "#cF2FDDAamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
       registry.add("cF2FDDCamp", "#cF2FDDCamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
+
+      for (auto n{0}; n < 5; n++) {
+        registry.add(hcFIT2s[n].data(), hcFIT2s[n].data(), {HistType::kTH2F, {{20, -0.5, 19.5}, {2, -0.5, 1.5}}});
+      }
     }
     if (context.mOptions.get<bool>("processFV0")) {
       registry.add("FV0A", "#FV0A", {HistType::kTH2F, {{48, -0.5, 47.5}, {2000, 0., 2000.}}});
@@ -435,8 +442,7 @@ struct UDQC {
   }
   PROCESS_SWITCH(UDQC, processFewProng, "Process FewProng", true);
 
-  // ...............................................................................................................
-  // Fraction of collisions with empty FIT as function of NDtcoll
+  // .............................................................................................................................................
   void processCleanFIT1(CC const& collision, BCs const& bct0s,
                         aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
@@ -444,9 +450,12 @@ struct UDQC {
 
     // test influence of BCrange width using a series of NDtcoll
     float ampFV0A, ampFT0A, ampFT0C, ampFDDA, ampFDDC;
+    auto FITlims = std::vector<float>(5, 1000000.);
     bool isDGcandidate = true;
     for (int NDtcoll = 0; NDtcoll < 20; NDtcoll++) {
       auto bcSlice = udhelpers::compatibleBCs(collision, NDtcoll, bct0s, 0);
+
+      // do for diffCuts.FITAmpLimits
       ampFV0A = ampFT0A = ampFT0C = ampFDDA = ampFDDC = 0.;
       isDGcandidate = true;
       for (auto const& bc : bcSlice) {
@@ -464,9 +473,7 @@ struct UDQC {
           ampFDDC += udhelpers::FDDAmplitudeA(bc.foundFDD());
         }
       }
-
       registry.get<TH2>(HIST("cleanFIT1"))->Fill(NDtcoll, isDGcandidate * 1.);
-
       if (isDGcandidate) {
         registry.get<TH2>(HIST("cF1FV0Aamp"))->Fill(NDtcoll, ampFV0A);
         registry.get<TH2>(HIST("cF1FT0Aamp"))->Fill(NDtcoll, ampFT0A);
@@ -474,11 +481,24 @@ struct UDQC {
         registry.get<TH2>(HIST("cF1FDDAamp"))->Fill(NDtcoll, ampFDDA);
         registry.get<TH2>(HIST("cF1FDDCamp"))->Fill(NDtcoll, ampFDDC);
       }
+
+      // loop over single detectors
+      static_for<0, 4>([&](auto n) {
+        FITlims[n] = 0.;
+        isDGcandidate = true;
+        for (auto const& bc : bcSlice) {
+          isDGcandidate &= udhelpers::cleanFIT(bc, FITlims);
+        }
+        constexpr int index = n.value;
+        registry.fill(HIST(hcFIT1s[index]), NDtcoll, isDGcandidate * 1.);
+        FITlims[n] = 1000000.;
+      });
     }
   }
-  PROCESS_SWITCH(UDQC, processCleanFIT1, "Process CleanFitTest1", true);
 
-  // ...............................................................................................................
+  PROCESS_SWITCH(UDQC, processCleanFIT1, "Process CleanFitTest1", true);
+  // .............................................................................................................................................
+
   void processCleanFIT2(CC const& collision, BCs const& bct0s,
                         aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
@@ -486,6 +506,7 @@ struct UDQC {
 
     // test influence of BCrange width using a series of nMinBC
     float ampFV0A, ampFT0A, ampFT0C, ampFDDA, ampFDDC;
+    auto FITlims = std::vector<float>(5, 1000000.);
     bool isDGcandidate = true;
     for (int nMinBC = 0; nMinBC < 20; nMinBC++) {
       auto bcSlice = udhelpers::compatibleBCs(collision, 0, bct0s, nMinBC);
@@ -506,9 +527,7 @@ struct UDQC {
           ampFDDC += udhelpers::FDDAmplitudeA(bc.foundFDD());
         }
       }
-
       registry.get<TH2>(HIST("cleanFIT2"))->Fill(nMinBC, isDGcandidate * 1.);
-
       if (isDGcandidate) {
         registry.get<TH2>(HIST("cF2FV0Aamp"))->Fill(nMinBC, ampFV0A);
         registry.get<TH2>(HIST("cF2FT0Aamp"))->Fill(nMinBC, ampFT0A);
@@ -516,8 +535,21 @@ struct UDQC {
         registry.get<TH2>(HIST("cF2FDDAamp"))->Fill(nMinBC, ampFDDA);
         registry.get<TH2>(HIST("cF2FDDCamp"))->Fill(nMinBC, ampFDDC);
       }
+
+      // loop over single detectors
+      static_for<0, 4>([&](auto n) {
+        FITlims[n] = 0.;
+        isDGcandidate = true;
+        for (auto const& bc : bcSlice) {
+          isDGcandidate &= udhelpers::cleanFIT(bc, FITlims);
+        }
+        constexpr int index = n.value;
+        registry.fill(HIST(hcFIT2s[index]), nMinBC, isDGcandidate * 1.);
+        FITlims[n] = 1000000.;
+      });
     }
   }
+
   PROCESS_SWITCH(UDQC, processCleanFIT2, "Process CleanFitTest2", true);
 
   // ...............................................................................................................
