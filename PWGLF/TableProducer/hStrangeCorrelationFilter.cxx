@@ -203,33 +203,38 @@ struct hstrangecorrelationfilter {
       if (!track.hasITS() && triggerRequireITS) {
         continue; // skip, doesn't have ITS signal (skips lots of TPC-only!)
       }
-      //prepared for Bayesian PID
-        // if (!track.bayesPi() > pionMinBayesProb) {
-        //   continue;
-        // }
-        // if (track.bayesPi() < track.bayesPr() || track.bayesPi() < track.bayesKa()){
-        //   continue;
-        // }
-        // if (track.tpcNSigmaPi() < assocPionNSigmaTPCFOF){
-        //   continue;
-        // }
-        // if (track.tofSignal() > 0 && track.tofNSigmaPi() < assocPionNSigmaTPCFOF){
-        //   continue;
-        // }
-      if (track.tofSignal() > 0){
-        if(std::sqrt(track.tofNSigmaPi()*track.tofNSigmaPi()+track.tpcNSigmaPi()*track.tpcNSigmaPi()) > assocPionNSigmaTPCFOF)
+      // prepared for Bayesian PID
+      //  if (!track.bayesPi() > pionMinBayesProb) {
+      //    continue;
+      //  }
+      //  if (track.bayesPi() < track.bayesPr() || track.bayesPi() < track.bayesKa()){
+      //    continue;
+      //  }
+      //  if (track.tpcNSigmaPi() < assocPionNSigmaTPCFOF){
+      //    continue;
+      //  }
+      //  if (track.tofSignal() > 0 && track.tofNSigmaPi() < assocPionNSigmaTPCFOF){
+      //    continue;
+      //  }
+      if (track.tofSignal() > 0) {
+        if (std::sqrt(track.tofNSigmaPi() * track.tofNSigmaPi() + track.tpcNSigmaPi() * track.tpcNSigmaPi()) > assocPionNSigmaTPCFOF)
           continue;
-        if (track.tofNSigmaPr() < rejectSigma) continue;
-        if (track.tpcNSigmaPr() < rejectSigma) continue;
-        if (track.tofNSigmaKa() < rejectSigma) continue;
-        if (track.tpcNSigmaKa() < rejectSigma) continue;
-      }else{
-        if(track.tpcNSigmaPi() > assocPionNSigmaTPCFOF)
+        if (track.tofNSigmaPr() < rejectSigma)
           continue;
-        if (track.tpcNSigmaPr() < rejectSigma) continue;
-        if (track.tpcNSigmaKa() < rejectSigma) continue;
+        if (track.tpcNSigmaPr() < rejectSigma)
+          continue;
+        if (track.tofNSigmaKa() < rejectSigma)
+          continue;
+        if (track.tpcNSigmaKa() < rejectSigma)
+          continue;
+      } else {
+        if (track.tpcNSigmaPi() > assocPionNSigmaTPCFOF)
+          continue;
+        if (track.tpcNSigmaPr() < rejectSigma)
+          continue;
+        if (track.tpcNSigmaKa() < rejectSigma)
+          continue;
       }
-
 
       assocPion(
         track.collisionId(),
