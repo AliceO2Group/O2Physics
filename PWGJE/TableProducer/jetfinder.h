@@ -242,7 +242,7 @@ bool selectCollision(T const& collision, std::string evSel)
   if (evSel == "evSel8" & !collision.sel8()) {
     return false;
   }
-  if(evSel == "evSel7" & !collision.sel7()){
+  if (evSel == "evSel7" & !collision.sel7()) {
     return false;
   }
   return true;
