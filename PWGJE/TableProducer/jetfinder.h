@@ -244,8 +244,14 @@ bool selectCollision(T const& collision, std::string eventSelection)
   }
   if (eventSelection == "sel7" & !collision.sel7()) {
     return false;
+<<<<<<< HEAD
   } else {
     return true;
+=======
+  }
+  else {
+  return true;
+>>>>>>> e97db4b4e2cbb0a75f02c314f8bcdeba064b350b
   }
 }
 
