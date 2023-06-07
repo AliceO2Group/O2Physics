@@ -240,10 +240,8 @@ struct HfCandidateSelectorDplusToPiKPi {
         int pTBin = findBin(binsPt, candidate.pt());
         // ML selections
         std::vector<float> inputFeatures{candidate.cpa(), candidate.cpaXY(), candidate.decayLength(), candidate.decayLengthXY()};
-        auto outputValues = hfMLResponse.getModelOutputValues(pTBin, inputFeatures);
-        LOG(info) << outputValues[0]; // FIXME: just here to use outputValues variable
 
-        bool isSelectedML = hfMLResponse.isSelectedML(pTBin, cutDirML, cutsML);
+        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, pTBin, cutDirML, cutsML);
         LOG(info) << isSelectedML << "hello"; 
       }
 
