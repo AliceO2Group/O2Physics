@@ -136,4 +136,4 @@ DECLARE_SOA_TABLE(AssocCascades, "AOD", "ASSOCCASCADES", o2::soa::Index<>, assoc
                   assocCascades::InMassRegionCheck<assocCascades::MassRegionXi, assocCascades::MassRegionOmega>);
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_HSTRANGECORRELATIONTABLES_H_
+#endif // PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_
