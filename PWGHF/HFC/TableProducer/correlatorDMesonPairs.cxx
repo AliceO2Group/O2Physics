@@ -95,7 +95,7 @@ struct HfCorrelatorDMesonPairs {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots"};
 
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0candidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> selectedDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>> selectedDPlusCandidatesMc = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
@@ -404,6 +404,10 @@ struct HfCorrelatorDMesonPairs {
   /// D0(bar)-D0(bar) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processDataD0(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
   {
+    // protection against empty tables to be sliced
+    if (selectedD0Candidates.size() <= 1) {
+      return;
+    }
     analyseMultiplicity(collision, tracks);
     auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (const auto& candidate1 : selectedD0CandidatesGrouped) {
@@ -419,8 +423,8 @@ struct HfCorrelatorDMesonPairs {
         if (!kinematicCuts<decltype(candidate2), true>(candidate2)) {
           continue;
         }
-        // excluding trigger self-correlations (possible in case of both mass hypotheses accepted)
-        if (candidate1.mRowIndex == candidate2.mRowIndex) {
+        // avoid double counting
+        if (candidate1.mRowIndex >= candidate2.mRowIndex) {
           continue;
         }
         auto candidateType2 = assignCandidateTypeD0<decltype(candidate2), false>(candidate2); // Candidate type attribution
@@ -445,8 +449,12 @@ struct HfCorrelatorDMesonPairs {
   /// D0(bar)-D0(bar) correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRecD0(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const&)
   {
+    // protection against empty tables to be sliced
+    if (selectedD0CandidatesMc.size() <= 1) {
+      return;
+    }
     analyseMultiplicity(collision, tracks);
-    auto selectedD0CandidatesGroupedMc = selectedD0candidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    auto selectedD0CandidatesGroupedMc = selectedD0CandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (const auto& candidate1 : selectedD0CandidatesGroupedMc) {
       if (!kinematicCuts<decltype(candidate1), true>(candidate1)) {
         continue;
@@ -472,8 +480,8 @@ struct HfCorrelatorDMesonPairs {
         if (!kinematicCuts<decltype(candidate2), true>(candidate2)) {
           continue;
         }
-        // Excluding trigger self-correlations (possible in case of both mass hypotheses accepted)
-        if (candidate1.mRowIndex == candidate2.mRowIndex) {
+        // avoid double counting
+        if (candidate1.mRowIndex >= candidate2.mRowIndex) {
           continue;
         }
 
@@ -519,6 +527,10 @@ struct HfCorrelatorDMesonPairs {
   /// Dplus(minus)-Dplus(minus) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processDataDPlus(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, aod::BigTracks const&)
   {
+    // protection against empty tables to be sliced
+    if (selectedDPlusCandidates.size() <= 1) {
+      return;
+    }
     analyseMultiplicity(collision, tracks);
     auto selectedDPlusCandidatesGrouped = selectedDPlusCandidates->sliceByCached(o2::aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (const auto& candidate1 : selectedDPlusCandidatesGrouped) {
@@ -540,7 +552,8 @@ struct HfCorrelatorDMesonPairs {
         if (!kinematicCuts<decltype(candidate2), false>(candidate2)) {
           continue;
         }
-        if (candidate1.mRowIndex == candidate2.mRowIndex) {
+        // avoid double counting
+        if (candidate1.mRowIndex >= candidate2.mRowIndex) {
           continue;
         }
 
@@ -572,6 +585,10 @@ struct HfCorrelatorDMesonPairs {
   /// Dplus(minus)-Dplus(minus) correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRecDPlus(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const&, aod::BigTracks const&)
   {
+    // protection against empty tables to be sliced
+    if (selectedDPlusCandidatesMc.size() <= 1) {
+      return;
+    }
     analyseMultiplicity(collision, tracks);
     auto selectedDPlusCandidatesGroupedMc = selectedDPlusCandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     for (const auto& candidate1 : selectedDPlusCandidatesGroupedMc) {
@@ -602,7 +619,8 @@ struct HfCorrelatorDMesonPairs {
         if (!kinematicCuts<decltype(candidate2), false>(candidate2)) {
           continue;
         }
-        if (candidate1.mRowIndex == candidate2.mRowIndex) {
+        // avoid double counting
+        if (candidate1.mRowIndex >= candidate2.mRowIndex) {
           continue;
         }
 
