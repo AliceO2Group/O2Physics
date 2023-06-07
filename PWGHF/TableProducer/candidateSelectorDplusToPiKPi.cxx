@@ -55,8 +55,9 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<std::vector<std::string>> modelPathsML{"modelPathsML", std::vector<std::string>{hf_cuts_ml::modelPaths}, "Paths of the ML models, one for each pT bin"};
   Configurable<std::vector<int>> cutDirML{"cutDirML", std::vector<int>{hf_cuts_ml::cutDir_v}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsML{"ml_cuts", {hf_cuts_ml::cuts[0], hf_cuts_ml::npTBins, hf_cuts_ml::nCutScores, hf_cuts_ml::pTBinLabels, hf_cuts_ml::cutScoreLabels}, "ML selections per pT bin"};
-
-  o2::analysis::HFMLResponse<1, float> hfMLResponse; // FIXME : default template of class does not work
+  
+  static constexpr int nModels = hf_cuts_ml::npTBins; 
+  o2::analysis::HFMLResponse<nModels, float> hfMLResponse{cutsML, cutDirML};
 
   TrackSelectorPID selectorPion;
   TrackSelectorPID selectorKaon;
@@ -241,7 +242,7 @@ struct HfCandidateSelectorDplusToPiKPi {
         // ML selections
         std::vector<float> inputFeatures{candidate.cpa(), candidate.cpaXY(), candidate.decayLength(), candidate.decayLengthXY()};
 
-        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, pTBin, cutDirML, cutsML);
+        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, pTBin);
         LOG(info) << isSelectedML << "hello"; 
       }
 

@@ -37,6 +37,10 @@ class HFMLResponse
 {
   public:
     HFMLResponse() = default;
+    HFMLResponse(const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir) {
+      mCuts = cuts;
+      mCutDir = cutDir;
+    }
     virtual ~HFMLResponse() = default;
 
 
@@ -83,17 +87,17 @@ class HFMLResponse
         return (std::vector<T>)*outputValues;
     }
 
-    template <typename T1, typename T2, typename T3, typename T4>
-    bool isSelectedML(T1& input, const T2& nModel, const T3& cutDir, const T4& cutsML) {
+    template <typename T1, typename T2>
+    bool isSelectedML(T1& input, const T2& nModel) {
       auto outputValues = getModelOutputValues(input, nModel);
       uint8_t iClass{0};
       for (const auto& outputValue : outputValues) {
-        uint8_t dir = cutDir->at(iClass);
+        uint8_t dir = mCutDir.at(iClass);
         if (dir != hf_cuts_ml::CutDirection::CutNot) {
-          if (dir == hf_cuts_ml::CutDirection::CutGreater && outputValue > cutsML->get(nModel, iClass)) {
+          if (dir == hf_cuts_ml::CutDirection::CutGreater && outputValue > mCuts.get(nModel, iClass)) {
             return false;
           }
-          else if (dir == hf_cuts_ml::CutDirection::CutSmaller && outputValue < cutsML->get(nModel, iClass)) {
+          else if (dir == hf_cuts_ml::CutDirection::CutSmaller && outputValue < mCuts.get(nModel, iClass)) {
             return false;
           }
         }
@@ -102,17 +106,17 @@ class HFMLResponse
       return true;
     }
 
-    template <typename T1, typename T2, typename T3, typename T4>
-    bool isSelectedML(const T1& input, const T2& nModel, const T3& cutDir, const T4& cutsML, std::vector<T>& outputValues) {
+    template <typename T1, typename T2>
+    bool isSelectedML(const T1& input, const T2& nModel, std::vector<T>& outputValues) {
       outputValues = getModelOutputValues(input, nModel);
       uint8_t iClass{0};
       for (const auto& outputValue : outputValues) {
-        uint8_t dir = cutDir->at(iClass);
+        uint8_t dir = mCutDir.at(iClass);
         if (dir != hf_cuts_ml::CutDirection::CutNot) {
-          if (dir == hf_cuts_ml::CutDirection::CutGreater && outputValue > cutsML->get(nModel, iClass)) {
+          if (dir == hf_cuts_ml::CutDirection::CutGreater && outputValue > mCuts.get(nModel, iClass)) {
             return false;
           }
-          else if (dir == hf_cuts_ml::CutDirection::CutSmaller && outputValue < cutsML->get(nModel, iClass)) {
+          else if (dir == hf_cuts_ml::CutDirection::CutSmaller && outputValue < mCuts.get(nModel, iClass)) {
             return false;
           }
         }
@@ -126,8 +130,8 @@ class HFMLResponse
     std::vector<o2::ml::OnnxModel> mNetworks{std::vector<o2::ml::OnnxModel>(nModels)};
     // std::vector<double> mBinsLimits = {}; // bin limits of the variable (e.g. pT) used to select which model to use
     std::vector<std::string> mPaths{std::vector<std::string>(nModels)}; // paths to the models, one for each bin
-    std::vector<o2::analysis::hf_cuts_ml::CutDirection> mCutDir = {}; // direction of the cuts on the model scores (no cut is also supported)
-    // o2::framework::LabeledArray<double> mCuts = {}; // array of cut values to apply on the model scores
+    std::vector<int> mCutDir = {}; // direction of the cuts on the model scores (no cut is also supported)
+    o2::framework::LabeledArray<double> mCuts = {}; // array of cut values to apply on the model scores
 };
 
 }  // namespace o2::analysis
