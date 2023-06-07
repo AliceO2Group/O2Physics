@@ -314,7 +314,7 @@ DECLARE_SOA_TABLE(ReducedMuonsCov, "AOD", "RTMUONCOV",
                   fwdtrack::CTglX, fwdtrack::CTglY, fwdtrack::CTglPhi, fwdtrack::CTglTgl, fwdtrack::C1PtX,
                   fwdtrack::C1PtY, fwdtrack::C1PtPhi, fwdtrack::C1PtTgl, fwdtrack::C1Pt21Pt2);
 
-// Muon collision information (joined with ReducedMuons) allowing to connect different tables (cross PWGs) 
+// Muon collision information (joined with ReducedMuons) allowing to connect different tables (cross PWGs)
 DECLARE_SOA_TABLE(ReducedMuonsInfo, "AOD", "RTMUONINFO",
                   reducedmuon::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
 
@@ -462,7 +462,7 @@ DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
                   reducedpair::Cos2DeltaPhi,
                   reducedpair::Cos3DeltaPhi);
 
-// Dilepton collision information (joined with DileptonsExtra) allowing to connect different tables (cross PWGs) 
+// Dilepton collision information (joined with DileptonsExtra) allowing to connect different tables (cross PWGs)
 DECLARE_SOA_TABLE(DileptonsInfo, "AOD", "RTDILEPTONINFO",
                   reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
 
