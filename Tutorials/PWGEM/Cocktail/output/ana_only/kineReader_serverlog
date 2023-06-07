@@ -1,0 +1,614 @@
+o2-sim-primary-server-device-runner
+--control
+static
+--id
+primary-server
+--mq-config
+o2simtopology_28302.json
+--severity
+debug
+-g
+extkinO2
+-n
+10
+-o
+/home/archita/alice/O2Physics/Tutorials/PWGEM/Cocktail/output/ana_only/kineReader
+--extKinFile
+/home/archita/Downloads/o2sim_Kine_10_Events.root
+--noGeant
+--forwardKine
+--noDiscOutput
+$$$$
+[[01;36m16:51:19[0m][[01;32mINFO[0m] 
+      ______      _    _______  _________ 
+     / ____/___ _(_)_______   |/  /_  __ \    version 1.4.56
+    / /_  / __ `/ / ___/__  /|_/ /_  / / /    build RELWITHDEBINFO
+   / __/ / /_/ / / /    _  /  / / / /_/ /     https://github.com/FairRootGroup/FairMQ
+  /_/    \__,_/_/_/     /_/  /_/  \___\_\     LGPL-3.0  © 2012-2022 GSI
+
+[[01;36m16:51:19[0m][[01;35mSTATE[0m] Starting FairMQ state machine --> IDLE
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] PID: 28360
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Loaded plugin: 'config', version '1.4.56', maintainer 'FairRootGroup <fairroot@gsi.de>', homepage 'https://github.com/FairRootGroup/FairMQ'
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Loaded plugin: 'control', version '1.4.56', maintainer 'FairRootGroup <fairroot@gsi.de>', homepage 'https://github.com/FairRootGroup/FairMQ'
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Running builtin controller: static
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Plugin 'control' is setting up signal handling for SIGINT and SIGTERM
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Configuration: 
+CCDBUrl                       = http://alice-ccdb.cern.ch                                                         <string>         [default] 
+asservice                     = false                                                                             <bool>           [default] 
+bMax                          = 0                                                                                 <float>          [default] 
+bad-alloc-attempt-interval    = 50                                                                                <int>            [default] 
+catch-signals                 = 1                                                                                 <int>            [default] 
+chunkSize                     = 500                                                                               <unsigned>       [default] 
+chunkSizeI                    = -1                                                                                <int>            [default] 
+color                         = true                                                                              <bool>           [default] 
+configFile                    =                                                                                   <string>         [default] 
+configKeyValues               =                                                                                   <string>         [default] 
+control                       = static                                                                            <string>         [provided]
+embedIntoFile                 =                                                                                   <string>         [default] 
+extKinFile                    = /home/archita/Downloads/o2sim_Kine_10_Events.root                                 <string>         [provided]
+field                         = -5                                                                                <string>         [default] 
+file-severity                 = debug                                                                             <string>         [default] 
+forwardKine                   = true                                                                              <bool>           [provided]
+fromCollContext               =                                                                                   <string>         [default] 
+generator                     = extkinO2                                                                          <string>         [provided]
+id                            = primary-server                                                                    <string>         [provided]
+init-timeout                  = 120                                                                               <int>            [default] 
+io-threads                    = 1                                                                                 <int>            [default] 
+isMT                          = false                                                                             <bool>           [default] 
+log-to-file                   =                                                                                   <string>         [default] 
+logseverity                   = INFO                                                                              <string>         [default] 
+logverbosity                  = medium                                                                            <string>         [default] 
+mcEngine                      = TGeant4                                                                           <string>         [default] 
+modules                       = all                                                                               <vector<string>> [default] 
+mq-config                     = o2simtopology_28302.json                                                          <string>         [provided]
+nEvents                       = 10                                                                                <unsigned>       [provided]
+network-interface             = default                                                                           <string>         [default] 
+noDiscOutput                  = true                                                                              <bool>           [provided]
+noGeant                       = true                                                                              <bool>           [provided]
+nworkers                      = 4                                                                                 <int>            [default] 
+ofi-size-hint                 = 0                                                                                 <unsigned long>  [default] 
+outPrefix                     = /home/archita/alice/O2Physics/Tutorials/PWGEM/Cocktail/output/ana_only/kineReader <string>         [provided]
+rate                          = 0                                                                                 <float>          [default] 
+readoutDetectors              =                                                                                   <vector<string>> [default] 
+run                           = -1                                                                                <int>            [default] 
+seed                          = 0                                                                                 <unsigned long>  [default] 
+session                       = default                                                                           <string>         [default] 
+severity                      = debug                                                                             <string>         [provided]
+shm-allocation                = rbtree_best_fit                                                                   <string>         [default] 
+shm-mlock-segment             = false                                                                             <bool>           [default] 
+shm-mlock-segment-on-creation = false                                                                             <bool>           [default] 
+shm-monitor                   = true                                                                              <bool>           [default] 
+shm-no-cleanup                = false                                                                             <bool>           [default] 
+shm-segment-id                = 0                                                                                 <unsigned short> [default] 
+shm-segment-size              = 2147483648                                                                        <unsigned long>  [default] 
+shm-throw-bad-alloc           = true                                                                              <bool>           [default] 
+shm-zero-segment              = false                                                                             <bool>           [default] 
+shm-zero-segment-on-creation  = false                                                                             <bool>           [default] 
+skipModules                   =                                                                                   <vector<string>> [default] 
+skipReadoutDetectors          =                                                                                   <vector<string>> [default] 
+startEvent                    = 0                                                                                 <unsigned>       [default] 
+transport                     = zeromq                                                                            <string>         [default] 
+trigger                       =                                                                                   <string>         [default] 
+verbosity                     = medium                                                                            <string>         [default] 
+vertexMode                    = kDiamondParam                                                                     <string>         [default] 
+
+[[01;36m16:51:19[0m][[01;35mSTATE[0m] IDLE ---> INITIALIZING DEVICE
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] mq-config: Using default JSON parser
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Parsing JSON from o2simtopology_28302.json ...
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Setting 'zeromq' as default transport for the device
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Adding 'zeromq' transport
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Transport: Using ZeroMQ library, version: 4.3.3
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Initializing transport for channel o2sim-primserv-info[0]: default
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Reusing existing 'zeromq' transport
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Initializing transport for channel primary-notifications[0]: default
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Reusing existing 'zeromq' transport
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Initializing transport for channel primary-get[0]: default
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Reusing existing 'zeromq' transport
+[[01;36m16:51:19[0m][[01;35mSTATE[0m] INITIALIZING DEVICE ---> INITIALIZED
+[[01;36m16:51:19[0m][[01;35mSTATE[0m] INITIALIZED ---> BINDING
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Validating channel 'o2sim-primserv-info[0]'... VALID
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Created socket primary-server.o2sim-primserv-info[0].rep
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Attached channel o2sim-primserv-info[0] to ipc:///tmp/o2sim-primserv-info-28302 (bind) (rep)
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Validating channel 'primary-notifications[0]'... VALID
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Created socket primary-server.primary-notifications[0].pub
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Attached channel primary-notifications[0] to ipc:///tmp/o2sim-primary-notifications-28302 (bind) (pub)
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Validating channel 'primary-get[0]'... VALID
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Created socket primary-server.primary-get[0].rep
+[[01;36m16:51:19[0m][[01;34mDEBUG[0m] Attached channel primary-get[0] to ipc:///tmp/o2sim-primary-get-28302 (bind) (rep)
+[[01;36m16:51:19[0m][[01;35mSTATE[0m] BINDING ---> BOUND
+[[01;36m16:51:19[0m][[01;35mSTATE[0m] BOUND ---> CONNECTING
+[[01;36m16:51:19[0m][[01;35mSTATE[0m] CONNECTING ---> DEVICE READY
+[[01;36m16:51:19[0m][[01;35mSTATE[0m] DEVICE READY ---> INITIALIZING TASK
+[[01;36m16:51:19[0m][[01;32mINFO[0m] INITTASK CHANGING STATE TO INIT
+[[01;36m16:51:19[0m][[01;32mINFO[0m] Init Server device 
+[[01;36m16:51:20[0m][[01;32mINFO[0m] Stack.storeSecondaries : true		[ CODE ]
+Stack.pruneKine : true		[ CODE ]
+Stack.transportPrimary : all		[ CODE ]
+Stack.transportPrimaryFileName : 		[ CODE ]
+Stack.transportPrimaryFuncName : 		[ CODE ]
+Stack.transportPrimaryInvert : false		[ CODE ]
+
+[[01;36m16:51:20[0m][[01;32mINFO[0m] ENGINE SET TO TGeant4
+[[01;36m16:51:20[0m][[01;32mINFO[0m] CHUNK SIZE SET TO 500
+[[01;36m16:51:20[0m][[01;32mINFO[0m] RNG INITIAL SEED 12956114846642424313
+[[01;36m16:51:21[0m][[01;32mINFO[0m] LAUNCHING STATUS THREAD
+[[01;36m16:51:21[0m][[01;32mINFO[0m] INFO REQUEST RECEIVED
+[[01;36m16:51:21[0m][[01;32mINFO[0m] Received config request
+[[01;36m16:51:21[0m][[01;32mINFO[0m] config reply send 
+[[01;36m16:51:21[0m][[01;32mINFO[0m] Init CcdApi with UserAgentID: archita-Inspiron-3576-1682693481-Xl3wfZ, Host: http://alice-ccdb.cern.ch/
+[[01;36m16:51:21[0m][[01;32mINFO[0m] Init CcdApi with UserAgentID: archita-Inspiron-3576-1682693481-Xl3wfZ, Host: http://alice-ccdb.cern.ch
+[[01;36m16:51:21[0m][[01;32mINFO[0m] MagneticField::CreateField: Maximim possible beam energy for requested beam is assumed
+[[01;36m16:51:21[0m][[01;32mINFO[0m] INFO REQUEST RECEIVED
+[[01;36m16:51:21[0m][[01;32mINFO[0m] Received config request
+[[01;36m16:51:21[0m][[01;32mINFO[0m] config reply send 
+[[01;36m16:51:21[0m][[01;32mINFO[0m] MagneticField::Print: Maps:
+[[01;36m16:51:21[0m][[01;32mINFO[0m] MagneticField::Print: Solenoid (-1*)5 kG, Dipole ON (-1) 
+[[01;36m16:51:21[0m][[01;32mINFO[0m] MagneticField::Print: Machine B fields for p-p  beam (7000 GeV): QGrad: 22.0002 Dipole: 37.8781
+[[01;36m16:51:21[0m][[01;32mINFO[0m] MagneticField::Print: Uses Sol30_Dip6_Hole  of $(O2_ROOT)/share/Common/maps/mfchebKGI_sym.root
+Info in <TGeoGlobalMagField::SetField>: Global magnetic field set to <Maps>
+Info in <TGeoGlobalMagField::Lock>: Global magnetic field <Maps> is now locked
+ *** TDatabasePDG::AddParticle: particle with PDGcode=3124 already defined
+ *** TDatabasePDG::AddAntiParticle: can't redefine parameters
+[[01;36m16:51:21[0m][[01;32mINFO[0m] Found 10 events in this file
+[[01;36m16:51:21[0m][[01;32mINFO[0m] using external O2 kinematics
+[[01;36m16:51:21[0m][[01;32mINFO[0m] Initialising primary generator
+[[01;36m16:51:21[0m][[01;32mINFO[0m] Init 'FromO2Kine' generator with following parameters
+[[01;36m16:51:21[0m][[01;32mINFO[0m] GeneratorFromO2Kine.skipNonTrackable : true		[ CODE ]
+GeneratorFromO2Kine.continueMode : false		[ CODE ]
+
+[[01;36m16:51:21[0m][[01;32mINFO[0m] Generator initialization took 0.25s
+[[01;36m16:51:21[0m][[01;32mINFO[0m] Event generation started 
+[[01;36m16:51:21[0m][[01;32mINFO[0m] Sampled interacting vertex (0.00149831,-0.00474017,-0.0102274)
+ *** TDatabasePDG::AddParticle: particle with PDGcode=200553 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=9900110 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=9900210 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=9900220 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=9900330 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=9900440 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=9902110 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=9902210 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=30443 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=9000111 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=9000211 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=-9000211 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=10325 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=-10325 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=10315 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=-10315 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=10215 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=-10215 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=10115 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=30323 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=-30323 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=30313 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=-30313 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=30213 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=-30213 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=30113 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=10225 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=10335 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=30223 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=20325 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=-20325 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=20315 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=-20315 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=327 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=-327 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=317 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=-317 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=217 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=-217 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=117 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=227 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=337 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=110551 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=120553 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=100555 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=300553 already defined
+ *** TDatabasePDG::AddAntiParticle: can't redefine parameters
+ *** TDatabasePDG::AddAntiParticle: can't redefine parameters
+ *** TDatabasePDG::AddAntiParticle: can't redefine parameters
+ *** TDatabasePDG::AddAntiParticle: can't redefine parameters
+ *** TDatabasePDG::AddParticle: particle with PDGcode=50000050 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=50000051 already defined
+ *** TDatabasePDG::AddParticle: particle with PDGcode=3124 already defined
+ *** TDatabasePDG::AddAntiParticle: can't redefine parameters
+ *** TDatabasePDG::AddAntiParticle: can't redefine parameters
+[[01;36m16:51:21[0m][[01;32mINFO[0m] Event generator put 8050 on stack
+[[01;36m16:51:21[0m][[01;32mINFO[0m] Event generation took 0.02s and produced 8050 primaries 
+[[01;36m16:51:21[0m][[01;32mINFO[0m] ASSIGNED PIPE HANDLE 11
+[[01;36m16:51:21[0m][[01;32mINFO[0m] INITTASK CHANGING STATE TO SERVING
+[[01;36m16:51:21[0m][[01;35mSTATE[0m] INITIALIZING TASK ---> READY
+[[01;36m16:51:21[0m][[01;35mSTATE[0m] READY ---> RUNNING
+[[01;36m16:51:21[0m][[01;32mINFO[0m] fair::mq::Device running...
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 1 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 2 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 3 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 4 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 5 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 6 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 7 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 8 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 9 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 10 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 11 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 12 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 13 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 14 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 15 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 16 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 50 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 1 part 17 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation started 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sampled interacting vertex (0.00965184,0.00722698,-0.0201654)
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generator put 8065 on stack
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation took 0s and produced 8065 primaries 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 1 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 2 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 3 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 4 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 5 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 6 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 7 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 8 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 9 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 10 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 11 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 12 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 13 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 14 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 15 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 16 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 65 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 2 part 17 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation started 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sampled interacting vertex (0.00453332,0.0189499,-0.00268576)
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generator put 8061 on stack
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation took 0.01s and produced 8061 primaries 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 1 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 2 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 3 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 4 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 5 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 6 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 7 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 8 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 9 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 10 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 11 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 12 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 13 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 14 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 15 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 16 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 61 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 3 part 17 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation started 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sampled interacting vertex (0.00227123,0.0167365,-0.00280016)
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generator put 8064 on stack
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation took 0.01s and produced 8064 primaries 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 1 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 2 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 3 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 4 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 5 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 6 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 7 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 8 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 9 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 10 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 11 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 12 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 13 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 14 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 15 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 16 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 64 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 4 part 17 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation started 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sampled interacting vertex (-0.00272246,0.0117995,0.0152549)
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generator put 8047 on stack
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation took 0s and produced 8047 primaries 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 1 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 2 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 3 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 4 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 5 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 6 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 7 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 8 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 9 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 10 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 11 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 12 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 13 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 14 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 15 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 16 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 47 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 5 part 17 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation started 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sampled interacting vertex (0.00092442,0.00199909,0.0127283)
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generator put 8061 on stack
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation took 0.01s and produced 8061 primaries 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 1 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 2 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 3 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 4 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 5 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 6 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 7 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 8 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 9 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 10 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 11 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 12 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 13 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 14 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 15 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 16 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 61 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 6 part 17 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation started 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sampled interacting vertex (-0.00268707,0.00235528,-0.0018212)
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generator put 8056 on stack
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation took 0.01s and produced 8056 primaries 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 1 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 2 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 3 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 4 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 5 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 6 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 7 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 8 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 9 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 10 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 11 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 12 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 13 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 14 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 15 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 16 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 56 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 7 part 17 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation started 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sampled interacting vertex (0.0113595,0.00240928,-0.0239404)
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generator put 8070 on stack
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation took 0.01s and produced 8070 primaries 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 1 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 2 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 3 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 4 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 5 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 6 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 7 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 8 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 9 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 10 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 11 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 12 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 13 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 14 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 15 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 16 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 70 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 8 part 17 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation started 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sampled interacting vertex (0.0118774,-0.0039389,0.0181209)
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generator put 8066 on stack
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation took 0.01s and produced 8066 primaries 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 1 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 2 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 3 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 4 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 5 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 6 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 7 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 8 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 9 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 10 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 11 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 12 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 13 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 14 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 15 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 16 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 66 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 9 part 17 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation started 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sampled interacting vertex (-0.0003174,0.0119361,-0.00250755)
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generator put 8071 on stack
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Event generation took 0.01s and produced 8071 primaries 
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 1 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 2 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 3 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 4 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 5 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 6 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 7 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 8 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 9 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 10 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 11 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 12 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 13 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 14 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 15 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 500 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 16 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Sending 71 particles
+[[01;36m16:51:23[0m][[01;32mINFO[0m] treating ev 10 part 17 out of 17
+[[01;36m16:51:23[0m][[01;32mINFO[0m] CONDRUN CHANGING STATE TO STOPPED
+[[01;36m16:51:23[0m][[01;32mINFO[0m] Waiting info thread
+[[01;36m16:51:23[0m][[01;35mSTATE[0m] RUNNING ---> READY
+[[01;36m16:51:23[0m][[01;35mSTATE[0m] READY ---> RESETTING TASK
+[[01;36m16:51:23[0m][[01;35mSTATE[0m] RESETTING TASK ---> DEVICE READY
+[[01;36m16:51:23[0m][[01;35mSTATE[0m] DEVICE READY ---> RESETTING DEVICE
+[[01;36m16:51:23[0m][[01;35mSTATE[0m] RESETTING DEVICE ---> IDLE
+[[01;36m16:51:23[0m][[01;35mSTATE[0m] IDLE ---> EXITING
+[[01;36m16:51:23[0m][[01;35mSTATE[0m] Exiting FairMQ state machine
+01;35mSTATE[0m] RESETTING TASK ---> DEVICE READY
+[[01;36m16:50:51[0m][[01;35mSTATE[0m] No transition from state DEVICE_READY on transition AUTO
+[[01;36m16:50:51[0m][[01;35mSTATE[0m] DEVICE READY ---> RESETTING DEVICE
+[[01;36m16:50:51[0m][[01;35mSTATE[0m] RESETTING DEVICE ---> IDLE
+[[01;36m16:50:51[0m][[01;35mSTATE[0m] IDLE ---> EXITING
+[[01;36m16:50:51[0m][[01;35mSTATE[0m] Exiting FairMQ state machine

@@ -1,0 +1,196 @@
+[WARN] Task em-lmee-lf-cocktail has no inputs
+[INFO] Initialising O2 Data Processing Layer. Driver PID: 28305.
+[INFO] Driver listening on port: 36385
+[INFO] Rate limiting set up at 500MB distributed over 1 readers
+[INFO] O2 Data Processing Layer initialised. We brake for nobody.
+[INFO] Optimised build. O2DEBUG / LOG(debug) / LOGF(debug) / assert statement will not be shown.
+[INFO] Redeployment of configuration asked.
+[INFO] Starting internal-dpl-clock on pid 28307
+[INFO] Starting o2sim-mctrack-proxy on pid 28308
+[INFO] Starting em-lmee-lf-cocktail on pid 28309
+[INFO] Starting internal-dpl-injected-dummy-sink on pid 28310
+[INFO] Starting internal-dpl-aod-global-analysis-file-sink on pid 28311
+[INFO] Redeployment of configuration done.
+[28310:internal-dpl-injected-dummy-sink]: [INFO] Instrumenting crash signals
+[28310:internal-dpl-injected-dummy-sink]: [INFO] Spawing new device internal-dpl-injected-dummy-sink in process with pid 28310
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][INFO] 
+[28310:internal-dpl-injected-dummy-sink]:       ______      _    _______  _________ 
+[28310:internal-dpl-injected-dummy-sink]:      / ____/___ _(_)_______   |/  /_  __ \    version 1.4.56
+[28310:internal-dpl-injected-dummy-sink]:     / /_  / __ `/ / ___/__  /|_/ /_  / / /    build RELWITHDEBINFO
+[28310:internal-dpl-injected-dummy-sink]:    / __/ / /_/ / / /    _  /  / / / /_/ /     https://github.com/FairRootGroup/FairMQ
+[28310:internal-dpl-injected-dummy-sink]:   /_/    \__,_/_/_/     /_/  /_/  \___\_\     LGPL-3.0  © 2012-2022 GSI
+[28310:internal-dpl-injected-dummy-sink]: 
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][STATE] Starting FairMQ state machine --> IDLE
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][STATE] IDLE ---> INITIALIZING DEVICE
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][STATE] INITIALIZING DEVICE ---> INITIALIZED
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][STATE] INITIALIZED ---> BINDING
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][STATE] BINDING ---> BOUND
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][STATE] BOUND ---> CONNECTING
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][STATE] CONNECTING ---> DEVICE READY
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][STATE] DEVICE READY ---> INITIALIZING TASK
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][STATE] INITIALIZING TASK ---> READY
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][STATE] READY ---> RUNNING
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][INFO] fair::mq::Device running...
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][INFO] LHCPeriod is not available, using current month APR
+[28310:internal-dpl-injected-dummy-sink]: [16:51:19][INFO] Correctly handshaken websocket connection.
+[28309:em-lmee-lf-cocktail]: [WARN] Task em-lmee-lf-cocktail has no inputs
+[28308:o2sim-mctrack-proxy]: [INFO] Instrumenting crash signals
+[28309:em-lmee-lf-cocktail]: [INFO] Instrumenting crash signals
+[28307:internal-dpl-clock]: [INFO] Instrumenting crash signals
+[28308:o2sim-mctrack-proxy]: [INFO] Spawing new device o2sim-mctrack-proxy in process with pid 28308
+[28309:em-lmee-lf-cocktail]: [INFO] Spawing new device em-lmee-lf-cocktail in process with pid 28309
+[28308:o2sim-mctrack-proxy]: [16:51:19][INFO] 
+[28308:o2sim-mctrack-proxy]:       ______      _    _______  _________ 
+[28308:o2sim-mctrack-proxy]:      / ____/___ _(_)_______   |/  /_  __ \    version 1.4.56
+[28308:o2sim-mctrack-proxy]:     / /_  / __ `/ / ___/__  /|_/ /_  / / /    build RELWITHDEBINFO
+[28308:o2sim-mctrack-proxy]:    / __/ / /_/ / / /    _  /  / / / /_/ /     https://github.com/FairRootGroup/FairMQ
+[28308:o2sim-mctrack-proxy]:   /_/    \__,_/_/_/     /_/  /_/  \___\_\     LGPL-3.0  © 2012-2022 GSI
+[28308:o2sim-mctrack-proxy]: 
+[28308:o2sim-mctrack-proxy]: [16:51:19][STATE] Starting FairMQ state machine --> IDLE
+[28311:internal-dpl-aod-global-analysis-file-sink]: [WARN] Task em-lmee-lf-cocktail has no inputs
+[28309:em-lmee-lf-cocktail]: [16:51:19][INFO] 
+[28309:em-lmee-lf-cocktail]:       ______      _    _______  _________ 
+[28309:em-lmee-lf-cocktail]:      / ____/___ _(_)_______   |/  /_  __ \    version 1.4.56
+[28309:em-lmee-lf-cocktail]:     / /_  / __ `/ / ___/__  /|_/ /_  / / /    build RELWITHDEBINFO
+[28309:em-lmee-lf-cocktail]:    / __/ / /_/ / / /    _  /  / / / /_/ /     https://github.com/FairRootGroup/FairMQ
+[28309:em-lmee-lf-cocktail]:   /_/    \__,_/_/_/     /_/  /_/  \___\_\     LGPL-3.0  © 2012-2022 GSI
+[28309:em-lmee-lf-cocktail]: 
+[28309:em-lmee-lf-cocktail]: [16:51:19][STATE] Starting FairMQ state machine --> IDLE
+[28307:internal-dpl-clock]: [INFO] Spawing new device internal-dpl-clock in process with pid 28307
+[28307:internal-dpl-clock]: [16:51:19][INFO] 
+[28307:internal-dpl-clock]:       ______      _    _______  _________ 
+[28307:internal-dpl-clock]:      / ____/___ _(_)_______   |/  /_  __ \    version 1.4.56
+[28307:internal-dpl-clock]:     / /_  / __ `/ / ___/__  /|_/ /_  / / /    build RELWITHDEBINFO
+[28307:internal-dpl-clock]:    / __/ / /_/ / / /    _  /  / / / /_/ /     https://github.com/FairRootGroup/FairMQ
+[28307:internal-dpl-clock]:   /_/    \__,_/_/_/     /_/  /_/  \___\_\     LGPL-3.0  © 2012-2022 GSI
+[28307:internal-dpl-clock]: 
+[28307:internal-dpl-clock]: [16:51:19][STATE] Starting FairMQ state machine --> IDLE
+[28308:o2sim-mctrack-proxy]: [16:51:19][STATE] IDLE ---> INITIALIZING DEVICE
+[28308:o2sim-mctrack-proxy]: [16:51:19][STATE] INITIALIZING DEVICE ---> INITIALIZED
+[28308:o2sim-mctrack-proxy]: [16:51:19][STATE] INITIALIZED ---> BINDING
+[28309:em-lmee-lf-cocktail]: [16:51:19][STATE] IDLE ---> INITIALIZING DEVICE
+[28308:o2sim-mctrack-proxy]: [16:51:19][STATE] BINDING ---> BOUND
+[28308:o2sim-mctrack-proxy]: [16:51:19][STATE] BOUND ---> CONNECTING
+[28311:internal-dpl-aod-global-analysis-file-sink]: [INFO] Instrumenting crash signals
+[28308:o2sim-mctrack-proxy]: [16:51:19][STATE] CONNECTING ---> DEVICE READY
+[28308:o2sim-mctrack-proxy]: [16:51:19][STATE] DEVICE READY ---> INITIALIZING TASK
+[28308:o2sim-mctrack-proxy]: [16:51:19][STATE] INITIALIZING TASK ---> READY
+[28308:o2sim-mctrack-proxy]: [16:51:19][STATE] READY ---> RUNNING
+[28308:o2sim-mctrack-proxy]: [16:51:19][INFO] fair::mq::Device running...
+[28308:o2sim-mctrack-proxy]: [16:51:19][INFO] LHCPeriod is not available, using current month APR
+[28307:internal-dpl-clock]: [16:51:19][STATE] IDLE ---> INITIALIZING DEVICE
+[28307:internal-dpl-clock]: [16:51:19][STATE] INITIALIZING DEVICE ---> INITIALIZED
+[28307:internal-dpl-clock]: [16:51:19][STATE] INITIALIZED ---> BINDING
+[28311:internal-dpl-aod-global-analysis-file-sink]: [INFO] Spawing new device internal-dpl-aod-global-analysis-file-sink in process with pid 28311
+[28307:internal-dpl-clock]: [16:51:19][STATE] BINDING ---> BOUND
+[28307:internal-dpl-clock]: [16:51:19][STATE] BOUND ---> CONNECTING
+[28307:internal-dpl-clock]: [16:51:19][STATE] CONNECTING ---> DEVICE READY
+[28307:internal-dpl-clock]: [16:51:19][STATE] DEVICE READY ---> INITIALIZING TASK
+[28307:internal-dpl-clock]: [16:51:19][STATE] INITIALIZING TASK ---> READY
+[28307:internal-dpl-clock]: [16:51:19][STATE] READY ---> RUNNING
+[28307:internal-dpl-clock]: [16:51:19][INFO] fair::mq::Device running...
+[28307:internal-dpl-clock]: [16:51:19][INFO] LHCPeriod is not available, using current month APR
+[28307:internal-dpl-clock]: [16:51:19][INFO] Correctly handshaken websocket connection.
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][INFO] 
+[28311:internal-dpl-aod-global-analysis-file-sink]:       ______      _    _______  _________ 
+[28311:internal-dpl-aod-global-analysis-file-sink]:      / ____/___ _(_)_______   |/  /_  __ \    version 1.4.56
+[28311:internal-dpl-aod-global-analysis-file-sink]:     / /_  / __ `/ / ___/__  /|_/ /_  / / /    build RELWITHDEBINFO
+[28311:internal-dpl-aod-global-analysis-file-sink]:    / __/ / /_/ / / /    _  /  / / / /_/ /     https://github.com/FairRootGroup/FairMQ
+[28311:internal-dpl-aod-global-analysis-file-sink]:   /_/    \__,_/_/_/     /_/  /_/  \___\_\     LGPL-3.0  © 2012-2022 GSI
+[28311:internal-dpl-aod-global-analysis-file-sink]: 
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][STATE] Starting FairMQ state machine --> IDLE
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][STATE] IDLE ---> INITIALIZING DEVICE
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][STATE] INITIALIZING DEVICE ---> INITIALIZED
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][STATE] INITIALIZED ---> BINDING
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][STATE] BINDING ---> BOUND
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][STATE] BOUND ---> CONNECTING
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][STATE] CONNECTING ---> DEVICE READY
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][STATE] DEVICE READY ---> INITIALIZING TASK
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][STATE] INITIALIZING TASK ---> READY
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][STATE] READY ---> RUNNING
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][INFO] fair::mq::Device running...
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][INFO] LHCPeriod is not available, using current month APR
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:19][INFO] Correctly handshaken websocket connection.
+[28309:em-lmee-lf-cocktail]: [16:51:20][INFO] Set Efficiency histo
+[28309:em-lmee-lf-cocktail]: [16:51:20][INFO] Set Resolution histo
+[28309:em-lmee-lf-cocktail]: [16:51:20][INFO] Set DCA templates
+[28309:em-lmee-lf-cocktail]: [16:51:20][INFO] Set Multiplicity weight files
+[28309:em-lmee-lf-cocktail]: [16:51:20][STATE] INITIALIZING DEVICE ---> INITIALIZED
+[28309:em-lmee-lf-cocktail]: [16:51:20][STATE] INITIALIZED ---> BINDING
+[28309:em-lmee-lf-cocktail]: [16:51:20][STATE] BINDING ---> BOUND
+[28309:em-lmee-lf-cocktail]: [16:51:20][STATE] BOUND ---> CONNECTING
+[28309:em-lmee-lf-cocktail]: [16:51:20][STATE] CONNECTING ---> DEVICE READY
+[28309:em-lmee-lf-cocktail]: [16:51:20][STATE] DEVICE READY ---> INITIALIZING TASK
+[28309:em-lmee-lf-cocktail]: [16:51:20][STATE] INITIALIZING TASK ---> READY
+[28309:em-lmee-lf-cocktail]: [16:51:20][STATE] READY ---> RUNNING
+[28309:em-lmee-lf-cocktail]: [16:51:20][INFO] fair::mq::Device running...
+[28309:em-lmee-lf-cocktail]: [16:51:20][INFO] LHCPeriod is not available, using current month APR
+[28309:em-lmee-lf-cocktail]: [16:51:20][INFO] Correctly handshaken websocket connection.
+[28308:o2sim-mctrack-proxy]: [16:51:23][INFO] Correctly handshaken websocket connection.
+[28308:o2sim-mctrack-proxy]: [16:51:23][INFO] Sending end-of-stream message to channel from_o2sim-mctrack-proxy_to_internal-dpl-injected-dummy-sink
+[28308:o2sim-mctrack-proxy]: [16:51:23][INFO] Sending end-of-stream message to channel from_o2sim-mctrack-proxy_to_em-lmee-lf-cocktail
+[28309:em-lmee-lf-cocktail]:  *** TDatabasePDG::AddParticle: particle with PDGcode=3124 already defined
+[28309:em-lmee-lf-cocktail]:  *** TDatabasePDG::AddAntiParticle: can't redefine parameters
+[28309:em-lmee-lf-cocktail]: [16:51:25][INFO] Sending end-of-stream message to channel from_em-lmee-lf-cocktail_to_internal-dpl-aod-global-analysis-file-sink
+[INFO] Quitting
+[INFO] QUIT_REQUESTED
+[28310:internal-dpl-injected-dummy-sink]: [16:51:27][INFO] Received device shutdown request (signal 15).
+[28310:internal-dpl-injected-dummy-sink]: [16:51:27][INFO] Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.
+[28310:internal-dpl-injected-dummy-sink]: [16:51:27][INFO] New state requested. No timeout set, quitting immediately as per --completion-policy
+[28310:internal-dpl-injected-dummy-sink]: [16:51:27][STATE] RUNNING ---> READY
+[28310:internal-dpl-injected-dummy-sink]: [16:51:27][STATE] READY ---> RESETTING TASK
+[28310:internal-dpl-injected-dummy-sink]: [16:51:27][STATE] Transition AUTO incoming, but another state transition is already ongoing.
+[28310:internal-dpl-injected-dummy-sink]: [16:51:27][STATE] RESETTING TASK ---> DEVICE READY
+[28310:internal-dpl-injected-dummy-sink]: [16:51:27][STATE] DEVICE READY ---> RESETTING DEVICE
+[28310:internal-dpl-injected-dummy-sink]: [16:51:27][STATE] RESETTING DEVICE ---> IDLE
+[28310:internal-dpl-injected-dummy-sink]: [16:51:27][STATE] IDLE ---> EXITING
+[28310:internal-dpl-injected-dummy-sink]: [16:51:27][STATE] Exiting FairMQ state machine
+[28308:o2sim-mctrack-proxy]: [16:51:27][INFO] Received device shutdown request (signal 15).
+[28308:o2sim-mctrack-proxy]: [16:51:27][INFO] Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.
+[28308:o2sim-mctrack-proxy]: [16:51:27][INFO] New state requested. No timeout set, quitting immediately as per --completion-policy
+[28308:o2sim-mctrack-proxy]: [16:51:27][STATE] RUNNING ---> READY
+[28308:o2sim-mctrack-proxy]: [16:51:27][STATE] READY ---> RESETTING TASK
+[28308:o2sim-mctrack-proxy]: [16:51:27][STATE] RESETTING TASK ---> DEVICE READY
+[28308:o2sim-mctrack-proxy]: [16:51:27][STATE] No transition from state DEVICE_READY on transition AUTO
+[28308:o2sim-mctrack-proxy]: [16:51:27][STATE] DEVICE READY ---> RESETTING DEVICE
+[28309:em-lmee-lf-cocktail]: [16:51:27][INFO] Received device shutdown request (signal 15).
+[28309:em-lmee-lf-cocktail]: [16:51:27][INFO] Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.
+[28309:em-lmee-lf-cocktail]: [16:51:27][INFO] New state requested. No timeout set, quitting immediately as per --completion-policy
+[28309:em-lmee-lf-cocktail]: [16:51:27][STATE] RUNNING ---> READY
+[28309:em-lmee-lf-cocktail]: [16:51:27][STATE] READY ---> RESETTING TASK
+[28309:em-lmee-lf-cocktail]: [16:51:27][STATE] RESETTING TASK ---> DEVICE READY
+[28309:em-lmee-lf-cocktail]: [16:51:27][STATE] No transition from state DEVICE_READY on transition AUTO
+[28309:em-lmee-lf-cocktail]: [16:51:27][STATE] DEVICE READY ---> RESETTING DEVICE
+[28307:internal-dpl-clock]: [16:51:27][INFO] Received device shutdown request (signal 15).
+[28307:internal-dpl-clock]: [16:51:27][INFO] Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.
+[28307:internal-dpl-clock]: [16:51:27][INFO] New state requested. No timeout set, quitting immediately as per --completion-policy
+[28307:internal-dpl-clock]: [16:51:27][STATE] RUNNING ---> READY
+[28307:internal-dpl-clock]: [16:51:27][STATE] READY ---> RESETTING TASK
+[28307:internal-dpl-clock]: [16:51:27][STATE] RESETTING TASK ---> DEVICE READY
+[28307:internal-dpl-clock]: [16:51:27][STATE] No transition from state DEVICE_READY on transition AUTO
+[28307:internal-dpl-clock]: [16:51:27][STATE] DEVICE READY ---> RESETTING DEVICE
+[28307:internal-dpl-clock]: [16:51:27][STATE] RESETTING DEVICE ---> IDLE
+[28307:internal-dpl-clock]: [16:51:27][STATE] IDLE ---> EXITING
+[28307:internal-dpl-clock]: [16:51:27][STATE] Exiting FairMQ state machine
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][INFO] Received device shutdown request (signal 15).
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][INFO] Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][INFO] New state requested. No timeout set, quitting immediately as per --completion-policy
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][STATE] RUNNING ---> READY
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][STATE] READY ---> RESETTING TASK
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][STATE] RESETTING TASK ---> DEVICE READY
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][STATE] DEVICE READY ---> RESETTING DEVICE
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][INFO] Cleaning up for shared memory id 'd94b9f0b'...
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][INFO] Found 0 unmanaged regions...
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][INFO] Found 1 managed segments...
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][INFO] Successfully removed 'fmq_d94b9f0b_m_0'.
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][INFO] Successfully removed 'fmq_d94b9f0b_mng'.
+[28309:em-lmee-lf-cocktail]: [16:51:27][STATE] RESETTING DEVICE ---> IDLE
+[28309:em-lmee-lf-cocktail]: [16:51:27][STATE] IDLE ---> EXITING
+[28309:em-lmee-lf-cocktail]: [16:51:27][STATE] Exiting FairMQ state machine
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][STATE] RESETTING DEVICE ---> IDLE
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][STATE] IDLE ---> EXITING
+[28311:internal-dpl-aod-global-analysis-file-sink]: [16:51:27][STATE] Exiting FairMQ state machine
+[28308:o2sim-mctrack-proxy]: [16:51:28][STATE] RESETTING DEVICE ---> IDLE
+[28308:o2sim-mctrack-proxy]: [16:51:28][STATE] IDLE ---> EXITING
+[28308:o2sim-mctrack-proxy]: [16:51:28][STATE] Exiting FairMQ state machine
+[INFO] Dumping used configuration in dpl-config.json

@@ -39,7 +39,7 @@ struct JetFinderHFTask {
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
-  Configurable<std::string> evSel{"evSel", "evSel8", "choose event selection"};
+  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
@@ -77,6 +77,7 @@ struct JetFinderHFTask {
 
   Service<O2DatabasePDG> pdg;
   std::string trackSelection;
+  std::string eventSelection;
 
   JetFinder jetFinder;
   std::vector<fastjet::PseudoJet> inputParticles;
@@ -87,6 +88,7 @@ struct JetFinderHFTask {
   void init(InitContext const&)
   {
     trackSelection = static_cast<std::string>(trackSelections);
+    eventSelection = static_cast<std::string>(eventSelections);
 
     if (DoRhoAreaSub) {
       jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
@@ -143,7 +145,7 @@ struct JetFinderHFTask {
   template <typename T, typename U, typename M>
   void analyseData(T const& collision, U const& tracks, M const& candidates)
   {
-    if (!selectCollision(collision, evSel)) {
+    if (!selectCollision(collision, eventSelections)) {
       return;
     }
 
@@ -161,7 +163,7 @@ struct JetFinderHFTask {
   template <typename T, typename U, typename M>
   void analyseMCD(T const& collision, U const& tracks, M const& candidates)
   {
-    if (!selectCollision(collision, evSel)) {
+    if (!selectCollision(collision, eventSelections)) {
       return;
     }
 

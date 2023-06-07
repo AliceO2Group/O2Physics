@@ -1,0 +1,61 @@
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": {
+        "time-limit": "0",
+        "orbit-offset-enumeration": "0",
+        "orbit-multiplier-enumeration": "0",
+        "start-value-enumeration": "0",
+        "end-value-enumeration": "-1",
+        "step-value-enumeration": "1",
+        "aod-file": "\/home\/archita\/Downloads\/AO2D.root"
+    },
+    "internal-dpl-injected-dummy-sink": "",
+    "internal-dpl-aod-index-builder": "",
+    "internal-dpl-aod-spawner": "",
+    "timestamp-task": {
+        "verbose": "false",
+        "rct-path": "RCT\/Info\/RunInformation",
+        "orbit-reset-path": "CTP\/Calib\/OrbitReset",
+        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
+        "isRun2MC": "false"
+    },
+    "track-propagation": "",
+    "bc-selection-task": {
+        "triggerBcShift": "999",
+        "processRun2": "false",
+        "processRun3": "true"
+    },
+    "event-selection-task": {
+        "syst": "pp",
+        "muonSelection": "0",
+        "customDeltaBC": "300",
+        "isMC": "false",
+        "processRun2": "false",
+        "processRun3": "true"
+    },
+    "track-selection": {
+        "isRun3": "true",
+        "produceFBextendedTable": "false",
+        "compatibilityIU": "false",
+        "itsMatching": "1",
+        "ptMin": "0.100000001",
+        "ptMax": "1e+10",
+        "etaMin": "-0.800000012",
+        "etaMax": "0.800000012"
+    },
+    "emcal-correction-task": "",
+    "multiplicity-table": {
+        "doVertexZeq": "1",
+        "processRun2": "false",
+        "processRun3": "true"
+    },
+    "cluster-tutorial": {
+        "doEventSel": "false",
+        "vertexCut": "-1",
+        "clusterDefinition": "10",
+        "processCalo": "true",
+        "processDummy": "false"
+    },
+    "internal-dpl-aod-global-analysis-file-sink": "",
+    "internal-dpl-aod-writer": ""
+}

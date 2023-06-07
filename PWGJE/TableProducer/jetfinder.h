@@ -237,18 +237,17 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, float par
 }
 
 template <typename T>
-bool selectCollision(T const& collision, std::string evSel)
+bool selectCollision(T const& collision, std::string eventSelection)
 {
-  if (evSel == "evSel8" & !collision.sel8()) {
+  if (eventSelection == "sel8" & !collision.sel8()) {
     return false;
   }
-  if (evSel == "evSel7" & !collision.sel7()) {
+  if (eventSelection == "sel7" & !collision.sel7()) {
     return false;
   }
-  if (evSel == "None") {
-    return true;
-  }
+  else {
   return true;
+  }
 }
 
 #endif // PWGJE_TABLEPRODUCER_JETFINDER_H_

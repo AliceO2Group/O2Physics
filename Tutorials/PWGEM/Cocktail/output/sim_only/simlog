@@ -1,0 +1,32 @@
+[INFO] This is o2-sim version 1.2.0 (b8250cd36)
+[INFO] Built by ALIBUILD:1.14.4.1-focal, ALIDIST-REV:35f19b835b6786bf499404d0ecca9477612b7403 on OS:Linux-5.4.0-147-generic
+[INFO] BINDING TO ADDRESS ipc:///tmp/o2sim-notifications-28614 type pub
+[INFO] Running with 4 sim workers 
+[INFO] CREATING SIM SHARED MEM SEGMENT FOR 4 WORKERS
+Spawning particle server on PID 28618; Redirect output to /home/archita/alice/O2Physics/Tutorials/PWGEM/Cocktail/output/sim_only/o2sim_serverlog
+Spawning sim worker 0 on PID 28620; Redirect output to /home/archita/alice/O2Physics/Tutorials/PWGEM/Cocktail/output/sim_only/o2sim_workerlog0
+Spawning hit merger on PID 28621; Redirect output to /home/archita/alice/O2Physics/Tutorials/PWGEM/Cocktail/output/sim_only/o2sim_mergerlog
+[INFO] DISTRIBUTING EVENT : 1
+[INFO] EVENT FINISHED : 1
+[INFO] DISTRIBUTING EVENT : 2
+[INFO] EVENT FINISHED : 2
+[INFO] DISTRIBUTING EVENT : 3
+[INFO] EVENT FINISHED : 3
+[INFO] DISTRIBUTING EVENT : 4
+[INFO] EVENT FINISHED : 4
+[INFO] DISTRIBUTING EVENT : 5
+[INFO] EVENT FINISHED : 5
+[INFO] DISTRIBUTING EVENT : 6
+[INFO] EVENT FINISHED : 6
+[INFO] DISTRIBUTING EVENT : 7
+[INFO] EVENT FINISHED : 7
+[INFO] DISTRIBUTING EVENT : 8
+[INFO] EVENT FINISHED : 8
+[INFO] DISTRIBUTING EVENT : 9
+[INFO] EVENT FINISHED : 9
+[INFO] DISTRIBUTING EVENT : 10
+[INFO] EVENT FINISHED : 10
+[INFO] SIMULATION IS DONE. INITIATING SHUTDOWN.
+[INFO] Merger process 28621 returned
+[INFO] Simulation process took 47.9959 s
+[INFO] SIMULATION RETURNED SUCCESFULLY
