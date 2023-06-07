@@ -1,0 +1,63 @@
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": {
+        "time-limit": "0",
+        "orbit-offset-enumeration": "0",
+        "orbit-multiplier-enumeration": "0",
+        "start-value-enumeration": "0",
+        "end-value-enumeration": "-1",
+        "step-value-enumeration": "1",
+        "aod-file": "\/home\/archita\/Downloads\/AO2D.root"
+    },
+    "internal-dpl-injected-dummy-sink": "",
+    "internal-dpl-aod-index-builder": "",
+    "internal-dpl-aod-spawner": "",
+    "timestamp-task": {
+        "verbose": "false",
+        "rct-path": "RCT\/Info\/RunInformation",
+        "orbit-reset-path": "CTP\/Calib\/OrbitReset",
+        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
+        "isRun2MC": "false"
+    },
+    "zdc-converter": "",
+    "track-propagation": "",
+    "bc-selection-task": {
+        "triggerBcShift": "999",
+        "processRun2": "false",
+        "processRun3": "true"
+    },
+    "event-selection-task": "",
+    "track-selection": {
+        "isRun3": "true",
+        "produceFBextendedTable": "false",
+        "compatibilityIU": "false",
+        "itsMatching": "1",
+        "ptMin": "0.100000001",
+        "ptMax": "1e+10",
+        "etaMin": "-0.800000012",
+        "etaMax": "0.800000012"
+    },
+    "emcal-correction-task": {
+        "selectedCellType": "1",
+        "clusterDefinition": "kV3Default",
+        "maxMatchingDistance": "0.400000006",
+        "hasPropagatedTracks": "false",
+        "nonlinearityFunction": "DATA_TestbeamFinal",
+        "disableNonLin": "false",
+        "hasShaperCorrection": "true",
+        "logWeight": "4.5",
+        "exoticCellFraction": "0.970000029",
+        "exoticCellDiffTime": "1000000",
+        "exoticCellMinAmplitude": "4",
+        "exoticCellInCrossMinAmplitude": "0.100000001",
+        "useWeightExotic": "false",
+        "isMC": "false",
+        "processFull": "true",
+        "processMCFull": "false",
+        "processStandalone": "false"
+    },
+    "multiplicity-table": "",
+    "cluster-tutorial": "",
+    "internal-dpl-aod-global-analysis-file-sink": "",
+    "internal-dpl-aod-writer": ""
+}
