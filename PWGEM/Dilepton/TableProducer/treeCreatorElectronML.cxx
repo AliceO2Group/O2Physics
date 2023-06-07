@@ -460,13 +460,16 @@ struct TreeCreatorElectronML {
   template <typename TTrack>
   bool IsSelected(TTrack const& track)
   {
-    if (track.tpcNClsCrossedRows() < mincrossedrows) {
-      return false;
-    }
     if (!track.hasITS()) {
       return false;
     }
     if (!track.hasTPC()) {
+      return false;
+    }
+    if (track.tpcNClsCrossedRows() < mincrossedrows) {
+      return false;
+    }
+    if (track.itsChi2NCl() < -1) { // if tracks are not reconstructed properly, chi2/ITSncls is set to -999;
       return false;
     }
     return true;

@@ -31,7 +31,7 @@ DECLARE_SOA_TABLE(TrackAssoc, "AOD", "TRACKASSOC", //! Table for track-to-collis
                   track_association::CollisionId,
                   track_association::TrackId);
 
-DECLARE_SOA_TABLE(TrackCompColls, "AOD", "TRACKCOMPCOLLS", //! Table with vectors of collision indices stored per track
+DECLARE_SOA_TABLE(TrackCompColls, "AOD", "TRACKCOMPCOLL", //! Table with vectors of collision indices stored per track
                   track_association::CollisionIds);
 
 namespace fwdtrack_association

@@ -33,11 +33,12 @@ struct JetFinderTask {
   // track level configurables
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
   Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum track pT"};
-  Configurable<float> trackEtaMin{"trackEtaMin", -0.8, "minimum track eta"};
-  Configurable<float> trackEtaMax{"trackEtaMax", 0.8, "maximum track eta"};
+  Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum track eta"};
+  Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  Configurable<std::string> evSel{"evSel", "evSel8", "choose event selection"};
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
@@ -108,7 +109,7 @@ struct JetFinderTask {
   void processChargedJets(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                           JetTracks const& tracks)
   {
-    if (!selectCollision(collision)) {
+    if (!selectCollision(collision, evSel)) {
       return;
     }
     inputParticles.clear();

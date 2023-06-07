@@ -1,4 +1,4 @@
-// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -41,6 +41,7 @@ enum V0Sel {
   kV0Sign, ///< +1 particle, -1 antiparticle
   kV0pTMin,
   kV0pTMax,
+  kV0etaMax,
   kV0DCADaughMax,
   kV0CPAMin,
   kV0TranRadMin,
@@ -68,7 +69,7 @@ class FemtoDreamV0Selection
 {
  public:
   FemtoDreamV0Selection()
-    : nPtV0MinSel(0), nPtV0MaxSel(0), nDCAV0DaughMax(0), nCPAV0Min(0), nTranRadV0Min(0), nTranRadV0Max(0), nDecVtxMax(0), pTV0Min(9999999.), pTV0Max(-9999999.), DCAV0DaughMax(-9999999.), CPAV0Min(9999999.), TranRadV0Min(9999999.), TranRadV0Max(-9999999.), DecVtxMax(-9999999.), fInvMassLowLimit(1.05), fInvMassUpLimit(1.3), fRejectKaon(false), fInvMassKaonLowLimit(0.48), fInvMassKaonUpLimit(0.515), nSigmaPIDOffsetTPC(0.) {}
+    : nPtV0MinSel(0), nPtV0MaxSel(0), nEtaV0MaxSel(0), nDCAV0DaughMax(0), nCPAV0Min(0), nTranRadV0Min(0), nTranRadV0Max(0), nDecVtxMax(0), pTV0Min(9999999.), pTV0Max(-9999999.), etaV0Max(-9999999.), DCAV0DaughMax(-9999999.), CPAV0Min(9999999.), TranRadV0Min(9999999.), TranRadV0Max(-9999999.), DecVtxMax(-9999999.), fInvMassLowLimit(1.05), fInvMassUpLimit(1.3), fRejectKaon(false), fInvMassKaonLowLimit(0.48), fInvMassKaonUpLimit(0.515), nSigmaPIDOffsetTPC(0.) {}
   /// Initializes histograms for the task
   template <o2::aod::femtodreamparticle::ParticleType part,
             o2::aod::femtodreamparticle::ParticleType daugh,
@@ -191,8 +192,7 @@ class FemtoDreamV0Selection
     nSigmaPIDOffsetTPC = offsetTPC;
   }
 
-  void
-    setChildRejectNotPropagatedTracks(femtoDreamV0Selection::ChildTrackType child, bool reject)
+  void setChildRejectNotPropagatedTracks(femtoDreamV0Selection::ChildTrackType child, bool reject)
   {
     if (child == femtoDreamV0Selection::kPosTrack) {
       PosDaughTrack.setRejectNotPropagatedTracks(reject);
@@ -213,6 +213,7 @@ class FemtoDreamV0Selection
  private:
   int nPtV0MinSel;
   int nPtV0MaxSel;
+  int nEtaV0MaxSel;
   int nDCAV0DaughMax;
   int nCPAV0Min;
   int nTranRadV0Min;
@@ -220,6 +221,7 @@ class FemtoDreamV0Selection
   int nDecVtxMax;
   float pTV0Min;
   float pTV0Max;
+  float etaV0Max;
   float DCAV0DaughMax;
   float CPAV0Min;
   float TranRadV0Min;
@@ -238,10 +240,10 @@ class FemtoDreamV0Selection
   FemtoDreamTrackSelection PosDaughTrack;
   FemtoDreamTrackSelection NegDaughTrack;
 
-  static constexpr int kNv0Selection = 8;
+  static constexpr int kNv0Selection = 9;
 
   static constexpr std::string_view mSelectionNames[kNv0Selection] = {
-    "Sign", "PtMin", "PtMax", "DCAdaughMax", "CPAMin",
+    "Sign", "PtMin", "PtMax", "EtaMax", "DCAdaughMax", "CPAMin",
     "TranRadMin", "TranRadMax", "DecVecMax"}; ///< Name of the different
                                               ///< selections
 
@@ -249,6 +251,7 @@ class FemtoDreamV0Selection
     mSelectionTypes[kNv0Selection]{
       femtoDreamSelection::kEqual,
       femtoDreamSelection::kLowerLimit,
+      femtoDreamSelection::kUpperLimit,
       femtoDreamSelection::kUpperLimit,
       femtoDreamSelection::kUpperLimit,
       femtoDreamSelection::kLowerLimit,
@@ -261,6 +264,7 @@ class FemtoDreamV0Selection
     "+1 for lambda, -1 for antilambda",
     "Minimum pT (GeV/c)",
     "Maximum pT (GeV/c)",
+    "Maximum |Eta|",
     "Maximum DCA between daughters (cm)",
     "Minimum Cosine of Pointing Angle",
     "Minimum transverse radius (cm)",
@@ -346,6 +350,8 @@ void FemtoDreamV0Selection::init(HistogramRegistry* registry)
                             kTH1F, {massAxisLambda});
     mHistogramRegistry->add("LambdaQA/hInvMassLambdaPtMax", "Maximum Pt cut",
                             kTH1F, {massAxisLambda});
+    mHistogramRegistry->add("LambdaQA/hInvMassLambdaEtaMax", "Maximum Eta cut",
+                            kTH1F, {massAxisLambda});
     mHistogramRegistry->add("LambdaQA/hInvMassLambdaDCAV0Daugh",
                             "V0-daughters DCA cut", kTH1F, {massAxisLambda});
     mHistogramRegistry->add("LambdaQA/hInvMassLambdaCPA", "CPA cut", kTH1F,
@@ -364,6 +370,7 @@ void FemtoDreamV0Selection::init(HistogramRegistry* registry)
   /// already be done by the filters
   nPtV0MinSel = getNSelections(femtoDreamV0Selection::kV0pTMin);
   nPtV0MaxSel = getNSelections(femtoDreamV0Selection::kV0pTMax);
+  nEtaV0MaxSel = getNSelections(femtoDreamV0Selection::kV0etaMax);
   nDCAV0DaughMax = getNSelections(femtoDreamV0Selection::kV0DCADaughMax);
   nCPAV0Min = getNSelections(femtoDreamV0Selection::kV0CPAMin);
   nTranRadV0Min = getNSelections(femtoDreamV0Selection::kV0TranRadMin);
@@ -374,6 +381,8 @@ void FemtoDreamV0Selection::init(HistogramRegistry* registry)
                                 femtoDreamSelection::kLowerLimit);
   pTV0Max = getMinimalSelection(femtoDreamV0Selection::kV0pTMax,
                                 femtoDreamSelection::kUpperLimit);
+  etaV0Max = getMinimalSelection(femtoDreamV0Selection::kV0etaMax,
+                                 femtoDreamSelection::kAbsUpperLimit);
   DCAV0DaughMax = getMinimalSelection(femtoDreamV0Selection::kV0DCADaughMax,
                                       femtoDreamSelection::kUpperLimit);
   CPAV0Min = getMinimalSelection(femtoDreamV0Selection::kV0CPAMin,
@@ -394,10 +403,12 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0,
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
   if (signPos < 0 || signNeg > 0) {
-    printf("-Something wrong in isSelectedMinimal--\n");
-    printf("ERROR - Wrong sign for V0 daughters\n");
+    LOG(warn) << "Something wrong in isSelectedMinimal";
+    LOG(warn) << "ERROR - Wrong sign for V0 daughters";
   }
+  // asfaf
   const float pT = v0.pt();
+  const float eta = v0.eta();
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
   const float tranRad = v0.v0radius();
   const float dcaDaughv0 = v0.dcaV0daughters();
@@ -422,6 +433,9 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0,
     return false;
   }
   if (nPtV0MaxSel > 0 && pT > pTV0Max) {
+    return false;
+  }
+  if (nEtaV0MaxSel > 0 && std::abs(eta) > etaV0Max) {
     return false;
   }
   if (nDCAV0DaughMax > 0 && dcaDaughv0 > DCAV0DaughMax) {
@@ -473,10 +487,11 @@ void FemtoDreamV0Selection::fillLambdaQA(C const& col, V const& v0,
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
   if (signPos < 0 || signNeg > 0) {
-    printf("-Something wrong in isSelectedMinimal--\n");
-    printf("ERROR - Wrong sign for V0 daughters\n");
+    LOG(warn) << "Something wrong in isSelectedMinimal";
+    LOG(warn) << "ERROR - Wrong sign for V0 daughters";
   }
   const float pT = v0.pt();
+  const float eta = v0.eta();
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
   const float tranRad = v0.v0radius();
   const float dcaDaughv0 = v0.dcaV0daughters();
@@ -497,6 +512,10 @@ void FemtoDreamV0Selection::fillLambdaQA(C const& col, V const& v0,
   }
   if (pT < pTV0Max) {
     mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaPtMax"),
+                             v0.mLambda());
+  }
+  if (std::abs(eta) < etaV0Max) {
+    mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaEtaMax"),
                              v0.mLambda());
   }
   if (dcaDaughv0 < DCAV0DaughMax) {
@@ -528,13 +547,10 @@ void FemtoDreamV0Selection::fillLambdaQA(C const& col, V const& v0,
 /// to pass the collsion as well
 template <typename cutContainerType, typename C, typename V, typename T>
 std::array<cutContainerType, 5>
-  FemtoDreamV0Selection::getCutContainer(C const& col, V const& v0,
-                                         T const& posTrack, T const& negTrack)
+  FemtoDreamV0Selection::getCutContainer(C const& col, V const& v0, T const& posTrack, T const& negTrack)
 {
-  auto outputPosTrack =
-    PosDaughTrack.getCutContainer<cutContainerType>(posTrack);
-  auto outputNegTrack =
-    NegDaughTrack.getCutContainer<cutContainerType>(negTrack);
+  auto outputPosTrack = PosDaughTrack.getCutContainer<cutContainerType>(posTrack);
+  auto outputNegTrack = NegDaughTrack.getCutContainer<cutContainerType>(negTrack);
   cutContainerType output = 0;
   size_t counter = 0;
 
@@ -551,26 +567,21 @@ std::array<cutContainerType, 5>
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
   // check the mass and the PID of daughters
-  if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-      abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-      diffAntiLambda > diffLambda) {
+  if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda > diffLambda) {
     sign = -1.;
-  } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-             abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-             diffAntiLambda < diffLambda) {
+  } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
     sign = 1.;
   } else {
     // if it happens that none of these are true, ignore the invariant mass
-    if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-        abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
+    if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
       sign = -1.;
-    } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-               abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
+    } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
       sign = 1.;
     }
   }
 
   const auto pT = v0.pt();
+  const auto eta = v0.eta();
   const auto tranRad = v0.v0radius();
   const auto dcaDaughv0 = v0.dcaV0daughters();
   const auto cpav0 = v0.v0cosPA(col.posX(), col.posY(), col.posZ());
@@ -579,7 +590,6 @@ std::array<cutContainerType, 5>
   float observable = 0.;
   for (auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
-
     if (selVariable == femtoDreamV0Selection::kV0DecVtxMax) {
       for (size_t i = 0; i < decVtx.size(); ++i) {
         auto decVtxValue = decVtx.at(i);
@@ -595,6 +605,9 @@ std::array<cutContainerType, 5>
           break;
         case (femtoDreamV0Selection::kV0pTMax):
           observable = pT;
+          break;
+        case (femtoDreamV0Selection::kV0etaMax):
+          observable = eta;
           break;
         case (femtoDreamV0Selection::kV0DCADaughMax):
           observable = dcaDaughv0;
@@ -616,13 +629,10 @@ std::array<cutContainerType, 5>
   }
   return {
     output,
-    outputPosTrack.at(
-      femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+    outputPosTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
     outputPosTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
-    outputNegTrack.at(
-      femtoDreamTrackSelection::TrackContainerPosition::kCuts),
-    outputNegTrack.at(
-      femtoDreamTrackSelection::TrackContainerPosition::kPID)};
+    outputNegTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+    outputNegTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID)};
 }
 
 template <o2::aod::femtodreamparticle::ParticleType part,

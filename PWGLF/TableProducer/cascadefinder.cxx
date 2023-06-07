@@ -267,7 +267,7 @@ struct cascadefinder {
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
                      t0id.dcaXY(),
-                     dcaInfo[0], dcaInfo[1]);
+                     dcaInfo[0], dcaInfo[1], 0, 1e+3);
           } // end if cascade recoed
         }   // end loop over bachelor
       }     // end if v0 recoed
@@ -357,7 +357,7 @@ struct cascadefinder {
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
                      t0id.dcaXY(),
-                     dcaInfo[0], dcaInfo[1]);
+                     dcaInfo[0], dcaInfo[1], 0, 1e+3);
           } // end if cascade recoed
         }   // end loop over bachelor
       }     // end if v0 recoed
