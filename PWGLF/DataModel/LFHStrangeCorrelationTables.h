@@ -41,9 +41,9 @@ DECLARE_SOA_TABLE(TriggerTracks, "AOD", "TRIGGERTRACKS", o2::soa::Index<>, trigg
 /// Table for storing assoc track indices
 namespace assocPions
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                       //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Assoc"); //!
-} // namespace triggerTracks
+} // namespace assocPions
 DECLARE_SOA_TABLE(AssocPions, "AOD", "ASSOCPIONS", o2::soa::Index<>, assocPions::CollisionId, assocPions::TrackId);
 /// _________________________________________
 /// Table for storing associated V0 indices

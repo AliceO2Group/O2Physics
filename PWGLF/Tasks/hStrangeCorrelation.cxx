@@ -157,7 +157,7 @@ struct correlateStrangeness {
         float deltaphi = ComputeDeltaPhi(trigg.phi(), assoc.phi());
         float deltaeta = trigg.eta() - assoc.eta();
         float ptassoc = assoc.pt();
-        if(!mixing)
+        if (!mixing)
           histos.fill(HIST("sameEvent/Pion"), deltaphi, deltaeta, ptassoc, pvz, mult);
         else
           histos.fill(HIST("mixedEvent/Pion"), deltaphi, deltaeta, ptassoc, pvz, mult);
@@ -255,7 +255,7 @@ struct correlateStrangeness {
     if (doCorrelationPion)
       histos.add("sameEvent/Pion", "Pion", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, ConfVtxBins, ConfMultBins});
 
-    if(doCorrelationK0Short || doCorrelationLambda || doCorrelationAntiLambda || doCorrelationXiMinus || doCorrelationXiPlus || doCorrelationOmegaMinus || doCorrelationOmegaPlus) {
+    if (doCorrelationK0Short || doCorrelationLambda || doCorrelationAntiLambda || doCorrelationXiMinus || doCorrelationXiPlus || doCorrelationOmegaMinus || doCorrelationOmegaPlus) {
       histos.addClone("sameEvent/Signal/", "sameEvent/LeftBg/");
       histos.addClone("sameEvent/Signal/", "sameEvent/RightBg/");
     }
@@ -369,8 +369,8 @@ struct correlateStrangeness {
     fillCorrelationsCascade(triggerTracks, associatedCascades, false, collision.posZ(), collision.centFT0M());
   }
   void processSameEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
-                            aod::AssocPions const& associatedPions, aod::TriggerTracks const& triggerTracks,
-                            TracksComplete const&)
+                              aod::AssocPions const& associatedPions, aod::TriggerTracks const& triggerTracks,
+                              TracksComplete const&)
   {
     // ________________________________________________
     // Perform basic event selection
@@ -381,7 +381,7 @@ struct correlateStrangeness {
       return;
     }
     // ________________________________________________
-    if (!doprocessSameEventHCascades && ! doprocessSameEventHV0s) {
+    if (!doprocessSameEventHCascades && !doprocessSameEventHV0s) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
       histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
       histos.fill(HIST("EventQA/hPvz"), collision.posZ());
@@ -391,7 +391,7 @@ struct correlateStrangeness {
       auto pionTrack = pion.track_as<TracksComplete>();
       histos.fill(HIST("hPionEtaVsPtVsPhi"), pionTrack.pt(), pionTrack.eta(), pionTrack.phi());
     }
-    if (!doprocessSameEventHCascades && ! doprocessSameEventHV0s) {
+    if (!doprocessSameEventHCascades && !doprocessSameEventHV0s) {
       for (auto const& triggerTrack : triggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
         histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
@@ -455,8 +455,8 @@ struct correlateStrangeness {
     }
   }
   void processMixedEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
-                                  aod::AssocPions const& assocPions, aod::TriggerTracks const& triggerTracks,
-                                  TracksComplete const&)
+                               aod::AssocPions const& assocPions, aod::TriggerTracks const& triggerTracks,
+                               TracksComplete const&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, collisions, collisions)) {
       // ________________________________________________
