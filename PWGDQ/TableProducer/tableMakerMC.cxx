@@ -726,7 +726,7 @@ struct TableMakerMC {
             }
           }
 
-          muonBasic(event.lastIndex(), trackFilteringTag, muon.pt(), muon.eta(), muon.phi(), muon.sign(), isAmbiguous, muon.collisionId());
+          muonBasic(event.lastIndex(), trackFilteringTag, muon.pt(), muon.eta(), muon.phi(), muon.sign(), isAmbiguous);
           muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                     muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
                     muon.matchScoreMCHMFT(), newMatchIndex.find(muon.index())->second, muon.mchBitMap(), muon.midBitMap(),

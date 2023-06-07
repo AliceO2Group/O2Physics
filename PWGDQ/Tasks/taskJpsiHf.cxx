@@ -82,7 +82,7 @@ DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefilterV
 // Declarations of various short names
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 
-using MyPairCandidatesSelected = soa::Join<aod::Dileptons, aod::DileptonsExtra>;
+using MyPairCandidatesSelected = soa::Join<aod::Dileptons, aod::DileptonsExtra, aod::DileptonsInfo>;
 using MyD0CandidatesSelected = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
 
 // Global function used to define needed histogram classes

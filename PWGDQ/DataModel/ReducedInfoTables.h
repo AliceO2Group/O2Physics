@@ -292,7 +292,7 @@ DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "RTMuons_MatchM
 // Muon track kinematics
 DECLARE_SOA_TABLE(ReducedMuons, "AOD", "RTMUON", //!
                   o2::soa::Index<>, reducedmuon::ReducedEventId, reducedmuon::FilteringFlags,
-                  reducedmuon::Pt, reducedmuon::Eta, reducedmuon::Phi, reducedmuon::Sign, reducedmuon::IsAmbiguous, reducedmuon::CollisionId,
+                  reducedmuon::Pt, reducedmuon::Eta, reducedmuon::Phi, reducedmuon::Sign, reducedmuon::IsAmbiguous,
                   reducedmuon::Px<reducedmuon::Pt, reducedmuon::Phi>,
                   reducedmuon::Py<reducedmuon::Pt, reducedmuon::Phi>,
                   reducedmuon::Pz<reducedmuon::Pt, reducedmuon::Eta>,
@@ -314,10 +314,15 @@ DECLARE_SOA_TABLE(ReducedMuonsCov, "AOD", "RTMUONCOV",
                   fwdtrack::CTglX, fwdtrack::CTglY, fwdtrack::CTglPhi, fwdtrack::CTglTgl, fwdtrack::C1PtX,
                   fwdtrack::C1PtY, fwdtrack::C1PtPhi, fwdtrack::C1PtTgl, fwdtrack::C1Pt21Pt2);
 
+// Muon collision information
+DECLARE_SOA_TABLE(ReducedMuonsInfo, "AOD", "RTMUONINFO",
+                  reducedmuon::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
+
 // iterators
 using ReducedMuon = ReducedMuons::iterator;
 using ReducedMuonExtra = ReducedMuonsExtra::iterator;
 using ReducedMuonCov = ReducedMuonsCov::iterator;
+using ReducedMuonInfo = ReducedMuonsInfo::iterator;
 
 namespace reducedmuonlabel
 {
@@ -449,14 +454,16 @@ DECLARE_SOA_TABLE(DileptonsExtra, "AOD", "RTDILEPTONEXTRA", //!
                   dilepton_track_index::Index0Id, dilepton_track_index::Index1Id,
                   reducedpair::Tauz,
                   reducedpair::Lz,
-                  reducedpair::Lxy,
-                  reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
+                  reducedpair::Lxy);
 
 DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
                   reducedpair::U2Q2,
                   reducedpair::U3Q3,
                   reducedpair::Cos2DeltaPhi,
                   reducedpair::Cos3DeltaPhi);
+
+DECLARE_SOA_TABLE(DileptonsInfo, "AOD", "RTDILEPTONINFO",
+                  reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
 
 DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib, dilepton_track_index::FwdDcaX1, dilepton_track_index::FwdDcaY1, dilepton_track_index::FwdDcaX2, dilepton_track_index::FwdDcaY2,
@@ -481,6 +488,7 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
 using Dilepton = Dileptons::iterator;
 using DileptonExtra = DileptonsExtra::iterator;
 using DileptonFlow = DileptonsFlow::iterator;
+using DileptonInfo = DileptonsInfo::iterator;
 using DimuonAll = DimuonsAll::iterator;
 
 // candidate information
