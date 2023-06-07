@@ -112,7 +112,7 @@ struct HfFilter { // Main struct for HF triggers
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
-  Configurable<long> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<string> ccdbPathTPC{"ccdbPathTPC", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
@@ -296,10 +296,10 @@ struct HfFilter { // Main struct for HF triggers
             LOG(fatal) << "Can not find the TPC Post Calibration object!";
           }
 
-          hMapPion[0] = (TH3F*)calibList->FindObject("mean_map_pion");
-          hMapPion[1] = (TH3F*)calibList->FindObject("sigma_map_pion");
-          hMapProton[0] = (TH3F*)calibList->FindObject("mean_map_proton");
-          hMapProton[1] = (TH3F*)calibList->FindObject("sigma_map_proton");
+          hMapPion[0] = reinterpret_cast<TH3F*>(calibList->FindObject("mean_map_pion"));
+          hMapPion[1] = reinterpret_cast<TH3F*>(calibList->FindObject("sigma_map_pion"));
+          hMapProton[0] = reinterpret_cast<TH3F*>(calibList->FindObject("mean_map_proton"));
+          hMapProton[1] = reinterpret_cast<TH3F*>(calibList->FindObject("sigma_map_proton"));
 
           if (!hMapPion[0] || !hMapPion[1] || !hMapProton[0] || !hMapProton[1]) {
             LOG(fatal) << "Can not find histograms!";
@@ -323,7 +323,7 @@ struct HfFilter { // Main struct for HF triggers
       bool keepEvent[kNtriggersHF]{false};
       //
 
-      std::vector<std::vector<long>> indicesDau2Prong{};
+      std::vector<std::vector<int64_t>> indicesDau2Prong{};
 
       auto cand2ProngsThisColl = cand2Prongs.sliceBy(hf2ProngPerCollision, thisCollId);
       for (const auto& cand2Prong : cand2ProngsThisColl) {                                // start loop over 2 prongs
@@ -415,7 +415,7 @@ struct HfFilter { // Main struct for HF triggers
         } // end high-pT selection
 
         if (isCharmTagged) {
-          indicesDau2Prong.push_back(std::vector<long>{trackPos.globalIndex(), trackNeg.globalIndex()});
+          indicesDau2Prong.push_back(std::vector<int64_t>{trackPos.globalIndex(), trackNeg.globalIndex()});
         } // end multi-charm selection
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
@@ -529,7 +529,7 @@ struct HfFilter { // Main struct for HF triggers
 
       } // end loop over 2-prong candidates
 
-      std::vector<std::vector<long>> indicesDau3Prong{};
+      std::vector<std::vector<int64_t>> indicesDau3Prong{};
       auto cand3ProngsThisColl = cand3Prongs.sliceBy(hf3ProngPerCollision, thisCollId);
       for (const auto& cand3Prong : cand3ProngsThisColl) { // start loop over 3 prongs
         std::array<int8_t, kNCharmParticles - 1> is3Prong = {
@@ -636,7 +636,7 @@ struct HfFilter { // Main struct for HF triggers
         }
 
         if (std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) {
-          indicesDau3Prong.push_back(std::vector<long>{trackFirst.globalIndex(), trackSecond.globalIndex(), trackThird.globalIndex()});
+          indicesDau3Prong.push_back(std::vector<int64_t>{trackFirst.globalIndex(), trackSecond.globalIndex(), trackThird.globalIndex()});
         } // end multiple 3-prong selection
 
         auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);

@@ -16,7 +16,7 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 #include "Framework/runDataProcessing.h"
-// #include "Framework/RunningWorkflowInfo.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -29,18 +29,6 @@ using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::analysis;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_b0_to_d_pi; // from SelectorCuts.h
-
-// FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-namespace o2::aod
-{
-namespace hf_cand_b0_config
-{
-DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int);
-} // namespace hf_cand_b0_config
-
-DECLARE_SOA_TABLE(HfCandB0Config, "AOD", "HFCANDB0CONFIG", //!
-                  hf_cand_b0_config::MySelectionFlagD);
-} // namespace o2::aod
 
 struct HfCandidateSelectorB0ToDPi {
   Produces<aod::HfSelB0ToDPi> hfSelB0ToDPiCandidate; // table defined in CandidateSelectionTables.h
@@ -67,8 +55,6 @@ struct HfCandidateSelectorB0ToDPi {
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // check if selectionFlagD (defined in candidateCreatorB0.cxx) and usePid configurables are in sync
   bool selectionFlagDAndUsePidInSync = true;
-  // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-  int mySelectionFlagD = -1;
 
   TrackSelectorPID selectorPion;
 
@@ -76,7 +62,7 @@ struct HfCandidateSelectorB0ToDPi {
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const& initContext)
+  void init(InitContext& initContext)
   {
     if (usePid) {
       selectorPion.setPDG(kPiPlus);
@@ -102,8 +88,7 @@ struct HfCandidateSelectorB0ToDPi {
       }
     }
 
-    // FIXME: will be uncommented once https://alice.its.cern.ch/jira/browse/O2-3582 is solved
-    /*int selectionFlagD = -1;
+    int selectionFlagD = -1;
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-b0") == 0) {
@@ -123,27 +108,12 @@ struct HfCandidateSelectorB0ToDPi {
     if (!usePid && TESTBIT(selectionFlagD, SelectionStep::RecoPID)) {
       selectionFlagDAndUsePidInSync = false;
       LOG(warning) << "No PID selections required on B0 daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD=7). Set selectionFlagD<7 in hf-candidate-creator-b0";
-    }*/
+    }
   }
 
   void process(aod::HfCandB0 const& hfCandsB0,
-               TracksPIDWithSel const&,
-               HfCandB0Config const& configs)
+               TracksPIDWithSel const&)
   {
-    // FIXME: get B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-    for (const auto& config : configs) {
-      mySelectionFlagD = config.mySelectionFlagD();
-
-      if (usePid && !TESTBIT(mySelectionFlagD, SelectionStep::RecoPID)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "PID selections required on B0 daughters (usePid=true) but no PID selections on D candidates were required a priori (selectionFlagD<7). Set selectionFlagD=7 in hf-candidate-creator-b0";
-      }
-      if (!usePid && TESTBIT(mySelectionFlagD, SelectionStep::RecoPID)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "No PID selections required on B0 daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD=7). Set selectionFlagD<7 in hf-candidate-creator-b0";
-      }
-    }
-
     for (const auto& hfCandB0 : hfCandsB0) {
       int statusB0ToDPi = 0;
       auto ptCandB0 = hfCandB0.pt();

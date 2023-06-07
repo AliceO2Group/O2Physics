@@ -157,7 +157,7 @@ struct JetSubstructureHFTask {
       }
     }
     hNsd->Fill(nsd);
-    jetSubstructurehfTable(jet.globalIndex(), zg, rg, nsd);
+    jetSubstructurehfTable(zg, rg, nsd);
   }
 
   void processDummy(aod::Tracks const& track)
@@ -258,15 +258,15 @@ struct JetSubstructureHFTask {
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processBplusMCP, "Bplus jet substructure on MC particle level", false);
 };
-using JetSubstructureD0 = JetSubstructureHFTask<o2::aod::D0ChargedJetSubstructure>;
-using MCDetectorLevelJetSubstructureD0 = JetSubstructureHFTask<o2::aod::D0ChargedMCDetectorLevelJetSubstructure>;
-using MCParticleLevelJetSubstructureD0 = JetSubstructureHFTask<o2::aod::D0ChargedMCParticleLevelJetSubstructure>;
-using JetSubstructureLc = JetSubstructureHFTask<o2::aod::LcChargedJetSubstructure>;
-using MCDetectorLevelJetSubstructureLc = JetSubstructureHFTask<o2::aod::LcChargedMCDetectorLevelJetSubstructure>;
-using MCParticleLevelJetSubstructureLc = JetSubstructureHFTask<o2::aod::LcChargedMCParticleLevelJetSubstructure>;
-using JetSubstructureBplus = JetSubstructureHFTask<o2::aod::BplusChargedJetSubstructure>;
-using MCDetectorLevelJetSubstructureBplus = JetSubstructureHFTask<o2::aod::BplusChargedMCDetectorLevelJetSubstructure>;
-using MCParticleLevelJetSubstructureBplus = JetSubstructureHFTask<o2::aod::BplusChargedMCParticleLevelJetSubstructure>;
+using JetSubstructureD0 = JetSubstructureHFTask<o2::aod::D0ChargedJetSubstructures>;
+using MCDetectorLevelJetSubstructureD0 = JetSubstructureHFTask<o2::aod::D0ChargedMCDetectorLevelJetSubstructures>;
+using MCParticleLevelJetSubstructureD0 = JetSubstructureHFTask<o2::aod::D0ChargedMCParticleLevelJetSubstructures>;
+using JetSubstructureLc = JetSubstructureHFTask<o2::aod::LcChargedJetSubstructures>;
+using MCDetectorLevelJetSubstructureLc = JetSubstructureHFTask<o2::aod::LcChargedMCDetectorLevelJetSubstructures>;
+using MCParticleLevelJetSubstructureLc = JetSubstructureHFTask<o2::aod::LcChargedMCParticleLevelJetSubstructures>;
+using JetSubstructureBplus = JetSubstructureHFTask<o2::aod::BplusChargedJetSubstructures>;
+using MCDetectorLevelJetSubstructureBplus = JetSubstructureHFTask<o2::aod::BplusChargedMCDetectorLevelJetSubstructures>;
+using MCParticleLevelJetSubstructureBplus = JetSubstructureHFTask<o2::aod::BplusChargedMCParticleLevelJetSubstructures>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
