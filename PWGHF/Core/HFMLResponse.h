@@ -51,7 +51,7 @@ class HFMLResponse
         std::map<std::string, std::string> metadata;
         bool retrieveSuccess = ccdbApi.retrieveBlob(pathCCDB, ".", metadata, timestampCCDB, false, onnxFile);
         if (retrieveSuccess) {
-          mPaths.emplace_back(onnxFile);
+          mPaths[counterModel] = onnxFile;
         } else {
           LOG(fatal) << "Error encountered while accessing the ML model from CCDB! Maybe the ML model doesn't exist yet for this runnumber/timestamp?";
         }
@@ -63,7 +63,7 @@ class HFMLResponse
     void init(const std::vector<std::string>& paths, bool enableOptimizations, int threads = 0) {
       uint8_t counterModel{0};
       for (const auto& path : paths) {
-        mPaths.emplace_back(path);
+        mPaths[counterModel] = path;
         mNetworks[counterModel].initModel(path, enableOptimizations, threads);
         ++counterModel;
       }
