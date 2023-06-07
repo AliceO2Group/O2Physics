@@ -55,21 +55,6 @@ bool OnnxModel::checkHyperloop(bool verbose)
   return alienCoresFound;
 }
 
-/// Access model from CCDB
-/// \param onnxFile is the onnx file name
-/// \param ccdbApi is the CCDB API
-/// \param pathCCDB is the model path in CCDB
-/// \param timestampCCDB is the CCDB timestamp
-void OnnxModel::accessModelFromCCDB(std::string onnxFile, o2::ccdb::CcdbApi& ccdbApi, std::string pathCCDB,long timestampCCDB) {
-  std::map<std::string, std::string> metadata;
-  bool retrieveSuccess = ccdbApi.retrieveBlob(pathCCDB, ".", metadata, timestampCCDB, false, onnxFile);
-  if (retrieveSuccess) {
-    modelPath = onnxFile;
-  } else {
-    LOG(fatal) << "Error encountered while accessing the ML model from CCDB! Maybe the ML model doesn't exist yet for this runnumber/timestamp?";
-  }
-}
-
 void OnnxModel::initModel(std::string localPath, bool enableOptimizations, int threads, uint64_t from, uint64_t until)
 {
 
@@ -113,11 +98,6 @@ void OnnxModel::initModel(std::string localPath, bool enableOptimizations, int t
   LOG(info) << "Model validity - From: " << validFrom << ", Until: " << validUntil;
 
   LOG(info) << "--- Model initialized! ---";
-}
-
-void OnnxModel::initModel(bool enableOptimizations, int threads, uint64_t from, uint64_t until)
-{
-  initModel(modelPath, enableOptimizations, threads, from, until);
 }
 
 void OnnxModel::setActiveThreads(int threads)

@@ -39,16 +39,29 @@ class HFMLResponse
     HFMLResponse() = default;
     virtual ~HFMLResponse() = default;
 
+
+    /// Access model from CCDB
+    /// \param onnxFiles is an array of onnx file names, one for each bin
+    /// \param ccdbApi is the CCDB API
+    /// \param pathCCDB is the model path in CCDB
+    /// \param timestampCCDB is the CCDB timestamp
     void accessModelFromCCDB(std::array<std::string, nModels> onnxFiles, o2::ccdb::CcdbApi& ccdbApi, std::string pathCCDB, long timestampCCDB) {
       uint8_t counterModel{0};
       for (const auto& onnxFile : onnxFiles) {
-        mNetworks[counterModel].accessModelFromCCDB(onnxFile, ccdbApi, pathCCDB, timestampCCDB);
+        std::map<std::string, std::string> metadata;
+        bool retrieveSuccess = ccdbApi.retrieveBlob(pathCCDB, ".", metadata, timestampCCDB, false, onnxFile);
+        if (retrieveSuccess) {
+          mPaths[counterModel] = onnxFile;
+        } else {
+          LOG(fatal) << "Error encountered while accessing the ML model from CCDB! Maybe the ML model doesn't exist yet for this runnumber/timestamp?";
+        }
         ++counterModel;
       }
     }
 
 // TODO add cuts and bin configs in init method
-    void init(std::vector<std::string> paths, bool enableOptimizations, int threads = 0) {
+    void init(std::array<std::string, nModels> paths, bool enableOptimizations, int threads = 0) {
+      mPaths = paths;
       uint8_t counterModel{0};
       for (const auto& path : paths) {
         mNetworks[counterModel].initModel(path, enableOptimizations, threads);
@@ -57,9 +70,7 @@ class HFMLResponse
     }
 
     void init(bool enableOptimizations, int threads = 0) {
-      for (auto& mNetwork : mNetworks) {
-        mNetwork.initModel(enableOptimizations, threads);
-      }
+      return init(mPaths, enableOptimizations, threads);
     }
 
     /// Get array with model prediction
@@ -96,7 +107,7 @@ class HFMLResponse
     std::vector<T> mOutputValues; 
 
     // std::vector<double> mBinsLimits = {}; // bin limits of the variable (e.g. pT) used to select which model to use
-    // std::array<std::string, nModels> mPaths = {}; // paths to the models, one for each bin
+    std::array<std::string, nModels> mPaths = {}; // paths to the models, one for each bin
     std::vector<o2::analysis::hf_cuts_ml::CutDirection> mCutDir = {}; // direction of the cuts on the model scores (no cut is also supported)
     // o2::framework::LabeledArray<double> mCuts = {}; // array of cut values to apply on the model scores
 };
