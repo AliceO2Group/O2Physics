@@ -198,6 +198,7 @@ def data_prep(config):
         )
     else:
         print("ERROR: test_fraction must belong to ]0,1[")
+        sys.exit(0)
 
     train_test_data = [train_set, y_train, test_set, y_test]
     del df_tot
