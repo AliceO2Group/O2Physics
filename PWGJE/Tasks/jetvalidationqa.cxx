@@ -190,7 +190,7 @@ struct jetTrackCollisionQa {
     double leadingJetEta = -1;
     // jet QA hists per jet in this collision
     for (const auto& j : jets) {
-      if(j.collisionId() != collision.globalIndex()){
+      if (j.collisionId() != collision.globalIndex()) {
         return;
       }
       fillJetQA(j);
@@ -254,7 +254,7 @@ struct jetTrackCollisionQa {
     double leadingJetEta = -1;
     // jet QA hists per jet in this collision
     for (const auto& j : jets) {
-      if(j.collisionId() != collision.globalIndex()){
+      if (j.collisionId() != collision.globalIndex()) {
         return;
       }
       fillJetQA(j);
