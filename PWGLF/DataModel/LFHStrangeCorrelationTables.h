@@ -19,8 +19,8 @@
 /// \author David Dobrigkeit Chinellato (david.dobrigkeit.chinellato@cern.ch)
 /// \author Zhongbao Yin (Zhong-Bao.Yin@cern.ch)
 
-#ifndef O2_ANALYSIS_HSTRANGECORRELATIONTABLES_H_
-#define O2_ANALYSIS_HSTRANGECORRELATIONTABLES_H_
+#ifndef PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_
+#define PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
