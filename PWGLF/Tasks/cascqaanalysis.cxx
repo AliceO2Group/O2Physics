@@ -129,7 +129,7 @@ struct cascqaanalysis {
 
   void init(InitContext const&)
   {
-    TString CandidateCounterLabels[5] = {"All candidates", "v0data exists", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
+    TString hCandidateCounterLabels[5] = {"All candidates", "v0data exists", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[4] = {"All", "z vrtx", "INEL>0", "Associated with rec. collision"};
     TString hNEventsLabels[4] = {"All", "sel8", "z vrtx", "INEL>0"};
 
@@ -157,12 +157,16 @@ struct cascqaanalysis {
 
     registry.add("hCandidateCounter", "hCandidateCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hCandidateCounter"))->GetNbinsX(); n++) {
-      registry.get<TH1>(HIST("hCandidateCounter"))->GetXaxis()->SetBinLabel(n, CandidateCounterLabels[n - 1]);
+      registry.get<TH1>(HIST("hCandidateCounter"))->GetXaxis()->SetBinLabel(n, hCandidateCounterLabels[n - 1]);
     }
+
+    AxisSpec allTracks = {2000, 0, 2000, "N_{all tracks}"};
+    AxisSpec secondaryTracks = {2000, 0, 2000, "N_{secondary tracks}"};
+    registry.add("hINELgt0PrimariesSelection", "hINELgt0PrimariesSelection", {HistType::kTH2F, {allTracks, secondaryTracks}});
   }
 
   // Event selection criteria
-  Configurable<float> cutzvertex{"cutzvertex", 15.0f, "Accepted z-vertex range (cm)"};
+  Configurable<float> cutzvertex{"cutzvertex", 20.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
   Configurable<bool> INELgt0{"INELgt0", 1, "Apply INEL>0 selection"};
 
@@ -178,6 +182,11 @@ struct cascqaanalysis {
   Configurable<float> v0radius{"v0radius", 0.0, "V0 Radius"};
   Configurable<float> cascradius{"cascradius", 0.0, "Casc Radius"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
+
+  Configurable<float> maxDCANsigmaScaling{"DCANsigmaScaling", 1.0f, "N of 7*sigma scaling factor for DCA to select primaries"};
+  Configurable<float> DCASigma{"DCASigma", 0.004f, "7*sigma for DCA"};
+  Configurable<float> DCAPtScaling{"DCAPtScaling", 0.013f, "pt scaling for DCA"};
+  Configurable<float> maxDCAz{"DCAz", 0.5f, "DCA z cut to select primaries"};
 
   TRandom* fRand = new TRandom();
 
@@ -212,15 +221,59 @@ struct cascqaanalysis {
     }
   }
 
+  template <typename TCollision, typename TTracks>
+  bool AcceptEvent(TCollision const& collision, TTracks const& tracks, bool isFillEventSelectionQA)
+  {
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 0.5);
+    }
+    // Event selection if required
+    if (sel8 && !collision.sel8()) {
+      return false;
+    }
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 1.5);
+    }
+
+    if (TMath::Abs(collision.posZ()) > cutzvertex) {
+      return false;
+    }
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 2.5);
+    }
+
+    if (INELgt0 && !isINELgt0(tracks, isFillEventSelectionQA)) {
+      return false;
+    }
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 3.5);
+    }
+
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hZCollision"), collision.posZ());
+      registry.fill(HIST("hCentFT0M"), collision.centFT0M());
+      registry.fill(HIST("hCentFV0A"), collision.centFV0A());
+    }
+    return true;
+  }
+
   template <typename TTracks>
-  bool isINELgt0(TTracks tracks)
+  bool isINELgt0(TTracks tracks, bool isFillEventSelectionQA)
   {
     // INEL > 0 (at least 1 charged track in |eta| < 1.0)
-    // TO DO: check for primary via DCA
     std::vector<float> TracksEta(tracks.size());
     int nTracks = 0;
+    int nRejTracks = 0;
     for (const auto& track : tracks) {
+      if(TMath::Abs(track.dcaXY()) > (maxDCANsigmaScaling*DCASigma + DCAPtScaling/track.pt()) || TMath::Abs(track.dcaZ()) > maxDCAz) {
+        nRejTracks++;
+        continue; // consider only primaries
+      }
       TracksEta[nTracks++] = track.eta();
+    }
+
+    if(isFillEventSelectionQA){
+      registry.fill(HIST("hINELgt0PrimariesSelection"), tracks.size(), nRejTracks);
     }
 
     auto etaConditionFunc = [](float elem) {
@@ -278,42 +331,6 @@ struct cascqaanalysis {
     } else {
       return false;
     }
-  }
-
-  template <typename TCollision, typename TTracks>
-  bool AcceptEvent(TCollision const& collision, TTracks const& tracks, bool isFillEventSelectionQA)
-  {
-    if (isFillEventSelectionQA) {
-      registry.fill(HIST("hNEvents"), 0.5);
-    }
-    // Event selection if required
-    if (sel8 && !collision.sel8()) {
-      return false;
-    }
-    if (isFillEventSelectionQA) {
-      registry.fill(HIST("hNEvents"), 1.5);
-    }
-
-    if (TMath::Abs(collision.posZ()) > cutzvertex) {
-      return false;
-    }
-    if (isFillEventSelectionQA) {
-      registry.fill(HIST("hNEvents"), 2.5);
-    }
-
-    if (INELgt0 && !isINELgt0(tracks)) {
-      return false;
-    }
-    if (isFillEventSelectionQA) {
-      registry.fill(HIST("hNEvents"), 3.5);
-    }
-
-    if (isFillEventSelectionQA) {
-      registry.fill(HIST("hZCollision"), collision.posZ());
-      registry.fill(HIST("hCentFT0M"), collision.centFT0M());
-      registry.fill(HIST("hCentFV0A"), collision.centFV0A());
-    }
-    return true;
   }
 
   void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
@@ -470,7 +487,7 @@ struct cascqaanalysis {
   void processMCgen(aod::McCollision const& mcCollision,
                     aod::McParticles const& mcParticles,
                     const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>>& collisions,
-                    aod::Tracks const& Tracks)
+                    DauTracks const& Tracks)
   {
     // All generated collisions
     registry.fill(HIST("hNEventsMC"), 0.5);

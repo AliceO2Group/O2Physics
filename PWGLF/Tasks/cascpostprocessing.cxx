@@ -148,6 +148,8 @@ struct cascpostprocessing {
   Configurable<float> bachBaryonCosPA{"bachBaryonCosPA", 0.9999, "Bachelor baryon CosPA"};
   Configurable<float> bachBaryonDCAxyToPV{"bachBaryonDCAxyToPV", 0.05, "DCA bachelor baryon to PV"};
 
+  Configurable<bool> isFT0MforMC{"isFT0MforMC", 0, "Fill with FT0M information or 0s"};
+
   HistogramRegistry registry{"registryts"};
 
   void init(InitContext const&)
@@ -485,7 +487,7 @@ struct cascpostprocessing {
 
       if (candidate.sign() < 0) {
         if (isCorrectlyRec) {
-          registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, 0);
+          registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, (isFT0MforMC ? candidate.multFT0M() : 0));
         }
         registry.fill(HIST("hCascMinusInvMassvsPt"), candidate.pt(), invmass);
         registry.fill(HIST("hCascMinusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
@@ -493,7 +495,7 @@ struct cascpostprocessing {
       }
       if (candidate.sign() > 0) {
         if (isCorrectlyRec) {
-          registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, 0);
+          registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, (isFT0MforMC ? candidate.multFT0M() : 0));
         }
         registry.fill(HIST("hCascPlusInvMassvsPt"), candidate.pt(), invmass);
         registry.fill(HIST("hCascPlusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
