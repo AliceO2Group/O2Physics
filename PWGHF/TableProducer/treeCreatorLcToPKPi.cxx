@@ -225,7 +225,7 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::LcToPKPi && pseudoRndm < downSampleBkgFactor) {
+        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
