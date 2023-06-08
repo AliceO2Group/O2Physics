@@ -54,7 +54,7 @@ struct HfTaskSingleMuonSelectionAmbiguousMftIndexBuilder {
   // mfttrack.ambMftTrack()
 };
 
-struct HfTaskSingleMuonSelection {
+struct HfTaskSingleMuon {
   Configurable<uint8_t> trkType{"trkType", 0, "Muon track type, valid values are 0, 1, 2, 3 and 4"};
   Configurable<uint8_t> mcMaskSelection{"mcMaskSelection", 0, "McMask for correct match, valid values are 0 and 128"};
   Configurable<float> etaMin{"etaMin", -3.6, "eta minimum value"};
@@ -251,6 +251,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<HfTaskSingleMuonSelectionAmbiguousMftIndexBuilder>(cfgc),
-    adaptAnalysisTask<HfTaskSingleMuonSelection>(cfgc),
+    adaptAnalysisTask<HfTaskSingleMuon>(cfgc),
   };
 }
