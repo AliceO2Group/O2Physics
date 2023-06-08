@@ -240,7 +240,7 @@ struct cascqaanalysis {
     // INEL > 0 (at least 1 charged particle in |eta| < 1.0)
     typedef struct EtaCharge {
       double eta;
-      short charge;
+      int charge;
     } EtaCharge;
     EtaCharge etaCharge;
     std::vector<EtaCharge> ParticlesEtaAndCharge(particles.size());
@@ -254,7 +254,7 @@ struct cascqaanalysis {
         switch (std::to_string(particle.pdgCode()).length()) {
           case 10: // nuclei
           {
-            etaCharge = {particle.eta(), static_cast<short>(particle.pdgCode() / 10000 % 1000)};
+            etaCharge = {particle.eta(), static_cast<int>(particle.pdgCode() / 10000 % 1000)};
             ParticlesEtaAndCharge[nParticles++] = etaCharge;
             break;
           }
@@ -262,7 +262,7 @@ struct cascqaanalysis {
             break;
         }
       } else {
-        etaCharge = {particle.eta(), static_cast<short>(p->Charge())};
+        etaCharge = {particle.eta(), static_cast<int>(p->Charge())};
         ParticlesEtaAndCharge[nParticles++] = etaCharge;
       }
     }
