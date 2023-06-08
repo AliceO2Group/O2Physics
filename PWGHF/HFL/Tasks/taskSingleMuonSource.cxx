@@ -58,7 +58,7 @@ DECLARE_SOA_COLUMN(Source, source, uint8_t);
 DECLARE_SOA_TABLE(HfMuonSource, "AOD", "MUONSOURCE", muon_source::Pt, muon_source::DcaXY, muon_source::Source);
 } // namespace o2::aod
 
-struct HfTaskMuonSource {
+struct HfTaskSingleMuonSource {
   Produces<aod::HfMuonSource> singleMuonSource;
 
   Configurable<bool> applyMcMask{"applyMcMask", true, "Flag of apply the mcMask selection"};
@@ -287,6 +287,6 @@ struct HfTaskMuonSource {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTaskMuonSource>(cfgc),
+    adaptAnalysisTask<HfTaskSingleMuonSource>(cfgc),
   };
 }
