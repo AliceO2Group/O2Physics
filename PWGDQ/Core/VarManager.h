@@ -102,7 +102,8 @@ class VarManager : public TObject
     AmbiTrack = BIT(19),
     AmbiMuon = BIT(20),
     DalitzBits = BIT(21),
-    TrackTPCPID = BIT(22)
+    TrackTPCPID = BIT(22),
+    TrackMFT = BIT(23)
   };
 
   enum PairCandidateType {
@@ -263,6 +264,7 @@ class VarManager : public TObject
     kTPCnSigmaPr,
     kTPCnSigmaEl_Corr,
     kTPCnSigmaPi_Corr,
+    kTPCnSigmaKa_Corr,
     kTPCnSigmaPr_Corr,
     kTPCnSigmaPrRandomized,
     kTPCnSigmaPrRandomizedDelta,
@@ -400,6 +402,8 @@ class VarManager : public TObject
     kTPCElectronSigma,
     kTPCPionMean,
     kTPCPionSigma,
+    kTPCKaonMean,
+    kTPCKaonSigma,
     kTPCProtonMean,
     kTPCProtonSigma,
     kNCalibObjects
@@ -535,6 +539,9 @@ class VarManager : public TObject
     }
     if (fgCalibs.find(kTPCPionMean) != fgCalibs.end() && fgCalibs.find(kTPCPionSigma) != fgCalibs.end()) {
       fgRunTPCPostCalibration[1] = true;
+    }
+    if (fgCalibs.find(kTPCKaonMean) != fgCalibs.end() && fgCalibs.find(kTPCKaonSigma) != fgCalibs.end()) {
+      fgRunTPCPostCalibration[2] = true;
     }
     if (fgCalibs.find(kTPCProtonMean) != fgCalibs.end() && fgCalibs.find(kTPCProtonSigma) != fgCalibs.end()) {
       fgRunTPCPostCalibration[3] = true;
@@ -1052,6 +1059,24 @@ void VarManager::FillTrack(T const& track, float* values)
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
       values[kTPCnSigmaPi_Corr] = (values[kTPCnSigmaPi] - mean) / width;
+    }
+    if (fgUsedVars[kTPCnSigmaKa_Corr] && fgRunTPCPostCalibration[2]) {
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCKaonMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCKaonSigma]);
+
+      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
+      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
+      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
+      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
+      binPin = (binPin == 0 ? 1 : binPin);
+      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
+      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
+      binEta = (binEta == 0 ? 1 : binEta);
+      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
+
+      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
+      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
+      values[kTPCnSigmaKa_Corr] = (values[kTPCnSigmaKa] - mean) / width;
     }
     // compute TPC postcalibrated proton nsigma if required
     if (fgUsedVars[kTPCnSigmaPr_Corr] && fgRunTPCPostCalibration[3]) {

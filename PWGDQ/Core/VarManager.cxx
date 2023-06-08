@@ -359,6 +359,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTPCnSigmaPi_Corr] = "";
   fgVariableNames[kTPCnSigmaKa] = "n #sigma_{K}^{TPC}";
   fgVariableUnits[kTPCnSigmaKa] = "";
+  fgVariableNames[kTPCnSigmaKa_Corr] = "n #sigma_{K}^{TPC} Corr.";
+  fgVariableUnits[kTPCnSigmaKa_Corr] = "";
   fgVariableNames[kTPCnSigmaPr] = "n #sigma_{p}^{TPC}";
   fgVariableUnits[kTPCnSigmaPr] = "";
   fgVariableNames[kTPCnSigmaPr_Corr] = "n #sigma_{p}^{TPC} Corr.";
@@ -549,6 +551,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kR3EP] = "";
   fgVariableNames[kPairMass] = "mass";
   fgVariableUnits[kPairMass] = "GeV/c2";
+  fgVariableNames[kPairMassDau] = "mass dilepton";
+  fgVariableUnits[kPairMassDau] = "GeV/c2";
+  fgVariableNames[kMassDau] = "mass HF";
+  fgVariableUnits[kMassDau] = "GeV/c2";
   fgVariableNames[kPairPt] = "p_{T}";
   fgVariableUnits[kPairPt] = "GeV/c";
   fgVariableNames[kPairEta] = "#eta";

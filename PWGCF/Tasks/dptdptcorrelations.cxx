@@ -20,6 +20,7 @@
 #include <TParameter.h>
 #include <TProfile3D.h>
 #include <TROOT.h>
+#include <TVector2.h>
 #include <cmath>
 #include <ctime>
 
@@ -61,6 +62,7 @@ float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
 bool processpairs = false;
 bool processmixedevents = false;
+bool ptorder = false;
 
 PairCuts fPairCuts;              // pair suppression engine
 bool fUseConversionCuts = false; // suppress resonances and conversions
@@ -89,6 +91,7 @@ struct DptDptCorrelationsTask {
     std::vector<TH2*> fhPtAvg_vsEtaPhi{nch, nullptr};                             //!<! average \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
     std::vector<std::vector<TH2F*>> fhN2_vsPtPt{nch, {nch, nullptr}};             //!<! weighted two particle distribution vs \f${p_T}_1, {p_T}_2\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhN2_vsDEtaDPhi{nch, {nch, nullptr}};         //!<! two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhN2cont_vsDEtaDPhi{nch, {nch, nullptr}};     //!<! two-particle distribution continuous vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhSum2PtPt_vsDEtaDPhi{nch, {nch, nullptr}};   //!<! two-particle  \f$\sum {p_T}_1 {p_T}_2\f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhSum2DptDpt_vsDEtaDPhi{nch, {nch, nullptr}}; //!<! two-particle  \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhSupN1N1_vsDEtaDPhi{nch, {nch, nullptr}};    //!<! suppressed n1n1 two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
@@ -300,7 +303,7 @@ struct DptDptCorrelationsTask {
     /// \param trks2 filtered table with the tracks associated to the second track in the pair
     /// \param cmul centrality - multiplicity for the collision being analyzed
     /// Be aware that in most of the cases traks1 and trks2 will have the same content (exception: mixed events)
-    template <typename TrackOneListObject, typename TrackTwoListObject>
+    template <bool doptorder, typename TrackOneListObject, typename TrackTwoListObject>
     void processTrackPairs(TrackOneListObject const& trks1, TrackTwoListObject const& trks2, std::vector<float>* corrs1, std::vector<float>* corrs2, std::vector<float>* ptavgs1, std::vector<float>* ptavgs2, float cmul, int bfield)
     {
       using namespace correlationstask;
@@ -325,6 +328,12 @@ struct DptDptCorrelationsTask {
             /* exclude autocorrelations */
             continue;
           }
+
+          if constexpr (doptorder) {
+            if (track2.pt() >= track1.pt()) {
+              continue;
+            }
+          }
           /* process pair magnitudes */
           double ptavg_2 = (*ptavgs2)[index2];
           double corr2 = (*corrs2)[index2];
@@ -334,6 +343,14 @@ struct DptDptCorrelationsTask {
 
           /* get the global bin for filling the differential histograms */
           int globalbin = GetDEtaDPhiGlobalIndex(track1, track2);
+          float deltaeta = track1.eta() - track2.eta();
+          float deltaphi = track1.phi() - track2.phi();
+          while (deltaphi >= deltaphiup) {
+            deltaphi -= constants::math::TwoPI;
+          }
+          while (deltaphi < deltaphilow) {
+            deltaphi += constants::math::TwoPI;
+          }
           if ((fUseConversionCuts && fPairCuts.conversionCuts(track1, track2)) || (fUseTwoTrackCut && fPairCuts.twoTrackCut(track1, track2, bfield))) {
             /* suppress the pair */
             fhSupN1N1_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, corr);
@@ -349,6 +366,7 @@ struct DptDptCorrelationsTask {
             sum2DptDptnw[track1.trackacceptedid()][track2.trackacceptedid()] += dptdptnw;
 
             fhN2_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, corr);
+            fhN2cont_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(deltaeta, deltaphi, corr);
             fhSum2DptDpt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, dptdptw);
             fhSum2PtPt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
           }
@@ -407,9 +425,17 @@ struct DptDptCorrelationsTask {
         }
         /* process pair magnitudes */
         if constexpr (mixed) {
-          processTrackPairs(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult, bfield);
+          if (ptorder) {
+            processTrackPairs<true>(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult, bfield);
+          } else {
+            processTrackPairs<false>(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult, bfield);
+          }
         } else {
-          processTrackPairs(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+          if (ptorder) {
+            processTrackPairs<true>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+          } else {
+            processTrackPairs<false>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+          }
         }
 
         delete ptavgs1;
@@ -533,6 +559,8 @@ struct DptDptCorrelationsTask {
             const char* pname = trackPairsNames[i][j].c_str();
             fhN2_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
                                              deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+            fhN2cont_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12cont_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
+                                                 deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             fhSum2PtPt_vsDEtaDPhi[i][j] = new TH2F(TString::Format("sumPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma p_{t,1}p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma p_{t,1}p_{t,2} #GT (GeV^{2})", pname),
                                                    deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             fhSum2DptDpt_vsDEtaDPhi[i][j] = new TH2F(TString::Format("sumDptDpt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (GeV^{2})", pname),
@@ -557,6 +585,8 @@ struct DptDptCorrelationsTask {
             /* the statistical uncertainties will be estimated by the subsamples method so let's get rid of the error tracking */
             fhN2_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
             fhN2_vsDEtaDPhi[i][j]->Sumw2(false);
+            fhN2cont_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
+            fhN2cont_vsDEtaDPhi[i][j]->Sumw2(false);
             fhSum2PtPt_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
             fhSum2PtPt_vsDEtaDPhi[i][j]->Sumw2(false);
             fhSum2DptDpt_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
@@ -567,6 +597,7 @@ struct DptDptCorrelationsTask {
             fhSupPt1Pt1_vsDEtaDPhi[i][j]->Sumw2(false);
 
             fOutputList->Add(fhN2_vsDEtaDPhi[i][j]);
+            fOutputList->Add(fhN2cont_vsDEtaDPhi[i][j]);
             fOutputList->Add(fhSum2PtPt_vsDEtaDPhi[i][j]);
             fOutputList->Add(fhSum2DptDpt_vsDEtaDPhi[i][j]);
             fOutputList->Add(fhSupN1N1_vsDEtaDPhi[i][j]);
@@ -615,6 +646,7 @@ struct DptDptCorrelationsTask {
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
+  Configurable<bool> cfgPtOrder{"ptorder", false, "enforce pT_1 < pT_2. Defalut: false"};
   struct : ConfigurableGroup {
     Configurable<std::string> cfgCCDBUrl{"input_ccdburl", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
     Configurable<std::string> cfgCCDBPathName{"input_ccdbpath", "", "The CCDB path for the input file. Default \"\", i.e. don't load from CCDB"};
@@ -644,6 +676,7 @@ struct DptDptCorrelationsTask {
     phibinshift = cfgBinning->mPhibinshift;
     processpairs = cfgProcessPairs.value;
     processmixedevents = cfgProcessME.value;
+    ptorder = cfgPtOrder.value;
     loadfromccdb = cfginputfile.cfgCCDBPathName->length() > 0;
     /* update the potential binning change */
     etabinwidth = (etaup - etalow) / static_cast<float>(etabins);

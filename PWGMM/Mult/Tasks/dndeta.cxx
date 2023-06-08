@@ -335,7 +335,7 @@ struct MultiplicityCounter {
 
   expressions::Filter atrackFilter = (aod::track::bestCollisionId >= 0) &&
                                      (nabs(aod::track::bestDCAZ) <= 2.f) &&
-                                     (nabs(aod::track::bestDCAXY) <= ((0.0105f + 0.0350f / npow(aod::track::pts, 1.1f))));
+                                     (nabs(aod::track::bestDCAXY) <= ((0.004f + 0.013f / npow(aod::track::pts, 1.1f))));
 
   using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   using FiTracks = soa::Filtered<ExTracks>;

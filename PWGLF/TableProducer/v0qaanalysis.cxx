@@ -17,67 +17,18 @@
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/v0qaanalysis.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
-
-namespace o2::aod
-{
-
-namespace myv0candidates
-{
-
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(V0Pt, v0pt, float);
-DECLARE_SOA_COLUMN(RapLambda, raplambda, float);
-DECLARE_SOA_COLUMN(RapK0Short, rapk0short, float);
-DECLARE_SOA_COLUMN(MassLambda, masslambda, float);
-DECLARE_SOA_COLUMN(MassAntiLambda, massantilambda, float);
-DECLARE_SOA_COLUMN(MassK0Short, massk0short, float);
-DECLARE_SOA_COLUMN(V0Radius, v0radius, float);
-DECLARE_SOA_COLUMN(V0CosPA, v0cospa, float);
-DECLARE_SOA_COLUMN(V0DCAPosToPV, v0dcapostopv, float);
-DECLARE_SOA_COLUMN(V0DCANegToPV, v0dcanegtopv, float);
-DECLARE_SOA_COLUMN(V0DCAV0Daughters, v0dcav0daughters, float);
-DECLARE_SOA_COLUMN(V0PosEta, v0poseta, float);
-DECLARE_SOA_COLUMN(V0NegEta, v0negeta, float);
-DECLARE_SOA_COLUMN(V0PosPhi, v0posphi, float);
-DECLARE_SOA_COLUMN(V0NegPhi, v0negphi, float);
-DECLARE_SOA_COLUMN(V0PosITSHits, v0positshits, float);
-DECLARE_SOA_COLUMN(V0NegITSHits, v0negitshits, float);
-DECLARE_SOA_COLUMN(CtauLambda, ctaulambda, float);
-DECLARE_SOA_COLUMN(CtauAntiLambda, ctauantilambda, float);
-DECLARE_SOA_COLUMN(CtauK0Short, ctauk0short, float);
-DECLARE_SOA_COLUMN(NTPCSigmaNegPr, ntpcsigmanegpr, float);
-DECLARE_SOA_COLUMN(NTPCSigmaPosPr, ntpcsigmapospr, float);
-DECLARE_SOA_COLUMN(NTPCSigmaNegPi, ntpcsigmanegpi, float);
-DECLARE_SOA_COLUMN(NTPCSigmaPosPi, ntpcsigmapospi, float);
-DECLARE_SOA_COLUMN(NTOFSigmaNegPr, ntofsigmanegpr, float);
-DECLARE_SOA_COLUMN(NTOFSigmaPosPr, ntofsigmapospr, float);
-DECLARE_SOA_COLUMN(NTOFSigmaNegPi, ntofsigmanegpi, float);
-DECLARE_SOA_COLUMN(NTOFSigmaPosPi, ntofsigmapospi, float);
-DECLARE_SOA_COLUMN(PosHasTOF, poshastof, float);
-DECLARE_SOA_COLUMN(NegHasTOF, neghastof, float);
-
-} // namespace myv0candidates
-
-DECLARE_SOA_TABLE(MyV0Candidates, "AOD", "MYV0CANDIDATES", o2::soa::Index<>,
-                  myv0candidates::CollisionId, myv0candidates::V0Pt, myv0candidates::RapLambda, myv0candidates::RapK0Short,
-                  myv0candidates::MassLambda, myv0candidates::MassAntiLambda, myv0candidates::MassK0Short,
-                  myv0candidates::V0Radius, myv0candidates::V0CosPA, myv0candidates::V0DCAPosToPV,
-                  myv0candidates::V0DCANegToPV, myv0candidates::V0DCAV0Daughters,
-                  myv0candidates::V0PosEta, myv0candidates::V0NegEta, myv0candidates::V0PosPhi, myv0candidates::V0NegPhi,
-                  myv0candidates::V0PosITSHits, myv0candidates::V0NegITSHits, myv0candidates::CtauLambda, myv0candidates::CtauAntiLambda, myv0candidates::CtauK0Short,
-                  myv0candidates::NTPCSigmaNegPr, myv0candidates::NTPCSigmaPosPr, myv0candidates::NTPCSigmaNegPi, myv0candidates::NTPCSigmaPosPi,
-                  myv0candidates::NTOFSigmaNegPr, myv0candidates::NTOFSigmaPosPr, myv0candidates::NTOFSigmaNegPi, myv0candidates::NTOFSigmaPosPi,
-                  myv0candidates::PosHasTOF, myv0candidates::NegHasTOF);
-
-} // namespace o2::aod
+using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
+using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
 
 struct v0qaanalysis {
 
@@ -89,6 +40,14 @@ struct v0qaanalysis {
   void init(InitContext const&)
   {
     registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{1, 0.f, 1.f}}});
+    registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
+    registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
+    if (isMC) {
+      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1I, {{1, 0.f, 1.f}}});
+      registry.add("GeneratedK0Short", "GeneratedK0Short", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+      registry.add("GeneratedLambda", "GeneratedLambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+      registry.add("GeneratedAntiLambda", "GeneratedAntiLambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+    }
   }
 
   // Event selection criteria
@@ -103,11 +62,13 @@ struct v0qaanalysis {
   Configurable<float> v0radius{"v0radius", 0.5, "Radius"};
   Configurable<float> rapidity{"rapidity", 0.5, "Rapidity"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
+  Configurable<bool> isMC{"isMC", 0, "Is MC"};
 
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&&
                                                          nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::V0Datas> const& V0s, DauTracks const& tracks)
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
+                   soa::Filtered<aod::V0Datas> const& V0s, DauTracks const& tracks)
   {
     // Event selection
     if (sel8 && !collision.sel8()) {
@@ -118,6 +79,8 @@ struct v0qaanalysis {
     }
 
     registry.fill(HIST("hNEvents"), 0.5);
+    registry.fill(HIST("hCentFT0M"), collision.centFT0M());
+    registry.fill(HIST("hCentFV0A"), collision.centFV0A());
 
     for (auto& v0 : V0s) { // loop over V0s
 
@@ -134,6 +97,9 @@ struct v0qaanalysis {
           negITSNhits++;
         }
       }
+
+      int lPDG = 0;
+      bool isPhysicalPrimary = isMC;
 
       if (v0.v0radius() > v0radius &&
           v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
@@ -152,10 +118,93 @@ struct v0qaanalysis {
               v0.negTrack_as<DauTracks>().tpcNSigmaPi(), v0.posTrack_as<DauTracks>().tpcNSigmaPi(),
               v0.negTrack_as<DauTracks>().tofNSigmaPr(), v0.posTrack_as<DauTracks>().tofNSigmaPr(),
               v0.negTrack_as<DauTracks>().tofNSigmaPi(), v0.posTrack_as<DauTracks>().tofNSigmaPi(),
-              v0.posTrack_as<DauTracks>().hasTOF(), v0.negTrack_as<DauTracks>().hasTOF());
+              v0.posTrack_as<DauTracks>().hasTOF(), v0.negTrack_as<DauTracks>().hasTOF(), lPDG, isPhysicalPrimary,
+              collision.centFT0M(), collision.centFV0A());
       }
     }
   }
+  PROCESS_SWITCH(v0qaanalysis, processData, "Process data", true);
+
+  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+                 soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
+                 aod::McParticles const& mcParticles, DauTracksMC const& tracks)
+  {
+
+    // Event selection
+    if (sel8 && !collision.sel8()) {
+      return;
+    }
+    if (TMath::Abs(collision.posZ()) > cutzvertex) {
+      return;
+    }
+
+    registry.fill(HIST("hNEventsMC"), 0.5);
+
+    for (auto& v0 : V0s) { // loop over V0s
+
+      if (!v0.has_mcParticle()) {
+        continue;
+      }
+      auto v0mcparticle = v0.mcParticle();
+      int lPDG = 0;
+      bool isprimary = false;
+      if (TMath::Abs(v0mcparticle.pdgCode()) == 310 || TMath::Abs(v0mcparticle.pdgCode()) == 3122) {
+        lPDG = v0mcparticle.pdgCode();
+        isprimary = v0mcparticle.isPhysicalPrimary();
+      }
+
+      int posITSNhits = 0, negITSNhits = 0;
+      for (unsigned int i = 0; i < 7; i++) {
+        if (v0.posTrack_as<DauTracksMC>().itsClusterMap() & (1 << i)) {
+          posITSNhits++;
+        }
+        if (v0.negTrack_as<DauTracksMC>().itsClusterMap() & (1 << i)) {
+          negITSNhits++;
+        }
+      }
+
+      float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(3122);
+      float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(-3122);
+      float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(310);
+
+      if (v0.v0radius() > v0radius &&
+          v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+          TMath::Abs(v0.posTrack_as<DauTracksMC>().eta()) < etadau &&
+          TMath::Abs(v0.negTrack_as<DauTracksMC>().eta()) < etadau // &&
+      ) {
+
+        float cent = 0.;
+
+        // Fill table
+        myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
+              v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
+              v0.v0radius(), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+              v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
+              v0.posTrack_as<DauTracksMC>().eta(), v0.negTrack_as<DauTracksMC>().eta(),
+              v0.posTrack_as<DauTracksMC>().phi(), v0.negTrack_as<DauTracksMC>().phi(),
+              posITSNhits, negITSNhits, ctauLambda, ctauAntiLambda, ctauK0s,
+              v0.negTrack_as<DauTracksMC>().tpcNSigmaPr(), v0.posTrack_as<DauTracksMC>().tpcNSigmaPr(),
+              v0.negTrack_as<DauTracksMC>().tpcNSigmaPi(), v0.posTrack_as<DauTracksMC>().tpcNSigmaPi(),
+              v0.negTrack_as<DauTracksMC>().tofNSigmaPr(), v0.posTrack_as<DauTracksMC>().tofNSigmaPr(),
+              v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
+              v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isprimary,
+              cent, cent);
+      }
+    }
+
+    for (auto& mcparticle : mcParticles) {
+
+      if (mcparticle.isPhysicalPrimary() && TMath::Abs(mcparticle.y()) < rapidity) {
+        if (mcparticle.pdgCode() == 310)
+          registry.fill(HIST("GeneratedK0Short"), mcparticle.pt()); // K0s
+        if (mcparticle.pdgCode() == 3122)
+          registry.fill(HIST("GeneratedLambda"), mcparticle.pt()); // Lambda
+        if (mcparticle.pdgCode() == -3122)
+          registry.fill(HIST("GeneratedAntiLambda"), mcparticle.pt()); // AntiLambda
+      }
+    }
+  }
+  PROCESS_SWITCH(v0qaanalysis, processMC, "Process MC", true);
 };
 
 struct myV0s {
