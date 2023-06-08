@@ -323,7 +323,7 @@ struct cascqaanalysis {
     ParticlesEtaAndCharge.resize(nParticles);
 
     auto etaChargeConditionFunc = [](EtaCharge elem) {
-      return ((TMath::Abs(elem.eta) < 1.0) && (TMath::Abs(elem.charge) < 0.001));
+      return ((TMath::Abs(elem.eta) < 1.0) && (TMath::Abs(elem.charge) > 0.001));
     };
 
     if (std::any_of(ParticlesEtaAndCharge.begin(), ParticlesEtaAndCharge.end(), etaChargeConditionFunc)) {
