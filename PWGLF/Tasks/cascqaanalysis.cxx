@@ -183,10 +183,10 @@ struct cascqaanalysis {
   Configurable<float> cascradius{"cascradius", 0.0, "Casc Radius"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
 
-  Configurable<float> maxDCANsigmaScaling{"DCANsigmaScaling", 1.0f, "N of 7*sigma scaling factor for DCA to select primaries"};
+  Configurable<float> maxDCANsigmaScaling{"maxDCANsigmaScaling", 1.0f, "N of 7*sigma scaling factor for DCA to select primaries"};
   Configurable<float> DCASigma{"DCASigma", 0.004f, "7*sigma for DCA"};
   Configurable<float> DCAPtScaling{"DCAPtScaling", 0.013f, "pt scaling for DCA"};
-  Configurable<float> maxDCAz{"DCAz", 0.5f, "DCA z cut to select primaries"};
+  Configurable<float> maxDCAz{"maxDCAz", 0.5f, "DCA z cut to select primaries"};
 
   TRandom* fRand = new TRandom();
 
