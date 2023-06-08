@@ -265,7 +265,7 @@ struct cascqaanalysis {
     int nTracks = 0;
     int nRejTracks = 0;
     for (const auto& track : tracks) {
-      if (TMath::Abs(track.dcaXY()) > (maxDCANsigmaScaling * DCASigma + DCAPtScaling / track.pt()) || TMath::Abs(track.dcaZ()) > maxDCAz) {
+      if (TMath::Abs(track.dcaXY()) > (maxDCANsigmaScaling * (DCASigma + DCAPtScaling / track.pt())) || TMath::Abs(track.dcaZ()) > maxDCAz) {
         nRejTracks++;
         continue; // consider only primaries
       }
