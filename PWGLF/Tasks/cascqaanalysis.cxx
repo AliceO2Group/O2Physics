@@ -92,8 +92,8 @@ DECLARE_SOA_COLUMN(BachHasTOF, bachhastof, float);
 DECLARE_SOA_COLUMN(PosPt, pospt, float);
 DECLARE_SOA_COLUMN(NegPt, negpt, float);
 DECLARE_SOA_COLUMN(BachPt, bachpt, float);
-DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, float); //! -1 unknown
-DECLARE_SOA_COLUMN(IsPrimary, isPrimary, float); //! -1 unknown, 0 not primary, 1 primary
+DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, float);                     //! -1 unknown
+DECLARE_SOA_COLUMN(IsPrimary, isPrimary, float);                     //! -1 unknown, 0 not primary, 1 primary
 DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
 DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
 
@@ -110,7 +110,7 @@ DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
                   mycascades::NTOFSigmaPosPi, mycascades::NTOFSigmaBachPi, mycascades::NTOFSigmaBachKa,
                   mycascades::PosNTPCClusters, mycascades::NegNTPCClusters, mycascades::BachNTPCClusters,
                   mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF,
-                  mycascades::PosPt, mycascades::NegPt, mycascades::BachPt, 
+                  mycascades::PosPt, mycascades::NegPt, mycascades::BachPt,
                   mycascades::McPdgCode, mycascades::IsPrimary,
                   cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV);
 
@@ -213,12 +213,13 @@ struct cascqaanalysis {
   }
 
   template <typename TTracks>
-  bool isINELgt0(TTracks tracks){
+  bool isINELgt0(TTracks tracks)
+  {
     // INEL > 0 (at least 1 charged track in |eta| < 1.0)
     // TO DO: check for primary via DCA
     std::vector<float> TracksEta(tracks.size());
     int nTracks = 0;
-    for(const auto& track : tracks){
+    for (const auto& track : tracks) {
       TracksEta[nTracks++] = track.eta();
     }
 
@@ -226,39 +227,41 @@ struct cascqaanalysis {
       return TMath::Abs(elem) < 1.0;
     };
 
-    if(std::any_of(TracksEta.begin(), TracksEta.end(), etaConditionFunc)){
+    if (std::any_of(TracksEta.begin(), TracksEta.end(), etaConditionFunc)) {
       return true;
-    }
-    else{
+    } else {
       return false;
     }
   }
 
   template <typename TMcParticles>
-  bool isINELgt0mc(TMcParticles particles){
+  bool isINELgt0mc(TMcParticles particles)
+  {
     // INEL > 0 (at least 1 charged particle in |eta| < 1.0)
-    typedef struct EtaCharge { double eta; short charge; } EtaCharge;
+    typedef struct EtaCharge {
+      double eta;
+      short charge;
+    } EtaCharge;
     EtaCharge etaCharge;
     std::vector<EtaCharge> ParticlesEtaAndCharge(particles.size());
     unsigned int nParticles = 0;
-    for(const auto& particle : particles){
+    for (const auto& particle : particles) {
       if (particle.isPhysicalPrimary() == 0)
-        continue; // consider only primaries
+        continue;           // consider only primaries
       etaCharge = {999, 0}; // refresh init. for safety
       TParticlePDG* p = TDatabasePDG::Instance()->GetParticle(particle.pdgCode());
-      if(!p){
-        switch(std::to_string(particle.pdgCode()).length()){
+      if (!p) {
+        switch (std::to_string(particle.pdgCode()).length()) {
           case 10: // nuclei
-            {
-              etaCharge = {particle.eta(), static_cast<short>(particle.pdgCode()/10000%1000)};
-              ParticlesEtaAndCharge[nParticles++] = etaCharge;
-              break;
-            }
+          {
+            etaCharge = {particle.eta(), static_cast<short>(particle.pdgCode() / 10000 % 1000)};
+            ParticlesEtaAndCharge[nParticles++] = etaCharge;
+            break;
+          }
           default:
             break;
         }
-      }
-      else{
+      } else {
         etaCharge = {particle.eta(), static_cast<short>(p->Charge())};
         ParticlesEtaAndCharge[nParticles++] = etaCharge;
       }
@@ -270,34 +273,40 @@ struct cascqaanalysis {
       return ((TMath::Abs(elem.eta) < 1.0) && (TMath::Abs(elem.charge) < 0.001));
     };
 
-    if(std::any_of(ParticlesEtaAndCharge.begin(), ParticlesEtaAndCharge.end(), etaChargeConditionFunc)){
+    if (std::any_of(ParticlesEtaAndCharge.begin(), ParticlesEtaAndCharge.end(), etaChargeConditionFunc)) {
       return true;
-    }
-    else{
+    } else {
       return false;
     }
   }
 
-
   template <typename TCollision, typename TTracks>
   bool AcceptEvent(TCollision const& collision, TTracks const& tracks, bool isFillEventSelectionQA)
   {
-    if(isFillEventSelectionQA){registry.fill(HIST("hNEvents"), 0.5);}
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 0.5);
+    }
     // Event selection if required
     if (sel8 && !collision.sel8()) {
       return false;
     }
-    if(isFillEventSelectionQA){registry.fill(HIST("hNEvents"), 1.5);}
-    
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 1.5);
+    }
+
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
       return false;
     }
-    if(isFillEventSelectionQA){registry.fill(HIST("hNEvents"), 2.5);}
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 2.5);
+    }
 
-    if(INELgt0 && !isINELgt0(tracks)){
+    if (INELgt0 && !isINELgt0(tracks)) {
       return false;
     }
-    if(isFillEventSelectionQA){registry.fill(HIST("hNEvents"), 3.5);}
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 3.5);
+    }
 
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hZCollision"), collision.posZ());
@@ -467,13 +476,13 @@ struct cascqaanalysis {
     registry.fill(HIST("hNEventsMC"), 0.5);
 
     // Generated with accepted z vertex
-    if(TMath::Abs(mcCollision.posZ()) > cutzvertex){
+    if (TMath::Abs(mcCollision.posZ()) > cutzvertex) {
       return;
     }
     registry.fill(HIST("hNEventsMC"), 1.5);
 
     // Generated collision is INEL>=0
-    if(INELgt0 && !isINELgt0mc(mcParticles)){
+    if (INELgt0 && !isINELgt0mc(mcParticles)) {
       return;
     }
     registry.fill(HIST("hNEventsMC"), 2.5);
