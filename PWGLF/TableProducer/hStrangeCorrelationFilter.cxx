@@ -46,8 +46,13 @@ struct hstrangecorrelationfilter {
   // Associated particle selections in phase space
   Configurable<float> assocEtaMin{"assocEtaCutMin", -0.8, "triggeretamin"};
   Configurable<float> assocEtaMax{"assocEtaCutMax", 0.8, "triggeretamax"};
-  Configurable<float> assocPtCutMin{"assocPtCutMin", 0, "assocptmin"};
-  Configurable<float> assocPtCutMax{"assocPtCutMax", 5, "assocptmax"};
+  Configurable<float> assocPtCutMin{"assocPtCutMin", 0.2, "assocptmin"};
+  Configurable<float> assocPtCutMax{"assocPtCutMax", 10, "assocptmax"};
+
+  // Associated pion identification
+  Configurable<float> pionMinBayesProb{"pionMinBayesProb", 0.95, "minimal Bayesian probablity for pion ID"};
+  Configurable<float> assocPionNSigmaTPCFOF{"assocPionNSigmaTPCFOF", 3, "minimal n sigma in TOF and TPC for Pion ID"};
+  Configurable<float> rejectSigma{"rejectSigma", 1, "n sigma for rejecting pion candidates"};
 
   // V0 selections
   Configurable<double> v0Cospa{"v0cospa", 0.97, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -101,8 +106,11 @@ struct hstrangecorrelationfilter {
     "registry",
     {}};
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+  // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
+  using IDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal>;
 
   Produces<aod::TriggerTracks> triggerTrack;
+  Produces<aod::AssocPions> assocPion;
   Produces<aod::AssocV0s> assocV0;
   Produces<aod::AssocCascades> assocCascades;
 
@@ -164,6 +172,71 @@ struct hstrangecorrelationfilter {
         continue; // skip, doesn't have ITS signal (skips lots of TPC-only!)
       }
       triggerTrack(
+        track.collisionId(),
+        track.globalIndex());
+    }
+  }
+  void processAssocPions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, IDTracks const& tracks)
+  {
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (TMath::Abs(collision.posZ()) > 10.0) {
+      return;
+    }
+
+    /// _________________________________________________
+    /// Step 1: Populate table with trigger tracks
+    for (auto const& track : tracks) {
+      if (track.eta() > assocEtaMax || track.eta() < assocEtaMin) {
+        continue;
+      }
+      // if (track.sign()= 1 ) {continue;}
+      if (track.pt() > assocPtCutMax || track.pt() < assocPtCutMin) {
+        continue;
+      }
+      if (track.tpcNClsCrossedRows() < minTPCNCrossedRows) {
+        continue; // crossed rows
+      }
+      if (!track.hasITS() && triggerRequireITS) {
+        continue; // skip, doesn't have ITS signal (skips lots of TPC-only!)
+      }
+      // prepared for Bayesian PID
+      //  if (!track.bayesPi() > pionMinBayesProb) {
+      //    continue;
+      //  }
+      //  if (track.bayesPi() < track.bayesPr() || track.bayesPi() < track.bayesKa()){
+      //    continue;
+      //  }
+      //  if (track.tpcNSigmaPi() < assocPionNSigmaTPCFOF){
+      //    continue;
+      //  }
+      //  if (track.tofSignal() > 0 && track.tofNSigmaPi() < assocPionNSigmaTPCFOF){
+      //    continue;
+      //  }
+      if (track.tofSignal() > 0) {
+        if (std::sqrt(track.tofNSigmaPi() * track.tofNSigmaPi() + track.tpcNSigmaPi() * track.tpcNSigmaPi()) > assocPionNSigmaTPCFOF)
+          continue;
+        if (track.tofNSigmaPr() < rejectSigma)
+          continue;
+        if (track.tpcNSigmaPr() < rejectSigma)
+          continue;
+        if (track.tofNSigmaKa() < rejectSigma)
+          continue;
+        if (track.tpcNSigmaKa() < rejectSigma)
+          continue;
+      } else {
+        if (track.tpcNSigmaPi() > assocPionNSigmaTPCFOF)
+          continue;
+        if (track.tpcNSigmaPr() < rejectSigma)
+          continue;
+        if (track.tpcNSigmaKa() < rejectSigma)
+          continue;
+      }
+
+      assocPion(
         track.collisionId(),
         track.globalIndex());
     }
@@ -349,6 +422,7 @@ struct hstrangecorrelationfilter {
 
   PROCESS_SWITCH(hstrangecorrelationfilter, processTriggers, "Produce trigger tables", true);
   PROCESS_SWITCH(hstrangecorrelationfilter, processV0s, "Produce associated V0 tables", true);
+  PROCESS_SWITCH(hstrangecorrelationfilter, processAssocPions, "Produce associated Pion tables", true);
   PROCESS_SWITCH(hstrangecorrelationfilter, processCascades, "Produce associated cascade tables", true);
 };
 
