@@ -106,7 +106,7 @@ DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
                   mycascades::NTOFSigmaPosPi, mycascades::NTOFSigmaBachPi, mycascades::NTOFSigmaBachKa,
                   mycascades::PosNTPCClusters, mycascades::NegNTPCClusters, mycascades::BachNTPCClusters,
                   mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF,
-                  mycascades::PosPt, mycascades::NegPt, mycascades::BachPt, 
+                  mycascades::PosPt, mycascades::NegPt, mycascades::BachPt,
                   mycascades::McPdgCode, mycascades::IsPrimary,
                   cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV);
 
@@ -205,7 +205,7 @@ struct cascpostprocessing {
     registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(22, rejcomp);
     if (hastof)
       registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(23, ptthrtof);
-    if (isSelectBachBaryon){
+    if (isSelectBachBaryon) {
       registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(24, bachBaryonCosPA);
       registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(25, bachBaryonDCAxyToPV);
     }
@@ -411,7 +411,7 @@ struct cascpostprocessing {
         ctau = candidate.ctauomega();
         invmass = candidate.massomega();
       }
-      if(isSelectBachBaryon && (candidate.bachBaryonCosPA() > bachBaryonCosPA || fabs(candidate.bachBaryonDCAxyToPV()) < bachBaryonDCAxyToPV)){ // Bach-baryon selection if required
+      if (isSelectBachBaryon && (candidate.bachBaryonCosPA() > bachBaryonCosPA || fabs(candidate.bachBaryonDCAxyToPV()) < bachBaryonDCAxyToPV)) { // Bach-baryon selection if required
         continue;
       }
       registry.fill(HIST("hCandidate"), ++counter);
