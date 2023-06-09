@@ -16,7 +16,7 @@
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
 #include "CCDB/BasicCCDBManager.h" // for dca recalculation
-#include "Common/DataModel/CollisionAssociation.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "DataFormatsParameters/GRPMagField.h" // for dca recalculation

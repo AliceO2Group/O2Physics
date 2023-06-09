@@ -14,7 +14,8 @@
 /// \author Sarah Herrmann <sarah.herrmann@cern.ch>, IP2I Lyon
 /// \author Maurice Coquet <maurice.louis.coquet@cern.ch>, CEA-Saclay/Irfu
 
-#include "Common/DataModel/CollisionAssociation.h"
+#include "Common/Core/CollisionAssociation.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Framework/AnalysisDataModel.h"
@@ -37,11 +38,19 @@ struct FwdTrackToCollisionAssociation {
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
   Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
 
+  track_association::CollisionAssociation<false> collisionAssociator;
+
   Preslice<FwdTracks> muonsPerCollisions = aod::fwdtrack::collisionId;
   Preslice<MFTTracks> mftsPerCollisions = aod::fwdtrack::collisionId;
 
   void init(InitContext const&)
   {
+    collisionAssociator.setNumSigmaForTimeCompat(nSigmaForTimeCompat);
+    collisionAssociator.setTimeMargin(timeMargin);
+    collisionAssociator.setTrackSelectionOptionForStdAssoc(track_association::TrackSelection::None);
+    collisionAssociator.setUsePvAssociation(false);
+    collisionAssociator.setIncludeUnassigned(includeUnassigned);
+    collisionAssociator.setFillTableOfCollIdsPerTrack(fillTableOfCollIdsPerTrack);
   }
 
   void processFwdAssocWithTime(Collisions const& collisions,
@@ -49,14 +58,14 @@ struct FwdTrackToCollisionAssociation {
                                AmbiguousFwdTracks const& ambiTracksFwd,
                                BCs const& bcs)
   {
-    runAssocWithTime<false>(collisions, muons, muons, ambiTracksFwd, bcs, fwdassociation, fwdreverseIndices, nSigmaForTimeCompat, timeMargin, 0, includeUnassigned, fillTableOfCollIdsPerTrack);
+    collisionAssociator.runAssocWithTime(collisions, muons, muons, ambiTracksFwd, bcs, fwdassociation, fwdreverseIndices);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processFwdAssocWithTime, "Use fwdtrack-to-collision association based on time", true);
 
   void processFwdStandardAssoc(Collisions const& collisions,
                                FwdTracks const& muons)
   {
-    runStandardAssoc<false>(collisions, muons, muonsPerCollisions, fwdassociation, fwdreverseIndices, 0, fillTableOfCollIdsPerTrack);
+    collisionAssociator.runStandardAssoc(collisions, muons, muonsPerCollisions, fwdassociation, fwdreverseIndices);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processFwdStandardAssoc, "Use standard fwdtrack-to-collision association", false);
 
@@ -65,14 +74,14 @@ struct FwdTrackToCollisionAssociation {
                                AmbiguousMFTTracks const& ambiguousTracks,
                                BCs const& bcs)
   {
-    runAssocWithTime<false>(collisions, tracks, tracks, ambiguousTracks, bcs, mftassociation, mftreverseIndices, nSigmaForTimeCompat, timeMargin, 0, includeUnassigned, fillTableOfCollIdsPerTrack);
+    collisionAssociator.runAssocWithTime(collisions, tracks, tracks, ambiguousTracks, bcs, mftassociation, mftreverseIndices);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processMFTAssocWithTime, "Use MFTtrack-to-collision association based on time", true);
 
   void processMFTStandardAssoc(Collisions const& collisions,
                                MFTTracks const& tracks)
   {
-    runStandardAssoc<false>(collisions, tracks, mftsPerCollisions, mftassociation, mftreverseIndices, 0, fillTableOfCollIdsPerTrack);
+    collisionAssociator.runStandardAssoc(collisions, tracks, mftsPerCollisions, mftassociation, mftreverseIndices);
   }
   PROCESS_SWITCH(FwdTrackToCollisionAssociation, processMFTStandardAssoc, "Use standard mfttrack-to-collision association", false);
 };

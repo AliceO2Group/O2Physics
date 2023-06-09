@@ -15,7 +15,8 @@
 /// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova
 
-#include "Common/DataModel/CollisionAssociation.h"
+#include "Common/Core/CollisionAssociation.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -27,6 +28,7 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 
 struct TrackToCollisionAssociation {
+
   Produces<TrackAssoc> association;
   Produces<TrackCompColls> reverseIndices;
 
@@ -37,9 +39,11 @@ struct TrackToCollisionAssociation {
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
   Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
 
-  Filter trackFilter = (setTrackSelections.node() == track_association::None) ||                                                    // no track selections
-                       ((setTrackSelections.node() == track_association::GlobalTrackWoDCA) && requireGlobalTrackWoDCAInFilter()) || // global track selections w/o dca
-                       ((setTrackSelections.node() == track_association::QualityTracksITS) && requireQualityTracksITSInFilter());   // ITS-quality selections only
+  track_association::CollisionAssociation<true> collisionAssociator;
+
+  Filter trackFilter = (setTrackSelections.node() == 0) ||                                        // no track selections
+                       ((setTrackSelections.node() == 1) && requireGlobalTrackWoDCAInFilter()) || // global track selections w/o dca
+                       ((setTrackSelections.node() == 2) && requireQualityTracksITSInFilter());   // ITS-quality selections only
   using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   using TracksWithSelFilter = soa::Filtered<TracksWithSel>;
   Preslice<TracksWithSel> tracksPerCollisions = aod::track::collisionId;
@@ -49,17 +53,25 @@ struct TrackToCollisionAssociation {
     if (doprocessAssocWithTime == doprocessStandardAssoc) {
       LOGP(fatal, "Exactly one process function should be enabled!");
     }
+
+    // set options in collisionAssociator
+    collisionAssociator.setNumSigmaForTimeCompat(nSigmaForTimeCompat);
+    collisionAssociator.setTimeMargin(timeMargin);
+    collisionAssociator.setTrackSelectionOptionForStdAssoc(setTrackSelections);
+    collisionAssociator.setUsePvAssociation(usePVAssociation);
+    collisionAssociator.setIncludeUnassigned(includeUnassigned);
+    collisionAssociator.setFillTableOfCollIdsPerTrack(fillTableOfCollIdsPerTrack);
   }
 
   void processAssocWithTime(Collisions const& collisions, TracksWithSel const& tracksUnfiltered, TracksWithSelFilter const& tracks, AmbiguousTracks const& ambiguousTracks, BCs const& bcs)
   {
-    runAssocWithTime<true>(collisions, tracksUnfiltered, tracks, ambiguousTracks, bcs, association, reverseIndices, nSigmaForTimeCompat, timeMargin, usePVAssociation, includeUnassigned, fillTableOfCollIdsPerTrack);
+    collisionAssociator.runAssocWithTime(collisions, tracksUnfiltered, tracks, ambiguousTracks, bcs, association, reverseIndices);
   }
   PROCESS_SWITCH(TrackToCollisionAssociation, processAssocWithTime, "Use track-to-collision association based on time", false);
 
   void processStandardAssoc(Collisions const& collisions, TracksWithSel const& tracksUnfiltered)
   {
-    runStandardAssoc<true>(collisions, tracksUnfiltered, tracksPerCollisions, association, reverseIndices, setTrackSelections, fillTableOfCollIdsPerTrack);
+    collisionAssociator.runStandardAssoc(collisions, tracksUnfiltered, tracksPerCollisions, association, reverseIndices);
   }
   PROCESS_SWITCH(TrackToCollisionAssociation, processStandardAssoc, "Use standard track-to-collision association", true);
 };

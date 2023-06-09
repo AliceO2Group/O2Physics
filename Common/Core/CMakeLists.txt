@@ -17,7 +17,8 @@ o2physics_add_library(AnalysisCore
                PUBLIC_LINK_LIBRARIES O2::Framework ROOT::EG O2::CCDB ROOT::Physics)
 
 o2physics_target_root_dictionary(AnalysisCore
-              HEADERS   TrackSelection.h
+              HEADERS   CollisionAssociation.h
+                        TrackSelection.h
                         TrackSelectionDefaults.h
                         OrbitRange.h
                         PID/ParamBase.h
