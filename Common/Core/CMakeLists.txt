@@ -10,7 +10,8 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_library(AnalysisCore
-               SOURCES TrackSelection.cxx
+               SOURCES CollisionAssociation.cxx
+                       TrackSelection.cxx
                        OrbitRange.cxx
                        PID/ParamBase.cxx
                        TrackSelectionDefaults.cxx
