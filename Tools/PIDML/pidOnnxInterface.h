@@ -20,6 +20,7 @@
 #include <string>
 #include <array>
 #include <set>
+#include <vector>
 
 #include "Framework/Array2D.h"
 #include "Tools/PIDML/pidOnnxModel.h"
