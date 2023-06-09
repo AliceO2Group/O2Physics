@@ -14,8 +14,8 @@
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
 
-#ifndef O2_ANALYSIS_PIDONNXMODEL_H_
-#define O2_ANALYSIS_PIDONNXMODEL_H_
+#ifndef TOOLS_PIDML_PIDONNXMODEL_H_
+#define TOOLS_PIDML_PIDONNXMODEL_H_
 
 #include "CCDB/CcdbApi.h"
 
@@ -267,4 +267,4 @@ struct PidONNXModel {
   std::vector<std::vector<int64_t>> mOutputShapes;
 };
 
-#endif // O2_ANALYSIS_PIDONNXMODEL_H_
+#endif // TOOLS_PIDML_PIDONNXMODEL_H_

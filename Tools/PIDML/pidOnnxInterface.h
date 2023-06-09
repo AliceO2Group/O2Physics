@@ -14,8 +14,8 @@
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
 
-#ifndef O2_ANALYSIS_PIDONNXINTERFACE_H_
-#define O2_ANALYSIS_PIDONNXINTERFACE_H_
+#ifndef TOOLS_PIDML_PIDONNXINTERFACE_H_
+#define TOOLS_PIDML_PIDONNXINTERFACE_H_
 
 #include "Framework/Array2D.h"
 #include "Tools/PIDML/pidOnnxModel.h"
@@ -126,4 +126,4 @@ struct PidONNXInterface {
   std::size_t mNPids;
   LabeledArray<double> mPTLimits;
 };
-#endif // O2_ANALYSIS_PIDONNXINTERFACE_H_
+#endif // TOOLS_PIDML_PIDONNXINTERFACE_H_
