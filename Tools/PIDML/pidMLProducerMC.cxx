@@ -8,6 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file pidMLProducerMc.cxx
+/// \brief Produce PID ML skimmed data from MC files.
+///
+/// \author Maja Kabus <mkabus@cern.ch>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
