@@ -243,8 +243,8 @@ struct HfTaskSingleMuon {
     runMuonSelMc(collision, tracksMFT, muons, mc);
   }
 
-  PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuon, "run muon selection with real data", true);
-  PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuonMc, "run muon selection with MC data", false);
+  PROCESS_SWITCH(HfTaskSingleMuon, processMuon, "run muon selection with real data", true);
+  PROCESS_SWITCH(HfTaskSingleMuon, processMuonMc, "run muon selection with MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
