@@ -8,6 +8,15 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file pidML.h
+/// \brief Data model for PID ML training.
+///
+/// \author Maja Kabus <mkabus@cern.ch>
+
+#ifndef TOOLS_PIDML_PIDML_H_
+#define TOOLS_PIDML_PIDML_H_
+
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
 
@@ -191,3 +200,4 @@ DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for comparati
                   aod::mcparticle::PdgCode,
                   pidtracks::IsPhysicalPrimary);
 } // namespace o2::aod
+#endif // TOOLS_PIDML_PIDML_H_
