@@ -39,6 +39,7 @@ struct JetFinderHFTask {
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  Configurable<std::string> evSel{"evSel", "evSel8", "choose event selection"};
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
@@ -142,7 +143,7 @@ struct JetFinderHFTask {
   template <typename T, typename U, typename M>
   void analyseData(T const& collision, U const& tracks, M const& candidates)
   {
-    if (!selectCollision(collision)) {
+    if (!selectCollision(collision, evSel)) {
       return;
     }
 
@@ -160,7 +161,7 @@ struct JetFinderHFTask {
   template <typename T, typename U, typename M>
   void analyseMCD(T const& collision, U const& tracks, M const& candidates)
   {
-    if (!selectCollision(collision)) {
+    if (!selectCollision(collision, evSel)) {
       return;
     }
 
