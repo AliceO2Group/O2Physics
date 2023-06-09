@@ -278,13 +278,13 @@ struct HfCandidateSelectorToXiPi {
       }
 
       // cut on primary pion dcaXY and dcaZ
-      if ((candidate.impactParPrimaryPiXY() < impactParameterXYPriPiMin) || (candidate.impactParPrimaryPiXY() > impactParameterXYPriPiMax)) {
+      if ((std::abs(candidate.impactParPrimaryPiXY()) < impactParameterXYPriPiMin) || (std::abs(candidate.impactParPrimaryPiXY()) > impactParameterXYPriPiMax)) {
         resultSelections = false;
         hSelDCAXYPrimPi->Fill(0);
       } else {
         hSelDCAXYPrimPi->Fill(1);
       }
-      if ((candidate.impactParPrimaryPiZ() < impactParameterZPriPiMin) || (candidate.impactParPrimaryPiZ() > impactParameterZPriPiMax)) {
+      if ((std::abs(candidate.impactParPrimaryPiZ()) < impactParameterZPriPiMin) || (std::abs(candidate.impactParPrimaryPiZ()) > impactParameterZPriPiMax)) {
         resultSelections = false;
         hSelDCAZPrimPi->Fill(0);
       } else {
@@ -373,7 +373,7 @@ struct HfCandidateSelectorToXiPi {
         hSelNCrossRowsTPCPiFromCasc->Fill(1);
       }
 
-      // further TPC selectiion
+      // further TPC selection
       if (trackPiFromOmeg.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
         resultSelections = false;
         hSelCrossRowsOverFindClsTPCAllTracks->Fill(0);
