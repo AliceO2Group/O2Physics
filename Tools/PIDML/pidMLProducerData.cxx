@@ -23,8 +23,8 @@ using namespace o2::framework::expressions;
 #include "Framework/runDataProcessing.h"
 
 struct PidMlProducerData {
-  Produces<aod::PidTracksRealMl> pidTracksTableML;
-  Produces<aod::PidTracksReal> pidTracksTable;
+  Produces<aod::PidTracksDataMl> pidTracksTableML;
+  Produces<aod::PidTracksData> pidTracksTable;
 
   Filter trackFilter = requireGlobalTrackInFilter();
   using BigTracksML = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal>>;
