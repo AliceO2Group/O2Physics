@@ -243,7 +243,7 @@ struct HfCandidateSelectorToXiPi {
       } else {
         registry.fill(HIST("hSelRadV0"), 1);
       }
-      
+
       // cosPA (LFcut)
       if (candidate.cosPACasc() < cosPACascMin) {
         resultSelections = false;
