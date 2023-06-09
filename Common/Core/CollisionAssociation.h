@@ -158,8 +158,15 @@ class CollisionAssociation
         if (std::abs(bcOffset) > bOffsetMax) {
           continue;
         }
+
         float trackTime = track.trackTime();
         float trackTimeRes = track.trackTimeRes();
+        if constexpr (isCentralBarrel) {
+          if (mUsePvAssociation && track.isPVContributor()) {
+            trackTime = track.collision().collisionTime();    // if PV contributor, we assume the time to be the one of the collision
+            trackTimeRes = constants::lhc::LHCBunchSpacingNS; // 1 BC
+          }
+        }
 
         const float deltaTime = trackTime - collTime + bcOffset * constants::lhc::LHCBunchSpacingNS;
         float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
@@ -219,12 +226,12 @@ class CollisionAssociation
   }
 
  private:
-  float mNumSigmaForTimeCompat{4.};        // number of sigma for time compatibility
-  float mTimeMargin{500.};                 // additional time margin in ns
-  int mTrackSelection{GlobalTrackWoDCA};   // track selection for central barrel tracks (standard association only)
-  bool mUsePvAssociation{true};            // use the information of PV contributors
-  bool mIncludeUnassigned{true};           // include tracks that were originally not assigned to any collision
-  bool mFillTableOfCollIdsPerTrack{false}; // fill additional table with vectors of compatible collisions per track
+  float mNumSigmaForTimeCompat{4.};                      // number of sigma for time compatibility
+  float mTimeMargin{500.};                               // additional time margin in ns
+  int mTrackSelection{TrackSelection::GlobalTrackWoDCA}; // track selection for central barrel tracks (standard association only)
+  bool mUsePvAssociation{true};                          // use the information of PV contributors
+  bool mIncludeUnassigned{true};                         // include tracks that were originally not assigned to any collision
+  bool mFillTableOfCollIdsPerTrack{false};               // fill additional table with vectors of compatible collisions per track
 
   ClassDefNV(CollisionAssociation, 1);
 };

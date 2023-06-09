@@ -45,6 +45,11 @@ struct FwdTrackToCollisionAssociation {
 
   void init(InitContext const&)
   {
+    if (doprocessFwdAssocWithTime == doprocessFwdStandardAssoc || doprocessMFTAssocWithTime == doprocessMFTStandardAssoc) {
+      LOGP(fatal, "Exactly one process function between standard and time-based association should be enabled!");
+    }
+
+    // set options in track-to-collision association
     collisionAssociator.setNumSigmaForTimeCompat(nSigmaForTimeCompat);
     collisionAssociator.setTimeMargin(timeMargin);
     collisionAssociator.setTrackSelectionOptionForStdAssoc(track_association::TrackSelection::None);

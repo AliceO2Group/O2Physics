@@ -51,10 +51,10 @@ struct TrackToCollisionAssociation {
   void init(InitContext const&)
   {
     if (doprocessAssocWithTime == doprocessStandardAssoc) {
-      LOGP(fatal, "Exactly one process function should be enabled!");
+      LOGP(fatal, "Exactly one process function between standard and time-based association should be enabled!");
     }
 
-    // set options in collisionAssociator
+    // set options in track-to-collision association
     collisionAssociator.setNumSigmaForTimeCompat(nSigmaForTimeCompat);
     collisionAssociator.setTimeMargin(timeMargin);
     collisionAssociator.setTrackSelectionOptionForStdAssoc(setTrackSelections);
@@ -67,13 +67,13 @@ struct TrackToCollisionAssociation {
   {
     collisionAssociator.runAssocWithTime(collisions, tracksUnfiltered, tracks, ambiguousTracks, bcs, association, reverseIndices);
   }
-  PROCESS_SWITCH(TrackToCollisionAssociation, processAssocWithTime, "Use track-to-collision association based on time", false);
+  PROCESS_SWITCH(TrackToCollisionAssociation, processAssocWithTime, "Use track-to-collision association based on time", true);
 
   void processStandardAssoc(Collisions const& collisions, TracksWithSel const& tracksUnfiltered)
   {
     collisionAssociator.runStandardAssoc(collisions, tracksUnfiltered, tracksPerCollisions, association, reverseIndices);
   }
-  PROCESS_SWITCH(TrackToCollisionAssociation, processStandardAssoc, "Use standard track-to-collision association", true);
+  PROCESS_SWITCH(TrackToCollisionAssociation, processStandardAssoc, "Use standard track-to-collision association", false);
 };
 
 //________________________________________________________________________________________________________________________
