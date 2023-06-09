@@ -10,7 +10,7 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(pid-ml-producer-mc
-                           SOURCES pidMLProducerMc.cxx
+                           SOURCES pidMLProducerMC.cxx
                            JOB_POOL analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
