@@ -17,12 +17,12 @@
 #ifndef TOOLS_PIDML_PIDONNXINTERFACE_H_
 #define TOOLS_PIDML_PIDONNXINTERFACE_H_
 
-#include "Framework/Array2D.h"
-#include "Tools/PIDML/pidOnnxModel.h"
-
 #include <string>
 #include <array>
 #include <set>
+
+#include "Framework/Array2D.h"
+#include "Tools/PIDML/pidOnnxModel.h"
 
 namespace pidml_pt_cuts
 {

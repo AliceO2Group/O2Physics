@@ -17,12 +17,13 @@
 #ifndef TOOLS_PIDML_PIDONNXMODEL_H_
 #define TOOLS_PIDML_PIDONNXMODEL_H_
 
-#include "CCDB/CcdbApi.h"
+#include <string>
 
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
-#include <string>
+
+#include "CCDB/CcdbApi.h"
 
 enum PidMLDetector {
   kTPCOnly = 0,
