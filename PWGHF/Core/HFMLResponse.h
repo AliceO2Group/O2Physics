@@ -32,15 +32,24 @@
 namespace o2::analysis
 {
 
-template <uint8_t nModels = 1, typename T = float>
+template <typename T = float>
 class HFMLResponse
 {
   public:
+    /// Default constructor
     HFMLResponse() = default;
-    HFMLResponse(const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir) {
+    /// Constructor initializing cuts and cut directions
+    HFMLResponse(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir) {
+      mBinsLimits = binsLimits;
       mCuts = cuts;
       mCutDir = cutDir;
+ 
+      mNetworks = std::vector<o2::ml::OnnxModel>(mNModels);
+      mPaths = std::vector<std::string>(mNModels);
+      mNModels = binsLimits.size() - 1;
+      mNClasses = (cutDir.size() >= 3) ? cutDir.size() : 2;
     }
+    /// Default destructor
     virtual ~HFMLResponse() = default;
 
 
@@ -63,7 +72,10 @@ class HFMLResponse
       }
     }
 
-// TODO add cuts and bin configs in init method
+    /// Initialize OnnxModels
+    /// \param paths is a vector of onnx model paths
+    /// \param enableOptimizations is a switch no enable optimizations
+    /// \param threads
     void init(const std::vector<std::string>& paths, bool enableOptimizations, int threads = 0) {
       uint8_t counterModel{0};
       for (const auto& path : paths) {
@@ -73,25 +85,35 @@ class HFMLResponse
       }
     }
 
+    // Initialize OnnxModels when paths already defined
+    /// \param paths is a vector of onnx model paths
+    /// \param enableOptimizations is a switch no enable optimizations
+    /// \param threads
     void init(bool enableOptimizations, int threads = 0) {
       return init(mPaths, enableOptimizations, threads);
     }
 
-    /// Get array with model prediction
+    /// Get vector with model predictions
     /// \param input a vector containing the values of features used in BDT model
+    /// \param nModel is the model index
     /// \return model prediction for each class and each model
     template <typename T1, typename T2>
-    std::vector<T> getModelOutputValues(T1& input, const T2& nModel)
+    std::vector<T> getModelOutput(T1& input, const T2& nModel)
     {
-        T* outputValues = mNetworks[nModel].evalModel(input);
-        return (std::vector<T>)*outputValues;
+        T* outputPtr = mNetworks[nModel].evalModel(input);
+        std::vector<T> output(outputPtr, outputPtr + mNClasses);
+        return output;
     }
 
+    /// ML selections 
+    /// \param input is the input features
+    /// \param nModel is the model index
+    /// \return boolean telling if model predictions pass the cuts
     template <typename T1, typename T2>
     bool isSelectedML(T1& input, const T2& nModel) {
-      auto outputValues = getModelOutputValues(input, nModel);
+      auto output = getModelOutput(input, nModel);
       uint8_t iClass{0};
-      for (const auto& outputValue : outputValues) {
+      for (const auto& outputValue : output) {
         uint8_t dir = mCutDir.at(iClass);
         if (dir != hf_cuts_ml::CutDirection::CutNot) {
           if (dir == hf_cuts_ml::CutDirection::CutGreater && outputValue > mCuts.get(nModel, iClass)) {
@@ -106,11 +128,16 @@ class HFMLResponse
       return true;
     }
 
+    /// ML selections 
+    /// \param input is the input features
+    /// \param nModel is the model index
+    /// \param output is a container to be filled with model output
+    /// \return boolean telling if model predictions pass the cuts
     template <typename T1, typename T2>
-    bool isSelectedML(const T1& input, const T2& nModel, std::vector<T>& outputValues) {
-      outputValues = getModelOutputValues(input, nModel);
+    bool isSelectedML(T1& input, const T2& nModel, std::vector<T>& output) {
+      output = getModelOutput(input, nModel);
       uint8_t iClass{0};
-      for (const auto& outputValue : outputValues) {
+      for (const auto& outputValue : output) {
         uint8_t dir = mCutDir.at(iClass);
         if (dir != hf_cuts_ml::CutDirection::CutNot) {
           if (dir == hf_cuts_ml::CutDirection::CutGreater && outputValue > mCuts.get(nModel, iClass)) {
@@ -123,13 +150,46 @@ class HFMLResponse
         ++iClass;
       }
       return true;
+    }
+
+    /// Tag BDT predicted class
+    /// \param scores is a vector with BDT out scores
+    /// \return 0 if rejected, otherwise bitmap with BIT(RecoDecay::OriginType::Prompt) and/or BIT(RecoDecay::OriginType::NonPrompt) on
+    template <typename T1, typename T2>
+    uint8_t tagBDT(const T1& scores, const T2& nModel)
+    {
+      uint8_t tag{0};
+
+      if (mNClasses == 2) { // binary classification
+        if (scores[0] > mCuts.get(nModel, RecoDecay::OriginType::Prompt - 1)) {
+          SETBIT(tag, RecoDecay::OriginType::Prompt); // here Prompt stands for Signal
+        }
+      } else if (mNClasses == 3) { // 3-class classification
+        if (scores[0] > mCuts.get(nModel, RecoDecay::OriginType::None)) {
+          return tag;
+        }
+        if (scores[1] > mCuts.get(nModel, RecoDecay::OriginType::Prompt)) {
+          SETBIT(tag, RecoDecay::OriginType::Prompt);
+        }
+        if (scores[2] > mCuts.get(nModel, RecoDecay::OriginType::NonPrompt)) {
+          SETBIT(tag, RecoDecay::OriginType::NonPrompt);
+        }
+      }
+      return tag;
+    }
+
+    // FIXME : getter for debugging
+    /// Get pointer to model of index 0
+    o2::ml::OnnxModel* getModel() {
+      return &mNetworks[0];
     }
 
   private:
-    //std::array<o2::ml::OnnxModel, nModels> mNetworks; // OnnxModel objects, one for each bin
-    std::vector<o2::ml::OnnxModel> mNetworks{std::vector<o2::ml::OnnxModel>(nModels)};
-    // std::vector<double> mBinsLimits = {}; // bin limits of the variable (e.g. pT) used to select which model to use
-    std::vector<std::string> mPaths{std::vector<std::string>(nModels)}; // paths to the models, one for each bin
+    std::vector<o2::ml::OnnxModel> mNetworks; // OnnxModel objects, one for each bin
+    uint8_t mNModels = 1; // number of bins
+    uint8_t mNClasses = 3; // number of model classes
+    std::vector<double> mBinsLimits = {}; // bin limits of the variable (e.g. pT) used to select which model to use
+    std::vector<std::string> mPaths = {""}; // paths to the models, one for each bin
     std::vector<int> mCutDir = {}; // direction of the cuts on the model scores (no cut is also supported)
     o2::framework::LabeledArray<double> mCuts = {}; // array of cut values to apply on the model scores
 };

@@ -57,12 +57,12 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<LabeledArray<double>> cutsML{"ml_cuts", {hf_cuts_ml::cuts[0], hf_cuts_ml::npTBins, hf_cuts_ml::nCutScores, hf_cuts_ml::pTBinLabels, hf_cuts_ml::cutScoreLabels}, "ML selections per pT bin"};
   
   static constexpr int nModels = hf_cuts_ml::npTBins; 
-  o2::analysis::HFMLResponse<nModels, float> hfMLResponse{cutsML, cutDirML};
+  o2::analysis::HFMLResponse<float> hfMLResponse{pTBinsML, cutsML, cutDirML};
 
   TrackSelectorPID selectorPion;
   TrackSelectorPID selectorKaon;
 
-  HistogramRegistry registry{"registry"};
+  HistogramRegistry registry{"registry"}; 
 
   void init(InitContext const&)
   {
@@ -90,7 +90,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     }
 
     if (b_applyML) {
-      hfMLResponse.init(modelPathsML, false);
+      hfMLResponse.init(modelPathsML, true);
     }
   }
 
@@ -199,6 +199,29 @@ struct HfCandidateSelectorDplusToPiKPi {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoSkims, ptCand);
       }
 
+      if (b_applyML) {
+        int pTBin = findBin(pTBinsML, candidate.pt());
+        // ML selections
+        std::vector<float> inputFeatures{candidate.ptProng0(),
+                                         candidate.impactParameter0(),
+                                         candidate.ptProng1(),
+                                         candidate.impactParameter1(),
+                                         candidate.ptProng2(),
+                                         candidate.impactParameter2(),
+                                         candidate.decayLength(),
+                                         candidate.decayLengthXYNormalised(),
+                                         candidate.cpa(),
+                                         candidate.cpaXY()};
+                                        //  candidate.maxNormalisedDeltaIP()};
+
+        std::vector<float> scores;
+        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, pTBin, scores);
+        LOG(info) << "isSelected " << isSelectedML; 
+        LOG(info) << "Scores : " << scores[0] << " " << scores[1] << " " << scores[2];
+        uint8_t tagBDT = hfMLResponse.tagBDT(scores, pTBin);
+        LOG(info) << "Tag BDT: " << (int)tagBDT;
+      }
+
       auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
@@ -237,14 +260,6 @@ struct HfCandidateSelectorDplusToPiKPi {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoPID, ptCand);
       }
 
-      if (b_applyML) {
-        int pTBin = findBin(binsPt, candidate.pt());
-        // ML selections
-        std::vector<float> inputFeatures{candidate.cpa(), candidate.cpaXY(), candidate.decayLength(), candidate.decayLengthXY()};
-
-        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, pTBin);
-        LOG(info) << isSelectedML << "hello"; 
-      }
 
       hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
     }
