@@ -183,6 +183,7 @@ struct PCMQCMC {
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
   void processQCMC(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
   {
+    THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
     for (auto& collision : collisions) {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(1.0);
@@ -201,6 +202,7 @@ struct PCMQCMC {
       }
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
+      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
       auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
 
       for (const auto& cut : fPCMCuts) {
