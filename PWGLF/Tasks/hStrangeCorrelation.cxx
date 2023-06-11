@@ -237,31 +237,31 @@ struct correlateStrangeness {
       bitset(doCorrelation, 7);
 
     if (bitcheck(doCorrelation, 0)) {
-      histos.add("h2dMassK0Short", "h2dMassK0Short", kTH2F, {axisPtQA, axisK0ShortMass, axisMult});
+      histos.add("h2dMassK0Short", "h2dMassK0Short", kTH3F, {axisPtQA, axisK0ShortMass, axisMult});
       histos.add("sameEvent/Signal/K0Short", "K0Short", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, axisVtxZ, axisMult});
     }
     if (bitcheck(doCorrelation, 1)) {
-      histos.add("h2dMassLambda", "h2dMassLambda", kTH2F, {axisPtQA, axisLambdaMass, axisMult});
+      histos.add("h2dMassLambda", "h2dMassLambda", kTH3F, {axisPtQA, axisLambdaMass, axisMult});
       histos.add("sameEvent/Signal/Lambda", "Lambda", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, axisVtxZ, axisMult});
     }
     if (bitcheck(doCorrelation, 2)) {
-      histos.add("h2dMassAntiLambda", "h2dMassAntiLambda", kTH2F, {axisPtQA, axisLambdaMass, axisMult});
+      histos.add("h2dMassAntiLambda", "h2dMassAntiLambda", kTH3F, {axisPtQA, axisLambdaMass, axisMult});
       histos.add("sameEvent/Signal/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, axisVtxZ, axisMult});
     }
     if (bitcheck(doCorrelation, 3)) {
-      histos.add("h2dMassXiMinus", "h2dMassXiMinus", kTH2F, {axisPtQA, axisXiMass, axisMult});
+      histos.add("h2dMassXiMinus", "h2dMassXiMinus", kTH3F, {axisPtQA, axisXiMass, axisMult});
       histos.add("sameEvent/Signal/XiMinus", "XiMinus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, axisVtxZ, axisMult});
     }
     if (bitcheck(doCorrelation, 4)) {
-      histos.add("h2dMassXiPlus", "h2dMassXiPlus", kTH2F, {axisPtQA, axisXiMass, axisMult});
+      histos.add("h2dMassXiPlus", "h2dMassXiPlus", kTH3F, {axisPtQA, axisXiMass, axisMult});
       histos.add("sameEvent/Signal/XiPlus", "XiPlus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, axisVtxZ, axisMult});
     }
     if (bitcheck(doCorrelation, 5)) {
-      histos.add("h2dMassOmegaMinus", "h2dMassOmegaMinus", kTH2F, {axisPtQA, axisOmegaMass, axisMult});
+      histos.add("h2dMassOmegaMinus", "h2dMassOmegaMinus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
       histos.add("sameEvent/Signal/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, axisVtxZ, axisMult});
     }
     if (bitcheck(doCorrelation, 6)) {
-      histos.add("h2dMassOmegaPlus", "h2dMassOmegaPlus", kTH2F, {axisPtQA, axisOmegaMass, axisMult});
+      histos.add("h2dMassOmegaPlus", "h2dMassOmegaPlus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
       histos.add("sameEvent/Signal/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, axisVtxZ, axisMult});
     }
     if (doCorrelationPion)
