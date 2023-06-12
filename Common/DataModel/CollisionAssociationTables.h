@@ -20,9 +20,7 @@
 #ifndef COMMON_DATAMODEL_COLLISIONASSOCIATIONTABLES_H_
 #define COMMON_DATAMODEL_COLLISIONASSOCIATIONTABLES_H_
 
-#include "CommonConstants/LHCConstants.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 
 namespace o2::aod
 {
@@ -65,4 +63,4 @@ DECLARE_SOA_TABLE(MFTTrkCompColls, "AOD", "MFTTRKCOMPCOLL", //! Table with vecto
 
 } // namespace o2::aod
 
-#endif // COMMON_DATAMODEL_COLLISIONASSOCIATION_H_
+#endif // COMMON_DATAMODEL_COLLISIONASSOCIATIONTABLES_H_

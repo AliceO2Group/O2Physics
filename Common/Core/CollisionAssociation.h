@@ -23,6 +23,8 @@
 #include "CommonConstants/LHCConstants.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include <vector>
+#include <memory>
 
 namespace o2::aod
 {
@@ -35,6 +37,12 @@ enum TrackSelection {
   GlobalTrackWoDCA = 1,
   QualityTracksITS = 2
 };
+
+} // namespace track_association
+} // namespace o2::aod
+
+using namespace o2;
+using namespace o2::aod;
 
 template <bool isCentralBarrel>
 class CollisionAssociation
@@ -64,23 +72,23 @@ class CollisionAssociation
         if constexpr (isCentralBarrel) {
           bool hasGoodQuality = true;
           switch (mTrackSelection) {
-            case TrackSelection::CentralBarrelRun2: {
+            case track_association::TrackSelection::CentralBarrelRun2: {
               unsigned char itsClusterMap = track.itsClusterMap();
               if (!(track.tpcNClsFound() >= 50 && track.flags() & track::ITSrefit && track.flags() & track::TPCrefit && (TESTBIT(itsClusterMap, 0) || TESTBIT(itsClusterMap, 1)))) {
                 hasGoodQuality = false;
               }
               break;
             }
-            case TrackSelection::None: {
+            case track_association::TrackSelection::None: {
               break;
             }
-            case TrackSelection::GlobalTrackWoDCA: {
+            case track_association::TrackSelection::GlobalTrackWoDCA: {
               if (!track.isGlobalTrackWoDCA()) {
                 hasGoodQuality = false;
               }
               break;
             }
-            case TrackSelection::QualityTracksITS: {
+            case track_association::TrackSelection::QualityTracksITS: {
               if (!track.isQualityTrackITS()) {
                 hasGoodQuality = false;
               }
@@ -226,15 +234,12 @@ class CollisionAssociation
   }
 
  private:
-  float mNumSigmaForTimeCompat{4.};                      // number of sigma for time compatibility
-  float mTimeMargin{500.};                               // additional time margin in ns
-  int mTrackSelection{TrackSelection::GlobalTrackWoDCA}; // track selection for central barrel tracks (standard association only)
-  bool mUsePvAssociation{true};                          // use the information of PV contributors
-  bool mIncludeUnassigned{true};                         // include tracks that were originally not assigned to any collision
-  bool mFillTableOfCollIdsPerTrack{false};               // fill additional table with vectors of compatible collisions per track
+  float mNumSigmaForTimeCompat{4.};                                         // number of sigma for time compatibility
+  float mTimeMargin{500.};                                                  // additional time margin in ns
+  int mTrackSelection{track_association::TrackSelection::GlobalTrackWoDCA}; // track selection for central barrel tracks (standard association only)
+  bool mUsePvAssociation{true};                                             // use the information of PV contributors
+  bool mIncludeUnassigned{true};                                            // include tracks that were originally not assigned to any collision
+  bool mFillTableOfCollIdsPerTrack{false};                                  // fill additional table with vectors of compatible collisions per track
 };
-
-} // namespace track_association
-} // namespace o2::aod
 
 #endif // COMMON_CORE_COLLISIONASSOCIATION_H_

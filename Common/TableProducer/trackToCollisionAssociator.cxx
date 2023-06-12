@@ -39,7 +39,7 @@ struct TrackToCollisionAssociation {
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
   Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
 
-  track_association::CollisionAssociation<true> collisionAssociator;
+  CollisionAssociation<true> collisionAssociator;
 
   Filter trackFilter = (setTrackSelections.node() == 0) ||                                        // no track selections
                        ((setTrackSelections.node() == 1) && requireGlobalTrackWoDCAInFilter()) || // global track selections w/o dca

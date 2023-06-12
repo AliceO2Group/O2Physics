@@ -17,6 +17,8 @@
 /// \author Sarah Herrmann <sarah.herrmann@cern.ch>, IP2I Lyon
 /// \author Maurice Coquet <maurice.louis.coquet@cern.ch>, CEA-Saclay/Irfu
 
+#include "Common/Core/CollisionAssociation.h"
+
 namespace o2::aod
 {
 namespace track_association

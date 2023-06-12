@@ -38,7 +38,7 @@ struct FwdTrackToCollisionAssociation {
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
   Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
 
-  track_association::CollisionAssociation<false> collisionAssociator;
+  CollisionAssociation<false> collisionAssociator;
 
   Preslice<FwdTracks> muonsPerCollisions = aod::fwdtrack::collisionId;
   Preslice<MFTTracks> mftsPerCollisions = aod::fwdtrack::collisionId;
