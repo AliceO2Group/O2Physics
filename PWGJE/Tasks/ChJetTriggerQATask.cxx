@@ -33,6 +33,7 @@
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/TableProducer/jetfinder.h"
 
 #include "Framework/HistogramRegistry.h"
 
@@ -154,23 +155,16 @@ struct ChJetTriggerQATask {
        {HistType::kTH2F, {{100, 0., +100.}, {50, 0., 2.}}}} //
     }};
 
-  TrackSelection globalTracks;
-
-  // TrackSelection globalTracks;
   void init(o2::framework::InitContext&)
   {
-    fiducialVolume = cfgTPCVolume - cfgJetR;
-    if (static_cast<std::string>(trackSelections) == "globalTracks") {
-      globalTracks = getGlobalTrackSelection();
-      globalTracks.SetEtaRange(-1.0 * cfgTPCVolume, cfgTPCVolume);
-    }
+    fiducialVolume = static_cast<float>(cfgTPCVolume) - static_cast<float>(cfgJetR);
   }
 
   // declare filters on collisions
-  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgVertexCut);
+  Filter collisionFilter = (nabs(aod::collision::posZ) < static_cast<float>(cfgVertexCut));
 
   // declare filters on tracks
-  Filter trackFilter = (nabs(aod::track::eta) < cfgTPCVolume) && (aod::track::phi > cfgTrackPhiMinCut) && (aod::track::phi < cfgTrackPhiMaxCut) && (aod::track::pt > cfgJetPtMin);
+  Filter trackFilter = (nabs(aod::track::eta) < static_cast<float>(cfgTPCVolume)) && (aod::track::phi > static_cast<float>(cfgTrackPhiMinCut)) && (aod::track::phi < static_cast<float>(cfgTrackPhiMaxCut)) && (aod::track::pt > static_cast<float>(cfgJetPtMin));
 
   // declare filters on jets
   Filter jetRadiusSelection = o2::aod::jet::r == nround(cfgJetR.node() * 100.0f);
@@ -185,11 +179,11 @@ struct ChJetTriggerQATask {
             soa::Filtered<TrackCandidates> const& tracks, filteredJets const& jets)
   {
 
-    if (cfgEventSel8 && !collision.sel8()) {
+    if (static_cast<bool>(cfgEventSel8) && !collision.sel8()) {
       return;
     }
 
-    if (collision.hasJetChHighPt() >= bTriggerDecision) {
+    if (collision.hasJetChHighPt() >= static_cast<int>(bTriggerDecision)) {
 
       float leadingJetPt = -1.0;
       float leadingJetEta = -2.0;
@@ -203,7 +197,7 @@ struct ChJetTriggerQATask {
 
       for (auto& trk : tracks) { //loop over filtered tracks in full TPC volume having pT > 100 MeV
 
-        if ((static_cast<std::string>(trackSelections) == "globalTracks" && !globalTracks.IsSelected(trk)) || (static_cast<std::string>(trackSelections) == "QualityTracks" && !trk.isQualityTrack())) {
+        if (!selectTrack(trk, trackSelections)) {
           continue;
         }
 
@@ -218,7 +212,7 @@ struct ChJetTriggerQATask {
           HIST("phietaTrackInclGoodAll"), trk.eta(),
           trk.phi()); // Inclusive Track pT vs eta spectrum in TPC volume
 
-        if (trk.pt() > cfgPtThr) {
+        if (trk.pt() > static_cast<float>(cfgPtThr)) {
           spectra.fill(
             HIST("phietaTrackInclGoodHighPt"), trk.eta(),
             trk.phi()); // Inclusive Track pT vs eta spectrum in TPC volume
@@ -241,7 +235,7 @@ struct ChJetTriggerQATask {
 
       // Find leading jet pT in full TPC volume
       for (auto& jet : jets) {
-        if (fabs(jet.eta()) < cfgTPCVolume) {
+        if (fabs(jet.eta()) < static_cast<float>(cfgTPCVolume)) {
 
           if (jet.pt() > leadingJetPt) {
             leadingJetPt = jet.pt();
@@ -274,18 +268,18 @@ struct ChJetTriggerQATask {
           spectra.fill(HIST("ptphiJetChInclFidVol"), jet.pt(), jet.phi());
           spectra.fill(HIST("ptetaJetChInclFidVol"), jet.pt(), jet.eta());
           spectra.fill(HIST("phietaJetChInclFidVol"), jet.eta(), jet.phi());
-          if (jet.pt() > cfgPtThr) {
+          if (jet.pt() > static_cast<float>(cfgPtThr)) {
             spectra.fill(HIST("phietaJetChInclFidVolHighPt"), jet.eta(), jet.phi());
           }
           spectra.fill(HIST("jetAreaFidVol"), jet.pt(), jet.area());
         }
 
-        if (fabs(jet.eta()) < cfgTPCVolume) {
+        if (fabs(jet.eta()) < static_cast<float>(cfgTPCVolume)) {
           spectra.fill(HIST("ptJetChInclFullVol"), jet.pt());
           spectra.fill(HIST("ptphiJetChInclFullVol"), jet.pt(), jet.phi());
           spectra.fill(HIST("ptetaJetChInclFullVol"), jet.pt(), jet.eta());
           spectra.fill(HIST("phietaJetChInclFullVol"), jet.eta(), jet.phi());
-          if (jet.pt() > cfgPtThr) {
+          if (jet.pt() > static_cast<float>(cfgPtThr)) {
             spectra.fill(HIST("phietaJetChInclFullVolHighPt"), jet.eta(), jet.phi());
           }
           spectra.fill(HIST("jetAreaFullVol"), jet.pt(), jet.area());

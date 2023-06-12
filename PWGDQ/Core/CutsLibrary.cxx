@@ -24,6 +24,32 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   AnalysisCompositeCut* cut = new AnalysisCompositeCut(cutName, cutName);
   std::string nameStr = cutName;
 
+  // ///////////////////////////////////////////////
+  //   These are the Cuts used in the CEFP Task   //
+  //   to select tracks in the event selection    //
+  // ///////////////////////////////////////////////
+  if (!nameStr.compare("Electron")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug5"));
+    return cut;
+  }
+  if (!nameStr.compare("MuonLow")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt2"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    cut->AddCut(GetAnalysisCut("MCHMID"));
+    return cut;
+  }
+  if (!nameStr.compare("MuonHigh")) {
+    cut->AddCut(GetAnalysisCut("muonHighPt2"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    cut->AddCut(GetAnalysisCut("MCHMID"));
+    return cut;
+  }
+  // ///////////////////////////////////////////////
+  //           End of Cuts for CEFP               //
+  // ///////////////////////////////////////////////
+
   if (!nameStr.compare("jpsiO2MCdebugCuts")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
@@ -2035,6 +2061,26 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   // -------------------------------------------------------------------------------------------------
   // Muon cuts
+  if (!nameStr.compare("GlobalMuonTrack")) {
+    cut->AddCut(VarManager::kMuonTrackType, -0.5, 0.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("MFTMCH")) {
+    cut->AddCut(VarManager::kMuonTrackType, 1.5, 2.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("MCHMID")) {
+    cut->AddCut(VarManager::kMuonTrackType, 2.5, 3.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("MCHStandalone")) {
+    cut->AddCut(VarManager::kMuonTrackType, 3.5, 4.5);
+    return cut;
+  }
+
   if (!nameStr.compare("muonQualityCuts")) {
     cut->AddCut(VarManager::kEta, -4.0, -2.5);
     cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 17.6, 89.5);

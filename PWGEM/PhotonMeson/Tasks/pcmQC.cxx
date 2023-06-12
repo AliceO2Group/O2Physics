@@ -165,6 +165,10 @@ struct PCMQC {
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hGammaRxy_recalc"))->Fill(v0.recalculatedVtxX(), v0.recalculatedVtxY());
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hKFChi2vsR_recalc"))->Fill(v0.recalculatedVtxR(), v0.chiSquareNDF());
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hKFChi2vsZ_recalc"))->Fill(v0.recalculatedVtxZ(), v0.chiSquareNDF());
+
+    float phi_recalc = atan2(v0.recalculatedVtxY(), v0.recalculatedVtxX());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hGammaRPhi"))->Fill(v0.phi(), v0.v0radius());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hGammaRPhi_recalc"))->Fill(phi_recalc < 0 ? phi_recalc + TMath::TwoPi() : phi_recalc, v0.recalculatedVtxR());
   }
 
   Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
