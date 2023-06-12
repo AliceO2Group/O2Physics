@@ -537,7 +537,7 @@ struct AnalysisSameEventPairing {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    if (fNoCorr){
+    if (fNoCorr) {
       VarManager::SetupFwdDCAFitterNoCorr();
     } else if (fCorrFullGeo) {
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
