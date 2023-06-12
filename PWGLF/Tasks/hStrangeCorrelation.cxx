@@ -287,11 +287,11 @@ struct correlateStrangeness {
     // --- vertex Z is safe -> skipped at evsel level
     // --- multiplicity -> check
 
-    std::vector<float> rangesDeltaPhi = {edgesDeltaPhi[0], edgesDeltaPhi[edgesDeltaPhi.size() - 1]};
-    std::vector<float> rangesDeltaEta = {edgesDeltaEta[0], edgesDeltaEta[edgesDeltaEta.size() - 1]};
-    std::vector<float> rangesPtAssoc = {edgesPtAssoc[0], edgesPtAssoc[edgesPtAssoc.size() - 1]};
-    std::vector<float> rangesVtxZ = {edgesVtxZ[0], edgesVtxZ[edgesVtxZ.size() - 1]};
-    std::vector<float> rangesMult = {edgesMult[0], edgesMult[edgesMult.size() - 1]};
+    std::vector<float> rangesDeltaPhi = {static_cast<float>(edgesDeltaPhi[0]), static_cast<float>(edgesDeltaPhi[edgesDeltaPhi.size() - 1])};
+    std::vector<float> rangesDeltaEta = {static_cast<float>(edgesDeltaEta[0]), static_cast<float>(edgesDeltaEta[edgesDeltaEta.size() - 1])};
+    std::vector<float> rangesPtAssoc = {static_cast<float>(edgesPtAssoc[0]), static_cast<float>(edgesPtAssoc[edgesPtAssoc.size() - 1])};
+    std::vector<float> rangesVtxZ = {static_cast<float>(edgesVtxZ[0]), static_cast<float>(edgesVtxZ[edgesVtxZ.size() - 1])};
+    std::vector<float> rangesMult = {static_cast<float>(edgesMult[0]), static_cast<float>(edgesMult[edgesMult.size() - 1])};
 
     axisRanges.emplace_back(rangesDeltaPhi);
     axisRanges.emplace_back(rangesDeltaEta);
