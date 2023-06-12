@@ -84,7 +84,7 @@ struct correlateStrangeness {
 
   uint8_t doCorrelation;
 
-  std::vector<std::vector<float>> axisRanges; 
+  std::vector<std::vector<float>> axisRanges;
 
   /// Function to aid in calculating delta-phi
   /// \param phi1 first phi value
@@ -124,12 +124,12 @@ struct correlateStrangeness {
         float ptassoc = assoc.pt();
 
         // skip if basic ranges not met
-        if ( deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1] ) 
-          continue; 
-        if ( deltaeta < axisRanges[1][0] || deltaeta > axisRanges[1][1] ) 
-          continue; 
-        if ( ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1] ) 
-          continue; 
+        if (deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1])
+          continue;
+        if (deltaeta < axisRanges[1][0] || deltaeta > axisRanges[1][1])
+          continue;
+        if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
+          continue;
 
         static_for<0, 2>([&](auto i) {
           constexpr int index = i.value;
@@ -182,12 +182,12 @@ struct correlateStrangeness {
         float ptassoc = assoc.pt();
 
         // skip if basic ranges not met
-        if ( deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1] ) 
-          continue; 
-        if ( deltaeta < axisRanges[1][0] || deltaeta > axisRanges[1][1] ) 
-          continue; 
-        if ( ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1] ) 
-          continue; 
+        if (deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1])
+          continue;
+        if (deltaeta < axisRanges[1][0] || deltaeta > axisRanges[1][1])
+          continue;
+        if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
+          continue;
 
         static_for<0, 3>([&](auto i) {
           constexpr int index = i.value;
@@ -230,12 +230,12 @@ struct correlateStrangeness {
         float ptassoc = assoc.pt();
 
         // skip if basic ranges not met
-        if ( deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1] ) 
-          continue; 
-        if ( deltaeta < axisRanges[1][0] || deltaeta > axisRanges[1][1] ) 
-          continue; 
-        if ( ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1] ) 
-          continue; 
+        if (deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1])
+          continue;
+        if (deltaeta < axisRanges[1][0] || deltaeta > axisRanges[1][1])
+          continue;
+        if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
+          continue;
 
         if (!mixing)
           histos.fill(HIST("sameEvent/Pion"), deltaphi, deltaeta, ptassoc, pvz, mult);
@@ -273,43 +273,43 @@ struct correlateStrangeness {
     const AxisSpec preAxisVtxZ{axisVtxZ, "vertex Z (cm)"};
     const AxisSpec preAxisMult{axisMult, "mult percentile"};
 
-    std::vector<double> edgesDeltaPhi = preAxisDeltaPhi.binEdges; 
-    std::vector<double> edgesDeltaEta = preAxisDeltaEta.binEdges; 
-    std::vector<double> edgesPtAssoc = preAxisPtAssoc.binEdges; 
-    std::vector<double> edgesVtxZ = preAxisVtxZ.binEdges; 
-    std::vector<double> edgesMult = preAxisMult.binEdges; 
+    std::vector<double> edgesDeltaPhi = preAxisDeltaPhi.binEdges;
+    std::vector<double> edgesDeltaEta = preAxisDeltaEta.binEdges;
+    std::vector<double> edgesPtAssoc = preAxisPtAssoc.binEdges;
+    std::vector<double> edgesVtxZ = preAxisVtxZ.binEdges;
+    std::vector<double> edgesMult = preAxisMult.binEdges;
 
-    // Store axis ranges to prevent spurious filling 
-    // axis status: 
-    // --- Delta-phi is safe -> math forbids insanity  
-    // --- Delta-eta depends on pre-filter -> check 
-    // --- pT assoc depends on binning -> check 
-    // --- vertex Z is safe -> skipped at evsel level 
-    // --- multiplicity -> check 
+    // Store axis ranges to prevent spurious filling
+    // axis status:
+    // --- Delta-phi is safe -> math forbids insanity
+    // --- Delta-eta depends on pre-filter -> check
+    // --- pT assoc depends on binning -> check
+    // --- vertex Z is safe -> skipped at evsel level
+    // --- multiplicity -> check
 
-    std::vector<float> rangesDeltaPhi = {edgesDeltaPhi[0], edgesDeltaPhi[edgesDeltaPhi.size()-1]};
-    std::vector<float> rangesDeltaEta = {edgesDeltaEta[0], edgesDeltaEta[edgesDeltaEta.size()-1]};
-    std::vector<float> rangesPtAssoc = {edgesPtAssoc[0], edgesPtAssoc[edgesPtAssoc.size()-1]};
-    std::vector<float> rangesVtxZ = {edgesVtxZ[0], edgesVtxZ[edgesVtxZ.size()-1]};
-    std::vector<float> rangesMult = {edgesMult[0], edgesMult[edgesMult.size()-1]};
+    std::vector<float> rangesDeltaPhi = {edgesDeltaPhi[0], edgesDeltaPhi[edgesDeltaPhi.size() - 1]};
+    std::vector<float> rangesDeltaEta = {edgesDeltaEta[0], edgesDeltaEta[edgesDeltaEta.size() - 1]};
+    std::vector<float> rangesPtAssoc = {edgesPtAssoc[0], edgesPtAssoc[edgesPtAssoc.size() - 1]};
+    std::vector<float> rangesVtxZ = {edgesVtxZ[0], edgesVtxZ[edgesVtxZ.size() - 1]};
+    std::vector<float> rangesMult = {edgesMult[0], edgesMult[edgesMult.size() - 1]};
 
-    axisRanges.emplace_back(rangesDeltaPhi); 
-    axisRanges.emplace_back(rangesDeltaEta); 
-    axisRanges.emplace_back(rangesPtAssoc); 
-    axisRanges.emplace_back(rangesVtxZ); 
-    axisRanges.emplace_back(rangesMult); 
+    axisRanges.emplace_back(rangesDeltaPhi);
+    axisRanges.emplace_back(rangesDeltaEta);
+    axisRanges.emplace_back(rangesPtAssoc);
+    axisRanges.emplace_back(rangesVtxZ);
+    axisRanges.emplace_back(rangesMult);
 
     // check if U/O-flow skip is on
-    if( skipUnderOverflowInTHn ){ 
+    if (skipUnderOverflowInTHn) {
       // v--- skipUnderOverflowInTHn ---v
-      // 
+      //
       // if enabled, this will change the axes such that they will solely cover the interval from
-      // edge[1] to edge[n-1]; this will mean that the bin 1 and bin N will be stored in 
-      // under / overflow bins and will have to be manually unpacked. Do not forget to do the manual 
-      // unpacking a posteriori! 
-      // 
-      // this feature is meant to save memory conveniently. 
-      // it should actually be implemented centrally in ROOT but ok, this will do it for now. 
+      // edge[1] to edge[n-1]; this will mean that the bin 1 and bin N will be stored in
+      // under / overflow bins and will have to be manually unpacked. Do not forget to do the manual
+      // unpacking a posteriori!
+      //
+      // this feature is meant to save memory conveniently.
+      // it should actually be implemented centrally in ROOT but ok, this will do it for now.
       edgesDeltaPhi.erase(edgesDeltaPhi.begin());
       edgesDeltaPhi.erase(edgesDeltaPhi.end());
       edgesDeltaEta.erase(edgesDeltaPhi.begin());
@@ -521,9 +521,9 @@ struct correlateStrangeness {
         continue;
       if (TMath::Abs(collision1.posZ()) > zVertexCut || TMath::Abs(collision2.posZ()) > zVertexCut)
         continue;
-      if (collision1.centFT0M() > axisRanges[4][1] || collision1.centFT0M() < axisRanges[4][0]) 
+      if (collision1.centFT0M() > axisRanges[4][1] || collision1.centFT0M() < axisRanges[4][0])
         continue;
-      if (collision2.centFT0M() > axisRanges[4][1] || collision2.centFT0M() < axisRanges[4][0]) 
+      if (collision2.centFT0M() > axisRanges[4][1] || collision2.centFT0M() < axisRanges[4][0])
         continue;
 
       if (!doprocessMixedEventHCascades) {
@@ -554,9 +554,9 @@ struct correlateStrangeness {
         continue;
       if (TMath::Abs(collision1.posZ()) > zVertexCut || TMath::Abs(collision2.posZ()) > zVertexCut)
         continue;
-      if (collision1.centFT0M() > axisRanges[4][1] || collision1.centFT0M() < axisRanges[4][0]) 
+      if (collision1.centFT0M() > axisRanges[4][1] || collision1.centFT0M() < axisRanges[4][0])
         continue;
-      if (collision2.centFT0M() > axisRanges[4][1] || collision2.centFT0M() < axisRanges[4][0]) 
+      if (collision2.centFT0M() > axisRanges[4][1] || collision2.centFT0M() < axisRanges[4][0])
         continue;
 
       if (collision1.globalIndex() == collision2.globalIndex()) {
@@ -586,9 +586,9 @@ struct correlateStrangeness {
         continue;
       if (TMath::Abs(collision1.posZ()) > zVertexCut || TMath::Abs(collision2.posZ()) > zVertexCut)
         continue;
-      if (collision1.centFT0M() > axisRanges[4][1] || collision1.centFT0M() < axisRanges[4][0]) 
+      if (collision1.centFT0M() > axisRanges[4][1] || collision1.centFT0M() < axisRanges[4][0])
         continue;
-      if (collision2.centFT0M() > axisRanges[4][1] || collision2.centFT0M() < axisRanges[4][0]) 
+      if (collision2.centFT0M() > axisRanges[4][1] || collision2.centFT0M() < axisRanges[4][0])
         continue;
 
       if (collision1.globalIndex() == collision2.globalIndex()) {
