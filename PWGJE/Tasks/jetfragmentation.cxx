@@ -35,7 +35,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetFragmentation {
-  HistogramRegistry registry{ "registry" };
+  HistogramRegistry registry{"registry"};
 
   std::vector<int> pdgVector = {211, 321, 2212, 111, 130, 310, 311, 3122};
   std::vector<std::string> hadronVector = {"#pi^{#pm}", "#it{K}^{#pm}", "#it{p}^{#pm}", "#pi^{0}", "#it{K}^{0}_{L}", "#it{K}^{0}_{S}", "#it{K}^{0}", "#Lambda^{0}"};
@@ -43,7 +43,7 @@ struct JetFragmentation {
   // Binning
   ConfigurableAxis binJetPt{"binJetPt", {200, 0.f, 200.f}, ""};
   ConfigurableAxis binEta{"binEta", {100, -1.f, 1.f}, ""};
-  ConfigurableAxis binPhi{"binPhi", {18*8, 0.f, 2. * TMath::Pi()}, ""};
+  ConfigurableAxis binPhi{"binPhi", {18 * 8, 0.f, 2. * TMath::Pi()}, ""};
   ConfigurableAxis binZ{"binZ", {100, -5e-3f, 1.f + 5e-3f}, ""};
   ConfigurableAxis binPDG{"binPDG", {static_cast<double>(pdgVector.size()), -0.5f, static_cast<double>(pdgVector.size()) - 0.5f}, ""};
   ConfigurableAxis binJetR{"binJetR", {6, 0.05f, 0.65f}, ""};
@@ -103,8 +103,7 @@ struct JetFragmentation {
   {
     if (dphi > TMath::Pi()) {
       return (dphi - 2 * TMath::Pi());
-    }
-    else if (dphi < -1 * TMath::Pi()) {
+    } else if (dphi < -1 * TMath::Pi()) {
       return (dphi + 2 * TMath::Pi());
     }
     return dphi;
