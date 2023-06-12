@@ -152,36 +152,10 @@ class HFMLResponse
       return true;
     }
 
-    /// Tag BDT predicted class
-    /// \param scores is a vector with BDT out scores
-    /// \return 0 if rejected, otherwise bitmap with BIT(RecoDecay::OriginType::Prompt) and/or BIT(RecoDecay::OriginType::NonPrompt) on
-    template <typename T1, typename T2>
-    uint8_t tagBDT(const T1& scores, const T2& nModel)
-    {
-      uint8_t tag{0};
-
-      if (mNClasses == 2) { // binary classification
-        if (scores[0] > mCuts.get(nModel, RecoDecay::OriginType::Prompt - 1)) {
-          SETBIT(tag, RecoDecay::OriginType::Prompt); // here Prompt stands for Signal
-        }
-      } else if (mNClasses == 3) { // 3-class classification
-        if (scores[0] > mCuts.get(nModel, RecoDecay::OriginType::None)) {
-          return tag;
-        }
-        if (scores[1] > mCuts.get(nModel, RecoDecay::OriginType::Prompt)) {
-          SETBIT(tag, RecoDecay::OriginType::Prompt);
-        }
-        if (scores[2] > mCuts.get(nModel, RecoDecay::OriginType::NonPrompt)) {
-          SETBIT(tag, RecoDecay::OriginType::NonPrompt);
-        }
-      }
-      return tag;
-    }
-
     // FIXME : getter for debugging
     /// Get pointer to model of index 0
-    o2::ml::OnnxModel* getModel() {
-      return &mNetworks[0];
+    o2::ml::OnnxModel* getModel(const int& nModel) {
+      return &mNetworks[nModel];
     }
 
   private:

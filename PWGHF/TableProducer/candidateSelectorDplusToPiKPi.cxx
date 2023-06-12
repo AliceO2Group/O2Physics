@@ -56,7 +56,6 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<std::vector<int>> cutDirML{"cutDirML", std::vector<int>{hf_cuts_ml::cutDir_v}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsML{"ml_cuts", {hf_cuts_ml::cuts[0], hf_cuts_ml::npTBins, hf_cuts_ml::nCutScores, hf_cuts_ml::pTBinLabels, hf_cuts_ml::cutScoreLabels}, "ML selections per pT bin"};
   
-  static constexpr int nModels = hf_cuts_ml::npTBins; 
   o2::analysis::HFMLResponse<float> hfMLResponse{pTBinsML, cutsML, cutDirML};
 
   TrackSelectorPID selectorPion;
@@ -76,7 +75,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     selectorKaon.setPDG(kKPlus);
 
     if (activateQA) {
-      constexpr int kNBinsSelections = 1 + aod::SelectionStep::NSelectionSteps;
+      constexpr int kNBinsSelections = aod::SelectionStep::NSelectionSteps;
       std::string labels[kNBinsSelections];
       labels[0] = "No selection";
       labels[1 + aod::SelectionStep::RecoSkims] = "Skims selection";
@@ -214,12 +213,12 @@ struct HfCandidateSelectorDplusToPiKPi {
                                          candidate.cpaXY()};
                                         //  candidate.maxNormalisedDeltaIP()};
 
-        std::vector<float> scores;
-        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, pTBin, scores);
-        LOG(info) << "isSelected " << isSelectedML; 
-        LOG(info) << "Scores : " << scores[0] << " " << scores[1] << " " << scores[2];
-        uint8_t tagBDT = hfMLResponse.tagBDT(scores, pTBin);
-        LOG(info) << "Tag BDT: " << (int)tagBDT;
+        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, pTBin);
+        if (isSelectedML) {
+          SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoML);
+        }
+        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
+        continue;
       }
 
       auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
@@ -259,7 +258,6 @@ struct HfCandidateSelectorDplusToPiKPi {
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoPID, ptCand);
       }
-
 
       hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
     }
