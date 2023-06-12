@@ -56,7 +56,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<std::vector<int>> cutDirML{"cutDirML", std::vector<int>{hf_cuts_ml::cutDir_v}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsML{"ml_cuts", {hf_cuts_ml::cuts[0], hf_cuts_ml::npTBins, hf_cuts_ml::nCutScores, hf_cuts_ml::pTBinLabels, hf_cuts_ml::cutScoreLabels}, "ML selections per pT bin"};
   
-  o2::analysis::HFMLResponse<float> hfMLResponse{pTBinsML, cutsML, cutDirML};
+  o2::analysis::HFMLResponse<float> hfMLResponse;
 
   TrackSelectorPID selectorPion;
   TrackSelectorPID selectorKaon;
@@ -89,7 +89,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     }
 
     if (b_applyML) {
-      hfMLResponse.init(modelPathsML, true);
+      hfMLResponse.init(pTBinsML, cutsML, cutDirML, modelPathsML, true);
     }
   }
 
@@ -198,7 +198,29 @@ struct HfCandidateSelectorDplusToPiKPi {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoSkims, ptCand);
       }
 
+      auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+
       if (b_applyML) {
+        auto tagPIDPos1 = o2::analysis::tagPID(trackPos1);
+        auto tagPIDNeg = o2::analysis::tagPID(trackNeg);
+        auto tagPIDPos2 = o2::analysis::tagPID(trackPos2);
+
+        // require TPC or TOF
+        if(TESTBIT(tagPIDPos1, o2::analysis::PIDStatus::NoTPCAndNoTOF) ||
+           TESTBIT(tagPIDNeg, o2::analysis::PIDStatus::NoTPCAndNoTOF) ||
+           TESTBIT(tagPIDPos2, o2::analysis::PIDStatus::NoTPCAndNoTOF)) {
+          continue;
+        }
+        
+        auto combinedNSigmaPiPos1 = getCombinedNSigma(trackPos1.tpcNSigmaPi(), trackPos1.tofNSigmaPi(), tagPIDPos1);
+        auto combinedNSigmaKaPos1 = getCombinedNSigma(trackPos1.tpcNSigmaKa(), trackPos1.tofNSigmaKa(), tagPIDPos1);
+        auto combinedNSigmaPiNeg = getCombinedNSigma(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi(), tagPIDNeg);
+        auto combinedNSigmaKaNeg = getCombinedNSigma(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa(), tagPIDNeg);
+        auto combinedNSigmaPiPos2 = getCombinedNSigma(trackPos2.tpcNSigmaPi(), trackPos2.tofNSigmaPi(), tagPIDPos2);
+        auto combinedNSigmaKaPos2 = getCombinedNSigma(trackPos2.tpcNSigmaKa(), trackPos2.tofNSigmaKa(), tagPIDPos2);
+
         int pTBin = findBin(pTBinsML, candidate.pt());
         // ML selections
         std::vector<float> inputFeatures{candidate.ptProng0(),
@@ -210,10 +232,18 @@ struct HfCandidateSelectorDplusToPiKPi {
                                          candidate.decayLength(),
                                          candidate.decayLengthXYNormalised(),
                                          candidate.cpa(),
-                                         candidate.cpaXY()};
-                                        //  candidate.maxNormalisedDeltaIP()};
+                                         candidate.cpaXY(),
+                                         candidate.maxNormalisedDeltaIP(),
+                                         combinedNSigmaPiPos1,
+                                         combinedNSigmaKaPos1,
+                                         combinedNSigmaPiNeg,
+                                         combinedNSigmaKaNeg,
+                                         combinedNSigmaPiPos2,
+                                         combinedNSigmaKaPos2};
 
-        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, pTBin);
+        // std::vector<float> output;
+        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, pTBin); // , output);
+
         if (isSelectedML) {
           SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoML);
         }
@@ -221,9 +251,6 @@ struct HfCandidateSelectorDplusToPiKPi {
         continue;
       }
 
-      auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
 
       /*
       // daughter track validity selection

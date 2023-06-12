@@ -32,23 +32,48 @@
 namespace o2::analysis
 {
 
+enum PIDStatus: uint8_t {
+  NoTPCAndNoTOF = 0,
+  TPCAndTOF,
+  TPCOnly,
+  TOFOnly
+};
+
+template <typename T1>
+uint8_t tagPID(const T1& track) {
+  uint8_t tag{0};
+  if (!track.hasTPC() && !track.hasTOF()) {
+    SETBIT(tag, PIDStatus::NoTPCAndNoTOF);
+  } else if (track.hasTPC() && track.hasTOF()) {
+    SETBIT(tag, PIDStatus::TPCAndTOF);
+  } else if (track.hasTPC() && !track.hasTOF()) {
+    SETBIT(tag, PIDStatus::TPCOnly);
+  } else {
+    SETBIT(tag, PIDStatus::TOFOnly);
+  }
+  return tag;
+}
+
+template <typename T1, typename T2>
+T1 getCombinedNSigma(const T1& nSigTPC, const T1& nSigTOF, const T2& tagPID) {
+  if (TESTBIT(tagPID, PIDStatus::TPCAndTOF)) {
+    return std::sqrt( (nSigTPC*nSigTPC + nSigTOF*nSigTOF) / 2 );
+  }
+  if (TESTBIT(tagPID, PIDStatus::TPCOnly)) {
+    return std::abs(nSigTPC);
+  }
+
+  if (TESTBIT(tagPID, PIDStatus::TOFOnly)) {
+    return std::abs(nSigTOF);
+  }
+}
+
 template <typename T = float>
 class HFMLResponse
 {
   public:
     /// Default constructor
     HFMLResponse() = default;
-    /// Constructor initializing cuts and cut directions
-    HFMLResponse(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir) {
-      mBinsLimits = binsLimits;
-      mCuts = cuts;
-      mCutDir = cutDir;
- 
-      mNetworks = std::vector<o2::ml::OnnxModel>(mNModels);
-      mPaths = std::vector<std::string>(mNModels);
-      mNModels = binsLimits.size() - 1;
-      mNClasses = (cutDir.size() >= 3) ? cutDir.size() : 2;
-    }
     /// Default destructor
     virtual ~HFMLResponse() = default;
 
@@ -72,11 +97,23 @@ class HFMLResponse
       }
     }
 
-    /// Initialize OnnxModels
+    /// Initialize class instance (import configurables and OnnxModels)
     /// \param paths is a vector of onnx model paths
     /// \param enableOptimizations is a switch no enable optimizations
     /// \param threads
-    void init(const std::vector<std::string>& paths, bool enableOptimizations, int threads = 0) {
+    void init(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir,
+              const std::vector<std::string>& paths, bool enableOptimizations, int threads = 0) {
+      // import configurables
+      mBinsLimits = binsLimits;
+      mCuts = cuts;
+      mCutDir = cutDir;
+ 
+      mNetworks = std::vector<o2::ml::OnnxModel>(mNModels);
+      mPaths = std::vector<std::string>(mNModels);
+      mNModels = binsLimits.size() - 1;
+      mNClasses = (cutDir.size() >= 3) ? cutDir.size() : 2;
+
+      // initialize models
       uint8_t counterModel{0};
       for (const auto& path : paths) {
         mPaths[counterModel] = path;
