@@ -115,7 +115,7 @@ struct taskJpsiHf {
 
   // WARNING: TO BE CHECKED
   Filter dileptonFilter = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
-  //Filter dmesonFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar > selectionFlagD0bar;
+  // Filter dmesonFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar > selectionFlagD0bar;
 
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
   constexpr static uint32_t fgDmesonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair;   // fill map
@@ -168,12 +168,12 @@ struct taskJpsiHf {
         if (yCandMax >= 0. && std::abs(yD0(dmeson)) > yCandMax) {
           continue;
         }
-        
+
         if (dmeson.isSelD0() >= selectionFlagD0) {
           VarManager::FillHadron(dmeson, fValuesDmeson, invMassD0ToPiK(dmeson));
           fHistMan->FillHistClass("DmesonsSelected", fValuesDmeson);
         }
-        
+
         if (dmeson.isSelD0bar() >= selectionFlagD0bar) {
           VarManager::FillHadron(dmeson, fValuesDmeson, invMassD0barToKPi(dmeson));
           fHistMan->FillHistClass("DmesonsSelected", fValuesDmeson);
