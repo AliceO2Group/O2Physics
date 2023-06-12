@@ -27,6 +27,7 @@ enum SelectionStep {
   RecoSkims = 0,
   RecoTopol,
   RecoPID,
+  RecoML,
   NSelectionSteps
 };
 
