@@ -113,8 +113,9 @@ struct taskJpsiHf {
   // General configurables
   Configurable<bool> configDebug{"configDebug", false, "If true, fill D0 - J/psi histograms separately"};
 
+  // WARNING: TO BE CHECKED
   Filter dileptonFilter = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
-  Filter dmesonFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar > selectionFlagD0bar;
+  // Filter dmesonFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar > selectionFlagD0bar;
 
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
   constexpr static uint32_t fgDmesonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair;   // fill map
@@ -159,22 +160,24 @@ struct taskJpsiHf {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDmeson);
 
     // loop over D mesons
-    for (auto& dmeson : dmesons) {
-      if (!(dmeson.hfflag() & 1 << DecayType::D0ToPiK)) {
-        continue;
-      }
-      if (yCandMax >= 0. && std::abs(yD0(dmeson)) > yCandMax) {
-        continue;
-      }
+    if (configDebug) {
+      for (auto& dmeson : dmesons) {
+        if (!(dmeson.hfflag() & 1 << DecayType::D0ToPiK)) {
+          continue;
+        }
+        if (yCandMax >= 0. && std::abs(yD0(dmeson)) > yCandMax) {
+          continue;
+        }
 
-      if (dmeson.isSelD0() >= selectionFlagD0) {
-        VarManager::FillHadron(dmeson, fValuesDmeson, invMassD0ToPiK(dmeson));
-        fHistMan->FillHistClass("DmesonsSelected", fValuesDmeson);
-      }
+        if (dmeson.isSelD0() >= selectionFlagD0) {
+          VarManager::FillHadron(dmeson, fValuesDmeson, invMassD0ToPiK(dmeson));
+          fHistMan->FillHistClass("DmesonsSelected", fValuesDmeson);
+        }
 
-      if (dmeson.isSelD0bar() >= selectionFlagD0bar) {
-        VarManager::FillHadron(dmeson, fValuesDmeson, invMassD0barToKPi(dmeson));
-        fHistMan->FillHistClass("DmesonsSelected", fValuesDmeson);
+        if (dmeson.isSelD0bar() >= selectionFlagD0bar) {
+          VarManager::FillHadron(dmeson, fValuesDmeson, invMassD0barToKPi(dmeson));
+          fHistMan->FillHistClass("DmesonsSelected", fValuesDmeson);
+        }
       }
     }
 
@@ -185,10 +188,19 @@ struct taskJpsiHf {
       }
 
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
-      fHistMan->FillHistClass("DimuonsSelected", fValuesDilepton);
+      if (configDebug) {
+        fHistMan->FillHistClass("DimuonsSelected", fValuesDilepton);
+      }
 
       // loop over D mesons
       for (auto& dmeson : dmesons) {
+        if (!(dmeson.hfflag() & 1 << DecayType::D0ToPiK)) {
+          continue;
+        }
+        if (yCandMax >= 0. && std::abs(yD0(dmeson)) > yCandMax) {
+          continue;
+        }
+
         if (dmeson.isSelD0() >= selectionFlagD0) {
           VarManager::FillDileptonHadron(dilepton, dmeson, fValuesDmeson, invMassD0ToPiK(dmeson));
           fHistMan->FillHistClass("DileptonHadronInvMass", fValuesDmeson);
@@ -201,13 +213,13 @@ struct taskJpsiHf {
     }
   }
 
-  void processSkimmedJpsiD0(MyEvents const& collisions, soa::Filtered<MyPairCandidatesSelected> const& dileptons, soa::Filtered<MyD0CandidatesSelected> const& dmesons)
+  void processSkimmedJpsiD0(MyEvents const& collisions, soa::Filtered<MyPairCandidatesSelected> const& dileptons, MyD0CandidatesSelected const& dmesons)
   {
     for (auto& collision : collisions) {
       auto groupedDmesonCandidates = dmesons.sliceBy(perCollisionDmeson, collision.globalIndex());
       auto groupedDileptonCandidates = dileptons.sliceBy(perCollisionDilepton, collision.globalIndex());
 
-      if (configDebug & (groupedDmesonCandidates.size() > 0 || groupedDileptonCandidates.size() > 0)) {
+      if (configDebug && (groupedDmesonCandidates.size() > 0 || groupedDileptonCandidates.size() > 0)) {
         LOGP(debug, "D-meson size = {} ; Dilepton size = {}", groupedDmesonCandidates.size(), groupedDileptonCandidates.size());
         LOGP(debug, "collision global index = {} ({}, {}, {})", collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ());
         runDileptonDmeson(groupedDileptonCandidates, groupedDmesonCandidates);
