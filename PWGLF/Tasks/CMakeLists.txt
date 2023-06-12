@@ -150,3 +150,8 @@ o2physics_add_dpl_workflow(phianalysisrun3
                     SOURCES phianalysisrun3.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(f0980analysis
+                    SOURCES f0980analysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
