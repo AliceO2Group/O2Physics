@@ -9,21 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef COMMON_CORE_ANALYSISCORELINKDEF_H_
-#define COMMON_CORE_ANALYSISCORELINKDEF_H_
+/// \file CollisionAssociation.cxx
+/// \brief Class for track to collision associators
+/// \author Jan Fiete Grosse-Oetringhaus <jan.fiete.grosse-oetringhaus@cern.ch>, CERN
+/// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
+/// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova
+/// \author Sarah Herrmann <sarah.herrmann@cern.ch>, IP2I Lyon
+/// \author Maurice Coquet <maurice.louis.coquet@cern.ch>, CEA-Saclay/Irfu
 
-#pragma link off all globals;
-#pragma link off all classes;
-#pragma link off all functions;
-
-#pragma link C++ class TrackSelection + ;
-
-#pragma link C++ class o2::pid::Parameters + ;
-#pragma link C++ class o2::pid::PidParameters < 5> + ;
-#pragma link C++ class o2::pid::Parametrization + ;
-
-#pragma link C++ class o2::pid::tpc::Response + ;
-
-#pragma link C++ class OrbitRange + ;
-
-#endif // COMMON_CORE_ANALYSISCORELINKDEF_H_
+#include "Common/Core/CollisionAssociation.h"
