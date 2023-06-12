@@ -350,7 +350,7 @@ struct correlateStrangeness {
     }
     if (bitcheck(doCorrelation, 5)) {
       histos.add("h2dMassOmegaMinus", "h2dMassOmegaMinus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
-      histos.add("sameEvent/Signal/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhi, axisDeltaEta, axisPtAssoc, axisVtxZ, axisMult});
+      histos.add("sameEvent/Signal/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 6)) {
       histos.add("h2dMassOmegaPlus", "h2dMassOmegaPlus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
