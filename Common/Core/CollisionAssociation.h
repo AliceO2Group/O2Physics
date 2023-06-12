@@ -232,8 +232,6 @@ class CollisionAssociation
   bool mUsePvAssociation{true};                          // use the information of PV contributors
   bool mIncludeUnassigned{true};                         // include tracks that were originally not assigned to any collision
   bool mFillTableOfCollIdsPerTrack{false};               // fill additional table with vectors of compatible collisions per track
-
-  ClassDefNV(CollisionAssociation, 1);
 };
 
 } // namespace track_association
