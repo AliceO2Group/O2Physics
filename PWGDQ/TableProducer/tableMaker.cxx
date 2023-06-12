@@ -1126,7 +1126,7 @@ struct TableMaker {
 
   // Produce barrel only tables, with multiplicity and event filtering ----------------------------------------------------------------------------------------
   void processBarrelOnlyWithMultsAndEventFilter(MyEventsWithMultsAndFilter::iterator const& collision, aod::BCsWithTimestamps const& bcs,
-                                        soa::Filtered<MyBarrelTracks> const& tracksBarrel)
+                                                soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
     for (int i = 0; i < kNaliases; i++) {
       if (collision.alias()[i] > 0) {

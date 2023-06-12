@@ -51,7 +51,6 @@ DECLARE_SOA_COLUMN(IsDQBarrelSelected, isDQBarrelSelected, uint32_t);
 DECLARE_SOA_TABLE(DQBarrelTrackCuts, "AOD", "DQBARRELCUTS", dqppfilter::IsDQBarrelSelected);
 } // namespace o2::aod
 
-
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -215,8 +214,8 @@ struct DQFilterPbPbTask {
 
   // Helper function for selecting DG events
   bool isEventDG(MyEvents::iterator const& collision, MyBCs const& bcs, MyBarrelTracksSelected const& tracks, MyMuons const& muons,
-                aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
-                std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, bool useFV0, bool useFT0, bool useFDD)
+                 aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
+                 std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, bool useFV0, bool useFT0, bool useFDD)
   {
     // Find BC associated with collision
     if (!collision.has_foundBC()) {
@@ -376,7 +375,7 @@ struct DQFilterPbPbTask {
   {
     fStats->Fill(-2.0);
 
-    std::vector<float> FITAmpLimits = {fConfigFV0AmpLimit, fConfigFT0AAmpLimit, fConfigFT0CAmpLimit,fConfigFDDAAmpLimit,fConfigFDDCAmpLimit};
+    std::vector<float> FITAmpLimits = {fConfigFV0AmpLimit, fConfigFT0AAmpLimit, fConfigFT0CAmpLimit, fConfigFDDAAmpLimit, fConfigFDDCAmpLimit};
     bool isDG = isEventDG(collision, bcs, tracks, muons, ft0s, fv0as, fdds, FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigUseFV0, fConfigUseFT0, fConfigUseFDD);
     fStats->Fill(-1.0, isDG);
 
@@ -395,7 +394,7 @@ struct DQFilterPbPbTask {
     filter |= isDG;
     for (int i = 0; i < fNBarrelCuts; i++) {
       if (objCountersBarrel[i] >= fBarrelNminTracks[i] && objCountersBarrel[i] <= fBarrelNmaxTracks[i]) {
-        filter |= (uint64_t(1) << i+1);
+        filter |= (uint64_t(1) << i + 1);
         fStats->Fill(static_cast<float>(i));
       }
     }
