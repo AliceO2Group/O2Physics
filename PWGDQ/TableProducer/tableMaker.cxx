@@ -1129,7 +1129,7 @@ struct TableMaker {
                                                 soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
     for (int i = 0; i < kNaliases; i++) {
-      if (collision.alias()[i] > 0) {
+      if (collision.alias_bit(i) > 0) {
         (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(i));
       }
     }
