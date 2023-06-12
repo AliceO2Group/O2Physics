@@ -144,8 +144,8 @@ static const AxisSpec alphaAxis{100, -1.f, 1.f};
 static const AxisSpec qtAxis{100, 0.f, 0.25f};
 static const AxisSpec bdtAxis{100, 0.f, 1.f};
 static const AxisSpec phiAxis{36, 0., TwoPI};
-static const std::array<AxisSpec, kNCharmParticles + 3> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 2.08f, 2.18f}};
-static const std::array<AxisSpec, kNBeautyParticles> massAxisB = {AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.3f, 5.9f}, AxisSpec{100, 5.3f, 5.9f}};
+static const std::array<AxisSpec, kNCharmParticles + 3> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 2.00f, 2.04f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 2.08f, 2.18f}};
+static const std::array<AxisSpec, kNBeautyParticles> massAxisB = {AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 5.0f, 6.2f}, AxisSpec{240, 5.0f, 6.2f}};
 
 /// load the TPC spline from the CCDB
 /// \param ccdbApi is Api for CCDB
