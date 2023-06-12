@@ -158,6 +158,11 @@ class HFMLResponse
       return &mNetworks[nModel];
     }
 
+    template <typename T1>
+    void setCutDir(const T1& cutDir) {
+      mCutDir = cutDir;
+    }
+
   private:
     std::vector<o2::ml::OnnxModel> mNetworks; // OnnxModel objects, one for each bin
     uint8_t mNModels = 1; // number of bins
