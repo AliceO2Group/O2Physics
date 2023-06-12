@@ -13,6 +13,8 @@
 //
 // Authors: Nima Zardoshti
 
+#include <string>
+
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -33,6 +35,8 @@
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
+
+#include "EventFiltering/filterTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -87,14 +91,68 @@ struct JetFinderQATask {
                               {"h3_jet_pt_part_jet_phi_part_jet_phi", "#it{p}_{T,jet}^{part} (GeV/#it{c}); #phi_{jet}^{part}; #phi_{jet}", {HistType::kTH3F, {{200, 0.0, 200}, {80, -1.0, 7.}, {80, -1.0, 7.}}}, true},
                               {"h3_jet_pt_part_jet_ntracks_part_jet_ntracks", "#it{p}_{T,jet}^{part} (GeV/#it{c}); N_{jet tracks}^{part}; N_{jet tracks}", {HistType::kTH3F, {{200, 0.0, 200}, {100, -0.5, 99.5}, {100, -0.5, 99.5}}}, true},
                               {"h2_jet_pt_part_jet_pt_diff", "#it{p}_{T,jet}^{part} (GeV/#it{c}); (#it{p}_{T,jet}^{part} (GeV/#it{c}) - #it{p}_{T,jet} (GeV/#it{c})) / #it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {1000, -5.0, 5.0}}}, true},
+                              {"h_collision_trigger_events", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}}, true},
+                              {"h_track_pt_MB", "track pT for MB events;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0.0, 200.0}}}, true},
+                              {"h_track_eta_MB", "track #eta for MB events;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}, true},
+                              {"h_track_phi_MB", "track #phi for MB events;#phi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}, true},
+                              {"h_track_pt_Triggered", "track pT for Triggered events;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0.0, 200.0}}}, true},
+                              {"h_track_eta_Triggered", "track #eta for Triggered events;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}, true},
+                              {"h_track_phi_Triggered", "track #phi for Triggered events;#phi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}, true},
                               {"h_collision_eventweight_part", "event weight;event weight;entries", {HistType::kTH1F, {weightAxis}}}}};
+
+  Configurable<float> triggeredJetsRadius{"triggeredJetsRadius", 0.6, "resolution parameter for triggered jets"};
+  Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
+  Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.2, 0.3, 0.4, 0.5, 0.6}, "jet resolution parameters"};
+  Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
+  Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
+  Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum pT acceptance for tracks"};
+  Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
+  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  std::string trackSelection;
+  std::vector<double> minJetPt;
+  std::vector<double> jetRadiiValues;
 
   void init(o2::framework::InitContext&)
   {
+    trackSelection = static_cast<std::string>(trackSelections);
+    jetRadiiValues = (std::vector<double>)jetRadii;
+
+    for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
+      minJetPt.push_back(0.0);
+    }
+    auto jetRadiiBins = (std::vector<double>)jetRadii;
+    jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + 0.1);
+    registry.add("h3_jet_radius_jet_pt_collision", "jet radius;#it{p}_{T,jet} (GeV/#it{c});collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {2, 0.0, 2.0}}});
+    registry.add("h3_jet_radius_jet_eta_collision", "jet radius;#eta_{jet};collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {100, -1.0, 1.0}, {2, 0.0, 2.0}}});
+    registry.add("h3_jet_radius_jet_phi_collision", "jet radius;#phi_{jet};collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {80, -1.0, 7.}, {2, 0.0, 2.0}}});
+    registry.add("h2_jet_radius_jet_pT_triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{jetRadiiBins, ""}, {200, 0., 200.}}});
+    registry.add("h3_jet_radius_jet_pt_track_pt_MB", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {200, 0., 200.}}});
+    registry.add("h3_jet_radius_jet_pt_track_eta_MB", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
+    registry.add("h3_jet_radius_jet_pt_track_phi_MB", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
+    registry.add("h3_jet_radius_jet_pt_track_pt_Triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {200, 0., 200.}}});
+    registry.add("h3_jet_radius_jet_pt_track_eta_Triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
+    registry.add("h3_jet_radius_jet_pt_track_phi_Triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
   }
 
   using JetTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
 
+  template <typename T>
+  bool selectTrack(T const& track)
+  {
+    if (trackSelection == "globalTracks" && !track.isGlobalTrackWoPtEta()) {
+      return false;
+    }
+    if (trackSelection == "globalTracks" && (track.pt() < trackPtMin || track.pt() >= trackPtMax || track.eta() < trackEtaMin || track.eta() >= trackEtaMax)) {
+      return false;
+    }
+    if (trackSelection == "QualityTracks" && !track.isQualityTrack()) {
+      return false;
+    }
+    if (trackSelection == "hybridTracksJE" && !track.trackCutFlagFb5()) { // isQualityTrack
+      return false;
+    }
+    return true;
+  }
   template <typename T>
   void fillHistograms(T const& jet, float weight = 1.0)
   {
@@ -232,12 +290,74 @@ struct JetFinderQATask {
   {
 
     registry.fill(HIST("h_collision_eventweight_part"), collision.weight());
-    registry.fill(HIST("h_collision_eventweight_part"), 0.000000003);
-    registry.fill(HIST("h_collision_eventweight_part"), 0.0000003);
-    registry.fill(HIST("h_collision_eventweight_part"), 0.0003);
-    registry.fill(HIST("h_collision_eventweight_part"), 0.03);
   }
   PROCESS_SWITCH(JetFinderQATask, processMCCollisionsWeighted, "collision QA for weighted events", false);
+
+  void processTriggeredData(soa::Join<aod::Collisions, aod::EvSels, aod::JetFilters>::iterator const& collision,
+                            soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
+                            JetTracks const& tracks)
+  {
+    registry.fill(HIST("h_collision_trigger_events"), 0.5); // all events
+    if (collision.posZ() > vertexZCut)
+      return;
+    registry.fill(HIST("h_collision_trigger_events"), 1.5); // all events with z vertex cut
+    if (!collision.sel8())
+      return;
+    registry.fill(HIST("h_collision_trigger_events"), 2.5); // events with sel8()
+    if (collision.hasJetChHighPt() >= 1)
+      registry.fill(HIST("h_collision_trigger_events"), 3.5); // events with triggered jets
+
+    for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
+      minJetPt[iJetRadius] = 0.0;
+    }
+    for (auto& jet : jets) {
+      for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
+        if (jet.r() == round(jetRadiiValues[iJetRadius] * 100.0f)) {
+          for (double pt = jet.pt(); pt > minJetPt[iJetRadius]; pt -= 1.0) {
+            registry.fill(HIST("h2_jet_radius_jet_pT_triggered"), jet.r() / 100.0, pt);
+          }
+          if (jet.pt() > minJetPt[iJetRadius]) {
+            minJetPt[iJetRadius] = jet.pt();
+          }
+          break;
+        }
+      }
+
+      if ((jet.eta() < (trackEtaMin + jet.r() / 100.0)) || (jet.eta() > (trackEtaMax - jet.r() / 100.0))) {
+        continue;
+      }
+      registry.fill(HIST("h3_jet_radius_jet_pt_collision"), jet.r() / 100.0, jet.pt(), collision.hasJetChHighPt());
+      registry.fill(HIST("h3_jet_radius_jet_eta_collision"), jet.r() / 100.0, jet.eta(), collision.hasJetChHighPt());
+      registry.fill(HIST("h3_jet_radius_jet_phi_collision"), jet.r() / 100.0, jet.phi(), collision.hasJetChHighPt());
+
+      for (auto& constituent : jet.template tracks_as<JetTracks>()) {
+        registry.fill(HIST("h3_jet_radius_jet_pt_track_pt_MB"), jet.r() / 100.0, jet.pt(), constituent.pt());
+        registry.fill(HIST("h3_jet_radius_jet_pt_track_eta_MB"), jet.r() / 100.0, jet.pt(), constituent.eta());
+        registry.fill(HIST("h3_jet_radius_jet_pt_track_phi_MB"), jet.r() / 100.0, jet.pt(), constituent.phi());
+        if (collision.hasJetChHighPt() >= 1) {
+          registry.fill(HIST("h3_jet_radius_jet_pt_track_pt_Triggered"), jet.r() / 100.0, jet.pt(), constituent.pt());
+          registry.fill(HIST("h3_jet_radius_jet_pt_track_eta_Triggered"), jet.r() / 100.0, jet.pt(), constituent.eta());
+          registry.fill(HIST("h3_jet_radius_jet_pt_track_phi_Triggered"), jet.r() / 100.0, jet.pt(), constituent.phi());
+        }
+      }
+    }
+
+    for (auto& track : tracks) {
+      if (!selectTrack(track)) {
+        continue;
+      }
+      registry.fill(HIST("h_track_pt_MB"), track.pt());
+      registry.fill(HIST("h_track_eta_MB"), track.eta());
+      registry.fill(HIST("h_track_phi_MB"), track.phi());
+      if (collision.hasJetChHighPt() >= 1) {
+        registry.fill(HIST("h_track_pt_Triggered"), track.pt());
+        registry.fill(HIST("h_track_eta_Triggered"), track.eta());
+        registry.fill(HIST("h_track_phi_Triggered"), track.phi());
+      }
+    }
+  }
+
+  PROCESS_SWITCH(JetFinderQATask, processTriggeredData, "QA for charged jet trigger", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetFinderQATask>(cfgc, TaskName{"jet-finder-qa"})}; }

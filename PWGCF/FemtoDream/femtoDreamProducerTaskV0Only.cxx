@@ -1,4 +1,4 @@
-// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -76,9 +76,9 @@ int getRowDaughters(int daughID, T const& vecID)
 
 struct femtoDreamProducerTaskV0Only {
 
-  Produces<aod::FemtoDreamCollisions> outputCollision;
-  Produces<aod::FemtoDreamParticles> outputParts;
-  Produces<aod::FemtoDreamDebugParticles> outputDebugParts;
+  Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FDParticles> outputParts;
+  Produces<aod::FDExtParticles> outputDebugParts;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
 
@@ -116,6 +116,18 @@ struct femtoDreamProducerTaskV0Only {
                                             "ConfV0"),
     std::vector<float>{0.3f},
     FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0pTMin,
+                                              "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0PtMax{
+    FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0pTMax,
+                                            "ConfV0"),
+    std::vector<float>{6.f},
+    FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0pTMax,
+                                              "V0 selection: ")};
+  Configurable<std::vector<float>> ConfV0EtaMax{
+    FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0etaMax,
+                                            "ConfV0"),
+    std::vector<float>{6.f},
+    FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0etaMax,
                                               "V0 selection: ")};
   Configurable<std::vector<float>> ConfDCAV0DaughMax{
     FemtoDreamV0Selection::getSelectionName(
@@ -214,6 +226,10 @@ struct femtoDreamProducerTaskV0Only {
                           femtoDreamSelection::kEqual);
       v0Cuts.setSelection(ConfV0PtMin, femtoDreamV0Selection::kV0pTMin,
                           femtoDreamSelection::kLowerLimit);
+      v0Cuts.setSelection(ConfV0PtMax, femtoDreamV0Selection::kV0pTMax,
+                          femtoDreamSelection::kUpperLimit);
+      v0Cuts.setSelection(ConfV0EtaMax, femtoDreamV0Selection::kV0etaMax,
+                          femtoDreamSelection::kUpperLimit);
       v0Cuts.setSelection(ConfDCAV0DaughMax,
                           femtoDreamV0Selection::kV0DCADaughMax,
                           femtoDreamSelection::kUpperLimit);

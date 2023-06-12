@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -39,7 +39,9 @@ using namespace o2::soa;
 struct femtoDreamDebugV0 {
   SliceCache cache;
 
-  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 3122, "Particle 1 - PDG code"};
+  Configurable<int> ConfPDGCodeV0{"ConfPDGCodePartOne", 3122, "V0 - PDG code"};
+  Configurable<int> ConfPDGCodeChildPos{"ConfPDGCodeChildPos", 2212, "Positive Child - PDG code"};
+  Configurable<int> ConfPDGCodeChildNeg{"ConfPDGCodeChildNeg", 211, "Negative Child- PDG code"};
   Configurable<uint32_t> ConfCutV0{"ConfCutV0", 338, "V0 - Selection bit from cutCulator"};
   ConfigurableAxis ConfV0TempFitVarBins{"ConfV0TempFitVarBins", {300, 0.95, 1.}, "V0: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfV0TempFitVarpTBins{"ConfV0TempFitVarpTBins", {20, 0.5, 4.05}, "V0: pT binning of the pT vs. TempFitVar plot"};
@@ -55,9 +57,9 @@ struct femtoDreamDebugV0 {
   ConfigurableAxis ConfChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
 
-  using FemtoFullParticles = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
+  using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && ((aod::femtodreamparticle::cut & ConfCutV0) == ConfCutV0);
-  Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::femtoDreamCollisionId;
+  Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
   /// Histogramming
   FemtoDreamEventHisto eventHisto;
@@ -72,15 +74,15 @@ struct femtoDreamDebugV0 {
   void init(InitContext&)
   {
     eventHisto.init(&EventRegistry);
-    posChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, true);
-    negChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, true);
-    V0Histos.init(&V0Registry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, false, true);
+    posChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, ConfPDGCodeChildPos.value, true);
+    negChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, ConfPDGCodeChildNeg, true);
+    V0Histos.init(&V0Registry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, false, ConfPDGCodeV0.value, true);
   }
 
   /// Porduce QA plots for V0 selection in FemtoDream framework
-  void process(o2::aod::FemtoDreamCollision const& col, FemtoFullParticles const& parts)
+  void process(o2::aod::FDCollision const& col, FemtoFullParticles const& parts)
   {
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     eventHisto.fillQA(col);
     for (auto& part : groupPartsOne) {
       if (!part.has_children()) {
