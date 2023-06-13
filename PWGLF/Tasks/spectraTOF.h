@@ -234,4 +234,4 @@ static constexpr std::string_view hdcazmat[NpCharge] = {"dcazmat/pos/el", "dcazm
                                                         "dcazmat/neg/ka", "dcazmat/neg/pr", "dcazmat/neg/de",
                                                         "dcazmat/neg/tr", "dcazmat/neg/he", "dcazmat/neg/al"};
 
-#endif
+#endif  // PWGLF_TASKS_SPECTRATOF_H_
