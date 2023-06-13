@@ -369,7 +369,7 @@ struct HfTreeCreatorDplusToPiKPi {
     for (auto const& candidate : candidates) {
       if (fillOnlyBackground) {
         float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
-        if (candidate.pt() < pseudoRndm >= donwSampleBkgFactor) {
+        if (candidate.pt() < maxPtforDownSample && pseudoRndm >= donwSampleBkgFactor) {
           continue;
         }
       }
