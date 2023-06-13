@@ -54,7 +54,7 @@ struct correlateStrangeness {
   Configurable<bool> doCorrelationOmegaPlus{"doCorrelationOmegaPlus", false, "do OmegaPlus correlation"};
   Configurable<bool> doCorrelationPion{"doCorrelationPion", false, "do Pion correlation"};
   Configurable<int> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
-  Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", true, "skip under/overflow in THns"};
+  Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
 
   // Axes - configurable for smaller sizes
   ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 0.01f, 1.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "Mixing bins - multiplicity"};
@@ -266,19 +266,6 @@ struct correlateStrangeness {
     if (doCorrelationPion)
       bitset(doCorrelation, 7);
 
-    // grab axis edge from ConfigurableAxes
-    const AxisSpec preAxisDeltaPhi{axisDeltaPhi, "#Delta#varphi"};
-    const AxisSpec preAxisDeltaEta{axisDeltaEta, "#Delta#eta"};
-    const AxisSpec preAxisPtAssoc{axisPtAssoc, "#it{p}_{T}^{assoc} (GeV/c)"};
-    const AxisSpec preAxisVtxZ{axisVtxZ, "vertex Z (cm)"};
-    const AxisSpec preAxisMult{axisMult, "mult percentile"};
-
-    std::vector<double> edgesDeltaPhi = preAxisDeltaPhi.binEdges;
-    std::vector<double> edgesDeltaEta = preAxisDeltaEta.binEdges;
-    std::vector<double> edgesPtAssoc = preAxisPtAssoc.binEdges;
-    std::vector<double> edgesVtxZ = preAxisVtxZ.binEdges;
-    std::vector<double> edgesMult = preAxisMult.binEdges;
-
     // Store axis ranges to prevent spurious filling
     // axis status:
     // --- Delta-phi is safe -> math forbids insanity
@@ -287,11 +274,24 @@ struct correlateStrangeness {
     // --- vertex Z is safe -> skipped at evsel level
     // --- multiplicity -> check
 
-    std::vector<float> rangesDeltaPhi = {static_cast<float>(edgesDeltaPhi[0]), static_cast<float>(edgesDeltaPhi[edgesDeltaPhi.size() - 1])};
-    std::vector<float> rangesDeltaEta = {static_cast<float>(edgesDeltaEta[0]), static_cast<float>(edgesDeltaEta[edgesDeltaEta.size() - 1])};
-    std::vector<float> rangesPtAssoc = {static_cast<float>(edgesPtAssoc[0]), static_cast<float>(edgesPtAssoc[edgesPtAssoc.size() - 1])};
-    std::vector<float> rangesVtxZ = {static_cast<float>(edgesVtxZ[0]), static_cast<float>(edgesVtxZ[edgesVtxZ.size() - 1])};
-    std::vector<float> rangesMult = {static_cast<float>(edgesMult[0]), static_cast<float>(edgesMult[edgesMult.size() - 1])};
+    // grab axis edge from ConfigurableAxes
+    const AxisSpec preAxisDeltaPhi{axisDeltaPhi, "#Delta#varphi"};
+    const AxisSpec preAxisDeltaEta{axisDeltaEta, "#Delta#eta"};
+    const AxisSpec preAxisPtAssoc{axisPtAssoc, "#it{p}_{T}^{assoc} (GeV/c)"};
+    const AxisSpec preAxisVtxZ{axisVtxZ, "vertex Z (cm)"};
+    const AxisSpec preAxisMult{axisMult, "mult percentile"};
+
+    std::vector<double> edgesDeltaPhiOrig = preAxisDeltaPhi.binEdges;
+    std::vector<double> edgesDeltaEtaOrig = preAxisDeltaEta.binEdges;
+    std::vector<double> edgesPtAssocOrig = preAxisPtAssoc.binEdges;
+    std::vector<double> edgesVtxZOrig = preAxisVtxZ.binEdges;
+    std::vector<double> edgesMultOrig = preAxisMult.binEdges;
+
+    std::vector<float> rangesDeltaPhi = {static_cast<float>(edgesDeltaPhiOrig[0]), static_cast<float>(edgesDeltaPhiOrig[edgesDeltaPhiOrig.size() - 1])};
+    std::vector<float> rangesDeltaEta = {static_cast<float>(edgesDeltaEtaOrig[0]), static_cast<float>(edgesDeltaEtaOrig[edgesDeltaEtaOrig.size() - 1])};
+    std::vector<float> rangesPtAssoc = {static_cast<float>(edgesPtAssocOrig[0]), static_cast<float>(edgesPtAssocOrig[edgesPtAssocOrig.size() - 1])};
+    std::vector<float> rangesVtxZ = {static_cast<float>(edgesVtxZOrig[0]), static_cast<float>(edgesVtxZOrig[edgesVtxZOrig.size() - 1])};
+    std::vector<float> rangesMult = {static_cast<float>(edgesMultOrig[0]), static_cast<float>(edgesMultOrig[edgesMultOrig.size() - 1])};
 
     axisRanges.emplace_back(rangesDeltaPhi);
     axisRanges.emplace_back(rangesDeltaEta);
@@ -299,28 +299,33 @@ struct correlateStrangeness {
     axisRanges.emplace_back(rangesVtxZ);
     axisRanges.emplace_back(rangesMult);
 
-    // check if U/O-flow skip is on
-    if (skipUnderOverflowInTHn) {
-      // v--- skipUnderOverflowInTHn ---v
-      //
-      // if enabled, this will change the axes such that they will solely cover the interval from
-      // edge[1] to edge[n-1]; this will mean that the bin 1 and bin N will be stored in
-      // under / overflow bins and will have to be manually unpacked. Do not forget to do the manual
-      // unpacking a posteriori!
-      //
-      // this feature is meant to save memory conveniently.
-      // it should actually be implemented centrally in ROOT but ok, this will do it for now.
-      edgesDeltaPhi.erase(edgesDeltaPhi.begin());
-      edgesDeltaPhi.erase(edgesDeltaPhi.end());
-      edgesDeltaEta.erase(edgesDeltaPhi.begin());
-      edgesDeltaEta.erase(edgesDeltaPhi.end());
-      edgesPtAssoc.erase(edgesDeltaPhi.begin());
-      edgesPtAssoc.erase(edgesDeltaPhi.end());
-      edgesVtxZ.erase(edgesDeltaPhi.begin());
-      edgesVtxZ.erase(edgesDeltaPhi.end());
-      edgesMult.erase(edgesDeltaPhi.begin());
-      edgesMult.erase(edgesDeltaPhi.end());
-    }
+    std::vector<double> edgesDeltaPhi;
+    std::vector<double> edgesDeltaEta;
+    std::vector<double> edgesPtAssoc;
+    std::vector<double> edgesVtxZ;
+    std::vector<double> edgesMult;
+
+    // v--- skipUnderOverflowInTHn ---v
+    //
+    // if enabled, this will change the axes such that they will solely cover the interval from
+    // edge[1] to edge[n-1]; this will mean that the bin 1 and bin N will be stored in
+    // under / overflow bins and will have to be manually unpacked. Do not forget to do the manual
+    // unpacking a posteriori!
+    //
+    // this feature is meant to save memory conveniently.
+    // it should actually be implemented centrally in ROOT but ok, this will do it for now.
+
+    int offset = skipUnderOverflowInTHn ? 1 : 0;
+    for (int i = offset; i < edgesDeltaPhiOrig.size() - offset; i++)
+      edgesDeltaPhi.emplace_back(edgesDeltaPhiOrig[i]);
+    for (int i = offset; i < edgesDeltaEtaOrig.size() - offset; i++)
+      edgesDeltaEta.emplace_back(edgesDeltaEtaOrig[i]);
+    for (int i = offset; i < edgesPtAssocOrig.size() - offset; i++)
+      edgesPtAssoc.emplace_back(edgesPtAssocOrig[i]);
+    for (int i = offset; i < edgesVtxZOrig.size() - offset; i++)
+      edgesVtxZ.emplace_back(edgesVtxZOrig[i]);
+    for (int i = offset; i < edgesMultOrig.size() - offset; i++)
+      edgesMult.emplace_back(edgesMultOrig[i]);
 
     const AxisSpec axisDeltaPhiNDim{edgesDeltaPhi, "#Delta#varphi"};
     const AxisSpec axisDeltaEtaNDim{edgesDeltaEta, "#Delta#eta"};
@@ -329,36 +334,37 @@ struct correlateStrangeness {
     const AxisSpec axisMultNDim{edgesMult, "mult percentile"};
 
     if (bitcheck(doCorrelation, 0)) {
-      histos.add("h2dMassK0Short", "h2dMassK0Short", kTH3F, {axisPtQA, axisK0ShortMass, axisMult});
+      histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisPtQA, axisK0ShortMass, axisMult});
       histos.add("sameEvent/Signal/K0Short", "K0Short", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 1)) {
-      histos.add("h2dMassLambda", "h2dMassLambda", kTH3F, {axisPtQA, axisLambdaMass, axisMult});
+      histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisPtQA, axisLambdaMass, axisMult});
       histos.add("sameEvent/Signal/Lambda", "Lambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 2)) {
-      histos.add("h2dMassAntiLambda", "h2dMassAntiLambda", kTH3F, {axisPtQA, axisLambdaMass, axisMult});
+      histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisPtQA, axisLambdaMass, axisMult});
       histos.add("sameEvent/Signal/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 3)) {
-      histos.add("h2dMassXiMinus", "h2dMassXiMinus", kTH3F, {axisPtQA, axisXiMass, axisMult});
+      histos.add("h3dMassXiMinus", "h3dMassXiMinus", kTH3F, {axisPtQA, axisXiMass, axisMult});
       histos.add("sameEvent/Signal/XiMinus", "XiMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 4)) {
-      histos.add("h2dMassXiPlus", "h2dMassXiPlus", kTH3F, {axisPtQA, axisXiMass, axisMult});
+      histos.add("h3dMassXiPlus", "h3dMassXiPlus", kTH3F, {axisPtQA, axisXiMass, axisMult});
       histos.add("sameEvent/Signal/XiPlus", "XiPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 5)) {
-      histos.add("h2dMassOmegaMinus", "h2dMassOmegaMinus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
+      histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
       histos.add("sameEvent/Signal/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 6)) {
-      histos.add("h2dMassOmegaPlus", "h2dMassOmegaPlus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
+      histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
       histos.add("sameEvent/Signal/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 7)) {
       histos.add("sameEvent/Pion", "Pion", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
+    LOGF(info, "Init THnFs done");
 
     if (doCorrelationK0Short || doCorrelationLambda || doCorrelationAntiLambda || doCorrelationXiMinus || doCorrelationXiPlus || doCorrelationOmegaMinus || doCorrelationOmegaPlus) {
       histos.addClone("sameEvent/Signal/", "sameEvent/LeftBg/");
@@ -420,7 +426,7 @@ struct correlateStrangeness {
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
         if (v0.compatible(index) && bitcheck(doCorrelation, index))
-          histos.fill(HIST("h2dMass") + HIST(v0names[index]), v0Data.pt(), v0Data.m(index));
+          histos.fill(HIST("h3dMass") + HIST(v0names[index]), v0Data.pt(), v0Data.m(index), collision.centFT0M());
       });
     }
     if (!doprocessSameEventHCascades) {
@@ -461,7 +467,7 @@ struct correlateStrangeness {
       static_for<0, 3>([&](auto i) {
         constexpr int index = i.value;
         if (casc.compatible(index) && bitcheck(doCorrelation, index + 3))
-          histos.fill(HIST("h2dMass") + HIST(cascadenames[index]), cascData.pt(), cascData.m(index));
+          histos.fill(HIST("h3dMass") + HIST(cascadenames[index]), cascData.pt(), cascData.m(index), collision.centFT0M());
       });
     }
     for (auto const& triggerTrack : triggerTracks) {
