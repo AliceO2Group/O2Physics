@@ -96,7 +96,7 @@ o2physics_add_dpl_workflow(threebodymcfinder
 # Resonances
 o2physics_add_dpl_workflow(reso2initializer
                     SOURCES LFResonanceInitializer.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(f1protoninitializer
@@ -107,4 +107,9 @@ o2physics_add_dpl_workflow(f1protoninitializer
 o2physics_add_dpl_workflow(filterf1proton
                     SOURCES filterf1proton.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(v0qaanalysis
+                    SOURCES v0qaanalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

@@ -35,6 +35,10 @@ DECLARE_SOA_COLUMN(RUNNUMBER, Runnumber, int);
 DECLARE_SOA_COLUMN(PVCONTRIB, PVContrib, int);
 DECLARE_SOA_COLUMN(PtPi, ptpi, float);
 DECLARE_SOA_COLUMN(PtKa, ptka, float);
+DECLARE_SOA_COLUMN(EtaPi, etapi, float);
+DECLARE_SOA_COLUMN(EtaKa, etaka, float);
+DECLARE_SOA_COLUMN(PhiPi, phipi, float);
+DECLARE_SOA_COLUMN(PhiKa, phika, float);
 DECLARE_SOA_COLUMN(DCAXYPiToPV, dcaxypvpi, float);
 DECLARE_SOA_COLUMN(DCAXYKaToPV, dcaxypvka, float);
 DECLARE_SOA_COLUMN(DCAPiToPV, dcapvpi, float);
@@ -51,6 +55,8 @@ DECLARE_SOA_COLUMN(DCADau, distdau, float);
 DECLARE_SOA_COLUMN(ImpParPiKa, d0pid0ka, float);
 
 DECLARE_SOA_COLUMN(PtDGeo, ptdgeo, float);
+DECLARE_SOA_COLUMN(EtaDGeo, etadgeo, float);
+DECLARE_SOA_COLUMN(PhiDGeo, phidgeo, float);
 DECLARE_SOA_COLUMN(MassGeo, massgeo, float);
 DECLARE_SOA_COLUMN(CosPaGeo, cospageo, float);
 DECLARE_SOA_COLUMN(CosPaXYGeo, cospaxygeo, float);
@@ -59,6 +65,8 @@ DECLARE_SOA_COLUMN(DCADPVXYGeo, distdpvxygeo, float);
 DECLARE_SOA_COLUMN(Chi2Geo, chi2geo, float);
 
 DECLARE_SOA_COLUMN(PtD, ptd, float);
+DECLARE_SOA_COLUMN(EtaD, etad, float);
+DECLARE_SOA_COLUMN(PhiD, phid, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(DecayLengthD, decaylengthd, float);
 DECLARE_SOA_COLUMN(DecayLengthDXY, decaylengthdxy, float);
@@ -77,6 +85,10 @@ DECLARE_SOA_TABLE(TreeKF, "AOD", "TREEKF",
                   kfparticle::PVCONTRIB,
                   kfparticle::PtPi,
                   kfparticle::PtKa,
+                  kfparticle::EtaPi,
+                  kfparticle::EtaKa,
+                  kfparticle::PhiPi,
+                  kfparticle::PhiKa,
                   kfparticle::DCAXYPiToPV,
                   kfparticle::DCAXYKaToPV,
                   kfparticle::DCAPiToPV,
@@ -91,6 +103,8 @@ DECLARE_SOA_TABLE(TreeKF, "AOD", "TREEKF",
                   kfparticle::DCADau,
                   kfparticle::ImpParPiKa,
                   kfparticle::PtDGeo,
+                  kfparticle::EtaDGeo,
+                  kfparticle::PhiDGeo,
                   kfparticle::MassGeo,
                   kfparticle::CosPaGeo,
                   kfparticle::CosPaXYGeo,
@@ -98,6 +112,8 @@ DECLARE_SOA_TABLE(TreeKF, "AOD", "TREEKF",
                   kfparticle::DCADPVXYGeo,
                   kfparticle::Chi2Geo,
                   kfparticle::PtD,
+                  kfparticle::EtaD,
+                  kfparticle::PhiD,
                   kfparticle::Mass,
                   kfparticle::DecayLengthD,
                   kfparticle::DecayLengthDXY,

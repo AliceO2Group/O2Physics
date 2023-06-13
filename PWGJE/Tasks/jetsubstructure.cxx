@@ -103,7 +103,7 @@ struct JetSubstructureTask {
       daughterSubJet = parentSubJet1;
     }
     hNsd->Fill(nsd);
-    jetSubstructureTable(jet.globalIndex(), zg, rg, nsd);
+    jetSubstructureTable(zg, rg, nsd);
   }
 
   void processDummy(aod::Tracks const& track)
@@ -160,9 +160,9 @@ struct JetSubstructureTask {
   }
   PROCESS_SWITCH(JetSubstructureTask, processMCP, "jet substructure on MC particle level", false);
 };
-using JetSubstructureDataLevel = JetSubstructureTask<o2::aod::ChargedJetSubstructure>;
-using JetSubstructureMCDetectorLevel = JetSubstructureTask<o2::aod::ChargedMCDetectorLevelJetSubstructure>;
-using JetSubstructureMCParticleLevel = JetSubstructureTask<o2::aod::ChargedMCParticleLevelJetSubstructure>;
+using JetSubstructureDataLevel = JetSubstructureTask<o2::aod::ChargedJetSubstructures>;
+using JetSubstructureMCDetectorLevel = JetSubstructureTask<o2::aod::ChargedMCDetectorLevelJetSubstructures>;
+using JetSubstructureMCParticleLevel = JetSubstructureTask<o2::aod::ChargedMCParticleLevelJetSubstructures>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

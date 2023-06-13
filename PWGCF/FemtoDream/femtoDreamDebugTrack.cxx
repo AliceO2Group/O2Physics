@@ -1,4 +1,4 @@
-// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -35,8 +35,7 @@ using namespace o2::soa;
 namespace
 {
 static constexpr int nCuts = 5;
-static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC",
-                                               "nSigmaTPCTOF", "MaxP"};
+static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
 static const float cutsTable[1][nCuts] = {{4.05f, 0.75f, 3.f, 3.f, 100.f}};
 
 } // namespace
@@ -54,13 +53,13 @@ struct femtoDreamDebugTrack {
   ConfigurableAxis ConfTempFitVarBins{"ConfDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
 
-  using FemtoFullParticles = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
+  using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
-  Preslice<FemtoFullParticles> perColReco = aod::femtodreamparticle::femtoDreamCollisionId;
+  Preslice<FemtoFullParticles> perColReco = aod::femtodreamparticle::fdCollisionId;
 
-  using FemtoFullParticlesMC = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles, aod::FemtoDreamMCLabels>;
+  using FemtoFullParticlesMC = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
   Partition<FemtoFullParticlesMC> partsOneMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
-  Preslice<FemtoFullParticlesMC> perColGen = aod::femtodreamparticle::femtoDreamCollisionId;
+  Preslice<FemtoFullParticlesMC> perColGen = aod::femtodreamparticle::fdCollisionId;
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
@@ -73,19 +72,18 @@ struct femtoDreamDebugTrack {
 
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry FullQaRegistry{"FullTrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    trackHisto.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfIsMC, true);
+    trackHisto.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfIsMC, ConfPDGCodePartOne.value, true);
     vPIDPartOne = ConfPIDPartOne.value;
     kNsigma = ConfTrkPIDnSigmaMax.value;
   }
 
   /// Porduce QA plots for sigle track selection in FemtoDream framework
   template <bool isMC, typename PartitionType>
-  void FillDebugHistos(o2::aod::FemtoDreamCollision& col, PartitionType& groupPartsOne)
+  void FillDebugHistos(o2::aod::FDCollision& col, PartitionType& groupPartsOne)
   {
     eventHisto.fillQA(col);
     for (auto& part : groupPartsOne) {
@@ -102,9 +100,9 @@ struct femtoDreamDebugTrack {
   /// process function when runnning over data/ Monte Carlo reconstructed only
   /// \param col subscribe to FemtoDreamCollision table
   /// \param parts subscribe to FemtoDreamParticles table
-  void processData(o2::aod::FemtoDreamCollision& col, FemtoFullParticles& parts)
+  void processData(o2::aod::FDCollision& col, FemtoFullParticles& parts)
   {
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     FillDebugHistos<false>(col, groupPartsOne);
   }
   PROCESS_SWITCH(femtoDreamDebugTrack, processData, "Enable Debug processing for Monte Carlo", true);
@@ -114,9 +112,9 @@ struct femtoDreamDebugTrack {
   /// \param col subscribe to FemtoDreamCollision table
   /// \param parts subscribe to the joined table of FemtoDreamParticles and FemtoDreamMCLabels table
   /// \param FemtoDramMCParticles subscribe to the table containing the Monte Carlo Truth information
-  void processMC(o2::aod::FemtoDreamCollision& col, FemtoFullParticlesMC& parts, o2::aod::FemtoDreamMCParticles&)
+  void processMC(o2::aod::FDCollision& col, FemtoFullParticlesMC& parts, o2::aod::FDMCParticles&)
   {
-    auto groupPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex(), cache);
+    auto groupPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     FillDebugHistos<true>(col, groupPartsOne);
   }
   PROCESS_SWITCH(femtoDreamDebugTrack, processMC, "Enable Debug processing for Monte Carlo", false);

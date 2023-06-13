@@ -15,6 +15,11 @@
 #ifndef PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 #define PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 
+#include "Common/Core/TrackSelectorPID.h"
+#include "Common/Core/RecoDecay.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
 namespace o2::aod
 {
 // selection steps
@@ -183,6 +188,103 @@ DECLARE_SOA_TABLE(HfSelLcToK0sP, "AOD", "HFSELLCK0SP", //!
 namespace hf_sel_candidate_b0
 {
 DECLARE_SOA_COLUMN(IsSelB0ToDPi, isSelB0ToDPi, int); //!
+
+/// Apply topological cuts as defined in SelectorCuts.h
+/// \param candB0 B0 candidate
+/// \param cuts B0 candidate selection per pT bin"
+/// \param binsPt pT bin limits
+/// \return true if candidate passes all selections
+template <typename T1, typename T2, typename T3>
+bool selectionTopol(const T1& candB0, const T2& cuts, const T3& binsPt)
+{
+  auto ptCandB0 = candB0.pt();
+  auto ptD = RecoDecay::pt(candB0.pxProng0(), candB0.pyProng0());
+  auto ptPi = RecoDecay::pt(candB0.pxProng1(), candB0.pyProng1());
+
+  int pTBin = findBin(binsPt, ptCandB0);
+  if (pTBin == -1) {
+    // LOGF(info, "B0 topol selection failed at getpTBin");
+    return false;
+  }
+
+  // // check that the candidate pT is within the analysis range
+  // if (ptCandB0 < ptCandMin || ptCandB0 >= ptCandMax) {
+  //   return false;
+  // }
+
+  // B0 mass cut
+  if (std::abs(o2::aod::hf_cand_b0::invMassB0ToDPi(candB0) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
+    // Printf("B0 topol selection failed at mass diff check");
+    return false;
+  }
+
+  // pion pt
+  if (ptPi < cuts->get(pTBin, "pT Pi")) {
+    return false;
+  }
+
+  // D- pt
+  if (ptD < cuts->get(pTBin, "pT D")) {
+    return false;
+  }
+
+  /*
+  // D mass cut | already applied in candidateSelectorDplusToPiKPi.cxx
+  if (std::abs(o2::aod::hf_cand_3prong::invMassDplusToPiKPi(hfCandD) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaMD")) {
+    return false;
+  }
+  */
+
+  // B0 Decay length
+  if (candB0.decayLength() < cuts->get(pTBin, "B0 decLen")) {
+    return false;
+  }
+
+  // B0 Decay length XY
+  if (candB0.decayLengthXY() < cuts->get(pTBin, "B0 decLenXY")) {
+    return false;
+  }
+
+  // B0 chi2PCA cut
+  if (candB0.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
+    return false;
+  }
+
+  // B0 CPA cut
+  if (candB0.cpa() < cuts->get(pTBin, "CPA")) {
+    return false;
+  }
+
+  // d0 of pi
+  if (std::abs(candB0.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+    return false;
+  }
+
+  // d0 of D
+  if (std::abs(candB0.impactParameter0()) < cuts->get(pTBin, "d0 D")) {
+    return false;
+  }
+
+  return true;
+}
+
+/// Apply PID selection
+/// \param pidTrackPi PID status of trackPi (prong1 of B0 candidate)
+/// \param acceptPIDNotApplicable switch to accept Status::PIDNotApplicable
+/// \return true if prong1 of B0 candidate passes all selections
+template <typename T1 = int, typename T2 = bool>
+bool selectionPID(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+{
+  if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
+    return false;
+  }
+  if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Status::PIDRejected) {
+    return false;
+  }
+
+  return true;
+}
+
 } // namespace hf_sel_candidate_b0
 DECLARE_SOA_TABLE(HfSelB0ToDPi, "AOD", "HFSELB0", //!
                   hf_sel_candidate_b0::IsSelB0ToDPi);
@@ -241,11 +343,22 @@ DECLARE_SOA_COLUMN(StatusInvMassLambda, statusInvMassLambda, bool);
 DECLARE_SOA_COLUMN(StatusInvMassCascade, statusInvMassCascade, bool);
 DECLARE_SOA_COLUMN(StatusInvMassOmegac, statusInvMassOmegac, bool);
 DECLARE_SOA_COLUMN(ResultSelections, resultSelections, bool);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromOmega, tpcNSigmaPiFromOmega, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromCasc, tpcNSigmaPiFromCasc, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromLambda, tpcNSigmaPiFromLambda, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPrFromLambda, tpcNSigmaPrFromLambda, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromOmega, tofNSigmaPiFromOmega, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromCasc, tofNSigmaPiFromCasc, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
+DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
+
 } // namespace hf_sel_toxipi
 DECLARE_SOA_TABLE(HfSelToXiPi, "AOD", "HFSELTOXIPI",
                   hf_sel_toxipi::StatusPidLambda, hf_sel_toxipi::StatusPidCascade, hf_sel_toxipi::StatusPidOmegac,
                   hf_sel_toxipi::StatusInvMassLambda, hf_sel_toxipi::StatusInvMassCascade, hf_sel_toxipi::StatusInvMassOmegac,
-                  hf_sel_toxipi::ResultSelections);
+                  hf_sel_toxipi::ResultSelections,
+                  hf_sel_toxipi::TpcNSigmaPiFromOmega, hf_sel_toxipi::TpcNSigmaPiFromCasc, hf_sel_toxipi::TpcNSigmaPiFromLambda, hf_sel_toxipi::TpcNSigmaPrFromLambda,
+                  hf_sel_toxipi::TofNSigmaPiFromOmega, hf_sel_toxipi::TofNSigmaPiFromCasc, hf_sel_toxipi::TofNSigmaPiFromLambda, hf_sel_toxipi::TofNSigmaPrFromLambda);
 
 } // namespace o2::aod
 #endif // PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_

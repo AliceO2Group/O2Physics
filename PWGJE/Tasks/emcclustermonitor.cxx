@@ -196,11 +196,11 @@ struct ClusterMonitor {
     bool isSelected = true;
     if (mDoEventSel) {
       if (theCollision.bc().runNumber() < 300000) {
-        if (!theCollision.alias()[kINT7]) {
+        if (!theCollision.alias_bit(kINT7)) {
           isSelected = false;
         }
       } else {
-        if (!theCollision.alias()[kTVXinEMC]) {
+        if (!theCollision.alias_bit(kTVXinEMC)) {
           isSelected = false;
         }
       }
@@ -303,11 +303,11 @@ struct ClusterMonitor {
     bool isSelected = true;
     if (mDoEventSel) {
       if (bc.runNumber() < 300000) {
-        if (!bc.alias()[kINT7]) {
+        if (!bc.alias_bit(kINT7)) {
           isSelected = false;
         }
       } else {
-        if (!bc.alias()[kTVXinEMC]) {
+        if (!bc.alias_bit(kTVXinEMC)) {
           isSelected = false;
         }
       }

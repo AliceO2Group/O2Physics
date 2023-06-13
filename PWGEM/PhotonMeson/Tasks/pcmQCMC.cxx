@@ -149,6 +149,11 @@ struct PCMQCMC {
     reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hTPCdEdx"))->Fill(leg.tpcInnerParam(), leg.tpcSignal());
     reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hTPCNsigmaEl"))->Fill(leg.tpcInnerParam(), leg.tpcNSigmaEl());
     reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hTPCNsigmaPi"))->Fill(leg.tpcInnerParam(), leg.tpcNSigmaPi());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hXY"))->Fill(leg.x(), leg.y());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hZX"))->Fill(leg.z(), leg.x());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hZY"))->Fill(leg.z(), leg.y());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hDCAxyEta"))->Fill(leg.eta(), leg.dcaXY());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cutname)->FindObject("hDCAxyZ"))->Fill(leg.z(), leg.dcaXY());
   }
 
   template <typename T>
@@ -168,12 +173,17 @@ struct PCMQCMC {
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hGammaRxy_recalc"))->Fill(v0.recalculatedVtxX(), v0.recalculatedVtxY());
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hKFChi2vsR_recalc"))->Fill(v0.recalculatedVtxR(), v0.chiSquareNDF());
     reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hKFChi2vsZ_recalc"))->Fill(v0.recalculatedVtxZ(), v0.chiSquareNDF());
+
+    float phi_recalc = atan2(v0.recalculatedVtxY(), v0.recalculatedVtxX());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hGammaRPhi"))->Fill(v0.phi(), v0.v0radius());
+    reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cutname)->FindObject("hGammaRPhi_recalc"))->Fill(phi_recalc < 0 ? phi_recalc + TMath::TwoPi() : phi_recalc, v0.recalculatedVtxR());
   }
 
   Preslice<MyV0Photons> perCollision = aod::v0photon::collisionId;
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
   void processQCMC(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
   {
+    THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
     for (auto& collision : collisions) {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(1.0);
@@ -192,6 +202,7 @@ struct PCMQCMC {
       }
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
+      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
       auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.collisionId());
 
       for (const auto& cut : fPCMCuts) {
@@ -220,6 +231,18 @@ struct PCMQCMC {
             } else if (IsFromWD(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
               reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPt_Photon_FromWD"))->Fill(g.pt());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaPhi_Photon_FromWD"))->Fill(g.phi(), g.eta());
+            } else {
+              // int mother_pdg = 0;
+              // if(mcphoton.has_mothers()){
+              //   auto mp = mcphoton.template mothers_first_as<aod::EMMCParticles>();
+              //   mother_pdg = mp.pdgCode();
+              // }
+              // LOGF(info, "mcphoton.vx() = %f, mcphoton.vy() = %f, mcphoton.vz() = %f, mother_pdg = %d", mcphoton.vx(), mcphoton.vy(), mcphoton.vz(), mother_pdg);
+              float rxy = sqrt(mcphoton.vx() * mcphoton.vx() + mcphoton.vy() * mcphoton.vy());
+              reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hRZ_Photon_test"))->Fill(mcphoton.vz(), rxy);
+              reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPt_Photon_test"))->Fill(g.pt());
+              reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEta_Photon_test"))->Fill(g.eta());
+              reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPhi_Photon_test"))->Fill(g.phi());
             }
 
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hConvPoint_diffX"))->Fill(elemc.vx(), g.vx() - elemc.vx());
@@ -240,7 +263,7 @@ struct PCMQCMC {
     }   // end of collision loop
   }     // end of process
 
-  // Preslice<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId; //this is guilty. 1 MC collision is reconstructed several times. soa::SmallGroups does not help somehow.
+  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
   void processGen(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
@@ -268,13 +291,8 @@ struct PCMQCMC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
 
-      // auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
-      // for (auto& mctrack : mctracks_coll) {
-      for (auto& mctrack : mcparticles) {
-        if (mctrack.emreducedmceventId() != mccollision.globalIndex()) {
-          continue;
-        }
-        // LOGF(info, "mctrack.emreducedmceventId() = %d", mctrack.emreducedmceventId());
+      auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
+      for (auto& mctrack : mctracks_coll) {
         if (abs(mctrack.y()) > maxY) {
           continue;
         }

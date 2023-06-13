@@ -55,14 +55,14 @@ struct ZDCAnalysis {
   {
     if (doprocessZdcAuto) { // Check if the process function for ZDCAuto is enabled
       registry.add("ZNApmc", "ZNApmc", {HistType::kTH1F, {{nBins1, -10., MaxZN}}});
-      registry.add("ZPApmc", "ZPApmc", {HistType::kTH1F, {{nBins1, -10., MaxZN}}});
-      registry.add("ZNCpmc", "ZNCpmc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZPApmc", "ZPApmc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZNCpmc", "ZNCpmc", {HistType::kTH1F, {{nBins1, -10., MaxZN}}});
       registry.add("ZPCpmc", "ZPCpmc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
       registry.add("ZEM1", "ZEM1", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
       registry.add("ZEM2", "ZEM2", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
       registry.add("ZNvsZEM", "ZNvsZEM", {HistType::kTH2F, {{{nBins2, -10., 10000.5}, {nBins2, -10., 2. * MaxZN}}}});
       registry.add("ZNAvsZNC", "ZNAvsZNC", {HistType::kTH2F, {{{nBins2, -10., MaxZN}, {nBins2, -10., MaxZN}}}});
-      registry.add("ZPAvsZPC", "ZPAvsZPC", {HistType::kTH2F, {{{nBins1, -10., MaxZP}, {nBins2, -10., MaxZP}}}});
+      registry.add("ZPAvsZPC", "ZPAvsZPC", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZP}}}});
       registry.add("ZNAvsZPA", "ZNAvsZPA", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}});
       registry.add("ZNCvsZPC", "ZNCvsZPC", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}});
     }
@@ -75,20 +75,20 @@ struct ZDCAnalysis {
       registry.add("ZEM2bc", "ZEM2bc", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
       registry.add("ZNvsZEMbc", "ZNvsZEMbc", {HistType::kTH2F, {{{nBins2, -10., 10000.5}, {nBins2, -10., 2. * MaxZN}}}});
       registry.add("ZNAvsZNCbc", "ZNAvsZNCbc", {HistType::kTH2F, {{{nBins2, -10., MaxZN}, {nBins2, -10., MaxZN}}}});
-      registry.add("ZPAvsZPCbc", "ZPAvsZPCbc", {HistType::kTH2F, {{{nBins1, -10., MaxZP}, {nBins2, -10., MaxZP}}}});
+      registry.add("ZPAvsZPCbc", "ZPAvsZPCbc", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZP}}}});
       registry.add("ZNAvsZPAbc", "ZNAvsZPAbc", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}});
       registry.add("ZNCvsZPCbc", "ZNCvsZPCbc", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}});
     }
     if (doprocessZdcCollAss) { // Check if the process function for ZDCCollAss is enabled
       registry.add("ZNAcoll", "ZNAcoll", {HistType::kTH1F, {{nBins1, -10., MaxZN}}});
-      registry.add("ZPAcoll", "ZPAcoll", {HistType::kTH1F, {{nBins1, -10., MaxZN}}});
-      registry.add("ZNCcoll", "ZNCcoll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZPAcoll", "ZPAcoll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
+      registry.add("ZNCcoll", "ZNCcoll", {HistType::kTH1F, {{nBins1, -10., MaxZN}}});
       registry.add("ZPCcoll", "ZPCcoll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
       registry.add("ZEM1coll", "ZEM1coll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
       registry.add("ZEM2coll", "ZEM2coll", {HistType::kTH1F, {{nBins1, -10., MaxZP}}});
       registry.add("ZNvsZEMcoll", "ZNvsZEMcoll", {HistType::kTH2F, {{{nBins2, -10., 10000.5}, {nBins2, -10., 2. * MaxZN}}}});
       registry.add("ZNAvsZNCcoll", "ZNAvsZNCcoll", {HistType::kTH2F, {{{nBins2, -10., MaxZN}, {nBins2, -10., MaxZN}}}});
-      registry.add("ZPAvsZPCcoll", "ZPAvsZPCcoll", {HistType::kTH2F, {{{nBins1, -10., MaxZP}, {nBins2, -10., MaxZP}}}});
+      registry.add("ZPAvsZPCcoll", "ZPAvsZPCcoll", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZP}}}});
       registry.add("ZNAvsZPAcoll", "ZNAvsZPAcoll", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}});
       registry.add("ZNCvsZPCcoll", "ZNCvsZPCcoll", {HistType::kTH2F, {{{nBins2, -10., MaxZP}, {nBins2, -10., MaxZN}}}});
     }

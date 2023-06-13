@@ -206,7 +206,7 @@ struct CorrelationTask {
   {
     target->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
 
-    if (!collision.alias()[kINT7] || !collision.sel7()) {
+    if (!collision.alias_bit(kINT7) || !collision.sel7()) {
       return false;
     }
 
@@ -433,7 +433,7 @@ struct CorrelationTask {
           continue;
         }
       }
-      if (!collision2.alias()[kINT7] || !collision2.sel7()) {
+      if (!collision2.alias_bit(kINT7) || !collision2.sel7()) {
         continue;
       }
 

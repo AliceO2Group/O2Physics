@@ -35,20 +35,8 @@
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
 
-// The Run 3 AO2D stores the tracks at the point of innermost update. For a
-// track with ITS this is the innermost (or second innermost) ITS layer. For a
-// track without ITS, this is the TPC inner wall or for loopers in the TPC even
-// a radius beyond that. In order to use the track parameters, the tracks have
-// to be propagated to the collision vertex which is done by this task. The task
-// consumes the TracksIU and TracksCovIU tables and produces Tracks and
-// TracksCov to which then the user analysis can subscribe.
-//
-// This task is not needed for Run 2 converted data.
-// There are two versions of the task (see process flags), one producing also
-// the covariance matrix and the other only the tracks table.
-
-// This is an alternative version of the propagation task with special treatment
-// of ambiguous tracks
+// This is a special version of the propagation task chosing the closest vertex
+// among the compatible, which is defined by track-to-collision-associator
 
 using namespace o2;
 using namespace o2::framework;
@@ -240,6 +228,5 @@ struct AmbiguousTrackPropagation {
 //****************************************************************************************
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc)};
-  return workflow;
+  return {adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc)};
 }

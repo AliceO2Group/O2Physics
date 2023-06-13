@@ -88,101 +88,6 @@ struct HfCandidateSelectorB0ToDPiReduced {
     }
   }
 
-  /// Apply topological cuts as defined in SelectorCuts.h
-  /// \param hfCandB0 is the B0 candidate
-  /// \param hfCandD is prong1 of B0 candidate
-  /// \param trackPi is prong1 of B0 candidate
-  /// \return true if candidate passes all selections
-  template <typename T>
-  bool selectionTopol(const T& hfCandB0)
-  {
-    auto candpT = hfCandB0.pt();
-    auto ptD = RecoDecay::pt(hfCandB0.pxProng0(), hfCandB0.pyProng0());
-    auto ptPi = RecoDecay::pt(hfCandB0.pxProng1(), hfCandB0.pyProng1());
-
-    int pTBin = findBin(binsPt, candpT);
-    if (pTBin == -1) {
-      // LOGF(info, "B0 topol selection failed at getpTBin");
-      return false;
-    }
-
-    // // check that the candidate pT is within the analysis range
-    // if (candpT < ptCandMin || candpT >= ptCandMax) {
-    //   return false;
-    // }
-
-    // B0 mass cut
-    if (std::abs(invMassB0ToDPi(hfCandB0) - RecoDecay::getMassPDG(pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
-      // Printf("B0 topol selection failed at mass diff check");
-      return false;
-    }
-
-    // pion pt
-    if (ptPi < cuts->get(pTBin, "pT Pi")) {
-      return false;
-    }
-
-    // D- pt
-    if (ptD < cuts->get(pTBin, "pT D")) {
-      return false;
-    }
-
-    /*
-    // D mass cut | already applied in candidateSelectorDplusToPiKPi.cxx
-    if (std::abs(hf_cand_3prong::invMassDplusToPiKPi(hfCandD) - RecoDecay::getMassPDG(pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaMD")) {
-      return false;
-    }
-    */
-
-    // B0 Decay length
-    if (hfCandB0.decayLength() < cuts->get(pTBin, "B0 decLen")) {
-      return false;
-    }
-
-    // B0 Decay length XY
-    if (hfCandB0.decayLengthXY() < cuts->get(pTBin, "B0 decLenXY")) {
-      return false;
-    }
-
-    // B0 chi2PCA cut
-    if (hfCandB0.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
-      return false;
-    }
-
-    // B0 CPA cut
-    if (hfCandB0.cpa() < cuts->get(pTBin, "CPA")) {
-      return false;
-    }
-
-    // d0 of pi
-    if (std::abs(hfCandB0.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
-      return false;
-    }
-
-    // d0 of D
-    if (std::abs(hfCandB0.impactParameter0()) < cuts->get(pTBin, "d0 D")) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /// Apply PID selection
-  /// \param pidTrackPi is the PID status of trackPi (prong1 of B0 candidate)
-  /// \return true if prong1 of B0 candidate passes all selections
-  template <typename T = int>
-  bool selectionPID(const T& pidTrackPi)
-  {
-    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
-      return false;
-    }
-    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Status::PIDRejected) {
-      return false;
-    }
-
-    return true;
-  }
-
   void process(HfCandB0 const& hfCandsB0,
                HfTracksPidReduced const&,
                HfCandB0Config const& configs)
@@ -220,7 +125,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
       }
 
       // topological cuts
-      if (!selectionTopol(hfCandB0)) {
+      if (!hf_sel_candidate_b0::selectionTopol(hfCandB0, cuts, binsPt)) {
         hfSelB0ToDPiCandidate(statusB0ToDPi);
         // LOGF(info, "B0 candidate selection failed at topology selection");
         continue;
@@ -236,10 +141,10 @@ struct HfCandidateSelectorB0ToDPiReduced {
         continue;
       }
       // track-level PID selection
-      auto trackPi = hfCandB0.prong1_as<HfTracksPidReduced>();
       if (usePid) {
+        auto trackPi = hfCandB0.prong1_as<HfTracksPidReduced>();
         int pidTrackPi = selectorPion.getStatusTrackPIDTpcAndTof(trackPi);
-        if (!selectionPID(pidTrackPi)) {
+        if (!hf_sel_candidate_b0::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           continue;

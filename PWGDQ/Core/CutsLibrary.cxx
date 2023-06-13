@@ -24,6 +24,32 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   AnalysisCompositeCut* cut = new AnalysisCompositeCut(cutName, cutName);
   std::string nameStr = cutName;
 
+  // ///////////////////////////////////////////////
+  //   These are the Cuts used in the CEFP Task   //
+  //   to select tracks in the event selection    //
+  // ///////////////////////////////////////////////
+  if (!nameStr.compare("Electron")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug5"));
+    return cut;
+  }
+  if (!nameStr.compare("MuonLow")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt2"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    cut->AddCut(GetAnalysisCut("MCHMID"));
+    return cut;
+  }
+  if (!nameStr.compare("MuonHigh")) {
+    cut->AddCut(GetAnalysisCut("muonHighPt2"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    cut->AddCut(GetAnalysisCut("MCHMID"));
+    return cut;
+  }
+  // ///////////////////////////////////////////////
+  //           End of Cuts for CEFP               //
+  // ///////////////////////////////////////////////
+
   if (!nameStr.compare("jpsiO2MCdebugCuts")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
@@ -221,6 +247,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("PIDCalibPion")) {
     cut->AddCut(GetAnalysisCut("pidcalib_pion"));
+    return cut;
+  }
+
+  if (!nameStr.compare("PIDCalibKaon")) {
+    cut->AddCut(GetAnalysisCut("pidcalib_kaon"));
     return cut;
   }
 
@@ -754,6 +785,27 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  for (int i = 1; i <= 8; i++) {
+    if (!nameStr.compare(Form("lmee_eNSigmaRun3_tight_Prefilter%d", i))) {
+      cut->AddCut(GetAnalysisCut(Form("notDalitzLeg%d", i)));
+      cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+      cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+      cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+
+      AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+      cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_tight"));
+
+      AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+      cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_tight"));
+
+      AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+      cut_pid_OR->AddCut(cut_tpc_nSigma);
+      cut_pid_OR->AddCut(cut_tof_nSigma);
+      cut->AddCut(cut_pid_OR);
+      return cut;
+    }
+  }
+
   // 4 cuts to separate pos & neg tracks in pos & neg eta range
   if (!nameStr.compare("lmee_posTrack_posEta_selection")) {
     cut->AddCut(GetAnalysisCut("posTrack"));
@@ -1021,6 +1073,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("muonHighPt4")) {
     cut->AddCut(GetAnalysisCut("muonHighPt4"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt5")) {
+    cut->AddCut(GetAnalysisCut("muonHighPt5"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt6")) {
+    cut->AddCut(GetAnalysisCut("muonHighPt6"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
   }
@@ -1671,6 +1735,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pidcalib_kaon")) {
+    cut->AddCut(VarManager::kTOFnSigmaKa, -2.0, 2.0);
+    cut->AddCut(VarManager::kTOFnSigmaPi, -2.0, 2.0, true);
+    cut->AddCut(VarManager::kITSncls, 1.5, 7.5);
+    return cut;
+  }
+
   // ------------------------------------------------
   // Barrel PID cuts
   if (!nameStr.compare("jpsi_TPCPID_debug1")) {
@@ -1990,6 +2061,26 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   // -------------------------------------------------------------------------------------------------
   // Muon cuts
+  if (!nameStr.compare("GlobalMuonTrack")) {
+    cut->AddCut(VarManager::kMuonTrackType, -0.5, 0.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("MFTMCH")) {
+    cut->AddCut(VarManager::kMuonTrackType, 1.5, 2.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("MCHMID")) {
+    cut->AddCut(VarManager::kMuonTrackType, 2.5, 3.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("MCHStandalone")) {
+    cut->AddCut(VarManager::kMuonTrackType, 3.5, 4.5);
+    return cut;
+  }
+
   if (!nameStr.compare("muonQualityCuts")) {
     cut->AddCut(VarManager::kEta, -4.0, -2.5);
     cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 17.6, 89.5);
@@ -2064,6 +2155,16 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("muonHighPt4")) {
+    cut->AddCut(VarManager::kPt, 8.0, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt5")) {
+    cut->AddCut(VarManager::kPt, 10.0, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("muonHighPt6")) {
     cut->AddCut(VarManager::kPt, 20.0, 1000.0);
     return cut;
   }

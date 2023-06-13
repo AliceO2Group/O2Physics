@@ -16,7 +16,7 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 #include "Framework/runDataProcessing.h"
-// #include "Framework/RunningWorkflowInfo.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -29,18 +29,6 @@ using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::analysis;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_b0_to_d_pi; // from SelectorCuts.h
-
-// FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-namespace o2::aod
-{
-namespace hf_cand_b0_config
-{
-DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int);
-} // namespace hf_cand_b0_config
-
-DECLARE_SOA_TABLE(HfCandB0Config, "AOD", "HFCANDB0CONFIG", //!
-                  hf_cand_b0_config::MySelectionFlagD);
-} // namespace o2::aod
 
 struct HfCandidateSelectorB0ToDPi {
   Produces<aod::HfSelB0ToDPi> hfSelB0ToDPiCandidate; // table defined in CandidateSelectionTables.h
@@ -67,8 +55,6 @@ struct HfCandidateSelectorB0ToDPi {
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // check if selectionFlagD (defined in candidateCreatorB0.cxx) and usePid configurables are in sync
   bool selectionFlagDAndUsePidInSync = true;
-  // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-  int mySelectionFlagD = -1;
 
   TrackSelectorPID selectorPion;
 
@@ -76,7 +62,7 @@ struct HfCandidateSelectorB0ToDPi {
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const& initContext)
+  void init(InitContext& initContext)
   {
     if (usePid) {
       selectorPion.setPDG(kPiPlus);
@@ -102,8 +88,7 @@ struct HfCandidateSelectorB0ToDPi {
       }
     }
 
-    // FIXME: will be uncommented once https://alice.its.cern.ch/jira/browse/O2-3582 is solved
-    /*int selectionFlagD = -1;
+    int selectionFlagD = -1;
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-b0") == 0) {
@@ -123,118 +108,12 @@ struct HfCandidateSelectorB0ToDPi {
     if (!usePid && TESTBIT(selectionFlagD, SelectionStep::RecoPID)) {
       selectionFlagDAndUsePidInSync = false;
       LOG(warning) << "No PID selections required on B0 daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD=7). Set selectionFlagD<7 in hf-candidate-creator-b0";
-    }*/
+    }
   }
 
-  /// Apply topological cuts as defined in SelectorCuts.h
-  /// \param hfCandB0 is the B0 candidate
-  /// \param hfCandD is prong1 of B0 candidate
-  /// \param trackPi is prong1 of B0 candidate
-  /// \return true if candidate passes all selections
-  template <typename T1, typename T2, typename T3>
-  bool selectionTopol(const T1& hfCandB0, const T2& hfCandD, const T3& trackPi)
+  void process(aod::HfCandB0 const& hfCandsB0,
+               TracksPIDWithSel const&)
   {
-    auto candpT = hfCandB0.pt();
-    int pTBin = findBin(binsPt, candpT);
-    if (pTBin == -1) {
-      // LOGF(info, "B0 topol selection failed at getpTBin");
-      return false;
-    }
-
-    // check that the candidate pT is within the analysis range
-    if (candpT < ptCandMin || candpT >= ptCandMax) {
-      return false;
-    }
-
-    // B0 mass cut
-    if (std::abs(invMassB0ToDPi(hfCandB0) - RecoDecay::getMassPDG(pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
-      // Printf("B0 topol selection failed at mass diff check");
-      return false;
-    }
-
-    // pion pt
-    if (trackPi.pt() < cuts->get(pTBin, "pT Pi")) {
-      return false;
-    }
-
-    // D- pt
-    if (hfCandD.pt() < cuts->get(pTBin, "pT D")) {
-      return false;
-    }
-
-    /*
-    // D mass cut | already applied in candidateSelectorDplusToPiKPi.cxx
-    if (std::abs(hf_cand_3prong::invMassDplusToPiKPi(hfCandD) - RecoDecay::getMassPDG(pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaMD")) {
-      return false;
-    }
-    */
-
-    // B0 Decay length
-    if (hfCandB0.decayLength() < cuts->get(pTBin, "B0 decLen")) {
-      return false;
-    }
-
-    // B0 Decay length XY
-    if (hfCandB0.decayLengthXY() < cuts->get(pTBin, "B0 decLenXY")) {
-      return false;
-    }
-
-    // B0 chi2PCA cut
-    if (hfCandB0.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
-      return false;
-    }
-
-    // B0 CPA cut
-    if (hfCandB0.cpa() < cuts->get(pTBin, "CPA")) {
-      return false;
-    }
-
-    // d0 of pi
-    if (std::abs(hfCandB0.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
-      return false;
-    }
-
-    // d0 of D
-    if (std::abs(hfCandB0.impactParameter0()) < cuts->get(pTBin, "d0 D")) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /// Apply PID selection
-  /// \param pidTrackPi is the PID status of trackPi (prong1 of B0 candidate)
-  /// \return true if prong1 of B0 candidate passes all selections
-  template <typename T = int>
-  bool selectionPID(const T& pidTrackPi)
-  {
-    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
-      return false;
-    }
-    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Status::PIDRejected) {
-      return false;
-    }
-
-    return true;
-  }
-
-  void process(aod::HfCandB0 const& hfCandsB0, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&, TracksPIDWithSel const&,
-               HfCandB0Config const& configs)
-  {
-    // FIXME: get B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-    for (const auto& config : configs) {
-      mySelectionFlagD = config.mySelectionFlagD();
-
-      if (usePid && !TESTBIT(mySelectionFlagD, SelectionStep::RecoPID)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "PID selections required on B0 daughters (usePid=true) but no PID selections on D candidates were required a priori (selectionFlagD<7). Set selectionFlagD=7 in hf-candidate-creator-b0";
-      }
-      if (!usePid && TESTBIT(mySelectionFlagD, SelectionStep::RecoPID)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "No PID selections required on B0 daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD=7). Set selectionFlagD<7 in hf-candidate-creator-b0";
-      }
-    }
-
     for (const auto& hfCandB0 : hfCandsB0) {
       int statusB0ToDPi = 0;
       auto ptCandB0 = hfCandB0.pt();
@@ -253,11 +132,8 @@ struct HfCandidateSelectorB0ToDPi {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandB0);
       }
 
-      auto candD = hfCandB0.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>();
-      auto trackPi = hfCandB0.prong1_as<TracksPIDWithSel>();
-
       // topological cuts
-      if (!selectionTopol(hfCandB0, candD, trackPi)) {
+      if (!hf_sel_candidate_b0::selectionTopol(hfCandB0, cuts, binsPt)) {
         hfSelB0ToDPiCandidate(statusB0ToDPi);
         // LOGF(info, "B0 candidate selection failed at topology selection");
         continue;
@@ -274,8 +150,9 @@ struct HfCandidateSelectorB0ToDPi {
       }
       // track-level PID selection
       if (usePid) {
+        auto trackPi = hfCandB0.prong1_as<TracksPIDWithSel>();
         int pidTrackPi = selectorPion.getStatusTrackPIDTpcAndTof(trackPi);
-        if (!selectionPID(pidTrackPi)) {
+        if (!hf_sel_candidate_b0::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           continue;

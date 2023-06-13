@@ -18,8 +18,8 @@
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, Strasbourg University
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 
-#ifndef O2_ANALYSIS_HF_FILTER_HELPERS_H_
-#define O2_ANALYSIS_HF_FILTER_HELPERS_H_
+#ifndef EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_
+#define EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_
 
 #include "Framework/DataTypes.h"
 #include "Framework/AnalysisDataModel.h"
@@ -37,6 +37,9 @@
 #include <array>
 #include <string>
 #include <cmath>
+#include <map>
+#include <memory>
+#include <algorithm>
 
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
@@ -141,8 +144,8 @@ static const AxisSpec alphaAxis{100, -1.f, 1.f};
 static const AxisSpec qtAxis{100, 0.f, 0.25f};
 static const AxisSpec bdtAxis{100, 0.f, 1.f};
 static const AxisSpec phiAxis{36, 0., TwoPI};
-static const std::array<AxisSpec, kNCharmParticles + 3> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 2.08f, 2.18f}};
-static const std::array<AxisSpec, kNBeautyParticles> massAxisB = {AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.0f, 5.6f}, AxisSpec{100, 5.3f, 5.9f}, AxisSpec{100, 5.3f, 5.9f}};
+static const std::array<AxisSpec, kNCharmParticles + 3> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 2.00f, 2.04f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 2.08f, 2.18f}};
+static const std::array<AxisSpec, kNBeautyParticles> massAxisB = {AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 5.0f, 6.2f}, AxisSpec{240, 5.0f, 6.2f}};
 
 /// load the TPC spline from the CCDB
 /// \param ccdbApi is Api for CCDB
@@ -831,7 +834,7 @@ int computeNumberOfCandidates(std::vector<std::vector<T>> indices)
 /// \param mlModelPathCCDB is the model path in CCDB
 /// \param timestampCCDB is the CCDB timestamp
 /// \return the pointer to the ONNX Ort::Experimental::Session
-Ort::Experimental::Session* InitONNXSession(std::string& onnxFile, std::string partName, Ort::Env& env, Ort::SessionOptions& sessionOpt, std::vector<std::vector<int64_t>>& inputShapes, int& dataType, bool loadModelsFromCCDB, o2::ccdb::CcdbApi& ccdbApi, std::string mlModelPathCCDB, long timestampCCDB)
+Ort::Experimental::Session* InitONNXSession(std::string& onnxFile, std::string partName, Ort::Env& env, Ort::SessionOptions& sessionOpt, std::vector<std::vector<int64_t>>& inputShapes, int& dataType, bool loadModelsFromCCDB, o2::ccdb::CcdbApi& ccdbApi, std::string mlModelPathCCDB, int64_t timestampCCDB)
 {
   // hard coded, we do not let the user change this
   sessionOpt.SetIntraOpNumThreads(1);
@@ -980,6 +983,7 @@ DECLARE_SOA_COLUMN(NsigmaPrTOF3, nsigmaPrTOF3, float);           //!
 DECLARE_SOA_COLUMN(FlagOrigin, flagOrigin, int8_t);              //!
 DECLARE_SOA_COLUMN(Channel, channel, int8_t);                    //!
 DECLARE_SOA_COLUMN(HFSelBit, hfselbit, int8_t);                  //!
+DECLARE_SOA_COLUMN(IsInCorrectColl, isInCorrectColl, bool);      //!
 } // namespace hftraining
 
 DECLARE_SOA_TABLE(HFTrigTrain2P, "AOD", "HFTRIGTRAIN2P", //!
@@ -1000,7 +1004,8 @@ DECLARE_SOA_TABLE(HFTrigTrain2P, "AOD", "HFTRIGTRAIN2P", //!
                   hftraining::NsigmaKaTPC2,
                   hftraining::NsigmaPiTOF2,
                   hftraining::NsigmaKaTOF2,
-                  hftraining::FlagOrigin);
+                  hftraining::FlagOrigin,
+                  hftraining::IsInCorrectColl);
 DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
                   hftraining::InvMassDplus,
                   hftraining::InvMassDsToKKPi,
@@ -1041,7 +1046,8 @@ DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
                   hftraining::NsigmaPrTOF3,
                   hftraining::FlagOrigin,
                   hftraining::Channel,
-                  hftraining::HFSelBit);
+                  hftraining::HFSelBit,
+                  hftraining::IsInCorrectColl);
 
 namespace hfoptimisationTree
 {
@@ -1086,4 +1092,4 @@ DECLARE_SOA_TABLE(HFOptimisationTreeCollisions, "AOD", "HFOPTIMTREECOLL", //!
                   hfoptimisationTree::CollisionIndex)
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_HF_FILTER_HELPERS_
+#endif // EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_

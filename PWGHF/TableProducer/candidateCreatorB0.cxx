@@ -35,22 +35,9 @@ using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_cand_b0; // from CandidateReconstructionTables.h
 using namespace o2::framework::expressions;
 
-// FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-namespace o2::aod
-{
-namespace hf_cand_b0_config
-{
-DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int);
-} // namespace hf_cand_b0_config
-
-DECLARE_SOA_TABLE(HfCandB0Config, "AOD", "HFCANDB0CONFIG", //!
-                  hf_cand_b0_config::MySelectionFlagD);
-} // namespace o2::aod
-
 /// Reconstruction of B0 candidates
 struct HfCandidateCreatorB0 {
   Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in CandidateReconstructionTables.h
-  Produces<aod::HfCandB0Config> rowCandidateConfig;
 
   // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field"};
@@ -68,8 +55,6 @@ struct HfCandidateCreatorB0 {
   Configurable<LabeledArray<double>> cutsTrackPionDCA{"cutsTrackPionDCA", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for pions"};
   Configurable<double> invMassWindowB0{"invMassWindowB0", 0.3, "invariant-mass window for B0 candidates"};
   Configurable<int> selectionFlagD{"selectionFlagD", 1, "Selection Flag for D"};
-  // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-  bool isHfCandB0ConfigFilled = false;
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -143,12 +128,6 @@ struct HfCandidateCreatorB0 {
                TracksWithSel const&,
                aod::BCsWithTimestamps const&)
   {
-    // FIXME: store B0 creator configurable (until https://alice.its.cern.ch/jira/browse/O2-3582 solved)
-    if (!isHfCandB0ConfigFilled) {
-      int mySelectionFlagD = selectionFlagD;
-      rowCandidateConfig(mySelectionFlagD);
-      isHfCandB0ConfigFilled = true;
-    }
     // Initialise fitter for B vertex (2-prong vertex filter)
     o2::vertexing::DCAFitterN<2> df2;
     // df2.setBz(bz);
@@ -357,7 +336,7 @@ struct HfCandidateCreatorB0Expressions {
 
   void processMc(aod::HfCand3Prong const& dplus,
                  aod::BigTracksMC const& tracks,
-                 aod::McParticles const& particlesMC)
+                 aod::McParticles const& particlesMc)
   {
     rowCandidateB0->bindExternalIndices(&tracks);
     rowCandidateB0->bindExternalIndices(&dplus);
@@ -376,41 +355,81 @@ struct HfCandidateCreatorB0Expressions {
       origin = 0;
       debug = 0;
       auto candD = candidate.prong0();
-      auto arrayDaughters = array{candD.prong0_as<aod::BigTracksMC>(),
-                                  candD.prong1_as<aod::BigTracksMC>(),
-                                  candD.prong2_as<aod::BigTracksMC>(),
-                                  candidate.prong1_as<aod::BigTracksMC>()};
+      auto arrayDaughtersB0 = array{candD.prong0_as<aod::BigTracksMC>(),
+                                    candD.prong1_as<aod::BigTracksMC>(),
+                                    candD.prong2_as<aod::BigTracksMC>(),
+                                    candidate.prong1_as<aod::BigTracksMC>()};
       auto arrayDaughtersD = array{candD.prong0_as<aod::BigTracksMC>(),
                                    candD.prong1_as<aod::BigTracksMC>(),
                                    candD.prong2_as<aod::BigTracksMC>()};
+
       // B0 → D- π+ → (π- K+ π-) π+
       // Printf("Checking B0 → D- π+");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kB0, array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 2);
+      indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, pdg::Code::kB0, array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
         // D- → π- K+ π-
         // Printf("Checking D- → π- K+ π-");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersD, pdg::Code::kDMinus, array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD, pdg::Code::kDMinus, array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
-          flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
+          flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
         } else {
           debug = 1;
-          LOGF(info, "WARNING: B0 in decays in the expected final state but the condition on the intermediate state is not fulfilled");
+          LOGF(debug, "WARNING: B0 in decays in the expected final state but the condition on the intermediate state is not fulfilled");
         }
       }
+
+      // B0 → Ds- π+ → (K- K+ π-) π+
+      if (!flag) {
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, pdg::Code::kB0, array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+        if (indexRec > -1) {
+          // Ds- → K- K+ π-
+          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD, -pdg::Code::kDS, array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+          if (indexRec > -1) {
+            flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi);
+          }
+        }
+      }
+
+      // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
+      // convention: final state particles are prong0,1,2,3
+      if (!flag) {
+        auto particleProng0 = arrayDaughtersB0[0].mcParticle();
+        auto particleProng1 = arrayDaughtersB0[1].mcParticle();
+        auto particleProng2 = arrayDaughtersB0[2].mcParticle();
+        auto particleProng3 = arrayDaughtersB0[3].mcParticle();
+        // b-hadron hypothesis
+        std::array<int, 3> bHadronMotherHypos = {pdg::Code::kB0, pdg::Code::kBS, pdg::Code::kLambdaB0};
+
+        for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
+          int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
+          int index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
+          int index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
+          int index3Mother = RecoDecay::getMother(particlesMc, particleProng3, bHadronMotherHypo, true);
+
+          // look for common b-hadron ancestor
+          if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
+            if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
+              flag = BIT(hf_cand_b0::DecayTypeMc::PartlyRecoDecay);
+              break;
+            }
+          }
+        }
+      }
+
       rowMcMatchRec(flag, origin, debug);
     } // rec
 
     // Match generated particles.
-    for (auto const& particle : particlesMC) {
+    for (auto const& particle : particlesMc) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       // B0 → D- π+
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kB0, array{-static_cast<int>(pdg::Code::kDPlus), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kB0, array{-static_cast<int>(pdg::Code::kDPlus), +kPiPlus}, true)) {
         // Match D- -> π- K+ π-
-        auto candDMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
+        auto candDMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking D- -> π- K+ π-");
-        if (RecoDecay::isMatchedMCGen(particlesMC, candDMC, -static_cast<int>(pdg::Code::kDPlus), array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(particlesMc, candDMC, -static_cast<int>(pdg::Code::kDPlus), array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
           flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
         }
       }

@@ -42,7 +42,7 @@ struct createEMReducedMCEvent {
   };
   Produces<o2::aod::EMReducedEvents> events;
   Produces<o2::aod::EMReducedMCEvents> mcevents;
-  Produces<o2::aod::EMReducedMCEventLabels> mclabels;
+  Produces<o2::aod::EMReducedMCEventLabels> mceventlabels;
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::EMMCParticleLabels> emmcparticlelabels;
 
@@ -86,8 +86,8 @@ struct createEMReducedMCEvent {
 
       auto mcCollision = collision.mcCollision();
       // auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-      bool is_phoscpv_readout = collision.alias()[kTVXinPHOS];
-      bool is_emc_readout = collision.alias()[kTVXinEMC];
+      bool is_phoscpv_readout = collision.alias_bit(kTVXinPHOS);
+      bool is_emc_readout = collision.alias_bit(kTVXinEMC);
 
       if constexpr (static_cast<bool>(system & kPCM)) {
         auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
@@ -102,13 +102,8 @@ struct createEMReducedMCEvent {
         ng_emc = emc_coll.size();
       }
 
-      uint64_t tag = 0;
       // store event selection decisions
-      for (int i = 0; i < kNsel; i++) {
-        if (collision.selection()[i] > 0) {
-          tag |= (uint64_t(1) << i);
-        }
-      }
+      uint64_t tag = collision.selection_raw();
 
       events(collision.globalIndex(), tag, collision.bc().runNumber(), collision.bc().triggerMask(), collision.sel8(),
              is_phoscpv_readout, is_emc_readout,
@@ -127,7 +122,7 @@ struct createEMReducedMCEvent {
         fCounters[1]++;
       }
 
-      mclabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
+      mceventlabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
 
       // store mc particles
       auto groupedMcTracks = mcTracks.sliceBy(perMcCollision, mcCollision.globalIndex());
@@ -152,6 +147,7 @@ struct createEMReducedMCEvent {
           && (abs(pdg) != 333) // phi(1020)
           // strange hadrons
           && (abs(pdg) != 310)  // K0S
+          && (abs(pdg) != 130)  // K0L
           && (abs(pdg) != 3122) // Lambda
         ) {
           continue;
@@ -275,7 +271,7 @@ struct createEMReducedMCEvent {
     fCounters[1] = 0;
   } //  end of skimmingMC
 
-  void processMC_PCM(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs)
+  void processMC_PCM(soa::SmallGroups<MyCollisions> const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs)
   {
     skimmingMC<kPCM>(collisions, bcs, mccollisions, mcTracks, tracks, v0photons, v0legs, nullptr, nullptr);
   }

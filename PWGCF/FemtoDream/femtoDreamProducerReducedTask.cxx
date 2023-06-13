@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -62,12 +62,12 @@ using FemtoFullTracks = soa::Join<aod::FullTracks, aod::TracksDCA,
 
 struct femtoDreamProducerReducedTask {
 
-  Produces<aod::FemtoDreamCollisions> outputCollision;
-  Produces<aod::FemtoDreamParticles> outputParts;
-  Produces<aod::FemtoDreamMCParticles> outputPartsMC;
-  Produces<aod::FemtoDreamDebugParticles> outputDebugParts;
-  Produces<aod::FemtoDreamMCLabels> outputPartsMCLabels;
-  Produces<aod::FemtoDreamDebugMCParticles> outputDebugPartsMC;
+  Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FDParticles> outputParts;
+  Produces<aod::FDMCParticles> outputPartsMC;
+  Produces<aod::FDExtParticles> outputDebugParts;
+  Produces<aod::FDMCLabels> outputPartsMCLabels;
+  Produces<aod::FDExtMCParticles> outputDebugPartsMC;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
   Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"}; // Choose if filtering or skimming version is run
@@ -85,6 +85,7 @@ struct femtoDreamProducerReducedTask {
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   Configurable<bool> ConfRejectITSHitandTOFMissing{"ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
 
+  Configurable<bool> ConfForceGRP{"ConfForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
   Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "PDG code of the selected track for Monte Carlo truth"};
   // Track cuts
   FemtoDreamTrackSelection trackCuts;
@@ -156,32 +157,27 @@ struct femtoDreamProducerReducedTask {
     auto timestamp = bc.timestamp();
     float output = -999;
 
-    if (ConfIsRun3 && !ConfIsMC) {
+    if (ConfIsRun3 && !ConfForceGRP) {
       static o2::parameters::GRPMagField* grpo = nullptr;
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
       if (grpo == nullptr) {
-        grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
-        if (grpo == nullptr) {
-          LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-          return;
-        }
-        LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return;
       }
+      LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
       // taken from GRP onject definition of getNominalL3Field; update later to something smarter (mNominalL3Field = std::lround(5.f * mL3Current / 30000.f);)
       auto NominalL3Field = std::lround(5.f * grpo->getL3Current() / 30000.f);
       output = 0.1 * (NominalL3Field);
-    }
 
-    if (!ConfIsRun3 || (ConfIsRun3 && ConfIsMC)) {
+    } else {
 
       static o2::parameters::GRPObject* grpo = nullptr;
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
       if (grpo == nullptr) {
-        grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-        if (grpo == nullptr) {
-          LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-          return;
-        }
-        LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return;
       }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
       output = 0.1 * (grpo->getNominalL3Field());
     }
     mMagField = output;
@@ -213,6 +209,7 @@ struct femtoDreamProducerReducedTask {
 
         particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
       }
+
       outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
       outputPartsMCLabels(outputPartsMC.lastIndex());
     } else {

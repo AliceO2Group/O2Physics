@@ -102,7 +102,8 @@ class VarManager : public TObject
     AmbiTrack = BIT(19),
     AmbiMuon = BIT(20),
     DalitzBits = BIT(21),
-    TrackTPCPID = BIT(22)
+    TrackTPCPID = BIT(22),
+    TrackMFT = BIT(23)
   };
 
   enum PairCandidateType {
@@ -263,6 +264,7 @@ class VarManager : public TObject
     kTPCnSigmaPr,
     kTPCnSigmaEl_Corr,
     kTPCnSigmaPi_Corr,
+    kTPCnSigmaKa_Corr,
     kTPCnSigmaPr_Corr,
     kTPCnSigmaPrRandomized,
     kTPCnSigmaPrRandomizedDelta,
@@ -400,6 +402,8 @@ class VarManager : public TObject
     kTPCElectronSigma,
     kTPCPionMean,
     kTPCPionSigma,
+    kTPCKaonMean,
+    kTPCKaonSigma,
     kTPCProtonMean,
     kTPCProtonSigma,
     kNCalibObjects
@@ -494,6 +498,11 @@ class VarManager : public TObject
   {
     fgFitterTwoProngFwd.setTGeoMat(true);
   }
+  // No material budget in fwdtrack propagation
+  static void SetupFwdDCAFitterNoCorr()
+  {
+    fgFitterTwoProngFwd.setTGeoMat(false);
+  }
 
   static auto getEventPlane(int harm, float qnxa, float qnya)
   {
@@ -536,6 +545,9 @@ class VarManager : public TObject
     if (fgCalibs.find(kTPCPionMean) != fgCalibs.end() && fgCalibs.find(kTPCPionSigma) != fgCalibs.end()) {
       fgRunTPCPostCalibration[1] = true;
     }
+    if (fgCalibs.find(kTPCKaonMean) != fgCalibs.end() && fgCalibs.find(kTPCKaonSigma) != fgCalibs.end()) {
+      fgRunTPCPostCalibration[2] = true;
+    }
     if (fgCalibs.find(kTPCProtonMean) != fgCalibs.end() && fgCalibs.find(kTPCProtonSigma) != fgCalibs.end()) {
       fgRunTPCPostCalibration[3] = true;
     }
@@ -568,8 +580,6 @@ class VarManager : public TObject
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
-  static float GetTPCPostCalibMap(float pin, float eta, int particle_type, TString period);
-  static TString GetRunPeriod(float runNumber);
   template <typename T, typename U, typename V>
   static auto getRotatedCovMatrixXX(const T& matrix, U phi, V theta);
   template <typename T>
@@ -663,37 +673,37 @@ void VarManager::FillEvent(T const& event, float* values)
     // TODO: trigger info from the event selection requires a separate flag
     //       so that it can be switched off independently of the rest of Collision variables (e.g. if event selection is not available)
     if (fgUsedVars[kIsINT7]) {
-      values[kIsINT7] = (event.alias()[kINT7] > 0);
+      values[kIsINT7] = (event.alias_bit(kINT7) > 0);
     }
     if (fgUsedVars[kIsEMC7]) {
-      values[kIsEMC7] = (event.alias()[kEMC7] > 0);
+      values[kIsEMC7] = (event.alias_bit(kEMC7) > 0);
     }
     if (fgUsedVars[kIsINT7inMUON]) {
-      values[kIsINT7inMUON] = (event.alias()[kINT7inMUON] > 0);
+      values[kIsINT7inMUON] = (event.alias_bit(kINT7inMUON) > 0);
     }
     if (fgUsedVars[kIsMuonSingleLowPt7]) {
-      values[kIsMuonSingleLowPt7] = (event.alias()[kMuonSingleLowPt7] > 0);
+      values[kIsMuonSingleLowPt7] = (event.alias_bit(kMuonSingleLowPt7) > 0);
     }
     if (fgUsedVars[kIsMuonSingleHighPt7]) {
-      values[kIsMuonSingleHighPt7] = (event.alias()[kMuonSingleHighPt7] > 0);
+      values[kIsMuonSingleHighPt7] = (event.alias_bit(kMuonSingleHighPt7) > 0);
     }
     if (fgUsedVars[kIsMuonUnlikeLowPt7]) {
-      values[kIsMuonUnlikeLowPt7] = (event.alias()[kMuonUnlikeLowPt7] > 0);
+      values[kIsMuonUnlikeLowPt7] = (event.alias_bit(kMuonUnlikeLowPt7) > 0);
     }
     if (fgUsedVars[kIsMuonLikeLowPt7]) {
-      values[kIsMuonLikeLowPt7] = (event.alias()[kMuonLikeLowPt7] > 0);
+      values[kIsMuonLikeLowPt7] = (event.alias_bit(kMuonLikeLowPt7) > 0);
     }
     if (fgUsedVars[kIsCUP8]) {
-      values[kIsCUP8] = (event.alias()[kCUP8] > 0);
+      values[kIsCUP8] = (event.alias_bit(kCUP8) > 0);
     }
     if (fgUsedVars[kIsCUP9]) {
-      values[kIsCUP9] = (event.alias()[kCUP9] > 0);
+      values[kIsCUP9] = (event.alias_bit(kCUP9) > 0);
     }
     if (fgUsedVars[kIsMUP10]) {
-      values[kIsMUP10] = (event.alias()[kMUP10] > 0);
+      values[kIsMUP10] = (event.alias_bit(kMUP10) > 0);
     }
     if (fgUsedVars[kIsMUP11]) {
-      values[kIsMUP11] = (event.alias()[kMUP11] > 0);
+      values[kIsMUP11] = (event.alias_bit(kMUP11) > 0);
     }
     values[kVtxX] = event.posX();
     values[kVtxY] = event.posY();
@@ -1054,6 +1064,24 @@ void VarManager::FillTrack(T const& track, float* values)
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
       values[kTPCnSigmaPi_Corr] = (values[kTPCnSigmaPi] - mean) / width;
+    }
+    if (fgUsedVars[kTPCnSigmaKa_Corr] && fgRunTPCPostCalibration[2]) {
+      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCKaonMean]);
+      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCKaonSigma]);
+
+      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
+      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
+      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
+      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
+      binPin = (binPin == 0 ? 1 : binPin);
+      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
+      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
+      binEta = (binEta == 0 ? 1 : binEta);
+      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
+
+      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
+      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
+      values[kTPCnSigmaKa_Corr] = (values[kTPCnSigmaKa] - mean) / width;
     }
     // compute TPC postcalibrated proton nsigma if required
     if (fgUsedVars[kTPCnSigmaPr_Corr] && fgRunTPCPostCalibration[3]) {

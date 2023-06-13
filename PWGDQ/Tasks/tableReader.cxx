@@ -89,10 +89,10 @@ using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksB
 using MyBarrelTracksSelectedWithPrefilter = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::Prefilter>;
 using MyBarrelTracksSelectedWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
 using MyPairCandidatesSelected = soa::Join<aod::Dileptons, aod::DileptonsExtra>;
-using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
-using MyMuonTracksSelected = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::MuonTrackCuts>;
-using MyMuonTracksWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov>;
-using MyMuonTracksSelectedWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov, aod::MuonTrackCuts>;
+using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo>;
+using MyMuonTracksSelected = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo, aod::MuonTrackCuts>;
+using MyMuonTracksWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo, aod::ReducedMuonsCov>;
+using MyMuonTracksSelectedWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo, aod::ReducedMuonsCov, aod::MuonTrackCuts>;
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
@@ -716,6 +716,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DileptonsExtra> dileptonExtraList;
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
+  Produces<aod::DileptonsInfo> dileptonInfoList;
   float mMagField = 0.0;
   o2::parameters::GRPMagField* grpmag = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
@@ -738,6 +739,7 @@ struct AnalysisSameEventPairing {
   Configurable<bool> fUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
   Configurable<bool> fPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
   Configurable<bool> fCorrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
+  Configurable<bool> fNoCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
@@ -768,7 +770,9 @@ struct AnalysisSameEventPairing {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    if (fCorrFullGeo) {
+    if (fNoCorr) {
+      VarManager::SetupFwdDCAFitterNoCorr();
+    } else if (fCorrFullGeo) {
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         ccdb->get<TGeoManager>(geoPath);
       }
@@ -946,6 +950,7 @@ struct AnalysisSameEventPairing {
     uint32_t dileptonMcDecision = 0; // placeholder, copy of the dqEfficiency.cxx one
     dileptonList.reserve(1);
     dileptonExtraList.reserve(1);
+    dileptonInfoList.reserve(1);
     if (fConfigFlatTables.value) {
       dimuonAllList.reserve(1);
     }
@@ -984,9 +989,11 @@ struct AnalysisSameEventPairing {
       }
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
       if constexpr ((TPairType == pairTypeMuMu) && muonHasCov) {
+        // LOGP(info, "mu1 collId = {}, mu2 collId = {}", t1.collisionId(), t2.collisionId());
         dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
+        dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
         if (fConfigFlatTables.value) {
-          dimuonAllList(event.posX(), event.posY(), event.posZ(), -999., -999., -999., VarManager::fgValues[VarManager::kMass], false, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], t1.pt(), t1.eta(), t1.phi(), t1.sign(), t2.pt(), t2.eta(), t2.phi(), t2.sign(), 0., 0., t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(), t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(), t1.chi2(), t2.chi2(), -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., t1.isAmbiguous(), t2.isAmbiguous());
+          dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(), t1.fwdDcaX(), t1.fwdDcaY(), t2.fwdDcaX(), t2.fwdDcaY(), -999., -999., -999., VarManager::fgValues[VarManager::kMass], false, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], t1.pt(), t1.eta(), t1.phi(), t1.sign(), t2.pt(), t2.eta(), t2.phi(), t2.sign(), 0., 0., t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(), t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(), t1.chi2(), t2.chi2(), -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., t1.isAmbiguous(), t2.isAmbiguous());
         }
       }
 

@@ -39,7 +39,7 @@ struct tracksWGTInBCs {
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
-  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
+  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
   using TC = TCs::iterator;
   using ATs = aod::AmbiguousTracks;
 
@@ -49,13 +49,16 @@ struct tracksWGTInBCs {
   void init(InitContext& context)
   {
     if (context.mOptions.get<bool>("processBarrel")) {
-      registry.add("barrelTracks", "#barrelTracks", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+      registry.add("barrel/Tracks", "#barrelTracks", {HistType::kTH1F, {{5, -0.5, 4.5}}});
     }
     if (context.mOptions.get<bool>("processForward")) {
-      registry.add("forwardTracks", "#forwardTracks", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+      registry.add("forward/Tracks", "#forwardTracks", {HistType::kTH1F, {{5, -0.5, 4.5}}});
     }
   }
 
+  // This process functions fills the TracksWGTInBCs table.
+  // It loops over all tracks. For the tracks with a 'good' timing it finds the associated BC.
+  // If a track is ambiguous, then the associated BC is calculated with help of the trackTime.
   void processBarrel(BCs const& bcs, CCs const& collisions, TCs const& tracks, ATs const& ambTracks)
   {
     // run number
@@ -66,24 +69,23 @@ struct tracksWGTInBCs {
     uint64_t closestBC = 0;
 
     // loop over all tracks and fill tracksInBCList
-    LOGF(info, "Number of barrel tracks: %d", tracks.size());
+    LOGF(debug, "Number of barrel tracks: %d", tracks.size());
     for (auto const& track : tracks) {
-      registry.get<TH1>(HIST("barrelTracks"))->Fill(0., 1.);
+      registry.get<TH1>(HIST("barrel/Tracks"))->Fill(0., 1.);
       auto ambTracksSlice = ambTracks.sliceBy(perTrack, track.globalIndex());
       if (ambTracksSlice.size() > 0) {
-        registry.get<TH1>(HIST("barrelTracks"))->Fill(2., 1.);
+        registry.get<TH1>(HIST("barrel/Tracks"))->Fill(2., 1.);
       } else {
-        registry.get<TH1>(HIST("barrelTracks"))->Fill(1., 1.);
+        registry.get<TH1>(HIST("barrel/Tracks"))->Fill(1., 1.);
       }
 
       // only consider tracks with good timing
       if (track.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
-        registry.get<TH1>(HIST("barrelTracks"))->Fill(3., 1.);
+        registry.get<TH1>(HIST("barrel/Tracks"))->Fill(3., 1.);
 
         // get first compatible BC
-        // auto ambTracksSlice = ambTracks.sliceBy(perTrack, track.globalIndex());
         if (ambTracksSlice.size() > 0) {
-          registry.get<TH1>(HIST("barrelTracks"))->Fill(4., 1.);
+          registry.get<TH1>(HIST("barrel/Tracks"))->Fill(4., 1.);
 
           // compute the BC closest in time
           auto firstCompatibleBC = ambTracksSlice.begin().bc().begin().globalBC();
@@ -91,7 +93,8 @@ struct tracksWGTInBCs {
                                  (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
           // this track is not ambiguous, has hence a unique association to a collision/BC
-          closestBC = track.collision_as<CCs>().foundBC_as<BCs>().globalBC();
+          auto collision = track.collision_as<CCs>();
+          closestBC = collision.foundBC_as<BCs>().globalBC();
         }
 
         // update tracksInBCList
@@ -104,55 +107,57 @@ struct tracksWGTInBCs {
     int indBCToSave;
     for (auto const& tracksInBC : tracksInBCList) {
       indBCToSave = -1;
-      if (tracksInBC.second.size() > 0) {
-        // find corresponding BC
-        for (auto ind = indBCToStart; ind < bcs.size(); ind++) {
-          auto bc = bcs.rawIteratorAt(ind);
-          if (bc.globalBC() == tracksInBC.first) {
-            indBCToSave = ind;
-            indBCToStart = ind;
-            break;
-          }
-          if (bc.globalBC() > tracksInBC.first) {
-            break;
-          }
+      // find corresponding BC
+      for (auto ind = indBCToStart; ind < bcs.size(); ind++) {
+        auto bc = bcs.rawIteratorAt(ind);
+        if (bc.globalBC() == tracksInBC.first) {
+          indBCToSave = ind;
+          indBCToStart = ind;
+          break;
         }
-        tracksWGTInBCs(indBCToSave, rnum, tracksInBC.first, tracksInBC.second);
-        LOGF(debug, " BC %i/%u with %i tracks with good timing", indBCToSave, tracksInBC.first, tracksInBC.second.size());
+        if (bc.globalBC() > tracksInBC.first) {
+          break;
+        }
       }
+      tracksWGTInBCs(indBCToSave, rnum, tracksInBC.first, tracksInBC.second);
+      LOGF(debug, " BC %i/%u with %i tracks with good timing", indBCToSave, tracksInBC.first, tracksInBC.second.size());
     }
+    LOGF(debug, "barrel done");
   }
   PROCESS_SWITCH(tracksWGTInBCs, processBarrel, "Process barrel tracks", false);
 
+  // This process functions fills the FwdTracksWGTInBCs table.
+  // It loops over all forward tracks. For the tracks with a 'good' timing it finds the associated BC.
+  // If a track is ambiguous, then the associated BC is calculated with help of the trackTime.
   void processForward(BCs& bcs, CCs& collisions, aod::FwdTracks& fwdTracks, aod::AmbiguousFwdTracks& ambFwdTracks)
   {
     // run number
     int rnum = bcs.iteratorAt(0).runNumber();
 
     // container to sort forward tracks according to their matching/closest BC
-    std::map<uint64_t, std::vector<int32_t>> fwdTracksWGTInBCList{};
+    std::map<uint64_t, std::vector<int32_t>> fwdTracksInBCList{};
     uint64_t closestBC = 0;
 
-    // loop over all forward tracks and fill fwdTracksWGTInBCList
-    LOGF(info, "Number of forward tracks: %d", fwdTracks.size());
+    // loop over all forward tracks and fill fwdTracksInBCList
+    LOGF(debug, "Number of forward tracks: %d", fwdTracks.size());
     for (auto const& fwdTrack : fwdTracks) {
-      registry.get<TH1>(HIST("forwardTracks"))->Fill(0., 1.);
+      registry.get<TH1>(HIST("forward/Tracks"))->Fill(0., 1.);
       auto ambFwdTracksSlice = ambFwdTracks.sliceBy(perFwdTrack, fwdTrack.globalIndex());
       if (ambFwdTracksSlice.size() > 0) {
-        registry.get<TH1>(HIST("forwardTracks"))->Fill(2., 1.);
+        registry.get<TH1>(HIST("forward/Tracks"))->Fill(2., 1.);
       } else {
-        registry.get<TH1>(HIST("forwardTracks"))->Fill(1., 1.);
+        registry.get<TH1>(HIST("forward/Tracks"))->Fill(1., 1.);
       }
 
       // only consider tracks with trackTimeRes < LHCBunchSpacingNS
       LOGF(debug, "Time resolution of fwdTrack %f", fwdTrack.trackTimeRes());
       if (fwdTrack.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
-        registry.get<TH1>(HIST("forwardTracks"))->Fill(3., 1.);
+        registry.get<TH1>(HIST("forward/Tracks"))->Fill(3., 1.);
 
         // get first compatible BC
         // auto ambFwdTracksSlice = ambFwdTracks.sliceBy(perFwdTrack, fwdTrack.globalIndex());
         if (ambFwdTracksSlice.size() > 0) {
-          registry.get<TH1>(HIST("forwardTracks"))->Fill(4., 1.);
+          registry.get<TH1>(HIST("forward/Tracks"))->Fill(4., 1.);
 
           // compute the BC closest in time
           auto firstCompatibleBC = ambFwdTracksSlice.begin().bc().begin().globalBC();
@@ -160,36 +165,36 @@ struct tracksWGTInBCs {
                                  (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
           // this track is not ambiguous, has hence a unique association to a collision/BC
-          closestBC = fwdTrack.collision_as<CCs>().bc_as<BCs>().globalBC();
+          auto collision = fwdTrack.collision_as<CCs>();
+          closestBC = collision.bc_as<BCs>().globalBC();
         }
 
         // update tracksInBCList
-        fwdTracksWGTInBCList[closestBC].emplace_back((int32_t)fwdTrack.globalIndex());
+        fwdTracksInBCList[closestBC].emplace_back((int32_t)fwdTrack.globalIndex());
       }
     }
 
     // fill fwdTracksWGTInBCs
     int indBCToStart = 0;
     int indBCToSave;
-    for (auto const& fwdTracksWGTInBC : fwdTracksWGTInBCList) {
+    for (auto const& fwdTracksInBC : fwdTracksInBCList) {
       indBCToSave = -1;
-      if (fwdTracksWGTInBC.second.size() > 0) {
-        // find corresponding BC
-        for (auto ind = indBCToStart; ind < bcs.size(); ind++) {
-          auto bc = bcs.rawIteratorAt(ind);
-          if (bc.globalBC() == fwdTracksWGTInBC.first) {
-            indBCToSave = ind;
-            indBCToStart = ind;
-            break;
-          }
-          if (bc.globalBC() > fwdTracksWGTInBC.first) {
-            break;
-          }
+      // find corresponding BC
+      for (auto ind = indBCToStart; ind < bcs.size(); ind++) {
+        auto bc = bcs.rawIteratorAt(ind);
+        if (bc.globalBC() == fwdTracksInBC.first) {
+          indBCToSave = ind;
+          indBCToStart = ind;
+          break;
         }
-        fwdTracksWGTInBCs(indBCToSave, rnum, fwdTracksWGTInBC.first, fwdTracksWGTInBC.second);
-        LOGF(debug, " BC %i/%u with %i forward tracks with good timing", indBCToSave, fwdTracksWGTInBC.first, fwdTracksWGTInBC.second.size());
+        if (bc.globalBC() > fwdTracksInBC.first) {
+          break;
+        }
       }
+      fwdTracksWGTInBCs(indBCToSave, rnum, fwdTracksInBC.first, fwdTracksInBC.second);
+      LOGF(debug, " BC %i/%u with %i forward tracks with good timing", indBCToSave, fwdTracksInBC.first, fwdTracksInBC.second.size());
     }
+    LOGF(debug, "fwd done");
   }
   PROCESS_SWITCH(tracksWGTInBCs, processForward, "Process forward tracks", false);
 
@@ -205,8 +210,9 @@ struct DGBCCandProducer {
   // data tables
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
+  Produces<aod::UDZdcs> outputZdcs;
   Produces<aod::UDTracks> outputTracks;
-  // Produces<aod::UDTracksCov> outputTracksCov;
+  Produces<aod::UDTracksCov> outputTracksCov;
   Produces<aod::UDTracksDCA> outputTracksDCA;
   Produces<aod::UDTracksPID> outputTracksPID;
   Produces<aod::UDTracksExtra> outputTracksExtra;
@@ -229,16 +235,13 @@ struct DGBCCandProducer {
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
-  using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, /*aod::TracksCov,*/ aod::TracksDCA, aod::TrackSelection,
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                         aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FTCs = aod::FwdTracks;
 
-  Preslice<CCs> CCperBC = aod::evsel::foundBCId;
   Preslice<TCs> TCperCollision = aod::track::collisionId;
   Preslice<aod::FwdTracks> FWperCollision = aod::fwdtrack::collisionId;
-  Preslice<TIBCs> TIBCperBC = aod::dgbcandidate::bcId;
-  Preslice<FTIBCs> FTIBCperBC = aod::dgbcandidate::bcId;
 
   // fill BB and BG information into FITInfo
   template <typename BCR>
@@ -248,25 +251,25 @@ struct DGBCCandProducer {
 
       // 0 <= bit <= 31
       auto bit = bc2u.globalBC() - minbc;
-      if (!bc2u.selection()[evsel::kNoBGT0A])
+      if (!bc2u.selection_bit(evsel::kNoBGT0A))
         SETBIT(info.BGFT0Apf, bit);
-      if (!bc2u.selection()[evsel::kNoBGT0C])
+      if (!bc2u.selection_bit(evsel::kNoBGT0C))
         SETBIT(info.BGFT0Cpf, bit);
-      if (bc2u.selection()[evsel::kIsBBT0A])
+      if (bc2u.selection_bit(evsel::kIsBBT0A))
         SETBIT(info.BBFT0Apf, bit);
-      if (bc2u.selection()[evsel::kIsBBT0C])
+      if (bc2u.selection_bit(evsel::kIsBBT0C))
         SETBIT(info.BBFT0Cpf, bit);
-      if (!bc2u.selection()[evsel::kNoBGV0A])
+      if (!bc2u.selection_bit(evsel::kNoBGV0A))
         SETBIT(info.BGFV0Apf, bit);
-      if (bc2u.selection()[evsel::kIsBBV0A])
+      if (bc2u.selection_bit(evsel::kIsBBV0A))
         SETBIT(info.BBFV0Apf, bit);
-      if (!bc2u.selection()[evsel::kNoBGFDA])
+      if (!bc2u.selection_bit(evsel::kNoBGFDA))
         SETBIT(info.BGFDDApf, bit);
-      if (!bc2u.selection()[evsel::kNoBGFDC])
+      if (!bc2u.selection_bit(evsel::kNoBGFDC))
         SETBIT(info.BGFDDCpf, bit);
-      if (bc2u.selection()[evsel::kIsBBFDA])
+      if (bc2u.selection_bit(evsel::kIsBBFDA))
         SETBIT(info.BBFDDApf, bit);
-      if (bc2u.selection()[evsel::kIsBBFDC])
+      if (bc2u.selection_bit(evsel::kIsBBFDC))
         SETBIT(info.BBFDDCpf, bit);
     }
   }
@@ -351,7 +354,13 @@ struct DGBCCandProducer {
     outputTracks(outputCollisions.lastIndex(),
                  track.px(), track.py(), track.pz(), track.sign(),
                  bcnum, track.trackTime(), track.trackTimeRes());
-    // outputTracksCov(track.x(), track.y(), track.z(), track.sigmaY(), track.sigmaZ());
+
+    // float sigmaY = track.sigmaY();
+    // float sigmaZ = track.sigmaZ();
+    float sigmaY = -1.;
+    float sigmaZ = -1.;
+    outputTracksCov(track.x(), track.y(), track.z(), sigmaY, sigmaZ);
+
     outputTracksDCA(track.dcaZ(), track.dcaXY());
     outputTracksPID(track.tpcNSigmaEl(),
                     track.tpcNSigmaMu(),
@@ -412,20 +421,26 @@ struct DGBCCandProducer {
   {
     diffCuts = (DGCutparHolder)DGCuts;
 
-    if (context.mOptions.get<bool>("processTable") || context.mOptions.get<bool>("processData")) {
-      registry.add("bcFlag", "#bcFlag", {HistType::kTH1F, {{64, -0.5, 63.5}}});
-      registry.add("candCase", "#candCase", {HistType::kTH1F, {{4, -0.5, 3.5}}});
-      registry.add("isDG1vsisDG2", "#isDG1vsisDG2", {HistType::kTH2F, {{13, -1.5, 11.5}, {13, -1.5, 11.5}}});
-      registry.add("ntr1vsntr2All", "#ntr1vsntr2All", {HistType::kTH2F, {{52, -1.5, 50.5}, {52, -1.5, 50.5}}});
-      registry.add("ntr1vsntr2Cand", "#ntr1vsntr2Cand", {HistType::kTH2F, {{52, -1.5, 50.5}, {52, -1.5, 50.5}}});
-      registry.add("ptvsdcaxy1", "#ptvsdcaxy1", {HistType::kTH2F, {{50, 0., 5.}, {50, -5., 5.}}});
-      registry.add("ptvsdcaxy2", "#ptvsdcaxy2", {HistType::kTH2F, {{50, 0., 5.}, {50, -5., 5.}}});
+    if (context.mOptions.get<bool>("processTinBCs")) {
+      registry.add("table/candCase", "#candCase", {HistType::kTH1F, {{4, -0.5, 3.5}}});
+    }
+
+    if (context.mOptions.get<bool>("processFull")) {
+      registry.add("data/candCase", "#candCase", {HistType::kTH1F, {{4, -0.5, 3.5}}});
+      registry.add("data/bcFlag", "#bcFlag", {HistType::kTH1F, {{64, -0.5, 63.5}}});
+      registry.add("data/isDG1vsisDG2", "#isDG1vsisDG2", {HistType::kTH2F, {{13, -1.5, 11.5}, {13, -1.5, 11.5}}});
+      registry.add("data/ntr1vsntr2All", "#ntr1vsntr2All", {HistType::kTH2F, {{52, -1.5, 50.5}, {52, -1.5, 50.5}}});
+      registry.add("data/ntr1vsntr2Cand", "#ntr1vsntr2Cand", {HistType::kTH2F, {{52, -1.5, 50.5}, {52, -1.5, 50.5}}});
     }
   }
 
-  void processTable(TIBC const& tibc, BCs const& bcs, CCs const& collisions,
-                    TCs const& tracks, aod::FwdTracks const& fwdtracks, FTIBCs const& ftibcs,
-                    aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+  // In this process function we run over all BCs in the TracksWGTInBCs table.
+  // --> Only those BCs are considered!
+  // If the BC has an associated collision, the information of this collision is extracted.
+  // If the BC is not associated with a collision, then fill the UDtables with information availabl for the BC.
+  void processTinBCs(TIBC const& tibc, BCs const& bcs, CCs const& collisions,
+                     TCs const& tracks, aod::FwdTracks const& fwdtracks, FTIBCs const& ftibcs,
+                     aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     // fill FITInfo
     auto bcnum = tibc.bcnum();
@@ -433,9 +448,9 @@ struct DGBCCandProducer {
 
     // check if DG event
     // distinguish between cases with and without associated BC
-    // 1. candidate has associated BC and associated collision
-    // 2. candidate has associated BC but no associated collision
-    // 3. candidate has no associated BC
+    // 1. candidate has associated BC and associated collision    -> vertex position: col.[posX(), posY(), posZ()]
+    // 2. candidate has associated BC but no associated collision ->                  [-2., 2., -2.]
+    // 3. candidate has no associated BC                          ->                  [-3., 3., -3.]
     int isDG = -1;
     float rtrwTOF = -1.;
     int8_t nCharge;
@@ -446,48 +461,40 @@ struct DGBCCandProducer {
       auto bc = tibc.bc_as<BCs>();
 
       // is there an associated collision?
-      auto colSlize = collisions.sliceBy(CCperBC, bc.globalIndex());
+      Partition<CCs> colSlize = aod::evsel::foundBCId == bc.globalIndex();
+      colSlize.bindTable(collisions);
+
       if (colSlize.size() > 0) {
-        LOGF(debug, "  1. BC has collision");
-        auto col = colSlize.rawIteratorAt(0);
+        LOGF(info, "  1. BC has collision");
+        colSlize.bindExternalIndices(&bcs);
+        auto col = colSlize.begin();
+
         auto colTracks = tracks.sliceBy(TCperCollision, col.globalIndex());
         auto colFwdTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
-        auto bcRange = udhelpers::compatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
+        auto bcRange = udhelpers::compatibleBCs1(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
         isDG = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
 
-        // update UDTables
+        // update UDTables, case 1.
         if (isDG == 0) {
-          registry.get<TH1>(HIST("candCase"))->Fill(1, 1.);
+          registry.get<TH1>(HIST("table/candCase"))->Fill(1, 1.);
           rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
           nCharge = udhelpers::netCharge<true>(colTracks);
 
-          outputCollisions(bc.globalBC(), bc.runNumber(),
-                           col.posX(), col.posY(), col.posZ(),
-                           col.numContrib(), nCharge,
-                           rtrwTOF);
-          outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
-                               fitInfo.triggerMaskFT0,
-                               fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC,
-                               fitInfo.triggerMaskFDD,
-                               fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
-                               fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
-                               fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
-                               fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-
-          // update DGTracks tables
-          for (auto const& track : colTracks) {
-            updateUDTrackTables(track, bc.globalBC());
-          }
+          updateUDTables(false, bc.globalBC(), bc.runNumber(), col.posX(), col.posY(), col.posZ(),
+                         col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
         }
       } else {
-        LOGF(debug, "  2. BC has NO collision");
+        LOGF(info, "  2. BC has NO collision");
         auto tracksArray = tibc.track_as<TCs>();
         auto bcRange = udhelpers::compatibleBCs(bc, bc.globalBC(), diffCuts.minNBCs(), bcs);
 
         // does BC have fwdTracks?
         if (ftibcs.size() > 0) {
-          auto ftibcSlice = ftibcs.sliceBy(FTIBCperBC, bc.globalIndex());
+          Partition<FTIBCs> ftibcSlice = aod::dgbcandidate::bcId == bc.globalIndex();
+          ftibcSlice.bindTable(ftibcs);
+
           if (ftibcSlice.size() > 0) {
+            ftibcSlice.bindExternalIndices(&fwdtracks);
             auto fwdTracksArray = ftibcSlice.begin().fwdtrack_as<FTCs>();
             isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
           } else {
@@ -499,33 +506,29 @@ struct DGBCCandProducer {
           isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
 
-        // update UDTables
+        // update UDTables, case 2.
         if (isDG == 0) {
-          registry.get<TH1>(HIST("candCase"))->Fill(2, 1.);
+          registry.get<TH1>(HIST("table/candCase"))->Fill(2, 1.);
           rtrwTOF = udhelpers::rPVtrwTOF<false>(tracksArray, tracksArray.size());
           nCharge = udhelpers::netCharge<false>(tracksArray);
 
-          outputCollisions(bc.globalBC(), bc.runNumber(),
-                           -1., 1., -1.,
-                           tracksArray.size(), nCharge,
-                           rtrwTOF);
-          outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
-                               fitInfo.triggerMaskFT0,
-                               fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC,
-                               fitInfo.triggerMaskFDD,
-                               fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
-                               fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
-                               fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
-                               fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-
-          // update DGTracks tables
-          for (auto const& track : tracksArray) {
-            updateUDTrackTables(track, bc.globalBC());
-          }
+          updateUDTables(false, bc.globalBC(), bc.runNumber(), -2., 2., -2,
+                         tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
         }
       }
+
+      // fill UDZdcs
+      if (isDG == 0 && bc.has_zdc()) {
+        auto zdc = bc.zdc();
+        std::vector<float> enes(zdc.energy()[0]);
+        std::vector<uint8_t> chEs(zdc.channelE()[0]);
+        std::vector<float> amps(zdc.amplitude()[0]);
+        std::vector<float> times(zdc.time()[0]);
+        std::vector<uint8_t> chTs(zdc.channelT()[0]);
+        outputZdcs(outputCollisions.lastIndex(), enes, chEs, amps, times, chTs);
+      }
     } else {
-      LOGF(debug, "3. BC NOT found");
+      LOGF(info, "3. BC NOT found");
 
       // the BC is not contained in the BCs table
       auto tracksArray = tibc.track_as<TCs>();
@@ -537,6 +540,7 @@ struct DGBCCandProducer {
         ftibcPart.bindTable(ftibcs);
 
         if (ftibcPart.size() > 0) {
+          ftibcPart.bindExternalIndices(&fwdtracks);
           auto fwdTracksArray = ftibcPart.begin().fwdtrack_as<FTCs>();
           isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         } else {
@@ -548,36 +552,34 @@ struct DGBCCandProducer {
         isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
       }
 
-      // update UDTables
+      // update UDTables, case 3.
       if (isDG == 0) {
-        registry.get<TH1>(HIST("candCase"))->Fill(3, 1.);
+        registry.get<TH1>(HIST("table/candCase"))->Fill(3, 1.);
         rtrwTOF = udhelpers::rPVtrwTOF<false>(tracksArray, tracksArray.size());
         nCharge = udhelpers::netCharge<false>(tracksArray);
 
-        outputCollisions(bcnum, tibc.runNumber(),
-                         -2., 2., -2.,
-                         tracksArray.size(), nCharge,
-                         rtrwTOF);
-        outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
-                             fitInfo.triggerMaskFT0,
-                             fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC,
-                             fitInfo.triggerMaskFDD,
-                             fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
-                             fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
-                             fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
-                             fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-
-        // update DGTracks tables
-        for (auto const& track : tracksArray) {
-          updateUDTrackTables(track, bcnum);
-        }
+        updateUDTables(false, bcnum, tibc.runNumber(), -3., 3., -3,
+                       tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
       }
     }
   }
 
-  PROCESS_SWITCH(DGBCCandProducer, processTable, "Produce UDTables", true);
+  PROCESS_SWITCH(DGBCCandProducer, processTinBCs, "Produce UDTables", true);
 
-  void processData(BCs const& bcs, CCs const& collisions,
+  // In this process function runs over all BC mumbers
+  // --> All possible BCs are considered!
+  // 1. search for associated BCs and Collisions and extract the related information.
+  // 2. search for entries in table TracksWGTInBCs and extract the related information.
+  // ATTENTION: note that a BC can be included twice in the output tables. This can happen when
+  //            the BC number is in both, the BCs and TracksWGTInBCs tables. The vertex position in
+  //            UDCollisions is used to distinguish the cases.
+  //              case:                                                           vertex position:
+  //              BC in BCs table and has assoc. Collision:                       [posx(), posy(), posz()]
+  //              BC in TracksWGTInBCs table:
+  //                is also in BCs table and has assoc. Collision:                [-1., 1., -1]
+  //                is also in BCs table and does not have assoc. Collision:      [-2., 2., -2.]
+  //                is not in BCs table and hence does not have assoc. Collision: [-3., 3., -3.]
+  void processFull(BCs const& bcs, CCs const& collisions,
                    TCs const& tracks, FTCs const& fwdtracks, TIBCs const& tibcs, FTIBCs const& ftibcs,
                    aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
@@ -598,6 +600,7 @@ struct DGBCCandProducer {
     }
 
     // run over globalBC [minGlobalBC, maxGlobalBC] ...
+    float vpos[3];
     uint64_t minGlobalBC = bcs.iteratorAt(0).globalBC();
     uint64_t maxGlobalBC = bcs.iteratorAt(bcs.size() - 1).globalBC();
     // ... and advance these pointers step-by-step
@@ -607,7 +610,7 @@ struct DGBCCandProducer {
     auto lastbc = bcs.iteratorAt(bcs.size() - 1);
     auto lasttibc = tibcs.iteratorAt(tibcs.size() - 1);
     auto lastftibc = ftibcs.iteratorAt(ftibcs.size() - 1);
-    LOGF(info, "bcs %d tibcs %d ftibcs %d", bcs.size(), tibcs.size(), ftibcs.size());
+    LOGF(debug, "bcs %d tibcs %d ftibcs %d", bcs.size(), tibcs.size(), ftibcs.size());
 
     for (auto bcnum = minGlobalBC; bcnum <= maxGlobalBC; bcnum++) {
       LOGF(debug, "max %d now %d", maxGlobalBC, bcnum);
@@ -623,36 +626,50 @@ struct DGBCCandProducer {
       while (bc.globalBC() < bcnum && bc != lastbc) {
         ++bc;
       }
+      // find associated collision
+      Partition<CCs> colSlize = aod::evsel::foundBCId == bc.globalIndex();
+      colSlize.bindTable(collisions);
+      colSlize.bindExternalIndices(&bcs);
+
       if (bc.globalBC() == bcnum) {
         SETBIT(bcFlag, 1);
 
-        // find associated collision
-        auto colSlize = collisions.sliceBy(CCperBC, bc.globalIndex());
         if (colSlize.size() > 0) {
+          // -> vertex position: col.[posX(), posY(), posZ()]
           SETBIT(bcFlag, 2);
 
           auto col = colSlize.begin();
           ntr1 = col.numContrib();
           auto colTracks = tracks.sliceBy(TCperCollision, col.globalIndex());
           auto colFwdTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
-          auto bcRange = udhelpers::compatibleBCs(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
+          auto bcRange = udhelpers::compatibleBCs1(col, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
           isDG1 = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
           if (isDG1 == 0) {
             // this is a DG candidate with proper collision vertex
             SETBIT(bcFlag, 3);
-            registry.get<TH1>(HIST("candCase"))->Fill(1, 1.);
+            registry.get<TH1>(HIST("data/candCase"))->Fill(1, 1.);
 
             auto rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
             auto nCharge = udhelpers::netCharge<true>(colTracks);
             auto fitInfo = getFITinfo(bcnum, bcs, ft0s, fv0as, fdds);
             updateUDTables(false, bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(),
                            col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
+            // fill UDZdcs
+            if (bc.has_zdc()) {
+              auto zdc = bc.zdc();
+              std::vector<float> enes(zdc.energy()[0]);
+              std::vector<uint8_t> chEs(zdc.channelE()[0]);
+              std::vector<float> amps(zdc.amplitude()[0]);
+              std::vector<float> times(zdc.time()[0]);
+              std::vector<uint8_t> chTs(zdc.channelT()[0]);
+              outputZdcs(outputCollisions.lastIndex(), enes, chEs, amps, times, chTs);
+            }
           }
         }
       }
 
-      // find BC in TIBCs table
-      if (ftibcs.size() > 0) {
+      // find BC in TracksWGTInBCs table
+      if (tibcs.size() > 0) {
         while (tibc.bcnum() < bcnum && tibc != lasttibc) {
           ++tibc;
         }
@@ -663,7 +680,6 @@ struct DGBCCandProducer {
           auto tracksArray = tibc.track_as<TCs>();
           ntr2 = tracksArray.size();
 
-          // find BC in FTIBCs table
           if (ftibcs.size() > 0) {
             while (ftibc.bcnum() < bcnum && ftibc != lastftibc) {
               ++ftibc;
@@ -681,30 +697,61 @@ struct DGBCCandProducer {
           }
 
           if (isDG2 == 0) {
-            // this is a DG candidate with tracks-in-BC
+            // this is a DG candidate contained in TracksWGTInBCs
             SETBIT(bcFlag, 5);
-            registry.get<TH1>(HIST("candCase"))->Fill(2, 1.);
+            registry.get<TH1>(HIST("data/candCase"))->Fill(2, 1.);
 
             auto rtrwTOF = udhelpers::rPVtrwTOF<false>(tracksArray, tracksArray.size());
             auto nCharge = udhelpers::netCharge<false>(tracksArray);
             auto fitInfo = getFITinfo(bcnum, bcs, ft0s, fv0as, fdds);
-            updateUDTables(false, bcnum, tibc.runNumber(), -1., 1., -1,
+
+            // distinguish different cases
+            if (bc.globalBC() == bcnum) {
+              if (colSlize.size() > 0) {
+                vpos[0] = -1.;
+                vpos[1] = 1.;
+                vpos[2] = -1.;
+              } else {
+                vpos[0] = -2.;
+                vpos[1] = 2.;
+                vpos[2] = -2.;
+              }
+            } else {
+              vpos[0] = -3.;
+              vpos[1] = 3.;
+              vpos[2] = -3.;
+            }
+
+            updateUDTables(false, bcnum, tibc.runNumber(), vpos[0], vpos[1], vpos[2],
                            tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
+
+            // fill UDZdcs
+            if (bc.globalBC() == bcnum) {
+              if (bc.has_zdc()) {
+                auto zdc = bc.zdc();
+                std::vector<float> enes(zdc.energy()[0]);
+                std::vector<uint8_t> chEs(zdc.channelE()[0]);
+                std::vector<float> amps(zdc.amplitude()[0]);
+                std::vector<float> times(zdc.time()[0]);
+                std::vector<uint8_t> chTs(zdc.channelT()[0]);
+                outputZdcs(outputCollisions.lastIndex(), enes, chEs, amps, times, chTs);
+              }
+            }
           }
         }
       }
 
       // update histograms
-      registry.get<TH1>(HIST("bcFlag"))->Fill(bcFlag, 1.);
-      registry.get<TH2>(HIST("isDG1vsisDG2"))->Fill(isDG1, isDG2);
-      registry.get<TH2>(HIST("ntr1vsntr2All"))->Fill(ntr1, ntr2);
+      registry.get<TH1>(HIST("data/bcFlag"))->Fill(bcFlag, 1.);
+      registry.get<TH2>(HIST("data/isDG1vsisDG2"))->Fill(isDG1, isDG2);
+      registry.get<TH2>(HIST("data/ntr1vsntr2All"))->Fill(ntr1, ntr2);
       if (isDG1 == 0 && isDG2 == 0) {
-        registry.get<TH2>(HIST("ntr1vsntr2Cand"))->Fill(ntr1, ntr2);
+        registry.get<TH2>(HIST("data/ntr1vsntr2Cand"))->Fill(ntr1, ntr2);
       }
     }
   }
 
-  PROCESS_SWITCH(DGBCCandProducer, processData, "Produce UDTables", true);
+  PROCESS_SWITCH(DGBCCandProducer, processFull, "Produce UDTables", true);
 
   void processDummy(BCs const& bcs, CCs const& collisions,
                     TCs const& tracks, FTCs const& fwdtracks, TIBCs const& tibcs, FTIBCs const& ftibcs,
