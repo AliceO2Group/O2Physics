@@ -13,8 +13,6 @@
 
 #include <TLorentzVector.h>
 
-#include <CCDB/BasicCCDBManager.h>
-
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -35,8 +33,6 @@ struct f0980analysis {
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  framework::Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
-
   Configurable<float> cfgMinPt{"cfgMinPt", 0.15, "Minimum transverse momentum for charged track"};
   Configurable<float> cfgMaxPt{"cfgMaxPt", 20.0, "Maximum transverse momentum for charged track"};
   Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8, "Maximum pseudorapidiy for charged track"};
@@ -46,18 +42,11 @@ struct f0980analysis {
   Configurable<float> cfgMaxTPCStandalone{"cfgMaxTPCStandalone", 2.0, "Maximum TPC PID as standalone"};
   Configurable<float> cfgMaxTPC{"cfgMaxTPC", 5.0, "Maximum TPC PID with TOF"};
   Configurable<float> cfgMaxTOF{"cfgMaxTOF", 3.0, "Maximum TOF PID with TPC"};
-  Configurable<float> cfgZvtx{"cfgZvtx", 10, "Maximum z vertex range"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
 
   void init(o2::framework::InitContext&)
   {
-    ccdb->setURL("http://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    ccdb->setCreatedNotAfter(now);
-
     AxisSpec centAxis = {20, 0, 100};
     AxisSpec ptAxis = {100, 0, 20};
     AxisSpec massAxis = {400, 0.2, 2.2};
@@ -108,9 +97,6 @@ struct f0980analysis {
   template <bool IsMC, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks)
   {
-    if (fabs(collision.posZ()) > cfgZvtx)
-      return;
-
     TLorentzVector Pion1, Pion2, Reco;
     for (auto& [trk1, trk2] : combinations(CombinationsStrictlyUpperIndexPolicy(dTracks, dTracks))) {
       if (!SelTrack(trk1) || !SelTrack(trk2))
