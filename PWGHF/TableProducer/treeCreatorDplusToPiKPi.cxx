@@ -210,6 +210,7 @@ struct HfTreeCreatorDplusToPiKPi {
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
   Configurable<float> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
+  Configurable<float> maxPtforDownSample{"maxPtforDownSample", 10., "Maximum pt for the application of the downasampling factor"};
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
@@ -368,7 +369,7 @@ struct HfTreeCreatorDplusToPiKPi {
     for (auto const& candidate : candidates) {
       if (fillOnlyBackground) {
         float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
-        if (pseudoRndm >= donwSampleBkgFactor) {
+        if (candidate.pt() < pseudoRndm >= donwSampleBkgFactor) {
           continue;
         }
       }
@@ -412,7 +413,7 @@ struct HfTreeCreatorDplusToPiKPi {
       }
       for (const auto& candidate : recBg) {
         float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
-        if (pseudoRndm >= donwSampleBkgFactor) {
+        if (candidate.pt() < maxPtforDownSample && pseudoRndm >= donwSampleBkgFactor) {
           continue;
         }
         auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
