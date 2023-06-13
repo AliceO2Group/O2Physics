@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -76,7 +76,6 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->add((folderName + folderSuffix + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hITSclusters").c_str(), "; ITS clusters; Entries", kTH1F, {{10, -0.5, 9.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, -0.5, 9.5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDCA").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
@@ -101,8 +100,6 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->add((folderName + folderSuffix + "/hDecayVtxX").c_str(), "; #it{Vtx}_{x} (cm); Entries", kTH1F, {{2000, 0, 200}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDecayVtxY").c_str(), "; #it{Vtx}_{y} (cm)); Entries", kTH1F, {{2000, 0, 200}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDecayVtxZ").c_str(), "; #it{Vtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hCPA").c_str(), "; #it{cos #theta_{p}}; Entries", kTH1F, {{1000, 0.9, 1.}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hCPAvsPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); #it{cos #theta_{p}}", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassLambda").c_str(), "; M_{#Lambda}; Entries", kTH1F, {{600, 0.f, 3.f}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassAntiLambda").c_str(), "; M_{#bar{#Lambda}}; Entries", kTH1F, {{600, 0.f, 3.f}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassLambdaAntiLambda").c_str(), "; M_{#Lambda}; M_{#bar{#Lambda}}", kTH2F, {{600, 0.f, 3.f}, {600, 0.f, 3.f}});
@@ -249,8 +246,6 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hDecayVtxX"), part.decayVtxX());
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hDecayVtxY"), part.decayVtxY());
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hDecayVtxZ"), part.decayVtxZ());
-      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hCPA"), part.tempFitVar());
-      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hCPAvsPt"), part.pt(), part.tempFitVar());
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hInvMassLambda"), part.mLambda());
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hInvMassAntiLambda"), part.mAntiLambda());
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hInvMassLambdaAntiLambda"), part.mLambda(), part.mAntiLambda());
@@ -331,9 +326,9 @@ class FemtoDreamParticleHisto
         fillQA_debug<o2::aod::femtodreamMCparticle::MCType::kRecon>(part);
       }
       if constexpr (isMC) {
-        if (part.has_femtoDreamMCParticle()) {
-          fillQA_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(part.femtoDreamMCParticle());
-          fillQA_MC(part, (part.femtoDreamMCParticle()).partOriginMCTruth(), (part.femtoDreamMCParticle()).pdgMCTruth());
+        if (part.has_fdMCParticle()) {
+          fillQA_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(part.fdMCParticle());
+          fillQA_MC(part, (part.fdMCParticle()).partOriginMCTruth(), (part.fdMCParticle()).pdgMCTruth());
         } else {
           mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hNoMCtruthCounter"), 0);
         }

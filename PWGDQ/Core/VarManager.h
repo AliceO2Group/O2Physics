@@ -102,7 +102,8 @@ class VarManager : public TObject
     AmbiTrack = BIT(19),
     AmbiMuon = BIT(20),
     DalitzBits = BIT(21),
-    TrackTPCPID = BIT(22)
+    TrackTPCPID = BIT(22),
+    TrackMFT = BIT(23)
   };
 
   enum PairCandidateType {
@@ -496,6 +497,11 @@ class VarManager : public TObject
   static void SetupTGeoFwdDCAFitter()
   {
     fgFitterTwoProngFwd.setTGeoMat(true);
+  }
+  // No material budget in fwdtrack propagation
+  static void SetupFwdDCAFitterNoCorr()
+  {
+    fgFitterTwoProngFwd.setTGeoMat(false);
   }
 
   static auto getEventPlane(int harm, float qnxa, float qnya)

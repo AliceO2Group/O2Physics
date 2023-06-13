@@ -24,6 +24,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
+#include "Common/Core/RecoDecay.h"
 #include <TPDGCode.h>
 
 using namespace o2;
@@ -46,7 +47,20 @@ enum ParticleType {
 };
 } // namespace
 
-struct HfTaskMuonSourceMc {
+namespace o2::aod
+{
+namespace muon_source
+{
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
+DECLARE_SOA_COLUMN(Source, source, uint8_t);
+} // namespace muon_source
+DECLARE_SOA_TABLE(HfMuonSource, "AOD", "MUONSOURCE", muon_source::Pt, muon_source::DcaXY, muon_source::Source);
+} // namespace o2::aod
+
+struct HfTaskSingleMuonSource {
+  Produces<aod::HfMuonSource> singleMuonSource;
+
   Configurable<bool> applyMcMask{"applyMcMask", true, "Flag of apply the mcMask selection"};
   Configurable<int> trackType{"trackType", 0, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
 
@@ -214,7 +228,9 @@ struct HfTaskMuonSourceMc {
   {
     const auto mask(getMask(muon));
     const auto pt(muon.pt()), chi2(muon.chi2MatchMCHMFT());
-    const auto dca(std::sqrt(std::pow(muon.fwdDcaX(), 2.) + std::pow(muon.fwdDcaY(), 2.)));
+    const auto dca(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
+
+    singleMuonSource(pt, dca, mask);
 
     if (isBeautyDecayMu(mask)) {
       registry.fill(HIST("h2BeautyDecayMuPtDCA"), pt, dca);
@@ -271,6 +287,6 @@ struct HfTaskMuonSourceMc {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTaskMuonSourceMc>(cfgc),
+    adaptAnalysisTask<HfTaskSingleMuonSource>(cfgc),
   };
 }

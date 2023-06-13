@@ -19,8 +19,8 @@
 /// \author David Dobrigkeit Chinellato (david.dobrigkeit.chinellato@cern.ch)
 /// \author Zhongbao Yin (Zhong-Bao.Yin@cern.ch)
 
-#ifndef O2_ANALYSIS_HSTRANGECORRELATIONTABLES_H_
-#define O2_ANALYSIS_HSTRANGECORRELATIONTABLES_H_
+#ifndef PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_
+#define PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
@@ -37,6 +37,14 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);                       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trigger"); //!
 } // namespace triggerTracks
 DECLARE_SOA_TABLE(TriggerTracks, "AOD", "TRIGGERTRACKS", o2::soa::Index<>, triggerTracks::CollisionId, triggerTracks::TrackId);
+/// _________________________________________
+/// Table for storing assoc track indices
+namespace assocPions
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Assoc"); //!
+} // namespace assocPions
+DECLARE_SOA_TABLE(AssocPions, "AOD", "ASSOCPIONS", o2::soa::Index<>, assocPions::CollisionId, assocPions::TrackId);
 /// _________________________________________
 /// Table for storing associated V0 indices
 namespace assocV0s
@@ -128,4 +136,4 @@ DECLARE_SOA_TABLE(AssocCascades, "AOD", "ASSOCCASCADES", o2::soa::Index<>, assoc
                   assocCascades::InMassRegionCheck<assocCascades::MassRegionXi, assocCascades::MassRegionOmega>);
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_HSTRANGECORRELATIONTABLES_H_
+#endif // PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_

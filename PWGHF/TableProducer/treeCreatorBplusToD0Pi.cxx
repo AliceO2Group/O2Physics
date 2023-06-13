@@ -94,6 +94,7 @@ DECLARE_SOA_COLUMN(NSigmaTPCTrk1Pi, nSigmaTPCTrk1Pi, float);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(GlobalIndex, globalIndex, int);
 } // namespace full
 
 // put the arguments into the table
@@ -158,7 +159,8 @@ DECLARE_SOA_TABLE(HfCandBplusFull, "AOD", "HFCANDBPFull",
                   full::NSigmaTOFTrk1Pi,
                   full::NSigmaTOFTrk1Ka,
                   full::NSigmaTPCTrk1Pi,
-                  full::NSigmaTPCTrk1Ka);
+                  full::NSigmaTPCTrk1Ka,
+                  full::GlobalIndex);
 
 DECLARE_SOA_TABLE(HfCandBplusFullEvents, "AOD", "HFCANDBPFullE",
                   collision::BCId,
@@ -175,7 +177,8 @@ DECLARE_SOA_TABLE(HfCandBplusFullParticles, "AOD", "HFCANDBPFullP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::MCflag);
+                  full::MCflag,
+                  full::GlobalIndex);
 
 } // namespace o2::aod
 
@@ -297,7 +300,8 @@ struct HfTreeCreatorBplusToD0Pi {
             d0Daughter1.tofNSigmaPi(),
             d0Daughter1.tofNSigmaKa(),
             d0Daughter1.tpcNSigmaPi(),
-            d0Daughter1.tpcNSigmaKa());
+            d0Daughter1.tpcNSigmaKa(),
+            candidate.globalIndex());
         }
       };
 
@@ -315,7 +319,8 @@ struct HfTreeCreatorBplusToD0Pi {
           particle.eta(),
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
-          particle.flagMcMatchGen());
+          particle.flagMcMatchGen(),
+          particle.globalIndex());
       }
     }
   }

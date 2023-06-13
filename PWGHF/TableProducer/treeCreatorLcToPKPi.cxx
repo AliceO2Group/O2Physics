@@ -81,6 +81,7 @@ DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(GlobalIndex, globalIndex, int);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
@@ -155,7 +156,8 @@ DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
                   full::E,
                   full::MCflag,
                   full::OriginMcRec,
-                  full::IsCandidateSwapped);
+                  full::IsCandidateSwapped,
+                  full::GlobalIndex);
 
 DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
                   collision::BCId,
@@ -173,7 +175,8 @@ DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
                   full::Phi,
                   full::Y,
                   full::MCflag,
-                  full::OriginMcGen);
+                  full::OriginMcGen,
+                  full::GlobalIndex);
 
 } // namespace o2::aod
 
@@ -221,8 +224,8 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionCt,
                            float FunctionY,
                            float FunctionE) {
-        double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::LcToPKPi && pseudoRndm < downSampleBkgFactor) {
+        double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
+        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
@@ -295,7 +298,8 @@ struct HfTreeCreatorLcToPKPi {
             FunctionE,
             candidate.flagMcMatchRec(),
             candidate.originMcRec(),
-            candidate.isCandidateSwapped());
+            candidate.isCandidateSwapped(),
+            candidate.globalIndex());
         }
       };
 
@@ -314,7 +318,8 @@ struct HfTreeCreatorLcToPKPi {
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
           particle.flagMcMatchGen(),
-          particle.originMcGen());
+          particle.originMcGen(),
+          particle.globalIndex());
       }
     }
   }
@@ -350,7 +355,7 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionCt,
                            float FunctionY,
                            float FunctionE) {
-        double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
+        double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
             trackPos1.collision().bcId(),
@@ -424,7 +429,8 @@ struct HfTreeCreatorLcToPKPi {
             FunctionE,
             0.,
             0.,
-            0.);
+            0.,
+            candidate.globalIndex());
         }
       };
 

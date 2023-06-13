@@ -531,6 +531,52 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_QuadDCAsigXYZ", "", false, 50, 0.0, 5.0, VarManager::kMass, 50, 0.0, 20.0, VarManager::kQuadDCAsigXYZ);
         hm->AddHistogram(histClass, "Mass_Pt_QuadDCAsigXYZ", "", false, 500, 0.0, 5.0, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt, 50, 0.0, 20.0, VarManager::kQuadDCAsigXYZ);
       }
+      if (subGroupStr.Contains("largescale")) {
+        // binning for mee at large scales:
+        // every 10 MeV from 0 to 1.1 GeV/c2
+        // every 50 MeV from 1.1 to 2.7 GeV/c2
+        // every 10 MeV from 2.7 to 3.2 GeV/c2
+        // every 50 MeV from 3.2 to 10 GeV/c2
+        double mee_bins[329];
+        for (int i = 0; i <= 110; i++)
+          mee_bins[i] = 0.01 * i;
+        for (int i = 1; i <= 32; i++)
+          mee_bins[110 + i] = 1.1 + 0.05 * i;
+        for (int i = 1; i <= 50; i++)
+          mee_bins[142 + i] = 2.7 + 0.01 * i;
+        for (int i = 1; i <= 136; i++)
+          mee_bins[192 + i] = 3.2 + 0.05 * i;
+        int nbins_mee = sizeof(mee_bins) / sizeof(*mee_bins) - 1;
+
+        // binning for ptee at large scales:
+        // every 0.1 GeV/c from 0 to 10 GeV/c
+        // every 0.5 GeV/c from 10 to 30 GeV/c
+        double ptee_bins[201];
+        for (int i = 0; i <= 100; i++)
+          ptee_bins[i] = 0.1 * i;
+        for (int i = 1; i <= 100; i++)
+          ptee_bins[100 + i] = 10 + 0.2 * i;
+        int nbins_ptee = sizeof(ptee_bins) / sizeof(*ptee_bins) - 1;
+
+        // binning for dca at large scales:
+        // every 0.1 sigma from 0 to 5 sigma
+        // every 0.5 sigma from 5 to 10 sigma
+        // every 1.0 sigma from 10 to 40 sigma
+        double dca_bins[91];
+        for (int i = 0; i <= 50; i++)
+          dca_bins[i] = 0.1 * i;
+        for (int i = 1; i <= 10; i++)
+          dca_bins[50 + i] = 5 + 0.5 * i;
+        for (int i = 1; i <= 30; i++)
+          dca_bins[60 + i] = 10 + 1 * i;
+        int nbins_dca = sizeof(dca_bins) / sizeof(*dca_bins) - 1;
+
+        hm->AddHistogram(histClass, "Mass_Pt_PhiV", "", false, 20, 0.0, 0.2, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt, 100, 0.0, TMath::Pi(), VarManager::kPairPhiv);
+        hm->AddHistogram(histClass, "Mass_QuadDCAsigXY", "", false, nbins_mee, mee_bins, VarManager::kMass, nbins_dca, dca_bins, VarManager::kQuadDCAsigXY);
+        hm->AddHistogram(histClass, "Mass_QuadDCAsigZ", "", false, nbins_mee, mee_bins, VarManager::kMass, nbins_dca, dca_bins, VarManager::kQuadDCAsigZ);
+        hm->AddHistogram(histClass, "Mass_QuadDCAsigXYZ", "", false, nbins_mee, mee_bins, VarManager::kMass, nbins_dca, dca_bins, VarManager::kQuadDCAsigXYZ);
+        hm->AddHistogram(histClass, "Mass_Pt_QuadDCAsigXYZ", "", false, nbins_mee, mee_bins, VarManager::kMass, nbins_ptee, ptee_bins, VarManager::kPt, nbins_dca, dca_bins, VarManager::kQuadDCAsigXYZ);
+      }
     }
   }
 
