@@ -315,16 +315,16 @@ struct correlateStrangeness {
     // this feature is meant to save memory conveniently.
     // it should actually be implemented centrally in ROOT but ok, this will do it for now.
 
-    int offset = skipUnderOverflowInTHn?1:0; 
-    for( int i=offset; i<edgesDeltaPhiOrig.size()-offset; i++)
+    int offset = skipUnderOverflowInTHn ? 1 : 0;
+    for (int i = offset; i < edgesDeltaPhiOrig.size() - offset; i++)
       edgesDeltaPhi.emplace_back(edgesDeltaPhiOrig[i]);
-    for( int i=offset; i<edgesDeltaEtaOrig.size()-offset; i++)
+    for (int i = offset; i < edgesDeltaEtaOrig.size() - offset; i++)
       edgesDeltaEta.emplace_back(edgesDeltaEtaOrig[i]);
-    for( int i=offset; i<edgesPtAssocOrig.size()-offset; i++)
+    for (int i = offset; i < edgesPtAssocOrig.size() - offset; i++)
       edgesPtAssoc.emplace_back(edgesPtAssocOrig[i]);
-    for( int i=offset; i<edgesVtxZOrig.size()-offset; i++)
+    for (int i = offset; i < edgesVtxZOrig.size() - offset; i++)
       edgesVtxZ.emplace_back(edgesVtxZOrig[i]);
-    for( int i=offset; i<edgesMultOrig.size()-offset; i++)
+    for (int i = offset; i < edgesMultOrig.size() - offset; i++)
       edgesMult.emplace_back(edgesMultOrig[i]);
 
     const AxisSpec axisDeltaPhiNDim{edgesDeltaPhi, "#Delta#varphi"};
