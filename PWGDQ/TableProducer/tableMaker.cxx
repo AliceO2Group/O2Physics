@@ -166,7 +166,7 @@ struct TableMaker {
   Preslice<MyBarrelTracks> perCollisionTracks = aod::track::collisionId;
   Preslice<MyMuons> perCollisionMuons = aod::fwdtrack::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::fwdtrack_association::collisionId;
+  Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
