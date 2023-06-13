@@ -369,7 +369,7 @@ struct HfTreeCreatorDplusToPiKPi {
     for (auto const& candidate : candidates) {
       if (fillOnlyBackground) {
         float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
-        if (candidate.pt() < maxPtforDownSample && pseudoRndm >= donwSampleBkgFactor) {
+        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= donwSampleBkgFactor) {
           continue;
         }
       }
@@ -413,7 +413,7 @@ struct HfTreeCreatorDplusToPiKPi {
       }
       for (const auto& candidate : recBg) {
         float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
-        if (candidate.pt() < maxPtforDownSample && pseudoRndm >= donwSampleBkgFactor) {
+        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= donwSampleBkgFactor) {
           continue;
         }
         auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
