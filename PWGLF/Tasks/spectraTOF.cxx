@@ -74,6 +74,7 @@ struct tofSpectra {
   static constexpr int kCentralityFV0A = 10;
   static constexpr int kNMults = 10;
   Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1, 8 CentralityFT0C, 9 CentralityFT0M, 10 CentralityFV0A"};
+  
   // Custom track cuts for the cut variation study
   TrackSelection customTrackCuts;
   Configurable<bool> useCustomTrackCuts{"useCustomTrackCuts", false, "Flag to use custom track cuts"};
