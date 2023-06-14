@@ -317,71 +317,71 @@ struct correlateStrangeness {
 
     int offset = skipUnderOverflowInTHn ? 1 : 0;
     // ===] delta-phi [===
-    if(!preAxisDeltaPhi.nBins.has_value()){
+    if (!preAxisDeltaPhi.nBins.has_value()) {
       // variable binning, use bins provided
       for (int i = offset; i < static_cast<int>(edgesDeltaPhiOrig.size()) - offset; i++)
         edgesDeltaPhi.emplace_back(edgesDeltaPhiOrig[i]);
-    }else{
+    } else {
       // fixed binning, generate the bin edges on-the-spot
-      double min = edgesDeltaPhiOrig[0]; 
-      double delta = (edgesDeltaPhiOrig[1]-edgesDeltaPhiOrig[0]) / preAxisDeltaPhi.nBins.value(); 
+      double min = edgesDeltaPhiOrig[0];
+      double delta = (edgesDeltaPhiOrig[1] - edgesDeltaPhiOrig[0]) / preAxisDeltaPhi.nBins.value();
       for (int i = offset; i < preAxisDeltaPhi.nBins.value() + 1 - offset; i++)
-        edgesDeltaPhi.emplace_back(min + static_cast<double>(i)*delta);
+        edgesDeltaPhi.emplace_back(min + static_cast<double>(i) * delta);
     }
     // ===] delta-eta [===
-    if(!preAxisDeltaEta.nBins.has_value()){
+    if (!preAxisDeltaEta.nBins.has_value()) {
       // variable binning, use bins provided
       for (int i = offset; i < static_cast<int>(edgesDeltaEtaOrig.size()) - offset; i++)
         edgesDeltaEta.emplace_back(edgesDeltaEtaOrig[i]);
-    }else{
+    } else {
       // fixed binning, generate the bin edges on-the-spot
-      double min = edgesDeltaEtaOrig[0]; 
-      double delta = (edgesDeltaEtaOrig[1]-edgesDeltaEtaOrig[0]) / preAxisDeltaEta.nBins.value(); 
+      double min = edgesDeltaEtaOrig[0];
+      double delta = (edgesDeltaEtaOrig[1] - edgesDeltaEtaOrig[0]) / preAxisDeltaEta.nBins.value();
       for (int i = offset; i < preAxisDeltaEta.nBins.value() + 1 - offset; i++)
-        edgesDeltaEta.emplace_back(min + static_cast<double>(i)*delta);
+        edgesDeltaEta.emplace_back(min + static_cast<double>(i) * delta);
     }
     // ===] pt assoc [===
-    if(!preAxisPtAssoc.nBins.has_value()){
+    if (!preAxisPtAssoc.nBins.has_value()) {
       // variable binning, use bins provided
       for (int i = offset; i < static_cast<int>(edgesPtAssocOrig.size()) - offset; i++)
         edgesPtAssoc.emplace_back(edgesPtAssocOrig[i]);
-    }else{
+    } else {
       // fixed binning, generate the bin edges on-the-spot
-      double min = edgesPtAssocOrig[0]; 
-      double delta = (edgesPtAssocOrig[1]-edgesPtAssocOrig[0]) / preAxisPtAssoc.nBins.value(); 
+      double min = edgesPtAssocOrig[0];
+      double delta = (edgesPtAssocOrig[1] - edgesPtAssocOrig[0]) / preAxisPtAssoc.nBins.value();
       for (int i = offset; i < preAxisVtxZ.nBins.value() + 1 - offset; i++)
-        edgesPtAssoc.emplace_back(min + static_cast<double>(i)*delta);
+        edgesPtAssoc.emplace_back(min + static_cast<double>(i) * delta);
     }
     // ===] vtx Z [===
-    if(!preAxisVtxZ.nBins.has_value()){
+    if (!preAxisVtxZ.nBins.has_value()) {
       // variable binning, use bins provided
       for (int i = offset; i < static_cast<int>(edgesVtxZOrig.size()) - offset; i++)
         edgesVtxZ.emplace_back(edgesVtxZOrig[i]);
-    }else{
+    } else {
       // fixed binning, generate the bin edges on-the-spot
-      double min = edgesVtxZOrig[0]; 
-      double delta = (edgesVtxZOrig[1]-edgesVtxZOrig[0]) / preAxisVtxZ.nBins.value(); 
+      double min = edgesVtxZOrig[0];
+      double delta = (edgesVtxZOrig[1] - edgesVtxZOrig[0]) / preAxisVtxZ.nBins.value();
       for (int i = offset; i < preAxisVtxZ.nBins.value() + 1 - offset; i++)
-        edgesVtxZ.emplace_back(min + static_cast<double>(i)*delta);
+        edgesVtxZ.emplace_back(min + static_cast<double>(i) * delta);
     }
     // ===] mult percentile [===
-    if(!preAxisMult.nBins.has_value()){
+    if (!preAxisMult.nBins.has_value()) {
       // variable binning, use bins provided
       for (int i = offset; i < static_cast<int>(edgesMultOrig.size()) - offset; i++)
         edgesMult.emplace_back(edgesMultOrig[i]);
-    }else{
+    } else {
       // fixed binning, generate the bin edges on-the-spot
-      double min = edgesMultOrig[0]; 
-      double delta = (edgesMultOrig[1]-edgesMultOrig[0]) / preAxisMult.nBins.value(); 
+      double min = edgesMultOrig[0];
+      double delta = (edgesMultOrig[1] - edgesMultOrig[0]) / preAxisMult.nBins.value();
       for (int i = offset; i < preAxisMult.nBins.value() + 1 - offset; i++)
-        edgesMult.emplace_back(min + static_cast<double>(i)*delta);
+        edgesMult.emplace_back(min + static_cast<double>(i) * delta);
     }
 
-    LOGF(info, "Initialized THnF axis delta-phi with %i bins.", edgesDeltaPhi.size()-1); 
-    LOGF(info, "Initialized THnF axis delta-eta with %i bins.", edgesDeltaEta.size()-1); 
-    LOGF(info, "Initialized THnF axis pTassoc with %i bins.", edgesPtAssoc.size()-1); 
-    LOGF(info, "Initialized THnF axis vertex-Z with %i bins.", edgesVtxZ.size()-1); 
-    LOGF(info, "Initialized THnF axis multiplicity with %i bins.", edgesMult.size()-1); 
+    LOGF(info, "Initialized THnF axis delta-phi with %i bins.", edgesDeltaPhi.size() - 1);
+    LOGF(info, "Initialized THnF axis delta-eta with %i bins.", edgesDeltaEta.size() - 1);
+    LOGF(info, "Initialized THnF axis pTassoc with %i bins.", edgesPtAssoc.size() - 1);
+    LOGF(info, "Initialized THnF axis vertex-Z with %i bins.", edgesVtxZ.size() - 1);
+    LOGF(info, "Initialized THnF axis multiplicity with %i bins.", edgesMult.size() - 1);
 
     const AxisSpec axisDeltaPhiNDim{edgesDeltaPhi, "#Delta#varphi"};
     const AxisSpec axisDeltaEtaNDim{edgesDeltaEta, "#Delta#eta"};

@@ -61,8 +61,8 @@ struct hstrangecorrelationfilter {
   Configurable<float> dcaPostopv{"dcapostopv", 0.06, "DCA Pos To PV"};
   Configurable<float> v0RadiusMin{"v0radiusmin", 0.5, "v0radius"};
   Configurable<float> v0RadiusMax{"v0radiusmax", 200, "v0radius"};
-  
-  // primary particle DCAxy selections 
+
+  // primary particle DCAxy selections
   // formula: |DCAxy| <  0.004f + (0.013f / pt)
   Configurable<std::vector<float>> dcaXYpars{"dcaXYpars", {0.004, 0.013}, "pars in |DCAxy| < [0]+[1]/pT"};
   Configurable<float> dcaXYconstant{"dcaXYconstant", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
@@ -102,7 +102,7 @@ struct hstrangecorrelationfilter {
   Configurable<float> backgroundNsigma{"backgroundNsigma", 6.0f, "bg region is +/- this many sigmas away (minus peak)"};
 
   // Do declarative selections for DCAs, if possible
-  Filter preFilterTracks = nabs(aod::track::dcaXY) < dcaXYconstant + dcaXYpTdep*nabs(aod::track::signed1Pt);	
+  Filter preFilterTracks = nabs(aod::track::dcaXY) < dcaXYconstant + dcaXYpTdep * nabs(aod::track::signed1Pt);
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcaPostopv&&
                                                          nabs(aod::v0data::dcanegtopv) > dcaNegtopv&& aod::v0data::dcaV0daughters < dcaV0dau;
   Filter preFilterCascade =
