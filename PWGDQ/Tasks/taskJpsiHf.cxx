@@ -71,7 +71,7 @@ struct taskJPsiHf {
   AxisSpec axisMassDmeson{200, 1.7f, 2.1f}; // TODO: make it dependent on the D-meson species
   AxisSpec axisMassJPsi{300, 2.f, 5.f};
   AxisSpec axisMidY{60, -1.5f, 1.5f};
-  AxisSpec axisFwdY{30, 2.5f, 4.0f};
+  AxisSpec axisFwdY{50, -4.5f, -2.0f};
   AxisSpec axisDeltaY{30, 2.5f, 4.0f};
   AxisSpec axisPhi{180, 0., 2 * constants::math::PI}; // same for delta phi
 
@@ -145,7 +145,7 @@ struct taskJPsiHf {
       auto massJPsi = dilepton.mass();
       auto ptJPsi = dilepton.pt();
       auto rapJPsi = dilepton.rap();
-      auto phiJPsi = dilepton.phi();
+      auto phiJPsi = dilepton.phi() + constants::math::PI; // TODO: check conventions!
 
       if (massJPsi < massDileptonCandMin || massJPsi > massDileptonCandMax) {
         continue;
