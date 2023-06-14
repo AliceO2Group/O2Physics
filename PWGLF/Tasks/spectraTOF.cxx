@@ -1315,98 +1315,20 @@ struct tofSpectra {
         if (makeTHnSparseChoice) {
           histos.fill(HIST(hpt_den_str[i]), mcParticle.pt(), multiplicity); // RD
         } else {
-          histos.fill(HIST(hpt_den_str[i]));
+          histos.fill(HIST(hpt_den_str[i]), mcParticle.pt());
         }
       } else {
         if (makeTHnSparseChoice) {
           histos.fill(HIST(hpt_den_mat[i]), mcParticle.pt(), multiplicity); // RD
         } else {
-          histos.fill(HIST(hpt_den_mat[i]));
+          histos.fill(HIST(hpt_den_mat[i]), mcParticle.pt());
         }
       }
     } else {
       if (makeTHnSparseChoice) {
         histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt(), multiplicity); // RD
       } else {
-        histos.fill(HIST(hpt_den_prm[i]));
-      }
-    }
-  }
-
-  template <std::size_t i, typename ParticleType>
-  void fillParticleHistograms_MCRecoEvs(ParticleType const& mcParticle, CollisionCandidateMC::iterator const& collision)
-  {
-
-    switch (i) {
-      case 0:
-      case Np:
-        if (doprocessFullEl == false && doprocessLfFullEl == false) {
-          return;
-        }
-        break;
-      case 1:
-      case Np + 1:
-        if (doprocessFullMu == false && doprocessLfFullMu == false) {
-          return;
-        }
-        break;
-      case 2:
-      case Np + 2:
-        if (doprocessFullPi == false && doprocessLfFullPi == false) {
-          return;
-        }
-        break;
-      case 3:
-      case Np + 3:
-        if (doprocessFullKa == false && doprocessLfFullKa == false) {
-          return;
-        }
-        break;
-      case 4:
-      case Np + 4:
-        if (doprocessFullPr == false && doprocessLfFullPr == false) {
-          return;
-        }
-        break;
-      case 5:
-      case Np + 5:
-        if (doprocessFullDe == false && doprocessLfFullDe == false) {
-          return;
-        }
-        break;
-      case 6:
-      case Np + 6:
-        if (doprocessFullTr == false && doprocessLfFullTr == false) {
-          return;
-        }
-        break;
-      case 7:
-      case Np + 7:
-        if (doprocessFullHe == false && doprocessLfFullHe == false) {
-          return;
-        }
-        break;
-      case 8:
-      case Np + 8:
-        if (doprocessFullAl == false && doprocessLfFullAl == false) {
-          return;
-        }
-        break;
-    }
-
-    if (mcParticle.pdgCode() != PDGs[i]) {
-      return;
-    }
-
-    if (mcParticle.isPhysicalPrimary()) {
-      if (collision.sel8()) {
-        if (abs(collision.posZ()) < cfgCutVertex) {
-          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt());
-        } else {
-          histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt());
-        }
-      } else {
-        histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt());
+        histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt());
       }
     }
   }
