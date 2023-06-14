@@ -412,7 +412,7 @@ struct tofSpectra {
           histos.add(hdeltatof[i].data(), pTCharge[i], kTH2D, {ptAxis, deltaTOFAxis});
           histos.add(hdeltatpc[i].data(), pTCharge[i], kTH2D, {ptAxis, deltaTPCAxis});
         }
-      } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice.value) {                               // RD
+      } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice.value) {                                   // RD
         histos.add(hnsigmatof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTOFAxis, multAxis, dcaXyAxis, dcaZAxis}); // RD
         histos.add(hnsigmatpc[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTPCAxis, multAxis, dcaXyAxis, dcaZAxis}); // RD
 
@@ -540,12 +540,12 @@ struct tofSpectra {
       } else {
         histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTPC);
       }
-    } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice.value) {                   // RD
-      if (track.sign() > 0) {                                                                       // RD
-        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ());      // RD
-      } else {                                                                                      // RD
-        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaZ()); // RD
-      }                                                                                             // RD
+    } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice.value) {                      // RD
+      if (track.sign() > 0) {                                                                                // RD
+        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ()); // RD
+      } else {                                                                                               // RD
+        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaZ());           // RD
+      }                                                                                                      // RD
     } else {
       if (track.sign() > 0) {
         histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC, multiplicity);
@@ -647,12 +647,12 @@ struct tofSpectra {
       } else {
         histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF);
       }
-    } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice.value) {                   // RD
-      if (track.sign() > 0) {                                                                       // RD
+    } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice.value) {                           // RD
+      if (track.sign() > 0) {                                                                                     // RD
         histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ());      // RD
-      } else {                                                                                      // RD
+      } else {                                                                                                    // RD
         histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ()); // RD
-      }                                                                                             // RD
+      }                                                                                                           // RD
     } else {
       if (track.sign() > 0) {
         histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity);
