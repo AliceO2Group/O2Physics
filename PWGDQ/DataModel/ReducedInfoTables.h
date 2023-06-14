@@ -280,15 +280,15 @@ namespace reducedmuon
 DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);        //!
 DECLARE_SOA_COLUMN(FilteringFlags, filteringFlags, uint8_t); //!
 // the (pt,eta,phi,sign) will be computed in the skimming task //!
-DECLARE_SOA_COLUMN(Pt, pt, float);                 //!
-DECLARE_SOA_COLUMN(Eta, eta, float);               //!
-DECLARE_SOA_COLUMN(Phi, phi, float);               //!
-DECLARE_SOA_COLUMN(Sign, sign, int);               //!
-DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float);       //!  Impact parameter in X of forward track to the primary vertex
-DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float);       //!  Impact parameter in Y of forward track to the primary vertex
-DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int); //!
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                 //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                  //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                //!
+DECLARE_SOA_COLUMN(Phi, phi, float);                //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                //!
+DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float);        //!  Impact parameter in X of forward track to the primary vertex
+DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float);        //!  Impact parameter in Y of forward track to the primary vertex
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int);  //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);     //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                  //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
                            [](float pt, float phi) -> float { return pt * std::sin(phi); });
