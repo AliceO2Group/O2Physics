@@ -180,8 +180,7 @@ struct HfTaskCorrelationD0Hadrons {
      {"hCorrel2DVsPtGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}}, // note: axes 3 and 4 (the pT) are updated in the init(),
      {"hCorrel2DPtIntGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
      {"hDeltaEtaPtIntGen", stringMCParticles + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
-     {"hDeltaPhiPtIntGen", stringMCParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}}
-    }};
+     {"hDeltaPhiPtIntGen", stringMCParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}}}};
 
   void init(o2::framework::InitContext&)
   {
@@ -269,7 +268,7 @@ struct HfTaskCorrelationD0Hadrons {
         registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
       }
-      
+
       if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && ((signalStatus == 11) || (signalStatus == 13))) {
         // in signal region, fills for soft pion only in ME
         registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
@@ -285,7 +284,7 @@ struct HfTaskCorrelationD0Hadrons {
         registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
       }
-      
+
       if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (signalStatus >= 12)) {
         // in signal region, fills for soft pion only in ME
         registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
@@ -303,7 +302,7 @@ struct HfTaskCorrelationD0Hadrons {
         registry.fill(HIST("hDeltaEtaPtIntSidebands"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebands"), deltaPhi, efficiencyWeight);
       }
-      
+
       if (((massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) ||
            (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD))) &&
           ((signalStatus == 11) || (signalStatus == 13))) {
@@ -323,7 +322,7 @@ struct HfTaskCorrelationD0Hadrons {
         registry.fill(HIST("hDeltaEtaPtIntSidebands"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebands"), deltaPhi, efficiencyWeight);
       }
-      
+
       if (((massDbar > sidebandLeftOuter->at(ptBinD) && massDbar < sidebandLeftInner->at(ptBinD)) ||
            (massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD))) &&
           (signalStatus >= 12)) {
@@ -367,7 +366,7 @@ struct HfTaskCorrelationD0Hadrons {
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
 
       // ---------------------- Fill plots for signal case, D0 ->1, D0bar ->8 ---------------------------------------------
-      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && (TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0Sig))) {
+      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && (TESTBIT(signalStatus, o2::aod::hf_correlation_d0_hadron::kD0Sig))) {
         // in signal region, performs operation (signalStatus & 1), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSignalRegionRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecSig"), deltaPhi, deltaEta, efficiencyWeight);
@@ -375,14 +374,14 @@ struct HfTaskCorrelationD0Hadrons {
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecSig"), deltaPhi, efficiencyWeight);
       }
 
-      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0barSig))) {
+      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (TESTBIT(signalStatus, o2::aod::hf_correlation_d0_hadron::kD0barSig))) {
         // in signal region, performs operation (signalStatus & 8), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSignalRegionRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecSig"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionRecSig"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecSig"), deltaPhi, efficiencyWeight);
       }
-      
+
       if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (signalStatus >= BIT(o2::aod::hf_correlation_d0_hadron::kSoftPi))) {
         // in signal region, fills for soft pion only for event mixing, performs operation (signalStatus >= 64)
         registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPiRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
@@ -393,7 +392,7 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((((massD > sidebandLeftOuter->at(ptBinD)) && (massD < sidebandLeftInner->at(ptBinD))) ||
            ((massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)))) &&
-          ((TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0Sig)))) {
+          ((TESTBIT(signalStatus, o2::aod::hf_correlation_d0_hadron::kD0Sig)))) {
         // in sideband region, performs operation (signalStatus & 1), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSidebandsRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsRecSig"), deltaPhi, deltaEta, efficiencyWeight);
@@ -403,14 +402,14 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((((massDbar > sidebandLeftOuter->at(ptBinD)) && (massDbar < sidebandLeftInner->at(ptBinD))) ||
            ((massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD)))) &&
-          (TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0barSig))) {
+          (TESTBIT(signalStatus, o2::aod::hf_correlation_d0_hadron::kD0barSig))) {
         // in sideband region, performs operation (signalStatus & 8), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSidebandsRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsRecSig"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsRecSig"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandsRecSig"), deltaPhi, efficiencyWeight);
       }
-      
+
       if ((((massDbar > sidebandLeftOuter->at(ptBinD)) && (massDbar < sidebandLeftInner->at(ptBinD))) ||
            ((massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD)))) &&
           (signalStatus >= BIT(o2::aod::hf_correlation_d0_hadron::kSoftPi))) {
@@ -422,7 +421,7 @@ struct HfTaskCorrelationD0Hadrons {
       }
 
       // ---------------------- Fill plots for reflection case, D0 ->2, D0bar ->16 ---------------------------------------------
-      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0Ref)) {
+      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && TESTBIT(signalStatus, o2::aod::hf_correlation_d0_hadron::kD0Ref)) {
         // in signal region, performs operation (signalStatus & 2), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSignalRegionRecRef"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecRef"), deltaPhi, deltaEta, efficiencyWeight);
@@ -430,14 +429,14 @@ struct HfTaskCorrelationD0Hadrons {
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecRef"), deltaPhi, efficiencyWeight);
       }
 
-      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0barRef)) {
+      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && TESTBIT(signalStatus, o2::aod::hf_correlation_d0_hadron::kD0barRef)) {
         // in signal region, performs operation (signalStatus & 16), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSignalRegionRecRef"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecRef"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionRecRef"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecRef"), deltaPhi, efficiencyWeight);
       }
-      
+
       if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (signalStatus >= BIT(o2::aod::hf_correlation_d0_hadron::kSoftPi))) {
         // in signal region, fills for soft pion only for event mixing, performs operation (signalStatus >= 64)
         registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPiRecRef"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
@@ -448,7 +447,7 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((((massD > sidebandLeftOuter->at(ptBinD)) && (massD < sidebandLeftInner->at(ptBinD))) ||
            ((massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)))) &&
-          TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0Ref)) {
+          TESTBIT(signalStatus, o2::aod::hf_correlation_d0_hadron::kD0Ref)) {
         // in sideband region, performs operation (signalStatus & 2), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSidebandsRecRef"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsRecRef"), deltaPhi, deltaEta, efficiencyWeight);
@@ -458,14 +457,14 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((((massDbar > sidebandLeftOuter->at(ptBinD)) && (massDbar < sidebandLeftInner->at(ptBinD))) ||
            ((massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD)))) &&
-          TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0barRef)) {
+          TESTBIT(signalStatus, o2::aod::hf_correlation_d0_hadron::kD0barRef)) {
         // in sideband region, performs operation (signalStatus & 16), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSidebandsRecRef"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsRecRef"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsRecRef"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandsRecRef"), deltaPhi, efficiencyWeight);
       }
-      
+
       if ((((massDbar > sidebandLeftOuter->at(ptBinD)) && (massDbar < sidebandLeftInner->at(ptBinD))) ||
            ((massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD)))) &&
           (signalStatus >= BIT(o2::aod::hf_correlation_d0_hadron::kSoftPi))) {
@@ -477,7 +476,7 @@ struct HfTaskCorrelationD0Hadrons {
       }
 
       // ---------------------- Fill plots for background case, D0 ->4, D0bar ->32 ---------------------------------------------
-      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0Bg)) {
+      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && TESTBIT(signalStatus, o2::aod::hf_correlation_d0_hadron::kD0Bg)) {
         // in signal region, performs operation (signalStatus & 4), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSignalRegionRecBg"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecBg"), deltaPhi, deltaEta, efficiencyWeight);
@@ -485,14 +484,14 @@ struct HfTaskCorrelationD0Hadrons {
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecBg"), deltaPhi, efficiencyWeight);
       }
 
-      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0barBg)) {
+      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && TESTBIT(signalStatus, o2::aod::hf_correlation_d0_hadron::kD0barBg)) {
         // in signal region, performs operation (signalStatus & 32), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSignalRegionRecBg"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecBg"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionRecBg"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecBg"), deltaPhi, efficiencyWeight);
       }
-      
+
       if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (signalStatus >= BIT(o2::aod::hf_correlation_d0_hadron::kSoftPi))) {
         // in signal region, fills for soft pion only for event mixing, performs operation (signalStatus >= 64)
         registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPiRecBg"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
@@ -503,7 +502,7 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((((massD > sidebandLeftOuter->at(ptBinD)) && (massD < sidebandLeftInner->at(ptBinD))) ||
            ((massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)))) &&
-          TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0Bg)) {
+          TESTBIT(signalStatus, o2::aod::hf_correlation_d0_hadron::kD0Bg)) {
         // in sideband region, performs operation (signalStatus & 4), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSidebandsRecBg"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsRecBg"), deltaPhi, deltaEta, efficiencyWeight);
@@ -513,14 +512,14 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((((massDbar > sidebandLeftOuter->at(ptBinD)) && (massDbar < sidebandLeftInner->at(ptBinD))) ||
            ((massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD)))) &&
-          TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0barBg)) {
+          TESTBIT(signalStatus, o2::aod::hf_correlation_d0_hadron::kD0barBg)) {
         // in sideband region, performs operation (signalStatus & 32), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSidebandsRecBg"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsRecBg"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsRecBg"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandsRecBg"), deltaPhi, efficiencyWeight);
       }
-      
+
       if ((((massDbar > sidebandLeftOuter->at(ptBinD)) && (massDbar < sidebandLeftInner->at(ptBinD))) ||
            ((massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD)))) &&
           (signalStatus >= BIT(o2::aod::hf_correlation_d0_hadron::kSoftPi))) {
