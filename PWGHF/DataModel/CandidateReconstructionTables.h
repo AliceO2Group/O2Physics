@@ -1273,32 +1273,32 @@ DECLARE_SOA_TABLE(DDbarRecoInfo, "AOD", "DDBARRECOINFO",
 // definition of columns and tables for D0-Hadron correlation pairs
 namespace hf_correlation_d0_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);         //! DeltaPhi between D0 and Hadrons
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);         //! DeltaEta between D0 and Hadrons
-DECLARE_SOA_COLUMN(PtD, ptD, float);	               //! Transverse momentum of D0
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);         //! Transverse momentum of Hadron
-DECLARE_SOA_COLUMN(MD, mD, float);	               //! Invariant mass of D0
-DECLARE_SOA_COLUMN(MDbar, mDbar, float);               //! Invariant mass of D0bar
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);   //! Tag for D0,D0bar
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);             //! Pool Bin for the MixedEvent
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);       //! DeltaPhi between D0 and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);       //! DeltaEta between D0 and Hadrons
+DECLARE_SOA_COLUMN(PtD, ptD, float);                 //! Transverse momentum of D0
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);       //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MD, mD, float);                   //! Invariant mass of D0
+DECLARE_SOA_COLUMN(MDbar, mDbar, float);             //! Invariant mass of D0bar
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int); //! Tag for D0,D0bar
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);           //! Pool Bin for the MixedEvent
 
 enum ParticleType {
-  kD0Sig = 0,    // D0 signal
-  kD0Ref,        // D0 reflection
-  kD0Bg,         // D0 background
-  kD0barSig,     // D0bar signal
-  kD0barRef,     // D0bar reflection
-  kD0barBg,      // D0bar background
-  kSoftPi        // pairs including soft pion
+  kD0Sig = 0, // D0 signal
+  kD0Ref,     // D0 reflection
+  kD0Bg,      // D0 background
+  kD0barSig,  // D0bar signal
+  kD0barRef,  // D0bar reflection
+  kD0barBg,   // D0bar background
+  kSoftPi     // pairs including soft pion
 };
 } // namespace hf_correlation_d0_hadron
-DECLARE_SOA_TABLE(DHadronPair, "AOD", "DHADRONPAIR",  //! D0-Hadrons pairs Informations
+DECLARE_SOA_TABLE(DHadronPair, "AOD", "DHADRONPAIR", //! D0-Hadrons pairs Informations
                   aod::hf_correlation_d0_hadron::DeltaPhi,
                   aod::hf_correlation_d0_hadron::DeltaEta,
                   aod::hf_correlation_d0_hadron::PtD,
                   aod::hf_correlation_d0_hadron::PtHadron,
                   aod::hf_correlation_d0_hadron::PoolBin);
-DECLARE_SOA_TABLE(DHadronRecoInfo, "AOD", "DHADRONRECOINFO",  //! D0-Hadrons pairs Reconstructed Informations
+DECLARE_SOA_TABLE(DHadronRecoInfo, "AOD", "DHADRONRECOINFO", //! D0-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_d0_hadron::MD,
                   aod::hf_correlation_d0_hadron::MDbar,
                   aod::hf_correlation_d0_hadron::SignalStatus);
