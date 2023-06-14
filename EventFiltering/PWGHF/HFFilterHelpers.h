@@ -69,8 +69,8 @@ enum HfTriggers {
   kDoubleCharm2P,
   kDoubleCharm3P,
   kDoubleCharmMix,
-  kGammaCharm2P,
-  kGammaCharm3P,
+  kV0Charm2P,
+  kV0Charm3P,
   kNtriggersHF
 };
 
@@ -106,10 +106,21 @@ enum PIDSpecies {
   kPr
 };
 
-static const std::array<std::string, kNtriggersHF> HfTriggerNames{"highPt", "beauty", "femto", "doubleCharm", "softGamma"};
+enum V0Species {
+  kPhoton = 0,
+  kK0S,
+  kLambda,
+  kAntiLambda,
+  kNV0
+};
+
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
 static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
 static const std::array<int, kNCharmParticles> pdgCodesCharm{421, 411, 431, 4122, 4232};
+static const std::array<std::string, kNtriggersHF + 2> eventTitles = {"all", "rejected", "w/ high-#it{p}_{T} 2p charm", "w/ high-#it{p}_{T} 3p charm", "w/ 3p beauty", "w/ 4p beauty", "w/ 2p femto", "w/ 3p femto", "w/ 2p double charm", "w/ 3p double charm", "w/ 2p and 3p double charm", "w/ 2p soft gamma", "w/ 3p soft gamma"};
+static const std::array<std::string, kNtriggersHF> hfTriggerNames{"kHighPt2P", "kHighPt3P", "kBeauty3P", "kBeauty4P", "kFemto2P", "kFemto3P", "kDoubleCharm2P", "kDoubleCharm3P", "kDoubleCharmMix", "kV0Charm2P", "kV0Charm3P"};
+static const std::array<std::string, kNV0> v0Labels{"#gamma", "K_{S}^{0}", "#Lambda", "#bar{#Lambda}"};
+static const std::array<std::string, kNV0> v0Names{"Photon", "K0S", "Lambda", "AntiLambda"};
 
 static const std::tuple pdgCharmDaughters{
   std::array{-321, 211},        // D0
@@ -134,6 +145,8 @@ static const float massBs = RecoDecay::getMassPDG(531);
 static const float massLb = RecoDecay::getMassPDG(5122);
 static const float massXib = RecoDecay::getMassPDG(5232);
 static const float massGamma = RecoDecay::getMassPDG(22);
+static const float massK0S = RecoDecay::getMassPDG(310);
+static const float massLambda = RecoDecay::getMassPDG(3122);
 
 static const AxisSpec ptAxis{50, 0.f, 50.f};
 static const AxisSpec pAxis{50, 0.f, 10.f};
@@ -144,7 +157,7 @@ static const AxisSpec alphaAxis{100, -1.f, 1.f};
 static const AxisSpec qtAxis{100, 0.f, 0.25f};
 static const AxisSpec bdtAxis{100, 0.f, 1.f};
 static const AxisSpec phiAxis{36, 0., TwoPI};
-static const std::array<AxisSpec, kNCharmParticles + 3> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 2.00f, 2.04f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 2.08f, 2.18f}};
+static const std::array<AxisSpec, kNCharmParticles + 6> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 2.00f, 2.04f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 2.08f, 2.18f}, AxisSpec{100, 2.35f, 2.85f}, AxisSpec{100, 2.35f, 2.85f}, AxisSpec{100, 2.80f, 3.30f}};
 static const std::array<AxisSpec, kNBeautyParticles> massAxisB = {AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 5.0f, 6.2f}, AxisSpec{240, 5.0f, 6.2f}};
 
 /// load the TPC spline from the CCDB
@@ -193,7 +206,7 @@ double getTPCSplineCalib(const T& track, const float mMassPar, const std::vector
 /// \param cutsSingleTrackBeauty cuts for all tracks
 /// \return 0 if track is rejected, 1 if track is soft pion, 2 if it is regular beauty
 template <typename T1, typename T2, typename T3, typename T4>
-int isSelectedTrackForBeauty(const T1& trackPar, const T2& dca, const float& pTMinSoftPion, const float& pTMinBeautyBachelor, const T3& pTBinsTrack, const T4& cutsSingleTrackBeauty)
+int isSelectedTrackForSoftPionOrBeauty(const T1& trackPar, const T2& dca, const float& pTMinSoftPion, const float& pTMinBeautyBachelor, const T3& pTBinsTrack, const T4& cutsSingleTrackBeauty)
 {
   auto pT = trackPar.getPt();
   auto pTBinTrack = findBin(pTBinsTrack, pT);
@@ -201,7 +214,7 @@ int isSelectedTrackForBeauty(const T1& trackPar, const T2& dca, const float& pTM
     return kRejected;
   }
 
-  if (pT < pTMinSoftPion) { // soft pion should be more stringent than usual tracks
+  if (pT < pTMinSoftPion) { // soft pion should be less stringent than usual tracks
     return kRejected;
   }
 
@@ -277,7 +290,7 @@ bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& fe
     return false;
   }
 
-  if (activateQA > 1) {
+  if (activateQA) {
     hProtonTPCPID->Fill(track.p(), NSigmaTPC);
     hProtonTOFPID->Fill(track.p(), NSigmaTOF);
   }
@@ -492,16 +505,13 @@ int8_t isDzeroPreselected(const T& trackPos, const T& trackNeg, const float& nsi
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return 1 for D0, 2 for D0bar, 3 for both
 template <typename T, typename H2>
-int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD, const float& phiD, int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt, H2 hMassVsPhi)
+int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD, const float& phiD, int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt)
 {
   int8_t retValue = 0;
   if (TESTBIT(isSelected, 0)) {
     auto invMassD0 = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massPi, massK});
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassD0);
-      if (activateQA > 2) {
-        hMassVsPhi->Fill(phiD, invMassD0);
-      }
     }
     if (std::abs(invMassD0 - massD0) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(0);
@@ -511,9 +521,6 @@ int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const flo
     auto invMassD0bar = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massK, massPi});
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassD0bar);
-      if (activateQA > 2) {
-        hMassVsPhi->Fill(phiD, invMassD0bar);
-      }
     }
     if (std::abs(invMassD0bar - massD0) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(1);
@@ -533,14 +540,11 @@ int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const flo
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return BIT(0) (==1) for D+, 0 otherwise
 template <typename T, typename H2>
-int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, const float& phiD, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt, H2 hMassVsPhi)
+int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, const float& phiD, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt)
 {
   auto invMassDplus = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massPi, massPi, massK});
   if (activateQA) {
     hMassVsPt->Fill(ptD, invMassDplus);
-    if (activateQA > 2) {
-      hMassVsPhi->Fill(phiD, invMassDplus);
-    }
   }
 
   if (std::abs(invMassDplus - massDPlus) > deltaMassCharmHadronForBeauty && ptD > 0) {
@@ -561,16 +565,13 @@ int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrac
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return BIT(0) for KKpi, BIT(1) for piKK, BIT(2) for phipi, BIT(3) for piphi
 template <typename T, typename H2>
-int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, const float& phiD, int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt, H2 hMassVsPhi)
+int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, const float& phiD, int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt)
 {
   int8_t retValue = 0;
   if (TESTBIT(isSelected, 0)) {
     auto invMassDsToKKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massK, massK, massPi});
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassDsToKKPi);
-      if (activateQA > 2) {
-        hMassVsPhi->Fill(phiD, invMassDsToKKPi);
-      }
     }
     if (std::abs(invMassDsToKKPi - massDs) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(0);
@@ -580,9 +581,6 @@ int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     auto invMassDsToPiKK = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massK});
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassDsToPiKK);
-      if (activateQA > 2) {
-        hMassVsPhi->Fill(phiD, invMassDsToPiKK);
-      }
     }
     if (std::abs(invMassDsToPiKK - massDs) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(1);
@@ -603,16 +601,13 @@ int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return BIT(0) for pKpi with mass cut, BIT(1) for piKp with mass cut
 template <typename T, typename H2>
-int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc, const float& phiLc, const int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt, H2 hMassVsPhi)
+int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc, const float& phiLc, const int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt)
 {
   int8_t retValue = 0;
   if (TESTBIT(isSelected, 0)) {
     auto invMassLcToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
     if (activateQA) {
       hMassVsPt->Fill(ptLc, invMassLcToPKPi);
-      if (activateQA > 2) {
-        hMassVsPhi->Fill(phiLc, invMassLcToPKPi);
-      }
     }
     if (std::abs(invMassLcToPKPi - massLc) < deltaMassCharmHadronForBeauty || ptLc > 10) {
       retValue |= BIT(0);
@@ -622,9 +617,6 @@ int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     auto invMassLcToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
     if (activateQA) {
       hMassVsPt->Fill(ptLc, invMassLcToPiKP);
-      if (activateQA > 2) {
-        hMassVsPhi->Fill(phiLc, invMassLcToPiKP);
-      }
     }
     if (std::abs(invMassLcToPiKP - massLc) < deltaMassCharmHadronForBeauty || ptLc > 10) {
       retValue |= BIT(1);
@@ -645,16 +637,13 @@ int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
 /// \param hMassVsPt histo with invariant mass vs pt
 /// \return BIT(0) for pKpi with mass cut, BIT(1) for piKp with mass cut
 template <typename T, typename H2>
-int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const float& phiXic, const int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt, H2 hMassVsPhi)
+int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const float& phiXic, const int8_t isSelected, const float& deltaMassCharmHadronForBeauty, const int& activateQA, H2 hMassVsPt)
 {
   int8_t retValue = 0;
   if (TESTBIT(isSelected, 0)) {
     auto invMassXicToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
     if (activateQA) {
       hMassVsPt->Fill(ptXic, invMassXicToPKPi);
-      if (activateQA > 2) {
-        hMassVsPhi->Fill(phiXic, invMassXicToPKPi);
-      }
     }
     if (std::abs(invMassXicToPKPi - massXic) < deltaMassCharmHadronForBeauty || ptXic > 10) {
       retValue |= BIT(0);
@@ -664,9 +653,6 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
     auto invMassXicToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
     if (activateQA) {
       hMassVsPt->Fill(ptXic, invMassXicToPiKP);
-      if (activateQA > 2) {
-        hMassVsPhi->Fill(phiXic, invMassXicToPiKP);
-      }
     }
     if (std::abs(invMassXicToPiKP - massXic) < deltaMassCharmHadronForBeauty || ptXic > 10) {
       retValue |= BIT(1);
@@ -677,59 +663,109 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
 }
 
 /// Basic selection of gamma candidates
-/// \param gamma is the gamma candidate
-/// \param minGammaCosinePA is the minimum required cosp of the gamma
-/// \param gammaCosinePA is the cosp of the gamma
-/// \param hGammaSelected is the pointer to the QA histo for selected gammas
-/// \param hGammaEtaBefore is the pointer to the QA histo for gamma eta before selection
-/// \param hGammaArmPodBefore is the pointer to the QA histo AP plot before selection
-/// \param hGammaEtaAfter is the pointer to the QA histo for gamma eta before selection
-/// \param hGammaArmPodAfter is the pointer to the QA histo AP plot before selection
+/// \param v0 is the v0 candidate
+/// \param minGammaCosinePa is the minimum required cosp of the gamma
+/// \param gammaCosinePa is the cosp of the gamma
+/// \param minV0CosinePa is the cosp of the V0s
+/// \param hV0Selected is the pointer to the QA histo for selected gammas
+/// \param hArmPod is the pointer to an array of QA histo AP plot before selection
 /// \return true if gamma passes all cuts
-template <typename T, typename H1, typename H2>
-bool isSelectedGamma(const T& gamma, const float& minGammaCosinePA, const float& gammaCosinePA, const int& activateQA, H1 hGammaSelected, H1 hGammaEtaBefore, H1 hGammaEtaAfter, H2 hGammaArmPodBefore, H2 hGammaArmPodAfter)
+template <typename T, typename A, typename H2>
+int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0CosinePa, const float& v0CosinePa, const int& activateQA, H2 hV0Selected, A hArmPod)
 {
-  if (activateQA > 1) {
-    hGammaSelected->Fill(0);
-    hGammaEtaBefore->Fill(gamma.eta());
-    hGammaArmPodBefore->Fill(gamma.alpha(), gamma.qtarm());
-  }
-  if (std::abs(gamma.eta()) > 0.8) {
-    if (activateQA > 1)
-      hGammaSelected->Fill(1);
-    return false;
-  }
-
-  if (gamma.v0radius() < 0. || gamma.v0radius() > 180.) {
-    if (activateQA > 1)
-      hGammaSelected->Fill(2);
-    return false;
-  }
-
-  if ((std::pow(gamma.alpha() / 0.95, 2) + std::pow(gamma.qtarm() / 0.05, 2)) >= 1) {
-    if (activateQA > 1)
-      hGammaSelected->Fill(3);
-    return false;
-  }
-
-  if (std::abs(gamma.psipair()) > 0.1) {
-    if (activateQA > 1)
-      hGammaSelected->Fill(4);
-    return false;
-  }
-
-  if (gammaCosinePA < minGammaCosinePA) {
-    if (activateQA > 1)
-      hGammaSelected->Fill(5);
-    return false;
-  }
+  int isSelected{BIT(kPhoton) | BIT(kK0S) | BIT(kLambda) | BIT(kAntiLambda)};
+  bool isRejected[kNV0] = {false, false, false, false};
 
   if (activateQA > 1) {
-    hGammaSelected->Fill(6);
-    hGammaEtaAfter->Fill(gamma.eta());
-    hGammaArmPodAfter->Fill(gamma.alpha(), gamma.qtarm());
+    for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
+      hV0Selected->Fill(0., iV0);
+    }
   }
-  return true;
+
+  if (std::abs(v0.eta()) > 0.8) { // cut all V0s with |eta| > 0.8
+    if (activateQA > 1) {
+      for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
+        hV0Selected->Fill(1., iV0);
+      }
+    }
+    return 0;
+  }
+
+  if (v0.v0radius() < 0. || v0.v0radius() > 180.) {
+    CLRBIT(isSelected, kPhoton);
+    if (activateQA > 1) {
+      isRejected[kPhoton] = true;
+      hV0Selected->Fill(2., kPhoton);
+    }
+  }
+
+  if (!isRejected[kPhoton] && v0CosinePa < minGammaCosinePa) {
+    CLRBIT(isSelected, kPhoton);
+    if (activateQA > 1) {
+      isRejected[kPhoton] = true;
+      hV0Selected->Fill(3., kPhoton);
+    }
+  }
+
+  if (v0CosinePa < minV0CosinePa) {
+    if (activateQA > 1) {
+      for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
+        isRejected[iV0] = true;
+        hV0Selected->Fill(3., iV0);
+      }
+    }
+    CLRBIT(isSelected, kK0S);
+    CLRBIT(isSelected, kLambda);
+    CLRBIT(isSelected, kAntiLambda);
+  }
+
+  if (!isRejected[kPhoton] && (std::pow(v0.alpha() / 0.95, 2) + std::pow(v0.qtarm() / 0.05, 2)) >= 1) {
+    CLRBIT(isSelected, kPhoton);
+    if (activateQA > 1) {
+      isRejected[kPhoton] = true;
+      hV0Selected->Fill(4., kPhoton);
+    }
+  }
+
+  if (!isRejected[kK0S] && std::abs(v0.mK0Short() - massK0S) > 0.08) {
+    CLRBIT(isSelected, kK0S);
+    if (activateQA > 1) {
+      isRejected[kK0S] = true;
+      hV0Selected->Fill(5., kK0S);
+    }
+  }
+  if (!isRejected[kLambda] && std::abs(v0.mLambda() - massLambda) > 0.1) {
+    CLRBIT(isSelected, kLambda);
+    if (activateQA > 1) {
+      isRejected[kLambda] = true;
+      hV0Selected->Fill(5., kLambda);
+    }
+  }
+  if (!isRejected[kAntiLambda] && std::abs(v0.mAntiLambda() - massLambda) > 0.1) {
+    CLRBIT(isSelected, kAntiLambda);
+    if (activateQA > 1) {
+      isRejected[kAntiLambda] = true;
+      hV0Selected->Fill(5., kAntiLambda);
+    }
+  }
+
+  if (!isRejected[kPhoton] && std::abs(v0.psipair()) > 0.1) {
+    CLRBIT(isSelected, kPhoton);
+    if (activateQA > 1) {
+      hV0Selected->Fill(6., kPhoton);
+    }
+  }
+
+  if (activateQA) {
+    for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
+      hArmPod[iV0]->Fill(v0.alpha(), v0.qtarm());
+      if (activateQA > 1) {
+        hV0Selected->Fill(7., iV0);
+      }
+    }
+  }
+
+  return isSelected;
 }
 
 /// Single-track cuts for bachelor track of beauty candidates
