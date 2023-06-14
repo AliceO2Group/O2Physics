@@ -180,6 +180,7 @@ struct tofSpectra {
       customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
       customTrackCuts.print();
     }
+    
     // Histograms
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec pAxis{binsPt, "#it{p} (GeV/#it{c})"};
