@@ -527,7 +527,7 @@ struct HfFilter { // Main struct for HF triggers
           if (!keepEvent[kV0Charm2P] && (isCharmTagged || isBeautyTagged) && (TESTBIT(selD0, 0) || (TESTBIT(selD0, 1)))) {
             float v0CosinePa = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
             auto selV0 = isSelectedV0(v0, minCosPaGamma, minCosPaV0, v0CosinePa, activateQA, hV0Selected, hArmPod);
-            if(selV0) {
+            if (selV0) {
               std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
               if (TESTBIT(selV0, kPhoton)) {
                 auto massD0Gamma = RecoDecay::m(std::array{pVec2Prong, pVecV0}, std::array{massD0, massGamma});
