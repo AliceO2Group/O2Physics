@@ -197,12 +197,17 @@ struct tofSpectra {
     h->GetXaxis()->SetBinLabel(3, "Quality passed");
     h->GetXaxis()->SetBinLabel(4, "TOF passed (partial)");
 
-    h = histos.add<TH1>("evtime_tof", "event time selections from pidEvTimeFlags", kTH1D, {{5, 0, 4}});
+    h = histos.add<TH1>("evtime_tof", "event time selections from pidEvTimeFlags", kTH1D, {{10, -0.5, 9.5}});
     h->GetXaxis()->SetBinLabel(1, "AnyEvTime");
     h->GetXaxis()->SetBinLabel(2, "EvTimeDefined");
     h->GetXaxis()->SetBinLabel(3, "EvTimeTOF");
     h->GetXaxis()->SetBinLabel(4, "EvTimeT0AC");
     h->GetXaxis()->SetBinLabel(5, "EvTimeTOFT0AV");
+    h->GetXaxis()->SetBinLabel(6, "AnyEvTime (selected)");
+    h->GetXaxis()->SetBinLabel(7, "EvTimeDefined (selected)");
+    h->GetXaxis()->SetBinLabel(8, "EvTimeTOF (selected)");
+    h->GetXaxis()->SetBinLabel(9, "EvTimeT0AC (selected)");
+    h->GetXaxis()->SetBinLabel(10, "EvTimeTOFT0AV (selected)");
 
     histos.add("Centrality/FV0A", "FV0A", HistType::kTH1D, {{binsPercentile, "Centrality FV0A"}});
     histos.add("Centrality/FT0M", "FT0M", HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
@@ -431,32 +436,31 @@ struct tofSpectra {
       histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH2D, {phiAxis, dcaXyAxis});
 
       if (doprocessMC) {
-        /* histos.add(hpt_num_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
-         histos.add(hpt_numtof_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
-         histos.add(hpt_num_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
-         histos.add(hpt_num_mat[i].data(), pTCharge[i], kTH1D, {ptAxis});
-         histos.add(hpt_den_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
-         histos.add(hpt_den_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
-         histos.add(hpt_den_mat[i].data(), pTCharge[i], kTH1D, {ptAxis});
-         histos.add(hpt_den_prm_recoev[i].data(), pTCharge[i], kTH1D, {ptAxis});
-         histos.add(hpt_den_prm_evsel[i].data(), pTCharge[i], kTH1D, {ptAxis});
-         histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
-         histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
-         histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH1D, {ptAxis});*/
+        if (makeTHnSparseChoice) {
+          //*************************************RD**********************************************
 
-        //*************************************RD**********************************************
+          histos.add(hpt_num_prm[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
+          histos.add(hpt_numtof_prm[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
+          histos.add(hpt_numtof_str[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
+          histos.add(hpt_numtof_mat[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
+          histos.add(hpt_num_str[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
+          histos.add(hpt_num_mat[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
+          histos.add(hpt_den_prm[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
+          histos.add(hpt_den_str[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
+          histos.add(hpt_den_mat[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
 
-        histos.add(hpt_num_prm[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
-        histos.add(hpt_numtof_prm[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
-        histos.add(hpt_numtof_str[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
-        histos.add(hpt_numtof_mat[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
-        histos.add(hpt_num_str[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
-        histos.add(hpt_num_mat[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, multAxis});
-        histos.add(hpt_den_prm[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
-        histos.add(hpt_den_str[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
-        histos.add(hpt_den_mat[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
-
-        //***************************************************************************************
+          //***************************************************************************************
+        } else {
+          histos.add(hpt_num_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_numtof_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_numtof_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_numtof_mat[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_num_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_num_mat[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_den_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_den_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_den_mat[i].data(), pTCharge[i], kTH1D, {ptAxis});
+        }
 
         histos.add(hpt_den_prm_recoev[i].data(), pTCharge[i], kTH1D, {ptAxis});
         histos.add(hpt_den_prm_evsel[i].data(), pTCharge[i], kTH1D, {ptAxis});
@@ -583,6 +587,19 @@ struct tofSpectra {
     if (requireNoTrd == true && track.hasTRD()) {
       return;
     }
+    histos.fill(HIST("evtime_tof"), 0.f);
+    if (track.isEvTimeDefined()) {
+      histos.fill(HIST("evtime_tof"), 1.f);
+    }
+    if (track.isEvTimeTOF()) {
+      histos.fill(HIST("evtime_tof"), 2.f);
+    }
+    if (track.isEvTimeT0AC()) {
+      histos.fill(HIST("evtime_tof"), 3.f);
+    }
+    if (track.isEvTimeTOFT0AC()) {
+      histos.fill(HIST("evtime_tof"), 4.f);
+    }
     switch (selectEvTime) {
       case 0:
         break;
@@ -614,18 +631,18 @@ struct tofSpectra {
       default:
         LOG(fatal) << "Fatal did not recognise value select event time" << selectEvTime;
     }
-    histos.fill(HIST("evtime_tof"), 0);
+    histos.fill(HIST("evtime_tof"), 5.f);
     if (track.isEvTimeDefined()) {
-      histos.fill(HIST("evtime_tof"), 1);
+      histos.fill(HIST("evtime_tof"), 6.f);
     }
     if (track.isEvTimeTOF()) {
-      histos.fill(HIST("evtime_tof"), 2);
+      histos.fill(HIST("evtime_tof"), 7.f);
     }
     if (track.isEvTimeT0AC()) {
-      histos.fill(HIST("evtime_tof"), 3);
+      histos.fill(HIST("evtime_tof"), 8.f);
     }
     if (track.isEvTimeTOFT0AC()) {
-      histos.fill(HIST("evtime_tof"), 4);
+      histos.fill(HIST("evtime_tof"), 9.f);
     }
 
     if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
@@ -1132,13 +1149,37 @@ struct tofSpectra {
 
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST(hpt_num_str[i]), track.pt(), track.dcaXY(), multiplicity); // RD
+        if (makeTHnSparseChoice) {
+          histos.fill(HIST(hpt_num_str[i]), track.pt(), track.dcaXY(), multiplicity); // RD
+          if (track.hasTOF()) {
+            histos.fill(HIST(hpt_numtof_str[i]), track.pt(), track.dcaXY(), multiplicity); // RD
+          }
+        } else {
+          histos.fill(HIST(hpt_num_str[i]), track.pt());
+          if (track.hasTOF()) {
+            histos.fill(HIST(hpt_numtof_str[i]), track.pt());
+          }
+        }
       } else {
-        histos.fill(HIST(hpt_num_mat[i]), track.pt(), track.dcaXY(), multiplicity); // RD
+        if (makeTHnSparseChoice) {
+          histos.fill(HIST(hpt_num_mat[i]), track.pt(), track.dcaXY(), multiplicity); // RD
+          if (track.hasTOF()) {
+            histos.fill(HIST(hpt_numtof_mat[i]), track.pt(), track.dcaXY(), multiplicity); // RD
+          }
+
+        } else {
+          histos.fill(HIST(hpt_num_mat[i]), track.pt());
+          if (track.hasTOF()) {
+            histos.fill(HIST(hpt_numtof_mat[i]), track.pt());
+          }
+        }
       }
     } else {
-      histos.fill(HIST(hpt_num_prm[i]), track.pt(), track.dcaXY(), multiplicity); // RD
-
+      if (makeTHnSparseChoice) {
+        histos.fill(HIST(hpt_num_prm[i]), track.pt(), track.dcaXY(), multiplicity); // RD
+      } else {
+        histos.fill(HIST(hpt_num_prm[i]), track.pt());
+      }
       if (track.hasTRD() && lastRequiredTrdCluster > 0) {
         int lastLayer = 0;
         for (int l = 7; l >= 0; l--) {
@@ -1151,20 +1192,12 @@ struct tofSpectra {
           return;
         }
       }
-
       if (track.hasTOF()) {
-        histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), track.dcaXY(), multiplicity); // RD
-
-        //**********************************RD************************************************
-        if (!mcParticle.isPhysicalPrimary()) {
-          if (mcParticle.getProcess() == 4) {
-            histos.fill(HIST(hpt_numtof_str[i]), track.pt(), track.dcaXY(), multiplicity); // RD
-          } else {
-            histos.fill(HIST(hpt_numtof_mat[i]), track.pt(), track.dcaXY(), multiplicity); // RD
-          }
+        if (makeTHnSparseChoice) {
+          histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), track.dcaXY(), multiplicity); // RD
+        } else {
+          histos.fill(HIST(hpt_numtof_prm[i]), track.pt());
         }
-
-        //****************************************************************************************
       }
     }
   }
@@ -1279,12 +1312,24 @@ struct tofSpectra {
 
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST(hpt_den_str[i]), mcParticle.pt(), multiplicity); // RD
+        if (makeTHnSparseChoice) {
+          histos.fill(HIST(hpt_den_str[i]), mcParticle.pt(), multiplicity); // RD
+        } else {
+          histos.fill(HIST(hpt_den_str[i]), mcParticle.pt());
+        }
       } else {
-        histos.fill(HIST(hpt_den_mat[i]), mcParticle.pt(), multiplicity); // RD
+        if (makeTHnSparseChoice) {
+          histos.fill(HIST(hpt_den_mat[i]), mcParticle.pt(), multiplicity); // RD
+        } else {
+          histos.fill(HIST(hpt_den_mat[i]), mcParticle.pt());
+        }
       }
     } else {
-      histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt(), multiplicity); // RD
+      if (makeTHnSparseChoice) {
+        histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt(), multiplicity); // RD
+      } else {
+        histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt());
+      }
     }
   }
 
@@ -1542,7 +1587,4 @@ struct tofSpectra {
 
 }; // end of spectra task
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<tofSpectra>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tofSpectra>(cfgc)}; }
