@@ -668,14 +668,16 @@ struct HfCorrelatorD0Hadrons {
         if (t1.isSelD0() >= selectionFlagD0) {
           if (isSoftpiD0 == false) {
            signalStatus += 1; 
+           } else {
+           signalStatus += 11;
            }
-          else signalStatus += 11;
         }
         if (t1.isSelD0bar() >= selectionFlagD0bar) {
            if (isSoftpiD0bar == false) {
            signalStatus += 2;
+           } else {
+           signalStatus += 12;
            }
-           else signalStatus += 12;
         }
         
         entryD0HadronPair(getDeltaPhi(t1.phi(), t2.phi()), t1.eta() - t2.eta(), t1.pt(), t2.pt(), poolBin);
