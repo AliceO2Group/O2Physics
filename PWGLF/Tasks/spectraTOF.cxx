@@ -179,7 +179,6 @@ struct tofSpectra {
       customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
       customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10000.f; }); // No DCAxy cut will be used, this is done via the member function of the task
       customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
-      //customTrackCuts.SetMakeTHnSparseChoice(makeTHnSparseChoice.value);
       customTrackCuts.print();
     }
     // Histograms
