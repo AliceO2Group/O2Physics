@@ -19,6 +19,7 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -36,6 +37,8 @@ struct HfTaskLc {
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
+
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
