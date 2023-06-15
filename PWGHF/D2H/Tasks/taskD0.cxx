@@ -233,9 +233,9 @@ struct HfTaskD0 {
         // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), pdg::Code::kD0, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
-        auto ptGen = particleMother.pt(); // gen. level pT
+        auto ptGen = particleMother.pt();                                                                                                                // gen. level pT
         auto yGen = RecoDecay::y(array{particleMother.px(), particleMother.py(), particleMother.pz()}, RecoDecay::getMassPDG(particleMother.pdgCode())); // gen. level y
-        registry.fill(HIST("hPtGenSig"), ptGen); // gen. level pT
+        registry.fill(HIST("hPtGenSig"), ptGen);                                                                                                         // gen. level pT
         auto ptRec = candidate.pt();
         auto yRec = yD0(candidate);
         if (candidate.isRecoHfFlag() >= selectionFlagHf) {
