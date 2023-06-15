@@ -334,12 +334,12 @@ struct qaKFParticle {
   bool isSelectedTracks(const T& track1, const T& track2)
   {
     /// DCA XY of the daughter tracks to the primaty vertex
-    if (track1.dcaXY() > d_dcaXYTrackPV) {
+    if (abs(track1.dcaXY()) > d_dcaXYTrackPV) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 6.f);
       return false;
     }
     /// DCA XY of the daughter tracks to the primaty vertex
-    if (track2.dcaXY() > d_dcaXYTrackPV) {
+    if (abs(track2.dcaXY()) > d_dcaXYTrackPV) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 6.f);
       return false;
     }
