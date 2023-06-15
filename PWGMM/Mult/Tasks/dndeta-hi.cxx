@@ -165,6 +165,16 @@ struct MultiplicityCounter {
   std::vector<int> usedTracksIds;
   void init(InitContext&)
   {
+    auto hstat = registry.get<TH1>(HIST("Events/Selection"));
+    auto* x = hstat->GetXaxis();
+    x->SetBinLabel(1, "All");
+    x->SetBinLabel(2, "Selected");
+    x->SetBinLabel(3, "Selected INEL>0");
+    x->SetBinLabel(4, "Rejected");
+    x->SetBinLabel(5, "Good BCs");
+    x->SetBinLabel(6, "BCs with collisions");
+    x->SetBinLabel(7, "BCs with pile-up/splitting");
+
     if (doprocessCountingWithCent) {
       registry.add({"Tracks/ProcessCounting/Centrality/Centrality", " ; centrality_FT0C (%) ", {HistType::kTH1F, {CentAxis}}});
       registry.add({"Tracks/ProcessCounting/Centrality/hrecdndeta", "evntclass; triggerclass; zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, TrigClassAxis, ZAxis, EtaAxis, CentAxis}}});
@@ -276,9 +286,7 @@ struct MultiplicityCounter {
           if constexpr (C::template contains<aod::CentFT0Cs>()) { // with centrality
             cent = collision.centFT0C();
             registry.fill(HIST("Tracks/ProcessCounting/Centrality/Centrality"), cent);
-
             registry.fill(HIST("Events/Selection"), 2.);
-
             registry.fill(HIST("Tracks/ProcessCounting/Centrality/hreczvtx"), Double_t(kDATA), Double_t(kMBAND), z, cent);
 
             usedTracksIds.clear();
