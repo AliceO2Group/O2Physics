@@ -29,7 +29,7 @@
 #include "Field/MagneticField.h"
 #include "TGeoGlobalMagField.h"
 
-#include "Common/DataModel/CollisionAssociation.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "bestCollisionTable.h"
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;

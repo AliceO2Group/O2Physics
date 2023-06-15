@@ -62,7 +62,7 @@ struct correlateStrangeness {
   ConfigurableAxis axisPhi{"axisPhi", {72, -0.5 * M_PI, 1.5 * M_PI}, "#phi"};
   ConfigurableAxis axisEta{"axisEta", {80, -0.8, +0.8}, "#eta"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta #varphi axis for histograms"};
-  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {50, -2, 2}, "delta eta axis for histograms"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {50, -1.6, 1.6}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
   ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
   ConfigurableAxis axisK0ShortMass{"axisK0ShortMass", {200, 0.400f, 0.600f}, "Inv. Mass (GeV/c^{2})"};
@@ -316,16 +316,72 @@ struct correlateStrangeness {
     // it should actually be implemented centrally in ROOT but ok, this will do it for now.
 
     int offset = skipUnderOverflowInTHn ? 1 : 0;
-    for (int i = offset; i < edgesDeltaPhiOrig.size() - offset; i++)
-      edgesDeltaPhi.emplace_back(edgesDeltaPhiOrig[i]);
-    for (int i = offset; i < edgesDeltaEtaOrig.size() - offset; i++)
-      edgesDeltaEta.emplace_back(edgesDeltaEtaOrig[i]);
-    for (int i = offset; i < edgesPtAssocOrig.size() - offset; i++)
-      edgesPtAssoc.emplace_back(edgesPtAssocOrig[i]);
-    for (int i = offset; i < edgesVtxZOrig.size() - offset; i++)
-      edgesVtxZ.emplace_back(edgesVtxZOrig[i]);
-    for (int i = offset; i < edgesMultOrig.size() - offset; i++)
-      edgesMult.emplace_back(edgesMultOrig[i]);
+    // ===] delta-phi [===
+    if (!preAxisDeltaPhi.nBins.has_value()) {
+      // variable binning, use bins provided
+      for (int i = offset; i < static_cast<int>(edgesDeltaPhiOrig.size()) - offset; i++)
+        edgesDeltaPhi.emplace_back(edgesDeltaPhiOrig[i]);
+    } else {
+      // fixed binning, generate the bin edges on-the-spot
+      double min = edgesDeltaPhiOrig[0];
+      double delta = (edgesDeltaPhiOrig[1] - edgesDeltaPhiOrig[0]) / preAxisDeltaPhi.nBins.value();
+      for (int i = offset; i < preAxisDeltaPhi.nBins.value() + 1 - offset; i++)
+        edgesDeltaPhi.emplace_back(min + static_cast<double>(i) * delta);
+    }
+    // ===] delta-eta [===
+    if (!preAxisDeltaEta.nBins.has_value()) {
+      // variable binning, use bins provided
+      for (int i = offset; i < static_cast<int>(edgesDeltaEtaOrig.size()) - offset; i++)
+        edgesDeltaEta.emplace_back(edgesDeltaEtaOrig[i]);
+    } else {
+      // fixed binning, generate the bin edges on-the-spot
+      double min = edgesDeltaEtaOrig[0];
+      double delta = (edgesDeltaEtaOrig[1] - edgesDeltaEtaOrig[0]) / preAxisDeltaEta.nBins.value();
+      for (int i = offset; i < preAxisDeltaEta.nBins.value() + 1 - offset; i++)
+        edgesDeltaEta.emplace_back(min + static_cast<double>(i) * delta);
+    }
+    // ===] pt assoc [===
+    if (!preAxisPtAssoc.nBins.has_value()) {
+      // variable binning, use bins provided
+      for (int i = offset; i < static_cast<int>(edgesPtAssocOrig.size()) - offset; i++)
+        edgesPtAssoc.emplace_back(edgesPtAssocOrig[i]);
+    } else {
+      // fixed binning, generate the bin edges on-the-spot
+      double min = edgesPtAssocOrig[0];
+      double delta = (edgesPtAssocOrig[1] - edgesPtAssocOrig[0]) / preAxisPtAssoc.nBins.value();
+      for (int i = offset; i < preAxisVtxZ.nBins.value() + 1 - offset; i++)
+        edgesPtAssoc.emplace_back(min + static_cast<double>(i) * delta);
+    }
+    // ===] vtx Z [===
+    if (!preAxisVtxZ.nBins.has_value()) {
+      // variable binning, use bins provided
+      for (int i = offset; i < static_cast<int>(edgesVtxZOrig.size()) - offset; i++)
+        edgesVtxZ.emplace_back(edgesVtxZOrig[i]);
+    } else {
+      // fixed binning, generate the bin edges on-the-spot
+      double min = edgesVtxZOrig[0];
+      double delta = (edgesVtxZOrig[1] - edgesVtxZOrig[0]) / preAxisVtxZ.nBins.value();
+      for (int i = offset; i < preAxisVtxZ.nBins.value() + 1 - offset; i++)
+        edgesVtxZ.emplace_back(min + static_cast<double>(i) * delta);
+    }
+    // ===] mult percentile [===
+    if (!preAxisMult.nBins.has_value()) {
+      // variable binning, use bins provided
+      for (int i = offset; i < static_cast<int>(edgesMultOrig.size()) - offset; i++)
+        edgesMult.emplace_back(edgesMultOrig[i]);
+    } else {
+      // fixed binning, generate the bin edges on-the-spot
+      double min = edgesMultOrig[0];
+      double delta = (edgesMultOrig[1] - edgesMultOrig[0]) / preAxisMult.nBins.value();
+      for (int i = offset; i < preAxisMult.nBins.value() + 1 - offset; i++)
+        edgesMult.emplace_back(min + static_cast<double>(i) * delta);
+    }
+
+    LOGF(info, "Initialized THnF axis delta-phi with %i bins.", edgesDeltaPhi.size() - 1);
+    LOGF(info, "Initialized THnF axis delta-eta with %i bins.", edgesDeltaEta.size() - 1);
+    LOGF(info, "Initialized THnF axis pTassoc with %i bins.", edgesPtAssoc.size() - 1);
+    LOGF(info, "Initialized THnF axis vertex-Z with %i bins.", edgesVtxZ.size() - 1);
+    LOGF(info, "Initialized THnF axis multiplicity with %i bins.", edgesMult.size() - 1);
 
     const AxisSpec axisDeltaPhiNDim{edgesDeltaPhi, "#Delta#varphi"};
     const AxisSpec axisDeltaEtaNDim{edgesDeltaEta, "#Delta#eta"};

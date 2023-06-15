@@ -62,6 +62,12 @@ struct hstrangecorrelationfilter {
   Configurable<float> v0RadiusMin{"v0radiusmin", 0.5, "v0radius"};
   Configurable<float> v0RadiusMax{"v0radiusmax", 200, "v0radius"};
 
+  // primary particle DCAxy selections
+  // formula: |DCAxy| <  0.004f + (0.013f / pt)
+  Configurable<std::vector<float>> dcaXYpars{"dcaXYpars", {0.004, 0.013}, "pars in |DCAxy| < [0]+[1]/pT"};
+  Configurable<float> dcaXYconstant{"dcaXYconstant", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
+  Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
+
   // cascade selections
   Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"};
   Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "cascadesetting_dcacascdau"};
@@ -95,7 +101,8 @@ struct hstrangecorrelationfilter {
   Configurable<float> peakNsigma{"peakNsigma", 3.0f, "peak region is +/- this many sigmas away"};
   Configurable<float> backgroundNsigma{"backgroundNsigma", 6.0f, "bg region is +/- this many sigmas away (minus peak)"};
 
-  // Cannot filter on dynamic columns, so we cut on DCA to PV and DCA between daus only!
+  // Do declarative selections for DCAs, if possible
+  Filter preFilterTracks = nabs(aod::track::dcaXY) < dcaXYconstant + dcaXYpTdep * nabs(aod::track::signed1Pt);
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcaPostopv&&
                                                          nabs(aod::v0data::dcanegtopv) > dcaNegtopv&& aod::v0data::dcaV0daughters < dcaV0dau;
   Filter preFilterCascade =
@@ -105,9 +112,9 @@ struct hstrangecorrelationfilter {
   HistogramRegistry registry{
     "registry",
     {}};
-  using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+  using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
-  using IDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal>;
+  using IDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TracksDCA>;
 
   Produces<aod::TriggerTracks> triggerTrack;
   Produces<aod::AssocPions> assocPion;
@@ -144,7 +151,7 @@ struct hstrangecorrelationfilter {
     fOmegaWidth->SetParameters(omegaWidthAngular, omegaWidthLinear);
   }
 
-  void processTriggers(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const& tracks)
+  void processTriggers(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, soa::Filtered<DauTracks> const& tracks)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -176,7 +183,7 @@ struct hstrangecorrelationfilter {
         track.globalIndex());
     }
   }
-  void processAssocPions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, IDTracks const& tracks)
+  void processAssocPions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, soa::Filtered<IDTracks> const& tracks)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -242,7 +249,7 @@ struct hstrangecorrelationfilter {
     }
   }
 
-  void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const& tracks, soa::Filtered<aod::V0Datas> const& V0s, aod::V0sLinked const&)
+  void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const&, soa::Filtered<aod::V0Datas> const& V0s, aod::V0sLinked const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -334,7 +341,7 @@ struct hstrangecorrelationfilter {
       assocV0(v0.collisionId(), v0.globalIndex(), compatibleK0Short, compatibleLambda, compatibleAntiLambda, massRegK0Short, massRegLambda, massRegAntiLambda);
     }
   }
-  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const& tracks, soa::Filtered<aod::V0Datas> const& V0s, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&)
+  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const&, soa::Filtered<aod::V0Datas> const& V0s, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {

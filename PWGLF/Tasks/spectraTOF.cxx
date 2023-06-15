@@ -89,7 +89,7 @@ struct tofSpectra {
   Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
   Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum value of the DCA z"};
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
-  Configurable<bool> makeTHnSparseChoice{"makeTHnSparseChoice", false, "choose if produce thnsparse"}; // RD
+  Configurable<bool> makeTHnSparseChoice{"makeTHnSparseChoice", true, "choose if produce thnsparse"}; // RD
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -165,6 +165,7 @@ struct tofSpectra {
       LOG(info) << "\tminTPCNClsFound=" << minTPCNClsFound.value;
       LOG(info) << "\tmaxChi2PerClusterITS=" << maxChi2PerClusterITS.value;
       LOG(info) << "\tmaxDcaZ=" << maxDcaZ.value;
+      LOG(info) << "\tmakeTHnSparseChoice=" << makeTHnSparseChoice.value;
 
       customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value);
       LOG(info) << "Customizing track cuts:";
@@ -178,6 +179,7 @@ struct tofSpectra {
       customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
       customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10000.f; }); // No DCAxy cut will be used, this is done via the member function of the task
       customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
+      // customTrackCuts.SetMakeTHnSparseChoice(makeTHnSparseChoice.value);
       customTrackCuts.print();
     }
     // Histograms
@@ -417,9 +419,9 @@ struct tofSpectra {
           histos.add(hdeltatof[i].data(), pTCharge[i], kTH2D, {ptAxis, deltaTOFAxis});
           histos.add(hdeltatpc[i].data(), pTCharge[i], kTH2D, {ptAxis, deltaTPCAxis});
         }
-      } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice) {                               // RD
-        histos.add(hnsigmatof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTOFAxis, multAxis, dcaXyAxis}); // RD
-        histos.add(hnsigmatpc[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTPCAxis, multAxis, dcaXyAxis}); // RD
+      } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice.value) {                                   // RD
+        histos.add(hnsigmatof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTOFAxis, multAxis, dcaXyAxis, dcaZAxis}); // RD
+        histos.add(hnsigmatpc[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTPCAxis, multAxis, dcaXyAxis, dcaZAxis}); // RD
 
       } else {
 
@@ -544,11 +546,11 @@ struct tofSpectra {
       } else {
         histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTPC);
       }
-    } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice) {                   // RD
+    } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice.value) {             // RD
       if (track.sign() > 0) {                                                                       // RD
-        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY());      // RD
+        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ()); // RD
       } else {                                                                                      // RD
-        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY()); // RD
+        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaZ());  // RD
       }                                                                                             // RD
     } else {
       if (track.sign() > 0) {
@@ -664,11 +666,11 @@ struct tofSpectra {
       } else {
         histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF);
       }
-    } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice) {                   // RD
+    } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice.value) {             // RD
       if (track.sign() > 0) {                                                                       // RD
-        histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY());      // RD
+        histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ()); // RD
       } else {                                                                                      // RD
-        histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY()); // RD
+        histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ()); // RD
       }                                                                                             // RD
     } else {
       if (track.sign() > 0) {
