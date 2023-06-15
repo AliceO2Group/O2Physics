@@ -290,7 +290,7 @@ bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& fe
     return false;
   }
 
-  if (activateQA) {
+  if (activateQA > 1) {
     hProtonTPCPID->Fill(track.p(), NSigmaTPC);
     hProtonTOFPID->Fill(track.p(), NSigmaTOF);
   }
