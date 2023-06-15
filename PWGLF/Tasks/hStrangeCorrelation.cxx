@@ -280,7 +280,7 @@ struct correlateStrangeness {
     const AxisSpec preAxisPtAssoc{axisPtAssoc, "#it{p}_{T}^{assoc} (GeV/c)"};
     const AxisSpec preAxisVtxZ{axisVtxZ, "vertex Z (cm)"};
     const AxisSpec preAxisMult{axisMult, "mult percentile"};
-    
+
     // store the original axes in specific TH1Cs for completeness
     histos.add("axes/hDeltaPhiAxis", "", kTH1C, {preAxisDeltaPhi});
     histos.add("axes/hDeltaEtaAxis", "", kTH1C, {preAxisDeltaEta});
