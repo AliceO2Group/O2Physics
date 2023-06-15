@@ -677,14 +677,14 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
   bool isRejected[kNV0] = {false, false, false, false};
 
   if (activateQA > 1) {
-    for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
+    for (int iV0{kPhoton}; iV0<kNV0; ++iV0) {
       hV0Selected->Fill(0., iV0);
     }
   }
 
   if (std::abs(v0.eta()) > 0.8) { // cut all V0s with |eta| > 0.8
     if (activateQA > 1) {
-      for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
+      for (int iV0{kPhoton}; iV0<kNV0; ++iV0) {
         hV0Selected->Fill(1., iV0);
       }
     }
@@ -709,7 +709,7 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
 
   if (v0CosinePa < minV0CosinePa) {
     if (activateQA > 1) {
-      for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
+      for (int iV0{kK0S}; iV0<kNV0; ++iV0) {
         isRejected[iV0] = true;
         hV0Selected->Fill(3., iV0);
       }
@@ -757,10 +757,12 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
   }
 
   if (activateQA) {
-    for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
-      hArmPod[iV0]->Fill(v0.alpha(), v0.qtarm());
-      if (activateQA > 1) {
-        hV0Selected->Fill(7., iV0);
+    for (int iV0{kPhoton}; iV0<kNV0; ++iV0) {
+      if (!isRejected[iV0]) {
+        hArmPod[iV0]->Fill(v0.alpha(), v0.qtarm());
+        if (activateQA > 1) {
+          hV0Selected->Fill(7., iV0);
+        }
       }
     }
   }
