@@ -29,7 +29,7 @@
 #include "EventFiltering/filterTables.h"
 #include "HFFilterHelpers.h"
 
-#include "Common/DataModel/CollisionAssociation.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 

@@ -15,12 +15,11 @@
 /// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova
 
-#include "Common/DataModel/CollisionAssociation.h"
+#include "Common/Core/CollisionAssociation.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/LHCConstants.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 
 using namespace o2;
@@ -29,6 +28,7 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 
 struct TrackToCollisionAssociation {
+
   Produces<TrackAssoc> association;
   Produces<TrackCompColls> reverseIndices;
 
@@ -39,171 +39,41 @@ struct TrackToCollisionAssociation {
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
   Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
 
+  CollisionAssociation<true> collisionAssociator;
+
   Filter trackFilter = (setTrackSelections.node() == 0) ||                                        // no track selections
                        ((setTrackSelections.node() == 1) && requireGlobalTrackWoDCAInFilter()) || // global track selections w/o dca
                        ((setTrackSelections.node() == 2) && requireQualityTracksITSInFilter());   // ITS-quality selections only
   using TracksWithSel = soa::Join<Tracks, TracksExtra, TrackSelection>;
   using TracksWithSelFilter = soa::Filtered<TracksWithSel>;
+  Preslice<TracksWithSel> tracksPerCollisions = aod::track::collisionId;
 
   void init(InitContext const&)
   {
     if (doprocessAssocWithTime == doprocessStandardAssoc) {
-      LOGP(fatal, "Exactly one process function should be enabled!");
+      LOGP(fatal, "Exactly one process function between standard and time-based association should be enabled!");
     }
+
+    // set options in track-to-collision association
+    collisionAssociator.setNumSigmaForTimeCompat(nSigmaForTimeCompat);
+    collisionAssociator.setTimeMargin(timeMargin);
+    collisionAssociator.setTrackSelectionOptionForStdAssoc(setTrackSelections);
+    collisionAssociator.setUsePvAssociation(usePVAssociation);
+    collisionAssociator.setIncludeUnassigned(includeUnassigned);
+    collisionAssociator.setFillTableOfCollIdsPerTrack(fillTableOfCollIdsPerTrack);
   }
 
-  void processAssocWithTime(Collisions const& collisions,
-                            TracksWithSel const& tracksUnfiltered,
-                            TracksWithSelFilter const& tracks,
-                            AmbiguousTracks const& ambiguousTracks,
-                            BCs const& bcs)
+  void processAssocWithTime(Collisions const& collisions, TracksWithSel const& tracksUnfiltered, TracksWithSelFilter const& tracks, AmbiguousTracks const& ambiguousTracks, BCs const& bcs)
   {
-    // cache globalBC
-    std::vector<uint64_t> globalBC;
-    for (const auto& track : tracks) {
-      if (track.has_collision()) {
-        globalBC.push_back(track.collision().bc().globalBC());
-      } else {
-        for (const auto& ambTrack : ambiguousTracks) {
-          if (ambTrack.trackId() == track.globalIndex()) {
-            globalBC.push_back(ambTrack.bc().begin().globalBC());
-            break;
-          }
-        }
-      }
-    }
-
-    // define vector of vectors to store indices of compatible collisions per track
-    std::vector<std::unique_ptr<std::vector<int>>> collsPerTrack(tracksUnfiltered.size());
-
-    // loop over collisions to find time-compatible tracks
-    auto trackBegin = tracks.begin();
-    constexpr auto bOffsetMax = 241; // 6 mus (ITS)
-    for (const auto& collision : collisions) {
-      const float collTime = collision.collisionTime();
-      const float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
-      uint64_t collBC = collision.bc().globalBC();
-      // bool iteratorMoved = false;
-      for (auto track = trackBegin; track != tracks.end(); ++track) {
-        if (!includeUnassigned && !track.has_collision()) {
-          continue;
-        }
-        const int64_t bcOffset = (int64_t)globalBC[track.filteredIndex()] - (int64_t)collBC;
-        if (std::abs(bcOffset) > bOffsetMax) {
-          continue;
-        }
-
-        float trackTime{0.};
-        float trackTimeRes{0.};
-        if (usePVAssociation && track.isPVContributor()) {
-          trackTime = track.collision().collisionTime();    // if PV contributor, we assume the time to be the one of the collision
-          trackTimeRes = constants::lhc::LHCBunchSpacingNS; // 1 BC
-        } else {
-          trackTime = track.trackTime();
-          trackTimeRes = track.trackTimeRes();
-        }
-        const float deltaTime = trackTime - collTime + bcOffset * constants::lhc::LHCBunchSpacingNS;
-        float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
-        LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), track.trackTime(), track.trackTimeRes(), collBC, globalBC[track.filteredIndex()], deltaTime);
-
-        // optimization to avoid looping over the full track list each time. This assumes that tracks are sorted by BCs (which they should be because collisions are sorted by BCs)
-        // NOTE this does not work anymore if includeUnassigned is set as the unassigned blocks can be somewhere (and we can have merged DFs, too)
-        // if (!iteratorMoved && bcOffset > -bOffsetMax) {
-        //   trackBegin.setCursor(track.filteredIndex());
-        //   iteratorMoved = true;
-        //   LOGP(debug, "Moving iterator begin {}", track.globalIndex());
-        // } else if (bcOffset > bOffsetMax) {
-        //   LOGP(debug, "Stopping iterator {}", track.globalIndex());
-        //   break;
-        // }
-
-        float thresholdTime = 0.;
-        if (usePVAssociation && track.isPVContributor()) {
-          thresholdTime = trackTimeRes;
-        } else if (TESTBIT(track.flags(), o2::aod::track::TrackTimeResIsRange)) {
-          thresholdTime = std::sqrt(sigmaTimeRes2) + timeMargin;
-        } else {
-          thresholdTime = nSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + timeMargin;
-        }
-
-        if (std::abs(deltaTime) < thresholdTime) {
-          const auto collIdx = collision.globalIndex();
-          const auto trackIdx = track.globalIndex();
-          LOGP(debug, "Filling track id {} for coll id {}", trackIdx, collIdx);
-          association(collIdx, trackIdx);
-          if (fillTableOfCollIdsPerTrack) {
-            if (collsPerTrack[trackIdx] == nullptr) {
-              collsPerTrack[trackIdx] = std::make_unique<std::vector<int>>();
-            }
-            collsPerTrack[trackIdx].get()->push_back(collIdx);
-          }
-        }
-      }
-    }
-
-    // create reverse index track to collisions if enabled
-    if (fillTableOfCollIdsPerTrack) {
-      std::vector<int> empty{};
-      for (const auto& track : tracksUnfiltered) {
-
-        const auto trackId = track.globalIndex();
-        if (collsPerTrack[trackId] == nullptr) {
-          reverseIndices(empty);
-        } else {
-          // for (const auto& collId : *collsPerTrack[trackId]) {
-          //   LOGP(info, "  -> Coll id {}", collId);
-          // }
-          reverseIndices(*collsPerTrack[trackId].get());
-        }
-      }
-    }
+    collisionAssociator.runAssocWithTime(collisions, tracksUnfiltered, tracks, ambiguousTracks, bcs, association, reverseIndices);
   }
+  PROCESS_SWITCH(TrackToCollisionAssociation, processAssocWithTime, "Use track-to-collision association based on time", true);
 
-  PROCESS_SWITCH(TrackToCollisionAssociation, processAssocWithTime, "Use track-to-collision association based on time", false);
-
-  Preslice<TracksWithSel> tracksPerCollisions = aod::track::collisionId;
-
-  void processStandardAssoc(Collisions const& collisions,
-                            TracksWithSel const& tracks)
+  void processStandardAssoc(Collisions const& collisions, TracksWithSel const& tracksUnfiltered)
   {
-    // we do it for all tracks, to be compatible with Run 2 analyses
-    for (const auto& collision : collisions) {
-      auto tracksThisCollision = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
-      for (const auto& track : tracksThisCollision) {
-        bool hasGoodQuality = true;
-        if (setTrackSelections == 1 && !track.isGlobalTrackWoDCA()) {
-          // global track selections w/o dca
-          hasGoodQuality = false;
-        } else if (setTrackSelections == 2 && !track.isQualityTrackITS()) {
-          // ITS-quality selections only
-          hasGoodQuality = false;
-        } else if (setTrackSelections == -1) {
-          // minimal track selections for Run 2
-          unsigned char itsClusterMap = track.itsClusterMap();
-          if (!(track.tpcNClsFound() >= 50 && track.flags() & o2::aod::track::ITSrefit && track.flags() & o2::aod::track::TPCrefit && (TESTBIT(itsClusterMap, 0) || TESTBIT(itsClusterMap, 1)))) {
-            hasGoodQuality = false;
-          }
-        }
-        if (hasGoodQuality) {
-          association(collision.globalIndex(), track.globalIndex());
-        }
-      }
-    }
-
-    // create reverse index track to collisions if enabled
-    std::vector<int> empty{};
-    if (fillTableOfCollIdsPerTrack) {
-      for (const auto& track : tracks) {
-        if (track.has_collision()) {
-          reverseIndices(std::vector<int>{track.collisionId()});
-        } else {
-          reverseIndices(empty);
-        }
-      }
-    }
+    collisionAssociator.runStandardAssoc(collisions, tracksUnfiltered, tracksPerCollisions, association, reverseIndices);
   }
-
-  PROCESS_SWITCH(TrackToCollisionAssociation, processStandardAssoc, "Use standard track-to-collision association", true);
+  PROCESS_SWITCH(TrackToCollisionAssociation, processStandardAssoc, "Use standard track-to-collision association", false);
 };
 
 //________________________________________________________________________________________________________________________
