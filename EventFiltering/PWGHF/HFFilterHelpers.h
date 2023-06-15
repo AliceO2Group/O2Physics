@@ -758,9 +758,11 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
 
   if (activateQA) {
     for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
-      hArmPod[iV0]->Fill(v0.alpha(), v0.qtarm());
-      if (activateQA > 1) {
-        hV0Selected->Fill(7., iV0);
+      if (!isRejected[iV0]) {
+        hArmPod[iV0]->Fill(v0.alpha(), v0.qtarm());
+        if (activateQA > 1) {
+          hV0Selected->Fill(7., iV0);
+        }
       }
     }
   }
