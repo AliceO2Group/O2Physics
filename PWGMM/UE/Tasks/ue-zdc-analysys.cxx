@@ -33,7 +33,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using BCsWithBcSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
-//using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+// using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
 struct ZDCAnalysis {
@@ -132,10 +132,10 @@ struct ZDCAnalysis {
     registry.get<TH2>(HIST("ZNAvsZPA"))->Fill(zdc.amplitudeZPA(), zdc.amplitudeZNA());
     registry.get<TH2>(HIST("ZNCvsZPC"))->Fill(zdc.amplitudeZPC(), zdc.amplitudeZNC());
     //
-    float sumZNC = (zdc.energySectorZNC())[0]+(zdc.energySectorZNC())[1]+(zdc.energySectorZNC())[2]+(zdc.energySectorZNC())[3];
-    float sumZNA = (zdc.energySectorZNA())[0]+(zdc.energySectorZNA())[1]+(zdc.energySectorZNA())[2]+(zdc.energySectorZNA())[3];
-    float sumZPC = (zdc.energySectorZPC())[0]+(zdc.energySectorZPC())[1]+(zdc.energySectorZPC())[2]+(zdc.energySectorZPC())[3];
-    float sumZPA = (zdc.energySectorZPA())[0]+(zdc.energySectorZPA())[1]+(zdc.energySectorZPA())[2]+(zdc.energySectorZPA())[3];
+    float sumZNC = (zdc.energySectorZNC())[0] + (zdc.energySectorZNC())[1] + (zdc.energySectorZNC())[2] + (zdc.energySectorZNC())[3];
+    float sumZNA = (zdc.energySectorZNA())[0] + (zdc.energySectorZNA())[1] + (zdc.energySectorZNA())[2] + (zdc.energySectorZNA())[3];
+    float sumZPC = (zdc.energySectorZPC())[0] + (zdc.energySectorZPC())[1] + (zdc.energySectorZPC())[2] + (zdc.energySectorZPC())[3];
+    float sumZPA = (zdc.energySectorZPA())[0] + (zdc.energySectorZPA())[1] + (zdc.energySectorZPA())[2] + (zdc.energySectorZPA())[3];
     registry.get<TH2>(HIST("ZNCcvsZNCsum"))->Fill(zdc.energyCommonZNC(), sumZNC);
     registry.get<TH2>(HIST("ZNAcvsZNAsum"))->Fill(zdc.energyCommonZNA(), sumZNA);
     registry.get<TH2>(HIST("ZPCcvsZPCsum"))->Fill(zdc.energyCommonZPC(), sumZPC);
@@ -154,7 +154,7 @@ struct ZDCAnalysis {
 
   void processZdcBcAss(
     // soa::Join<aod::BCs, aod::Timestamps> const& bcs,
-    //BCsRun3 const& bcs,
+    // BCsRun3 const& bcs,
     // BCsWithBcSels const& bcs,
     BCsWithRun3Matchings const& bcs,
     aod::Zdcs const& zdcs)
@@ -197,7 +197,7 @@ struct ZDCAnalysis {
       //
       registry.get<TH2>(HIST("ZNCadcvstdccoll"))->Fill(collision.foundZDC().timeZNC(), collision.foundZDC().amplitudeZNC());
       registry.get<TH2>(HIST("ZNAadcvstdccoll"))->Fill(collision.foundZDC().timeZNA(), collision.foundZDC().amplitudeZNA());
-      registry.get<TH2>(HIST("ZPCadcvstdccoll"))->Fill( collision.foundZDC().timeZPC(), collision.foundZDC().amplitudeZPC());
+      registry.get<TH2>(HIST("ZPCadcvstdccoll"))->Fill(collision.foundZDC().timeZPC(), collision.foundZDC().amplitudeZPC());
       registry.get<TH2>(HIST("ZPAadcvstdccoll"))->Fill(collision.foundZDC().timeZPA(), collision.foundZDC().amplitudeZPA());
       registry.get<TH2>(HIST("ZEM1adcvstdccoll"))->Fill(collision.foundZDC().timeZEM1(), collision.foundZDC().amplitudeZEM1());
       registry.get<TH2>(HIST("ZEM2adcvstdccoll"))->Fill(collision.foundZDC().timeZEM2(), collision.foundZDC().amplitudeZEM2());
@@ -252,8 +252,8 @@ struct ZDCAnalysis {
     }
 
     if (foundBC.has_zdc()) {
-      registry.get<TH2>(HIST("ZNvsFV0Acorrel"))->Fill(multV0A/100., foundBC.zdc().amplitudeZNA() + foundBC.zdc().amplitudeZNC());
-      registry.get<TH2>(HIST("ZNvsFT0correl"))->Fill((multT0A + multT0C)/100., foundBC.zdc().amplitudeZNC() + foundBC.zdc().amplitudeZNA());
+      registry.get<TH2>(HIST("ZNvsFV0Acorrel"))->Fill(multV0A / 100., foundBC.zdc().amplitudeZNA() + foundBC.zdc().amplitudeZNC());
+      registry.get<TH2>(HIST("ZNvsFT0correl"))->Fill((multT0A + multT0C) / 100., foundBC.zdc().amplitudeZNC() + foundBC.zdc().amplitudeZNA());
       registry.get<TH2>(HIST("ZNvsFDDcorrel"))->Fill(multFDC + multFDA, foundBC.zdc().amplitudeZNC() + foundBC.zdc().amplitudeZNA());
     }
   }
