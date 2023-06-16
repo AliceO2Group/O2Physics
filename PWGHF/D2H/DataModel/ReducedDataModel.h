@@ -168,7 +168,7 @@ template <typename T>
 auto invMassD0barToKPi(const T& pVec0, const T& pVec1)
 {
   return RecoDecay::m(std::array{pVec0, pVec1},
-                      array{RecoDecay::getMassPDG(kKPlus), 
+                      array{RecoDecay::getMassPDG(kKPlus),
                             RecoDecay::getMassPDG(kPiPlus)});
 }
 } // namespace hf_cand_2prong_reduced
@@ -309,7 +309,7 @@ DECLARE_SOA_TABLE(HfBpMcGenReduced, "AOD", "HFBPMCGENRED", //! Generation-level 
 // so we can use them in the Bplus part
 namespace hf_cand_bplus_config
 {
-DECLARE_SOA_COLUMN(MySelectionFlagD0, mySelectionFlagD0, int8_t); //! Flag to filter selected D0 mesons
+DECLARE_SOA_COLUMN(MySelectionFlagD0, mySelectionFlagD0, int8_t);       //! Flag to filter selected D0 mesons
 DECLARE_SOA_COLUMN(MySelectionFlagD0bar, mySelectionFlagD0bar, int8_t); //! Flag to filter selected D0 mesons
 } // namespace hf_cand_bplus_config
 

@@ -302,7 +302,7 @@ template <typename T1, typename T2, typename T3>
 bool selectionTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
 {
   auto ptcandBp = candBp.pt();
-  //auto ptD = RecoDecay::pt(candBp.pxProng0(), candBp.pyProng0());
+  // auto ptD = RecoDecay::pt(candBp.pxProng0(), candBp.pyProng0());
   auto ptPi = RecoDecay::pt(candBp.pxProng1(), candBp.pyProng1());
 
   int pTBin = findBin(binsPt, ptcandBp);
@@ -319,7 +319,7 @@ bool selectionTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
   // B+ mass cut
   if (std::abs(invMassBplusToD0Pi(candBp) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
     Printf("B+ topol selection failed at mass diff check");
-     return false;
+    return false;
   }
 
   // pion pt
@@ -328,9 +328,9 @@ bool selectionTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
   }
 
   // d0(D0)xd0(pi)
-    if (candBp.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
-      return false;
-    }
+  if (candBp.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
+    return false;
+  }
 
   /* // D0 mass  --> already applied in candidateSelectorD0.cxx
   if (trackPi.sign() > 0) {
