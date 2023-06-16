@@ -548,9 +548,9 @@ struct tofSpectra {
       }
     } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice.value) {             // RD
       if (track.sign() > 0) {                                                                       // RD
-        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ()); // RD
+        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY(), track.dcaZ()); // RD
       } else {                                                                                      // RD
-        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaZ());  // RD
+        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY(), track.dcaZ()); // RD
       }                                                                                             // RD
     } else {
       if (track.sign() > 0) {
