@@ -101,11 +101,11 @@ struct OnTheFlyTracker {
       const char* lutKaChar = lutKa->c_str();
       const char* lutPrChar = lutPr->c_str();
 
-      LOGF(info, "Will load electron lut file ..: %s", lutElChar); 
-      LOGF(info, "Will load muon lut file ......: %s", lutMuChar); 
-      LOGF(info, "Will load pion lut file ......: %s", lutPiChar); 
-      LOGF(info, "Will load kaon lut file ......: %s", lutKaChar); 
-      LOGF(info, "Will load proton lut file ....: %s", lutPrChar); 
+      LOGF(info, "Will load electron lut file ..: %s", lutElChar);
+      LOGF(info, "Will load muon lut file ......: %s", lutMuChar);
+      LOGF(info, "Will load pion lut file ......: %s", lutPiChar);
+      LOGF(info, "Will load kaon lut file ......: %s", lutKaChar);
+      LOGF(info, "Will load proton lut file ....: %s", lutPrChar);
 
       mapPdgLut.insert(std::make_pair(11, lutElChar));
       mapPdgLut.insert(std::make_pair(13, lutMuChar));
