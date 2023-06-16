@@ -72,8 +72,7 @@ struct DGCandAnalyzer {
     "registry",
     {{"nDGperRun", "Number of DG collisions per run", {HistType::kTH1D, {{1, 0, 1}}}},
      {"nIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}}},
-     {"candCase", "#candCase", {HistType::kTH1F, {{5, -0.5, 4.5}}}}
-    }};
+     {"candCase", "#candCase", {HistType::kTH1F, {{5, -0.5, 4.5}}}}}};
 
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using UDCollisionFull = UDCollisionsFull::iterator;
