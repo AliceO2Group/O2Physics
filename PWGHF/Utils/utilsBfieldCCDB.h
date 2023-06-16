@@ -13,6 +13,10 @@
 /// \brief Utility to set the B field in analysis querying it from CCDB
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN Padova, Italy
 
+#ifndef PWGHF_UTILS_UTILSBFIELDCCDB_H_
+#define PWGHF_UTILS_UTILSBFIELDCCDB_H_
+
+#include <string>
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -52,3 +56,5 @@ void initCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
     mRunNumber = bc.runNumber();
   }
 } /// end initCCDB
+
+#endif // PWGHF_UTILS_UTILSBFIELDCCDB_H_
