@@ -130,7 +130,7 @@ struct HfTaskCorrelationDMesonPairs {
   HistogramConfigSpec hTH1DeltaPtMaxMin{HistType::kTH1F, {{72, 0., 36.}}};
   HistogramConfigSpec hTH1Phi{HistType::kTH1F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}}};
   HistogramConfigSpec hTH2CorrelPt{HistType::kTH2F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {200, -10., 10.}}};
-  HistogramConfigSpec hTHnMass2DCorrPairsFinerBinning{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {40, 1., 4.}, {40, 1., 4.}, {160, -0.8, 0.8}, {160, -0.8, 0.8}}};
+  HistogramConfigSpec hTHnMass2DCorrPairsFinerBinning{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {60, 1., 6.}, {60, 1., 6.}, {160, -0.8, 0.8}, {160, -0.8, 0.8}}};
 
   HistogramRegistry registry{
     "registry",
