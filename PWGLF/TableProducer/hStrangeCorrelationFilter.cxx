@@ -77,25 +77,17 @@ struct hstrangecorrelationfilter {
   Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"};
 
   // invariant mass parametrizations
-  Configurable<float> k0MeanAngular{"k0MeanAngular", 0.000984543f, "angular coefficient of K0 mean position vs pT"};
-  Configurable<float> k0MeanLinear{"k0MeanLinear", 0.495298f, "linear coefficient of K0 mean position vs pT"};
-  Configurable<float> k0WidthAngular{"k0WidthAngular", 0.00211051f, "angular coefficient of K0 width vs pT"};
-  Configurable<float> k0WidthLinear{"k0WidthLinear", 0.0070932f, "linear coefficient of K0 width vs pT"};
+  Configurable<std::vector<float>> massParsK0Mean{"massParsK0Mean", {0.495, 0.000250, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
+  Configurable<std::vector<float>> massParsK0Width{"massParsK0Width", {0.00354, 0.000609, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
 
-  Configurable<float> lambdaMeanAngular{"lambdaMeanAngular", 0.000178879f, "angular coefficient of Lambda mean position vs pT"};
-  Configurable<float> lambdaMeanLinear{"lambdaMeanLinear", 1.11524f, "linear coefficient of Lambda mean position vs pT"};
-  Configurable<float> lambdaWidthAngular{"lambdaWidthAngular", 0.000509707f, "angular coefficient of lambda width vs pT"};
-  Configurable<float> lambdaWidthLinear{"lambdaWidthLinear", 0.00182213f, "linear coefficient of lambda width vs pT"};
+  Configurable<std::vector<float>> massParsLambdaMean{"massParsLambdaMean", {1.114, 0.000314, 0.140, 11.9}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
+  Configurable<std::vector<float>> massParsLambdaWidth{"massParsLambdaWidth", {0.00127, 0.000172, 0.00261, 2.02}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
 
-  Configurable<float> xiMeanAngular{"xiMeanAngular", 0.000358057f, "angular coefficient of xi mean position vs pT"};
-  Configurable<float> xiMeanLinear{"xiMeanLinear", 1.32062f, "linear coefficient of xi mean position vs pT"};
-  Configurable<float> xiWidthAngular{"xiWidthAngular", 0.000707717f, "angular coefficient of xi width vs pT"};
-  Configurable<float> xiWidthLinear{"xiWidthLinear", 0.00258716f, "linear coefficient of xi width vs pT"};
+  Configurable<std::vector<float>> massParsCascadeMean{"massParsCascadeMean", {1.32, 0.000278, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
+  Configurable<std::vector<float>> massParsCascadeWidth{"massParsCascadeWidth", {0.00189, 0.000227, 0.00370, 1.635}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
 
-  Configurable<float> omegaMeanAngular{"omegaMeanAngular", 0.00899215f, "angular coefficient of omega mean position vs pT"};
-  Configurable<float> omegaMeanLinear{"omegaMeanLinear", 1.65008f, "linear coefficient of omega mean position vs pT"};
-  Configurable<float> omegaWidthAngular{"omegaWidthAngular", 0.00641875f, "angular coefficient of omega width vs pT"};
-  Configurable<float> omegaWidthLinear{"omegaWidthLinear", -0.00422177f, "linear coefficient of omega width vs pT"};
+  Configurable<std::vector<float>> massParsOmegaMean{"massParsOmegaMean", {1.67, 0.000298, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
+  Configurable<std::vector<float>> massParsOmegaWidth{"massParsOmegaWidth", {0.00189, 0.000325, 0.00606, 1.77}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
 
   // definitions of peak and background
   Configurable<float> peakNsigma{"peakNsigma", 3.0f, "peak region is +/- this many sigmas away"};
@@ -121,34 +113,25 @@ struct hstrangecorrelationfilter {
   Produces<aod::AssocV0s> assocV0;
   Produces<aod::AssocCascades> assocCascades;
 
-  TF1* fK0Mean;
-  TF1* fK0Width;
-  TF1* fLambdaMean;
-  TF1* fLambdaWidth;
-  TF1* fXiMean;
-  TF1* fXiWidth;
-  TF1* fOmegaMean;
-  TF1* fOmegaWidth;
+  TF1* fK0Mean = new TF1("fK0Mean", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
+  TF1* fK0Width = new TF1("fK0Width", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
+  TF1* fLambdaMean = new TF1("fLambdaMean", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
+  TF1* fLambdaWidth = new TF1("fLambdaWidth", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
+  TF1* fXiMean = new TF1("fXiMean", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
+  TF1* fXiWidth = new TF1("fXiWidth", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
+  TF1* fOmegaMean = new TF1("fomegaMean", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
+  TF1* fOmegaWidth = new TF1("fomegaWidth", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
+
   void init(InitContext const&)
   {
-    // initialise regions of mean and width
-    fK0Mean = new TF1("fK0Mean", "[0]*x+[1]");
-    fK0Width = new TF1("fK0Width", "[0]*x+[1]");
-    fLambdaMean = new TF1("fLambdaMean", "[0]*x+[1]");
-    fLambdaWidth = new TF1("fLambdaWidth", "[0]*x+[1]");
-    fXiMean = new TF1("fXiMean", "[0]*x+[1]");
-    fXiWidth = new TF1("fXiWidth", "[0]*x+[1]");
-    fOmegaMean = new TF1("fomegaMean", "[0]*x+[1]");
-    fOmegaWidth = new TF1("fomegaWidth", "[0]*x+[1]");
-
-    fK0Mean->SetParameters(k0MeanAngular, k0MeanLinear);
-    fK0Width->SetParameters(k0WidthAngular, k0WidthLinear);
-    fLambdaMean->SetParameters(lambdaMeanAngular, lambdaMeanLinear);
-    fLambdaWidth->SetParameters(lambdaWidthAngular, lambdaWidthLinear);
-    fXiMean->SetParameters(xiMeanAngular, xiMeanLinear);
-    fXiWidth->SetParameters(xiWidthAngular, xiWidthLinear);
-    fOmegaMean->SetParameters(omegaMeanAngular, omegaMeanLinear);
-    fOmegaWidth->SetParameters(omegaWidthAngular, omegaWidthLinear);
+    fK0Mean->SetParameters(massParsK0Mean->at(0), massParsK0Mean->at(1), massParsK0Mean->at(2), massParsK0Mean->at(3));
+    fK0Width->SetParameters(massParsK0Width->at(0), massParsK0Width->at(1), massParsK0Width->at(2), massParsK0Width->at(3));
+    fLambdaMean->SetParameters(massParsLambdaMean->at(0), massParsLambdaMean->at(1), massParsLambdaMean->at(2), massParsLambdaMean->at(3));
+    fLambdaWidth->SetParameters(massParsLambdaWidth->at(0), massParsLambdaWidth->at(1), massParsLambdaWidth->at(2), massParsLambdaWidth->at(3));
+    fXiMean->SetParameters(massParsCascadeMean->at(0), massParsCascadeMean->at(1), massParsCascadeMean->at(2), massParsCascadeMean->at(3));
+    fXiWidth->SetParameters(massParsCascadeWidth->at(0), massParsCascadeWidth->at(1), massParsCascadeWidth->at(2), massParsCascadeWidth->at(3));
+    fOmegaMean->SetParameters(massParsOmegaMean->at(0), massParsOmegaMean->at(1), massParsOmegaMean->at(2), massParsOmegaMean->at(3));
+    fOmegaWidth->SetParameters(massParsOmegaWidth->at(0), massParsOmegaWidth->at(1), massParsOmegaWidth->at(2), massParsOmegaWidth->at(3));
   }
 
   void processTriggers(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, soa::Filtered<DauTracks> const& tracks)
