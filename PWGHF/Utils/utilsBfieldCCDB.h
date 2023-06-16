@@ -16,7 +16,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
 
 /// \brief Sets up the grp object for magnetic field (w/o matCorr for propagation)
 /// \param bc is the bunch crossing
