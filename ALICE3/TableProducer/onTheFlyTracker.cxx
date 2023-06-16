@@ -95,16 +95,28 @@ struct OnTheFlyTracker {
 
     if (enableLUT) {
       std::map<int, const char*> mapPdgLut;
-      //       const char* lutElChar = ((std::string)lutEl).c_str();
-      //       const char* lutMuChar = ((std::string)lutMu).c_str();
-      //       const char* lutPiChar = ((std::string)lutPi).c_str();
-      //       const char* lutKaChar = ((std::string)lutKa).c_str();
-      //       const char* lutPrChar = ((std::string)lutPr).c_str();
-      mapPdgLut.insert(std::make_pair(11, "lutCovm.el.dat"));
-      mapPdgLut.insert(std::make_pair(13, "lutCovm.mu.dat"));
-      mapPdgLut.insert(std::make_pair(211, "lutCovm.pi.dat"));
-      mapPdgLut.insert(std::make_pair(321, "lutCovm.ka.dat"));
-      mapPdgLut.insert(std::make_pair(2212, "lutCovm.pr.dat"));
+      const char* lutElChar = lutEl->c_str();
+      const char* lutMuChar = lutMu->c_str();
+      const char* lutPiChar = lutPi->c_str();
+      const char* lutKaChar = lutKa->c_str();
+      const char* lutPrChar = lutPr->c_str();
+
+      LOGF(info, "Will load electron lut file ..: %s", lutElChar);
+      LOGF(info, "Will load muon lut file ......: %s", lutMuChar);
+      LOGF(info, "Will load pion lut file ......: %s", lutPiChar);
+      LOGF(info, "Will load kaon lut file ......: %s", lutKaChar);
+      LOGF(info, "Will load proton lut file ....: %s", lutPrChar);
+
+      mapPdgLut.insert(std::make_pair(11, lutElChar));
+      mapPdgLut.insert(std::make_pair(13, lutMuChar));
+      mapPdgLut.insert(std::make_pair(211, lutPiChar));
+      mapPdgLut.insert(std::make_pair(321, lutKaChar));
+      mapPdgLut.insert(std::make_pair(2212, lutPrChar));
+      // mapPdgLut.insert(std::make_pair(11, "lutCovm.el.dat"));
+      // mapPdgLut.insert(std::make_pair(13, "lutCovm.mu.dat"));
+      // mapPdgLut.insert(std::make_pair(211, "lutCovm.pi.dat"));
+      // mapPdgLut.insert(std::make_pair(321, "lutCovm.ka.dat"));
+      // mapPdgLut.insert(std::make_pair(2212, "lutCovm.pr.dat"));
       if (enableNucleiSmearing) {
         const char* lutDeChar = ((std::string)lutDe).c_str();
         const char* lutTrChar = ((std::string)lutTr).c_str();
