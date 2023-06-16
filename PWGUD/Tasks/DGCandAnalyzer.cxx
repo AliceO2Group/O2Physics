@@ -72,7 +72,8 @@ struct DGCandAnalyzer {
     "registry",
     {{"nDGperRun", "Number of DG collisions per run", {HistType::kTH1D, {{1, 0, 1}}}},
      {"nIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}}},
-     {"candCase", "#candCase", {HistType::kTH1F, {{5, -0.5, 4.5}}}}}};
+     {"candCase", "#candCase", {HistType::kTH1F, {{5, -0.5, 4.5}}}}
+    }};
 
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using UDCollisionFull = UDCollisionsFull::iterator;
@@ -223,6 +224,23 @@ struct DGCandAnalyzer {
       return;
     }
 
+    // extract bc pattern from CCDB for data or anchored MC only
+    if (run != lastRun && run >= 500000) {
+      LOGF(info, "Updating bcPattern %d ...", run);
+      auto tss = ccdb->getRunDuration(run);
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", tss.first);
+      bcPatternB = grplhcif->getBunchFilling().getBCPattern();
+      lastRun = run;
+      LOGF(info, "done!");
+    }
+
+    // is BB bunch?
+    auto bcnum = dgcand.globalBC();
+    if (run >= 500000 && bcPatternB[bcnum % o2::constants::lhc::LHCMaxBunches] == 0) {
+      LOGF(debug, "bcnum[1] %d is not a BB BC", bcnum % o2::constants::lhc::LHCMaxBunches);
+      return;
+    }
+      
     // skip unwanted cases
     // 0. all candidates
     // 1. candidate has associated BC and associated collision
