@@ -207,7 +207,7 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
     }
   }
   LOGF(debug, "  BC range: %d - %d", minBCId, maxBCId);
-  
+
   // reset bcIter
   bcIter.moveByIndex(-moveCount);
 
