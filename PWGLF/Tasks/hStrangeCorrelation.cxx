@@ -53,8 +53,9 @@ struct correlateStrangeness {
   Configurable<bool> doCorrelationOmegaMinus{"doCorrelationOmegaMinus", false, "do OmegaMinus correlation"};
   Configurable<bool> doCorrelationOmegaPlus{"doCorrelationOmegaPlus", false, "do OmegaPlus correlation"};
   Configurable<bool> doCorrelationPion{"doCorrelationPion", false, "do Pion correlation"};
-  Configurable<int> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
+  Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
   Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
+  Configurable<int> mixingParameter{"mixingParameter", 10, "how many events are mixed"};
 
   // Axes - configurable for smaller sizes
   ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 0.01f, 1.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "Mixing bins - multiplicity"};
@@ -583,7 +584,7 @@ struct correlateStrangeness {
                              aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
                              aod::V0Datas const&, aod::V0sLinked const&, TracksComplete const&)
   {
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, collisions, collisions)) {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
       // ________________________________________________
       // Perform basic event selection on both collisions
       if (!collision1.sel8() || !collision2.sel8())
@@ -616,7 +617,7 @@ struct correlateStrangeness {
                                   aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
                                   aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
   {
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, collisions, collisions)) {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
       // ________________________________________________
       // Perform basic event selection on both collisions
       if (!collision1.sel8() || !collision2.sel8())
@@ -648,7 +649,7 @@ struct correlateStrangeness {
                                aod::AssocPions const& assocPions, aod::TriggerTracks const& triggerTracks,
                                TracksComplete const&)
   {
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, collisions, collisions)) {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
       // ________________________________________________
       // Perform basic event selection on both collisions
       if (!collision1.sel8() || !collision2.sel8())
