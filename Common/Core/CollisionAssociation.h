@@ -61,9 +61,9 @@ class CollisionAssociation
   template <typename TTracks, typename Slice, typename Assoc, typename RevIndices>
   void runStandardAssoc(Collisions const& collisions,
                         TTracks const& tracks,
-                        Slice perCollisions,
-                        Assoc association,
-                        RevIndices reverseIndices)
+                        Slice& perCollisions,
+                        Assoc& association,
+                        RevIndices& reverseIndices)
   {
     // we do it for all tracks, to be compatible with Run 2 analyses
     for (const auto& collision : collisions) {
@@ -122,8 +122,8 @@ class CollisionAssociation
                         TTracks const& tracks,
                         TAmbiTracks const& ambiguousTracks,
                         BCs const& bcs,
-                        Assoc association,
-                        RevIndices reverseIndices)
+                        Assoc& association,
+                        RevIndices& reverseIndices)
   {
     // cache globalBC
     std::vector<uint64_t> globalBC;
