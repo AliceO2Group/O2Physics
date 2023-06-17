@@ -36,7 +36,7 @@ using namespace o2::framework::expressions;
 struct hstrangecorrelationfilter {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // Operational 
+  // Operational
   Configurable<bool> fillTableOnlyWithCompatible{"fillTableOnlyWithCompatible", true, "pre-apply dE/dx, broad mass window in table filling"};
   Configurable<float> strangedEdxNSigma{"strangedEdxNSigma", 5, "Nsigmas for strange decay daughters"};
 
@@ -344,20 +344,19 @@ struct hstrangecorrelationfilter {
         massRegAntiLambda = 0;
       }
 
-      if(compatibleK0Short)
+      if (compatibleK0Short)
         histos.fill(HIST("h3dMassK0Short"), v0.pt(), v0.mK0Short(), collision.centFT0M());
-      if(compatibleLambda)
+      if (compatibleLambda)
         histos.fill(HIST("h3dMassLambda"), v0.pt(), v0.mLambda(), collision.centFT0M());
-      if(compatibleAntiLambda)
+      if (compatibleAntiLambda)
         histos.fill(HIST("h3dMassAntiLambda"), v0.pt(), v0.mAntiLambda(), collision.centFT0M());
 
-      if(!fillTableOnlyWithCompatible || 
-        ( // start major condition check  
-          (compatibleK0Short && massRegK0Short > 0 && massRegK0Short < 4) || 
-          (compatibleLambda && massRegLambda > 0 && massRegLambda < 4) ||
-          (compatibleAntiLambda && massRegAntiLambda > 0 && massRegAntiLambda < 4)
-        ) // end major condition check
-       ){
+      if (!fillTableOnlyWithCompatible ||
+          ( // start major condition check
+            (compatibleK0Short && massRegK0Short > 0 && massRegK0Short < 4) ||
+            (compatibleLambda && massRegLambda > 0 && massRegLambda < 4) ||
+            (compatibleAntiLambda && massRegAntiLambda > 0 && massRegAntiLambda < 4)) // end major condition check
+      ) {
         assocV0(v0.collisionId(), v0.globalIndex(), compatibleK0Short, compatibleLambda, compatibleAntiLambda, massRegK0Short, massRegLambda, massRegAntiLambda);
       }
     }
@@ -445,21 +444,20 @@ struct hstrangecorrelationfilter {
         massRegOmega = 0;
       }
 
-      if(compatibleXiMinus)
+      if (compatibleXiMinus)
         histos.fill(HIST("h3dMassXiMinus"), casc.pt(), casc.mXi(), collision.centFT0M());
-      if(compatibleXiPlus)
+      if (compatibleXiPlus)
         histos.fill(HIST("h3dMassXiPlus"), casc.pt(), casc.mXi(), collision.centFT0M());
-      if(compatibleOmegaMinus)
+      if (compatibleOmegaMinus)
         histos.fill(HIST("h3dMassOmegaMinus"), casc.pt(), casc.mOmega(), collision.centFT0M());
-      if(compatibleOmegaPlus)
+      if (compatibleOmegaPlus)
         histos.fill(HIST("h3dMassOmegaPlus"), casc.pt(), casc.mOmega(), collision.centFT0M());
 
-      if(!fillTableOnlyWithCompatible || 
-        ( // start major condition check  
-          ((compatibleXiMinus||compatibleXiPlus) && massRegXi > 0 && massRegXi < 4) || 
-          ((compatibleOmegaMinus||compatibleOmegaPlus) && massRegOmega > 0 && massRegOmega < 4)
-        ) // end major condition check
-       ){
+      if (!fillTableOnlyWithCompatible ||
+          ( // start major condition check
+            ((compatibleXiMinus || compatibleXiPlus) && massRegXi > 0 && massRegXi < 4) ||
+            ((compatibleOmegaMinus || compatibleOmegaPlus) && massRegOmega > 0 && massRegOmega < 4)) // end major condition check
+      ) {
         assocCascades(casc.collisionId(), casc.globalIndex(), compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus, massRegXi, massRegOmega);
       }
     }
