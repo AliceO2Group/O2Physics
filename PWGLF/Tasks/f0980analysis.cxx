@@ -47,14 +47,20 @@ struct f0980analysis {
 
   void init(o2::framework::InitContext&)
   {
+    std::vector<double> ptBinning = {
+      0.0, 0.2, 0.4, 0.6, 0.8,
+      1.0, 1.5, 2.0, 2.5, 3.0,
+      3.5, 4.0, 4.5, 5.0, 6.0,
+      7.0, 8.0, 10.0, 13.0, 20.0};
+
     AxisSpec centAxis = {20, 0, 100};
-    AxisSpec ptAxis = {100, 0, 20};
+    AxisSpec ptAxis = {ptBinning};
     AxisSpec massAxis = {400, 0.2, 2.2};
     AxisSpec epAxis = {20, -constants::math::PI, constants::math::PI};
 
-    histos.add("hInvMass_f0980_US", "unlike invariant mass", {HistType::kTHnF, {massAxis, ptAxis, centAxis, epAxis}});
-    histos.add("hInvMass_f0980_LSpp", "++ invariant mass", {HistType::kTHnF, {massAxis, ptAxis, centAxis, epAxis}});
-    histos.add("hInvMass_f0980_LSmm", "-- invariant mass", {HistType::kTHnF, {massAxis, ptAxis, centAxis, epAxis}});
+    histos.add("hInvMass_f0980_US", "unlike invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("hInvMass_f0980_LSpp", "++ invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("hInvMass_f0980_LSmm", "-- invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
 
     histos.print();
   }
@@ -66,7 +72,7 @@ struct f0980analysis {
   {
     if (track.pt() < cfgMinPt)
       return false;
-    if (track.pt() < cfgMaxPt)
+    if (track.pt() > cfgMaxPt)
       return false;
     if (std::fabs(track.eta()) > cfgMaxEta)
       return false;
@@ -90,7 +96,6 @@ struct f0980analysis {
         return false;
       }
     }
-
     return true;
   }
 
@@ -111,11 +116,11 @@ struct f0980analysis {
       if (Reco.Rapidity() > cfgMaxRap || Reco.Rapidity() < cfgMinRap)
         continue;
       if (trk1.sign() * trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(), collision.multV0M(), 0);
+        histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(), collision.multV0M());
       } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-        histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(), collision.multV0M(), 0);
+        histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(), collision.multV0M());
       } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(), collision.multV0M(), 0);
+        histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(), collision.multV0M());
       }
     }
   }
@@ -125,8 +130,8 @@ struct f0980analysis {
   {
     LOGF(debug, "[DATA] Processing %d collisions", collisions.size());
     for (auto& collision : collisions) {
+      Partition<aod::ResoTracks> selectedTracks = o2::aod::track::pt > static_cast<float_t>(cfgMinPt) && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cfgMinDCAzToPVcut)) && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cfgMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cfgMaxDCArToPVcut));
 
-      Partition<aod::ResoTracks> selectedTracks = requireTOFPIDPionCutInFilter();
       selectedTracks.bindTable(resotracks);
       auto colTracks = selectedTracks->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
       fillHistograms<false>(collision, colTracks);
