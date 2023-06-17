@@ -49,7 +49,7 @@ namespace o2::aod
 namespace emphotonhistograms
 {
 void DefineHistograms(THashList* list, const char* histClass, const char* subGroup = "");
-void AddHistClass(THashList* list, const char* histClass);
+THashList* AddHistClass(THashList* list, const char* histClass);
 
 template <EMHistType htype, typename T>
 void FillHistClass(THashList* list, const char* subGroup, T const& obj)
