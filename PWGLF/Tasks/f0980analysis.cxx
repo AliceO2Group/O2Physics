@@ -47,20 +47,20 @@ struct f0980analysis {
 
   void init(o2::framework::InitContext&)
   {
-	std::vector<double> ptBinning = {
-	0.0, 0.2, 0.4, 0.6, 0.8,
-	1.0, 1.5, 2.0, 2.5, 3.0,
-	3.5, 4.0, 4.5, 5.0, 6.0,
-	7.0, 8.0, 10.0, 13.0, 20.0 };
+    std::vector<double> ptBinning = {
+      0.0, 0.2, 0.4, 0.6, 0.8,
+      1.0, 1.5, 2.0, 2.5, 3.0,
+      3.5, 4.0, 4.5, 5.0, 6.0,
+      7.0, 8.0, 10.0, 13.0, 20.0};
 
     AxisSpec centAxis = {20, 0, 100};
-	AxisSpec ptAxis = {ptBinning};
+    AxisSpec ptAxis = {ptBinning};
     AxisSpec massAxis = {400, 0.2, 2.2};
     AxisSpec epAxis = {20, -constants::math::PI, constants::math::PI};
 
-    histos.add("hInvMass_f0980_US", "unlike invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis }});
-    histos.add("hInvMass_f0980_LSpp", "++ invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis }});
-    histos.add("hInvMass_f0980_LSmm", "-- invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis }});
+    histos.add("hInvMass_f0980_US", "unlike invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("hInvMass_f0980_LSpp", "++ invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("hInvMass_f0980_LSmm", "-- invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
 
     histos.print();
   }
@@ -90,13 +90,13 @@ struct f0980analysis {
     if ((track.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) != aod::resodaughter::kHasTOF) {
       if (std::fabs(track.tpcNSigmaPi()) > cfgMaxTPCStandalone) {
         return false;
-      } 
+      }
     } else {
       if (std::fabs(track.tpcNSigmaPi()) > cfgMaxTPC || std::fabs(track.tofNSigmaPi()) > cfgMaxTOF) {
         return false;
-      } 
+      }
     }
-	return true;
+    return true;
   }
 
   template <bool IsMC, typename CollisionType, typename TracksType>
@@ -116,11 +116,11 @@ struct f0980analysis {
       if (Reco.Rapidity() > cfgMaxRap || Reco.Rapidity() < cfgMinRap)
         continue;
       if (trk1.sign() * trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(), collision.multV0M() );
+        histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(), collision.multV0M());
       } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-        histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(), collision.multV0M() );
+        histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(), collision.multV0M());
       } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(), collision.multV0M() );
+        histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(), collision.multV0M());
       }
     }
   }
