@@ -14,6 +14,7 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  30.09.2022
 
+#include <algorithm>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGUD/DataModel/UDTables.h"

@@ -26,7 +26,6 @@
 #include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/DGPIDSelector.h"
 #include "PWGUD/Core/UDGoodRunSelector.h"
-#include <set>
 
 using namespace o2;
 using namespace o2::framework;
