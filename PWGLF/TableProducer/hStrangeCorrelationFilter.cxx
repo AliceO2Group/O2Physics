@@ -69,6 +69,9 @@ struct hstrangecorrelationfilter {
   Configurable<float> v0RadiusMin{"v0radiusmin", 0.5, "v0radius"};
   Configurable<float> v0RadiusMax{"v0radiusmax", 200, "v0radius"};
 
+  // specific selections
+  Configurable<double> lambdaCospa{"lambdaCospa", 0.995, "CosPA for lambda"}; // allows for tighter selection for Lambda
+
   // primary particle DCAxy selections
   // formula: |DCAxy| <  0.004f + (0.013f / pt)
   Configurable<float> dcaXYconstant{"dcaXYconstant", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
@@ -287,10 +290,14 @@ struct hstrangecorrelationfilter {
         compatibleK0Short = true;
       }
       if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
-        compatibleLambda = true;
+        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < lambdaCospa) {
+          compatibleLambda = true;
+        }
       }
       if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma) {
-        compatibleAntiLambda = true;
+        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < lambdaCospa) {
+          compatibleAntiLambda = true;
+        }
       }
       // check whether V0s are in the regin
       int massRegK0Short = -1;
