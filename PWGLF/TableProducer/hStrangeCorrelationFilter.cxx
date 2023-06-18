@@ -26,6 +26,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "TF1.h"
 
 using namespace o2;
@@ -33,6 +34,12 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct hstrangecorrelationfilter {
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // Operational
+  Configurable<bool> fillTableOnlyWithCompatible{"fillTableOnlyWithCompatible", true, "pre-apply dE/dx, broad mass window in table filling"};
+  Configurable<float> strangedEdxNSigma{"strangedEdxNSigma", 5, "Nsigmas for strange decay daughters"};
+
   // Trigger particle selections in phase space
   Configurable<float> triggerEtaMin{"triggerEtaCutMin", -0.8, "triggeretamin"};
   Configurable<float> triggerEtaMax{"triggerEtaCutMax", 0.8, "triggeretamax"};
@@ -40,7 +47,7 @@ struct hstrangecorrelationfilter {
   Configurable<float> triggerPtCutMax{"triggerPtCutMax", 20, "triggerptmax"};
 
   // Track quality
-  Configurable<int> minTPCNCrossedRows{"minTPCNCrossedRows", 50, "Minimum TPC crossed rows"};
+  Configurable<int> minTPCNCrossedRows{"minTPCNCrossedRows", 70, "Minimum TPC crossed rows"};
   Configurable<bool> triggerRequireITS{"triggerRequireITS", true, "require ITS signal in trigger tracks"};
 
   // Associated particle selections in phase space
@@ -50,7 +57,7 @@ struct hstrangecorrelationfilter {
   Configurable<float> assocPtCutMax{"assocPtCutMax", 10, "assocptmax"};
 
   // Associated pion identification
-  Configurable<float> pionMinBayesProb{"pionMinBayesProb", 0.95, "minimal Bayesian probablity for pion ID"};
+  Configurable<float> pionMinBayesProb{"pionMinBayesProb", 0.95, "minimal Bayesian probability for pion ID"};
   Configurable<float> assocPionNSigmaTPCFOF{"assocPionNSigmaTPCFOF", 3, "minimal n sigma in TOF and TPC for Pion ID"};
   Configurable<float> rejectSigma{"rejectSigma", 1, "n sigma for rejecting pion candidates"};
 
@@ -64,7 +71,6 @@ struct hstrangecorrelationfilter {
 
   // primary particle DCAxy selections
   // formula: |DCAxy| <  0.004f + (0.013f / pt)
-  Configurable<std::vector<float>> dcaXYpars{"dcaXYpars", {0.004, 0.013}, "pars in |DCAxy| < [0]+[1]/pT"};
   Configurable<float> dcaXYconstant{"dcaXYconstant", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
   Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
 
@@ -92,6 +98,14 @@ struct hstrangecorrelationfilter {
   // definitions of peak and background
   Configurable<float> peakNsigma{"peakNsigma", 3.0f, "peak region is +/- this many sigmas away"};
   Configurable<float> backgroundNsigma{"backgroundNsigma", 6.0f, "bg region is +/- this many sigmas away (minus peak)"};
+
+  // For extracting strangeness mass QA plots
+  ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
+  ConfigurableAxis axisK0ShortMass{"axisK0ShortMass", {200, 0.400f, 0.600f}, "Inv. Mass (GeV/c^{2})"};
+  ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.01f, 1.21f}, "Inv. Mass (GeV/c^{2})"};
+  ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, "Inv. Mass (GeV/c^{2})"};
+  ConfigurableAxis axisOmegaMass{"axisOmegaMass", {200, 1.57f, 1.77f}, "Inv. Mass (GeV/c^{2})"};
+  ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 0.01f, 1.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "Centrality percentile bins"};
 
   // Do declarative selections for DCAs, if possible
   Filter preFilterTracks = nabs(aod::track::dcaXY) < dcaXYconstant + dcaXYpTdep * nabs(aod::track::signed1Pt);
@@ -132,6 +146,14 @@ struct hstrangecorrelationfilter {
     fXiWidth->SetParameters(massParsCascadeWidth->at(0), massParsCascadeWidth->at(1), massParsCascadeWidth->at(2), massParsCascadeWidth->at(3));
     fOmegaMean->SetParameters(massParsOmegaMean->at(0), massParsOmegaMean->at(1), massParsOmegaMean->at(2), massParsOmegaMean->at(3));
     fOmegaWidth->SetParameters(massParsOmegaWidth->at(0), massParsOmegaWidth->at(1), massParsOmegaWidth->at(2), massParsOmegaWidth->at(3));
+
+    histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisPtQA, axisK0ShortMass, axisMult});
+    histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisPtQA, axisLambdaMass, axisMult});
+    histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisPtQA, axisLambdaMass, axisMult});
+    histos.add("h3dMassXiMinus", "h3dMassXiMinus", kTH3F, {axisPtQA, axisXiMass, axisMult});
+    histos.add("h3dMassXiPlus", "h3dMassXiPlus", kTH3F, {axisPtQA, axisXiMass, axisMult});
+    histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
+    histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
   }
 
   void processTriggers(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, soa::Filtered<DauTracks> const& tracks)
@@ -232,7 +254,7 @@ struct hstrangecorrelationfilter {
     }
   }
 
-  void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const&, soa::Filtered<aod::V0Datas> const& V0s, aod::V0sLinked const&)
+  void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracks const&, soa::Filtered<aod::V0Datas> const& V0s, aod::V0sLinked const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -261,13 +283,13 @@ struct hstrangecorrelationfilter {
       if (posdau.tpcNClsCrossedRows() < minTPCNCrossedRows)
         continue;
 
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < 5 && TMath::Abs(negdau.tpcNSigmaPi()) < 5) {
+      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
         compatibleK0Short = true;
       }
-      if (TMath::Abs(posdau.tpcNSigmaPr()) < 5 && TMath::Abs(negdau.tpcNSigmaPi()) < 5) {
+      if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
         compatibleLambda = true;
       }
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < 5 && TMath::Abs(negdau.tpcNSigmaPr()) < 5) {
+      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma) {
         compatibleAntiLambda = true;
       }
       // check whether V0s are in the regin
@@ -321,10 +343,25 @@ struct hstrangecorrelationfilter {
       if (v0.mAntiLambda() < fLambdaMean->Eval(v0.pt()) - backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
         massRegAntiLambda = 0;
       }
-      assocV0(v0.collisionId(), v0.globalIndex(), compatibleK0Short, compatibleLambda, compatibleAntiLambda, massRegK0Short, massRegLambda, massRegAntiLambda);
+
+      if (compatibleK0Short)
+        histos.fill(HIST("h3dMassK0Short"), v0.pt(), v0.mK0Short(), collision.centFT0M());
+      if (compatibleLambda)
+        histos.fill(HIST("h3dMassLambda"), v0.pt(), v0.mLambda(), collision.centFT0M());
+      if (compatibleAntiLambda)
+        histos.fill(HIST("h3dMassAntiLambda"), v0.pt(), v0.mAntiLambda(), collision.centFT0M());
+
+      if (!fillTableOnlyWithCompatible ||
+          ( // start major condition check
+            (compatibleK0Short && massRegK0Short > 0 && massRegK0Short < 4) ||
+            (compatibleLambda && massRegLambda > 0 && massRegLambda < 4) ||
+            (compatibleAntiLambda && massRegAntiLambda > 0 && massRegAntiLambda < 4)) // end major condition check
+      ) {
+        assocV0(v0.collisionId(), v0.globalIndex(), compatibleK0Short, compatibleLambda, compatibleAntiLambda, massRegK0Short, massRegLambda, massRegAntiLambda);
+      }
     }
   }
-  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, DauTracks const&, soa::Filtered<aod::V0Datas> const& V0s, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&)
+  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracks const&, soa::Filtered<aod::V0Datas> const& V0s, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -360,16 +397,16 @@ struct hstrangecorrelationfilter {
       bool compatibleOmegaMinus = false;
       bool compatibleOmegaPlus = false;
 
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < 5 && TMath::Abs(negTrackCast.tpcNSigmaPi()) < 5 && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < 5) {
+      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() < 0) {
         compatibleXiMinus = true;
       }
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < 5 && TMath::Abs(negTrackCast.tpcNSigmaPr()) < 5 && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < 5) {
+      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() > 0) {
         compatibleXiPlus = true;
       }
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < 5 && TMath::Abs(negTrackCast.tpcNSigmaPi()) < 5 && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < 5) {
+      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() < 0) {
         compatibleOmegaMinus = true;
       }
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < 5 && TMath::Abs(negTrackCast.tpcNSigmaPr()) < 5 && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < 5) {
+      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() > 0) {
         compatibleOmegaPlus = true;
       }
 
@@ -406,7 +443,23 @@ struct hstrangecorrelationfilter {
       if (casc.mOmega() < fOmegaMean->Eval(casc.pt()) - backgroundNsigma * fOmegaWidth->Eval(casc.pt())) {
         massRegOmega = 0;
       }
-      assocCascades(casc.collisionId(), casc.globalIndex(), compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus, massRegXi, massRegOmega);
+
+      if (compatibleXiMinus)
+        histos.fill(HIST("h3dMassXiMinus"), casc.pt(), casc.mXi(), collision.centFT0M());
+      if (compatibleXiPlus)
+        histos.fill(HIST("h3dMassXiPlus"), casc.pt(), casc.mXi(), collision.centFT0M());
+      if (compatibleOmegaMinus)
+        histos.fill(HIST("h3dMassOmegaMinus"), casc.pt(), casc.mOmega(), collision.centFT0M());
+      if (compatibleOmegaPlus)
+        histos.fill(HIST("h3dMassOmegaPlus"), casc.pt(), casc.mOmega(), collision.centFT0M());
+
+      if (!fillTableOnlyWithCompatible ||
+          ( // start major condition check
+            ((compatibleXiMinus || compatibleXiPlus) && massRegXi > 0 && massRegXi < 4) ||
+            ((compatibleOmegaMinus || compatibleOmegaPlus) && massRegOmega > 0 && massRegOmega < 4)) // end major condition check
+      ) {
+        assocCascades(casc.collisionId(), casc.globalIndex(), compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus, massRegXi, massRegOmega);
+      }
     }
   }
 

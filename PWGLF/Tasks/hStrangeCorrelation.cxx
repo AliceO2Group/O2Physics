@@ -66,10 +66,6 @@ struct correlateStrangeness {
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {50, -1.6, 1.6}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
   ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
-  ConfigurableAxis axisK0ShortMass{"axisK0ShortMass", {200, 0.400f, 0.600f}, "Inv. Mass (GeV/c^{2})"};
-  ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.01f, 1.21f}, "Inv. Mass (GeV/c^{2})"};
-  ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, "Inv. Mass (GeV/c^{2})"};
-  ConfigurableAxis axisOmegaMass{"axisOmegaMass", {200, 1.57f, 1.77f}, "Inv. Mass (GeV/c^{2})"};
 
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   BinningType colBinning{{axisVtxZ, axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
@@ -398,31 +394,24 @@ struct correlateStrangeness {
     const AxisSpec axisMultNDim{edgesMult, "mult percentile"};
 
     if (bitcheck(doCorrelation, 0)) {
-      histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisPtQA, axisK0ShortMass, axisMult});
       histos.add("sameEvent/Signal/K0Short", "K0Short", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 1)) {
-      histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisPtQA, axisLambdaMass, axisMult});
       histos.add("sameEvent/Signal/Lambda", "Lambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 2)) {
-      histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisPtQA, axisLambdaMass, axisMult});
       histos.add("sameEvent/Signal/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 3)) {
-      histos.add("h3dMassXiMinus", "h3dMassXiMinus", kTH3F, {axisPtQA, axisXiMass, axisMult});
       histos.add("sameEvent/Signal/XiMinus", "XiMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 4)) {
-      histos.add("h3dMassXiPlus", "h3dMassXiPlus", kTH3F, {axisPtQA, axisXiMass, axisMult});
       histos.add("sameEvent/Signal/XiPlus", "XiPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 5)) {
-      histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
       histos.add("sameEvent/Signal/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 6)) {
-      histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
       histos.add("sameEvent/Signal/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 7)) {
@@ -487,11 +476,6 @@ struct correlateStrangeness {
     for (auto const& v0 : associatedV0s) {
       auto v0Data = v0.v0Data();
       histos.fill(HIST("hV0EtaVsPtVsPhi"), v0Data.pt(), v0Data.eta(), v0Data.phi());
-      static_for<0, 2>([&](auto i) {
-        constexpr int index = i.value;
-        if (v0.compatible(index) && bitcheck(doCorrelation, index))
-          histos.fill(HIST("h3dMass") + HIST(v0names[index]), v0Data.pt(), v0Data.m(index), collision.centFT0M());
-      });
     }
     if (!doprocessSameEventHCascades) {
       for (auto const& triggerTrack : triggerTracks) {
@@ -528,11 +512,6 @@ struct correlateStrangeness {
     for (auto const& casc : associatedCascades) {
       auto cascData = casc.cascData();
       histos.fill(HIST("hCascEtaVsPtVsPhi"), cascData.pt(), cascData.eta(), cascData.phi());
-      static_for<0, 3>([&](auto i) {
-        constexpr int index = i.value;
-        if (casc.compatible(index) && bitcheck(doCorrelation, index + 3))
-          histos.fill(HIST("h3dMass") + HIST(cascadenames[index]), cascData.pt(), cascData.m(index), collision.centFT0M());
-      });
     }
     for (auto const& triggerTrack : triggerTracks) {
       auto track = triggerTrack.track_as<TracksComplete>();
