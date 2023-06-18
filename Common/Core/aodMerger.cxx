@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
   std::string outputFileName("AO2D.root");
   long maxDirSize = 100000000;
   bool skipNonExistingFiles = false;
-  bool skipParentFilesLists = false;
+  bool skipParentFilesList = false;
   int verbosity = 2;
   int exitCode = 0; // 0: success, >0: failure
 
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
     {"output", required_argument, nullptr, 1},
     {"max-size", required_argument, nullptr, 2},
     {"skip-non-existing-files", no_argument, nullptr, 3},
-    {"skip-parent-files-lists", no_argument, nullptr, 4},
+    {"skip-parent-files-list", no_argument, nullptr, 4},
     {"verbosity", required_argument, nullptr, 5},
     {"help", no_argument, nullptr, 6},
     {nullptr, 0, nullptr, 0}};
@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
     } else if (c == 3) {
       skipNonExistingFiles = true;
     } else if (c == 4) {
-      skipParentFilesLists = true;
+      skipParentFilesList = true;
     } else if (c == 5) {
       verbosity = atoi(optarg);
     } else if (c == 6) {
@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
       printf("  --output <outputfile.root>   Target output ROOT file. Default: %s\n", outputFileName.c_str());
       printf("  --max-size <size in Bytes>   Target directory size. Default: %ld. Set to 0 if file is not self-contained.\n", maxDirSize);
       printf("  --skip-non-existing-files    Flag to allow skipping of non-existing files in the input list.\n");
-      printf("  --skip-parent-files-lists    Flag to allow skipping the creation of the parent files list.\n");
+      printf("  --skip-parent-files-list     Flag to allow skipping the merging of the parent files list.\n");
       printf("  --verbosity <flag>           Verbosity of output (default: %d).\n", verbosity);
       return -1;
     } else {
@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
         }
       }
 
-      if (((TObjString*)key1)->GetString().EqualTo("parentFiles") && !skipParentFilesLists) {
+      if (((TObjString*)key1)->GetString().EqualTo("parentFiles") && !skipParentFilesList) {
         auto parentFilesCurrentFile = (TMap*)inputFile->Get("parentFiles");
         if (parentFiles == nullptr) {
           parentFiles = new TMap;
