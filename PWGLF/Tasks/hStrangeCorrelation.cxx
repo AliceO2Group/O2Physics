@@ -131,17 +131,17 @@ struct correlateStrangeness {
         static_for<0, 2>([&](auto i) {
           constexpr int index = i.value;
           if (bitcheck(doCorrelation, index)) {
-            if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 1))
+            if (assocCandidate.compatible(index) && !mixing && assocCandidate.invMassRegionCheck(index, 1))
               histos.fill(HIST("sameEvent/LeftBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
-            if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 2))
+            if (assocCandidate.compatible(index) && !mixing && assocCandidate.invMassRegionCheck(index, 2))
               histos.fill(HIST("sameEvent/Signal/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
-            if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 3))
+            if (assocCandidate.compatible(index) && !mixing && assocCandidate.invMassRegionCheck(index, 3))
               histos.fill(HIST("sameEvent/RightBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
-            if (assocCandidate.compatible(index) && mixing && assocCandidate.inMassRegionCheck(index, 1))
+            if (assocCandidate.compatible(index) && mixing && assocCandidate.invMassRegionCheck(index, 1))
               histos.fill(HIST("mixedEvent/LeftBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
-            if (assocCandidate.compatible(index) && mixing && assocCandidate.inMassRegionCheck(index, 2))
+            if (assocCandidate.compatible(index) && mixing && assocCandidate.invMassRegionCheck(index, 2))
               histos.fill(HIST("mixedEvent/Signal/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
-            if (assocCandidate.compatible(index) && mixing && assocCandidate.inMassRegionCheck(index, 3))
+            if (assocCandidate.compatible(index) && mixing && assocCandidate.invMassRegionCheck(index, 3))
               histos.fill(HIST("mixedEvent/RightBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
           }
         });
@@ -189,17 +189,17 @@ struct correlateStrangeness {
         static_for<0, 3>([&](auto i) {
           constexpr int index = i.value;
           if (bitcheck(doCorrelation, index + 3)) {
-            if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 1))
+            if (assocCandidate.compatible(index) && !mixing && assocCandidate.invMassRegionCheck(index, 1))
               histos.fill(HIST("sameEvent/LeftBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
-            if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 2))
+            if (assocCandidate.compatible(index) && !mixing && assocCandidate.invMassRegionCheck(index, 2))
               histos.fill(HIST("sameEvent/Signal/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
-            if (assocCandidate.compatible(index) && !mixing && assocCandidate.inMassRegionCheck(index, 3))
+            if (assocCandidate.compatible(index) && !mixing && assocCandidate.invMassRegionCheck(index, 3))
               histos.fill(HIST("sameEvent/RightBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
-            if (assocCandidate.compatible(index) && mixing && assocCandidate.inMassRegionCheck(index, 1))
+            if (assocCandidate.compatible(index) && mixing && assocCandidate.invMassRegionCheck(index, 1))
               histos.fill(HIST("mixedEvent/LeftBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
-            if (assocCandidate.compatible(index) && mixing && assocCandidate.inMassRegionCheck(index, 2))
+            if (assocCandidate.compatible(index) && mixing && assocCandidate.invMassRegionCheck(index, 2))
               histos.fill(HIST("mixedEvent/Signal/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
-            if (assocCandidate.compatible(index) && mixing && assocCandidate.inMassRegionCheck(index, 3))
+            if (assocCandidate.compatible(index) && mixing && assocCandidate.invMassRegionCheck(index, 3))
               histos.fill(HIST("mixedEvent/RightBg/") + HIST(cascadenames[index]), deltaphi, deltaeta, ptassoc, pvz, mult);
           }
         });
@@ -394,24 +394,31 @@ struct correlateStrangeness {
     const AxisSpec axisMultNDim{edgesMult, "mult percentile"};
 
     if (bitcheck(doCorrelation, 0)) {
+      histos.add("h3dK0ShortSpectrum", "h3dK0ShortSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("sameEvent/Signal/K0Short", "K0Short", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 1)) {
+      histos.add("h3dLambdaSpectrum", "h3dLambdaSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("sameEvent/Signal/Lambda", "Lambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 2)) {
+      histos.add("h3dAntiLambdaSpectrum", "h3dAntiLambdaSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("sameEvent/Signal/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 3)) {
+      histos.add("h3dXiMinusSpectrum", "h3dXiMinusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("sameEvent/Signal/XiMinus", "XiMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 4)) {
+      histos.add("h3dXiPlusSpectrum", "h3dXiPlusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("sameEvent/Signal/XiPlus", "XiPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 5)) {
+      histos.add("h3dXiMinusSpectrum", "h3dXiMinusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("sameEvent/Signal/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 6)) {
+      histos.add("h3dOmegaPlusSpectrum", "h3dOmegaPlusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
       histos.add("sameEvent/Signal/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 7)) {
@@ -476,6 +483,11 @@ struct correlateStrangeness {
     for (auto const& v0 : associatedV0s) {
       auto v0Data = v0.v0Data();
       histos.fill(HIST("hV0EtaVsPtVsPhi"), v0Data.pt(), v0Data.eta(), v0Data.phi());
+      static_for<0, 2>([&](auto i) {
+        constexpr int index = i.value;
+        if (v0.compatible(index) && bitcheck(doCorrelation, index))
+          histos.fill(HIST("h3d") + HIST(v0names[index]) + HIST("Spectrum"), v0Data.pt(), collision.centFT0M(), v0.invMassRegion(index));
+      });
     }
     if (!doprocessSameEventHCascades) {
       for (auto const& triggerTrack : triggerTracks) {
@@ -512,6 +524,11 @@ struct correlateStrangeness {
     for (auto const& casc : associatedCascades) {
       auto cascData = casc.cascData();
       histos.fill(HIST("hCascEtaVsPtVsPhi"), cascData.pt(), cascData.eta(), cascData.phi());
+      static_for<0, 3>([&](auto i) {
+        constexpr int index = i.value;
+        if (casc.compatible(index) && bitcheck(doCorrelation, index + 3))
+          histos.fill(HIST("h3d") + HIST(cascadenames[index]) + HIST("Spectrum"), cascData.pt(), collision.centFT0M(), casc.invMassRegion(index));
+      });
     }
     for (auto const& triggerTrack : triggerTracks) {
       auto track = triggerTrack.track_as<TracksComplete>();
