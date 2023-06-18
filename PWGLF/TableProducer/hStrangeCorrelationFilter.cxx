@@ -69,7 +69,7 @@ struct hstrangecorrelationfilter {
   Configurable<float> v0RadiusMin{"v0radiusmin", 0.5, "v0radius"};
   Configurable<float> v0RadiusMax{"v0radiusmax", 200, "v0radius"};
 
-  // specific selections 
+  // specific selections
   Configurable<double> lambdaCospa{"lambdaCospa", 0.995, "CosPA for lambda"}; // allows for tighter selection for Lambda
 
   // primary particle DCAxy selections
@@ -290,12 +290,12 @@ struct hstrangecorrelationfilter {
         compatibleK0Short = true;
       }
       if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
-        if(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < lambdaCospa){
+        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < lambdaCospa) {
           compatibleLambda = true;
         }
       }
       if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma) {
-        if(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < lambdaCospa){
+        if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < lambdaCospa) {
           compatibleAntiLambda = true;
         }
       }
