@@ -50,7 +50,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct TaggingPi0 {
