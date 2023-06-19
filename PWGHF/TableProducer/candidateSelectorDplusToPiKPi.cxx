@@ -31,6 +31,7 @@ using namespace o2::analysis::hf_cuts_dplus_to_pi_k_pi;
 /// Struct for applying Dplus to piKpi selection cuts
 struct HfCandidateSelectorDplusToPiKPi {
   Produces<aod::HfSelDplusToPiKPi> hfSelDplusToPiKPiCandidate;
+  Produces<aod::HfMlDplusToPiKPi> hfMlDplusToPiKPiCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
@@ -40,47 +41,53 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC"};
+  Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 3., "Nsigma cut on TPC combined with TOF"};
   // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
   Configurable<double> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF"};
+  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 3., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_dplus_to_pi_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Dplus candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // ML inference
-  Configurable<bool> b_applyML{"b_applyML", false, "Flag to apply ML selections"};
+  Configurable<bool> applyML{"applyML", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> pTBinsML{"pTBinsML", std::vector<double>{hf_cuts_ml::pTBins_v}, "pT bin limits for ML application"};
   Configurable<std::vector<std::string>> modelPathsML{"modelPathsML", std::vector<std::string>{hf_cuts_ml::modelPaths}, "Paths of the ML models, one for each pT bin"};
   Configurable<std::vector<int>> cutDirML{"cutDirML", std::vector<int>{hf_cuts_ml::cutDir_v}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsML{"ml_cuts", {hf_cuts_ml::cuts[0], hf_cuts_ml::npTBins, hf_cuts_ml::nCutScores, hf_cuts_ml::pTBinLabels, hf_cuts_ml::cutScoreLabels}, "ML selections per pT bin"};
-  
+
   o2::analysis::HFMLResponse<float> hfMLResponse;
+  std::vector<float> outputML = {};
 
   TrackSelectorPID selectorPion;
   TrackSelectorPID selectorKaon;
 
-  HistogramRegistry registry{"registry"}; 
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
     selectorPion.setPDG(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
     selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
     selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
 
     selectorKaon = selectorPion;
     selectorKaon.setPDG(kKPlus);
 
     if (activateQA) {
-      constexpr int kNBinsSelections = aod::SelectionStep::NSelectionSteps;
+      constexpr int kNBinsSelections = 1 + aod::SelectionStep::NSelectionSteps;
       std::string labels[kNBinsSelections];
       labels[0] = "No selection";
       labels[1 + aod::SelectionStep::RecoSkims] = "Skims selection";
       labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
       labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
+      labels[1 + aod::SelectionStep::RecoML] = "ML selection";
       static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
       registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
       for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
@@ -88,8 +95,9 @@ struct HfCandidateSelectorDplusToPiKPi {
       }
     }
 
-    if (b_applyML) {
+    if (applyML) {
       hfMLResponse.init(pTBinsML, cutsML, cutDirML, modelPathsML, true);
+      outputML.assign(((std::vector<int>)cutDirML).size(), -1.f); // dummy value for ML output
     }
   }
 
@@ -188,6 +196,9 @@ struct HfCandidateSelectorDplusToPiKPi {
 
       if (!TESTBIT(candidate.hfflag(), DecayType::DplusToPiKPi)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
+        if (applyML) {
+          hfMlDplusToPiKPiCandidate(outputML);
+        }
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCand);
         }
@@ -202,18 +213,53 @@ struct HfCandidateSelectorDplusToPiKPi {
       auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
 
-      if (b_applyML) {
+      /*
+      // daughter track validity selection
+      if (!daughterSelection(trackPos1) ||
+          !daughterSelection(trackNeg) ||
+          !daughterSelection(trackPos2)) {
+        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
+        continue;
+      }
+      */
+
+      // topological selection
+      if (!selection(candidate, trackPos1, trackNeg, trackPos2)) {
+        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
+        if (applyML) {
+          hfMlDplusToPiKPiCandidate(outputML);
+        }
+        continue;
+      }
+      SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoTopol);
+      if (activateQA) {
+        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoTopol, ptCand);
+      }
+
+      // track-level PID selection
+      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos1);
+      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackNeg);
+      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos2);
+
+      if (!selectionPID(pidTrackPos1Pion, pidTrackNegKaon, pidTrackPos2Pion)) { // exclude D±
+        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
+        if (applyML) {
+          hfMlDplusToPiKPiCandidate(outputML);
+        }
+        continue;
+      }
+      SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoPID);
+      if (activateQA) {
+        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoPID, ptCand);
+      }
+
+      if (applyML) {
+        // tracks without TPC nor TOF already rejected at PID selection level
+        // tag tracks with TPC and TOF, only TPC, only TOF
         auto tagPIDPos1 = o2::analysis::tagPID(trackPos1);
         auto tagPIDNeg = o2::analysis::tagPID(trackNeg);
         auto tagPIDPos2 = o2::analysis::tagPID(trackPos2);
 
-        // require TPC or TOF
-        if(TESTBIT(tagPIDPos1, o2::analysis::PIDStatus::NoTPCAndNoTOF) ||
-           TESTBIT(tagPIDNeg, o2::analysis::PIDStatus::NoTPCAndNoTOF) ||
-           TESTBIT(tagPIDPos2, o2::analysis::PIDStatus::NoTPCAndNoTOF)) {
-          continue;
-        }
-        
         auto combinedNSigmaPiPos1 = getCombinedNSigma(trackPos1.tpcNSigmaPi(), trackPos1.tofNSigmaPi(), tagPIDPos1);
         auto combinedNSigmaKaPos1 = getCombinedNSigma(trackPos1.tpcNSigmaKa(), trackPos1.tofNSigmaKa(), tagPIDPos1);
         auto combinedNSigmaPiNeg = getCombinedNSigma(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi(), tagPIDNeg);
@@ -241,49 +287,17 @@ struct HfCandidateSelectorDplusToPiKPi {
                                          combinedNSigmaPiPos2,
                                          combinedNSigmaKaPos2};
 
-        // std::vector<float> output;
-        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, pTBin); // , output);
+        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, pTBin, outputML);
+        hfMlDplusToPiKPiCandidate(outputML);
 
-        if (isSelectedML) {
-          SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoML);
+        if (!isSelectedML) {
+          hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
+          continue;
         }
-        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
-        continue;
-      }
-
-
-      /*
-      // daughter track validity selection
-      if (!daughterSelection(trackPos1) ||
-          !daughterSelection(trackNeg) ||
-          !daughterSelection(trackPos2)) {
-        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
-        continue;
-      }
-      */
-
-      // topological selection
-      if (!selection(candidate, trackPos1, trackNeg, trackPos2)) {
-        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
-        continue;
-      }
-      SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoTopol);
-      if (activateQA) {
-        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoTopol, ptCand);
-      }
-
-      // track-level PID selection
-      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos1);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackNeg);
-      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos2);
-
-      if (!selectionPID(pidTrackPos1Pion, pidTrackNegKaon, pidTrackPos2Pion)) { // exclude D±
-        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
-        continue;
-      }
-      SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoPID);
-      if (activateQA) {
-        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoPID, ptCand);
+        SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoML);
+        if (activateQA) {
+          registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoML, ptCand);
+        }
       }
 
       hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);

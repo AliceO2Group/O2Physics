@@ -102,7 +102,7 @@ DECLARE_SOA_COLUMN(MlProbDplusToPiKPi, mlProbDplusToPiKPi, std::vector<float>); 
 } // namespace hf_sel_candidate_dplus
 DECLARE_SOA_TABLE(HfSelDplusToPiKPi, "AOD", "HFSELDPLUS", //!
                   hf_sel_candidate_dplus::IsSelDplusToPiKPi);
-DECLARE_SOA_TABLE(HfMlDplusToPiKPi, "AOD", "HFMLDPLUS",   //!
+DECLARE_SOA_TABLE(HfMlDplusToPiKPi, "AOD", "HFMLDPLUS", //!
                   hf_sel_candidate_dplus::MlProbDplusToPiKPi);
 
 namespace hf_sel_candidate_ds
