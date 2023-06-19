@@ -15,7 +15,7 @@
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari
 
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociation.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -134,9 +134,6 @@ struct HfDataCreatorD0PiReduced {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbPathGeo);
-    }
     runNumber = 0;
   }
 
