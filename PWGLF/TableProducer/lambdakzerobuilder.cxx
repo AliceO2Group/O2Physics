@@ -137,6 +137,7 @@ struct lambdakzeroBuilder {
   Configurable<float> dQALambdaMassWindow{"dQALambdaMassWindow", 0.005, "Lambda/AntiLambda mass window for ITS cluster map QA"};
 
   ConfigurableAxis axisX{"axisX", {200, 0, 200}, "X_{IU}"};
+  ConfigurableAxis axisRadius{"axisRadius", {500, 0, 50}, "Radius (cm)"};
 
   int mRunNumber;
   float d_bz;
@@ -245,7 +246,6 @@ struct lambdakzeroBuilder {
 
       // bit packed ITS cluster map
       const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
-      const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
 
       // Histogram to bookkeep cluster maps
       registry.add("h2dITSCluMap_Gamma", "h2dITSCluMap_Gamma", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
