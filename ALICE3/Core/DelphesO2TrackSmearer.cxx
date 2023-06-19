@@ -182,7 +182,15 @@ double TrackSmearer::getPtRes(int pdg, float nch, float eta, float pt)
 {
   // complaints to sebastian
   auto lutEntry = getLUTEntry(pid, nch, 0., eta, pt);
-  auto val = sqrt(lutEntry->covm[14]) * lutEntry->pt * 100.;
+  auto val = sqrt(lutEntry->covm[14]) * lutEntry->pt;
+  return val;
+}
+
+double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
+{
+  // complaints to sebastian
+  auto lutEntry = getLUTEntry(pid, nch, 0., eta, pt);
+  auto val = sqrt(lutEntry->covm[9]) / lutEntry->eta;
   return val;
 }
 
