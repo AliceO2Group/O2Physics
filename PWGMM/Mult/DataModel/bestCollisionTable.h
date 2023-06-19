@@ -9,7 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-
 #ifndef PWGMM_MULT_DATAMODEL_BESTCOLLISIONTABLE_H_
 #define PWGMM_MULT_DATAMODEL_BESTCOLLISIONTABLE_H_
 
@@ -30,7 +29,7 @@ DECLARE_SOA_COLUMN(PhiStatic, phis, float);
 namespace fwdtrack
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(BestCollision, bestCollision, int, Collisions, "");
-DECLARE_SOA_COLUMN(AmbDegree, ambDegree, int);// degree of ambiguity of the track
+DECLARE_SOA_COLUMN(AmbDegree, ambDegree, int); // degree of ambiguity of the track
 DECLARE_SOA_COLUMN(BestDCAXY, bestDCAXY, float);
 DECLARE_SOA_COLUMN(BestDCAX, bestDCAX, float);
 DECLARE_SOA_COLUMN(BestDCAY, bestDCAY, float);
@@ -44,19 +43,17 @@ namespace pwgmm::indices
 {
 DECLARE_SOA_INDEX_COLUMN(Track, track);
 DECLARE_SOA_INDEX_COLUMN(MFTTrack, mfttrack);
-}
+} // namespace pwgmm::indices
 
 DECLARE_SOA_TABLE(BestCollisionsFwd, "AOD", "BESTCOLLFWD", o2::soa::Index<>, pwgmm::indices::MFTTrackId, aod::fwdtrack::AmbDegree,
                   aod::fwdtrack::BestCollisionId, aod::fwdtrack::BestDCAXY,
-                  fwdtrack::BestDCAX, fwdtrack::BestDCAY);//beware: depending on which process produced this table,
-                  //it can be joined with either MFTAmbiguousTracks OR MFTTracks
+                  fwdtrack::BestDCAX, fwdtrack::BestDCAY); // beware: depending on which process produced this table,
+// it can be joined with either MFTAmbiguousTracks OR MFTTracks
 DECLARE_SOA_TABLE(BestCollFwdExtra, "AOD", "BESTCOLLFWDE",
                   fwdtrack::X, fwdtrack::Y,
                   fwdtrack::Z, fwdtrack::Tgl, fwdtrack::Signed1Pt,
                   fwdtrack::PtStatic, fwdtrack::PStatic, fwdtrack::EtaStatic,
                   fwdtrack::PhiStatic); // Snp does not exist
-
-
 
 DECLARE_SOA_TABLE(ReassignedTracksCore, "AOD", "CRRETRACKS",
                   aod::track::BestCollisionId,
