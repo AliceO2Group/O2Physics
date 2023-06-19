@@ -62,6 +62,8 @@ struct HfTaskD0 {
      {"hEtaRecSig", "2-prong candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -5., 5.}}}},
      {"hEtaRecBg", "2-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -5., 5.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -5., 5.}}}},
+     {"hPtGenVsPtRecSig", "2-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH2F, {{360, 0., 36.}, {360, 0., 36.}}}},
+     {"hYGenVsYRecSig", "2-prong candidates (matched);#it{y}^{gen.} ;#it{y}^{rec.} ;entries", {HistType::kTH2F, {{300, -1.5, 1.5}, {300, -1.5, 1.5}}}},
      {"hPtProng0Sig", "prong0 pt (matched); #it{y}", {HistType::kTH2F, {{360, 0., 36.}, {10, -5., 5.}}}},
      {"hPtProng1Sig", "prong1 pt (matched); #it{y}", {HistType::kTH2F, {{360, 0., 36.}, {10, -5., 5.}}}},
      {"hDecLengthSig", "2-prong candidates (matched);decay length (cm); #it{y}", {HistType::kTH2F, {{200, 0., 2.}, {10, -5., 5.}}}},
@@ -106,6 +108,7 @@ struct HfTaskD0 {
      {"hPtVsYGen", "2-prong candidates (matched);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{360, 0., 36.}, {100, -5., 5.}}}},
      {"hPtVsYGenPrompt", "2-prong candidates (matched, prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{360, 0., 36.}, {100, -5., 5.}}}},
      {"hPtVsYGenNonPrompt", "2-prong candidates (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{360, 0., 36.}, {100, -5., 5.}}}},
+     {"hMassVsPtGenVsPtRecSig", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2});#it{p}_{T}^{gen.} (GeV/#it{c});#it{p}_{T}^{rec.} (GeV/#it{c})", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {150, 0., 30.}}}},
      {"hMassSigD0", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {20, -5., 5.}}}},
      {"hMassBkgD0", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {20, -5., 5.}}}},
      {"hMassReflBkgD0", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {20, -5., 5.}}}},
@@ -224,15 +227,27 @@ struct HfTaskD0 {
       if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
         continue;
       }
+      auto massD0 = invMassD0ToPiK(candidate);
+      auto massD0bar = invMassD0barToKPi(candidate);
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::D0ToPiK) {
         // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), pdg::Code::kD0, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
-        registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
+        auto ptGen = particleMother.pt();                                                                                                                // gen. level pT
+        auto yGen = RecoDecay::y(array{particleMother.px(), particleMother.py(), particleMother.pz()}, RecoDecay::getMassPDG(particleMother.pdgCode())); // gen. level y
+        registry.fill(HIST("hPtGenSig"), ptGen);                                                                                                         // gen. level pT
         auto ptRec = candidate.pt();
         auto yRec = yD0(candidate);
         if (candidate.isRecoHfFlag() >= selectionFlagHf) {
           registry.fill(HIST("hPtVsYRecSigRecoHFFlag"), ptRec, yRec);
+          registry.fill(HIST("hPtGenVsPtRecSig"), ptGen, ptRec);
+          registry.fill(HIST("hYGenVsYRecSig"), yGen, yRec);
+          if (candidate.isSelD0() >= selectionFlagD0) {
+            registry.fill(HIST("hMassVsPtGenVsPtRecSig"), massD0, ptGen, ptRec);
+          }
+          if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+            registry.fill(HIST("hMassVsPtGenVsPtRecSig"), massD0bar, ptGen, ptRec);
+          }
         }
         if (candidate.isRecoTopol() >= selectionTopol) {
           registry.fill(HIST("hPtVsYRecSigRecoTopol"), ptRec, yRec);
@@ -289,8 +304,6 @@ struct HfTaskD0 {
         registry.fill(HIST("hCPARecBg"), candidate.cpa());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
       }
-      auto massD0 = invMassD0ToPiK(candidate);
-      auto massD0bar = invMassD0barToKPi(candidate);
       auto ptCandidate = candidate.pt();
       auto ptProng0 = candidate.ptProng0();
       auto ptProng1 = candidate.ptProng1();
