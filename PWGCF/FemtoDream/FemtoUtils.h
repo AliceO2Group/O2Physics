@@ -17,6 +17,7 @@
 #define PWGCF_FEMTODREAM_FEMTOUTILS_H_
 
 #include <vector>
+#include <algorithm>
 #include "Framework/ASoAHelpers.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
 
@@ -33,8 +34,11 @@ enum kDetector { kTPC = 0,
 /// \return kPIDselection corresponding to n-sigma
 int getPIDselection(const float nSigma, const std::vector<float>& vNsigma)
 {
-  for (std::size_t i = 0; i < vNsigma.size(); i++) {
-    if (abs(nSigma - vNsigma[i]) < 1e-3) {
+  // asdf
+  std::vector<float> sNsigma(vNsigma);
+  std::reverse(sNsigma.begin(), sNsigma.end());
+  for (std::size_t i = 0; i < sNsigma.size(); i++) {
+    if (abs(nSigma - vNsigma[i]) < 1e-2) {
       return static_cast<int>(i);
     }
   }
@@ -52,17 +56,17 @@ int getPIDselection(const float nSigma, const std::vector<float>& vNsigma)
 /// \param kDetector enum corresponding to the PID technique
 /// \return Whether the PID selection specified in the vectors is fulfilled
 bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut,
-                   std::vector<int> const& vSpecies, int nSpecies, float nSigma,
+                   int vSpecies,
+                   int nSpecies,
+                   float nSigma,
                    const std::vector<float>& vNsigma,
                    const kDetector iDet = kDetector::kTPC)
 {
   bool pidSelection = true;
   int iNsigma = getPIDselection(nSigma, vNsigma);
-  for (auto iSpecies : vSpecies) {
-    int bit_to_check = nSpecies * kDetector::kNdetectors * iNsigma + iSpecies * kDetector::kNdetectors + iDet;
-    if (!(pidcut & (1UL << bit_to_check))) {
-      pidSelection = false;
-    }
+  int bit_to_check = nSpecies * kDetector::kNdetectors * iNsigma + vSpecies * kDetector::kNdetectors + iDet;
+  if (!(pidcut & (1UL << bit_to_check))) {
+    pidSelection = false;
   }
   return pidSelection;
 };
@@ -77,9 +81,12 @@ bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut,
 /// \param nSigmaTPCTOF Number of TPC+TOF sigmas for selection (circular selection)
 /// \return Whether the PID selection is fulfilled
 bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut,
-                       float const momentum, float const pidThresh,
-                       std::vector<int> const& vSpecies, int nSpecies,
-                       const std::vector<float>& vNsigma, const float nSigmaTPC,
+                       float const momentum,
+                       float const pidThresh,
+                       int vSpecies,
+                       int nSpecies,
+                       const std::vector<float>& vNsigma,
+                       const float nSigmaTPC,
                        const float nSigmaTPCTOF)
 {
   bool pidSelection = true;

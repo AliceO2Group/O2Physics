@@ -176,7 +176,6 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
       if (obs.compare(cmp) == 0)
         return index;
     }
-    LOGF(info, "Variable %s not found", obs);
     return -1;
   }
 
