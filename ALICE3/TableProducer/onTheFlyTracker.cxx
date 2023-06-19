@@ -46,6 +46,7 @@
 #include "TableHelper.h"
 
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "ALICE3/DataModel/collisionAlice3.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -59,6 +60,7 @@ struct OnTheFlyTracker {
   Produces<aod::TracksCovExtension> tracksParCovExtension;
   Produces<aod::McTrackLabels> tracksLabels;
   Produces<aod::TracksDCA> tracksDCA;
+  Produces<aod::CollisionsAlice3> collisionAlice3;
 
   Configurable<float> maxEta{"maxEta", 1.5, "maximum eta to consider viable"};
   Configurable<float> multEtaRange{"multEtaRange", 0.8, "eta range to compute the multiplicity"};
@@ -208,6 +210,8 @@ struct OnTheFlyTracker {
       dNdEta += 1.f;
     }
 
+    dNdEta /= (multEtaRange * 2.0f);
+
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
@@ -277,6 +281,7 @@ struct OnTheFlyTracker {
                0, 1e-3, mcParticles.size(),
                0, 0);
     collLabels(mcCollision.globalIndex(), 0);
+    collisionAlice3(dNdEta);
   }
 };
 
