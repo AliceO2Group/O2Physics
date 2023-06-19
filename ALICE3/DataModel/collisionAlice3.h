@@ -16,8 +16,8 @@
 /// \brief  Table for ALICE 3 collision-related info
 ///
 
-#ifndef ALICE3_DATAMODEL_COLLALICE3_H_
-#define ALICE3_DATAMODEL_COLLALICE3_H_
+#ifndef ALICE3_DATAMODEL_COLLISIONALICE3_H_
+#define ALICE3_DATAMODEL_COLLISIONALICE3_H_
 
 // O2 includes
 #include "Framework/AnalysisDataModel.h"
@@ -35,4 +35,4 @@ using CollisionAlice3 = CollisionsAlice3::iterator;
 
 } // namespace o2::aod
 
-#endif // ALICE3_DATAMODEL_COLLALICE3_H_
+#endif // ALICE3_DATAMODEL_COLLISIONALICE3_H_
