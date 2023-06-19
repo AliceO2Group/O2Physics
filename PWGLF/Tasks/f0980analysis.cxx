@@ -34,7 +34,6 @@ struct f0980analysis {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> cfgMinPt{"cfgMinPt", 0.15, "Minimum transverse momentum for charged track"};
-  Configurable<float> cfgMaxPt{"cfgMaxPt", 20.0, "Maximum transverse momentum for charged track"};
   Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8, "Maximum pseudorapidiy for charged track"};
   Configurable<float> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.5, "Maximum transverse DCA"};
   Configurable<float> cfgMinDCAzToPVcut{"cfgMinDCAzToPVcut", 0.0, "Minimum longitudinal DCA"};
@@ -72,8 +71,6 @@ struct f0980analysis {
   {
     if (track.pt() < cfgMinPt)
       return false;
-    if (track.pt() > cfgMaxPt)
-      return false;
     if (std::fabs(track.eta()) > cfgMaxEta)
       return false;
     if (track.dcaXY() > cfgMaxDCArToPVcut)
@@ -109,12 +106,16 @@ struct f0980analysis {
       if (!SelPion(trk1) || !SelPion(trk2))
         continue;
 
+      LOGF(debug, "Accepted");
+
       Pion1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
       Pion2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
       Reco = Pion1 + Pion2;
 
       if (Reco.Rapidity() > cfgMaxRap || Reco.Rapidity() < cfgMinRap)
         continue;
+
+      LOGF(debug, "Rap Accepted");
       if (trk1.sign() * trk2.sign() < 0) {
         histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(), collision.multV0M());
       } else if (trk1.sign() > 0 && trk2.sign() > 0) {
@@ -130,13 +131,12 @@ struct f0980analysis {
   {
     LOGF(debug, "[DATA] Processing %d collisions", collisions.size());
     for (auto& collision : collisions) {
-      Partition<aod::ResoTracks> selectedTracks = o2::aod::track::pt > static_cast<float_t>(cfgMinPt) && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cfgMinDCAzToPVcut)) && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cfgMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cfgMaxDCArToPVcut));
-
+      Partition<aod::ResoTracks> selectedTracks = o2::aod::track::pt > static_cast<float_t>(cfgMinPt) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cfgMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cfgMaxDCArToPVcut));
       selectedTracks.bindTable(resotracks);
       auto colTracks = selectedTracks->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
       fillHistograms<false>(collision, colTracks);
     }
-  }
+  };
   PROCESS_SWITCH(f0980analysis, processData, "Process Event for data", true);
 };
 
