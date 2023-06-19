@@ -489,9 +489,9 @@ struct correlateStrangeness {
       auto v0Data = v0.v0Data();
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
-        if (v0.compatible(index) && bitcheck(doCorrelation, index)){
+        if (v0.compatible(index) && bitcheck(doCorrelation, index)) {
           histos.fill(HIST("h3d") + HIST(v0names[index]) + HIST("Spectrum"), v0Data.pt(), collision.centFT0M(), v0.invMassRegion(index));
-          if(v0.invMassRegionCheck(index, 2))
+          if (v0.invMassRegionCheck(index, 2))
             histos.fill(HIST("h") + HIST(v0names[index]) + HIST("EtaVsPtVsPhi"), v0Data.pt(), v0Data.eta(), v0Data.phi());
         }
       });
@@ -532,9 +532,9 @@ struct correlateStrangeness {
       auto cascData = casc.cascData();
       static_for<0, 3>([&](auto i) {
         constexpr int index = i.value;
-        if (casc.compatible(index) && bitcheck(doCorrelation, index + 3)){
+        if (casc.compatible(index) && bitcheck(doCorrelation, index + 3)) {
           histos.fill(HIST("h3d") + HIST(cascadenames[index]) + HIST("Spectrum"), cascData.pt(), collision.centFT0M(), casc.invMassRegion(index));
-          if(casc.invMassRegionCheck(index, 2))
+          if (casc.invMassRegionCheck(index, 2))
             histos.fill(HIST("h") + HIST(cascadenames[index]) + HIST("EtaVsPtVsPhi"), cascData.pt(), cascData.eta(), cascData.phi());
         }
       });
