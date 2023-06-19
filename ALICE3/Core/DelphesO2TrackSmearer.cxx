@@ -178,6 +178,15 @@ bool TrackSmearer::smearTrack(O2Track& o2track, int pid, float nch)
 }
 
 /*****************************************************************/
+double TrackSmearer::getPtRes(int pdg, float nch, float eta, float pt)
+{
+  // complaints to sebastian
+  auto lutEntry = getLUTEntry(pid, nch, 0., eta, pt);
+  auto val = sqrt(lutEntry->covm[14]) * lutEntry->pt * 100.;
+  return val;
+}
+
+/*****************************************************************/
 // Only in DelphesO2
 // bool TrackSmearer::smearTrack(Track& track, bool atDCA)
 // {
