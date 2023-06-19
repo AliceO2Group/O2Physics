@@ -13,7 +13,7 @@
 /// \file   collisionExtra.h
 /// \author David Dobrigkeit Chinellato
 /// \since  11/05/2023
-/// \brief  Table for ALICE 3 collision-related info 
+/// \brief  Table for ALICE 3 collision-related info
 ///
 
 #ifndef ALICE3_DATAMODEL_COLLALICE3_H_
@@ -27,7 +27,7 @@ namespace o2::aod
 namespace collision_alice3
 {
 DECLARE_SOA_COLUMN(MultDensity, multDensity, float); //! midrapidity Nch density
-} // namespace upgrade_tof
+} // namespace collision_alice3
 DECLARE_SOA_TABLE(CollisionsAlice3, "AOD", "COLLALICE3",
                   collision_alice3::MultDensity);
 
