@@ -132,8 +132,12 @@ struct lambdakzeroBuilder {
   Configurable<int> dQANBinsPtCoarse{"dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
   Configurable<int> dQANBinsMass{"dQANBinsMass", 400, "Number of mass bins for QA histograms"};
   Configurable<float> dQAMaxPt{"dQAMaxPt", 5, "max pT in QA histo"};
+  Configurable<float> dQAGammaMassWindow{"dQAGammaMassWindow", 0.05, "gamma mass window for ITS cluster map QA"};
   Configurable<float> dQAK0ShortMassWindow{"dQAK0ShortMassWindow", 0.005, "K0 mass window for ITS cluster map QA"};
   Configurable<float> dQALambdaMassWindow{"dQALambdaMassWindow", 0.005, "Lambda/AntiLambda mass window for ITS cluster map QA"};
+
+  ConfigurableAxis axisX{"axisX", {200, 0, 200}, "X_{IU}"};
+  ConfigurableAxis axisRadius{"axisRadius", {500, 0, 50}, "Radius (cm)"};
 
   int mRunNumber;
   float d_bz;
@@ -242,15 +246,18 @@ struct lambdakzeroBuilder {
 
       // bit packed ITS cluster map
       const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
-      const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
 
       // Histogram to bookkeep cluster maps
-      registry.add("h2dITSCluMap_K0ShortPositive", "h2dITSCluMap_K0ShortPositive", kTH2D, {axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_K0ShortNegative", "h2dITSCluMap_K0ShortNegative", kTH2D, {axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_LambdaPositive", "h2dITSCluMap_LambdaPositive", kTH2D, {axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_LambdaNegative", "h2dITSCluMap_LambdaNegative", kTH2D, {axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_AntiLambdaPositive", "h2dITSCluMap_AntiLambdaPositive", kTH2D, {axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_AntiLambdaNegative", "h2dITSCluMap_AntiLambdaNegative", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_Gamma", "h2dITSCluMap_Gamma", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_K0Short", "h2dITSCluMap_K0Short", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_Lambda", "h2dITSCluMap_Lambda", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_AntiLambda", "h2dITSCluMap_AntiLambda", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
+
+      // Histogram to bookkeep cluster maps
+      registry.add("h2dXIU_Gamma", "h2dXIU_Gamma", kTH3D, {axisX, axisX, axisRadius});
+      registry.add("h2dXIU_K0Short", "h2dXIU_K0Short", kTH3D, {axisX, axisX, axisRadius});
+      registry.add("h2dXIU_Lambda", "h2dXIU_Lambda", kTH3D, {axisX, axisX, axisRadius});
+      registry.add("h2dXIU_AntiLambda", "h2dXIU_AntiLambda", kTH3D, {axisX, axisX, axisRadius});
     }
 
     mRunNumber = 0;
@@ -592,17 +599,21 @@ struct lambdakzeroBuilder {
         registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
 
       // Fill ITS cluster maps with specific mass cuts
+      if (TMath::Abs(lGammaMass - 0.0) < dQAGammaMassWindow && ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))) {
+        registry.fill(HIST("h2dITSCluMap_Gamma"), (float)posTrack.itsClusterMap(), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dXIU_Gamma"), (float)posTrack.x(), (float)negTrack.x(), v0candidate.V0radius);
+      }
       if (TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow && ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))) {
-        registry.fill(HIST("h2dITSCluMap_K0ShortPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
-        registry.fill(HIST("h2dITSCluMap_K0ShortNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_K0Short"), (float)posTrack.itsClusterMap(), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dXIU_K0Short"), (float)posTrack.x(), (float)negTrack.x(), v0candidate.V0radius);
       }
       if (TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))) {
-        registry.fill(HIST("h2dITSCluMap_LambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
-        registry.fill(HIST("h2dITSCluMap_LambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_Lambda"), (float)posTrack.itsClusterMap(), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dXIU_Lambda"), (float)posTrack.x(), (float)negTrack.x(), v0candidate.V0radius);
       }
       if (TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))) {
-        registry.fill(HIST("h2dITSCluMap_AntiLambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
-        registry.fill(HIST("h2dITSCluMap_AntiLambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_AntiLambda"), (float)posTrack.itsClusterMap(), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dXIU_AntiLambda"), (float)posTrack.x(), (float)negTrack.x(), v0candidate.V0radius);
       }
     }
     return true;
