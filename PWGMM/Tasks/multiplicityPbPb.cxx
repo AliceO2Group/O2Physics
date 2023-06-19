@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 ///
 /// \brief This task creates basic histograms for Pb-Pb multiplicity analysis.
-///       
+///
 /// \author hhesouno
 
 #include "Framework/runDataProcessing.h"
@@ -26,7 +26,7 @@ using namespace o2::framework::expressions;
 
 struct myExampleTask {
 
-  //Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
+  // Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -43,7 +43,7 @@ struct myExampleTask {
   // using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,  aod::McTrackLabels>;
   using myFilteredTracks = soa::Filtered<myCompleteTracks>;
 
-  //Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+  // Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
   void init(InitContext const&)
   {
@@ -60,9 +60,8 @@ struct myExampleTask {
     const AxisSpec axisNtrk{nBinsMult, 0, 100, "N_{trk}"};
 
     const AxisSpec axisPhi{nBinsPhi, -10, 10, "#phi"};
-    const AxisSpec axisZvtx{nBinsZvtx, -30, 30, "Z_{vtx} (cm)"};    
+    const AxisSpec axisZvtx{nBinsZvtx, -30, 30, "Z_{vtx} (cm)"};
 
-    
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
     histos.add("ptHistogram", "ptHistogram", kTH1F, {axisPt});
     // need mc for it:
@@ -72,7 +71,7 @@ struct myExampleTask {
 
     histos.add("DCAxy", "; DCA_{xy} (cm)", kTH1F, {axisDCAxy});
     histos.add("DCAz", "; DCA_{z} (cm)", kTH1F, {axisDCAz});
-    //do not know how:
+    // do not know how:
     histos.add("Multiplicity", "Multiplicity; tracks; events", kTH1F, {axisNtrk});
 
     histos.add("Anton/PhiTracks", "; #phi; tracks", kTH1F, {axisPhi});
@@ -83,21 +82,22 @@ struct myExampleTask {
     histos.add("Anton/PhiEtaTracks", "; #phi; #eta; tracks", kTH2F, {axisPhi, axisEta});
   }
 
-  //void process(aod::Collision const& collision, soa::Filtered<myCompleteTracks> const& tracks, aod::McParticles const&)
+  // void process(aod::Collision const& collision, soa::Filtered<myCompleteTracks> const& tracks, aod::McParticles const&)
   void process(aod::Collision const& collision, soa::Filtered<myCompleteTracks> const& tracks)
   {
     int trackCounter = 0;
 
-    //auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+    // auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
 
     histos.fill(HIST("eventCounter"), 0.5);
 
-    //histos.fill(HIST("Multiplicity"), groupedTracks.size());
+    // histos.fill(HIST("Multiplicity"), groupedTracks.size());
 
     histos.fill(HIST("Anton/ZvtxEvents"), collision.posZ());
 
     for (auto& track : tracks) {
-      if( track.tpcNClsCrossedRows() < 70 ) continue; //badly tracked
+      if (track.tpcNClsCrossedRows() < 70)
+        continue; // badly tracked
 
       trackCounter = 1 + trackCounter;
 
@@ -115,14 +115,12 @@ struct myExampleTask {
       histos.fill(HIST("Anton/PhiTracks"), track.phi());
 
       histos.fill(HIST("Anton/EtaZvtxTracks"), track.eta(), collision.posZ());
-      histos.fill(HIST("Anton/PhiEtaTracks"), track.phi(), track.eta());      
-
+      histos.fill(HIST("Anton/PhiEtaTracks"), track.phi(), track.eta());
     }
 
     histos.fill(HIST("Multiplicity"), trackCounter);
 
     histos.fill(HIST("Anton/NtrkZvtxEvents"), trackCounter, collision.posZ());
-
   }
 };
 
