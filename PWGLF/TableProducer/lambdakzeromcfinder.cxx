@@ -27,6 +27,7 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <Math/Vector4D.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -52,7 +53,6 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TProfile.h>
-#include <Math/Vector4D.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
 
