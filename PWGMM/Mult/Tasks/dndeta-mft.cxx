@@ -109,8 +109,7 @@ struct PseudorapidityDensityMFT {
   void init(InitContext&)
   {
 
-    if (int(doprocessMult) + int(doprocessMultReassoc) + int(doprocessCountingCentrality) > 1) {
-      printf(">>>>>> doprocessMult = %d, doprocessMultReassoc =%d, doprocessCountingCentrality=%d\n", int(doprocessMult), int(doprocessMultReassoc), int(doprocessCountingCentrality));
+    if (static_cast<int>(doprocessMult) + static_cast<int>(doprocessMultReassoc) + static_cast<int>(doprocessCountingCentrality) > 1) {
       LOGP(fatal, "Exactly one process function between processMult, processMultReassoc and processCountingCentrality should be enabled!");
     }
 
