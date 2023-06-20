@@ -24,10 +24,10 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <Math/Vector4D.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
-#include <Math/Vector4D.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
