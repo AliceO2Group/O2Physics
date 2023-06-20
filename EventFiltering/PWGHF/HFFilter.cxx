@@ -208,12 +208,8 @@ struct HfFilter { // Main struct for HF triggers
       for (int iBeautyPart{0}; iBeautyPart < kNBeautyParticles; ++iBeautyPart) {
         hMassVsPtB[iBeautyPart] = registry.add<TH2>(Form("fMassVsPt%s", beautyParticleNames[iBeautyPart].data()), Form("#it{M} vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", beautyParticleNames[iBeautyPart].data()), HistType::kTH2F, {ptAxis, massAxisB[iBeautyPart]});
       }
-      if (activateQA > 1) {
-        for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
-          hArmPod[iV0] = registry.add<TH2>(Form("fArmPod%s", v0Names[iV0].data()), Form("Armenteros Podolanski plot for selected %s;#it{#alpha};#it{q}_{T} (GeV/#it{c})", v0Labels[iV0].data()), HistType::kTH2F, {alphaAxis, qtAxis});
-        }
-      } else {
-        hArmPod[0] = registry.add<TH2>("fArmPodSelV0s", "Armenteros Podolanski plot for V0s;#it{#alpha};#it{q}_{T} (GeV/#it{c})", HistType::kTH2F, {alphaAxis, qtAxis});
+      for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
+        hArmPod[iV0] = registry.add<TH2>(Form("fArmPod%s", v0Names[iV0].data()), Form("Armenteros Podolanski plot for selected %s;#it{#alpha};#it{q}_{T} (GeV/#it{c})", v0Labels[iV0].data()), HistType::kTH2F, {alphaAxis, qtAxis});
       }
 
       if (activateQA > 1) {

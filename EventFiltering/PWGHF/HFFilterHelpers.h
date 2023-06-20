@@ -674,7 +674,6 @@ template <typename T, typename A, typename H2>
 int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0CosinePa, const float& v0CosinePa, const int& activateQA, H2 hV0Selected, A hArmPod)
 {
   int isSelected{BIT(kPhoton) | BIT(kK0S) | BIT(kLambda) | BIT(kAntiLambda)};
-  bool isRejected[kNV0] = {false, false, false, false};
 
   if (activateQA > 1) {
     for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
@@ -694,23 +693,20 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
   if (v0.v0radius() < 0. || v0.v0radius() > 180.) {
     CLRBIT(isSelected, kPhoton);
     if (activateQA > 1) {
-      isRejected[kPhoton] = true;
       hV0Selected->Fill(2., kPhoton);
     }
   }
 
-  if (!isRejected[kPhoton] && v0CosinePa < minGammaCosinePa) {
+  if (TESTBIT(isSelected, kPhoton) && v0CosinePa < minGammaCosinePa) {
     CLRBIT(isSelected, kPhoton);
     if (activateQA > 1) {
-      isRejected[kPhoton] = true;
       hV0Selected->Fill(3., kPhoton);
     }
   }
 
   if (v0CosinePa < minV0CosinePa) {
-    if (activateQA > 1) {
-      for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
-        isRejected[iV0] = true;
+    for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
+      if (activateQA > 1) {
         hV0Selected->Fill(3., iV0);
       }
     }
@@ -719,37 +715,33 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
     CLRBIT(isSelected, kAntiLambda);
   }
 
-  if (!isRejected[kPhoton] && (std::pow(v0.alpha() / 0.95, 2) + std::pow(v0.qtarm() / 0.05, 2)) >= 1) {
+  if (TESTBIT(isSelected, kPhoton) && (std::pow(v0.alpha() / 0.95, 2) + std::pow(v0.qtarm() / 0.05, 2)) >= 1) {
     CLRBIT(isSelected, kPhoton);
     if (activateQA > 1) {
-      isRejected[kPhoton] = true;
       hV0Selected->Fill(4., kPhoton);
     }
   }
 
-  if (!isRejected[kK0S] && std::fabs(v0.mK0Short() - massK0S) > 0.08) {
+  if (TESTBIT(isSelected, kK0s) && std::fabs(v0.mK0Short() - massK0S) > 0.08) {
     CLRBIT(isSelected, kK0S);
     if (activateQA > 1) {
-      isRejected[kK0S] = true;
       hV0Selected->Fill(4., kK0S);
     }
   }
-  if (!isRejected[kLambda] && std::fabs(v0.mLambda() - massLambda) > 0.1) {
+  if (TESTBIT(isSelected, kLambda) && std::fabs(v0.mLambda() - massLambda) > 0.1) {
     CLRBIT(isSelected, kLambda);
     if (activateQA > 1) {
-      isRejected[kLambda] = true;
       hV0Selected->Fill(4., kLambda);
     }
   }
-  if (!isRejected[kAntiLambda] && std::fabs(v0.mAntiLambda() - massLambda) > 0.1) {
+  if (TESTBIT(isSelected, kAntiLambda) && std::fabs(v0.mAntiLambda() - massLambda) > 0.1) {
     CLRBIT(isSelected, kAntiLambda);
     if (activateQA > 1) {
-      isRejected[kAntiLambda] = true;
       hV0Selected->Fill(4., kAntiLambda);
     }
   }
 
-  if (!isRejected[kPhoton] && std::fabs(v0.psipair()) > 0.1) {
+  if (TESTBIT(isSelected, kPhoton) && std::fabs(v0.psipair()) > 0.1) {
     CLRBIT(isSelected, kPhoton);
     if (activateQA > 1) {
       hV0Selected->Fill(5., kPhoton);
@@ -758,12 +750,10 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
 
   if (activateQA) {
     for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
-      if (!isRejected[iV0]) {
+      if (TESTBIT(isSelected, iV0)) {
         hArmPod[iV0]->Fill(v0.alpha(), v0.qtarm());
         if (activateQA > 1) {
           hV0Selected->Fill(6., iV0);
-        } else {
-          continue;
         }
       }
     }
