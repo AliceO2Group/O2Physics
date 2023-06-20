@@ -42,7 +42,7 @@ struct taskJPsiHf {
   //
 
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
-  Configurable<std::string> fConfigTrackCuts{"cfgLeptonCuts", "JPsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigTrackCuts{"cfgLeptonCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
   // comment: add list of subgroups (must define subgroups under )
   Configurable<std::string> fConfigAddDileptonHadHistogram{"cfgAddDileptonHadHistogram", "", "Comma separated list of histograms"};
 
@@ -161,7 +161,7 @@ struct taskJPsiHf {
 
       // loop over D mesons
       for (auto& dmeson : dmesons) {
-        if (TESTBIT(dmeson.hfflag(), DecayType::D0ToPiK)) {
+        if (!TESTBIT(dmeson.hfflag(), DecayType::D0ToPiK)) {
           continue;
         }
 

@@ -172,6 +172,7 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
   LOGF(debug, "  minBC %d maxBC %d bcIterator %d (%d)", minBC, maxBC, bcIter.globalBC(), bcIter.globalIndex());
 
   // find slice of BCs table with BC in [minBC, maxBC]
+  int moveCount = 0;
   int64_t minBCId = bcIter.globalIndex();
   int64_t maxBCId = bcIter.globalIndex();
 
@@ -179,12 +180,14 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
   if (bcIter.globalBC() < minBC) {
     while (bcIter != bcs.end() && bcIter.globalBC() < minBC) {
       ++bcIter;
+      ++moveCount;
       minBCId = bcIter.globalIndex();
     }
   } else {
     while (bcIter.globalIndex() > 0 && bcIter.globalBC() >= minBC) {
       minBCId = bcIter.globalIndex();
       --bcIter;
+      --moveCount;
     }
   }
 
@@ -193,16 +196,22 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
     while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC) {
       maxBCId = bcIter.globalIndex();
       ++bcIter;
+      ++moveCount;
     }
 
   } else {
     while (bcIter.globalIndex() > 0 && bcIter.globalBC() > maxBC) {
       --bcIter;
+      --moveCount;
       maxBCId = bcIter.globalIndex();
     }
   }
   LOGF(debug, "  BC range: %d - %d", minBCId, maxBCId);
 
+  // reset bcIter
+  bcIter.moveByIndex(-moveCount);
+
+  // create bc slice
   T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
   bcs.copyIndexBindings(slice);
   LOGF(debug, "  size of slice %d", slice.size());
