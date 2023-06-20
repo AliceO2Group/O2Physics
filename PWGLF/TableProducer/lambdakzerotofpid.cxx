@@ -258,15 +258,15 @@ struct lambdakzerotofpid {
         // the first v0 is the v0data row; the getter de-references the v0 (stored indices) row
         // the v0 (stored indices) contain the tags of the lambdakzero preselector
 
-        if (originalV0.isK0ShortCandidate() || !checkTPCCompatibility) {
+        if (originalV0.isdEdxK0Short() || !checkTPCCompatibility) {
           histos.fill(HIST("h3dMassK0ShortPositive"), v0.pt(), deltaTimePositivePi, v0.mK0Short());
           histos.fill(HIST("h3dMassK0ShortNegative"), v0.pt(), deltaTimeNegativePi, v0.mK0Short());
         }
-        if (originalV0.isLambdaCandidate() || !checkTPCCompatibility) {
+        if (originalV0.isdEdxLambda() || !checkTPCCompatibility) {
           histos.fill(HIST("h3dMassLambdaPositive"), v0.pt(), deltaTimePositivePr, v0.mLambda());
           histos.fill(HIST("h3dMassLambdaNegative"), v0.pt(), deltaTimeNegativePi, v0.mLambda());
         }
-        if (originalV0.isAntiLambdaCandidate() || !checkTPCCompatibility) {
+        if (originalV0.isdEdxAntiLambda() || !checkTPCCompatibility) {
           histos.fill(HIST("h3dMassAntiLambdaPositive"), v0.pt(), deltaTimePositivePi, v0.mAntiLambda());
           histos.fill(HIST("h3dMassAntiLambdaNegative"), v0.pt(), deltaTimeNegativePr, v0.mAntiLambda());
         }
