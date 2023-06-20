@@ -722,7 +722,7 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
     }
   }
 
-  if (TESTBIT(isSelected, kK0s) && std::fabs(v0.mK0Short() - massK0S) > 0.08) {
+  if (TESTBIT(isSelected, kK0S) && std::fabs(v0.mK0Short() - massK0S) > 0.08) {
     CLRBIT(isSelected, kK0S);
     if (activateQA > 1) {
       hV0Selected->Fill(4., kK0S);
