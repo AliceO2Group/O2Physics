@@ -10,18 +10,18 @@
 // or submit itself to any jurisdiction.
 //
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
-//     Lambdakzero TOF PID 
+//     Lambdakzero TOF PID
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
 //
 /// \author Nicolò Jacazio
 /// \author David Dobrigkeit Chinellato
 /// \since  11/05/2023
 /// \brief  Table producer for V0 daughter TOF info
-// 
-// This task produces daughter PID information for strange daughters 
-// taking into account the (candidate-by-candidate) time spent as a heavier 
-// (strange, weakly-decaying) particle. This task is meant to be a test, as 
-// it hasn't been fully tested yet! Use at your own peril for now :-) 
+//
+// This task produces daughter PID information for strange daughters
+// taking into account the (candidate-by-candidate) time spent as a heavier
+// (strange, weakly-decaying) particle. This task is meant to be a test, as
+// it hasn't been fully tested yet! Use at your own peril for now :-)
 
 #include <cmath>
 #include <array>
@@ -185,11 +185,12 @@ struct lambdakzerotofpid {
     return length;
   }
 
-  float velocity(float lMomentum, float lMass){
-    //Momentum p and mass m -> returns speed in centimeters per picosecond
-    //Useful for TOF calculations
-    float lA = (lMomentum / lMass)*(lMomentum / lMass);
-    return 0.0299792458*TMath::Sqrt(lA/(1+lA));
+  float velocity(float lMomentum, float lMass)
+  {
+    // Momentum p and mass m -> returns speed in centimeters per picosecond
+    // Useful for TOF calculations
+    float lA = (lMomentum / lMass) * (lMomentum / lMass);
+    return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
   void process(aod::Collisions const& collisions, aod::V0Datas const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedV0s const& allV0s)
@@ -202,12 +203,12 @@ struct lambdakzerotofpid {
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
       // V0 table sliced
-      for(auto const& v0 : V0Table_thisCollision){
+      for (auto const& v0 : V0Table_thisCollision) {
         // time of V0 segment
-        float lengthV0 = std::hypot( v0.x() - collision.posX(), v0.y() - collision.posY(), v0.z() - collision.posZ() ); 
-        float velocityV0 = velocity( v0.p(), o2::constants::physics::MassLambda ); 
-        //float velocityV0K0short = velocity( v0.p(), o2::constants::physics::MassLambda ); 
-        float timeV0 = lengthV0/velocityV0; //in picoseconds
+        float lengthV0 = std::hypot(v0.x() - collision.posX(), v0.y() - collision.posY(), v0.z() - collision.posZ());
+        float velocityV0 = velocity(v0.p(), o2::constants::physics::MassLambda);
+        // float velocityV0K0short = velocity( v0.p(), o2::constants::physics::MassLambda );
+        float timeV0 = lengthV0 / velocityV0; // in picoseconds
 
         auto const& posTrackRow = v0.posTrack_as<FullTracksExtIU>();
         auto const& negTrackRow = v0.negTrack_as<FullTracksExtIU>();
@@ -215,57 +216,57 @@ struct lambdakzerotofpid {
         auto posTrack = getTrackParCov(posTrackRow);
         auto negTrack = getTrackParCov(negTrackRow);
 
-        float posTofX = -1; 
-        float negTofX = -1; 
-        if (!posTrack.getXatLabR(370.0, posTofX, d_bz, o2::track::DirOutward)){
+        float posTofX = -1;
+        float negTofX = -1;
+        if (!posTrack.getXatLabR(370.0, posTofX, d_bz, o2::track::DirOutward)) {
           posTofX = -1;
         }
-        if (!negTrack.getXatLabR(370.0, negTofX, d_bz, o2::track::DirOutward)){
+        if (!negTrack.getXatLabR(370.0, negTofX, d_bz, o2::track::DirOutward)) {
           negTofX = -1;
         }
         float deltaTimePositivePi = -1e+6;
         float deltaTimeNegativePi = -1e+6;
         float deltaTimePositivePr = -1e+6;
         float deltaTimeNegativePr = -1e+6;
-        if( posTofX > 10 ){
-          float velocityPositive = velocity( posTrack.getP(), o2::constants::physics::MassProton );
-          float lengthPositive = trackLength( posTrack, v0.posX(),  posTofX );
-          float timePositive = lengthPositive/velocityPositive;
-          deltaTimePositivePi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeV0+timePositive) ; 
+        if (posTofX > 10) {
+          float velocityPositive = velocity(posTrack.getP(), o2::constants::physics::MassProton);
+          float lengthPositive = trackLength(posTrack, v0.posX(), posTofX);
+          float timePositive = lengthPositive / velocityPositive;
+          deltaTimePositivePi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeV0 + timePositive);
         }
-        if( posTofX > 10 ){
-          float velocityPositive = velocity( posTrack.getP(), o2::constants::physics::MassProton );
-          float lengthPositive = trackLength( posTrack, v0.posX(),  posTofX );
-          float timePositive = lengthPositive/velocityPositive;
-          deltaTimePositivePr = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeV0+timePositive) ; 
+        if (posTofX > 10) {
+          float velocityPositive = velocity(posTrack.getP(), o2::constants::physics::MassProton);
+          float lengthPositive = trackLength(posTrack, v0.posX(), posTofX);
+          float timePositive = lengthPositive / velocityPositive;
+          deltaTimePositivePr = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeV0 + timePositive);
         }
-        if( negTofX > 10 ){
-          float velocityNegative = velocity( negTrack.getP(), o2::constants::physics::MassPionCharged );
-          float lengthNegative = trackLength( negTrack, v0.negX(),  negTofX );
-          float timeNegative = lengthNegative/velocityNegative;
-          deltaTimeNegativePi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeV0+timeNegative) ; 
+        if (negTofX > 10) {
+          float velocityNegative = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
+          float lengthNegative = trackLength(negTrack, v0.negX(), negTofX);
+          float timeNegative = lengthNegative / velocityNegative;
+          deltaTimeNegativePi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeV0 + timeNegative);
         }
-        if( negTofX > 10 ){
-          float velocityNegative = velocity( negTrack.getP(), o2::constants::physics::MassProton );
-          float lengthNegative = trackLength( negTrack, v0.negX(),  negTofX );
-          float timeNegative = lengthNegative/velocityNegative;
-          deltaTimeNegativePr = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeV0+timeNegative) ; 
+        if (negTofX > 10) {
+          float velocityNegative = velocity(negTrack.getP(), o2::constants::physics::MassProton);
+          float lengthNegative = trackLength(negTrack, v0.negX(), negTofX);
+          float timeNegative = lengthNegative / velocityNegative;
+          deltaTimeNegativePr = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeV0 + timeNegative);
         }
-        v0DeltaTimeTOF(deltaTimePositivePi, deltaTimePositivePr, deltaTimeNegativePi, deltaTimeNegativePr); 
+        v0DeltaTimeTOF(deltaTimePositivePi, deltaTimePositivePr, deltaTimeNegativePi, deltaTimeNegativePr);
 
         auto originalV0 = v0.v0_as<TaggedV0s>(); // this could look confusing, so:
         // the first v0 is the v0data row; the getter de-references the v0 (stored indices) row
         // the v0 (stored indices) contain the tags of the lambdakzero preselector
 
-        if (originalV0.isK0ShortCandidate() || !checkTPCCompatibility ){
+        if (originalV0.isK0ShortCandidate() || !checkTPCCompatibility) {
           histos.fill(HIST("h3dMassK0ShortPositive"), v0.pt(), deltaTimePositivePi, v0.mK0Short());
           histos.fill(HIST("h3dMassK0ShortNegative"), v0.pt(), deltaTimeNegativePi, v0.mK0Short());
         }
-        if (originalV0.isLambdaCandidate() || !checkTPCCompatibility ){
+        if (originalV0.isLambdaCandidate() || !checkTPCCompatibility) {
           histos.fill(HIST("h3dMassLambdaPositive"), v0.pt(), deltaTimePositivePr, v0.mLambda());
           histos.fill(HIST("h3dMassLambdaNegative"), v0.pt(), deltaTimeNegativePi, v0.mLambda());
         }
-        if (originalV0.isAntiLambdaCandidate() || !checkTPCCompatibility ){
+        if (originalV0.isAntiLambdaCandidate() || !checkTPCCompatibility) {
           histos.fill(HIST("h3dMassAntiLambdaPositive"), v0.pt(), deltaTimePositivePi, v0.mAntiLambda());
           histos.fill(HIST("h3dMassAntiLambdaNegative"), v0.pt(), deltaTimeNegativePr, v0.mAntiLambda());
         }

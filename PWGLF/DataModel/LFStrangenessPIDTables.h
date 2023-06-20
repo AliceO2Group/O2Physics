@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Defines TOF PID tables for strangeness. 
+// Defines TOF PID tables for strangeness.
 // Entries calculated per candidate, tables are joinable with v0/cascdata tables.
 
 #ifndef PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
@@ -28,11 +28,11 @@ DECLARE_SOA_COLUMN(PosDeltaTimePi, posDeltaTimePi, float); //! positive track De
 DECLARE_SOA_COLUMN(PosDeltaTimePr, posDeltaTimePr, float); //! positive track DeltaTime from proton expectation
 DECLARE_SOA_COLUMN(NegDeltaTimePi, negDeltaTimePi, float); //! negative track DeltaTime from pion expectation
 DECLARE_SOA_COLUMN(NegDeltaTimePr, negDeltaTimePr, float); //! negative track DeltaTime from proton expectation
-DECLARE_SOA_COLUMN(PosNSigmaPi, posNSigmaPi, float); //! positive track Nsigma from pion expectation
-DECLARE_SOA_COLUMN(PosNSigmaPr, posNSigmaPr, float); //! positive track Nsigma from proton expectation
-DECLARE_SOA_COLUMN(NegNSigmaPi, negNSigmaPi, float); //! negative track Nsigma from pion expectation
-DECLARE_SOA_COLUMN(NegNSigmaPr, negNSigmaPr, float); //! negative track Nsigma from proton expectation
-}
+DECLARE_SOA_COLUMN(PosNSigmaPi, posNSigmaPi, float);       //! positive track Nsigma from pion expectation
+DECLARE_SOA_COLUMN(PosNSigmaPr, posNSigmaPr, float);       //! positive track Nsigma from proton expectation
+DECLARE_SOA_COLUMN(NegNSigmaPi, negNSigmaPi, float);       //! negative track Nsigma from pion expectation
+DECLARE_SOA_COLUMN(NegNSigmaPr, negNSigmaPr, float);       //! negative track Nsigma from proton expectation
+} // namespace v0data
 DECLARE_SOA_TABLE(V0DeltaTimeTOF, "AOD", "V0DELTATIMETOF",
                   v0data::PosDeltaTimePi, v0data::PosDeltaTimePr,
                   v0data::NegDeltaTimePi, v0data::NegDeltaTimePr);
