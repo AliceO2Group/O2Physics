@@ -218,18 +218,18 @@ int isSelectedTrackForSoftPionOrBeauty(const T1& trackPar, const T2& dca, const 
     return kRejected;
   }
 
-  if (std::abs(trackPar.getEta()) > 0.8) {
+  if (std::fabs(trackPar.getEta()) > 0.8) {
     return kRejected;
   }
 
-  if (std::abs(dca[1]) > 2.f) {
+  if (std::fabs(dca[1]) > 2.f) {
     return kRejected;
   }
 
-  if (std::abs(dca[0]) < cutsSingleTrackBeauty.get(pTBinTrack, "min_dcaxytoprimary")) {
+  if (std::fabs(dca[0]) < cutsSingleTrackBeauty.get(pTBinTrack, "min_dcaxytoprimary")) {
     return kRejected; // minimum DCAxy
   }
-  if (std::abs(dca[0]) > cutsSingleTrackBeauty.get(pTBinTrack, "max_dcaxytoprimary")) {
+  if (std::fabs(dca[0]) > cutsSingleTrackBeauty.get(pTBinTrack, "max_dcaxytoprimary")) {
     return kRejected; // maximum DCAxy
   }
 
@@ -261,7 +261,7 @@ bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& fe
     return false;
   }
 
-  if (std::abs(trackPar.getEta()) > 0.8) {
+  if (std::fabs(trackPar.getEta()) > 0.8) {
     return false;
   }
 
@@ -318,10 +318,10 @@ bool isSelectedProton4CharmBaryons(const T& track, const float& nsigmaTPCProtonL
     NSigmaTPC = getTPCSplineCalib(track, massProton, hSplineProton[0]);
   }
 
-  if (std::abs(NSigmaTPC) > nsigmaTPCProtonLc) {
+  if (std::fabs(NSigmaTPC) > nsigmaTPCProtonLc) {
     return false;
   }
-  if (track.hasTOF() && std::abs(NSigmaTOF) > nsigmaTOFProtonLc) {
+  if (track.hasTOF() && std::fabs(NSigmaTOF) > nsigmaTOFProtonLc) {
     return false;
   }
 
@@ -348,10 +348,10 @@ bool isSelectedKaon4Charm3Prong(const T& track, const float& nsigmaTPCKaon3Prong
     NSigmaTPC = getTPCSplineCalib(track, massK, hSplineKaon[0]);
   }
 
-  if (std::abs(NSigmaTPC) > nsigmaTPCKaon3Prong) {
+  if (std::fabs(NSigmaTPC) > nsigmaTPCKaon3Prong) {
     return false;
   }
-  if (track.hasTOF() && std::abs(NSigmaTOF) > nsigmaTOFKaon3Prong) {
+  if (track.hasTOF() && std::fabs(NSigmaTOF) > nsigmaTOFKaon3Prong) {
     return false;
   }
 
@@ -405,10 +405,10 @@ int8_t isDsPreselected(const P& pTrackSameChargeFirst, const P& pTrackSameCharge
   auto invMassKKFirst = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge}, std::array{massK, massK});
   auto invMassKKSecond = RecoDecay::m(std::array{pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massK, massK});
 
-  if (std::abs(invMassKKFirst - massPhi) < 0.02) {
+  if (std::fabs(invMassKKFirst - massPhi) < 0.02) {
     retValue |= BIT(0);
   }
-  if (std::abs(invMassKKSecond - massPhi) < 0.02) {
+  if (std::fabs(invMassKKSecond - massPhi) < 0.02) {
     retValue |= BIT(1);
   }
 
@@ -485,10 +485,10 @@ int8_t isDzeroPreselected(const T& trackPos, const T& trackNeg, const float& nsi
     NSigmaKaTPCNeg = getTPCSplineCalib(trackNeg, massK, hSplineKaon[1]);
   }
 
-  if ((std::abs(NSigmaPiTPCPos) <= nsigmaTPCPionKaonDzero && (!trackPos.hasTOF() || std::abs(NSigmaPiTOFPos) <= nsigmaTOFPionKaonDzero)) && (std::abs(NSigmaKaTPCNeg) <= nsigmaTPCPionKaonDzero && (!trackNeg.hasTOF() || std::abs(NSigmaKaTOFNeg) <= nsigmaTOFPionKaonDzero))) {
+  if ((std::fabs(NSigmaPiTPCPos) <= nsigmaTPCPionKaonDzero && (!trackPos.hasTOF() || std::fabs(NSigmaPiTOFPos) <= nsigmaTOFPionKaonDzero)) && (std::fabs(NSigmaKaTPCNeg) <= nsigmaTPCPionKaonDzero && (!trackNeg.hasTOF() || std::fabs(NSigmaKaTOFNeg) <= nsigmaTOFPionKaonDzero))) {
     retValue |= BIT(0);
   }
-  if ((std::abs(NSigmaPiTPCNeg) <= nsigmaTPCPionKaonDzero && (!trackNeg.hasTOF() || std::abs(NSigmaPiTOFNeg) <= nsigmaTOFPionKaonDzero)) && (std::abs(NSigmaKaTPCPos) <= nsigmaTPCPionKaonDzero && (!trackPos.hasTOF() || std::abs(NSigmaKaTOFPos) <= nsigmaTOFPionKaonDzero))) {
+  if ((std::fabs(NSigmaPiTPCNeg) <= nsigmaTPCPionKaonDzero && (!trackNeg.hasTOF() || std::fabs(NSigmaPiTOFNeg) <= nsigmaTOFPionKaonDzero)) && (std::fabs(NSigmaKaTPCPos) <= nsigmaTPCPionKaonDzero && (!trackPos.hasTOF() || std::fabs(NSigmaKaTOFPos) <= nsigmaTOFPionKaonDzero))) {
     retValue |= BIT(1);
   }
 
@@ -513,7 +513,7 @@ int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const flo
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassD0);
     }
-    if (std::abs(invMassD0 - massD0) < deltaMassCharmHadronForBeauty || ptD > 10) {
+    if (std::fabs(invMassD0 - massD0) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(0);
     }
   }
@@ -522,7 +522,7 @@ int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const flo
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassD0bar);
     }
-    if (std::abs(invMassD0bar - massD0) < deltaMassCharmHadronForBeauty || ptD > 10) {
+    if (std::fabs(invMassD0bar - massD0) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(1);
     }
   }
@@ -547,7 +547,7 @@ int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrac
     hMassVsPt->Fill(ptD, invMassDplus);
   }
 
-  if (std::abs(invMassDplus - massDPlus) > deltaMassCharmHadronForBeauty && ptD > 0) {
+  if (std::fabs(invMassDplus - massDPlus) > deltaMassCharmHadronForBeauty && ptD > 0) {
     return 0;
   }
 
@@ -573,7 +573,7 @@ int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassDsToKKPi);
     }
-    if (std::abs(invMassDsToKKPi - massDs) < deltaMassCharmHadronForBeauty || ptD > 10) {
+    if (std::fabs(invMassDsToKKPi - massDs) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(0);
     }
   }
@@ -582,7 +582,7 @@ int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassDsToPiKK);
     }
-    if (std::abs(invMassDsToPiKK - massDs) < deltaMassCharmHadronForBeauty || ptD > 10) {
+    if (std::fabs(invMassDsToPiKK - massDs) < deltaMassCharmHadronForBeauty || ptD > 10) {
       retValue |= BIT(1);
     }
   }
@@ -609,7 +609,7 @@ int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     if (activateQA) {
       hMassVsPt->Fill(ptLc, invMassLcToPKPi);
     }
-    if (std::abs(invMassLcToPKPi - massLc) < deltaMassCharmHadronForBeauty || ptLc > 10) {
+    if (std::fabs(invMassLcToPKPi - massLc) < deltaMassCharmHadronForBeauty || ptLc > 10) {
       retValue |= BIT(0);
     }
   }
@@ -618,7 +618,7 @@ int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSa
     if (activateQA) {
       hMassVsPt->Fill(ptLc, invMassLcToPiKP);
     }
-    if (std::abs(invMassLcToPiKP - massLc) < deltaMassCharmHadronForBeauty || ptLc > 10) {
+    if (std::fabs(invMassLcToPiKP - massLc) < deltaMassCharmHadronForBeauty || ptLc > 10) {
       retValue |= BIT(1);
     }
   }
@@ -645,7 +645,7 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
     if (activateQA) {
       hMassVsPt->Fill(ptXic, invMassXicToPKPi);
     }
-    if (std::abs(invMassXicToPKPi - massXic) < deltaMassCharmHadronForBeauty || ptXic > 10) {
+    if (std::fabs(invMassXicToPKPi - massXic) < deltaMassCharmHadronForBeauty || ptXic > 10) {
       retValue |= BIT(0);
     }
   }
@@ -654,7 +654,7 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
     if (activateQA) {
       hMassVsPt->Fill(ptXic, invMassXicToPiKP);
     }
-    if (std::abs(invMassXicToPiKP - massXic) < deltaMassCharmHadronForBeauty || ptXic > 10) {
+    if (std::fabs(invMassXicToPiKP - massXic) < deltaMassCharmHadronForBeauty || ptXic > 10) {
       retValue |= BIT(1);
     }
   }
@@ -674,7 +674,6 @@ template <typename T, typename A, typename H2>
 int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0CosinePa, const float& v0CosinePa, const int& activateQA, H2 hV0Selected, A hArmPod)
 {
   int isSelected{BIT(kPhoton) | BIT(kK0S) | BIT(kLambda) | BIT(kAntiLambda)};
-  bool isRejected[kNV0] = {false, false, false, false};
 
   if (activateQA > 1) {
     for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
@@ -682,7 +681,7 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
     }
   }
 
-  if (std::abs(v0.eta()) > 0.8) { // cut all V0s with |eta| > 0.8
+  if (std::fabs(v0.eta()) > 0.8) { // cut all V0s with |eta| > 0.8
     if (activateQA > 1) {
       for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
         hV0Selected->Fill(1., iV0);
@@ -694,23 +693,20 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
   if (v0.v0radius() < 0. || v0.v0radius() > 180.) {
     CLRBIT(isSelected, kPhoton);
     if (activateQA > 1) {
-      isRejected[kPhoton] = true;
       hV0Selected->Fill(2., kPhoton);
     }
   }
 
-  if (!isRejected[kPhoton] && v0CosinePa < minGammaCosinePa) {
+  if (TESTBIT(isSelected, kPhoton) && v0CosinePa < minGammaCosinePa) {
     CLRBIT(isSelected, kPhoton);
     if (activateQA > 1) {
-      isRejected[kPhoton] = true;
       hV0Selected->Fill(3., kPhoton);
     }
   }
 
   if (v0CosinePa < minV0CosinePa) {
-    if (activateQA > 1) {
-      for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
-        isRejected[iV0] = true;
+    for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
+      if (activateQA > 1) {
         hV0Selected->Fill(3., iV0);
       }
     }
@@ -719,37 +715,33 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
     CLRBIT(isSelected, kAntiLambda);
   }
 
-  if (!isRejected[kPhoton] && (std::pow(v0.alpha() / 0.95, 2) + std::pow(v0.qtarm() / 0.05, 2)) >= 1) {
+  if (TESTBIT(isSelected, kPhoton) && (std::pow(v0.alpha() / 0.95, 2) + std::pow(v0.qtarm() / 0.05, 2)) >= 1) {
     CLRBIT(isSelected, kPhoton);
     if (activateQA > 1) {
-      isRejected[kPhoton] = true;
       hV0Selected->Fill(4., kPhoton);
     }
   }
 
-  if (!isRejected[kK0S] && std::abs(v0.mK0Short() - massK0S) > 0.08) {
+  if (TESTBIT(isSelected, kK0S) && std::fabs(v0.mK0Short() - massK0S) > 0.08) {
     CLRBIT(isSelected, kK0S);
     if (activateQA > 1) {
-      isRejected[kK0S] = true;
       hV0Selected->Fill(4., kK0S);
     }
   }
-  if (!isRejected[kLambda] && std::abs(v0.mLambda() - massLambda) > 0.1) {
+  if (TESTBIT(isSelected, kLambda) && std::fabs(v0.mLambda() - massLambda) > 0.1) {
     CLRBIT(isSelected, kLambda);
     if (activateQA > 1) {
-      isRejected[kLambda] = true;
       hV0Selected->Fill(4., kLambda);
     }
   }
-  if (!isRejected[kAntiLambda] && std::abs(v0.mAntiLambda() - massLambda) > 0.1) {
+  if (TESTBIT(isSelected, kAntiLambda) && std::fabs(v0.mAntiLambda() - massLambda) > 0.1) {
     CLRBIT(isSelected, kAntiLambda);
     if (activateQA > 1) {
-      isRejected[kAntiLambda] = true;
       hV0Selected->Fill(4., kAntiLambda);
     }
   }
 
-  if (!isRejected[kPhoton] && std::abs(v0.psipair()) > 0.1) {
+  if (TESTBIT(isSelected, kPhoton) && std::fabs(v0.psipair()) > 0.1) {
     CLRBIT(isSelected, kPhoton);
     if (activateQA > 1) {
       hV0Selected->Fill(5., kPhoton);
@@ -758,12 +750,10 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
 
   if (activateQA) {
     for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
-      if (!isRejected[iV0]) {
+      if (TESTBIT(isSelected, iV0)) {
         hArmPod[iV0]->Fill(v0.alpha(), v0.qtarm());
         if (activateQA > 1) {
           hV0Selected->Fill(6., iV0);
-        } else {
-          continue;
         }
       }
     }
