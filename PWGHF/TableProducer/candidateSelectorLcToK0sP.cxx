@@ -24,11 +24,13 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
+#include "Tools/ML/model.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_casc;
 using namespace o2::analysis::hf_cuts_lc_to_k0s_p;
+using namespace o2::ml;
 
 using MyBigTracksBayes = soa::Join<aod::BigTracksPID, aod::pidBayesPr, aod::pidBayesEl, aod::pidBayesMu, aod::pidBayesKa, aod::pidBayesPi>;
 
@@ -58,6 +60,18 @@ struct HfCandidateSelectorLcToK0sP {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_k0s_p::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
 
+  // ONNX ML
+  Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
+  Configurable<std::string> onnxFile{"onnxFile", "", "ONNX file for ML model for Lc+ candidates"};
+  Configurable<std::vector<double>> binsPtML{"binsPtML", std::vector<double>{hf_cuts_bdt_multiclass::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> thresholdBDTScore{"thresholdBDTScore", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc+ candidates"};
+  Configurable<uint32_t> MLInputs{"MLInputs", 2088892, "Bit mask to select the input parameters for the ML model"};
+
+  HistogramRegistry registry{"registry", {}};
+
+  int dataTypeML;
+  OnnxModel model;
+
   void init(InitContext&)
   {
     if (!doprocessWithStandardPID && !doprocessWithBayesPID) {
@@ -65,6 +79,23 @@ struct HfCandidateSelectorLcToK0sP {
     }
     if (doprocessWithStandardPID && doprocessWithBayesPID) {
       LOGF(fatal, "Cannot enable processWithStandardPID and processWithBayesPID at the same time. Please choose one.");
+    }
+
+    if (applyML) {
+      AxisSpec axisBDT = {100, 0, 1, "score"};
+      AxisSpec axisBinsPt = {binsPtML, "#it{p}_{T} (GeV/#it{c})"};
+      registry.add<TH1>("hBDTScoreBkg", "BDT score distribution for Lc;BDT score;counts", HistType::kTH1F, {axisBDT});
+      registry.add<TH2>("hBDTScoreBkgVsPtCand", "BDT score distribution for Lc;BDT score;counts", HistType::kTH2F, {axisBDT, axisBinsPt});
+      registry.add<TH1>("hBDTScorePrompt", "BDT score distribution for Lc;BDT score;counts", HistType::kTH1F, {axisBDT});
+      registry.add<TH2>("hBDTScorePromptVsPtCand", "BDT score distribution for Lc;BDT score;counts", HistType::kTH2F, {axisBDT, axisBinsPt});
+      registry.add<TH1>("hBDTScoreNonPrompt", "BDT score distribution for Lc;BDT score;counts", HistType::kTH1F, {axisBDT});
+      registry.add<TH2>("hBDTScoreNonPromptVsPtCand", "BDT score distribution for Lc;BDT score;counts", HistType::kTH2F, {axisBDT, axisBinsPt});
+      // for the moment only local onnx file, no ccdb call
+      model.initModel(onnxFile, false, 1);
+      auto session = model.getSession();
+      std::vector<float> dummyInput(model.getNumInputNodes(), 1.);
+      model.evalModel(dummyInput); // Init the model evaluations
+      dataTypeML = session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetElementType();
     }
   }
 
@@ -166,6 +197,92 @@ struct HfCandidateSelectorLcToK0sP {
     return selectorProton.getStatusTrackBayesProbPID(track) == TrackSelectorPID::Status::PIDAccepted;
   }
 
+  template <typename T, typename U>
+  bool selectionML(const T& hfCandCascade, const U& bach)
+  {
+
+    auto candPt = hfCandCascade.pt();
+    int ptBin = findBin(binsPtML, candPt);
+    if (ptBin == -1) {
+      return false;
+    }
+
+    float inputParamsAll[24] = {
+      hfCandCascade.rSecondaryVertex(),
+      hfCandCascade.decayLength(),
+      hfCandCascade.ptProng0(),
+      hfCandCascade.ptProng1(),
+      hfCandCascade.impactParameter0(),
+      hfCandCascade.impactParameter1(),
+      hfCandCascade.v0radius(),
+      hfCandCascade.v0cosPA(),
+      hfCandCascade.mLambda(),
+      hfCandCascade.mAntiLambda(),
+      hfCandCascade.mK0Short(),
+      hfCandCascade.mGamma(),
+      o2::aod::hf_cand_casc::ctV0K0s(hfCandCascade),
+      o2::aod::hf_cand_casc::ctV0Lambda(hfCandCascade),
+      hfCandCascade.dcaV0daughters(),
+      hfCandCascade.ptV0Pos(),
+      hfCandCascade.dcapostopv(),
+      hfCandCascade.ptV0Neg(),
+      hfCandCascade.dcanegtopv(),
+      bach.tpcNSigmaPr(),
+      bach.tofNSigmaPr(),
+      hfCandCascade.cpa(),
+      o2::aod::hf_cand_3prong::ctLc(hfCandCascade),
+      o2::aod::hf_cand_3prong::yLc(hfCandCascade)};
+
+    std::vector<float> inputFeaturesF;
+    std::vector<double> inputFeaturesD;
+    uint32_t i = 1;
+    for (const auto& param : inputParamsAll) {
+      if (i & MLInputs) {
+        inputFeaturesF.push_back(param);
+        inputFeaturesD.push_back(param);
+      }
+      i = i * 2;
+    }
+
+    float scores[3] = {-1.f, -1.f, -1.f};
+    if (dataTypeML == 1) {
+      auto scoresRaw = model.evalModel(inputFeaturesF);
+      for (int iScore = 0; iScore < 3; ++iScore) {
+        scores[iScore] = scoresRaw[iScore];
+      }
+    } else if (dataTypeML == 11) {
+      auto scoresRaw = model.evalModel(inputFeaturesD);
+      for (int iScore = 0; iScore < 3; ++iScore) {
+        scores[iScore] = scoresRaw[iScore];
+      }
+    } else {
+      LOG(error) << "Error running model inference for Lc: Unexpected input data type.";
+    }
+
+    registry.fill(HIST("hBDTScoreBkg"), scores[0]);
+    registry.fill(HIST("hBDTScoreBkgVsPtCand"), scores[0], candPt);
+    registry.fill(HIST("hBDTScorePrompt"), scores[1]);
+    registry.fill(HIST("hBDTScorePromptVsPtCand"), scores[1], candPt);
+    registry.fill(HIST("hBDTScoreNonPrompt"), scores[2]);
+    registry.fill(HIST("hBDTScoreNonPromptVsPtCand"), scores[2], candPt);
+
+    if (scores[0] > thresholdBDTScore->get(ptBin, "BDTbkg")) {
+      return false;
+    }
+    if (scores[1] <= thresholdBDTScore->get(ptBin, "BDTprompt") && scores[2] <= thresholdBDTScore->get(ptBin, "BDTnonprompt")) {
+      return false;
+    }
+    /*
+    if (scores[1] > thresholdBDTScore->get(ptBin, "BDTprompt")) {
+      // prompt
+    }
+    if (scores[2] > thresholdBDTScore->get(ptBin, "BDTnonprompt")) {
+      // non-prompt
+    }
+    */
+    return true;
+  }
+
   void processWithStandardPID(aod::HfCandCascade const& candidates, aod::BigTracksPID const& tracks)
   {
     int statusLc = 0; // final selection flag : 0-rejected  1-accepted
@@ -185,6 +302,13 @@ struct HfCandidateSelectorLcToK0sP {
       if (!selectionStandardPID(bach)) {
         hfSelLcToK0sPCandidate(statusLc);
         continue;
+      }
+
+      if (applyML) {
+        if (!selectionML(candidate, bach)) {
+          hfSelLcToK0sPCandidate(statusLc);
+          continue;
+        }
       }
 
       statusLc = 1;
@@ -211,6 +335,13 @@ struct HfCandidateSelectorLcToK0sP {
       if (!selectionBayesPID(bach)) {
         hfSelLcToK0sPCandidate(statusLc);
         continue;
+      }
+
+      if (applyML) {
+        if (!selectionML(candidate, bach)) {
+          hfSelLcToK0sPCandidate(statusLc);
+          continue;
+        }
       }
 
       statusLc = 1;
