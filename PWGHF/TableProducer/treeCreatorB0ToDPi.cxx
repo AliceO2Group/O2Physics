@@ -38,6 +38,7 @@ DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                                     //! Transverse momentum of prong1 (GeV/c)
 DECLARE_SOA_COLUMN(PProng1, pProng1, float);                                       //! Momentum of prong1 (in GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, float); //! Normalised impact parameter of prong1
+DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);         //! Impact parameter product
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int);                       //! Selection flag of candidate (output of candidateSelector)
 DECLARE_SOA_COLUMN(M, m, float);                                                   //! Invariant mass of candidate (GeV/c2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                                                 //! Transverse momentum of candidate (GeV/c)
@@ -71,7 +72,7 @@ DECLARE_SOA_TABLE(HfCandB0Lite, "AOD", "HFCANDB0Lite",
                   full::PtProng1,
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
-                  hf_cand_2prong::ImpactParameterProduct<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
+                  full::ImpactParameterProduct,
                   full::NSigTpcPi1,
                   full::NSigTofPi1,
                   full::CandidateSelFlag,
@@ -84,7 +85,7 @@ DECLARE_SOA_TABLE(HfCandB0Lite, "AOD", "HFCANDB0Lite",
                   full::Phi,
                   full::Y,
                   hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec)
+                  hf_cand_3prong::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCandB0Full, "AOD", "HFCANDB0Full",
                   collision::BCId,
@@ -117,9 +118,9 @@ DECLARE_SOA_TABLE(HfCandB0Full, "AOD", "HFCANDB0Full",
                   hf_cand::PzProng1,
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
+                  full::ImpactParameterProduct,
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
-                  hf_cand_2prong::ImpactParameterProduct<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
                   full::NSigTpcPi1,
                   full::NSigTofPi1,
                   full::CandidateSelFlag,
@@ -169,7 +170,7 @@ struct HfTreeCreatorB0ToDPi {
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
-  Configurable<float> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
+  Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0;
@@ -215,6 +216,7 @@ struct HfTreeCreatorB0ToDPi {
         candidate.ptProng1(),
         candidate.impactParameter0(),
         candidate.impactParameter1(),
+        candidate.impactParameter0() * candidate.impactParameter1(),
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelB0ToDPi(),
@@ -260,6 +262,7 @@ struct HfTreeCreatorB0ToDPi {
         candidate.pzProng1(),
         candidate.impactParameter0(),
         candidate.impactParameter1(),
+        candidate.impactParameter0() * candidate.impactParameter1(),
         candidate.errorImpactParameter0(),
         candidate.errorImpactParameter1(),
         prong1.tpcNSigmaPi(),
@@ -299,7 +302,7 @@ struct HfTreeCreatorB0ToDPi {
     for (auto const& candidate : candidates) {
       if (fillOnlyBackground) {
         float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
-        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= donwSampleBkgFactor) {
+        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
       }
@@ -339,7 +342,7 @@ struct HfTreeCreatorB0ToDPi {
       }
       for (const auto& candidate : recBg) {
         float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
-        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= donwSampleBkgFactor) {
+        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
         auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
