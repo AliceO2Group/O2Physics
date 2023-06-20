@@ -73,7 +73,7 @@ struct taskJPsiHf {
   AxisSpec axisMassJPsi{300, 2.f, 5.f};
   AxisSpec axisMidY{60, -1.5f, 1.5f};
   AxisSpec axisFwdY{50, -4.5f, -2.0f};
-  AxisSpec axisDeltaY{30, 2.5f, 4.0f};
+  AxisSpec axisDeltaY{90, 1.f, 5.5f};
   AxisSpec axisPhi{180, 0., 2 * constants::math::PI}; // same for delta phi
 
   HistogramRegistry registry{"registry",
@@ -175,7 +175,7 @@ struct taskJPsiHf {
         auto phiD0 = dmeson.phi();
         auto massD0 = -1.;
         auto massD0bar = -1.;
-        auto rapDelta = rapJPsi - rapD0;
+        auto rapDelta = rapD0 - rapJPsi;
         auto phiDelta = std::abs(phiJPsi - phiD0);
 
         if (dmeson.isSelD0() >= selectionFlagD0) {
