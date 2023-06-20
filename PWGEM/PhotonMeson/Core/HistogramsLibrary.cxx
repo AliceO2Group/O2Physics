@@ -249,6 +249,17 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0"))->Sumw2();
   }
 
+  if (TString(histClass) == "tag_and_probe") {
+    list->Add(new TH2F("hMggPt_Probe_Same", "m_{#gamma#gamma} vs. p_{T,#gamma};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
+    list->Add(new TH2F("hMggPt_Probe_Mixed", "m_{#gamma#gamma} vs. p_{T,#gamma};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Probe_Same"))->Sumw2();
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Probe_Mixed"))->Sumw2();
+    list->Add(new TH2F("hMggPt_PassingProbe_Same", "m_{#gamma#gamma} vs. p_{T,#gamma};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
+    list->Add(new TH2F("hMggPt_PassingProbe_Mixed", "m_{#gamma#gamma} vs. p_{T,#gamma};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_PassingProbe_Same"))->Sumw2();
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_PassingProbe_Mixed"))->Sumw2();
+  }
+
   if (TString(histClass) == "photon_hbt") {
     const int ndim = 5; // qinv, qlong, qout, qside, kt
     const int nbins[ndim] = {40, 80, 80, 80, 10};
@@ -263,15 +274,16 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(hs_q_mix);
   }
 }
-void o2::aod::emphotonhistograms::AddHistClass(THashList* list, const char* histClass)
+THashList* o2::aod::emphotonhistograms::AddHistClass(THashList* list, const char* histClass)
 {
   if (list->FindObject(histClass)) {
-    LOG(warn) << "HistogramsLibrary::AddHistClass(): Cannot add histogram class " << histClass << " because it already exists.";
-    return;
+    LOGF(info, "HistogramsLibrary::AddHistClass(): Cannot add histogram class %s because it already exists.", histClass);
+    return static_cast<THashList*>(list->FindObject(histClass));
   }
 
   auto* sublist = new THashList();
   sublist->SetOwner(true);
   sublist->SetName(histClass);
   list->Add(sublist);
+  return sublist;
 }

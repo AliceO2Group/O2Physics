@@ -157,7 +157,7 @@ static const AxisSpec alphaAxis{100, -1.f, 1.f};
 static const AxisSpec qtAxis{100, 0.f, 0.25f};
 static const AxisSpec bdtAxis{100, 0.f, 1.f};
 static const AxisSpec phiAxis{36, 0., TwoPI};
-static const std::array<AxisSpec, kNCharmParticles + 6> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 2.00f, 2.04f}, AxisSpec{100, 1.98f, 2.08f}, AxisSpec{100, 2.08f, 2.18f}, AxisSpec{100, 2.35f, 2.85f}, AxisSpec{100, 2.35f, 2.85f}, AxisSpec{100, 2.80f, 3.30f}};
+static const std::array<AxisSpec, kNCharmParticles + 6> massAxisC = {AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.65f, 2.05f}, AxisSpec{100, 1.75f, 2.15f}, AxisSpec{100, 2.05f, 2.45f}, AxisSpec{100, 2.25f, 2.65f}, AxisSpec{100, 0.139f, 0.159f}, AxisSpec{100, 0.f, 0.25f}, AxisSpec{100, 0.f, 0.25f}, AxisSpec{100, 0.48f, 0.88f}, AxisSpec{100, 0.48f, 0.88f}, AxisSpec{100, 1.1f, 1.4f}};
 static const std::array<AxisSpec, kNBeautyParticles> massAxisB = {AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 5.0f, 6.2f}, AxisSpec{240, 5.0f, 6.2f}};
 
 /// load the TPC spline from the CCDB
@@ -731,28 +731,28 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
     CLRBIT(isSelected, kK0S);
     if (activateQA > 1) {
       isRejected[kK0S] = true;
-      hV0Selected->Fill(5., kK0S);
+      hV0Selected->Fill(4., kK0S);
     }
   }
   if (!isRejected[kLambda] && std::abs(v0.mLambda() - massLambda) > 0.1) {
     CLRBIT(isSelected, kLambda);
     if (activateQA > 1) {
       isRejected[kLambda] = true;
-      hV0Selected->Fill(5., kLambda);
+      hV0Selected->Fill(4., kLambda);
     }
   }
   if (!isRejected[kAntiLambda] && std::abs(v0.mAntiLambda() - massLambda) > 0.1) {
     CLRBIT(isSelected, kAntiLambda);
     if (activateQA > 1) {
       isRejected[kAntiLambda] = true;
-      hV0Selected->Fill(5., kAntiLambda);
+      hV0Selected->Fill(4., kAntiLambda);
     }
   }
 
   if (!isRejected[kPhoton] && std::abs(v0.psipair()) > 0.1) {
     CLRBIT(isSelected, kPhoton);
     if (activateQA > 1) {
-      hV0Selected->Fill(6., kPhoton);
+      hV0Selected->Fill(5., kPhoton);
     }
   }
 
@@ -761,7 +761,9 @@ int isSelectedV0(const T& v0, const float& minGammaCosinePa, const float& minV0C
       if (!isRejected[iV0]) {
         hArmPod[iV0]->Fill(v0.alpha(), v0.qtarm());
         if (activateQA > 1) {
-          hV0Selected->Fill(7., iV0);
+          hV0Selected->Fill(6., iV0);
+        } else {
+          continue;
         }
       }
     }
