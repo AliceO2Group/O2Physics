@@ -24,6 +24,10 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -40,7 +44,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
@@ -52,9 +55,6 @@
 #include <Math/Vector4D.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -93,7 +93,7 @@ struct lambdakzeromcfinder {
   void init(InitContext& context)
   {
     // initialize histograms
-    const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
+    const AxisSpec axisNTimesCollRecoed{static_cast<int>(10), -0.5f, +9.5f, ""};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
 
@@ -184,7 +184,7 @@ struct lambdakzeromcfinder {
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
       if (daughters.size() >= 2) {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
-          if (( daughter.getProcess() != 4 && mcParticle.pdgCode() != 22 ) || daughter.getProcess() != 5)
+          if ((daughter.getProcess() != 4 && mcParticle.pdgCode() != 22) || daughter.getProcess() != 5)
             continue; // skip deltarays (if ever), stick to decay products only
           if (daughter.pdgCode() == positivePdg) {
             for (auto const& track : trackList) {
