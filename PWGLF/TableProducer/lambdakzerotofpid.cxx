@@ -87,6 +87,7 @@ struct lambdakzerotofpid {
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> nStepsLIntegrator{"nStepsLIntegrator", 200, "number of steps in length integrator"};
+  Configurable<bool> checkTPCCompatibility{"checkTPCCompatibility", true, "check compatibility with dE/dx"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -94,6 +95,11 @@ struct lambdakzerotofpid {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+
+  ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
+  ConfigurableAxis axisDeltaTime{"axisDeltaTime", {2000, -1000.0f, +1000.0f}, "delta-time (ps)"};
+  ConfigurableAxis axisK0ShortMass{"axisK0ShortMass", {200, 0.400f, 0.600f}, "Inv. Mass (GeV/c^{2})"};
+  ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.01f, 1.21f}, "Inv. Mass (GeV/c^{2})"};
 
   int mRunNumber;
   float d_bz;
@@ -112,10 +118,12 @@ struct lambdakzerotofpid {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    const AxisSpec axisDeltaTime{(int)2000, -1000.0f, +1000.0f, "p_{T} (GeV/c)"};
-
-    histos.add("hDeltaTimePositive", "hDeltaTimePositive", kTH1F, {axisDeltaTime});
-    histos.add("hDeltaTimeNegative", "hDeltaTimeNegative", kTH1F, {axisDeltaTime});
+    histos.add("h3dMassK0ShortPositive", "h3dMassK0ShortPositive", kTH3F, {axisPtQA, axisDeltaTime, axisK0ShortMass});
+    histos.add("h3dMassLambdaPositive", "h3dMassLambdaPositive", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
+    histos.add("h3dMassAntiLambdaPositive", "h3dMassAntiLambdaPositive", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
+    histos.add("h3dMassK0ShortNegative", "h3dMassK0ShortNegative", kTH3F, {axisPtQA, axisDeltaTime, axisK0ShortMass});
+    histos.add("h3dMassLambdaNegative", "h3dMassLambdaNegative", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
+    histos.add("h3dMassAntiLambdaNegative", "h3dMassAntiLambdaNegative", kTH3F, {axisPtQA, axisDeltaTime, axisLambdaMass});
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -184,7 +192,7 @@ struct lambdakzerotofpid {
     return 0.0299792458*TMath::Sqrt(lA/(1+lA));
   }
 
-  void process(aod::Collisions const& collisions, aod::V0Datas const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void process(aod::Collisions const& collisions, aod::V0Datas const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const&, TaggedV0s const& allV0s)
   {
     for (const auto& collision : collisions) {
       // Fire up CCDB
@@ -215,24 +223,52 @@ struct lambdakzerotofpid {
         if (!negTrack.getXatLabR(370.0, negTofX, d_bz, o2::track::DirOutward)){
           negTofX = -1;
         }
-        float deltaTimePositive = -1e+6;
-        float deltaTimeNegative = -1e+6;
+        float deltaTimePositivePi = -1e+6;
+        float deltaTimeNegativePi = -1e+6;
+        float deltaTimePositivePr = -1e+6;
+        float deltaTimeNegativePr = -1e+6;
         if( posTofX > 10 ){
           float velocityPositive = velocity( posTrack.getP(), o2::constants::physics::MassProton );
           float lengthPositive = trackLength( posTrack, v0.posX(),  posTofX );
           float timePositive = lengthPositive/velocityPositive;
-          deltaTimePositive = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeV0+timePositive) ; 
+          deltaTimePositivePi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeV0+timePositive) ; 
+        }
+        if( posTofX > 10 ){
+          float velocityPositive = velocity( posTrack.getP(), o2::constants::physics::MassProton );
+          float lengthPositive = trackLength( posTrack, v0.posX(),  posTofX );
+          float timePositive = lengthPositive/velocityPositive;
+          deltaTimePositivePr = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeV0+timePositive) ; 
         }
         if( negTofX > 10 ){
           float velocityNegative = velocity( negTrack.getP(), o2::constants::physics::MassPionCharged );
           float lengthNegative = trackLength( negTrack, v0.negX(),  negTofX );
           float timeNegative = lengthNegative/velocityNegative;
-          deltaTimeNegative = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeV0+timeNegative) ; 
+          deltaTimeNegativePi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeV0+timeNegative) ; 
         }
-        v0DeltaTimeTOF(-1, deltaTimePositive, deltaTimeNegative, -1); 
+        if( negTofX > 10 ){
+          float velocityNegative = velocity( negTrack.getP(), o2::constants::physics::MassProton );
+          float lengthNegative = trackLength( negTrack, v0.negX(),  negTofX );
+          float timeNegative = lengthNegative/velocityNegative;
+          deltaTimeNegativePr = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeV0+timeNegative) ; 
+        }
+        v0DeltaTimeTOF(deltaTimePositivePi, deltaTimePositivePr, deltaTimeNegativePi, deltaTimeNegativePr); 
 
-        histos.fill(HIST("hDeltaTimePositive"), deltaTimePositive);
-        histos.fill(HIST("hDeltaTimeNegative"), deltaTimeNegative);
+        auto originalV0 = v0.v0_as<TaggedV0s>(); // this could look confusing, so:
+        // the first v0 is the v0data row; the getter de-references the v0 (stored indices) row
+        // the v0 (stored indices) contain the tags of the lambdakzero preselector
+
+        if (originalV0.isK0ShortCandidate() || !checkTPCCompatibility ){
+          histos.fill(HIST("h3dMassK0ShortPositive"), v0.pt(), deltaTimePositivePi, v0.mK0Short());
+          histos.fill(HIST("h3dMassK0ShortNegative"), v0.pt(), deltaTimeNegativePi, v0.mK0Short());
+        }
+        if (originalV0.isLambdaCandidate() || !checkTPCCompatibility ){
+          histos.fill(HIST("h3dMassLambdaPositive"), v0.pt(), deltaTimePositivePr, v0.mLambda());
+          histos.fill(HIST("h3dMassLambdaNegative"), v0.pt(), deltaTimeNegativePi, v0.mLambda());
+        }
+        if (originalV0.isAntiLambdaCandidate() || !checkTPCCompatibility ){
+          histos.fill(HIST("h3dMassAntiLambdaPositive"), v0.pt(), deltaTimePositivePi, v0.mAntiLambda());
+          histos.fill(HIST("h3dMassAntiLambdaNegative"), v0.pt(), deltaTimeNegativePr, v0.mAntiLambda());
+        }
       }
     }
   }
