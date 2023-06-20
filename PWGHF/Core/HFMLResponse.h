@@ -16,9 +16,6 @@
 #ifndef PWGHF_CORE_HFMLRESPONSE_H_
 #define PWGHF_CORE_HFMLRESPONSE_H_
 
-#include <vector>
-#include <string>
-
 // ML application
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 
