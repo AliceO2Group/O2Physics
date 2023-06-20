@@ -96,7 +96,8 @@ struct HfCandidateSelectorDplusToPiKPi {
     }
 
     if (applyML) {
-      hfMLResponse.init(pTBinsML, cutsML, cutDirML, modelPathsML, true);
+      uint8_t nClasses = 3;
+      hfMLResponse.init(pTBinsML, cutsML, cutDirML, modelPathsML, nClasses);
       outputML.assign(((std::vector<int>)cutDirML).size(), -1.f); // dummy value for ML output
     }
   }

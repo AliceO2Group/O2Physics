@@ -13,8 +13,8 @@
 /// \brief Class to compute the ML response for HF-analysis selections
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, Universita' and INFN Torino
 
-#ifndef O2_ANALYSIS_HFMLRESPONSE_H_
-#define O2_ANALYSIS_HFMLRESPONSE_H_
+#ifndef PWGHF_CORE_HFMLRESPONSE_H_
+#define PWGHF_CORE_HFMLRESPONSE_H_
 
 #include <vector>
 #include <string>
@@ -110,17 +110,17 @@ class HFMLResponse
   /// \param enableOptimizations is a switch no enable optimizations
   /// \param threads
   void init(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir,
-            const std::vector<std::string>& paths, bool enableOptimizations, int threads = 0)
+            const std::vector<std::string>& paths, const uint8_t& nClasses, bool enableOptimizations = false, int threads = 0)
   {
     // import configurables
     mBinsLimits = binsLimits;
     mCuts = cuts;
     mCutDir = cutDir;
+    mNClasses = nClasses;
 
     mNetworks = std::vector<o2::ml::OnnxModel>(mNModels);
     mPaths = std::vector<std::string>(mNModels);
     mNModels = binsLimits.size() - 1;
-    mNClasses = (cutDir.size() >= 3) ? cutDir.size() : 2;
 
     // initialize models
     uint8_t counterModel{0};
@@ -135,7 +135,7 @@ class HFMLResponse
   /// \param paths is a vector of onnx model paths
   /// \param enableOptimizations is a switch no enable optimizations
   /// \param threads
-  void init(bool enableOptimizations, int threads = 0)
+  void init(bool enableOptimizations = false, int threads = 0)
   {
     return init(mPaths, enableOptimizations, threads);
   }
@@ -211,4 +211,4 @@ class HFMLResponse
 
 } // namespace o2::analysis
 
-#endif // O2_ANALYSIS_HFMLRESPONSE_H_
+#endif // PWGHF_CORE_HFMLRESPONSE_H_
