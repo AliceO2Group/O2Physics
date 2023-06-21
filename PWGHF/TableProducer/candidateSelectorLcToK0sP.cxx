@@ -21,10 +21,10 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
-#include "Tools/ML/model.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,13 +64,13 @@ struct HfCandidateSelectorLcToK0sP {
   Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
   Configurable<std::string> onnxFile{"onnxFile", "", "ONNX file for ML model for Lc+ candidates"};
   Configurable<std::vector<double>> binsPtML{"binsPtML", std::vector<double>{hf_cuts_bdt_multiclass::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> thresholdBDTScore{"thresholdBDTScore", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc+ candidates"};
+  Configurable<LabeledArray<double>> thresholdBdtScore{"thresholdBdtScore", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc+ candidates"};
   Configurable<uint32_t> MLInputs{"MLInputs", 2088892, "Bit mask to select the input parameters for the ML model"};
-
-  HistogramRegistry registry{"registry", {}};
 
   int dataTypeML;
   OnnxModel model;
+
+  HistogramRegistry registry{"registry", {}};
 
   void init(InitContext&)
   {
@@ -82,14 +82,14 @@ struct HfCandidateSelectorLcToK0sP {
     }
 
     if (applyML) {
-      AxisSpec axisBDT = {100, 0, 1, "score"};
+      AxisSpec axisBdt = {100, 0, 1, "score"};
       AxisSpec axisBinsPt = {binsPtML, "#it{p}_{T} (GeV/#it{c})"};
-      registry.add<TH1>("hBDTScoreBkg", "BDT score distribution for Lc;BDT score;counts", HistType::kTH1F, {axisBDT});
-      registry.add<TH2>("hBDTScoreBkgVsPtCand", "BDT score distribution for Lc;BDT score;counts", HistType::kTH2F, {axisBDT, axisBinsPt});
-      registry.add<TH1>("hBDTScorePrompt", "BDT score distribution for Lc;BDT score;counts", HistType::kTH1F, {axisBDT});
-      registry.add<TH2>("hBDTScorePromptVsPtCand", "BDT score distribution for Lc;BDT score;counts", HistType::kTH2F, {axisBDT, axisBinsPt});
-      registry.add<TH1>("hBDTScoreNonPrompt", "BDT score distribution for Lc;BDT score;counts", HistType::kTH1F, {axisBDT});
-      registry.add<TH2>("hBDTScoreNonPromptVsPtCand", "BDT score distribution for Lc;BDT score;counts", HistType::kTH2F, {axisBDT, axisBinsPt});
+      registry.add<TH1>("hBdtScoreBkg", "BDT score distribution for Lc;BDT score;counts", HistType::kTH1F, {axisBdt});
+      registry.add<TH2>("hBdtScoreBkgVsPtCand", "BDT score distribution for Lc;BDT score;counts", HistType::kTH2F, {axisBdt, axisBinsPt});
+      registry.add<TH1>("hBdtScorePrompt", "BDT score distribution for Lc;BDT score;counts", HistType::kTH1F, {axisBdt});
+      registry.add<TH2>("hBdtScorePromptVsPtCand", "BDT score distribution for Lc;BDT score;counts", HistType::kTH2F, {axisBdt, axisBinsPt});
+      registry.add<TH1>("hBdtScoreNonPrompt", "BDT score distribution for Lc;BDT score;counts", HistType::kTH1F, {axisBdt});
+      registry.add<TH2>("hBdtScoreNonPromptVsPtCand", "BDT score distribution for Lc;BDT score;counts", HistType::kTH2F, {axisBdt, axisBinsPt});
       // for the moment only local onnx file, no ccdb call
       model.initModel(onnxFile, false, 1);
       auto session = model.getSession();
@@ -207,7 +207,8 @@ struct HfCandidateSelectorLcToK0sP {
       return false;
     }
 
-    float inputParamsAll[24] = {
+    const int nParamsAll = 24;
+    float inputParamsAll[nParamsAll] = {
       hfCandCascade.rSecondaryVertex(),
       hfCandCascade.decayLength(),
       hfCandCascade.ptProng0(),
@@ -235,13 +236,12 @@ struct HfCandidateSelectorLcToK0sP {
 
     std::vector<float> inputFeaturesF;
     std::vector<double> inputFeaturesD;
-    uint32_t i = 1;
-    for (const auto& param : inputParamsAll) {
-      if (i & MLInputs) {
-        inputFeaturesF.push_back(param);
-        inputFeaturesD.push_back(param);
+
+    for (int i = 0; i < nParamsAll; i++) {
+      if (TESTBIT(MLInputs, i)) {
+        inputFeaturesF.push_back(inputParamsAll[i]);
+        inputFeaturesD.push_back(inputParamsAll[i]);
       }
-      i = i * 2;
     }
 
     float scores[3] = {-1.f, -1.f, -1.f};
@@ -259,27 +259,20 @@ struct HfCandidateSelectorLcToK0sP {
       LOG(error) << "Error running model inference for Lc: Unexpected input data type.";
     }
 
-    registry.fill(HIST("hBDTScoreBkg"), scores[0]);
-    registry.fill(HIST("hBDTScoreBkgVsPtCand"), scores[0], candPt);
-    registry.fill(HIST("hBDTScorePrompt"), scores[1]);
-    registry.fill(HIST("hBDTScorePromptVsPtCand"), scores[1], candPt);
-    registry.fill(HIST("hBDTScoreNonPrompt"), scores[2]);
-    registry.fill(HIST("hBDTScoreNonPromptVsPtCand"), scores[2], candPt);
+    registry.fill(HIST("hBdtScoreBkg"), scores[0]);
+    registry.fill(HIST("hBdtScoreBkgVsPtCand"), scores[0], candPt);
+    registry.fill(HIST("hBdtScorePrompt"), scores[1]);
+    registry.fill(HIST("hBdtScorePromptVsPtCand"), scores[1], candPt);
+    registry.fill(HIST("hBdtScoreNonPrompt"), scores[2]);
+    registry.fill(HIST("hBdtScoreNonPromptVsPtCand"), scores[2], candPt);
 
-    if (scores[0] > thresholdBDTScore->get(ptBin, "BDTbkg")) {
+    if (scores[0] > thresholdBdtScore->get(ptBin, "BDTbkg")) {
       return false;
     }
-    if (scores[1] <= thresholdBDTScore->get(ptBin, "BDTprompt") && scores[2] <= thresholdBDTScore->get(ptBin, "BDTnonprompt")) {
+    if (scores[1] <= thresholdBdtScore->get(ptBin, "BDTprompt") && scores[2] <= thresholdBdtScore->get(ptBin, "BDTnonprompt")) {
       return false;
     }
-    /*
-    if (scores[1] > thresholdBDTScore->get(ptBin, "BDTprompt")) {
-      // prompt
-    }
-    if (scores[2] > thresholdBDTScore->get(ptBin, "BDTnonprompt")) {
-      // non-prompt
-    }
-    */
+
     return true;
   }
 
@@ -304,11 +297,9 @@ struct HfCandidateSelectorLcToK0sP {
         continue;
       }
 
-      if (applyML) {
-        if (!selectionML(candidate, bach)) {
-          hfSelLcToK0sPCandidate(statusLc);
-          continue;
-        }
+      if (applyML && !selectionML(candidate, bach)) {
+        hfSelLcToK0sPCandidate(statusLc);
+        continue;
       }
 
       statusLc = 1;
@@ -337,11 +328,9 @@ struct HfCandidateSelectorLcToK0sP {
         continue;
       }
 
-      if (applyML) {
-        if (!selectionML(candidate, bach)) {
-          hfSelLcToK0sPCandidate(statusLc);
-          continue;
-        }
+      if (applyML && !selectionML(candidate, bach)) {
+        hfSelLcToK0sPCandidate(statusLc);
+        continue;
       }
 
       statusLc = 1;
