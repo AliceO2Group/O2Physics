@@ -141,7 +141,7 @@ struct HfCorrelatorDplusDminus {
         if (track.eta() < -4.0 || track.eta() > 4.0) {
           continue;
         }
-        if (abs(track.dcaXY()) > 0.0025 || abs(track.dcaZ()) > 0.0025) {
+        if (std::abs(track.dcaXY()) > 0.0025 || std::abs(track.dcaZ()) > 0.0025) {
           continue;
         }
         nTracks++;
@@ -249,7 +249,7 @@ struct HfCorrelatorDplusDminus {
         if (track.eta() < -4.0 || track.eta() > 4.0) {
           continue;
         }
-        if (abs(track.dcaXY()) > 0.0025 || abs(track.dcaZ()) > 0.0025) {
+        if (std::abs(track.dcaXY()) > 0.0025 || std::abs(track.dcaZ()) > 0.0025) {
           continue;
         }
         nTracks++;
