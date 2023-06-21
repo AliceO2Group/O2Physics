@@ -209,7 +209,6 @@ struct OnTheFlyTracker {
       }
       dNdEta += 1.f;
     }
-    dNdEta /= (multEtaRange*2);
 
     dNdEta /= (multEtaRange * 2.0f);
 
