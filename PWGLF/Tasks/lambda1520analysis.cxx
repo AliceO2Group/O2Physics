@@ -228,7 +228,7 @@ struct lambda1520analysis {
       if (isTrk2hasTOF) {
         trk2NSigmaKaTOF = trk2.tofNSigmaKa();
         if (std::abs(trk2NSigmaKaTOF) > cMaxTOFnSigmaKaon)
-          isTrk1Selected = false;
+          isTrk2Selected = false;
       }
       // For Kaon candidate, we need to apply pT-dependent PID cuts
       /*       if (lengthOfkaonTPCPIDpTintv > 0) {
@@ -265,7 +265,7 @@ struct lambda1520analysis {
 
       //  --- PID QA Kaon
       histos.fill(HIST("QA/QAbefore/Kaon/TPC_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTPC);
-      if (isTrk1hasTOF) {
+      if (isTrk2hasTOF) {
         histos.fill(HIST("QA/QAbefore/Kaon/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
         histos.fill(HIST("QA/QAbefore/Kaon/TOF_TPC_Map_ka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
       }
@@ -359,7 +359,7 @@ struct lambda1520analysis {
   {
     LOGF(debug, "[DATA] Processing %d collisions", collisions.size());
     for (auto& collision : collisions) {
-      Partition<aod::ResoTracks> selectedTracks = (o2::aod::track::pt > static_cast<float_t>(cMinPtcut)) && (nabs(o2::aod::track::eta) < static_cast<float_t>(cfgCutEta)) && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) <= static_cast<float_t>(cMaxDCArToPVcut)); // ((0.0105f + 0.0350f / npow(o2::aod::track::pt, 1.1f))))  && (aod::resodaughter::tpcNClsCrossedRows > static_cast<uint8_t>(cMinTPCncr)); // Basic DCA cuts
+      Partition<aod::ResoTracks> selectedTracks = (o2::aod::track::pt > static_cast<float_t>(cMinPtcut)) && (nabs(o2::aod::track::eta) < static_cast<float_t>(cfgCutEta)) && (nabs(o2::aod::track::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) <= static_cast<float_t>(cMaxDCArToPVcut)) /* ((0.0105f + 0.0350f / npow(o2::aod::track::pt, 1.1f)))) */ && (aod::resodaughter::tpcNClsCrossedRows > static_cast<uint8_t>(cMinTPCncr)); // Basic DCA cuts
       selectedTracks.bindTable(resotracks);
       auto colTracks = selectedTracks->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
       fillHistograms<false, false>(collision, colTracks, colTracks);

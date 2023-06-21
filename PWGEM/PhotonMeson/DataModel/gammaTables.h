@@ -227,6 +227,52 @@ DECLARE_SOA_TABLE(V0Photons, "AOD", "V0PHOTON", //!
 // iterators
 using V0Photon = V0Photons::iterator;
 
+namespace v0photonkf
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                         //!
+DECLARE_SOA_INDEX_COLUMN(V0Photon, v0photon);                           //!
+DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, V0Legs, "_Pos"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, V0Legs, "_Neg"); //!
+DECLARE_SOA_COLUMN(Vx, vx, float);                                      //!
+DECLARE_SOA_COLUMN(Vy, vy, float);                                      //!
+DECLARE_SOA_COLUMN(Vz, vz, float);                                      //!
+DECLARE_SOA_COLUMN(Px, px, float);
+DECLARE_SOA_COLUMN(Py, py, float);
+DECLARE_SOA_COLUMN(Pz, pz, float);
+DECLARE_SOA_COLUMN(MGamma, mGamma, float);
+DECLARE_SOA_COLUMN(CosPA, cospa, float); //!
+DECLARE_SOA_COLUMN(PCA, pca, float);     //!
+
+DECLARE_SOA_COLUMN(Alpha, alpha, float);
+DECLARE_SOA_COLUMN(QtArm, qtarm, float);
+DECLARE_SOA_COLUMN(PsiPair, psipair, float);
+DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float); // Chi2 / NDF of the reconstructed V0
+
+DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float px, float py, float pz, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz, m); }); //! energy of v0 photn, mass to be given as argument when getter is called!
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float { return RecoDecay::eta(array{px, py, pz}); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
+DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, [](float vx, float vy) -> float { return RecoDecay::sqrtSumOfSquares(vx, vy); });
+
+} // namespace v0photonkf
+DECLARE_SOA_TABLE(V0PhotonsKF, "AOD", "V0PHOTONKF", //!
+                  o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::V0PhotonId, v0photon::PosTrackId, v0photon::NegTrackId,
+                  v0photonkf::Vx, v0photonkf::Vy, v0photonkf::Vz,
+                  v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz,
+                  v0photonkf::MGamma, v0photonkf::CosPA, v0photonkf::PCA,
+                  v0photonkf::Alpha, v0photonkf::QtArm, v0photonkf::PsiPair,
+                  v0photonkf::ChiSquareNDF,
+                  // dynamic column
+                  v0photonkf::E<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
+                  v0photonkf::Pt<v0photonkf::Px, v0photonkf::Py>,
+                  v0photonkf::Eta<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
+                  v0photonkf::Phi<v0photonkf::Px, v0photonkf::Py>,
+                  v0photonkf::P<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
+                  v0photonkf::V0Radius<v0photonkf::Vx, v0photonkf::Vy>);
+// iterators
+using V0PhotonKF = V0PhotonsKF::iterator;
+
 namespace MCTracksTrue
 {
 DECLARE_SOA_COLUMN(SameMother, sameMother, bool); // Do the tracks have the same mother particle?
@@ -254,20 +300,21 @@ namespace v0Recalculations
 DECLARE_SOA_COLUMN(RecalculatedVtxX, recalculatedVtxX, float); //! Recalculated conversion point
 DECLARE_SOA_COLUMN(RecalculatedVtxY, recalculatedVtxY, float); //! Recalculated conversion point
 DECLARE_SOA_COLUMN(RecalculatedVtxZ, recalculatedVtxZ, float); //! Recalculated conversion point
-DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float y) { return TMath::Sqrt(x * x + y * y); });
+DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float y) { return sqrt(x * x + y * y); });
 } // namespace v0Recalculations
 
-namespace v0KFParticle
-{
-DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float); // Chi2 / NDF of the reconstructed V0
-} // namespace v0KFParticle
+// namespace v0KFParticle
+//{
+// DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float); // Chi2 / NDF of the reconstructed V0
+// } // namespace v0KFParticle
 
-DECLARE_SOA_TABLE(V0RecalculationAndKF, "AOD", "V0RECALCANDKF",
+DECLARE_SOA_TABLE(V0Recalculation, "AOD", "V0RECALC",
                   v0Recalculations::RecalculatedVtxX,
                   v0Recalculations::RecalculatedVtxY,
                   v0Recalculations::RecalculatedVtxZ,
-                  v0Recalculations::RecalculatedVtxR<o2::aod::v0Recalculations::RecalculatedVtxX, o2::aod::v0Recalculations::RecalculatedVtxY>,
-                  v0KFParticle::ChiSquareNDF);
+                  v0Recalculations::RecalculatedVtxR<o2::aod::v0Recalculations::RecalculatedVtxX, o2::aod::v0Recalculations::RecalculatedVtxY>
+                  // v0KFParticle::ChiSquareNDF
+);
 
 namespace gammamctrue
 {
