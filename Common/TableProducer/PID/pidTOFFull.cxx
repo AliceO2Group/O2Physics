@@ -58,6 +58,7 @@ struct tofPidFull {
   Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
+  Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"}; // temporary for pass3
   Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
   Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
 
@@ -135,18 +136,27 @@ struct tofPidFull {
       LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
       o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
       paramCollection->print();
-      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) {
+      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) { // Attempt at loading the parameters with the pass defined
         if (fatalOnPassNotAvailable) {
           LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         } else {
           LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         }
-      } else {
+      } else { // Pass is available, load non standard parameters
         mRespParamsV2.setShiftParameters(paramCollection->getPars(passName.value));
         mRespParamsV2.printShiftParameters();
       }
     }
     mRespParamsV2.print();
+    if (timeShiftCCDBPath.value != "") {
+      if (timeShiftCCDBPath.value.find(".root") != std::string::npos) {
+        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Pos", true);
+        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Neg", false);
+      } else {
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), timestamp.value), true);
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), timestamp.value), false);
+      }
+    }
   }
 
   // Reserves an empty table for the given particle ID with size of the given track table
@@ -244,8 +254,8 @@ struct tofPidFull {
       reserveTable(pidId, tracks.size());
     }
 
-    int lastCollisionId = -1; // Last collision ID analysed
-    float resolution = 1.f;
+    int lastCollisionId = -1;          // Last collision ID analysed
+    float resolution = 1.f;            // Last resolution assigned
     for (auto const& track : tracks) { // Loop on all tracks
       if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
@@ -349,7 +359,7 @@ struct tofPidFull {
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size());
     }
-    float resolution = 1.f;
+    float resolution = 1.f;            // Last resolution assigned
     for (auto const& track : tracks) { // Loop on all tracks
       if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
