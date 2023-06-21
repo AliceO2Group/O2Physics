@@ -143,6 +143,7 @@ struct lambdakzeroBuilder {
   ConfigurableAxis axisTopoVarV0Radius{"axisTopoVarV0Radius", {500, 0.0, 100.0}, "V0 decay radius (cm)"};
   ConfigurableAxis axisTopoVarDCAV0Dau{"axisTopoVarDCAV0Dau", {200, 0.0, 2.0}, "DCA between V0 daughters (cm)"};
   ConfigurableAxis axisTopoVarDCAToPV{"axisTopoVarDCAToPV", {200, -1, 1.0}, "single track DCA to PV (cm)"};
+  ConfigurableAxis axisTopoVarDCAV0ToPV{"axisTopoVarDCAV0ToPV", {200, 0, 5.0}, "V0 DCA to PV (cm)"};
 
   ConfigurableAxis axisX{"axisX", {200, 0, 200}, "X_{IU}"};
   ConfigurableAxis axisRadius{"axisRadius", {500, 0, 50}, "Radius (cm)"};
@@ -273,6 +274,7 @@ struct lambdakzeroBuilder {
       registry.add("h2dTopoVarDCAV0Dau", "h2dTopoVarDCAV0Dau", kTH2D, {axisPtQA, axisTopoVarDCAV0Dau});
       registry.add("h2dTopoVarPosDCAToPV", "h2dTopoVarPosDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
       registry.add("h2dTopoVarNegDCAToPV", "h2dTopoVarNegDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
+      registry.add("h2dTopoVarNegDCAV0ToPV", "h2dTopoVarNegDCAV0ToPV", kTH2D, {axisPtQA, axisTopoVarDCAV0ToPV});
     }
 
     mRunNumber = 0;
@@ -595,6 +597,9 @@ struct lambdakzeroBuilder {
       auto lHypertritonMass = RecoDecay::m(array{array{2.0f * v0candidate.posP[0], 2.0f * v0candidate.posP[1], 2.0f * v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPionCharged});
       auto lAntiHypertritonMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{2.0f * v0candidate.negP[0], 2.0f * v0candidate.negP[1], 2.0f * v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
 
+      auto px = v0candidate.posP[0] + v0candidate.negP[0];
+      auto py = v0candidate.posP[1] + v0candidate.negP[1];
+      auto pz = v0candidate.posP[2] + v0candidate.negP[2];
       auto lPt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtHy = RecoDecay::sqrtSumOfSquares(2.0f * v0candidate.posP[0] + v0candidate.negP[0], 2.0f * v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
@@ -631,11 +636,16 @@ struct lambdakzeroBuilder {
         registry.fill(HIST("h2dXIU_AntiLambda"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
 
+      // QA extra: DCA to PV
+      float dcaV0toPV = std::sqrt((std::pow((primaryVertex.getY() - v0candidate.pos[1]) * pz - (primaryVertex.getZ() - v0candidate.pos[2]) * py, 2) + std::pow((primaryVertex.getX() - v0candidate.pos[0]) * pz - (primaryVertex.getZ() - v0candidate.pos[2]) * px, 2) + std::pow((primaryVertex.getX() - v0candidate.pos[0]) * py - (primaryVertex.getY() - v0candidate.pos[1]) * px, 2)) / (px * px + py * py + pz * pz));
+
       registry.fill(HIST("h2dTopoVarPointingAngle"), lPt, TMath::ACos(v0candidate.cosPA));
       registry.fill(HIST("h2dTopoVarV0Radius"), lPt, v0candidate.V0radius);
       registry.fill(HIST("h2dTopoVarDCAV0Dau"), lPt, v0candidate.dcaV0dau);
       registry.fill(HIST("h2dTopoVarPosDCAToPV"), lPt, v0candidate.posDCAxy);
       registry.fill(HIST("h2dTopoVarNegDCAToPV"), lPt, v0candidate.negDCAxy);
+      registry.fill(HIST("h2dTopoVarDCAV0ToPV"), lPt, dcaV0toPV);
+
     } // end QA
     return true;
   }
