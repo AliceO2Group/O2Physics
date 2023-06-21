@@ -1653,7 +1653,6 @@ struct NucleiHistTask {
             MC_adeuteron_PR_reg.fill(HIST("histDcaVsPtData_isMat"), track.pt(), track.dcaXY());
             MC_adeuteron_PR_reg.fill(HIST("histDcaZVsPtData_isMat"), track.pt(), track.dcaZ());
           }
-
         }
       }
     }
