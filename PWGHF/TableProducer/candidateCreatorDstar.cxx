@@ -14,7 +14,6 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-
 // #include "Common/Core/trackUtilities.h"
 // #include "DetectorsVertexing/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"

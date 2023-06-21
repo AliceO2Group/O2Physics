@@ -113,7 +113,7 @@ struct HfTaskFlow {
   void init(o2::framework::InitContext&)
   {
     //  EVENT HISTOGRAMS
-    constexpr int  kNBinsEvents = 3;
+    constexpr int kNBinsEvents = 3;
     registry.add("hEventCounter", "hEventCounter", {HistType::kTH1F, {{kNBinsEvents, 0.5, 0.5 + kNBinsEvents}}});
     //  set axes of the event counter histogram
     std::string labels[kNBinsEvents];
