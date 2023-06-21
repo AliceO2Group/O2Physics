@@ -190,9 +190,9 @@ double TrackSmearer::getPtRes(int pdg, float nch, float eta, float pt)
 double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
 {
   auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt);
-  auto sigmatgl = sqrt(lutEntry->covm[9]); // sigmatgl2
+  auto sigmatgl = sqrt(lutEntry->covm[9]);           // sigmatgl2
   auto etaRes = 1 / (sqrt(1 + sigmatgl * sigmatgl)); // propagate tgl to eta uncertainty
-  etaRes /= lutEntry->eta; // relative uncertainty
+  etaRes /= lutEntry->eta;                           // relative uncertainty
   return etaRes;
 }
 

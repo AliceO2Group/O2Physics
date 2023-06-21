@@ -25,7 +25,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 
-
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::soa;
@@ -67,7 +66,7 @@ struct Alice3Dilepton {
     const AxisSpec axisM{500, 0, 5, "#it{m}_{ll} (GeV/#it{c}^{2})"};
     const AxisSpec axisPt{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisSigmaEl{200, -10, 10, "n#sigma_{El}"};
-    const AxisSpec axisTrackLengthOuterTOF{300,0.,300.,"Track length (cm)"};
+    const AxisSpec axisTrackLengthOuterTOF{300, 0., 300., "Track length (cm)"};
     const AxisSpec axisEta{1000, -5, 5, "#it{#eta}"};
     const AxisSpec axisDCAxy{1000, 0, 20, "DCA_{xy,ll} (#sigma)"};
     const AxisSpec axisPhi{360, 0, TMath::TwoPi(), "#it{#varphi} (rad.)"};
@@ -541,7 +540,7 @@ struct Alice3Dilepton {
         }
         registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), mcParticle.pt(), track.nSigmaElectronOuterTOF());
         registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), mcParticle.pt(), track.nSigmaElectronInnerTOF());
-        registry.fill(HIST("Reconstructed/Track/outerTOFTrackLength"),track.outerTOFTrackLength());
+        registry.fill(HIST("Reconstructed/Track/outerTOFTrackLength"), track.outerTOFTrackLength());
         registry.fill(HIST("Reconstructed/Track/Pt"), track.pt());
         registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
         registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());
