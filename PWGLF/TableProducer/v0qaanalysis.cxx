@@ -43,10 +43,17 @@ struct v0qaanalysis {
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     if (isMC) {
-      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1I, {{1, 0.f, 1.f}}});
-      registry.add("GeneratedK0Short", "GeneratedK0Short", {HistType::kTH1F, {{250, 0.f, 25.f}}});
-      registry.add("GeneratedLambda", "GeneratedLambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
-      registry.add("GeneratedAntiLambda", "GeneratedAntiLambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+      registry.add("hNEventsMC_AllColl", "hNEventsMC_AllColl", {HistType::kTH1I, {{1, 0.f, 1.f}}});
+      registry.add("hNEventsMC_RecoColl", "hNEventsMC_RecoColl", {HistType::kTH1I, {{1, 0.f, 1.f}}});
+      registry.add("Reconstructed_MCRecoColl_K0Short", "Reconstructed_MCRecoColl_K0Short", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+      registry.add("Reconstructed_MCRecoColl_Lambda", "Reconstructed_MCRecoColl_Lambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+      registry.add("Reconstructed_MCRecoColl_AntiLambda", "Reconstructed_MCRecoColl_AntiLambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+      registry.add("Generated_MCRecoColl_K0Short", "Generated_MCRecoColl_K0Short", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+      registry.add("Generated_MCRecoColl_Lambda", "Generated_MCRecoColl_Lambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+      registry.add("Generated_MCRecoColl_AntiLambda", "Generated_MCRecoColl_AntiLambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+      registry.add("Generated_MCAllColl_K0Short", "Generated_MCAllColl_K0Short", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+      registry.add("Generated_MCAllColl_Lambda", "Generated_MCAllColl_Lambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
+      registry.add("Generated_MCAllColl_AntiLambda", "Generated_MCAllColl_AntiLambda", {HistType::kTH1F, {{250, 0.f, 25.f}}});
     }
   }
 
@@ -125,82 +132,157 @@ struct v0qaanalysis {
   }
   PROCESS_SWITCH(v0qaanalysis, processData, "Process data", true);
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+  Preslice<soa::Join<aod::V0Datas, aod::McV0Labels>> perCol = aod::track::collisionId;
+  Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
+
+  SliceCache cache1;
+  SliceCache cache2;
+
+  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
+                 aod::McCollisions const& mcCollisions,
                  soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
                  aod::McParticles const& mcParticles, DauTracksMC const& tracks)
   {
-
-    // Event selection
-    if (sel8 && !collision.sel8()) {
-      return;
-    }
-    if (TMath::Abs(collision.posZ()) > cutzvertex) {
-      return;
-    }
-
-    registry.fill(HIST("hNEventsMC"), 0.5);
-
-    for (auto& v0 : V0s) { // loop over V0s
-
-      if (!v0.has_mcParticle()) {
+    for (const auto& collision : collisions) {
+      // Event selection
+      if (sel8 && !collision.sel8()) {
         continue;
       }
-      auto v0mcparticle = v0.mcParticle();
-      int lPDG = 0;
-      bool isprimary = false;
-      if (TMath::Abs(v0mcparticle.pdgCode()) == 310 || TMath::Abs(v0mcparticle.pdgCode()) == 3122) {
-        lPDG = v0mcparticle.pdgCode();
-        isprimary = v0mcparticle.isPhysicalPrimary();
+      if (TMath::Abs(collision.posZ()) > cutzvertex) {
+        continue;
+      }
+      if (!collision.has_mcCollision()) {
+        continue;
       }
 
-      int posITSNhits = 0, negITSNhits = 0;
-      for (unsigned int i = 0; i < 7; i++) {
-        if (v0.posTrack_as<DauTracksMC>().itsClusterMap() & (1 << i)) {
-          posITSNhits++;
+      registry.fill(HIST("hNEventsMC_RecoColl"), 0.5);
+
+      auto v0sThisCollision = V0s.sliceBy(perCol, collision.globalIndex());
+      for (auto& v0 : v0sThisCollision) { // loop over V0s
+
+        if (!v0.has_mcParticle()) {
+          continue;
         }
-        if (v0.negTrack_as<DauTracksMC>().itsClusterMap() & (1 << i)) {
-          negITSNhits++;
+        auto v0mcparticle = v0.mcParticle();
+
+        // Highest numerator of efficiency
+        if (v0mcparticle.isPhysicalPrimary() && TMath::Abs(v0mcparticle.y()) <= rapidity) {
+          if (v0mcparticle.pdgCode() == 310) {
+            registry.fill(HIST("Reconstructed_MCRecoColl_K0Short"), v0mcparticle.pt()); // K0s
+          }
+          if (v0mcparticle.pdgCode() == 3122) {
+            registry.fill(HIST("Reconstructed_MCRecoColl_Lambda"), v0mcparticle.pt()); // Lambda
+          }
+          if (v0mcparticle.pdgCode() == -3122) {
+            registry.fill(HIST("Reconstructed_MCRecoColl_AntiLambda"), v0mcparticle.pt()); // AntiLambda
+          }
+        }
+
+        int lPDG = 0;
+        bool isprimary = false;
+        if (TMath::Abs(v0mcparticle.pdgCode()) == 310 || TMath::Abs(v0mcparticle.pdgCode()) == 3122) {
+          lPDG = v0mcparticle.pdgCode();
+          isprimary = v0mcparticle.isPhysicalPrimary();
+        }
+
+        int posITSNhits = 0, negITSNhits = 0;
+        for (unsigned int i = 0; i < 7; i++) {
+          if (v0.posTrack_as<DauTracksMC>().itsClusterMap() & (1 << i)) {
+            posITSNhits++;
+          }
+          if (v0.negTrack_as<DauTracksMC>().itsClusterMap() & (1 << i)) {
+            negITSNhits++;
+          }
+        }
+
+        float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(3122);
+        float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(-3122);
+        float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(310);
+
+        if (v0.v0radius() > v0radius &&
+            v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+            TMath::Abs(v0.posTrack_as<DauTracksMC>().eta()) < etadau &&
+            TMath::Abs(v0.negTrack_as<DauTracksMC>().eta()) < etadau // &&
+        ) {
+
+          float cent = 0.;
+
+          // Fill table
+          myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
+                v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
+                v0.v0radius(), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+                v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
+                v0.posTrack_as<DauTracksMC>().eta(), v0.negTrack_as<DauTracksMC>().eta(),
+                v0.posTrack_as<DauTracksMC>().phi(), v0.negTrack_as<DauTracksMC>().phi(),
+                posITSNhits, negITSNhits, ctauLambda, ctauAntiLambda, ctauK0s,
+                v0.negTrack_as<DauTracksMC>().tpcNSigmaPr(), v0.posTrack_as<DauTracksMC>().tpcNSigmaPr(),
+                v0.negTrack_as<DauTracksMC>().tpcNSigmaPi(), v0.posTrack_as<DauTracksMC>().tpcNSigmaPi(),
+                v0.negTrack_as<DauTracksMC>().tofNSigmaPr(), v0.posTrack_as<DauTracksMC>().tofNSigmaPr(),
+                v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
+                v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isprimary,
+                cent, cent);
         }
       }
 
-      float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(3122);
-      float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(-3122);
-      float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(310);
+      // Generated particles
+      const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache1);
 
-      if (v0.v0radius() > v0radius &&
-          v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
-          TMath::Abs(v0.posTrack_as<DauTracksMC>().eta()) < etadau &&
-          TMath::Abs(v0.negTrack_as<DauTracksMC>().eta()) < etadau // &&
-      ) {
-
-        float cent = 0.;
-
-        // Fill table
-        myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
-              v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
-              v0.v0radius(), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
-              v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
-              v0.posTrack_as<DauTracksMC>().eta(), v0.negTrack_as<DauTracksMC>().eta(),
-              v0.posTrack_as<DauTracksMC>().phi(), v0.negTrack_as<DauTracksMC>().phi(),
-              posITSNhits, negITSNhits, ctauLambda, ctauAntiLambda, ctauK0s,
-              v0.negTrack_as<DauTracksMC>().tpcNSigmaPr(), v0.posTrack_as<DauTracksMC>().tpcNSigmaPr(),
-              v0.negTrack_as<DauTracksMC>().tpcNSigmaPi(), v0.posTrack_as<DauTracksMC>().tpcNSigmaPi(),
-              v0.negTrack_as<DauTracksMC>().tofNSigmaPr(), v0.posTrack_as<DauTracksMC>().tofNSigmaPr(),
-              v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
-              v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isprimary,
-              cent, cent);
+      for (auto& mcParticle : particlesInCollision) {
+        if (std::abs(mcParticle.y()) > rapidity) {
+          continue;
+        }
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+        if (mcParticle.pdgCode() == 310)
+          registry.fill(HIST("Generated_MCRecoColl_K0Short"), mcParticle.pt()); // K0s
+        if (mcParticle.pdgCode() == 3122)
+          registry.fill(HIST("Generated_MCRecoColl_Lambda"), mcParticle.pt()); // Lambda
+        if (mcParticle.pdgCode() == -3122)
+          registry.fill(HIST("Generated_MCRecoColl_AntiLambda"), mcParticle.pt()); // AntiLambda
       }
     }
 
-    for (auto& mcparticle : mcParticles) {
+    for (const auto& mccollision : mcCollisions) {
 
-      if (mcparticle.isPhysicalPrimary() && TMath::Abs(mcparticle.y()) < rapidity) {
-        if (mcparticle.pdgCode() == 310)
-          registry.fill(HIST("GeneratedK0Short"), mcparticle.pt()); // K0s
-        if (mcparticle.pdgCode() == 3122)
-          registry.fill(HIST("GeneratedLambda"), mcparticle.pt()); // Lambda
-        if (mcparticle.pdgCode() == -3122)
-          registry.fill(HIST("GeneratedAntiLambda"), mcparticle.pt()); // AntiLambda
+      if (TMath::Abs(mccollision.posZ()) > cutzvertex) {
+        continue;
+      }
+
+      bool isFT0A = false;
+      bool isFT0C = false;
+
+      const auto particlesInMCCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache2);
+
+      for (auto& mcParticle : particlesInMCCollision) {
+
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+
+        if (std::abs(mcParticle.pdgCode() == 211)) {
+          if (mcParticle.eta() <= -2.3 && mcParticle.eta() >= -3.4) {
+            isFT0C = true;
+          }
+          if (mcParticle.eta() <= 5.0 && mcParticle.eta() >= 3.8) {
+            isFT0A = true;
+          }
+        }
+
+        if (std::abs(mcParticle.y()) > rapidity) {
+          continue;
+        }
+
+        if (mcParticle.pdgCode() == 310)
+          registry.fill(HIST("Generated_MCAllColl_K0Short"), mcParticle.pt()); // K0s
+        if (mcParticle.pdgCode() == 3122)
+          registry.fill(HIST("Generated_MCAllColl_Lambda"), mcParticle.pt()); // Lambda
+        if (mcParticle.pdgCode() == -3122)
+          registry.fill(HIST("Generated_MCAllColl_AntiLambda"), mcParticle.pt()); // AntiLambda
+      }
+
+      if (isFT0A && isFT0C) {
+        registry.fill(HIST("hNEventsMC_AllColl"), 0.5);
       }
     }
   }
