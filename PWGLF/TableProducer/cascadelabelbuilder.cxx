@@ -47,7 +47,7 @@ using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 struct cascadeLabelBuilder {
   Produces<aod::McCascLabels> casclabels; // MC labels for cascades
   Produces<aod::McTraCascLabels> tracasclabels; // MC labels for cascades
-  Produces<aod::McCascBBTags> bbtags; // MC labels for cascades
+  Produces<aod::McCascBBTags> bbtags;           // MC labels for cascades
   void init(InitContext const&) {}
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -166,21 +166,21 @@ struct cascadeLabelBuilder {
         continue; // skip those cascades for which V0 doesn't exist
       }
       auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
-      
+
       // Acquire all three daughter tracks, please
       auto lBachTrack = casc.bachelor_as<aod::McTrackLabels>();
       auto lNegTrack = v0data.negTrack_as<aod::McTrackLabels>();
       auto lPosTrack = v0data.posTrack_as<aod::McTrackLabels>();
 
-      // Bachelor-baryon association checker 
-      // this will allow for analyses to pinpoint the effect of spurious, unwanted correlations! 
-      
-      if( lBachTrack.has_mcParticle() ){ 
+      // Bachelor-baryon association checker
+      // this will allow for analyses to pinpoint the effect of spurious, unwanted correlations!
+
+      if (lBachTrack.has_mcParticle()) {
         auto bachelorParticle = lBachTrack.mcParticle_as<aod::McParticles>();
-        if(bachelorParticle.pdgCode() == 211){ //pi+, look for antiproton in negative prong
+        if (bachelorParticle.pdgCode() == 211) { // pi+, look for antiproton in negative prong
           if (lNegTrack.has_mcParticle()) {
             auto baryonParticle = lNegTrack.mcParticle_as<aod::McParticles>();
-            if (baryonParticle.has_mothers() && bachelorParticle.has_mothers() && baryonParticle.pdgCode() == -2212 ) {
+            if (baryonParticle.has_mothers() && bachelorParticle.has_mothers() && baryonParticle.pdgCode() == -2212) {
               for (auto& baryonMother : baryonParticle.mothers_as<aod::McParticles>()) {
                 for (auto& pionMother : bachelorParticle.mothers_as<aod::McParticles>()) {
                   if (baryonMother.globalIndex() == pionMother.globalIndex() && baryonMother.pdgCode() == -3122) {
@@ -190,11 +190,11 @@ struct cascadeLabelBuilder {
               }
             }
           }
-        } // end if-pion
-        if(bachelorParticle.pdgCode() == -211){ //pi-, look for proton in positive prong
+        }                                         // end if-pion
+        if (bachelorParticle.pdgCode() == -211) { // pi-, look for proton in positive prong
           if (lNegTrack.has_mcParticle()) {
             auto baryonParticle = lPosTrack.mcParticle_as<aod::McParticles>();
-            if (baryonParticle.has_mothers() && bachelorParticle.has_mothers() && baryonParticle.pdgCode() == 2212 ) {
+            if (baryonParticle.has_mothers() && bachelorParticle.has_mothers() && baryonParticle.pdgCode() == 2212) {
               for (auto& baryonMother : baryonParticle.mothers_as<aod::McParticles>()) {
                 for (auto& pionMother : bachelorParticle.mothers_as<aod::McParticles>()) {
                   if (baryonMother.globalIndex() == pionMother.globalIndex() && baryonMother.pdgCode() == 3122) {
@@ -205,7 +205,7 @@ struct cascadeLabelBuilder {
             }
           }
         } // end if-pion
-      } // end bachelor has mcparticle 
+      }   // end bachelor has mcparticle
       // Construct label table (note: this will be joinable with CascDatas)
       bbtags(bbTag);
     } // end casctable loop
