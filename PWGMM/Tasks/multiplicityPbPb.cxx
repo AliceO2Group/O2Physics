@@ -120,5 +120,5 @@ struct multiplicityPbPb {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<myExampleTask>(cfgc)};
+    adaptAnalysisTask<multiplicityPbPb>(cfgc)};
 }
