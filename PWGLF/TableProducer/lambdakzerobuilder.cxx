@@ -136,6 +136,14 @@ struct lambdakzeroBuilder {
   Configurable<float> dQAK0ShortMassWindow{"dQAK0ShortMassWindow", 0.005, "K0 mass window for ITS cluster map QA"};
   Configurable<float> dQALambdaMassWindow{"dQALambdaMassWindow", 0.005, "Lambda/AntiLambda mass window for ITS cluster map QA"};
 
+  ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
+
+  // for topo var QA
+  ConfigurableAxis axisTopoVarPointingAngle{"axisTopoVarPointingAngle", {50, 0.0, 1.0}, "pointing angle"};
+  ConfigurableAxis axisTopoVarV0Radius{"axisTopoVarV0Radius", {500, 0.0, 100.0}, "V0 decay radius (cm)"};
+  ConfigurableAxis axisTopoVarDCAV0Dau{"axisTopoVarDCAV0Dau", {200, 0.0, 2.0}, "DCA between V0 daughters (cm)"};
+  ConfigurableAxis axisTopoVarDCAToPV{"axisTopoVarDCAToPV", {200, -1, 1.0}, "single track DCA to PV (cm)"};
+
   ConfigurableAxis axisX{"axisX", {200, 0, 200}, "X_{IU}"};
   ConfigurableAxis axisRadius{"axisRadius", {500, 0, 50}, "Radius (cm)"};
 
@@ -180,11 +188,11 @@ struct lambdakzeroBuilder {
 
   // Helper struct to do bookkeeping of building parameters
   struct {
-    std::array<long, kNV0Steps> v0stats;
-    std::array<long, 10> posITSclu;
-    std::array<long, 10> negITSclu;
-    long exceptions;
-    long eventCounter;
+    std::array<int32_t, kNV0Steps> v0stats;
+    std::array<int32_t, 10> posITSclu;
+    std::array<int32_t, 10> negITSclu;
+    int32_t exceptions;
+    int32_t eventCounter;
   } statisticsRegistry;
 
   HistogramRegistry registry{
@@ -231,11 +239,11 @@ struct lambdakzeroBuilder {
     // Optionally, add extra QA histograms to processing chain
     if (d_doQA) {
       // Basic histograms containing invariant masses of all built candidates
-      const AxisSpec axisVsPtCoarse{(int)dQANBinsPtCoarse, 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
-      const AxisSpec axisGammaMass{(int)dQANBinsMass, 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisK0ShortMass{(int)dQANBinsMass, 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisLambdaMass{(int)dQANBinsMass, 1.01f, 1.21f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisHypertritonMass{(int)dQANBinsMass, 2.900f, 3.300f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisVsPtCoarse{static_cast<int32_t>(dQANBinsPtCoarse), 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
+      const AxisSpec axisGammaMass{static_cast<int32_t>(dQANBinsMass), 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisK0ShortMass{static_cast<int32_t>(dQANBinsMass), 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisLambdaMass{static_cast<int32_t>(dQANBinsMass), 1.01f, 1.21f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisHypertritonMass{static_cast<int32_t>(dQANBinsMass), 2.900f, 3.300f, "Inv. Mass (GeV/c^{2})"};
 
       registry.add("h2dGammaMass", "h2dGammaMass", kTH2F, {axisVsPtCoarse, axisGammaMass});
       registry.add("h2dK0ShortMass", "h2dK0ShortMass", kTH2F, {axisVsPtCoarse, axisK0ShortMass});
@@ -245,7 +253,7 @@ struct lambdakzeroBuilder {
       registry.add("h2dAntiHypertritonMass", "h2dAntiHypertritonMass", kTH2F, {axisVsPtCoarse, axisHypertritonMass});
 
       // bit packed ITS cluster map
-      const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
+      const AxisSpec axisITSCluMap{static_cast<int32_t>(128), -0.5f, +127.5f, "Packed ITS map"};
 
       // Histogram to bookkeep cluster maps
       registry.add("h2dITSCluMap_Gamma", "h2dITSCluMap_Gamma", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
@@ -258,6 +266,13 @@ struct lambdakzeroBuilder {
       registry.add("h2dXIU_K0Short", "h2dXIU_K0Short", kTH3D, {axisX, axisX, axisRadius});
       registry.add("h2dXIU_Lambda", "h2dXIU_Lambda", kTH3D, {axisX, axisX, axisRadius});
       registry.add("h2dXIU_AntiLambda", "h2dXIU_AntiLambda", kTH3D, {axisX, axisX, axisRadius});
+
+      // QA plots of topological variables using axisPtQA
+      registry.add("h2dTopoVarPointingAngle", "h2dTopoVarPointingAngle", kTH2D, {axisPtQA, axisTopoVarPointingAngle});
+      registry.add("h2dTopoVarV0Radius", "h2dTopoVarV0Radius", kTH2D, {axisPtQA, axisTopoVarV0Radius});
+      registry.add("h2dTopoVarDCAV0Dau", "h2dTopoVarDCAV0Dau", kTH2D, {axisPtQA, axisTopoVarDCAV0Dau});
+      registry.add("h2dTopoVarPosDCAToPV", "h2dTopoVarPosDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
+      registry.add("h2dTopoVarNegDCAToPV", "h2dTopoVarNegDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
     }
 
     mRunNumber = 0;
@@ -372,13 +387,13 @@ struct lambdakzeroBuilder {
     LOGF(info, " -+*> process call configuration:");
     if (doprocessRun2 == true) {
       LOGF(info, " ---+*> Run 2 processing enabled. Will subscribe to Tracks table.");
-    };
+    }
     if (doprocessRun3 == true) {
       LOGF(info, " ---+*> Run 3 processing enabled. Will subscribe to TracksIU table.");
-    };
+    }
     if (createV0CovMats > 0) {
       LOGF(info, " ---+*> Will produce V0 cov mat table");
-    };
+    }
     //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
     // initialize O2 2-prong fitter (only once)
@@ -600,22 +615,28 @@ struct lambdakzeroBuilder {
 
       // Fill ITS cluster maps with specific mass cuts
       if (TMath::Abs(lGammaMass - 0.0) < dQAGammaMassWindow && ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))) {
-        registry.fill(HIST("h2dITSCluMap_Gamma"), (float)posTrack.itsClusterMap(), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
-        registry.fill(HIST("h2dXIU_Gamma"), (float)posTrack.x(), (float)negTrack.x(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_Gamma"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
+        registry.fill(HIST("h2dXIU_Gamma"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
       if (TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow && ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))) {
-        registry.fill(HIST("h2dITSCluMap_K0Short"), (float)posTrack.itsClusterMap(), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
-        registry.fill(HIST("h2dXIU_K0Short"), (float)posTrack.x(), (float)negTrack.x(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_K0Short"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
+        registry.fill(HIST("h2dXIU_K0Short"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
       if (TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))) {
-        registry.fill(HIST("h2dITSCluMap_Lambda"), (float)posTrack.itsClusterMap(), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
-        registry.fill(HIST("h2dXIU_Lambda"), (float)posTrack.x(), (float)negTrack.x(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_Lambda"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
+        registry.fill(HIST("h2dXIU_Lambda"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
       if (TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))) {
-        registry.fill(HIST("h2dITSCluMap_AntiLambda"), (float)posTrack.itsClusterMap(), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
-        registry.fill(HIST("h2dXIU_AntiLambda"), (float)posTrack.x(), (float)negTrack.x(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_AntiLambda"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
+        registry.fill(HIST("h2dXIU_AntiLambda"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
-    }
+
+      registry.fill(HIST("h2dTopoVarPointingAngle"), lPt, TMath::ACos(v0candidate.cosPA));
+      registry.fill(HIST("h2dTopoVarV0Radius"), lPt, v0candidate.V0radius);
+      registry.fill(HIST("h2dTopoVarDCAV0Dau"), lPt, v0candidate.dcaV0dau);
+      registry.fill(HIST("h2dTopoVarPosDCAToPV"), lPt, v0candidate.posDCAxy);
+      registry.fill(HIST("h2dTopoVarNegDCAToPV"), lPt, v0candidate.negDCAxy);
+    } // end QA
     return true;
   }
 
