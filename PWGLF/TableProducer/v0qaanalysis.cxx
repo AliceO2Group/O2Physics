@@ -235,9 +235,9 @@ struct v0qaanalysis {
           continue;
         }
         if (mcParticle.pdgCode() == 310)
-          registry.fill(HIST("Generated_MCRecoColl_K0Short"), mcParticle.pt());    // K0s
+          registry.fill(HIST("Generated_MCRecoColl_K0Short"), mcParticle.pt()); // K0s
         if (mcParticle.pdgCode() == 3122)
-          registry.fill(HIST("Generated_MCRecoColl_Lambda"), mcParticle.pt());     // Lambda
+          registry.fill(HIST("Generated_MCRecoColl_Lambda"), mcParticle.pt()); // Lambda
         if (mcParticle.pdgCode() == -3122)
           registry.fill(HIST("Generated_MCRecoColl_AntiLambda"), mcParticle.pt()); // AntiLambda
       }
@@ -261,10 +261,10 @@ struct v0qaanalysis {
         }
 
         if (std::abs(mcParticle.pdgCode() == 211)) {
-          if (mcParticle.eta() <= -2.3 && mcParticle.eta() >= -3.4){
+          if (mcParticle.eta() <= -2.3 && mcParticle.eta() >= -3.4) {
             isFT0C = true;
           }
-          if (mcParticle.eta() <= 5.0 && mcParticle.eta() >= 3.8){
+          if (mcParticle.eta() <= 5.0 && mcParticle.eta() >= 3.8) {
             isFT0A = true;
           }
         }
@@ -274,9 +274,9 @@ struct v0qaanalysis {
         }
 
         if (mcParticle.pdgCode() == 310)
-          registry.fill(HIST("Generated_MCAllColl_K0Short"), mcParticle.pt());    // K0s
+          registry.fill(HIST("Generated_MCAllColl_K0Short"), mcParticle.pt()); // K0s
         if (mcParticle.pdgCode() == 3122)
-          registry.fill(HIST("Generated_MCAllColl_Lambda"), mcParticle.pt());     // Lambda
+          registry.fill(HIST("Generated_MCAllColl_Lambda"), mcParticle.pt()); // Lambda
         if (mcParticle.pdgCode() == -3122)
           registry.fill(HIST("Generated_MCAllColl_AntiLambda"), mcParticle.pt()); // AntiLambda
       }
