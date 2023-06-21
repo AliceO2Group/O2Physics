@@ -226,7 +226,6 @@ bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
 // relative uncertainty on pt
 double TrackSmearer::getPtRes(int pdg, float nch, float eta, float pt)
 {
-<<<<<<< HEAD
   float dummy = 0.0f;
   auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
   auto val = sqrt(lutEntry->covm[14]) * lutEntry->pt;
@@ -237,6 +236,7 @@ double TrackSmearer::getPtRes(int pdg, float nch, float eta, float pt)
 // relative uncertainty on eta
 double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
 {
+<<<<<<< HEAD
   // complaints to sebastian
   auto lutEntry = getLUTEntry(pid, nch, 0., eta, pt);
   auto val = sqrt(lutEntry->covm[9]) / lutEntry->eta;
