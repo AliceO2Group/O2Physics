@@ -266,18 +266,19 @@ struct reso2initializer {
 
   // Multiplicity estimator selection
   template <typename ResoColl>
-  float MultEst(ResoColl ResoEvents){
-	if ( cfgMultName.value == "FT0M"){
-		return ResoEvents.centFT0M();
-	} else if ( cfgMultName.value == "FT0C"){
-		return ResoEvents.centFT0C();
-	} else if ( cfgMultName.value == "FT0A"){
-		return ResoEvents.centFT0A();
-	} else if ( cfgMultName.value == "FV0M"){
-		return ResoEvents.multFV0M();
-	} else{
-		return ResoEvents.centFT0M();
-	}
+  float MultEst(ResoColl ResoEvents)
+  {
+    if (cfgMultName.value == "FT0M") {
+      return ResoEvents.centFT0M();
+    } else if (cfgMultName.value == "FT0C") {
+      return ResoEvents.centFT0C();
+    } else if (cfgMultName.value == "FT0A") {
+      return ResoEvents.centFT0A();
+    } else if (cfgMultName.value == "FV0M") {
+      return ResoEvents.multFV0M();
+    } else {
+      return ResoEvents.centFT0M();
+    }
   }
 
   // Filter for all tracks
@@ -306,7 +307,8 @@ struct reso2initializer {
         if (std::abs(track.tofNSigmaKa()) < pidnSigmaPreSelectionCut)
           tofPIDselections |= aod::resodaughter::PDGtype::kKaon;
         if (std::abs(track.tofNSigmaPr()) < pidnSigmaPreSelectionCut)
-          tofPIDselections |= aod::resodaughter::PDGtype::kProton; }
+          tofPIDselections |= aod::resodaughter::PDGtype::kProton;
+      }
       reso2trks(resoCollisions.lastIndex(),
                 track.pt(),
                 track.px(),
