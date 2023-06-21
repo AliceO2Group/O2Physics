@@ -233,13 +233,6 @@ struct DGCandAnalyzer {
       LOGF(info, "done!");
     }
 
-    // is BB bunch?
-    auto bcnum = dgcand.globalBC();
-    if (run >= 500000 && bcPatternB[bcnum % o2::constants::lhc::LHCMaxBunches] == 0) {
-      LOGF(debug, "bcnum[1] %d is not a BB BC", bcnum % o2::constants::lhc::LHCMaxBunches);
-      return;
-    }
-
     // skip unwanted cases
     // 0. all candidates
     // 1. candidate has associated BC and associated collision
