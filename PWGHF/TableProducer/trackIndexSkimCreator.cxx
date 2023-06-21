@@ -34,12 +34,14 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/V0.h"
+#include "ReconstructionDataFormats/Vertex.h" // for PV refit
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "ReconstructionDataFormats/V0.h"
-#include "ReconstructionDataFormats/Vertex.h" // for PV refit
 
 using namespace o2;
 using namespace o2::framework;

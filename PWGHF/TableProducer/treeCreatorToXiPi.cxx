@@ -16,9 +16,10 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University & GSI
 
 #include "Common/Core/trackUtilities.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 

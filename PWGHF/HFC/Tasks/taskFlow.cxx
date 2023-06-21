@@ -13,30 +13,32 @@
 /// \author Katarina Krizkova Gajdosova <katarina.gajdosova@cern.ch>, CERN
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/StepTHn.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "CommonConstants/MathConstants.h"
+#include <cmath>
 
+#include <TDirectory.h>
+#include <TH1F.h>
+#include <THn.h>
+
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "CommonConstants/MathConstants.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 
-#include <TH1F.h>
-#include <cmath>
-#include <TDirectory.h>
-#include <THn.h>
+#include "PWGCF/Core/CorrelationContainer.h"
+#include "PWGCF/Core/PairCuts.h"
+
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;

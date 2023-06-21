@@ -17,9 +17,10 @@
 #define PWGHF_UTILS_UTILSBFIELDCCDB_H_
 
 #include <string>
+
 #include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
 
 /// \brief Sets up the grp object for magnetic field (w/o matCorr for propagation)
 /// \param bc is the bunch crossing
@@ -32,9 +33,7 @@ void initCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
               o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string const& ccdbPathGrp, o2::base::MatLayerCylSet* lut,
               bool isRun2)
 {
-
   if (mRunNumber != bc.runNumber()) {
-
     LOGF(info, "====== initCCDB function called (isRun2==%d)", isRun2);
     if (isRun2) { // Run 2 GRP object
       o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());

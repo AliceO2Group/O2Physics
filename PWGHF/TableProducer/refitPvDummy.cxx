@@ -14,15 +14,15 @@
 ///
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN Padova, Italy
 
-#include "ReconstructionDataFormats/Track.h"
+#include "Common/Core/trackUtilities.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "Common/Core/trackUtilities.h"
 
 using namespace o2::framework;
-
-#include "Framework/runDataProcessing.h"
 
 struct HfRefitPvDummy {
 
