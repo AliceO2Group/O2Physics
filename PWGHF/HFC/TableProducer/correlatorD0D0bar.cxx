@@ -36,7 +36,7 @@ using namespace o2::constants::math;
 ///
 double getDeltaPhi(double phiD, double phiDbar)
 {
-  return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PI / 2.);
+  return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
 }
 
 /// definition of variables for D0D0bar pairs vs eta acceptance studies (hDDbarVsEtaCut, in data-like, MC-reco and MC-kine tasks)
@@ -56,7 +56,7 @@ const double massAxisMin = 1.5848;
 const double massAxisMax = 2.1848;
 const int phiAxisBins = 32;
 const double phiAxisMin = 0.;
-const double phiAxisMax = 2. * o2::constants::math::PI;
+const double phiAxisMax = o2::constants::math::TwoPI;
 const int yAxisBins = 100;
 const double yAxisMin = -5.;
 const double yAxisMax = 5.;
