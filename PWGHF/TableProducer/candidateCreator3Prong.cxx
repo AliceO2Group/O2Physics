@@ -54,7 +54,6 @@ struct HfCandidateCreator3Prong {
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
@@ -88,9 +87,6 @@ struct HfCandidateCreator3Prong {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbPathGeo);
-    }
     runNumber = 0;
   }
 
@@ -250,6 +246,8 @@ struct HfCandidateCreator3ProngExpressions {
     std::array<int, 2> arrPDGResonant1 = {kProton, 313};  // Λc± → p± K*
     std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};  // Λc± → Δ(1232)±± K∓
     std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus}; // Λc± → Λ(1520) π±
+    std::array<int, 2> arrPDGResonantDsPhiPi = {333, kPiPlus}; // Ds± → Phi π±
+    std::array<int, 2> arrPDGResonantDsKstarK = {313, kKPlus}; // Ds± → K*(892)0bar K±
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -275,6 +273,21 @@ struct HfCandidateCreator3ProngExpressions {
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDS, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::DsToKKPi);
+          if (arrayDaughters[0].has_mcParticle()) {
+            swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
+          }
+          RecoDecay::getDaughters(particlesMC.rawIteratorAt(indexRec), &arrDaughIndex, array{0}, 1);
+          if (arrDaughIndex.size() == 2) {
+            for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
+              auto daughI = particlesMC.rawIteratorAt(arrDaughIndex[iProng]);
+              arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
+            }
+            if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
+              channel = DecayChannelDs::PhiPi;
+            } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
+              channel = DecayChannelDs::K0starK;
+            }
+          }
         }
       }
 
@@ -343,6 +356,18 @@ struct HfCandidateCreator3ProngExpressions {
         // Printf("Checking Ds± → K± K∓ π±");
         if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kDS, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::DsToKKPi);
+          RecoDecay::getDaughters(particle, &arrDaughIndex, array{0}, 1);
+          if (arrDaughIndex.size() == 2) {
+            for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
+              auto daughJ = particlesMC.rawIteratorAt(arrDaughIndex[jProng]);
+              arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
+            }
+            if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
+              channel = DecayChannelDs::PhiPi;
+            } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
+              channel = DecayChannelDs::K0starK;
+            }
+          }
         }
       }
 

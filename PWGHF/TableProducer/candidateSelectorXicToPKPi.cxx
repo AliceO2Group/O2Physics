@@ -117,7 +117,7 @@ struct HfCandidateSelectorXicToPKPi {
     }
 
     // candidate impact parameter XY
-    if (candidate.impactParameterXY() > cuts->get(pTBin, "impParXY")) {
+    if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impParXY")) {
       return false;
     }
 

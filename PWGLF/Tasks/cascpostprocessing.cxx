@@ -90,6 +90,8 @@ DECLARE_SOA_COLUMN(NegPt, negpt, float);
 DECLARE_SOA_COLUMN(BachPt, bachpt, float);
 DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, float); // -1 unknown
 DECLARE_SOA_COLUMN(IsPrimary, isPrimary, float); // -1 unknown, 0 not primary, 1 primary
+DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
+DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
 
 } // namespace mycascades
 
@@ -104,7 +106,9 @@ DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
                   mycascades::NTOFSigmaPosPi, mycascades::NTOFSigmaBachPi, mycascades::NTOFSigmaBachKa,
                   mycascades::PosNTPCClusters, mycascades::NegNTPCClusters, mycascades::BachNTPCClusters,
                   mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF,
-                  mycascades::PosPt, mycascades::NegPt, mycascades::BachPt, mycascades::McPdgCode, mycascades::IsPrimary);
+                  mycascades::PosPt, mycascades::NegPt, mycascades::BachPt,
+                  mycascades::McPdgCode, mycascades::IsPrimary,
+                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV);
 
 } // namespace o2::aod
 
@@ -140,6 +144,12 @@ struct cascpostprocessing {
   Configurable<float> nsigmatofPr{"nsigmatofPr", 6, "N sigma TOF Proton"};
   Configurable<float> nsigmatofKa{"nsigmatofKa", 6, "N sigma TOF Kaon"};
 
+  Configurable<bool> isSelectBachBaryon{"isSelectBachBaryon", 0, "Bachelor-baryon cascade selection"};
+  Configurable<float> bachBaryonCosPA{"bachBaryonCosPA", 0.9999, "Bachelor baryon CosPA"};
+  Configurable<float> bachBaryonDCAxyToPV{"bachBaryonDCAxyToPV", 0.05, "DCA bachelor baryon to PV"};
+
+  Configurable<bool> isFT0MforMC{"isFT0MforMC", 0, "Fill with FT0M information or 0s"};
+
   HistogramRegistry registry{"registryts"};
 
   void init(InitContext const&)
@@ -158,10 +168,10 @@ struct cascpostprocessing {
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
 
-    TString CutLabel[25] = {"All", "MassWin", "y", "EtaDau", "DCADauToPV", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "ctau", "CompDecayMass"};
-    TString CutLabelSummary[25] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegtopv", "dcabachtopv", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "proplifetime", "rejcomp", "ptthrtof"};
+    TString CutLabel[22] = {"All", "MassWin", "y", "EtaDau", "DCADauToPV", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "ctau", "CompDecayMass", "Bach-baryon"};
+    TString CutLabelSummary[25] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegtopv", "dcabachtopv", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "proplifetime", "rejcomp", "ptthrtof", "bachBaryonCosPA", "bachBaryonDCAxyToPV"};
 
-    registry.add("hCandidate", "hCandidate", HistType::kTH1F, {{25, -0.5, 24.5}});
+    registry.add("hCandidate", "hCandidate", HistType::kTH1F, {{22, -0.5, 21.5}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hCandidate"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hCandidate"))->GetXaxis()->SetBinLabel(n, CutLabel[n - 1]);
     }
@@ -197,6 +207,10 @@ struct cascpostprocessing {
     registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(22, rejcomp);
     if (hastof)
       registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(23, ptthrtof);
+    if (isSelectBachBaryon) {
+      registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(24, bachBaryonCosPA);
+      registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(25, bachBaryonDCAxyToPV);
+    }
 
     registry.add("hPt", "hPt", {HistType::kTH1F, {ptAxis}});
     registry.add("hCascMinusInvMassvsPt", "hCascMinusInvMassvsPt", HistType::kTH2F, {ptAxis, massAxis});
@@ -222,6 +236,9 @@ struct cascpostprocessing {
     registry.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
     registry.add("hDCAV0ToPV", "hDCAV0ToPV", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
     registry.add("hMassLambdaDau", "hMassLambdaDau", {HistType::kTH1F, {{60, 1.1f, 1.13f}}});
+
+    registry.add("hBachBaryonCosPA", "hBachBaryonCosPA", {HistType::kTH1F, {{100, 0.0f, 1.0f}}});
+    registry.add("hBachBaryonDCAxyToPV", "hBachBaryonDCAxyToPV", {HistType::kTH1F, {{300, -3.0f, 3.0f}}});
 
     // kine
     registry.add("hEtaMinus", "hEtaMinus", {HistType::kTH2F, {ptAxis, etaAxis}});
@@ -396,6 +413,10 @@ struct cascpostprocessing {
         ctau = candidate.ctauomega();
         invmass = candidate.massomega();
       }
+      if (isSelectBachBaryon && (candidate.bachBaryonCosPA() > bachBaryonCosPA || fabs(candidate.bachBaryonDCAxyToPV()) < bachBaryonDCAxyToPV)) { // Bach-baryon selection if required
+        continue;
+      }
+      registry.fill(HIST("hCandidate"), ++counter);
 
       registry.fill(HIST("hPt"), candidate.pt());
       registry.fill(HIST("hDCANegToPV"), candidate.dcanegtopv());
@@ -410,6 +431,8 @@ struct cascpostprocessing {
       registry.fill(HIST("hDCAV0ToPV"), candidate.dcav0topv());
       registry.fill(HIST("hMassLambdaDau"), candidate.masslambdadau());
 
+      registry.fill(HIST("hBachBaryonCosPA"), candidate.bachBaryonCosPA());
+      registry.fill(HIST("hBachBaryonDCAxyToPV"), candidate.bachBaryonDCAxyToPV());
       if (candidate.sign() > 0) {
         registry.fill(HIST("hCtauPlus"), ctau);
         registry.fill(HIST("hEtaPlus"), candidate.pt(), candidate.eta());
@@ -464,7 +487,7 @@ struct cascpostprocessing {
 
       if (candidate.sign() < 0) {
         if (isCorrectlyRec) {
-          registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, candidate.multFT0M());
+          registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, (isFT0MforMC ? candidate.multFT0M() : 0));
         }
         registry.fill(HIST("hCascMinusInvMassvsPt"), candidate.pt(), invmass);
         registry.fill(HIST("hCascMinusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
@@ -472,7 +495,7 @@ struct cascpostprocessing {
       }
       if (candidate.sign() > 0) {
         if (isCorrectlyRec) {
-          registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, candidate.multFT0M());
+          registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, (isFT0MforMC ? candidate.multFT0M() : 0));
         }
         registry.fill(HIST("hCascPlusInvMassvsPt"), candidate.pt(), invmass);
         registry.fill(HIST("hCascPlusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);

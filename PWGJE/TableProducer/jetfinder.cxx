@@ -38,6 +38,7 @@ struct JetFinderTask {
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  Configurable<std::string> evSel{"evSel", "evSel8", "choose event selection"};
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
@@ -108,7 +109,7 @@ struct JetFinderTask {
   void processChargedJets(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                           JetTracks const& tracks)
   {
-    if (!selectCollision(collision)) {
+    if (!selectCollision(collision, evSel)) {
       return;
     }
     inputParticles.clear();

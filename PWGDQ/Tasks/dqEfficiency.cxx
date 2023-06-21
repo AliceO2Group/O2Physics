@@ -510,6 +510,7 @@ struct AnalysisSameEventPairing {
   Configurable<bool> fUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
   Configurable<bool> fPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
   Configurable<bool> fCorrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
+  Configurable<bool> fNoCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
@@ -536,7 +537,9 @@ struct AnalysisSameEventPairing {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    if (fCorrFullGeo) {
+    if (fNoCorr) {
+      VarManager::SetupFwdDCAFitterNoCorr();
+    } else if (fCorrFullGeo) {
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         ccdb->get<TGeoManager>(geoPath);
       }
@@ -1209,19 +1212,22 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "trigger,cent,mc");
     }
 
-    if (classStr.Contains("Track")) {
+    if (classStr.Contains("Track") && !classStr.Contains("Pairs")) {
       if (classStr.Contains("Barrel")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid,mc");
       }
-    }
-
-    if (classStr.Contains("Muon")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
+      if (classStr.Contains("Muon")) {
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
+      }
     }
 
     if (classStr.Contains("Pairs")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel", "vertexing-barrel");
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon", "vertexing-forward");
+      if (classStr.Contains("Barrel")) {
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel,vertexing-barrel");
+      }
+      if (classStr.Contains("Muon")) {
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "dimuon,vertexing-forward");
+      }
     }
 
     if (classStr.Contains("MCTruthGenPair")) {

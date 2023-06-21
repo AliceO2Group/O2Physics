@@ -192,10 +192,13 @@ def data_prep(config):
     )
 
     labels_array = np.array([0]*n_bkg + [1]*n_prompt + [2]*n_nonprompt)
-    if test_f < 1:
+    if 0 < test_f < 1:
         train_set, test_set, y_train, y_test = train_test_split(
             df_tot, labels_array, test_size=test_f, random_state=seed_split
         )
+    else:
+        print("ERROR: test_fraction must belong to ]0,1[")
+        sys.exit(0)
 
     train_test_data = [train_set, y_train, test_set, y_test]
     del df_tot

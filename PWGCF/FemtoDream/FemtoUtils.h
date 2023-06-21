@@ -59,11 +59,7 @@ bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut,
   bool pidSelection = true;
   int iNsigma = getPIDselection(nSigma, vNsigma);
   for (auto iSpecies : vSpecies) {
-    //\todo we also need the possibility to specify whether the bit is
-    // true/false ->std>>vector<std::pair<int, int>>
-    // if (!((pidcut >> it.first) & it.second)) {
     int bit_to_check = nSpecies * kDetector::kNdetectors * iNsigma + iSpecies * kDetector::kNdetectors + iDet;
-    LOG(info) << "Check bit: " << bit_to_check;
     if (!(pidcut & (1UL << bit_to_check))) {
       pidSelection = false;
     }

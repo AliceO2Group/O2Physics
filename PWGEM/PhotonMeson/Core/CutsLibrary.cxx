@@ -88,6 +88,24 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetRxyRange(1, 90);
     return cut;
   }
+  if (!nameStr.compare("qc_w_mee")) {
+    // for track
+    cut->SetTrackPtRange(0.01f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(20);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
+    cut->SetMaxChi2PerClusterTPC(4.0);
+    cut->SetTPCNsigmaElRange(-3, +3);
+    cut->SetIsWithinBeamPipe(true);
+    // for v0
+    cut->SetV0PtRange(0.01f, 1e10f);
+    cut->SetV0EtaRange(-0.9, +0.9);
+    cut->SetMinCosPA(0.99);
+    cut->SetMaxPCA(1.5);
+    cut->SetRxyRange(1, 180);
+    cut->SetMaxMeePsiPairDep([](float psipair) { return psipair < 0.4 ? 0.06 : 0.015; });
+    return cut;
+  }
   if (!nameStr.compare("qc")) {
     // for track
     cut->SetTrackPtRange(0.01f, 1e10f);
@@ -226,6 +244,24 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetRxyRange(1, 180);
     return cut;
   }
+  if (!nameStr.compare("tag_track")) {
+    // for track
+    cut->SetTrackPtRange(0.01f, 1e10f);
+    cut->SetTrackEtaRange(-0.9, +0.9);
+    cut->SetMinNCrossedRowsTPC(20);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.6);
+    cut->SetMaxChi2PerClusterTPC(4.0);
+    cut->SetTPCNsigmaElRange(-3, +3);
+    cut->SetIsWithinBeamPipe(true);
+    cut->SetRequireITS(true);
+    // for v0
+    cut->SetV0PtRange(0.01f, 1e10f);
+    cut->SetV0EtaRange(-0.9, +0.9);
+    cut->SetMinCosPA(0.998);
+    cut->SetMaxPCA(0.5);
+    cut->SetRxyRange(1, 90);
+    return cut;
+  }
 
   delete cut;
   LOGF(info, Form("Did not find cut %s", cutName));
@@ -254,6 +290,10 @@ PHOSPhotonCut* o2::aod::phoscuts::GetCut(const char* cutName)
     return cut;
   }
   if (!nameStr.compare("test10")) {
+    cut->SetEnergyRange(1.0f, 1e10f);
+    return cut;
+  }
+  if (!nameStr.compare("tag")) {
     cut->SetEnergyRange(1.0f, 1e10f);
     return cut;
   }
@@ -298,6 +338,22 @@ EMCPhotonCut* o2::aod::emccuts::GetCut(const char* cutName)
     });
     cut->SetMinEoverP(0.f);
     cut->SetUseExoticCut(false);
+    return cut;
+  }
+  if (!nameStr.compare("tag")) {
+    cut->SetMinE(0.7f);
+    cut->SetMinNCell(1);
+    cut->SetM02Range(0.1f, 0.7f);
+    cut->SetTimeRange(-20.f, 25.f);
+
+    cut->SetTrackMatchingEta([](float pT) {
+      return 0.01f + pow(pT + 4.07f, -2.5f);
+    });
+    cut->SetTrackMatchingPhi([](float pT) {
+      return 0.015f + pow(pT + 3.65f, -2.f);
+    });
+    cut->SetMinEoverP(1.75f);
+    cut->SetUseExoticCut(true);
     return cut;
   }
 

@@ -119,7 +119,7 @@ struct HfTaskCorrelationDMesonPairs {
   Configurable<int> pairType{"pairType", 0, "Pair type: 0 = DD, 1=DDbar, 2 = DbarDbar"};
 
   // HistoTypes
-  HistogramConfigSpec hTHnMass2DCorrPairs{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {10, 0., 10.}, {10, 0., 10.}}};                                                  // note: axes 3 and 4 (the pT) are updated in the init();
+  HistogramConfigSpec hTHnMass2DCorrPairs{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {10, 0., 10.}, {10, 0., 10.}, {10, -1, 1}, {10, -1, 1}}};                        // note: axes 3 and 4 (the pT) are updated in the init();
   HistogramConfigSpec hTHnCorrel2DVsPt{HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {120, -6., 6.}, {10, 0., 10.}, {10, 0., 10.}}}; // note: axes 3 and 4 (the pT) are updated in the init()
   HistogramConfigSpec hTH1Y{HistType::kTH1F, {{200, -10., 10.}}};
   HistogramConfigSpec hTH1DeltaPtDDbar{HistType::kTH1F, {{144, -36., 36.}}};
@@ -293,10 +293,10 @@ struct HfTaskCorrelationDMesonPairs {
   }
 
   // Fill Mass correlation histograms
-  void fillMassCorrHists(std::shared_ptr<THnSparse> hMassCorrArray[3][3], uint const& candLabel1, uint const& candLabel2, double const& massCand1, double const& massCand2, double const& ptCand1, double const& ptCand2)
+  void fillMassCorrHists(std::shared_ptr<THnSparse> hMassCorrArray[3][3], uint const& candLabel1, uint const& candLabel2, double const& massCand1, double const& massCand2, double const& ptCand1, double const& ptCand2, double const& yCand1, double const& yCand2)
   {
     if (candLabel1 != 0 && candLabel2 != 0) {
-      hMassCorrArray[candLabel1 - 1][candLabel2 - 1]->Fill(massCand1, massCand2, ptCand1, ptCand2);
+      hMassCorrArray[candLabel1 - 1][candLabel2 - 1]->Fill(massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
     }
   }
 
@@ -379,7 +379,13 @@ struct HfTaskCorrelationDMesonPairs {
       int ptBinCand2 = o2::analysis::findBin(binsPtCorrelations, ptCand2);
 
       // fill 2D invariant mass plots
-      registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2);
+      if (pairType == DD && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedD))) {
+        registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+      } else if (pairType == DDbar && ((TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDbar)) || (TESTBIT(pairEntry.candidateType1(), SelectedDbar) && TESTBIT(pairEntry.candidateType2(), SelectedD)))) {
+        registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+      } else if (pairType == DbarDbar && (TESTBIT(pairEntry.candidateType1(), SelectedDbar) && TESTBIT(pairEntry.candidateType2(), SelectedDbar))) {
+        registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+      }
 
       // reject entries outside pT ranges of interest
       if (ptBinCand1 == -1 || ptBinCand2 == -1) { // at least one particle outside accepted pT range
@@ -391,7 +397,7 @@ struct HfTaskCorrelationDMesonPairs {
         // in signal region
         if (pairType == DD && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedD))) {
           fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-        } else if (pairType == DDbar && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDbar))) {
+        } else if (pairType == DDbar && ((TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDbar)) || (TESTBIT(pairEntry.candidateType1(), SelectedDbar) && TESTBIT(pairEntry.candidateType2(), SelectedD)))) {
           fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
         } else if (pairType == DbarDbar && (TESTBIT(pairEntry.candidateType1(), SelectedDbar) && TESTBIT(pairEntry.candidateType2(), SelectedDbar))) {
           fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
@@ -407,7 +413,7 @@ struct HfTaskCorrelationDMesonPairs {
         // in sideband region
         if (pairType == DD && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedD))) {
           fillKinematicSidebandHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-        } else if (pairType == DDbar && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDbar))) {
+        } else if (pairType == DDbar && ((TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDbar)) || (TESTBIT(pairEntry.candidateType1(), SelectedDbar) && TESTBIT(pairEntry.candidateType2(), SelectedD)))) {
           fillKinematicSidebandHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
         } else if (pairType == DbarDbar && (TESTBIT(pairEntry.candidateType1(), SelectedDbar) && TESTBIT(pairEntry.candidateType2(), SelectedDbar))) {
           fillKinematicSidebandHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
@@ -461,13 +467,14 @@ struct HfTaskCorrelationDMesonPairs {
       // fill 2D invariant mass plots
       switch (pairType) {
         case DD: // D0 D0
-          fillMassCorrHists(hMassCorrArray, dMesonCand1, dMesonCand2, massCand1, massCand2, ptCand1, ptCand2);
+          fillMassCorrHists(hMassCorrArray, dMesonCand1, dMesonCand2, massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
           break;
         case DDbar: // D0 D0bar
-          fillMassCorrHists(hMassCorrArray, dMesonCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2);
+          fillMassCorrHists(hMassCorrArray, dMesonCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+          fillMassCorrHists(hMassCorrArray, dMesonBarCand1, dMesonCand2, massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
           break;
         case DbarDbar: // D0bar D0bar
-          fillMassCorrHists(hMassCorrArray, dMesonBarCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2);
+          fillMassCorrHists(hMassCorrArray, dMesonBarCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
           break;
       }
 
@@ -482,7 +489,7 @@ struct HfTaskCorrelationDMesonPairs {
         // Fill histograms depending on the type of pair we are analysing
         if (pairType == DD && (dMesonCand1 != 0 && dMesonCand2 != 0)) {
           fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-        } else if (pairType == DDbar && (dMesonCand1 != 0 && dMesonBarCand2 != 0)) {
+        } else if (pairType == DDbar && ((dMesonCand1 != 0 && dMesonBarCand2 != 0) || (dMesonBarCand1 != 0 && dMesonCand2 != 0))) {
           fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
         } else if (pairType == DbarDbar && (dMesonBarCand1 != 0 && dMesonBarCand2 != 0)) {
           fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
@@ -495,6 +502,7 @@ struct HfTaskCorrelationDMesonPairs {
             break;
           case DDbar: // D0 D0bar
             fillAngularCorrelHists(hCorrelSignalArray, dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+            fillAngularCorrelHists(hCorrelSignalArray, dMesonBarCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
           case DbarDbar: // D0bar D0bar
             fillAngularCorrelHists(hCorrelSignalArray, dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
@@ -512,7 +520,7 @@ struct HfTaskCorrelationDMesonPairs {
         // Fill histograms depending on the type of pair we are analysing
         if (pairType == DD && (dMesonCand1 != 0 && dMesonCand2 != 0)) {
           fillKinematicSidebandHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-        } else if (pairType == DDbar && (dMesonCand1 != 0 && dMesonBarCand2 != 0)) {
+        } else if (pairType == DDbar && ((dMesonCand1 != 0 && dMesonBarCand2 != 0) || (dMesonBarCand1 != 0 && dMesonCand2 != 0))) {
           fillKinematicSidebandHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
         } else if (pairType == DbarDbar && (dMesonBarCand1 != 0 && dMesonBarCand2 != 0)) {
           fillKinematicSidebandHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
@@ -525,6 +533,7 @@ struct HfTaskCorrelationDMesonPairs {
             break;
           case DDbar: // D0 D0bar
             fillAngularCorrelHists(hCorrelSidebandsArray, dMesonCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
+            fillAngularCorrelHists(hCorrelSidebandsArray, dMesonBarCand1, dMesonCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
             break;
           case DbarDbar: // D0bar D0bar
             fillAngularCorrelHists(hCorrelSidebandsArray, dMesonBarCand1, dMesonBarCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
@@ -566,7 +575,7 @@ struct HfTaskCorrelationDMesonPairs {
       // Fill histograms depending on the type of pair we are analysing
       if (pairType == DD && (dMesonCand1 != 0 && dMesonCand2 != 0)) {
         fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
-      } else if (pairType == DDbar && (dMesonCand1 != 0 && dMesonBarCand2 != 0)) {
+      } else if (pairType == DDbar && ((dMesonCand1 != 0 && dMesonBarCand2 != 0) || (dMesonBarCand1 != 0 && dMesonCand2 != 0))) {
         fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);
       } else if (pairType == DbarDbar && (dMesonBarCand1 != 0 && dMesonBarCand2 != 0)) {
         fillKinematicSignalHists(pairEntry.dataType(), yCand1, yCand2, deltaPhi, deltaEta, ptCand1, ptCand2);

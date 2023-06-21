@@ -798,6 +798,11 @@ auto invMassDplusToPiKPi(const T& candidate)
 
 // Ds± → K± K∓ π±
 
+enum DecayChannelDs {
+  PhiPi = 1,
+  K0starK
+};
+
 template <typename T>
 auto ctDs(const T& candidate)
 {
@@ -1312,13 +1317,6 @@ DECLARE_SOA_TABLE(DsHadronRecoInfo, "AOD", "DSHRECOINFO", //! Ds-Hadrons pairs R
 DECLARE_SOA_TABLE(DsHadronGenInfo, "AOD", "DSHGENINFO", //! Ds-Hadrons pairs Generated Informations
                   aod::hf_correlation_ds_hadron::IsPrompt);
 
-// table for selection of collisions with at least one Ds meson
-namespace hf_sel_collision_ds
-{
-DECLARE_SOA_COLUMN(DsFound, dsFound, bool); //! Ds found in a collision
-} // namespace hf_sel_collision_ds
-DECLARE_SOA_TABLE(DsSelCollision, "AOD", "DSCOLL", aod::hf_sel_collision_ds::DsFound);
-
 // definition of columns and tables for Dplus-Hadron correlation pairs
 namespace hf_correlation_dplus_hadron
 {
@@ -1793,6 +1791,11 @@ DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mi
 // mapping of decay types
 enum DecayType { B0ToDPi };
 
+enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
+                             B0ToDsPiToKKPiPi,
+                             PartlyRecoDecay,
+                             OtherDecay,
+                             NDecayTypeMc };
 // B0(B0bar) → D∓ π±
 template <typename T>
 auto ctB0(const T& candidate)
