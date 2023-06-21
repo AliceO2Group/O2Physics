@@ -24,7 +24,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct myExampleTask {
+struct multiplicityPbPb {
 
   // Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
 
@@ -64,8 +64,6 @@ struct myExampleTask {
 
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
     histos.add("ptHistogram", "ptHistogram", kTH1F, {axisPt});
-    // need mc for it:
-    histos.add("withMC/ptResolution", "ptResolution", kTH2F, {axisPt, axisDeltaPt});
     //
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
 
@@ -99,15 +97,10 @@ struct myExampleTask {
       if (track.tpcNClsCrossedRows() < 70)
         continue; // badly tracked
 
-      trackCounter = 1 + trackCounter;
+      ++trackCounter;
 
       histos.fill(HIST("etaHistogram"), track.eta());
       histos.fill(HIST("ptHistogram"), track.pt());
-
-      /*if(track.has_mcParticle()){
-        auto mcParticle = track.mcParticle();
-        histos.fill(HIST("withMC/ptResolution"), track.pt(), track.pt() - mcParticle.pt());
-      }*/
 
       histos.fill(HIST("DCAxy"), track.dcaXY());
       histos.fill(HIST("DCAz"), track.dcaZ());
