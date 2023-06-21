@@ -16,6 +16,8 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -31,8 +33,6 @@ namespace o2::aod
 {
 using DDbarPairFull = soa::Join<aod::DDbarPair, aod::DDbarRecoInfo>;
 } // namespace o2::aod
-
-#include "Framework/runDataProcessing.h"
 
 ///
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies

@@ -17,6 +17,8 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -26,14 +28,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
-
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Fill MC histograms."}};
-  workflowOptions.push_back(optionDoMC);
-}
-
-#include "Framework/runDataProcessing.h"
 
 /// Fills MC histograms.
 struct HfTaskLcAlice3 {
