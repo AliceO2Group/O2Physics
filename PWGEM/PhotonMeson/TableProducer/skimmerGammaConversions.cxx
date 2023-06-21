@@ -278,7 +278,7 @@ struct skimmerGammaConversions {
     v0photonskf(collision.globalIndex(), v0photons.lastIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                 gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                 gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
-                gammaKF_DecayVtx.GetMass(), cpaFromKF(gammaKF_DecayVtx, KFPV), v0.dcaV0daughters(),
+                v0.mGamma(), cpaFromKF(gammaKF_DecayVtx, KFPV), v0.dcaV0daughters(),
                 v0.alpha(), v0.qtarm(), v0.psipair(), chi2kf);
   }
 
