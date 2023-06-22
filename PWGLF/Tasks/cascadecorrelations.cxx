@@ -105,12 +105,12 @@ struct cascadeSelector {
           continue;
         }
       } else {
-        //Proton check:
+        // Proton check:
         if (TMath::Abs(negTrack.tpcNSigmaPr()) > 3) {
           cascflags(0);
           continue;
         }
-        //Pion check:
+        // Pion check:
         if (TMath::Abs(posTrack.tpcNSigmaPi()) > 3) {
           cascflags(0);
           continue;
