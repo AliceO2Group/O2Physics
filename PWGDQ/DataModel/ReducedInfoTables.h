@@ -494,7 +494,7 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   reducedpair::McDecision,
                   reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign, reducedpair::Chi2pca,
                   reducedpair::Tauz, reducedpair::TauzErr,
-                  reducedpair::Tauxy, reducedpair::TauxyErr, 
+                  reducedpair::Tauxy, reducedpair::TauxyErr,
                   dilepton_track_index::Pt1, dilepton_track_index::Eta1, dilepton_track_index::Phi1, dilepton_track_index::Sign1,
                   dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2, dilepton_track_index::Sign2,
                   dilepton_track_index::McMask1, dilepton_track_index::McMask2,
