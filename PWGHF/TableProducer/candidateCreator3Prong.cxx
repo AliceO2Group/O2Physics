@@ -35,8 +35,6 @@ struct HfCandidateCreator3Prong {
   Produces<aod::HfCand3ProngBase> rowCandidateBase;
 
   // vertexing
-  Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
-  // Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
@@ -85,10 +83,8 @@ struct HfCandidateCreator3Prong {
     runNumber = 0;
   }
 
-  void process(aod::Collisions const& collisions,
-               soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
-               aod::BigTracks const& tracks,
-               aod::BCsWithTimestamps const& bcWithTimeStamps)
+  template<bool doPvRefit = false, typename Cand>
+  void runCreator3Prong(aod::Collisions const& collisions, Cand const& rowsTrackIndexProng3, aod::BigTracks const& tracks, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df;
@@ -103,9 +99,9 @@ struct HfCandidateCreator3Prong {
 
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
-      auto track0 = rowTrackIndexProng3.prong0_as<aod::BigTracks>();
-      auto track1 = rowTrackIndexProng3.prong1_as<aod::BigTracks>();
-      auto track2 = rowTrackIndexProng3.prong2_as<aod::BigTracks>();
+      auto track0 = rowTrackIndexProng3.template prong0_as<aod::BigTracks>();
+      auto track1 = rowTrackIndexProng3.template prong1_as<aod::BigTracks>();
+      auto track2 = rowTrackIndexProng3.template prong2_as<aod::BigTracks>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
@@ -114,7 +110,7 @@ struct HfCandidateCreator3Prong {
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
         initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
@@ -152,7 +148,7 @@ struct HfCandidateCreator3Prong {
       // This modifies track momenta!
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
-      if (doPvRefit) {
+      if constexpr (doPvRefit) {
         /// use PV refit
         /// Using it in the rowCandidateBase all dynamic columns shall take it into account
         // coordinates
@@ -214,6 +210,27 @@ struct HfCandidateCreator3Prong {
       }
     }
   }
+
+  void processPvRefit(aod::Collisions const& collisions,
+                      soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                      aod::BigTracks const& tracks,
+                      aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong<true>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefit, "Run candidate creator with PV refit", true);
+
+  void processNoPvRefit(aod::Collisions const& collisions,
+                        aod::Hf3Prongs const& rowsTrackIndexProng3,
+                        aod::BigTracks const& tracks,
+                        aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefit, "Run candidate creator without PV refit", true);
+
 };
 
 /// Extends the base table with expression columns.

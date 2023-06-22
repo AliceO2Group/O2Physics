@@ -1736,9 +1736,12 @@ struct HfTrackIndexSkimCreator {
               if (isSelected2ProngCand > 0) {
                 // fill table row
                 rowTrackIndexProng2(thisCollId, trackPos1.globalIndex(), trackNeg1.globalIndex(), isSelected2ProngCand);
-                // fill table row with coordinates of PV refit
-                rowProng2PVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
-                                 pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);
+
+                if (doPvRefit) {
+                  // fill table row with coordinates of PV refit
+                  rowProng2PVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
+                                  pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);
+                }
 
                 if (debug) {
                   int Prong2CutStatus[kN2ProngDecays];
@@ -1953,9 +1956,11 @@ struct HfTrackIndexSkimCreator {
 
               // fill table row
               rowTrackIndexProng3(thisCollId, trackPos1.globalIndex(), trackNeg1.globalIndex(), trackPos2.globalIndex(), isSelected3ProngCand);
-              // fill table row of coordinates of PV refit
-              rowProng3PVrefit(pvRefitCoord3Prong2Pos1Neg[0], pvRefitCoord3Prong2Pos1Neg[1], pvRefitCoord3Prong2Pos1Neg[2],
-                               pvRefitCovMatrix3Prong2Pos1Neg[0], pvRefitCovMatrix3Prong2Pos1Neg[1], pvRefitCovMatrix3Prong2Pos1Neg[2], pvRefitCovMatrix3Prong2Pos1Neg[3], pvRefitCovMatrix3Prong2Pos1Neg[4], pvRefitCovMatrix3Prong2Pos1Neg[5]);
+              if (doPvRefit) {
+                // fill table row of coordinates of PV refit
+                rowProng3PVrefit(pvRefitCoord3Prong2Pos1Neg[0], pvRefitCoord3Prong2Pos1Neg[1], pvRefitCoord3Prong2Pos1Neg[2],
+                                pvRefitCovMatrix3Prong2Pos1Neg[0], pvRefitCovMatrix3Prong2Pos1Neg[1], pvRefitCovMatrix3Prong2Pos1Neg[2], pvRefitCovMatrix3Prong2Pos1Neg[3], pvRefitCovMatrix3Prong2Pos1Neg[4], pvRefitCovMatrix3Prong2Pos1Neg[5]);
+              }
 
               if (debug) {
                 int Prong3CutStatus[kN3ProngDecays];
