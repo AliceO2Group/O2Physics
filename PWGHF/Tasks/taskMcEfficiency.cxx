@@ -210,7 +210,7 @@ struct HfTaskMcEfficiency {
           if (pdgCode == pdg::kLambdaCPlus) {
             massHypo2 = invMassLcToPiKP(candidate);
           } else if (pdgCode == pdg::kDS) {
-            massHypo1 = invMassDsToPiKK(candidate);
+            massHypo2 = invMassDsToPiKK(candidate);
           }
           hCandidates->Fill(kHFStepTracked, pt, massHypo2, pdgCode, cpa, collisionMatched, origin);
         }
