@@ -76,7 +76,8 @@ using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct lambdakzerotofpid {
-  Produces<aod::V0DeltaTimeTOF> v0DeltaTimeTOF;
+  Produces<aod::LaDeltaTimeTOF> laDeltaTimeTOF;
+  Produces<aod::K0DeltaTimeTOF> k0DeltaTimeTOF;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // For manual sliceBy
@@ -86,7 +87,7 @@ struct lambdakzerotofpid {
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<int> nStepsLIntegrator{"nStepsLIntegrator", 200, "number of steps in length integrator"};
+  Configurable<float> tofPosition{"tofPosition", 370, "TOF position for tests"};
   Configurable<bool> checkTPCCompatibility{"checkTPCCompatibility", true, "check compatibility with dE/dx"};
 
   // CCDB options
@@ -105,6 +106,71 @@ struct lambdakzerotofpid {
   float d_bz;
   float maxSnp;  // max sine phi for propagation
   float maxStep; // max step size (cm) for propagation
+
+  /// function to calculate track length of this track up to a certain radius
+  /// \param track the input track
+  /// \param radius the radius of the layer you're calculating the length to
+  /// \param magneticField the magnetic field to use when propagating
+  float trackLength(o2::track::TrackParCov track, float radius, float magneticField)
+  {
+    // don't make use of the track parametrization
+    float length = -100;
+
+    o2::math_utils::CircleXYf_t trcCircle;
+    float sna, csa;
+    track.getCircleParams(magneticField, trcCircle, sna, csa);
+
+    // distance between circle centers (one circle is at origin -> easy)
+    float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
+
+    // condition of circles touching - if not satisfied returned length will be -100
+    if (centerDistance < trcCircle.rC + radius && centerDistance > fabs(trcCircle.rC - radius)) {
+      length = 0.0f;
+
+      // base radical direction
+      float ux = trcCircle.xC / centerDistance;
+      float uy = trcCircle.yC / centerDistance;
+      // calculate perpendicular vector (normalized) for +/- displacement
+      float vx = -uy;
+      float vy = +ux;
+      // calculate coordinate for radical line
+      float radical = (centerDistance * centerDistance - trcCircle.rC * trcCircle.rC + radius * radius) / (2.0f * centerDistance);
+      // calculate absolute displacement from center-to-center axis
+      float displace = (0.5f / centerDistance) * TMath::Sqrt(
+                                                   (-centerDistance + trcCircle.rC - radius) *
+                                                   (-centerDistance - trcCircle.rC + radius) *
+                                                   (-centerDistance + trcCircle.rC + radius) *
+                                                   (centerDistance + trcCircle.rC + radius));
+
+      // possible intercept points of track and TOF layer in 2D plane
+      float point1[2] = {radical * ux + displace * vx, radical * uy + displace * vy};
+      float point2[2] = {radical * ux - displace * vx, radical * uy - displace * vy};
+
+      // decide on correct intercept point
+      std::array<float, 3> mom;
+      track.getPxPyPzGlo(mom);
+      float scalarProduct1 = point1[0] * mom[0] + point1[1] * mom[1];
+      float scalarProduct2 = point2[0] * mom[0] + point2[1] * mom[1];
+
+      // get start point
+      std::array<float, 3> startPoint;
+      track.getXYZGlo(startPoint);
+
+      float cosAngle = -1000, modulus = -1000;
+
+      if (scalarProduct1 > scalarProduct2) {
+        modulus = std::hypot(point1[0] - trcCircle.xC, point1[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
+        cosAngle = (point1[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point1[1] - trcCircle.yC) * (startPoint[0] - trcCircle.yC);
+      } else {
+        modulus = std::hypot(point2[0] - trcCircle.xC, point2[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
+        cosAngle = (point2[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point2[1] - trcCircle.yC) * (startPoint[0] - trcCircle.yC);
+      }
+      cosAngle /= modulus;
+      length = trcCircle.rC * TMath::ACos(cosAngle);
+      length *= sqrt(1.0f + track.getTgl() * track.getTgl());
+    }
+    return length;
+  }
 
   void init(InitContext& context)
   {
@@ -165,26 +231,6 @@ struct lambdakzerotofpid {
     mRunNumber = bc.runNumber();
   }
 
-  /// function to calculate track length
-  /// \param track the input track
-  /// \param x0 the initial position
-  /// \param x1 the final position
-  float trackLength(o2::track::TrackParCov track, float x0, float x1)
-  {
-    std::array<float, 3> pointN;
-    std::array<float, 3> pointNplus;
-    float length = 0.0;
-    track.propagateTo(x0, d_bz);
-    for (int iStep = 1; iStep < nStepsLIntegrator; iStep++) {
-      track.getXYZGlo(pointN);
-      float position = x0 + (x1 - x0) * (static_cast<float>(iStep)) / (static_cast<float>(nStepsLIntegrator - 1));
-      track.propagateTo(position, d_bz);
-      track.getXYZGlo(pointNplus);
-      length += std::hypot(pointNplus[0] - pointN[0], pointNplus[1] - pointN[1], pointNplus[2] - pointN[2]);
-    }
-    return length;
-  }
-
   float velocity(float lMomentum, float lMass)
   {
     // Momentum p and mass m -> returns speed in centimeters per picosecond
@@ -206,9 +252,10 @@ struct lambdakzerotofpid {
       for (auto const& v0 : V0Table_thisCollision) {
         // time of V0 segment
         float lengthV0 = std::hypot(v0.x() - collision.posX(), v0.y() - collision.posY(), v0.z() - collision.posZ());
-        float velocityV0 = velocity(v0.p(), o2::constants::physics::MassLambda);
-        // float velocityV0K0short = velocity( v0.p(), o2::constants::physics::MassLambda );
-        float timeV0 = lengthV0 / velocityV0; // in picoseconds
+        float velocityK0Short = velocity(v0.p(), o2::constants::physics::MassKaonNeutral);
+        float velocityLambda = velocity(v0.p(), o2::constants::physics::MassLambda);
+        float timeK0Short = lengthV0 / velocityK0Short; // in picoseconds
+        float timeLambda = lengthV0 / velocityLambda;   // in picoseconds
 
         auto const& posTrackRow = v0.posTrack_as<FullTracksExtIU>();
         auto const& negTrackRow = v0.negTrack_as<FullTracksExtIU>();
@@ -216,59 +263,55 @@ struct lambdakzerotofpid {
         auto posTrack = getTrackParCov(posTrackRow);
         auto negTrack = getTrackParCov(negTrackRow);
 
-        float posTofX = -1;
-        float negTofX = -1;
-        if (!posTrack.getXatLabR(370.0, posTofX, d_bz, o2::track::DirOutward)) {
-          posTofX = -1;
-        }
-        if (!negTrack.getXatLabR(370.0, negTofX, d_bz, o2::track::DirOutward)) {
-          negTofX = -1;
-        }
-        float deltaTimePositivePi = -1e+6;
-        float deltaTimeNegativePi = -1e+6;
-        float deltaTimePositivePr = -1e+6;
-        float deltaTimeNegativePr = -1e+6;
-        if (posTofX > 10) {
-          float velocityPositive = velocity(posTrack.getP(), o2::constants::physics::MassProton);
-          float lengthPositive = trackLength(posTrack, v0.posX(), posTofX);
-          float timePositive = lengthPositive / velocityPositive;
-          deltaTimePositivePi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeV0 + timePositive);
-        }
-        if (posTofX > 10) {
-          float velocityPositive = velocity(posTrack.getP(), o2::constants::physics::MassProton);
-          float lengthPositive = trackLength(posTrack, v0.posX(), posTofX);
-          float timePositive = lengthPositive / velocityPositive;
-          deltaTimePositivePr = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeV0 + timePositive);
-        }
-        if (negTofX > 10) {
-          float velocityNegative = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
-          float lengthNegative = trackLength(negTrack, v0.negX(), negTofX);
-          float timeNegative = lengthNegative / velocityNegative;
-          deltaTimeNegativePi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeV0 + timeNegative);
-        }
-        if (negTofX > 10) {
-          float velocityNegative = velocity(negTrack.getP(), o2::constants::physics::MassProton);
-          float lengthNegative = trackLength(negTrack, v0.negX(), negTofX);
-          float timeNegative = lengthNegative / velocityNegative;
-          deltaTimeNegativePr = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeV0 + timeNegative);
-        }
-        v0DeltaTimeTOF(deltaTimePositivePi, deltaTimePositivePr, deltaTimeNegativePi, deltaTimeNegativePr);
+        float deltaTimePositiveLambdaPi = -1e+6;
+        float deltaTimeNegativeLambdaPi = -1e+6;
+        float deltaTimePositiveLambdaPr = -1e+6;
+        float deltaTimeNegativeLambdaPr = -1e+6;
+        float deltaTimePositiveK0ShortPi = -1e+6;
+        float deltaTimeNegativeK0ShortPi = -1e+6;
+
+        float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
+        float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
+        float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
+        float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
+
+        // propagate to V0 decay vertex
+        posTrack.propagateTo(v0.posX(), d_bz);
+        negTrack.propagateTo(v0.negX(), d_bz);
+
+        float lengthPositive = trackLength(posTrack, tofPosition, d_bz); // FIXME: tofPosition ok? adjust?
+        float lengthNegative = trackLength(negTrack, tofPosition, d_bz); // FIXME: tofPosition ok? adjust?
+        float timePositivePr = lengthPositive / velocityPositivePr;
+        float timePositivePi = lengthPositive / velocityPositivePi;
+        float timeNegativePr = lengthNegative / velocityNegativePr;
+        float timeNegativePi = lengthNegative / velocityNegativePi;
+
+        deltaTimePositiveLambdaPr = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeLambda + timePositivePr);
+        deltaTimePositiveLambdaPi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeLambda + timePositivePi);
+        deltaTimeNegativeLambdaPr = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeLambda + timeNegativePr);
+        deltaTimeNegativeLambdaPi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeLambda + timeNegativePi);
+        deltaTimePositiveK0ShortPi = (posTrackRow.tofSignal() - posTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
+        deltaTimeNegativeK0ShortPi = (negTrackRow.tofSignal() - negTrackRow.tofEvTime()) - (timeK0Short + timeNegativePi);
+
+        laDeltaTimeTOF(deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
+                       deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr);
+        k0DeltaTimeTOF(deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi);
 
         auto originalV0 = v0.v0_as<TaggedV0s>(); // this could look confusing, so:
         // the first v0 is the v0data row; the getter de-references the v0 (stored indices) row
         // the v0 (stored indices) contain the tags of the lambdakzero preselector
 
         if (originalV0.isdEdxK0Short() || !checkTPCCompatibility) {
-          histos.fill(HIST("h3dMassK0ShortPositive"), v0.pt(), deltaTimePositivePi, v0.mK0Short());
-          histos.fill(HIST("h3dMassK0ShortNegative"), v0.pt(), deltaTimeNegativePi, v0.mK0Short());
+          histos.fill(HIST("h3dMassK0ShortPositive"), v0.pt(), deltaTimePositiveK0ShortPi, v0.mK0Short());
+          histos.fill(HIST("h3dMassK0ShortNegative"), v0.pt(), deltaTimePositiveK0ShortPi, v0.mK0Short());
         }
         if (originalV0.isdEdxLambda() || !checkTPCCompatibility) {
-          histos.fill(HIST("h3dMassLambdaPositive"), v0.pt(), deltaTimePositivePr, v0.mLambda());
-          histos.fill(HIST("h3dMassLambdaNegative"), v0.pt(), deltaTimeNegativePi, v0.mLambda());
+          histos.fill(HIST("h3dMassLambdaPositive"), v0.pt(), deltaTimePositiveLambdaPr, v0.mLambda());
+          histos.fill(HIST("h3dMassLambdaNegative"), v0.pt(), deltaTimeNegativeLambdaPi, v0.mLambda());
         }
         if (originalV0.isdEdxAntiLambda() || !checkTPCCompatibility) {
-          histos.fill(HIST("h3dMassAntiLambdaPositive"), v0.pt(), deltaTimePositivePi, v0.mAntiLambda());
-          histos.fill(HIST("h3dMassAntiLambdaNegative"), v0.pt(), deltaTimeNegativePr, v0.mAntiLambda());
+          histos.fill(HIST("h3dMassAntiLambdaPositive"), v0.pt(), deltaTimePositiveK0ShortPi, v0.mAntiLambda());
+          histos.fill(HIST("h3dMassAntiLambdaNegative"), v0.pt(), deltaTimeNegativeK0ShortPi, v0.mAntiLambda());
         }
       }
     }
