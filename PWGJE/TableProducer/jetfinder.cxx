@@ -38,7 +38,7 @@ struct JetFinderTask {
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
-  Configurable<std::string> evSel{"evSel", "evSel8", "choose event selection"};
+  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
@@ -66,6 +66,7 @@ struct JetFinderTask {
 
   Service<O2DatabasePDG> pdg;
   std::string trackSelection;
+  std::string eventSelection;
 
   JetFinder jetFinder;
   std::vector<fastjet::PseudoJet> inputParticles;
@@ -73,6 +74,7 @@ struct JetFinderTask {
   void init(InitContext const&)
   {
     trackSelection = static_cast<std::string>(trackSelections);
+    eventSelection = static_cast<std::string>(eventSelections);
 
     if (DoRhoAreaSub) {
       jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
@@ -109,7 +111,7 @@ struct JetFinderTask {
   void processChargedJets(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                           JetTracks const& tracks)
   {
-    if (!selectCollision(collision, evSel)) {
+    if (!selectCollision(collision, eventSelections)) {
       return;
     }
     inputParticles.clear();
