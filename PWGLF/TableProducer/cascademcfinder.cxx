@@ -76,10 +76,15 @@ struct cascademcfinder {
   Configurable<bool> findOmegaMinus{"findOmegaMinus", true, "findOmegaMinus"};
   Configurable<bool> findOmegaPlus{"findOmegaPlus", true, "findOmegaPlus"};
   Configurable<bool> requireITS{"requireITS", false, "require ITS information used in tracks"};
+  Configurable<float> yPreFilter{"yPreFilter", 2.5, "broad y pre-filter for speed"};
   Configurable<bool> doQA{"doQA", true, "do qa plots"};
 
   // For manual sliceBy
   Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
+
+  // declarative filtering for particles of interest
+  // pre-filter on PDG and on very broad rapidity window
+  Filter mcParticleFilter = nabs(o2::aod::mcparticle::y) < yPreFilter && (nabs(o2::aod::mcparticle::pdgCode) == 3312 || nabs(o2::aod::mcparticle::pdgCode) == 3334);
 
   std::vector<int> casccollisionId;
   std::vector<int> cascv0Index;
@@ -246,7 +251,7 @@ struct cascademcfinder {
     return reconstructed;
   }
 
-  void process(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, aod::McParticles const& allMcParticles, LabeledFullV0s const& v0s)
+  void process(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, soa::Filtered<aod::McParticles> const& allMcParticles, LabeledFullV0s const& v0s)
   {
     casccollisionId.clear();
     cascbachelorIndex.clear();
@@ -318,19 +323,19 @@ struct cascademcfinder {
               histos.fill(HIST("hPtOmegaPlusGlobalWithPV"), mcParticle.pt());
           }
         }
-          }
-        }
-
-        // sort according to collision ID
-        auto sortedIndices = sort_indices(casccollisionId);
-
-        // V0 list established, populate
-        for (auto ic : sortedIndices) {
-          if (casccollisionId[ic] >= 0) {
-            cascades(casccollisionId[ic], cascv0Index[ic], cascbachelorIndex[ic]);
-          }
-        }
       }
+    }
+
+    // sort according to collision ID
+    auto sortedIndices = sort_indices(casccollisionId);
+
+    // V0 list established, populate
+    for (auto ic : sortedIndices) {
+      if (casccollisionId[ic] >= 0) {
+        cascades(casccollisionId[ic], cascv0Index[ic], cascbachelorIndex[ic]);
+      }
+    }
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
