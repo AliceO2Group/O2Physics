@@ -95,7 +95,7 @@ struct CentralityQa {
       return;
     LOGF(debug, "centFV0A=%.0f", col.centFV0A());
     hCentFV0A->Fill(col.centFV0A());
-    hCentFV0A->Fill(col.centFV0A(), col.multNTracksPVetaHalf());
+    hCentProfileFV0A->Fill(col.centFV0A(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FV0A, "Process with Run 3 FV0A estimator", false);
 
@@ -108,7 +108,7 @@ struct CentralityQa {
       return;
     LOGF(debug, "centFT0M=%.0f", col.centFT0M());
     hCentFT0M->Fill(col.centFT0M());
-    hCentFT0M->Fill(col.centFT0M(), col.multNTracksPVetaHalf());
+    hCentProfileFT0M->Fill(col.centFT0M(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0M, "Process with Run 3 FT0M estimator", false);
 
@@ -120,7 +120,7 @@ struct CentralityQa {
     if (!col.sel8())
       return;
     hCentFT0A->Fill(col.centFT0A());
-    hCentFT0A->Fill(col.centFT0A(), col.multNTracksPVetaHalf());
+    hCentProfileFT0A->Fill(col.centFT0A(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0A, "Process with Run 3 FT0A estimator", false);
 
@@ -132,7 +132,7 @@ struct CentralityQa {
     if (!col.sel8())
       return;
     hCentFT0C->Fill(col.centFT0C());
-    hCentFT0C->Fill(col.centFT0C(), col.multNTracksPVetaHalf());
+    hCentProfileFT0C->Fill(col.centFT0C(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0C, "Process with Run 3 FT0A estimator", false);
 
@@ -144,7 +144,7 @@ struct CentralityQa {
     if (!col.sel8())
       return;
     hCentFDDM->Fill(col.centFDDM());
-    hCentFDDM->Fill(col.centFDDM(), col.multNTracksPVetaHalf());
+    hCentProfileFDDM->Fill(col.centFDDM(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FDDM, "Process with Run 3 FDDM estimator", false);
 
@@ -156,7 +156,7 @@ struct CentralityQa {
     if (!col.sel8())
       return;
     hCentNTPV->Fill(col.centNTPV());
-    hCentNTPV->Fill(col.centNTPV(), col.multNTracksPVetaHalf());
+    hCentProfileNTPV->Fill(col.centNTPV(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_NTPV, "Process with Run 3 NTPV estimator", false);
 };
