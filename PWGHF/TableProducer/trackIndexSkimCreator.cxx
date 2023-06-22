@@ -792,15 +792,19 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   )
   {
 
-    if (doPvRefit && debug) {
-      LOG(info) << ">>> number of tracks: " << tracks.size();
-      LOG(info) << ">>> number of collisions: " << collisions.size();
-    }
-
     // prepare vectors to cache quantities needed for PV refit
-    std::vector<std::array<float, 2>> pvRefitDcaPerTrack(tracks.size());
-    std::vector<std::array<float, 3>> pvRefitPvCoordPerTrack(tracks.size());
-    std::vector<std::array<float, 6>> pvRefitPvCovMatrixPerTrack(tracks.size());
+    std::vector<std::array<float, 2>> pvRefitDcaPerTrack{};
+    std::vector<std::array<float, 3>> pvRefitPvCoordPerTrack{};
+    std::vector<std::array<float, 6>> pvRefitPvCovMatrixPerTrack{};
+    if (doPvRefit) {
+      pvRefitDcaPerTrack.resize(tracks.size());
+      pvRefitPvCoordPerTrack.resize(tracks.size());
+      pvRefitPvCovMatrixPerTrack.resize(tracks.size());
+      if (debug) {
+        LOG(info) << ">>> number of tracks: " << tracks.size();
+        LOG(info) << ">>> number of collisions: " << collisions.size();
+      }
+    }
 
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -846,6 +850,9 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
             LOG(info) << "[BEFORE performPvRefitTrack] track.collision().globalIndex(): " << collision.globalIndex();
           }
           performPvRefitTrack(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, track, pvRefitPvCoord, pvRefitPvCovMatrix, pvRefitDcaXYDcaZ);
+          pvRefitDcaPerTrack[trackIdx] = pvRefitDcaXYDcaZ;
+          pvRefitPvCoordPerTrack[trackIdx] = pvRefitPvCoord;
+          pvRefitPvCovMatrixPerTrack[trackIdx] = pvRefitPvCovMatrix;
         } else if (track.collisionId() != thisCollId) {
           auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
           initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
@@ -871,18 +878,15 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
         isSelectedTrack(track, trackPt, trackEta, pvRefitDcaXYDcaZ, statusProng);
         rowSelectedTrack(statusProng);
-
-        pvRefitDcaPerTrack[trackIdx] = pvRefitDcaXYDcaZ;
-        pvRefitPvCoordPerTrack[trackIdx] = pvRefitPvCoord;
-        pvRefitPvCovMatrixPerTrack[trackIdx] = pvRefitPvCovMatrix;
       }
     }
 
-    /// fill table with PV refit info (it has to be filled per track)
-    for (auto iTrack{0u}; iTrack < tracks.size(); ++iTrack) {
-      tabPvRefitTrack(pvRefitPvCoordPerTrack[iTrack][0], pvRefitPvCoordPerTrack[iTrack][1], pvRefitPvCoordPerTrack[iTrack][2],
-                      pvRefitPvCovMatrixPerTrack[iTrack][0], pvRefitPvCovMatrixPerTrack[iTrack][1], pvRefitPvCovMatrixPerTrack[iTrack][2], pvRefitPvCovMatrixPerTrack[iTrack][3], pvRefitPvCovMatrixPerTrack[iTrack][4], pvRefitPvCovMatrixPerTrack[iTrack][5],
-                      pvRefitDcaPerTrack[iTrack][0], pvRefitDcaPerTrack[iTrack][1]);
+    if (doPvRefit) { /// fill table with PV refit info (it has to be filled per track)
+      for (auto iTrack{0u}; iTrack < tracks.size(); ++iTrack) {
+        tabPvRefitTrack(pvRefitPvCoordPerTrack[iTrack][0], pvRefitPvCoordPerTrack[iTrack][1], pvRefitPvCoordPerTrack[iTrack][2],
+                        pvRefitPvCovMatrixPerTrack[iTrack][0], pvRefitPvCovMatrixPerTrack[iTrack][1], pvRefitPvCovMatrixPerTrack[iTrack][2], pvRefitPvCovMatrixPerTrack[iTrack][3], pvRefitPvCovMatrixPerTrack[iTrack][4], pvRefitPvCovMatrixPerTrack[iTrack][5],
+                        pvRefitDcaPerTrack[iTrack][0], pvRefitDcaPerTrack[iTrack][1]);
+      }
     }
   }
 };
@@ -900,7 +904,6 @@ struct HfTrackIndexSkimCreator {
 
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<int> do3Prong{"do3Prong", 0, "do 3 prong"};
-  Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
   Configurable<bool> debug{"debug", false, "debug mode"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   ConfigurableAxis axisNumTracks{"axisNumTracks", {250, -0.5f, 249.5f}, "Number of tracks"};
@@ -967,9 +970,18 @@ struct HfTrackIndexSkimCreator {
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using TracksWithPVRefitAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
+  using TracksWithDCA = soa::Join<aod::BigTracks, aod::TracksDCA>;
 
+  // filter collisions
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  Filter filterSelectedTrackIds = aod::hf_sel_track::isSelProng > 0;
+
+  // define slice of track indices per collisions
+  Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
+
+  // filter track indices
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
+  using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
+  Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
 
   // FIXME
   // Partition<TracksWithPVRefitAndDCA> tracksPos = aod::track::signed1Pt > 0.f;
@@ -984,7 +996,7 @@ struct HfTrackIndexSkimCreator {
 
   void init(InitContext const& context)
   {
-    if (!doprocess2And3Prongs) {
+    if (!doprocess2And3ProngsWithPvRefit) {
       return;
     }
 
@@ -1040,7 +1052,7 @@ struct HfTrackIndexSkimCreator {
     }
 
     // needed for PV refitting
-    if (doPvRefit) {
+    if (doprocess2And3ProngsWithPvRefit) {
       if (fillHistograms) {
         AxisSpec axisCollisionX{100, -20.f, 20.f, "X (cm)"};
         AxisSpec axisCollisionY{100, -20.f, 20.f, "Y (cm)"};
@@ -1369,7 +1381,7 @@ struct HfTrackIndexSkimCreator {
     bool pvRefitDoable = vertexer.prepareVertexRefit(vecPvContributorTrackParCov, primVtx);
     if (!pvRefitDoable) {
       LOG(info) << "Not enough tracks accepted for the refit";
-      if (doPvRefit && fillHistograms) {
+      if (doprocess2And3ProngsWithPvRefit && fillHistograms) {
         registry.fill(HIST("PvRefit/hNContribPvRefitNotDoable"), collision.numContrib());
       }
     }
@@ -1384,7 +1396,7 @@ struct HfTrackIndexSkimCreator {
     /// PV refitting, if the tracks contributed to this at the beginning
     o2::dataformats::VertexBase primVtxBaseRecalc;
     bool recalcPvRefit = false;
-    if (doPvRefit && pvRefitDoable) {
+    if (doprocess2And3ProngsWithPvRefit && pvRefitDoable) {
       recalcPvRefit = true;
       int nCandContr = 0;
       for (uint64_t myGlobalID : vecCandPvContributorGlobId) {
@@ -1465,29 +1477,13 @@ struct HfTrackIndexSkimCreator {
 
       // cnt++;
 
-    } /// end 'if (doPvRefit && pvRefitDoable)'
+    } /// end 'if (doprocess2And3ProngsWithPvRefit && pvRefitDoable)'
 
     return;
   } /// end of performPvRefitCandProngs function
 
-  // define slice of track indices per collisions
-  Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
-
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
-  using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
-  Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
-
-  void processNo2And3Prongs(SelectedCollisions const&)
-  {
-    // dummy
-  }
-  PROCESS_SWITCH(HfTrackIndexSkimCreator, processNo2And3Prongs, "Do not process 2-prongs and 3-prongs", false);
-
-  void process2And3Prongs( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
-    SelectedCollisions const& collisions,
-    aod::BCsWithTimestamps const& bcWithTimeStamps,
-    FilteredTrackAssocSel const& trackIndices,
-    TracksWithPVRefitAndDCA const& tracks)
+  template<bool doPvRefit = false, typename TTracks>
+  void run2And3Prongs(SelectedCollisions const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps, FilteredTrackAssocSel const& trackIndices, TTracks const& tracks)
   {
 
     // can be added to run over limited collisions per file - for tesing purposes
@@ -1506,8 +1502,8 @@ struct HfTrackIndexSkimCreator {
       /// retrieve PV contributors for the current collision
       std::vector<int64_t> vecPvContributorGlobId = {};
       std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov = {};
-      auto groupedTracksUnfiltered = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
-      if (doPvRefit) {
+      if constexpr (doPvRefit) {
+        auto groupedTracksUnfiltered = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
         const int nTrk = groupedTracksUnfiltered.size();
         int nContrib = 0;
         int nNonContrib = 0;
@@ -1666,7 +1662,7 @@ struct HfTrackIndexSkimCreator {
               /// PV refit excluding the candidate daughters, if contributors
               array<float, 3> pvRefitCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
               array<float, 6> pvRefitCovMatrix2Prong = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
-              if (doPvRefit) {
+              if constexpr (doPvRefit) {
                 if (fillHistograms) {
                   registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
                 }
@@ -1726,7 +1722,7 @@ struct HfTrackIndexSkimCreator {
               auto pVecCandProng2 = RecoDecay::pVec(pvec0, pvec1);
               // 2-prong selections after secondary vertex
               array<float, 3> pvCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()};
-              if (doPvRefit) {
+              if constexpr (doPvRefit) {
                 pvCoord2Prong[0] = pvRefitCoord2Prong[0];
                 pvCoord2Prong[1] = pvRefitCoord2Prong[1];
                 pvCoord2Prong[2] = pvRefitCoord2Prong[2];
@@ -1737,7 +1733,7 @@ struct HfTrackIndexSkimCreator {
                 // fill table row
                 rowTrackIndexProng2(thisCollId, trackPos1.globalIndex(), trackNeg1.globalIndex(), isSelected2ProngCand);
 
-                if (doPvRefit) {
+                if constexpr (doPvRefit) {
                   // fill table row with coordinates of PV refit
                   rowProng2PVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
                                   pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);
@@ -1855,7 +1851,7 @@ struct HfTrackIndexSkimCreator {
               /// PV refit excluding the candidate daughters, if contributors
               array<float, 3> pvRefitCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
               array<float, 6> pvRefitCovMatrix3Prong2Pos1Neg = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
-              if (doPvRefit) {
+              if constexpr (doPvRefit) {
                 if (fillHistograms) {
                   registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
                 }
@@ -1944,7 +1940,7 @@ struct HfTrackIndexSkimCreator {
               auto pVecCandProng3Pos = RecoDecay::pVec(pvec0, pvec1, pvec2);
               // 3-prong selections after secondary vertex
               array<float, 3> pvCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()};
-              if (doPvRefit) {
+              if constexpr (doPvRefit) {
                 pvCoord3Prong2Pos1Neg[0] = pvRefitCoord3Prong2Pos1Neg[0];
                 pvCoord3Prong2Pos1Neg[1] = pvRefitCoord3Prong2Pos1Neg[1];
                 pvCoord3Prong2Pos1Neg[2] = pvRefitCoord3Prong2Pos1Neg[2];
@@ -1956,7 +1952,7 @@ struct HfTrackIndexSkimCreator {
 
               // fill table row
               rowTrackIndexProng3(thisCollId, trackPos1.globalIndex(), trackNeg1.globalIndex(), trackPos2.globalIndex(), isSelected3ProngCand);
-              if (doPvRefit) {
+              if constexpr (doPvRefit) {
                 // fill table row of coordinates of PV refit
                 rowProng3PVrefit(pvRefitCoord3Prong2Pos1Neg[0], pvRefitCoord3Prong2Pos1Neg[1], pvRefitCoord3Prong2Pos1Neg[2],
                                 pvRefitCovMatrix3Prong2Pos1Neg[0], pvRefitCovMatrix3Prong2Pos1Neg[1], pvRefitCovMatrix3Prong2Pos1Neg[2], pvRefitCovMatrix3Prong2Pos1Neg[3], pvRefitCovMatrix3Prong2Pos1Neg[4], pvRefitCovMatrix3Prong2Pos1Neg[5]);
@@ -2075,7 +2071,7 @@ struct HfTrackIndexSkimCreator {
               /// PV refit excluding the candidate daughters, if contributors
               array<float, 3> pvRefitCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
               array<float, 6> pvRefitCovMatrix3Prong1Pos2Neg = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
-              if (doPvRefit) {
+              if constexpr (doPvRefit) {
                 if (fillHistograms) {
                   registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
                 }
@@ -2164,7 +2160,7 @@ struct HfTrackIndexSkimCreator {
               auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
               // 3-prong selections after secondary vertex
               array<float, 3> pvCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()};
-              if (doPvRefit) {
+              if constexpr (doPvRefit) {
                 pvCoord3Prong1Pos2Neg[0] = pvRefitCoord3Prong1Pos2Neg[0];
                 pvCoord3Prong1Pos2Neg[1] = pvRefitCoord3Prong1Pos2Neg[1];
                 pvCoord3Prong1Pos2Neg[2] = pvRefitCoord3Prong1Pos2Neg[2];
@@ -2253,8 +2249,35 @@ struct HfTrackIndexSkimCreator {
         registry.fill(HIST("hNCand3ProngVsNTracks"), nTracks, nCand3);
       }
     }
+  } /// end of run2And3Prongs function
+
+  void processNo2And3Prongs(SelectedCollisions const&)
+  {
+    // dummy
   }
-  PROCESS_SWITCH(HfTrackIndexSkimCreator, process2And3Prongs, "Process 2-prong and 3-prong skim", true);
+  PROCESS_SWITCH(HfTrackIndexSkimCreator, processNo2And3Prongs, "Do not process 2-prongs and 3-prongs", false);
+
+  void process2And3ProngsWithPvRefit( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
+    SelectedCollisions const& collisions,
+    aod::BCsWithTimestamps const& bcWithTimeStamps,
+    FilteredTrackAssocSel const& trackIndices,
+    TracksWithPVRefitAndDCA const& tracks)
+  {
+    run2And3Prongs<true>(collisions, bcWithTimeStamps, trackIndices, tracks);
+  }
+
+  PROCESS_SWITCH(HfTrackIndexSkimCreator, process2And3ProngsWithPvRefit, "Process 2-prong and 3-prong skim with PV refit", false);
+
+  void process2And3ProngsNoPvRefit( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
+    SelectedCollisions const& collisions,
+    aod::BCsWithTimestamps const& bcWithTimeStamps,
+    FilteredTrackAssocSel const& trackIndices,
+    TracksWithDCA const& tracks)
+  {
+    run2And3Prongs(collisions, bcWithTimeStamps, trackIndices, tracks);
+  }
+
+  PROCESS_SWITCH(HfTrackIndexSkimCreator, process2And3ProngsNoPvRefit, "Process 2-prong and 3-prong skim without PV refit", true);
 };
 
 //________________________________________________________________________________________________________________________
