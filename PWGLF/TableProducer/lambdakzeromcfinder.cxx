@@ -87,8 +87,8 @@ struct lambdakzeromcfinder {
   Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
 
   // declarative filtering for particles of interest
-  // pre-filter on PDG and on very broad rapidity window 
-  Filter mcParticleFilter = nabs(o2::aod::mcparticle::y)<yPreFilter && (nabs(o2::aod::mcparticle::pdgCode) == 1010010030 || nabs(o2::aod::mcparticle::pdgCode) == 3122 || o2::aod::mcparticle::pdgCode == 310 || o2::aod::mcparticle::pdgCode == 22);
+  // pre-filter on PDG and on very broad rapidity window
+  Filter mcParticleFilter = nabs(o2::aod::mcparticle::y) < yPreFilter && (nabs(o2::aod::mcparticle::pdgCode) == 1010010030 || nabs(o2::aod::mcparticle::pdgCode) == 3122 || o2::aod::mcparticle::pdgCode == 310 || o2::aod::mcparticle::pdgCode == 22);
 
   std::vector<int> v0collisionId;
   std::vector<int> v0positiveIndex;
