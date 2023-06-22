@@ -54,13 +54,13 @@ struct lambda1520analysis {
   Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 2.0, "TPC nSigma cut for Kaon"};       // TPC
   Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 2.0, "TOF nSigma cut for Kaon"};       // TOF
   // Kaon
-  Configurable<bool> IsptDependentKaonCut{"IsptDependentKaonCut", false, "Flag to proceed with pT dependent Kaon pid cuts"};
+  Configurable<bool> IsptDependentKaonCut{"IsptIndependentKaonCut", false, "Flag to proceed with pT dependent Kaon pid cuts"};
   Configurable<std::vector<double>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {999.}, "pT intervals for Kaon TPC PID cuts"};
   Configurable<std::vector<double>> kaonTPCPIDcuts{"kaonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
   Configurable<std::vector<double>> kaonTOFPIDpTintv{"kaonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
   Configurable<std::vector<double>> kaonTOFPIDcuts{"kaonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
   // Proton
-  Configurable<bool> IsptDependentProtonCut{"IsptDependentProtonCut", false, "Flag to proceed with pT dependent Proton pid cuts"};
+  Configurable<bool> IsptDependentProtonCut{"IsptIndependentProtonCut", false, "Flag to proceed with pT dependent Proton pid cuts"};
   Configurable<std::vector<double>> protonTPCPIDpTintv{"protonTPCPIDpTintv", {999.}, "pT intervals for Kaon TPC PID cuts"};
   Configurable<std::vector<double>> protonTPCPIDcuts{"protonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
   Configurable<std::vector<double>> protonTOFPIDpTintv{"protonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
@@ -233,7 +233,7 @@ struct lambda1520analysis {
       }
       //// PID selections
       // For Proton candidate:
-      if (IsptDependentProtonCut) {
+      if (IsptIndependentProtonCut) {
         // to apply pT-independent PID cuts
         if (std::abs(trk1NSigmaPrTPC) > cMaxTPCnSigmaProton)
           isTrk1Selected = false;
@@ -267,7 +267,7 @@ struct lambda1520analysis {
 
       // For Kaon candidate:
       // to apply pT-independent PID cuts
-      if (IsptDependentKaonCut) {
+      if (IsptIndependentKaonCut) {
         if (std::abs(trk2NSigmaKaTPC) > cMaxTPCnSigmaKaon)
           isTrk2Selected = false;
         if (isTrk2hasTOF) {
