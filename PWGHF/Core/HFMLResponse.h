@@ -17,12 +17,13 @@
 #define PWGHF_CORE_HFMLRESPONSE_H_
 
 // ML application
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+#include "Tools/ML/model.h"
 
 #include "Framework/Array2D.h"
 #include "PWGHF/Core/SelectorCuts.h"
-#include <CCDB/BasicCCDBManager.h>
-#include "Tools/ML/model.h"
+
+// CCDB
+#include "CCDB/CcdbApi.h"
 
 namespace o2::analysis
 {
@@ -115,9 +116,9 @@ class HFMLResponse
     mCutDir = cutDir;
     mNClasses = nClasses;
 
+    mNModels = binsLimits.size() - 1;
     mNetworks = std::vector<o2::ml::OnnxModel>(mNModels);
     mPaths = std::vector<std::string>(mNModels);
-    mNModels = binsLimits.size() - 1;
 
     // initialize models
     uint8_t counterModel{0};

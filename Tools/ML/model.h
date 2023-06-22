@@ -27,8 +27,6 @@
 #include <memory>
 #include <map>
 
-#include <CCDB/BasicCCDBManager.h>
-
 // ROOT includes
 #include "TSystem.h"
 

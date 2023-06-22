@@ -17,11 +17,10 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "PWGHF/Core/HFMLResponse.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
-
-#include "PWGHF/Core/HFMLResponse.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,6 +57,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<std::vector<std::string>> modelPathsML{"modelPathsML", std::vector<std::string>{hf_cuts_ml::modelPaths}, "Paths of the ML models, one for each pT bin"};
   Configurable<std::vector<int>> cutDirML{"cutDirML", std::vector<int>{hf_cuts_ml::cutDir_v}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsML{"ml_cuts", {hf_cuts_ml::cuts[0], hf_cuts_ml::npTBins, hf_cuts_ml::nCutScores, hf_cuts_ml::pTBinLabels, hf_cuts_ml::cutScoreLabels}, "ML selections per pT bin"};
+  Configurable<int8_t> nClassesML{"nClassesML", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
 
   o2::analysis::HFMLResponse<float> hfMLResponse;
   std::vector<float> outputML = {};
@@ -96,8 +96,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     }
 
     if (applyML) {
-      uint8_t nClasses = 3;
-      hfMLResponse.init(pTBinsML, cutsML, cutDirML, modelPathsML, nClasses);
+      hfMLResponse.init(pTBinsML, cutsML, cutDirML, modelPathsML, nClassesML);
       outputML.assign(((std::vector<int>)cutDirML).size(), -1.f); // dummy value for ML output
     }
   }
