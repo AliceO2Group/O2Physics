@@ -111,7 +111,7 @@ struct JetFinderTask {
   void processChargedJets(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                           JetTracks const& tracks)
   {
-    if (!selectCollision(collision, eventSelections)) {
+    if (!selectCollision(collision, eventSelection)) {
       return;
     }
     inputParticles.clear();
