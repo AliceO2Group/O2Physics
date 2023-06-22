@@ -51,8 +51,8 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using FullTracksExtWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 using FullTracksExtIUWithPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 
-// Let's try to add a column to the cascdataext table: IsSelected.
-// In the future this will probably also be a way to tell Xi's and Omega's apart
+// Add a column to the cascdataext table: IsSelected.
+// 0 = not selected, 1 = Xi, 2 = Omega
 namespace o2::aod
 {
 namespace cascadeflags
@@ -64,8 +64,6 @@ DECLARE_SOA_TABLE(CascadeFlags, "AOD", "CASCADEFLAGS", //!
 using CascDataExtSelected = soa::Join<CascDataExt, CascadeFlags>;
 } // namespace o2::aod
 
-// Should we make a separate struct with "cascadeSelector" here?
-// The process function of this would then produce the CascadeFlags table.
 struct cascadeSelector {
   Produces<aod::CascadeFlags> cascflags;
 
@@ -93,13 +91,9 @@ struct cascadeSelector {
       auto posTrack = v0data.posTrack_as<FullTracksExtIUWithPID>();
       auto negTrack = v0data.negTrack_as<FullTracksExtIUWithPID>();
 
-      // Bachelor check: Regardless of sign, should be pion (Xi)
-      if (TMath::Abs(bachTrack.tpcNSigmaPi()) > 3) {
-        cascflags(0);
-        continue;
-      }
-
-      if (casc.sign() < 0) { // FIXME: only Xi for now, implement Omega's TODO
+      // PID
+      // Lambda check
+      if (casc.sign() < 0) {
         // Proton check:
         if (TMath::Abs(posTrack.tpcNSigmaPr()) > 3) {
           cascflags(0);
@@ -111,25 +105,37 @@ struct cascadeSelector {
           continue;
         }
       } else {
-        // //Proton check:
-        // if (TMath::Abs(posTrack.tpcNSigmaPr()) > 3) {
-        //   cascflags(0);
-        //   continue;
-        // }
-        // //Pion check:
-        // if (TMath::Abs(negTrack.tpcNSigmaPi()) > 3) {
-        //   cascflags(0);
-        //   continue;
-        // }
+        //Proton check:
+        if (TMath::Abs(negTrack.tpcNSigmaPr()) > 3) {
+          cascflags(0);
+          continue;
+        }
+        //Pion check:
+        if (TMath::Abs(posTrack.tpcNSigmaPi()) > 3) {
+          cascflags(0);
+          continue;
+        }
       }
-      // if we reach here, candidate is good!
-      cascflags(1);
+      // Bachelor check
+      if (TMath::Abs(bachTrack.tpcNSigmaPi()) < 3) {
+        if (TMath::Abs(bachTrack.tpcNSigmaKa()) < 3) {
+          // TODO: ambiguous! ignore for now
+          cascflags(0);
+          continue;
+        }
+        cascflags(1);
+        continue;
+      } else if (TMath::Abs(bachTrack.tpcNSigmaKa()) < 3) {
+        cascflags(2);
+        continue;
+      }
+      // if we reach here, the bachelor was neither pion nor kaon
+      cascflags(0);
     } // cascade loop
   }   // process
 };    // struct
 
 struct cascadeCorrelations {
-  // Basic checks
   HistogramRegistry registry{
     "registry",
     {
@@ -137,19 +143,17 @@ struct cascadeCorrelations {
       {"hMassXiPlus", "hMassXiPlus", {HistType::kTH1F, {{3000, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"}}}},
       {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH1F, {{3000, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"}}}},
       {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH1F, {{3000, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"}}}},
-
       {"hPhi", "hPhi", {HistType::kTH1F, {{100, 0, 2 * PI, "#varphi"}}}},
-
       {"hDeltaPhiSS", "hDeltaPhiSS", {HistType::kTH1F, {{100, -PI / 2, 1.5 * PI, "#Delta#varphi"}}}},
       {"hDeltaPhiOS", "hDeltaPhiOS", {HistType::kTH1F, {{100, -PI / 2, 1.5 * PI, "#Delta#varphi"}}}},
     },
   };
 
-  Filter Selector = aod::cascadeflags::isSelected > 0;
+  Filter Selector = aod::cascadeflags::isSelected > 0; // TODO: treat Omega's and Xi's differently
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExtSelected> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
   {
-    // some QA on the cascades
+    // Some QA on the cascades
     for (auto& casc : Cascades) {
 
       auto v0 = casc.v0_as<o2::aod::V0sLinked>();
@@ -159,15 +163,9 @@ struct cascadeCorrelations {
       auto v0data = v0.v0Data();
 
       if (casc.sign() < 0) { // FIXME: could be done better...
-        // Check if we don't use the same pion twice in single cascade reco
-        if (casc.bachelorId() == v0data.negTrackId())
-          LOGF(info, "autocorrelation in neg cascade! %d %d", casc.bachelorId(), v0data.negTrackId());
         registry.fill(HIST("hMassXiMinus"), casc.mXi());
         registry.fill(HIST("hMassOmegaMinus"), casc.mOmega());
       } else {
-        // Check if we don't use the same pion twice in single cascade reco
-        if (casc.bachelorId() == v0data.posTrackId())
-          LOGF(info, "autocorrelation in pos cascade! %d %d", casc.bachelorId(), v0data.negTrackId());
         registry.fill(HIST("hMassXiPlus"), casc.mXi());
         registry.fill(HIST("hMassOmegaPlus"), casc.mOmega());
       }
@@ -184,18 +182,16 @@ struct cascadeCorrelations {
       auto v0data0 = lambda0.v0Data();
       auto v0data1 = lambda1.v0Data();
 
-      LOGF(info, "Found a cascade pair!"); // casc table doesn't have global indices, makes no sense to print them (will just be numbered like 0,1,2,...)
       double phi0 = RecoDecay::phi(c0.px(), c0.py());
       double phi1 = RecoDecay::phi(c1.px(), c1.py());
       double dphi = std::fmod(phi0 - phi1 + 2.5 * PI, 2 * PI) - 0.5 * PI;
-      if (c0.sign() * c1.sign() < 0) { // OS
+      if (c0.sign() * c1.sign() < 0) { // opposite-sign
         registry.fill(HIST("hDeltaPhiOS"), dphi);
-      } else { // SS
-        // Let's see if we have many autocorrelations?
-        // Should only be prevalent in SS due to pions, lambda's
-        // Let's first check if the lambda's aren't the same:
+      } else { // same-sign
+        // make sure to check for autocorrelations - only possible in same-sign correlations
+        // TODO: make QA histo to quantify autocorrelations
         if (v0data0.v0Id() == v0data1.v0Id()) {
-          LOGF(info, "same v0 in SS correlation! %d %d", v0data0.v0Id(), v0data1.v0Id());
+          // LOGF(info, "same v0 in SS correlation! %d %d", v0data0.v0Id(), v0data1.v0Id());
           continue;
         }
         int bachId0 = c0.bachelorId();
@@ -205,22 +201,22 @@ struct cascadeCorrelations {
         int posId1 = v0data1.posTrackId();
         int negId1 = v0data1.negTrackId();
         if (bachId0 == bachId1) {
-          LOGF(info, "same bachelor in SS correlation! %d %d", bachId0, bachId1);
+          // LOGF(info, "same bachelor in SS correlation! %d %d", bachId0, bachId1);
           continue;
         }
         // check for same tracks in v0's of cascades
         if (negId0 == negId1 || posId0 == posId1) {
-          LOGF(info, "cascades have a v0-track in common in SS correlation!");
+          // LOGF(info, "cascades have a v0-track in common in SS correlation!");
           continue;
         }
         if (c0.sign() < 0) { // min cascade
           if (negId0 == bachId1 || negId1 == bachId0) {
-            LOGF(info, "bach of casc == v0-pion of other casc in neg SS correlation!");
+            // LOGF(info, "bach of casc == v0-pion of other casc in neg SS correlation!");
             continue;
           }
         } else { // pos cascade
           if (posId0 == bachId1 || posId1 == bachId0) {
-            LOGF(info, "bach of casc == v0-pion of other casc in pos SS correlation!");
+            // LOGF(info, "bach of casc == v0-pion of other casc in pos SS correlation!");
             continue;
           }
         }
