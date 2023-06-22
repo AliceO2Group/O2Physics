@@ -15,12 +15,13 @@
 ///
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Università/INFN Cagliari
 
-#include "Framework/runDataProcessing.h"
+#include "ALICE3/DataModel/ECAL.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "ALICE3/DataModel/ECAL.h"
 
 using namespace o2;
 using namespace o2::aod;

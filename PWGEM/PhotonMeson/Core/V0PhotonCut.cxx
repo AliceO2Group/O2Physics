@@ -65,6 +65,11 @@ void V0PhotonCut::SetMaxPCA(float max)
   mMaxPCA = max;
   LOG(info) << "V0 Photon Cut, set max distance between 2 legs: " << mMaxPCA;
 }
+void V0PhotonCut::SetMaxMarginZ(float max)
+{
+  mMaxMarginZ = max;
+  LOG(info) << "V0 Photon Cut, set max margin z: " << mMaxMarginZ;
+}
 void V0PhotonCut::SetOnWwireIB(bool flag)
 {
   mIsOnWwireIB = flag;

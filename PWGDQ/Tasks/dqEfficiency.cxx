@@ -1212,19 +1212,22 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "trigger,cent,mc");
     }
 
-    if (classStr.Contains("Track")) {
+    if (classStr.Contains("Track") && !classStr.Contains("Pairs")) {
       if (classStr.Contains("Barrel")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid,mc");
       }
-    }
-
-    if (classStr.Contains("Muon")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
+      if (classStr.Contains("Muon")) {
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
+      }
     }
 
     if (classStr.Contains("Pairs")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel", "vertexing-barrel");
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon", "vertexing-forward");
+      if (classStr.Contains("Barrel")) {
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel,vertexing-barrel");
+      }
+      if (classStr.Contains("Muon")) {
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "dimuon,vertexing-forward");
+      }
     }
 
     if (classStr.Contains("MCTruthGenPair")) {

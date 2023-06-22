@@ -17,12 +17,13 @@
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 /// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab
 
-#include "Framework/runDataProcessing.h"
+#include "Common/Core/trackUtilities.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::framework;

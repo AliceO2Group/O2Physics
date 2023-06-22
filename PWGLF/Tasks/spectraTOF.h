@@ -110,6 +110,20 @@ static constexpr std::string_view hpt_numtof_prm[NpCharge] = {"MC/el/pos/prm/pt/
                                                               "MC/el/neg/prm/pt/numtof", "MC/mu/neg/prm/pt/numtof", "MC/pi/neg/prm/pt/numtof",
                                                               "MC/ka/neg/prm/pt/numtof", "MC/pr/neg/prm/pt/numtof", "MC/de/neg/prm/pt/numtof",
                                                               "MC/tr/neg/prm/pt/numtof", "MC/he/neg/prm/pt/numtof", "MC/al/neg/prm/pt/numtof"};
+
+//********************************************RD**********************************************************************************************
+static constexpr std::string_view hpt_numtof_str[NpCharge] = {"MC/el/pos/str/pt/numtof", "MC/mu/pos/str/pt/numtof", "MC/pi/pos/str/pt/numtof",
+                                                              "MC/ka/pos/str/pt/numtof", "MC/pr/pos/str/pt/numtof", "MC/de/pos/str/pt/numtof",
+                                                              "MC/tr/pos/str/pt/numtof", "MC/he/pos/str/pt/numtof", "MC/al/pos/str/pt/numtof",
+                                                              "MC/el/neg/str/pt/numtof", "MC/mu/neg/str/pt/numtof", "MC/pi/neg/str/pt/numtof",
+                                                              "MC/ka/neg/str/pt/numtof", "MC/pr/neg/str/pt/numtof", "MC/de/neg/str/pt/numtof",
+                                                              "MC/tr/neg/str/pt/numtof", "MC/he/neg/str/pt/numtof", "MC/al/neg/str/pt/numtof"};
+static constexpr std::string_view hpt_numtof_mat[NpCharge] = {"MC/el/pos/mat/pt/numtof", "MC/mu/pos/mat/pt/numtof", "MC/pi/pos/mat/pt/numtof",
+                                                              "MC/ka/pos/mat/pt/numtof", "MC/pr/pos/mat/pt/numtof", "MC/de/pos/mat/pt/numtof",
+                                                              "MC/tr/pos/mat/pt/numtof", "MC/he/pos/mat/pt/numtof", "MC/al/pos/mat/pt/numtof",
+                                                              "MC/el/neg/mat/pt/numtof", "MC/mu/neg/mat/pt/numtof", "MC/pi/neg/mat/pt/numtof",
+                                                              "MC/ka/neg/mat/pt/numtof", "MC/pr/neg/mat/pt/numtof", "MC/de/neg/mat/pt/numtof",
+                                                              "MC/tr/neg/mat/pt/numtof", "MC/he/neg/mat/pt/numtof", "MC/al/neg/mat/pt/numtof"};
 static constexpr std::string_view hpt_den_prm[NpCharge] = {"MC/el/pos/prm/pt/den", "MC/mu/pos/prm/pt/den", "MC/pi/pos/prm/pt/den",
                                                            "MC/ka/pos/prm/pt/den", "MC/pr/pos/prm/pt/den", "MC/de/pos/prm/pt/den",
                                                            "MC/tr/pos/prm/pt/den", "MC/he/pos/prm/pt/den", "MC/al/pos/prm/pt/den",
@@ -219,4 +233,4 @@ static constexpr std::string_view hdcazmat[NpCharge] = {"dcazmat/pos/el", "dcazm
                                                         "dcazmat/neg/ka", "dcazmat/neg/pr", "dcazmat/neg/de",
                                                         "dcazmat/neg/tr", "dcazmat/neg/he", "dcazmat/neg/al"};
 
-#endif
+#endif // PWGLF_TASKS_SPECTRATOF_H_

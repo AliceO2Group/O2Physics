@@ -111,11 +111,6 @@ o2physics_add_dpl_workflow(lambda1520analysis
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cascqaanalysis
-                    SOURCES cascqaanalysis.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(nuclei-hist
                     SOURCES NucleiHistTask.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -148,5 +143,15 @@ o2physics_add_dpl_workflow(k1analysis
 
 o2physics_add_dpl_workflow(phianalysisrun3
                     SOURCES phianalysisrun3.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(f0980analysis
+                    SOURCES f0980analysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(v0postprocessing
+                    SOURCES v0postprocessing.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
