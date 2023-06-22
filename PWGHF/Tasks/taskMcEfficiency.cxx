@@ -513,12 +513,28 @@ struct HfTaskMcEfficiency {
         if (absPdg != pdgCode) { /// abs. value because only "kLambdaCPlus" is defined, not "kAntiLambdaCPlus"
           continue;
         }
+
+        std::array<int, 3> pdgDaughters;
+        if (pdgCode == pdg::kDPlus) {
+          pdgDaughters[0] = +kPiPlus;
+          pdgDaughters[1] = -kKPlus;
+          pdgDaughters[2] = +kPiPlus;
+        } else if (pdgCode == pdg::kDS) {
+          pdgDaughters[0] = +kKPlus;
+          pdgDaughters[1] = -kKPlus;
+          pdgDaughters[2] = +kPiPlus;
+        } else if (pdgCode == pdg::kLambdaCPlus) {
+          pdgDaughters[0] = +kProton;
+          pdgDaughters[1] = -kKPlus;
+          pdgDaughters[2] = +kPiPlus;
+        } else {
+          LOGP(fatal, "Not implemented for PDG {}", pdgCode);
+        }
+
         /// check if we end-up with the correct final state using MC info
         int8_t sign = 0;
         std::unique_ptr<std::vector<int>> listIndexDaughters(new std::vector<int>{});
-        if ((absPdg == pdg::kLambdaCPlus && !RecoDecay::isMatchedMCGen(mcParticles, mcParticle, pdg::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2, listIndexDaughters.get())) ||
-            (absPdg == pdg::kDPlus && !RecoDecay::isMatchedMCGen(mcParticles, mcParticle, pdg::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2, listIndexDaughters.get())) ||
-            (absPdg == pdg::kDS && !RecoDecay::isMatchedMCGen(mcParticles, mcParticle, pdg::kDS, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, listIndexDaughters.get()))) {
+        if (!RecoDecay::isMatchedMCGen(mcParticles, mcParticle, pdgCode, pdgDaughters, true, &sign, 2, listIndexDaughters.get())) {
           /// check if we have Λc± → p± K∓ π± (either direct or resonant), or D± → π± K∓ π± (either direct or resonant) or Ds± → K± K∓ π± (either direct or resonant)
           continue;
         }
