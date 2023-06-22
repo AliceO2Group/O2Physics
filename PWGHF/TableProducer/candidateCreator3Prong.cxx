@@ -83,7 +83,7 @@ struct HfCandidateCreator3Prong {
     runNumber = 0;
   }
 
-  template<bool doPvRefit = false, typename Cand>
+  template <bool doPvRefit = false, typename Cand>
   void runCreator3Prong(aod::Collisions const& collisions, Cand const& rowsTrackIndexProng3, aod::BigTracks const& tracks, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // 3-prong vertex fitter
@@ -230,7 +230,6 @@ struct HfCandidateCreator3Prong {
   }
 
   PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefit, "Run candidate creator without PV refit", true);
-
 };
 
 /// Extends the base table with expression columns.
@@ -255,9 +254,9 @@ struct HfCandidateCreator3ProngExpressions {
     int8_t channel = 0;
     std::vector<int> arrDaughIndex;
     std::array<int, 2> arrPDGDaugh;
-    std::array<int, 2> arrPDGResonant1 = {kProton, 313};  // Λc± → p± K*
-    std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};  // Λc± → Δ(1232)±± K∓
-    std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus}; // Λc± → Λ(1520) π±
+    std::array<int, 2> arrPDGResonant1 = {kProton, 313};       // Λc± → p± K*
+    std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};       // Λc± → Δ(1232)±± K∓
+    std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus};      // Λc± → Λ(1520) π±
     std::array<int, 2> arrPDGResonantDsPhiPi = {333, kPiPlus}; // Ds± → Phi π±
     std::array<int, 2> arrPDGResonantDsKstarK = {313, kKPlus}; // Ds± → K*(892)0bar K±
 
