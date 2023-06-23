@@ -69,18 +69,8 @@ o2physics_add_dpl_workflow(candidate-creator-sigmac0plusplus
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(candidate-creator-chic
-                    SOURCES candidateCreatorChic.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(candidate-creator-lb
                     SOURCES candidateCreatorLb.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(candidate-creator-x
-                    SOURCES candidateCreatorX.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
@@ -99,11 +89,6 @@ o2physics_add_dpl_workflow(tree-creator-lb-to-lc-pi
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(tree-creator-x-to-jpsi-pi-pi
-                    SOURCES treeCreatorXToJpsiPiPi.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(tree-creator-xicc-to-p-k-pi-pi
                     SOURCES treeCreatorXiccToPKPiPi.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -113,11 +98,6 @@ o2physics_add_dpl_workflow(tree-creator-bplus-to-d0-pi
                     SOURCES treeCreatorBplusToD0Pi.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(tree-creator-chic-to-jpsi-gamma
-                   SOURCES treeCreatorChicToJpsiGamma.cxx
-                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                   COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tree-creator-lc-to-k0s-p
                     SOURCES treeCreatorLcToK0sP.cxx
@@ -131,31 +111,6 @@ o2physics_add_dpl_workflow(tree-creator-to-xi-pi
 
 o2physics_add_dpl_workflow(candidate-selector-d0
                     SOURCES candidateSelectorD0.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(candidate-selector-d0-alice3-barrel
-                    SOURCES candidateSelectorD0Alice3Barrel.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(candidate-selector-d0-parametrized-pid
-                    SOURCES candidateSelectorD0ParametrizedPid.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(candidate-selector-lc-parametrized-pid
-                    SOURCES candidateSelectorLcParametrizedPid.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(candidate-selector-lc-alice3
-                    SOURCES candidateSelectorLcAlice3.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(candidate-selector-d0-alice3-forward
-                    SOURCES candidateSelectorD0Alice3Forward.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -177,11 +132,6 @@ o2physics_add_dpl_workflow(candidate-selector-lc
 o2physics_add_dpl_workflow(candidate-selector-lc-ml
                     SOURCES candidateSelectorLcMl.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::CCDB ONNXRuntime::ONNXRuntime O2Physics::MLCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(candidate-selector-jpsi
-                    SOURCES candidateSelectorJpsi.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-xic-to-p-k-pi
@@ -216,15 +166,5 @@ o2physics_add_dpl_workflow(candidate-selector-bplus-to-d0-pi
 
 o2physics_add_dpl_workflow(candidate-selector-lb-to-lc-pi
                     SOURCES candidateSelectorLbToLcPi.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(candidate-selector-x-to-jpsi-pi-pi
-                    SOURCES candidateSelectorXToJpsiPiPi.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(candidate-selector-chic-to-jpsi-gamma
-                    SOURCES candidateSelectorChicToJpsiGamma.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

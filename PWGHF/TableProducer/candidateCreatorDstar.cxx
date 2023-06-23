@@ -14,13 +14,13 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include "Framework/AnalysisTask.h"
-// #include "DetectorsVertexing/DCAFitterN.h"
 // #include "Common/Core/trackUtilities.h"
-// #include "ReconstructionDataFormats/DCA.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-
+// #include "DetectorsVertexing/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+// #include "ReconstructionDataFormats/DCA.h"
+
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
 using namespace o2::framework;

@@ -171,6 +171,12 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
   uint64_t maxBC = meanBC + (uint64_t)deltaBC;
   LOGF(debug, "  minBC %d maxBC %d bcIterator %d (%d)", minBC, maxBC, bcIter.globalBC(), bcIter.globalIndex());
 
+  // check [min,max]BC to overlap with [bcs.iteratorAt([0,bcs.size() - 1])
+  if (maxBC < bcs.iteratorAt(0).globalBC() || minBC > bcs.iteratorAt(bcs.size() - 1).globalBC()) {
+    LOGF(info, "<compatibleBCs> No overlap of [%d, %d] and [%d, %d]", minBC, maxBC, bcs.iteratorAt(0).globalBC(), bcs.iteratorAt(bcs.size() - 1).globalBC());
+    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+  }
+
   // find slice of BCs table with BC in [minBC, maxBC]
   int moveCount = 0;
   int64_t minBCId = bcIter.globalIndex();

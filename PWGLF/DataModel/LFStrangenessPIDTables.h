@@ -24,22 +24,75 @@ namespace o2::aod
 {
 namespace v0data
 {
-DECLARE_SOA_COLUMN(PosDeltaTimePi, posDeltaTimePi, float); //! positive track DeltaTime from pion expectation
-DECLARE_SOA_COLUMN(PosDeltaTimePr, posDeltaTimePr, float); //! positive track DeltaTime from proton expectation
-DECLARE_SOA_COLUMN(NegDeltaTimePi, negDeltaTimePi, float); //! negative track DeltaTime from pion expectation
-DECLARE_SOA_COLUMN(NegDeltaTimePr, negDeltaTimePr, float); //! negative track DeltaTime from proton expectation
-DECLARE_SOA_COLUMN(PosNSigmaPi, posNSigmaPi, float);       //! positive track Nsigma from pion expectation
-DECLARE_SOA_COLUMN(PosNSigmaPr, posNSigmaPr, float);       //! positive track Nsigma from proton expectation
-DECLARE_SOA_COLUMN(NegNSigmaPi, negNSigmaPi, float);       //! negative track Nsigma from pion expectation
-DECLARE_SOA_COLUMN(NegNSigmaPr, negNSigmaPr, float);       //! negative track Nsigma from proton expectation
-} // namespace v0data
-DECLARE_SOA_TABLE(V0DeltaTimeTOF, "AOD", "V0DELTATIMETOF",
-                  v0data::PosDeltaTimePi, v0data::PosDeltaTimePr,
-                  v0data::NegDeltaTimePi, v0data::NegDeltaTimePr);
-DECLARE_SOA_TABLE(V0NSigmaTOF, "AOD", "V0NSIGMATOF",
-                  v0data::PosNSigmaPi, v0data::PosNSigmaPr,
-                  v0data::NegNSigmaPi, v0data::NegNSigmaPr);
+// delta-times
+DECLARE_SOA_COLUMN(PosDeltaTimeLambdaPi, posDeltaTimeLambdaPi, float);   //! positive track DeltaTime from pion <- lambda expectation
+DECLARE_SOA_COLUMN(PosDeltaTimeLambdaPr, posDeltaTimeLambdaPr, float);   //! positive track DeltaTime from proton <- lambda expectation
+DECLARE_SOA_COLUMN(NegDeltaTimeLambdaPi, negDeltaTimeLambdaPi, float);   //! negative track DeltaTime from pion <- lambda expectation
+DECLARE_SOA_COLUMN(NegDeltaTimeLambdaPr, negDeltaTimeLambdaPr, float);   //! negative track DeltaTime from proton <- lambda expectation
+DECLARE_SOA_COLUMN(PosDeltaTimeK0ShortPi, posDeltaTimeK0ShortPi, float); //! positive track DeltaTime from pion <- k0short expectation
+DECLARE_SOA_COLUMN(NegDeltaTimeK0ShortPi, negDeltaTimeK0ShortPi, float); //! positive track DeltaTime from pion <- k0short expectation
 
+// n-sigmas
+DECLARE_SOA_COLUMN(PosNSigmaLambdaPi, posNSigmaLambdaPi, float);   //! positive track NSigma from pion <- lambda expectation
+DECLARE_SOA_COLUMN(PosNSigmaLambdaPr, posNSigmaLambdaPr, float);   //! positive track NSigma from proton <- lambda expectation
+DECLARE_SOA_COLUMN(NegNSigmaLambdaPi, negNSigmaLambdaPi, float);   //! negative track NSigma from pion <- lambda expectation
+DECLARE_SOA_COLUMN(NegNSigmaLambdaPr, negNSigmaLambdaPr, float);   //! negative track NSigma from proton <- lambda expectation
+DECLARE_SOA_COLUMN(PosNSigmaK0ShortPi, posNSigmaK0ShortPi, float); //! positive track NSigma from pion <- k0short expectation
+DECLARE_SOA_COLUMN(NegNSigmaK0ShortPi, negNSigmaK0ShortPi, float); //! positive track NSigma from pion <- k0short expectation
+} // namespace v0data
+DECLARE_SOA_TABLE(LaDeltaTimeTOF, "AOD", "LADELTATIMETOF",
+                  v0data::PosDeltaTimeLambdaPi, v0data::PosDeltaTimeLambdaPr,
+                  v0data::NegDeltaTimeLambdaPi, v0data::NegDeltaTimeLambdaPr);
+DECLARE_SOA_TABLE(K0DeltaTimeTOF, "AOD", "K0DELTATIMETOF",
+                  v0data::PosDeltaTimeK0ShortPi, v0data::NegDeltaTimeK0ShortPi);
+DECLARE_SOA_TABLE(LaNSigmaTOF, "AOD", "LANSIGMATOF",
+                  v0data::PosNSigmaLambdaPi, v0data::PosNSigmaLambdaPr,
+                  v0data::NegNSigmaLambdaPi, v0data::NegNSigmaLambdaPr);
+DECLARE_SOA_TABLE(K0NSigmaTOF, "AOD", "K0NSIGMATOF",
+                  v0data::PosNSigmaK0ShortPi, v0data::NegNSigmaK0ShortPi);
+
+namespace cascdata
+{
+// delta-times
+DECLARE_SOA_COLUMN(PosDeltaTimeXiPi, posDeltaTimeXiPi, float);         //! positive track DeltaTime from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(PosDeltaTimeXiPr, posDeltaTimeXiPr, float);         //! positive track DeltaTime from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(NegDeltaTimeXiPi, negDeltaTimeXiPi, float);         //! negative track DeltaTime from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(NegDeltaTimeXiPr, negDeltaTimeXiPr, float);         //! negative track DeltaTime from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(BachDeltaTimeXiPi, bachDeltaTimeXiPi, float);       //! bachelor track DeltaTime from pion <- xi expectation
+DECLARE_SOA_COLUMN(PosDeltaTimeOmegaPi, posDeltaTimeOmegaPi, float);   //! positive track DeltaTime from pion <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(PosDeltaTimeOmegaPr, posDeltaTimeOmegaPr, float);   //! positive track DeltaTime from pion <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(NegDeltaTimeOmegaPi, negDeltaTimeOmegaPi, float);   //! negative track DeltaTime from pion <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(NegDeltaTimeOmegaPr, negDeltaTimeOmegaPr, float);   //! negative track DeltaTime from pion <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(BachDeltaTimeOmegaPi, bachDeltaTimeOmegaPi, float); //! bachelor track DeltaTime from pion <- omega expectation
+
+// n-sigmas
+DECLARE_SOA_COLUMN(PosNSigmaXiPi, posNSigmaXiPi, float);         //! positive track NSigma from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(PosNSigmaXiPr, posNSigmaXiPr, float);         //! positive track NSigma from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(NegNSigmaXiPi, negNSigmaXiPi, float);         //! negative track NSigma from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(NegNSigmaXiPr, negNSigmaXiPr, float);         //! negative track NSigma from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(BachNSigmaXiPi, bachNSigmaXiPi, float);       //! bachelor track NSigma from pion <- xi expectation
+DECLARE_SOA_COLUMN(PosNSigmaOmegaPi, posNSigmaOmegaPi, float);   //! positive track NSigma from pion <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(PosNSigmaOmegaPr, posNSigmaOmegaPr, float);   //! positive track NSigma from pion <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(NegNSigmaOmegaPi, negNSigmaOmegaPi, float);   //! negative track NSigma from pion <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(NegNSigmaOmegaPr, negNSigmaOmegaPr, float);   //! negative track NSigma from pion <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(BachNSigmaOmegaPi, bachNSigmaOmegaPi, float); //! bachelor track NSigma from pion <- omega expectation
+} // namespace cascdata
+DECLARE_SOA_TABLE(XiDeltaTimeTOF, "AOD", "XIDELTATIMETOF",
+                  cascdata::PosDeltaTimeXiPi, cascdata::PosDeltaTimeXiPr,
+                  cascdata::NegDeltaTimeXiPi, cascdata::NegDeltaTimeXiPr,
+                  cascdata::BachDeltaTimeXiPi);
+DECLARE_SOA_TABLE(OmDeltaTimeTOF, "AOD", "OMDELTATIMETOF",
+                  cascdata::PosDeltaTimeOmegaPi, cascdata::PosDeltaTimeOmegaPr,
+                  cascdata::NegDeltaTimeOmegaPi, cascdata::NegDeltaTimeOmegaPr,
+                  cascdata::BachDeltaTimeOmegaPi);
+DECLARE_SOA_TABLE(XiNSigmaTOF, "AOD", "XINSIGMATOF",
+                  cascdata::PosNSigmaXiPi, cascdata::PosNSigmaXiPr,
+                  cascdata::NegNSigmaXiPi, cascdata::NegNSigmaXiPr,
+                  cascdata::BachNSigmaXiPi);
+DECLARE_SOA_TABLE(OmNSigmaTOF, "AOD", "OmNSIGMATOF",
+                  cascdata::PosNSigmaOmegaPi, cascdata::PosNSigmaOmegaPr,
+                  cascdata::NegNSigmaOmegaPi, cascdata::NegNSigmaOmegaPr,
+                  cascdata::BachNSigmaOmegaPi);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_

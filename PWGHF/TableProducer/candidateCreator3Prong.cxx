@@ -15,25 +15,19 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include "Framework/AnalysisTask.h"
+#include "Common/Core/trackUtilities.h"
 #include "DCAFitter/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_3prong;
-
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
-  workflowOptions.push_back(optionDoMC);
-}
-
-#include "Framework/runDataProcessing.h"
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreator3Prong {

@@ -100,6 +100,10 @@ struct lambdakzeroBuilder {
   // use auto-detect configuration
   Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
 
+  // downscaling for testing
+  Configurable<float> downscaleFactor{"downscaleFactor", 2, "Downcale factor (0: build nothing, 1: build all)"};
+  unsigned int randomSeed = 0;
+
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -143,6 +147,7 @@ struct lambdakzeroBuilder {
   ConfigurableAxis axisTopoVarV0Radius{"axisTopoVarV0Radius", {500, 0.0, 100.0}, "V0 decay radius (cm)"};
   ConfigurableAxis axisTopoVarDCAV0Dau{"axisTopoVarDCAV0Dau", {200, 0.0, 2.0}, "DCA between V0 daughters (cm)"};
   ConfigurableAxis axisTopoVarDCAToPV{"axisTopoVarDCAToPV", {200, -1, 1.0}, "single track DCA to PV (cm)"};
+  ConfigurableAxis axisTopoVarDCAV0ToPV{"axisTopoVarDCAV0ToPV", {200, 0, 5.0}, "V0 DCA to PV (cm)"};
 
   ConfigurableAxis axisX{"axisX", {200, 0, 200}, "X_{IU}"};
   ConfigurableAxis axisRadius{"axisRadius", {500, 0, 50}, "Radius (cm)"};
@@ -236,6 +241,8 @@ struct lambdakzeroBuilder {
   {
     resetHistos();
 
+    randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+
     // Optionally, add extra QA histograms to processing chain
     if (d_doQA) {
       // Basic histograms containing invariant masses of all built candidates
@@ -273,6 +280,7 @@ struct lambdakzeroBuilder {
       registry.add("h2dTopoVarDCAV0Dau", "h2dTopoVarDCAV0Dau", kTH2D, {axisPtQA, axisTopoVarDCAV0Dau});
       registry.add("h2dTopoVarPosDCAToPV", "h2dTopoVarPosDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
       registry.add("h2dTopoVarNegDCAToPV", "h2dTopoVarNegDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
+      registry.add("h2dTopoVarDCAV0ToPV", "h2dTopoVarDCAV0ToPV", kTH2D, {axisPtQA, axisTopoVarDCAV0ToPV});
     }
 
     mRunNumber = 0;
@@ -595,6 +603,9 @@ struct lambdakzeroBuilder {
       auto lHypertritonMass = RecoDecay::m(array{array{2.0f * v0candidate.posP[0], 2.0f * v0candidate.posP[1], 2.0f * v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPionCharged});
       auto lAntiHypertritonMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{2.0f * v0candidate.negP[0], 2.0f * v0candidate.negP[1], 2.0f * v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
 
+      auto px = v0candidate.posP[0] + v0candidate.negP[0];
+      auto py = v0candidate.posP[1] + v0candidate.negP[1];
+      auto pz = v0candidate.posP[2] + v0candidate.negP[2];
       auto lPt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtHy = RecoDecay::sqrtSumOfSquares(2.0f * v0candidate.posP[0] + v0candidate.negP[0], 2.0f * v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
@@ -631,11 +642,16 @@ struct lambdakzeroBuilder {
         registry.fill(HIST("h2dXIU_AntiLambda"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
 
+      // QA extra: DCA to PV
+      float dcaV0toPV = std::sqrt((std::pow((primaryVertex.getY() - v0candidate.pos[1]) * pz - (primaryVertex.getZ() - v0candidate.pos[2]) * py, 2) + std::pow((primaryVertex.getX() - v0candidate.pos[0]) * pz - (primaryVertex.getZ() - v0candidate.pos[2]) * px, 2) + std::pow((primaryVertex.getX() - v0candidate.pos[0]) * py - (primaryVertex.getY() - v0candidate.pos[1]) * px, 2)) / (px * px + py * py + pz * pz));
+
       registry.fill(HIST("h2dTopoVarPointingAngle"), lPt, TMath::ACos(v0candidate.cosPA));
       registry.fill(HIST("h2dTopoVarV0Radius"), lPt, v0candidate.V0radius);
       registry.fill(HIST("h2dTopoVarDCAV0Dau"), lPt, v0candidate.dcaV0dau);
       registry.fill(HIST("h2dTopoVarPosDCAToPV"), lPt, v0candidate.posDCAxy);
       registry.fill(HIST("h2dTopoVarNegDCAToPV"), lPt, v0candidate.negDCAxy);
+      registry.fill(HIST("h2dTopoVarDCAV0ToPV"), lPt, dcaV0toPV);
+
     } // end QA
     return true;
   }
@@ -647,6 +663,11 @@ struct lambdakzeroBuilder {
 
     // Loops over all V0s in the time frame
     for (auto& V0 : V0s) {
+      // downscale some V0s if requested to do so
+      if (downscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > downscaleFactor) {
+        return;
+      }
+
       // populates v0candidate struct declared inside strangenessbuilder
       bool validCandidate = buildV0Candidate<TTrackTo>(V0);
 

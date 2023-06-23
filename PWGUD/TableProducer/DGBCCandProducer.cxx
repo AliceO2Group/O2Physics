@@ -49,7 +49,7 @@ struct tracksWGTInBCs {
   void init(InitContext& context)
   {
     if (context.mOptions.get<bool>("processBarrel")) {
-      registry.add("barrel/Tracks", "#barrelTracks", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+      registry.add("barrel/Tracks", "#barrelTracks", {HistType::kTH1F, {{6, -0.5, 5.5}}});
     }
     if (context.mOptions.get<bool>("processForward")) {
       registry.add("forward/Tracks", "#forwardTracks", {HistType::kTH1F, {{5, -0.5, 4.5}}});
@@ -72,21 +72,27 @@ struct tracksWGTInBCs {
     LOGF(debug, "Number of barrel tracks: %d", tracks.size());
     for (auto const& track : tracks) {
       registry.get<TH1>(HIST("barrel/Tracks"))->Fill(0., 1.);
+
+      // is this track aPV track?
+      if (track.isPVContributor()) {
+        registry.get<TH1>(HIST("barrel/Tracks"))->Fill(1., 1.);
+      }
+
       // is this track an ambiguous track?
       auto ambTracksSlice = ambTracks.sliceBy(perTrack, track.globalIndex());
       if (ambTracksSlice.size() > 0) {
-        registry.get<TH1>(HIST("barrel/Tracks"))->Fill(2., 1.);
+        registry.get<TH1>(HIST("barrel/Tracks"))->Fill(3., 1.);
       } else {
-        registry.get<TH1>(HIST("barrel/Tracks"))->Fill(1., 1.);
+        registry.get<TH1>(HIST("barrel/Tracks"))->Fill(2., 1.);
       }
 
       // only consider tracks with good timing
       if (track.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
-        registry.get<TH1>(HIST("barrel/Tracks"))->Fill(3., 1.);
+        registry.get<TH1>(HIST("barrel/Tracks"))->Fill(4., 1.);
 
         // get first compatible BC
         if (ambTracksSlice.size() > 0) {
-          registry.get<TH1>(HIST("barrel/Tracks"))->Fill(4., 1.);
+          registry.get<TH1>(HIST("barrel/Tracks"))->Fill(5., 1.);
 
           // compute the BC closest in time
           auto firstCompatibleBC = ambTracksSlice.begin().bc().begin().globalBC();
@@ -466,7 +472,7 @@ struct DGBCCandProducer {
       colSlize.bindTable(collisions);
 
       if (colSlize.size() > 0) {
-        LOGF(info, "  1. BC has collision");
+        LOGF(debug, "  1. BC has collision");
         colSlize.bindExternalIndices(&bcs);
         auto col = colSlize.begin();
 
@@ -485,7 +491,7 @@ struct DGBCCandProducer {
                          col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
         }
       } else {
-        LOGF(info, "  2. BC has NO collision");
+        LOGF(debug, "  2. BC has NO collision");
         auto tracksArray = tibc.track_as<TCs>();
         auto bcRange = udhelpers::compatibleBCs(bc, bc.globalBC(), diffCuts.minNBCs(), bcs);
 
@@ -529,7 +535,7 @@ struct DGBCCandProducer {
         outputZdcs(outputCollisions.lastIndex(), enes, chEs, amps, times, chTs);
       }
     } else {
-      LOGF(info, "  3. BC NOT found");
+      LOGF(debug, "  3. BC NOT found");
 
       // the BC is not contained in the BCs table
       auto tracksArray = tibc.track_as<TCs>();
@@ -612,7 +618,7 @@ struct DGBCCandProducer {
     auto lastbc = bcs.iteratorAt(bcs.size() - 1);
     auto lasttibc = tibcs.iteratorAt(tibcs.size() - 1);
     auto lastftibc = ftibcs.iteratorAt(ftibcs.size() - 1);
-    LOGF(info, "bcs %d tibcs %d ftibcs %d", bcs.size(), tibcs.size(), ftibcs.size());
+    LOGF(debug, "collisions %d bcs %d tibcs %d ftibcs %d", collisions.size(), bcs.size(), tibcs.size(), ftibcs.size());
 
     // set first bcnum
     bool bc2go = bc != lastbc;
@@ -625,7 +631,7 @@ struct DGBCCandProducer {
     }
     bool withCollision = false;
     while (bc2go || tibc2go) {
-      LOGF(debug, "Testing bc %d", bcnum);
+      LOGF(debug, "Testing bc %d/%d/%d", bcnum, bc.globalBC(), tibc.bcnum());
       // reset counters
       bcFlag = 1; // bit 0 is always set
       isDG1 = -1;
@@ -667,6 +673,7 @@ struct DGBCCandProducer {
           auto colTracks = tracks.sliceBy(TCperCollision, col.globalIndex());
           auto colFwdTracks = fwdtracks.sliceBy(FWperCollision, col.globalIndex());
           isDG1 = dgSelector.IsSelected(diffCuts, col, bcRange, colTracks, colFwdTracks);
+          LOGF(debug, "  isDG1 %d with %d tracks", isDG1, ntr1);
           if (isDG1 == 0) {
             // this is a DG candidate with proper collision vertex
             SETBIT(bcFlag, 3);
@@ -716,6 +723,7 @@ struct DGBCCandProducer {
             isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
           }
 
+          LOGF(debug, "  isDG2 %d with %d tracks", isDG2, ntr2);
           if (isDG2 == 0) {
             // this is a DG candidate contained in TracksWGTInBCs
             SETBIT(bcFlag, 5);
