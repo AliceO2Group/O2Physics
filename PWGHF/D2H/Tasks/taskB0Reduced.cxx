@@ -170,7 +170,7 @@ struct HfTaskB0Reduced {
       if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
-      if (yCandGenMax >= 0. && std::abs(yB0(candidate)) > yCandGenMax) {
+      if (yCandRecoMax >= 0. && std::abs(yB0(candidate)) > yCandRecoMax) {
         continue;
       }
 
