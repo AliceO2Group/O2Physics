@@ -11,18 +11,22 @@
 
 /// \file HFMLResponse.h
 /// \brief Class to compute the ML response for HF-analysis selections
-/// \author Fabio Catalano <fabio.catalano@cern.ch>, Universita' and INFN Torino
+/// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
+/// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
 #ifndef PWGHF_CORE_HFMLRESPONSE_H_
 #define PWGHF_CORE_HFMLRESPONSE_H_
 
-// ML application
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+#include <vector>
+#include <string>
+#include <map>
+
 #include "Tools/ML/model.h"
 
 #include "Framework/Array2D.h"
 #include "PWGHF/Core/SelectorCuts.h"
 
-// CCDB
 #include "CCDB/CcdbApi.h"
 
 namespace o2::analysis
@@ -80,12 +84,45 @@ class HFMLResponse
   /// Default destructor
   virtual ~HFMLResponse() = default;
 
-  /// Access model from CCDB
+  /// Configure class instance (import configurables)
+  /// \param binsLimits is a vector containing bins limits
+  /// \param cuts is a LabeledArray containing selections per bin
+  /// \param cutDir is a vector telling whether to reject score values greater or smaller than the threshold
+  /// \param paths is a vector of onnx model paths
+  void config(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir,
+              const uint8_t& nClasses, const std::vector<std::string>& paths)
+  {
+    mBinsLimits = binsLimits;
+    mCuts = cuts;
+    mCutDir = cutDir;
+    mNClasses = nClasses;
+    mNModels = binsLimits.size() - 1;
+    mModels = std::vector<o2::ml::OnnxModel>(mNModels);
+    mPaths = paths;
+  }
+
+  /// Configure class instance (import configurables) when accessing model via CCDB
+  /// \param binsLimits is a vector containing bins limits
+  /// \param cuts is a LabeledArray containing selections per bin
+  /// \param cutDir is a vector telling whether to reject score values greater or smaller than the threshold
+  void config(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir,
+              const uint8_t& nClasses)
+  {
+    mBinsLimits = binsLimits;
+    mCuts = cuts;
+    mCutDir = cutDir;
+    mNClasses = nClasses;
+    mNModels = binsLimits.size() - 1;
+    mModels = std::vector<o2::ml::OnnxModel>(mNModels);
+    mPaths = std::vector<std::string>(mNModels);
+  }
+
+  /// Set models paths to CCDB
   /// \param onnxFiles is a vector of onnx file names, one for each bin
   /// \param ccdbApi is the CCDB API
   /// \param pathCCDB is the model path in CCDB
   /// \param timestampCCDB is the CCDB timestamp
-  void accessModelFromCCDB(const std::vector<std::string>& onnxFiles, o2::ccdb::CcdbApi& ccdbApi, std::string pathCCDB, long timestampCCDB)
+  void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, o2::ccdb::CcdbApi& ccdbApi, std::string pathCCDB, int64_t timestampCCDB)
   {
     uint8_t counterModel{0};
     for (const auto& onnxFile : onnxFiles) {
@@ -100,52 +137,26 @@ class HFMLResponse
     }
   }
 
-  /// Initialize class instance (import configurables and OnnxModels)
-  /// \param binsLimits is a vector containing bins limits
-  /// \param cuts is a LabeledArray containing selections per bin
-  /// \param cutDir is a vector telling whether to reject score values greater or smaller than the threshold
-  /// \param paths is a vector of onnx model paths
-  /// \param enableOptimizations is a switch no enable optimizations
-  /// \param threads
-  void init(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir,
-            const std::vector<std::string>& paths, const uint8_t& nClasses, bool enableOptimizations = false, int threads = 0)
-  {
-    // import configurables
-    mBinsLimits = binsLimits;
-    mCuts = cuts;
-    mCutDir = cutDir;
-    mNClasses = nClasses;
-
-    mNModels = binsLimits.size() - 1;
-    mNetworks = std::vector<o2::ml::OnnxModel>(mNModels);
-    mPaths = std::vector<std::string>(mNModels);
-
-    // initialize models
-    uint8_t counterModel{0};
-    for (const auto& path : paths) {
-      mPaths[counterModel] = path;
-      mNetworks[counterModel].initModel(path, enableOptimizations, threads);
-      ++counterModel;
-    }
-  }
-
-  // Initialize OnnxModels when paths already defined
-  /// \param paths is a vector of onnx model paths
+  /// Initialize class instance (initialize OnnxModels)
   /// \param enableOptimizations is a switch no enable optimizations
   /// \param threads
   void init(bool enableOptimizations = false, int threads = 0)
   {
-    return init(mPaths, enableOptimizations, threads);
+    uint8_t counterModel{0};
+    for (const auto& path : mPaths) {
+      mModels[counterModel].initModel(path, enableOptimizations, threads);
+      ++counterModel;
+    }
   }
 
   /// Get vector with model predictions
-  /// \param input a vector containing the values of features used in BDT model
+  /// \param input a vector containing the values of features used in the model
   /// \param nModel is the model index
-  /// \return model prediction for each class and each model
+  /// \return model prediction for each class and the selected model
   template <typename T1, typename T2>
   std::vector<T> getModelOutput(T1& input, const T2& nModel)
   {
-    T* outputPtr = mNetworks[nModel].evalModel(input);
+    T* outputPtr = mModels[nModel].evalModel(input);
     std::vector<T> output(outputPtr, outputPtr + mNClasses);
     return output;
   }
@@ -155,8 +166,9 @@ class HFMLResponse
   /// \param nModel is the model index
   /// \return boolean telling if model predictions pass the cuts
   template <typename T1, typename T2>
-  bool isSelectedML(T1& input, const T2& nModel)
+  bool isSelectedML(T1& input, const T2& pt)
   {
+    auto nModel = o2::analysis::findBin(&mBinsLimits, pt);
     auto output = getModelOutput(input, nModel);
     uint8_t iClass{0};
     for (const auto& outputValue : output) {
@@ -179,8 +191,9 @@ class HFMLResponse
   /// \param output is a container to be filled with model output
   /// \return boolean telling if model predictions pass the cuts
   template <typename T1, typename T2>
-  bool isSelectedML(T1& input, const T2& nModel, std::vector<T>& output)
+  bool isSelectedML(T1& input, const T2& pt, std::vector<T>& output)
   {
+    auto nModel = o2::analysis::findBin(&mBinsLimits, pt);
     output = getModelOutput(input, nModel);
     uint8_t iClass{0};
     for (const auto& outputValue : output) {
@@ -198,7 +211,7 @@ class HFMLResponse
   }
 
  private:
-  std::vector<o2::ml::OnnxModel> mNetworks;       // OnnxModel objects, one for each bin
+  std::vector<o2::ml::OnnxModel> mModels;         // OnnxModel objects, one for each bin
   uint8_t mNModels = 1;                           // number of bins
   uint8_t mNClasses = 3;                          // number of model classes
   std::vector<double> mBinsLimits = {};           // bin limits of the variable (e.g. pT) used to select which model to use

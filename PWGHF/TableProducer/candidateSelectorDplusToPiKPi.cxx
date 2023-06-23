@@ -53,11 +53,18 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // ML inference
   Configurable<bool> applyML{"applyML", false, "Flag to apply ML selections"};
-  Configurable<std::vector<double>> pTBinsML{"pTBinsML", std::vector<double>{hf_cuts_ml::pTBins_v}, "pT bin limits for ML application"};
+  Configurable<std::vector<double>> binsPtML{"binsPtML", std::vector<double>{hf_cuts_ml::binsPt_v}, "pT bin limits for ML application"};
   Configurable<std::vector<std::string>> modelPathsML{"modelPathsML", std::vector<std::string>{hf_cuts_ml::modelPaths}, "Paths of the ML models, one for each pT bin"};
   Configurable<std::vector<int>> cutDirML{"cutDirML", std::vector<int>{hf_cuts_ml::cutDir_v}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsML{"ml_cuts", {hf_cuts_ml::cuts[0], hf_cuts_ml::npTBins, hf_cuts_ml::nCutScores, hf_cuts_ml::pTBinLabels, hf_cuts_ml::cutScoreLabels}, "ML selections per pT bin"};
+  Configurable<LabeledArray<double>> cutsML{"ml_cuts", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int8_t> nClassesML{"nClassesML", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  // CCDB configuration
+  o2::ccdb::CcdbApi ccdbApi;
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "EventFiltering/PWGHF/BDTDplus", "Path on CCDB"};
+  Configurable<std::vector<std::string>> onnxFilesCCDB{"onnxFilesCCDB", std::vector<std::string>{"ModelHandler_onnx_DplusToPiKPi.onnx"}, "ONNX file names on CCDB, for each pT bin"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HFMLResponse<float> hfMLResponse;
   std::vector<float> outputML = {};
@@ -96,7 +103,14 @@ struct HfCandidateSelectorDplusToPiKPi {
     }
 
     if (applyML) {
-      hfMLResponse.init(pTBinsML, cutsML, cutDirML, modelPathsML, nClassesML);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(url);
+        hfMLResponse.config(binsPtML, cutsML, cutDirML, nClassesML);
+        hfMLResponse.setModelPathsCCDB(onnxFilesCCDB, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+      } else {
+        hfMLResponse.config(binsPtML, cutsML, cutDirML, nClassesML, modelPathsML);
+      }
+      hfMLResponse.init();
       outputML.assign(((std::vector<int>)cutDirML).size(), -1.f); // dummy value for ML output
     }
   }
@@ -267,7 +281,6 @@ struct HfCandidateSelectorDplusToPiKPi {
         auto combinedNSigmaPiPos2 = getCombinedNSigma(trackPos2.tpcNSigmaPi(), trackPos2.tofNSigmaPi(), tagPIDPos2);
         auto combinedNSigmaKaPos2 = getCombinedNSigma(trackPos2.tpcNSigmaKa(), trackPos2.tofNSigmaKa(), tagPIDPos2);
 
-        int pTBin = findBin(pTBinsML, candidate.pt());
         // ML selections
         std::vector<float> inputFeatures{candidate.ptProng0(),
                                          candidate.impactParameter0(),
@@ -287,7 +300,7 @@ struct HfCandidateSelectorDplusToPiKPi {
                                          combinedNSigmaPiPos2,
                                          combinedNSigmaKaPos2};
 
-        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, pTBin, outputML);
+        bool isSelectedML = hfMLResponse.isSelectedML(inputFeatures, ptCand, outputML);
         hfMlDplusToPiKPiCandidate(outputML);
 
         if (!isSelectedML) {

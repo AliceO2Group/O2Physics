@@ -161,7 +161,7 @@ o2physics_add_dpl_workflow(candidate-selector-d0-alice3-forward
 
 o2physics_add_dpl_workflow(candidate-selector-dplus-to-pi-k-pi
                     SOURCES candidateSelectorDplusToPiKPi.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::CCDB ONNXRuntime::ONNXRuntime O2Physics::MLCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::CCDB O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-ds-to-k-k-pi
