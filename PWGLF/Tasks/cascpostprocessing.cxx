@@ -161,10 +161,13 @@ struct cascpostprocessing {
     if (!isXi)
       massAxis = omegamassAxis;
     AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec pTPCAxis = {100, 0.0f, 10.0f, "#it{p} TPC (GeV/#it{c})"};
     AxisSpec etaAxis = {200, -2.0f, 2.0f, "#eta"};
-    AxisSpec centFT0MAxis = {100, 0.0f, 100.0f, "FT0M (%)"};
-    AxisSpec centFV0AAxis = {100, 0.0f, 100.0f, "FV0A (%)"};
+    ConfigurableAxis centFT0MAxis{"FT0M",
+                                       {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 50, 70, 100},
+                                       "FT0M (%)"};
+    ConfigurableAxis centFV0AAxis{"FV0A",
+                                       {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 50, 70, 100},
+                                       "FV0A (%)"};                             
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
 
@@ -253,12 +256,12 @@ struct cascpostprocessing {
     registry.add("hCtauPlus", "hCtauPlus", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
 
     // daughter tracks
-    registry.add("hTPCNSigmaPosPi", "hTPCNSigmaPosPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
-    registry.add("hTPCNSigmaNegPi", "hTPCNSigmaNegPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
-    registry.add("hTPCNSigmaPosPr", "hTPCNSigmaPosPr", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
-    registry.add("hTPCNSigmaNegPr", "hTPCNSigmaNegPr", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
-    registry.add("hTPCNSigmaBachPi", "hTPCNSigmaBachPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
-    registry.add("hTPCNSigmaBachKa", "hTPCNSigmaBachKa", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
+    registry.add("hTPCNSigmaPosPi", "hTPCNSigmaPosPi", {HistType::kTH2F, {ptAxis, {120, -6.0f, 6.0f}}});
+    registry.add("hTPCNSigmaNegPi", "hTPCNSigmaNegPi", {HistType::kTH2F, {ptAxis, {120, -6.0f, 6.0f}}});
+    registry.add("hTPCNSigmaPosPr", "hTPCNSigmaPosPr", {HistType::kTH2F, {ptAxis, {120, -6.0f, 6.0f}}});
+    registry.add("hTPCNSigmaNegPr", "hTPCNSigmaNegPr", {HistType::kTH2F, {ptAxis, {120, -6.0f, 6.0f}}});
+    registry.add("hTPCNSigmaBachPi", "hTPCNSigmaBachPi", {HistType::kTH2F, {ptAxis, {120, -6.0f, 6.0f}}});
+    registry.add("hTPCNSigmaBachKa", "hTPCNSigmaBachKa", {HistType::kTH2F, {ptAxis, {120, -6.0f, 6.0f}}});
     registry.add("hTOFNSigmaPosPi", "hTOFNSigmaPosPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
     registry.add("hTOFNSigmaNegPi", "hTOFNSigmaNegPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
     registry.add("hTOFNSigmaPosPr", "hTOFNSigmaPosPr", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
@@ -460,24 +463,24 @@ struct cascpostprocessing {
       }
       if (isCandidate) {
         if (candidate.sign() < 0) {
-          registry.fill(HIST("hTPCNSigmaPosPr"), candidate.ntpcsigmapospr());
-          registry.fill(HIST("hTPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
+          registry.fill(HIST("hTPCNSigmaPosPr"), candidate.pt(), candidate.ntpcsigmapospr());
+          registry.fill(HIST("hTPCNSigmaNegPi"), candidate.pt(), candidate.ntpcsigmanegpi());
           registry.fill(HIST("hTOFNSigmaPosPr"), candidate.ntofsigmapospr());
           registry.fill(HIST("hTOFNSigmaNegPi"), candidate.ntofsigmanegpi());
           registry.fill(HIST("hCascMinusEtaPos"), candidate.poseta());
           registry.fill(HIST("hCascMinusEtaNeg"), candidate.negeta());
           registry.fill(HIST("hCascMinusEtaBach"), candidate.bacheta());
         } else {
-          registry.fill(HIST("hTPCNSigmaPosPi"), candidate.ntpcsigmapospi());
-          registry.fill(HIST("hTPCNSigmaNegPr"), candidate.ntpcsigmanegpr());
+          registry.fill(HIST("hTPCNSigmaPosPi"), candidate.pt(), candidate.ntpcsigmapospi());
+          registry.fill(HIST("hTPCNSigmaNegPr"), candidate.pt(), candidate.ntpcsigmanegpr());
           registry.fill(HIST("hTOFNSigmaPosPi"), candidate.ntofsigmapospi());
           registry.fill(HIST("hTOFNSigmaNegPr"), candidate.ntofsigmanegpr());
         }
         if (isXi) {
-          registry.fill(HIST("hTPCNSigmaBachPi"), candidate.ntpcsigmabachpi());
+          registry.fill(HIST("hTPCNSigmaBachPi"), candidate.pt(), candidate.ntpcsigmabachpi());
           registry.fill(HIST("hTOFNSigmaBachPi"), candidate.ntofsigmabachpi());
         } else {
-          registry.fill(HIST("hTPCNSigmaBachKa"), candidate.ntpcsigmabachka());
+          registry.fill(HIST("hTPCNSigmaBachKa"), candidate.pt(), candidate.ntpcsigmabachka());
           registry.fill(HIST("hTOFNSigmaBachKa"), candidate.ntofsigmabachka());
         }
       }
@@ -490,7 +493,7 @@ struct cascpostprocessing {
           registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, (isFT0MforMC ? candidate.multFT0M() : 0));
         }
         registry.fill(HIST("hCascMinusInvMassvsPt"), candidate.pt(), invmass);
-        registry.fill(HIST("hCascMinusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
+        registry.fill(HIST("hCascMinusInvMassvsPt_FT0M"), isFT0MforMC ? candidate.multFT0M() : 0, candidate.pt(), invmass);
         registry.fill(HIST("hCascMinusInvMassvsPt_FV0A"), candidate.multFV0A(), candidate.pt(), invmass);
       }
       if (candidate.sign() > 0) {
@@ -498,7 +501,7 @@ struct cascpostprocessing {
           registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, (isFT0MforMC ? candidate.multFT0M() : 0));
         }
         registry.fill(HIST("hCascPlusInvMassvsPt"), candidate.pt(), invmass);
-        registry.fill(HIST("hCascPlusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
+        registry.fill(HIST("hCascPlusInvMassvsPt_FT0M"), isFT0MforMC ? candidate.multFT0M() : 0, candidate.pt(), invmass);
         registry.fill(HIST("hCascPlusInvMassvsPt_FV0A"), candidate.multFV0A(), candidate.pt(), invmass);
       }
     }

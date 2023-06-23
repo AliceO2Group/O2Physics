@@ -45,7 +45,9 @@ struct cascqaanalysis {
 
   AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
   AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
-  AxisSpec centFT0MAxis = {100, 0.0f, 100.0f, "FT0M (%)"};
+  ConfigurableAxis centFT0MAxis{"FT0M",
+                                     {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 50, 70, 100},
+                                     "FT0M (%)"};
 
   void init(InitContext const&)
   {
@@ -53,7 +55,7 @@ struct cascqaanalysis {
     TString hNEventsMCLabels[4] = {"All", "z vrtx", "INEL>0", "Associated with rec. collision"};
     TString hNEventsLabels[4] = {"All", "sel8", "z vrtx", "INEL>0"};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{4, 0.f, 4.f}}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }
@@ -87,6 +89,8 @@ struct cascqaanalysis {
     registry.add("hDCAz_AfterCut", "hDCAz_AfterCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAz"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
     registry.add("hDCAxy_BefCut", "hDCAxy_BefCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
     registry.add("hDCAxy_AfterCut", "hDCAxy_AfterCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
+    registry.add("hNchMultFT0M", "hNchMultFT0M", HistType::kTH2F, {{10000, 0.f, 10000.f, "N_{ch}"}, {10000, 0.f, 10000.f, "FT0M signal"}});
+    registry.add("hNchMultFV0A", "hNchMultFV0A", HistType::kTH2F, {{10000, 0.f, 10000.f, "N_{ch}"}, {10000, 0.f, 10000.f, "FT0M signal"}});
   }
 
   // Event selection criteria
@@ -181,6 +185,11 @@ struct cascqaanalysis {
     return true;
   }
 
+  template <typename TTrack>
+  bool isPrimaryTrack(TTrack track){
+    return (TMath::Abs(track.dcaXY()) < (maxDCANsigmaScaling * (DCASigma + DCAPtScaling / track.pt()))) && (TMath::Abs(track.dcaZ()) < maxDCAz);
+  }
+
   template <typename TTracks>
   bool isINELgt0(TTracks tracks, bool isFillEventSelectionQA)
   {
@@ -193,9 +202,9 @@ struct cascqaanalysis {
       registry.fill(HIST("hDCAxy_BefCut"), track.dcaXY(), track.pt());
       registry.fill(HIST("hDCAz_BefCut"), track.dcaZ(), track.pt());
 
-      if (TMath::Abs(track.dcaXY()) > (maxDCANsigmaScaling * (DCASigma + DCAPtScaling / track.pt())) || TMath::Abs(track.dcaZ()) > maxDCAz) {
+      if(!isPrimaryTrack(track)){
         nRejTracks++;
-        continue; // consider only primaries
+        continue; // consider only primaries    
       }
       TracksEta[nTracks++] = track.eta();
 
@@ -262,6 +271,19 @@ struct cascqaanalysis {
     } else {
       return false;
     }
+  }
+
+  template <typename TCollision, typename TTracks>
+  void fillMultHisto(TCollision const& collision, TTracks const& tracks)
+  {
+    double Nch = 0;
+    for (const auto& track : tracks) {
+      if(TMath::Abs(track.eta()) > 0.5) continue;
+      if(!isPrimaryTrack(track)) continue;
+      Nch++;
+    }
+    registry.fill(HIST("hNchMultFT0M"), Nch, collision.multZeqFT0A() + collision.multZeqFT0C());
+    registry.fill(HIST("hNchMultFV0A"), Nch, collision.multZeqFV0A());
   }
 
   void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
@@ -333,7 +355,7 @@ struct cascqaanalysis {
 
   PROCESS_SWITCH(cascqaanalysis, processData, "Process Run 3 data", true);
 
-  void processMCrec(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
+  void processMCrec(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                     soa::Filtered<LabeledCascades> const& Cascades,
                     aod::V0sLinked const&,
                     aod::V0Datas const&,
@@ -343,6 +365,8 @@ struct cascqaanalysis {
     if (!AcceptEvent(collision, Tracks, 1)) {
       return;
     }
+
+    fillMultHisto(collision, Tracks);
 
     float lEventScale = scalefactor;
 
@@ -398,7 +422,7 @@ struct cascqaanalysis {
         }
         // Fill table
         if (fRand->Rndm() < lEventScale) {
-          mycascades(casc.globalIndex(), collision.posZ(), collision.centFT0M(), collision.centFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
+          mycascades(casc.globalIndex(), collision.posZ(), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multZeqFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
                      casc.mXi(), casc.mOmega(), casc.mLambda(), casc.cascradius(), casc.v0radius(),
                      casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                      casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(), casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
