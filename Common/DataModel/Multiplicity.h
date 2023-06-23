@@ -35,6 +35,7 @@ DECLARE_SOA_COLUMN(MultTracklets, multTracklets, int);
 DECLARE_SOA_COLUMN(MultTPC, multTPC, int);
 DECLARE_SOA_COLUMN(MultNTracksPV, multNTracksPV, int);
 DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
+DECLARE_SOA_COLUMN(MultNTracksPVetaHalf, multNTracksPVetaHalf, int);
 
 } // namespace mult
 DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
@@ -48,7 +49,8 @@ DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
                   mult::MultTracklets,
                   mult::MultTPC,
                   mult::MultNTracksPV,
-                  mult::MultNTracksPVeta1);
+                  mult::MultNTracksPVeta1,
+                  mult::MultNTracksPVetaHalf);
 using Mult = Mults::iterator;
 
 namespace multZeq

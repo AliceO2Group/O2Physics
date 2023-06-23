@@ -16,9 +16,10 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University & GSI
 
 #include "Common/Core/trackUtilities.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -32,6 +33,7 @@ namespace o2::aod
 namespace full
 {
 // from creator
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
@@ -135,7 +137,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiFull, "AOD", "HFTOXIPIFULL",
-                  full::XPv, full::YPv, full::ZPv, collision::NumContrib,
+                  full::CollisionId, full::XPv, full::YPv, full::ZPv, collision::NumContrib,
                   full::XDecayVtxOmegac, full::YDecayVtxOmegac, full::ZDecayVtxOmegac,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
@@ -197,6 +199,7 @@ struct HfTreeCreatorToXiPi {
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc)
   {
     rowCandidateFull(
+      candidate.collisionId(),
       candidate.xPv(),
       candidate.yPv(),
       candidate.zPv(),

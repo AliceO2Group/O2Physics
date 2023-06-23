@@ -34,6 +34,14 @@ struct CentralityQa {
   OutputObj<TH1F> hCentFDDM{TH1F("hCentFDDM", "FDDM", nBins, 0, 105.)};
   OutputObj<TH1F> hCentNTPV{TH1F("hCentNTPV", "NTPV", nBins, 0, 105.)};
 
+  // profiles of midrapidity multiplicity density
+  OutputObj<TProfile> hCentProfileFV0A{TProfile("hCentProfileFV0A", "FV0A", nBins, 0, 105.)};
+  OutputObj<TProfile> hCentProfileFT0M{TProfile("hCentProfileFT0M", "FT0M", nBins, 0, 105.)};
+  OutputObj<TProfile> hCentProfileFT0A{TProfile("hCentProfileFT0A", "FT0A", nBins, 0, 105.)};
+  OutputObj<TProfile> hCentProfileFT0C{TProfile("hCentProfileFT0C", "FT0C", nBins, 0, 105.)};
+  OutputObj<TProfile> hCentProfileFDDM{TProfile("hCentProfileFDDM", "FDDM", nBins, 0, 105.)};
+  OutputObj<TProfile> hCentProfileNTPV{TProfile("hCentProfileNTPV", "NTPV", nBins, 0, 105.)};
+
   void processRun2PP(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2SPDClss, aod::Mults>::iterator const& col)
   {
     if (!col.alias_bit(kINT7)) {
@@ -87,6 +95,7 @@ struct CentralityQa {
       return;
     LOGF(debug, "centFV0A=%.0f", col.centFV0A());
     hCentFV0A->Fill(col.centFV0A());
+    hCentProfileFV0A->Fill(col.centFV0A(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FV0A, "Process with Run 3 FV0A estimator", false);
 
@@ -99,6 +108,7 @@ struct CentralityQa {
       return;
     LOGF(debug, "centFT0M=%.0f", col.centFT0M());
     hCentFT0M->Fill(col.centFT0M());
+    hCentProfileFT0M->Fill(col.centFT0M(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0M, "Process with Run 3 FT0M estimator", false);
 
@@ -110,6 +120,7 @@ struct CentralityQa {
     if (!col.sel8())
       return;
     hCentFT0A->Fill(col.centFT0A());
+    hCentProfileFT0A->Fill(col.centFT0A(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0A, "Process with Run 3 FT0A estimator", false);
 
@@ -121,6 +132,7 @@ struct CentralityQa {
     if (!col.sel8())
       return;
     hCentFT0C->Fill(col.centFT0C());
+    hCentProfileFT0C->Fill(col.centFT0C(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0C, "Process with Run 3 FT0A estimator", false);
 
@@ -132,6 +144,7 @@ struct CentralityQa {
     if (!col.sel8())
       return;
     hCentFDDM->Fill(col.centFDDM());
+    hCentProfileFDDM->Fill(col.centFDDM(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FDDM, "Process with Run 3 FDDM estimator", false);
 
@@ -143,6 +156,7 @@ struct CentralityQa {
     if (!col.sel8())
       return;
     hCentNTPV->Fill(col.centNTPV());
+    hCentProfileNTPV->Fill(col.centNTPV(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_NTPV, "Process with Run 3 NTPV estimator", false);
 };

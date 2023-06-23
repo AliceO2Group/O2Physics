@@ -16,12 +16,13 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include "ALICE3/DataModel/MID.h"
+#include "ALICE3/DataModel/RICH.h"
+#include "Common/Core/TrackSelectorPID.h"
 #include "Framework/AnalysisTask.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/TrackSelectorPID.h"
-#include "ALICE3/DataModel/RICH.h"
-#include "ALICE3/DataModel/MID.h"
 
 using namespace o2;
 using namespace o2::framework;

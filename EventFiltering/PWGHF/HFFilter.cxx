@@ -209,10 +209,7 @@ struct HfFilter { // Main struct for HF triggers
         hMassVsPtB[iBeautyPart] = registry.add<TH2>(Form("fMassVsPt%s", beautyParticleNames[iBeautyPart].data()), Form("#it{M} vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", beautyParticleNames[iBeautyPart].data()), HistType::kTH2F, {ptAxis, massAxisB[iBeautyPart]});
       }
       for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
-        hArmPod[iV0] = registry.add<TH2>(Form("fArmPod%s", v0Names[iV0].data()), "Armenteros Podolanski plot for V0s,  selections;#it{#alpha};#it{q}_{T} (GeV/#it{c})", HistType::kTH2F, {alphaAxis, qtAxis});
-        if (iV0 > kPhoton && activateQA < 2) {
-          continue;
-        }
+        hArmPod[iV0] = registry.add<TH2>(Form("fArmPod%s", v0Names[iV0].data()), Form("Armenteros Podolanski plot for selected %s;#it{#alpha};#it{q}_{T} (GeV/#it{c})", v0Labels[iV0].data()), HistType::kTH2F, {alphaAxis, qtAxis});
       }
 
       if (activateQA > 1) {
@@ -462,7 +459,7 @@ struct HfFilter { // Main struct for HF triggers
               auto massCand = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
               auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
               auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
-              if (isTrackSelected == kRegular && std::abs(massCand - massBPlus) <= deltaMassBPlus) {
+              if (isTrackSelected == kRegular && std::fabs(massCand - massBPlus) <= deltaMassBPlus) {
                 keepEvent[kBeauty3P] = true;
                 // fill optimisation tree for D0
                 if (applyOptimisation) {
@@ -482,7 +479,7 @@ struct HfFilter { // Main struct for HF triggers
                 auto massDstarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecThird}, std::array{massDausD0[0], massDausD0[1], massPi});
                 auto massDiffDstar = massDstarCand - massD0dau;
 
-                if (std::abs(massDiffDstar - (massDStar - massD0)) <= deltaMassDStar) { // additional check for B0->D*pi polarization studies
+                if (std::fabs(massDiffDstar - (massDStar - massD0)) <= deltaMassDStar) { // additional check for B0->D*pi polarization studies
                   if (activateQA) {
                     hMassVsPtC[kNCharmParticles]->Fill(ptCand, massDiffDstar);
                   }
@@ -501,7 +498,7 @@ struct HfFilter { // Main struct for HF triggers
 
                     if (track.sign() * trackB.sign() < 0 && isSelectedTrackForSoftPionOrBeauty(trackParFourth, dcaFourth, pTMinSoftPion, pTMinBeautyBachelor, pTBinsTrack, cutsSingleTrackBeauty[kBeauty3P - 2]) == kRegular) {
                       auto massCandB0 = RecoDecay::m(std::array{pVecBeauty3Prong, pVecFourth}, std::array{massDStar, massPi});
-                      if (std::abs(massCandB0 - massB0) <= deltaMassB0) {
+                      if (std::fabs(massCandB0 - massB0) <= deltaMassB0) {
                         keepEvent[kBeauty3P] = true;
                         // fill optimisation tree for D0
                         if (applyOptimisation) {
@@ -605,7 +602,7 @@ struct HfFilter { // Main struct for HF triggers
                     auto massDiffDstar = massDStarCand - massD0dau;
                     auto pVecDStarCand = RecoDecay::pVec(pVec2Prong, pVecBachelor);
                     auto ptDStarCand = RecoDecay::pt(pVecDStarCand);
-                    if (std::abs(massDiffDstar - (massDStar - massD0)) <= deltaMassDStar) {
+                    if (std::fabs(massDiffDstar - (massDStar - massD0)) <= deltaMassDStar) {
                       if (activateQA) {
                         hMassVsPtC[kNCharmParticles]->Fill(ptDStarCand, massDiffDstar);
                       }
@@ -806,7 +803,7 @@ struct HfFilter { // Main struct for HF triggers
             for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty4P]; ++iHypo) {
               if (isBeautyTagged[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1))) {
                 auto massCandB = RecoDecay::m(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
-                if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
+                if (std::fabs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                   keepEvent[kBeauty4P] = true;
                   if (applyOptimisation) {
                     optimisationTreeBeauty(thisCollId, charmParticleID[iHypo], pt3Prong, scoresToFill[iHypo][0], scoresToFill[iHypo][1], scoresToFill[iHypo][2], dcaFourth[0]);
