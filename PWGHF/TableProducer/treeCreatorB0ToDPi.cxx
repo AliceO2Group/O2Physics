@@ -38,7 +38,6 @@ DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                                     //! Transverse momentum of prong1 (GeV/c)
 DECLARE_SOA_COLUMN(PProng1, pProng1, float);                                       //! Momentum of prong1 (in GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, float); //! Normalised impact parameter of prong1
-DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);         //! Impact parameter product
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int);                       //! Selection flag of candidate (output of candidateSelector)
 DECLARE_SOA_COLUMN(M, m, float);                                                   //! Invariant mass of candidate (GeV/c2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                                                 //! Transverse momentum of candidate (GeV/c)
@@ -72,7 +71,6 @@ DECLARE_SOA_TABLE(HfCandB0Lite, "AOD", "HFCANDB0Lite",
                   full::PtProng1,
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
-                  full::ImpactParameterProduct,
                   full::NSigTpcPi1,
                   full::NSigTofPi1,
                   full::CandidateSelFlag,
@@ -118,7 +116,6 @@ DECLARE_SOA_TABLE(HfCandB0Full, "AOD", "HFCANDB0Full",
                   hf_cand::PzProng1,
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
-                  full::ImpactParameterProduct,
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
                   full::NSigTpcPi1,
@@ -216,7 +213,6 @@ struct HfTreeCreatorB0ToDPi {
         candidate.ptProng1(),
         candidate.impactParameter0(),
         candidate.impactParameter1(),
-        candidate.impactParameter0() * candidate.impactParameter1(),
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelB0ToDPi(),
@@ -262,7 +258,6 @@ struct HfTreeCreatorB0ToDPi {
         candidate.pzProng1(),
         candidate.impactParameter0(),
         candidate.impactParameter1(),
-        candidate.impactParameter0() * candidate.impactParameter1(),
         candidate.errorImpactParameter0(),
         candidate.errorImpactParameter1(),
         prong1.tpcNSigmaPi(),
