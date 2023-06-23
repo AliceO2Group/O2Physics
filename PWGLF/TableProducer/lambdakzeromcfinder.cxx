@@ -266,7 +266,7 @@ struct lambdakzeromcfinder {
       bool negativeTPCITS = false;
       bool reconstructed = false;
       for (auto& mcParticle : mcParticles) {
-        if (fabs(mcParticle.y())> yPreFilter ) 
+        if (fabs(mcParticle.y()) > yPreFilter)
           continue; // go declarative at a later stage but pre-filter here
 
         if (mcParticle.pdgCode() == 22 && findGamma) {
