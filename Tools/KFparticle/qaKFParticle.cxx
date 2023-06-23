@@ -687,7 +687,7 @@ struct qaKFParticle {
       bool CandD0 = false;
       bool CandD0bar = false;
 
-float TPCNclsPosPi = 0;
+      float TPCNclsPosPi = 0;
       float TPCNclsNegPi = 0;
       float TPCNclsPosKa = 0;
       float TPCNclsNegKa = 0;
