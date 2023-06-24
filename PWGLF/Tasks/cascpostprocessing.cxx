@@ -163,11 +163,11 @@ struct cascpostprocessing {
     AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec etaAxis = {200, -2.0f, 2.0f, "#eta"};
     ConfigurableAxis centFT0MAxis{"FT0M",
-                                       {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 50, 70, 100},
-                                       "FT0M (%)"};
+                                  {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 50, 70, 100},
+                                  "FT0M (%)"};
     ConfigurableAxis centFV0AAxis{"FV0A",
-                                       {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 50, 70, 100},
-                                       "FV0A (%)"};                             
+                                  {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 50, 70, 100},
+                                  "FV0A (%)"};
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
 
