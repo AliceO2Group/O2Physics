@@ -46,8 +46,8 @@ struct cascqaanalysis {
   AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
   AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
   ConfigurableAxis centFT0MAxis{"FT0M",
-                                     {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 50, 70, 100},
-                                     "FT0M (%)"};
+                                {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 50, 70, 100},
+                                "FT0M (%)"};
 
   void init(InitContext const&)
   {
@@ -186,7 +186,8 @@ struct cascqaanalysis {
   }
 
   template <typename TTrack>
-  bool isPrimaryTrack(TTrack track){
+  bool isPrimaryTrack(TTrack track)
+  {
     return (TMath::Abs(track.dcaXY()) < (maxDCANsigmaScaling * (DCASigma + DCAPtScaling / track.pt()))) && (TMath::Abs(track.dcaZ()) < maxDCAz);
   }
 
@@ -202,9 +203,9 @@ struct cascqaanalysis {
       registry.fill(HIST("hDCAxy_BefCut"), track.dcaXY(), track.pt());
       registry.fill(HIST("hDCAz_BefCut"), track.dcaZ(), track.pt());
 
-      if(!isPrimaryTrack(track)){
+      if (!isPrimaryTrack(track)) {
         nRejTracks++;
-        continue; // consider only primaries    
+        continue; // consider only primaries
       }
       TracksEta[nTracks++] = track.eta();
 
@@ -278,8 +279,10 @@ struct cascqaanalysis {
   {
     double Nch = 0;
     for (const auto& track : tracks) {
-      if(TMath::Abs(track.eta()) > 0.5) continue;
-      if(!isPrimaryTrack(track)) continue;
+      if (TMath::Abs(track.eta()) > 0.5)
+        continue;
+      if (!isPrimaryTrack(track))
+        continue;
       Nch++;
     }
     registry.fill(HIST("hNchMultFT0M"), Nch, collision.multFT0A() + collision.multFT0C());
