@@ -328,10 +328,10 @@ struct MultiplicityCounter {
   }
 
   expressions::Filter trackSelectionProper = ((aod::track::trackCutFlag & trackSelectionITS) == trackSelectionITS) &&
-                                             ifnode((aod::track::detectorMap & (uint8_t)o2::aod::track::TPC) == (uint8_t)o2::aod::track::TPC,
-                                                    (aod::track::trackCutFlag & trackSelectionTPC) == trackSelectionTPC,
+                                             ifnode(ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC),
+                                                    ncheckbit(aod::track::trackCutFlag, trackSelectionTPC),
                                                     true) &&
-                                             ((aod::track::trackCutFlag & trackSelectionDCA) == trackSelectionDCA);
+                                             ncheckbit(aod::track::trackCutFlag, trackSelectionDCA);
 
   expressions::Filter atrackFilter = (aod::track::bestCollisionId >= 0) &&
                                      (nabs(aod::track::bestDCAZ) <= 2.f) &&

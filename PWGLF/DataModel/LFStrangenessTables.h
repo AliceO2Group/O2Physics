@@ -52,6 +52,8 @@ DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance mat
 // Momenta
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! V0 pT
                            [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! V0 pT
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return std::hypot(pxpos + pxneg, pypos + pyneg, pzpos + pzneg); });
 // Account for rigidity in case of hypertriton
 DECLARE_SOA_DYNAMIC_COLUMN(PtHypertriton, ptHypertriton, //! V0 pT
                            [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(2.0f * pxpos + pxneg, 2.0f * pypos + pyneg); });
@@ -193,6 +195,7 @@ DECLARE_SOA_TABLE_FULL(StoredV0Datas, "V0Datas", "AOD", "V0DATA", //!
 
                        // Dynamic columns
                        v0data::Pt<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                       v0data::P<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
                        v0data::PtAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
                        v0data::V0Radius<v0data::X, v0data::Y>,
@@ -536,11 +539,15 @@ using McFullV0Label = McFullV0Labels::iterator;
 namespace mccasclabel
 {
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Cascade
+DECLARE_SOA_COLUMN(IsBachBaryonCandidate, isBachBaryonCandidate, bool); //! will this be built or not?
 } // namespace mccasclabel
 
 DECLARE_SOA_TABLE(McCascLabels, "AOD", "MCCASCLABEL", //! Table joinable with CascData containing the MC labels
                   mccasclabel::McParticleId);
+DECLARE_SOA_TABLE(McCascBBTags, "AOD", "MCCASCBBTAG", //! Table joinable with CascData containing yes / no for BB correlation
+                  mccasclabel::IsBachBaryonCandidate);
 using McCascLabel = McCascLabels::iterator;
+using McCascBBTag = McCascBBTags::iterator;
 
 // Definition of labels for tracked cascades
 namespace mctracasclabel

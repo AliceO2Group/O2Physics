@@ -45,8 +45,15 @@ struct FwdTrackToCollisionAssociation {
 
   void init(InitContext const&)
   {
-    if (doprocessFwdAssocWithTime == doprocessFwdStandardAssoc || doprocessMFTAssocWithTime == doprocessMFTStandardAssoc) {
+    if (doprocessFwdAssocWithTime && doprocessFwdStandardAssoc) {
       LOGP(fatal, "Exactly one process function between standard and time-based association should be enabled!");
+    }
+    if (doprocessMFTAssocWithTime && doprocessMFTStandardAssoc) {
+      LOGP(fatal, "Exactly one process function between standard and time-based association should be enabled!");
+    }
+
+    if (!(doprocessMFTAssocWithTime || doprocessMFTStandardAssoc || doprocessFwdAssocWithTime || doprocessFwdStandardAssoc)) {
+      LOGP(fatal, "At least one process function should be enabled!");
     }
 
     // set options in track-to-collision association

@@ -15,19 +15,19 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include "Framework/AnalysisTask.h"
+#include "Common/Core/trackUtilities.h"
 #include "DCAFitter/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_2prong;
-
-#include "Framework/runDataProcessing.h"
 
 /// Reconstruction of heavy-flavour 2-prong decay candidates
 struct HfCandidateCreator2Prong {

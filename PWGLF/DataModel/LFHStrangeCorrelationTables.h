@@ -78,14 +78,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(InvMassRegionCheck, invMassRegionCheck,
                              return false;
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassRegion, invMassRegion,
-                           [](int rK0Short, int rLambda, int rAntiLambda, int value) -> bool {
+                           [](int rK0Short, int rLambda, int rAntiLambda, int value) -> int {
                              if (value == 0)
                                return rK0Short;
                              if (value == 1)
                                return rLambda;
                              if (value == 2)
                                return rAntiLambda;
-                             return false;
+                             return -1;
                            });
 } // namespace assocV0s
 DECLARE_SOA_TABLE(AssocV0s, "AOD", "ASSOCV0S", o2::soa::Index<>,

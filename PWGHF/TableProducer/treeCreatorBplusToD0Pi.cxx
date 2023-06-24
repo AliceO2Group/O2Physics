@@ -17,12 +17,13 @@
 ///
 /// \author Antonio Palasciano <antonio.palasciano@ba.infn.it>, Università & INFN, Bari
 
-#include "Framework/runDataProcessing.h"
+#include "Common/Core/trackUtilities.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::aod;

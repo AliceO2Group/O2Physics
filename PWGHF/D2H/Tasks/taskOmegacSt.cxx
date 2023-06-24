@@ -16,12 +16,13 @@
 
 #include "TDatabasePDG.h"
 #include "TPDGCode.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
@@ -29,9 +30,11 @@
 #include "Framework/ASoA.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/DCA.h"
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "PWGHF/Core/SelectorCuts.h"
 
 using namespace o2;
 using namespace o2::framework;

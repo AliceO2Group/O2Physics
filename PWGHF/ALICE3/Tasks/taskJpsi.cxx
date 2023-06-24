@@ -18,6 +18,7 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -194,7 +195,7 @@ struct HfTaskJpsiMc {
                McParticlesHf const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
-    //Printf("MC Candidates: %d", candidates.size());
+    // Printf("MC Candidates: %d", candidates.size());
     int decayMode = modeJpsiToMuMu ? DecayType::JpsiToMuMu : DecayType::JpsiToEE;
 
     for (auto& candidate : candidates) {
@@ -230,7 +231,7 @@ struct HfTaskJpsiMc {
         continue;
       }
       if (candidate.flagMcMatchRec() == 1 << decayMode) {
-        //Get the corresponding MC particle.
+        // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<McParticlesHf>(), pdg::Code::kJPsi, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
@@ -272,7 +273,7 @@ struct HfTaskJpsiMc {
       }
     }
     // MC gen.
-    //Printf("MC Particles: %d", particlesMC.size());
+    // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
@@ -281,8 +282,8 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hPtGen"), particle.pt());
         registry.fill(HIST("hEtaGen"), particle.eta());
         registry.fill(HIST("hYGen"), RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())), particle.pt());
-        //registry.fill(HIST("hPtGenProng0"), particle.daughter0_as<McParticlesHf>().pt(), particle.pt());
-        //registry.fill(HIST("hPtGenProng1"), particle.daughter1_as<McParticlesHf>().pt(), particle.pt());
+        // registry.fill(HIST("hPtGenProng0"), particle.daughter0_as<McParticlesHf>().pt(), particle.pt());
+        // registry.fill(HIST("hPtGenProng1"), particle.daughter1_as<McParticlesHf>().pt(), particle.pt());
       }
     }
   }

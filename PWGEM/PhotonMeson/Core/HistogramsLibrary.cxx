@@ -118,6 +118,10 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(new TH2F("hConvPoint_diffX_recalc", "conversion point diff X MC;X_{MC} (cm);X_{rec}^{recalc} - X_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
       list->Add(new TH2F("hConvPoint_diffY_recalc", "conversion point diff Y MC;Y_{MC} (cm);Y_{rec}^{recalc} - Y_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
       list->Add(new TH2F("hConvPoint_diffZ_recalc", "conversion point diff Z MC;Z_{MC} (cm);Z_{rec}^{recalc} - Z_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
+
+      list->Add(new TH2F("hPtGen_DeltaPtOverPtGen", "photon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", 1000, 0, 10, 1000, -1.0f, 1.0f));
+      list->Add(new TH2F("hPtGen_DeltaEta", "photon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", 1000, 0, 10, 1000, -1.0f, 1.0f));
+      list->Add(new TH2F("hPtGen_DeltaPhi", "photon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", 1000, 0, 10, 1000, -1.0f, 1.0f));
     }
   }
 

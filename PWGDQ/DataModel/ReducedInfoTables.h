@@ -440,6 +440,7 @@ DECLARE_SOA_COLUMN(Tauxy, tauxy, float);               //! Transverse pseudo-pro
 DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);         //! Error on transverse pseudo-proper time of lepton pair (in ns)
 DECLARE_SOA_COLUMN(Lz, lz, float);                     //! Longitudinal projection of decay length
 DECLARE_SOA_COLUMN(Lxy, lxy, float);                   //! Transverse projection of decay length
+DECLARE_SOA_COLUMN(Chi2pca, chi2pca, float);           //! Chi2 for PCA of the dilepton
 DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                 //! Scalar product between unitary vector with event flow vector (harmonic 2)
 DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                 //! Scalar product between unitary vector with event flow vector (harmonic 3)
 DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float); //! Cosinus term using event plane angle (harmonic 2)
@@ -491,7 +492,7 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
                   reducedpair::Mass,
                   reducedpair::McDecision,
-                  reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign, reducedpair::Chi2pca,
                   reducedpair::Tauz, reducedpair::TauzErr,
                   reducedpair::Tauxy, reducedpair::TauxyErr,
                   dilepton_track_index::Pt1, dilepton_track_index::Eta1, dilepton_track_index::Phi1, dilepton_track_index::Sign1,

@@ -36,6 +36,11 @@ o2physics_add_dpl_workflow(lambdakzeromcfinder
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lambdakzerotofpid
+                    SOURCES lambdakzerotofpid.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(cascadebuilder
                     SOURCES cascadebuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
@@ -111,5 +116,10 @@ o2physics_add_dpl_workflow(filterf1proton
 
 o2physics_add_dpl_workflow(v0qaanalysis
                     SOURCES v0qaanalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascqaanalysis
+                    SOURCES cascqaanalysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

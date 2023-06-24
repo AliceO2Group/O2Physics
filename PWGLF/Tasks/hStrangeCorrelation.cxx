@@ -60,7 +60,7 @@ struct correlateStrangeness {
   // Axes - configurable for smaller sizes
   ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 0.01f, 1.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis axisVtxZ{"axisVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis axisPhi{"axisPhi", {72, -0.5 * M_PI, 1.5 * M_PI}, "#phi"};
+  ConfigurableAxis axisPhi{"axisPhi", {72, 0, 2 * M_PI}, "#phi"};
   ConfigurableAxis axisEta{"axisEta", {80, -0.8, +0.8}, "#eta"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta #varphi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {50, -1.6, 1.6}, "delta eta axis for histograms"};
@@ -395,34 +395,42 @@ struct correlateStrangeness {
 
     if (bitcheck(doCorrelation, 0)) {
       histos.add("h3dK0ShortSpectrum", "h3dK0ShortSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
+      histos.add("hK0ShortEtaVsPtVsPhi", "hK0ShortEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
       histos.add("sameEvent/Signal/K0Short", "K0Short", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 1)) {
       histos.add("h3dLambdaSpectrum", "h3dLambdaSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
+      histos.add("hLambdaEtaVsPtVsPhi", "hLambdaEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
       histos.add("sameEvent/Signal/Lambda", "Lambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 2)) {
       histos.add("h3dAntiLambdaSpectrum", "h3dAntiLambdaSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
+      histos.add("hAntiLambdaEtaVsPtVsPhi", "hAntiLambdaEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
       histos.add("sameEvent/Signal/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 3)) {
       histos.add("h3dXiMinusSpectrum", "h3dXiMinusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
+      histos.add("hXiMinusEtaVsPtVsPhi", "hXiMinusEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
       histos.add("sameEvent/Signal/XiMinus", "XiMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 4)) {
       histos.add("h3dXiPlusSpectrum", "h3dXiPlusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
+      histos.add("hXiPlusEtaVsPtVsPhi", "hXiPlusEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
       histos.add("sameEvent/Signal/XiPlus", "XiPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 5)) {
-      histos.add("h3dXiMinusSpectrum", "h3dXiMinusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
+      histos.add("h3dOmegaMinusSpectrum", "h3dOmegaMinusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
+      histos.add("hOmegaMinusEtaVsPtVsPhi", "hOmegaMinusEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
       histos.add("sameEvent/Signal/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 6)) {
       histos.add("h3dOmegaPlusSpectrum", "h3dOmegaPlusSpectrum", kTH3F, {axisPtQA, axisMult, {3, 0.5f, 3.5f}});
+      histos.add("hOmegaPlusEtaVsPtVsPhi", "hOmegaPlusEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
       histos.add("sameEvent/Signal/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
     }
     if (bitcheck(doCorrelation, 7)) {
       histos.add("sameEvent/Pion", "Pion", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisVtxZNDim, axisMultNDim});
+      histos.add("hPionEtaVsPtVsPhi", "hPionEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
     }
     LOGF(info, "Init THnFs done");
 
@@ -438,9 +446,6 @@ struct correlateStrangeness {
 
     // Some QA plots
     histos.add("hTrackEtaVsPtVsPhi", "hTrackEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
-    histos.add("hV0EtaVsPtVsPhi", "hV0EtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
-    histos.add("hCascEtaVsPtVsPhi", "hCascEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
-    histos.add("hPionEtaVsPtVsPhi", "hPionEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
 
     histos.add("sameEvent/TriggerParticlesV0", "TriggersV0", kTH2F, {axisPtQA, axisMult});
     histos.add("sameEvent/TriggerParticlesCascade", "TriggersCascade", kTH2F, {axisPtQA, axisMult});
@@ -482,11 +487,13 @@ struct correlateStrangeness {
     // Do basic QA
     for (auto const& v0 : associatedV0s) {
       auto v0Data = v0.v0Data();
-      histos.fill(HIST("hV0EtaVsPtVsPhi"), v0Data.pt(), v0Data.eta(), v0Data.phi());
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
-        if (v0.compatible(index) && bitcheck(doCorrelation, index))
+        if (v0.compatible(index) && bitcheck(doCorrelation, index)) {
           histos.fill(HIST("h3d") + HIST(v0names[index]) + HIST("Spectrum"), v0Data.pt(), collision.centFT0M(), v0.invMassRegion(index));
+          if (v0.invMassRegionCheck(index, 2))
+            histos.fill(HIST("h") + HIST(v0names[index]) + HIST("EtaVsPtVsPhi"), v0Data.pt(), v0Data.eta(), v0Data.phi());
+        }
       });
     }
     if (!doprocessSameEventHCascades) {
@@ -523,11 +530,13 @@ struct correlateStrangeness {
     // Do basic QA
     for (auto const& casc : associatedCascades) {
       auto cascData = casc.cascData();
-      histos.fill(HIST("hCascEtaVsPtVsPhi"), cascData.pt(), cascData.eta(), cascData.phi());
       static_for<0, 3>([&](auto i) {
         constexpr int index = i.value;
-        if (casc.compatible(index) && bitcheck(doCorrelation, index + 3))
+        if (casc.compatible(index) && bitcheck(doCorrelation, index + 3)) {
           histos.fill(HIST("h3d") + HIST(cascadenames[index]) + HIST("Spectrum"), cascData.pt(), collision.centFT0M(), casc.invMassRegion(index));
+          if (casc.invMassRegionCheck(index, 2))
+            histos.fill(HIST("h") + HIST(cascadenames[index]) + HIST("EtaVsPtVsPhi"), cascData.pt(), cascData.eta(), cascData.phi());
+        }
       });
     }
     for (auto const& triggerTrack : triggerTracks) {
