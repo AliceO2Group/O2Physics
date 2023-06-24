@@ -89,8 +89,8 @@ struct cascqaanalysis {
     registry.add("hDCAz_AfterCut", "hDCAz_AfterCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAz"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
     registry.add("hDCAxy_BefCut", "hDCAxy_BefCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
     registry.add("hDCAxy_AfterCut", "hDCAxy_AfterCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
-    registry.add("hNchMultFT0M", "hNchMultFT0M", HistType::kTH2F, {{10000, 0.f, 10000.f, "N_{ch}"}, {10000, 0.f, 10000.f, "FT0M signal"}});
-    registry.add("hNchMultFV0A", "hNchMultFV0A", HistType::kTH2F, {{10000, 0.f, 10000.f, "N_{ch}"}, {10000, 0.f, 10000.f, "FT0M signal"}});
+    registry.add("hNchMultFT0M", "hNchMultFT0M", HistType::kTH2F, {{150, 0.f, 150.f, "N_{ch}"}, {10000, 0.f, 10000.f, "FT0M signal"}});
+    registry.add("hNchMultFV0A", "hNchMultFV0A", HistType::kTH2F, {{150, 0.f, 150.f, "N_{ch}"}, {10000, 0.f, 10000.f, "FV0A signal"}});
   }
 
   // Event selection criteria
@@ -282,8 +282,8 @@ struct cascqaanalysis {
       if(!isPrimaryTrack(track)) continue;
       Nch++;
     }
-    registry.fill(HIST("hNchMultFT0M"), Nch, collision.multZeqFT0A() + collision.multZeqFT0C());
-    registry.fill(HIST("hNchMultFV0A"), Nch, collision.multZeqFV0A());
+    registry.fill(HIST("hNchMultFT0M"), Nch, collision.multFT0A() + collision.multFT0C());
+    registry.fill(HIST("hNchMultFV0A"), Nch, collision.multFV0A());
   }
 
   void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
@@ -355,7 +355,7 @@ struct cascqaanalysis {
 
   PROCESS_SWITCH(cascqaanalysis, processData, "Process Run 3 data", true);
 
-  void processMCrec(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
+  void processMCrec(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                     soa::Filtered<LabeledCascades> const& Cascades,
                     aod::V0sLinked const&,
                     aod::V0Datas const&,
@@ -422,7 +422,7 @@ struct cascqaanalysis {
         }
         // Fill table
         if (fRand->Rndm() < lEventScale) {
-          mycascades(casc.globalIndex(), collision.posZ(), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multZeqFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
+          mycascades(casc.globalIndex(), collision.posZ(), collision.multFT0A() + collision.multFT0C(), collision.multFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
                      casc.mXi(), casc.mOmega(), casc.mLambda(), casc.cascradius(), casc.v0radius(),
                      casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                      casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(), casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
