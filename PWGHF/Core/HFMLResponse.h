@@ -70,9 +70,7 @@ T1 getCombinedNSigma(const T1& nSigTPC, const T1& nSigTOF, const T2& tagPID)
     return std::abs(nSigTPC);
   }
 
-  if (TESTBIT(tagPID, PIDStatus::TOFOnly)) {
-    return std::abs(nSigTOF);
-  }
+  return std::abs(nSigTOF); // if (TESTBIT(tagPID, PIDStatus::TOFOnly))
 }
 
 template <typename T = float>
@@ -88,6 +86,7 @@ class HFMLResponse
   /// \param binsLimits is a vector containing bins limits
   /// \param cuts is a LabeledArray containing selections per bin
   /// \param cutDir is a vector telling whether to reject score values greater or smaller than the threshold
+  /// \param nClasses is the number of classes for each model
   /// \param paths is a vector of onnx model paths
   void config(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir,
               const uint8_t& nClasses, const std::vector<std::string>& paths)
@@ -105,6 +104,7 @@ class HFMLResponse
   /// \param binsLimits is a vector containing bins limits
   /// \param cuts is a LabeledArray containing selections per bin
   /// \param cutDir is a vector telling whether to reject score values greater or smaller than the threshold
+  /// \param nClasses is the number of classes for each model
   void config(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir,
               const uint8_t& nClasses)
   {
@@ -139,7 +139,7 @@ class HFMLResponse
 
   /// Initialize class instance (initialize OnnxModels)
   /// \param enableOptimizations is a switch no enable optimizations
-  /// \param threads
+  /// \param threads is the number of active threads
   void init(bool enableOptimizations = false, int threads = 0)
   {
     uint8_t counterModel{0};
@@ -163,7 +163,7 @@ class HFMLResponse
 
   /// ML selections
   /// \param input is the input features
-  /// \param nModel is the model index
+  /// \param pt is the candidate transverse momentum
   /// \return boolean telling if model predictions pass the cuts
   template <typename T1, typename T2>
   bool isSelectedML(T1& input, const T2& pt)
@@ -187,7 +187,7 @@ class HFMLResponse
 
   /// ML selections
   /// \param input is the input features
-  /// \param nModel is the model index
+  /// \param pt is the candidate transverse momentum
   /// \param output is a container to be filled with model output
   /// \return boolean telling if model predictions pass the cuts
   template <typename T1, typename T2>
