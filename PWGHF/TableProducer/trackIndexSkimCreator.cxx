@@ -135,9 +135,9 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
       }
       // primary vertex histograms
       registry.add("hNContributors", "Number of PV contributors;entries", {HistType::kTH1F, {axisNumContributors}});
-      registry.add("hPrimVtxX", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{400, -0.5, 0.5}}});
-      registry.add("hPrimVtxY", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{400, -0.5, 0.5}}});
-      registry.add("hPrimVtxZ", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{400, -20., 20.}}});
+      registry.add("hPrimVtxX", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{200, -0.5, 0.5}}});
+      registry.add("hPrimVtxY", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{200, -0.5, 0.5}}});
+      registry.add("hPrimVtxZ", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{200, -20., 20.}}});
     }
   }
 
@@ -363,9 +363,9 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         AxisSpec axisCollisionX{100, -20.f, 20.f, "X (cm)"};
         AxisSpec axisCollisionY{100, -20.f, 20.f, "Y (cm)"};
         AxisSpec axisCollisionZ{100, -20.f, 20.f, "Z (cm)"};
-        AxisSpec axisCollisionXOriginal{1000, -20.f, 20.f, "X original PV (cm)"};
-        AxisSpec axisCollisionYOriginal{1000, -20.f, 20.f, "Y original PV (cm)"};
-        AxisSpec axisCollisionZOriginal{1000, -20.f, 20.f, "Z original PV (cm)"};
+        AxisSpec axisCollisionXOriginal{100, -2.f, 2.f, "X original PV (cm)"};
+        AxisSpec axisCollisionYOriginal{100, -2.f, 2.f, "Y original PV (cm)"};
+        AxisSpec axisCollisionZOriginal{100, -2.f, 2.f, "Z original PV (cm)"};
         AxisSpec axisCollisionNContrib{1000, 0, 1000, "Number of contributors"};
         AxisSpec axisCollisionDeltaX{axisPvRefitDeltaX, "#Delta x_{PV} (cm)"};
         AxisSpec axisCollisionDeltaY{axisPvRefitDeltaY, "#Delta y_{PV} (cm)"};
@@ -791,6 +791,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 #endif
   )
   {
+    rowSelectedTrack.reserve(tracks.size());
 
     // prepare vectors to cache quantities needed for PV refit
     std::vector<std::array<float, 2>> pvRefitDcaPerTrack{};
@@ -804,6 +805,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         LOG(info) << ">>> number of tracks: " << tracks.size();
         LOG(info) << ">>> number of collisions: " << collisions.size();
       }
+      tabPvRefitTrack.reserve(tracks.size());
     }
 
     for (const auto& collision : collisions) {
