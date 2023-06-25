@@ -205,11 +205,11 @@ struct qaKFParticleLc {
   bool isSelectedTracks(const T& track1, const T& track2, const T& track3)
   {
     /// DCA XY of the daughter tracks to the primaty vertex
-    if ((track1.dcaXY() > d_dcaXYTrackPV) || (track2.dcaXY() > d_dcaXYTrackPV) || (track3.dcaXY() > d_dcaXYTrackPV)) {
+    if ((fabs(track1.dcaXY()) > d_dcaXYTrackPV) || (fabs(track2.dcaXY()) > d_dcaXYTrackPV) || (fabs(track3.dcaXY()) > d_dcaXYTrackPV)) {
       return false;
     }
     /// DCA Z of the daughter tracks to the primaty vertex
-    if ((track1.dcaZ() > d_dcaZTrackPV) || (track2.dcaZ() > d_dcaZTrackPV) || (track3.dcaZ() > d_dcaZTrackPV)) {
+    if ((fabs(track1.dcaZ()) > d_dcaZTrackPV) || (fabs(track2.dcaZ()) > d_dcaZTrackPV) || (fabs(track3.dcaZ()) > d_dcaZTrackPV)) {
       return false;
     }
     /// reject if the tracks with sum of charge != 1

@@ -37,6 +37,10 @@ DECLARE_SOA_COLUMN(PtPi, ptpi, float);
 DECLARE_SOA_COLUMN(PtKa, ptka, float);
 DECLARE_SOA_COLUMN(EtaPi, etapi, float);
 DECLARE_SOA_COLUMN(EtaKa, etaka, float);
+DECLARE_SOA_COLUMN(RapPi, rappi, float);
+DECLARE_SOA_COLUMN(RapKa, rapka, float);
+DECLARE_SOA_COLUMN(TPCNclsPi, tpcnclspi, float);
+DECLARE_SOA_COLUMN(TPCNclsKa, tpcnclska, float);
 DECLARE_SOA_COLUMN(PhiPi, phipi, float);
 DECLARE_SOA_COLUMN(PhiKa, phika, float);
 DECLARE_SOA_COLUMN(DCAXYPiToPV, dcaxypvpi, float);
@@ -87,12 +91,16 @@ DECLARE_SOA_TABLE(TreeKF, "AOD", "TREEKF",
                   kfparticle::PtKa,
                   kfparticle::EtaPi,
                   kfparticle::EtaKa,
+                  kfparticle::RapPi,
+                  kfparticle::RapKa,
                   kfparticle::PhiPi,
                   kfparticle::PhiKa,
                   kfparticle::DCAXYPiToPV,
                   kfparticle::DCAXYKaToPV,
                   kfparticle::DCAPiToPV,
                   kfparticle::DCAKaToPV,
+                  kfparticle::TPCNclsPi,
+                  kfparticle::TPCNclsKa,
                   kfparticle::TPCNSigmaPi,
                   kfparticle::TPCNSigmaKA,
                   kfparticle::TOFNSigmaPi,
