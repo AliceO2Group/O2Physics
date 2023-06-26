@@ -256,23 +256,23 @@ struct strangenessFilter {
   void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
-    bool keepEvent[7]{false, false, false, false, false, false, false};
+    bool keepEvent[8]{false, false, false, false, false, false, false, false};
 
     if (kint7 && !collision.alias_bit(kINT7)) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7]);
       return;
     }
     if (sel7 && !collision.sel7()) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7]);
       return;
     }
     if (sel8 && !collision.sel8()) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7]);
       return;
     }
 
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7]);
       return;
     }
 
@@ -504,7 +504,7 @@ struct strangenessFilter {
     }
 
     // Filling the table
-    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7]);
   }
   //
   PROCESS_SWITCH(strangenessFilter, processRun2, "Process data Run2", true);
@@ -513,20 +513,21 @@ struct strangenessFilter {
   ////////// Strangeness Filter - Run 3 MC /////////////
   //////////////////////////////////////////////////////
 
-  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
+  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks,
+                   aod::AssignedTrackedCascades const& trackedCascades, aod::AssignedTrackedV0s const& trackedV0s, aod::AssignedTracked3Bodys const& tracked3Bodys)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
-    bool keepEvent[7]{false, false, false, false, false, false, false};
+    bool keepEvent[8]{false, false, false, false, false, false, false, false};
 
     if (sel8 && !collision.sel8()) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7]);
       return;
     }
     // all processed events after event selection
     hProcessedEvents->Fill(0.5);
 
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7]);
       return;
     }
     QAHistos.fill(HIST("hVtxZ"), collision.posZ());
@@ -912,6 +913,28 @@ struct strangenessFilter {
       keepEvent[6] = true;
     }
 
+    // strangeness tracking selection
+    for (const auto& trackedCascade : trackedCascades) {
+      const auto trackCasc = trackedCascade.track_as<TrackCandidates>();
+      if (trackCasc.pt() > 0.) {
+        keepEvent[7] = true;
+      }
+    }
+
+    for (const auto& trackedV0 : trackedV0s) {
+      const auto trackV0 = trackedV0.track_as<TrackCandidates>();
+      if (trackV0.pt() > 0.) {
+        keepEvent[7] = true;
+      }
+    }
+
+    for (const auto& tracked3Body : tracked3Bodys) {
+      const auto track3Body = tracked3Body.track_as<TrackCandidates>();
+      if (track3Body.pt() > 0.) {
+        keepEvent[7] = true;
+      }
+    }
+
     // Fill centrality dependent histos
     if (keepEvent[0]) {
       hProcessedEvents->Fill(2.5);
@@ -939,7 +962,7 @@ struct strangenessFilter {
     }
 
     // Filling the table
-    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7]);
   }
   //
   PROCESS_SWITCH(strangenessFilter, processRun3, "Process Run3", true);
