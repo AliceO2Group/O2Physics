@@ -112,9 +112,10 @@ struct skimmerGammaConversions {
   };
 
   Produces<aod::V0Photons> v0photons;
+  Produces<aod::V0PhotonsKF> v0photonskf;
   Produces<aod::V0Legs> v0legs;
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
-  Produces<aod::V0RecalculationAndKF> fFuncTableV0Recalculated;
+  Produces<aod::V0Recalculation> fFuncTableV0Recalculated;
   Produces<aod::V0DaughterMcParticles> fFuncTableMCTrackInformation;
   Produces<aod::MCParticleIndex> fIndexTableMCTrackIndex;
 
@@ -170,6 +171,10 @@ struct skimmerGammaConversions {
 
     o2::base::Propagator::Instance()->setMatLUT(lut);
     runNumber = bc.runNumber();
+
+    /// Set magnetic field for KF vertexing
+    float magneticField = o2::base::Propagator::Instance()->getNominalBz();
+    KFParticle::SetField(magneticField);
   }
 
   template <typename TV0, typename TTRACK>
@@ -191,8 +196,7 @@ struct skimmerGammaConversions {
     fFuncTableV0Recalculated(
       recalculatedVertex.recalculatedConversionPoint[0],
       recalculatedVertex.recalculatedConversionPoint[1],
-      recalculatedVertex.recalculatedConversionPoint[2],
-      recalculatedVertex.KFParticleChi2DividedByNDF);
+      recalculatedVertex.recalculatedConversionPoint[2]);
   }
 
   template <typename TTRACK>
@@ -228,6 +232,53 @@ struct skimmerGammaConversions {
       return false;
     }
     return true;
+  }
+
+  template <typename TTrack, typename TCollision, typename TV0>
+  void fillV0KF(TCollision const& collision, TV0 const& v0, recalculatedVertexParameters recalculatedVertex)
+  {
+    auto pos = v0.template posTrack_as<TTrack>(); // positive daughter
+    auto ele = v0.template negTrack_as<TTrack>(); // negative daughter
+
+    KFPTrack kfp_track_pos = createKFPTrackFromTrack(pos);
+    KFPTrack kfp_track_ele = createKFPTrackFromTrack(ele);
+    KFParticle kfp_pos(kfp_track_pos, -11);
+    KFParticle kfp_ele(kfp_track_ele, 11);
+    const KFParticle* GammaDaughters[2] = {&kfp_pos, &kfp_ele};
+
+    KFParticle gammaKF;
+    gammaKF.SetConstructMethod(2);
+    gammaKF.Construct(GammaDaughters, 2);
+    gammaKF.SetNonlinearMassConstraint(kfMassConstrain);
+
+    KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
+    KFParticle KFPV(kfpVertex);
+
+    float xyz[3] = {recalculatedVertex.recalculatedConversionPoint[0], recalculatedVertex.recalculatedConversionPoint[1], recalculatedVertex.recalculatedConversionPoint[2]};
+
+    /// Transport the gamma to the recalculated decay vertex
+    KFParticle gammaKF_DecayVtx = gammaKF;
+    gammaKF_DecayVtx.TransportToPoint(xyz);
+
+    /// Apply a topological constraint of the gamma to the PV.
+    /// Parameters will be given at the primary vertex.
+    KFParticle gammaKF_PV = gammaKF_DecayVtx;
+    gammaKF_PV.SetProductionVertex(KFPV);
+
+    float chi2kf = -1.f;
+    if (gammaKF_DecayVtx.GetNDF() > 0) {
+      chi2kf = gammaKF_DecayVtx.GetChi2() / gammaKF_DecayVtx.GetNDF();
+    }
+
+    // LOGF(info, "mee = %f (DCAFitter) , %f (KF)", v0.mGamma(), gammaKF_DecayVtx.GetMass());
+
+    // float pca_kf = kfp_pos.GetDistanceFromParticle(kfp_ele);
+
+    v0photonskf(collision.globalIndex(), v0photons.lastIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
+                gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
+                gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
+                v0.mGamma(), cpaFromKF(gammaKF_DecayVtx, KFPV), v0.dcaV0daughters(),
+                v0.alpha(), v0.qtarm(), v0.psipair(), chi2kf);
   }
 
   // ============================ FUNCTION DEFINITIONS ====================================================
@@ -289,6 +340,8 @@ struct skimmerGammaConversions {
                   v0.pxpos(), v0.pypos(), v0.pzpos(),
                   v0.pxneg(), v0.pyneg(), v0.pzneg(),
                   v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()), v0.dcaV0daughters()); // if v0legs is empty, lastIndex = -1.
+
+        fillV0KF<tracksAndTPCInfo>(collision, v0, recalculatedVertex);
 
         fillTrackTable(v0, pos);
         fillTrackTable(v0, ele);
@@ -372,6 +425,8 @@ struct skimmerGammaConversions {
                   v0.pxpos(), v0.pypos(), v0.pzpos(),
                   v0.pxneg(), v0.pyneg(), v0.pzneg(),
                   v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()), v0.dcaV0daughters()); // if v0legs is empty, lastIndex = -1.
+
+        fillV0KF<tracksAndTPCInfoMC>(collision, v0, recalculatedVertex);
 
         fillTrackTable(v0, pos);
         fillTrackTable(v0, ele);

@@ -17,10 +17,11 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include "Common/DataModel/CollisionAssociation.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 

@@ -14,9 +14,10 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -26,7 +27,6 @@ using namespace o2::framework::expressions;
 
 namespace
 {
-
 static constexpr int nCutsToTestCosp = 15;
 static constexpr int nCutsToTestDecLen = 11;
 static constexpr int nCutsToTestImpParProd = 11;

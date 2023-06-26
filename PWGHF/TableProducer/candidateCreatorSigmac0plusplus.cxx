@@ -16,20 +16,21 @@
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
 #include "CCDB/BasicCCDBManager.h" // for dca recalculation
-#include "Common/DataModel/CollisionAssociation.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "DataFormatsParameters/GRPMagField.h" // for dca recalculation
 #include "DataFormatsParameters/GRPObject.h"   // for dca recalculation
 #include "DetectorsBase/GeometryManager.h"     // for dca recalculation
 #include "DetectorsBase/Propagator.h"          // for dca recalculation
 #include "DetectorsVertexing/PVertexer.h"      // for dca recalculation
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+// #include "ReconstructionDataFormats/Vertex.h" // for dca recalculation
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h" // for dca recalculation
-// #include "ReconstructionDataFormats/Vertex.h" // for dca recalculation
 
 using namespace o2;
 using namespace o2::framework;

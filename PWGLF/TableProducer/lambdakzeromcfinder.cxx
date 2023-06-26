@@ -24,6 +24,11 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <Math/Vector4D.h>
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -40,7 +45,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
@@ -49,12 +53,8 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TProfile.h>
-#include <Math/Vector4D.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -71,6 +71,7 @@ struct lambdakzeromcfinder {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Configurables for selecting which particles to generate
+  Configurable<bool> findGamma{"findGamma", true, "findGamma"};
   Configurable<bool> findK0Short{"findK0Short", true, "findK0Short"};
   Configurable<bool> findLambda{"findLambda", true, "findLambda"};
   Configurable<bool> findAntiLambda{"findAntiLambda", true, "findAntiLambda"};
@@ -80,7 +81,8 @@ struct lambdakzeromcfinder {
   Configurable<bool> doUnassociatedV0s{"doUnassociatedV0s", true, "generate also unassociated V0s (for cascades!)"};
   Configurable<bool> doQA{"doQA", true, "do qa plots"};
   Configurable<int> qaNbins{"qaNbins", 200, "qa plots: binning"};
-  Configurable<float> qaMaxPt{"qaMaxPt", 2, "qa plots: max pt"};
+  Configurable<float> yPreFilter{"yPreFilter", 2.5, "broad y pre-filter for speed"};
+  ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
 
   Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
 
@@ -92,37 +94,40 @@ struct lambdakzeromcfinder {
   void init(InitContext& context)
   {
     // initialize histograms
-    const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
-    const AxisSpec axisPt{(int)100, +0.0f, +10.0f, "p_{T} (GeV/c)"};
-    const AxisSpec axisPtQA{(int)qaNbins, +0.0f, qaMaxPt, "p_{T} (GeV/c)"};
+    const AxisSpec axisNTimesCollRecoed{static_cast<int>(10), -0.5f, +9.5f, ""};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
 
-    histos.add("hPtK0ShortGenerated", "hPtK0ShortGenerated", kTH1F, {axisPt});
-    histos.add("hPtLambdaGenerated", "hPtLambdaGenerated", kTH1F, {axisPt});
-    histos.add("hPtAntiLambdaGenerated", "hPtAntiLambdaGenerated", kTH1F, {axisPt});
-    histos.add("hPtHypertritonGenerated", "hPtHypertritonGenerated", kTH1F, {axisPt});
-    histos.add("hPtAntiHypertritonGenerated", "hPtAntiHypertritonGenerated", kTH1F, {axisPt});
+    histos.add("hPtGammaGenerated", "hPtGammaGenerated", kTH1F, {axisPtQA});
+    histos.add("hPtK0ShortGenerated", "hPtK0ShortGenerated", kTH1F, {axisPtQA});
+    histos.add("hPtLambdaGenerated", "hPtLambdaGenerated", kTH1F, {axisPtQA});
+    histos.add("hPtAntiLambdaGenerated", "hPtAntiLambdaGenerated", kTH1F, {axisPtQA});
+    histos.add("hPtHypertritonGenerated", "hPtHypertritonGenerated", kTH1F, {axisPtQA});
+    histos.add("hPtAntiHypertritonGenerated", "hPtAntiHypertritonGenerated", kTH1F, {axisPtQA});
 
-    histos.add("hPtK0ShortReconstructed", "hPtK0ShortReconstructed", kTH1F, {axisPt});
-    histos.add("hPtLambdaReconstructed", "hPtLambdaReconstructed", kTH1F, {axisPt});
-    histos.add("hPtAntiLambdaReconstructed", "hPtAntiLambdaReconstructed", kTH1F, {axisPt});
-    histos.add("hPtHypertritonReconstructed", "hPtHypertritonReconstructed", kTH1F, {axisPt});
-    histos.add("hPtAntiHypertritonReconstructed", "hPtAntiHypertritonReconstructed", kTH1F, {axisPt});
+    histos.add("hPtGammaReconstructed", "hPtGammaReconstructed", kTH1F, {axisPtQA});
+    histos.add("hPtK0ShortReconstructed", "hPtK0ShortReconstructed", kTH1F, {axisPtQA});
+    histos.add("hPtLambdaReconstructed", "hPtLambdaReconstructed", kTH1F, {axisPtQA});
+    histos.add("hPtAntiLambdaReconstructed", "hPtAntiLambdaReconstructed", kTH1F, {axisPtQA});
+    histos.add("hPtHypertritonReconstructed", "hPtHypertritonReconstructed", kTH1F, {axisPtQA});
+    histos.add("hPtAntiHypertritonReconstructed", "hPtAntiHypertritonReconstructed", kTH1F, {axisPtQA});
 
-    histos.add("hPtK0ShortGlobal", "hPtK0ShortGlobal", kTH1F, {axisPt});
-    histos.add("hPtLambdaGlobal", "hPtLambdaGlobal", kTH1F, {axisPt});
-    histos.add("hPtAntiLambdaGlobal", "hPtAntiLambdaGlobal", kTH1F, {axisPt});
-    histos.add("hPtHypertritonGlobal", "hPtHypertritonGlobal", kTH1F, {axisPt});
-    histos.add("hPtAntiHypertritonGlobal", "hPtAntiHypertritonGlobal", kTH1F, {axisPt});
+    histos.add("hPtGammaGlobal", "hPtGammaGlobal", kTH1F, {axisPtQA});
+    histos.add("hPtK0ShortGlobal", "hPtK0ShortGlobal", kTH1F, {axisPtQA});
+    histos.add("hPtLambdaGlobal", "hPtLambdaGlobal", kTH1F, {axisPtQA});
+    histos.add("hPtAntiLambdaGlobal", "hPtAntiLambdaGlobal", kTH1F, {axisPtQA});
+    histos.add("hPtHypertritonGlobal", "hPtHypertritonGlobal", kTH1F, {axisPtQA});
+    histos.add("hPtAntiHypertritonGlobal", "hPtAntiHypertritonGlobal", kTH1F, {axisPtQA});
 
-    histos.add("hPtK0ShortGlobalWithPV", "hPtK0ShortGlobalWithPV", kTH1F, {axisPt});
-    histos.add("hPtLambdaGlobalWithPV", "hPtLambdaGlobalWithPV", kTH1F, {axisPt});
-    histos.add("hPtAntiLambdaGlobalWithPV", "hPtAntiLambdaGlobalWithPV", kTH1F, {axisPt});
-    histos.add("hPtHypertritonGlobalWithPV", "hPtHypertritonGlobalWithPV", kTH1F, {axisPt});
-    histos.add("hPtAntiHypertritonGlobalWithPV", "hPtAntiHypertritonGlobalWithPV", kTH1F, {axisPt});
+    histos.add("hPtGammaGlobalWithPV", "hPtGammaGlobalWithPV", kTH1F, {axisPtQA});
+    histos.add("hPtK0ShortGlobalWithPV", "hPtK0ShortGlobalWithPV", kTH1F, {axisPtQA});
+    histos.add("hPtLambdaGlobalWithPV", "hPtLambdaGlobalWithPV", kTH1F, {axisPtQA});
+    histos.add("hPtAntiLambdaGlobalWithPV", "hPtAntiLambdaGlobalWithPV", kTH1F, {axisPtQA});
+    histos.add("hPtHypertritonGlobalWithPV", "hPtHypertritonGlobalWithPV", kTH1F, {axisPtQA});
+    histos.add("hPtAntiHypertritonGlobalWithPV", "hPtAntiHypertritonGlobalWithPV", kTH1F, {axisPtQA});
 
     if (doQA) {
+      histos.add("hPtGammaDaughters", "hPtGammaDaughters", kTH2F, {axisPtQA, axisPtQA});
       histos.add("hPtK0ShortDaughters", "hPtK0ShortDaughters", kTH2F, {axisPtQA, axisPtQA});
       histos.add("hPtLambdaDaughters", "hPtLambdaDaughters", kTH2F, {axisPtQA, axisPtQA});
       histos.add("hPtAntiLambdaDaughters", "hPtAntiLambdaDaughters", kTH2F, {axisPtQA, axisPtQA});
@@ -159,6 +164,10 @@ struct lambdakzeromcfinder {
 
     int positivePdg = 211;
     int negativePdg = -211;
+    if (mcParticle.pdgCode() == 22) {
+      positivePdg = -11;
+      negativePdg = +11;
+    }
     if (mcParticle.pdgCode() == 3122) {
       positivePdg = 2212;
     }
@@ -176,7 +185,7 @@ struct lambdakzeromcfinder {
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
       if (daughters.size() >= 2) {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
-          if (daughter.getProcess() != 4)
+          if ((daughter.getProcess() != 4 && mcParticle.pdgCode() != 22) || daughter.getProcess() != 5)
             continue; // skip deltarays (if ever), stick to decay products only
           if (daughter.pdgCode() == positivePdg) {
             for (auto const& track : trackList) {
@@ -218,6 +227,8 @@ struct lambdakzeromcfinder {
       v0negativeIndex.emplace_back(trackIndexNegative);
       v0mcLabel.emplace_back(mcParticle.globalIndex());
       if (doQA) {
+        if (mcParticle.pdgCode() == 22)
+          histos.fill(HIST("hPtGammaDaughters"), posPt, negPt);
         if (mcParticle.pdgCode() == 310)
           histos.fill(HIST("hPtK0ShortDaughters"), posPt, negPt);
         if (mcParticle.pdgCode() == 3122)
@@ -255,6 +266,21 @@ struct lambdakzeromcfinder {
       bool negativeTPCITS = false;
       bool reconstructed = false;
       for (auto& mcParticle : mcParticles) {
+        if (fabs(mcParticle.y()) > yPreFilter)
+          continue; // go declarative at a later stage but pre-filter here
+
+        if (mcParticle.pdgCode() == 22 && findGamma) {
+          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC, positiveTPCITS, negativeTPCITS);
+          if (fabs(mcParticle.y()) < 0.5) {
+            histos.fill(HIST("hPtGammaGenerated"), mcParticle.pt());
+            if (reconstructed)
+              histos.fill(HIST("hPtGammaReconstructed"), mcParticle.pt());
+            if (reconstructed && positiveTPCITS && negativeTPCITS)
+              histos.fill(HIST("hPtGammaGlobal"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0 && positiveTPCITS && negativeTPCITS)
+              histos.fill(HIST("hPtGammaGlobalWithPV"), mcParticle.pt());
+          }
+        }
         if (mcParticle.pdgCode() == 310 && findK0Short) {
           reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC, positiveTPCITS, negativeTPCITS);
           if (fabs(mcParticle.y()) < 0.5) {

@@ -16,12 +16,13 @@
 ///
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 
-#include "Framework/runDataProcessing.h"
+#include "Common/Core/trackUtilities.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -81,7 +82,7 @@ DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-DECLARE_SOA_COLUMN(GlobalIndex, globalIndex, int);
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
@@ -157,7 +158,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
                   full::MCflag,
                   full::OriginMcRec,
                   full::IsCandidateSwapped,
-                  full::GlobalIndex);
+                  full::CandidateId);
 
 DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
                   collision::BCId,
@@ -176,7 +177,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
                   full::Y,
                   full::MCflag,
                   full::OriginMcGen,
-                  full::GlobalIndex);
+                  full::CandidateId);
 
 } // namespace o2::aod
 
