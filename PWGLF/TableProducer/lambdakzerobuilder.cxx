@@ -100,6 +100,10 @@ struct lambdakzeroBuilder {
   // use auto-detect configuration
   Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
 
+  // downscaling for testing
+  Configurable<float> downscaleFactor{"downscaleFactor", 2, "Downcale factor (0: build nothing, 1: build all)"};
+  unsigned int randomSeed = 0;
+
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -237,6 +241,8 @@ struct lambdakzeroBuilder {
   {
     resetHistos();
 
+    randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+
     // Optionally, add extra QA histograms to processing chain
     if (d_doQA) {
       // Basic histograms containing invariant masses of all built candidates
@@ -274,7 +280,7 @@ struct lambdakzeroBuilder {
       registry.add("h2dTopoVarDCAV0Dau", "h2dTopoVarDCAV0Dau", kTH2D, {axisPtQA, axisTopoVarDCAV0Dau});
       registry.add("h2dTopoVarPosDCAToPV", "h2dTopoVarPosDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
       registry.add("h2dTopoVarNegDCAToPV", "h2dTopoVarNegDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
-      registry.add("h2dTopoVarNegDCAV0ToPV", "h2dTopoVarNegDCAV0ToPV", kTH2D, {axisPtQA, axisTopoVarDCAV0ToPV});
+      registry.add("h2dTopoVarDCAV0ToPV", "h2dTopoVarDCAV0ToPV", kTH2D, {axisPtQA, axisTopoVarDCAV0ToPV});
     }
 
     mRunNumber = 0;
@@ -657,6 +663,11 @@ struct lambdakzeroBuilder {
 
     // Loops over all V0s in the time frame
     for (auto& V0 : V0s) {
+      // downscale some V0s if requested to do so
+      if (downscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > downscaleFactor) {
+        return;
+      }
+
       // populates v0candidate struct declared inside strangenessbuilder
       bool validCandidate = buildV0Candidate<TTrackTo>(V0);
 

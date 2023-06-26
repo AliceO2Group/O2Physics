@@ -35,7 +35,8 @@ using namespace o2::analysis::hf_cuts_lc_to_p_k_pi;
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLc {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
@@ -255,7 +256,7 @@ struct HfTaskLc {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yLc(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yLc(candidate)) > yCandRecoMax) {
         continue;
       }
       auto pt = candidate.pt();
@@ -314,7 +315,7 @@ struct HfTaskLc {
         continue;
       }
       /// rapidity selection
-      if (yCandMax >= 0. && std::abs(yLc(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yLc(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -454,7 +455,7 @@ struct HfTaskLc {
     for (auto const& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
         auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
-        if (yCandMax >= 0. && std::abs(yGen) > yCandMax) {
+        if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
         }
         auto ptGen = particle.pt();

@@ -43,7 +43,8 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 /// Λb0 analysis task
 struct HfTaskLb {
   Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
-  Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_to_lc_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lb::isSelLbToLcPi >= selectionFlagLb);
@@ -81,7 +82,7 @@ struct HfTaskLb {
       if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yLb(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yLb(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -114,7 +115,8 @@ struct HfTaskLb {
 /// Lb MC analysis and fill histograms
 struct HfTaskLbMc {
   Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
-  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_to_lc_pi::vecBinsPt}, "pT bin limits"};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lb::isSelLbToLcPi >= selectionFlagLb);
@@ -183,7 +185,7 @@ struct HfTaskLbMc {
       if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yLb(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       auto candLc = candidate.prong0_as<aod::HfCand3Prong>();
@@ -238,7 +240,7 @@ struct HfTaskLbMc {
       if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
 
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
-        if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
+        if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
 
