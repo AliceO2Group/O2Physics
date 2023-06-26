@@ -493,7 +493,7 @@ struct cascpostprocessing {
           registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, (isFT0MforMC ? candidate.multFT0M() : 0));
         }
         registry.fill(HIST("hCascMinusInvMassvsPt"), candidate.pt(), invmass);
-        registry.fill(HIST("hCascMinusInvMassvsPt_FT0M"), isFT0MforMC ? candidate.multFT0M() : 0, candidate.pt(), invmass);
+        registry.fill(HIST("hCascMinusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
         registry.fill(HIST("hCascMinusInvMassvsPt_FV0A"), candidate.multFV0A(), candidate.pt(), invmass);
       }
       if (candidate.sign() > 0) {
@@ -501,7 +501,7 @@ struct cascpostprocessing {
           registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, (isFT0MforMC ? candidate.multFT0M() : 0));
         }
         registry.fill(HIST("hCascPlusInvMassvsPt"), candidate.pt(), invmass);
-        registry.fill(HIST("hCascPlusInvMassvsPt_FT0M"), isFT0MforMC ? candidate.multFT0M() : 0, candidate.pt(), invmass);
+        registry.fill(HIST("hCascPlusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
         registry.fill(HIST("hCascPlusInvMassvsPt_FV0A"), candidate.multFV0A(), candidate.pt(), invmass);
       }
     }
