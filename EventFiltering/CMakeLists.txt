@@ -83,7 +83,12 @@ o2physics_add_dpl_workflow(mult-filter
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(em-filter
-                           SOURCES PWGEM/photonFilter.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(em-photon-filter
+                           SOURCES PWGEM/EMPhotonFilter.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(em-photon-filter-qc
+                           SOURCES PWGEM/EMPhotonFilterQC.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                            COMPONENT_NAME Analysis)

@@ -91,11 +91,19 @@ class V0PhotonCut : public TNamed
     if (!IsSelectedV0(v0, V0PhotonCuts::kRZLine)) {
       return false;
     }
-    if (mIsOnWwireIB && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB)) {
-      return false;
-    }
-    if (mIsOnWwireOB && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireOB)) {
-      return false;
+
+    if (mIsOnWwireIB && mIsOnWwireOB) {
+      if (!IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB) && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireOB)) {
+        return false;
+      }
+    } else if (mIsOnWwireIB) {
+      if (!IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB)) {
+        return false;
+      }
+    } else if (mIsOnWwireOB) {
+      if (!IsSelectedV0(v0, V0PhotonCuts::kOnWwireOB)) {
+        return false;
+      }
     }
 
     auto pos = v0.template posTrack_as<TLeg>();
@@ -229,19 +237,23 @@ class V0PhotonCut : public TNamed
         return true;
       }
       case V0PhotonCuts::kOnWwireOB: {
-        const float rxy_min = 30.8 - margin;  // cm
-        const float rxy_max = 30.8 + margin;  // cm
-        const float z_min = -47.0;            // cm
-        const float z_max = +47.0;            // cm
-        float x = abs(v0.recalculatedVtxX()); // cm, measured secondary vertex of gamma->ee
-        float y = v0.recalculatedVtxY();      // cm, measured secondary vertex of gamma->ee
-        float z = v0.recalculatedVtxZ();      // cm, measured secondary vertex of gamma->ee
+        const float rxy_min = 30.8 - margin; // cm
+        const float rxy_max = 30.8 + margin; // cm
+        const float z_min = -47.0;           // cm
+        const float z_max = +47.0;           // cm
+        float x = v0.recalculatedVtxX();     // cm, measured secondary vertex of gamma->ee
+        float y = v0.recalculatedVtxY();     // cm, measured secondary vertex of gamma->ee
+        float z = v0.recalculatedVtxZ();     // cm, measured secondary vertex of gamma->ee
         float rxy = sqrt(x * x + y * y);
         if ((rxy < rxy_min || rxy_max < rxy) || (z < z_min || z_max < z)) {
           return false;
         }
-        float x_exp = abs(rxy * TMath::Cos(-1.3 * TMath::DegToRad())); // cm, expected position x of W wire
-        float y_exp = rxy * TMath::Sin(-1.3 * TMath::DegToRad());      // cm, expected position y of W wire
+        if (x < 0) { // w wire ITSob is only at x > 0.
+          return false;
+        }
+
+        float x_exp = rxy * TMath::Cos(-1.3 * TMath::DegToRad()); // cm, expected position x of W wire
+        float y_exp = rxy * TMath::Sin(-1.3 * TMath::DegToRad()); // cm, expected position y of W wire
         if (abs(x - x_exp) > margin || abs(y - y_exp) > margin) {
           return false;
         }
