@@ -14,15 +14,21 @@
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
 
-#ifndef O2_ANALYSIS_PIDONNXMODEL_H_
-#define O2_ANALYSIS_PIDONNXMODEL_H_
+#ifndef TOOLS_PIDML_PIDONNXMODEL_H_
+#define TOOLS_PIDML_PIDONNXMODEL_H_
+
+#include <string>
+#include <algorithm>
+#include <map>
+#include <utility>
+#include <memory>
+#include <vector>
+
+#include "onnxruntime/core/session/experimental_onnxruntime_cxx_api.h"
+#include "rapidjson/document.h"
+#include "rapidjson/filereadstream.h"
 
 #include "CCDB/CcdbApi.h"
-
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
-#include <rapidjson/document.h>
-#include <rapidjson/filereadstream.h>
-#include <string>
 
 enum PidMLDetector {
   kTPCOnly = 0,
@@ -182,13 +188,13 @@ struct PidONNXModel {
     float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
     float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
     float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
-    float scaledTPCNClsShared = ((float)track.tpcNClsShared() - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
+    float scaledTPCNClsShared = (static_cast<float>(track.tpcNClsShared()) - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
     float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
     float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
 
     float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
 
-    std::vector<float> inputValues{track.px(), track.py(), track.pz(), (float)track.sign(), scaledX, scaledY, scaledZ, scaledAlpha, (float)track.trackType(), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p(), scaledTPCSignal};
+    std::vector<float> inputValues{track.px(), track.py(), track.pz(), static_cast<float>(track.sign()), scaledX, scaledY, scaledZ, scaledAlpha, static_cast<float>(track.trackType()), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p(), scaledTPCSignal};
 
     if (mDetector >= kTPCTOF) {
       float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
@@ -267,4 +273,4 @@ struct PidONNXModel {
   std::vector<std::vector<int64_t>> mOutputShapes;
 };
 
-#endif // O2_ANALYSIS_PIDONNXMODEL_H_
+#endif // TOOLS_PIDML_PIDONNXMODEL_H_

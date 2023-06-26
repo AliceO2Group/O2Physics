@@ -25,6 +25,7 @@
 #include "Framework/ASoA.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;

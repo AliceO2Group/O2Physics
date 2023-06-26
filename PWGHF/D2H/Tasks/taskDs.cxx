@@ -19,6 +19,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -29,8 +30,10 @@ using namespace o2::aod::hf_cand_3prong;
 
 /// Ds± analysis task
 struct HfTaskDs {
+  Configurable<int> decayChannel{"decayChannel", 1, "Switch between decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
 
   Filter dsFlagFilter = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0);
@@ -207,7 +210,7 @@ struct HfTaskDs {
   void process(candDsData const& candidates)
   {
     for (auto& candidate : selectedDsToKKPiCand) {
-      if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yDs(candidate)) > yCandRecoMax) {
         continue;
       }
       fillHisto(candidate);
@@ -215,7 +218,7 @@ struct HfTaskDs {
     }
 
     for (auto& candidate : selectedDsToPiKKCand) {
-      if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yDs(candidate)) > yCandRecoMax) {
         continue;
       }
       fillHisto(candidate);
@@ -227,10 +230,13 @@ struct HfTaskDs {
   {
     // MC rec.
     for (auto& candidate : candidates) {
-      if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yDs(candidate)) > yCandRecoMax) {
         continue;
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
+        if (candidate.flagMcDecayChanRec() != decayChannel) {
+          continue;
+        }
         auto prong0McPart = candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>();
         auto indexMother = RecoDecay::getMother(particlesMC, prong0McPart, pdg::Code::kDS, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
@@ -257,9 +263,12 @@ struct HfTaskDs {
     // MC gen.
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DsToKKPi) {
+        if (particle.flagMcDecayChanGen() != decayChannel) {
+          continue;
+        }
         auto pt = particle.pt();
         auto y = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
-        if (yCandMax >= 0. && std::abs(y) > yCandMax) {
+        if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
           continue;
         }
 

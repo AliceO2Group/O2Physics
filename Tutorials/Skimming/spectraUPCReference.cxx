@@ -48,7 +48,7 @@ struct UPCSpectraReferenceTask {
     if (checkFDD) {
       return;
     }
-    if (!col.alias()[kCUP9]) {
+    if (!col.alias_bit(kCUP9)) {
       return;
     }
     if (tracks.size() != 2) {
@@ -72,7 +72,7 @@ struct UPCSpectraReferenceTask {
     histos.fill(HIST("fhPt"), p.Pt());
     float signalTPC1 = first.tpcSignal();
     float signalTPC2 = second.tpcSignal();
-    //hSignalTPC1vsSignalTPC2->Fill(signalTPC1, signalTPC2);
+    // hSignalTPC1vsSignalTPC2->Fill(signalTPC1, signalTPC2);
     if ((p.Pt() < 0.1) && (signalTPC1 + signalTPC2 < 140.)) {
       histos.fill(HIST("fhMass"), p.M());
     }

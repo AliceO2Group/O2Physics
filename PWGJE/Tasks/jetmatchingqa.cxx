@@ -28,10 +28,13 @@ using namespace o2::framework::expressions;
 
 template <typename BaseJetCollection, typename TagJetCollection>
 struct JetMatchingQA {
-  OutputObj<TH2F> hJetPt{"h_jet_pt"};
-  OutputObj<TH2F> hJetDetaDphi{"h_jet_deta_dphi"};
+  OutputObj<TH2F> hJetHfPt{"h_jet_hf_pt"};
+  OutputObj<TH2F> hJetHfDetaDphi{"h_jet_hf_deta_dphi"};
   OutputObj<TH2F> hJetGeoPt{"h_jet_geo_pt"};
   OutputObj<TH2F> hJetGeoDetaDphi{"h_jet_geo_deta_dphi"};
+  OutputObj<TH2F> hJetPtPt{"h_jet_pt_pt"};
+  OutputObj<TH2F> hJetPtDetaDphi{"h_jet_pt_deta_dphi"};
+
   OutputObj<TH1F> hJetDetPt{"h_jet_det_pt"};
   OutputObj<TH1F> hJetGenPt{"h_jet_gen_pt"};
   OutputObj<TH1F> hJetDetPhi{"h_jet_det_phi"};
@@ -47,10 +50,14 @@ struct JetMatchingQA {
                                  100, 0., 100., 100, 0., 100.));
     hJetGeoDetaDphi.setObject(new TH2F("h_jet_geo_deta_dphi", "geo-matched jets;jet #Delta#phi;#Delta#eta",
                                        100, -2. * TMath::Pi(), 2. * TMath::Pi(), 100, -2., 2.));
-    hJetPt.setObject(new TH2F("h_jet_pt", "HF-matched jets;jet p_{T}^{gen} (GeV/#it{c});jet p_{T}^{det} (GeV/#it{c})",
-                              100, 0., 100., 100, 0., 100.));
-    hJetDetaDphi.setObject(new TH2F("h_jet_deta_dphi", "HF-matched jets;jet #Delta#phi;#Delta#eta",
-                                    100, -2. * TMath::Pi(), 2. * TMath::Pi(), 100, -2., 2.));
+    hJetHfPt.setObject(new TH2F("h_jet_pt", "HF-matched jets;jet p_{T}^{gen} (GeV/#it{c});jet p_{T}^{det} (GeV/#it{c})",
+                                100, 0., 100., 100, 0., 100.));
+    hJetHfDetaDphi.setObject(new TH2F("h_jet_deta_dphi", "HF-matched jets;jet #Delta#phi;#Delta#eta",
+                                      100, -2. * TMath::Pi(), 2. * TMath::Pi(), 100, -2., 2.));
+    hJetPtPt.setObject(new TH2F("h_jet_pt_pt", "pt-matched jets;jet p_{T}^{gen} (GeV/#it{c});jet p_{T}^{det} (GeV/#it{c})",
+                                100, 0., 100., 100, 0., 100.));
+    hJetPtDetaDphi.setObject(new TH2F("h_jet_pt_deta_dphi", "pt-matched jets;jet #Delta#phi;#Delta#eta",
+                                      100, -2. * TMath::Pi(), 2. * TMath::Pi(), 100, -2., 2.));
 
     hJetDetPt.setObject(new TH1F("h_jet_det_pt", "detector level jets;jet p_{T}^{det} (GeV/#it{c})", 100, 0., 100.));
     hJetGenPt.setObject(new TH1F("h_jet_gen_pt", "particle level jets;jet p_{T}^{gen} (GeV/#it{c})", 100, 0., 100.));
@@ -76,9 +83,9 @@ struct JetMatchingQA {
         const auto& pjet = djet.template matchedJetCand_as<TagJetCollection>();
         LOGF(info, "djet %d (pt of %g GeV/c) is HF-matched to %d (pt of %g GeV/c)",
              djet.globalIndex(), djet.pt(), djet.matchedJetCandId(), pjet.pt());
-        hJetPt->Fill(pjet.pt(), djet.pt());
+        hJetHfPt->Fill(pjet.pt(), djet.pt());
         const auto dphi = -TMath::Pi() + fmod(2 * TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2 * TMath::Pi()), 2 * TMath::Pi());
-        hJetDetaDphi->Fill(dphi, djet.eta() - pjet.eta());
+        hJetHfDetaDphi->Fill(dphi, djet.eta() - pjet.eta());
       }
 
       if (djet.has_matchedJetGeo()) {
@@ -88,6 +95,15 @@ struct JetMatchingQA {
         hJetGeoPt->Fill(pjet.pt(), djet.pt());
         const auto dphi = -TMath::Pi() + fmod(2 * TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2 * TMath::Pi()), 2 * TMath::Pi());
         hJetGeoDetaDphi->Fill(dphi, djet.eta() - pjet.eta());
+      }
+
+      if (djet.has_matchedJetPt()) {
+        const auto& pjet = djet.template matchedJetPt_as<TagJetCollection>();
+        LOGF(info, "djet %d (pt of %g GeV/c) is pt-matched to %d (pt of %g GeV/c)",
+             djet.globalIndex(), djet.pt(), djet.matchedJetGeoId(), pjet.pt());
+        hJetPtPt->Fill(pjet.pt(), djet.pt());
+        const auto dphi = -TMath::Pi() + fmod(2 * TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2 * TMath::Pi()), 2 * TMath::Pi());
+        hJetPtDetaDphi->Fill(dphi, djet.eta() - pjet.eta());
       }
     }
   }
@@ -104,7 +120,7 @@ struct JetMatchingQA {
         hJetGenNTracks->Fill(pjet.tracksIds().size() + 1); // adding HF candidate
       }
 
-      if (pjet.has_matchedJetCand() && pjet.matchedJetCandId() >= 0) {
+      if (pjet.has_matchedJetCand()) {
         const auto& djet = pjet.template matchedJetCand_as<BaseJetCollection>();
         LOGF(info, "pjet %d (pt of %g GeV/c) is HF-matched to %d (pt of %g GeV/c)",
              pjet.globalIndex(), pjet.pt(), pjet.matchedJetCandId(), djet.pt());
@@ -112,6 +128,12 @@ struct JetMatchingQA {
 
       if (pjet.has_matchedJetGeo()) {
         const auto& djet = pjet.template matchedJetGeo_as<BaseJetCollection>();
+        LOGF(info, "pjet %d (pt of %g GeV/c) is geo-matched to %d (pt of %g GeV/c)",
+             pjet.globalIndex(), pjet.pt(), pjet.matchedJetGeoId(), djet.pt());
+      }
+
+      if (pjet.has_matchedJetPt()) {
+        const auto& djet = pjet.template matchedJetPt_as<BaseJetCollection>();
         LOGF(info, "pjet %d (pt of %g GeV/c) is geo-matched to %d (pt of %g GeV/c)",
              pjet.globalIndex(), pjet.pt(), pjet.matchedJetGeoId(), djet.pt());
       }

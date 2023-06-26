@@ -11,7 +11,6 @@
 //
 // Contact: daiki.sekihata@cern.ch
 //
-
 #include <iostream>
 #include <memory>
 #include <fstream>
@@ -30,6 +29,7 @@ using namespace std;
 #include <THnSparse.h>
 #include <TIterator.h>
 #include <TClass.h>
+#include "Framework/Logger.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
 
 void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* histClass, const char* subGroup)
@@ -44,11 +44,11 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hCentFT0M", "hCentFT0M;centrality FT0M (%)", 110, 0, 110));
     list->Add(new TH2F("hCentFT0MvsMultNTracksPV", "hCentFT0MvsMultNTracksPV;centrality FT0M (%);N_{track} to PV", 110, 0, 110, 1001, -0.5, 1000.5));
   }
-  if (TString(histClass) == "Track") {
+  if (TString(histClass) == "V0Leg") {
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
     list->Add(new TH1F("hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", 1000, -50, 50));
     list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f));
-    list->Add(new TH2F("hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", 100, -5.0f, 5.0f, 100, -5.0f, 5.0f));
+    list->Add(new TH2F("hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", 1000, -50.0f, 50.0f, 1000, -50.0f, 50.0f));
     list->Add(new TH1F("hNclsTPC", "number of TPC clusters", 161, -0.5, 160.5));
     list->Add(new TH1F("hNcrTPC", "number of TPC crossed rows", 161, -0.5, 160.5));
     list->Add(new TH1F("hChi2TPC", "chi2/number of TPC clusters", 100, 0, 10));
@@ -59,6 +59,11 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hTPCNcls2Nf", "TPC Ncls/Nfindable", 200, 0, 2));
     list->Add(new TH1F("hNclsITS", "number of ITS clusters", 8, -0.5, 7.5));
     list->Add(new TH1F("hChi2ITS", "chi2/number of ITS clusters", 360, 0, 36));
+    list->Add(new TH2F("hXY", "X vs. Y;X;Y", 100, 0, 100, 100, -50, 50));
+    list->Add(new TH2F("hZX", "Z vs. X;Z;X", 200, -100, 100, 100, 0, 100));
+    list->Add(new TH2F("hZY", "Z vs. Y;Z;Y", 200, -100, 100, 100, -50, 50));
+    list->Add(new TH2F("hDCAxyEta", "DCAxy vs. #eta;#eta;DCA_{xy} (cm)", 400, -2, +2, 100, -50, 50));
+    list->Add(new TH2F("hDCAxyZ", "DCAxy vs. Z;Z (cm);DCA_{xy} (cm)", 200, -100, +100, 100, -50, 50));
   }
   if (TString(histClass) == "V0") {
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
@@ -73,15 +78,38 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hMassGamma_recalc", "recalc. hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TH2F("hGammaRxy_recalc", "recalc. conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
-    list->Add(new TH2F("hKFChi2vsR_recalc", "KF chi2 vs. recalc. conversion point in XY;R_{xy} (cm);KF chi2/NDF", 250, 0.0f, 250.0f, 100, 0.f, 100.0f));
-    list->Add(new TH2F("hKFChi2vsZ_recalc", "KF chi2 vs. recalc. conversion point in Z;Z (cm);KF chi2/NDF", 500, -250.0f, 250.0f, 100, 0.f, 100.0f));
+    list->Add(new TH2F("hKFChi2vsR", "KF chi2 vs. recalc. conversion point in XY;R_{xy} (cm);KF chi2/NDF", 200, 0.0f, 200.0f, 100, 0.f, 100.0f));
+    list->Add(new TH2F("hKFChi2vsZ", "KF chi2 vs. recalc. conversion point in Z;Z (cm);KF chi2/NDF", 500, -250.0f, 250.0f, 100, 0.f, 100.0f));
     list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
+
+    const int nrxy = 102;
+    double rxy[nrxy] = {0.f};
+    for (int i = 0; i < 90; i++) {
+      rxy[i] = 1.0 * i;
+    }
+    for (int i = 90; i < nrxy; i++) {
+      rxy[i] = 10.0 * (i - 90) + 90.0;
+    }
+
+    const int ndim = 3; // r, phi, eta
+    const int nbins[ndim] = {nrxy - 1, 72, 40};
+    const double xmin[ndim] = {0.0, 0.0, -2.0};
+    const double xmax[ndim] = {200.0, TMath::TwoPi(), +2.0};
+
+    THnSparseF* hs_conv_point = new THnSparseF("hs_conv_point", "hs_conv_point;R_{xy} (cm);#varphi (rad.);#eta;", ndim, nbins, xmin, xmax);
+    hs_conv_point->SetBinEdges(0, rxy);
+    list->Add(hs_conv_point);
 
     if (TString(subGroup) == "mc") {
       list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                  // for MC efficiency
       list->Add(new TH2F("hEtaPhi_Photon_Primary", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f)); // for MC efficiency
       list->Add(new TH1F("hPt_Photon_FromWD", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                   // for MC feed down correction
       list->Add(new TH2F("hEtaPhi_Photon_FromWD", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f));  // for MC feed down correction
+
+      list->Add(new TH2F("hRZ_Photon_test", "R vs. Z;Z (cm);R_{xy} (cm)", 500, -250.0f, +250, 200, 0, 200));
+      list->Add(new TH1F("hPt_Photon_test", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
+      list->Add(new TH1F("hEta_Photon_test", "rapidity;y", 40, -2.0f, 2.0f));
+      list->Add(new TH1F("hPhi_Photon_test", "#varphi;#varphi (rad.);", 180, 0, TMath::TwoPi()));
 
       list->Add(new TH2F("hConvPoint_diffX", "conversion point diff X MC;X_{MC} (cm);X_{rec} - X_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
       list->Add(new TH2F("hConvPoint_diffY", "conversion point diff Y MC;Y_{MC} (cm);Y_{rec} - Y_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
@@ -90,6 +118,28 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(new TH2F("hConvPoint_diffX_recalc", "conversion point diff X MC;X_{MC} (cm);X_{rec}^{recalc} - X_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
       list->Add(new TH2F("hConvPoint_diffY_recalc", "conversion point diff Y MC;Y_{MC} (cm);Y_{rec}^{recalc} - Y_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
       list->Add(new TH2F("hConvPoint_diffZ_recalc", "conversion point diff Z MC;Z_{MC} (cm);Z_{rec}^{recalc} - Z_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
+
+      list->Add(new TH2F("hPtGen_DeltaPtOverPtGen", "photon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", 1000, 0, 10, 1000, -1.0f, 1.0f));
+      list->Add(new TH2F("hPtGen_DeltaEta", "photon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", 1000, 0, 10, 1000, -1.0f, 1.0f));
+      list->Add(new TH2F("hPtGen_DeltaPhi", "photon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", 1000, 0, 10, 1000, -1.0f, 1.0f));
+    }
+  }
+
+  if (TString(histClass) == "Cluster") {
+    list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
+    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 400, -2.0f, 2.0f));
+    list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
+
+    if (TString(subGroup) == "PHOS") {
+      list->Add(new TH2F("hEvsNcell", "E_{cluster} vs. N_{cell};E_{cluster} (GeV);N_{cell}", 200, 0, 20, 51, -0.5, 50.5f));
+      list->Add(new TH2F("hEvsM02", "E_{cluster} vs. M02;E_{cluster} (GeV);M02 (cm)", 200, 0, 20, 100, 0, 10));
+      list->Add(new TH2F("hEvsM20", "E_{cluster} vs. M20;E_{cluster} (GeV);M20 (cm)", 200, 0, 20, 100, 0, 10));
+      list->Add(new TH1F("hDistToBC", "distance to bad channel", 100, 0, 10));
+
+      const int nmod = 4;
+      for (int i = 1; i <= nmod; i++) {
+        list->Add(new TH2F(Form("hClusterXZM%d", i), Form("cluster (X,Z) on M%d;X;Z", i), 64, 0.5, 64.5, 56, 0.5, 56.5));
+      } // end of module loop
     }
   }
 
@@ -127,6 +177,13 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
 
+    if (TString(subGroup) == "PCMPHOS" || TString(subGroup) == "PCMEMC") {
+      list->Add(new TH2F("hdEtadPhi", "#Delta#eta vs. #Delta#varphi;#Delta#varphi (rad.);#Delta#eta", 200, -1, +1, 200, -1, +1));
+      list->Add(new TH2F("hdEtaPt", "#Delta#eta vs. p_{T}^{leg};p_{T}^{leg} (GeV/c);#Delta#eta", 100, 0, 10, 200, -1, +1));
+      list->Add(new TH2F("hdPhiPt", "#Delta#varphi vs. p_{T}^{leg};p_{T}^{leg} (GeV/c);#Delta#varphi", 100, 0, 10, 200, -1, +1));
+      list->Add(new TH2F("hEp_E", "E/p vs. matched E_{cluster};E_{cluster} (GeV);E/p", 100, 0, 10, 200, 0, 2));
+    }
+
     if (TString(subGroup) == "EMCEMC") {
       list->Add(new TH2F("hMggPt_Same_RotatedBkg", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
       reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same_RotatedBkg"))->Sumw2();
@@ -145,11 +202,12 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hCollisionCounter", "hCollisionCounter", 5, 0.5f, 5.5f));
     list->Add(new TH1F("hZvtx_before", "vertex z; Zvtx (cm)", 100, -50, +50));
     list->Add(new TH1F("hZvtx_after", "vertex z; Zvtx (cm)", 100, -50, +50));
+    list->Add(new TH1F("hNrecPerMCCollision", "Nrec per mc collisions;N_{rec} collisions per MC collisions", 101, -0.5f, 100.5f));
 
     if (TString(subGroup) == "ConversionStudy") {
       list->Add(new TH2F("hPhotonRxy", "conversion point in XY MC;V_{x} (cm);V_{y} (cm)", 2000, -100.0f, 100.0f, 2000, -100.0f, 100.0f));
       list->Add(new TH2F("hPhotonRZ", "conversion point in RZ MC;V_{z} (cm);R_{xy} (cm)", 5000, -250.0f, 250.0f, 1000, 0.f, 100.0f));
-      list->Add(new TH2F("hPhotonPhivsRxy", "conversion point of #varphi vs. R_{xy} MC;#varphi (rad.);R_{xy} (cm);N_{e}", 360, 0.0f, TMath::TwoPi(), 900, 0, 90));
+      list->Add(new TH2F("hPhotonPhivsRxy", "conversion point of #varphi vs. R_{xy} MC;#varphi (rad.);R_{xy} (cm);N_{e}", 360, 0.0f, TMath::TwoPi(), 200, 0, 200));
     }
 
     // Generated, particles
@@ -182,17 +240,28 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   for (int i = 50; i < npTgg10; i++)
     pTgg10[i] = 0.5 * (i - 50) + 5.0; // from 5 to 10 GeV/c, evety 0.5 GeV/c
 
-  if (TString(histClass) == "tagged_photon") {
+  if (TString(histClass) == "tagging_pi0") {
     list->Add(new TH2F("hMggPt_Same", "m_{ee#gamma} vs. p_{T,ee};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
     list->Add(new TH2F("hMggPt_Mixed", "m_{ee#gamma} vs. p_{T,ee};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
   }
-  if (TString(histClass) == "tagged_photon_mc") {
+  if (TString(histClass) == "tagging_pi0_mc") {
     list->Add(new TH1F("hPt_v0photon_Pi0", "reconstructed v0 photon from pi0;p_{T,ee} (GeV/c);N_{ee}^{#pi^{0}}", npTgg10 - 1, pTgg10));                                                              // denominator for conditional probability
     list->Add(new TH2F("hMggPt_Pi0", "reconstructed m_{ee#gamma} vs. p_{T,ee} from pi0;m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c);N_{ee}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
     reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0"))->Sumw2();
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0"))->Sumw2();
+  }
+
+  if (TString(histClass) == "tag_and_probe") {
+    list->Add(new TH2F("hMggPt_Probe_Same", "m_{#gamma#gamma} vs. p_{T,#gamma};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
+    list->Add(new TH2F("hMggPt_Probe_Mixed", "m_{#gamma#gamma} vs. p_{T,#gamma};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Probe_Same"))->Sumw2();
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Probe_Mixed"))->Sumw2();
+    list->Add(new TH2F("hMggPt_PassingProbe_Same", "m_{#gamma#gamma} vs. p_{T,#gamma};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
+    list->Add(new TH2F("hMggPt_PassingProbe_Mixed", "m_{#gamma#gamma} vs. p_{T,#gamma};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_PassingProbe_Same"))->Sumw2();
+    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_PassingProbe_Mixed"))->Sumw2();
   }
 
   if (TString(histClass) == "photon_hbt") {
@@ -209,15 +278,16 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(hs_q_mix);
   }
 }
-void o2::aod::emphotonhistograms::AddHistClass(THashList* list, const char* histClass)
+THashList* o2::aod::emphotonhistograms::AddHistClass(THashList* list, const char* histClass)
 {
   if (list->FindObject(histClass)) {
-    std::cout << "Warning in HistogramsLibrary::AddHistClass(): Cannot add histogram class " << histClass << " because it already exists." << std::endl;
-    return;
+    LOGF(info, "HistogramsLibrary::AddHistClass(): Cannot add histogram class %s because it already exists.", histClass);
+    return static_cast<THashList*>(list->FindObject(histClass));
   }
 
-  THashList* sublist = new THashList();
+  auto* sublist = new THashList();
   sublist->SetOwner(true);
   sublist->SetName(histClass);
   list->Add(sublist);
+  return sublist;
 }

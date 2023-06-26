@@ -110,12 +110,56 @@ static constexpr std::string_view hpt_numtof_prm[NpCharge] = {"MC/el/pos/prm/pt/
                                                               "MC/el/neg/prm/pt/numtof", "MC/mu/neg/prm/pt/numtof", "MC/pi/neg/prm/pt/numtof",
                                                               "MC/ka/neg/prm/pt/numtof", "MC/pr/neg/prm/pt/numtof", "MC/de/neg/prm/pt/numtof",
                                                               "MC/tr/neg/prm/pt/numtof", "MC/he/neg/prm/pt/numtof", "MC/al/neg/prm/pt/numtof"};
+
+//********************************************RD**********************************************************************************************
+static constexpr std::string_view hpt_numtof_str[NpCharge] = {"MC/el/pos/str/pt/numtof", "MC/mu/pos/str/pt/numtof", "MC/pi/pos/str/pt/numtof",
+                                                              "MC/ka/pos/str/pt/numtof", "MC/pr/pos/str/pt/numtof", "MC/de/pos/str/pt/numtof",
+                                                              "MC/tr/pos/str/pt/numtof", "MC/he/pos/str/pt/numtof", "MC/al/pos/str/pt/numtof",
+                                                              "MC/el/neg/str/pt/numtof", "MC/mu/neg/str/pt/numtof", "MC/pi/neg/str/pt/numtof",
+                                                              "MC/ka/neg/str/pt/numtof", "MC/pr/neg/str/pt/numtof", "MC/de/neg/str/pt/numtof",
+                                                              "MC/tr/neg/str/pt/numtof", "MC/he/neg/str/pt/numtof", "MC/al/neg/str/pt/numtof"};
+static constexpr std::string_view hpt_numtof_mat[NpCharge] = {"MC/el/pos/mat/pt/numtof", "MC/mu/pos/mat/pt/numtof", "MC/pi/pos/mat/pt/numtof",
+                                                              "MC/ka/pos/mat/pt/numtof", "MC/pr/pos/mat/pt/numtof", "MC/de/pos/mat/pt/numtof",
+                                                              "MC/tr/pos/mat/pt/numtof", "MC/he/pos/mat/pt/numtof", "MC/al/pos/mat/pt/numtof",
+                                                              "MC/el/neg/mat/pt/numtof", "MC/mu/neg/mat/pt/numtof", "MC/pi/neg/mat/pt/numtof",
+                                                              "MC/ka/neg/mat/pt/numtof", "MC/pr/neg/mat/pt/numtof", "MC/de/neg/mat/pt/numtof",
+                                                              "MC/tr/neg/mat/pt/numtof", "MC/he/neg/mat/pt/numtof", "MC/al/neg/mat/pt/numtof"};
 static constexpr std::string_view hpt_den_prm[NpCharge] = {"MC/el/pos/prm/pt/den", "MC/mu/pos/prm/pt/den", "MC/pi/pos/prm/pt/den",
                                                            "MC/ka/pos/prm/pt/den", "MC/pr/pos/prm/pt/den", "MC/de/pos/prm/pt/den",
                                                            "MC/tr/pos/prm/pt/den", "MC/he/pos/prm/pt/den", "MC/al/pos/prm/pt/den",
                                                            "MC/el/neg/prm/pt/den", "MC/mu/neg/prm/pt/den", "MC/pi/neg/prm/pt/den",
                                                            "MC/ka/neg/prm/pt/den", "MC/pr/neg/prm/pt/den", "MC/de/neg/prm/pt/den",
                                                            "MC/tr/neg/prm/pt/den", "MC/he/neg/prm/pt/den", "MC/al/neg/prm/pt/den"};
+static constexpr std::string_view hpt_den_prm_recoev[NpCharge] = {"MC/el/pos/prm/pt/denrecoev", "MC/mu/pos/prm/pt/denrecoev", "MC/pi/pos/prm/pt/denrecoev",
+                                                                  "MC/ka/pos/prm/pt/denrecoev", "MC/pr/pos/prm/pt/denrecoev", "MC/de/pos/prm/pt/denrecoev",
+                                                                  "MC/tr/pos/prm/pt/denrecoev", "MC/he/pos/prm/pt/denrecoev", "MC/al/pos/prm/pt/denrecoev",
+                                                                  "MC/el/neg/prm/pt/denrecoev", "MC/mu/neg/prm/pt/denrecoev", "MC/pi/neg/prm/pt/denrecoev",
+                                                                  "MC/ka/neg/prm/pt/denrecoev", "MC/pr/neg/prm/pt/denrecoev", "MC/de/neg/prm/pt/denrecoev",
+                                                                  "MC/tr/neg/prm/pt/denrecoev", "MC/he/neg/prm/pt/denrecoev", "MC/al/neg/prm/pt/denrecoev"};
+static constexpr std::string_view hpt_den_prm_evsel[NpCharge] = {"MC/el/pos/prm/pt/denevsel", "MC/mu/pos/prm/pt/denevsel", "MC/pi/pos/prm/pt/denevsel",
+                                                                 "MC/ka/pos/prm/pt/denevsel", "MC/pr/pos/prm/pt/denevsel", "MC/de/pos/prm/pt/denevsel",
+                                                                 "MC/tr/pos/prm/pt/denevsel", "MC/he/pos/prm/pt/denevsel", "MC/al/pos/prm/pt/denevsel",
+                                                                 "MC/el/neg/prm/pt/denevsel", "MC/mu/neg/prm/pt/denevsel", "MC/pi/neg/prm/pt/denevsel",
+                                                                 "MC/ka/neg/prm/pt/denevsel", "MC/pr/neg/prm/pt/denevsel", "MC/de/neg/prm/pt/denevsel",
+                                                                 "MC/tr/neg/prm/pt/denevsel", "MC/he/neg/prm/pt/denevsel", "MC/al/neg/prm/pt/denevsel"};
+static constexpr std::string_view hpt_den_prm_goodev[NpCharge] = {"MC/el/pos/prm/pt/dengoodev", "MC/mu/pos/prm/pt/dengoodev", "MC/pi/pos/prm/pt/dengoodev",
+                                                                  "MC/ka/pos/prm/pt/dengoodev", "MC/pr/pos/prm/pt/dengoodev", "MC/de/pos/prm/pt/dengoodev",
+                                                                  "MC/tr/pos/prm/pt/dengoodev", "MC/he/pos/prm/pt/dengoodev", "MC/al/pos/prm/pt/dengoodev",
+                                                                  "MC/el/neg/prm/pt/dengoodev", "MC/mu/neg/prm/pt/dengoodev", "MC/pi/neg/prm/pt/dengoodev",
+                                                                  "MC/ka/neg/prm/pt/dengoodev", "MC/pr/neg/prm/pt/dengoodev", "MC/de/neg/prm/pt/dengoodev",
+                                                                  "MC/tr/neg/prm/pt/dengoodev", "MC/he/neg/prm/pt/dengoodev", "MC/al/neg/prm/pt/dengoodev"};
+static constexpr std::string_view hpt_den_prm_mcgoodev[NpCharge] = {"MC/el/pos/prm/pt/denmcgoodev", "MC/mu/pos/prm/pt/denmcgoodev", "MC/pi/pos/prm/pt/denmcgoodev",
+                                                                    "MC/ka/pos/prm/pt/denmcgoodev", "MC/pr/pos/prm/pt/denmcgoodev", "MC/de/pos/prm/pt/denmcgoodev",
+                                                                    "MC/tr/pos/prm/pt/denmcgoodev", "MC/he/pos/prm/pt/denmcgoodev", "MC/al/pos/prm/pt/denmcgoodev",
+                                                                    "MC/el/neg/prm/pt/denmcgoodev", "MC/mu/neg/prm/pt/denmcgoodev", "MC/pi/neg/prm/pt/denmcgoodev",
+                                                                    "MC/ka/neg/prm/pt/denmcgoodev", "MC/pr/neg/prm/pt/denmcgoodev", "MC/de/neg/prm/pt/denmcgoodev",
+                                                                    "MC/tr/neg/prm/pt/denmcgoodev", "MC/he/neg/prm/pt/denmcgoodev", "MC/al/neg/prm/pt/denmcgoodev"};
+static constexpr std::string_view hpt_den_prm_mcbadev[NpCharge] = {"MC/el/pos/prm/pt/denmcbadev", "MC/mu/pos/prm/pt/denmcbadev", "MC/pi/pos/prm/pt/denmcbadev",
+                                                                   "MC/ka/pos/prm/pt/denmcbadev", "MC/pr/pos/prm/pt/denmcbadev", "MC/de/pos/prm/pt/denmcbadev",
+                                                                   "MC/tr/pos/prm/pt/denmcbadev", "MC/he/pos/prm/pt/denmcbadev", "MC/al/pos/prm/pt/denmcbadev",
+                                                                   "MC/el/neg/prm/pt/denmcbadev", "MC/mu/neg/prm/pt/denmcbadev", "MC/pi/neg/prm/pt/denmcbadev",
+                                                                   "MC/ka/neg/prm/pt/denmcbadev", "MC/pr/neg/prm/pt/denmcbadev", "MC/de/neg/prm/pt/denmcbadev",
+                                                                   "MC/tr/neg/prm/pt/denmcbadev", "MC/he/neg/prm/pt/denmcbadev", "MC/al/neg/prm/pt/denmcbadev"};
 static constexpr std::string_view hpt_num_str[NpCharge] = {"MC/el/pos/str/pt/num", "MC/mu/pos/str/pt/num", "MC/pi/pos/str/pt/num",
                                                            "MC/ka/pos/str/pt/num", "MC/pr/pos/str/pt/num", "MC/de/pos/str/pt/num",
                                                            "MC/tr/pos/str/pt/num", "MC/he/pos/str/pt/num", "MC/al/pos/str/pt/num",
@@ -189,4 +233,4 @@ static constexpr std::string_view hdcazmat[NpCharge] = {"dcazmat/pos/el", "dcazm
                                                         "dcazmat/neg/ka", "dcazmat/neg/pr", "dcazmat/neg/de",
                                                         "dcazmat/neg/tr", "dcazmat/neg/he", "dcazmat/neg/al"};
 
-#endif
+#endif // PWGLF_TASKS_SPECTRATOF_H_

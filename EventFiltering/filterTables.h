@@ -73,12 +73,13 @@ DECLARE_SOA_COLUMN(GammaLowPtEMCAL, hasGammaLowPtEMCAL, bool);   //! Photon trig
 DECLARE_SOA_COLUMN(GammaLowPtDCAL, hasGammaLowPtDCAL, bool);     //! Photon trigger in DCAL, low threshold
 
 // strangeness (lf)
-DECLARE_SOA_COLUMN(Omega, hasOmega, bool);             //! at leat 1 Omega
-DECLARE_SOA_COLUMN(hadronXi, hashadronXi, bool);       //! at least 1 Xi + high-pt hadron
-DECLARE_SOA_COLUMN(DoubleXi, hasDoubleXi, bool);       //! at least 2 Xi
-DECLARE_SOA_COLUMN(TripleXi, hasTripleXi, bool);       //! at least 3 Xi
-DECLARE_SOA_COLUMN(QuadrupleXi, hasQuadrupleXi, bool); //! at least 4 Xi
-DECLARE_SOA_COLUMN(SingleXiYN, hasSingleXiYN, bool);   //! at least 1 Xi with R > 24.39 cm (YN interactions)
+DECLARE_SOA_COLUMN(Omega, hasOmega, bool);                       //! at leat 1 Omega
+DECLARE_SOA_COLUMN(hadronXi, hashadronXi, bool);                 //! at least 1 Xi + high-pt hadron
+DECLARE_SOA_COLUMN(DoubleXi, hasDoubleXi, bool);                 //! at least 2 Xi
+DECLARE_SOA_COLUMN(TripleXi, hasTripleXi, bool);                 //! at least 3 Xi
+DECLARE_SOA_COLUMN(QuadrupleXi, hasQuadrupleXi, bool);           //! at least 4 Xi
+DECLARE_SOA_COLUMN(SingleXiYN, hasSingleXiYN, bool);             //! at least 1 Xi with high radius (YN interactions)
+DECLARE_SOA_COLUMN(OmegaLargeRadius, hasOmegaLargeRadius, bool); //! at least 1 Omega with high radius
 
 // multiplicity
 DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool);     //! high trk muliplicity
@@ -159,7 +160,7 @@ using FullJetFilter = FullJetFilters::iterator;
 
 // strangeness (lf)
 DECLARE_SOA_TABLE(StrangenessFilters, "AOD", "LFStrgFilters", //!
-                  filtering::Omega, filtering::hadronXi, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN);
+                  filtering::Omega, filtering::hadronXi, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius);
 
 using StrangenessFilter = StrangenessFilters::iterator;
 

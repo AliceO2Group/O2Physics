@@ -59,6 +59,8 @@ struct perfK0sResolution {
   Configurable<float> v0lifetime{"v0lifetime", 3., "n ctau"};
   Configurable<float> rapidity{"rapidity", 0.5, "rapidity"};
   Configurable<float> nSigTPC{"nSigTPC", 10., "nSigTPC"};
+  Configurable<int> requireTRDneg{"requireTRDneg", 0, "requireTRDneg"}; // 0: no requirement, >0: TRD only tracks, <0: reject TRD tracks
+  Configurable<int> requireTRDpos{"requireTRDpos", 0, "requireTRDpos"}; // 0: no requirement, >0: TRD only tracks, <0: reject TRD tracks
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   template <typename T1, typename T2, typename C>
@@ -78,6 +80,10 @@ struct perfK0sResolution {
     if (!ntrack.hasTPC() || !ptrack.hasTPC())
       return kFALSE;
     if (ntrack.tpcNSigmaPi() > nSigTPC || ptrack.tpcNSigmaPi() > nSigTPC)
+      return kFALSE;
+    if ((requireTRDneg > 0 && !ntrack.hasTRD()) || (requireTRDneg < 0 && ntrack.hasTRD()))
+      return kFALSE;
+    if ((requireTRDpos > 0 && !ptrack.hasTRD()) || (requireTRDpos < 0 && ptrack.hasTRD()))
       return kFALSE;
     return kTRUE;
   }

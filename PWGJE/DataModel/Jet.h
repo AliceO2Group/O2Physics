@@ -98,6 +98,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
   {                                                                                           \
     DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetGeo, int32_t, _jet_type_##s, "_geo"); \
   }                                                                                           \
+  namespace _name_##matchingPt                                                                \
+  {                                                                                           \
+    DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetPt, int32_t, _jet_type_##s, "_pt");   \
+  }                                                                                           \
   namespace _name_##matchingCand                                                              \
   {                                                                                           \
     DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetCand, int32_t, _jet_type_##s, "_hf"); \
@@ -146,16 +150,30 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 #define DECLARE_JETMATCHING_TABLE(_jet_type_base_, _jet_type_tag_, _description_)               \
   DECLARE_SOA_TABLE(_jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jets, "AOD", _description_, \
                     _jet_type_tag_##jetmatchingGeo::_jet_type_tag_##JetId,                      \
+                    _jet_type_tag_##jetmatchingPt::_jet_type_tag_##JetId,                       \
                     _jet_type_tag_##jetmatchingCand::_jet_type_tag_##JetId);                    \
   using _jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jet = _jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jets::iterator;
 
+#define DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_, _name_, _description_) \
+  namespace _name_##eventweights                                       \
+  {                                                                    \
+    DECLARE_SOA_INDEX_COLUMN(_jet_type_##Jet, jet);                    \
+    DECLARE_SOA_COLUMN(EventWeight, eventWeight, float);               \
+  }                                                                    \
+  DECLARE_SOA_TABLE(_jet_type_##JetEventWeights, "AOD", _description_, \
+                    _name_##eventweights::_jet_type_##JetId,           \
+                    _name_##eventweights::EventWeight);                \
+  using _jet_type_##JetEventWeight = _jet_type_##JetEventWeights::iterator;
+
 // generate tables for data-, detector- and particle-level jets
-#define DECLARE_JET_TABLES_LEVELS(_jet_type_, _hfcand_type_, _shortname_)                                    \
-  DECLARE_JET_TABLES(Collision, _jet_type_, Track, _hfcand_type_, _shortname_ "JET");                        \
-  DECLARE_JET_TABLES(Collision, _jet_type_##MCDetectorLevel, Track, _hfcand_type_, _shortname_ "DJET");      \
-  DECLARE_JET_TABLES(McCollision, _jet_type_##MCParticleLevel, McParticle, McParticles, _shortname_ "PJET"); \
-  DECLARE_JETMATCHING_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCDetectorLevel, _shortname_ "JETMP2D") \
-  DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCParticleLevel, _shortname_ "JETMD2P")
+#define DECLARE_JET_TABLES_LEVELS(_jet_type_, _hfcand_type_, _shortname_)                                      \
+  DECLARE_JET_TABLES(Collision, _jet_type_, Track, _hfcand_type_, _shortname_ "JET")                           \
+  DECLARE_JET_TABLES(Collision, _jet_type_##MCDetectorLevel, Track, _hfcand_type_, _shortname_ "DJET")         \
+  DECLARE_JET_TABLES(McCollision, _jet_type_##MCParticleLevel, McParticle, McParticles, _shortname_ "PJET")    \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCParticleLevel, _shortname_ "JETMD2P")   \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCDetectorLevel, _shortname_ "JETMP2D")   \
+  DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCDetectorLevel, _shortname_ "JETMDEW") \
+  DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCParticleLevel, _shortname_ "JETMPEW")
 
 namespace o2::aod
 {
