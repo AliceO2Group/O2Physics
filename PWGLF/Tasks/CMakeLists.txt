@@ -156,7 +156,7 @@ o2physics_add_dpl_workflow(v0postprocessing
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(AntimatterAbsorptionHMPID
+o2physics_add_dpl_workflow(antimatterabsorptionhmpid
                     SOURCES AntimatterAbsorptionHMPID.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
