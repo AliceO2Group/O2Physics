@@ -86,10 +86,6 @@ struct lambdakzeromcfinder {
 
   Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
 
-  // declarative filtering for particles of interest
-  // pre-filter on PDG and on very broad rapidity window
-  Filter mcParticleFilter = nabs(o2::aod::mcparticle::y) < yPreFilter && (nabs(o2::aod::mcparticle::pdgCode) == 1010010030 || nabs(o2::aod::mcparticle::pdgCode) == 3122 || o2::aod::mcparticle::pdgCode == 310 || o2::aod::mcparticle::pdgCode == 22);
-
   std::vector<int> v0collisionId;
   std::vector<int> v0positiveIndex;
   std::vector<int> v0negativeIndex;
@@ -248,7 +244,7 @@ struct lambdakzeromcfinder {
     return reconstructed;
   }
 
-  void process(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, soa::Filtered<aod::McParticles> const& allMcParticles)
+  void process(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, aod::McParticles const& allMcParticles)
   {
     v0collisionId.clear();
     v0positiveIndex.clear();
@@ -270,6 +266,9 @@ struct lambdakzeromcfinder {
       bool negativeTPCITS = false;
       bool reconstructed = false;
       for (auto& mcParticle : mcParticles) {
+        if (fabs(mcParticle.y()) > yPreFilter)
+          continue; // go declarative at a later stage but pre-filter here
+
         if (mcParticle.pdgCode() == 22 && findGamma) {
           reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC, positiveTPCITS, negativeTPCITS);
           if (fabs(mcParticle.y()) < 0.5) {

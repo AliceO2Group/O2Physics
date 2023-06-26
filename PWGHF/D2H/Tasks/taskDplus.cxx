@@ -31,7 +31,8 @@ using namespace o2::aod::hf_cand_3prong;
 /// D± analysis task
 struct HfTaskDplus {
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for DPlus"}; // 7 corresponds to topo+PID cuts
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits"};
 
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> selectedDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
@@ -98,7 +99,7 @@ struct HfTaskDplus {
       if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yDplus(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yDplus(candidate)) > yCandRecoMax) {
         continue;
       }
       registry.fill(HIST("hMass"), invMassDplusToPiKPi(candidate), candidate.pt());
@@ -137,7 +138,7 @@ struct HfTaskDplus {
       if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yDplus(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yDplus(candidate)) > yCandRecoMax) {
         continue;
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DplusToPiKPi) {
@@ -194,7 +195,7 @@ struct HfTaskDplus {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DplusToPiKPi) {
         auto ptGen = particle.pt();
         auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
-        if (yCandMax >= 0. && std::abs(yGen) > yCandMax) {
+        if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
         }
         registry.fill(HIST("hPtGen"), ptGen);

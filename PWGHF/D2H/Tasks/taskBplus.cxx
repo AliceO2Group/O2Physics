@@ -46,7 +46,8 @@ const TString mcParticleMatched = "MC particles (matched);";
 /// B± analysis task
 struct HfTaskBplus {
   Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
-  Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
 
   Partition<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>> selectedBPlusCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus;
@@ -141,7 +142,7 @@ struct HfTaskBplus {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yBplus(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -183,7 +184,7 @@ struct HfTaskBplus {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yBplus(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
@@ -233,7 +234,7 @@ struct HfTaskBplus {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kBPlus));
-        if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
+        if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
 

@@ -72,6 +72,9 @@ struct qaEventTrack {
   Configurable<float> minPhi{"minPhi", -1.f, "Minimum phi of accepted tracks"};
   Configurable<float> maxPhi{"maxPhi", 10.f, "Maximum phi of accepted tracks"};
 
+  // options to check the track variables only for PV contributors
+  Configurable<bool> checkOnlyPVContributor{"checkOnlyPVContributor", false, "check the track variables only for primary vertex contributors"};
+
   // configurable binning of histograms
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
   ConfigurableAxis binsDeltaPt{"binsDeltaPt", {100, -0.495, 0.505}, ""};
@@ -1133,6 +1136,9 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
 
   int nFilteredTracks = 0;
   for (const auto& track : tracks) {
+    if (checkOnlyPVContributor && !track.isPVContributor()) {
+      continue;
+    }
     histos.fill(HIST("Tracks/selection"), 1.f);
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
@@ -1342,6 +1348,9 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
 
   // track related histograms
   for (const auto& track : tracks) {
+    if (checkOnlyPVContributor && !track.isPVContributor()) {
+      continue;
+    }
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
     }
