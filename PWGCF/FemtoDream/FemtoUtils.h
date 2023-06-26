@@ -17,6 +17,7 @@
 #define PWGCF_FEMTODREAM_FEMTOUTILS_H_
 
 #include <vector>
+#include <functional>
 #include <algorithm>
 #include "Framework/ASoAHelpers.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
