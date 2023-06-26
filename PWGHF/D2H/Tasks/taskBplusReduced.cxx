@@ -41,7 +41,8 @@ const TString mcParticleMatched = "MC particles (matched);";
 /// B+ analysis task
 struct HfTaskBplusReduced {
   Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for Bplus"};
-  Configurable<double> yCandMax{"yCandMax", -1, "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. track pseudo-rapidity"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
@@ -162,7 +163,7 @@ struct HfTaskBplusReduced {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yBplus(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -203,7 +204,7 @@ struct HfTaskBplusReduced {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yBplus(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -259,7 +260,7 @@ struct HfTaskBplusReduced {
       auto ptParticle = particle.ptTrack();
       auto yParticle = particle.yTrack();
       auto etaParticle = particle.etaTrack();
-      if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
+      if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
         continue;
       }
 
