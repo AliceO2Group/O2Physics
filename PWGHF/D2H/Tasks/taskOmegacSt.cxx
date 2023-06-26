@@ -47,6 +47,83 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+// namespace o2::aod
+// {
+// namespace stomegac
+// {
+
+// /// definition of tables
+// namespace hfsttraining
+// {
+// DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                 //!
+// DECLARE_SOA_COLUMN(InvMassD0bar, invMassD0bar, float);           //!
+// DECLARE_SOA_COLUMN(InvMassDplus, invMassDplus, float);           //!
+// DECLARE_SOA_COLUMN(InvMassDsToKKPi, invMassDsToKKPi, float);     //!
+// DECLARE_SOA_COLUMN(InvMassDsToPiKK, invMassDsToPiKK, float);     //!
+// DECLARE_SOA_COLUMN(InvMassLcToPKPi, invMassLcToPKPi, float);     //!
+// DECLARE_SOA_COLUMN(InvMassLcToPiKP, invMassLcToPiKP, float);     //!
+// DECLARE_SOA_COLUMN(InvMassXicToPKPi, invMassXicToPKPi, float);   //!
+// DECLARE_SOA_COLUMN(InvMassXicToPiKP, invMassXicToPiKP, float);   //!
+// DECLARE_SOA_COLUMN(PT2Prong, pT2Prong, float);                   //!
+// DECLARE_SOA_COLUMN(PT3Prong, pT3Prong, float);                   //!
+// DECLARE_SOA_COLUMN(DeltaMassKKFirst, deltaMassKKFirst, float);   //!
+// DECLARE_SOA_COLUMN(DeltaMassKKSecond, deltaMassKKSecond, float); //!
+// DECLARE_SOA_COLUMN(PT1, pT1, float);                             //!
+// DECLARE_SOA_COLUMN(DCAPrimXY1, dcaPrimXY1, float);               //!
+// DECLARE_SOA_COLUMN(DCAPrimZ1, dcaPrimZ1, float);                 //!
+// DECLARE_SOA_COLUMN(NsigmaPiTPC1, nsigmaPiTPC1, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaKaTPC1, nsigmaKaTPC1, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaPrTPC1, nsigmaPrTPC1, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaPiTOF1, nsigmaPiTOF1, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaKaTOF1, nsigmaKaTOF1, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaPrTOF1, nsigmaPrTOF1, float);           //!
+// DECLARE_SOA_COLUMN(PT2, pT2, float);                             //!
+// DECLARE_SOA_COLUMN(DCAPrimXY2, dcaPrimXY2, float);               //!
+// DECLARE_SOA_COLUMN(DCAPrimZ2, dcaPrimZ2, float);                 //!
+// DECLARE_SOA_COLUMN(NsigmaPiTPC2, nsigmaPiTPC2, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaKaTPC2, nsigmaKaTPC2, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaPrTPC2, nsigmaPrTPC2, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaPiTOF2, nsigmaPiTOF2, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaKaTOF2, nsigmaKaTOF2, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaPrTOF2, nsigmaPrTOF2, float);           //!
+// DECLARE_SOA_COLUMN(PT3, pT3, float);                             //!
+// DECLARE_SOA_COLUMN(DCAPrimXY3, dcaPrimXY3, float);               //!
+// DECLARE_SOA_COLUMN(DCAPrimZ3, dcaPrimZ3, float);                 //!
+// DECLARE_SOA_COLUMN(NsigmaPiTPC3, nsigmaPiTPC3, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaKaTPC3, nsigmaKaTPC3, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaPrTPC3, nsigmaPrTPC3, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaPiTOF3, nsigmaPiTOF3, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaKaTOF3, nsigmaKaTOF3, float);           //!
+// DECLARE_SOA_COLUMN(NsigmaPrTOF3, nsigmaPrTOF3, float);           //!
+// DECLARE_SOA_COLUMN(FlagOrigin, flagOrigin, int8_t);              //!
+// DECLARE_SOA_COLUMN(Channel, channel, int8_t);                    //!
+// DECLARE_SOA_COLUMN(HFSelBit, hfselbit, int8_t);                  //!
+// DECLARE_SOA_COLUMN(IsInCorrectColl, isInCorrectColl, bool);      //!
+// } // namespace hfsttraining
+
+// DECLARE_SOA_TABLE(HfOmegacSt, "AOD", "HFOMEGACST", //!
+//                   hfsttraining::InvMassD0,
+//                   hfsttraining::InvMassD0bar,
+//                   hfsttraining::PT2Prong,
+//                   hfsttraining::PT1,
+//                   hfsttraining::DCAPrimXY1,
+//                   hfsttraining::DCAPrimZ1,
+//                   hfsttraining::NsigmaPiTPC1,
+//                   hfsttraining::NsigmaKaTPC1,
+//                   hfsttraining::NsigmaPiTOF1,
+//                   hfsttraining::NsigmaKaTOF1,
+//                   hfsttraining::PT2,
+//                   hfsttraining::DCAPrimXY2,
+//                   hfsttraining::DCAPrimZ2,
+//                   hfsttraining::NsigmaPiTPC2,
+//                   hfsttraining::NsigmaKaTPC2,
+//                   hfsttraining::NsigmaPiTOF2,
+//                   hfsttraining::NsigmaKaTOF2,
+//                   hfsttraining::FlagOrigin,
+//                   hfsttraining::IsInCorrectColl);
+// }
+// }
+
 struct HfTaskOmegacSt {
   Configurable<double> bz{"bz", -5., "magnetic field"};
   Configurable<int> materialCorrectionType{"materialCorrectionType", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
@@ -61,6 +138,7 @@ struct HfTaskOmegacSt {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
 
+  // Produces<aod::stomegac::HfOmegacSt> outputTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> df2;
 
