@@ -896,7 +896,7 @@ struct HfFilter { // Main struct for HF triggers
                 }
                 if ((TESTBIT(v0Sel, kLambda) && sign3Prong > 0) || (TESTBIT(v0Sel, kAntiLambda) && sign3Prong < 0)) { // Xic(3055) and Xic(3080)
                   auto massXicStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massK, massPi, massLambda});
-                  auto massDiffXicStar = massXicStarCand;
+                  auto massDiffXicStar = massXicStarCand - massDPlusCand;
                   if (massDiffXicStar < maxMassXicStar) {
                     if (activateQA) {
                       auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecV0);
