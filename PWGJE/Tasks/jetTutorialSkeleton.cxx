@@ -46,7 +46,8 @@ struct JetTutorialSkeletonTask {
                               {"h_part_jet_eta", "particle level jet #eta;#eta_{jet part};entries", {HistType::kTH1F, {{30, -1.5, 1.5}}}},
                               {"h_part_jet_phi", "particle level jet #phi;#phi_{jet part};entries", {HistType::kTH1F, {{140, -7.0, 7.}}}},
                               {"h_jet_ntracks", "jet N tracks;N_{jet tracks};entries", {HistType::kTH1F, {{40, -0.5, 39.5}}}},
-                              {"h_jet_angularity", "jet angularity ;#lambda_{1};entries", {HistType::kTH1F, {{5, 0.0, 0.5}}}},
+                              {"h_part_jet_ntracks", "particle level jet N tracks;N_{jet part tracks};entries", {HistType::kTH1F, {{40, -0.5, 39.5}}}},
+                              {"h_jet_angularity", "jet angularity ;#lambda_{1};entries", {HistType::kTH1F, {{20, 0.0, 0.8}}}},
                               {"h_full_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 50.}}}},
                               {"h_full_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{30, -1.5, 1.5}}}},
                               {"h_full_jet_phi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{140, -7.0, 7.}}}},
@@ -60,7 +61,10 @@ struct JetTutorialSkeletonTask {
                               {"h_recoil_jet_dphi", "hadron-jet #Delta#phi;#Delta#phi_{jet,trigger hadron};entries", {HistType::kTH1F, {{40, -2.0, 2.0}}}},
                               {"h_matched_jets_pt", "#it{p}_{T,jet part}; #it{p}_{T,jet det}", {HistType::kTH2F, {{100, 0., 20.}, {100, 0., 20.0}}}},
                               {"h_matched_jets_eta", "#eta_{jet part}; #eta_{jet det}", {HistType::kTH2F, {{30, -1.5, 1.5}, {30, -1.5, 1.5}}}},
-                              {"h_matched_jets_phi", "#phi_{jet part}; #phi_{jet det}", {HistType::kTH2F, {{140, -7.0, 7.}, {140, -7.0, 7.}}}}}};
+                              {"h_matched_jets_phi", "#phi_{jet part}; #phi_{jet det}", {HistType::kTH2F, {{140, -7.0, 7.}, {140, -7.0, 7.}}}},
+                              {"h_dPhi", "dPhi;#Delta#phi;entries", {HistType::kTH1F, {{100, -TMath::Pi(), TMath::Pi()}}}}
+                              }
+                            };
 
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
   Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
@@ -68,6 +72,16 @@ struct JetTutorialSkeletonTask {
   void init(InitContext const&) {}
 
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
+
+  double AngularDistance(double dphi)
+  {
+    // Handle periodicity of azimuthal angle
+    if (dphi >= TMath::Pi())
+      dphi -= 2 * TMath::Pi();
+    else if (dphi < -TMath::Pi())
+      dphi += 2 * TMath::Pi();
+    return dphi;
+  }
 
   void processDataCharged(soa::Filtered<aod::ChargedJets>::iterator const& jet)
   {
@@ -101,7 +115,7 @@ struct JetTutorialSkeletonTask {
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processMCParticleLevelFull, "full jets on particle level MC", false);
 
-  void processMCCharged(aod::Collision const& collision, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& MCDjets, soa::Filtered<aod::ChargedMCParticleLevelJets> const& MCPjets)
+  void processMCCharged(soa::Filtered<aod::ChargedMCDetectorLevelJets> const& MCDjets, soa::Filtered<aod::ChargedMCParticleLevelJets> const& MCPjets)
   {
     for (auto& MCDjet : MCDjets) {
       registry.fill(HIST("h_jet_pt"), MCDjet.pt());
@@ -124,8 +138,13 @@ struct JetTutorialSkeletonTask {
     registry.fill(HIST("h_jet_ntracks"), jet.tracks().size());
     double angularity = 0.0;
     for (auto& jetConstituent : jet.tracks_as<aod::Tracks>()) {
-      angularity += jetConstituent.pt() * TMath::Sqrt(TMath::Power(jetConstituent.phi() - jet.phi(), 2.0) + TMath::Power(jetConstituent.eta() - jet.eta(), 2.0));
+      
+      double dPhi = jetConstituent.phi() - jet.phi();
+      registry.fill(HIST("h_dPhi"), AngularDistance(dPhi));
+      
+      angularity += jetConstituent.pt() * TMath::Sqrt(TMath::Power(dPhi, 2.0) + TMath::Power(jetConstituent.eta() - jet.eta(), 2.0));
     }
+
     registry.fill(HIST("h_jet_angularity"), angularity / (jet.pt() * jet.r() / 100.0));
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processDataChargedSubstructure, "jet substructure charged jets", false);
@@ -139,10 +158,18 @@ struct JetTutorialSkeletonTask {
     registry.fill(HIST("h_full_jet_nclusters"), jet.clusters().size());
     double angularity = 0.0;
     for (auto& jetConstituent : jet.tracks_as<aod::Tracks>()) {
-      angularity += jetConstituent.pt() * TMath::Sqrt(TMath::Power(jetConstituent.phi() - jet.phi(), 2.0) + TMath::Power(jetConstituent.eta() - jet.eta(), 2.0));
+
+      double dPhi = jetConstituent.phi() - jet.phi();
+      registry.fill(HIST("h_dPhi"), AngularDistance(dPhi));
+
+      angularity += jetConstituent.pt() * TMath::Sqrt(TMath::Power(dPhi, 2.0) + TMath::Power(jetConstituent.eta() - jet.eta(), 2.0));
     }
     for (auto& jetConstituent : jet.clusters_as<aod::EMCALClusters>()) {
-      angularity += jetConstituent.energy() * TMath::Sqrt(TMath::Power(jetConstituent.phi() - jet.phi(), 2.0) + TMath::Power(jetConstituent.eta() - jet.eta(), 2.0));
+
+      double dPhi = jetConstituent.phi() - jet.phi();
+      registry.fill(HIST("h_dPhi"), AngularDistance(dPhi));
+
+      angularity += jetConstituent.energy() * TMath::Sqrt(TMath::Power(dPhi, 2.0) + TMath::Power(jetConstituent.eta() - jet.eta(), 2.0));
     }
     registry.fill(HIST("h_full_jet_angularity"), angularity / (jet.pt() * jet.r() / 100.0));
   }
@@ -156,6 +183,10 @@ struct JetTutorialSkeletonTask {
     registry.fill(HIST("h_part_jet_ntracks"), jet.tracks().size());
     double angularity = 0.0;
     for (auto& jetConstituent : jet.tracks_as<aod::McParticles>()) {
+
+      double dPhi = jetConstituent.phi() - jet.phi();
+      registry.fill(HIST("h_dPhi"), AngularDistance(dPhi));
+
       angularity += jetConstituent.pt() * TMath::Sqrt(TMath::Power(jetConstituent.phi() - jet.phi(), 2.0) + TMath::Power(jetConstituent.eta() - jet.eta(), 2.0));
     }
     registry.fill(HIST("h_part_jet_angularity"), angularity / (jet.pt() * jet.r() / 100.0));
