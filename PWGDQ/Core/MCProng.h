@@ -52,8 +52,8 @@ A few non-existent PYTHIA codes are used to select more than one PYTHIA code.
 5001 - open beauty baryons                         5000-5499
 */
 
-#ifndef MCProng_H
-#define MCProng_H
+#ifndef PWGDQ_CORE_MCPRONG_H_
+#define PWGDQ_CORE_MCPRONG_H_
 
 #include "TNamed.h"
 
