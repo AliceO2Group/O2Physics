@@ -354,6 +354,11 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from open beauty hadron decays", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("eFromHcb")) {
+    MCProng prong(2, {11, 902}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electrons from open charm or beauty hadron decays", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("eFromMc")) {
     MCProng prong(2, {11, 401}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Electrons from open charmed meson decays", {prong}, {-1});
@@ -550,6 +555,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   // LMEE pair signals for HF
+  // Any c in history -> e
+  if (!nameStr.compare("eeFromAnyCharm")) {
+    MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, true); // check if mother pdg code is in history
+    signal = new MCSignal(name, "ee pairs with any charm in decay chain", {prong, prong}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
   // c->e and c->e (no check)
   if (!nameStr.compare("eeFromCCNoCheck")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
@@ -564,10 +576,49 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
-  // c->e and c->e (prompt)
+  // c->e and c->e (prompt) no feed down from b
   if (!nameStr.compare("eeFromCC")) {
     MCProng prong(3, {11, 402, 502}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     signal = new MCSignal(name, "ee pairs from c->e and c->e", {prong, prong}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // Any c in history but no b -> c -> e
+  if (!nameStr.compare("eeFromAnyCharmNoBeauty")) {
+    MCProng prong(3, {11, 402, 502}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true); // check if mother pdg code is in history
+    signal = new MCSignal(name, "ee pairs with any charm but no beauty in decay chain", {prong, prong}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // Any b in history -> e
+  if (!nameStr.compare("eeFromAnyBeauty")) {
+    MCProng prong(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, true); // check if mother pdg code is in history
+    signal = new MCSignal(name, "ee pairs with any beauty in decay chain", {prong, prong}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // Any b to any c in history b -> c -> e
+  if (!nameStr.compare("eeFromAnyBeautyToCharm")) {
+    MCProng prong(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true); // check if mother pdg code is in history
+    signal = new MCSignal(name, "ee pairs with any beauty to charm in decay chain", {prong, prong}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // Any c from b and any c in history b -> c -> e  and c -> e
+  if (!nameStr.compare("eeFromAnyBeautyAndCharm")) {
+    MCProng prongB(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true); // check if mother pdg code is in history
+    MCProng prongC(3, {11, 402, 502}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true); // check if mother pdg code is in history
+    // MCProng prongC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, true); // check if mother pdg code is in history
+    signal = new MCSignal(name, "ee pairs with any charm crossterms in decay chain", {prongB, prongC}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // Any c from b and any c in history b -> c -> e  and c -> e
+  if (!nameStr.compare("eeFromAnyBeautyAndCharmBis")) {
+    MCProng prongB(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true); // check if mother pdg code is in history
+    MCProng prongC(3, {11, 402, 502}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true); // check if mother pdg code is in history
+    // MCProng prongC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, true); // check if mother pdg code is in history
+    signal = new MCSignal(name, "ee pairs with any charm crossterms in decay chain", {prongC, prongB}, {-1, -1}); // signal at pair level
     return signal;
   }
 

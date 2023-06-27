@@ -129,6 +129,43 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
 {
   using P = typename T::parent_t;
   auto currentMCParticle = track;
+  
+  // check if mother pdg is in history
+  if (fProngs[i].fPDGInHistory) {
+    std::vector<bool> pdgInHistory;
+    // check the PDG code of currentMCParticle
+    if (!fProngs[i].TestPDG(0, currentMCParticle.pdgCode())) {
+      return false;
+    }
+
+    // while find mothers, check if they have provided PDG codes 
+    int nIncludedPDG = 0;
+    for (int k = 1; k < fProngs[i].fPDGcodes.size(); k++) {
+      currentMCParticle = track;
+      if (!fProngs[i].fExcludePDG[k]) nIncludedPDG++;
+      int ith = 0;
+      while (currentMCParticle.has_mothers()) {
+        auto mother = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
+        if (!fProngs[i].fExcludePDG[k] && fProngs[i].TestPDG(k, mother.pdgCode())) {
+          pdgInHistory.emplace_back(true);
+          break;
+        }
+        if (fProngs[i].fExcludePDG[k] && !fProngs[i].TestPDG(k, mother.pdgCode())) {
+          return false;
+        }
+        ith++;
+        currentMCParticle = mother;
+        if (ith > 10) { // need error message. Given pdg code was not found within 10 generations of the particles decay chain.
+          break;
+        }
+      }
+    }
+    if (pdgInHistory.size() == nIncludedPDG) { // vector has as many entries as mothers defined for prong
+      return true;
+    }
+    else 
+      return false;
+  }
 
   // loop over the generations specified for this prong
   for (int j = 0; j < fProngs[i].fNGenerations; j++) {

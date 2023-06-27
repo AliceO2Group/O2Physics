@@ -24,12 +24,14 @@ MCProng::MCProng() : fNGenerations(0),
                      fSourceBits({}),
                      fExcludeSource({}),
                      fUseANDonSourceBitMap({}),
+                     fPDGInHistory(0),
                      fCheckGenerationsInTime(0)
 {
 }
 
 //________________________________________________________________________________________________________________
 MCProng::MCProng(int n) : fNGenerations(n),
+                          fPDGInHistory(0),
                           fCheckGenerationsInTime(0)
 {
   fPDGcodes.reserve(n);
@@ -51,14 +53,15 @@ MCProng::MCProng(int n) : fNGenerations(n),
 //________________________________________________________________________________________________________________
 MCProng::MCProng(int n, const std::vector<int> pdgs, const std::vector<bool> checkBothCharges, const std::vector<bool> excludePDG,
                  const std::vector<uint64_t> sourceBits, const std::vector<uint64_t> excludeSource,
-                 const std::vector<bool> useANDonSourceBitMap, bool checkGenerationsInTime) : fNGenerations(n),
-                                                                                              fPDGcodes(pdgs),
-                                                                                              fCheckBothCharges(checkBothCharges),
-                                                                                              fExcludePDG(excludePDG),
-                                                                                              fSourceBits(sourceBits),
-                                                                                              fExcludeSource(excludeSource),
-                                                                                              fUseANDonSourceBitMap(useANDonSourceBitMap),
-                                                                                              fCheckGenerationsInTime(checkGenerationsInTime){};
+                 const std::vector<bool> useANDonSourceBitMap, bool checkIfPDGInHistory, bool checkGenerationsInTime) : fNGenerations(n),
+                                                                                                                        fPDGcodes(pdgs),
+                                                                                                                        fCheckBothCharges(checkBothCharges),
+                                                                                                                        fExcludePDG(excludePDG),
+                                                                                                                        fSourceBits(sourceBits),
+                                                                                                                        fExcludeSource(excludeSource),
+                                                                                                                        fUseANDonSourceBitMap(useANDonSourceBitMap),
+                                                                                                                        fPDGInHistory(checkIfPDGInHistory),
+                                                                                                                        fCheckGenerationsInTime(checkGenerationsInTime){};
 
 //________________________________________________________________________________________________________________
 void MCProng::SetPDGcode(int generation, int code, bool checkBothCharges /*= false*/, bool exclude /*= false*/)
@@ -115,7 +118,7 @@ void MCProng::Print() const
   for (int i = 0; i < fNGenerations; i++) {
     std::cout << "Generation #" << i << " PDGcode(" << fPDGcodes[i] << ") CheckBothCharges(" << fCheckBothCharges[i]
               << ") ExcludePDG(" << fExcludePDG[i] << ")  SourceBits(" << fSourceBits[i] << ") ExcludeSource(" << fExcludeSource[i]
-              << ") UseANDonSource(" << fUseANDonSourceBitMap[i] << ") CheckGenerationsInTime(" << fCheckGenerationsInTime << ")" << std::endl;
+              << ") UseANDonSource(" << fUseANDonSourceBitMap[i]  << ") PDGInHistory(" << fPDGInHistory << ") CheckGenerationsInTime(" << fCheckGenerationsInTime << ")" << std::endl;
   }
 }
 
