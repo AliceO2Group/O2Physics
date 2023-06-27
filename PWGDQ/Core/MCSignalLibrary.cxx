@@ -556,7 +556,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 
   // LMEE pair signals for HF
   // Any c in history -> e
-  if (!nameStr.compare("eeFromAnyCharm")) {
+  if (!nameStr.compare("eeFromAnyCandAnyC")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, true); // check if mother pdg code is in history
     signal = new MCSignal(name, "ee pairs with any charm in decay chain", {prong, prong}, {-1, -1}); // signal at pair level
     return signal;
@@ -577,28 +577,28 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   // Any c in history but no b -> c -> e
-  if (!nameStr.compare("eeFromAnyCharmNoBeauty")) {
+  if (!nameStr.compare("eeFromPromptCandPromptC")) {
     MCProng prong(3, {11, 402, 502}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true); // check if mother pdg code is in history
     signal = new MCSignal(name, "ee pairs with any charm but no beauty in decay chain", {prong, prong}, {-1, -1});                 // signal at pair level
     return signal;
   }
 
   // Any b in history -> e
-  if (!nameStr.compare("eeFromAnyBeauty")) {
+  if (!nameStr.compare("eeFromAnyBandAnyB")) {
     MCProng prong(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, true);  // check if mother pdg code is in history
     signal = new MCSignal(name, "ee pairs with any beauty in decay chain", {prong, prong}, {-1, -1}); // signal at pair level
     return signal;
   }
 
   // Any b to any c in history b -> c -> e
-  if (!nameStr.compare("eeFromAnyBeautyToCharm")) {
+  if (!nameStr.compare("eeFromBtoCandBtoC")) {
     MCProng prong(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true); // check if mother pdg code is in history
     signal = new MCSignal(name, "ee pairs with any beauty to charm in decay chain", {prong, prong}, {-1, -1});                      // signal at pair level
     return signal;
   }
 
   // Any c from b and any c in history b -> c -> e  and c -> e
-  if (!nameStr.compare("eeFromAnyBeautyAndCharm")) {
+  if (!nameStr.compare("eeFromBtoCandPromptC")) {
     MCProng prongB(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true); // check if mother pdg code is in history
     MCProng prongC(3, {11, 402, 502}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true);  // check if mother pdg code is in history
     signal = new MCSignal(name, "ee pairs with any charm crossterms in decay chain", {prongB, prongC}, {-1, -1});                    // signal at pair level
@@ -606,10 +606,26 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   // Any c from b and any c in history b -> c -> e  and c -> e
-  if (!nameStr.compare("eeFromAnyBeautyAndCharmBis")) {
+  if (!nameStr.compare("eeFromBtoCandPromptCBis")) {
     MCProng prongB(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true); // check if mother pdg code is in history
     MCProng prongC(3, {11, 402, 502}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true);  // check if mother pdg code is in history
     signal = new MCSignal(name, "ee pairs with any charm crossterms in decay chain", {prongC, prongB}, {-1, -1});                    // signal at pair level
+    return signal;
+  }
+
+  // Any b->e and Any b->c->e
+  if (!nameStr.compare("eeFromBandBtoC")) {
+    MCProng prongB(3, {11, 402, 502}, {true, true, true}, {false, true, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true);
+    MCProng prongBtoC(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true);
+    signal = new MCSignal(name, "ee pairs from b->e and b->c->e", {prongB, prongBtoC}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // Any b->e and Any b->c->e
+  if (!nameStr.compare("eeFromBandBtoCBis")) {
+    MCProng prongB(3, {11, 402, 502}, {true, true, true}, {false, true, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true);
+    MCProng prongBtoC(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, true);
+    signal = new MCSignal(name, "ee pairs from b->e and b->c->e", {prongBtoC, prongB}, {-1, -1}); // signal at pair level
     return signal;
   }
 
@@ -633,6 +649,14 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     MCProng prongC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from b->e and c->e", {prongC, prongB}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // b->e and b->c->e (single b)
+  if (!nameStr.compare("eeFromSingleBandBtoC")) {
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongBtoC(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "ee pairs from b->e and b->c->e (single b)", {prongB, prongBtoC}, {1, 2}); // signal at pair level
     return signal;
   }
 
