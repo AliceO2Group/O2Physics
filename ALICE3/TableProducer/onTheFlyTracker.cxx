@@ -63,6 +63,7 @@ struct OnTheFlyTracker {
   Produces<aod::CollisionsAlice3> collisionAlice3;
 
   // optionally produced, empty (to be tuned later)
+  Produces<aod::StoredTracksExtra> tracksExtra; // base table, extend later
   Produces<aod::TrackSelection> trackSelection;
   Produces<aod::TrackSelectionExtension> trackSelectionExtension;
 
@@ -121,7 +122,7 @@ struct OnTheFlyTracker {
       mapPdgLut.insert(std::make_pair(211, lutPiChar));
       mapPdgLut.insert(std::make_pair(321, lutKaChar));
       mapPdgLut.insert(std::make_pair(2212, lutPrChar));
-      
+
       if (enableNucleiSmearing) {
         const char* lutDeChar = ((std::string)lutDe).c_str();
         const char* lutTrChar = ((std::string)lutTr).c_str();
@@ -284,7 +285,10 @@ struct OnTheFlyTracker {
 
       // populate extra tables if required to do so 
       if(populateTracksExtra){
-        // WIP
+        tracksExtra(0.0f, (uint32_t)0, (uint8_t)0, (uint8_t)0, 
+                    (int8_t)0, (int8_t)0, (uint8_t)0, (uint8_t)0,
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
       }
       if(populateTrackSelection){
         trackSelection((uint8_t)0, false, false, false, false, false, false);
@@ -301,4 +305,15 @@ struct OnTheFlyTracker {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<OnTheFlyTracker>(cfgc)}; }
+/// Extends TracksExtra if necessary
+struct onTheFlyTrackerInitializer {
+  Spawns<aod::TracksExtra> tracksExtra;
+  void init(InitContext const&) {}
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<OnTheFlyTracker>(cfgc),
+    adaptAnalysisTask<onTheFlyTrackerInitializer>(cfgc)};
+}
