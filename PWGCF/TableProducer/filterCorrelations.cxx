@@ -117,90 +117,9 @@ struct FilterCF {
   }
   PROCESS_SWITCH(FilterCF, processData, "Process data", true);
 
-  void processMC1(soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>> const& tracks)
-  {
-    if (cfgVerbosity > 0) {
-      LOGF(info, "processMC1: Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d", tracks.size(), collision.posZ(), collision.flags(), collision.sel7());
-    }
-
-    if (!keepCollision(collision)) {
-      return;
-    }
-
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    // NOTE only works if we save all MC collisions...
-    outputCollisions(collision.mcCollisionId(), bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
-
-    for (auto& track : tracks) {
-      uint8_t trackType = 0;
-      if (track.isGlobalTrack()) {
-        trackType = 1;
-      } else if (track.isGlobalTrackSDD()) {
-        trackType = 2;
-      }
-
-      // NOTE only works if we save all MC tracks...
-      outputTracks(outputCollisions.lastIndex(), track.mcParticleId(), truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), trackType);
-
-      yields->Fill(collision.multiplicity(), track.pt(), track.eta());
-      etaphi->Fill(collision.multiplicity(), track.eta(), track.phi());
-    }
-  }
-  PROCESS_SWITCH(FilterCF, processMC1, "Process MC: data part", false);
-
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
-  void processMC2(aod::McCollision const& mcCollision, aod::McParticles const& particles, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>> const& tracks)
-  {
-    if (cfgVerbosity > 0) {
-      LOGF(info, "processMC2: Particles for MC collision: %d | Vertex: %.1f", particles.size(), mcCollision.posZ());
-    }
-
-    bool* reconstructed = new bool[particles.size()];
-    for (int i = 0; i < particles.size(); i++) {
-      reconstructed[i] = false;
-    }
-    for (auto& collision : collisions) {
-      auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
-      if (cfgVerbosity > 0) {
-        LOGF(info, "  Reconstructed collision at vtx-z = %f which has %d tracks", collision.posZ(), groupedTracks.size());
-      }
-
-      for (auto& track : groupedTracks) {
-        if (track.has_mcParticle()) {
-          reconstructed[track.mcParticleId() - particles.begin().globalIndex()] = true;
-        }
-      }
-    }
-
-    int multiplicity = 0;
-    for (auto& particle : particles) {
-      int8_t sign = 0;
-      TParticlePDG* pdgparticle = pdg->GetParticle(particle.pdgCode());
-      if (pdgparticle != nullptr) {
-        sign = (pdgparticle->Charge() > 0) ? 1.0 : ((pdgparticle->Charge() < 0) ? -1.0 : 0.0);
-      }
-      if (particle.isPhysicalPrimary() && sign != 0 && std::abs(particle.eta()) < cfgCutMCEta && particle.pt() > cfgCutMCPt) {
-        multiplicity++;
-      }
-      // use highest bit to flag if it is reconstructed
-      uint8_t flags = particle.flags() & ~aod::cfmcparticle::kReconstructed; // clear bit in case of clashes in the future
-      if (reconstructed[particle.index()]) {
-        flags |= aod::cfmcparticle::kReconstructed;
-      }
-
-      // NOTE using "outputMcCollisions.lastIndex()+1" here to allow filling of outputMcCollisions *after* the loop
-      outputMcParticles(outputMcCollisions.lastIndex() + 1, truncateFloatFraction(particle.pt(), FLOAT_PRECISION), truncateFloatFraction(particle.eta(), FLOAT_PRECISION),
-                        truncateFloatFraction(particle.phi(), FLOAT_PRECISION), sign, particle.pdgCode(), flags);
-    }
-
-    outputMcCollisions(mcCollision.posZ(), multiplicity);
-
-    delete[] reconstructed;
-  }
-  PROCESS_SWITCH(FilterCF, processMC2, "Process MC: MC part", false);
-
   // NOTE not filtering collisions here because in that case there can be tracks referring to MC particles which are not part of the selected MC collisions
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   void processMC(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
                  soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
                  soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
