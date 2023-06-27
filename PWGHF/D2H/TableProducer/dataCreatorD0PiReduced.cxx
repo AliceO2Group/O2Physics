@@ -276,7 +276,7 @@ struct HfDataCreatorD0PiReduced {
         }
 
         const auto& secondaryVertexD0 = df2.getPCACandidate();
-        // propagate the 3 prongs to the secondary vertex
+        // propagate the 2 prongs to the secondary vertex
         trackParCov0.propagateTo(secondaryVertexD0[0], bz);
         trackParCov1.propagateTo(secondaryVertexD0[0], bz);
 
@@ -386,31 +386,29 @@ struct HfDataCreatorD0PiReducedMc {
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
-    int8_t debug = 0;
 
     for (const auto& candD0 : candsD0) {
-      auto arrayDaughtersD0 = array{candD0.prong0_as<aod::BigTracksMC>(),
-                                    candD0.prong1_as<aod::BigTracksMC>()};
+      auto arrayDaughtersD0 = std::array{candD0.prong0_as<aod::BigTracksMC>(),
+                                         candD0.prong1_as<aod::BigTracksMC>()};
 
       for (const auto& trackPion : tracksPion) {
         if (trackPion.hfReducedCollisionId() != candD0.hfReducedCollisionId()) {
           continue;
         }
         // const auto& trackId = trackPion.globalIndex();
-        auto arrayDaughtersBplus = array{candD0.prong0_as<aod::BigTracksMC>(),
-                                         candD0.prong1_as<aod::BigTracksMC>(),
-                                         trackPion.track_as<aod::BigTracksMC>()};
+        auto arrayDaughtersBplus = std::array{candD0.prong0_as<aod::BigTracksMC>(),
+                                              candD0.prong1_as<aod::BigTracksMC>(),
+                                              trackPion.track_as<aod::BigTracksMC>()};
         // B+ → D0(bar) π+ → (K+ π-) π+
         // Printf("Checking B+ → D0bar π+");
-        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBplus, pdg::Code::kBPlus, array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBplus, pdg::Code::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           // D0bar → K+ π-
           // Printf("Checking D0bar → K+ π-");
-          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD0, -pdg::Code::kD0, array{-kPiPlus, +kKPlus}, true, &sign, 1);
+          indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD0, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
           if (indexRec > -1) {
             flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
           } else {
-            debug = 1;
             LOGF(info, "WARNING: B+ decays in the expected final state but the condition on the intermediate state is not fulfilled");
           }
         }
@@ -427,11 +425,11 @@ struct HfDataCreatorD0PiReducedMc {
       flag = 0;
       origin = 0;
       // B+ → D0bar π+
-      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kBPlus, array{-static_cast<int>(pdg::Code::kD0), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kBPlus, std::array{static_cast<int>(pdg::Code::kD0), +kPiPlus}, true)) {
         // Match D0bar -> π- K+
         auto candD0MC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
         // Printf("Checking D0bar -> π- K+");
-        if (RecoDecay::isMatchedMCGen(particlesMc, candD0MC, -static_cast<int>(pdg::Code::kD0), array{-kPiPlus, +kKPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(particlesMc, candD0MC, static_cast<int>(pdg::Code::kD0), std::array{+kPiPlus, -kKPlus}, true, &sign)) {
           flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
         }
       }
@@ -452,7 +450,7 @@ struct HfDataCreatorD0PiReducedMc {
       for (auto const& daught : particle.daughters_as<aod::McParticles>()) {
         ptProngs[counter] = daught.pt();
         etaProngs[counter] = daught.eta();
-        yProngs[counter] = RecoDecay::y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+        yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
         counter++;
       }
       rowHfBPMcGenReduced(flag, origin,

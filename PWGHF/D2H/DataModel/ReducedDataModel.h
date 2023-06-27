@@ -154,7 +154,7 @@ namespace hf_cand_2prong_reduced
 {
 DECLARE_SOA_COLUMN(CPA, cpa, float);                 //! Cosinus pointing angle
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float); //! Decay length in cm
-DECLARE_SOA_COLUMN(InvMass, invMass, float);         //! Invariant mass of 3prong candidate in GeV/c2
+DECLARE_SOA_COLUMN(InvMass, invMass, float);         //! Invariant mass of 2prong candidate in GeV/c2
 
 template <typename T>
 auto invMassD0ToPiK(const T& pVec0, const T& pVec1)
@@ -168,12 +168,12 @@ template <typename T>
 auto invMassD0barToKPi(const T& pVec0, const T& pVec1)
 {
   return RecoDecay::m(std::array{pVec0, pVec1},
-                      array{RecoDecay::getMassPDG(kKPlus),
-                            RecoDecay::getMassPDG(kPiPlus)});
+                      std::array{RecoDecay::getMassPDG(kKPlus),
+                                 RecoDecay::getMassPDG(kPiPlus)});
 }
 } // namespace hf_cand_2prong_reduced
 
-DECLARE_SOA_TABLE(HfCand2ProngReduced, "AOD", "HFCAND2PRONGRED", //! Table with 3prong candidate information for reduced workflow
+DECLARE_SOA_TABLE(HfCand2ProngReduced, "AOD", "HFCAND2PRONGRED", //! Table with 2prong candidate information for reduced workflow
                   o2::soa::Index<>,
                   hf_track_index::Prong0Id, hf_track_index::Prong1Id,
                   hf_track_index_reduced::HfReducedCollisionId,
@@ -279,7 +279,7 @@ DECLARE_SOA_COLUMN(EtaProng1, etaProng1, float); //! Pseudorapidity of the track
 } // namespace hf_bplus_mc
 
 // table with results of reconstruction level MC matching
-DECLARE_SOA_TABLE(HfD0PiMcRecReduced, "AOD", "HFD0PIMCRECRED", //! Table with reconstructed MC information on DPi(<-B0) pairs for reduced workflow
+DECLARE_SOA_TABLE(HfD0PiMcRecReduced, "AOD", "HFD0PIMCRECRED", //! Table with reconstructed MC information on D0Pi(<-B+) pairs for reduced workflow
                   hf_cand_bplus::Prong0Id,
                   hf_track_index::Prong1Id,
                   hf_cand_bplus::FlagMcMatchRec,
@@ -287,12 +287,12 @@ DECLARE_SOA_TABLE(HfD0PiMcRecReduced, "AOD", "HFD0PIMCRECRED", //! Table with re
                   hf_bplus_mc::PtMother);
 
 // Table with same size as HFCANDBPLUS
-DECLARE_SOA_TABLE(HfBpMcRecReduced, "AOD", "HFBPMCRECRED", //! Reconstruction-level MC information on B0 candidates for reduced workflow
+DECLARE_SOA_TABLE(HfBpMcRecReduced, "AOD", "HFBPMCRECRED", //! Reconstruction-level MC information on B+ candidates for reduced workflow
                   hf_cand_bplus::FlagMcMatchRec,
                   hf_cand_bplus::OriginMcRec,
                   hf_bplus_mc::PtMother);
 
-DECLARE_SOA_TABLE(HfBpMcGenReduced, "AOD", "HFBPMCGENRED", //! Generation-level MC information on B0 candidates for reduced workflow
+DECLARE_SOA_TABLE(HfBpMcGenReduced, "AOD", "HFBPMCGENRED", //! Generation-level MC information on B+ candidates for reduced workflow
                   hf_cand_bplus::FlagMcMatchGen,
                   hf_cand_bplus::OriginMcGen,
                   hf_bplus_mc::PtTrack,

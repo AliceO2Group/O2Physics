@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskB0Reduced.cxx
-/// \brief B0 → D- π+ → (π- K+ π-) π+ analysis task
+/// \file taskBplusReduced.cxx
+/// \brief B+ → D0bar π+ → (π+ K-) π+ analysis task
 ///
-/// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
+/// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Sezione di Bari
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -157,7 +157,7 @@ struct HfTaskBplusReduced {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>> const& candidates,
-               aod::HfCand2ProngReduced const&, HfTracksPidReduced const&)
+               aod::HfCand2ProngReduced const&)
   {
     for (auto const& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
