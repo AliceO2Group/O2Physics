@@ -67,7 +67,7 @@ struct DGFilterRun3 {
   {
     // reset collision counter
     collCounter = 0;
-    verbose = (int64_t) Verbose;
+    verbose = (int64_t)Verbose;
     if (verbose <= 0) {
       verbose = 1000000000000;
     };
