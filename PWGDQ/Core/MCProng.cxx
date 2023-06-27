@@ -118,7 +118,7 @@ void MCProng::Print() const
   for (int i = 0; i < fNGenerations; i++) {
     std::cout << "Generation #" << i << " PDGcode(" << fPDGcodes[i] << ") CheckBothCharges(" << fCheckBothCharges[i]
               << ") ExcludePDG(" << fExcludePDG[i] << ")  SourceBits(" << fSourceBits[i] << ") ExcludeSource(" << fExcludeSource[i]
-              << ") UseANDonSource(" << fUseANDonSourceBitMap[i]  << ") PDGInHistory(" << fPDGInHistory << ") CheckGenerationsInTime(" << fCheckGenerationsInTime << ")" << std::endl;
+              << ") UseANDonSource(" << fUseANDonSourceBitMap[i] << ") PDGInHistory(" << fPDGInHistory << ") CheckGenerationsInTime(" << fCheckGenerationsInTime << ")" << std::endl;
   }
 }
 
