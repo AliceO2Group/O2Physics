@@ -95,7 +95,7 @@ DECLARE_SOA_COLUMN(NSigmaTPCTrk1Pi, nSigmaTPCTrk1Pi, float);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-DECLARE_SOA_COLUMN(GlobalIndex, globalIndex, int);
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCandBplus, "_0");
 } // namespace full
 
 // put the arguments into the table
@@ -161,7 +161,7 @@ DECLARE_SOA_TABLE(HfCandBplusFull, "AOD", "HFCANDBPFull",
                   full::NSigmaTOFTrk1Ka,
                   full::NSigmaTPCTrk1Pi,
                   full::NSigmaTPCTrk1Ka,
-                  full::GlobalIndex);
+                  full::CandidateId);
 
 DECLARE_SOA_TABLE(HfCandBplusFullEvents, "AOD", "HFCANDBPFullE",
                   collision::BCId,
@@ -179,7 +179,7 @@ DECLARE_SOA_TABLE(HfCandBplusFullParticles, "AOD", "HFCANDBPFullP",
                   full::Phi,
                   full::Y,
                   full::MCflag,
-                  full::GlobalIndex);
+                  full::CandidateId);
 
 } // namespace o2::aod
 
