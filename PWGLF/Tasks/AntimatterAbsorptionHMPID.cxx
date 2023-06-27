@@ -41,6 +41,18 @@ using namespace o2::framework::expressions;
 struct AntimatterAbsorptionHMPID {
 
   // Registry (Data)
+  HistogramRegistry pos_reg{
+    "positive_tracks",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
+  HistogramRegistry neg_reg{
+    "negative_tracks",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
   HistogramRegistry proton_reg{
     "proton",
     {},
