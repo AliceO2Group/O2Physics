@@ -61,13 +61,16 @@ class DGSelector
       }
     }
 
-    // no activity in forward direction
+    // forward tracks
     LOGF(debug, "FwdTracks %i", fwdtracks.size());
-    for (auto& fwdtrack : fwdtracks) {
-      LOGF(debug, "  %i / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p());
-    }
-    if (fwdtracks.size() > 0) {
-      return 2;
+    if (!diffCuts.withFwdTracks()) {
+      // only consider tracks with MID (good timing)
+      for (auto& fwdtrack : fwdtracks) {
+        LOGF(info, "  %i / %f / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p(), fwdtrack.trackTimeRes());
+        if (fwdtrack.trackType() == 0 || fwdtrack.trackType() == 3) {
+          return 2;
+        }
+      }
     }
 
     // no global tracks which are not vtx tracks

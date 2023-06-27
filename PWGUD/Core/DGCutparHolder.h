@@ -21,6 +21,7 @@ class DGCutparHolder
  public:
   // constructor
   DGCutparHolder(int ndtcoll = 4, int nMinBCs = 7,
+                 bool withFwdTracks = false,
                  bool globalTracksOnly = false,
                  float minrgtrwTOF = 0.,
                  int MinNTracks = 0, int MaxNTracks = 10000,
@@ -31,13 +32,14 @@ class DGCutparHolder
                  float minEta = -1.0, float maxEta = 1.0,
                  float minIVM = 0.0, float maxIVM = 1000.,
                  float maxNSigmaTPC = 1000., float maxNSigmaTOF = 1000.,
-                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mGlobalTracksOnly{globalTracksOnly}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mNetCharges{NetCharges}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mFITAmpLimits{FITAmpLimits}
+                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mWithFwdTracks{withFwdTracks}, mGlobalTracksOnly{globalTracksOnly}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mNetCharges{NetCharges}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mFITAmpLimits{FITAmpLimits}
   {
   }
 
   // setter
   void SetNDtcoll(int);
   void SetMinNBCs(int);
+  void SetWithFwdTracks(bool);
   void SetGlobalTracksOnly(bool);
   void SetMinRgtrwTOF(float);
   void SetNTracks(int MinNTracks, int MaxNTracks);
@@ -54,6 +56,7 @@ class DGCutparHolder
   // getter
   int NDtcoll() const;
   int minNBCs() const;
+  bool withFwdTracks() const;
   bool globalTracksOnly() const;
   float minRgtrwTOF() const;
   int minNTracks() const;
@@ -76,6 +79,9 @@ class DGCutparHolder
   // number of collision time resolutions to consider
   int mNDtcoll;
   int mMinNBCs;
+
+  // allow forward tracks
+  bool mWithFwdTracks;
 
   // require all vertex tracks to be global tracks
   bool mGlobalTracksOnly;
