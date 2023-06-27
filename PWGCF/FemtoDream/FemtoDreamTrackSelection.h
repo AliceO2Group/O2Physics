@@ -176,7 +176,6 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
       if (obs.compare(cmp) == 0)
         return index;
     }
-    LOGF(info, "Variable %s not found", obs);
     return -1;
   }
 
@@ -463,7 +462,6 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
   cutContainerType output = 0;
   size_t counter = 0;
   cutContainerType outputPID = 0;
-  size_t counterPID = 0;
   const auto sign = track.sign();
   const auto pT = track.pt();
   const auto eta = track.eta();
@@ -488,12 +486,12 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
     const auto selVariable = sel.getSelectionVariable();
     if (selVariable == femtoDreamTrackSelection::kPIDnSigmaMax) {
       /// PID needs to be handled a bit differently since we may need more than one species
-      for (size_t i = 0; i < pidTPC.size(); ++i) {
+      for (size_t i = 0; i < mPIDspecies.size(); ++i) {
         auto pidTPCVal = pidTPC.at(i) - nSigmaPIDOffsetTPC;
         auto pidTOFVal = pidTOF.at(i) - nSigmaPIDOffsetTOF;
-        sel.checkSelectionSetBit(pidTPCVal, outputPID, counterPID);
         auto pidComb = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal);
-        sel.checkSelectionSetBit(pidComb, outputPID, counterPID);
+        sel.checkSelectionSetBitPID(pidTPCVal, outputPID);
+        sel.checkSelectionSetBitPID(pidComb, outputPID);
       }
 
     } else {

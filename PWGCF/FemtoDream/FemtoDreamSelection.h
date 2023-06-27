@@ -109,6 +109,18 @@ class FemtoDreamSelection
     ++counter;
   }
 
+  template <typename T>
+  void checkSelectionSetBitPID(selValDataType observable, T& cutContainer)
+  {
+    /// If the selection is fulfilled the bit at the specified position (counter) within the bit-wise container is set to 1
+    if (isSelected(observable)) {
+      cutContainer |= 1UL;
+    } else {
+      cutContainer |= 0UL;
+    }
+    cutContainer <<= 1;
+  }
+
  private:
   selValDataType mSelVal{0.f};                 ///< Value used for the selection
   selVariableDataType mSelVar;                 ///< Variable used for the selection

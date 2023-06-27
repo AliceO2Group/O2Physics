@@ -97,7 +97,7 @@ class FemtoDreamObjectSelection
     }
 
     /// Then, the sorted selections are added to the overall container of cuts
-    for (const auto& sel : sels) {
+    for (auto& sel : sels) {
       mSelections.push_back(sel);
     }
   }

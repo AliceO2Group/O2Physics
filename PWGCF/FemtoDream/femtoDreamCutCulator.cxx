@@ -36,19 +36,19 @@ int main(int argc, char* argv[])
     cut.init(argv[1]);
 
     std::cout
-      << "Do you want to work with tracks or V0s (T/V)?";
+      << "Do you want to work with tracks or V0s (T/V)? >";
     std::string choice;
     std::cin >> choice;
 
     if (choice == std::string("T")) {
       cut.setTrackSelectionFromFile("ConfTrk");
-      cut.setPIDSelectionFromFile("ConfPIDTrk", "ConfTrk");
+      cut.setPIDSelectionFromFile("ConfTrk");
     } else if (choice == std::string("V")) {
-      std::cout << "Do you want to select V0s or one of its children (V/T)?";
+      std::cout << "Do you want to select V0s or one of its children (V/T)? >";
       std::cin >> choice;
       cut.setV0SelectionFromFile("ConfV0");
       cut.setTrackSelectionFromFile("ConfChild");
-      cut.setPIDSelectionFromFile("ConfPIDChild", "ConfChild");
+      cut.setPIDSelectionFromFile("ConfChild");
     } else {
       std::cout << "Option not recognized. Break...";
       return 2;
@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
     /// femtoDreamSelection::kAbsUpperLimit, "ConfTrk");
 
     std::cout << "Do you want to manually select cuts or create systematic "
-                 "variations(M/V)?";
+                 "variations(M/V)? >";
     std::string manual;
     std::cin >> manual;
 
