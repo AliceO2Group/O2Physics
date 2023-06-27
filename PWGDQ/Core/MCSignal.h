@@ -138,6 +138,43 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
       return false;
     }
 
+    if (checkSources && fProngs[i].fSourceBits[0]) {
+      // check source of first prong
+      uint64_t sourcesDecision = 0;
+      // Check kPhysicalPrimary
+      if (fProngs[i].fSourceBits[0] & (uint64_t(1) << MCProng::kPhysicalPrimary)) {
+        if ((fProngs[i].fExcludeSource[0] & (uint64_t(1) << MCProng::kPhysicalPrimary)) != currentMCParticle.isPhysicalPrimary()) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kPhysicalPrimary);
+        }
+      }
+      // Check kProducedInTransport
+      if (fProngs[i].fSourceBits[0] & (uint64_t(1) << MCProng::kProducedInTransport)) {
+        if ((fProngs[i].fExcludeSource[0] & (uint64_t(1) << MCProng::kProducedInTransport)) != (!currentMCParticle.producedByGenerator())) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kProducedInTransport);
+        }
+      }
+      // Check kProducedByGenerator
+      if (fProngs[i].fSourceBits[0] & (uint64_t(1) << MCProng::kProducedByGenerator)) {
+        if ((fProngs[i].fExcludeSource[0] & (uint64_t(1) << MCProng::kProducedByGenerator)) != currentMCParticle.producedByGenerator()) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kProducedByGenerator);
+        }
+      }
+      // Check kFromBackgroundEvent
+      if (fProngs[i].fSourceBits[0] & (uint64_t(1) << MCProng::kFromBackgroundEvent)) {
+        if ((fProngs[i].fExcludeSource[0] & (uint64_t(1) << MCProng::kFromBackgroundEvent)) != currentMCParticle.fromBackgroundEvent()) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kFromBackgroundEvent);
+        }
+      }
+      // no source bit is fulfilled
+      if (!sourcesDecision) {
+        return false;
+      }
+      // if fUseANDonSourceBitMap is on, request all bits
+      if (fProngs[i].fUseANDonSourceBitMap[0] && (sourcesDecision != fProngs[i].fSourceBits[0])) {
+        return false;
+      }
+    }
+
     // while find mothers, check if they have provided PDG codes 
     int nIncludedPDG = 0;
     for (int k = 1; k < fProngs[i].fPDGcodes.size(); k++) {
