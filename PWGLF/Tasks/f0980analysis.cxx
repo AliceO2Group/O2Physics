@@ -131,7 +131,7 @@ struct f0980analysis {
   {
     LOGF(debug, "[DATA] Processing %d collisions", collisions.size());
     for (auto& collision : collisions) {
-      Partition<aod::ResoTracks> selectedTracks = o2::aod::track::pt > static_cast<float_t>(cfgMinPt) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cfgMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cfgMaxDCArToPVcut));
+      Partition<aod::ResoTracks> selectedTracks = requireTOFPIDPionCutInFilter() && o2::aod::track::pt > static_cast<float_t>(cfgMinPt) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cfgMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cfgMaxDCArToPVcut));
       selectedTracks.bindTable(resotracks);
       auto colTracks = selectedTracks->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
       fillHistograms<false>(collision, colTracks);
