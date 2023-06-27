@@ -204,7 +204,7 @@ struct DptDptCorrelationsTask {
     {
       LOGF(info, "Stored NUA&NUE corrections for %d track ids", corrs.size());
       for (uint i = 0; i < corrs.size(); ++i) {
-        LOGF(info, "  Stored NUA&NUE corrections for track id %s %s", corrs[i] != nullptr ? "yes" : "no");
+        LOGF(info, "  Stored NUA&NUE corrections for track id %d %s", i, corrs[i] != nullptr ? "yes" : "no");
         fhNuaNue_vsZEtaPhiPt[i] = corrs[i];
       }
       ccdbstored = true;
