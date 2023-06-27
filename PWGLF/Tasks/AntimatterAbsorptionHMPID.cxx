@@ -10,7 +10,6 @@
 // or submit itself to any jurisdiction.
 //
 // Authors: Alberto Caliva (alberto.caliva@cern.ch)
-//============================================================================================
 
 #include <cmath>
 #include <TLorentzVector.h>
@@ -42,52 +41,53 @@ struct AntimatterAbsorptionHMPID {
     HistogramRegistry antiproton_reg{"antiproton", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
     HistogramRegistry antideuteron_reg{"antideuteron", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
     
-    void init(o2::framework::InitContext&)  {
+    void init(o2::framework::InitContext&)
+    {
                 
         std::vector<double> momentum_bin_edges = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0};
-        AxisSpec pAxis = {momentum_bin_edges,"#it{p} (GeV/#it{c})"};
+        AxisSpec pAxis = {momentum_bin_edges, "#it{p} (GeV/#it{c})"};
         
         //General Histogram (Positive Tracks)
-        pos_reg.add("histTpcSignalData","dE/dx", HistType::kTH2F, {{500,0.0,5.0, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E}/d#it{x} (a. u.)"}});
-        pos_reg.add("histTofSignalData","TOF signal", HistType::kTH2F, {{500,0.0,5.0, "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-        pos_reg.add("histDcaxyVsPData","dca_xy vs p", HistType::kTH2F, {pAxis, {250, -0.5, 0.5, "DCA_{xy} (cm)"}});
-        pos_reg.add("histDcaZVsPtData","dca_z vs p", HistType::kTH2F, {pAxis, {1000, -2.0, 2.0, "DCA_{z} (cm)"}});
-        pos_reg.add("histNClusterTPC","Number of TPC Clusters vs p", HistType::kTH2F, {pAxis, {160, 0.0, 160.0, "nClustersTPC"}});
-        pos_reg.add("histNCrossedRowTPC","Number of TPC crossed row vs p", HistType::kTH2F, {pAxis, {160, 0.0, 160.0, "nCrossedRowsTPC"}});
-        pos_reg.add("histNClusterITS","Number of ITS Clusters vs p", HistType::kTH2F, {pAxis, {10, 0.0, 10.0, "nClustersITS"}});
-        pos_reg.add("histChi2TPC","chi^2 TPC vs p", HistType::kTH2F, {pAxis, {100, 0.0, 5.0, "chi^2_{TPC}"}});
-        pos_reg.add("histChi2ITS","chi^2 ITS vs p", HistType::kTH2F, {pAxis, {500, 0.0, 50.0, "chi^2_{ITS}"}});
-        pos_reg.add("histEta","eta", HistType::kTH2F, {pAxis, {100, -1.0, 1.0,"eta"}});
-        pos_reg.add("histPhi","phi", HistType::kTH2F, {pAxis, {200, 0.0, TMath::TwoPi(),"phi"}});
-
+        pos_reg.add("histTpcSignalData", "dE/dx", HistType::kTH2F, {{500, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E}/d#it{x} (a. u.)"}});
+        pos_reg.add("histTofSignalData", "TOF signal", HistType::kTH2F, {{500, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+        pos_reg.add("histDcaxyVsPData", "dca_xy vs p", HistType::kTH2F, {pAxis, {250, -0.5, 0.5, "DCA_{xy} (cm)"}});
+        pos_reg.add("histDcaZVsPtData", "dca_z vs p", HistType::kTH2F, {pAxis, {1000, -2.0, 2.0, "DCA_{z} (cm)"}});
+        pos_reg.add("histNClusterTPC", "Number of TPC Clusters vs p", HistType::kTH2F, {pAxis, {160, 0.0, 160.0, "nClustersTPC"}});
+        pos_reg.add("histNCrossedRowTPC", "Number of TPC crossed row vs p", HistType::kTH2F, {pAxis, {160, 0.0, 160.0, "nCrossedRowsTPC"}});
+        pos_reg.add("histNClusterITS", "Number of ITS Clusters vs p", HistType::kTH2F, {pAxis, {10, 0.0, 10.0, "nClustersITS"}});
+        pos_reg.add("histChi2TPC", "chi^2 TPC vs p", HistType::kTH2F, {pAxis, {100, 0.0, 5.0, "chi^2_{TPC}"}});
+        pos_reg.add("histChi2ITS", "chi^2 ITS vs p", HistType::kTH2F, {pAxis, {500, 0.0, 50.0, "chi^2_{ITS}"}});
+        pos_reg.add("histEta", "eta", HistType::kTH2F, {pAxis, {100, -1.0, 1.0, "eta"}});
+        pos_reg.add("histPhi", "phi", HistType::kTH2F, {pAxis, {200, 0.0, TMath::TwoPi(), "phi"}});
+        
         //General Histogram (Negative Tracks)
-        neg_reg.add("histTpcSignalData","dE/dx", HistType::kTH2F, {{500,0.0,5.0, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E}/d#it{x} (a. u.)"}});
-        neg_reg.add("histTofSignalData","TOF signal", HistType::kTH2F, {{500,0.0,5.0, "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-        neg_reg.add("histDcaxyVsPData","dca_xy vs p", HistType::kTH2F, {pAxis, {250, -0.5, 0.5, "DCA_{xy} (cm)"}});
-        neg_reg.add("histDcaZVsPtData","dca_z vs p", HistType::kTH2F, {pAxis, {1000, -2.0, 2.0, "DCA_{z} (cm)"}});
-        neg_reg.add("histNClusterTPC","Number of TPC Clusters vs p", HistType::kTH2F, {pAxis, {160, 0.0, 160.0, "nClustersTPC"}});
-        neg_reg.add("histNCrossedRowTPC","Number of TPC crossed row vs p", HistType::kTH2F, {pAxis, {160, 0.0, 160.0, "nCrossedRowsTPC"}});
-        neg_reg.add("histNClusterITS","Number of ITS Clusters vs p", HistType::kTH2F, {pAxis, {10, 0.0, 10.0, "nClustersITS"}});
-        neg_reg.add("histChi2TPC","chi^2 TPC vs p", HistType::kTH2F, {pAxis, {100, 0.0, 5.0, "chi^2_{TPC}"}});
-        neg_reg.add("histChi2ITS","chi^2 ITS vs p", HistType::kTH2F, {pAxis, {500, 0.0, 50.0, "chi^2_{ITS}"}});
-        neg_reg.add("histEta","eta", HistType::kTH2F, {pAxis, {100, -1.0, 1.0,"eta"}});
-        neg_reg.add("histPhi","phi", HistType::kTH2F, {pAxis, {200, 0.0, TMath::TwoPi(),"phi"}});
+        neg_reg.add("histTpcSignalData", "dE/dx", HistType::kTH2F, {{500, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E}/d#it{x} (a. u.)"}});
+        neg_reg.add("histTofSignalData", "TOF signal", HistType::kTH2F, {{500, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+        neg_reg.add("histDcaxyVsPData", "dca_xy vs p", HistType::kTH2F, {pAxis, {250, -0.5, 0.5, "DCA_{xy} (cm)"}});
+        neg_reg.add("histDcaZVsPtData", "dca_z vs p", HistType::kTH2F, {pAxis, {1000, -2.0, 2.0, "DCA_{z} (cm)"}});
+        neg_reg.add("histNClusterTPC", "Number of TPC Clusters vs p", HistType::kTH2F, {pAxis, {160, 0.0, 160.0, "nClustersTPC"}});
+        neg_reg.add("histNCrossedRowTPC", "Number of TPC crossed row vs p", HistType::kTH2F, {pAxis, {160, 0.0, 160.0, "nCrossedRowsTPC"}});
+        neg_reg.add("histNClusterITS", "Number of ITS Clusters vs p", HistType::kTH2F, {pAxis, {10, 0.0, 10.0, "nClustersITS"}});
+        neg_reg.add("histChi2TPC", "chi^2 TPC vs p", HistType::kTH2F, {pAxis, {100, 0.0, 5.0, "chi^2_{TPC}"}});
+        neg_reg.add("histChi2ITS", "chi^2 ITS vs p", HistType::kTH2F, {pAxis, {500, 0.0, 50.0, "chi^2_{ITS}"}});
+        neg_reg.add("histEta", "eta", HistType::kTH2F, {pAxis, {100, -1.0, 1.0, "eta"}});
+        neg_reg.add("histPhi", "phi", HistType::kTH2F, {pAxis, {200, 0.0, TMath::TwoPi(), "phi"}});
 
         //Protons
-        proton_reg.add("histTpcNsigmaData","nsigmaTPC (p)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (p)"}});
-        proton_reg.add("histTofNsigmaData","nsigmaTOF (p)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (p)"}});
+        proton_reg.add("histTpcNsigmaData", "nsigmaTPC (p)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (p)"}});
+        proton_reg.add("histTofNsigmaData", "nsigmaTOF (p)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (p)"}});
         
         //Deuterons
-        deuteron_reg.add("histTpcNsigmaData","nsigmaTPC (d)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (d)"}});
-        deuteron_reg.add("histTofNsigmaData","nsigmaTOF (d)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (d)"}});
+        deuteron_reg.add("histTpcNsigmaData", "nsigmaTPC (d)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (d)"}});
+        deuteron_reg.add("histTofNsigmaData", "nsigmaTOF (d)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (d)"}});
         
         //Antiprotons
-        antiproton_reg.add("histTpcNsigmaData","nsigmaTPC (antip)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (p)"}});
-        antiproton_reg.add("histTofNsigmaData","nsigmaTOF (antip)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (p)"}});
+        antiproton_reg.add("histTpcNsigmaData", "nsigmaTPC (antip)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (p)"}});
+        antiproton_reg.add("histTofNsigmaData", "nsigmaTOF (antip)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (p)"}});
         
         //Antideuterons
-        antideuteron_reg.add("histTpcNsigmaData","nsigmaTPC (d)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (d)"}});
-        antideuteron_reg.add("histTofNsigmaData","nsigmaTOF (d)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (d)"}});
+        antideuteron_reg.add("histTpcNsigmaData", "nsigmaTPC (d)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (d)"}});
+        antideuteron_reg.add("histTofNsigmaData", "nsigmaTOF (d)", HistType::kTH2F, {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (d)"}});
     }
     
 
@@ -108,34 +108,28 @@ struct AntimatterAbsorptionHMPID {
     Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
     Configurable<float> maxDCA_xy{"maxDCA_xy", 0.5f, "maxDCA_xy"};
     Configurable<float> maxDCA_z{"maxDCA_z", 2.0f, "maxDCA_z"};
-    Configurable<int>   lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last TRD cluster (-1 = no requirement)"};
-    Configurable<bool>  enable_PVcontributor_proton{"enable_PVcontributor_proton", true, "is PV contributor (global)"};
-    Configurable<bool>  enable_PVcontributor_antiproton{"enable_PVcontributor_antiproton", true, "is PV contributor (global)"};
-    Configurable<bool>  enable_PVcontributor_deuteron{"enable_PVcontributor_deuteron", true, "is PV contributor (global)"};
-    Configurable<bool>  enable_PVcontributor_antideuteron{"enable_PVcontributor_antideuteron", true, "is PV contributor (global)"};
-
+    Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last TRD cluster (-1 = no requirement)"};
+    Configurable<bool> enable_PVcontributor_proton{"enable_PVcontributor_proton", true, "is PV contributor (global)"};
+    Configurable<bool> enable_PVcontributor_antiproton{"enable_PVcontributor_antiproton", true, "is PV contributor (global)"};
+    Configurable<bool> enable_PVcontributor_deuteron{"enable_PVcontributor_deuteron", true, "is PV contributor (global)"};
+    Configurable<bool> enable_PVcontributor_antideuteron{"enable_PVcontributor_antideuteron", true, "is PV contributor (global)"};
     
     template <typename CollisionType, typename TracksType>
-    void fillHistograms(const CollisionType& event, const TracksType& tracks)  {
-        
-        //Collision process loop
-        bool keepEvent_p = false;
-        bool keepEvent_d = false;
-        bool keepEvent_antip = false;
-        bool keepEvent_antid = false;
-        
+    void fillHistograms(const CollisionType& event, const TracksType& tracks)
+    {
+    
         //Loop over Reconstructed Tracks
         for (auto track : tracks) {
             
             //Loose Track Selection
             if (!track.isGlobalTrackWoDCA()) continue;
-            if (!track.passedITSRefit())  continue;
-            if (!track.passedTPCRefit())  continue;
-            if (track.itsNCls() < 1)      continue;
+            if (!track.passedITSRefit()) continue;
+            if (!track.passedTPCRefit()) continue;
+            if (track.itsNCls() < 1) continue;
             if (track.tpcNClsFound() < 0) continue;
             if (track.tpcNClsCrossedRows() < 60) continue;
-            if (TMath::Abs(track.dcaXY()) > 1)   continue;
-            if (TMath::Abs(track.dcaZ()) > 1)    continue;
+            if (TMath::Abs(track.dcaXY()) > 1.0) continue;
+            if (TMath::Abs(track.dcaZ()) > 1.0) continue;
 
             //Fill QA Histograms (Positive Tracks)
             if (track.sign() > 0) {
@@ -175,22 +169,22 @@ struct AntimatterAbsorptionHMPID {
             if (track.itsNCls() < minReqClusterITS)     continue;
             if (track.tpcNClsFound() < minTPCnClsFound) continue;
             if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC) continue;
-            if (track.tpcChi2NCl()>maxChi2TPC) continue;
-            if (track.itsChi2NCl()>maxChi2ITS) continue;
+            if (track.tpcChi2NCl() > maxChi2TPC) continue;
+            if (track.itsChi2NCl() > maxChi2ITS) continue;
             if (TMath::Abs(track.dcaXY()) > maxDCA_xy) continue;
             if (TMath::Abs(track.dcaZ()) > maxDCA_z) continue;
             if (enable_PVcontributor_global && !(track.isPVContributor())) continue;
-            if (track.eta()<etaMin) continue;
-            if (track.eta()>etaMax) continue;
-            if (track.phi()<phiMin) continue;
-            if (track.phi()>phiMax) continue;
+            if (track.eta() < etaMin) continue;
+            if (track.eta() > etaMax) continue;
+            if (track.phi() < phiMin) continue;
+            if (track.phi() > phiMax) continue;
             
-            if (track.sign() > 0)  {
+            if (track.sign() > 0) {
                 proton_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaPr());
                 deuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaDe());
             }
             
-            if (track.sign() < 0)  {
+            if (track.sign() < 0) {
                 antiproton_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaPr());
                 antideuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaDe());
             }
@@ -198,24 +192,22 @@ struct AntimatterAbsorptionHMPID {
             bool passedProtTPCsel = false;
             bool passedDeutTPCsel = false;
             
-            if (track.tpcNSigmaPr()>nsigmaTPCMin && track.tpcNSigmaPr()<nsigmaTPCMax) passedProtTPCsel=true;
-            if (track.tpcNSigmaDe()>nsigmaTPCMin && track.tpcNSigmaDe()<nsigmaTPCMax) passedDeutTPCsel=true;
+            if (track.tpcNSigmaPr() > nsigmaTPCMin && track.tpcNSigmaPr() < nsigmaTPCMax) passedProtTPCsel = true;
+            if (track.tpcNSigmaDe() > nsigmaTPCMin && track.tpcNSigmaDe() < nsigmaTPCMax) passedDeutTPCsel = true;
             
-            if (track.hasTOF())  {
-                
-                if (track.sign() > 0)  {
+            if (track.hasTOF()) {
+                if (track.sign() > 0) {
                     if (passedProtTPCsel) proton_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaPr());
                     if (passedDeutTPCsel) deuteron_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaDe());
                 }
                 
-                if (track.sign() < 0)  {
+                if (track.sign() < 0) {
                     if (passedProtTPCsel) antiproton_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaPr());
                     if (passedDeutTPCsel) antideuteron_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaDe());
                 }
             }
         }
     }
-
   
     Filter collisionFilter = (nabs(aod::collision::posZ) < zVertexRange);
     Filter trackFilter = (nabs(aod::track::eta) < 0.8f && requireGlobalTrackWoDCAInFilter());
@@ -229,12 +221,12 @@ struct AntimatterAbsorptionHMPID {
         fillHistograms(event, tracks);
     }
     PROCESS_SWITCH(AntimatterAbsorptionHMPID, processData, "process data", true);
-    
 };
-//====================================================================================================================================================================
+
+//**********************************************************************************************************************************************
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<AntimatterAbsorptionHMPID>(cfgc, TaskName{"antimatter-abs-hmpid"})};
 }
-//====================================================================================================================================================================
