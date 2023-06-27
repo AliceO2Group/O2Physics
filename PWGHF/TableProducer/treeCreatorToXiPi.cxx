@@ -16,9 +16,10 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University & GSI
 
 #include "Common/Core/trackUtilities.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -32,6 +33,7 @@ namespace o2::aod
 namespace full
 {
 // from creator
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
@@ -124,10 +126,18 @@ DECLARE_SOA_COLUMN(StatusInvMassLambda, statusInvMassLambda, bool);
 DECLARE_SOA_COLUMN(StatusInvMassCascade, statusInvMassCascade, bool);
 DECLARE_SOA_COLUMN(StatusInvMassOmegac, statusInvMassOmegac, bool);
 DECLARE_SOA_COLUMN(ResultSelections, resultSelections, bool);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromOmega, tpcNSigmaPiFromOmega, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromCasc, tpcNSigmaPiFromCasc, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromLambda, tpcNSigmaPiFromLambda, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPrFromLambda, tpcNSigmaPrFromLambda, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromOmega, tofNSigmaPiFromOmega, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromCasc, tofNSigmaPiFromCasc, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
+DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiFull, "AOD", "HFTOXIPIFULL",
-                  full::XPv, full::YPv, full::ZPv, collision::NumContrib,
+                  full::CollisionId, full::XPv, full::YPv, full::ZPv, collision::NumContrib,
                   full::XDecayVtxOmegac, full::YDecayVtxOmegac, full::ZDecayVtxOmegac,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
@@ -154,6 +164,8 @@ DECLARE_SOA_TABLE(HfToXiPiFull, "AOD", "HFTOXIPIFULL",
                   full::DcaCascDau, full::DcaV0Dau, full::DcaOmegacDau,
                   full::StatusPidLambda, full::StatusPidCascade, full::StatusPidOmegac,
                   full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassOmegac, full::ResultSelections,
+                  full::TpcNSigmaPiFromOmega, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
+                  full::TofNSigmaPiFromOmega, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
                   full::FlagMcMatchRec, full::DebugMcRec);
 
 DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENTS",
@@ -187,6 +199,7 @@ struct HfTreeCreatorToXiPi {
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc)
   {
     rowCandidateFull(
+      candidate.collisionId(),
       candidate.xPv(),
       candidate.yPv(),
       candidate.zPv(),
@@ -276,6 +289,14 @@ struct HfTreeCreatorToXiPi {
       candidate.statusInvMassCascade(),
       candidate.statusInvMassOmegac(),
       candidate.resultSelections(),
+      candidate.tpcNSigmaPiFromOmega(),
+      candidate.tpcNSigmaPiFromCasc(),
+      candidate.tpcNSigmaPiFromLambda(),
+      candidate.tpcNSigmaPrFromLambda(),
+      candidate.tofNSigmaPiFromOmega(),
+      candidate.tofNSigmaPiFromCasc(),
+      candidate.tofNSigmaPiFromLambda(),
+      candidate.tofNSigmaPrFromLambda(),
       flagMc,
       debugMc);
   }

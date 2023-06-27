@@ -26,22 +26,25 @@ namespace NucleiTableNS
 {
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Zvertex, zVertex, uint8_t);
 DECLARE_SOA_COLUMN(ITSclsMap, itsClsMap, uint8_t);
 DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, uint8_t);
-DECLARE_SOA_COLUMN(DCAxy, dcaxy, int8_t);
-DECLARE_SOA_COLUMN(DCAz, dcaz, int8_t);
+DECLARE_SOA_COLUMN(DCAxy, dcaxy, uint8_t);
+DECLARE_SOA_COLUMN(DCAz, dcaz, uint8_t);
 DECLARE_SOA_COLUMN(Flags, flags, uint16_t);
 DECLARE_SOA_COLUMN(TPCnsigma, tpcnsigma, uint8_t);
 DECLARE_SOA_COLUMN(TOFmass, tofmass, uint8_t);
 DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
+DECLARE_SOA_COLUMN(gPhi, genPhi, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
 
 } // namespace NucleiTableNS
 DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::Pt,
                   NucleiTableNS::Eta,
+                  NucleiTableNS::Phi,
                   NucleiTableNS::Zvertex,
                   NucleiTableNS::ITSclsMap,
                   NucleiTableNS::TPCnCls,
@@ -54,6 +57,7 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
 DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::Pt,
                   NucleiTableNS::Eta,
+                  NucleiTableNS::Phi,
                   NucleiTableNS::Zvertex,
                   NucleiTableNS::ITSclsMap,
                   NucleiTableNS::TPCnCls,
@@ -64,6 +68,7 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::TOFmass,
                   NucleiTableNS::gPt,
                   NucleiTableNS::gEta,
+                  NucleiTableNS::gPhi,
                   NucleiTableNS::PDGcode)
 
 } // namespace o2::aod

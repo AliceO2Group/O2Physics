@@ -97,56 +97,15 @@ float rPVtrwTOF(TCs tracks, int nPVTracks)
 // By default a collision is associated with the BC closest in time.
 // Any BC falling within a BC window of meanBC +- deltaBC could potentially be the
 // true BC.
-// The bcIter is ideally placed within [minBC, maxBC], but it does not need to be.
+//
+template <typename T>
+T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs);
+
 template <typename I, typename T>
-T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
-{
-  // range of BCs to consider
-  uint64_t minBC = (uint64_t)deltaBC < meanBC ? meanBC - (uint64_t)deltaBC : 0;
-  uint64_t maxBC = meanBC + (uint64_t)deltaBC;
-  LOGF(debug, "  minBC %d maxBC %d bcIterator %d (%d)", minBC, maxBC, bcIter.globalBC(), bcIter.globalIndex());
+T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs);
 
-  // find slice of BCs table with BC in [minBC, maxBC]
-  int64_t minBCId = bcIter.globalIndex();
-  int64_t maxBCId = bcIter.globalIndex();
-
-  // lower limit
-  if (bcIter.globalBC() < minBC) {
-    while (bcIter != bcs.end() && bcIter.globalBC() < minBC) {
-      ++bcIter;
-      minBCId = bcIter.globalIndex();
-    }
-  } else {
-    while (bcIter.globalIndex() > 0 && bcIter.globalBC() >= minBC) {
-      minBCId = bcIter.globalIndex();
-      --bcIter;
-    }
-  }
-
-  // upper limit limit
-  if (bcIter.globalBC() < maxBC) {
-    while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC) {
-      maxBCId = bcIter.globalIndex();
-      ++bcIter;
-    }
-
-  } else {
-    while (bcIter.globalIndex() > 0 && bcIter.globalBC() > maxBC) {
-      --bcIter;
-      maxBCId = bcIter.globalIndex();
-    }
-  }
-  LOGF(debug, "  BC range: %d - %d", minBCId, maxBCId);
-
-  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
-  bcs.copyIndexBindings(slice);
-  LOGF(debug, "  size of slice %d", slice.size());
-  return slice;
-}
-
-// -----------------------------------------------------------------------------
-// The range of compatible BCs is calculated from the collision time and the time
-// resolution dt. Typically the range is +- 4*dt.
+// In this variant of compatibleBCs the range of compatible BCs is calculated from the
+// collision time and the time resolution dt. Typically the range is +- 4*dt.
 template <typename T>
 T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
 {
@@ -170,6 +129,108 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
     deltaBC = nMinBCs;
   }
   LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
+
+  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
+}
+
+// same as above but with an other collision iterator as input
+template <typename T>
+T compatibleBCs1(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
+{
+  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
+
+  // return if collisions has no associated BC
+  if (!collision.has_foundBC()) {
+    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+  }
+
+  // get associated BC
+  auto bcIter = collision.foundBC_as<T>();
+
+  // due to the filling scheme the most probable BC may not be the one estimated from the collision time
+  uint64_t mostProbableBC = bcIter.globalBC();
+  uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+
+  // enforce minimum number for deltaBC
+  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
+  if (deltaBC < nMinBCs) {
+    deltaBC = nMinBCs;
+  }
+  LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
+
+  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
+}
+
+// In this variant of compatibleBCs the bcIter is ideally placed within
+// [minBC, maxBC], but it does not need to be. The range is given by +- delatBC.
+template <typename I, typename T>
+T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
+{
+  // range of BCs to consider
+  uint64_t minBC = (uint64_t)deltaBC < meanBC ? meanBC - (uint64_t)deltaBC : 0;
+  uint64_t maxBC = meanBC + (uint64_t)deltaBC;
+  LOGF(debug, "  minBC %d maxBC %d bcIterator %d (%d)", minBC, maxBC, bcIter.globalBC(), bcIter.globalIndex());
+
+  // check [min,max]BC to overlap with [bcs.iteratorAt([0,bcs.size() - 1])
+  if (maxBC < bcs.iteratorAt(0).globalBC() || minBC > bcs.iteratorAt(bcs.size() - 1).globalBC()) {
+    LOGF(info, "<compatibleBCs> No overlap of [%d, %d] and [%d, %d]", minBC, maxBC, bcs.iteratorAt(0).globalBC(), bcs.iteratorAt(bcs.size() - 1).globalBC());
+    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+  }
+
+  // find slice of BCs table with BC in [minBC, maxBC]
+  int moveCount = 0;
+  int64_t minBCId = bcIter.globalIndex();
+  int64_t maxBCId = bcIter.globalIndex();
+
+  // lower limit
+  if (bcIter.globalBC() < minBC) {
+    while (bcIter != bcs.end() && bcIter.globalBC() < minBC) {
+      ++bcIter;
+      ++moveCount;
+      minBCId = bcIter.globalIndex();
+    }
+  } else {
+    while (bcIter.globalIndex() > 0 && bcIter.globalBC() >= minBC) {
+      minBCId = bcIter.globalIndex();
+      --bcIter;
+      --moveCount;
+    }
+  }
+
+  // upper limit limit
+  if (bcIter.globalBC() < maxBC) {
+    while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC) {
+      maxBCId = bcIter.globalIndex();
+      ++bcIter;
+      ++moveCount;
+    }
+
+  } else {
+    while (bcIter.globalIndex() > 0 && bcIter.globalBC() > maxBC) {
+      --bcIter;
+      --moveCount;
+      maxBCId = bcIter.globalIndex();
+    }
+  }
+  LOGF(debug, "  BC range: %d - %d", minBCId, maxBCId);
+
+  // reset bcIter
+  bcIter.moveByIndex(-moveCount);
+
+  // create bc slice
+  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
+  bcs.copyIndexBindings(slice);
+  LOGF(debug, "  size of slice %d", slice.size());
+  return slice;
+}
+
+// In this variant of compatibleBCs the range of compatible BCs is defined by meanBC +- deltaBC.
+template <typename T>
+T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs)
+{
+  // find BC with globalBC ~ meanBC
+  uint64_t ind = (uint64_t)(bcs.size() / 2);
+  auto bcIter = bcs.iteratorAt(ind);
 
   return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
 }
@@ -199,18 +260,6 @@ T MCcompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels
   if (deltaBC < nMinBCs) {
     deltaBC = nMinBCs;
   }
-
-  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
-}
-
-// -----------------------------------------------------------------------------
-// In this case the range of compatible BCs is defied by meanBC +- deltaBC.
-template <typename T>
-T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs)
-{
-  // find BC with globalBC ~ meanBC
-  uint64_t ind = (uint64_t)(bcs.size() / 2);
-  auto bcIter = bcs.iteratorAt(ind);
 
   return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
 }

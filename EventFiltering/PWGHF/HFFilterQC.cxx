@@ -52,8 +52,8 @@ struct HfFilterQc { // Main struct for HF trigger QC
     hPtDistr[0] = registry.add<TH2>("hPtDistrAll", "All events;;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {50, -0.5, 10.5}});
     hPtDistr[1] = registry.add<TH2>("hPtDistrTriggered", "HF triggered events;;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {11, -0.5, 10.5}});
     for (auto iTrig = 0; iTrig < kNtriggersHF; ++iTrig) {
-      hPartPerEvent[iTrig + 2] = registry.add<TH2>(Form("hPartPerEvent%s", HfTriggerNames[iTrig].data()), Form("%s Filtered events;;number of particles", HfTriggerNames[iTrig].data()), HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {11, -0.5, 10.5}});
-      hPtDistr[iTrig + 2] = registry.add<TH2>(Form("hPtDistr%s", HfTriggerNames[iTrig].data()), Form("%s Filtered events;;#it{p}_{T} (GeV/#it{c})", HfTriggerNames[iTrig].data()), HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {11, -0.5, 10.5}});
+      hPartPerEvent[iTrig + 2] = registry.add<TH2>(Form("hPartPerEvent%s", hfTriggerNames[iTrig].data()), Form("%s Filtered events;;number of particles", hfTriggerNames[iTrig].data()), HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {11, -0.5, 10.5}});
+      hPtDistr[iTrig + 2] = registry.add<TH2>(Form("hPtDistr%s", hfTriggerNames[iTrig].data()), Form("%s Filtered events;;#it{p}_{T} (GeV/#it{c})", hfTriggerNames[iTrig].data()), HistType::kTH2F, {{kNCharmParticles, -0.5, kNCharmParticles - 0.5}, {11, -0.5, 10.5}});
     }
     for (auto iTrig = 0; iTrig < kNtriggersHF + 1; ++iTrig) {
       for (auto iBin = 0; iBin < kNCharmParticles; ++iBin) {

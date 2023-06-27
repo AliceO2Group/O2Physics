@@ -8,6 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
+#define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
+
+enum eConfiguration { eTaskName = 1,
+                      eVerbose = 2,
+                      eConfiguration_N };
 
 enum eRecoSim { eRec = 0,
                 eSim = 1 };
@@ -36,3 +42,5 @@ enum eParticleHistograms { ePhi,
                            ePt,
                            eEta,
                            eParticleHistograms_N };
+
+#endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_

@@ -34,6 +34,7 @@ namespace resocollision
 DECLARE_SOA_COLUMN(MultV0M, multV0M, float);         //! V0M multiplicity
 DECLARE_SOA_COLUMN(MultTPCtemp, multTPCtemp, float); //! TPC multiplicity (temporal)
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float);   //! Sphericity of the event
+DECLARE_SOA_COLUMN(BMagField, bMagField, float);     //! Magnetic field
 } // namespace resocollision
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
                   o2::soa::Index<>,
@@ -43,6 +44,7 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
                   resocollision::MultV0M,
                   resocollision::MultTPCtemp,
                   resocollision::Sphericity,
+                  resocollision::BMagField,
                   timestamp::Timestamp);
 using ResoCollision = ResoCollisions::iterator;
 
