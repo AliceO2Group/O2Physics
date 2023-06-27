@@ -283,14 +283,14 @@ struct OnTheFlyTracker {
                             trackParCov.getSigma1Pt2());
       tracksLabels(mcParticle.globalIndex(), 0);
 
-      // populate extra tables if required to do so 
-      if(populateTracksExtra){
-        tracksExtra(0.0f, (uint32_t)0, (uint8_t)0, (uint8_t)0, 
+      // populate extra tables if required to do so
+      if (populateTracksExtra) {
+        tracksExtra(0.0f, (uint32_t)0, (uint8_t)0, (uint8_t)0,
                     (int8_t)0, (int8_t)0, (uint8_t)0, (uint8_t)0,
-                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
       }
-      if(populateTrackSelection){
+      if (populateTrackSelection) {
         trackSelection((uint8_t)0, false, false, false, false, false, false);
         trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
