@@ -107,7 +107,8 @@ struct EMPhotonFilter {
           }
 
         } // end of v0 photon loop
-      } else if constexpr (static_cast<bool>(system & EM_Filter_PhotonType::kPHOS)) {
+      }
+      if constexpr (static_cast<bool>(system & EM_Filter_PhotonType::kPHOS)) {
         int nPHOSclu = 0;
         int nPHOSnbar = 0;
         auto photons2_coll = photons2.sliceBy(perCollision_phos, collision.globalIndex());
@@ -169,14 +170,15 @@ struct EMPhotonFilter {
         if (keepEvent[kNbar]) {
           mHistManager.fill(HIST("fProcessedEvents"), 5.);
         }
-      } else if constexpr (static_cast<bool>(system & EM_Filter_PhotonType::kEMC)) {
+      }
+      if constexpr (static_cast<bool>(system & EM_Filter_PhotonType::kEMC)) {
         // so far, do nothing.
       }
       tags(keepEvent[kPhot], keepEvent[kEl], keepEvent[kPair], keepEvent[kNbar], keepEvent[kPCM_Wwire]);
     } // end of collision loop
   }
 
-  void processPCM(aod::Collisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& v0legs)
+  void process_PCM(aod::Collisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& v0legs)
   {
     const uint8_t system = EM_Filter_PhotonType::kPCM;
     runFilter<system>(collisions, v0photons, nullptr, nullptr, v0legs);
@@ -184,21 +186,28 @@ struct EMPhotonFilter {
 
   Filter phosCluFilter = (o2::aod::calocluster::e > 0.3f);
   using CluCandidates = o2::soa::Filtered<o2::aod::CaloClusters>;
-  void processPHOS(aod::Collisions const& collisions, CluCandidates const& clusters)
+  void process_PHOS(aod::Collisions const& collisions, CluCandidates const& clusters)
   {
     const uint8_t system = EM_Filter_PhotonType::kPHOS;
     runFilter<system>(collisions, nullptr, clusters, nullptr, nullptr);
   }
 
-  void processEMC(aod::Collisions const& collisions, aod::SkimEMCClusters const& clusters)
+  void process_EMC(aod::Collisions const& collisions, aod::SkimEMCClusters const& clusters)
   {
     const uint8_t system = EM_Filter_PhotonType::kEMC;
     runFilter<system>(collisions, nullptr, nullptr, clusters, nullptr);
   }
 
-  PROCESS_SWITCH(EMPhotonFilter, processPCM, "Process PCM software trigger decision", true);
-  PROCESS_SWITCH(EMPhotonFilter, processPHOS, "Process PHOS software trigger decision", true);
-  PROCESS_SWITCH(EMPhotonFilter, processEMC, "Process EMC software trigger decision", false);
+  void process_PCM_PHOS(aod::Collisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& v0legs, CluCandidates const& clusters)
+  {
+    const uint8_t system = EM_Filter_PhotonType::kPCM | EM_Filter_PhotonType::kPHOS;
+    runFilter<system>(collisions, v0photons, clusters, nullptr, v0legs);
+  }
+
+  PROCESS_SWITCH(EMPhotonFilter, process_PCM, "Process PCM software trigger decision", false);
+  PROCESS_SWITCH(EMPhotonFilter, process_PHOS, "Process PHOS software trigger decision", false);
+  PROCESS_SWITCH(EMPhotonFilter, process_EMC, "Process EMC software trigger decision", false);
+  PROCESS_SWITCH(EMPhotonFilter, process_PCM_PHOS, "Process PCM and PHOS software trigger decision", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
