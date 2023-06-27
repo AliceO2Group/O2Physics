@@ -19,7 +19,7 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
-#include "../filterTables.h"
+#include "EventFiltering/filterTables.h"
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2;

@@ -10,16 +10,15 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
+#include <fmt/format.h>
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
 #include <iostream>
 #include <cstdio>
 #include <random>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include <fmt/format.h>
-#include <rapidjson/document.h>
-#include <rapidjson/filereadstream.h>
 
 #include "filterTables.h"
 
