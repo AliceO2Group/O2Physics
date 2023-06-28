@@ -9,44 +9,45 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorChicToJpsiGamma.cxx
-/// \brief chi_c selection task.
-/// \note Adapted from candidateSelectorXToJpsiPiPi.cxx
+/// \file candidateSelectorXToJpsiPiPi.cxx
+/// \brief X(3872) selection task.
+/// \note Adapted from candidateSelectorJpsi.cxx
 ///
-/// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Università/INFN Cagliari
+/// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
+/// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "ALICE3/DataModel/ECAL.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_chic;
+using namespace o2::aod::hf_cand_x;
 using namespace o2::analysis;
-using namespace o2::analysis::hf_cuts_chic_to_jpsi_gamma;
+using namespace o2::analysis::hf_cuts_x_to_jpsi_pi_pi;
 
 /// Struct for applying Jpsi selection cuts
-struct HfCandidateSelectorChicToJpsiGamma {
-  Produces<aod::HfSelChicToJpsiGamma> hfSelChicToJpsiGammaCandidate;
+struct HfCandidateSelectorXToJpsiPiPi {
+  Produces<aod::HfSelXToJpsiPiPi> hfSelXToJpsiPiPiCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
-  // Configurable<double> TPCNClsFindableMin{"TPCNClsFindableMin", 70., "Lower bound of TPC findable clusters for good PID"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 10., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
-  // TPC PID
+  // Configurable<double> TPCNClsFindableMin{"TPCNClsFindableMin", 70., "Lower bound of TPC findable clusters for good PID"};
+  // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
   Configurable<double> ptPidTofMax{"ptPidTofMax", 10., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   // topological cuts
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_to_jpsi_gamma::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_chic_to_jpsi_gamma::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_x_to_jpsi_pi_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
   /// Selection on goodness of daughter tracks
   /// \note should be applied at candidate selection
@@ -59,42 +60,45 @@ struct HfCandidateSelectorChicToJpsiGamma {
   }
 
   /// Conjugate independent toplogical cuts
-  /// \param hfCandChic is candidate
+  /// \param hfCandX is candidate
   /// \param trackNeutral is the track with the pi+ hypothesis
+  /// \param trackPos is the track with the pi+ hypothesis
+  /// \param trackNeg is the track with the pi- hypothesis
   /// \return true if candidate passes all cuts
   template <typename T1, typename T2, typename T3>
-  bool selectionTopol(const T1& hfCandChic, const T2& hfCandJpsi, const T3& ecal)
+  bool selectionTopol(const T1& hfCandX, const T2& hfCandJpsi, const T3& trackPos, const T3& trackNeg)
   {
-    auto candpT = hfCandChic.pt();
+    auto candpT = hfCandX.pt();
     int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
+      // Printf("X topol selection failed at getpTBin");
       return false;
     }
 
     if (candpT < ptCandMin || candpT >= ptCandMax) {
+      // Printf("X topol selection failed at cand pT check");
       return false; // check that the candidate pT is within the analysis range
     }
 
-    auto mchic = RecoDecay::getMassPDG(20443); // chi_c1(1p)
-    if (TMath::Abs(invMassChicToJpsiGamma(hfCandChic) - mchic) > cuts->get(pTBin, "m")) {
-      // Printf("Chic topol selection failed at mass diff check");
+    // TODO: replace hardcoded mass with "RecoDecay::getMassPDG(9920443)"
+    if (TMath::Abs(invMassXToJpsiPiPi(hfCandX) - 3.87168) > cuts->get(pTBin, "m")) {
+      // Printf("X topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds
     }
 
-    if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi"))) { // adf: Warning: no cut on photon
-      return false;                                        // cut on daughter pT
+    if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi")) || (trackNeg.pt() < cuts->get(pTBin, "pT Pi")) || (trackPos.pt() < cuts->get(pTBin, "pT Pi"))) {
+      // Printf("X topol selection failed at daughter pT check");
+      return false; // cut on daughter pT
     }
 
-    // if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi")) || (trackNeg.pt() < cuts->get(pTBin, "pT Pi")) || (trackPos.pt() < cuts->get(pTBin, "pT Pi"))) {
-    //   return false; //cut on daughter pT
-    // }
-
-    if (hfCandChic.cpa() < cuts->get(pTBin, "CPA")) {
+    if (hfCandX.cpa() < cuts->get(pTBin, "CPA")) {
       return false; // CPA check
     }
 
-    if ((TMath::Abs(hfCandChic.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) { // adf: Warning: no cut on photon
-      return false;                                                                  // DCA check on daughters
+    if ((TMath::Abs(hfCandX.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi")) ||
+        (TMath::Abs(hfCandX.impactParameter1()) > cuts->get(pTBin, "d0 Pi")) ||
+        (TMath::Abs(hfCandX.impactParameter2()) > cuts->get(pTBin, "d0 Pi"))) {
+      return false; // DCA check on daughters
     }
 
     // add more cuts: d0 product? PCA?
@@ -129,7 +133,6 @@ struct HfCandidateSelectorChicToJpsiGamma {
     return true;
   }
 
-  //------------------------------------------------------------------------------------
   /// Check if track is compatible with given TPC Nsigma cut for the pion hypothesis
   /// \param track is the track
   /// \param nSigmaCut is the nsigma threshold to test against
@@ -140,89 +143,99 @@ struct HfCandidateSelectorChicToJpsiGamma {
     if (nSigmaCut > 999.) {
       return true;
     }
-    //    return track.tpcNSigmaPi() < nSigmaCut;
-    return true;
+    return track.tpcNSigmaPi() < nSigmaCut;
   }
 
-  // Check if track is compatible with given TOF NSigma cut for the pion hypothesis
-  // \param track is the track
-  // \param nSigmaCut is the nSigma threshold to test against
-  // \return true if track satisfies TOF pion hypothesis for given NSigma cut
+  /// Check if track is compatible with given TOF NSigma cut for the pion hypothesis
+  /// \param track is the track
+  /// \param nSigmaCut is the nSigma threshold to test against
+  /// \return true if track satisfies TOF pion hypothesis for given NSigma cut
   template <typename T>
   bool selectionPIDTOF(const T& track, double nSigmaCut)
   {
     if (nSigmaCut > 999.) {
       return true;
     }
-    //    return track.tofNSigmaPi() < nSigmaCut;
-    return true;
+    return track.tofNSigmaPi() < nSigmaCut;
   }
 
-  // PID selection on daughter track
-  // \param track is the daughter track
-  // \return 1 if successful PID match, 0 if successful PID rejection, -1 if no PID info
+  /// PID selection on daughter track
+  /// \param track is the daughter track
+  /// \return 1 if successful PID match, 0 if successful PID rejection, -1 if no PID info
   template <typename T>
   int selectionPID(const T& track)
   { // use both TPC and TOF here; in run5 only TOF makes sense. add some flag for run3/run5 data later?
-    // if (validTofPid(track)) {
-    //   if (!selectionPIDTOF(track, nSigmaTofMax)) {
+    if (validTofPid(track)) {
+      if (!selectionPIDTOF(track, nSigmaTofMax)) {
+        return 0; // rejected by PID
+      } else {
+        return 1; // positive PID
+      }
+    } else {
+      return -1; // no PID info
+    }
+
+    // no tpc in run5, so for now comment it out
+    // if (validTPCPID(track)) {
+    //   if (!selectionPIDTPC(track, nSigmaTpcMax)) {
     //     return 0; //rejected by PID
     //   } else {
     //     return 1; //positive PID
     //   }
     // } else {
     //   return -1; //no PID info
-
-    return true;
+    // }
   }
 
-  //---------------------------------------------------------------
-
-  void process(aod::HfCandChic const& hfCandChics, aod::HfCand2Prong const&, aod::BigTracksPID const& tracks, aod::ECALs const& ecals)
+  void process(aod::HfCandX const& hfCandXs, aod::HfCand2Prong const&, aod::BigTracksPID const& tracks)
   {
-    for (auto& hfCandChic : hfCandChics) { // looping over chi_c candidates
+    for (auto& hfCandX : hfCandXs) { // looping over X candidates
       // note the difference between Jpsi (index0) and pions (index1,2)
-      auto candJpsi = hfCandChic.prong0();
-      auto gamma = hfCandChic.prong1_as<aod::ECALs>();
+      auto candJpsi = hfCandX.prong0();
+      auto trackPos = hfCandX.prong1_as<aod::BigTracksPID>(); // positive daughter
+      auto trackNeg = hfCandX.prong2_as<aod::BigTracksPID>(); // negative daughter
 
       int selJpsiToEE = 1;
       int selJpsiToMuMu = 1;
 
-      // check if flagged as chic --> Jpsi gamma
-      if (!(hfCandChic.hfflag() & 1 << hf_cand_chic::DecayType::ChicToJpsiToEEGamma)) {
+      // check if flagged as X --> Jpsi Pi Pi
+      if (!(hfCandX.hfflag() & 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi)) {
         selJpsiToEE = 0;
       }
 
-      if (!(hfCandChic.hfflag() & 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma)) {
+      if (!(hfCandX.hfflag() & 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi)) {
         selJpsiToMuMu = 0;
       }
 
       if (selJpsiToEE == 0 && selJpsiToMuMu == 0) {
-        hfSelChicToJpsiGammaCandidate(0, 0);
+        hfSelXToJpsiPiPiCandidate(0, 0);
         continue;
       }
 
       // daughter track validity selection
-      if (!daughterSelection(gamma)) { // no selection at present
-        hfSelChicToJpsiGammaCandidate(0, 0);
+      if (!daughterSelection(trackPos) || !daughterSelection(trackNeg)) {
+        hfSelXToJpsiPiPiCandidate(0, 0);
+        // Printf("X candidate selection failed at daughter selection");
         continue;
       }
 
       // implement filter bit 4 cut - should be done before this task at the track selection level
       // need to add special cuts (additional cuts on decay length and d0 norm)
 
-      if (!selectionTopol(hfCandChic, candJpsi, gamma)) { // check selections
-        hfSelChicToJpsiGammaCandidate(0, 0);
+      if (!selectionTopol(hfCandX, candJpsi, trackPos, trackNeg)) {
+        hfSelXToJpsiPiPiCandidate(0, 0);
+        // Printf("X candidate selection failed at selection topology");
         continue;
       }
 
-      if (selectionPID(gamma) == 0) { // no selection at present
-        hfSelChicToJpsiGammaCandidate(0, 0);
+      if (selectionPID(trackPos) == 0 || selectionPID(trackNeg) == 0) {
+        hfSelXToJpsiPiPiCandidate(0, 0);
+        // Printf("X candidate selection failed at selection PID");
         continue;
       }
 
-      hfSelChicToJpsiGammaCandidate(selJpsiToEE, selJpsiToMuMu);
-      // Printf("Chi_c candidate selection successful, candidate should be selected");
+      hfSelXToJpsiPiPiCandidate(selJpsiToEE, selJpsiToMuMu);
+      // Printf("X candidate selection successful, candidate should be selected");
     }
   }
 };
@@ -230,5 +243,5 @@ struct HfCandidateSelectorChicToJpsiGamma {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorChicToJpsiGamma>(cfgc)};
+    adaptAnalysisTask<HfCandidateSelectorXToJpsiPiPi>(cfgc)};
 }

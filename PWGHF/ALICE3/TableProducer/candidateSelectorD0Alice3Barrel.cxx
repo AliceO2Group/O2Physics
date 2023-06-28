@@ -9,20 +9,21 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorD0Alice3Forward.cxx
+/// \file candidateSelectorD0Alice3Barrel.cxx
 /// \brief D0(bar) → π± K∓ selection task
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include "Framework/runDataProcessing.h"
+#include "ALICE3/DataModel/RICH.h"
+#include "Common/Core/TrackSelectorPID.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/PID.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/TrackSelectorPID.h"
-#include "ALICE3/DataModel/RICH.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "ReconstructionDataFormats/PID.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -36,20 +37,20 @@ namespace o2::aod
 namespace indices
 {
 DECLARE_SOA_INDEX_COLUMN(Track, track);
-DECLARE_SOA_INDEX_COLUMN(FRICH, frich);
+DECLARE_SOA_INDEX_COLUMN(RICH, rich);
 } // namespace indices
-DECLARE_SOA_INDEX_TABLE_USER(FRICHTracksIndex, Tracks, "FRICHTRK", indices::TrackId, indices::FRICHId);
+DECLARE_SOA_INDEX_TABLE_USER(RICHTracksIndex, Tracks, "RICHTRK", indices::TrackId, indices::RICHId);
 } // namespace o2::aod
 
-struct HfCandidateSelectorD0Alice3ForwardRichIndexBuilder { // Builder of the RICH-track index linkage
-  Builds<o2::aod::FRICHTracksIndex> indF;
+struct HfCandidateSelectorD0Alice3BarrelRichIndexBuilder { // Builder of the RICH-track index linkage
+  Builds<o2::aod::RICHTracksIndex> indB;
 
   void init(o2::framework::InitContext&) {}
 };
 
 /// Struct for applying D0 selection cuts
-struct HfCandidateSelectorD0Alice3Forward {
-  Produces<aod::HfSelD0Alice3Forward> hfSelD0CandidateALICE3Forward;
+struct HfCandidateSelectorD0Alice3Barrel {
+  Produces<aod::HfSelD0Alice3Barrel> hfSelD0CandidateALICE3Barrel;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
@@ -67,7 +68,7 @@ struct HfCandidateSelectorD0Alice3Forward {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_d0_to_pi_k::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "D0 candidate selection per pT bin"};
 
-  using Trks = soa::Join<aod::BigTracksPIDExtended, aod::Tracks, aod::FRICHTracksIndex, aod::TracksExtra>;
+  using Trks = soa::Join<aod::BigTracksPIDExtended, aod::RICHTracksIndex, aod::McTrackLabels>;
 
   /*
   /// Selection on goodness of daughter tracks
@@ -190,7 +191,7 @@ struct HfCandidateSelectorD0Alice3Forward {
     return true;
   }
 
-  void process(aod::HfCand2Prong const& candidates, Trks const& forwardtracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCand2Prong const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
 
     for (auto& candidate : candidates) {
@@ -198,55 +199,111 @@ struct HfCandidateSelectorD0Alice3Forward {
       // selection flag
       int statusHFFlag = 0;
       int statusD0NoPid = 0;
+      int statusD0PerfectPid = 0;
+      int statusD0TofPid = 0;
       int statusD0RICHPID = 0;
-
+      int statusD0TofPlusRichPid = 0;
+      int statusD0barTofPlusRichPid = 0;
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
-        hfSelD0CandidateALICE3Forward(statusHFFlag, statusD0NoPid, statusD0RICHPID);
+        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPid, statusD0PerfectPid, statusD0TofPid, statusD0RICHPID, statusD0TofPlusRichPid, statusD0barTofPlusRichPid);
         continue;
       }
       statusHFFlag = 1;
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
-        hfSelD0CandidateALICE3Forward(statusHFFlag, statusD0NoPid, statusD0RICHPID);
+        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPid, statusD0PerfectPid, statusD0TofPid, statusD0RICHPID, statusD0TofPlusRichPid, statusD0barTofPlusRichPid);
         continue;
       }
 
       auto trackPos = candidate.prong0_as<Trks>();
       auto trackNeg = candidate.prong1_as<Trks>();
 
-      // auto momentumPosTrack = trackPos.p();
-      // auto momentumNegTrack = trackNeg.p();
+      auto momentumPosTrack = trackPos.p();
+      auto momentumNegTrack = trackNeg.p();
 
       bool topolD0 = selectionTopolConjugate(candidate, trackPos, trackNeg);
       bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
-        hfSelD0CandidateALICE3Forward(statusHFFlag, statusD0NoPid, statusD0RICHPID);
+        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPid, statusD0PerfectPid, statusD0TofPid, statusD0RICHPID, statusD0TofPlusRichPid, statusD0barTofPlusRichPid);
         continue;
       }
 
-      // float nsigmaTOFNegKaon = -5000.0;
+      int pdgPositive = 0;
+      int pdgNegative = 0;
+      if (trackPos.has_mcParticle()) {
+        pdgPositive = trackPos.mcParticle_as<aod::McParticles_000>().pdgCode();
+      }
+      if (trackNeg.has_mcParticle()) {
+        pdgNegative = trackNeg.mcParticle_as<aod::McParticles_000>().pdgCode();
+      }
+
+      float nsigmaTOFNegKaon = -5000.0;
       float nsigmaRICHNegKaon = -5000.0;
-      // float nsigmaTOFPosPion = -5000.0;
+      float nsigmaTOFPosPion = -5000.0;
       float nsigmaRICHPosPion = -5000.0;
+      float nsigmaTOFNegPion = -5000.0;
+      float nsigmaRICHNegPion = -5000.0;
+      float nsigmaTOFPosKaon = -5000.0;
+      float nsigmaRICHPosKaon = -5000.0;
 
-      if (trackPos.has_frich()) {
-        nsigmaRICHPosPion = trackPos.frich().frichNsigmaPi();
+      if (trackPos.hasTOF()) {
+        nsigmaTOFPosPion = trackPos.tofNSigmaPi();
+        nsigmaTOFPosKaon = trackPos.tofNSigmaKa();
       }
-      if (trackNeg.has_frich()) {
-        nsigmaRICHNegKaon = trackNeg.frich().frichNsigmaKa();
+      if (trackNeg.hasTOF()) {
+        nsigmaTOFNegKaon = trackNeg.tofNSigmaKa();
+        nsigmaTOFNegPion = trackNeg.tofNSigmaPi();
+      }
+      if (trackPos.has_rich()) {
+        nsigmaRICHPosPion = trackPos.rich().richNsigmaPi();
+        nsigmaRICHPosKaon = trackPos.rich().richNsigmaKa();
+      }
+      if (trackNeg.has_rich()) {
+        nsigmaRICHNegKaon = trackNeg.rich().richNsigmaKa();
+        nsigmaRICHNegPion = trackNeg.rich().richNsigmaPi();
       }
 
-      // bool selectPionTOFplusRICH = false;
-      // bool selectKaonTOFplusRICH = false;
+      bool selectPosPionTOFplusRICH = false;
+      bool selectNegKaonTOFplusRICH = false;
+      bool selectNegPionTOFplusRICH = false;
+      bool selectPosKaonTOFplusRICH = false;
+
+      if ((momentumPosTrack < 0.6 && std::abs(nsigmaTOFPosPion) < 3.0))
+        selectPosPionTOFplusRICH = true;
+      if ((momentumPosTrack > 0.6 && trackPos.has_rich() && std::sqrt(nsigmaRICHPosPion * nsigmaRICHPosPion + nsigmaTOFPosPion * nsigmaTOFPosPion) < 3.0))
+        selectPosPionTOFplusRICH = true;
+      if ((momentumNegTrack < 2.0 && std::abs(nsigmaTOFNegKaon) < 3.0))
+        selectNegKaonTOFplusRICH = true;
+      if ((momentumNegTrack > 2.0 && trackNeg.has_rich() && std::sqrt(nsigmaRICHNegKaon * nsigmaRICHNegKaon + nsigmaTOFNegKaon * nsigmaTOFNegKaon) < 3.0))
+        selectNegKaonTOFplusRICH = true;
+
+      if ((momentumNegTrack < 0.6 && std::abs(nsigmaTOFNegPion) < 3.0))
+        selectNegPionTOFplusRICH = true;
+      if ((momentumNegTrack > 0.6 && trackNeg.has_rich() && std::sqrt(nsigmaRICHNegPion * nsigmaRICHNegPion + nsigmaTOFNegPion * nsigmaTOFNegPion) < 3.0))
+        selectNegPionTOFplusRICH = true;
+      if ((momentumPosTrack < 2.0 && std::abs(nsigmaTOFPosKaon) < 3.0))
+        selectPosKaonTOFplusRICH = true;
+      if ((momentumPosTrack > 2.0 && trackPos.has_rich() && std::sqrt(nsigmaRICHPosKaon * nsigmaRICHPosKaon + nsigmaTOFPosKaon * nsigmaTOFPosKaon) < 3.0))
+        selectPosKaonTOFplusRICH = true;
 
       if (topolD0) {
         statusD0NoPid = 1;
+        if (pdgPositive == 211 && pdgNegative == -321)
+          statusD0PerfectPid = 1;
+        if ((std::abs(nsigmaTOFPosPion) < 3.0 && std::abs(nsigmaTOFNegKaon) < 3.0))
+          statusD0TofPid = 1;
         if ((std::abs(nsigmaRICHPosPion) < 3.0 && std::abs(nsigmaRICHNegKaon) < 3.0))
           statusD0RICHPID = 1;
+        if (selectPosPionTOFplusRICH && selectNegKaonTOFplusRICH)
+          statusD0TofPlusRichPid = 1;
       }
-      hfSelD0CandidateALICE3Forward(statusHFFlag, statusD0NoPid, statusD0RICHPID);
+      if (topolD0bar) {
+        if (selectNegPionTOFplusRICH && selectPosKaonTOFplusRICH)
+          statusD0barTofPlusRichPid = 1;
+      }
+      hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPid, statusD0PerfectPid, statusD0TofPid, statusD0RICHPID, statusD0TofPlusRichPid, statusD0barTofPlusRichPid);
     }
   }
 };
@@ -254,7 +311,7 @@ struct HfCandidateSelectorD0Alice3Forward {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorD0Alice3ForwardRichIndexBuilder>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorD0Alice3Forward>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorD0Alice3BarrelRichIndexBuilder>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfCandidateSelectorD0Alice3Barrel>(cfgc));
   return workflow;
 }

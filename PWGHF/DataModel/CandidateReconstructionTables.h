@@ -18,16 +18,18 @@
 #ifndef PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 #define PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 
-#include <Math/Vector4D.h>
 #include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h>
 
 #include "ALICE3/DataModel/ECAL.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
-#include "PWGHF/Core/SelectorCuts.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/AnalysisDataModel.h"
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "PWGHF/Core/SelectorCuts.h"
 
 using namespace o2::analysis;
 

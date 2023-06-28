@@ -17,6 +17,8 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -26,13 +28,12 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 
-#include "Framework/runDataProcessing.h"
-
 /// D0 analysis task
 struct HfTaskD0 {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for HF flagged candidates"};
   Configurable<int> selectionTopol{"selectionTopol", 1, "Selection Flag for topologically selected candidates"};
   Configurable<int> selectionCand{"selectionCand", 1, "Selection Flag for conj. topol. selected candidates"};
@@ -166,7 +167,7 @@ struct HfTaskD0 {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yD0(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -224,7 +225,7 @@ struct HfTaskD0 {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yD0(candidate)) > yCandRecoMax) {
         continue;
       }
       auto massD0 = invMassD0ToPiK(candidate);
@@ -381,7 +382,7 @@ struct HfTaskD0 {
     // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
+        if (yCandGenMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandGenMax) {
           continue;
         }
         auto ptGen = particle.pt();

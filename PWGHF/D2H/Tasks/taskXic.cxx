@@ -22,6 +22,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -35,7 +36,8 @@ using namespace o2::analysis::hf_cuts_xic_to_p_k_pi;
 
 struct HfTaskXic {
   Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 4.0, "max. track eta"};
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 0.0025, "max. DCAxy for track"};
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 0.0025, "max. DCAz for track"};
@@ -202,7 +204,7 @@ struct HfTaskXic {
         continue;
       }
 
-      if (yCandMax >= 0. && std::abs(yXic(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yXic(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -285,7 +287,7 @@ struct HfTaskXic {
       if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
         continue;
       } // rapidity selection
-      if (yCandMax >= 0. && std::abs(yXic(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yXic(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -362,7 +364,7 @@ struct HfTaskXic {
     for (auto const& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XicToPKPi) {
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
-        if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
+        if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
         auto ptParticle = particle.pt();

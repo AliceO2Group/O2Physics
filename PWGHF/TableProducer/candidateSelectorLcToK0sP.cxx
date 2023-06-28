@@ -17,8 +17,9 @@
 ///         Daniel Samitz, <daniel.samitz@cern.ch>, Vienna
 
 #include "Common/Core/TrackSelectorPID.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
