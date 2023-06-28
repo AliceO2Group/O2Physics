@@ -16,9 +16,9 @@
 /// \author Henrique J C Zanoli <henrique.zanoli@cern.ch>, Utrecht University
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 
-#include "TEfficiency.h"
-#include "TList.h"
-#include "TPDGCode.h"
+#include <TEfficiency.h>
+#include <TList.h>
+#include <TPDGCode.h>
 
 #include "ALICE3/DataModel/MID.h"
 #include "ALICE3/DataModel/RICH.h"

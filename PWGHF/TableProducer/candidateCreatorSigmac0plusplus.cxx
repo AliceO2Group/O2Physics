@@ -26,7 +26,6 @@
 #include "DetectorsVertexing/PVertexer.h"      // for dca recalculation
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-// #include "ReconstructionDataFormats/Vertex.h" // for dca recalculation
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
