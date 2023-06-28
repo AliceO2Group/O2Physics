@@ -374,7 +374,7 @@ struct OnTheFlyTracker {
         }
       }
       primaryVertex = vertices[largestVertex];
-      histos.fill(HIST("h2dVerticesVsContributors"), primaryVertex.getNContributors(), n_vertices);  
+      histos.fill(HIST("h2dVerticesVsContributors"), primaryVertex.getNContributors(), n_vertices);
     } else {
       primaryVertex.setXYZ(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
     }
@@ -408,13 +408,13 @@ struct OnTheFlyTracker {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
         }
-        histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY*1e+4); // in microns, please
+        histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
         tracksDCA(dcaXY, dcaZ);
       }
 
       tracksPar(collisions.lastIndex(), trackType, trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
       tracksParExtension(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
-      
+
       // TODO do we keep the rho as 0? Also the sigma's are duplicated information
       tracksParCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
                    std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
