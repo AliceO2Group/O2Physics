@@ -25,6 +25,8 @@
 
 #include <utility>
 
+#include <TGeoGlobalMagField.h>
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -43,7 +45,11 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
+#include "DetectorsVertexing/PVertexer.h"
+#include "DetectorsVertexing/PVertexerHelpers.h"
+#include "SimulationDataFormat/InteractionSampler.h"
 #include "TableHelper.h"
+#include "Field/MagneticField.h"
 
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
@@ -67,12 +73,15 @@ struct OnTheFlyTracker {
   Produces<aod::TrackSelection> trackSelection;
   Produces<aod::TrackSelectionExtension> trackSelectionExtension;
 
+  Configurable<float> magneticField{"magneticField", 20.0f, "magnetic field in kG"};
   Configurable<float> maxEta{"maxEta", 1.5, "maximum eta to consider viable"};
   Configurable<float> multEtaRange{"multEtaRange", 0.8, "eta range to compute the multiplicity"};
   Configurable<float> minPt{"minPt", 0.1, "minimum pt to consider viable"};
   Configurable<bool> enableLUT{"enableLUT", false, "Enable track smearing"};
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
+  Configurable<bool> enablePrimaryVertexing{"enablePrimaryVertexing", true, "Enable primary vertexing"};
 
+  Configurable<bool> populateTracksDCA{"populateTracksDCA", true, "populate TracksDCA table"};
   Configurable<bool> populateTracksExtra{"populateTracksExtra", false, "populate TracksExtra table (legacy)"};
   Configurable<bool> populateTrackSelection{"populateTrackSelection", false, "populate TrackSelection table (legacy)"};
 
@@ -85,7 +94,28 @@ struct OnTheFlyTracker {
   Configurable<std::string> lutTr{"lutTr", "lutCovm.tr.dat", "LUT for tritons"};
   Configurable<std::string> lutHe3{"lutHe3", "lutCovm.he3.dat", "LUT for Helium-3"};
 
-  bool fillTracksDCA = false;
+  ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
+  ConfigurableAxis axisNVertices{"axisNVertices", {20, -0.5, 19.5}, "N_{vertices}"};
+  ConfigurableAxis axisNContributors{"axisNContributors", {100, -0.5, 99.5}, "N_{contributors}"};
+  ConfigurableAxis axisVertexZ{"axisVertexZ", {40, -20, 20}, "vertex Z (cm)"};
+  ConfigurableAxis axisDCA{"axisDCA", {400, -200, 200}, "DCA (#mum)"};
+
+  using PVertex = o2::dataformats::PrimaryVertex;
+
+  // Class to hold the track information for the O2 vertexing
+  class TrackAlice3 : public o2::track::TrackParCov
+  {
+    using TimeEst = o2::dataformats::TimeStampWithError<float, float>;
+
+   public:
+    TrackAlice3() = default;
+    ~TrackAlice3() = default;
+    TrackAlice3(const TrackAlice3& src) = default;
+    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, const float t = 0, const float te = 1) : o2::track::TrackParCov(src), mcLabel{label}, timeEst{t, te} {}
+    const TimeEst& getTimeMUS() const { return timeEst; }
+    const int64_t mcLabel;
+    TimeEst timeEst; ///< time estimate in ns
+  };
 
   // necessary for particle charges
   Service<O2DatabasePDG> pdgDB;
@@ -98,11 +128,14 @@ struct OnTheFlyTracker {
   // Track smearer
   o2::delphes::DelphesO2TrackSmearer mSmearer;
 
+  // For processing and vertexing
+  std::vector<TrackAlice3> tracksAlice3;
+  std::vector<o2::InteractionRecord> bcData;
+  o2::steer::InteractionSampler irSampler;
+  o2::vertexing::PVertexer vertexer;
+
   void init(o2::framework::InitContext& initContext)
   {
-    // Checking if the tables are requested in the workflow and enabling them
-    fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
-
     if (enableLUT) {
       std::map<int, const char*> mapPdgLut;
       const char* lutElChar = lutEl->c_str();
@@ -139,7 +172,6 @@ struct OnTheFlyTracker {
     }
 
     // Basic QA
-    const AxisSpec axisMomentum{static_cast<int>(1000), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
     histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axisMomentum});
     histos.add("hPtGeneratedEl", "hPtGeneratedEl", kTH1F, {axisMomentum});
     histos.add("hPtGeneratedPi", "hPtGeneratedPi", kTH1F, {axisMomentum});
@@ -150,6 +182,41 @@ struct OnTheFlyTracker {
     histos.add("hPtReconstructedPi", "hPtReconstructedPi", kTH1F, {axisMomentum});
     histos.add("hPtReconstructedKa", "hPtReconstructedKa", kTH1F, {axisMomentum});
     histos.add("hPtReconstructedPr", "hPtReconstructedPr", kTH1F, {axisMomentum});
+
+    // Collision QA
+    histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axisNContributors, axisNVertices});
+    histos.add("h2dDCAxy", "h2dDCAxy", kTH2F, {axisMomentum, axisDCA});
+    histos.add("hPVz", "hPVz", kTH1F, {axisVertexZ});
+
+    LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
+    o2::parameters::GRPMagField grpmag;
+    grpmag.setFieldUniformity(true);
+    grpmag.setL3Current(30000.f * (magneticField / 5.0f));
+    auto field = grpmag.getNominalL3Field();
+    o2::base::Propagator::initFieldFromGRP(&grpmag);
+
+    auto fieldInstance = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    if (!fieldInstance) {
+      LOGF(fatal, "Failed to set up magnetic field! Stopping now!");
+    }
+
+    // Cross-check
+    LOGF(info, "Check field at (0, 0, 0): %.1f kG, nominal: %.1f", static_cast<float>(fieldInstance->GetBz(0, 0, 0)), static_cast<float>(field));
+
+    LOGF(info, "Initializing empty material cylinder LUT - could be better in the future");
+    o2::base::MatLayerCylSet* lut = new o2::base::MatLayerCylSet();
+    lut->addLayer(200, 200.1, 2, 1.0f, 100.0f);
+    LOGF(info, "MatLayerCylSet::optimizePhiSlices()");
+    lut->optimizePhiSlices();
+    LOGF(info, "Setting lut now...");
+    o2::base::Propagator::Instance()->setMatLUT(lut);
+
+    irSampler.setInteractionRate(100);
+    irSampler.init();
+
+    vertexer.setValidateWithIR(kFALSE);
+    vertexer.setBunchFilling(irSampler.getBunchFilling());
+    vertexer.init();
   }
 
   /// Function to convert a McParticle into a perfect Track
@@ -178,22 +245,15 @@ struct OnTheFlyTracker {
     new (&o2track)(o2::track::TrackParCov)(x, particle.phi(), params, covm);
   }
 
-  /// Function to fill track parameter table
-  /// \param coll collision (for index)
-  /// \param trackType type of created track
-  /// \param trackPar track for parameters
-  template <typename CollType, typename TTrackPar>
-  void fillTracksPar(CollType& coll, aod::track::TrackTypeEnum trackType, TTrackPar& trackPar)
-  {
-    tracksPar(coll.globalIndex(), trackType, trackPar.getX(), trackPar.getAlpha(), trackPar.getY(), trackPar.getZ(), trackPar.getSnp(), trackPar.getTgl(), trackPar.getQ2Pt());
-    tracksParExtension(trackPar.getPt(), trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
-  }
-
   float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    o2::dataformats::DCA dcaInfoCov;
+    o2::dataformats::DCA dcaInfo;
     o2::dataformats::VertexBase vtx;
+
+    // generate collision time
+    o2::InteractionRecord ir = irSampler.generateCollisionTime();
+
     // First we compute the number of charged particles in the event
     dNdEta = 0.f;
     for (const auto& mcParticle : mcParticles) {
@@ -251,11 +311,10 @@ struct OnTheFlyTracker {
       if (!mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta)) {
         continue;
       }
-
-      // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
-      // Calculate primary vertex
-      // To be added once smeared tracks are in place
-      // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
+      if (TMath::IsNaN(trackParCov.getZ())) {
+        // capture rare smearing mistakes / corrupted tracks
+        continue;
+      }
 
       // Base QA (note: reco pT here)
       histos.fill(HIST("hPtReconstructed"), trackParCov.getPt());
@@ -268,12 +327,94 @@ struct OnTheFlyTracker {
       if (TMath::Abs(mcParticle.pdgCode()) == 2212)
         histos.fill(HIST("hPtReconstructedPr"), mcParticle.pt());
 
+      // populate vector with track if we reco-ed it
+      const float t = (ir.bc2ns() + gRandom->Gaus(0., 100.)) * 1e-3;
+      tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3});
+    }
+
+    // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
+    // Calculate primary vertex with tracks from this collision
+    // data preparation
+    o2::vertexing::PVertex primaryVertex;
+
+    if (enablePrimaryVertexing) {
+      std::vector<o2::MCCompLabel> lblTracks;
+      std::vector<o2::vertexing::PVertex> vertices;
+      std::vector<o2::vertexing::GIndex> vertexTrackIDs;
+      std::vector<o2::vertexing::V2TRef> v2tRefs;
+      std::vector<o2::MCEventLabel> lblVtx;
+      lblVtx.emplace_back(mcCollision.globalIndex(), 1);
+      std::vector<o2::dataformats::GlobalTrackID> idxVec; // store IDs
+
+      idxVec.reserve(tracksAlice3.size());
+      for (unsigned i = 0; i < tracksAlice3.size(); i++) {
+        lblTracks.emplace_back(tracksAlice3[i].mcLabel, mcCollision.globalIndex(), 1, false);
+        idxVec.emplace_back(i, o2::dataformats::GlobalTrackID::ITS); // let's say ITS
+      }
+
+      // Calculate vertices
+      const int n_vertices = vertexer.process(tracksAlice3, // track array
+                                              idxVec,
+                                              gsl::span<o2::InteractionRecord>{bcData},
+                                              vertices,
+                                              vertexTrackIDs,
+                                              v2tRefs,
+                                              gsl::span<const o2::MCCompLabel>{lblTracks},
+                                              lblVtx);
+
+      if (n_vertices < 1) {
+        return; // primary vertex not reconstructed
+      }
+
+      // Find largest vertex
+      int largestVertex = 0;
+      for (Int_t iv = 1; iv < n_vertices; iv++) {
+        if (vertices[iv].getNContributors() > vertices[largestVertex].getNContributors()) {
+          largestVertex = iv;
+        }
+      }
+      primaryVertex = vertices[largestVertex];
+      histos.fill(HIST("h2dVerticesVsContributors"), primaryVertex.getNContributors(), n_vertices);
+    } else {
+      primaryVertex.setXYZ(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+    }
+    // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
+
+    // debug / informational
+    histos.fill(HIST("hPVz"), primaryVertex.getZ());
+
+    // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
+    // populate collisions
+    collisions(-1, // BC is irrelevant in synthetic MC tests for now, could be adjusted in future
+               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
+               primaryVertex.getSigmaX2(), primaryVertex.getSigmaXY(), primaryVertex.getSigmaY2(),
+               primaryVertex.getSigmaXZ(), primaryVertex.getSigmaYZ(), primaryVertex.getSigmaZ2(),
+               0, primaryVertex.getChi2(), primaryVertex.getNContributors(),
+               0, 0);
+    collLabels(mcCollision.globalIndex(), 0);
+    collisionAlice3(dNdEta);
+    // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
+
+    // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
+    // populate tracks
+    for (const auto& trackParCov : tracksAlice3) {
       // Fixme: collision index could be changeable
       aod::track::TrackTypeEnum trackType = aod::track::Track;
-      fillTracksPar(mcCollision, trackType, trackParCov);
-      if (fillTracksDCA) {
-        tracksDCA(1e-3, 1e-3);
+
+      if (populateTracksDCA) {
+        float dcaXY = 1e+10, dcaZ = 1e+10;
+        o2::track::TrackParCov trackParametrization(trackParCov);
+        if (trackParametrization.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
+          dcaXY = dcaInfo.getY();
+          dcaZ = dcaInfo.getZ();
+        }
+        histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+        tracksDCA(dcaXY, dcaZ);
       }
+
+      tracksPar(collisions.lastIndex(), trackType, trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
+      tracksParExtension(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
+
       // TODO do we keep the rho as 0? Also the sigma's are duplicated information
       tracksParCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
                    std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -281,7 +422,7 @@ struct OnTheFlyTracker {
                             trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
                             trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                             trackParCov.getSigma1Pt2());
-      tracksLabels(mcParticle.globalIndex(), 0);
+      tracksLabels(trackParCov.mcLabel, 0);
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
@@ -295,13 +436,11 @@ struct OnTheFlyTracker {
         trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
     }
-    collisions(-1, // BC is irrelevant in synthetic MC tests for now, could be adjusted in future
-               mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
-               1e-3, 0.0, 1e-3, 0.0, 0.0, 1e-3,
-               0, 1e-3, mcParticles.size(),
-               0, 0);
-    collLabels(mcCollision.globalIndex(), 0);
-    collisionAlice3(dNdEta);
+    // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
+    // for the love of god, clear the vector or die
+    tracksAlice3.clear();
+    bcData.clear();
+    // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
   }
 };
 
