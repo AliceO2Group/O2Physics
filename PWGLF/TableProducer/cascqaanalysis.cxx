@@ -46,8 +46,8 @@ struct cascqaanalysis {
   AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
   AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
   ConfigurableAxis centAxis{"FT0M",
-                                {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100},
-                                "FT0M (%)"};                        
+                            {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100},
+                            "FT0M (%)"};
 
   void init(InitContext const&)
   {
@@ -493,14 +493,14 @@ struct cascqaanalysis {
         continue;
       }
       SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
-      if(collision.mcCollision_as<aod::McCollisions>().globalIndex() == mcCollision.globalIndex()) {
+      if (collision.mcCollision_as<aod::McCollisions>().globalIndex() == mcCollision.globalIndex()) {
         nAssocColl++;
         NumberOfContributors.push_back(collision.numContrib());
       }
     }
     SelectedEvents.resize(nevts);
     registry.fill(HIST("hNAssocCollisions"), nAssocColl);
-    if(NumberOfContributors.size() == 2) {
+    if (NumberOfContributors.size() == 2) {
       std::sort(NumberOfContributors.begin(), NumberOfContributors.end());
       registry.fill(HIST("hNContributorsCorrelation"), NumberOfContributors[0], NumberOfContributors[1]);
     }
