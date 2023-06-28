@@ -104,4 +104,4 @@ class MCProng
 
   ClassDef(MCProng, 2);
 };
-#endif
+#endif  // PWGDQ_CORE_MCPRONG_H_
