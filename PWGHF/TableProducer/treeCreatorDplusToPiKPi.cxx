@@ -214,10 +214,12 @@ struct HfTreeCreatorDplusToPiKPi {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
+  using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
-  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == (int8_t)BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi);
-  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != (int8_t)BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
+  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
 
   void init(InitContext const&)
   {
@@ -389,7 +391,7 @@ struct HfTreeCreatorDplusToPiKPi {
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
+                 MatchedGenCandidatesMc const& particles,
                  aod::BigTracksPID const&)
   {
     // Filling event properties
@@ -437,7 +439,6 @@ struct HfTreeCreatorDplusToPiKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (auto const& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), DecayType::DplusToPiKPi)) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
@@ -446,7 +447,6 @@ struct HfTreeCreatorDplusToPiKPi {
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
           particle.flagMcMatchGen(),
           particle.originMcGen());
-      }
     }
   }
 

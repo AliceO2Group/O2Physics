@@ -215,15 +215,17 @@ struct HfTreeCreatorDsToKKPi {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
+  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanGen == decayChannel; 
 
   using candDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using candDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
+  using candDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
   Partition<candDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<candDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
-  Partition<candDsMcReco> recSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == (int8_t)BIT(aod::hf_cand_3prong::DecayType::DsToKKPi) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
-  Partition<candDsMcReco> recBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != (int8_t)BIT(aod::hf_cand_3prong::DecayType::DsToKKPi);
+  Partition<candDsMcReco> recSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
+  Partition<candDsMcReco> recBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(DecayType::DsToKKPi));
 
   void init(InitContext const&)
   {
@@ -422,7 +424,7 @@ struct HfTreeCreatorDsToKKPi {
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
                  candDsMcReco const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC,
+                 candDsMcGen const& particlesMC,
                  aod::BigTracksPID const&)
   {
     // Filling event properties
@@ -499,7 +501,6 @@ struct HfTreeCreatorDsToKKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particlesMC.size());
     for (auto const& particle : particlesMC) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), DecayType::DsToKKPi)) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
@@ -508,7 +509,6 @@ struct HfTreeCreatorDsToKKPi {
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
           particle.flagMcMatchGen(),
           particle.originMcGen());
-      }
     }
   }
 
