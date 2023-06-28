@@ -224,6 +224,8 @@ struct AntimatterAbsorptionHMPID {
         continue;
       if (TMath::Abs(track.dcaZ()) > 1.0)
         continue;
+      if (enable_PVcontributor_global && !(track.isPVContributor()))
+        continue;
 
       // Fill QA Histograms (Positive Tracks)
       if (track.sign() > 0) {
@@ -279,8 +281,6 @@ struct AntimatterAbsorptionHMPID {
       if (TMath::Abs(track.dcaXY()) > maxDCA_xy)
         continue;
       if (TMath::Abs(track.dcaZ()) > maxDCA_z)
-        continue;
-      if (enable_PVcontributor_global && !(track.isPVContributor()))
         continue;
       if (track.eta() < etaMin)
         continue;
