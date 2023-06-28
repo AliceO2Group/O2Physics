@@ -419,7 +419,6 @@ struct NucleiHistTask {
     bool keepEvent_antiHe3 = kFALSE;
     bool keepEvent_antiHe4 = kFALSE;
 
-
     if (event_selection_sel8 && event.sel8()) {
       spectra_reg.fill(HIST("histRecVtxZData"), event.posZ());
     }
