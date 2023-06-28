@@ -439,14 +439,14 @@ struct HfTreeCreatorDplusToPiKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (auto const& particle : particles) {
-        rowCandidateFullParticles(
-          particle.mcCollision().bcId(),
-          particle.pt(),
-          particle.eta(),
-          particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
-          particle.flagMcMatchGen(),
-          particle.originMcGen());
+      rowCandidateFullParticles(
+        particle.mcCollision().bcId(),
+        particle.pt(),
+        particle.eta(),
+        particle.phi(),
+        RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+        particle.flagMcMatchGen(),
+        particle.originMcGen());
     }
   }
 
