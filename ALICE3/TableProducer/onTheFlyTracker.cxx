@@ -81,6 +81,7 @@ struct OnTheFlyTracker {
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
   Configurable<bool> enablePrimaryVertexing{"enablePrimaryVertexing", true, "Enable primary vertexing"};
 
+  Configurable<bool> populateTracksDCA{"populateTracksDCA", true, "populate TracksDCA table"};
   Configurable<bool> populateTracksExtra{"populateTracksExtra", false, "populate TracksExtra table (legacy)"};
   Configurable<bool> populateTrackSelection{"populateTrackSelection", false, "populate TrackSelection table (legacy)"};
 
@@ -93,6 +94,12 @@ struct OnTheFlyTracker {
   Configurable<std::string> lutTr{"lutTr", "lutCovm.tr.dat", "LUT for tritons"};
   Configurable<std::string> lutHe3{"lutHe3", "lutCovm.he3.dat", "LUT for Helium-3"};
 
+  ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
+  ConfigurableAxis axisNVertices{"axisNVertices", {20, -0.5, 19.5}, "N_{vertices}"};
+  ConfigurableAxis axisNContributors{"axisNContributors", {100, -0.5, 99.5}, "N_{contributors}"};
+  ConfigurableAxis axisVertexZ{"axisVertexZ", {40, -20, 20}, "vertex Z (cm)"};
+  ConfigurableAxis axisDCA{"axisDCA", {400, -200, 200}, "DCA (#mum)"};
+
   using PVertex = o2::dataformats::PrimaryVertex;
 
   // Class to hold the track information for the O2 vertexing
@@ -104,13 +111,11 @@ struct OnTheFlyTracker {
     TrackAlice3() = default;
     ~TrackAlice3() = default;
     TrackAlice3(const TrackAlice3& src) = default;
-    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label = 0, const float t = 0, const float te = 1) : o2::track::TrackParCov(src), mcLabel{label}, timeEst{t, te} {}
+    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, const float t = 0, const float te = 1) : o2::track::TrackParCov(src), mcLabel{label}, timeEst{t, te} {}
     const TimeEst& getTimeMUS() const { return timeEst; }
     const int64_t mcLabel;
     TimeEst timeEst; ///< time estimate in ns
   };
-
-  bool fillTracksDCA = false;
 
   // necessary for particle charges
   Service<O2DatabasePDG> pdgDB;
@@ -131,9 +136,6 @@ struct OnTheFlyTracker {
 
   void init(o2::framework::InitContext& initContext)
   {
-    // Checking if the tables are requested in the workflow and enabling them
-    fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
-
     if (enableLUT) {
       std::map<int, const char*> mapPdgLut;
       const char* lutElChar = lutEl->c_str();
@@ -170,9 +172,6 @@ struct OnTheFlyTracker {
     }
 
     // Basic QA
-    const AxisSpec axisMomentum{static_cast<int>(100), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
-    const AxisSpec axisNVertices{static_cast<int>(20), -0.5f, +19.5f, "N_{vertices}"};
-    const AxisSpec axisVertexZ{static_cast<int>(40), -20.f, +20.f, "vertex Z (cm)"};
     histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axisMomentum});
     histos.add("hPtGeneratedEl", "hPtGeneratedEl", kTH1F, {axisMomentum});
     histos.add("hPtGeneratedPi", "hPtGeneratedPi", kTH1F, {axisMomentum});
@@ -185,7 +184,8 @@ struct OnTheFlyTracker {
     histos.add("hPtReconstructedPr", "hPtReconstructedPr", kTH1F, {axisMomentum});
 
     // Collision QA
-    histos.add("hNVertices", "hNVertices", kTH1F, {axisNVertices});
+    histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axisNContributors, axisNVertices});
+    histos.add("h2dDCAxy", "h2dDCAxy", kTH2F, {axisMomentum, axisDCA});
     histos.add("hPVz", "hPVz", kTH1F, {axisVertexZ});
 
     LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
@@ -248,7 +248,7 @@ struct OnTheFlyTracker {
   float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    o2::dataformats::DCA dcaInfoCov;
+    o2::dataformats::DCA dcaInfo;
     o2::dataformats::VertexBase vtx;
 
     // generate collision time
@@ -362,8 +362,6 @@ struct OnTheFlyTracker {
                                               gsl::span<const o2::MCCompLabel>{lblTracks},
                                               lblVtx);
 
-      histos.fill(HIST("hNVertices"), n_vertices);
-
       if (n_vertices < 1) {
         return; // primary vertex not reconstructed
       }
@@ -376,6 +374,7 @@ struct OnTheFlyTracker {
         }
       }
       primaryVertex = vertices[largestVertex];
+      histos.fill(HIST("h2dVerticesVsContributors"), primaryVertex.getNContributors(), n_vertices);  
     } else {
       primaryVertex.setXYZ(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
     }
@@ -402,12 +401,20 @@ struct OnTheFlyTracker {
       // Fixme: collision index could be changeable
       aod::track::TrackTypeEnum trackType = aod::track::Track;
 
+      if (populateTracksDCA) {
+        float dcaXY = 1e+10, dcaZ = 1e+10;
+        o2::track::TrackParCov trackParametrization(trackParCov);
+        if (trackParametrization.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
+          dcaXY = dcaInfo.getY();
+          dcaZ = dcaInfo.getZ();
+        }
+        histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY*1e+4); // in microns, please
+        tracksDCA(dcaXY, dcaZ);
+      }
+
       tracksPar(collisions.lastIndex(), trackType, trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
       tracksParExtension(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
-
-      if (fillTracksDCA) {
-        tracksDCA(1e-3, 1e-3);
-      }
+      
       // TODO do we keep the rho as 0? Also the sigma's are duplicated information
       tracksParCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
                    std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
