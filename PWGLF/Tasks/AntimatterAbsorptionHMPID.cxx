@@ -189,14 +189,16 @@ struct AntimatterAbsorptionHMPID {
   Configurable<float> maxDCA_z{"maxDCA_z", 2.0f, "maxDCA_z"};
   Configurable<int> lastRequiredTrdCluster{
     "lastRequiredTrdCluster", 5, "Last TRD cluster (-1 = no requirement)"};
+  Configurable<bool> enable_PVcontributor_global{
+    "enable_PVcontributor_global", true, "is PV contributor (global)"};
   Configurable<bool> enable_PVcontributor_proton{
-    "enable_PVcontributor_proton", true, "is PV contributor (global)"};
+    "enable_PVcontributor_proton", true, "is PV contributor (proton)"};
   Configurable<bool> enable_PVcontributor_antiproton{
-    "enable_PVcontributor_antiproton", true, "is PV contributor (global)"};
+    "enable_PVcontributor_antiproton", true, "is PV contributor (antiproton)"};
   Configurable<bool> enable_PVcontributor_deuteron{
-    "enable_PVcontributor_deuteron", true, "is PV contributor (global)"};
+    "enable_PVcontributor_deuteron", true, "is PV contributor (deuteron)"};
   Configurable<bool> enable_PVcontributor_antideuteron{
-    "enable_PVcontributor_antideuteron", true, "is PV contributor (global)"};
+    "enable_PVcontributor_antideuteron", true, "is PV contributor (antideuteron)"};
 
   template <typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& event, const TracksType& tracks)
