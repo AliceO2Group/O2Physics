@@ -98,15 +98,16 @@ struct OnTheFlyTracker {
   // Class to hold the track information for the O2 vertexing
   class TrackAlice3 : public o2::track::TrackParCov
   {
-    using TimeEst = o2::dataformats::TimeStampWithError<float, float>;    
-    public:
-      TrackAlice3() = default;
-      ~TrackAlice3() = default;
-      TrackAlice3(const TrackAlice3& src) = default;
-      TrackAlice3(const o2::track::TrackParCov& src,  const int64_t label = 0, const float t = 0, const float te = 1) : o2::track::TrackParCov(src), mcLabel{label}, timeEst{t, te} {}
-      const TimeEst& getTimeMUS() const { return timeEst; }
-      const int64_t mcLabel;
-      TimeEst timeEst; ///< time estimate in ns
+    using TimeEst = o2::dataformats::TimeStampWithError<float, float>;
+
+   public:
+    TrackAlice3() = default;
+    ~TrackAlice3() = default;
+    TrackAlice3(const TrackAlice3& src) = default;
+    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label = 0, const float t = 0, const float te = 1) : o2::track::TrackParCov(src), mcLabel{label}, timeEst{t, te} {}
+    const TimeEst& getTimeMUS() const { return timeEst; }
+    const int64_t mcLabel;
+    TimeEst timeEst; ///< time estimate in ns
   };
 
   bool fillTracksDCA = false;
@@ -122,7 +123,7 @@ struct OnTheFlyTracker {
   // Track smearer
   o2::delphes::DelphesO2TrackSmearer mSmearer;
 
-  //For processing and vertexing 
+  // For processing and vertexing
   std::vector<TrackAlice3> tracksAlice3;
   std::vector<o2::InteractionRecord> bcData;
   o2::steer::InteractionSampler irSampler;
@@ -183,7 +184,7 @@ struct OnTheFlyTracker {
     histos.add("hPtReconstructedKa", "hPtReconstructedKa", kTH1F, {axisMomentum});
     histos.add("hPtReconstructedPr", "hPtReconstructedPr", kTH1F, {axisMomentum});
 
-    // Collision QA 
+    // Collision QA
     histos.add("hNVertices", "hNVertices", kTH1F, {axisNVertices});
     histos.add("hPVz", "hPVz", kTH1F, {axisVertexZ});
 
@@ -191,23 +192,23 @@ struct OnTheFlyTracker {
     o2::parameters::GRPMagField grpmag;
     grpmag.setFieldUniformity(true);
     grpmag.setL3Current(30000.f * (magneticField / 5.0f));
-    auto field = grpmag.getNominalL3Field(); 
+    auto field = grpmag.getNominalL3Field();
     o2::base::Propagator::initFieldFromGRP(&grpmag);
-    
+
     auto fieldInstance = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     if (!fieldInstance) {
       LOGF(fatal, "Failed to set up magnetic field! Stopping now!");
     }
-  
-    // Cross-check 
-    LOGF(info, "Check field at (0, 0, 0): %.1f kG, nominal: %.1f", static_cast<float>(fieldInstance->GetBz(0,0,0)), static_cast<float>(field));
 
-    LOGF(info, "Initializing empty material cylinder LUT - could be better in the future"); 
+    // Cross-check
+    LOGF(info, "Check field at (0, 0, 0): %.1f kG, nominal: %.1f", static_cast<float>(fieldInstance->GetBz(0, 0, 0)), static_cast<float>(field));
+
+    LOGF(info, "Initializing empty material cylinder LUT - could be better in the future");
     o2::base::MatLayerCylSet* lut = new o2::base::MatLayerCylSet();
     lut->addLayer(200, 200.1, 2, 1.0f, 100.0f);
-    LOGF(info, "MatLayerCylSet::optimizePhiSlices()"); 
+    LOGF(info, "MatLayerCylSet::optimizePhiSlices()");
     lut->optimizePhiSlices();
-    LOGF(info, "Setting lut now..."); 
+    LOGF(info, "Setting lut now...");
     o2::base::Propagator::Instance()->setMatLUT(lut);
 
     irSampler.setInteractionRate(100);
@@ -250,7 +251,7 @@ struct OnTheFlyTracker {
     o2::dataformats::DCA dcaInfoCov;
     o2::dataformats::VertexBase vtx;
 
-    // generate collision time 
+    // generate collision time
     o2::InteractionRecord ir = irSampler.generateCollisionTime();
 
     // First we compute the number of charged particles in the event
@@ -313,7 +314,7 @@ struct OnTheFlyTracker {
       if (TMath::IsNaN(trackParCov.getZ())) {
         // capture rare smearing mistakes / corrupted tracks
         continue;
-      }  
+      }
 
       // Base QA (note: reco pT here)
       histos.fill(HIST("hPtReconstructed"), trackParCov.getPt());
@@ -333,10 +334,10 @@ struct OnTheFlyTracker {
 
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
     // Calculate primary vertex with tracks from this collision
-    // data preparation 
+    // data preparation
     o2::vertexing::PVertex primaryVertex;
 
-    if(enablePrimaryVertexing){ 
+    if (enablePrimaryVertexing) {
       std::vector<o2::MCCompLabel> lblTracks;
       std::vector<o2::vertexing::PVertex> vertices;
       std::vector<o2::vertexing::GIndex> vertexTrackIDs;
@@ -348,7 +349,7 @@ struct OnTheFlyTracker {
       idxVec.reserve(tracksAlice3.size());
       for (unsigned i = 0; i < tracksAlice3.size(); i++) {
         lblTracks.emplace_back(tracksAlice3[i].mcLabel, mcCollision.globalIndex(), 1, false);
-        idxVec.emplace_back(i, o2::dataformats::GlobalTrackID::ITS); //let's say ITS
+        idxVec.emplace_back(i, o2::dataformats::GlobalTrackID::ITS); // let's say ITS
       }
 
       // Calculate vertices
@@ -363,32 +364,32 @@ struct OnTheFlyTracker {
 
       histos.fill(HIST("hNVertices"), n_vertices);
 
-      if(n_vertices<1){ 
+      if (n_vertices < 1) {
         return; // primary vertex not reconstructed
       }
 
       // Find largest vertex
       int largestVertex = 0;
-      for(Int_t iv=1; iv<n_vertices; iv++){
-        if(vertices[iv].getNContributors() > vertices[largestVertex].getNContributors()){
+      for (Int_t iv = 1; iv < n_vertices; iv++) {
+        if (vertices[iv].getNContributors() > vertices[largestVertex].getNContributors()) {
           largestVertex = iv;
         }
       }
-      primaryVertex = vertices[largestVertex]; 
-    }else{
+      primaryVertex = vertices[largestVertex];
+    } else {
       primaryVertex.setXYZ(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
     }
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
 
-    // debug / informational 
+    // debug / informational
     histos.fill(HIST("hPVz"), primaryVertex.getZ());
 
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
     // populate collisions
     collisions(-1, // BC is irrelevant in synthetic MC tests for now, could be adjusted in future
                primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
-               primaryVertex.getSigmaX2(), primaryVertex.getSigmaXY(), primaryVertex.getSigmaY2(), 
-               primaryVertex.getSigmaXZ(), primaryVertex.getSigmaYZ(), primaryVertex.getSigmaZ2(), 
+               primaryVertex.getSigmaX2(), primaryVertex.getSigmaXY(), primaryVertex.getSigmaY2(),
+               primaryVertex.getSigmaXZ(), primaryVertex.getSigmaYZ(), primaryVertex.getSigmaZ2(),
                0, primaryVertex.getChi2(), primaryVertex.getNContributors(),
                0, 0);
     collLabels(mcCollision.globalIndex(), 0);
@@ -400,7 +401,7 @@ struct OnTheFlyTracker {
     for (const auto& trackParCov : tracksAlice3) {
       // Fixme: collision index could be changeable
       aod::track::TrackTypeEnum trackType = aod::track::Track;
-      
+
       tracksPar(collisions.lastIndex(), trackType, trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
       tracksParExtension(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
 
