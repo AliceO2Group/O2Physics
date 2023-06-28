@@ -44,11 +44,11 @@ struct lambda1520analysis {
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0f, "Track DCAz cut to PV Minimum"};
 
   /// PID Selections
-  Configurable<double> cMaxTPCnSigmaProton{"cMaxTPCnSigmaProton", 2.0, "TPC nSigma cut for Proton"}; // TPC
-  Configurable<double> cMaxTOFnSigmaProton{"cMaxTOFnSigmaProton", 2.0, "TOF nSigma cut for Proton"}; // TOF
+  Configurable<double> cMaxTPCnSigmaProton{"cMaxTPCnSigmaProton", 2.0, "TPC nSigma cut for Proton"};              // TPC
+  Configurable<double> cMaxTOFnSigmaProton{"cMaxTOFnSigmaProton", 2.0, "TOF nSigma cut for Proton"};              // TOF
   Configurable<double> cMaxTPCnSigmaProtonVETO{"cMaxTPCnSigmaProtonVETO", 3.0, "TPC nSigma VETO cut for Proton"}; // TPC
-  Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 2.0, "TPC nSigma cut for Kaon"};       // TPC
-  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 2.0, "TOF nSigma cut for Kaon"};       // TOF
+  Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 2.0, "TPC nSigma cut for Kaon"};                    // TPC
+  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 2.0, "TOF nSigma cut for Kaon"};                    // TOF
   Configurable<double> cMaxTPCnSigmaKaonVETO{"cMaxTPCnSigmaKaonVETO", 3.0, "TPC nSigma VETO cut for Kaon"};       // TPC
   // Kaon
   Configurable<bool> IsptIndependentKaonCut{"IsptIndependentKaonCut", true, "Flag to proceed with pT dependent Kaon pid cuts"};
@@ -73,7 +73,7 @@ struct lambda1520analysis {
   ConfigurableAxis binsPtQA{"binsPtQA", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0}, "Binning of the pT axis"};
   ConfigurableAxis binsMass{"binsMass", {500, 1.3, 3.0}, "Invariant Mass (GeV/#it{c}^2)"};
   ConfigurableAxis binsMult{"binsMult", {500, 0.0, 500.0}, "mult_{FT0M}"};
-  ConfigurableAxis binsDCA{"binsDCA",{1000, -5, 5},""};
+  ConfigurableAxis binsDCA{"binsDCA", {1000, -5, 5}, ""};
   ConfigurableAxis binsTPCXrows{"binsTPCXrows", {200, 0, 200}, ""};
   ConfigurableAxis binsnSigma{"binsnSigma", {130, -6.5, 6.5}, ""};
 
@@ -83,7 +83,7 @@ struct lambda1520analysis {
     AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisMassLambda1520{binsMass, "Invariant Mass (GeV/#it{c}^2)"};
     AxisSpec axisMult{binsMult, "mult_{V0M}"};
-    AxisSpec axisDCA{binsDCA,""};
+    AxisSpec axisDCA{binsDCA, ""};
     AxisSpec axisTPCcrossedrow{binsTPCXrows, ""};
     AxisSpec ptAxisQA = {binsPtQA, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pidQAAxis = {binsnSigma, ""};
