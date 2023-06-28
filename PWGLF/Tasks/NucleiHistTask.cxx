@@ -388,6 +388,8 @@ struct NucleiHistTask {
   Configurable<float> maxDCA_Z{"maxDCA_Z", 2.0f, "max DCA to vertex z"};
   Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to required in TRD for track selection. -1 does not require any TRD cluster"};
 
+  Configurable<bool> event_selection_sel8{"event_selection_sel8", true, "Enable sel8 event selection"};
+
   Configurable<bool> enable_PVcontributor_global{"enable_PVcontributor_global", true, "is PV contributor (global)"};
   Configurable<bool> enable_PVcontributor_proton{"enable_PVcontributor_proton", true, "is PV contributor (global)"};
   Configurable<bool> enable_PVcontributor_antiproton{"enable_PVcontributor_antiproton", true, "is PV contributor (global)"};
@@ -417,9 +419,19 @@ struct NucleiHistTask {
     bool keepEvent_antiHe3 = kFALSE;
     bool keepEvent_antiHe4 = kFALSE;
 
-    spectra_reg.fill(HIST("histRecVtxZData"), event.posZ());
+    if (event_selection_sel8 && event.sel8()) {
+      spectra_reg.fill(HIST("histRecVtxZData"), event.posZ());
+    }
+
+    if (!event_selection_sel8) {
+      spectra_reg.fill(HIST("histRecVtxZData"), event.posZ());
+    }
 
     for (auto track : tracks) { // start loop over tracks
+
+      if (event_selection_sel8 && !event.sel8()) {
+        continue;
+      }
 
       float TPCnumberClsFound = track.tpcNClsFound();
       float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
@@ -1065,9 +1077,19 @@ struct NucleiHistTask {
   void fillCentHistorgrams(const CollisionType& event, const TracksType& tracks)
   {
 
-    spectra_reg.fill(HIST("histCentrality"), event.centFT0C());
+    if (event_selection_sel8 && event.sel8()) {
+      spectra_reg.fill(HIST("histCentrality"), event.centFT0C());
+    }
+
+    if (!event_selection_sel8) {
+      spectra_reg.fill(HIST("histCentrality"), event.centFT0C());
+    }
 
     for (auto track : tracks) { // start loop over tracks
+
+      if (event_selection_sel8 && !event.sel8()) {
+        continue;
+      }
 
       float TPCnumberClsFound = track.tpcNClsFound();
       float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
@@ -1208,11 +1230,9 @@ struct NucleiHistTask {
   // MC
   void processMC_generated(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
   {
-    int events = 0;
     int particles = 0;
     int primaryparticles = 0;
 
-    LOGF(info, "MC. vtx-z = %f", mcCollision.posZ());
     MC_spectra_reg.fill(HIST("histRecVtxZData"), mcCollision.posZ());
 
     for (auto& mcParticle : mcParticles) {
@@ -1241,15 +1261,11 @@ struct NucleiHistTask {
       }
       particles++;
     }
-    LOGF(info, "Events %i", events++ + 1);
-    LOGF(info, "Particles %i", particles);
-    LOGF(info, "Primaries %i", primaryparticles);
   }
   PROCESS_SWITCH(NucleiHistTask, processMC_generated, "process generated MC data", false);
 
   void processMC_tracked(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe>> const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
   {
-    LOGF(info, "vtx-z (data) = %f | vtx-z (MC) = %f", collision.posZ(), collision.mcCollision().posZ());
 
     for (auto& track : tracks) {
 
@@ -1327,7 +1343,6 @@ struct NucleiHistTask {
 
   void processMC_PID(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe>> const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
   {
-    LOGF(info, "vtx-z (data) = %f | vtx-z (MC) = %f", collision.posZ(), collision.mcCollision().posZ());
 
     for (auto& track : tracks) {
 
@@ -1508,7 +1523,6 @@ struct NucleiHistTask {
 
   void processMC_primary_fraction(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe>> const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
   {
-    LOGF(info, "vtx-z (data) = %f | vtx-z (MC) = %f", collision.posZ(), collision.mcCollision().posZ());
 
     for (auto& track : tracks) {
 
