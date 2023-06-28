@@ -145,7 +145,8 @@ struct HfTaskOmegacSt {
   bool bzOnly = true;
   int runNumber{0};
 
-  using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
+  using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
+  using TracksExtMc = soa::Join<TracksExt, aod::McTrackLabels>;
 
   HistogramRegistry registry{
     "registry",
@@ -313,7 +314,7 @@ struct HfTaskOmegacSt {
 
   void processGen(aod::Collision const& collision, aod::McCollisions const& mcCollisions,
                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
-                  aod::V0s const& v0s, TracksExt const& tracks, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
+                  aod::V0s const& v0s, TracksExtMc const& tracks, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
     const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
@@ -333,7 +334,7 @@ struct HfTaskOmegacSt {
     const auto primaryVertex = getPrimaryVertex(collision);
     o2::dataformats::DCA impactParameterTrk;
     for (const auto& trackedCascade : trackedCascades) {
-      const auto trackCasc = trackedCascade.track_as<TracksExt>();
+      const auto trackCasc = trackedCascade.track_as<TracksExtMc>();
       auto trackParCovTrk = getTrackParCov(trackCasc);
       if (bzOnly) {
         o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovTrk, bz, 2.f, matCorr, &impactParameterTrk);
@@ -351,10 +352,10 @@ struct HfTaskOmegacSt {
       // registry.fill(HIST("hMassVsPt"), trackedCascade.omegaMass(), trackCasc.pt());
 
       const auto& casc = trackedCascade.cascade();
-      const auto& bachelor = casc.bachelor_as<TracksExt>();
+      const auto& bachelor = casc.bachelor_as<TracksExtMc>();
       const auto& v0 = casc.v0();
-      const auto& v0TrackPos = v0.posTrack_as<TracksExt>();
-      const auto& v0TrackNeg = v0.negTrack_as<TracksExt>();
+      const auto& v0TrackPos = v0.posTrack_as<TracksExtMc>();
+      const auto& v0TrackNeg = v0.negTrack_as<TracksExtMc>();
 
       if (!v0TrackPos.has_mcParticle() || !v0TrackNeg.has_mcParticle() || !bachelor.has_mcParticle()) {
         continue;
