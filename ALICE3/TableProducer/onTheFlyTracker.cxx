@@ -62,11 +62,19 @@ struct OnTheFlyTracker {
   Produces<aod::TracksDCA> tracksDCA;
   Produces<aod::CollisionsAlice3> collisionAlice3;
 
+  // optionally produced, empty (to be tuned later)
+  Produces<aod::StoredTracksExtra> tracksExtra; // base table, extend later
+  Produces<aod::TrackSelection> trackSelection;
+  Produces<aod::TrackSelectionExtension> trackSelectionExtension;
+
   Configurable<float> maxEta{"maxEta", 1.5, "maximum eta to consider viable"};
   Configurable<float> multEtaRange{"multEtaRange", 0.8, "eta range to compute the multiplicity"};
   Configurable<float> minPt{"minPt", 0.1, "minimum pt to consider viable"};
   Configurable<bool> enableLUT{"enableLUT", false, "Enable track smearing"};
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
+
+  Configurable<bool> populateTracksExtra{"populateTracksExtra", false, "populate TracksExtra table (legacy)"};
+  Configurable<bool> populateTrackSelection{"populateTrackSelection", false, "populate TrackSelection table (legacy)"};
 
   Configurable<std::string> lutEl{"lutEl", "lutCovm.el.dat", "LUT for electrons"};
   Configurable<std::string> lutMu{"lutMu", "lutCovm.mu.dat", "LUT for muons"};
@@ -114,11 +122,7 @@ struct OnTheFlyTracker {
       mapPdgLut.insert(std::make_pair(211, lutPiChar));
       mapPdgLut.insert(std::make_pair(321, lutKaChar));
       mapPdgLut.insert(std::make_pair(2212, lutPrChar));
-      // mapPdgLut.insert(std::make_pair(11, "lutCovm.el.dat"));
-      // mapPdgLut.insert(std::make_pair(13, "lutCovm.mu.dat"));
-      // mapPdgLut.insert(std::make_pair(211, "lutCovm.pi.dat"));
-      // mapPdgLut.insert(std::make_pair(321, "lutCovm.ka.dat"));
-      // mapPdgLut.insert(std::make_pair(2212, "lutCovm.pr.dat"));
+
       if (enableNucleiSmearing) {
         const char* lutDeChar = ((std::string)lutDe).c_str();
         const char* lutTrChar = ((std::string)lutTr).c_str();
@@ -199,6 +203,10 @@ struct OnTheFlyTracker {
       if (mcParticle.has_daughters()) {
         continue;
       }
+      const auto pdg = std::abs(mcParticle.pdgCode());
+      if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton) {
+        continue;
+      }
       const auto& pdgInfo = pdgDB->GetParticle(mcParticle.pdgCode());
       if (!pdgInfo) {
         LOG(warning) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
@@ -274,6 +282,18 @@ struct OnTheFlyTracker {
                             trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                             trackParCov.getSigma1Pt2());
       tracksLabels(mcParticle.globalIndex(), 0);
+
+      // populate extra tables if required to do so
+      if (populateTracksExtra) {
+        tracksExtra(0.0f, (uint32_t)0, (uint8_t)0, (uint8_t)0,
+                    (int8_t)0, (int8_t)0, (uint8_t)0, (uint8_t)0,
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+      }
+      if (populateTrackSelection) {
+        trackSelection((uint8_t)0, false, false, false, false, false, false);
+        trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
+      }
     }
     collisions(-1, // BC is irrelevant in synthetic MC tests for now, could be adjusted in future
                mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
@@ -285,4 +305,15 @@ struct OnTheFlyTracker {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<OnTheFlyTracker>(cfgc)}; }
+/// Extends TracksExtra if necessary
+struct onTheFlyTrackerInitializer {
+  Spawns<aod::TracksExtra> tracksExtra;
+  void init(InitContext const&) {}
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<OnTheFlyTracker>(cfgc),
+    adaptAnalysisTask<onTheFlyTrackerInitializer>(cfgc)};
+}
