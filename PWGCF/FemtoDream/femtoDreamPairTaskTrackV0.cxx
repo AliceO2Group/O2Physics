@@ -57,7 +57,7 @@ struct femtoDreamPairTaskTrackV0 {
   Configurable<LabeledArray<float>> ConfTrkCutTable{"ConfTrkCutTable", {cutsTableTrack[0], nTrack, nCuts, TrackName, cutNames}, "Particle selections"};
   Configurable<int> ConfTrkPDGCodePartOne{"ConfTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};
   Configurable<uint32_t> ConfTrkCutPartOne{"ConfTrkCutPartOne", 5542474, "Particle 1 (Track) - Selection bit from cutCulator"};
-  Configurable<std::vector<int>> ConfTrkPIDPartOne{"ConfTrkPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"};
+  Configurable<int> ConfTrkPIDPartOne{"ConfTrkPIDPartOne", 2, "Particle 1 - Read from cutCulator"};
   Configurable<int> ConfNspecies{"ConfNspecies", 2, "Number of particle spieces with PID info"};
   Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{"ConfTrkPIDnSigmaMax", std::vector<float>{4.f, 3.f, 2.f}, "This configurable needs to be the same as the one used in the producer task"};
   ConfigurableAxis ConfTrkTempFitVarBins{"ConfTrkDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
@@ -96,8 +96,7 @@ struct femtoDreamPairTaskTrackV0 {
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
 
-  /// The configurables need to be passed to an std::vector
-  std::vector<int> vPIDPartOne;
+  int vPIDPartOne;
   std::vector<float> kNsigma;
 
   /// Correlation part
@@ -171,8 +170,8 @@ struct femtoDreamPairTaskTrackV0 {
       const auto& negChild = parts.iteratorAt(part.index() - 1);
       // check cuts on V0 children
       if (!((posChild.cut() & ConfCutChildPos) == ConfCutChildPos) || !((negChild.cut() & ConfCutChildNeg) == ConfCutChildNeg) ||
-          !isFullPIDSelected(posChild.pidcut(), posChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), std::vector<int>(ConfChildPosIndex.value), ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("PosChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("PosChild", "nSigmaTPCTOF")) ||
-          !isFullPIDSelected(negChild.pidcut(), negChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), std::vector<int>(ConfChildNegIndex.value), ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPCTOF"))) {
+          !isFullPIDSelected(posChild.pidcut(), posChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), ConfChildPosIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("PosChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("PosChild", "nSigmaTPCTOF")) ||
+          !isFullPIDSelected(negChild.pidcut(), negChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), ConfChildNegIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPCTOF"))) {
         continue;
       }
       trackHistoPartTwo.fillQA<false, false>(part);
@@ -190,8 +189,8 @@ struct femtoDreamPairTaskTrackV0 {
       const auto& negChild = parts.iteratorAt(p2.index() - 1);
       // check cuts on V0 children
       if (!((posChild.cut() & ConfCutChildPos) == ConfCutChildPos) || !((negChild.cut() & ConfCutChildNeg) == ConfCutChildNeg) ||
-          !isFullPIDSelected(posChild.pidcut(), posChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), std::vector<int>(ConfChildPosIndex.value), ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("PosChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("PosChild", "nSigmaTPCTOF")) ||
-          !isFullPIDSelected(negChild.pidcut(), negChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), std::vector<int>(ConfChildNegIndex.value), ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPCTOF"))) {
+          !isFullPIDSelected(posChild.pidcut(), posChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), ConfChildPosIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("PosChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("PosChild", "nSigmaTPCTOF")) ||
+          !isFullPIDSelected(negChild.pidcut(), negChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), ConfChildNegIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPCTOF"))) {
         continue;
       }
       if (ConfIsCPR.value) {
@@ -238,8 +237,8 @@ struct femtoDreamPairTaskTrackV0 {
         const auto& negChild = parts.iteratorAt(p2.index() - 1);
         // check cuts on V0 children
         if (!((posChild.cut() & ConfCutChildPos) == ConfCutChildPos) || !((negChild.cut() & ConfCutChildNeg) == ConfCutChildNeg) ||
-            !isFullPIDSelected(posChild.pidcut(), posChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), std::vector<int>(ConfChildPosIndex.value), ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("PosChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("PosChild", "nSigmaTPCTOF")) ||
-            !isFullPIDSelected(negChild.pidcut(), negChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), std::vector<int>(ConfChildNegIndex.value), ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPCTOF"))) {
+            !isFullPIDSelected(posChild.pidcut(), posChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), ConfChildPosIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("PosChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("PosChild", "nSigmaTPCTOF")) ||
+            !isFullPIDSelected(negChild.pidcut(), negChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), ConfChildNegIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPCTOF"))) {
           continue;
         }
         if (ConfIsCPR.value) {

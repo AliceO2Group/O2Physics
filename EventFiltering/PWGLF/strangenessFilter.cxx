@@ -87,6 +87,9 @@ struct strangenessFilter {
   Configurable<bool> kint7{"kint7", 0, "Apply kINT7 event selection"};
   Configurable<bool> sel7{"sel7", 0, "Apply sel7 event selection"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
+  Configurable<float> minPtTrackedCascade{"minPtTrackedCascade", 0., "Min. pt for tracked cascades"};
+  Configurable<float> minPtTrackedV0{"minPtTrackedV0", 0., "Min. pt for tracked V0"};
+  Configurable<float> minPtTracked3Body{"minPtTracked3Body", 0., "Min. pt for tracked 3Body"};
 
   // Selections criteria for tracks
   Configurable<float> hEta{"hEta", 0.9f, "Eta range for trigger particles"};
@@ -253,26 +256,32 @@ struct strangenessFilter {
   ////////// Strangeness Filter - Run 2 conv /////////////
   ////////////////////////////////////////////////////////
 
+  void fillTriggerTable(bool keepEvent[])
+  {
+    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9]);
+  }
+
   void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
-    bool keepEvent[7]{false, false, false, false, false, false, false};
+    // [7] tracked cascade, [8] tracked V0, [9] tracked 3Body
+    bool keepEvent[10]{}; // explicitly zero-initialised
 
     if (kint7 && !collision.alias_bit(kINT7)) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+      fillTriggerTable(keepEvent);
       return;
     }
     if (sel7 && !collision.sel7()) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+      fillTriggerTable(keepEvent);
       return;
     }
     if (sel8 && !collision.sel8()) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+      fillTriggerTable(keepEvent);
       return;
     }
 
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+      fillTriggerTable(keepEvent);
       return;
     }
 
@@ -504,7 +513,7 @@ struct strangenessFilter {
     }
 
     // Filling the table
-    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+    fillTriggerTable(keepEvent);
   }
   //
   PROCESS_SWITCH(strangenessFilter, processRun2, "Process data Run2", true);
@@ -513,20 +522,22 @@ struct strangenessFilter {
   ////////// Strangeness Filter - Run 3 MC /////////////
   //////////////////////////////////////////////////////
 
-  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
+  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks,
+                   aod::AssignedTrackedCascades const& trackedCascades, aod::AssignedTrackedV0s const& trackedV0s, aod::AssignedTracked3Bodys const& tracked3Bodys)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
-    bool keepEvent[7]{false, false, false, false, false, false, false};
+    // [7] tracked cascade, [8] tracked V0, [9] tracked 3Body
+    bool keepEvent[10]{}; // explicitly zero-initialised
 
     if (sel8 && !collision.sel8()) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+      fillTriggerTable(keepEvent);
       return;
     }
     // all processed events after event selection
     hProcessedEvents->Fill(0.5);
 
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+      fillTriggerTable(keepEvent);
       return;
     }
     QAHistos.fill(HIST("hVtxZ"), collision.posZ());
@@ -912,6 +923,28 @@ struct strangenessFilter {
       keepEvent[6] = true;
     }
 
+    // strangeness tracking selection
+    for (const auto& trackedCascade : trackedCascades) {
+      const auto trackCasc = trackedCascade.track_as<TrackCandidates>();
+      if (trackCasc.pt() > minPtTrackedCascade) {
+        keepEvent[7] = true;
+      }
+    }
+
+    for (const auto& trackedV0 : trackedV0s) {
+      const auto trackV0 = trackedV0.track_as<TrackCandidates>();
+      if (trackV0.pt() > minPtTrackedV0) {
+        keepEvent[8] = true;
+      }
+    }
+
+    for (const auto& tracked3Body : tracked3Bodys) {
+      const auto track3Body = tracked3Body.track_as<TrackCandidates>();
+      if (track3Body.pt() > minPtTracked3Body) {
+        keepEvent[9] = true;
+      }
+    }
+
     // Fill centrality dependent histos
     if (keepEvent[0]) {
       hProcessedEvents->Fill(2.5);
@@ -939,7 +972,7 @@ struct strangenessFilter {
     }
 
     // Filling the table
-    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
+    fillTriggerTable(keepEvent);
   }
   //
   PROCESS_SWITCH(strangenessFilter, processRun3, "Process Run3", true);

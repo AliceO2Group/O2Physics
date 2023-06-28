@@ -9,13 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(task-qa-pid-rejection
-                    SOURCES taskQaPidRejection.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(task-d0-parametrized-pid
-                    SOURCES taskD0ParametrizedPid.cxx
+o2physics_add_dpl_workflow(task-chic
+                    SOURCES taskChic.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -24,18 +19,13 @@ o2physics_add_dpl_workflow(task-d0-alice3-barrel
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(task-lc-alice3
-                    SOURCES taskLcAlice3.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(task-d0-alice3-forward
                     SOURCES taskD0Alice3Forward.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(task-lc-parametrized-pid
-                    SOURCES taskLcParametrizedPid.cxx
+o2physics_add_dpl_workflow(task-d0-parametrized-pid
+                    SOURCES taskD0ParametrizedPid.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -44,12 +34,22 @@ o2physics_add_dpl_workflow(task-jpsi
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(task-x
-                    SOURCES taskX.cxx
+o2physics_add_dpl_workflow(task-lc-alice3
+                    SOURCES taskLcAlice3.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(task-chic
-                    SOURCES taskChic.cxx
+o2physics_add_dpl_workflow(task-lc-parametrized-pid
+                    SOURCES taskLcParametrizedPid.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-qa-pid-rejection
+                    SOURCES taskQaPidRejection.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-x
+                    SOURCES taskX.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
