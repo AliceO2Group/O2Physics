@@ -190,7 +190,7 @@ struct OnTheFlyTracker {
     histos.add("hSimMultiplicity", "hSimMultiplicity", kTH1F, {axisMultiplicity});
     histos.add("hRecoMultiplicity", "hRecoMultiplicity", kTH1F, {axisMultiplicity});
 
-    if(doExtraQA){
+    if (doExtraQA) {
       histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axisMultiplicity, axisNVertices});
       histos.add("hRecoVsSimMultiplicity", "hRecoVsSimMultiplicity", kTH2F, {axisMultiplicity, axisMultiplicity});
       histos.add("h2dDCAxy", "h2dDCAxy", kTH2F, {axisMomentum, axisDCA});
@@ -387,7 +387,7 @@ struct OnTheFlyTracker {
         }
       }
       primaryVertex = vertices[largestVertex];
-      if(doExtraQA){
+      if (doExtraQA) {
         histos.fill(HIST("h2dVerticesVsContributors"), primaryVertex.getNContributors(), n_vertices);
       }
     } else {
@@ -400,8 +400,8 @@ struct OnTheFlyTracker {
     histos.fill(HIST("hRecoMultiplicity"), tracksAlice3.size());
     histos.fill(HIST("hPVz"), primaryVertex.getZ());
 
-    if(doExtraQA){
-      histos.fill(HIST("hRecoVsSimMultiplicity"), multiplicityCounter,tracksAlice3.size());
+    if (doExtraQA) {
+      histos.fill(HIST("hRecoVsSimMultiplicity"), multiplicityCounter, tracksAlice3.size());
     }
 
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
@@ -429,7 +429,7 @@ struct OnTheFlyTracker {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
         }
-        if(doExtraQA){
+        if (doExtraQA) {
           histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
         }
         tracksDCA(dcaXY, dcaZ);
