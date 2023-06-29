@@ -14,8 +14,8 @@
 ///
 /// \author Jochen Klein
 
-#include "TDatabasePDG.h"
-#include "TPDGCode.h"
+#include <TDatabasePDG.h>
+#include <TPDGCode.h>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/RecoDecay.h"
@@ -28,6 +28,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoA.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
