@@ -161,10 +161,15 @@ struct cascpostprocessing {
     if (!isXi)
       massAxis = omegamassAxis;
     AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec pTPCAxis = {100, 0.0f, 10.0f, "#it{p} TPC (GeV/#it{c})"};
+    AxisSpec ptAxisTopoVar = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptAxisPID = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec etaAxis = {200, -2.0f, 2.0f, "#eta"};
-    AxisSpec centFT0MAxis = {100, 0.0f, 100.0f, "FT0M (%)"};
-    AxisSpec centFV0AAxis = {100, 0.0f, 100.0f, "FV0A (%)"};
+    ConfigurableAxis centFT0MAxis{"FT0M",
+                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100},
+                                  "FT0M (%)"};
+    ConfigurableAxis centFV0AAxis{"FV0A",
+                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100},
+                                  "FV0A (%)"};
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
 
@@ -225,20 +230,20 @@ struct cascpostprocessing {
     registry.add("hOmegaPlusInvMassvsPt_BefSels", "hOmegaPlusInvMassvsPt_BefSels", {HistType::kTH2F, {ptAxis, omegamassAxis}});
 
     // topo
-    registry.add("hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}});
-    registry.add("hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}});
-    registry.add("hDCABachToPV", "hDCABachToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}});
-    registry.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
-    registry.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
-    registry.add("hCascRadius", "hCascRadius", {HistType::kTH1D, {{500, 0.0f, 50.0f}}});
-    registry.add("hV0Radius", "hV0Radius", {HistType::kTH1D, {{500, 0.0f, 50.0f}}});
-    registry.add("hDCACascDaughters", "hDCACascDaughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
-    registry.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
-    registry.add("hDCAV0ToPV", "hDCAV0ToPV", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
-    registry.add("hMassLambdaDau", "hMassLambdaDau", {HistType::kTH1F, {{60, 1.1f, 1.13f}}});
+    registry.add("hDCANegToPV", "hDCANegToPV", {HistType::kTH2F, {ptAxisTopoVar, {200, -1.0f, 1.0f}}});
+    registry.add("hDCAPosToPV", "hDCAPosToPV", {HistType::kTH2F, {ptAxisTopoVar, {200, -1.0f, 1.0f}}});
+    registry.add("hDCABachToPV", "hDCABachToPV", {HistType::kTH2F, {ptAxisTopoVar, {200, -1.0f, 1.0f}}});
+    registry.add("hCascCosPA", "hCascCosPA", {HistType::kTH2F, {ptAxisTopoVar, {100, 0.9f, 1.0f}}});
+    registry.add("hV0CosPA", "hV0CosPA", {HistType::kTH2F, {ptAxisTopoVar, {100, 0.9f, 1.0f}}});
+    registry.add("hCascRadius", "hCascRadius", {HistType::kTH2D, {ptAxisTopoVar, {500, 0.0f, 50.0f}}});
+    registry.add("hV0Radius", "hV0Radius", {HistType::kTH2D, {ptAxisTopoVar, {500, 0.0f, 50.0f}}});
+    registry.add("hDCACascDaughters", "hDCACascDaughters", {HistType::kTH2F, {ptAxisTopoVar, {55, 0.0f, 2.20f}}});
+    registry.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH2F, {ptAxisTopoVar, {55, 0.0f, 2.20f}}});
+    registry.add("hDCAV0ToPV", "hDCAV0ToPV", {HistType::kTH2F, {ptAxisTopoVar, {55, 0.0f, 2.20f}}});
+    registry.add("hMassLambdaDau", "hMassLambdaDau", {HistType::kTH2F, {ptAxis, {60, 1.1f, 1.13f}}});
 
-    registry.add("hBachBaryonCosPA", "hBachBaryonCosPA", {HistType::kTH1F, {{100, 0.0f, 1.0f}}});
-    registry.add("hBachBaryonDCAxyToPV", "hBachBaryonDCAxyToPV", {HistType::kTH1F, {{300, -3.0f, 3.0f}}});
+    registry.add("hBachBaryonCosPA", "hBachBaryonCosPA", {HistType::kTH2F, {ptAxisTopoVar, {100, 0.0f, 1.0f}}});
+    registry.add("hBachBaryonDCAxyToPV", "hBachBaryonDCAxyToPV", {HistType::kTH2F, {ptAxisTopoVar, {300, -3.0f, 3.0f}}});
 
     // kine
     registry.add("hEtaMinus", "hEtaMinus", {HistType::kTH2F, {ptAxis, etaAxis}});
@@ -253,12 +258,12 @@ struct cascpostprocessing {
     registry.add("hCtauPlus", "hCtauPlus", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
 
     // daughter tracks
-    registry.add("hTPCNSigmaPosPi", "hTPCNSigmaPosPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
-    registry.add("hTPCNSigmaNegPi", "hTPCNSigmaNegPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
-    registry.add("hTPCNSigmaPosPr", "hTPCNSigmaPosPr", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
-    registry.add("hTPCNSigmaNegPr", "hTPCNSigmaNegPr", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
-    registry.add("hTPCNSigmaBachPi", "hTPCNSigmaBachPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
-    registry.add("hTPCNSigmaBachKa", "hTPCNSigmaBachKa", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
+    registry.add("hTPCNSigmaPosPi", "hTPCNSigmaPosPi", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
+    registry.add("hTPCNSigmaNegPi", "hTPCNSigmaNegPi", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
+    registry.add("hTPCNSigmaPosPr", "hTPCNSigmaPosPr", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
+    registry.add("hTPCNSigmaNegPr", "hTPCNSigmaNegPr", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
+    registry.add("hTPCNSigmaBachPi", "hTPCNSigmaBachPi", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
+    registry.add("hTPCNSigmaBachKa", "hTPCNSigmaBachKa", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
     registry.add("hTOFNSigmaPosPi", "hTOFNSigmaPosPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
     registry.add("hTOFNSigmaNegPi", "hTOFNSigmaNegPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
     registry.add("hTOFNSigmaPosPr", "hTOFNSigmaPosPr", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
@@ -419,20 +424,20 @@ struct cascpostprocessing {
       registry.fill(HIST("hCandidate"), ++counter);
 
       registry.fill(HIST("hPt"), candidate.pt());
-      registry.fill(HIST("hDCANegToPV"), candidate.dcanegtopv());
-      registry.fill(HIST("hDCAPosToPV"), candidate.dcapostopv());
-      registry.fill(HIST("hDCABachToPV"), candidate.dcabachtopv());
-      registry.fill(HIST("hCascCosPA"), candidate.casccospa());
-      registry.fill(HIST("hV0CosPA"), candidate.v0cospa());
-      registry.fill(HIST("hCascRadius"), candidate.cascradius());
-      registry.fill(HIST("hV0Radius"), candidate.v0radius());
-      registry.fill(HIST("hDCACascDaughters"), candidate.dcacascdaughters());
-      registry.fill(HIST("hDCAV0Daughters"), candidate.dcav0daughters());
-      registry.fill(HIST("hDCAV0ToPV"), candidate.dcav0topv());
-      registry.fill(HIST("hMassLambdaDau"), candidate.masslambdadau());
+      registry.fill(HIST("hDCANegToPV"), candidate.pt(), candidate.dcanegtopv());
+      registry.fill(HIST("hDCAPosToPV"), candidate.pt(), candidate.dcapostopv());
+      registry.fill(HIST("hDCABachToPV"), candidate.pt(), candidate.dcabachtopv());
+      registry.fill(HIST("hCascCosPA"), candidate.pt(), candidate.casccospa());
+      registry.fill(HIST("hV0CosPA"), candidate.pt(), candidate.v0cospa());
+      registry.fill(HIST("hCascRadius"), candidate.pt(), candidate.cascradius());
+      registry.fill(HIST("hV0Radius"), candidate.pt(), candidate.v0radius());
+      registry.fill(HIST("hDCACascDaughters"), candidate.pt(), candidate.dcacascdaughters());
+      registry.fill(HIST("hDCAV0Daughters"), candidate.pt(), candidate.dcav0daughters());
+      registry.fill(HIST("hDCAV0ToPV"), candidate.pt(), candidate.dcav0topv());
+      registry.fill(HIST("hMassLambdaDau"), candidate.pt(), candidate.masslambdadau());
 
-      registry.fill(HIST("hBachBaryonCosPA"), candidate.bachBaryonCosPA());
-      registry.fill(HIST("hBachBaryonDCAxyToPV"), candidate.bachBaryonDCAxyToPV());
+      registry.fill(HIST("hBachBaryonCosPA"), candidate.pt(), candidate.bachBaryonCosPA());
+      registry.fill(HIST("hBachBaryonDCAxyToPV"), candidate.pt(), candidate.bachBaryonDCAxyToPV());
       if (candidate.sign() > 0) {
         registry.fill(HIST("hCtauPlus"), ctau);
         registry.fill(HIST("hEtaPlus"), candidate.pt(), candidate.eta());
@@ -460,24 +465,24 @@ struct cascpostprocessing {
       }
       if (isCandidate) {
         if (candidate.sign() < 0) {
-          registry.fill(HIST("hTPCNSigmaPosPr"), candidate.ntpcsigmapospr());
-          registry.fill(HIST("hTPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
+          registry.fill(HIST("hTPCNSigmaPosPr"), candidate.pt(), candidate.ntpcsigmapospr());
+          registry.fill(HIST("hTPCNSigmaNegPi"), candidate.pt(), candidate.ntpcsigmanegpi());
           registry.fill(HIST("hTOFNSigmaPosPr"), candidate.ntofsigmapospr());
           registry.fill(HIST("hTOFNSigmaNegPi"), candidate.ntofsigmanegpi());
           registry.fill(HIST("hCascMinusEtaPos"), candidate.poseta());
           registry.fill(HIST("hCascMinusEtaNeg"), candidate.negeta());
           registry.fill(HIST("hCascMinusEtaBach"), candidate.bacheta());
         } else {
-          registry.fill(HIST("hTPCNSigmaPosPi"), candidate.ntpcsigmapospi());
-          registry.fill(HIST("hTPCNSigmaNegPr"), candidate.ntpcsigmanegpr());
+          registry.fill(HIST("hTPCNSigmaPosPi"), candidate.pt(), candidate.ntpcsigmapospi());
+          registry.fill(HIST("hTPCNSigmaNegPr"), candidate.pt(), candidate.ntpcsigmanegpr());
           registry.fill(HIST("hTOFNSigmaPosPi"), candidate.ntofsigmapospi());
           registry.fill(HIST("hTOFNSigmaNegPr"), candidate.ntofsigmanegpr());
         }
         if (isXi) {
-          registry.fill(HIST("hTPCNSigmaBachPi"), candidate.ntpcsigmabachpi());
+          registry.fill(HIST("hTPCNSigmaBachPi"), candidate.pt(), candidate.ntpcsigmabachpi());
           registry.fill(HIST("hTOFNSigmaBachPi"), candidate.ntofsigmabachpi());
         } else {
-          registry.fill(HIST("hTPCNSigmaBachKa"), candidate.ntpcsigmabachka());
+          registry.fill(HIST("hTPCNSigmaBachKa"), candidate.pt(), candidate.ntpcsigmabachka());
           registry.fill(HIST("hTOFNSigmaBachKa"), candidate.ntofsigmabachka());
         }
       }
