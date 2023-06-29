@@ -47,19 +47,10 @@ using LfCandNucleusEvent = LfCandNucleusEvents::iterator;
 namespace full
 {
 DECLARE_SOA_INDEX_COLUMN(LfCandNucleusEvent, lfCandNucleusFullEvent);
-DECLARE_SOA_COLUMN(Px, px, float);
-DECLARE_SOA_COLUMN(Py, py, float);
-DECLARE_SOA_COLUMN(Pz, pz, float);
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
-                           [](float px, float py) -> float { return sqrt(px * px + py * py); });
-DECLARE_SOA_DYNAMIC_COLUMN(P, p,
-                           [](float px, float py, float pz) -> float { return sqrt(px * px + py * py + pz * pz); });
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(P, p, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Sign, sign, short);
-DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,
-                           [](float px, float py, float pz) -> float {
-                             const auto p = sqrt(px * px + py * py + pz * pz);
-                             return 0.5f * log((p + pz) / (p - pz));
-                           });
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,
@@ -129,7 +120,9 @@ DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   full::TPCInnerParam,
                   full::Beta,
                   full::TPCSignal,
-                  full::Px, full::Py, full::Pz,
+                  full::Pt,
+                  full::P,
+                  full::Eta,
                   full::Phi,
                   full::Sign,
                   full::ITSNCls,
@@ -140,9 +133,6 @@ DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   full::ITSChi2NCl,
                   track::ITSClusterMap,
                   full::IsPVContributor,
-                  full::Pt<full::Px, full::Py>,
-                  full::P<full::Px, full::Py, full::Pz>,
-                  full::Eta<full::Px, full::Py, full::Pz>,
                   full::Rapidity<full::Px, full::Py, full::Pz>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
