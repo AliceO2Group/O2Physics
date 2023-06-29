@@ -91,7 +91,6 @@ int main(int argc, char* argv[])
   const std::string jiraticket = arguments["jiraticket"].as<std::string>();
   const std::string comment = arguments["comment"].as<std::string>();
 
-
   const float bb0 = arguments["bb0"].as<float>();
   const float bb1 = arguments["bb1"].as<float>();
   const float bb2 = arguments["bb2"].as<float>();
@@ -212,7 +211,7 @@ int main(int argc, char* argv[])
       std::map<std::string, std::string> metadata;
 
       // Sanity check: Request confirmation if any of recoPass, period name, comment, jira not specified
-      int missingPass=0, missingPeriod=0, missingComment=0, missingJira=0;
+      int missingPass = 0, missingPeriod = 0, missingComment = 0, missingJira = 0;
       if (recopass.empty()) {
         missingPass = 1;
       } else {
@@ -226,7 +225,7 @@ int main(int argc, char* argv[])
       }
 
       if (comment.empty()) {
-        missingComment = 1; 
+        missingComment = 1;
       } else {
         metadata["Comment"] = comment;
       }
@@ -246,12 +245,12 @@ int main(int argc, char* argv[])
           LOG(info) << "\t- Comment";
         if (missingJira)
           LOG(info) << "\t- JIRA ticket";
-        
-        //Request interactive confirmation to upload
+
+        // Request interactive confirmation to upload
         LOG(info) << "Continue with object upload anyway? (Y/n)";
         std::string confirm;
         cin >> confirm;
-        if (boost::iequals(confirm.substr(0, 1),"y")) {
+        if (boost::iequals(confirm.substr(0, 1), "y")) {
           LOG(info) << "Continuing with object upload";
         } else {
           LOG(info) << "Aborting upload";
@@ -259,14 +258,11 @@ int main(int argc, char* argv[])
         }
       }
 
-
-
       // Fill metadata map for start/end run number
       if (minRunNumber != 0) {
         metadata["min-runnumber"] = Form("%i", minRunNumber);
         metadata["max-runnumber"] = Form("%i", maxRunNumber);
       }
-
 
       storeOnCCDB(pathCCDB + "/" + objname, metadata, validityStart, validityStop, tpc);
     }
