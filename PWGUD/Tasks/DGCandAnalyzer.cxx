@@ -160,6 +160,7 @@ struct DGCandAnalyzer {
     registry.add("tracks/dcaXYDG", "dcaXY in DG candidates", {HistType::kTH1F, {{400, -2., 2.}}});
     registry.add("tracks/dcaZDG", "dcaZ in DG candidates", {HistType::kTH1F, {{800, -20., 20.}}});
     registry.add("tracks/TPCNCl", "Number of found TPC clusters", {HistType::kTH1F, {{200, 0., 200.}}});
+    registry.add("tracks/TPCChi2NCl", "TPC chi2 per cluster of tracks", {HistType::kTH1F, {{200, 0., 50.}}});
     registry.add("tracks/ptTrkdcaXYDG", "dcaXY versus track pT in DG candidates", {HistType::kTH2F, {axispt, {80, -2., 2.}}});
     registry.add("tracks/ptTrkdcaZDG", "dcaZ versus track pT in DG candidates", {HistType::kTH2F, {axispt, {400, -20., 20.}}});
 
@@ -272,19 +273,6 @@ struct DGCandAnalyzer {
       return;
     }
 
-    // check FIT information
-    auto bitMin = anaPars.dBCMin() + 16;
-    auto bitMax = anaPars.dBCMax() + 16;
-    for (auto bit = bitMin; bit <= bitMax; bit++) {
-      if (TESTBIT(dgcand.bbFT0Apf(), bit) ||
-          TESTBIT(dgcand.bbFT0Cpf(), bit) ||
-          TESTBIT(dgcand.bbFV0Apf(), bit) ||
-          TESTBIT(dgcand.bbFDDApf(), bit) ||
-          TESTBIT(dgcand.bbFDDCpf(), bit)) {
-        return;
-      }
-    }
-
     // fill FIT amplitude histograms
     registry.fill(HIST("FIT/FT0AAmplitude"), dgcand.totalFT0AmplitudeA(), 1.);
     registry.fill(HIST("FIT/FT0CAmplitude"), dgcand.totalFT0AmplitudeC(), 1.);
@@ -301,13 +289,25 @@ struct DGCandAnalyzer {
       registry.fill(HIST("FIT/BBFDDC"), bit - 16, TESTBIT(dgcand.bbFDDCpf(), bit));
     }
 
+    // check FIT information
+    auto bitMin = anaPars.dBCMin() + 16;
+    auto bitMax = anaPars.dBCMax() + 16;
+    for (auto bit = bitMin; bit <= bitMax; bit++) {
+      if (TESTBIT(dgcand.bbFT0Apf(), bit) ||
+          TESTBIT(dgcand.bbFT0Cpf(), bit) ||
+          TESTBIT(dgcand.bbFV0Apf(), bit) ||
+          TESTBIT(dgcand.bbFDDApf(), bit) ||
+          TESTBIT(dgcand.bbFDDCpf(), bit)) {
+        return;
+      }
+    }
+
     // find track combinations which are compatible with PID cuts
     auto nIVMs = pidsel.computeIVMs(PVContributors);
     LOGF(debug, "Number of IVMs %d", nIVMs);
 
     // update candCase histogram
     if (nIVMs > 0) {
-      registry.fill(HIST("stat/candCase"), candCase, 1.);
       // check bcnum
       if (bcnums.find(bcnum) != bcnums.end()) {
         LOGF(info, "candCase %i bcnum %i allready found! ", candCase, bcnum);
@@ -316,15 +316,17 @@ struct DGCandAnalyzer {
       } else {
         bcnums.insert(bcnum);
       }
-
-      // update histogram nDGperRun
-      registry.get<TH1>(HIST("stat/nDGperRun"))->Fill(Form("%d", run), 1);
     } else {
       LOGF(debug, "Rejected 4: no IVMs.");
+      return;
     }
 
+    // update histogram stat/candCase and stat/nDGperRun
+    registry.fill(HIST("stat/candCase"), candCase, 1.);
+    registry.get<TH1>(HIST("stat/nDGperRun"))->Fill(Form("%d", run), 1);
+
     // update histograms
-    registry.fill(HIST("stat/nIVMs"), nIVMs, 1.);
+    int goodIVMs = 0;
     for (auto ivm : pidsel.IVMs()) {
       // cut on pt-system
       if (ivm.Perp() < anaPars.minptsys() || ivm.Perp() > anaPars.maxptsys()) {
@@ -350,6 +352,8 @@ struct DGCandAnalyzer {
           registry.fill(HIST("2Prong/AngleIVM"), ivm.M(), angle, 1.);
         }
 
+        registry.fill(HIST("2Prong/TPCNCl1"), trk1.tpcNClsFindable() - trk1.tpcNClsFindableMinusFound(), 1.);
+        registry.fill(HIST("2Prong/TPCNCl2"), trk2.tpcNClsFindable() - trk2.tpcNClsFindableMinusFound(), 1.);
         registry.fill(HIST("2Prong/TPCChi2NCl1"), trk1.tpcChi2NCl(), 1.);
         registry.fill(HIST("2Prong/TPCChi2NCl2"), trk2.tpcChi2NCl(), 1.);
         registry.fill(HIST("2Prong/pt1eta1"), trk1.pt(), v1.Eta(), 1.);
@@ -357,11 +361,25 @@ struct DGCandAnalyzer {
         registry.fill(HIST("2Prong/pt1pt2"), trk1.pt(), trk2.pt(), 1.);
         registry.fill(HIST("2Prong/eta1IVM"), ivm.M(), v1.Eta(), 1.);
         registry.fill(HIST("2Prong/eta2IVM"), ivm.M(), v2.Eta(), 1.);
+
+        fillSignalHists(ivm, PVContributors, pidsel);
       }
 
+      // update system/IVMptSysDG
       registry.fill(HIST("system/IVMptSysDG"), ivm.M(), ivm.Perp());
       for (auto ind : ivm.trkinds()) {
         auto track = PVContributors.begin() + ind;
+        registry.fill(HIST("system/IVMptTrkDG"), ivm.M(), track.pt());
+      }
+      goodIVMs++;
+    }
+
+    // fill histograms with PV track information of collisions with DG candidates
+    registry.fill(HIST("stat/nIVMs"), goodIVMs, 1.);
+    if (goodIVMs > 0) {
+
+      // loop over PV tracks and update histograms
+      for (auto track : PVContributors) {
         registry.fill(HIST("tracks/trackHits"), 0., 1.);
         registry.fill(HIST("tracks/trackHits"), 1., track.hasITS() * 1.);
         registry.fill(HIST("tracks/trackHits"), 2., track.hasTPC() * 1.);
@@ -372,8 +390,8 @@ struct DGCandAnalyzer {
         // registry.fill(HIST("ptTrkdcaXYDG"), track.pt(), track.dcaXY());
         // registry.fill(HIST("dcaZDG"), track.dcaZ());
         // registry.fill(HIST("ptTrkdcaZDG"), track.pt(), track.dcaZ());
-
-        registry.fill(HIST("system/IVMptTrkDG"), ivm.M(), track.pt());
+        registry.fill(HIST("tracks/TPCNCl"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound(), 1.);
+        registry.fill(HIST("tracks/TPCChi2NCl"), track.tpcChi2NCl(), 1.);
 
         // fill nSigma histograms
         /*
@@ -405,8 +423,6 @@ struct DGCandAnalyzer {
           registry.fill(HIST("tracks/nSigmaTOFPPr"), track.pt(), track.tofNSigmaPr());
         }
       }
-      // fillSignalHists(ivm, dgtracks, pidsel);
-      fillSignalHists(ivm, PVContributors, pidsel);
     }
   }
 };
