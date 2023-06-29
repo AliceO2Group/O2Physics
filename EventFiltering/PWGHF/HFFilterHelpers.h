@@ -749,7 +749,7 @@ int isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const float& v0Cosi
         hV0Selected->Fill(4., iV0);
       }
     }
-  };
+  }
 
   // armenteros-podolanski / mass
   if (TESTBIT(isSelected, kPhoton) && (std::pow(v0.alpha() / 0.95, 2) + std::pow(v0.qtarm() / 0.05, 2)) >= 1) {
