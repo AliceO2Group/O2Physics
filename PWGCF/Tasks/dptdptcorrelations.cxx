@@ -214,7 +214,7 @@ struct DptDptCorrelationsTask {
     {
       LOGF(info, "Stored pT average for %d track ids", ptavgs.size());
       for (uint i = 0; i < ptavgs.size(); ++i) {
-        LOGF(info, "  Stored pT average for track id %s %s", ptavgs[i] != nullptr ? "yes" : "no");
+        LOGF(info, "  Stored pT average for track id %d %s", i, ptavgs[i] != nullptr ? "yes" : "no");
         fhPtAvg_vsEtaPhi[i] = ptavgs[i];
       }
       ccdbstored = true;
