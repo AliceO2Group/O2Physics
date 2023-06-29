@@ -29,9 +29,9 @@
 #include <string>
 #include <vector>
 
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector3D.h>
-#include <Math/Vector4D.h>
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
 
 #include "CCDB/CcdbApi.h" // CCDB
 #include "DataFormatsParameters/GRPMagField.h"
