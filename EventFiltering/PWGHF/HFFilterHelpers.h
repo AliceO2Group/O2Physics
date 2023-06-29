@@ -21,32 +21,31 @@
 #ifndef EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_
 #define EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_
 
-#include "Framework/DataTypes.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/Propagator.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
-#include <vector>
+#include <algorithm>
 #include <array>
-#include <string>
 #include <cmath>
 #include <map>
 #include <memory>
-#include <algorithm>
+#include <string>
+#include <vector>
 
+#include "Math/GenVector/Boost.h"
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
 
-// CCDB
-#include "CCDB/CcdbApi.h"
+#include "CCDB/CcdbApi.h" // CCDB
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/DataTypes.h"
+#include "Framework/HistogramRegistry.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -750,7 +749,7 @@ int isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const float& v0Cosi
         hV0Selected->Fill(4., iV0);
       }
     }
-  };
+  }
 
   // armenteros-podolanski / mass
   if (TESTBIT(isSelected, kPhoton) && (std::pow(v0.alpha() / 0.95, 2) + std::pow(v0.qtarm() / 0.05, 2)) >= 1) {
