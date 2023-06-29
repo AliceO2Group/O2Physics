@@ -326,6 +326,7 @@ struct DGCandAnalyzer {
     registry.get<TH1>(HIST("stat/nDGperRun"))->Fill(Form("%d", run), 1);
 
     // update histograms
+    int goodIVMs = 0;
     for (auto ivm : pidsel.IVMs()) {
       // cut on pt-system
       if (ivm.Perp() < anaPars.minptsys() || ivm.Perp() > anaPars.maxptsys()) {
