@@ -139,7 +139,7 @@ struct LfTreeCreatorNuclei {
         track.tpcInnerParam(),
         track.beta(),
         track.tpcSignal(),
-        track.pt(), track.p(), track.eta(), track.phi(),
+        track.pt(), track.eta(), track.phi(),
         track.sign(),
         track.itsNCls(),
         track.tpcNClsFindable(),
