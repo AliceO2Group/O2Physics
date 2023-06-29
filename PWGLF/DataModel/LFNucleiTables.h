@@ -48,13 +48,15 @@ namespace full
 {
 DECLARE_SOA_INDEX_COLUMN(LfCandNucleusEvent, lfCandNucleusFullEvent);
 DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(P, p, float);
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * cosh(eta); });
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Sign, sign, short);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,
-                           [](float p, float mass) -> float {
+                           [](float pt, float eta, float mass) -> float {
+                             const auto p = pt * cosh(eta);
+                             const auto pz = pt * sinh(eta);
                              const auto energy = sqrt(p * p + mass * mass);
                              return 0.5f * log((energy + pz) / (energy - pz));
                            });
@@ -121,7 +123,6 @@ DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   full::Beta,
                   full::TPCSignal,
                   full::Pt,
-                  full::P,
                   full::Eta,
                   full::Phi,
                   full::Sign,
@@ -133,7 +134,8 @@ DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   full::ITSChi2NCl,
                   track::ITSClusterMap,
                   full::IsPVContributor,
-                  full::Rapidity<full::P>,
+                  full::P<full::Pt, full::Eta>,
+                  full::Rapidity<full::Pt, full::Eta>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
