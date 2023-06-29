@@ -719,9 +719,9 @@ struct AnalysisTrackSelection {
         bool checked = false;
         if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
           auto mctrack_raw = groupedMCTracks.rawIteratorAt(mctrack.globalIndex());
-          checked = (*sig).CheckSignal(false, mctrack_raw);
+          checked = (*sig).CheckSignal(true, mctrack_raw);
         } else {
-          checked = (*sig).CheckSignal(false, mctrack);
+          checked = (*sig).CheckSignal(true, mctrack);
         }
         if (checked) {
           if (mctrack.pdgCode() > 0) {
@@ -1199,9 +1199,9 @@ struct AnalysisSameEventPairing {
         if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
           auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
           auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
-          checked = (*sig).CheckSignal(false, t1_raw, t2_raw);
+          checked = (*sig).CheckSignal(true, t1_raw, t2_raw);
         } else {
-          checked = (*sig).CheckSignal(false, t1, t2);
+          checked = (*sig).CheckSignal(true, t1, t2);
         }
         if (checked) {
 
