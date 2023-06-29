@@ -53,12 +53,9 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<int> activateQA{"activateQA", 0, "flag to enable QA histos (0 no QA, 1 basic QA, 2 extended QA, 3 very extended QA)"};
 
   // parameters for all triggers
-  Configurable<float> nsigmaTPCProtonLc{"nsigmaTPCProtonLc", 3., "Maximum value for TPC PID proton Nsigma for Lc candidates"};
-  Configurable<float> nsigmaTOFProtonLc{"nsigmaTOFProtonLc", 3., "Maximum value for TOF PID proton Nsigma for Lc candidates"};
-  Configurable<float> nsigmaTPCPionKaonDzero{"nsigmaTPCPionKaonDzero", 4., "Maximum value for TPC PID pion/kaon Nsigma for D0 candidates"};
-  Configurable<float> nsigmaTOFPionKaonDzero{"nsigmaTOFPionKaonDzero", 4., "Maximum value for TOF PID pion/kaon Nsigma for D0 candidates"};
-  Configurable<float> nsigmaTPCKaon3Prong{"nsigmaTPCKaon3Prong", 4., "Maximum value for TPC PID kaon Nsigma for all 3-prongs candidates"};
-  Configurable<float> nsigmaTOFKaon3Prong{"nsigmaTOFKaon3Prong", 4., "Maximum value for TOF PID kaon Nsigma for all 3-prongs candidates"};
+  Configurable<float> maxNsigmaPrLc{"maxNsigmaPrLc", 3., "Maximum value for TPC/TOF PID proton Nsigma for Lc candidates"};
+  Configurable<float> maxNsigmaPiKaDzero{"maxNsigmaPiKaDzero", 4., "Maximum value for TOF PID pion/kaon Nsigma for D0 candidates"};
+  Configurable<float> maxNsigmaKa3Prong{"maxNsigmaKa3Prong", 4., "Maximum value for TPC/TOF PID kaon Nsigma for all 3-prongs candidates"};
 
   // parameters for high-pT triggers
   Configurable<float> pTThreshold2Prong{"pTThreshold2Prong", 8., "pT treshold for high pT 2-prong candidates for kHighPt triggers in GeV/c"};
@@ -90,6 +87,8 @@ struct HfFilter { // Main struct for HF triggers
   // parameters for V0 triggers
   Configurable<float> minCosPaGamma{"minCosPaGamma", 0.85, "Minimal required cosine of pointing angle for photons"};
   Configurable<float> minCosPaV0{"minCosPaV0", 0.95, "Minimal required cosine of pointing angle for K0S and Lambdas"};
+  Configurable<float> minV0Radius{"minV0Radius", 0.1, "Minimal required V0 radius for K0S and Lambdas"};
+  Configurable<float> maxNsigmaPrForLambda{"maxNsigmaPrForLambda", 5., "Maximum allowed nSigma TPC/TOF for protons in Lambda decays"};
   Configurable<float> maxMassDstarToGamma{"maxMassDstarToGamma", 0.4, "Maximum invariant mass delta for D* -> D gamma"};
   Configurable<float> maxMassDs12{"maxMassDs12", 0.88, "Maximum invariant mass delta for Ds1+ and Ds2*+"};
   Configurable<float> maxMassXicStar{"maxMassXicStar", 1.4, "Maximum invariant mass delta for Xic(3055) and Xic(3080)"};
@@ -120,8 +119,6 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<string> ccdbPathTPC{"ccdbPathTPC", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
 
   // TPC PID calibrations
   Configurable<int> setTPCCalib{"setTPCCalib", 0, "0 is not use re-calibrations, 1 is compute TPC post-calibrated n-sigmas, 2 is using TPC Spline"};
@@ -131,6 +128,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<std::string> ccdbBBAntiPion{"ccdbBBAntiPion", "Users/l/lserksny/PIDAntiPion", "Path to the CCDB ocject for antiPion BB param"};
   Configurable<std::string> ccdbBBKaon{"ccdbBBKaon", "Users/l/lserksny/PIDPion", "Path to the CCDB ocject for Kaon BB param"};
   Configurable<std::string> ccdbBBAntiKaon{"ccdbBBAntiKaon", "Users/l/lserksny/PIDAntiPion", "Path to the CCDB ocject for antiKaon BB param"};
+  Configurable<string> ccdbPathTPC{"ccdbPathTPC", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the CCDB object"};
 
   // parameter for Optimisation Tree
   Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
@@ -215,7 +213,7 @@ struct HfFilter { // Main struct for HF triggers
       if (activateQA > 1) {
         hProtonTPCPID = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2F, {pAxis, nSigmaAxis});
         hProtonTOFPID = registry.add<TH2>("fProtonTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2F, {pAxis, nSigmaAxis});
-        hV0Selected = registry.add<TH2>("fV0Selected", "Selections for V0s;;counts", HistType::kTH2F, {{7, -0.5, 6.5}, {kNV0, -0.5, kNV0 - 0.5}});
+        hV0Selected = registry.add<TH2>("fV0Selected", "Selections for V0s;;counts", HistType::kTH2F, {{9, -0.5, 8.5}, {kNV0, -0.5, kNV0 - 0.5}});
 
         for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
           hV0Selected->GetYaxis()->SetBinLabel(iV0 + 1, v0Labels[iV0].data());
@@ -224,9 +222,11 @@ struct HfFilter { // Main struct for HF triggers
         hV0Selected->GetXaxis()->SetBinLabel(2, "rej. |#eta|");
         hV0Selected->GetXaxis()->SetBinLabel(3, "rej. radius");
         hV0Selected->GetXaxis()->SetBinLabel(4, "rej. cos(#theta_{P})");
-        hV0Selected->GetXaxis()->SetBinLabel(5, "rej. AP / Mass");
-        hV0Selected->GetXaxis()->SetBinLabel(6, "rej. pair cut");
-        hV0Selected->GetXaxis()->SetBinLabel(7, "selected");
+        hV0Selected->GetXaxis()->SetBinLabel(5, "rej. DCA V0 daughters");
+        hV0Selected->GetXaxis()->SetBinLabel(6, "rej. AP / Mass");
+        hV0Selected->GetXaxis()->SetBinLabel(7, "rej. pair cut");
+        hV0Selected->GetXaxis()->SetBinLabel(8, "rej. PID");
+        hV0Selected->GetXaxis()->SetBinLabel(9, "selected");
       }
     }
 
@@ -301,7 +301,7 @@ struct HfFilter { // Main struct for HF triggers
 
       // needed for track propagation
       if (currentRun != bc.runNumber()) {
-        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
         o2::base::Propagator::initFieldFromGRP(grpo);
 
         // needed for TPC PID postcalibrations
@@ -349,7 +349,7 @@ struct HfFilter { // Main struct for HF triggers
         auto trackPos = cand2Prong.prong0_as<BigTracksPID>(); // positive daughter
         auto trackNeg = cand2Prong.prong1_as<BigTracksPID>(); // negative daughter
 
-        auto preselD0 = isDzeroPreselected(trackPos, trackNeg, nsigmaTPCPionKaonDzero, nsigmaTOFPionKaonDzero, setTPCCalib, hMapPion, hBBPion, hBBKaon);
+        auto preselD0 = isDzeroPreselected(trackPos, trackNeg, maxNsigmaPiKaDzero, maxNsigmaPiKaDzero, setTPCCalib, hMapPion, hBBPion, hBBKaon);
         if (!preselD0) {
           continue;
         }
@@ -541,7 +541,9 @@ struct HfFilter { // Main struct for HF triggers
         for (auto& v0 : v0sThisCollision) {
           if (!keepEvent[kV0Charm2P] && (isCharmTagged || isBeautyTagged) && (TESTBIT(selD0, 0) || (TESTBIT(selD0, 1)))) {
             float v0CosinePa = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-            auto selV0 = isSelectedV0(v0, minCosPaGamma, minCosPaV0, v0CosinePa, activateQA, hV0Selected, hArmPod);
+            auto posTrack = v0.posTrack_as<BigTracksPID>();
+            auto negTrack = v0.negTrack_as<BigTracksPID>();
+            auto selV0 = isSelectedV0(v0, std::array{posTrack, negTrack}, v0CosinePa, minCosPaGamma, minCosPaV0, minV0Radius, maxNsigmaPrForLambda, setTPCCalib, hMapProton, hBBProton, activateQA, hV0Selected, hArmPod);
             if (selV0) {
               std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
               if (TESTBIT(selV0, kPhoton)) {
@@ -665,13 +667,13 @@ struct HfFilter { // Main struct for HF triggers
         }
 
         if (is3Prong[0]) { // D+ preselections
-          is3Prong[0] = isDplusPreselected(trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapPion, hBBKaon);
+          is3Prong[0] = isDplusPreselected(trackSecond, maxNsigmaKa3Prong, maxNsigmaKa3Prong, setTPCCalib, hMapPion, hBBKaon);
         }
         if (is3Prong[1]) { // Ds preselections
-          is3Prong[1] = isDsPreselected(pVecFirst, pVecThird, pVecSecond, trackSecond, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapPion, hBBKaon);
+          is3Prong[1] = isDsPreselected(pVecFirst, pVecThird, pVecSecond, trackSecond, maxNsigmaKa3Prong, maxNsigmaKa3Prong, setTPCCalib, hMapPion, hBBKaon);
         }
         if (is3Prong[2] || is3Prong[3]) { // charm baryon preselections
-          auto presel = isCharmBaryonPreselected(trackFirst, trackThird, trackSecond, nsigmaTPCProtonLc, nsigmaTOFProtonLc, nsigmaTPCKaon3Prong, nsigmaTOFKaon3Prong, setTPCCalib, hMapProton, hBBProton, hMapPion, hBBKaon);
+          auto presel = isCharmBaryonPreselected(trackFirst, trackThird, trackSecond, maxNsigmaPrLc, maxNsigmaPrLc, maxNsigmaKa3Prong, maxNsigmaKa3Prong, setTPCCalib, hMapProton, hBBProton, hMapPion, hBBKaon);
           if (is3Prong[2]) {
             is3Prong[2] = presel;
           }
@@ -850,10 +852,12 @@ struct HfFilter { // Main struct for HF triggers
         for (auto& v0 : v0sThisCollision) {
           if (!keepEvent[kV0Charm3P] && (isGoodDsToKKPi || isGoodDsToPiKK || isGoodDPlus)) {
             float v0CosinePa = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-            auto v0Sel = isSelectedV0(v0, minCosPaGamma, minCosPaV0, v0CosinePa, activateQA, hV0Selected, hArmPod);
-            if (v0Sel > 0) {
+            auto posTrack = v0.posTrack_as<BigTracksPID>();
+            auto negTrack = v0.negTrack_as<BigTracksPID>();
+            auto selV0 = isSelectedV0(v0, std::array{posTrack, negTrack}, v0CosinePa, minCosPaGamma, minCosPaV0, minV0Radius, maxNsigmaPrForLambda, setTPCCalib, hMapProton, hBBProton, activateQA, hV0Selected, hArmPod);
+            if (selV0 > 0) {
               std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
-              if (!keepEvent[kV0Charm3P] && (isGoodDsToKKPi || isGoodDsToPiKK) && TESTBIT(v0Sel, kPhoton)) {
+              if (!keepEvent[kV0Charm3P] && (isGoodDsToKKPi || isGoodDsToPiKK) && TESTBIT(selV0, kPhoton)) {
                 float massDsStarToKKPiCand{-1.}, massDsStarToPiKKCand{999.};
                 float massDiffDsStarToKKPi{-1.}, massDiffDsStarToPiKK{999.};
                 if (isGoodDsToKKPi) {
@@ -882,7 +886,7 @@ struct HfFilter { // Main struct for HF triggers
                 }
               }
               if (!keepEvent[kV0Charm3P] && isGoodDPlus) {
-                if (TESTBIT(v0Sel, kK0S)) { // Ds2*
+                if (TESTBIT(selV0, kK0S)) { // Ds2*
                   auto massDsStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massK, massPi, massK0S});
                   auto massDiffDsStar = massDsStarCand - massDPlusCand;
                   if (massDiffDsStar < maxMassDs12) {
@@ -894,7 +898,7 @@ struct HfFilter { // Main struct for HF triggers
                     keepEvent[kV0Charm3P] = true;
                   }
                 }
-                if ((TESTBIT(v0Sel, kLambda) && sign3Prong > 0) || (TESTBIT(v0Sel, kAntiLambda) && sign3Prong < 0)) { // Xic(3055) and Xic(3080)
+                if ((TESTBIT(selV0, kLambda) && sign3Prong > 0) || (TESTBIT(selV0, kAntiLambda) && sign3Prong < 0)) { // Xic(3055) and Xic(3080)
                   auto massXicStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massK, massPi, massLambda});
                   auto massDiffXicStar = massXicStarCand - massDPlusCand;
                   if (massDiffXicStar < maxMassXicStar) {
@@ -912,6 +916,8 @@ struct HfFilter { // Main struct for HF triggers
         } // end gamma selection
 
       } // end loop over 3-prong candidates
+
+      // TODO: add loop over lfcascades
 
       auto n2Prongs = computeNumberOfCandidates(indicesDau2Prong);
       auto n3Prongs = computeNumberOfCandidates(indicesDau3Prong);
