@@ -46,8 +46,9 @@ using namespace o2::framework::expressions;
 
 /// Writes the full information in an output TTree
 struct LfTreeCreatorNuclei {
-  Produces<o2::aod::LfCandNucleusFullEvents> tableEvents;
-  Produces<o2::aod::LfCandNucleusFull> tableCandidate;
+  Produces<o2::aod::LfCandNucleusEvents> tableEvents;
+  Produces<o2::aod::LfCandNucleus> tableCandidate;
+  Produces<o2::aod::LfCandNucleusExtra> tableCandidateExtra;
   Produces<o2::aod::LfCandNucleusMC> tableCandidateMC;
 
   void init(o2::framework::InitContext&)
@@ -64,7 +65,9 @@ struct LfTreeCreatorNuclei {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> nsigmacutLow{"nsigmacutLow", -8.0, "Value of the Nsigma cut"};
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +8.0, "Value of the Nsigma cut"};
-  Configurable<int> trackSelType{"trackSelType", 0, "Option for the track cut: 0 isGlobalTrackWoDCA, 1 isGlobalTrack"};
+  Configurable<float> filterDeTPC{"filterDeTPC", 15.0, "Value of the Nsigma cut for deuterons for the filtering (option 3)"};
+  Configurable<float> filterHeTPC{"filterHeTPC", 15.0, "Value of the Nsigma cut for helium3 for the filtering (option 3)"};
+  Configurable<int> trackSelType{"trackSelType", 0, "Option for the track cut: 0 isGlobalTrackWoDCA, 1 isGlobalTrack, 3 is for filtered mode"};
   Configurable<int> nITSInnerBarrelHits{"nITSInnerBarrelHits", 0, "Option for ITS inner barrel hits maximum: 3"};
 
   // events
@@ -75,7 +78,9 @@ struct LfTreeCreatorNuclei {
   Filter collisionFilter = (aod::collision::posZ < cfgHighCutVertex && aod::collision::posZ > cfgLowCutVertex);
   // Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
   Filter etaFilter = (nabs(aod::track::eta) < cfgCutEta);
-  Filter trackFilter = (trackSelType.value == 0 && requireGlobalTrackWoDCAInFilter()) || (trackSelType.value == 1 && requireGlobalTrackInFilter());
+  Filter trackFilter = (trackSelType.value == 0 && requireGlobalTrackWoDCAInFilter()) ||
+                       (trackSelType.value == 1 && requireGlobalTrackInFilter()) ||
+                       (trackSelType.value == 3);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -103,47 +108,56 @@ struct LfTreeCreatorNuclei {
 
     // Filling candidate properties
     tableCandidate.reserve(tracks.size());
+    tableCandidateExtra.reserve(tracks.size());
     if constexpr (isMC) {
       tableCandidateMC.reserve(tracks.size());
     }
     for (auto& track : tracks) {
-      if (track.itsNClsInnerBarrel() < nITSInnerBarrelHits)
+      if (track.itsNClsInnerBarrel() < nITSInnerBarrelHits) {
         continue;
-      // auto const& mcParticle = track.mcParticle();
+      }
+      if (trackSelType.value == 3) { // Filtering mode
+        if (!track.hasTPC()) {
+          continue;
+        }
+        if (track.tpcNClsCrossedRows() < 90) {
+          continue;
+        }
+        if ((TMath::Abs(track.tpcNSigmaDe()) > filterDeTPC.value) && (TMath::Abs(track.tpcNSigmaHe()) > filterHeTPC.value)) {
+          continue;
+        }
+      }
       tableCandidate(
         tableEvents.lastIndex(),
-        track.dcaXY(),
-        track.dcaZ(),
-        track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-        track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl(),
-        track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-        track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe(), track.tofNSigmaAl(),
-        track.tpcExpSignalDiffPr(), track.tpcExpSignalDiffDe(), track.tpcExpSignalDiffHe(),
-        track.tofExpSignalDiffPr(), track.tofExpSignalDiffDe(), track.tofExpSignalDiffHe(),
+        track.dcaXY(), track.dcaZ(),
+        track.tpcNSigmaDe(), track.tpcNSigmaHe(),
+        track.tofNSigmaDe(), track.tofNSigmaHe(),
         track.isEvTimeTOF(),
         track.isEvTimeT0AC(),
         track.hasTOF(),
         track.hasTRD(),
         track.tpcInnerParam(),
-        track.tofExpMom(),
-        track.tpcSignal(),
         track.beta(),
-        track.px(),
-        track.py(),
-        track.pz(),
-        track.pt(),
-        track.p(),
-        track.eta(),
-        track.phi(),
+        track.tpcSignal(),
+        track.pt(), track.eta(), track.phi(),
         track.sign(),
         track.itsNCls(),
-        track.tpcNClsCrossedRows(),
-        track.tpcCrossedRowsOverFindableCls(),
-        track.tpcNClsFound(),
+        track.tpcNClsFindable(),
+        track.tpcNClsFindableMinusFound(),
+        track.tpcNClsFindableMinusCrossedRows(),
         track.tpcChi2NCl(),
         track.itsChi2NCl(),
         track.itsClusterMap(),
         track.isPVContributor());
+
+      tableCandidateExtra(
+        track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+        track.tpcNSigmaTr(), track.tpcNSigmaAl(),
+        track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+        track.tofNSigmaTr(), track.tofNSigmaAl(),
+        track.tpcExpSignalDiffPr(), track.tpcExpSignalDiffDe(), track.tpcExpSignalDiffHe(),
+        track.tofExpSignalDiffPr(), track.tofExpSignalDiffDe(), track.tofExpSignalDiffHe(),
+        track.tofExpMom());
 
       if constexpr (isMC) { // Filling MC reco information
         if (track.has_mcParticle()) {
