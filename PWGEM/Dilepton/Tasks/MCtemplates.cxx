@@ -267,12 +267,12 @@ struct AnalysisTrackSelection {
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
-          if ((*sig).CheckSignal(false, tracksMC, track.reducedMCTrack())) {
+          if ((*sig).CheckSignal(false, track.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
-          if ((*sig).CheckSignal(false, tracksMC, track.template mcParticle_as<aod::McParticles_001>())) {
+          if ((*sig).CheckSignal(false, track.template mcParticle_as<aod::McParticles_001>())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -436,12 +436,12 @@ struct AnalysisSameEventPairing {
       int isig = 0;
       for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) { // for skimmed DQ model
-          if ((*sig).CheckSignal(false, tracksMC, t1.reducedMCTrack(), t2.reducedMCTrack())) {
+          if ((*sig).CheckSignal(false, t1.reducedMCTrack(), t2.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) { // for Framework data model
-          if ((*sig).CheckSignal(false, tracksMC, t1.template mcParticle_as<aod::McParticles_001>(), t2.template mcParticle_as<aod::McParticles_001>())) {
+          if ((*sig).CheckSignal(false, t1.template mcParticle_as<aod::McParticles_001>(), t2.template mcParticle_as<aod::McParticles_001>())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -489,7 +489,14 @@ struct AnalysisSameEventPairing {
         if (sig.GetNProngs() != 1) { // NOTE: 1-prong signals required
           continue;
         }
-        if (sig.CheckSignal(false, groupedMCTracks, mctrack)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto mctrack_raw = groupedMCTracks.rawIteratorAt(mctrack.globalIndex());
+          checked = sig.CheckSignal(false, mctrack_raw);
+        } else {
+          checked = sig.CheckSignal(false, mctrack);
+        }
+        if (checked) {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), VarManager::fgValues);
         }
       }
@@ -501,7 +508,15 @@ struct AnalysisSameEventPairing {
         continue;
       }
       for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
-        if (sig.CheckSignal(false, groupedMCTracks, t1, t2)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
+          auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
+          checked = sig.CheckSignal(false, t1_raw, t2_raw);
+        } else {
+          checked = sig.CheckSignal(false, t1, t2);
+        }
+        if (checked) {
           VarManager::FillPairMC(t1, t2);
           fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
         }
