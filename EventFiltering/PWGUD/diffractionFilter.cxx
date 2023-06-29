@@ -210,12 +210,14 @@ struct DGFilterRun3 {
     registry.get<TH1>(HIST("collisions/globalTracksAll"))->Fill(goodTracks.size());
     auto netCharge = udhelpers::netCharge<true>(tracks);
     registry.fill(HIST("collisions/netChargeAll"), collision.numContrib(), netCharge);
+    registry.fill(HIST("collisions/dtcvsrPVtrwTOFAll"), collision.collisionTimeRes(), rgtrwTOF);
     registry.fill(HIST("collisions/rPVtrwTOFAll"), collision.numContrib(), rgtrwTOF);
     if (ccs) {
       registry.fill(HIST("collisions/tracksDG"), tracks.size());
       registry.fill(HIST("collisions/PVTracksDG"), collision.numContrib());
       registry.get<TH1>(HIST("collisions/globalTracksDG"))->Fill(goodTracks.size());
       registry.fill(HIST("collisions/netChargeDG"), collision.numContrib(), netCharge);
+      registry.fill(HIST("collisions/dtcvsrPVtrwTOFDG"), collision.collisionTimeRes(), rgtrwTOF);
       registry.fill(HIST("collisions/rPVtrwTOFDG"), collision.numContrib(), rgtrwTOF);
     }
 
