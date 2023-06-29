@@ -75,6 +75,11 @@ struct cascadeSelector {
     },
   };
 
+  // Configurables
+  Configurable<float> tpcNsigmaBachelor{"tpcNsigmaBachelor", 3, "TPC NSigma bachelor (>10 is no cut)"};
+  Configurable<float> tpcNsigmaProton{"tpcNsigmaProton", 3, "TPC NSigma proton <- lambda (>10 is no cut)"};
+  Configurable<float> tpcNsigmaPion{"tpcNsigmaPion", 3, "TPC NSigma pion <- lambda (>10 is no cut)"};
+
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIUWithPID const&)
   {
     for (auto& casc : Cascades) {
@@ -95,37 +100,37 @@ struct cascadeSelector {
       // Lambda check
       if (casc.sign() < 0) {
         // Proton check:
-        if (TMath::Abs(posTrack.tpcNSigmaPr()) > 3) {
+        if (TMath::Abs(posTrack.tpcNSigmaPr()) > tpcNsigmaProton && tpcNsigmaProton < 9.99) {
           cascflags(0);
           continue;
         }
         // Pion check:
-        if (TMath::Abs(negTrack.tpcNSigmaPi()) > 3) {
+        if (TMath::Abs(negTrack.tpcNSigmaPi()) > tpcNsigmaPion && tpcNsigmaPion < 9.99) {
           cascflags(0);
           continue;
         }
       } else {
         // Proton check:
-        if (TMath::Abs(negTrack.tpcNSigmaPr()) > 3) {
+        if (TMath::Abs(negTrack.tpcNSigmaPr()) > tpcNsigmaProton && tpcNsigmaProton < 9.99) {
           cascflags(0);
           continue;
         }
         // Pion check:
-        if (TMath::Abs(posTrack.tpcNSigmaPi()) > 3) {
+        if (TMath::Abs(posTrack.tpcNSigmaPi()) > tpcNsigmaPion && tpcNsigmaPion < 9.99) {
           cascflags(0);
           continue;
         }
       }
       // Bachelor check
-      if (TMath::Abs(bachTrack.tpcNSigmaPi()) < 3) {
-        if (TMath::Abs(bachTrack.tpcNSigmaKa()) < 3) {
+      if (TMath::Abs(bachTrack.tpcNSigmaPi()) < tpcNsigmaBachelor || tpcNsigmaBachelor >= 10) {
+        if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor || tpcNsigmaBachelor >= 10) {
           // TODO: ambiguous! ignore for now
           cascflags(0);
           continue;
         }
         cascflags(1);
         continue;
-      } else if (TMath::Abs(bachTrack.tpcNSigmaKa()) < 3) {
+      } else if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor || tpcNsigmaBachelor >=10) {
         cascflags(2);
         continue;
       }
@@ -160,7 +165,6 @@ struct cascadeCorrelations {
       if (!(v0.has_v0Data())) {
         continue; // reject if no v0data
       }
-      auto v0data = v0.v0Data();
 
       if (casc.sign() < 0) { // FIXME: could be done better...
         registry.fill(HIST("hMassXiMinus"), casc.mXi());
@@ -170,7 +174,7 @@ struct cascadeCorrelations {
         registry.fill(HIST("hMassOmegaPlus"), casc.mOmega());
       }
 
-      registry.fill(HIST("hPhi"), RecoDecay::phi(casc.px(), casc.py()));
+      registry.fill(HIST("hPhi"), casc.phi());
     } // casc loop
 
     for (auto& [c0, c1] : combinations(Cascades, Cascades)) { // combinations automatically applies strictly upper in case of 2 identical tables
@@ -182,9 +186,7 @@ struct cascadeCorrelations {
       auto v0data0 = lambda0.v0Data();
       auto v0data1 = lambda1.v0Data();
 
-      double phi0 = RecoDecay::phi(c0.px(), c0.py());
-      double phi1 = RecoDecay::phi(c1.px(), c1.py());
-      double dphi = std::fmod(phi0 - phi1 + 2.5 * PI, 2 * PI) - 0.5 * PI;
+      double dphi = std::fmod(c0.phi() - c1.phi() + 2.5 * PI, 2 * PI) - 0.5 * PI;
       if (c0.sign() * c1.sign() < 0) { // opposite-sign
         registry.fill(HIST("hDeltaPhiOS"), dphi);
       } else { // same-sign
