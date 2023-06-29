@@ -173,6 +173,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
                   full::RunNumber);
 
 DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
+                  full::CollisionId,
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -318,6 +319,7 @@ struct HfTreeCreatorLcToPKPi {
     for (auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
         rowCandidateFullParticles(
+          particle.mcCollision().globalIndex(),
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
