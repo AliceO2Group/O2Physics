@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
   const std::string periodname = arguments["period"].as<std::string>();
   const std::string jiraticket = arguments["jiraticket"].as<std::string>();
   const std::string comment = arguments["comment"].as<std::string>();
-  
+
 
   const float bb0 = arguments["bb0"].as<float>();
   const float bb1 = arguments["bb1"].as<float>();
@@ -215,10 +215,10 @@ int main(int argc, char* argv[])
       int missingPass=0, missingPeriod=0, missingComment=0, missingJira=0;
       if (recopass.empty()) {missingPass = 1;}
         else {metadata["RecoPassName"] = recopass;}
-      
+
       if (periodname.empty()) missingPeriod = 1;
         else {metadata["LPMProductionTag"] = periodname;}
-      
+
       if (comment.empty()) missingComment = 1;
         else {metadata["Comment"] = comment;}
       if (jiraticket.empty()) missingJira = 1;
@@ -260,7 +260,7 @@ int main(int argc, char* argv[])
     if (!recopass.empty()) {
       metadata["RecoPassName"] = recopass;
     }
-    
+
     tpc = retrieveFromCCDB<Response>(pathCCDB + "/" + objname, ccdbTimestamp, metadata);
     if (!tpc) {
       LOG(error) << "No CCDB object found with requested parameters";

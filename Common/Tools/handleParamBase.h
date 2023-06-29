@@ -100,10 +100,7 @@ T* retrieveFromCCDB(const std::string path,
 {
   std::map<std::string, std::string> metadata;
   return retrieveFromCCDB<T>(path,timestamp,metadata);
-  
 }
-
-
 
 template <typename T>
 void storeOnCCDB(const std::string& path,
