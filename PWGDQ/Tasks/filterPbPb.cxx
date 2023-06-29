@@ -207,6 +207,8 @@ struct DQFilterPbPbTask {
   Configurable<bool> fConfigUseFDD{"cfgUseFDD", true, "Whether to use FDD for veto"};
   Configurable<bool> fConfigUseSideA{"cfgUseSideA", true, "Whether to use side A of FIT to perform veto"};
   Configurable<bool> fConfigUseSideC{"cfgUseSideC", true, "Whether to use side C of FIT to perform veto"};
+  Configurable<bool> fConfigVetoForward{"cfgVetoForward", true, "Whether to veto on forward tracks"};
+  Configurable<bool> fConfigVetoBarrel{"cfgVetoBarrel", false, "Whether to veto on barrel tracks"};
 
   Filter filterBarrelTrackSelected = aod::dqppfilter::isDQBarrelSelected > uint32_t(0);
 
@@ -217,7 +219,7 @@ struct DQFilterPbPbTask {
   // Helper function for selecting DG events
   bool isEventDG(MyEvents::iterator const& collision, MyBCs const& bcs, MyBarrelTracksSelected const& tracks, MyMuons const& muons,
                  aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
-                 std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, bool useFV0, bool useFT0, bool useFDD, bool useSideA, bool useSideC)
+                 std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, bool useFV0, bool useFT0, bool useFDD, bool useSideA, bool useSideC, bool doVetoFwd, bool doVetoBarrel)
   {
     // Find BC associated with collision
     if (!collision.has_foundBC()) {
@@ -328,12 +330,19 @@ struct DQFilterPbPbTask {
       barrelEmpty = false;
     }
 
-    // Compute decision. For now only check if FIT is empty and there are no forward tracks
-    if (cleanFIT && muonsEmpty) {
-      return 1;
-    } else {
-      return 0;
+    bool decision = 0;
+    // Compute decision
+    if (doVetoFwd) {
+      decision = cleanFIT && muonsEmpty;
     }
+    else if (doVetoBarrel) {
+      decision = cleanFIT && barrelEmpty;
+    }
+    else {
+      decision = cleanFIT;
+    }
+
+    return decision;
   }
 
   void DefineCuts()
@@ -378,7 +387,7 @@ struct DQFilterPbPbTask {
     fStats->Fill(-2.0);
 
     std::vector<float> FITAmpLimits = {fConfigFV0AmpLimit, fConfigFT0AAmpLimit, fConfigFT0CAmpLimit, fConfigFDDAAmpLimit, fConfigFDDCAmpLimit};
-    bool isDG = isEventDG(collision, bcs, tracks, muons, ft0s, fv0as, fdds, FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigUseFV0, fConfigUseFT0, fConfigUseFDD, fConfigUseSideA, fConfigUseSideC);
+    bool isDG = isEventDG(collision, bcs, tracks, muons, ft0s, fv0as, fdds, FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigUseFV0, fConfigUseFT0, fConfigUseFDD, fConfigUseSideA, fConfigUseSideC, fConfigVetoForward, fConfigVetoBarrel);
     fStats->Fill(-1.0, isDG);
 
     std::vector<int> objCountersBarrel(fNBarrelCuts, 0); // init all counters to zero
