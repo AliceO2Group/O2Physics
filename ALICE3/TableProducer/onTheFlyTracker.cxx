@@ -85,6 +85,8 @@ struct OnTheFlyTracker {
   Configurable<bool> populateTracksExtra{"populateTracksExtra", false, "populate TracksExtra table (legacy)"};
   Configurable<bool> populateTrackSelection{"populateTrackSelection", false, "populate TrackSelection table (legacy)"};
 
+  Configurable<bool> doExtraQA{"doExtraQA", false, "do extra 2D QA plots"};
+
   Configurable<std::string> lutEl{"lutEl", "lutCovm.el.dat", "LUT for electrons"};
   Configurable<std::string> lutMu{"lutMu", "lutCovm.mu.dat", "LUT for muons"};
   Configurable<std::string> lutPi{"lutPi", "lutCovm.pi.dat", "LUT for pions"};
@@ -96,7 +98,7 @@ struct OnTheFlyTracker {
 
   ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
   ConfigurableAxis axisNVertices{"axisNVertices", {20, -0.5, 19.5}, "N_{vertices}"};
-  ConfigurableAxis axisNContributors{"axisNContributors", {100, -0.5, 99.5}, "N_{contributors}"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {100, -0.5, 99.5}, "N_{contributors}"};
   ConfigurableAxis axisVertexZ{"axisVertexZ", {40, -20, 20}, "vertex Z (cm)"};
   ConfigurableAxis axisDCA{"axisDCA", {400, -200, 200}, "DCA (#mum)"};
 
@@ -184,9 +186,15 @@ struct OnTheFlyTracker {
     histos.add("hPtReconstructedPr", "hPtReconstructedPr", kTH1F, {axisMomentum});
 
     // Collision QA
-    histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axisNContributors, axisNVertices});
-    histos.add("h2dDCAxy", "h2dDCAxy", kTH2F, {axisMomentum, axisDCA});
     histos.add("hPVz", "hPVz", kTH1F, {axisVertexZ});
+    histos.add("hSimMultiplicity", "hSimMultiplicity", kTH1F, {axisMultiplicity});
+    histos.add("hRecoMultiplicity", "hRecoMultiplicity", kTH1F, {axisMultiplicity});
+
+    if (doExtraQA) {
+      histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axisMultiplicity, axisNVertices});
+      histos.add("hRecoVsSimMultiplicity", "hRecoVsSimMultiplicity", kTH2F, {axisMultiplicity, axisMultiplicity});
+      histos.add("h2dDCAxy", "h2dDCAxy", kTH2F, {axisMomentum, axisDCA});
+    }
 
     LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
     o2::parameters::GRPMagField grpmag;
@@ -248,6 +256,9 @@ struct OnTheFlyTracker {
   float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
+    tracksAlice3.clear();
+    bcData.clear();
+
     o2::dataformats::DCA dcaInfo;
     o2::dataformats::VertexBase vtx;
 
@@ -279,6 +290,7 @@ struct OnTheFlyTracker {
     }
 
     dNdEta /= (multEtaRange * 2.0f);
+    uint32_t multiplicityCounter = 0;
 
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary()) {
@@ -305,6 +317,7 @@ struct OnTheFlyTracker {
       if (mcParticle.pt() < minPt) {
         continue;
       }
+      multiplicityCounter++;
       o2::track::TrackParCov trackParCov;
       convertMCParticleToO2Track(mcParticle, trackParCov);
 
@@ -374,14 +387,22 @@ struct OnTheFlyTracker {
         }
       }
       primaryVertex = vertices[largestVertex];
-      histos.fill(HIST("h2dVerticesVsContributors"), primaryVertex.getNContributors(), n_vertices);
+      if (doExtraQA) {
+        histos.fill(HIST("h2dVerticesVsContributors"), primaryVertex.getNContributors(), n_vertices);
+      }
     } else {
       primaryVertex.setXYZ(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
     }
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
 
     // debug / informational
+    histos.fill(HIST("hSimMultiplicity"), multiplicityCounter);
+    histos.fill(HIST("hRecoMultiplicity"), tracksAlice3.size());
     histos.fill(HIST("hPVz"), primaryVertex.getZ());
+
+    if (doExtraQA) {
+      histos.fill(HIST("hRecoVsSimMultiplicity"), multiplicityCounter, tracksAlice3.size());
+    }
 
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
     // populate collisions
@@ -408,7 +429,9 @@ struct OnTheFlyTracker {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
         }
-        histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+        if (doExtraQA) {
+          histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+        }
         tracksDCA(dcaXY, dcaZ);
       }
 
@@ -436,11 +459,6 @@ struct OnTheFlyTracker {
         trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
     }
-    // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
-    // for the love of god, clear the vector or die
-    tracksAlice3.clear();
-    bcData.clear();
-    // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
   }
 };
 
