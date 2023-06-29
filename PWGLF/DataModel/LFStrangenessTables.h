@@ -52,6 +52,8 @@ DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance mat
 // Momenta
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! V0 pT
                            [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! V0 pT
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return std::hypot(pxpos + pxneg, pypos + pyneg, pzpos + pzneg); });
 // Account for rigidity in case of hypertriton
 DECLARE_SOA_DYNAMIC_COLUMN(PtHypertriton, ptHypertriton, //! V0 pT
                            [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(2.0f * pxpos + pxneg, 2.0f * pypos + pyneg); });
@@ -193,6 +195,7 @@ DECLARE_SOA_TABLE_FULL(StoredV0Datas, "V0Datas", "AOD", "V0DATA", //!
 
                        // Dynamic columns
                        v0data::Pt<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                       v0data::P<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
                        v0data::PtAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
                        v0data::V0Radius<v0data::X, v0data::Y>,
@@ -262,12 +265,16 @@ DECLARE_SOA_COLUMN(IsTrueHypertriton, isTrueHypertriton, bool);         //! PDG 
 DECLARE_SOA_COLUMN(IsTrueAntiHypertriton, isTrueAntiHypertriton, bool); //! PDG checked correctly in MC
 
 // dE/dx compatibility bools
-DECLARE_SOA_COLUMN(IsGammaCandidate, isGammaCandidate, bool);                     //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsK0ShortCandidate, isK0ShortCandidate, bool);                 //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsLambdaCandidate, isLambdaCandidate, bool);                   //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsAntiLambdaCandidate, isAntiLambdaCandidate, bool);           //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsHypertritonCandidate, isHypertritonCandidate, bool);         //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsAntiHypertritonCandidate, isAntiHypertritonCandidate, bool); //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxGamma, isdEdxGamma, bool);                     //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxK0Short, isdEdxK0Short, bool);                 //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxLambda, isdEdxLambda, bool);                   //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxAntiLambda, isdEdxAntiLambda, bool);           //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxHypertriton, isdEdxHypertriton, bool);         //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxAntiHypertriton, isdEdxAntiHypertriton, bool); //! compatible with dE/dx hypotheses
+
+// used in cascades (potentially useful in general, make available as tags)
+DECLARE_SOA_COLUMN(IsFromCascade, isFromCascade, bool);               //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsFromTrackedCascade, isFromTrackedCascade, bool); //! compatible with dE/dx hypotheses
 } // namespace v0tag
 DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
                   v0tag::IsInteresting,
@@ -277,20 +284,23 @@ DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
                   v0tag::IsTrueAntiLambda,
                   v0tag::IsTrueHypertriton,
                   v0tag::IsTrueAntiHypertriton,
-                  v0tag::IsGammaCandidate,
-                  v0tag::IsK0ShortCandidate,
-                  v0tag::IsLambdaCandidate,
-                  v0tag::IsAntiLambdaCandidate,
-                  v0tag::IsHypertritonCandidate,
-                  v0tag::IsAntiHypertritonCandidate);
+                  v0tag::IsdEdxGamma,
+                  v0tag::IsdEdxK0Short,
+                  v0tag::IsdEdxLambda,
+                  v0tag::IsdEdxAntiLambda,
+                  v0tag::IsdEdxHypertriton,
+                  v0tag::IsdEdxAntiHypertriton,
+                  v0tag::IsFromCascade,
+                  v0tag::IsFromTrackedCascade);
 
 namespace cascdata
 {
 // Necessary for full filtering functionality
-DECLARE_SOA_INDEX_COLUMN(V0, v0);                                   //!
-DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);                         //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, ""); //!
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
+DECLARE_SOA_INDEX_COLUMN(V0, v0);                                           //!
+DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);                                 //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, "");         //!
+DECLARE_SOA_INDEX_COLUMN_FULL(StrangeTrack, strangeTrack, int, Tracks, ""); //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                             //!
 // General cascade properties: position, momentum
 DECLARE_SOA_COLUMN(Sign, sign, int);         //!
 DECLARE_SOA_COLUMN(MXi, mXi, float);         //!
@@ -326,6 +336,11 @@ DECLARE_SOA_COLUMN(DCAZCascToPV, dcaZCascToPV, float);         //!
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
+
+// Selection to avoid spurious invariant mass correlation
+// bachelor-baryon cosine of pointing angle / DCA to PV
+DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
+DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
 
 // Saved from strangeness tracking
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float); //!
@@ -394,6 +409,7 @@ DECLARE_SOA_TABLE(StoredCascDatas, "AOD", "CASCDATA", //!
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
                   cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
+                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV,
 
                   // Dynamic columns
                   cascdata::Pt<cascdata::Px, cascdata::Py>,
@@ -414,7 +430,7 @@ DECLARE_SOA_TABLE(StoredCascDatas, "AOD", "CASCDATA", //!
                   cascdata::Phi<cascdata::Px, cascdata::Py>);
 
 DECLARE_SOA_TABLE(StoredTraCascDatas, "AOD", "TRACASCDATA", //!
-                  o2::soa::Index<>, cascdata::V0Id, cascdata::CascadeId, cascdata::BachelorId, cascdata::CollisionId,
+                  o2::soa::Index<>, cascdata::V0Id, cascdata::CascadeId, cascdata::BachelorId, cascdata::StrangeTrackId, cascdata::CollisionId,
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,
                   cascdata::X, cascdata::Y, cascdata::Z,
                   cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda,
@@ -424,6 +440,7 @@ DECLARE_SOA_TABLE(StoredTraCascDatas, "AOD", "TRACASCDATA", //!
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
                   cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
+                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV,
                   cascdata::MatchingChi2, cascdata::TopologyChi2, cascdata::ItsClsSize,
 
                   // Dynamic columns
@@ -482,10 +499,10 @@ DECLARE_SOA_COLUMN(IsTrueOmegaMinus, isTrueOmegaMinus, bool); //! PDG checked co
 DECLARE_SOA_COLUMN(IsTrueOmegaPlus, isTrueOmegaPlus, bool);   //! PDG checked correctly in MC
 
 // dE/dx compatibility bools
-DECLARE_SOA_COLUMN(IsXiMinusCandidate, isXiMinusCandidate, bool);       //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsXiPlusCandidate, isXiPlusCandidate, bool);         //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsOmegaMinusCandidate, isOmegaMinusCandidate, bool); //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsOmegaPlusCandidate, isOmegaPlusCandidate, bool);   //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxXiMinus, isdEdxXiMinus, bool);       //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxXiPlus, isdEdxXiPlus, bool);         //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxOmegaMinus, isdEdxOmegaMinus, bool); //! compatible with dE/dx hypotheses
+DECLARE_SOA_COLUMN(IsdEdxOmegaPlus, isdEdxOmegaPlus, bool);   //! compatible with dE/dx hypotheses
 } // namespace casctag
 DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
                   casctag::IsInteresting,
@@ -493,10 +510,10 @@ DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
                   casctag::IsTrueXiPlus,
                   casctag::IsTrueOmegaMinus,
                   casctag::IsTrueOmegaPlus,
-                  casctag::IsXiMinusCandidate,
-                  casctag::IsXiPlusCandidate,
-                  casctag::IsOmegaMinusCandidate,
-                  casctag::IsOmegaPlusCandidate);
+                  casctag::IsdEdxXiMinus,
+                  casctag::IsdEdxXiPlus,
+                  casctag::IsdEdxOmegaMinus,
+                  casctag::IsdEdxOmegaPlus);
 
 // Definition of labels for V0s
 namespace mcv0label
@@ -522,11 +539,15 @@ using McFullV0Label = McFullV0Labels::iterator;
 namespace mccasclabel
 {
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Cascade
+DECLARE_SOA_COLUMN(IsBachBaryonCandidate, isBachBaryonCandidate, bool); //! will this be built or not?
 } // namespace mccasclabel
 
 DECLARE_SOA_TABLE(McCascLabels, "AOD", "MCCASCLABEL", //! Table joinable with CascData containing the MC labels
                   mccasclabel::McParticleId);
+DECLARE_SOA_TABLE(McCascBBTags, "AOD", "MCCASCBBTAG", //! Table joinable with CascData containing yes / no for BB correlation
+                  mccasclabel::IsBachBaryonCandidate);
 using McCascLabel = McCascLabels::iterator;
+using McCascBBTag = McCascBBTags::iterator;
 
 // Definition of labels for tracked cascades
 namespace mctracasclabel
@@ -541,15 +562,20 @@ using McTraCascLabel = McTraCascLabels::iterator;
 DECLARE_SOA_TABLE(TrackedCascadeColls, "AOD", "TRACASCCOLL", //! Table joinable with TrackedCascades containing collision ids
                   track::CollisionId, o2::soa::Marker<1>);
 using TrackedCascadeColl = TrackedCascadeColls::iterator;
+using AssignedTrackedCascades = soa::Join<aod::TrackedCascades, aod::TrackedCascadeColls>;
+using AssignedTrackedCascade = AssignedTrackedCascades::iterator;
 
 DECLARE_SOA_TABLE(TrackedV0Colls, "AOD", "TRAV0COLL", //! Table joinable with TrackedV0s containing collision ids
                   track::CollisionId, o2::soa::Marker<2>);
 using TrackedV0Coll = TrackedV0Colls::iterator;
+using AssignedTrackedV0s = soa::Join<aod::TrackedV0s, aod::TrackedV0Colls>;
+using AssignedTrackedV0 = AssignedTrackedV0s::iterator;
 
 DECLARE_SOA_TABLE(Tracked3BodyColls, "AOD", "TRA3BODYCOLL", //! Table joinable with Tracked3Bodys containing collision ids
                   track::CollisionId, o2::soa::Marker<3>);
 using Tracked3BodyColl = Tracked3BodyColls::iterator;
-
+using AssignedTracked3Bodys = soa::Join<aod::Tracked3Bodys, aod::Tracked3BodyColls>;
+using AssignedTracked3Body = AssignedTracked3Bodys::iterator;
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_

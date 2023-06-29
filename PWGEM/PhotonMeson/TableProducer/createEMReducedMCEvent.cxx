@@ -42,7 +42,7 @@ struct createEMReducedMCEvent {
   };
   Produces<o2::aod::EMReducedEvents> events;
   Produces<o2::aod::EMReducedMCEvents> mcevents;
-  Produces<o2::aod::EMReducedMCEventLabels> mclabels;
+  Produces<o2::aod::EMReducedMCEventLabels> mceventlabels;
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::EMMCParticleLabels> emmcparticlelabels;
 
@@ -86,8 +86,8 @@ struct createEMReducedMCEvent {
 
       auto mcCollision = collision.mcCollision();
       // auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-      bool is_phoscpv_readout = collision.alias()[kTVXinPHOS];
-      bool is_emc_readout = collision.alias()[kTVXinEMC];
+      bool is_phoscpv_readout = collision.alias_bit(kTVXinPHOS);
+      bool is_emc_readout = collision.alias_bit(kTVXinEMC);
 
       if constexpr (static_cast<bool>(system & kPCM)) {
         auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
@@ -102,13 +102,8 @@ struct createEMReducedMCEvent {
         ng_emc = emc_coll.size();
       }
 
-      uint64_t tag = 0;
       // store event selection decisions
-      for (int i = 0; i < kNsel; i++) {
-        if (collision.selection()[i] > 0) {
-          tag |= (uint64_t(1) << i);
-        }
-      }
+      uint64_t tag = collision.selection_raw();
 
       events(collision.globalIndex(), tag, collision.bc().runNumber(), collision.bc().triggerMask(), collision.sel8(),
              is_phoscpv_readout, is_emc_readout,
@@ -127,7 +122,7 @@ struct createEMReducedMCEvent {
         fCounters[1]++;
       }
 
-      mclabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
+      mceventlabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
 
       // store mc particles
       auto groupedMcTracks = mcTracks.sliceBy(perMcCollision, mcCollision.globalIndex());
@@ -136,47 +131,27 @@ struct createEMReducedMCEvent {
         if (mctrack.pt() < 1e-2 || abs(mctrack.y()) > 1.5 || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > 260) {
           continue;
         }
-
         int pdg = mctrack.pdgCode();
+
+        // Note that pi0 from weak decay gives producedByGenerator() = false
         if (
           abs(pdg) != 11      // electron
           && (abs(pdg) != 22) // photon
           // light mesons
           && (abs(pdg) != 111) // pi0
           && (abs(pdg) != 113) // rho(770)
-          //&& (abs(pdg) != 211 ) // changed pion
+          // && (abs(pdg) != 211) // changed pion
           && (abs(pdg) != 221) // eta
           && (abs(pdg) != 223) // omega(782)
           && (abs(pdg) != 331) // eta'(958)
           && (abs(pdg) != 333) // phi(1020)
           // strange hadrons
           && (abs(pdg) != 310)  // K0S
+          && (abs(pdg) != 130)  // K0L
           && (abs(pdg) != 3122) // Lambda
         ) {
           continue;
         }
-
-        // float dx = mctrack.vx() - mcCollision.posX();
-        // float dy = mctrack.vy() - mcCollision.posY();
-        // float dz = mctrack.vz() - mcCollision.posZ();
-        // float r3D = sqrt(dx*dx + dy*dy + dz*dz);
-        // if (
-        //   abs(pdg) != 11                                               // electron
-        //   && (abs(pdg) != 22   || r3D > 1.0f) // photon
-        //   // light mesons
-        //   && (abs(pdg) != 111  || r3D > 1.0f) // pi0
-        //   && (abs(pdg) != 113  || r3D > 1.0f) // rho(770)
-        //   && (abs(pdg) != 211  || r3D > 1.0f) // changed pion
-        //   && (abs(pdg) != 221  || r3D > 1.0f) // eta
-        //   && (abs(pdg) != 223  || r3D > 1.0f) // omega(782)
-        //   && (abs(pdg) != 331  || r3D > 1.0f) // eta'(958)
-        //   && (abs(pdg) != 333  || r3D > 1.0f) // phi(1020)
-        //   //strange hadrons
-        //   && (abs(pdg) != 310  || r3D > 1.0f) // K0S
-        //   && (abs(pdg) != 3122 || r3D > 1.0f) // Lambda
-        //) {
-        //   continue;
-        // }
 
         // LOGF(info,"index = %d , mc track pdg = %d , producedByGenerator =  %d , isPhysicalPrimary = %d", mctrack.index(), mctrack.pdgCode(), mctrack.producedByGenerator(), mctrack.isPhysicalPrimary());
 
@@ -296,7 +271,7 @@ struct createEMReducedMCEvent {
     fCounters[1] = 0;
   } //  end of skimmingMC
 
-  void processMC_PCM(MyCollisions const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs)
+  void processMC_PCM(soa::SmallGroups<MyCollisions> const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& tracks, aod::V0Photons const& v0photons, aod::V0Legs const& v0legs)
   {
     skimmingMC<kPCM>(collisions, bcs, mccollisions, mcTracks, tracks, v0photons, v0legs, nullptr, nullptr);
   }

@@ -24,6 +24,11 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <Math/Vector4D.h>
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -40,7 +45,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
@@ -49,12 +53,8 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TProfile.h>
-#include <Math/Vector4D.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -71,12 +71,18 @@ struct lambdakzeromcfinder {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Configurables for selecting which particles to generate
+  Configurable<bool> findGamma{"findGamma", true, "findGamma"};
   Configurable<bool> findK0Short{"findK0Short", true, "findK0Short"};
   Configurable<bool> findLambda{"findLambda", true, "findLambda"};
   Configurable<bool> findAntiLambda{"findAntiLambda", true, "findAntiLambda"};
   Configurable<bool> findHyperTriton{"findHyperTriton", false, "findHyperTriton"};
   Configurable<bool> findAntiHyperTriton{"findAntiHyperTriton", false, "findAntiHyperTriton"};
   Configurable<bool> requireITS{"requireITS", false, "require ITS information used in tracks"};
+  Configurable<bool> doUnassociatedV0s{"doUnassociatedV0s", true, "generate also unassociated V0s (for cascades!)"};
+  Configurable<bool> doQA{"doQA", true, "do qa plots"};
+  Configurable<int> qaNbins{"qaNbins", 200, "qa plots: binning"};
+  Configurable<float> yPreFilter{"yPreFilter", 2.5, "broad y pre-filter for speed"};
+  ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
 
   Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
 
@@ -88,34 +94,46 @@ struct lambdakzeromcfinder {
   void init(InitContext& context)
   {
     // initialize histograms
-    const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
-    const AxisSpec axisPt{(int)100, +0.0f, +10.0f, "p_{T} (GeV/c)"};
+    const AxisSpec axisNTimesCollRecoed{static_cast<int>(10), -0.5f, +9.5f, ""};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
 
-    histos.add("hPtK0ShortGenerated", "hPtK0ShortGenerated", kTH1F, {axisPt});
-    histos.add("hPtLambdaGenerated", "hPtLambdaGenerated", kTH1F, {axisPt});
-    histos.add("hPtAntiLambdaGenerated", "hPtAntiLambdaGenerated", kTH1F, {axisPt});
-    histos.add("hPtHypertritonGenerated", "hPtHypertritonGenerated", kTH1F, {axisPt});
-    histos.add("hPtAntiHypertritonGenerated", "hPtAntiHypertritonGenerated", kTH1F, {axisPt});
+    histos.add("hPtGammaGenerated", "hPtGammaGenerated", kTH1F, {axisPtQA});
+    histos.add("hPtK0ShortGenerated", "hPtK0ShortGenerated", kTH1F, {axisPtQA});
+    histos.add("hPtLambdaGenerated", "hPtLambdaGenerated", kTH1F, {axisPtQA});
+    histos.add("hPtAntiLambdaGenerated", "hPtAntiLambdaGenerated", kTH1F, {axisPtQA});
+    histos.add("hPtHypertritonGenerated", "hPtHypertritonGenerated", kTH1F, {axisPtQA});
+    histos.add("hPtAntiHypertritonGenerated", "hPtAntiHypertritonGenerated", kTH1F, {axisPtQA});
 
-    histos.add("hPtK0ShortReconstructed", "hPtK0ShortReconstructed", kTH1F, {axisPt});
-    histos.add("hPtLambdaReconstructed", "hPtLambdaReconstructed", kTH1F, {axisPt});
-    histos.add("hPtAntiLambdaReconstructed", "hPtAntiLambdaReconstructed", kTH1F, {axisPt});
-    histos.add("hPtHypertritonReconstructed", "hPtHypertritonReconstructed", kTH1F, {axisPt});
-    histos.add("hPtAntiHypertritonReconstructed", "hPtAntiHypertritonReconstructed", kTH1F, {axisPt});
+    histos.add("hPtGammaReconstructed", "hPtGammaReconstructed", kTH1F, {axisPtQA});
+    histos.add("hPtK0ShortReconstructed", "hPtK0ShortReconstructed", kTH1F, {axisPtQA});
+    histos.add("hPtLambdaReconstructed", "hPtLambdaReconstructed", kTH1F, {axisPtQA});
+    histos.add("hPtAntiLambdaReconstructed", "hPtAntiLambdaReconstructed", kTH1F, {axisPtQA});
+    histos.add("hPtHypertritonReconstructed", "hPtHypertritonReconstructed", kTH1F, {axisPtQA});
+    histos.add("hPtAntiHypertritonReconstructed", "hPtAntiHypertritonReconstructed", kTH1F, {axisPtQA});
 
-    histos.add("hPtK0ShortGlobal", "hPtK0ShortGlobal", kTH1F, {axisPt});
-    histos.add("hPtLambdaGlobal", "hPtLambdaGlobal", kTH1F, {axisPt});
-    histos.add("hPtAntiLambdaGlobal", "hPtAntiLambdaGlobal", kTH1F, {axisPt});
-    histos.add("hPtHypertritonGlobal", "hPtHypertritonGlobal", kTH1F, {axisPt});
-    histos.add("hPtAntiHypertritonGlobal", "hPtAntiHypertritonGlobal", kTH1F, {axisPt});
+    histos.add("hPtGammaGlobal", "hPtGammaGlobal", kTH1F, {axisPtQA});
+    histos.add("hPtK0ShortGlobal", "hPtK0ShortGlobal", kTH1F, {axisPtQA});
+    histos.add("hPtLambdaGlobal", "hPtLambdaGlobal", kTH1F, {axisPtQA});
+    histos.add("hPtAntiLambdaGlobal", "hPtAntiLambdaGlobal", kTH1F, {axisPtQA});
+    histos.add("hPtHypertritonGlobal", "hPtHypertritonGlobal", kTH1F, {axisPtQA});
+    histos.add("hPtAntiHypertritonGlobal", "hPtAntiHypertritonGlobal", kTH1F, {axisPtQA});
 
-    histos.add("hPtK0ShortGlobalWithPV", "hPtK0ShortGlobalWithPV", kTH1F, {axisPt});
-    histos.add("hPtLambdaGlobalWithPV", "hPtLambdaGlobalWithPV", kTH1F, {axisPt});
-    histos.add("hPtAntiLambdaGlobalWithPV", "hPtAntiLambdaGlobalWithPV", kTH1F, {axisPt});
-    histos.add("hPtHypertritonGlobalWithPV", "hPtHypertritonGlobalWithPV", kTH1F, {axisPt});
-    histos.add("hPtAntiHypertritonGlobalWithPV", "hPtAntiHypertritonGlobalWithPV", kTH1F, {axisPt});
+    histos.add("hPtGammaGlobalWithPV", "hPtGammaGlobalWithPV", kTH1F, {axisPtQA});
+    histos.add("hPtK0ShortGlobalWithPV", "hPtK0ShortGlobalWithPV", kTH1F, {axisPtQA});
+    histos.add("hPtLambdaGlobalWithPV", "hPtLambdaGlobalWithPV", kTH1F, {axisPtQA});
+    histos.add("hPtAntiLambdaGlobalWithPV", "hPtAntiLambdaGlobalWithPV", kTH1F, {axisPtQA});
+    histos.add("hPtHypertritonGlobalWithPV", "hPtHypertritonGlobalWithPV", kTH1F, {axisPtQA});
+    histos.add("hPtAntiHypertritonGlobalWithPV", "hPtAntiHypertritonGlobalWithPV", kTH1F, {axisPtQA});
+
+    if (doQA) {
+      histos.add("hPtGammaDaughters", "hPtGammaDaughters", kTH2F, {axisPtQA, axisPtQA});
+      histos.add("hPtK0ShortDaughters", "hPtK0ShortDaughters", kTH2F, {axisPtQA, axisPtQA});
+      histos.add("hPtLambdaDaughters", "hPtLambdaDaughters", kTH2F, {axisPtQA, axisPtQA});
+      histos.add("hPtAntiLambdaDaughters", "hPtAntiLambdaDaughters", kTH2F, {axisPtQA, axisPtQA});
+      histos.add("hPtHypertritonDaughters", "hPtHypertritonDaughters", kTH2F, {axisPtQA, axisPtQA});
+      histos.add("hPtAntiHypertritonDaughters", "hPtAntiHypertritonDaughters", kTH2F, {axisPtQA, axisPtQA});
+    }
   }
 
   // for sorting
@@ -130,41 +148,75 @@ struct lambdakzeromcfinder {
   }
 
   template <typename TmcParticle, typename TTrackList>
-  bool ProcessV0(TmcParticle const& mcParticle, TTrackList const& trackList, int bestCollisionIndex, bool& positiveITS, bool& negativeITS, bool& positiveTPC, bool& negativeTPC)
+  bool ProcessV0(TmcParticle const& mcParticle, TTrackList const& trackList, int bestCollisionIndex, bool& positiveITS, bool& negativeITS, bool& positiveTPC, bool& negativeTPC, bool& positiveTPCITS, bool& negativeTPCITS)
   {
     bool reconstructed = false;
     positiveITS = false;
     negativeITS = false;
     positiveTPC = false;
     negativeTPC = false;
+    positiveTPCITS = false;
+    negativeTPCITS = false;
     int trackIndexPositive = -1;
     int trackIndexNegative = -1;
+    float posPt = -1.0f;
+    float negPt = -1.0f;
+
+    int positivePdg = 211;
+    int negativePdg = -211;
+    if (mcParticle.pdgCode() == 22) {
+      positivePdg = -11;
+      negativePdg = +11;
+    }
+    if (mcParticle.pdgCode() == 3122) {
+      positivePdg = 2212;
+    }
+    if (mcParticle.pdgCode() == -3122) {
+      negativePdg = -2212;
+    }
+    if (mcParticle.pdgCode() == 1010010030) {
+      positivePdg = 1000020030;
+    }
+    if (mcParticle.pdgCode() == -1010010030) {
+      negativePdg = -1000020030;
+    }
+
     if (mcParticle.has_daughters()) {
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
-      if (daughters.size() == 2) {
+      if (daughters.size() >= 2) {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
-          for (auto const& track : trackList) {
-            if (track.mcParticleId() == daughter.globalIndex()) {
-              // determine which charge this particle has
-              if (track.sign() > 0) {
-                trackIndexPositive = track.globalIndex();
+          if ((daughter.getProcess() != 4 && mcParticle.pdgCode() != 22) || daughter.getProcess() != 5)
+            continue; // skip deltarays (if ever), stick to decay products only
+          if (daughter.pdgCode() == positivePdg) {
+            for (auto const& track : trackList) {
+              if (track.mcParticleId() == daughter.globalIndex()) {
                 if (track.hasITS())
                   positiveITS = true;
-                if (track.hasTPC())
+                if (track.hasTPC()) {
                   positiveTPC = true;
-                if (trackIndexNegative >= 0)
-                  break;
-              } else {
-                trackIndexNegative = track.globalIndex();
+                  trackIndexPositive = track.globalIndex(); // assign only if TPC present
+                  posPt = track.pt();
+                  if (track.hasITS())
+                    positiveTPCITS = true;
+                }
+              } // end daughter ID check
+            }   // end track list loop
+          }     // end positive pdg check
+          if (daughter.pdgCode() == negativePdg) {
+            for (auto const& track : trackList) {
+              if (track.mcParticleId() == daughter.globalIndex()) {
                 if (track.hasITS())
                   negativeITS = true;
-                if (track.hasTPC())
+                if (track.hasTPC()) {
                   negativeTPC = true;
-                if (trackIndexPositive >= 0)
-                  break;
-              }
-            }
-          }
+                  trackIndexNegative = track.globalIndex(); // assign only if TPC present
+                  negPt = track.pt();
+                  if (track.hasITS())
+                    negativeTPCITS = true;
+                }
+              } // end daughter ID check
+            }   // end track list loop
+          }     // end positive pdg check
         }
       }
     }
@@ -174,6 +226,20 @@ struct lambdakzeromcfinder {
       v0positiveIndex.emplace_back(trackIndexPositive);
       v0negativeIndex.emplace_back(trackIndexNegative);
       v0mcLabel.emplace_back(mcParticle.globalIndex());
+      if (doQA) {
+        if (mcParticle.pdgCode() == 22)
+          histos.fill(HIST("hPtGammaDaughters"), posPt, negPt);
+        if (mcParticle.pdgCode() == 310)
+          histos.fill(HIST("hPtK0ShortDaughters"), posPt, negPt);
+        if (mcParticle.pdgCode() == 3122)
+          histos.fill(HIST("hPtLambdaDaughters"), posPt, negPt);
+        if (mcParticle.pdgCode() == -3122)
+          histos.fill(HIST("hPtAntiLambdaDaughters"), posPt, negPt);
+        if (mcParticle.pdgCode() == 1010010030)
+          histos.fill(HIST("hPtHypertritonDaughters"), posPt, negPt);
+        if (mcParticle.pdgCode() == -1010010030)
+          histos.fill(HIST("hPtAntiHypertritonDaughters"), posPt, negPt);
+      }
     }
     return reconstructed;
   }
@@ -196,65 +262,82 @@ struct lambdakzeromcfinder {
       bool negativeITS = false;
       bool positiveTPC = false;
       bool negativeTPC = false;
+      bool positiveTPCITS = false;
+      bool negativeTPCITS = false;
       bool reconstructed = false;
       for (auto& mcParticle : mcParticles) {
+        if (fabs(mcParticle.y()) > yPreFilter)
+          continue; // go declarative at a later stage but pre-filter here
+
+        if (mcParticle.pdgCode() == 22 && findGamma) {
+          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC, positiveTPCITS, negativeTPCITS);
+          if (fabs(mcParticle.y()) < 0.5) {
+            histos.fill(HIST("hPtGammaGenerated"), mcParticle.pt());
+            if (reconstructed)
+              histos.fill(HIST("hPtGammaReconstructed"), mcParticle.pt());
+            if (reconstructed && positiveTPCITS && negativeTPCITS)
+              histos.fill(HIST("hPtGammaGlobal"), mcParticle.pt());
+            if (reconstructed && bestCollisionIndex >= 0 && positiveTPCITS && negativeTPCITS)
+              histos.fill(HIST("hPtGammaGlobalWithPV"), mcParticle.pt());
+          }
+        }
         if (mcParticle.pdgCode() == 310 && findK0Short) {
-          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC);
+          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC, positiveTPCITS, negativeTPCITS);
           if (fabs(mcParticle.y()) < 0.5) {
             histos.fill(HIST("hPtK0ShortGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtK0ShortReconstructed"), mcParticle.pt());
-            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC)
+            if (reconstructed && positiveTPCITS && negativeTPCITS)
               histos.fill(HIST("hPtK0ShortGlobal"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC)
+            if (reconstructed && bestCollisionIndex >= 0 && positiveTPCITS && negativeTPCITS)
               histos.fill(HIST("hPtK0ShortGlobalWithPV"), mcParticle.pt());
           }
         }
         if (mcParticle.pdgCode() == 3122 && findLambda) {
-          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC);
+          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC, positiveTPCITS, negativeTPCITS);
           if (fabs(mcParticle.y()) < 0.5) {
             histos.fill(HIST("hPtLambdaGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtLambdaReconstructed"), mcParticle.pt());
-            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC)
+            if (reconstructed && positiveTPCITS && negativeTPCITS)
               histos.fill(HIST("hPtLambdaGlobal"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC)
+            if (reconstructed && bestCollisionIndex >= 0 && positiveTPCITS && negativeTPCITS)
               histos.fill(HIST("hPtLambdaGlobalWithPV"), mcParticle.pt());
           }
         }
         if (mcParticle.pdgCode() == -3122 && findAntiLambda) {
-          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC);
+          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC, positiveTPCITS, negativeTPCITS);
           if (fabs(mcParticle.y()) < 0.5) {
             histos.fill(HIST("hPtAntiLambdaGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtAntiLambdaReconstructed"), mcParticle.pt());
-            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC)
+            if (reconstructed && positiveTPCITS && negativeTPCITS)
               histos.fill(HIST("hPtAntiLambdaGlobal"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC)
+            if (reconstructed && bestCollisionIndex >= 0 && positiveTPCITS && negativeTPCITS)
               histos.fill(HIST("hPtAntiLambdaGlobalWithPV"), mcParticle.pt());
           }
         }
         if (mcParticle.pdgCode() == 1010010030 && findHyperTriton) {
-          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC);
+          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC, positiveTPCITS, negativeTPCITS);
           if (fabs(mcParticle.y()) < 0.5) {
             histos.fill(HIST("hPtHyperTritonGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtHyperTritonReconstructed"), mcParticle.pt());
-            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC)
+            if (reconstructed && positiveTPCITS && negativeTPCITS)
               histos.fill(HIST("hPtHyperTritonGlobal"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC)
+            if (reconstructed && bestCollisionIndex >= 0 && positiveTPCITS && negativeTPCITS)
               histos.fill(HIST("hPtHyperTritonGlobalWithPV"), mcParticle.pt());
           }
         }
         if (mcParticle.pdgCode() == -1010010030 && findAntiHyperTriton) {
-          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC);
+          reconstructed = ProcessV0(mcParticle, tracks, bestCollisionIndex, positiveITS, negativeITS, positiveTPC, negativeTPC, positiveTPCITS, negativeTPCITS);
           if (fabs(mcParticle.y()) < 0.5) {
             histos.fill(HIST("hPtAntiHyperTritonGenerated"), mcParticle.pt());
             if (reconstructed)
               histos.fill(HIST("hPtAntiHyperTritonReconstructed"), mcParticle.pt());
-            if (reconstructed && positiveITS && negativeITS && positiveTPC && negativeTPC)
+            if (reconstructed && positiveTPCITS && negativeTPCITS)
               histos.fill(HIST("hPtAntiHyperTritonGlobal"), mcParticle.pt());
-            if (reconstructed && bestCollisionIndex >= 0 && positiveITS && negativeITS && positiveTPC && negativeTPC)
+            if (reconstructed && bestCollisionIndex >= 0 && positiveTPCITS && negativeTPCITS)
               histos.fill(HIST("hPtAntiHyperTritonGlobalWithPV"), mcParticle.pt());
           }
         }
@@ -266,7 +349,7 @@ struct lambdakzeromcfinder {
 
     // V0 list established, populate
     for (auto ic : sortedIndices) {
-      if (v0collisionId[ic] >= 0) {
+      if (v0collisionId[ic] >= 0 || doUnassociatedV0s) {
         v0(v0collisionId[ic], v0positiveIndex[ic], v0negativeIndex[ic]);
         fullv0labels(v0mcLabel[ic]);
       }

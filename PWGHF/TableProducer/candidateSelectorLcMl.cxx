@@ -17,16 +17,16 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN, Warsaw University of Technology
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "CCDB/CcdbApi.h"
+#include "Common/Core/TrackSelectorPID.h"
+#include "Common/Core/trackUtilities.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "Tools/ML/model.h"
 
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelectorPID.h"
-#include "Tools/ML/model.h"
 
 using namespace o2;
 using namespace o2::framework;

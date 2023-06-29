@@ -316,104 +316,125 @@ struct CentralityTable {
 
   using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
 
-  void processRun3(soa::Join<aod::Collisions, aod::Mults, aod::MultZeqs>::iterator const& collision, BCsWithTimestamps const&)
+  void processRun3(soa::Join<aod::Collisions, aod::Mults, aod::MultZeqs> const& collisions, BCsWithTimestamps const&)
   {
-    /* check the previous run number */
-    auto bc = collision.bc_as<BCsWithTimestamps>();
-    if (bc.runNumber() != mRunNumber) {
-      LOGF(info, "timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
-      TList* callst = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
-
-      FV0AInfo.mCalibrationStored = false;
-      FT0MInfo.mCalibrationStored = false;
-      FT0AInfo.mCalibrationStored = false;
-      FT0CInfo.mCalibrationStored = false;
-      FDDMInfo.mCalibrationStored = false;
-      NTPVInfo.mCalibrationStored = false;
-      if (callst != nullptr) {
-        LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
-        auto getccdb = [callst, bc](struct calibrationInfo& estimator, const Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
-          estimator.mhMultSelCalib = (TH1*)callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data());
-          estimator.mMCScale = (TFormula*)callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data());
-          if (estimator.mhMultSelCalib != nullptr) {
-            if (generatorName->length() != 0) {
-              if (estimator.mMCScale != nullptr) {
-                for (int ixpar = 0; ixpar < 6; ++ixpar) {
-                  estimator.mMCScalePars[ixpar] = estimator.mMCScale->GetParameter(ixpar);
-                }
-              } else {
-                LOGF(warning, "MC Scale information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
-              }
-            }
-            estimator.mCalibrationStored = true;
-          } else {
-            LOGF(error, "Calibration information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
-          }
-        };
-        if (estFV0A == 1) {
-          getccdb(FV0AInfo, genName);
-        }
-        if (estFT0M == 1) {
-          getccdb(FT0MInfo, genName);
-        }
-        if (estFT0A == 1) {
-          getccdb(FT0AInfo, genName);
-        }
-        if (estFT0C == 1) {
-          getccdb(FT0CInfo, genName);
-        }
-        if (estFDDM == 1) {
-          getccdb(FDDMInfo, genName);
-        }
-        if (estNTPV == 1) {
-          getccdb(NTPVInfo, genName);
-        }
-        mRunNumber = bc.runNumber();
-      } else {
-        if (!doNotCrashOnNull) { // default behaviour: crash
-          LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
-        } else { // only if asked: continue filling with non-valid values (105)
-          LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
-          mRunNumber = bc.runNumber();
-        }
-      }
-    }
-
-    auto populateTable = [](auto& table, struct calibrationInfo& estimator, float multiplicity) {
-      auto scaleMC = [](float x, float pars[6]) {
-        return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
-      };
-
-      float percentile = 105.0f;
-      float scaledMultiplicity = multiplicity;
-      if (estimator.mCalibrationStored) {
-        if (estimator.mMCScale != nullptr) {
-          scaledMultiplicity = scaleMC(multiplicity, estimator.mMCScalePars);
-          LOGF(debug, "Unscaled %s multiplicity: %f, scaled %s multiplicity: %f", estimator.name.c_str(), multiplicity, estimator.name.c_str(), scaledMultiplicity);
-        }
-        percentile = estimator.mhMultSelCalib->GetBinContent(estimator.mhMultSelCalib->FindFixBin(scaledMultiplicity));
-      }
-      LOGF(debug, "%s centrality/multiplicity percentile = %.0f for a zvtx eq %s value %.0f", estimator.name.c_str(), percentile, estimator.name.c_str(), scaledMultiplicity);
-      table(percentile);
-    };
-
+    // do memory reservation for the relevant tables only, please
     if (estFV0A == 1) {
-      populateTable(centFV0A, FV0AInfo, collision.multZeqFV0A());
+      centFV0A.reserve(collisions.size());
     }
     if (estFT0M == 1) {
-      populateTable(centFT0M, FT0MInfo, collision.multZeqFT0A() + collision.multZeqFT0C());
+      centFT0M.reserve(collisions.size());
     }
     if (estFT0A == 1) {
-      populateTable(centFT0A, FT0AInfo, collision.multZeqFT0A());
+      centFT0A.reserve(collisions.size());
     }
     if (estFT0C == 1) {
-      populateTable(centFT0C, FT0CInfo, collision.multZeqFT0C());
+      centFT0C.reserve(collisions.size());
     }
     if (estFDDM == 1) {
-      populateTable(centFDDM, FDDMInfo, collision.multZeqFDDA() + collision.multZeqFDDC());
+      centFDDM.reserve(collisions.size());
     }
     if (estNTPV == 1) {
-      populateTable(centNTPV, NTPVInfo, collision.multZeqNTracksPV());
+      centNTPV.reserve(collisions.size());
+    }
+    for (auto const& collision : collisions) {
+      /* check the previous run number */
+      auto bc = collision.bc_as<BCsWithTimestamps>();
+      if (bc.runNumber() != mRunNumber) {
+        LOGF(info, "timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
+        TList* callst = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
+
+        FV0AInfo.mCalibrationStored = false;
+        FT0MInfo.mCalibrationStored = false;
+        FT0AInfo.mCalibrationStored = false;
+        FT0CInfo.mCalibrationStored = false;
+        FDDMInfo.mCalibrationStored = false;
+        NTPVInfo.mCalibrationStored = false;
+        if (callst != nullptr) {
+          LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          auto getccdb = [callst, bc](struct calibrationInfo& estimator, const Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
+            estimator.mhMultSelCalib = (TH1*)callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data());
+            estimator.mMCScale = (TFormula*)callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data());
+            if (estimator.mhMultSelCalib != nullptr) {
+              if (generatorName->length() != 0) {
+                if (estimator.mMCScale != nullptr) {
+                  for (int ixpar = 0; ixpar < 6; ++ixpar) {
+                    estimator.mMCScalePars[ixpar] = estimator.mMCScale->GetParameter(ixpar);
+                  }
+                } else {
+                  LOGF(warning, "MC Scale information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
+                }
+              }
+              estimator.mCalibrationStored = true;
+            } else {
+              LOGF(error, "Calibration information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
+            }
+          };
+          if (estFV0A == 1) {
+            getccdb(FV0AInfo, genName);
+          }
+          if (estFT0M == 1) {
+            getccdb(FT0MInfo, genName);
+          }
+          if (estFT0A == 1) {
+            getccdb(FT0AInfo, genName);
+          }
+          if (estFT0C == 1) {
+            getccdb(FT0CInfo, genName);
+          }
+          if (estFDDM == 1) {
+            getccdb(FDDMInfo, genName);
+          }
+          if (estNTPV == 1) {
+            getccdb(NTPVInfo, genName);
+          }
+          mRunNumber = bc.runNumber();
+        } else {
+          if (!doNotCrashOnNull) { // default behaviour: crash
+            LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+          } else { // only if asked: continue filling with non-valid values (105)
+            LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
+            mRunNumber = bc.runNumber();
+          }
+        }
+      }
+
+      auto populateTable = [](auto& table, struct calibrationInfo& estimator, float multiplicity) {
+        auto scaleMC = [](float x, float pars[6]) {
+          return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+        };
+
+        float percentile = 105.0f;
+        float scaledMultiplicity = multiplicity;
+        if (estimator.mCalibrationStored) {
+          if (estimator.mMCScale != nullptr) {
+            scaledMultiplicity = scaleMC(multiplicity, estimator.mMCScalePars);
+            LOGF(debug, "Unscaled %s multiplicity: %f, scaled %s multiplicity: %f", estimator.name.c_str(), multiplicity, estimator.name.c_str(), scaledMultiplicity);
+          }
+          percentile = estimator.mhMultSelCalib->GetBinContent(estimator.mhMultSelCalib->FindFixBin(scaledMultiplicity));
+        }
+        LOGF(debug, "%s centrality/multiplicity percentile = %.0f for a zvtx eq %s value %.0f", estimator.name.c_str(), percentile, estimator.name.c_str(), scaledMultiplicity);
+        table(percentile);
+      };
+
+      if (estFV0A == 1) {
+        populateTable(centFV0A, FV0AInfo, collision.multZeqFV0A());
+      }
+      if (estFT0M == 1) {
+        populateTable(centFT0M, FT0MInfo, collision.multZeqFT0A() + collision.multZeqFT0C());
+      }
+      if (estFT0A == 1) {
+        populateTable(centFT0A, FT0AInfo, collision.multZeqFT0A());
+      }
+      if (estFT0C == 1) {
+        populateTable(centFT0C, FT0CInfo, collision.multZeqFT0C());
+      }
+      if (estFDDM == 1) {
+        populateTable(centFDDM, FDDMInfo, collision.multZeqFDDA() + collision.multZeqFDDC());
+      }
+      if (estNTPV == 1) {
+        populateTable(centNTPV, NTPVInfo, collision.multZeqNTracksPV());
+      }
     }
   }
   PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", false);

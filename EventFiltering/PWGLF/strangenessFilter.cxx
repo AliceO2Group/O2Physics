@@ -47,7 +47,7 @@ struct strangenessFilter {
   HistogramRegistry QAHistosTopologicalVariables{"QAHistosTopologicalVariables", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAHistosTriggerParticles{"QAHistosTriggerParticles", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry EventsvsMultiplicity{"EventsvsMultiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1F> hProcessedEvents{TH1F("hProcessedEvents", "Strangeness - event filtered; Event counter; Number of events", 9, 0., 9.)};
+  OutputObj<TH1F> hProcessedEvents{TH1F("hProcessedEvents", "Strangeness - event filtered; Event counter; Number of events", 10, 0., 10.)};
   OutputObj<TH1F> hCandidate{TH1F("hCandidate", "; Candidate pass selection; Number of events", 30, 0., 30.)};
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Xi events with pT_h higher than thrd; hadrons with p_{T}>bincenter (GeV/c); Number of events", 11, 0., 11.)};
   OutputObj<TH1F> hhXiPairsvsPt{TH1F("hhXiPairsvsPt", "pt distributions of Xi in events with a trigger particle; #it{p}_{T} (GeV/c); Number of Xi", 100, 0., 10.)};
@@ -77,6 +77,8 @@ struct strangenessFilter {
   Configurable<float> omegamasswindow{"omegamasswindow", 0.075, "Omega Mass Window"}; // merge the two windows variables into one?
   Configurable<int> properlifetimefactor{"properlifetimefactor", 5, "Proper Lifetime cut"};
   Configurable<float> lowerradiusXiYN{"lowerradiusXiYN", 24.39, "Cascade lower radius for single Xi trigger"};
+  Configurable<float> lowerradiusOmega{"lowerradiusOmega", 19.0, "Omega lower radius for high radius Omega trigger"};
+  Configurable<float> upperradiusOmega{"upperradiusOmega", 19.0, "Omega upper radius for low radius Omega trigger"};
   Configurable<float> nsigmatpcpi{"nsigmatpcpi", 6, "N Sigmas TPC pi"};
   Configurable<float> nsigmatpcka{"nsigmatpcka", 6, "N Sigmas TPC ka"};
   Configurable<float> nsigmatpcpr{"nsigmatpcpr", 6, "N Sigmas TPC pr"};
@@ -85,6 +87,9 @@ struct strangenessFilter {
   Configurable<bool> kint7{"kint7", 0, "Apply kINT7 event selection"};
   Configurable<bool> sel7{"sel7", 0, "Apply sel7 event selection"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
+  Configurable<float> minPtTrackedCascade{"minPtTrackedCascade", 0., "Min. pt for tracked cascades"};
+  Configurable<float> minPtTrackedV0{"minPtTrackedV0", 0., "Min. pt for tracked V0"};
+  Configurable<float> minPtTracked3Body{"minPtTracked3Body", 0., "Min. pt for tracked 3Body"};
 
   // Selections criteria for tracks
   Configurable<float> hEta{"hEta", 0.9f, "Eta range for trigger particles"};
@@ -116,7 +121,8 @@ struct strangenessFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(6, "3#Xi");
     hProcessedEvents->GetXaxis()->SetBinLabel(7, "4#Xi");
     hProcessedEvents->GetXaxis()->SetBinLabel(8, "#Xi-YN");
-    hProcessedEvents->GetXaxis()->SetBinLabel(9, "#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(9, "#Omega high radius");
+    hProcessedEvents->GetXaxis()->SetBinLabel(10, "#Xi");
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "Has_V0");
@@ -187,6 +193,8 @@ struct strangenessFilter {
     QAHistosTopologicalVariables.add("hDCANegToPVOmega", "hDCANegToPVOmega", HistType::kTH1F, {{400, 0.0f, 2.0f}});
     QAHistosTopologicalVariables.add("hInvMassLambdaOmega", "InvMassLambdaOmega", HistType::kTH1F, {{200, 1.07f, 1.17f}});
     QAHistosTopologicalVariables.add("hProperLifetimeOmega", "Proper Lifetime Omega", HistType::kTH1F, {{50, 0, 50}});
+    QAHistosTopologicalVariables.add("hCascRadiusOmegaLargeR", "hCascRadiusOmegaLargeR", HistType::kTH1F, {{500, 0.0f, 50.0f}});
+    QAHistosTopologicalVariables.add("hCascRadiusXiYN", "hCascRadiusXiYN", HistType::kTH1F, {{500, 0.0f, 50.0f}});
 
     // trigger particles QA
     QAHistosTriggerParticles.add("hTriggeredParticlesAllEv", "Distribution of #tracks w/ pt > pt,trigg,min", HistType::kTH1F, {{20, 0.5, 20.5, "Trigger counter"}});
@@ -248,26 +256,32 @@ struct strangenessFilter {
   ////////// Strangeness Filter - Run 2 conv /////////////
   ////////////////////////////////////////////////////////
 
+  void fillTriggerTable(bool keepEvent[])
+  {
+    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9]);
+  }
+
   void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
   {
-    // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi
-    bool keepEvent[6]{false};
+    // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
+    // [7] tracked cascade, [8] tracked V0, [9] tracked 3Body
+    bool keepEvent[10]{}; // explicitly zero-initialised
 
-    if (kint7 && !collision.alias()[kINT7]) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+    if (kint7 && !collision.alias_bit(kINT7)) {
+      fillTriggerTable(keepEvent);
       return;
     }
     if (sel7 && !collision.sel7()) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+      fillTriggerTable(keepEvent);
       return;
     }
     if (sel8 && !collision.sel8()) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+      fillTriggerTable(keepEvent);
       return;
     }
 
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+      fillTriggerTable(keepEvent);
       return;
     }
 
@@ -289,6 +303,7 @@ struct strangenessFilter {
     int xicounter = 0;
     int xicounterYN = 0;
     int omegacounter = 0;
+    int omegalargeRcounter = 0;
     int triggcounterForEstimates = 0;
     int triggcounter = 0;
 
@@ -306,6 +321,7 @@ struct strangenessFilter {
       bool isXi = false;
       bool isXiYN = false;
       bool isOmega = false;
+      bool isOmegalargeR = false;
 
       // Position
       xipos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
@@ -393,10 +409,19 @@ struct strangenessFilter {
       isOmega = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpcka) &&
                 (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
                 (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
+                (casc.cascradius() < upperradiusOmega) &&
                 (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
                 (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) > xirej) &&
                 (omegaproperlifetime < properlifetimefactor * ctauomega) &&
                 (TMath::Abs(casc.yOmega()) < rapidity); // add PID on bachelor
+      isOmegalargeR = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpcka) &&
+                      (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
+                      (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
+                      (casc.cascradius() > lowerradiusOmega) &&
+                      (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
+                      (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) > xirej) &&
+                      (omegaproperlifetime < properlifetimefactor * ctauomega) &&
+                      (TMath::Abs(casc.yOmega()) < rapidity); // add PID on bachelor
 
       if (isXi) {
         // Count number of Xi candidates
@@ -416,6 +441,10 @@ struct strangenessFilter {
       if (isOmega) {
         // Count number of Omega candidates
         omegacounter++;
+      }
+      if (isOmegalargeR) {
+        // Count number of Omega candidates with high radius
+        omegalargeRcounter++;
       }
     } // end loop over cascades
 
@@ -455,6 +484,11 @@ struct strangenessFilter {
       keepEvent[5] = true;
     }
 
+    // Omega with high radius trigger definition
+    if (omegalargeRcounter > 0) {
+      keepEvent[6] = true;
+    }
+
     // Fill centrality dependent histos
     if (keepEvent[0]) {
       hProcessedEvents->Fill(2.5);
@@ -474,9 +508,12 @@ struct strangenessFilter {
     if (keepEvent[5]) {
       hProcessedEvents->Fill(7.5);
     }
+    if (keepEvent[6]) {
+      hProcessedEvents->Fill(8.5);
+    }
 
     // Filling the table
-    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+    fillTriggerTable(keepEvent);
   }
   //
   PROCESS_SWITCH(strangenessFilter, processRun2, "Process data Run2", true);
@@ -485,20 +522,22 @@ struct strangenessFilter {
   ////////// Strangeness Filter - Run 3 MC /////////////
   //////////////////////////////////////////////////////
 
-  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
+  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks,
+                   aod::AssignedTrackedCascades const& trackedCascades, aod::AssignedTrackedV0s const& trackedV0s, aod::AssignedTracked3Bodys const& tracked3Bodys)
   {
-    // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi
-    bool keepEvent[6]{false};
+    // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
+    // [7] tracked cascade, [8] tracked V0, [9] tracked 3Body
+    bool keepEvent[10]{}; // explicitly zero-initialised
 
     if (sel8 && !collision.sel8()) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+      fillTriggerTable(keepEvent);
       return;
     }
     // all processed events after event selection
     hProcessedEvents->Fill(0.5);
 
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
-      strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+      fillTriggerTable(keepEvent);
       return;
     }
     QAHistos.fill(HIST("hVtxZ"), collision.posZ());
@@ -520,6 +559,7 @@ struct strangenessFilter {
     int xicounter = 0;
     int xicounterYN = 0;
     int omegacounter = 0;
+    int omegalargeRcounter = 0;
     int triggcounter = 0;
     int triggcounterAllEv = 0;
     int triggcounterForEstimates = 0;
@@ -542,6 +582,7 @@ struct strangenessFilter {
       bool isXi = false;
       bool isXiYN = false;
       bool isOmega = false;
+      bool isOmegalargeR = false;
 
       // QA
       QAHistos.fill(HIST("hMassXiBefSelvsPt"), casc.mXi(), casc.pt());
@@ -672,8 +713,17 @@ struct strangenessFilter {
                 (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
                 (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
                 (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) > xirej) &&
+                (casc.cascradius() < upperradiusOmega) &&
                 (omegaproperlifetime < properlifetimefactor * ctauomega) &&
                 (TMath::Abs(casc.yOmega()) < rapidity);
+      isOmegalargeR = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpcka) &&
+                      (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
+                      (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
+                      (casc.cascradius() > lowerradiusOmega) &&
+                      (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
+                      (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) > xirej) &&
+                      (omegaproperlifetime < properlifetimefactor * ctauomega) &&
+                      (TMath::Abs(casc.yOmega()) < rapidity);
 
       if (isXi) {
         QAHistos.fill(HIST("hMassXiAfterSelvsPt"), casc.mXi(), casc.pt());
@@ -731,6 +781,7 @@ struct strangenessFilter {
       if (isXiYN) {
         // Xis for YN interactions
         xicounterYN++;
+        QAHistosTopologicalVariables.fill(HIST("hCascRadiusXiYN"), casc.cascradius());
       }
       if (isOmega) {
         QAHistos.fill(HIST("hMassOmegaAfterSelvsPt"), casc.mOmega(), casc.pt());
@@ -771,6 +822,10 @@ struct strangenessFilter {
 
         // Count number of Omega candidates
         omegacounter++;
+      }
+      if (isOmegalargeR) {
+        omegalargeRcounter++;
+        QAHistosTopologicalVariables.fill(HIST("hCascRadiusOmegaLargeR"), casc.cascradius());
       }
     } // end loop over cascades
 
@@ -863,6 +918,33 @@ struct strangenessFilter {
       keepEvent[5] = true;
     }
 
+    // Omega with high radius trigger definition
+    if (omegalargeRcounter > 0) {
+      keepEvent[6] = true;
+    }
+
+    // strangeness tracking selection
+    for (const auto& trackedCascade : trackedCascades) {
+      const auto trackCasc = trackedCascade.track_as<TrackCandidates>();
+      if (trackCasc.pt() > minPtTrackedCascade) {
+        keepEvent[7] = true;
+      }
+    }
+
+    for (const auto& trackedV0 : trackedV0s) {
+      const auto trackV0 = trackedV0.track_as<TrackCandidates>();
+      if (trackV0.pt() > minPtTrackedV0) {
+        keepEvent[8] = true;
+      }
+    }
+
+    for (const auto& tracked3Body : tracked3Bodys) {
+      const auto track3Body = tracked3Body.track_as<TrackCandidates>();
+      if (track3Body.pt() > minPtTracked3Body) {
+        keepEvent[9] = true;
+      }
+    }
+
     // Fill centrality dependent histos
     if (keepEvent[0]) {
       hProcessedEvents->Fill(2.5);
@@ -882,12 +964,15 @@ struct strangenessFilter {
     if (keepEvent[5]) {
       hProcessedEvents->Fill(7.5);
     }
-    if (xicounter > 0) {
+    if (keepEvent[6]) {
       hProcessedEvents->Fill(8.5);
+    }
+    if (xicounter > 0) {
+      hProcessedEvents->Fill(9.5);
     }
 
     // Filling the table
-    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+    fillTriggerTable(keepEvent);
   }
   //
   PROCESS_SWITCH(strangenessFilter, processRun3, "Process Run3", true);

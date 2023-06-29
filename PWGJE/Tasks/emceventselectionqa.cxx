@@ -52,7 +52,7 @@ struct EmcEventSelectionQA {
     mHistManager.add("hBCEmcalCellContent", "Bunch crossings with non-0 EMCAL cell content", o2HistType::kTH1F, {bcAxis});
   }
 
-  Preslice<collEventSels> perFoundBC = aod::evsel::foundBCId;
+  PresliceUnsorted<collEventSels> perFoundBC = aod::evsel::foundBCId;
 
   void process(bcEvSels const& bcs, collEventSels const& collisions, soa::Filtered<aod::Calos> const& cells)
   {
@@ -76,13 +76,13 @@ struct EmcEventSelectionQA {
       if (bc.runNumber() > 300000) {
         // in case of run3 not all BCs contain EMCAL data, require trigger selection also for min. bias
         // in addition select also L0/L1 triggers as triggers with EMCAL in reaodut
-        if (bc.alias()[kTVXinEMC] || bc.alias()[kEMC7] || bc.alias()[kEG1] || bc.alias()[kEG2] || bc.alias()[kEJ1] || bc.alias()[kEJ2]) {
+        if (bc.alias_bit(kTVXinEMC) || bc.alias_bit(kEMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2)) {
           isEMCALreadout = true;
         }
       } else {
         // run1/2: rely on trigger cluster, runlist must contain only runs with EMCAL in readout
         // Select min. bias trigger and EMCAL L0/L1 triggers
-        if (bc.alias()[kINT7] || bc.alias()[kEMC7] || bc.alias()[kEG1] || bc.alias()[kEG2] || bc.alias()[kEJ1] || bc.alias()[kEJ2]) {
+        if (bc.alias_bit(kINT7) || bc.alias_bit(kEMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2)) {
           isEMCALreadout = true;
         }
       }
@@ -92,7 +92,7 @@ struct EmcEventSelectionQA {
         mHistManager.fill(HIST("hBCEmcalReadout"), bcID);
       }
 
-      if (bc.selection()[kIsTriggerTVX]) {
+      if (bc.selection_bit(kIsTriggerTVX)) {
         mHistManager.fill(HIST("hBCTVX"), bcID);
       }
 

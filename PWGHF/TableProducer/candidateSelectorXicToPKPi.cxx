@@ -16,11 +16,12 @@
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include "Framework/runDataProcessing.h"
+#include "Common/Core/TrackSelectorPID.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/TrackSelectorPID.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -96,10 +97,31 @@ struct HfCandidateSelectorXicToPKPi {
       return false;
     }
 
+    // candidate decay length XY
+    if (candidate.decayLengthXY() <= cuts->get(pTBin, "decLengthXY")) {
+      return false;
+    }
+
+    // candidate normalized decay length XY
+    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "normDecLXY")) {
+      return false;
+    }
+
     // candidate normalised decay length (Inspired from Lc selector)
     if (candidate.decayLengthXYNormalised() < decayLengthXYNormalisedMin) {
       return false;
     }
+
+    // candidate ct
+    if (ctXic(candidate) > cuts->get(pTBin, "ct")) {
+      return false;
+    }
+
+    // candidate impact parameter XY
+    if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impParXY")) {
+      return false;
+    }
+
     return true;
   }
 

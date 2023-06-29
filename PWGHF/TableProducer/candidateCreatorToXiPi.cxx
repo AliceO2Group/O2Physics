@@ -14,27 +14,28 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, HEIDELBERG UNIVERSITY & GSI
 
 #include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/CollisionAssociation.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
 #include "DCAFitter/DCAFitterN.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/V0.h"
+
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -69,9 +70,13 @@ struct HfCandidateCreatorToXiPi {
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  // cascade invariant mass cuts
+  Configurable<bool> doCascadeInvMassCut{"doCascadeInvMassCut", false, "Use invariant mass cut to select cascade candidates"};
+  Configurable<double> sigmaInvMassCascade{"sigmaInvMassCascade", 0.0025, "Invariant mass cut for cascade (sigma)"};
+  Configurable<int> nSigmaInvMassCut{"nSigmaInvMassCut", 4, "Number of sigma for invariant mass cut"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
@@ -81,7 +86,7 @@ struct HfCandidateCreatorToXiPi {
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
   using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
-  using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>;
+  using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
@@ -165,6 +170,13 @@ struct HfCandidateCreatorToXiPi {
             continue;
           }
           if (trackXiDauCharged.collisionId() != trackV0Dau0.collisionId()) {
+            continue;
+          }
+        }
+
+        // use invariant mass cut to select cascades candidates
+        if (doCascadeInvMassCut) {
+          if (std::abs(casc.mXi() - massXiFromPDG) > (nSigmaInvMassCut * sigmaInvMassCascade)) {
             continue;
           }
         }
@@ -403,8 +415,8 @@ struct HfCandidateCreatorToXiPi {
         } // loop over pions
       }   // loop over cascades
     }     // close loop collisions
-  }     // end of process
-};      // end of struct
+  }       // end of process
+};        // end of struct
 
 /// Performs MC matching.
 struct HfCandidateCreatorToXiPiMc {
@@ -427,10 +439,13 @@ struct HfCandidateCreatorToXiPiMc {
                  aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
-    int8_t sign = 0;
-    int8_t flag = 0;
+    int8_t sign = -9;
+    int8_t flag = -9;
     // int8_t origin = 0; //to be used for prompt/non prompt
     int8_t debug = 0;
+    int8_t debugGenCharmBar = 0;
+    int8_t debugGenXi = 0;
+    int8_t debugGenLambda = 0;
 
     int pdgCodeOmegac0 = pdg::Code::kOmegaC0; // 4332
     int pdgCodeXic0 = pdg::Code::kXiCZero;    // 4132
@@ -524,18 +539,25 @@ struct HfCandidateCreatorToXiPiMc {
     // Match generated particles.
     for (auto& particle : particlesMC) {
       // Printf("New gen. candidate");
-      flag = 0;
+      flag = -9;
+      sign = -9;
+      debugGenCharmBar = 0;
+      debugGenXi = 0;
+      debugGenLambda = 0;
       // origin = 0;
       if (matchOmegacMc) {
         //  Omegac → Xi pi
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+          debugGenCharmBar = 1;
           // Match Xi -> lambda pi
           auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking cascade → lambda pi");
           if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+            debugGenXi = 1;
             // lambda -> p pi
             auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
-            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign)) {
+            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+              debugGenLambda = 1;
               flag = sign * (1 << DecayType::OmegaczeroToXiPi);
             }
           }
@@ -543,14 +565,17 @@ struct HfCandidateCreatorToXiPiMc {
       }
       if (matchXicMc) {
         //  Xic → Xi pi
-        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+          debugGenCharmBar = 1;
           // Match Xi -> lambda pi
           auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking cascade → lambda pi");
           if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+            debugGenXi = 1;
             // lambda -> p pi
             auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
-            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign)) {
+            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+              debugGenLambda = 1;
               flag = sign * (1 << DecayType::XiczeroToXiPi);
             }
           }
@@ -558,7 +583,7 @@ struct HfCandidateCreatorToXiPiMc {
       }
 
       // rowMCMatchGen(flag, origin);
-      rowMCMatchGen(flag);
+      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda);
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processMc, "Process MC", false);

@@ -13,13 +13,13 @@
 /// \brief Omegac → Xi Pi selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University & GSI
 
-#include "Common/Core/TrackSelectorPID.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/Core/RecoDecay.h"
-#include "Framework/runDataProcessing.h"
+#include "Common/Core/TrackSelectorPID.h"
 #include "Framework/AnalysisTask.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -106,16 +106,50 @@ struct HfCandidateSelectorToXiPi {
 
   using MyTrackInfo = aod::BigTracksPIDExtended;
 
-  OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
-  OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
-  OutputObj<TH1F> hCTauOmegac{TH1F("hCTauOmegac", "Omegac ctau;ctau;entries", 500, 0., 10.)};
-  OutputObj<TH1F> hCTauXic{TH1F("hCTauXic", "Xic ctau;ctau;entries", 500, 0., 10.)};
-  OutputObj<TH1F> hNEventsSaved{TH1F("hNEventsSaved", "Events with a charmed baryon candidate;Events source;N. events", 3, 0, 3)};
-  // bin1 -> number of events taking collisionId from cascade, bin2 -> number of events taking collisionId from primary pion, bin3 -> number of times collId cascade id different from collId primary pi
+  HistogramRegistry registry{"registry"}; // for QA of selections
 
-  // temporary histo for debugging (to be removed after test on hyperloop)
-  OutputObj<TH1F> hTest1{TH1F("hTest1", "Test status steps;status;entries", 12, 0., 12.)};
-  OutputObj<TH1F> hTest2{TH1F("hTest2", "Test status consecutive;status;entries", 12, 0., 12.)};
+  OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
+  OutputObj<TH1F> hNEventsSaved{TH1F("hNEventsSaved", "Events with a charmed baryon candidate;Events source;N. events", 3, 0, 3)};
+
+  void init(InitContext const&)
+  {
+    registry.add("hSelPID", "hSelPID;status;entries", {HistType::kTH1F, {{12, 0., 12.}}});
+    registry.add("hTest", "Test status consecutive;status;entries", {HistType::kTH1F, {{12, 0., 12.}}});
+
+    // for QA of the selections (bin 0 -> candidates that did not pass the selection, bin 1 -> candidates that passed the selection)
+    registry.add("hSelSignDec", "hSelSignDec;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelEtaPosV0Dau", "hSelEtaPosV0Dau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelEtaNegV0Dau", "hSelEtaNegV0Dau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelEtaPiFromCasc", "hSelEtaPiFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelEtaPiFromOme", "hSelEtaPiFromOme;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelRadCasc", "hSelRadCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelRadV0", "hSelRadV0;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelCosPACasc", "hSelCosPACasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelCosPAV0", "hSelCosPAV0;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCACascDau", "hSelDCACascDau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCAV0Dau", "hSelDCAV0Dau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCAOmeDau", "hSelDCAOmeDau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCAXYPrimPi", "hSelDCAXYPrimPi;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCAZPrimPi", "hSelDCAZPrimPi;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCAXYCasc", "hSelDCAXYCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCAZCasc", "hSelDCAZCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelPtPiFromCasc", "hSelPtPiFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelPtPiFromOme", "hSelPtPiFromOme;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNClsTPCPiFromOme", "hSelNClsTPCPiFromOme;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNClsTPCPiFromLam", "hSelNClsTPCPiFromLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNClsTPCPrFromLam", "hSelNClsTPCPrFromLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNClsTPCPiFromCasc", "hSelNClsTPCPiFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNCrossRowsTPCPiFromOme", "hSelNCrossRowsTPCPiFromOme;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNCrossRowsTPCPiFromLam", "hSelNCrossRowsTPCPiFromLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNCrossRowsTPCPrFromLam", "hSelNCrossRowsTPCPrFromLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNCrossRowsTPCPiFromCasc", "hSelNCrossRowsTPCPiFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelCrossRowsOverFindClsTPCAllTracks", "hSelCrossRowsOverFindClsTPCAllTracks;status;entries", {HistType::kTH1F, {{10, 0., 10.}}});
+    registry.add("hSelNClsITSPiFromOme", "hSelNClsITSPiFromOme;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNClsITSInnerPiFromOme", "hSelNClsITSInnerPiFromOme;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelMassLam", "hSelMassLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelMassCasc", "hSelMassCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelMassOme", "hSelMassOme;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+  }
 
   void process(aod::HfCandToXiPi const& candidates, MyTrackInfo const&)
   {
@@ -158,8 +192,12 @@ struct HfCandidateSelectorToXiPi {
       if (signDecay > 0) {
         trackPiFromLam = trackV0PosDau;
         trackPrFromLam = trackV0NegDau;
+        registry.fill(HIST("hSelSignDec"), 1);
       } else if (signDecay == 0) {
         resultSelections = false;
+        registry.fill(HIST("hSelSignDec"), 0);
+      } else {
+        registry.fill(HIST("hSelSignDec"), 1);
       }
 
       // eta selection
@@ -169,58 +207,106 @@ struct HfCandidateSelectorToXiPi {
       double etaPiFromOme = candidate.etaPiFromOme();
       if (std::abs(etaV0PosDau) > etaTrackMax) {
         resultSelections = false;
+        registry.fill(HIST("hSelEtaPosV0Dau"), 0);
+      } else {
+        registry.fill(HIST("hSelEtaPosV0Dau"), 1);
       }
       if (std::abs(etaV0NegDau) > etaTrackMax) {
         resultSelections = false;
+        registry.fill(HIST("hSelEtaNegV0Dau"), 0);
+      } else {
+        registry.fill(HIST("hSelEtaNegV0Dau"), 1);
       }
       if (std::abs(etaPiFromCasc) > etaTrackMax) {
         resultSelections = false;
+        registry.fill(HIST("hSelEtaPiFromCasc"), 0);
+      } else {
+        registry.fill(HIST("hSelEtaPiFromCasc"), 1);
       }
       if (std::abs(etaPiFromOme) > etaTrackMax) {
         resultSelections = false;
+        registry.fill(HIST("hSelEtaPiFromOme"), 0);
+      } else {
+        registry.fill(HIST("hSelEtaPiFromOme"), 1);
       }
 
       // minimum radius cut (LFcut)
       if (RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxCascade(), candidate.yDecayVtxCascade()) < radiusCascMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelRadCasc"), 0);
+      } else {
+        registry.fill(HIST("hSelRadCasc"), 1);
       }
       if (RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxV0(), candidate.yDecayVtxV0()) < radiusV0Min) {
         resultSelections = false;
+        registry.fill(HIST("hSelRadV0"), 0);
+      } else {
+        registry.fill(HIST("hSelRadV0"), 1);
       }
+
       // cosPA (LFcut)
       if (candidate.cosPACasc() < cosPACascMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelCosPACasc"), 0);
+      } else {
+        registry.fill(HIST("hSelCosPACasc"), 1);
       }
       if (candidate.cosPAV0() < cosPAV0Min) {
         resultSelections = false;
+        registry.fill(HIST("hSelCosPAV0"), 0);
+      } else {
+        registry.fill(HIST("hSelCosPAV0"), 1);
       }
+
       // cascade and v0 daughters dca cut (LF cut)
       if (candidate.dcaCascDau() > dcaCascDauMax) {
         resultSelections = false;
+        registry.fill(HIST("hSelDCACascDau"), 0);
+      } else {
+        registry.fill(HIST("hSelDCACascDau"), 1);
       }
+
       if (candidate.dcaV0Dau() > dcaV0DauMax) {
         resultSelections = false;
+        registry.fill(HIST("hSelDCAV0Dau"), 0);
+      } else {
+        registry.fill(HIST("hSelDCAV0Dau"), 1);
       }
 
       // dca omegac daughters cut
       if (candidate.dcaOmegacDau() > dcaOmegacDauMax) {
         resultSelections = false;
+        registry.fill(HIST("hSelDCAOmeDau"), 0);
+      } else {
+        registry.fill(HIST("hSelDCAOmeDau"), 1);
       }
 
       // cut on primary pion dcaXY and dcaZ
-      if ((candidate.impactParPrimaryPiXY() < impactParameterXYPriPiMin) || (candidate.impactParPrimaryPiXY() > impactParameterXYPriPiMax)) {
+      if ((std::abs(candidate.impactParPrimaryPiXY()) < impactParameterXYPriPiMin) || (std::abs(candidate.impactParPrimaryPiXY()) > impactParameterXYPriPiMax)) {
         resultSelections = false;
+        registry.fill(HIST("hSelDCAXYPrimPi"), 0);
+      } else {
+        registry.fill(HIST("hSelDCAXYPrimPi"), 1);
       }
-      if ((candidate.impactParPrimaryPiZ() < impactParameterZPriPiMin) || (candidate.impactParPrimaryPiZ() > impactParameterZPriPiMax)) {
+      if ((std::abs(candidate.impactParPrimaryPiZ()) < impactParameterZPriPiMin) || (std::abs(candidate.impactParPrimaryPiZ()) > impactParameterZPriPiMax)) {
         resultSelections = false;
+        registry.fill(HIST("hSelDCAZPrimPi"), 0);
+      } else {
+        registry.fill(HIST("hSelDCAZPrimPi"), 1);
       }
 
       // cut on cascade dcaXY and dcaZ
-      if ((candidate.impactParCascXY() < impactParameterXYCascMin) || (candidate.impactParCascXY() > impactParameterXYCascMax)) {
+      if ((std::abs(candidate.impactParCascXY()) < impactParameterXYCascMin) || (std::abs(candidate.impactParCascXY()) > impactParameterXYCascMax)) {
         resultSelections = false;
+        registry.fill(HIST("hSelDCAXYCasc"), 0);
+      } else {
+        registry.fill(HIST("hSelDCAXYCasc"), 1);
       }
-      if ((candidate.impactParCascZ() < impactParameterZCascMin) || (candidate.impactParCascZ() > impactParameterZCascMax)) {
+      if ((std::abs(candidate.impactParCascZ()) < impactParameterZCascMin) || (std::abs(candidate.impactParCascZ()) > impactParameterZCascMax)) {
         resultSelections = false;
+        registry.fill(HIST("hSelDCAZCasc"), 0);
+      } else {
+        registry.fill(HIST("hSelDCAZCasc"), 1);
       }
 
       // pT selections
@@ -228,48 +314,107 @@ struct HfCandidateSelectorToXiPi {
       double ptPiFromOme = RecoDecay::sqrtSumOfSquares(candidate.pxPrimaryPi(), candidate.pyPrimaryPi());
       if (std::abs(ptPiFromCasc) < ptPiFromCascMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelPtPiFromCasc"), 0);
+      } else {
+        registry.fill(HIST("hSelPtPiFromCasc"), 1);
       }
       if (std::abs(ptPiFromOme) < ptPiFromOmeMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelPtPiFromOme"), 0);
+      } else {
+        registry.fill(HIST("hSelPtPiFromOme"), 1);
       }
 
       //  TPC clusters selections
       if (trackPiFromOmeg.tpcNClsFound() < nClustersTpcMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelNClsTPCPiFromOme"), 0);
+      } else {
+        registry.fill(HIST("hSelNClsTPCPiFromOme"), 1);
       }
       if (trackPiFromLam.tpcNClsFound() < nClustersTpcMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelNClsTPCPiFromLam"), 0);
+      } else {
+        registry.fill(HIST("hSelNClsTPCPiFromLam"), 1);
       }
       if (trackPrFromLam.tpcNClsFound() < nClustersTpcMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelNClsTPCPrFromLam"), 0);
+      } else {
+        registry.fill(HIST("hSelNClsTPCPrFromLam"), 1);
       }
       if (trackPiFromCasc.tpcNClsFound() < nClustersTpcMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelNClsTPCPiFromCasc"), 0);
+      } else {
+        registry.fill(HIST("hSelNClsTPCPiFromCasc"), 1);
       }
 
+      // TPC crossed rows selection
       if (trackPiFromOmeg.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelNCrossRowsTPCPiFromOme"), 0);
+      } else {
+        registry.fill(HIST("hSelNCrossRowsTPCPiFromOme"), 1);
       }
       if (trackPiFromLam.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelNCrossRowsTPCPiFromLam"), 0);
+      } else {
+        registry.fill(HIST("hSelNCrossRowsTPCPiFromLam"), 1);
       }
       if (trackPrFromLam.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelNCrossRowsTPCPrFromLam"), 0);
+      } else {
+        registry.fill(HIST("hSelNCrossRowsTPCPrFromLam"), 1);
       }
       if (trackPiFromCasc.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelNCrossRowsTPCPiFromCasc"), 0);
+      } else {
+        registry.fill(HIST("hSelNCrossRowsTPCPiFromCasc"), 1);
       }
 
+      // further TPC selection
       if (trackPiFromOmeg.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 0);
+      } else {
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 1);
+      }
+      if (trackPiFromCasc.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
+        resultSelections = false;
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 2);
+      } else {
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 3);
+      }
+      if (trackPiFromLam.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
+        resultSelections = false;
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 4);
+      } else {
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 5);
+      }
+      if (trackPrFromLam.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
+        resultSelections = false;
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 6);
+      } else {
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 7);
       }
 
       //  ITS clusters selection
       if (trackPiFromOmeg.itsNCls() < nClustersItsMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelNClsITSPiFromOme"), 0);
+      } else {
+        registry.fill(HIST("hSelNClsITSPiFromOme"), 1);
       }
       if (trackPiFromOmeg.itsNClsInnerBarrel() < nClustersItsInnBarrMin) {
         resultSelections = false;
+        registry.fill(HIST("hSelNClsITSInnerPiFromOme"), 0);
+      } else {
+        registry.fill(HIST("hSelNClsITSInnerPiFromOme"), 1);
       }
 
       // track-level PID selection
@@ -299,21 +444,21 @@ struct HfCandidateSelectorToXiPi {
       if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted) {
         statusPidLambda = true;
         if (resultSelections) {
-          hTest2->Fill(0.5);
+          registry.fill(HIST("hTest"), 0.5);
         }
       }
 
       if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted && pidPiFromCasc == TrackSelectorPID::Status::PIDAccepted) {
         statusPidCascade = true;
         if (resultSelections) {
-          hTest2->Fill(1.5);
+          registry.fill(HIST("hTest"), 1.5);
         }
       }
 
       if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted && pidPiFromCasc == TrackSelectorPID::Status::PIDAccepted && pidPiFromOme == TrackSelectorPID::Status::PIDAccepted) {
         statusPidOmegac = true;
         if (resultSelections) {
-          hTest2->Fill(2.5);
+          registry.fill(HIST("hTest"), 2.5);
         }
       }
 
@@ -328,71 +473,79 @@ struct HfCandidateSelectorToXiPi {
 
       if (std::abs(invMassLambda - massLambdaFromPDG) < (nSigmaInvMassCut * sigmaInvMassLambda)) {
         statusInvMassLambda = true;
+        registry.fill(HIST("hSelMassLam"), 1);
         if (statusPidLambda && statusPidCascade && statusPidOmegac && resultSelections) {
-          hTest2->Fill(3.5);
+          registry.fill(HIST("hTest"), 3.5);
         }
+      } else {
+        registry.fill(HIST("hSelMassLam"), 0);
       }
 
       if (std::abs(invMassCascade - massXiFromPDG) < (nSigmaInvMassCut * sigmaInvMassCascade)) {
         statusInvMassCascade = true;
+        registry.fill(HIST("hSelMassCasc"), 1);
         if (statusPidLambda && statusPidCascade && statusPidOmegac && statusInvMassLambda && resultSelections) {
-          hTest2->Fill(4.5);
+          registry.fill(HIST("hTest"), 4.5);
         }
+      } else {
+        registry.fill(HIST("hSelMassCasc"), 0);
       }
 
       if ((invMassOmegac >= invMassOmegacMin) && (invMassOmegac <= invMassOmegacMax)) {
         statusInvMassOmegac = true;
+        registry.fill(HIST("hSelMassOme"), 1);
         if (statusPidLambda && statusPidCascade && statusPidOmegac && statusInvMassLambda && statusInvMassCascade && resultSelections) {
-          hTest2->Fill(5.5);
+          registry.fill(HIST("hTest"), 5.5);
         }
+      } else {
+        registry.fill(HIST("hSelMassOme"), 0);
       }
 
-      hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidOmegac, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac, resultSelections);
+      hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidOmegac, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac, resultSelections,
+                  trackPiFromOmeg.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
+                  trackPiFromOmeg.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
 
       if (resultSelections) {
         if (!statusPidLambda) {
-          hTest1->Fill(0.5);
+          registry.fill(HIST("hSelPID"), 0.5);
         }
         if (statusPidLambda) {
-          hTest1->Fill(1.5);
+          registry.fill(HIST("hSelPID"), 1.5);
         }
         if (!statusPidCascade) {
-          hTest1->Fill(2.5);
+          registry.fill(HIST("hSelPID"), 2.5);
         }
         if (statusPidCascade) {
-          hTest1->Fill(3.5);
+          registry.fill(HIST("hSelPID"), 3.5);
         }
         if (!statusPidOmegac) {
-          hTest1->Fill(4.5);
+          registry.fill(HIST("hSelPID"), 4.5);
         }
         if (statusPidOmegac) {
-          hTest1->Fill(5.5);
+          registry.fill(HIST("hSelPID"), 5.5);
         }
         if (!statusInvMassLambda) {
-          hTest1->Fill(6.5);
+          registry.fill(HIST("hSelPID"), 6.5);
         }
         if (statusInvMassLambda) {
-          hTest1->Fill(7.5);
+          registry.fill(HIST("hSelPID"), 7.5);
         }
         if (!statusInvMassCascade) {
-          hTest1->Fill(8.5);
+          registry.fill(HIST("hSelPID"), 8.5);
         }
         if (statusInvMassCascade) {
-          hTest1->Fill(9.5);
+          registry.fill(HIST("hSelPID"), 9.5);
         }
         if (!statusInvMassOmegac) {
-          hTest1->Fill(10.5);
+          registry.fill(HIST("hSelPID"), 10.5);
         }
         if (statusInvMassOmegac) {
-          hTest1->Fill(11.5);
+          registry.fill(HIST("hSelPID"), 11.5);
         }
       }
 
       if (statusPidLambda && statusPidCascade && statusPidOmegac && statusInvMassLambda && statusInvMassCascade && statusInvMassOmegac && resultSelections) {
-        hxVertexOmegac->Fill(candidate.xDecayVtxOmegac());
         hInvMassOmegac->Fill(invMassOmegac);
-        hCTauOmegac->Fill(candidate.ctauOmegac());
-        hCTauXic->Fill(candidate.ctauXic());
 
         if (candidate.collisionId() != collId) {
           hNEventsSaved->Fill(0.5);

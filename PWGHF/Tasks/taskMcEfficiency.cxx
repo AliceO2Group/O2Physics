@@ -19,6 +19,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -372,10 +373,13 @@ struct HfTaskMcEfficiency {
           /// check if we have D0(bar) → π± K∓
           continue;
         }
-        hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, pdgCode, 1.0, true);
+
+        int origin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle);
+
+        hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, pdgCode, 1.0, true, origin);
 
         if (std::abs(mcParticle.y()) < 0.5) {
-          hCandidates->Fill(kHFStepMcInRapidity, mcParticle.pt(), mass, pdgCode, 1.0, true);
+          hCandidates->Fill(kHFStepMcInRapidity, mcParticle.pt(), mass, pdgCode, 1.0, true, origin);
         }
 
         if (mcParticle.daughtersIds().size() != 2) {
@@ -398,13 +402,13 @@ struct HfTaskMcEfficiency {
         }
 
         if (inAcceptance) {
-          hCandidates->Fill(kHFStepAcceptance, mcParticle.pt(), mass, pdgCode, 1.0, true);
+          hCandidates->Fill(kHFStepAcceptance, mcParticle.pt(), mass, pdgCode, 1.0, true, origin);
         }
 
         if (tracked[prong0Id] && tracked[prong1Id]) {
-          hCandidates->Fill(kHFStepTrackable, mcParticle.pt(), mass, pdgCode, 1.0, true);
+          hCandidates->Fill(kHFStepTrackable, mcParticle.pt(), mass, pdgCode, 1.0, true, origin);
           if (inAcceptance) {
-            hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, pdgCode, 1.0, true);
+            hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, pdgCode, 1.0, true, origin);
           } else {
             LOGP(debug, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
             for (const auto& daughter : daughters) {
@@ -427,7 +431,7 @@ struct HfTaskMcEfficiency {
 
         // with track cuts (see checkTrack)
         if (selected[prong0Id] && selected[prong1Id]) {
-          hCandidates->Fill(kHFStepTrackableCuts, mcParticle.pt(), mass, pdgCode, 1.0, true);
+          hCandidates->Fill(kHFStepTrackableCuts, mcParticle.pt(), mass, pdgCode, 1.0, true, origin);
           if (!inAcceptance) {
             LOGP(info, "Candidate {} not in acceptance but tracked and selected.", mcParticle.globalIndex());
             for (const auto& daughter : daughters) {

@@ -163,18 +163,37 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry)
 
 /*****************************************************************/
 
-bool TrackSmearer::smearTrack(O2Track& o2track, int pid, float nch)
+bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
 {
 
   auto pt = o2track.getPt();
-  if (abs(pid) == 1000020030) {
+  if (abs(pdg) == 1000020030) {
     pt *= 2.f;
   }
   auto eta = o2track.getEta();
-  auto lutEntry = getLUTEntry(pid, nch, 0., eta, pt);
+  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt);
   if (!lutEntry || !lutEntry->valid)
     return false;
   return smearTrack(o2track, lutEntry);
+}
+
+/*****************************************************************/
+// relative uncertainty on pt
+double TrackSmearer::getPtRes(int pdg, float nch, float eta, float pt)
+{
+  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt);
+  auto val = sqrt(lutEntry->covm[14]) * lutEntry->pt;
+  return val;
+}
+/*****************************************************************/
+// relative uncertainty on eta
+double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
+{
+  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt);
+  auto sigmatgl = sqrt(lutEntry->covm[9]);           // sigmatgl2
+  auto etaRes = 1 / (sqrt(1 + sigmatgl * sigmatgl)); // propagate tgl to eta uncertainty
+  etaRes /= lutEntry->eta;                           // relative uncertainty
+  return etaRes;
 }
 
 /*****************************************************************/

@@ -188,7 +188,7 @@ struct lambdakzeroAnalysis {
             // Lambda
             if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { // previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
               registry.fill(HIST("V0loopFiltersCounts"), 5.5);
-              registry.fill(HIST("h3dMassLambda"), 0., v0.pt(), v0.mLambda());            // collision.centV0M() instead of 0. once available
+              registry.fill(HIST("h3dMassLambda"), 0., v0.pt(), v0.mLambda()); // collision.centV0M() instead of 0. once available
               registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
               if (saveDcaHist == 1) {
                 registry.fill(HIST("h3dMassLambdaDca"), v0.dcaV0daughters(), v0.pt(), v0.mLambda());
@@ -230,7 +230,7 @@ struct lambdakzeroAnalysis {
   void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, MyTracks const& tracks)
   {
     registry.fill(HIST("hEventSelection"), 0.5);
-    if (!collision.alias()[kINT7]) {
+    if (!collision.alias_bit(kINT7)) {
       return;
     }
     if (event_sel8_selection && !collision.sel7()) {

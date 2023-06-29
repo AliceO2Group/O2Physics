@@ -14,7 +14,7 @@
 * @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
-/ALICE3 @alibuild @njacazio @ginnocen @vkucera
+/ALICE3 @alibuild @njacazio @ginnocen @vkucera @hscheid
 /DPG @alibuild @chiarazampolli @noferini
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
 /DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio
@@ -32,7 +32,7 @@
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern
 /PWGHF @alibuild @ginnocen @vkucera @fcolamar
 /PWGHF/D2H @alibuild @ginnocen @vkucera @fcolamar @fcatalan92 @lvermunt
-/PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @mmazzilli
+/PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @mmazzilli @deepathoms
 /PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @nzardosh @rvertesi
 /PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @NicoleBastid @mvolkl
 /PWGLF @alibuild @lramona @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio @ChiaraDeMartin95 @skundu692
