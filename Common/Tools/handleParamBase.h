@@ -75,9 +75,10 @@ void setStandardOpt(bpo::options_description& options)
 
 template <typename T>
 T* retrieveFromCCDB(const std::string path,
-                    const long timestamp)
+                    const long timestamp,
+                    std::map<std::string, std::string> metadata)
 {
-  std::map<std::string, std::string> metadata, headers;
+  std::map<std::string, std::string> headers;
   LOG(info) << "Object " << path << " for timestamp " << timestamp << " -> " << timeStampToHReadble(timestamp);
   headers = api.retrieveHeaders(path, metadata, timestamp);
   LOG(info) << headers.size() << " HEADERS:";
@@ -90,7 +91,19 @@ T* retrieveFromCCDB(const std::string path,
     LOG(fatal) << "Could not get from CCDB for path " << path << " and timestamp " << timestamp << " -> " << timeStampToHReadble(timestamp);
   }
   return obj;
+
 }
+
+template <typename T>
+T* retrieveFromCCDB(const std::string path,
+                    const long timestamp)
+{
+  std::map<std::string, std::string> metadata;
+  return retrieveFromCCDB<T>(path,timestamp,metadata);
+  
+}
+
+
 
 template <typename T>
 void storeOnCCDB(const std::string& path,
