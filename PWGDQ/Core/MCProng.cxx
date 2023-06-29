@@ -61,7 +61,7 @@ MCProng::MCProng(int n, const std::vector<int> pdgs, const std::vector<bool> che
                                                                                                                         fExcludeSource(excludeSource),
                                                                                                                         fUseANDonSourceBitMap(useANDonSourceBitMap),
                                                                                                                         fPDGInHistory(checkIfPDGInHistory),
-                                                                                                                        fCheckGenerationsInTime(checkGenerationsInTime){}
+                                                                                                                        fCheckGenerationsInTime(checkGenerationsInTime) {}
 
 //________________________________________________________________________________________________________________
 void MCProng::SetPDGcode(int generation, int code, bool checkBothCharges /*= false*/, bool exclude /*= false*/)

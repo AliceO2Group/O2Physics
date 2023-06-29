@@ -183,7 +183,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
         nIncludedPDG++;
       int ith = 0;
       while (currentMCParticle.has_mothers()) {
-        auto mother = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
+        auto mother = currentMCParticle.template mothers_first_as<P>();
         if (!fProngs[i].fExcludePDG[k] && fProngs[i].TestPDG(k, mother.pdgCode())) {
           pdgInHistory.emplace_back(true);
           break;
