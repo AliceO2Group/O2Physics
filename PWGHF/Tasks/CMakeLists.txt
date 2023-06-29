@@ -11,20 +11,20 @@
 
 o2physics_add_dpl_workflow(task-lc-centrality
                     SOURCES taskLcCentrality.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-mc-efficiency
                     SOURCES taskMcEfficiency.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-mc-validation
                     SOURCES taskMcValidation.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-sel-optimisation
                     SOURCES taskSelOptimisation.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

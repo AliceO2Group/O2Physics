@@ -17,8 +17,6 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>, GSI Darmstadt
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"

@@ -15,8 +15,6 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Cagliari University
 
-#include <iostream>
-
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 

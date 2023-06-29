@@ -15,7 +15,7 @@
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
 ///         Paul Buehler, <paul.buehler@oeaw.ac.at>, Vienna
 ///
-/// based on taskD0.cxx, taskLc.cxx
+/// \note based on taskD0.cxx, taskLc.cxx
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"

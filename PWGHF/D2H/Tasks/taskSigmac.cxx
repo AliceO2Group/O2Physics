@@ -16,6 +16,7 @@
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
 #include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
