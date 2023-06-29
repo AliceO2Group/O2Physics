@@ -634,7 +634,7 @@ struct CorrelationTask {
   PROCESS_SWITCH(CorrelationTask, processMCSameDerived, "Process MC same event on derived data", false);
 
   using BinningTypeMCDerived = ColumnBinningPolicy<aod::mccollision::PosZ, aod::cfmccollision::Multiplicity>;
-  Preslice<aod::CFCollisions> collisionPerMCCollision = aod::cfcollision::cfMcCollisionId;
+  PresliceUnsorted<aod::CFCollisions> collisionPerMCCollision = aod::cfcollision::cfMcCollisionId;
   void processMCMixedDerived(soa::Filtered<aod::CFMcCollisions>& mcCollisions, soa::Filtered<aod::CFMcParticles> const& mcParticles, soa::Filtered<aod::CFCollisions> const& collisions)
   {
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
