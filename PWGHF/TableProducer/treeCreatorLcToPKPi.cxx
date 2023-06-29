@@ -32,6 +32,7 @@ namespace o2::aod
 {
 namespace full
 {
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);
@@ -86,6 +87,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
+                  full::CollisionId,
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -161,6 +163,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
                   full::CandidateId);
 
 DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
+                  full::CollisionId,
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -204,6 +207,7 @@ struct HfTreeCreatorLcToPKPi {
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto& collision : collisions) {
       rowCandidateFullEvents(
+        collision.globalIndex(),
         collision.bcId(),
         collision.numContrib(),
         collision.posX(),
@@ -228,6 +232,7 @@ struct HfTreeCreatorLcToPKPi {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
+            candidate.collisionId(),
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
             candidate.posX(),
@@ -335,6 +340,7 @@ struct HfTreeCreatorLcToPKPi {
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto& collision : collisions) {
       rowCandidateFullEvents(
+        collision.globalIndex(),
         collision.bcId(),
         collision.numContrib(),
         collision.posX(),
@@ -359,6 +365,7 @@ struct HfTreeCreatorLcToPKPi {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
+            candidate.collisionId(),
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
             candidate.posX(),
