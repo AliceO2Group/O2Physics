@@ -85,15 +85,15 @@ class MCSignal : public TNamed
     return fProngs[0].fNGenerations;
   }
 
-  template <typename U, typename... T>
-  bool CheckSignal(bool checkSources, const U& mcStack, const T&... args)
+  template <typename... T>
+  bool CheckSignal(bool checkSources, const T&... args)
   {
     // Make sure number of tracks provided is equal to the number of prongs
     if (sizeof...(args) != fNProngs) { // TODO: addd a proper error message
       return false;
     }
 
-    return CheckMC(0, checkSources, mcStack, args...);
+    return CheckMC(0, checkSources, args...);
   };
 
   void PrintConfig();
@@ -104,33 +104,32 @@ class MCSignal : public TNamed
   std::vector<short> fCommonAncestorIdxs;
   int fTempAncestorLabel;
 
-  template <typename U, typename T>
-  bool CheckProng(int i, bool checkSources, const U& mcStack, const T& track);
+  template <typename T>
+  bool CheckProng(int i, bool checkSources, const T& track);
 
-  template <typename U>
-  bool CheckMC(int, bool, U)
+  bool CheckMC(int, bool)
   {
     return true;
   };
 
-  template <typename U, typename T, typename... Ts>
-  bool CheckMC(int i, bool checkSources, const U& mcStack, const T& track, const Ts&... args)
+  template <typename T, typename... Ts>
+  bool CheckMC(int i, bool checkSources, const T& track, const Ts&... args)
   {
     // recursive call of CheckMC for all args
-    if (!CheckProng(i, checkSources, mcStack, track)) {
+    if (!CheckProng(i, checkSources, track)) {
       return false;
     } else {
-      return CheckMC(i + 1, checkSources, mcStack, args...);
+      return CheckMC(i + 1, checkSources, args...);
     }
   };
-
-  ClassDef(MCSignal, 1);
 };
 
-template <typename U, typename T>
-bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& track)
+template <typename T>
+bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
 {
+  using P = typename T::parent_t;
   auto currentMCParticle = track;
+
   // loop over the generations specified for this prong
   for (int j = 0; j < fProngs[i].fNGenerations; j++) {
     // check the PDG code
@@ -148,20 +147,15 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
       }
     }
 
-    // if checking back in time: look for mother
-    // else (checking in time): look for daughter
+    // Update the currentMCParticle by moving either back in time (towards mothers, grandmothers, etc)
+    //    or in time (towards daughters) depending on how this was configured in the MSignal
     if (!fProngs[i].fCheckGenerationsInTime) {
       // make sure that a mother exists in the stack before moving one generation further in history
       if (!currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
         return false;
       }
-      /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
-        LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
-      }*/
       if (currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
-        // currentMCParticle = currentMCParticle.template mothers_first_as<U>();
-        currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
-        // currentMCParticle = currentMCParticle.template mother0_as<U>();
+        currentMCParticle = currentMCParticle.template mothers_first_as<P>();
       }
     } else {
       // make sure that a daughter exists in the stack before moving one generation younger
@@ -169,11 +163,9 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
         return false;
       }
       if (currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
-        const auto& daughtersSlice = currentMCParticle.template daughters_as<U>();
+        const auto& daughtersSlice = currentMCParticle.template daughters_as<P>();
         for (auto& d : daughtersSlice) {
           if (fProngs[i].TestPDG(j + 1, d.pdgCode())) {
-            // currentMCParticle = d;
-            currentMCParticle = mcStack.iteratorAt(currentMCParticle.daughtersIds()[0]);
             break;
           }
         }
@@ -181,11 +173,12 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
     }
   }
 
+  // check the various specified sources
   if (checkSources) {
     currentMCParticle = track;
     for (int j = 0; j < fProngs[i].fNGenerations; j++) {
+      // check whether sources are required for this generation
       if (!fProngs[i].fSourceBits[j]) {
-        // no sources required for this generation
         continue;
       }
       // check each source
@@ -223,39 +216,26 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
         return false;
       }
 
-      // if checking back in time: look for mother
-      // else (checking in time): look for daughter
+      // Update the currentMCParticle by moving either back in time (towards mothers, grandmothers, etc)
+      //    or in time (towards daughters) depending on how this was configured in the MSignal
       if (!fProngs[i].fCheckGenerationsInTime) {
-        // move one generation back in history
         // make sure that a mother exists in the stack before moving one generation further in history
         if (!currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
           return false;
         }
         if (currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
-          /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
-            LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
-          }*/
-          // currentMCParticle = currentMCParticle.template mothers_first_as<U>();
-          currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
-          // currentMCParticle = currentMCParticle.template mother0_as<U>();
+          currentMCParticle = currentMCParticle.template mothers_first_as<P>();
         }
-        /*if (j < fProngs[i].fNGenerations - 1) {
-          currentMCParticle = mcStack.iteratorAt(currentMCParticle.mother0Id());
-          //currentMCParticle = currentMCParticle.template mother0_as<U>();
-        }*/
       } else {
-        // move one generation further in history
-        // pong history will be moved to the branch of the first daughter that matches the PDG requirement
+        // prong history will be moved to the branch of the first daughter that matches the PDG requirement
         // make sure that a daughter exists in the stack before moving one generation younger
         if (!currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
           return false;
         }
         if (currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
-          const auto& daughtersSlice = currentMCParticle.template daughters_as<U>();
+          const auto& daughtersSlice = currentMCParticle.template daughters_as<P>();
           for (auto& d : daughtersSlice) {
             if (fProngs[i].TestPDG(j + 1, d.pdgCode())) {
-              // currentMCParticle = d;
-              currentMCParticle = mcStack.iteratorAt(currentMCParticle.daughtersIds()[0]);
               break;
             }
           }
