@@ -54,8 +54,8 @@ DECLARE_SOA_COLUMN(Sign, sign, short);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,
-                           [](float px, float py, float pz, float mass) -> float {
-                             const auto energy = sqrt(px * px + py * py + pz * pz + mass * mass);
+                           [](float p, float mass) -> float {
+                             const auto energy = sqrt(p * p + mass * mass);
                              return 0.5f * log((energy + pz) / (energy - pz));
                            });
 // TPC
@@ -133,7 +133,7 @@ DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   full::ITSChi2NCl,
                   track::ITSClusterMap,
                   full::IsPVContributor,
-                  full::Rapidity<full::Px, full::Py, full::Pz>,
+                  full::Rapidity<full::P>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
