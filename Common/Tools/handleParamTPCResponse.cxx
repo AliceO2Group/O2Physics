@@ -31,8 +31,8 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "objname,n", bpo::value<std::string>()->default_value("Response"), "Object name to be stored in file")(
     "inobjname", bpo::value<std::string>()->default_value("Response"), "Object name to be read from file in 'push' mode")(
     "recopass", bpo::value<std::string>()->default_value(""), "Reconstruction pass name")(
-    "period", bpo::value<std::string>()->default_value(""), "Period name" )(
-    "jiraticket", bpo::value<std::string>()->default_value(""),"JIRA ticket")(
+    "period", bpo::value<std::string>()->default_value(""), "Period name")(
+    "jiraticket", bpo::value<std::string>()->default_value(""), "JIRA ticket")(
     "comment", bpo::value<std::string>()->default_value(""), "Comment for metadata")(
     "bb0", bpo::value<float>()->default_value(0.03209809958934784f), "Bethe-Bloch parameter 0")(
     "bb1", bpo::value<float>()->default_value(19.9768009185791f), "Bethe-Bloch parameter 1")(
@@ -213,31 +213,49 @@ int main(int argc, char* argv[])
 
       // Sanity check: Request confirmation if any of recoPass, period name, comment, jira not specified
       int missingPass=0, missingPeriod=0, missingComment=0, missingJira=0;
-      if (recopass.empty()) {missingPass = 1;}
-        else {metadata["RecoPassName"] = recopass;}
+      if (recopass.empty()) {
+        missingPass = 1;
+      } else {
+        metadata["RecoPassName"] = recopass;
+      }
 
-      if (periodname.empty()) missingPeriod = 1;
-        else {metadata["LPMProductionTag"] = periodname;}
+      if (periodname.empty()) {
+        missingPeriod = 1;
+      } else {
+        metadata["LPMProductionTag"] = periodname;
+      }
 
-      if (comment.empty()) missingComment = 1;
-        else {metadata["Comment"] = comment;}
-      if (jiraticket.empty()) missingJira = 1;
-        else {metadata["JIRA"] = jiraticket;}
+      if (comment.empty()) {
+        missingComment = 1; 
+      } else {
+        metadata["Comment"] = comment;
+      }
+      if (jiraticket.empty()) {
+        missingJira = 1;
+      } else {
+        metadata["JIRA"] = jiraticket;
+      }
 
       if (missingPass || missingPeriod || missingComment || missingJira) {
         LOG(info) << "WARNING: Attempting to push an object with missing metadata elements:";
-        if (missingPass) LOG(info) << "\t- Pass name";
-        if (missingPeriod) LOG(info) << "\t- Period name";
-        if (missingComment) LOG(info) << "\t- Comment";
-        if (missingJira) LOG(info) << "\t- JIRA ticket";
+        if (missingPass)
+          LOG(info) << "\t- Pass name";
+        if (missingPeriod)
+          LOG(info) << "\t- Period name";
+        if (missingComment)
+          LOG(info) << "\t- Comment";
+        if (missingJira)
+          LOG(info) << "\t- JIRA ticket";
+        
+        //Request interactive confirmation to upload
         LOG(info) << "Continue with object upload anyway? (Y/n)";
         std::string confirm;
         cin >> confirm;
-        if (boost::iequals(confirm.substr(0,1),"y")) {
-           LOG(info) << "Continuing with object upload";
+        if (boost::iequals(confirm.substr(0, 1),"y")) {
+          LOG(info) << "Continuing with object upload";
         } else {
-           LOG(info) << "Aborting upload";
-           return 1;
+          LOG(info) << "Aborting upload";
+          return 1;
         }
       }
 

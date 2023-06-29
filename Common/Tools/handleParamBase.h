@@ -16,6 +16,11 @@
 /// \brief  Header file with utilities for handling PID parametrization on CCDB
 ///
 
+#ifndef COMMON_TOOLS_HANDLEPARAMBASE_H_
+#define COMMON_TOOLS_HANDLEPARAMBASE_H_
+
+#include <map>
+#include <string>
 #include "CCDB/CcdbApi.h"
 #include <boost/program_options.hpp>
 #include "Framework/Logger.h"
@@ -39,7 +44,7 @@ std::string timeStampToHReadble(time_t rawtime)
   struct tm* dt;
   char buffer[30];
   rawtime /= 1000;
-  dt = localtime(&rawtime);
+  dt = localtime_r(&rawtime);
   strftime(buffer, sizeof(buffer), "%H:%M %d-%m %Y", dt);
   return std::string(buffer);
 }
@@ -99,7 +104,7 @@ T* retrieveFromCCDB(const std::string path,
                     const long timestamp)
 {
   std::map<std::string, std::string> metadata;
-  return retrieveFromCCDB<T>(path,timestamp,metadata);
+  return retrieveFromCCDB<T>(path, timestamp, metadata);
 }
 
 template <typename T>
@@ -177,3 +182,5 @@ void setupTimestamps(long& timestamp,
     validityStop = 4108971600000;
   }
 }
+
+#endif
