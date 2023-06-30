@@ -18,10 +18,11 @@
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN, Warsaw University of Technology
 
 #include "CCDB/CcdbApi.h"
-#include "Common/Core/TrackSelectorPID.h"
-#include "Common/Core/trackUtilities.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+
+#include "Common/Core/TrackSelectorPID.h"
+#include "Common/Core/trackUtilities.h"
 #include "Tools/ML/model.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
