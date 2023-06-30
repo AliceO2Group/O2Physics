@@ -28,8 +28,6 @@
 
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
-#include <cmath>
-#include <iostream>
 
 using namespace std;
 using namespace o2;
