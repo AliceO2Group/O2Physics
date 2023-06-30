@@ -39,8 +39,10 @@ using namespace o2::framework::expressions;
 double massKa = TDatabasePDG::Instance()->GetParticle(321)->Mass();
 double massPr = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
 
-namespace o2::aod {
-namespace mycols {
+namespace o2::aod
+{
+namespace mycols
+{
 DECLARE_SOA_COLUMN(Mult, mult, int);
 DECLARE_SOA_COLUMN(Sp, sp, float);
 } // namespace mycols
@@ -52,9 +54,12 @@ struct myTable {
   Produces<aod::MyCols> rowMyCols;
 
   HistogramRegistry histos{
-      "histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+    "histos",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject};
 
-  void init(InitContext const &) {
+  void init(InitContext const&)
+  {
     const AxisSpec axSp(120, -0.1, 1.1, "s_{0}");
     const AxisSpec axMult(10, 0, 10, "Mult");
     const AxisSpec axCtr(1, 0, 1, "CTR");
@@ -63,14 +68,15 @@ struct myTable {
     histos.add("hSp", "Transverse Spherocity", kTH1F, {axSp});
   }
 
-  void process(aod::ResoCollision const &col, aod::ResoTracks const &tracks) {
+  void process(aod::ResoCollision const& col, aod::ResoTracks const& tracks)
+  {
     int size = tracks.size();
     float Sp = 1;
-    for (auto const &trk1 : tracks) {
+    for (auto const& trk1 : tracks) {
       float sum1 = 0;
       float phi1 = trk1.phi();
       int ctr = 0;
-      for (auto const &trk2 : tracks) {
+      for (auto const& trk2 : tracks) {
         ++ctr;
         if (trk1.index() == trk2.index())
           continue;
@@ -102,7 +108,9 @@ struct lambdaTask {
   Configurable<float> cDCAxy{"cDCAxy", 0.12, "DCA in xy plane."};
 
   HistogramRegistry histos{
-      "histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+    "histos",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> nBinsPt{"nBinsPt", 500, "N bins in pT histogram."};
   Configurable<int> nBinsMult{"nBinsMult", 100,
@@ -110,7 +118,8 @@ struct lambdaTask {
   Configurable<int> nBinsInvM{"nBinsInvM", 1600,
                               "N bins in InvMass histograms."};
 
-  void init(InitContext const &) {
+  void init(InitContext const&)
+  {
     // Define Axis.
     const AxisSpec axEv(1, 0, 1, "N_{Ev}");
     const AxisSpec axEta(200, -1, 1, "#eta");
@@ -190,9 +199,10 @@ struct lambdaTask {
   }
 
   template <bool isMix, typename trackType>
-  void fillHistos(int const &mult, float const &sp, trackType const &trkPr,
-                  trackType const &trkKa) {
-    for (auto const &[trk1, trk2] :
+  void fillHistos(int const& mult, float const& sp, trackType const& trkPr,
+                  trackType const& trkKa)
+  {
+    for (auto const& [trk1, trk2] :
          soa::combinations(soa::CombinationsFullIndexPolicy(trkPr, trkKa))) {
 
       if (trk1.index() == trk2.index())
@@ -340,29 +350,30 @@ struct lambdaTask {
 
   // Collision and Track Table.
   using myCollisions =
-      soa::Filtered<soa::Join<aod::ResoCollisions, aod::MyCols>>;
+    soa::Filtered<soa::Join<aod::ResoCollisions, aod::MyCols>>;
   using myTracks = soa::Filtered<aod::ResoTracks>;
 
   // Track Filters.
-  Filter fTracks = aod::resodaughter::pt > cMinPt &&aod::resodaughter::pt <
-                   cMaxPt &&nabs(aod::resodaughter::eta) < cEta;
+  Filter fTracks = aod::resodaughter::pt > cMinPt&& aod::resodaughter::pt <
+                   cMaxPt&& nabs(aod::resodaughter::eta) < cEta;
   Filter fDCA =
-      nabs(aod::track::dcaZ) < cDCAz && nabs(aod::track::dcaXY) < cDCAxy;
+    nabs(aod::track::dcaZ) < cDCAz && nabs(aod::track::dcaXY) < cDCAxy;
   Filter fNCLs = aod::resodaughter::tpcNClsCrossedRows >
                  static_cast<uint8_t>(70);
 
   // Collision Filters.
   Filter fCol = aod::mycols::mult > 2;
 
-  void processData(myCollisions::iterator const &collision,
-                   myTracks const &tracks) {
+  void processData(myCollisions::iterator const& collision,
+                   myTracks const& tracks)
+  {
     histos.fill(HIST("Events/hEv"), 0.5);
     histos.fill(HIST("Events/hMult"), collision.mult());
     histos.fill(HIST("Events/hSp"), collision.sp());
 
     fillHistos<false>(collision.mult(), collision.sp(), tracks, tracks);
 
-    for (auto const &track : tracks) {
+    for (auto const& track : tracks) {
       histos.fill(HIST("Tracks/hPt"), track.pt());
       histos.fill(HIST("Tracks/hEta"), track.eta());
     }
@@ -372,19 +383,20 @@ struct lambdaTask {
 
   SliceCache cache;
   vector<double> vZBins{
-      VARIABLE_WIDTH, -10., -8., -6., -4., -2., 2., 4., 6., 8., 10.};
+    VARIABLE_WIDTH, -10., -8., -6., -4., -2., 2., 4., 6., 8., 10.};
   vector<double> vSBins{VARIABLE_WIDTH, 0.2, 0.4, 0.6, 0.8, 1.0};
   using BinningType =
-      ColumnBinningPolicy<aod::ResoCollision::PosZ, aod::mycols::Sp>;
+    ColumnBinningPolicy<aod::ResoCollision::PosZ, aod::mycols::Sp>;
   BinningType binningOnPositions{{vZBins, vSBins}, true};
 
-  void processMix(myCollisions &collisions, myTracks const &tracks) {
+  void processMix(myCollisions& collisions, myTracks const& tracks)
+  {
 
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<myCollisions, myTracks, BinningType> pair{
-        binningOnPositions, 5, -1, collisions, tracksTuple, &cache};
+      binningOnPositions, 5, -1, collisions, tracksTuple, &cache};
 
-    for (auto &[c1, t1, c2, t2] : pair) {
+    for (auto& [c1, t1, c2, t2] : pair) {
       fillHistos<true>(c1.mult(), c1.sp(), t1, t2);
     }
   }
@@ -392,7 +404,8 @@ struct lambdaTask {
   PROCESS_SWITCH(lambdaTask, processMix, "Process Mixed Events", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<myTable>(cfgc),
                       adaptAnalysisTask<lambdaTask>(cfgc)};
 }
