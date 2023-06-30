@@ -164,10 +164,11 @@ struct HfTaskOmegacSt {
       {"hDeltaDecayLength", "#Delta decay length (gen);#Delta L (#mum)", {HistType::kTH1D, {{200, -250., 250.}}}},
       {"hDecayLengthScaled", "Decay length * M/p;L (#mum / #it{c})", {HistType::kTH1D, {{200, 0., 500.}}}},
       {"hDecayLengthScaledId", "Decay length * M/p (true #Omega_{c});L (#mum / #it{c})", {HistType::kTH1D, {{200, 0., 500.}}}},
-      {"hDecayLengthScaledGen", "Decay length * M/p (gen);L (#mum / #it{c})", {HistType::kTH1D, {{200, 0., 500.}}}},
+      {"hDecayLengthScaledGen", "Decay length * M/p (MC id);L (#mum / #it{c})", {HistType::kTH1D, {{200, 0., 500.}}}},
       {"hDecayLengthScaledMc", "Decay length * M/p (MC);L (#mum / #it{c})", {HistType::kTH1D, {{200, 0., 500.}}}},
       {"hMassOmegac", "inv. mass #Omega + #pi;inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.5, 3.}}}},
       {"hMassOmegacVsPt", "inv. mass #Omega + #pi;inv. mass (GeV/#it{c}^{2});p_{T} (GeV/#it{c})", {HistType::kTH2D, {{400, 1.5, 3.}, {10, 0., 10.}}}},
+      {"hMassOmegacId", "inv. mass #Omega + #pi (MC ID);inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.5, 3.}}}},
       {"hMassOmegacGen", "inv. mass #Omega + #pi (from MC);inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.5, 3.}}}},
       {"hMassVsPt", "DCA;Mass (GeV/#it{c}^2);p_{T} (GeV/#it{c})", {HistType::kTH2D, {{200, 0., 10.}, {200, 0., 10.}}}},
       {"hDeltaPtVsPt", "Delta pt;p_{T} (GeV/#it{c});#Delta p_{T} / p_{T}", {HistType::kTH2D, {{200, 0., 10.}, {200, -1., 1.}}}},
@@ -271,7 +272,7 @@ struct HfTaskOmegacSt {
 
       if ((std::abs(massOmega1 - RecoDecay::getMassPDG(kOmegaMinus)) < .1) ||
           (std::abs(massOmega2 - RecoDecay::getMassPDG(kOmegaMinus)) < .1)) {
-        LOGF(info, "found candidate in mass range");
+        LOGF(debug, "found candidate in mass range");
         if ((std::abs(bachelor.tpcNSigmaKa()) < 3.) &&
             (((std::abs(v0TrackPos.tpcNSigmaPr()) < 3.) && (std::abs(v0TrackNeg.tpcNSigmaPi()) < 3.)) ||
              ((std::abs(v0TrackPos.tpcNSigmaPi()) < 3.) && (std::abs(v0TrackNeg.tpcNSigmaPr()) < 3.)))) {
@@ -402,8 +403,7 @@ struct HfTaskOmegacSt {
                 trackParCovTrk.getPxPyPzGlo(momenta[0]);
                 trackParCovPion.getPxPyPzGlo(momenta[1]);
                 registry.fill(HIST("hDeltaPtVsPt"), mcpart.pt(), (trackParCovPion.getPt() - mcpart.pt()) / mcpart.pt());
-                // registry.fill(HIST("hMassOmegac"), RecoDecay::m(momenta, masses));
-                // registry.fill(HIST("hMassOmegacVsPt"), RecoDecay::m(momenta, masses), RecoDecay::pt(momenta[0], momenta[1]));
+                registry.fill(HIST("hMassOmegacId"), RecoDecay::m(momenta, masses));
 
                 if (df2.process(trackParCovTrk, trackParCovPion)) {
                   const auto& secondaryVertex = df2.getPCACandidate();
