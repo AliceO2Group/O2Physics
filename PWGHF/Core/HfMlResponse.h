@@ -17,79 +17,78 @@
 #ifndef PWGHF_CORE_HFMLRESPONSE_H_
 #define PWGHF_CORE_HFMLRESPONSE_H_
 
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
-#include <vector>
-#include <string>
 #include <map>
-
-#include "Tools/ML/model.h"
-
-#include "Framework/Array2D.h"
-#include "PWGHF/Core/SelectorCuts.h"
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+#include <string>
+#include <vector>
 
 #include "CCDB/CcdbApi.h"
+#include "Framework/Array2D.h"
+#include "Tools/ML/model.h"
+
+#include "PWGHF/Core/SelectorCuts.h"
 
 namespace o2::analysis
 {
 
 enum PIDStatus : uint8_t {
-  TPCAndTOF = 0,
-  TPCOnly,
-  TOFOnly
+  TpcAndTof = 0,
+  TpcOnly,
+  TofOnly
 };
 
-template <typename T1>
 /// Tag track PID status (TPC and TOF, only TPC, only TOF)
 /// \param track is the track
 /// \return tag of PID status of the track
+template <typename T1>
 uint8_t tagPID(const T1& track)
 {
   uint8_t tag{0};
   if (track.hasTPC() && track.hasTOF()) {
-    SETBIT(tag, PIDStatus::TPCAndTOF);
+    SETBIT(tag, PIDStatus::TpcAndTof);
   } else if (track.hasTPC() && !track.hasTOF()) {
-    SETBIT(tag, PIDStatus::TPCOnly);
+    SETBIT(tag, PIDStatus::TpcOnly);
   } else {
-    SETBIT(tag, PIDStatus::TOFOnly);
+    SETBIT(tag, PIDStatus::TofOnly);
   }
   return tag;
 }
 
 /// Combine TPC and TOF nSigma
-/// \param nSigTPC is the number of sigmas for TPC
-/// \param nSigTOF is the number of sigmas for TOF
+/// \param nSigTpc is the number of sigmas for TPC
+/// \param nSigTof is the number of sigmas for TOF
 /// \param tagPID is the tag on PID status of the track
 /// \return combined nSigma value
 template <typename T1, typename T2>
-T1 getCombinedNSigma(const T1& nSigTPC, const T1& nSigTOF, const T2& tagPID)
+T1 getCombinedNSigma(const T1& nSigTpc, const T1& nSigTof, const T2& tagPID)
 {
-  if (TESTBIT(tagPID, PIDStatus::TPCAndTOF)) {
-    return std::sqrt((nSigTPC * nSigTPC + nSigTOF * nSigTOF) / 2);
+  if (TESTBIT(tagPID, PIDStatus::TpcAndTof)) {
+    return std::sqrt((nSigTpc * nSigTpc + nSigTof * nSigTof) / 2);
   }
-  if (TESTBIT(tagPID, PIDStatus::TPCOnly)) {
-    return std::abs(nSigTPC);
+  if (TESTBIT(tagPID, PIDStatus::TpcOnly)) {
+    return std::abs(nSigTpc);
   }
 
-  return std::abs(nSigTOF); // if (TESTBIT(tagPID, PIDStatus::TOFOnly))
+  return std::abs(nSigTof); // if (TESTBIT(tagPID, PIDStatus::TofOnly))
 }
 
 template <typename T = float>
-class HFMLResponse
+class HfMlResponse
 {
  public:
   /// Default constructor
-  HFMLResponse() = default;
+  HfMlResponse() = default;
   /// Default destructor
-  virtual ~HFMLResponse() = default;
+  ~HfMlResponse() = default;
 
   /// Configure class instance (import configurables)
   /// \param binsLimits is a vector containing bins limits
   /// \param cuts is a LabeledArray containing selections per bin
   /// \param cutDir is a vector telling whether to reject score values greater or smaller than the threshold
   /// \param nClasses is the number of classes for each model
-  /// \param paths is a vector of onnx model paths
-  void config(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir,
-              const uint8_t& nClasses, const std::vector<std::string>& paths)
+  /// \param paths is a vector of onnx model paths (set empty if ccdb access foreseen)
+  void configure(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir,
+                 const uint8_t& nClasses, const std::vector<std::string>& paths)
   {
     mBinsLimits = binsLimits;
     mCuts = cuts;
@@ -97,24 +96,11 @@ class HFMLResponse
     mNClasses = nClasses;
     mNModels = binsLimits.size() - 1;
     mModels = std::vector<o2::ml::OnnxModel>(mNModels);
-    mPaths = paths;
-  }
-
-  /// Configure class instance (import configurables) when accessing model via CCDB
-  /// \param binsLimits is a vector containing bins limits
-  /// \param cuts is a LabeledArray containing selections per bin
-  /// \param cutDir is a vector telling whether to reject score values greater or smaller than the threshold
-  /// \param nClasses is the number of classes for each model
-  void config(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir,
-              const uint8_t& nClasses)
-  {
-    mBinsLimits = binsLimits;
-    mCuts = cuts;
-    mCutDir = cutDir;
-    mNClasses = nClasses;
-    mNModels = binsLimits.size() - 1;
-    mModels = std::vector<o2::ml::OnnxModel>(mNModels);
-    mPaths = std::vector<std::string>(mNModels);
+    if (paths.empty()) {
+      mPaths = std::vector<std::string>(mNModels);
+    } else {
+      mPaths = paths;
+    }
   }
 
   /// Set models paths to CCDB
@@ -157,8 +143,7 @@ class HFMLResponse
   std::vector<T> getModelOutput(T1& input, const T2& nModel)
   {
     T* outputPtr = mModels[nModel].evalModel(input);
-    std::vector<T> output(outputPtr, outputPtr + mNClasses);
-    return output;
+    return std::vector<T>{outputPtr, outputPtr + mNClasses};
   }
 
   /// ML selections
@@ -166,7 +151,7 @@ class HFMLResponse
   /// \param pt is the candidate transverse momentum
   /// \return boolean telling if model predictions pass the cuts
   template <typename T1, typename T2>
-  bool isSelectedML(T1& input, const T2& pt)
+  bool isSelectedMl(T1& input, const T2& pt)
   {
     auto nModel = o2::analysis::findBin(&mBinsLimits, pt);
     auto output = getModelOutput(input, nModel);
@@ -176,7 +161,8 @@ class HFMLResponse
       if (dir != hf_cuts_ml::CutDirection::CutNot) {
         if (dir == hf_cuts_ml::CutDirection::CutGreater && outputValue > mCuts.get(nModel, iClass)) {
           return false;
-        } else if (dir == hf_cuts_ml::CutDirection::CutSmaller && outputValue < mCuts.get(nModel, iClass)) {
+        }
+        if (dir == hf_cuts_ml::CutDirection::CutSmaller && outputValue < mCuts.get(nModel, iClass)) {
           return false;
         }
       }
@@ -191,7 +177,7 @@ class HFMLResponse
   /// \param output is a container to be filled with model output
   /// \return boolean telling if model predictions pass the cuts
   template <typename T1, typename T2>
-  bool isSelectedML(T1& input, const T2& pt, std::vector<T>& output)
+  bool isSelectedMl(T1& input, const T2& pt, std::vector<T>& output)
   {
     auto nModel = o2::analysis::findBin(&mBinsLimits, pt);
     output = getModelOutput(input, nModel);
@@ -201,7 +187,8 @@ class HFMLResponse
       if (dir != hf_cuts_ml::CutDirection::CutNot) {
         if (dir == hf_cuts_ml::CutDirection::CutGreater && outputValue > mCuts.get(nModel, iClass)) {
           return false;
-        } else if (dir == hf_cuts_ml::CutDirection::CutSmaller && outputValue < mCuts.get(nModel, iClass)) {
+        }
+        if (dir == hf_cuts_ml::CutDirection::CutSmaller && outputValue < mCuts.get(nModel, iClass)) {
           return false;
         }
       }

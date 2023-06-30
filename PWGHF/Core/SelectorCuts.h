@@ -141,7 +141,7 @@ static constexpr int nCutScores = 3;
 constexpr double binsPt[nBinsPt + 1] = {
   0.,
   1000};
-auto binsPt_v = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the ML model paths, one model per pT bin
 static const std::vector<std::string> modelPaths = {
@@ -149,7 +149,7 @@ static const std::vector<std::string> modelPaths = {
 
 // default values for the cut directions
 constexpr int cutDir[nCutScores] = {CutGreater, CutSmaller, CutSmaller};
-auto cutDir_v = std::vector<int>{cutDir, cutDir + nCutScores};
+auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
 
 // default values for the cuts
 constexpr double cuts[nBinsPt][nCutScores] = {{0.5, 0.5, 0.5}};

@@ -17,8 +17,8 @@
 
 #include <vector>
 
-#include "Common/Core/TrackSelectorPID.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -30,7 +30,7 @@ enum SelectionStep {
   RecoSkims = 0,
   RecoTopol,
   RecoPID,
-  RecoML,
+  RecoMl,
   NSelectionSteps
 };
 
