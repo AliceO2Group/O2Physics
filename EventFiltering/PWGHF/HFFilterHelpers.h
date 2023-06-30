@@ -901,27 +901,27 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
   // V0 cosp
   if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < 0.95) {
     return false;
-  };
+  }
 
   // cascade cosp
   if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < 0.95) {
     return false;
-  };
+  }
 
   // Xi bachelor min pT
   if (dauTracks[0].pt() < minPtXiBachelor) {
     return false;
-  };
+  }
 
   // cascade mass
   if (std::fabs(casc.mXi() - massXi) < deltaMassXi) {
     return false;
-  };
+  }
 
   // V0 mass
   if (std::fabs(casc.mLambda() - massLambda) < deltaMassLambda) {
     return false;
-  };
+  }
 
   // PID
   float nSigmaPrTpc[3] = {-999., dauTracks[1].tpcNSigmaPr(), dauTracks[2].tpcNSigmaPr()};
