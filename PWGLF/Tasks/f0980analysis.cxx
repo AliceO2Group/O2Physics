@@ -106,8 +106,6 @@ struct f0980analysis {
       if (!SelPion(trk1) || !SelPion(trk2))
         continue;
 
-      LOGF(debug, "Accepted");
-
       Pion1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
       Pion2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
       Reco = Pion1 + Pion2;
@@ -115,7 +113,6 @@ struct f0980analysis {
       if (Reco.Rapidity() > cfgMaxRap || Reco.Rapidity() < cfgMinRap)
         continue;
 
-      LOGF(debug, "Rap Accepted");
       if (trk1.sign() * trk2.sign() < 0) {
         histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(), collision.multV0M());
       } else if (trk1.sign() > 0 && trk2.sign() > 0) {
