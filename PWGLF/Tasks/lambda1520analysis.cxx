@@ -212,25 +212,18 @@ struct lambda1520analysis {
       // For Proton candidate:
       if (IsptIndependentProtonCut) {
         // to apply pT-independent PID cuts
-        if (std::abs(trk1NSigmaPrTPC) > cMaxTPCnSigmaProton)
-          isTrk1Selected = false;
         if (isTrk1hasTOF) {
           trk1NSigmaPrTOF = trk1.tofNSigmaPr();
           if (std::abs(trk1NSigmaPrTOF) > cMaxTOFnSigmaProton)
             isTrk1Selected = false;
           if (std::abs(trk1NSigmaPrTPC) > cMaxTPCnSigmaProtonVETO)
             isTrk1Selected = false;
+        } else {
+          if (std::abs(trk1NSigmaPrTPC) > cMaxTPCnSigmaProton)
+            isTrk1Selected = false;
         }
       } else {
         // to apply pT-dependent PID cuts
-        if (lengthOfprotonTPCPIDpTintv > 0) {
-          for (int i = 0; i < lengthOfprotonTPCPIDpTintv; i++) {
-            if (trk1ptPr < vProtonTPCPIDpTintv[i]) {
-              if (std::abs(trk1NSigmaPrTPC) > vProtonTPCPIDcuts[i])
-                isTrk1Selected = false;
-            }
-          }
-        }
         if (isTrk1hasTOF) {
           trk1NSigmaPrTOF = trk1.tofNSigmaPr();
           if (lengthOfprotonTPCPIDpTintv > 0) {
@@ -243,31 +236,33 @@ struct lambda1520analysis {
               }
             }
           }
+        } else {
+          if (lengthOfprotonTPCPIDpTintv > 0) {
+            for (int i = 0; i < lengthOfprotonTPCPIDpTintv; i++) {
+              if (trk1ptPr < vProtonTPCPIDpTintv[i]) {
+                if (std::abs(trk1NSigmaPrTPC) > vProtonTPCPIDcuts[i])
+                  isTrk1Selected = false;
+              }
+            }
+          }
         }
       }
 
       // For Kaon candidate:
       // to apply pT-independent PID cuts
       if (IsptIndependentKaonCut) {
-        if (std::abs(trk2NSigmaKaTPC) > cMaxTPCnSigmaKaon)
-          isTrk2Selected = false;
         if (isTrk2hasTOF) {
           trk2NSigmaKaTOF = trk2.tofNSigmaKa();
           if (std::abs(trk2NSigmaKaTOF) > cMaxTOFnSigmaKaon)
             isTrk2Selected = false;
           if (std::abs(trk2NSigmaKaTPC) > cMaxTPCnSigmaKaonVETO)
             isTrk2Selected = false;
+        } else {
+          if (std::abs(trk2NSigmaKaTPC) > cMaxTPCnSigmaKaon)
+            isTrk2Selected = false;
         }
       } else {
         // to apply pT-dependent PID cuts
-        if (lengthOfkaonTPCPIDpTintv > 0) {
-          for (int i = 0; i < lengthOfkaonTPCPIDpTintv; i++) {
-            if (trk2ptKa < vKaonTPCPIDpTintv[i]) {
-              if (std::abs(trk2NSigmaKaTPC) > vKaonTPCPIDcuts[i])
-                isTrk2Selected = false;
-            }
-          }
-        }
         if (isTrk2hasTOF) {
           trk2NSigmaKaTOF = trk2.tofNSigmaKa();
           if (lengthOfkaonTPCPIDpTintv > 0) {
@@ -276,6 +271,15 @@ struct lambda1520analysis {
                 if (std::abs(trk2NSigmaKaTOF) > vKaonTOFPIDcuts[i])
                   isTrk2Selected = false;
                 if (std::abs(trk2NSigmaKaTPC) > cMaxTPCnSigmaKaonVETO)
+                  isTrk2Selected = false;
+              }
+            }
+          }
+        } else {
+          if (lengthOfkaonTPCPIDpTintv > 0) {
+            for (int i = 0; i < lengthOfkaonTPCPIDpTintv; i++) {
+              if (trk2ptKa < vKaonTPCPIDpTintv[i]) {
+                if (std::abs(trk2NSigmaKaTPC) > vKaonTPCPIDcuts[i])
                   isTrk2Selected = false;
               }
             }
