@@ -91,11 +91,19 @@ class V0PhotonCut : public TNamed
     if (!IsSelectedV0(v0, V0PhotonCuts::kRZLine)) {
       return false;
     }
-    if (mIsOnWwireIB && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB)) {
-      return false;
-    }
-    if (mIsOnWwireOB && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireOB)) {
-      return false;
+
+    if (mIsOnWwireIB && mIsOnWwireOB) {
+      if (!IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB) && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireOB)) {
+        return false;
+      }
+    } else if (mIsOnWwireIB) {
+      if (!IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB)) {
+        return false;
+      }
+    } else if (mIsOnWwireOB) {
+      if (!IsSelectedV0(v0, V0PhotonCuts::kOnWwireOB)) {
+        return false;
+      }
     }
 
     auto pos = v0.template posTrack_as<TLeg>();
@@ -182,7 +190,7 @@ class V0PhotonCut : public TNamed
   template <typename T>
   bool IsSelectedV0(T const& v0, const V0PhotonCuts& cut) const
   {
-    const float margin = 1.0; // cm
+    const float margin = 1.5; // cm
     switch (cut) {
       case V0PhotonCuts::kV0PtRange:
         return v0.pt() >= mMinV0Pt && v0.pt() <= mMaxV0Pt;
@@ -209,40 +217,37 @@ class V0PhotonCut : public TNamed
         return v0.recalculatedVtxR() > abs(v0.recalculatedVtxZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxV0Eta))) - mMaxMarginZ; // as long as z recalculation is not fixed use this
 
       case V0PhotonCuts::kOnWwireIB: {
-        const float rxy_min = 5.506;          // cm
-        const float rxy_max = 14.846;         // cm
-        const float z_min = -17.56;           // cm
-        const float z_max = +31.15;           // cm
+        const float rxy_min = 5.506; // cm
+        // const float rxy_max = 14.846;         // cm
+        const float z_min = -17.56; // cm
+        // const float z_max = +31.15;           // cm
         float x = abs(v0.recalculatedVtxX()); // cm, measured secondary vertex of gamma->ee
         float y = v0.recalculatedVtxY();      // cm, measured secondary vertex of gamma->ee
         float z = v0.recalculatedVtxZ();      // cm, measured secondary vertex of gamma->ee
         float rxy = sqrt(x * x + y * y);
-        if ((rxy < rxy_min || rxy_max < rxy) || (z < z_min || z_max < z)) {
+        float drz = abs(1.0 * rxy - (z - z_min) * TMath::Tan(10.86 * TMath::DegToRad()) - rxy_min) / sqrt(pow(1.0, 2) + pow(TMath::Tan(10.86 * TMath::DegToRad()), 2));
+        if (drz > margin) { // cut in RZ plane first
           return false;
         }
-        float x_exp = abs(rxy * TMath::Cos(-8.52 * TMath::DegToRad()));                // cm, expected position x of W wire
-        float y_exp = rxy * TMath::Sin(-8.52 * TMath::DegToRad());                     // cm, expected position y of W wire
-        float z_exp = z_min + (rxy - rxy_min) / TMath::Tan(10.86 * TMath::DegToRad()); // cm, expected position rxy of W wire as a function of z
-        if (abs(x - x_exp) > margin || abs(y - y_exp) > margin || abs(z - z_exp) > margin) {
+        float dxy = abs(1.0 * y - x * TMath::Tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(TMath::Tan(-8.52 * TMath::DegToRad()), 2));
+        if (dxy > margin) { // cut in XY plane first
           return false;
         }
         return true;
       }
       case V0PhotonCuts::kOnWwireOB: {
-        const float rxy_min = 30.8 - margin;  // cm
-        const float rxy_max = 30.8 + margin;  // cm
-        const float z_min = -47.0;            // cm
-        const float z_max = +47.0;            // cm
-        float x = abs(v0.recalculatedVtxX()); // cm, measured secondary vertex of gamma->ee
-        float y = v0.recalculatedVtxY();      // cm, measured secondary vertex of gamma->ee
-        float z = v0.recalculatedVtxZ();      // cm, measured secondary vertex of gamma->ee
-        float rxy = sqrt(x * x + y * y);
-        if ((rxy < rxy_min || rxy_max < rxy) || (z < z_min || z_max < z)) {
+        const float rxy_exp = 30.8;                                         // cm
+        const float x_exp = rxy_exp * TMath::Cos(-1.3 * TMath::DegToRad()); // cm, expected position x of W wire
+        const float y_exp = rxy_exp * TMath::Sin(-1.3 * TMath::DegToRad()); // cm, expected position y of W wire
+        const float z_min = -47.0;                                          // cm
+        const float z_max = +47.0;                                          // cm
+        float x = v0.recalculatedVtxX();                                    // cm, measured secondary vertex of gamma->ee
+        float y = v0.recalculatedVtxY();                                    // cm, measured secondary vertex of gamma->ee
+        float z = v0.recalculatedVtxZ();                                    // cm, measured secondary vertex of gamma->ee
+        if (z + margin < z_min || z_max < z - margin) {
           return false;
         }
-        float x_exp = abs(rxy * TMath::Cos(-1.3 * TMath::DegToRad())); // cm, expected position x of W wire
-        float y_exp = rxy * TMath::Sin(-1.3 * TMath::DegToRad());      // cm, expected position y of W wire
-        if (abs(x - x_exp) > margin || abs(y - y_exp) > margin) {
+        if (sqrt(pow(x - x_exp, 2) + pow(y - y_exp, 2)) > margin) {
           return false;
         }
         return true;
@@ -292,7 +297,7 @@ class V0PhotonCut : public TNamed
         if (15.f < abs(track.dcaXY()) && abs(track.dcaXY()) < 100.f) {
           return false;
         }
-        if (abs(abs(track.z()) - 44.f) < 2.f && 15.f < abs(track.dcaXY())) {
+        if (abs(abs(track.z()) - 43.f) < 3.f && 15.f < abs(track.dcaXY())) {
           return false;
         }
         return true;
