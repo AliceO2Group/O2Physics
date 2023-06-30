@@ -19,12 +19,13 @@
 #ifndef PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
 #define PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/PIDResponse.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 

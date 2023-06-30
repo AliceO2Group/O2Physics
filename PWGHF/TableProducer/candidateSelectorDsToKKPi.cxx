@@ -15,9 +15,10 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, Universita and INFN Torino
 /// \author Stefano Politano <stefano.politano@cern.ch>, Politecnico and INFN Torino
 
-#include "Common/Core/TrackSelectorPID.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+
+#include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"

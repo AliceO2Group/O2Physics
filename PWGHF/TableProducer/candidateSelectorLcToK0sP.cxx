@@ -16,9 +16,10 @@
 /// \author Chiara Zampolli <Chiara.Zampolli@cern.ch>, CERN
 ///         Daniel Samitz, <daniel.samitz@cern.ch>, Vienna
 
-#include "Common/Core/TrackSelectorPID.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+
+#include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"

@@ -14,9 +14,10 @@
 ///
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 
-#include "Common/DataModel/Centrality.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+
+#include "Common/DataModel/Centrality.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"

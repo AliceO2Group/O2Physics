@@ -13,10 +13,11 @@
 /// \brief Omegac → Xi Pi selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University & GSI
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectorPID.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"

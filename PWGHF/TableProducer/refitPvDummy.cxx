@@ -14,11 +14,12 @@
 ///
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN Padova, Italy
 
-#include "Common/Core/trackUtilities.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
+
+#include "Common/Core/trackUtilities.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
