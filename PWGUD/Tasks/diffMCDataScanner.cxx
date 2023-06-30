@@ -116,7 +116,7 @@ struct collisionsInfo {
     std::vector<float> const lims{0.0, 0.0, 0.0, 0.0, 0.0}; // amplitude thresholds: FV0A, FT0A, FT0C, FDDA, FDDC
     auto isDGcandidate = true;
     for (auto& bc : bcSlice) {
-      if (!udhelpers::cleanFIT(bc, lims)) {
+      if (!udhelpers::cleanFIT(bc, 4., lims)) {
         isDGcandidate = false;
         break;
       }
