@@ -15,10 +15,10 @@
 #ifndef PWGHF_CORE_SELECTORCUTS_H_
 #define PWGHF_CORE_SELECTORCUTS_H_
 
-#include <vector>
-#include <string>
-
-#include "Framework/Configurable.h"
+#include <algorithm> // std::upper_bound
+#include <iterator>  // std::distance
+#include <string>    // std::string
+#include <vector>    // std::vector
 
 namespace o2::analysis
 {
@@ -28,28 +28,28 @@ namespace pdg
 /// \note Follow kCamelCase naming convention
 /// \link https://root.cern/doc/master/TPDGCode_8h.html
 enum Code {
-  kD0 = 421,
-  kD0Bar = -421,
-  kDPlus = 411,
-  kDMinus = -411,
-  kDStar = 413,
-  kDS = 431,
-  kLambdaCPlus = 4122,
-  kXiCZero = 4132,
-  kXiCPlus = 4232,
-  kXiCCPlusPlus = 4422,
-  kLambdaB0 = 5122,
-  kJPsi = 443,
-  kChiC1 = 20443,
   kB0 = 511,
   kB0Bar = -511,
   kBPlus = 521,
   kBS = 531,
-  kX3872 = 9920443,
+  kD0 = 421,
+  kD0Bar = -421,
+  kDMinus = -411,
+  kDPlus = 411,
+  kDS = 431,
+  kDStar = 413,
+  kChiC1 = 20443,
+  kJPsi = 443,
+  kLambdaB0 = 5122,
+  kLambdaCPlus = 4122,
+  kOmegaC0 = 4332,
+  kPhi = 333,
   kSigmaC0 = 4112,
   kSigmaCPlusPlus = 4222,
-  kOmegaC0 = 4332,
-  kPhi = 333
+  kX3872 = 9920443,
+  kXiCCPlusPlus = 4422,
+  kXiCPlus = 4232,
+  kXiCZero = 4132
 };
 } // namespace pdg
 

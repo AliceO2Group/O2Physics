@@ -204,7 +204,7 @@ struct DptDptCorrelationsTask {
     {
       LOGF(info, "Stored NUA&NUE corrections for %d track ids", corrs.size());
       for (uint i = 0; i < corrs.size(); ++i) {
-        LOGF(info, "  Stored NUA&NUE corrections for track id %s %s", corrs[i] != nullptr ? "yes" : "no");
+        LOGF(info, "  Stored NUA&NUE corrections for track id %d %s", i, corrs[i] != nullptr ? "yes" : "no");
         fhNuaNue_vsZEtaPhiPt[i] = corrs[i];
       }
       ccdbstored = true;
@@ -214,7 +214,7 @@ struct DptDptCorrelationsTask {
     {
       LOGF(info, "Stored pT average for %d track ids", ptavgs.size());
       for (uint i = 0; i < ptavgs.size(); ++i) {
-        LOGF(info, "  Stored pT average for track id %s %s", ptavgs[i] != nullptr ? "yes" : "no");
+        LOGF(info, "  Stored pT average for track id %d %s", i, ptavgs[i] != nullptr ? "yes" : "no");
         fhPtAvg_vsEtaPhi[i] = ptavgs[i];
       }
       ccdbstored = true;

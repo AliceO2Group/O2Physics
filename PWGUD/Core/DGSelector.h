@@ -45,29 +45,22 @@ class DGSelector
 
     // check that there are no FIT signals in any of the compatible BCs
     // Double Gap (DG) condition
-    auto lims = diffCuts.FITAmpLimits();
-
     for (auto const& bc : bcRange) {
-      LOGF(debug, "Amplitudes FV0A %f FT0 %f / %f FDD %i / %i",
-           bc.has_foundFV0() ? udhelpers::FV0AmplitudeA(bc.foundFV0()) : -1.,
-           bc.has_foundFT0() ? udhelpers::FT0AmplitudeA(bc.foundFT0()) : -1.,
-           bc.has_foundFT0() ? udhelpers::FT0AmplitudeC(bc.foundFT0()) : -1.,
-           bc.has_foundFDD() ? udhelpers::FDDAmplitudeA(bc.foundFDD()) : -1,
-           bc.has_foundFDD() ? udhelpers::FDDAmplitudeC(bc.foundFDD()) : -1);
-      LOGF(debug, "  clean FV0A %i FT0 %i FDD %i", udhelpers::cleanFV0(bc, lims[0]), udhelpers::cleanFT0(bc, lims[1], lims[2]), udhelpers::cleanFDD(bc, lims[3], lims[4]));
-
-      if (!udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits())) {
+      if (!udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
         return 1;
       }
     }
 
-    // no activity in forward direction
+    // forward tracks
     LOGF(debug, "FwdTracks %i", fwdtracks.size());
-    for (auto& fwdtrack : fwdtracks) {
-      LOGF(debug, "  %i / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p());
-    }
-    if (fwdtracks.size() > 0) {
-      return 2;
+    if (!diffCuts.withFwdTracks()) {
+      // only consider tracks with MID (good timing)
+      for (auto& fwdtrack : fwdtracks) {
+        LOGF(info, "  %i / %f / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p(), fwdtrack.trackTimeRes());
+        if (fwdtrack.trackType() == 0 || fwdtrack.trackType() == 3) {
+          return 2;
+        }
+      }
     }
 
     // no global tracks which are not vtx tracks
@@ -155,7 +148,7 @@ class DGSelector
     // check that there are no FIT signals in bcRange
     // Double Gap (DG) condition
     for (auto const& bc : bcRange) {
-      if (!udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits())) {
+      if (!udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
         return 1;
       }
     }

@@ -249,15 +249,12 @@ struct skimmerGammaConversions {
     KFParticle gammaKF;
     gammaKF.SetConstructMethod(2);
     gammaKF.Construct(GammaDaughters, 2);
-    // gammaKF.SetNonlinearMassConstraint(2 * 0.0005111); //this is not useful.
+    gammaKF.SetNonlinearMassConstraint(kfMassConstrain);
 
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
     KFParticle KFPV(kfpVertex);
 
-    float xyz[3] = {
-      recalculatedVertex.recalculatedConversionPoint[0],
-      recalculatedVertex.recalculatedConversionPoint[1],
-      recalculatedVertex.recalculatedConversionPoint[2]};
+    float xyz[3] = {recalculatedVertex.recalculatedConversionPoint[0], recalculatedVertex.recalculatedConversionPoint[1], recalculatedVertex.recalculatedConversionPoint[2]};
 
     /// Transport the gamma to the recalculated decay vertex
     KFParticle gammaKF_DecayVtx = gammaKF;
@@ -269,9 +266,11 @@ struct skimmerGammaConversions {
     gammaKF_PV.SetProductionVertex(KFPV);
 
     float chi2kf = -1.f;
-    if (gammaKF.GetNDF() > 0) {
-      chi2kf = gammaKF.GetChi2() / gammaKF.GetNDF();
+    if (gammaKF_DecayVtx.GetNDF() > 0) {
+      chi2kf = gammaKF_DecayVtx.GetChi2() / gammaKF_DecayVtx.GetNDF();
     }
+
+    // LOGF(info, "mee = %f (DCAFitter) , %f (KF)", v0.mGamma(), gammaKF_DecayVtx.GetMass());
 
     // float pca_kf = kfp_pos.GetDistanceFromParticle(kfp_ele);
 
