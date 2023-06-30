@@ -231,13 +231,13 @@ struct UDQC {
     // 1. no FIT signal in bcSlice / collision
     if (doCleanFITBC) {
       for (auto const& bc : bcSlice) {
-        if (!udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits())) {
+        if (!udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
           isDGcandidate = false;
           break;
         }
       }
     } else {
-      if (!udhelpers::cleanFITCollision(collision, diffCuts.FITAmpLimits())) {
+      if (!udhelpers::cleanFITCollision(collision, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
         isDGcandidate = false;
       }
     }
@@ -432,7 +432,7 @@ struct UDQC {
 
     // check FT0 to be empty
     auto bc = collision.foundBC_as<BCs>();
-    if (udhelpers::cleanFT0(bc, 0., 0.)) {
+    if (udhelpers::cleanFT0(bc, diffCuts.maxFITtime(), 0., 0.)) {
       // only collisions with empty FT0 arrive here
       registry.get<TH1>(HIST("fpStat"))->Fill(2., 1.);
 
@@ -459,7 +459,7 @@ struct UDQC {
       ampFV0A = ampFT0A = ampFT0C = ampFDDA = ampFDDC = 0.;
       isDGcandidate = true;
       for (auto const& bc : bcSlice) {
-        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
+        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits());
 
         if (bc.has_foundFV0()) {
           ampFV0A += udhelpers::FV0AmplitudeA(bc.foundFV0());
@@ -487,7 +487,7 @@ struct UDQC {
         FITlims[n] = 0.;
         isDGcandidate = true;
         for (auto const& bc : bcSlice) {
-          isDGcandidate &= udhelpers::cleanFIT(bc, FITlims);
+          isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), FITlims);
         }
         constexpr int index = n.value;
         registry.fill(HIST(hcFIT1s[index]), NDtcoll, isDGcandidate * 1.);
@@ -513,7 +513,7 @@ struct UDQC {
       ampFV0A = ampFT0A = ampFT0C = ampFDDA = ampFDDC = 0.;
       isDGcandidate = true;
       for (auto const& bc : bcSlice) {
-        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
+        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits());
 
         if (bc.has_foundFV0()) {
           ampFV0A += udhelpers::FV0AmplitudeA(bc.foundFV0());
@@ -541,7 +541,7 @@ struct UDQC {
         FITlims[n] = 0.;
         isDGcandidate = true;
         for (auto const& bc : bcSlice) {
-          isDGcandidate &= udhelpers::cleanFIT(bc, FITlims);
+          isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), FITlims);
         }
         constexpr int index = n.value;
         registry.fill(HIST(hcFIT2s[index]), nMinBC, isDGcandidate * 1.);

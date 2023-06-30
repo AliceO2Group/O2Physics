@@ -32,7 +32,8 @@ class DGCutparHolder
                  float minEta = -1.0, float maxEta = 1.0,
                  float minIVM = 0.0, float maxIVM = 1000.,
                  float maxNSigmaTPC = 1000., float maxNSigmaTOF = 1000.,
-                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mWithFwdTracks{withFwdTracks}, mGlobalTracksOnly{globalTracksOnly}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mNetCharges{NetCharges}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mFITAmpLimits{FITAmpLimits}
+                 float maxFITtime = 4,
+                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mWithFwdTracks{withFwdTracks}, mGlobalTracksOnly{globalTracksOnly}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mNetCharges{NetCharges}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mMaxFITtime{maxFITtime}, mFITAmpLimits{FITAmpLimits}
   {
   }
 
@@ -51,6 +52,7 @@ class DGCutparHolder
   void SetIVMRange(float minIVM, float maxIVM);
   void SetMaxNSigmaTPC(float maxnSigma);
   void SetMaxNSigmaTOF(float maxnSigma);
+  void SetMaxFITtime(float maxFITtime);
   void SetFITAmpLimits(std::vector<float> FITAmpLimits);
 
   // getter
@@ -73,6 +75,7 @@ class DGCutparHolder
   float maxIVM() const;
   float maxNSigmaTPC() const;
   float maxNSigmaTOF() const;
+  float maxFITtime() const;
   std::vector<float> FITAmpLimits() const;
 
  private:
@@ -109,6 +112,9 @@ class DGCutparHolder
   // maximum nSigma for PID
   float mMaxNSigmaTPC; // maximum nSigma TPC
   float mMaxNSigmaTOF; // maximum nSigma TOF
+
+  // maximum FIT time
+  float mMaxFITtime;
 
   // lower limits for FIT signals
   std::vector<float> mFITAmpLimits;
