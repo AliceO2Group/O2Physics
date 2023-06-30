@@ -156,8 +156,7 @@ struct tpcPidFull {
         ccdb->setTimestamp(time);
         response.SetParameters(ccdb->getSpecific<o2::pid::tpc::Response>(path, time, metadata));
         response.PrintAll();
-      } 
-      
+      }
     }
 
     /// Neural network init for TPC PID
@@ -300,8 +299,8 @@ struct tpcPidFull {
         }
         response.SetParameters(ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata));
         response.PrintAll();
-        
       }
+
       // Check and fill enabled tables
       auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracks_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
         if (flag.value != 1) {

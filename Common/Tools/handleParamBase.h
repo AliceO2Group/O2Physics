@@ -182,4 +182,4 @@ void setupTimestamps(int64_t& timestamp,
   }
 }
 
-#endif  // COMMON_TOOLS_HANDLEPARAMBASE_H_
+#endif // COMMON_TOOLS_HANDLEPARAMBASE_H_
