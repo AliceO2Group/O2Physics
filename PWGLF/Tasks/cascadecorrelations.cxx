@@ -105,32 +105,32 @@ struct cascadeSelector {
           continue;
         }
         // Pion check:
-        if (TMath::Abs(negTrack.tpcNSigmaPi()) > tpcNsigmaPion && tpcNsigmaPion < 9.99) {
+        if (TMath::Abs(negTrack.tpcNSigmaPi()) > tpcNsigmaPion) {
           cascflags(0);
           continue;
         }
       } else {
         // Proton check:
-        if (TMath::Abs(negTrack.tpcNSigmaPr()) > tpcNsigmaProton && tpcNsigmaProton < 9.99) {
+        if (TMath::Abs(negTrack.tpcNSigmaPr()) > tpcNsigmaProton) {
           cascflags(0);
           continue;
         }
         // Pion check:
-        if (TMath::Abs(posTrack.tpcNSigmaPi()) > tpcNsigmaPion && tpcNsigmaPion < 9.99) {
+        if (TMath::Abs(posTrack.tpcNSigmaPi()) > tpcNsigmaPion) {
           cascflags(0);
           continue;
         }
       }
       // Bachelor check
-      if (TMath::Abs(bachTrack.tpcNSigmaPi()) < tpcNsigmaBachelor || tpcNsigmaBachelor >= 10) {
-        if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor || tpcNsigmaBachelor >= 10) {
+      if (TMath::Abs(bachTrack.tpcNSigmaPi()) < tpcNsigmaBachelor) {
+        if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor) {
           // TODO: ambiguous! ignore for now
           cascflags(0);
           continue;
         }
         cascflags(1);
         continue;
-      } else if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor || tpcNsigmaBachelor >=10) {
+      } else if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor) {
         cascflags(2);
         continue;
       }
@@ -186,7 +186,7 @@ struct cascadeCorrelations {
       auto v0data0 = lambda0.v0Data();
       auto v0data1 = lambda1.v0Data();
 
-      double dphi = std::fmod(c0.phi() - c1.phi() + 2.5 * PI, 2 * PI) - 0.5 * PI;
+      double dphi = RecoDecay::constrainAngle(c0.phi() - c1.phi(), -0.5 * PI);
       if (c0.sign() * c1.sign() < 0) { // opposite-sign
         registry.fill(HIST("hDeltaPhiOS"), dphi);
       } else { // same-sign
