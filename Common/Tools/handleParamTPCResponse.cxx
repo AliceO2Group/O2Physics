@@ -156,10 +156,9 @@ int main(int argc, char* argv[])
     LOG(info) << "Reading existing TPCPIDResponse object " << objname << " from " << inFilename << ":";
     tpc->PrintAll();
     return 0;
-  }
 
-  else if (optMode.compare("write") == 0 || optMode.compare("push") == 0) // Create new object to write to local file or push to CCDB
-  {
+  } else if (optMode.compare("write") == 0 || optMode.compare("push") == 0) { // Create new object to write to local file or push to CCDB
+
     if (!inFilename.empty()) { // Read from existing file to push to CCDB
       LOG(info) << "Reading from existing file to write to CCDB:";
       TFile fin(inFilename.data(), "READ");
@@ -167,11 +166,13 @@ int main(int argc, char* argv[])
         LOG(error) << "Input file " << inFilename << " could not be read";
         return 1;
       }
+
       tpc = fin.Get<Response>(inobjname.c_str());
       if (!tpc) {
         LOG(error) << "Object with name " << objname << " could not be found in file " << inFilename;
         return 1;
       }
+
       tpc->PrintAll();
     } else { // Create new object if file not specified
       LOG(info) << "Creating new TPCPIDResponse object with defined parameters:";
@@ -187,6 +188,7 @@ int main(int argc, char* argv[])
       tpc->SetUseDefaultResolutionParam(useDefaultParam);
       tpc->PrintAll();
     }
+
     if (optMode.compare("write") == 0) {
       if (outFilename.empty()) {
         LOG(error) << "'write' mode specified, but no output filename. Quitting";
@@ -266,9 +268,7 @@ int main(int argc, char* argv[])
 
       storeOnCCDB(pathCCDB + "/" + objname, metadata, validityStart, validityStop, tpc);
     }
-  }
-
-  else if (optMode.compare("pull") == 0) { // pull existing from CCDB; write out to file if requested
+  } else if (optMode.compare("pull") == 0) { // pull existing from CCDB; write out to file if requested
     LOG(info) << "Attempting to pull object from CCDB (" << urlCCDB << "): " << pathCCDB << "/" << objname << (recopass.empty() ? "" : "/recoPass=" + recopass);
     std::map<std::string, std::string> metadata;
     if (!recopass.empty()) {
@@ -295,9 +295,7 @@ int main(int argc, char* argv[])
       LOG(info) << "File successfully written";
     }
     return 0;
-  }
-
-  else {
+  } else {
     LOG(error) << "Invalid mode specified! (must be 'read', 'write', 'pull' or 'push')";
     return 1;
   }

@@ -32,9 +32,9 @@ bpo::variables_map arguments;             // Command line arguments
 o2::ccdb::CcdbApi api;                    // Global CCDB api
 unsigned int minRunNumber = 0;            // Starting run validity
 unsigned int maxRunNumber = minRunNumber; // Ending run validity
-int64_t ccdbTimestamp = 0;                   // Timestamp used for the retrieval
-int64_t validityStart = 0;                   // Initial validity for the object
-int64_t validityStop = 0;                    // End validity for the object
+int64_t ccdbTimestamp = 0;                // Timestamp used for the retrieval
+int64_t validityStart = 0;                // Initial validity for the object
+int64_t validityStop = 0;                 // End validity for the object
 
 std::string timeStampToHReadble(time_t rawtime)
 {
@@ -44,7 +44,7 @@ std::string timeStampToHReadble(time_t rawtime)
   struct tm* dt;
   char buffer[30];
   rawtime /= 1000;
-  dt = localtime_r(&rawtime);
+  localtime_r(&rawtime, dt);
   strftime(buffer, sizeof(buffer), "%H:%M %d-%m %Y", dt);
   return std::string(buffer);
 }
@@ -182,4 +182,4 @@ void setupTimestamps(int64_t& timestamp,
   }
 }
 
-#endif
+#endif  // COMMON_TOOLS_HANDLEPARAMBASE_H_
