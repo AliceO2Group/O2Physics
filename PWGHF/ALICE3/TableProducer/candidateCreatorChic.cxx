@@ -15,12 +15,13 @@
 ///
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Cagliari University
 
-#include "ALICE3/DataModel/ECAL.h"
-#include "Common/Core/trackUtilities.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
+
+#include "ALICE3/DataModel/ECAL.h"
+#include "Common/Core/trackUtilities.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"

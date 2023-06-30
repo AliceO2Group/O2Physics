@@ -18,10 +18,6 @@
 #include <THn.h>
 
 #include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/MathConstants.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -31,6 +27,11 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "CommonConstants/MathConstants.h"
 
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"

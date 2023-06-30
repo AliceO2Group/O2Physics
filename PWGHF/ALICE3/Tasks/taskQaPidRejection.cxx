@@ -20,14 +20,15 @@
 #include <TList.h>
 #include <TPDGCode.h>
 
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "ReconstructionDataFormats/DCA.h"
+
 #include "ALICE3/DataModel/MID.h"
 #include "ALICE3/DataModel/RICH.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
