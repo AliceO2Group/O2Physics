@@ -59,9 +59,17 @@ struct map_t {
   {
     float width = (max - min) / nbins;
     int bin;
-    bin = static_cast<int>((val - min) / width);
-    return val / width - bin;
+    float returnVal = 0.5f;
+    if (log) {
+      bin = static_cast<int>((log10(val) - min) / width);
+      returnVal = ((log10(val) - min) / width) - bin;
+    } else {
+      bin = static_cast<int>((val - min) / width);
+      returnVal = val / width - bin;
+    }
+    return returnVal;
   }
+
   int find(float val)
   {
     float width = (max - min) / nbins;

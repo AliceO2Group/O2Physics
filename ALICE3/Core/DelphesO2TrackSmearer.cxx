@@ -125,35 +125,41 @@ lutEntry_t*
   if (mInterpolateEfficiency) {
     if (fraction > 0.5) {
       if (mWhatEfficiency == 1) {
-        if (inch < mLUTHeader[ipdg]->nchmap.nbins) {
+        if (inch < mLUTHeader[ipdg]->nchmap.nbins - 1) {
           interpolatedEff = (1.5f - fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (-0.5f + fraction) * mLUTEntry[ipdg][inch + 1][irad][ieta][ipt]->eff;
         } else {
           interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
         }
       }
       if (mWhatEfficiency == 2) {
-        if (inch < mLUTHeader[ipdg]->nchmap.nbins) {
+        if (inch < mLUTHeader[ipdg]->nchmap.nbins - 1) {
           interpolatedEff = (1.5f - fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2 + (-0.5f + fraction) * mLUTEntry[ipdg][inch + 1][irad][ieta][ipt]->eff2;
         } else {
           interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
         }
       }
     } else {
+      float comparisonValue = mLUTHeader[ipdg]->nchmap.log ? log10(nch) : nch;
       if (mWhatEfficiency == 1) {
-        if (inch > 0) {
+        if (inch > 0 && comparisonValue < mLUTHeader[ipdg]->nchmap.max) {
           interpolatedEff = (0.5f + fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (0.5f - fraction) * mLUTEntry[ipdg][inch - 1][irad][ieta][ipt]->eff;
         } else {
           interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
         }
       }
       if (mWhatEfficiency == 2) {
-        if (inch > 0) {
+        if (inch > 0 && comparisonValue < mLUTHeader[ipdg]->nchmap.max) {
           interpolatedEff = (0.5f + fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2 + (0.5f - fraction) * mLUTEntry[ipdg][inch - 1][irad][ieta][ipt]->eff2;
         } else {
           interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
         }
       }
     }
+  } else {
+    if (mWhatEfficiency == 1)
+      interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
+    if (mWhatEfficiency == 2)
+      interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
   }
   return mLUTEntry[ipdg][inch][irad][ieta][ipt];
 } //;
