@@ -59,11 +59,6 @@ struct map_t {
   {
     float width = (max - min) / nbins;
     int bin;
-<<<<<<< Updated upstream
-    bin = static_cast<int>((val - min) / width);
-    return val / width - bin;
-  }
-=======
     float returnVal = 0.5f;
     if (log) {
       bin = static_cast<int>((log10(val) - min) / width);
@@ -73,8 +68,8 @@ struct map_t {
       returnVal = val / width - bin;
     }
     return returnVal;
-  } 
->>>>>>> Stashed changes
+  }
+
   int find(float val)
   {
     float width = (max - min) / nbins;
