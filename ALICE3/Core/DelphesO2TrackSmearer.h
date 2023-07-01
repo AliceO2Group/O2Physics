@@ -53,7 +53,15 @@ struct map_t {
     if (log)
       return pow(10., val);
     return val;
-  } //;
+  }
+  // function needed to interpolate some dimensions
+  float fracPositionWithinBin(float val)
+  {
+    float width = (max - min) / nbins;
+    int bin;
+    bin = static_cast<int>((val - min) / width);
+    return val / width - bin;
+  }
   int find(float val)
   {
     float width = (max - min) / nbins;
@@ -162,15 +170,17 @@ class TrackSmearer
   /** LUT methods **/
   bool loadTable(int pdg, const char* filename, bool forceReload = false);
   void useEfficiency(bool val) { mUseEfficiency = val; }                      //;
+  void interpolateEfficiency(bool val) { mInterpolateEfficiency = val; }      //;
   void setWhatEfficiency(int val) { mWhatEfficiency = val; }                  //;
   lutHeader_t* getLUTHeader(int pdg) { return mLUTHeader[getIndexPDG(pdg)]; } //;
-  lutEntry_t* getLUTEntry(int pdg, float nch, float radius, float eta, float pt);
+  lutEntry_t* getLUTEntry(int pdg, float nch, float radius, float eta, float pt, float& interpolatedEff);
 
-  bool smearTrack(O2Track& o2track, lutEntry_t* lutEntry);
+  bool smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float interpolatedEff);
   bool smearTrack(O2Track& o2track, int pdg, float nch);
   // bool smearTrack(Track& track, bool atDCA = true); // Only in DelphesO2
   double getPtRes(int pdg, float nch, float eta, float pt);
   double getEtaRes(int pdg, float nch, float eta, float pt);
+  double getEfficiency(int pdg, float nch, float eta, float pt);
 
   int getIndexPDG(int pdg)
   {
@@ -203,6 +213,7 @@ class TrackSmearer
   lutHeader_t* mLUTHeader[nLUTs] = {nullptr};
   lutEntry_t***** mLUTEntry[nLUTs] = {nullptr};
   bool mUseEfficiency = true;
+  bool mInterpolateEfficiency = false;
   int mWhatEfficiency = 1;
   float mdNdEta = 1600.;
 };
