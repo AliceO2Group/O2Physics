@@ -24,6 +24,7 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
+#include "TableHelper.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -37,7 +38,8 @@ using namespace o2::framework::expressions;
 struct TrackSelectionTask {
   // FIXME: this will be removed once we can get this via meta data
   Configurable<bool> isRun3{"isRun3", false, "temp option to enable run3 mode"};
-  Configurable<bool> produceFBextendedTable{"produceFBextendedTable", false, "option to produce table with FB selection information"};
+  Configurable<int> produceTable{"produceTable", -1, "option to produce the standard table table with the track selection. -1 autosetup, 0 dislabled, 1 enabled"};
+  Configurable<int> produceFBextendedTable{"produceFBextendedTable", -1, "option to produce table with FB selection information. -1 autosetup, 0 dislabled, 1 enabled"};
   Configurable<bool> compatibilityIU{"compatibilityIU", false, "compatibility option to allow the processing of tracks before the introduction of IU tracks"};
   Configurable<int> itsMatching{"itsMatching", 0, "condition for ITS matching (0: Run2 SPD kAny, 1: Run3ITSibAny, 2: Run3ITSallAny, 3: Run3ITSall7Layers)"};
   Configurable<int> dcaSetup{"dcaSetup", 0, "dca setup: (0: default, 1: ppPass3)"};
@@ -56,8 +58,13 @@ struct TrackSelectionTask {
   TrackSelection filtBit4;
   TrackSelection filtBit5;
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
+    // Check which tables are used
+    enableFlagIfTableRequired(initContext, "TRACKSELECTION", produceTable);
+    enableFlagIfTableRequired(initContext, "TRACKSELEXTRA", produceFBextendedTable);
+
+    // Set up the track cuts
     switch (itsMatching) {
       case 0:
         // Run 2 SPD kAny
@@ -120,27 +127,35 @@ struct TrackSelectionTask {
 
   void process(soa::Join<aod::FullTracks, aod::TracksDCA> const& tracks)
   {
-    filterTable.reserve(tracks.size());
-    if (produceFBextendedTable) {
+    if (produceTable == 1) {
+      filterTable.reserve(tracks.size());
+    }
+    if (produceFBextendedTable == 1) {
       filterTableDetail.reserve(tracks.size());
+    }
+    if (produceTable == 0 && produceFBextendedTable == 0) {
+      return;
     }
     if (isRun3) {
       for (auto& track : tracks) {
-        o2::aod::track::TrackSelectionFlags::flagtype trackflagGlob = globalTracks.IsSelectedMask(track);
-        o2::aod::track::TrackSelectionFlags::flagtype trackflagFB1 = filtBit1.IsSelectedMask(track);
-        o2::aod::track::TrackSelectionFlags::flagtype trackflagFB2 = filtBit2.IsSelectedMask(track);
-        // o2::aod::track::TrackSelectionFlags::flagtype trackflagFB3 = filtBit3.IsSelectedMask(track); // only temporarily commented, will be used
-        // o2::aod::track::TrackSelectionFlags::flagtype trackflagFB4 = filtBit4.IsSelectedMask(track);
-        // o2::aod::track::TrackSelectionFlags::flagtype trackflagFB5 = filtBit5.IsSelectedMask(track);
 
-        filterTable((uint8_t)0,
-                    globalTracks.IsSelectedMask(track),
-                    filtBit1.IsSelected(track),
-                    filtBit2.IsSelected(track),
-                    filtBit3.IsSelected(track),
-                    filtBit4.IsSelected(track),
-                    filtBit5.IsSelected(track));
-        if (produceFBextendedTable) {
+        if (produceTable == 1) {
+          filterTable((uint8_t)0,
+                      globalTracks.IsSelectedMask(track),
+                      filtBit1.IsSelected(track),
+                      filtBit2.IsSelected(track),
+                      filtBit3.IsSelected(track),
+                      filtBit4.IsSelected(track),
+                      filtBit5.IsSelected(track));
+        }
+        if (produceFBextendedTable == 1) {
+          o2::aod::track::TrackSelectionFlags::flagtype trackflagGlob = globalTracks.IsSelectedMask(track);
+          o2::aod::track::TrackSelectionFlags::flagtype trackflagFB1 = filtBit1.IsSelectedMask(track);
+          o2::aod::track::TrackSelectionFlags::flagtype trackflagFB2 = filtBit2.IsSelectedMask(track);
+          // o2::aod::track::TrackSelectionFlags::flagtype trackflagFB3 = filtBit3.IsSelectedMask(track); // only temporarily commented, will be used
+          // o2::aod::track::TrackSelectionFlags::flagtype trackflagFB4 = filtBit4.IsSelectedMask(track);
+          // o2::aod::track::TrackSelectionFlags::flagtype trackflagFB5 = filtBit5.IsSelectedMask(track);
+
           filterTableDetail(o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTrackType),
                             o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kPtRange),
                             o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kEtaRange),
@@ -165,14 +180,16 @@ struct TrackSelectionTask {
 
     for (auto& track : tracks) {
       o2::aod::track::TrackSelectionFlags::flagtype trackflagGlob = globalTracks.IsSelectedMask(track);
-      filterTable((uint8_t)globalTracksSDD.IsSelected(track),
-                  globalTracks.IsSelectedMask(track),
-                  filtBit1.IsSelected(track),
-                  filtBit2.IsSelected(track),
-                  filtBit3.IsSelected(track),
-                  filtBit4.IsSelected(track),
-                  filtBit5.IsSelected(track));
-      if (produceFBextendedTable) {
+      if (produceTable == 1) {
+        filterTable((uint8_t)globalTracksSDD.IsSelected(track),
+                    globalTracks.IsSelectedMask(track),
+                    filtBit1.IsSelected(track),
+                    filtBit2.IsSelected(track),
+                    filtBit3.IsSelected(track),
+                    filtBit4.IsSelected(track),
+                    filtBit5.IsSelected(track));
+      }
+      if (produceFBextendedTable == 1) {
         filterTableDetail(o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kTrackType),
                           o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kPtRange),
                           o2::aod::track::TrackSelectionFlags::checkFlag(trackflagGlob, o2::aod::track::TrackSelectionFlags::kEtaRange),
