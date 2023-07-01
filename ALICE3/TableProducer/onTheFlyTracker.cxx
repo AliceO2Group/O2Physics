@@ -187,6 +187,7 @@ struct OnTheFlyTracker {
 
     // Collision QA
     histos.add("hPVz", "hPVz", kTH1F, {axisVertexZ});
+    histos.add("hLUTMultiplicity", "hLUTMultiplicity", kTH1F, {axisMultiplicity});
     histos.add("hSimMultiplicity", "hSimMultiplicity", kTH1F, {axisMultiplicity});
     histos.add("hRecoMultiplicity", "hRecoMultiplicity", kTH1F, {axisMultiplicity});
 
@@ -271,7 +272,7 @@ struct OnTheFlyTracker {
       if (std::abs(mcParticle.eta()) > multEtaRange) {
         continue;
       }
-      if (mcParticle.has_daughters()) {
+      if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
       const auto pdg = std::abs(mcParticle.pdgCode());
@@ -291,6 +292,7 @@ struct OnTheFlyTracker {
 
     dNdEta /= (multEtaRange * 2.0f);
     uint32_t multiplicityCounter = 0;
+    histos.fill(HIST("hLUTMultiplicity"), dNdEta);
 
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary()) {
