@@ -60,8 +60,8 @@ struct map_t {
     float width = (max - min) / nbins;
     int bin;
     bin = static_cast<int>((val - min) / width);
-    return val/width - bin;
-  } 
+    return val / width - bin;
+  }
   int find(float val)
   {
     float width = (max - min) / nbins;
@@ -173,7 +173,7 @@ class TrackSmearer
   void interpolateEfficiency(bool val) { mInterpolateEfficiency = val; }      //;
   void setWhatEfficiency(int val) { mWhatEfficiency = val; }                  //;
   lutHeader_t* getLUTHeader(int pdg) { return mLUTHeader[getIndexPDG(pdg)]; } //;
-  lutEntry_t* getLUTEntry(int pdg, float nch, float radius, float eta, float pt, float &interpolatedEff);
+  lutEntry_t* getLUTEntry(int pdg, float nch, float radius, float eta, float pt, float& interpolatedEff);
 
   bool smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float interpolatedEff);
   bool smearTrack(O2Track& o2track, int pdg, float nch);

@@ -110,7 +110,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
 /*****************************************************************/
 
 lutEntry_t*
-  TrackSmearer::getLUTEntry(int pdg, float nch, float radius, float eta, float pt, float &interpolatedEff)
+  TrackSmearer::getLUTEntry(int pdg, float nch, float radius, float eta, float pt, float& interpolatedEff)
 {
   auto ipdg = getIndexPDG(pdg);
   if (!mLUTHeader[ipdg])
@@ -120,36 +120,36 @@ lutEntry_t*
   auto ieta = mLUTHeader[ipdg]->etamap.find(eta);
   auto ipt = mLUTHeader[ipdg]->ptmap.find(pt);
 
-  //Interpolate if requested
+  // Interpolate if requested
   auto fraction = mLUTHeader[ipdg]->nchmap.fracPositionWithinBin(nch);
-  if(mInterpolateEfficiency){
-    if(fraction>0.5){
-      if (mWhatEfficiency == 1){
-        if( inch < mLUTHeader[ipdg]->nchmap.nbins){
-          interpolatedEff = (1.5f-fraction)*mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (-0.5f+fraction)*mLUTEntry[ipdg][inch+1][irad][ieta][ipt]->eff;
-        }else{
+  if (mInterpolateEfficiency) {
+    if (fraction > 0.5) {
+      if (mWhatEfficiency == 1) {
+        if (inch < mLUTHeader[ipdg]->nchmap.nbins) {
+          interpolatedEff = (1.5f - fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (-0.5f + fraction) * mLUTEntry[ipdg][inch + 1][irad][ieta][ipt]->eff;
+        } else {
           interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
         }
       }
-      if (mWhatEfficiency == 2){
-        if( inch < mLUTHeader[ipdg]->nchmap.nbins){
-          interpolatedEff = (1.5f-fraction)*mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2 + (-0.5f+fraction)*mLUTEntry[ipdg][inch+1][irad][ieta][ipt]->eff2;
-        }else{
+      if (mWhatEfficiency == 2) {
+        if (inch < mLUTHeader[ipdg]->nchmap.nbins) {
+          interpolatedEff = (1.5f - fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2 + (-0.5f + fraction) * mLUTEntry[ipdg][inch + 1][irad][ieta][ipt]->eff2;
+        } else {
           interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
         }
       }
-    }else{
-      if (mWhatEfficiency == 1){
-        if(inch > 0 ){
-          interpolatedEff = (0.5f+fraction)*mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (0.5f-fraction)*mLUTEntry[ipdg][inch-1][irad][ieta][ipt]->eff;
-        }else{
+    } else {
+      if (mWhatEfficiency == 1) {
+        if (inch > 0) {
+          interpolatedEff = (0.5f + fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (0.5f - fraction) * mLUTEntry[ipdg][inch - 1][irad][ieta][ipt]->eff;
+        } else {
           interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
         }
       }
-      if (mWhatEfficiency == 2){
-        if(inch > 0 ){
-          interpolatedEff = (0.5f+fraction)*mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2 + (0.5f-fraction)*mLUTEntry[ipdg][inch-1][irad][ieta][ipt]->eff2;
-        }else{
+      if (mWhatEfficiency == 2) {
+        if (inch > 0) {
+          interpolatedEff = (0.5f + fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2 + (0.5f - fraction) * mLUTEntry[ipdg][inch - 1][irad][ieta][ipt]->eff2;
+        } else {
           interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
         }
       }
