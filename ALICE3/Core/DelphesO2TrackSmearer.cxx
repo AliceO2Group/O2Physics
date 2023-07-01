@@ -139,7 +139,7 @@ lutEntry_t*
         }
       }
     } else {
-      float comparisonValue = mLUTHeader[ipdg]->nchmap.log?log10(nch):nch;
+      float comparisonValue = mLUTHeader[ipdg]->nchmap.log ? log10(nch) : nch;
       if (mWhatEfficiency == 1) {
         if (inch > 0 && comparisonValue < mLUTHeader[ipdg]->nchmap.max) {
           interpolatedEff = (0.5f + fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (0.5f - fraction) * mLUTEntry[ipdg][inch - 1][irad][ieta][ipt]->eff;
@@ -155,9 +155,7 @@ lutEntry_t*
         }
       }
     }
-  }
-  else
-  {
+  } else {
     if (mWhatEfficiency == 1)
       interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
     if (mWhatEfficiency == 2)
