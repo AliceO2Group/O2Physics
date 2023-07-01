@@ -999,6 +999,10 @@ int8_t isSelectedBachelorForCharmBaryon(const T& track, const float& minPt, cons
 {
   int8_t retValue{BIT(kPionForCharmBaryon) | BIT(kKaonForCharmBaryon)};
 
+  if (!track.isGlobalTrackWoDCA()) {
+    return kRejected;
+  }
+
   if (std::fabs(track.pt()) < minPt) {
     return kRejected;
   }
