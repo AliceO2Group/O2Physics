@@ -334,11 +334,9 @@ struct DQFilterPbPbTask {
     // Compute decision
     if (doVetoFwd) {
       decision = cleanFIT && muonsEmpty;
-    }
-    else if (doVetoBarrel) {
+    } else if (doVetoBarrel) {
       decision = cleanFIT && barrelEmpty;
-    }
-    else {
+    } else {
       decision = cleanFIT;
     }
 
