@@ -65,12 +65,12 @@ struct map_t {
   }
 =======
     float returnVal = 0.5f;
-    if (log){
+    if (log) {
       bin = static_cast<int>((log10(val) - min) / width);
       returnVal = ((log10(val) - min) / width) - bin;
-    }else{
+    } else {
       bin = static_cast<int>((val - min) / width);
-      returnVal = val/width - bin;
+      returnVal = val / width - bin;
     }
     return returnVal;
   } 
