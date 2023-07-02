@@ -145,42 +145,42 @@ struct lambdakzeromcfinder {
     }
 
     // initialise search vectors
-    if(findGamma){
+    if (findGamma) {
       searchedV0PDG.emplace_back(22);
       searchedV0PositivePDG.emplace_back(-11);
       searchedV0NegativePDG.emplace_back(+11);
       searchedV0PositiveMass.emplace_back(0.0f);
       searchedV0NegativeMass.emplace_back(0.0f);
     }
-    if(findK0Short){
+    if (findK0Short) {
       searchedV0PDG.emplace_back(310);
       searchedV0PositivePDG.emplace_back(+211);
       searchedV0NegativePDG.emplace_back(-211);
       searchedV0PositiveMass.emplace_back(o2::constants::physics::MassPionCharged);
       searchedV0NegativeMass.emplace_back(o2::constants::physics::MassPionCharged);
     }
-    if(findLambda){
+    if (findLambda) {
       searchedV0PDG.emplace_back(3122);
       searchedV0PositivePDG.emplace_back(+2212);
       searchedV0NegativePDG.emplace_back(-211);
       searchedV0PositiveMass.emplace_back(o2::constants::physics::MassProton);
       searchedV0NegativeMass.emplace_back(o2::constants::physics::MassPionCharged);
     }
-    if(findAntiLambda){
+    if (findAntiLambda) {
       searchedV0PDG.emplace_back(-3122);
       searchedV0PositivePDG.emplace_back(+211);
       searchedV0NegativePDG.emplace_back(-2212);
       searchedV0PositiveMass.emplace_back(o2::constants::physics::MassPionCharged);
       searchedV0NegativeMass.emplace_back(o2::constants::physics::MassProton);
     }
-    if(findHyperTriton){
+    if (findHyperTriton) {
       searchedV0PDG.emplace_back(+1010010030);
       searchedV0PositivePDG.emplace_back(+1000020030);
       searchedV0NegativePDG.emplace_back(-211);
       searchedV0PositiveMass.emplace_back(o2::constants::physics::MassHelium3);
       searchedV0NegativeMass.emplace_back(o2::constants::physics::MassPionCharged);
     }
-    if(findAntiHyperTriton){
+    if (findAntiHyperTriton) {
       searchedV0PDG.emplace_back(-1010010030);
       searchedV0PositivePDG.emplace_back(+211);
       searchedV0NegativePDG.emplace_back(-1000020030);
@@ -409,7 +409,6 @@ struct lambdakzeromcfinder {
     }
   }
 
-
   // this improved process function does not start from MC particles, as that would be too costly
   // rather, it starts from appropriately detected prongs of the correct charge.
   Partition<LabeledTracks> posTracks = aod::track::signed1Pt > 0.0f;
@@ -422,43 +421,43 @@ struct lambdakzeromcfinder {
     v0negativeIndex.clear();
     v0mcLabel.clear();
 
-    //This will take place once per TF!
+    // This will take place once per TF!
     for (auto& posTrack : posTracks) { //<- no grouping, deliberately
       int v0pdgIndex = -1;
       int motherIndex = -1;
-      if(!posTrack.has_mcParticle()) 
+      if (!posTrack.has_mcParticle())
         continue;
       auto posParticle = posTrack.mcParticle_as<aod::McParticles>();
-      if(!posParticle.has_mothers())
+      if (!posParticle.has_mothers())
         continue;
       for (auto& posMotherParticle : posParticle.mothers_as<aod::McParticles>()) {
         // determine if mother particle satisfies any condition curently being searched for
-        for(uint16_t ipdg = 0; ipdg<searchedV0PDG.size(); ipdg++)
-          if(searchedV0PDG[ipdg] == posMotherParticle.pdgCode()){
-            v0pdgIndex = ipdg; //index mapping to desired V0 species
+        for (uint16_t ipdg = 0; ipdg < searchedV0PDG.size(); ipdg++)
+          if (searchedV0PDG[ipdg] == posMotherParticle.pdgCode()) {
+            v0pdgIndex = ipdg; // index mapping to desired V0 species
             motherIndex = posMotherParticle.globalIndex();
             continue;
           }
-        if(v0pdgIndex<0 || posParticle.pdgCode() != searchedV0PositivePDG[v0pdgIndex])
+        if (v0pdgIndex < 0 || posParticle.pdgCode() != searchedV0PositivePDG[v0pdgIndex])
           continue; // not interesting, skip
 
-        //if we got here, we need to search for the other prong
+        // if we got here, we need to search for the other prong
         for (auto& negTrack : negTracks) { //<- no grouping, deliberately
-          if(doSameCollisionOnly && negTrack.collisionId() != posTrack.collisionId())
+          if (doSameCollisionOnly && negTrack.collisionId() != posTrack.collisionId())
             continue; // skip if requested to look only at the same collision (fixme: could be better)
-          if(!negTrack.has_mcParticle()) 
+          if (!negTrack.has_mcParticle())
             continue;
           auto negParticle = negTrack.mcParticle_as<aod::McParticles>();
-          if(!negParticle.has_mothers())
+          if (!negParticle.has_mothers())
             continue;
           for (auto& negMotherParticle : negParticle.mothers_as<aod::McParticles>()) {
-            if(negMotherParticle.globalIndex() == posMotherParticle.globalIndex() && negMotherParticle.pdgCode() == searchedV0NegativePDG[v0pdgIndex]){
+            if (negMotherParticle.globalIndex() == posMotherParticle.globalIndex() && negMotherParticle.pdgCode() == searchedV0NegativePDG[v0pdgIndex]) {
               // de-reference best collision
               int bestCollisionIndex = -1;
               auto mcCollision = posParticle.mcCollision_as<soa::Join<aod::McCollisions, aod::McCollsExtra>>();
-              if( mcCollision.hasRecoCollision() )
+              if (mcCollision.hasRecoCollision())
                 bestCollisionIndex = mcCollision.bestCollisionIndex();
-              
+
               // place in list to be passed along, please
               v0collisionId.emplace_back(bestCollisionIndex);
               v0positiveIndex.emplace_back(posTrack.globalIndex());
