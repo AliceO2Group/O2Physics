@@ -67,6 +67,7 @@ struct skimmerGammaConversions {
 
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min. crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max. chi2/NclsTPC"};
+  Configurable<float> minpt{"minpt", 0.01, "min pt for track"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 5.0, "max. TPC n sigma for electron"};
   Configurable<float> dcamin{"dcamin", 0.1, "dcamin"};
@@ -210,29 +211,53 @@ struct skimmerGammaConversions {
       sameMother);
   }
 
-  template <typename TLeg>
-  bool checkV0leg(TLeg const& leg)
+  template <typename TTrack>
+  bool checkV0leg(TTrack const& track)
   {
-    if (abs(leg.eta()) > maxeta) {
+    if (track.pt() < minpt || abs(track.eta()) > maxeta) {
       return false;
     }
-    if (abs(leg.tpcNSigmaEl()) > maxTPCNsigmaEl) {
+    if (abs(track.dcaXY()) < dcamin || dcamax < abs(track.dcaXY())) {
       return false;
     }
-    if (leg.tpcChi2NCl() > maxchi2tpc) {
+    if (!track.hasITS() && !track.hasTPC()) {
       return false;
     }
-    if (leg.tpcNClsCrossedRows() < mincrossedrows) {
-      return false;
-    }
-    if (abs(leg.dcaXY()) < dcamin) {
-      return false;
-    }
-    if (dcamax < abs(leg.dcaXY())) {
-      return false;
+
+    if (track.hasTPC()) {
+      if (track.tpcNClsCrossedRows() < mincrossedrows || track.tpcChi2NCl() > maxchi2tpc) {
+        return false;
+      }
+      if (abs(track.tpcNSigmaEl()) > maxTPCNsigmaEl) {
+        return false;
+      }
     }
     return true;
   }
+
+  // template <typename TLeg>
+  // bool checkV0leg(TLeg const& leg)
+  //{
+  //   if (abs(leg.eta()) > maxeta) {
+  //     return false;
+  //   }
+  //   if (abs(leg.tpcNSigmaEl()) > maxTPCNsigmaEl) {
+  //     return false;
+  //   }
+  //   if (leg.tpcChi2NCl() > maxchi2tpc) {
+  //     return false;
+  //   }
+  //   if (leg.tpcNClsCrossedRows() < mincrossedrows) {
+  //     return false;
+  //   }
+  //   if (abs(leg.dcaXY()) < dcamin) {
+  //     return false;
+  //   }
+  //   if (dcamax < abs(leg.dcaXY())) {
+  //     return false;
+  //   }
+  //   return true;
+  // }
 
   template <typename TTrack, typename TCollision, typename TV0>
   void fillV0KF(TCollision const& collision, TV0 const& v0, recalculatedVertexParameters recalculatedVertex)
@@ -418,6 +443,10 @@ struct skimmerGammaConversions {
 
         if (!flag_closer) {
           continue;
+        }
+
+        if (!ele.has_mcParticle() || !pos.has_mcParticle()) {
+          continue; // If no MC particle is found, skip the v0
         }
 
         eV0Confirmation v0Status = isTrueV0(v0, pos, ele);

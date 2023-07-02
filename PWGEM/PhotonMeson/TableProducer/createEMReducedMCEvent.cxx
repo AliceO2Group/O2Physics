@@ -171,11 +171,17 @@ struct createEMReducedMCEvent {
           auto ele = v0.template negTrack_as<aod::V0Legs>();
           auto pos = v0.template posTrack_as<aod::V0Legs>();
 
+          auto o2track_ele = ele.template track_as<TracksMC>();
+          auto o2track_pos = pos.template track_as<TracksMC>();
+          if (!o2track_ele.has_mcParticle() || !o2track_pos.has_mcParticle()) {
+            continue; // If no MC particle is found, skip the v0
+          }
+
           for (auto& leg : {pos, ele}) { // be carefull of order {pos, ele}!
             auto o2track = leg.template track_as<TracksMC>();
-            if (!o2track.has_mcParticle()) {
-              continue; // If no MC particle is found, skip the track
-            }
+            // if (!o2track.has_mcParticle()) {
+            //   continue; // If no MC particle is found, skip the track
+            // }
             auto mctrack = o2track.template mcParticle_as<aod::McParticles>();
 
             // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
