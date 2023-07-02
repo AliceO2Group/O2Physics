@@ -77,7 +77,11 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hGammaPsiPair"))->Fill(obj.psipair(), obj.mGamma());
     reinterpret_cast<TH2F*>(list->FindObject("hGammaRxy"))->Fill(obj.vx(), obj.vy());
     reinterpret_cast<TH2F*>(list->FindObject("hGammaRxy_recalc"))->Fill(obj.recalculatedVtxX(), obj.recalculatedVtxY());
+    reinterpret_cast<TProfile2D*>(list->FindObject("hGammaRxy_KFChi2"))->Fill(obj.recalculatedVtxX(), obj.recalculatedVtxY(), obj.chiSquareNDF(), 1.0);
+    reinterpret_cast<TProfile2D*>(list->FindObject("hGammaRZ_KFChi2"))->Fill(obj.recalculatedVtxZ(), obj.recalculatedVtxR(), obj.chiSquareNDF(), 1.0);
     reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsR"))->Fill(obj.recalculatedVtxR(), obj.chiSquareNDF());
+    reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsX"))->Fill(obj.recalculatedVtxX(), obj.chiSquareNDF());
+    reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsY"))->Fill(obj.recalculatedVtxY(), obj.chiSquareNDF());
     reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsZ"))->Fill(obj.recalculatedVtxZ(), obj.chiSquareNDF());
 
     float phi_recalc = atan2(obj.recalculatedVtxY(), obj.recalculatedVtxX());
