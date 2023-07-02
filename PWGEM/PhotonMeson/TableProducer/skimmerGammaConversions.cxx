@@ -256,14 +256,21 @@ struct skimmerGammaConversions {
 
     float xyz[3] = {recalculatedVertex.recalculatedConversionPoint[0], recalculatedVertex.recalculatedConversionPoint[1], recalculatedVertex.recalculatedConversionPoint[2]};
 
-    /// Transport the gamma to the recalculated decay vertex
-    KFParticle gammaKF_DecayVtx = gammaKF;
+    // Transport the gamma to the recalculated decay vertex
+    KFParticle gammaKF_DecayVtx = gammaKF; // with respect to (0,0,0)
     gammaKF_DecayVtx.TransportToPoint(xyz);
 
-    /// Apply a topological constraint of the gamma to the PV.
-    /// Parameters will be given at the primary vertex.
+    // Apply a topological constraint of the gamma to the PV. Parameters will be given at the primary vertex.
     KFParticle gammaKF_PV = gammaKF_DecayVtx;
     gammaKF_PV.SetProductionVertex(KFPV);
+
+    KFParticle gammaKF_DecayVtx2 = gammaKF_PV; // with respect to the PV
+    gammaKF_DecayVtx2.TransportToPoint(xyz);
+
+    // LOGF(info, "cpaFromKF(gammaKF_DecayVtx, KFPV) = %f", cpaFromKF(gammaKF_DecayVtx, KFPV));
+    // LOGF(info, "cpaFromKF(gammaKF_DecayVtx2, KFPV) = %f", cpaFromKF(gammaKF_DecayVtx2, KFPV));
+    // LOGF(info, "gammaKF_DecayVtx.GetMass() = %f" , gammaKF_DecayVtx.GetMass());
+    // LOGF(info, "gammaKF_DecayVtx2.GetMass() = %f", gammaKF_DecayVtx2.GetMass());
 
     float chi2kf = -1.f;
     if (gammaKF_DecayVtx.GetNDF() > 0) {
