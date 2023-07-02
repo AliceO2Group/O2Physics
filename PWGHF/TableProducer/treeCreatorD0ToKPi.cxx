@@ -17,11 +17,12 @@
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 /// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab
 
-#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-
+#include "Framework/AnalysisTask.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "Common/Core/trackUtilities.h"
+#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,9 +50,11 @@ DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);
 DECLARE_SOA_COLUMN(PProng1, pProng1, float);
 DECLARE_SOA_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, float);
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
 DECLARE_SOA_COLUMN(CandidateType, candidateType, int8_t);
 DECLARE_SOA_COLUMN(MassD0, massD0, float);
 DECLARE_SOA_COLUMN(MassD0bar, massD0bar, float);
+DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
@@ -66,24 +69,66 @@ DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);
 DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);
 DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);
 DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);
+DECLARE_SOA_COLUMN(NSigCombTpcTofPi0, nSigCombTpcTofPi0, float);
+DECLARE_SOA_COLUMN(NSigCombTpcTofPi1, nSigCombTpcTofPi1, float);
+DECLARE_SOA_COLUMN(NSigCombTpcTofKa0, nSigCombTpcTofKa0, float);
+DECLARE_SOA_COLUMN(NSigCombTpcTofKa1, nSigCombTpcTofKa1, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);
+DECLARE_SOA_COLUMN(ImpactParameterXY, impactParameterXY, float);
+DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);
 DECLARE_SOA_COLUMN(Cpa, cpa, float);
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);
+DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
 DECLARE_SOA_COLUMN(CosThetaStarD0, cosThetaStarD0, float);
 DECLARE_SOA_COLUMN(CosThetaStarD0bar, cosThetaStarD0bar, float);
+DECLARE_SOA_COLUMN(PtB, ptB, float);
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t); // is prompt or non-prompt, reco level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); // is prompt or non-prompt, Gen level
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand2Prong, "_0");
 } // namespace full
+
+DECLARE_SOA_TABLE(HfCand2ProngLite, "AOD", "HFCAND2PLite",
+                  full::CandidateType,
+                  full::MassD0,
+                  full::MassD0bar,
+                  full::Pt,
+                  full::DecayLength,
+                  full::DecayLengthXY,
+                  full::DecayLengthNormalised,
+                  full::DecayLengthXYNormalised,
+                  full::ImpactParameterXY,
+                  full::ImpactParameterProduct,
+                  full::Cpa,
+                  full::CpaXY,
+                  full::CosThetaStarD0,
+                  full::CosThetaStarD0bar,
+                  full::MaxNormalisedDeltaIP,
+                  full::PtProng0,
+                  full::PtProng1,
+                  hf_cand::ImpactParameter0,
+                  hf_cand::ImpactParameter1,
+                  full::NSigTpcPi0,
+                  full::NSigTpcKa0,
+                  full::NSigTofPi0,
+                  full::NSigTofKa0,
+                  full::NSigTpcPi1,
+                  full::NSigTpcKa1,
+                  full::NSigTofPi1,
+                  full::NSigTofKa1,
+                  full::NSigCombTpcTofPi0,
+                  full::NSigCombTpcTofPi1,
+                  full::NSigCombTpcTofKa0,
+                  full::NSigCombTpcTofKa1,
+                  full::FlagMc,
+                  full::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
                   collision::BCId,
@@ -126,12 +171,10 @@ DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
                   full::NSigTpcKa1,
                   full::NSigTofPi1,
                   full::NSigTofKa1,
-                  full::CandidateType,
-                  full::MassD0,
-                  full::MassD0bar,
+                  full::CandidateSelFlag,
+                  full::M,
                   full::ImpactParameterProduct,
-                  full::CosThetaStarD0,
-                  full::CosThetaStarD0bar,
+                  full::CosThetaStar,
                   full::Pt,
                   full::P,
                   full::Cpa,
@@ -142,8 +185,7 @@ DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
                   full::Y,
                   full::E,
                   full::FlagMc,
-                  full::OriginMcRec,
-                  full::CandidateId);
+                  full::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCand2ProngFullEvents, "AOD", "HFCAND2PFullE",
                   collision::BCId,
@@ -161,8 +203,7 @@ DECLARE_SOA_TABLE(HfCand2ProngFullParticles, "AOD", "HFCAND2PFullP",
                   full::Phi,
                   full::Y,
                   full::FlagMc,
-                  full::OriginMcGen,
-                  full::CandidateId);
+                  full::OriginMcGen);
 
 } // namespace o2::aod
 
@@ -173,7 +214,9 @@ struct HfTreeCreatorD0ToKPi {
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<double> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for HF flagged candidates"};
+  Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
 
+  Produces<o2::aod::HfCand2ProngLite> rowCandidateLite;
   Produces<o2::aod::HfCand2ProngFull> rowCandidateFull;
   Produces<o2::aod::HfCand2ProngFullEvents> rowCandidateFullEvents;
   Produces<o2::aod::HfCand2ProngFullParticles> rowCandidateFullParticles;
@@ -183,6 +226,19 @@ struct HfTreeCreatorD0ToKPi {
 
   void init(InitContext const&)
   {
+  }
+
+  double combineNsigmaTPCTOF(double nsigmaTPC, double nsigmaTOF)
+  {
+    if (nsigmaTPC > -998. && nsigmaTOF > -998.) {
+      return TMath::Sqrt((nsigmaTPC * nsigmaTPC + nsigmaTOF * nsigmaTOF) / 2);
+    } else if (nsigmaTPC > -998. && nsigmaTOF < -998.) {
+      return TMath::Abs(nsigmaTPC);
+    } else if (nsigmaTPC < -998. && nsigmaTOF > -998.) {
+      return TMath::Abs(nsigmaTOF);
+    } else {
+      return -999.;
+    }
   }
 
   template <typename T>
@@ -199,42 +255,29 @@ struct HfTreeCreatorD0ToKPi {
   }
 
   template <typename T, typename U>
-  auto fillTable(const T& candidate, const U& prong0, const U& prong1, int candFlag, double invMassD0, double invMassD0bar, double ctsD0, double ctsD0bar,
-                 double ct, double y, double e, int8_t flagMc, int8_t origin)
+  auto fillLiteTable(const T& candidate, const U& prong0, const U& prong1, int candFlag, double invMassD0, double invMassD0bar, double ctsD0, double ctsD0bar,
+                 double nsigCombPi0, double nsigCombPi1, double nsigCombKa0, double nsigCombKa1, int8_t flagMc, int8_t origin)
   {
-    rowCandidateFull(
-      prong0.collision().bcId(),
-      prong0.collision().numContrib(),
-      candidate.posX(),
-      candidate.posY(),
-      candidate.posZ(),
-      candidate.xSecondaryVertex(),
-      candidate.ySecondaryVertex(),
-      candidate.zSecondaryVertex(),
-      candidate.errorDecayLength(),
-      candidate.errorDecayLengthXY(),
-      candidate.chi2PCA(),
-      candidate.rSecondaryVertex(),
+    rowCandidateLite(
+      candFlag,
+      invMassD0,
+      invMassD0bar,
+      candidate.pt(),
       candidate.decayLength(),
       candidate.decayLengthXY(),
       candidate.decayLengthNormalised(),
       candidate.decayLengthXYNormalised(),
-      candidate.impactParameterNormalised0(),
+      candidate.impactParameterXY(),
+      candidate.impactParameterProduct(),
+      candidate.cpa(),
+      candidate.cpaXY(),
+      ctsD0,
+      ctsD0bar,
+      candidate.maxNormalisedDeltaIP(),
       candidate.ptProng0(),
-      RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-      candidate.impactParameterNormalised1(),
       candidate.ptProng1(),
-      RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-      candidate.pxProng0(),
-      candidate.pyProng0(),
-      candidate.pzProng0(),
-      candidate.pxProng1(),
-      candidate.pyProng1(),
-      candidate.pzProng1(),
       candidate.impactParameter0(),
       candidate.impactParameter1(),
-      candidate.errorImpactParameter0(),
-      candidate.errorImpactParameter1(),
       prong0.tpcNSigmaPi(),
       prong0.tpcNSigmaKa(),
       prong0.tofNSigmaPi(),
@@ -243,24 +286,76 @@ struct HfTreeCreatorD0ToKPi {
       prong1.tpcNSigmaKa(),
       prong1.tofNSigmaPi(),
       prong1.tofNSigmaKa(),
-      candFlag,
-      invMassD0,
-      invMassD0bar,
-      candidate.impactParameterProduct(),
-      ctsD0,
-      ctsD0bar,
-      candidate.pt(),
-      candidate.p(),
-      candidate.cpa(),
-      candidate.cpaXY(),
-      ct,
-      candidate.eta(),
-      candidate.phi(),
-      y,
-      e,
+      nsigCombPi0,
+      nsigCombPi1,
+      nsigCombKa0,
+      nsigCombKa1,
       flagMc,
-      origin,
-      candidate.globalIndex());
+      origin);
+  }
+
+  template <typename T, typename U>
+  auto fillTable(const T& candidate, const U& prong0, const U& prong1, int candFlag, int selection, double invMass, double cosThetaStar,
+                 double ct, double y, double e, int8_t flagMc, int8_t origin)
+  {
+    if (selection >= 1) {
+      rowCandidateFull(
+        prong0.collision().bcId(),
+        prong0.collision().numContrib(),
+        candidate.posX(),
+        candidate.posY(),
+        candidate.posZ(),
+        candidate.xSecondaryVertex(),
+        candidate.ySecondaryVertex(),
+        candidate.zSecondaryVertex(),
+        candidate.errorDecayLength(),
+        candidate.errorDecayLengthXY(),
+        candidate.chi2PCA(),
+        candidate.rSecondaryVertex(),
+        candidate.decayLength(),
+        candidate.decayLengthXY(),
+        candidate.decayLengthNormalised(),
+        candidate.decayLengthXYNormalised(),
+        candidate.impactParameterNormalised0(),
+        candidate.ptProng0(),
+        RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+        candidate.impactParameterNormalised1(),
+        candidate.ptProng1(),
+        RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+        candidate.pxProng0(),
+        candidate.pyProng0(),
+        candidate.pzProng0(),
+        candidate.pxProng1(),
+        candidate.pyProng1(),
+        candidate.pzProng1(),
+        candidate.impactParameter0(),
+        candidate.impactParameter1(),
+        candidate.errorImpactParameter0(),
+        candidate.errorImpactParameter1(),
+        prong0.tpcNSigmaPi(),
+        prong0.tpcNSigmaKa(),
+        prong0.tofNSigmaPi(),
+        prong0.tofNSigmaKa(),
+        prong1.tpcNSigmaPi(),
+        prong1.tpcNSigmaKa(),
+        prong1.tofNSigmaPi(),
+        prong1.tofNSigmaKa(),
+        1 << candFlag,
+        invMass,
+        candidate.impactParameterProduct(),
+        cosThetaStar,
+        candidate.pt(),
+        candidate.p(),
+        candidate.cpa(),
+        candidate.cpaXY(),
+        ct,
+        candidate.eta(),
+        candidate.phi(),
+        y,
+        e,
+        flagMc,
+        origin);
+    }
   }
 
   void processData(aod::Collisions const& collisions,
@@ -274,31 +369,45 @@ struct HfTreeCreatorD0ToKPi {
     }
 
     // Filling candidate properties
-    rowCandidateFull.reserve(selectedCandidates.size());
-    for (auto const& candidate : selectedCandidates) {
-      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
-        continue;
+    if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(selectedCandidates.size());
+      for (auto const& candidate : selectedCandidates) {
+        if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+          continue;
+        }
+        if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
+          continue;
+        }
+        int candType = 0;
+        auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+        double massD0Cand = invMassD0ToPiK(candidate);
+        double massD0barCand = invMassD0barToKPi(candidate);
+        double ctsD0 = cosThetaStarD0(candidate);
+        double ctsD0bar = cosThetaStarD0bar(candidate);
+        double nSigCombPi0 = combineNsigmaTPCTOF(prong0.tpcNSigmaPi(), prong0.tofNSigmaPi());
+        double nSigCombPi1 = combineNsigmaTPCTOF(prong1.tpcNSigmaPi(), prong1.tofNSigmaPi());
+        double nSigCombKa0 = combineNsigmaTPCTOF(prong0.tpcNSigmaKa(), prong0.tofNSigmaKa());
+        double nSigCombKa1 = combineNsigmaTPCTOF(prong1.tpcNSigmaKa(), prong1.tofNSigmaKa());
+        if (candidate.isSelD0()) {
+          candType |= o2::aod::full::SelD0;
+        }
+        if (candidate.isSelD0bar()) {
+          candType |= o2::aod::full::SelD0bar;
+        }
+        fillLiteTable(candidate, prong0, prong1, candType, massD0Cand, massD0barCand, ctsD0, ctsD0bar, nSigCombPi0, nSigCombPi1, nSigCombKa0, nSigCombKa1, 0, 0);
       }
-      if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
-        continue;
+    } else {
+      rowCandidateFull.reserve(candidates.size());
+      for (auto const& candidate : candidates) {
+        auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+        double yD = yD0(candidate);
+        double eD = eD0(candidate);
+        double ctD = ctD0(candidate);
+        fillTable(candidate, prong0, prong1, 0, candidate.isSelD0(), invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD, yD, eD, 0, 0);
+        fillTable(candidate, prong0, prong1, 1, candidate.isSelD0bar(), invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD, yD, eD, 0, 0);
       }
-      int candType = 0;
-      auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-      auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
-      double yD = yD0(candidate);
-      double eD = eD0(candidate);
-      double ctD = ctD0(candidate);
-      double massD0Cand = invMassD0ToPiK(candidate);
-      double massD0barCand = invMassD0barToKPi(candidate);
-      double ctsD0 = cosThetaStarD0(candidate);
-      double ctsD0bar = cosThetaStarD0bar(candidate);
-      if (candidate.isSelD0()) {
-        candType |= o2::aod::full::SelD0;
-      }
-      if (candidate.isSelD0bar()) {
-        candType |= o2::aod::full::SelD0bar;
-      }
-      fillTable(candidate, prong0, prong1, candType, massD0Cand, massD0barCand, ctsD0, ctsD0bar, ctD, yD, eD, 0, 0);
     }
   }
 
@@ -317,53 +426,67 @@ struct HfTreeCreatorD0ToKPi {
     }
 
     // Filling candidate properties
-    rowCandidateFull.reserve(recoFlag2Prongs.size());
-    for (auto const& candidate : recoFlag2Prongs) {
-      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
-        continue;
-      }
-      if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
-        continue;
-      }
-      int candType = 0;
-      auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-      auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
-      double yD = yD0(candidate);
-      double eD = eD0(candidate);
-      double ctD = ctD0(candidate);
-      double massD0Cand = invMassD0ToPiK(candidate);
-      double massD0barCand = invMassD0barToKPi(candidate);
-      double ctsD0 = cosThetaStarD0(candidate);
-      double ctsD0bar = cosThetaStarD0bar(candidate);
-      if (candidate.isSelD0() >= selectionFlagD0) {
-        candType |= o2::aod::full::SelD0;
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK) || candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
-          candType |= o2::aod::full::MatchedRec;
-          if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-            candType |= o2::aod::full::Prompt;
-          } else {
-            candType |= o2::aod::full::NonPrompt;
-          }
-          if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
-            candType |= o2::aod::full::ReflectedD0;
+    if (fillCandidateLiteTable) {
+      rowCandidateFull.reserve(recoFlag2Prongs.size());
+      for (auto const& candidate : recoFlag2Prongs) {
+        if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+          continue;
+        }
+        if (yCandMax >= 0. && std::abs(yD0(candidate)) > yCandMax) {
+          continue;
+        }
+        int candType = 0;
+        auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+        double massD0Cand = invMassD0ToPiK(candidate);
+        double massD0barCand = invMassD0barToKPi(candidate);
+        double ctsD0 = cosThetaStarD0(candidate);
+        double ctsD0bar = cosThetaStarD0bar(candidate);
+        double nSigCombPi0 = combineNsigmaTPCTOF(prong0.tpcNSigmaPi(), prong0.tofNSigmaPi());
+        double nSigCombPi1 = combineNsigmaTPCTOF(prong1.tpcNSigmaPi(), prong1.tofNSigmaPi());
+        double nSigCombKa0 = combineNsigmaTPCTOF(prong0.tpcNSigmaKa(), prong0.tofNSigmaKa());
+        double nSigCombKa1 = combineNsigmaTPCTOF(prong1.tpcNSigmaKa(), prong1.tofNSigmaKa());
+        if (candidate.isSelD0() >= selectionFlagD0) {
+          candType |= o2::aod::full::SelD0;
+          if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK) || candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
+            candType |= o2::aod::full::MatchedRec;
+            if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
+              candType |= o2::aod::full::Prompt;
+            } else {
+              candType |= o2::aod::full::NonPrompt;
+            }
+            if (candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
+              candType |= o2::aod::full::ReflectedD0;
+            }
           }
         }
-      }
-      if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        candType |= o2::aod::full::SelD0bar;
-        if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK) || candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
-          candType |= o2::aod::full::MatchedRec;
-          if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-            candType |= o2::aod::full::Prompt;
-          } else {
-            candType |= o2::aod::full::NonPrompt;
-          }
-          if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
-            candType |= o2::aod::full::ReflectedD0bar;
+        if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+          candType |= o2::aod::full::SelD0bar;
+          if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK) || candidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
+            candType |= o2::aod::full::MatchedRec;
+            if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
+              candType |= o2::aod::full::Prompt;
+            } else {
+              candType |= o2::aod::full::NonPrompt;
+            }
+            if (candidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+              candType |= o2::aod::full::ReflectedD0bar;
+            }
           }
         }
+        fillLiteTable(candidate, prong0, prong1, candType, massD0Cand, massD0barCand, ctsD0, ctsD0bar, nSigCombPi0, nSigCombPi1, nSigCombKa0, nSigCombKa1, candidate.flagMcMatchRec(), candidate.originMcRec());
       }
-      fillTable(candidate, prong0, prong1, candType, massD0Cand, massD0barCand, ctsD0, ctsD0bar, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+    } else {
+      rowCandidateFull.reserve(candidates.size());
+      for (auto const& candidate : candidates) {
+        auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong0_as<aod::BigTracksPID>();
+        double yD = yD0(candidate);
+        double eD = eD0(candidate);
+        double ctD = ctD0(candidate);
+        fillTable(candidate, prong0, prong1, 0, candidate.isSelD0(), invMassD0ToPiK(candidate), cosThetaStarD0(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+        fillTable(candidate, prong0, prong1, 1, candidate.isSelD0bar(), invMassD0barToKPi(candidate), cosThetaStarD0bar(candidate), ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+      }
     }
 
     // Filling particle properties
@@ -377,8 +500,7 @@ struct HfTreeCreatorD0ToKPi {
           particle.phi(),
           RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
           particle.flagMcMatchGen(),
-          particle.originMcGen(),
-          particle.globalIndex());
+          particle.originMcGen());
       }
     }
   }
