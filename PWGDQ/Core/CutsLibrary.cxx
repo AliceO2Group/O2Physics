@@ -1462,7 +1462,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("eventTPCMultLow")) {
-    cut->AddCut(VarManager::kMultTPC, 2, 50);
+    cut->AddCut(VarManager::kMultTPC, 0, 50);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventExclusivePair")) {
+    cut->AddCut(VarManager::kMultTPC, 2, 2);
     return cut;
   }
 
