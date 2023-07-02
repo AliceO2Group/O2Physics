@@ -445,6 +445,10 @@ struct skimmerGammaConversions {
           continue;
         }
 
+        if (!ele.has_mcParticle() || !pos.has_mcParticle()) {
+          continue; // If no MC particle is found, skip the v0
+        }
+
         eV0Confirmation v0Status = isTrueV0(v0, pos, ele);
 
         fRegistry.get<TH1>(HIST("hV0Confirmation"))->Fill(v0Status);
