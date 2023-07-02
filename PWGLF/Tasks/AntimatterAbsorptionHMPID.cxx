@@ -112,6 +112,7 @@ struct AntimatterAbsorptionHMPID {
     pos_reg.add("histTpcSignalData", "dE/dx", HistType::kTH2F,
                 {{500, 0.0, 5.0, "#it{p} (GeV/#it{c})"},
                  {1400, 0, 1400, "d#it{E}/d#it{x} (a. u.)"}});
+    pos_reg.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20.0, +20.0, "z_{vtx} (cm)"}});
     pos_reg.add("histTofSignalData", "TOF signal", HistType::kTH2F,
                 {{500, 0.0, 5.0, "#it{p} (GeV/#it{c})"},
                  {550, 0.0, 1.1, "#beta (TOF)"}});
@@ -250,8 +251,14 @@ struct AntimatterAbsorptionHMPID {
   void fillHistograms(const CollisionType& event, const TracksType& tracks)
   {
 
+    if (event.sel8())
+      pos_reg.fill(HIST("histRecVtxZData"), event.posZ());
+
     // Loop over Reconstructed Tracks
     for (auto track : tracks) {
+
+      if (!event.sel8())
+        continue;
 
       // Loose Track Selection
       if (!track.isGlobalTrackWoDCA())
