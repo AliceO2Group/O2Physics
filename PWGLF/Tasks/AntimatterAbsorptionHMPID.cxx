@@ -423,29 +423,28 @@ struct AntimatterAbsorptionHMPID {
         }
       }
     }
-
-    Filter collisionFilter = (nabs(aod::collision::posZ) < zVertexRange);
-    Filter trackFilter =
-      (nabs(aod::track::eta) < 0.8f && requireGlobalTrackWoDCAInFilter());
-
-    using EventCandidates =
-      soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
-
-    using TrackCandidates = soa::Filtered<soa::Join<
-      aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPr,
-      aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe,
-      aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe,
-      aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl,
-      aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal,
-      aod::pidTOFmass, aod::pidTOFbeta>>;
-
-    void processData(EventCandidates::iterator const& event,
-                     TrackCandidates const& tracks)
-    {
-      fillHistograms(event, tracks);
-    }
-    PROCESS_SWITCH(AntimatterAbsorptionHMPID, processData, "process data", true);
   }
+  Filter collisionFilter = (nabs(aod::collision::posZ) < zVertexRange);
+  Filter trackFilter =
+    (nabs(aod::track::eta) < 0.8f && requireGlobalTrackWoDCAInFilter());
+
+  using EventCandidates =
+    soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
+
+  using TrackCandidates = soa::Filtered<soa::Join<
+    aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPr,
+    aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe,
+    aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe,
+    aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl,
+    aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal,
+    aod::pidTOFmass, aod::pidTOFbeta>>;
+
+  void processData(EventCandidates::iterator const& event,
+                   TrackCandidates const& tracks)
+  {
+    fillHistograms(event, tracks);
+  }
+  PROCESS_SWITCH(AntimatterAbsorptionHMPID, processData, "process data", true);
 };
 
 //**********************************************************************************************************************************************
