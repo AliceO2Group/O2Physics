@@ -28,6 +28,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFQATables.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "TH1F.h"
 #include "TH2F.h"
 
@@ -55,8 +56,14 @@ struct MultiplicityQa {
 
   ConfigurableAxis axisContributors{"axisContributors", {100, -0.5f, 99.5f}, "Vertex z (cm)"};
   ConfigurableAxis axisNumberOfPVs{"axisNumberOfPVs", {10, -0.5f, 9.5f}, "Number of reconstructed PVs"};
+  ConfigurableAxis axisNchFT0{"axisNchFT0", {500, -0.5f, 499.5f}, "Number of charged particles in FT0 acceptance"};
 
   Configurable<bool> useZeqInProfiles{"useZeqInProfiles", true, "use Z-equalized signals in midrap Nch profiles"};
+
+  // necessary for particle charges
+  Service<O2DatabasePDG> pdgDB;
+
+  SliceCache cache;
 
   void init(InitContext&)
   {
@@ -106,6 +113,12 @@ struct MultiplicityQa {
       histos.add("multiplicityQa/h2dPVsVsFT0A", "FT0A", kTH2F, {axisMultFT0A, axisNumberOfPVs});
       histos.add("multiplicityQa/h2dPVsVsFT0C", "FT0C", kTH2F, {axisMultFT0C, axisNumberOfPVs});
       histos.add("multiplicityQa/h2dPVsVsFDD", "FDD", kTH2F, {axisMultFDD, axisNumberOfPVs});
+    }
+
+    if (doprocessMCCollisions) {
+      histos.add("multiplicityQa/h2dPVsVsNchT0M", "N(PV) vs Nch(FT0)", kTH2F, {axisNchFT0, axisNumberOfPVs});
+      histos.add("multiplicityQa/h2dNtracksVsNchT0M", "N(tracks) vs Nch(FT0)", kTH2F, {axisNchFT0, axisMultNTracks});
+      histos.add("multiplicityQa/h2dFT0MVsNchT0M", "FT0M sig vs Nch(FT0)", kTH2F, {axisNchFT0, axisMultFT0});
     }
 
     // Contributors correlation
@@ -258,7 +271,7 @@ struct MultiplicityQa {
     histos.fill(HIST("h2dNContribCorrAll"), NcontribsTRD, NcontribsTOF);
   }
 
-  void processMCCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::McCollisionLabels>::iterator const& col, soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions)
+  void processCollisionsWithMCInfo(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::McCollisionLabels>::iterator const& col, soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions)
   {
     if (selection == 7 && !col.sel7()) {
       return;
@@ -297,10 +310,80 @@ struct MultiplicityQa {
       histos.fill(HIST("multiplicityQa/h2dPVsVsFDD"), col.multFDDA() + col.multFDDC(), mcCollision.hasRecoCollision());
     }
   }
+
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+  Preslice<aod::TracksIU> perColIU = aod::track::collisionId;
+
+  using Run3Tracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
+  Partition<Run3Tracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+
+  void processMCCollisions(soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision, aod::McParticles const& mcParticles, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::MultZeqs, aod::Collisions>> const& collisions, Run3Tracks const&)
+  {
+    // This process function is to be used to loop over MC collisions and
+    //  --- understand the properties of PV finding versus true multiplicity
+    //  --- understand the correlation between true multiplicity and reconstructed multiplicity
+    //  --- Nota bene: further work separating the midrapidity response and the forward/midrapidity Nch correlation to be done
+
+    // step zero: particle counting!
+    // FITFT0:-3.3<η<-2.1,3.5<η<4.9
+    // FITFV0:2.2<η<5.0
+    // FITFDD:-6.9<η<-4.9,4.7<η<6.3
+
+    uint16_t nchFT0 = 0;
+    bool conditionINELgtZERO = false;
+
+    for (auto& mcParticle : mcParticles) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+      const auto& pdgInfo = pdgDB->GetParticle(mcParticle.pdgCode());
+      if (!pdgInfo) {
+        continue;
+      }
+      if (pdgInfo->Charge() == 0) {
+        continue;
+      }
+      if (fabs(mcParticle.eta()) < 1.0f) {
+        conditionINELgtZERO = true;
+      }
+      if (mcParticle.eta() < -3.3 || mcParticle.eta() > 4.9 || (mcParticle.eta() > -2.1 && mcParticle.eta() < 3.5)) {
+        continue; // select on T0M Nch region
+      }
+      nchFT0++; // increment
+    }
+    if (!conditionINELgtZERO && INELgtZERO)
+      return;
+
+    // Ingredient one: PV finding versus true multiplicity
+    histos.fill(HIST("multiplicityQa/h2dPVsVsNchT0M"), nchFT0, mcCollision.hasRecoCollision());
+
+    // Ingredient two: true multiplicity vs reco multiplicity
+    // important: reco multiplicity of which collision, exactly?
+    // to be understood - could study first and second collision separately
+    int biggestNContribs = -1;
+    uint16_t ntracks = 0;
+    float biggestFT0 = 0.0f;
+    for (auto& collision : collisions) {
+      if (biggestNContribs < collision.numContrib()) {
+        biggestNContribs = collision.numContrib();
+        auto tracksGrouped = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+        ntracks = tracksGrouped.size();
+        if (useZeqInProfiles) {
+          biggestFT0 = collision.multFT0A() + collision.multFT0C();
+        } else {
+          biggestFT0 = collision.multZeqFT0A() + collision.multZeqFT0C();
+        }
+      }
+    }
+    histos.fill(HIST("multiplicityQa/h2dNtracksVsNchT0M"), nchFT0, ntracks);
+    histos.fill(HIST("multiplicityQa/h2dFT0MVsNchT0M"), nchFT0, biggestFT0);
+  }
+
   PROCESS_SWITCH(MultiplicityQa, processCollisions, "per-collision analysis", true);
   PROCESS_SWITCH(MultiplicityQa, processBCs, "per-BC analysis", false);
   PROCESS_SWITCH(MultiplicityQa, processCollisionsPVChecks, "do PV contributors check", false);
-  PROCESS_SWITCH(MultiplicityQa, processMCCollisions, "verify mc collisions", false);
+  PROCESS_SWITCH(MultiplicityQa, processCollisionsWithMCInfo, "analyse collisions + correlate with MC info", false);
+  PROCESS_SWITCH(MultiplicityQa, processMCCollisions, "analyse MC collisions", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
