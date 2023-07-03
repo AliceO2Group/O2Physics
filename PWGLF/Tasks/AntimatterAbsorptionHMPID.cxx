@@ -259,171 +259,168 @@ struct AntimatterAbsorptionHMPID {
     // Loop over Reconstructed Tracks
     for (auto track : tracks) {
 
-      // Loop over Reconstructed Tracks
-      for (auto track : tracks) {
+      // Loose Track Selection
+      if (!track.isGlobalTrackWoDCA())
+        continue;
+      if (!track.passedITSRefit())
+        continue;
+      if (!track.passedTPCRefit())
+        continue;
+      if (track.itsNCls() < 1)
+        continue;
+      if (track.tpcNClsFound() < 0)
+        continue;
+      if (track.tpcNClsCrossedRows() < 60)
+        continue;
+      if (TMath::Abs(track.dcaXY()) > 1.0)
+        continue;
+      if (TMath::Abs(track.dcaZ()) > 1.0)
+        continue;
+      if (enable_PVcontributor_global && !(track.isPVContributor()))
+        continue;
 
-        // Loose Track Selection
-        if (!track.isGlobalTrackWoDCA())
-          continue;
-        if (!track.passedITSRefit())
-          continue;
-        if (!track.passedTPCRefit())
-          continue;
-        if (track.itsNCls() < 1)
-          continue;
-        if (track.tpcNClsFound() < 0)
-          continue;
-        if (track.tpcNClsCrossedRows() < 60)
-          continue;
-        if (TMath::Abs(track.dcaXY()) > 1.0)
-          continue;
-        if (TMath::Abs(track.dcaZ()) > 1.0)
-          continue;
-        if (enable_PVcontributor_global && !(track.isPVContributor()))
-          continue;
+      // Fill QA Histograms (Positive Tracks)
+      if (track.sign() > 0) {
 
-        // Fill QA Histograms (Positive Tracks)
+        pos_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(),
+                     track.tpcSignal());
+        pos_reg.fill(HIST("histTofSignalData"), track.p(), track.beta());
+        pos_reg.fill(HIST("histDcaxyVsPData"), track.p(), track.dcaXY());
+        pos_reg.fill(HIST("histDcaZVsPtData"), track.p(), track.dcaZ());
+        pos_reg.fill(HIST("histNClusterTPC"), track.p(), track.tpcNClsFound());
+        pos_reg.fill(HIST("histNCrossedRowTPC"), track.p(),
+                     track.tpcNClsCrossedRows());
+        pos_reg.fill(HIST("histNClusterITS"), track.p(), track.itsNCls());
+        pos_reg.fill(HIST("histChi2TPC"), track.p(), track.tpcChi2NCl());
+        pos_reg.fill(HIST("histChi2ITS"), track.p(), track.itsChi2NCl());
+        pos_reg.fill(HIST("histEta"), track.p(), track.eta());
+        pos_reg.fill(HIST("histPhi"), track.p(), track.phi());
+      }
+
+      // Fill QA Histograms (Negative Tracks)
+      if (track.sign() < 0) {
+
+        neg_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(),
+                     track.tpcSignal());
+        neg_reg.fill(HIST("histTofSignalData"), track.p(), track.beta());
+        neg_reg.fill(HIST("histDcaxyVsPData"), track.p(), track.dcaXY());
+        neg_reg.fill(HIST("histDcaZVsPtData"), track.p(), track.dcaZ());
+        neg_reg.fill(HIST("histNClusterTPC"), track.p(), track.tpcNClsFound());
+        neg_reg.fill(HIST("histNCrossedRowTPC"), track.p(),
+                     track.tpcNClsCrossedRows());
+        neg_reg.fill(HIST("histNClusterITS"), track.p(), track.itsNCls());
+        neg_reg.fill(HIST("histChi2TPC"), track.p(), track.tpcChi2NCl());
+        neg_reg.fill(HIST("histChi2ITS"), track.p(), track.itsChi2NCl());
+        neg_reg.fill(HIST("histEta"), track.p(), track.eta());
+        neg_reg.fill(HIST("histPhi"), track.p(), track.phi());
+      }
+
+      // Track Selection
+      if (!track.passedITSRefit())
+        continue;
+      if (!track.passedTPCRefit())
+        continue;
+      if (track.itsNCls() < minReqClusterITS)
+        continue;
+      if (track.tpcNClsFound() < minTPCnClsFound)
+        continue;
+      if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+        continue;
+      if (track.tpcChi2NCl() > maxChi2TPC)
+        continue;
+      if (track.itsChi2NCl() > maxChi2ITS)
+        continue;
+      if (TMath::Abs(track.dcaXY()) > maxDCA_xy)
+        continue;
+      if (TMath::Abs(track.dcaZ()) > maxDCA_z)
+        continue;
+      if (track.eta() < etaMin)
+        continue;
+      if (track.eta() > etaMax)
+        continue;
+      if (track.phi() < phiMin)
+        continue;
+      if (track.phi() > phiMax)
+        continue;
+
+      if (track.sign() > 0) {
+        pion_pos_reg.fill(HIST("histTpcNsigmaData"), track.p(),
+                          track.tpcNSigmaPi());
+        kaon_pos_reg.fill(HIST("histTpcNsigmaData"), track.p(),
+                          track.tpcNSigmaKa());
+        proton_reg.fill(HIST("histTpcNsigmaData"), track.p(),
+                        track.tpcNSigmaPr());
+        deuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(),
+                          track.tpcNSigmaDe());
+      }
+
+      if (track.sign() < 0) {
+        pion_neg_reg.fill(HIST("histTpcNsigmaData"), track.p(),
+                          track.tpcNSigmaPi());
+        kaon_neg_reg.fill(HIST("histTpcNsigmaData"), track.p(),
+                          track.tpcNSigmaKa());
+        antiproton_reg.fill(HIST("histTpcNsigmaData"), track.p(),
+                            track.tpcNSigmaPr());
+        antideuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(),
+                              track.tpcNSigmaDe());
+      }
+
+      bool passedPionTPCsel = false;
+      bool passedKaonTPCsel = false;
+      bool passedProtTPCsel = false;
+      bool passedDeutTPCsel = false;
+
+      if (track.tpcNSigmaPi() > nsigmaTPCMin &&
+          track.tpcNSigmaPi() < nsigmaTPCMax)
+        passedPionTPCsel = true;
+
+      if (track.tpcNSigmaKa() > nsigmaTPCMin &&
+          track.tpcNSigmaKa() < nsigmaTPCMax)
+        passedKaonTPCsel = true;
+
+      if (track.tpcNSigmaPr() > nsigmaTPCMin &&
+          track.tpcNSigmaPr() < nsigmaTPCMax)
+        passedProtTPCsel = true;
+      if (track.tpcNSigmaDe() > nsigmaTPCMin &&
+          track.tpcNSigmaDe() < nsigmaTPCMax)
+        passedDeutTPCsel = true;
+
+      if (track.hasTOF()) {
         if (track.sign() > 0) {
+          if (passedPionTPCsel)
+            pion_pos_reg.fill(HIST("histTofNsigmaData"), track.p(),
+                              track.tofNSigmaPi());
 
-          pos_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(),
-                       track.tpcSignal());
-          pos_reg.fill(HIST("histTofSignalData"), track.p(), track.beta());
-          pos_reg.fill(HIST("histDcaxyVsPData"), track.p(), track.dcaXY());
-          pos_reg.fill(HIST("histDcaZVsPtData"), track.p(), track.dcaZ());
-          pos_reg.fill(HIST("histNClusterTPC"), track.p(), track.tpcNClsFound());
-          pos_reg.fill(HIST("histNCrossedRowTPC"), track.p(),
-                       track.tpcNClsCrossedRows());
-          pos_reg.fill(HIST("histNClusterITS"), track.p(), track.itsNCls());
-          pos_reg.fill(HIST("histChi2TPC"), track.p(), track.tpcChi2NCl());
-          pos_reg.fill(HIST("histChi2ITS"), track.p(), track.itsChi2NCl());
-          pos_reg.fill(HIST("histEta"), track.p(), track.eta());
-          pos_reg.fill(HIST("histPhi"), track.p(), track.phi());
-        }
-
-        // Fill QA Histograms (Negative Tracks)
-        if (track.sign() < 0) {
-
-          neg_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(),
-                       track.tpcSignal());
-          neg_reg.fill(HIST("histTofSignalData"), track.p(), track.beta());
-          neg_reg.fill(HIST("histDcaxyVsPData"), track.p(), track.dcaXY());
-          neg_reg.fill(HIST("histDcaZVsPtData"), track.p(), track.dcaZ());
-          neg_reg.fill(HIST("histNClusterTPC"), track.p(), track.tpcNClsFound());
-          neg_reg.fill(HIST("histNCrossedRowTPC"), track.p(),
-                       track.tpcNClsCrossedRows());
-          neg_reg.fill(HIST("histNClusterITS"), track.p(), track.itsNCls());
-          neg_reg.fill(HIST("histChi2TPC"), track.p(), track.tpcChi2NCl());
-          neg_reg.fill(HIST("histChi2ITS"), track.p(), track.itsChi2NCl());
-          neg_reg.fill(HIST("histEta"), track.p(), track.eta());
-          neg_reg.fill(HIST("histPhi"), track.p(), track.phi());
-        }
-
-        // Track Selection
-        if (!track.passedITSRefit())
-          continue;
-        if (!track.passedTPCRefit())
-          continue;
-        if (track.itsNCls() < minReqClusterITS)
-          continue;
-        if (track.tpcNClsFound() < minTPCnClsFound)
-          continue;
-        if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
-          continue;
-        if (track.tpcChi2NCl() > maxChi2TPC)
-          continue;
-        if (track.itsChi2NCl() > maxChi2ITS)
-          continue;
-        if (TMath::Abs(track.dcaXY()) > maxDCA_xy)
-          continue;
-        if (TMath::Abs(track.dcaZ()) > maxDCA_z)
-          continue;
-        if (track.eta() < etaMin)
-          continue;
-        if (track.eta() > etaMax)
-          continue;
-        if (track.phi() < phiMin)
-          continue;
-        if (track.phi() > phiMax)
-          continue;
-
-        if (track.sign() > 0) {
-          pion_pos_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                            track.tpcNSigmaPi());
-          kaon_pos_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                            track.tpcNSigmaKa());
-          proton_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                          track.tpcNSigmaPr());
-          deuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                            track.tpcNSigmaDe());
+          if (passedKaonTPCsel)
+            kaon_pos_reg.fill(HIST("histTofNsigmaData"), track.p(),
+                              track.tofNSigmaKa());
+          if (passedProtTPCsel)
+            proton_reg.fill(HIST("histTofNsigmaData"), track.p(),
+                            track.tofNSigmaPr());
+          if (passedDeutTPCsel)
+            deuteron_reg.fill(HIST("histTofNsigmaData"), track.p(),
+                              track.tofNSigmaDe());
         }
 
         if (track.sign() < 0) {
-          pion_neg_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                            track.tpcNSigmaPi());
-          kaon_neg_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                            track.tpcNSigmaKa());
-          antiproton_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                              track.tpcNSigmaPr());
-          antideuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                                track.tpcNSigmaDe());
-        }
+          if (passedPionTPCsel)
+            pion_neg_reg.fill(HIST("histTofNsigmaData"), track.p(),
+                              track.tofNSigmaPi());
 
-        bool passedPionTPCsel = false;
-        bool passedKaonTPCsel = false;
-        bool passedProtTPCsel = false;
-        bool passedDeutTPCsel = false;
-
-        if (track.tpcNSigmaPi() > nsigmaTPCMin &&
-            track.tpcNSigmaPi() < nsigmaTPCMax)
-          passedPionTPCsel = true;
-
-        if (track.tpcNSigmaKa() > nsigmaTPCMin &&
-            track.tpcNSigmaKa() < nsigmaTPCMax)
-          passedKaonTPCsel = true;
-
-        if (track.tpcNSigmaPr() > nsigmaTPCMin &&
-            track.tpcNSigmaPr() < nsigmaTPCMax)
-          passedProtTPCsel = true;
-        if (track.tpcNSigmaDe() > nsigmaTPCMin &&
-            track.tpcNSigmaDe() < nsigmaTPCMax)
-          passedDeutTPCsel = true;
-
-        if (track.hasTOF()) {
-          if (track.sign() > 0) {
-            if (passedPionTPCsel)
-              pion_pos_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                                track.tofNSigmaPi());
-
-            if (passedKaonTPCsel)
-              kaon_pos_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                                track.tofNSigmaKa());
-            if (passedProtTPCsel)
-              proton_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                              track.tofNSigmaPr());
-            if (passedDeutTPCsel)
-              deuteron_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                                track.tofNSigmaDe());
-          }
-
-          if (track.sign() < 0) {
-            if (passedPionTPCsel)
-              pion_neg_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                                track.tofNSigmaPi());
-
-            if (passedKaonTPCsel)
-              kaon_neg_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                                track.tofNSigmaKa());
-            if (passedProtTPCsel)
-              antiproton_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                                  track.tofNSigmaPr());
-            if (passedDeutTPCsel)
-              antideuteron_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                                    track.tofNSigmaDe());
-          }
+          if (passedKaonTPCsel)
+            kaon_neg_reg.fill(HIST("histTofNsigmaData"), track.p(),
+                              track.tofNSigmaKa());
+          if (passedProtTPCsel)
+            antiproton_reg.fill(HIST("histTofNsigmaData"), track.p(),
+                                track.tofNSigmaPr());
+          if (passedDeutTPCsel)
+            antideuteron_reg.fill(HIST("histTofNsigmaData"), track.p(),
+                                  track.tofNSigmaDe());
         }
       }
     }
   }
+
   Filter collisionFilter = (nabs(aod::collision::posZ) < zVertexRange);
   Filter trackFilter =
     (nabs(aod::track::eta) < 0.8f && requireGlobalTrackWoDCAInFilter());
