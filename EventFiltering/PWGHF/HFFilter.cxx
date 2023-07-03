@@ -17,7 +17,7 @@
 /// \author Marcel Lesch <marcel.lesch@tum.de>, TUM
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, Strasbourg University
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
-/// \author Federica Zanone <federica.zanone@cern.ch>, GSI
+/// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 
