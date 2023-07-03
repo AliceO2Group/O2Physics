@@ -87,12 +87,6 @@ struct cascqaanalysis {
     AxisSpec allTracks = {2000, 0, 2000, "N_{all tracks}"};
     AxisSpec secondaryTracks = {2000, 0, 2000, "N_{secondary tracks}"};
     registry.add("hINELgt0PrimariesSelection", "hINELgt0PrimariesSelection", {HistType::kTH2F, {allTracks, secondaryTracks}});
-    registry.add("hDCAz_BefCut", "hDCAz_BefCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAz"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
-    registry.add("hDCAz_AfterCut", "hDCAz_AfterCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAz"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
-    registry.add("hDCAxy_BefCut", "hDCAxy_BefCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
-    registry.add("hDCAxy_AfterCut", "hDCAxy_AfterCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
-    registry.add("hNchMultFT0M", "hNchMultFT0M", HistType::kTH2F, {{300, 0.0f, 300.0f, "N_{ch}"}, {10000, 0.f, 10000.f, "FT0M signal"}});
-    registry.add("hNchMultFV0A", "hNchMultFV0A", HistType::kTH2F, {{300, 0.0f, 300.0f, "N_{ch}"}, {15000, 0.f, 15000.f, "FV0A signal"}});
   }
 
   // Event selection criteria
@@ -239,21 +233,6 @@ struct cascqaanalysis {
     }
   }
 
-  template <typename TCollision, typename TTracks>
-  void fillMultHisto(TCollision const& collision, TTracks const& tracks)
-  {
-    double Nch = 0;
-    for (const auto& track : tracks) {
-      if (TMath::Abs(track.eta()) > 0.5)
-        continue;
-      if (!isPrimaryTrack(track)) // TODO: check for primaries in a better way
-        continue;
-      Nch++;
-    }
-    registry.fill(HIST("hNchMultFT0M"), Nch, collision.multFT0A() + collision.multFT0C());
-    registry.fill(HIST("hNchMultFV0A"), Nch, collision.multFV0A());
-  }
-
   void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                    soa::Filtered<aod::CascDataExt> const& Cascades,
                    aod::V0sLinked const&,
@@ -334,8 +313,6 @@ struct cascqaanalysis {
       return;
     }
 
-    fillMultHisto(collision, Tracks);
-
     float lEventScale = scalefactor;
 
     for (const auto& casc : Cascades) {              // loop over Cascades
@@ -387,7 +364,7 @@ struct cascqaanalysis {
             lPDG = cascmc.pdgCode();
             isPrimary = cascmc.isPhysicalPrimary() ? 1 : 0;
           }
-        }
+        } 
         // Fill table
         if (fRand->Rndm() < lEventScale) {
           mycascades(casc.globalIndex(), collision.posZ(), collision.multFT0A() + collision.multFT0C(), collision.multFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
