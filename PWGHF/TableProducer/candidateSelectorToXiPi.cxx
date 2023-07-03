@@ -550,7 +550,7 @@ struct HfCandidateSelectorToXiPi {
 
         if (candidate.collisionId() != collId) {
           hNEventsSaved->Fill(0.5);
-          collId = trackPiFromCasc.collisionId();
+          collId = candidate.collisionId();
         }
       }
     }
