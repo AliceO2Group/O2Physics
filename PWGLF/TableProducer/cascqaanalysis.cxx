@@ -59,7 +59,7 @@ struct cascqaanalysis {
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }
-    registry.add("hNAssocCollisions", "hNAssocCollisions", {HistType::kTH1F, {{5, -0.5f, 4.5f}}});
+    registry.add("hNAssocMCCollisions", "hNAssocMCCollisions", {HistType::kTH1F, {{5, -0.5f, 4.5f}}});
     registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
     registry.add("hZCollision", "hZCollision", {HistType::kTH1F, {{200, -20.f, 20.f}}});
     registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1F, {{200, -20.f, 20.f}}});
@@ -172,7 +172,7 @@ struct cascqaanalysis {
       registry.fill(HIST("hNEvents"), 2.5);
     }
 
-    if (INELgt0 && !isINELgt0(tracks, isFillEventSelectionQA)) {
+    if (INELgt0 && collision.multNTracksPVeta1() < 1) {
       return false;
     }
     if (isFillEventSelectionQA) {
@@ -191,43 +191,6 @@ struct cascqaanalysis {
   bool isPrimaryTrack(TTrack track)
   {
     return (TMath::Abs(track.dcaXY()) < (maxDCANsigmaScaling * (DCASigma + DCAPtScaling / track.pt()))) && (TMath::Abs(track.dcaZ()) < maxDCAz);
-  }
-
-  template <typename TTracks>
-  bool isINELgt0(TTracks tracks, bool isFillEventSelectionQA)
-  {
-    // INEL > 0 (at least 1 charged track in |eta| < 1.0)
-    std::vector<float> TracksEta(tracks.size());
-    int nTracks = 0;
-    int nRejTracks = 0;
-
-    for (const auto& track : tracks) {
-      registry.fill(HIST("hDCAxy_BefCut"), track.dcaXY(), track.pt());
-      registry.fill(HIST("hDCAz_BefCut"), track.dcaZ(), track.pt());
-
-      if (!isPrimaryTrack(track)) {
-        nRejTracks++;
-        continue; // consider only primaries
-      }
-      TracksEta[nTracks++] = track.eta();
-
-      registry.fill(HIST("hDCAxy_AfterCut"), track.dcaXY(), track.pt());
-      registry.fill(HIST("hDCAz_AfterCut"), track.dcaZ(), track.pt());
-    }
-
-    if (isFillEventSelectionQA) {
-      registry.fill(HIST("hINELgt0PrimariesSelection"), tracks.size(), nRejTracks);
-    }
-
-    auto etaConditionFunc = [](float elem) {
-      return TMath::Abs(elem) < 1.0;
-    };
-
-    if (std::any_of(TracksEta.begin(), TracksEta.end(), etaConditionFunc)) {
-      return true;
-    } else {
-      return false;
-    }
   }
 
   template <typename TMcParticles>
@@ -283,7 +246,7 @@ struct cascqaanalysis {
     for (const auto& track : tracks) {
       if (TMath::Abs(track.eta()) > 0.5)
         continue;
-      if (!isPrimaryTrack(track))
+      if (!isPrimaryTrack(track)) // TODO: check for primaries in a better way
         continue;
       Nch++;
     }
@@ -499,7 +462,7 @@ struct cascqaanalysis {
       }
     }
     SelectedEvents.resize(nevts);
-    registry.fill(HIST("hNAssocCollisions"), nAssocColl);
+    registry.fill(HIST("hNAssocMCCollisions"), nAssocColl);
     if (NumberOfContributors.size() == 2) {
       std::sort(NumberOfContributors.begin(), NumberOfContributors.end());
       registry.fill(HIST("hNContributorsCorrelation"), NumberOfContributors[0], NumberOfContributors[1]);
