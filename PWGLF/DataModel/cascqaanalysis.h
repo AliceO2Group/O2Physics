@@ -45,9 +45,9 @@ namespace mycascades
 {
 
 enum EvFlags : uint8_t {
-  EvINEL = 0x1,  // INEL Event
-  EvINELgt0 = 0x2,    // Event with at least 1 PV contributors from the |eta| < 1
-  EvINELgt1 = 0x4   // Event with at least 2 PV contributors from the |eta| < 1
+  EvINEL = 0x1,    // INEL Event
+  EvINELgt0 = 0x2, // Event with at least 1 PV contributors from the |eta| < 1
+  EvINELgt1 = 0x4  // Event with at least 2 PV contributors from the |eta| < 1
 };
 
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
@@ -128,10 +128,10 @@ DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
                   mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF,
                   mycascades::PosPt, mycascades::NegPt, mycascades::BachPt,
                   mycascades::McPdgCode, mycascades::IsPrimary,
-                  mycascades::BachBaryonCosPA, mycascades::BachBaryonDCAxyToPV, 
+                  mycascades::BachBaryonCosPA, mycascades::BachBaryonDCAxyToPV,
                   mycascades::EventSelFilterBitMask,
-                  mycascades::IsINEL<mycascades::EventSelFilterBitMask>, 
-                  mycascades::IsINELgt0<mycascades::EventSelFilterBitMask>, 
+                  mycascades::IsINEL<mycascades::EventSelFilterBitMask>,
+                  mycascades::IsINELgt0<mycascades::EventSelFilterBitMask>,
                   mycascades::IsINELgt1<mycascades::EventSelFilterBitMask>);
 
 } // namespace o2::aod
