@@ -445,12 +445,13 @@ struct AntimatterAbsorptionHMPID {
       fillHistograms(event, tracks);
     }
     PROCESS_SWITCH(AntimatterAbsorptionHMPID, processData, "process data", true);
-  };
-
-  //**********************************************************************************************************************************************
-
-  WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-  {
-    return WorkflowSpec{adaptAnalysisTask<AntimatterAbsorptionHMPID>(
-      cfgc)};
   }
+};
+
+//**********************************************************************************************************************************************
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<AntimatterAbsorptionHMPID>(
+    cfgc)};
+}
