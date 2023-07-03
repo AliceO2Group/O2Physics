@@ -49,7 +49,7 @@ struct HfCandidateSelectorToXiPi {
   Configurable<double> invMassOmegacMax{"invMassOmegacMax", 3.1, "Upper limit invariant mass spectrum charm baryon"};
 
   // kinematic selections
-  Configurable<double> etaTrackMax{"etaTrackMax", 1.0, "Max absolute value of eta"};
+  Configurable<double> etaTrackMax{"etaTrackMax", 0.8, "Max absolute value of eta"};
   Configurable<double> ptPiFromCascMin{"ptPiFromCascMin", 0.15, "Min pT pi <- casc"};
   Configurable<double> ptPiFromOmeMin{"ptPiFromOmeMin", 0.2, "Min pT pi <- omegac"};
 
