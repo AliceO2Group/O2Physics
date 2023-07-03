@@ -17,7 +17,7 @@
 /// \author Marcel Lesch <marcel.lesch@tum.de>, TUM
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, Strasbourg University
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
-/// \author Federica Zanone <federica.zanone@cern.ch>, CCNU
+/// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
 #ifndef EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_
 #define EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_
@@ -926,8 +926,8 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
   // PID
   float nSigmaPrTpc[3] = {-999., dauTracks[1].tpcNSigmaPr(), dauTracks[2].tpcNSigmaPr()};
   float nSigmaPrTof[3] = {-999., dauTracks[1].tofNSigmaPr(), dauTracks[2].tofNSigmaPr()};
-  float nSigmaPiTpc[3] = {dauTracks[0].tpcNSigmaPr(), dauTracks[1].tpcNSigmaPr(), dauTracks[2].tpcNSigmaPr()};
-  float nSigmaPiTof[3] = {dauTracks[0].tofNSigmaPr(), dauTracks[1].tofNSigmaPr(), dauTracks[2].tofNSigmaPr()};
+  float nSigmaPiTpc[3] = {dauTracks[0].tpcNSigmaPi(), dauTracks[1].tpcNSigmaPi(), dauTracks[2].tpcNSigmaPi()};
+  float nSigmaPiTof[3] = {dauTracks[0].tofNSigmaPi(), dauTracks[1].tofNSigmaPi(), dauTracks[2].tofNSigmaPi()};
   if (setTPCCalib == 1) {
     for (int iDau{0}; iDau < 3; ++iDau) {
       nSigmaPiTpc[iDau] = getTPCPostCalib(hMapPion, dauTracks[iDau], kPi);
