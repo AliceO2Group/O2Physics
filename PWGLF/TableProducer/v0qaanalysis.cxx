@@ -260,7 +260,7 @@ struct v0qaanalysis {
           continue;
         }
 
-        if (std::abs(mcParticle.pdgCode() == 211)) {
+        if (std::abs(mcParticle.pdgCode()) == 211) {
           if (mcParticle.eta() <= -2.3 && mcParticle.eta() >= -3.4) {
             isFT0C = true;
           }

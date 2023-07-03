@@ -19,13 +19,12 @@
 /// \author Jinjoo Seo <jseo@cern.ch>, Inha University
 /// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
 
-#include <algorithm>
+#include <algorithm> // std::find
+#include <iterator>  // std::distance
+#include <string>    // std::string
+#include <vector>    // std::vector
 
-#include "CCDB/BasicCCDBManager.h" // for PV refit
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "CCDB/BasicCCDBManager.h"             // for PV refit
 #include "DataFormatsParameters/GRPMagField.h" // for PV refit
 #include "DataFormatsParameters/GRPObject.h"   // for PV refit
 #include "DCAFitter/DCAFitterN.h"
@@ -36,6 +35,11 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/V0.h"
 #include "ReconstructionDataFormats/Vertex.h" // for PV refit
+
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 

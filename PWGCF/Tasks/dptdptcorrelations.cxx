@@ -214,7 +214,7 @@ struct DptDptCorrelationsTask {
     {
       LOGF(info, "Stored pT average for %d track ids", ptavgs.size());
       for (uint i = 0; i < ptavgs.size(); ++i) {
-        LOGF(info, "  Stored pT average for track id %s %s", ptavgs[i] != nullptr ? "yes" : "no");
+        LOGF(info, "  Stored pT average for track id %d %s", i, ptavgs[i] != nullptr ? "yes" : "no");
         fhPtAvg_vsEtaPhi[i] = ptavgs[i];
       }
       ccdbstored = true;
@@ -1011,6 +1011,33 @@ struct DptDptCorrelationsTask {
   }
   PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevelCheck, "Process reco level checks", true);
 
+  void processGenLevelCheck(aod::McCollisions const& mccollisions, aod::McParticles& particles)
+  {
+    int nAssignedParticles = 0;
+    int nNotAssignedParticles = 0;
+    int64_t firstNotAssignedIndex = -1;
+    int64_t lastNotAssignedIndex = -1;
+
+    for (auto particle : particles) {
+      if (particle.has_mcCollision()) {
+        nAssignedParticles++;
+      } else {
+        nNotAssignedParticles++;
+        if (firstNotAssignedIndex < 0) {
+          firstNotAssignedIndex = particle.globalIndex();
+        } else {
+          lastNotAssignedIndex = particle.globalIndex();
+        }
+      }
+    }
+    LOGF(info, "Received %d generated collisions and %d particles.", mccollisions.size(), particles.size());
+    LOGF(info, "  Assigned tracks %d", nAssignedParticles);
+    LOGF(info, "  Not assigned tracks %d", nNotAssignedParticles);
+    LOGF(info, "  First not assigned track index %d", firstNotAssignedIndex);
+    LOGF(info, "  Last not assigned track index %d", lastNotAssignedIndex);
+  }
+  PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevelCheck, "Process generator level checks", true);
+
   void processRecLevelNotStored(
     soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
     aod::BCsWithTimestamps const&,
@@ -1033,9 +1060,9 @@ struct DptDptCorrelationsTask {
 
   void processGenLevelNotStored(
     soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>::iterator const& collision,
-    soa::Filtered<aod::ScannedTrueTracks>& tracks)
+    soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>>& particles)
   {
-    processSame<true>(collision, tracks);
+    processSame<true>(collision, particles);
   }
   PROCESS_SWITCH(DptDptCorrelationsTask,
                  processGenLevelNotStored,

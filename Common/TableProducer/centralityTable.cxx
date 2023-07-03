@@ -54,6 +54,7 @@ struct CentralityTable {
   Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
   Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
   Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
+  Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
 
   int mRunNumber;
   struct tagRun2V0MCalibration {
@@ -399,7 +400,7 @@ struct CentralityTable {
         }
       }
 
-      auto populateTable = [](auto& table, struct calibrationInfo& estimator, float multiplicity) {
+      auto populateTable = [](auto& table, struct calibrationInfo& estimator, float multiplicity, bool assignOutOfRange) {
         auto scaleMC = [](float x, float pars[6]) {
           return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
         };
@@ -412,28 +413,31 @@ struct CentralityTable {
             LOGF(debug, "Unscaled %s multiplicity: %f, scaled %s multiplicity: %f", estimator.name.c_str(), multiplicity, estimator.name.c_str(), scaledMultiplicity);
           }
           percentile = estimator.mhMultSelCalib->GetBinContent(estimator.mhMultSelCalib->FindFixBin(scaledMultiplicity));
+          if (assignOutOfRange)
+            percentile = 100.5f;
         }
         LOGF(debug, "%s centrality/multiplicity percentile = %.0f for a zvtx eq %s value %.0f", estimator.name.c_str(), percentile, estimator.name.c_str(), scaledMultiplicity);
         table(percentile);
       };
 
       if (estFV0A == 1) {
-        populateTable(centFV0A, FV0AInfo, collision.multZeqFV0A());
+        populateTable(centFV0A, FV0AInfo, collision.multZeqFV0A(), collision.multNTracksPVeta1() < 1 && embedINELgtZEROselection);
+      } else {
       }
       if (estFT0M == 1) {
-        populateTable(centFT0M, FT0MInfo, collision.multZeqFT0A() + collision.multZeqFT0C());
+        populateTable(centFT0M, FT0MInfo, collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPVeta1() < 1 && embedINELgtZEROselection);
       }
       if (estFT0A == 1) {
-        populateTable(centFT0A, FT0AInfo, collision.multZeqFT0A());
+        populateTable(centFT0A, FT0AInfo, collision.multZeqFT0A(), collision.multNTracksPVeta1() < 1 && embedINELgtZEROselection);
       }
       if (estFT0C == 1) {
-        populateTable(centFT0C, FT0CInfo, collision.multZeqFT0C());
+        populateTable(centFT0C, FT0CInfo, collision.multZeqFT0C(), collision.multNTracksPVeta1() < 1 && embedINELgtZEROselection);
       }
       if (estFDDM == 1) {
-        populateTable(centFDDM, FDDMInfo, collision.multZeqFDDA() + collision.multZeqFDDC());
+        populateTable(centFDDM, FDDMInfo, collision.multZeqFDDA() + collision.multZeqFDDC(), collision.multNTracksPVeta1() < 1 && embedINELgtZEROselection);
       }
       if (estNTPV == 1) {
-        populateTable(centNTPV, NTPVInfo, collision.multZeqNTracksPV());
+        populateTable(centNTPV, NTPVInfo, collision.multZeqNTracksPV(), collision.multNTracksPVeta1() < 1 && embedINELgtZEROselection);
       }
     }
   }

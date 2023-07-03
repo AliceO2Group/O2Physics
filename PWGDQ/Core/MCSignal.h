@@ -53,8 +53,8 @@ process(aod::McParticles const& mcTracks) {
 }
 }
 */
-#ifndef MCSignal_H
-#define MCSignal_H
+#ifndef PWGDQ_CORE_MCSIGNAL_H_
+#define PWGDQ_CORE_MCSIGNAL_H_
 
 #include "MCProng.h"
 #include "TNamed.h"
@@ -129,6 +129,80 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
 {
   using P = typename T::parent_t;
   auto currentMCParticle = track;
+
+  // check if mother pdg is in history
+  if (fProngs[i].fPDGInHistory) {
+    std::vector<bool> pdgInHistory;
+    // check the PDG code of currentMCParticle
+    if (!fProngs[i].TestPDG(0, currentMCParticle.pdgCode())) {
+      return false;
+    }
+
+    if (checkSources && fProngs[i].fSourceBits[0]) {
+      // check source of first prong
+      uint64_t sourcesDecision = 0;
+      // Check kPhysicalPrimary
+      if (fProngs[i].fSourceBits[0] & (uint64_t(1) << MCProng::kPhysicalPrimary)) {
+        if ((fProngs[i].fExcludeSource[0] & (uint64_t(1) << MCProng::kPhysicalPrimary)) != currentMCParticle.isPhysicalPrimary()) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kPhysicalPrimary);
+        }
+      }
+      // Check kProducedInTransport
+      if (fProngs[i].fSourceBits[0] & (uint64_t(1) << MCProng::kProducedInTransport)) {
+        if ((fProngs[i].fExcludeSource[0] & (uint64_t(1) << MCProng::kProducedInTransport)) != (!currentMCParticle.producedByGenerator())) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kProducedInTransport);
+        }
+      }
+      // Check kProducedByGenerator
+      if (fProngs[i].fSourceBits[0] & (uint64_t(1) << MCProng::kProducedByGenerator)) {
+        if ((fProngs[i].fExcludeSource[0] & (uint64_t(1) << MCProng::kProducedByGenerator)) != currentMCParticle.producedByGenerator()) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kProducedByGenerator);
+        }
+      }
+      // Check kFromBackgroundEvent
+      if (fProngs[i].fSourceBits[0] & (uint64_t(1) << MCProng::kFromBackgroundEvent)) {
+        if ((fProngs[i].fExcludeSource[0] & (uint64_t(1) << MCProng::kFromBackgroundEvent)) != currentMCParticle.fromBackgroundEvent()) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kFromBackgroundEvent);
+        }
+      }
+      // no source bit is fulfilled
+      if (!sourcesDecision) {
+        return false;
+      }
+      // if fUseANDonSourceBitMap is on, request all bits
+      if (fProngs[i].fUseANDonSourceBitMap[0] && (sourcesDecision != fProngs[i].fSourceBits[0])) {
+        return false;
+      }
+    }
+
+    // while find mothers, check if they have provided PDG codes
+    int nIncludedPDG = 0;
+    for (int k = 1; k < fProngs[i].fPDGcodes.size(); k++) {
+      currentMCParticle = track;
+      if (!fProngs[i].fExcludePDG[k])
+        nIncludedPDG++;
+      int ith = 0;
+      while (currentMCParticle.has_mothers()) {
+        auto mother = currentMCParticle.template mothers_first_as<P>();
+        if (!fProngs[i].fExcludePDG[k] && fProngs[i].TestPDG(k, mother.pdgCode())) {
+          pdgInHistory.emplace_back(true);
+          break;
+        }
+        if (fProngs[i].fExcludePDG[k] && !fProngs[i].TestPDG(k, mother.pdgCode())) {
+          return false;
+        }
+        ith++;
+        currentMCParticle = mother;
+        if (ith > 10) { // need error message. Given pdg code was not found within 10 generations of the particles decay chain.
+          break;
+        }
+      }
+    }
+    if (pdgInHistory.size() == nIncludedPDG) { // vector has as many entries as mothers defined for prong
+      return true;
+    } else
+      return false;
+  }
 
   // loop over the generations specified for this prong
   for (int j = 0; j < fProngs[i].fNGenerations; j++) {
@@ -247,4 +321,4 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
   return true;
 }
 
-#endif
+#endif // PWGDQ_CORE_MCSIGNAL_H_
