@@ -94,7 +94,7 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hVtxZNTracksPV", "Av NTracks vs vertex Z", kTProfile, {axisVertexZ});
 
     // two-dimensional histograms
-    if( do2Dplots ){
+    if (do2Dplots) {
       histos.add("multiplicityQa/h2dNchVsFV0", "FV0", kTH2F, {axisMultFV0, axisMultNTracks});
       histos.add("multiplicityQa/h2dNchVsFT0", "FT0", kTH2F, {axisMultFT0, axisMultNTracks});
       histos.add("multiplicityQa/h2dNchVsFT0A", "FT0A", kTH2F, {axisMultFT0A, axisMultNTracks});
@@ -164,7 +164,7 @@ struct MultiplicityQa {
     histos.fill(HIST("multiplicityQa/hZeqNTracksPV"), col.multZeqNTracksPV());
 
     // Profiles
-    if (useZeqInProfiles && do2Dplots ) {
+    if (useZeqInProfiles && do2Dplots) {
       histos.fill(HIST("multiplicityQa/h2dNchVsFV0"), col.multZeqFV0A(), col.multZeqNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0"), col.multZeqFT0A() + col.multZeqFT0C(), col.multZeqNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0A"), col.multZeqFT0A(), col.multZeqNTracksPV());
@@ -276,9 +276,9 @@ struct MultiplicityQa {
 
     // verify that PV has collision
     if (!col.has_mcCollision())
-      return; 
-    
-    auto mcCollision = col.mcCollision_as<soa::Join<aod::McCollisions, aod::McCollsExtra>>(); 
+      return;
+
+    auto mcCollision = col.mcCollision_as<soa::Join<aod::McCollisions, aod::McCollsExtra>>();
     if (mcCollision.hasRecoCollision() < 1)
       return; // total paranoia mode: on
 
