@@ -423,7 +423,7 @@ struct HfCandidateSelectorToXiPi {
 
       // track-level PID selection
 
-      //for TrackSelectorPID
+      // for TrackSelectorPID
       int statusPidPrFromLam = -999;
       int statusPidPiFromLam = -999;
       int statusPidPiFromCasc = -999;
@@ -440,71 +440,71 @@ struct HfCandidateSelectorToXiPi {
       bool statusPidCharm = false;
 
       if (usePidTpcOnly == usePidTpcTofCombined) {
-          LOGF(fatal, "Check the PID configurables, usePidTpcOnly and usePidTpcTofCombined can't have the same value");
+        LOGF(fatal, "Check the PID configurables, usePidTpcOnly and usePidTpcTofCombined can't have the same value");
       }
       if (doBasicNSigmaPID == doPidWDedicatedClass) {
-          LOGF(fatal, "Check the PID configurables, doBasicNSigmaPID and doPidWDedicatedClass can't have the same value");
+        LOGF(fatal, "Check the PID configurables, doBasicNSigmaPID and doPidWDedicatedClass can't have the same value");
       }
 
-      if(doBasicNSigmaPID){
+      if (doBasicNSigmaPID) {
 
-        if(usePidTpcOnly){
-          if (trackPiFromLam.hasTPC() && std::abs(trackPiFromLam.tpcNSigmaPi()) > nSigmaTpcPiMax){
+        if (usePidTpcOnly) {
+          if (trackPiFromLam.hasTPC() && std::abs(trackPiFromLam.tpcNSigmaPi()) > nSigmaTpcPiMax) {
             statusBasicPidPiFromLam = false;
           }
-          if (trackPrFromLam.hasTPC() && std::abs(trackPrFromLam.tpcNSigmaPr()) > nSigmaTpcPrMax){
+          if (trackPrFromLam.hasTPC() && std::abs(trackPrFromLam.tpcNSigmaPr()) > nSigmaTpcPrMax) {
             statusBasicPidPrFromLam = false;
           }
-          if (trackPiFromCasc.hasTPC() && std::abs(trackPiFromCasc.tpcNSigmaPi()) > nSigmaTpcPiMax){
+          if (trackPiFromCasc.hasTPC() && std::abs(trackPiFromCasc.tpcNSigmaPi()) > nSigmaTpcPiMax) {
             statusBasicPidPiFromCasc = false;
           }
           if (trackPiFromOmeg.hasTPC() && std::abs(trackPiFromOmeg.tpcNSigmaPi()) > nSigmaTpcPiMax) {
             statusBasicPidPiFromCharm = false;
           }
-          if(statusBasicPidPiFromLam && statusBasicPidPrFromLam){
+          if (statusBasicPidPiFromLam && statusBasicPidPrFromLam) {
             statusPidLambda = true;
             if (resultSelections) {
               registry.fill(HIST("hTest"), 0.5);
             }
           }
-          if(statusBasicPidPiFromLam && statusBasicPidPrFromLam && statusBasicPidPiFromCasc){
+          if (statusBasicPidPiFromLam && statusBasicPidPrFromLam && statusBasicPidPiFromCasc) {
             statusPidCascade = true;
             if (resultSelections) {
               registry.fill(HIST("hTest"), 1.5);
             }
           }
-          if(statusBasicPidPiFromLam && statusBasicPidPrFromLam && statusBasicPidPiFromCasc && statusBasicPidPiFromCharm){
+          if (statusBasicPidPiFromLam && statusBasicPidPrFromLam && statusBasicPidPiFromCasc && statusBasicPidPiFromCharm) {
             statusPidCharm = true;
             if (resultSelections) {
               registry.fill(HIST("hTest"), 2.5);
             }
           }
-        } else if(usePidTpcTofCombined){
-          if ((trackPiFromLam.hasTPC() && std::abs(trackPiFromLam.tpcNSigmaPi()) > nSigmaTpcPiMax) && (trackPiFromLam.hasTOF() && std::abs(trackPiFromLam.tofNSigmaPi()) > nSigmaTofPiMax)){
+        } else if (usePidTpcTofCombined) {
+          if ((trackPiFromLam.hasTPC() && std::abs(trackPiFromLam.tpcNSigmaPi()) > nSigmaTpcPiMax) && (trackPiFromLam.hasTOF() && std::abs(trackPiFromLam.tofNSigmaPi()) > nSigmaTofPiMax)) {
             statusBasicPidPiFromLam = false;
           }
-          if ((trackPrFromLam.hasTPC() && std::abs(trackPrFromLam.tpcNSigmaPr()) > nSigmaTpcPrMax) && (trackPrFromLam.hasTOF() && std::abs(trackPrFromLam.tofNSigmaPr()) > nSigmaTofPrMax)){
+          if ((trackPrFromLam.hasTPC() && std::abs(trackPrFromLam.tpcNSigmaPr()) > nSigmaTpcPrMax) && (trackPrFromLam.hasTOF() && std::abs(trackPrFromLam.tofNSigmaPr()) > nSigmaTofPrMax)) {
             statusBasicPidPrFromLam = false;
           }
-          if ((trackPiFromCasc.hasTPC() && std::abs(trackPiFromCasc.tpcNSigmaPi()) > nSigmaTpcPiMax) && (trackPiFromCasc.hasTOF() && std::abs(trackPiFromCasc.tofNSigmaPi()) > nSigmaTofPiMax)){
+          if ((trackPiFromCasc.hasTPC() && std::abs(trackPiFromCasc.tpcNSigmaPi()) > nSigmaTpcPiMax) && (trackPiFromCasc.hasTOF() && std::abs(trackPiFromCasc.tofNSigmaPi()) > nSigmaTofPiMax)) {
             statusBasicPidPiFromCasc = false;
           }
           if ((trackPiFromOmeg.hasTPC() && std::abs(trackPiFromOmeg.tpcNSigmaPi()) > nSigmaTpcPiMax) && (trackPiFromOmeg.hasTOF() && std::abs(trackPiFromOmeg.tofNSigmaPi()) > nSigmaTofPiMax)) {
             statusBasicPidPiFromCharm = false;
           }
-          if(statusBasicPidPiFromLam && statusBasicPidPrFromLam){
+          if (statusBasicPidPiFromLam && statusBasicPidPrFromLam) {
             statusPidLambda = true;
             if (resultSelections) {
               registry.fill(HIST("hTest"), 0.5);
             }
           }
-          if(statusBasicPidPiFromLam && statusBasicPidPrFromLam && statusBasicPidPiFromCasc){
+          if (statusBasicPidPiFromLam && statusBasicPidPrFromLam && statusBasicPidPiFromCasc) {
             statusPidCascade = true;
             if (resultSelections) {
               registry.fill(HIST("hTest"), 1.5);
             }
           }
-          if(statusBasicPidPiFromLam && statusBasicPidPrFromLam && statusBasicPidPiFromCasc && statusBasicPidPiFromCharm){
+          if (statusBasicPidPiFromLam && statusBasicPidPrFromLam && statusBasicPidPiFromCasc && statusBasicPidPiFromCharm) {
             statusPidCharm = true;
             if (resultSelections) {
               registry.fill(HIST("hTest"), 2.5);
@@ -528,7 +528,7 @@ struct HfCandidateSelectorToXiPi {
         if (statusPidPrFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::Status::PIDAccepted) {
           statusPidLambda = true;
           if (resultSelections) {
-           registry.fill(HIST("hTest"), 0.5);
+            registry.fill(HIST("hTest"), 0.5);
           }
         }
 
