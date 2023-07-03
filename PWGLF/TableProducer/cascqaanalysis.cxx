@@ -364,7 +364,7 @@ struct cascqaanalysis {
             lPDG = cascmc.pdgCode();
             isPrimary = cascmc.isPhysicalPrimary() ? 1 : 0;
           }
-        } 
+        }
         // Fill table
         if (fRand->Rndm() < lEventScale) {
           mycascades(casc.globalIndex(), collision.posZ(), collision.multFT0A() + collision.multFT0C(), collision.multFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
