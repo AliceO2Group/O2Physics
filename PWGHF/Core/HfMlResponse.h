@@ -18,13 +18,15 @@
 #define PWGHF_CORE_HFMLRESPONSE_H_
 
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+
 #include <map>
 #include <string>
 #include <vector>
 
 #include "CCDB/CcdbApi.h"
-#include "Framework/Array2D.h"
 #include "Tools/ML/model.h"
+
+#include "Framework/Array2D.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
 
@@ -48,7 +50,7 @@ uint8_t tagPID(const T1& track)
     SETBIT(tag, PIDStatus::TpcAndTof);
   } else if (track.hasTPC() && !track.hasTOF()) {
     SETBIT(tag, PIDStatus::TpcOnly);
-  } else {
+  } else if (!track.hasTPC() && track.hasTOF()) {
     SETBIT(tag, PIDStatus::TofOnly);
   }
   return tag;
@@ -62,14 +64,16 @@ uint8_t tagPID(const T1& track)
 template <typename T1, typename T2>
 T1 getCombinedNSigma(const T1& nSigTpc, const T1& nSigTof, const T2& tagPID)
 {
+  float combinedNSigma{0.};
   if (TESTBIT(tagPID, PIDStatus::TpcAndTof)) {
-    return std::sqrt((nSigTpc * nSigTpc + nSigTof * nSigTof) / 2);
-  }
-  if (TESTBIT(tagPID, PIDStatus::TpcOnly)) {
-    return std::abs(nSigTpc);
+    combinedNSigma = std::sqrt((nSigTpc * nSigTpc + nSigTof * nSigTof) / 2);
+  } else if (TESTBIT(tagPID, PIDStatus::TpcOnly)) {
+    combinedNSigma = std::abs(nSigTpc);
+  } else if (TESTBIT(tagPID, PIDStatus::TofOnly)) {
+    combinedNSigma = std::abs(nSigTof);
   }
 
-  return std::abs(nSigTof); // if (TESTBIT(tagPID, PIDStatus::TofOnly))
+  return combinedNSigma;
 }
 
 template <typename T = float>
