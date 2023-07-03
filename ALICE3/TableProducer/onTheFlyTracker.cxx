@@ -80,6 +80,7 @@ struct OnTheFlyTracker {
   Configurable<bool> enableLUT{"enableLUT", false, "Enable track smearing"};
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
   Configurable<bool> enablePrimaryVertexing{"enablePrimaryVertexing", true, "Enable primary vertexing"};
+  Configurable<bool> interpolateLutEfficiencyVsNch{"interpolateLutEfficiencyVsNch", true, "interpolate LUT efficiency as f(Nch)"};
 
   Configurable<bool> populateTracksDCA{"populateTracksDCA", true, "populate TracksDCA table"};
   Configurable<bool> populateTracksExtra{"populateTracksExtra", false, "populate TracksExtra table (legacy)"};
@@ -101,6 +102,7 @@ struct OnTheFlyTracker {
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {100, -0.5, 99.5}, "N_{contributors}"};
   ConfigurableAxis axisVertexZ{"axisVertexZ", {40, -20, 20}, "vertex Z (cm)"};
   ConfigurableAxis axisDCA{"axisDCA", {400, -200, 200}, "DCA (#mum)"};
+  ConfigurableAxis axisX{"axisX", {250, -50, 200}, "track X (cm)"};
 
   using PVertex = o2::dataformats::PrimaryVertex;
 
@@ -171,6 +173,8 @@ struct OnTheFlyTracker {
           LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
         }
       }
+      // interpolate efficiencies if requested to do so
+      mSmearer.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
     }
 
     // Basic QA
@@ -187,6 +191,7 @@ struct OnTheFlyTracker {
 
     // Collision QA
     histos.add("hPVz", "hPVz", kTH1F, {axisVertexZ});
+    histos.add("hLUTMultiplicity", "hLUTMultiplicity", kTH1F, {axisMultiplicity});
     histos.add("hSimMultiplicity", "hSimMultiplicity", kTH1F, {axisMultiplicity});
     histos.add("hRecoMultiplicity", "hRecoMultiplicity", kTH1F, {axisMultiplicity});
 
@@ -194,6 +199,10 @@ struct OnTheFlyTracker {
       histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axisMultiplicity, axisNVertices});
       histos.add("hRecoVsSimMultiplicity", "hRecoVsSimMultiplicity", kTH2F, {axisMultiplicity, axisMultiplicity});
       histos.add("h2dDCAxy", "h2dDCAxy", kTH2F, {axisMomentum, axisDCA});
+
+      histos.add("hSimTrackX", "hSimTrackX", kTH1F, {axisX});
+      histos.add("hRecoTrackX", "hRecoTrackX", kTH1F, {axisX});
+      histos.add("hTrackXatDCA", "hTrackXatDCA", kTH1F, {axisX});
     }
 
     LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
@@ -271,7 +280,7 @@ struct OnTheFlyTracker {
       if (std::abs(mcParticle.eta()) > multEtaRange) {
         continue;
       }
-      if (mcParticle.has_daughters()) {
+      if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
       const auto pdg = std::abs(mcParticle.pdgCode());
@@ -291,6 +300,7 @@ struct OnTheFlyTracker {
 
     dNdEta /= (multEtaRange * 2.0f);
     uint32_t multiplicityCounter = 0;
+    histos.fill(HIST("hLUTMultiplicity"), dNdEta);
 
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary()) {
@@ -321,6 +331,10 @@ struct OnTheFlyTracker {
       o2::track::TrackParCov trackParCov;
       convertMCParticleToO2Track(mcParticle, trackParCov);
 
+      if (doExtraQA) {
+        histos.fill(HIST("hSimTrackX"), trackParCov.getX());
+      }
+
       if (!mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta)) {
         continue;
       }
@@ -339,6 +353,10 @@ struct OnTheFlyTracker {
         histos.fill(HIST("hPtReconstructedKa"), mcParticle.pt());
       if (TMath::Abs(mcParticle.pdgCode()) == 2212)
         histos.fill(HIST("hPtReconstructedPr"), mcParticle.pt());
+
+      if (doExtraQA) {
+        histos.fill(HIST("hRecoTrackX"), trackParCov.getX());
+      }
 
       // populate vector with track if we reco-ed it
       const float t = (ir.bc2ns() + gRandom->Gaus(0., 100.)) * 1e-3;
@@ -431,6 +449,7 @@ struct OnTheFlyTracker {
         }
         if (doExtraQA) {
           histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+          histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
         }
         tracksDCA(dcaXY, dcaZ);
       }
