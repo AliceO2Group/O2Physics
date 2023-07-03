@@ -53,9 +53,9 @@ struct cascqaanalysis {
   {
     TString hCandidateCounterLabels[5] = {"All candidates", "v0data exists", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[4] = {"All", "z vrtx", "INEL>0", "Associated with rec. collision"};
-    TString hNEventsLabels[4] = {"All", "sel8", "z vrtx", "INEL>0"};
+    TString hNEventsLabels[6] = {"All", "sel8", "z vrtx", "INEL", "INEL>0", "INEL>1"};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{4, 0.f, 4.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{6, 0.f, 6.f}}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }
@@ -166,11 +166,14 @@ struct cascqaanalysis {
       registry.fill(HIST("hNEvents"), 2.5);
     }
 
-    if (INELgt0 && collision.multNTracksPVeta1() < 1) {
-      return false;
-    }
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hNEvents"), 3.5);
+      if (collision.multNTracksPVeta1() > 0) {
+        registry.fill(HIST("hNEvents"), 4.5);
+      }
+      if (collision.multNTracksPVeta1() > 1) {
+        registry.fill(HIST("hNEvents"), 5.5);
+      }
     }
 
     if (isFillEventSelectionQA) {
@@ -274,6 +277,15 @@ struct cascqaanalysis {
         }
       }
 
+      uint8_t flags = 0;
+      flags |= o2::aod::mycascades::EvFlags::EvINEL;
+      if (collision.multNTracksPVeta1() > 0) {
+        flags |= o2::aod::mycascades::EvFlags::EvINELgt0;
+      }
+      if (collision.multNTracksPVeta1() > 1) {
+        flags |= o2::aod::mycascades::EvFlags::EvINELgt1;
+      }
+
       // c x tau
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
@@ -294,7 +306,7 @@ struct cascqaanalysis {
                      negdau.tofNSigmaPr(), posdau.tofNSigmaPr(), negdau.tofNSigmaPi(), posdau.tofNSigmaPi(), bachelor.tofNSigmaPi(), bachelor.tofNSigmaKa(),
                      posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
                      posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF(),
-                     posdau.pt(), negdau.pt(), bachelor.pt(), -1, -1, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV());
+                     posdau.pt(), negdau.pt(), bachelor.pt(), -1, -1, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), flags);
         }
       }
     }
@@ -344,6 +356,15 @@ struct cascqaanalysis {
         }
       }
 
+      uint8_t flags = 0;
+      flags |= o2::aod::mycascades::EvFlags::EvINEL;
+      if (collision.multNTracksPVeta1() > 0) {
+        flags |= o2::aod::mycascades::EvFlags::EvINELgt0;
+      }
+      if (collision.multNTracksPVeta1() > 1) {
+        flags |= o2::aod::mycascades::EvFlags::EvINELgt1;
+      }
+
       // c x tau
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
@@ -376,7 +397,7 @@ struct cascqaanalysis {
                      negdau.tofNSigmaPr(), posdau.tofNSigmaPr(), negdau.tofNSigmaPi(), posdau.tofNSigmaPi(), bachelor.tofNSigmaPi(), bachelor.tofNSigmaKa(),
                      posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
                      posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF(),
-                     posdau.pt(), negdau.pt(), bachelor.pt(), lPDG, isPrimary, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV());
+                     posdau.pt(), negdau.pt(), bachelor.pt(), lPDG, isPrimary, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), flags);
         }
       }
     }
