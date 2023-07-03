@@ -250,15 +250,17 @@ struct AntimatterAbsorptionHMPID {
   template <typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& event, const TracksType& tracks)
   {
-
-    if (event.sel8())
-      pos_reg.fill(HIST("histRecVtxZData"), event.posZ());
-
+    
+    if (!event.sel8())
+        return;
+    
+    pos_reg.fill(HIST("histRecVtxZData"), event.posZ());
+    
     // Loop over Reconstructed Tracks
     for (auto track : tracks) {
 
-      if (!event.sel8())
-        continue;
+    // Loop over Reconstructed Tracks
+    for (auto track : tracks) {
 
       // Loose Track Selection
       if (!track.isGlobalTrackWoDCA())
@@ -368,7 +370,6 @@ struct AntimatterAbsorptionHMPID {
 
       bool passedPionTPCsel = false;
       bool passedKaonTPCsel = false;
-
       bool passedProtTPCsel = false;
       bool passedDeutTPCsel = false;
 
@@ -389,7 +390,6 @@ struct AntimatterAbsorptionHMPID {
 
       if (track.hasTOF()) {
         if (track.sign() > 0) {
-
           if (passedPionTPCsel)
             pion_pos_reg.fill(HIST("histTofNsigmaData"), track.p(),
                               track.tofNSigmaPi());
@@ -397,7 +397,6 @@ struct AntimatterAbsorptionHMPID {
           if (passedKaonTPCsel)
             kaon_pos_reg.fill(HIST("histTofNsigmaData"), track.p(),
                               track.tofNSigmaKa());
-
           if (passedProtTPCsel)
             proton_reg.fill(HIST("histTofNsigmaData"), track.p(),
                             track.tofNSigmaPr());
@@ -407,7 +406,6 @@ struct AntimatterAbsorptionHMPID {
         }
 
         if (track.sign() < 0) {
-
           if (passedPionTPCsel)
             pion_neg_reg.fill(HIST("histTofNsigmaData"), track.p(),
                               track.tofNSigmaPi());
@@ -415,7 +413,6 @@ struct AntimatterAbsorptionHMPID {
           if (passedKaonTPCsel)
             kaon_neg_reg.fill(HIST("histTofNsigmaData"), track.p(),
                               track.tofNSigmaKa());
-
           if (passedProtTPCsel)
             antiproton_reg.fill(HIST("histTofNsigmaData"), track.p(),
                                 track.tofNSigmaPr());
