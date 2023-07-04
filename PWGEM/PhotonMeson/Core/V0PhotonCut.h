@@ -37,6 +37,7 @@ class V0PhotonCut : public TNamed
     kMee = 0,
     kV0PtRange,
     kV0EtaRange,
+    kAP,
     kPsiPair,
     kRxy,
     kCosPA,
@@ -76,6 +77,9 @@ class V0PhotonCut : public TNamed
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kMee)) {
+      return false;
+    }
+    if (!IsSelectedV0(v0, V0PhotonCuts::kAP)) {
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kPsiPair)) {
@@ -217,6 +221,9 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kMee:
         return v0.mGamma() <= ((mMaxMeePsiPairDep) ? mMaxMeePsiPairDep(abs(v0.psipair())) : mMaxMee);
 
+      case V0PhotonCuts::kAP:
+        return pow(v0.alpha() / mMaxAlpha, 2) + pow(v0.qtarm() / mMaxQt, 2) < 1.0;
+
       case V0PhotonCuts::kPsiPair:
         return v0.psipair() >= mMinPsiPair && v0.psipair() <= mMaxPsiPair;
 
@@ -244,7 +251,7 @@ class V0PhotonCut : public TNamed
         float z = v0.recalculatedVtxZ();      // cm, measured secondary vertex of gamma->ee
 
         float rxy = sqrt(x * x + y * y);
-        if (rxy < 7.0 || 16.0 < rxy) {
+        if (rxy < 7.5 || 15.0 < rxy) {
           return false;
         }
 
@@ -357,6 +364,7 @@ class V0PhotonCut : public TNamed
   void SetV0EtaRange(float minEta = -1e10f, float maxEta = 1e10f);
   void SetMeeRange(float min = 0.f, float max = 0.1);
   void SetPsiPairRange(float min = -3.15, float max = +3.15);
+  void SetAPRange(float max_alpha = 0.95, float max_qt = 0.05); // Armenteros Podolanski
   void SetRxyRange(float min = 0.f, float max = 180.f);
   void SetMinCosPA(float min = 0.95);
   void SetMaxPCA(float max = 2.f);
@@ -393,6 +401,7 @@ class V0PhotonCut : public TNamed
   float mMinMee{0.f}, mMaxMee{0.1f};
   float mMinV0Pt{0.f}, mMaxV0Pt{1e10f};      // range in pT
   float mMinV0Eta{-1e10f}, mMaxV0Eta{1e10f}; // range in eta
+  float mMaxAlpha{0.95}, mMaxQt{0.05};
   float mMinPsiPair{-3.15}, mMaxPsiPair{+3.15};
   float mMinRxy{0.f}, mMaxRxy{180.f};
   float mMinCosPA{0.95};
