@@ -168,7 +168,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsINELgt1, isINELgt1, //! True if the Event belongs t
                            [](uint8_t flags) -> bool { return (flags & EvFlags::EvINELgt1) == EvFlags::EvINELgt1; });
 } // namespace myMCcascades
 
-DECLARE_SOA_TABLE(MyMCCascades, "AOD", "MYMCCASCADES",  o2::soa::Index<>, 
+DECLARE_SOA_TABLE(MyMCCascades, "AOD", "MYMCCASCADES", o2::soa::Index<>,
                   myMCcascades::McCollisionId,
                   myMCcascades::CollisionZ, myMCcascades::Sign, myMCcascades::PdgCode,
                   myMCcascades::Y, myMCcascades::Eta, myMCcascades::Phi, myMCcascades::Pt,

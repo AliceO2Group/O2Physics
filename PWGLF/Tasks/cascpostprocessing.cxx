@@ -464,7 +464,8 @@ struct cascpostprocessing {
 
   PROCESS_SWITCH(cascpostprocessing, processRec, "Process Run 3 reconstructed data", true);
 
-  void processGen(aod::MyMCCascades const& myMCcascades) {
+  void processGen(aod::MyMCCascades const& myMCcascades)
+  {
     for (auto& genCascade : myMCcascades) {
       if (genCascade.isPrimary() == 0)
         continue; // Consider only primaries
