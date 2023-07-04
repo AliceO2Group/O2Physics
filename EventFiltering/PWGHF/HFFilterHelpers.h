@@ -309,7 +309,7 @@ bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& fe
     return false;
   }
 
-  if (track.isGlobalTrack()) {
+  if (!track.isGlobalTrack()) {
     return false; // use only global tracks
   }
 
