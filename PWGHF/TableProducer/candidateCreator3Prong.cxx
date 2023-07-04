@@ -76,7 +76,7 @@ struct HfCandidateCreator3Prong {
 
   void init(InitContext const&)
   {
-    if (doprocessPvRefit && doProcessNoPvRefit) {
+    if (doprocessPvRefit && doprocessNoPvRefit) {
       LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
     }
 
