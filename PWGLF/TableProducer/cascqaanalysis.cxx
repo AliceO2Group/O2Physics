@@ -178,6 +178,13 @@ struct cascqaanalysis {
     }
     return true;
   }
+  
+  // OLD isPrimaryTrack check for rec. tracks
+  template <typename TTrack>
+  bool isPrimaryTrack(TTrack track)
+  {
+    return (TMath::Abs(track.dcaXY()) < (maxDCANsigmaScaling * (DCASigma + DCAPtScaling / track.pt()))) && (TMath::Abs(track.dcaZ()) < maxDCAz);
+  }
 
   template <typename TMcParticles>
   bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection)

@@ -61,8 +61,8 @@ struct TrackSelectionTask {
   void init(InitContext& initContext)
   {
     // Check which tables are used
-    enableFlagIfTableRequired(initContext, "TRACKSELECTION", produceTable);
-    enableFlagIfTableRequired(initContext, "TRACKSELEXTRA", produceFBextendedTable);
+    enableFlagIfTableRequired(initContext, "TrackSelection", produceTable);
+    enableFlagIfTableRequired(initContext, "TrackSelectionExtension", produceFBextendedTable);
 
     // Set up the track cuts
     switch (itsMatching) {
