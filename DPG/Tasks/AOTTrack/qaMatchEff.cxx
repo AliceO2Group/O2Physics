@@ -510,7 +510,7 @@ struct qaMatchEff {
       histos.add("data/PID/etahist_tpc_noid", "#eta distribution - data TPC tag - no ident.", kTH1D, {axisEta}, true);
       histos.add("data/PID/phihist_tpc_noid", "#phi distribution - data TPC tag - no ident.", kTH1D, {axisPhi}, true);
 
-       histos.add("data/PID/pthist_tpcits_noid", "#it{p}_{T} distribution - data TPC+ITS tag - no ident.", kTH1D, {axisPt}, true);
+      histos.add("data/PID/pthist_tpcits_noid", "#it{p}_{T} distribution - data TPC+ITS tag - no ident.", kTH1D, {axisPt}, true);
       histos.add("data/PID/etahist_tpcits_noid", "#eta distribution - data TPC+ITS tag - no ident.", kTH1D, {axisEta}, true);
       histos.add("data/PID/phihist_tpcits_noid", "#phi distribution - data TPC+ITS tag - no ident.", kTH1D, {axisPhi}, true);
       // plus
