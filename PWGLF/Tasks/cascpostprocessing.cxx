@@ -211,19 +211,19 @@ struct cascpostprocessing {
     for (auto& candidate : mycascades) {
 
       switch (evSelFlag) {
-        case 1:
-        {
-          if(!candidate.isINEL()) continue;
+        case 1: {
+          if (!candidate.isINEL())
+            continue;
           break;
         }
-        case 2:
-        {
-          if(!candidate.isINELgt0()) continue;
+        case 2: {
+          if (!candidate.isINELgt0())
+            continue;
           break;
         }
-        case 3:
-        {
-          if(!candidate.isINELgt1()) continue;
+        case 3: {
+          if (!candidate.isINELgt1())
+            continue;
           break;
         }
         default:
