@@ -44,6 +44,12 @@ namespace o2::aod
 namespace mycascades
 {
 
+enum EvFlags : uint8_t {
+  EvINEL = 0x1,    // INEL Event
+  EvINELgt0 = 0x2, // Event with at least 1 PV contributors from the |eta| < 1
+  EvINELgt1 = 0x4  // Event with at least 2 PV contributors from the |eta| < 1
+};
+
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(CollisionZ, zcoll, float);
 DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
@@ -99,7 +105,14 @@ DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, float);                     //! -1 unkn
 DECLARE_SOA_COLUMN(IsPrimary, isPrimary, float);                     //! -1 unknown, 0 not primary, 1 primary
 DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
 DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
+DECLARE_SOA_COLUMN(EventSelFilterBitMask, eventSelFilterBitMask, uint8_t);
 
+DECLARE_SOA_DYNAMIC_COLUMN(IsINEL, isINEL, //! True if the Event belongs to the INEL event class
+                           [](uint8_t flags) -> bool { return (flags & EvFlags::EvINEL) == EvFlags::EvINEL; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsINELgt0, isINELgt0, //! True if the Event belongs to the INELgt0 event class
+                           [](uint8_t flags) -> bool { return (flags & EvFlags::EvINELgt0) == EvFlags::EvINELgt0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsINELgt1, isINELgt1, //! True if the Event belongs to the INELgt1 event class
+                           [](uint8_t flags) -> bool { return (flags & EvFlags::EvINELgt1) == EvFlags::EvINELgt1; });
 } // namespace mycascades
 
 DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
@@ -115,7 +128,11 @@ DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
                   mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF,
                   mycascades::PosPt, mycascades::NegPt, mycascades::BachPt,
                   mycascades::McPdgCode, mycascades::IsPrimary,
-                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV);
+                  mycascades::BachBaryonCosPA, mycascades::BachBaryonDCAxyToPV,
+                  mycascades::EventSelFilterBitMask,
+                  mycascades::IsINEL<mycascades::EventSelFilterBitMask>,
+                  mycascades::IsINELgt0<mycascades::EventSelFilterBitMask>,
+                  mycascades::IsINELgt1<mycascades::EventSelFilterBitMask>);
 
 } // namespace o2::aod
 
