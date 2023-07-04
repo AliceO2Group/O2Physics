@@ -178,7 +178,7 @@ struct cascqaanalysis {
     }
     return true;
   }
-  
+
   // OLD isPrimaryTrack check for rec. tracks
   template <typename TTrack>
   bool isPrimaryTrack(TTrack track)
@@ -468,9 +468,9 @@ struct cascqaanalysis {
       registry.fill(HIST("hNContributorsCorrelation"), NumberOfContributors[0], NumberOfContributors[1]);
     }
 
-    auto isAssocToINEL = [&mcCollision](CollisionIndexAndType i) { return ( i.index == mcCollision.globalIndex()) && ((i.typeFlag & o2::aod::myMCcascades::EvFlags::EvINEL) == o2::aod::myMCcascades::EvFlags::EvINEL); };
-    auto isAssocToINELgt0 = [&mcCollision](CollisionIndexAndType i) { return ( i.index == mcCollision.globalIndex()) && ((i.typeFlag & o2::aod::myMCcascades::EvFlags::EvINELgt0) == o2::aod::myMCcascades::EvFlags::EvINELgt0); };
-    auto isAssocToINELgt1 = [&mcCollision](CollisionIndexAndType i) { return ( i.index == mcCollision.globalIndex()) && ((i.typeFlag & o2::aod::myMCcascades::EvFlags::EvINELgt1) == o2::aod::myMCcascades::EvFlags::EvINELgt1); };
+    auto isAssocToINEL = [&mcCollision](CollisionIndexAndType i) { return (i.index == mcCollision.globalIndex()) && ((i.typeFlag & o2::aod::myMCcascades::EvFlags::EvINEL) == o2::aod::myMCcascades::EvFlags::EvINEL); };
+    auto isAssocToINELgt0 = [&mcCollision](CollisionIndexAndType i) { return (i.index == mcCollision.globalIndex()) && ((i.typeFlag & o2::aod::myMCcascades::EvFlags::EvINELgt0) == o2::aod::myMCcascades::EvFlags::EvINELgt0); };
+    auto isAssocToINELgt1 = [&mcCollision](CollisionIndexAndType i) { return (i.index == mcCollision.globalIndex()) && ((i.typeFlag & o2::aod::myMCcascades::EvFlags::EvINELgt1) == o2::aod::myMCcascades::EvFlags::EvINELgt1); };
     // at least 1 selected reconstructed INEL event has the same global index as mcCollision
     const auto evtReconstructedAndINEL = std::find_if(SelectedEvents.begin(), SelectedEvents.end(), isAssocToINEL) != SelectedEvents.end();
     // at least 1 selected reconstructed INELgt0 event has the same global index as mcCollision
@@ -479,14 +479,14 @@ struct cascqaanalysis {
     const auto evtReconstructedAndINELgt1 = std::find_if(SelectedEvents.begin(), SelectedEvents.end(), isAssocToINELgt1) != SelectedEvents.end();
 
     uint8_t flagsAssoc = 0;
-    if(evtReconstructedAndINEL) {
+    if (evtReconstructedAndINEL) {
       flagsAssoc |= o2::aod::myMCcascades::EvFlags::EvINEL;
       registry.fill(HIST("hNEventsMC"), 5.5);
     }
-    if(evtReconstructedAndINELgt0) {
+    if (evtReconstructedAndINELgt0) {
       flagsAssoc |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
     }
-    if(evtReconstructedAndINELgt1) {
+    if (evtReconstructedAndINELgt1) {
       flagsAssoc |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
     }
 
@@ -513,19 +513,17 @@ struct cascqaanalysis {
       float sign = 0;
       if (mcParticle.pdgCode() == -3312 || mcParticle.pdgCode() == -3334) {
         sign = 1;
-      }
-      else if(mcParticle.pdgCode() == 3312 || mcParticle.pdgCode() == 3334) {
+      } else if (mcParticle.pdgCode() == 3312 || mcParticle.pdgCode() == 3334) {
         sign = -1;
-      }
-      else{
+      } else {
         continue;
       }
-      myMCcascades(mcCollision.globalIndex(), 
-                 mcCollision.posZ(), sign, mcParticle.pdgCode(), 
-                 mcParticle.y(), mcParticle.eta(), mcParticle.phi(), mcParticle.pt(),
-                 mcParticle.isPhysicalPrimary(), nAssocColl, nchFT0,
-                 flagsAssoc,
-                 flagsGen);
+      myMCcascades(mcCollision.globalIndex(),
+                   mcCollision.posZ(), sign, mcParticle.pdgCode(),
+                   mcParticle.y(), mcParticle.eta(), mcParticle.phi(), mcParticle.pt(),
+                   mcParticle.isPhysicalPrimary(), nAssocColl, nchFT0,
+                   flagsAssoc,
+                   flagsGen);
     }
   }
   PROCESS_SWITCH(cascqaanalysis, processMCgen, "Process Run 3 mc, genereated", false);
