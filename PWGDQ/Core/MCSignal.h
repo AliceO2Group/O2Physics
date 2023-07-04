@@ -240,6 +240,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
         const auto& daughtersSlice = currentMCParticle.template daughters_as<P>();
         for (auto& d : daughtersSlice) {
           if (fProngs[i].TestPDG(j + 1, d.pdgCode())) {
+            currentMCParticle = d;
             break;
           }
         }
@@ -310,6 +311,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
           const auto& daughtersSlice = currentMCParticle.template daughters_as<P>();
           for (auto& d : daughtersSlice) {
             if (fProngs[i].TestPDG(j + 1, d.pdgCode())) {
+              currentMCParticle = d;
               break;
             }
           }
