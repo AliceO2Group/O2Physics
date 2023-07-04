@@ -14,12 +14,13 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Core/SelectorCuts.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -34,7 +35,8 @@ using namespace o2::framework::expressions;
 /// B0 analysis task
 struct HfTaskB0 {
   Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
-  Configurable<double> yCandMax{"yCandMax", 1.44, "max. cand. rapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. track pseudo-rapidity"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_d_pi::vecBinsPt}, "pT bin limits"};
@@ -153,7 +155,7 @@ struct HfTaskB0 {
       if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yB0(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yB0(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -193,7 +195,7 @@ struct HfTaskB0 {
       if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(yB0(candidate)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(yB0(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -266,7 +268,7 @@ struct HfTaskB0 {
 
         auto ptParticle = particle.pt();
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
-        if (yCandMax >= 0. && std::abs(yParticle) > yCandMax) {
+        if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
 
@@ -287,9 +289,6 @@ struct HfTaskB0 {
         registry.fill(HIST("hYProng1Gen"), yProngs[1], ptParticle);
         registry.fill(HIST("hEtaProng0Gen"), etaProngs[0], ptParticle);
         registry.fill(HIST("hEtaProng1Gen"), etaProngs[1], ptParticle);
-
-        //  if (yCandMax >= 0. && (std::abs(yProngs[0]) > yCandMax || std::abs(yProngs[1]) > yCandMax))
-        //    continue;
 
         registry.fill(HIST("hPtGen"), ptParticle);
         registry.fill(HIST("hYGen"), yParticle, ptParticle);

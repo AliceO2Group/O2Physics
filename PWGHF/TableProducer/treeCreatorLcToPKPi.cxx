@@ -16,12 +16,11 @@
 ///
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -31,6 +30,7 @@ namespace o2::aod
 {
 namespace full
 {
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);
@@ -81,10 +81,11 @@ DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-DECLARE_SOA_COLUMN(GlobalIndex, globalIndex, int);
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
+                  full::CollisionId,
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -157,9 +158,10 @@ DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
                   full::MCflag,
                   full::OriginMcRec,
                   full::IsCandidateSwapped,
-                  full::GlobalIndex);
+                  full::CandidateId);
 
 DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
+                  full::CollisionId,
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -169,6 +171,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
                   full::RunNumber);
 
 DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
+                  full::CollisionId,
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -176,7 +179,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
                   full::Y,
                   full::MCflag,
                   full::OriginMcGen,
-                  full::GlobalIndex);
+                  full::CandidateId);
 
 } // namespace o2::aod
 
@@ -203,6 +206,7 @@ struct HfTreeCreatorLcToPKPi {
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto& collision : collisions) {
       rowCandidateFullEvents(
+        collision.globalIndex(),
         collision.bcId(),
         collision.numContrib(),
         collision.posX(),
@@ -227,6 +231,7 @@ struct HfTreeCreatorLcToPKPi {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
+            candidate.collisionId(),
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
             candidate.posX(),
@@ -312,6 +317,7 @@ struct HfTreeCreatorLcToPKPi {
     for (auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
         rowCandidateFullParticles(
+          particle.mcCollision().globalIndex(),
           particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
@@ -334,6 +340,7 @@ struct HfTreeCreatorLcToPKPi {
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto& collision : collisions) {
       rowCandidateFullEvents(
+        collision.globalIndex(),
         collision.bcId(),
         collision.numContrib(),
         collision.posX(),
@@ -358,6 +365,7 @@ struct HfTreeCreatorLcToPKPi {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
+            candidate.collisionId(),
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
             candidate.posX(),

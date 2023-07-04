@@ -12,14 +12,16 @@
 /// \file correlatorDplusHadrons.cxx
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -35,7 +37,7 @@ using namespace o2::constants::math;
 
 double getDeltaPhi(double phiD, double phiHadron)
 {
-  return RecoDecay::constrainAngle(phiHadron - phiD, -o2::constants::math::PI / 2.);
+  return RecoDecay::constrainAngle(phiHadron - phiD, -o2::constants::math::PIHalf);
 }
 
 /// definition of variables for Dplus hadron pairs (in data-like, MC-reco and MC-kine tasks)
@@ -48,8 +50,8 @@ const int massAxisBins = 350;
 const double massAxisMin = 1.7;
 const double massAxisMax = 2.05;
 const int phiAxisBins = 32;
-const double phiAxisMin = -o2::constants::math::PI / 2.;
-const double phiAxisMax = 3. * o2::constants::math::PI / 2.;
+const double phiAxisMin = -o2::constants::math::PIHalf;
+const double phiAxisMax = 3. * o2::constants::math::PIHalf;
 const int yAxisBins = 100;
 const double yAxisMin = -2.;
 const double yAxisMax = 2.;
@@ -261,7 +263,7 @@ struct HfCorrelatorDplusHadrons {
         registry.fill(HIST("hPtProng1"), candidate1.ptProng1());
         registry.fill(HIST("hPtProng2"), candidate1.ptProng2());
         registry.fill(HIST("hEta"), candidate1.eta());
-        registry.fill(HIST("hPhi"), RecoDecay::constrainAngle(candidate1.phi(), -o2::constants::math::PI / 2.));
+        registry.fill(HIST("hPhi"), RecoDecay::constrainAngle(candidate1.phi(), -o2::constants::math::PIHalf));
         registry.fill(HIST("hY"), yDplus(candidate1));
         registry.fill(HIST("hSelectionStatus"), candidate1.isSelDplusToPiKPi());
         registry.fill(HIST("hDplusBin"), poolBin);
@@ -348,7 +350,7 @@ struct HfCorrelatorDplusHadrons {
           registry.fill(HIST("hPtProng1MCRec"), candidate1.ptProng1());
           registry.fill(HIST("hPtProng2MCRec"), candidate1.ptProng2());
           registry.fill(HIST("hEtaMCRec"), candidate1.eta());
-          registry.fill(HIST("hPhiMCRec"), RecoDecay::constrainAngle(candidate1.phi(), -o2::constants::math::PI / 2.));
+          registry.fill(HIST("hPhiMCRec"), RecoDecay::constrainAngle(candidate1.phi(), -o2::constants::math::PIHalf));
           registry.fill(HIST("hYMCRec"), yDplus(candidate1));
           registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelDplusToPiKPi());
         }
@@ -424,7 +426,7 @@ struct HfCorrelatorDplusHadrons {
       }
       registry.fill(HIST("hPtCandMCGen"), particle1.pt());
       registry.fill(HIST("hEtaMCGen"), particle1.eta());
-      registry.fill(HIST("hPhiMCGen"), RecoDecay::constrainAngle(particle1.phi(), -o2::constants::math::PI / 2.));
+      registry.fill(HIST("hPhiMCGen"), RecoDecay::constrainAngle(particle1.phi(), -o2::constants::math::PIHalf));
       registry.fill(HIST("hYMCGen"), yD);
       counterDplusHadron++;
       // Dplus Hadron correlation dedicated section

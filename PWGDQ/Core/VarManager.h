@@ -498,6 +498,11 @@ class VarManager : public TObject
   {
     fgFitterTwoProngFwd.setTGeoMat(true);
   }
+  // No material budget in fwdtrack propagation
+  static void SetupFwdDCAFitterNoCorr()
+  {
+    fgFitterTwoProngFwd.setTGeoMat(false);
+  }
 
   static auto getEventPlane(int harm, float qnxa, float qnya)
   {

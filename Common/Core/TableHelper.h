@@ -45,13 +45,15 @@ bool isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const st
 /// @param flag int value of flag to set, only if initially set to -1. Initial values of 0 or 1 will be kept disregarding the table usage in the workflow.
 void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const std::string& table, int& flag)
 {
+  if (flag > 0) {
+    flag = 1;
+    LOG(info) << "Table enabled: " + table;
+    return;
+  }
   if (isTableRequiredInWorkflow(initContext, table)) {
     if (flag < 0) {
       flag = 1;
       LOG(info) << "Auto-enabling table: " + table;
-    } else if (flag > 0) {
-      flag = 1;
-      LOG(info) << "Table enabled: " + table;
     } else {
       LOG(info) << "Table disabled: " + table;
     }

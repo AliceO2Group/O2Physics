@@ -100,6 +100,10 @@ struct lambdakzeroBuilder {
   // use auto-detect configuration
   Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
 
+  // downscaling for testing
+  Configurable<float> downscaleFactor{"downscaleFactor", 2, "Downcale factor (0: build nothing, 1: build all)"};
+  unsigned int randomSeed = 0;
+
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -132,8 +136,21 @@ struct lambdakzeroBuilder {
   Configurable<int> dQANBinsPtCoarse{"dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
   Configurable<int> dQANBinsMass{"dQANBinsMass", 400, "Number of mass bins for QA histograms"};
   Configurable<float> dQAMaxPt{"dQAMaxPt", 5, "max pT in QA histo"};
+  Configurable<float> dQAGammaMassWindow{"dQAGammaMassWindow", 0.05, "gamma mass window for ITS cluster map QA"};
   Configurable<float> dQAK0ShortMassWindow{"dQAK0ShortMassWindow", 0.005, "K0 mass window for ITS cluster map QA"};
   Configurable<float> dQALambdaMassWindow{"dQALambdaMassWindow", 0.005, "Lambda/AntiLambda mass window for ITS cluster map QA"};
+
+  ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
+
+  // for topo var QA
+  ConfigurableAxis axisTopoVarPointingAngle{"axisTopoVarPointingAngle", {50, 0.0, 1.0}, "pointing angle"};
+  ConfigurableAxis axisTopoVarV0Radius{"axisTopoVarV0Radius", {500, 0.0, 100.0}, "V0 decay radius (cm)"};
+  ConfigurableAxis axisTopoVarDCAV0Dau{"axisTopoVarDCAV0Dau", {200, 0.0, 2.0}, "DCA between V0 daughters (cm)"};
+  ConfigurableAxis axisTopoVarDCAToPV{"axisTopoVarDCAToPV", {200, -1, 1.0}, "single track DCA to PV (cm)"};
+  ConfigurableAxis axisTopoVarDCAV0ToPV{"axisTopoVarDCAV0ToPV", {200, 0, 5.0}, "V0 DCA to PV (cm)"};
+
+  ConfigurableAxis axisX{"axisX", {200, 0, 200}, "X_{IU}"};
+  ConfigurableAxis axisRadius{"axisRadius", {500, 0, 50}, "Radius (cm)"};
 
   int mRunNumber;
   float d_bz;
@@ -176,11 +193,11 @@ struct lambdakzeroBuilder {
 
   // Helper struct to do bookkeeping of building parameters
   struct {
-    std::array<long, kNV0Steps> v0stats;
-    std::array<long, 10> posITSclu;
-    std::array<long, 10> negITSclu;
-    long exceptions;
-    long eventCounter;
+    std::array<int32_t, kNV0Steps> v0stats;
+    std::array<int32_t, 10> posITSclu;
+    std::array<int32_t, 10> negITSclu;
+    int32_t exceptions;
+    int32_t eventCounter;
   } statisticsRegistry;
 
   HistogramRegistry registry{
@@ -224,14 +241,16 @@ struct lambdakzeroBuilder {
   {
     resetHistos();
 
+    randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+
     // Optionally, add extra QA histograms to processing chain
     if (d_doQA) {
       // Basic histograms containing invariant masses of all built candidates
-      const AxisSpec axisVsPtCoarse{(int)dQANBinsPtCoarse, 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
-      const AxisSpec axisGammaMass{(int)dQANBinsMass, 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisK0ShortMass{(int)dQANBinsMass, 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisLambdaMass{(int)dQANBinsMass, 1.01f, 1.21f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisHypertritonMass{(int)dQANBinsMass, 2.900f, 3.300f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisVsPtCoarse{static_cast<int32_t>(dQANBinsPtCoarse), 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
+      const AxisSpec axisGammaMass{static_cast<int32_t>(dQANBinsMass), 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisK0ShortMass{static_cast<int32_t>(dQANBinsMass), 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisLambdaMass{static_cast<int32_t>(dQANBinsMass), 1.01f, 1.21f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisHypertritonMass{static_cast<int32_t>(dQANBinsMass), 2.900f, 3.300f, "Inv. Mass (GeV/c^{2})"};
 
       registry.add("h2dGammaMass", "h2dGammaMass", kTH2F, {axisVsPtCoarse, axisGammaMass});
       registry.add("h2dK0ShortMass", "h2dK0ShortMass", kTH2F, {axisVsPtCoarse, axisK0ShortMass});
@@ -241,16 +260,27 @@ struct lambdakzeroBuilder {
       registry.add("h2dAntiHypertritonMass", "h2dAntiHypertritonMass", kTH2F, {axisVsPtCoarse, axisHypertritonMass});
 
       // bit packed ITS cluster map
-      const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
-      const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
+      const AxisSpec axisITSCluMap{static_cast<int32_t>(128), -0.5f, +127.5f, "Packed ITS map"};
 
       // Histogram to bookkeep cluster maps
-      registry.add("h2dITSCluMap_K0ShortPositive", "h2dITSCluMap_K0ShortPositive", kTH2D, {axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_K0ShortNegative", "h2dITSCluMap_K0ShortNegative", kTH2D, {axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_LambdaPositive", "h2dITSCluMap_LambdaPositive", kTH2D, {axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_LambdaNegative", "h2dITSCluMap_LambdaNegative", kTH2D, {axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_AntiLambdaPositive", "h2dITSCluMap_AntiLambdaPositive", kTH2D, {axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_AntiLambdaNegative", "h2dITSCluMap_AntiLambdaNegative", kTH2D, {axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_Gamma", "h2dITSCluMap_Gamma", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_K0Short", "h2dITSCluMap_K0Short", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_Lambda", "h2dITSCluMap_Lambda", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_AntiLambda", "h2dITSCluMap_AntiLambda", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
+
+      // Histogram to bookkeep cluster maps
+      registry.add("h2dXIU_Gamma", "h2dXIU_Gamma", kTH3D, {axisX, axisX, axisRadius});
+      registry.add("h2dXIU_K0Short", "h2dXIU_K0Short", kTH3D, {axisX, axisX, axisRadius});
+      registry.add("h2dXIU_Lambda", "h2dXIU_Lambda", kTH3D, {axisX, axisX, axisRadius});
+      registry.add("h2dXIU_AntiLambda", "h2dXIU_AntiLambda", kTH3D, {axisX, axisX, axisRadius});
+
+      // QA plots of topological variables using axisPtQA
+      registry.add("h2dTopoVarPointingAngle", "h2dTopoVarPointingAngle", kTH2D, {axisPtQA, axisTopoVarPointingAngle});
+      registry.add("h2dTopoVarV0Radius", "h2dTopoVarV0Radius", kTH2D, {axisPtQA, axisTopoVarV0Radius});
+      registry.add("h2dTopoVarDCAV0Dau", "h2dTopoVarDCAV0Dau", kTH2D, {axisPtQA, axisTopoVarDCAV0Dau});
+      registry.add("h2dTopoVarPosDCAToPV", "h2dTopoVarPosDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
+      registry.add("h2dTopoVarNegDCAToPV", "h2dTopoVarNegDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
+      registry.add("h2dTopoVarDCAV0ToPV", "h2dTopoVarDCAV0ToPV", kTH2D, {axisPtQA, axisTopoVarDCAV0ToPV});
     }
 
     mRunNumber = 0;
@@ -365,13 +395,13 @@ struct lambdakzeroBuilder {
     LOGF(info, " -+*> process call configuration:");
     if (doprocessRun2 == true) {
       LOGF(info, " ---+*> Run 2 processing enabled. Will subscribe to Tracks table.");
-    };
+    }
     if (doprocessRun3 == true) {
       LOGF(info, " ---+*> Run 3 processing enabled. Will subscribe to TracksIU table.");
-    };
+    }
     if (createV0CovMats > 0) {
       LOGF(info, " ---+*> Will produce V0 cov mat table");
-    };
+    }
     //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
     // initialize O2 2-prong fitter (only once)
@@ -573,6 +603,9 @@ struct lambdakzeroBuilder {
       auto lHypertritonMass = RecoDecay::m(array{array{2.0f * v0candidate.posP[0], 2.0f * v0candidate.posP[1], 2.0f * v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPionCharged});
       auto lAntiHypertritonMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{2.0f * v0candidate.negP[0], 2.0f * v0candidate.negP[1], 2.0f * v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
 
+      auto px = v0candidate.posP[0] + v0candidate.negP[0];
+      auto py = v0candidate.posP[1] + v0candidate.negP[1];
+      auto pz = v0candidate.posP[2] + v0candidate.negP[2];
       auto lPt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtHy = RecoDecay::sqrtSumOfSquares(2.0f * v0candidate.posP[0] + v0candidate.negP[0], 2.0f * v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
@@ -592,19 +625,34 @@ struct lambdakzeroBuilder {
         registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
 
       // Fill ITS cluster maps with specific mass cuts
+      if (TMath::Abs(lGammaMass - 0.0) < dQAGammaMassWindow && ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))) {
+        registry.fill(HIST("h2dITSCluMap_Gamma"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
+        registry.fill(HIST("h2dXIU_Gamma"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
+      }
       if (TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow && ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))) {
-        registry.fill(HIST("h2dITSCluMap_K0ShortPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
-        registry.fill(HIST("h2dITSCluMap_K0ShortNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_K0Short"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
+        registry.fill(HIST("h2dXIU_K0Short"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
       if (TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))) {
-        registry.fill(HIST("h2dITSCluMap_LambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
-        registry.fill(HIST("h2dITSCluMap_LambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_Lambda"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
+        registry.fill(HIST("h2dXIU_Lambda"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
       if (TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))) {
-        registry.fill(HIST("h2dITSCluMap_AntiLambdaPositive"), (float)posTrack.itsClusterMap(), v0candidate.V0radius);
-        registry.fill(HIST("h2dITSCluMap_AntiLambdaNegative"), (float)negTrack.itsClusterMap(), v0candidate.V0radius);
+        registry.fill(HIST("h2dITSCluMap_AntiLambda"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
+        registry.fill(HIST("h2dXIU_AntiLambda"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
-    }
+
+      // QA extra: DCA to PV
+      float dcaV0toPV = std::sqrt((std::pow((primaryVertex.getY() - v0candidate.pos[1]) * pz - (primaryVertex.getZ() - v0candidate.pos[2]) * py, 2) + std::pow((primaryVertex.getX() - v0candidate.pos[0]) * pz - (primaryVertex.getZ() - v0candidate.pos[2]) * px, 2) + std::pow((primaryVertex.getX() - v0candidate.pos[0]) * py - (primaryVertex.getY() - v0candidate.pos[1]) * px, 2)) / (px * px + py * py + pz * pz));
+
+      registry.fill(HIST("h2dTopoVarPointingAngle"), lPt, TMath::ACos(v0candidate.cosPA));
+      registry.fill(HIST("h2dTopoVarV0Radius"), lPt, v0candidate.V0radius);
+      registry.fill(HIST("h2dTopoVarDCAV0Dau"), lPt, v0candidate.dcaV0dau);
+      registry.fill(HIST("h2dTopoVarPosDCAToPV"), lPt, v0candidate.posDCAxy);
+      registry.fill(HIST("h2dTopoVarNegDCAToPV"), lPt, v0candidate.negDCAxy);
+      registry.fill(HIST("h2dTopoVarDCAV0ToPV"), lPt, dcaV0toPV);
+
+    } // end QA
     return true;
   }
 
@@ -615,6 +663,11 @@ struct lambdakzeroBuilder {
 
     // Loops over all V0s in the time frame
     for (auto& V0 : V0s) {
+      // downscale some V0s if requested to do so
+      if (downscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > downscaleFactor) {
+        return;
+      }
+
       // populates v0candidate struct declared inside strangenessbuilder
       bool validCandidate = buildV0Candidate<TTrackTo>(V0);
 

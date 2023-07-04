@@ -72,6 +72,7 @@ struct OnTheFlyTOFPID {
   Configurable<int> nBinsP{"nBinsP", 80, "number of bins in momentum"};
   Configurable<int> nBinsTrackLengthInner{"nBinsTrackLengthInner", 300, "number of bins in track length"};
   Configurable<int> nBinsTrackLengthOuter{"nBinsTrackLengthOuter", 300, "number of bins in track length"};
+  Configurable<int> nBinsTrackDeltaLength{"nBinsTrackDeltaLength", 100, "number of bins in delta track length"};
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
@@ -91,10 +92,17 @@ struct OnTheFlyTOFPID {
       const AxisSpec axisVelocity{static_cast<int>(nBinsBeta), 0.0f, +1.1f, "Measured #beta"};
       const AxisSpec axisTrackLengthInner{static_cast<int>(nBinsTrackLengthInner), 0.0f, 60.0f, "Track length (cm)"};
       const AxisSpec axisTrackLengthOuter{static_cast<int>(nBinsTrackLengthOuter), 0.0f, 300.0f, "Track length (cm)"};
+      const AxisSpec axisTrackDeltaLength{static_cast<int>(nBinsTrackDeltaLength), 0.0f, 30.0f, "Delta Track length (cm)"};
       histos.add("h2dVelocityVsMomentumInner", "h2dVelocityVsMomentumInner", kTH2F, {axisMomentum, axisVelocity});
       histos.add("h2dVelocityVsMomentumOuter", "h2dVelocityVsMomentumOuter", kTH2F, {axisMomentum, axisVelocity});
       histos.add("h2dTrackLengthInnerVsPt", "h2dTrackLengthInnerVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthInner});
       histos.add("h2dTrackLengthOuterVsPt", "h2dTrackLengthOuterVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthOuter});
+
+      histos.add("h2dTrackLengthInnerRecoVsPt", "h2dTrackLengthInnerRecoVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthInner});
+      histos.add("h2dTrackLengthOuterRecoVsPt", "h2dTrackLengthOuterRecoVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthOuter});
+
+      histos.add("h2dDeltaTrackLengthInnerVsPt", "h2dDeltaTrackLengthInnerVsPt", kTH2F, {axisMomentumSmall, axisTrackDeltaLength});
+      histos.add("h2dDeltaTrackLengthOuterVsPt", "h2dDeltaTrackLengthOuterVsPt", kTH2F, {axisMomentumSmall, axisTrackDeltaLength});
     }
   }
 
@@ -270,10 +278,12 @@ struct OnTheFlyTOFPID {
         if (trackLengthRecoInnerTOF > 0) {
           histos.fill(HIST("h2dVelocityVsMomentumInner"), momentum, innerBeta);
           histos.fill(HIST("h2dTrackLengthInnerVsPt"), o2track.getPt(), trackLengthInnerTOF);
+          histos.fill(HIST("h2dTrackLengthInnerRecoVsPt"), o2track.getPt(), trackLengthRecoInnerTOF);
         }
         if (trackLengthRecoOuterTOF > 0) {
           histos.fill(HIST("h2dVelocityVsMomentumOuter"), momentum, outerBeta);
           histos.fill(HIST("h2dTrackLengthOuterVsPt"), o2track.getPt(), trackLengthOuterTOF);
+          histos.fill(HIST("h2dTrackLengthOuterRecoVsPt"), o2track.getPt(), trackLengthRecoOuterTOF);
         }
       }
 
@@ -295,9 +305,18 @@ struct OnTheFlyTOFPID {
           nSigmaOuterTOF[ii] = deltaTimeOuterTOF[ii] / outerTOFTimeReso;
       }
 
+      float deltaTrackLengthInnerTOF = abs(trackLengthInnerTOF - trackLengthRecoInnerTOF);
+      if (trackLengthInnerTOF > 0 && trackLengthRecoInnerTOF > 0) {
+        histos.fill(HIST("h2dDeltaTrackLengthInnerVsPt"), o2track.getPt(), deltaTrackLengthInnerTOF);
+      }
+      float deltaTrackLengthOuterTOF = abs(trackLengthOuterTOF - trackLengthRecoOuterTOF);
+      if (trackLengthOuterTOF > 0 && trackLengthRecoOuterTOF > 0) {
+        histos.fill(HIST("h2dDeltaTrackLengthOuterVsPt"), o2track.getPt(), deltaTrackLengthInnerTOF);
+      }
+
       // Sigmas have been fully calculated. Please populate the NSigma helper table (once per track)
-      upgradeTof(nSigmaInnerTOF[0], nSigmaInnerTOF[1], nSigmaInnerTOF[2], nSigmaInnerTOF[3], nSigmaInnerTOF[4], trackLengthInnerTOF,
-                 nSigmaOuterTOF[0], nSigmaOuterTOF[1], nSigmaOuterTOF[2], nSigmaOuterTOF[3], nSigmaOuterTOF[4], trackLengthOuterTOF);
+      upgradeTof(nSigmaInnerTOF[0], nSigmaInnerTOF[1], nSigmaInnerTOF[2], nSigmaInnerTOF[3], nSigmaInnerTOF[4], trackLengthInnerTOF, trackLengthRecoInnerTOF, deltaTrackLengthInnerTOF,
+                 nSigmaOuterTOF[0], nSigmaOuterTOF[1], nSigmaOuterTOF[2], nSigmaOuterTOF[3], nSigmaOuterTOF[4], trackLengthOuterTOF, trackLengthRecoOuterTOF, deltaTrackLengthOuterTOF);
     }
   }
 };

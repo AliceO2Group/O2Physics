@@ -44,7 +44,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct SinglePhoton {
@@ -60,7 +60,7 @@ struct SinglePhoton {
   Configurable<std::string> CentEstimator{"CentEstimator", "FT0M", "centrality estimator"};
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
-  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
+  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,analysis16,analysis1690,wwire_ib,qc,qc_ITSTPC,qc_ITSonly,qc_TPConly", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
   Configurable<std::string> fConfigEMCCuts{"fConfigEMCCuts", "custom,standard,nocut", "Comma separated list of EMCal photon cuts"};
 

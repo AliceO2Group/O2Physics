@@ -14,27 +14,29 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, HEIDELBERG UNIVERSITY & GSI
 
 #include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/CollisionAssociation.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
 #include "DCAFitter/DCAFitterN.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/V0.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -69,9 +71,13 @@ struct HfCandidateCreatorToXiPi {
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  // cascade invariant mass cuts
+  Configurable<bool> doCascadeInvMassCut{"doCascadeInvMassCut", false, "Use invariant mass cut to select cascade candidates"};
+  Configurable<double> sigmaInvMassCascade{"sigmaInvMassCascade", 0.0025, "Invariant mass cut for cascade (sigma)"};
+  Configurable<int> nSigmaInvMassCut{"nSigmaInvMassCut", 4, "Number of sigma for invariant mass cut"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
@@ -169,6 +175,13 @@ struct HfCandidateCreatorToXiPi {
           }
         }
 
+        // use invariant mass cut to select cascades candidates
+        if (doCascadeInvMassCut) {
+          if (std::abs(casc.mXi() - massXiFromPDG) > (nSigmaInvMassCut * sigmaInvMassCascade)) {
+            continue;
+          }
+        }
+
         //--------------------------reconstruct V0 track---------------------------
         // pseudorapidity
         double pseudorapV0PosDau = trackV0Dau0.eta();
@@ -244,7 +257,7 @@ struct HfCandidateCreatorToXiPi {
           }
 
           // check not to take the same particle twice in the decay chain
-          if (trackPion.globalIndex() == trackXiDauCharged.globalIndex() || trackPion.globalIndex() == trackV0Dau0.globalIndex() || trackPion.globalIndex() == trackV0Dau1.globalIndex() || trackPion.globalIndex() == casc.globalIndex()) {
+          if (trackPion.globalIndex() == trackXiDauCharged.globalIndex() || trackPion.globalIndex() == trackV0Dau0.globalIndex() || trackPion.globalIndex() == trackV0Dau1.globalIndex()) {
             continue;
           }
 

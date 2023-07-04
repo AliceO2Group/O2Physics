@@ -60,6 +60,8 @@ class CollisonCuts
     mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
     mHistogramRegistry->add("Event/MultFV0M", "; vMultV0M; Entries", kTH1F, {{120, 0, 120}});
     mHistogramRegistry->add("Event/MultFT0M", "; vMultT0M; Entries", kTH1F, {{120, 0, 120}});
+    mHistogramRegistry->add("Event/MultFT0C", "; vMultT0C; Entries", kTH1F, {{120, 0, 120}});
+    mHistogramRegistry->add("Event/MultFT0A", "; vMultT0A; Entries", kTH1F, {{120, 0, 120}});
     mHistogramRegistry->add("Event/MultTPC", "; vMultTPC; Entries", kTH1F, {{300, 0, 3000}});
   }
 
@@ -120,6 +122,8 @@ class CollisonCuts
       mHistogramRegistry->fill(HIST("Event/posZ"), col.posZ());
       mHistogramRegistry->fill(HIST("Event/MultFV0M"), col.multFV0M());
       mHistogramRegistry->fill(HIST("Event/MultFT0M"), col.centFT0M());
+      mHistogramRegistry->fill(HIST("Event/MultFT0C"), col.centFT0C());
+      mHistogramRegistry->fill(HIST("Event/MultFT0A"), col.centFT0A());
       mHistogramRegistry->fill(HIST("Event/MultTPC"), col.multTPC());
     }
   }
