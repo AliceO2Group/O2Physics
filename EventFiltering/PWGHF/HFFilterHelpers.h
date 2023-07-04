@@ -914,12 +914,12 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
   }
 
   // cascade mass
-  if (std::fabs(casc.mXi() - massXi) < deltaMassXi) {
+  if (std::fabs(casc.mXi() - massXi) > deltaMassXi) {
     return false;
   }
 
   // V0 mass
-  if (std::fabs(casc.mLambda() - massLambda) < deltaMassLambda) {
+  if (std::fabs(casc.mLambda() - massLambda) > deltaMassLambda) {
     return false;
   }
 
