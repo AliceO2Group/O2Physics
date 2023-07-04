@@ -910,7 +910,7 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
   // cascade cosp
   if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cosPAXi) {
     return false;
-  }const float& DCAxyXi
+  }
 
   // cascade DCAxy to PV
   if (std::fabs(casc.dcaXYCascToPV()) > DCAxyXi) {
