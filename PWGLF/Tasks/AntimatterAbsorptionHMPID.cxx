@@ -53,6 +53,18 @@ struct AntimatterAbsorptionHMPID {
     OutputObjHandlingPolicy::AnalysisObject,
     true,
     true};
+  HistogramRegistry pion_pos_reg{
+    "pion_pos",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
+  HistogramRegistry kaon_pos_reg{
+    "kaon_pos",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
   HistogramRegistry proton_reg{
     "proton",
     {},
@@ -61,6 +73,18 @@ struct AntimatterAbsorptionHMPID {
     true};
   HistogramRegistry deuteron_reg{
     "deuteron",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
+  HistogramRegistry pion_neg_reg{
+    "pion_neg",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
+  HistogramRegistry kaon_neg_reg{
+    "kaon_neg",
     {},
     OutputObjHandlingPolicy::AnalysisObject,
     true,
@@ -81,15 +105,14 @@ struct AntimatterAbsorptionHMPID {
   void init(o2::framework::InitContext&)
   {
 
-    std::vector<double> momentum_bin_edges = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,
-                                              0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4,
-                                              1.5, 1.6, 1.7, 1.8, 1.9, 2.0};
+    std::vector<double> momentum_bin_edges = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4, 1.45, 1.5, 1.55, 1.6, 1.65, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0};
     AxisSpec pAxis = {momentum_bin_edges, "#it{p} (GeV/#it{c})"};
 
     // General Histogram (Positive Tracks)
     pos_reg.add("histTpcSignalData", "dE/dx", HistType::kTH2F,
                 {{500, 0.0, 5.0, "#it{p} (GeV/#it{c})"},
                  {1400, 0, 1400, "d#it{E}/d#it{x} (a. u.)"}});
+    pos_reg.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20.0, +20.0, "z_{vtx} (cm)"}});
     pos_reg.add("histTofSignalData", "TOF signal", HistType::kTH2F,
                 {{500, 0.0, 5.0, "#it{p} (GeV/#it{c})"},
                  {550, 0.0, 1.1, "#beta (TOF)"}});
@@ -138,6 +161,18 @@ struct AntimatterAbsorptionHMPID {
     neg_reg.add("histPhi", "phi", HistType::kTH2F,
                 {pAxis, {200, 0.0, TMath::TwoPi(), "phi"}});
 
+    // Pion
+    pion_pos_reg.add("histTpcNsigmaData", "nsigmaTPC (#pi)", HistType::kTH2F,
+                     {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (#pi)"}});
+    pion_pos_reg.add("histTofNsigmaData", "nsigmaTOF (#pi)", HistType::kTH2F,
+                     {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (#pi)"}});
+
+    // Kaon
+    kaon_pos_reg.add("histTpcNsigmaData", "nsigmaTPC (K)", HistType::kTH2F,
+                     {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (K)"}});
+    kaon_pos_reg.add("histTofNsigmaData", "nsigmaTOF (K)", HistType::kTH2F,
+                     {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (K)"}});
+
     // Protons
     proton_reg.add("histTpcNsigmaData", "nsigmaTPC (p)", HistType::kTH2F,
                    {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (p)"}});
@@ -149,6 +184,18 @@ struct AntimatterAbsorptionHMPID {
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (d)"}});
     deuteron_reg.add("histTofNsigmaData", "nsigmaTOF (d)", HistType::kTH2F,
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (d)"}});
+
+    // Pion
+    pion_neg_reg.add("histTpcNsigmaData", "nsigmaTPC (#pi)", HistType::kTH2F,
+                     {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (#pi)"}});
+    pion_neg_reg.add("histTofNsigmaData", "nsigmaTOF (#pi)", HistType::kTH2F,
+                     {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (#pi)"}});
+
+    // Kaon
+    kaon_neg_reg.add("histTpcNsigmaData", "nsigmaTPC (K)", HistType::kTH2F,
+                     {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (K)"}});
+    kaon_neg_reg.add("histTofNsigmaData", "nsigmaTOF (K)", HistType::kTH2F,
+                     {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (K)"}});
 
     // Antiprotons
     antiproton_reg.add("histTpcNsigmaData", "nsigmaTPC (antip)",
@@ -203,6 +250,11 @@ struct AntimatterAbsorptionHMPID {
   template <typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& event, const TracksType& tracks)
   {
+
+    if (!event.sel8())
+      return;
+
+    pos_reg.fill(HIST("histRecVtxZData"), event.posZ());
 
     // Loop over Reconstructed Tracks
     for (auto track : tracks) {
@@ -292,6 +344,10 @@ struct AntimatterAbsorptionHMPID {
         continue;
 
       if (track.sign() > 0) {
+        pion_pos_reg.fill(HIST("histTpcNsigmaData"), track.p(),
+                          track.tpcNSigmaPi());
+        kaon_pos_reg.fill(HIST("histTpcNsigmaData"), track.p(),
+                          track.tpcNSigmaKa());
         proton_reg.fill(HIST("histTpcNsigmaData"), track.p(),
                         track.tpcNSigmaPr());
         deuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(),
@@ -299,14 +355,28 @@ struct AntimatterAbsorptionHMPID {
       }
 
       if (track.sign() < 0) {
+        pion_neg_reg.fill(HIST("histTpcNsigmaData"), track.p(),
+                          track.tpcNSigmaPi());
+        kaon_neg_reg.fill(HIST("histTpcNsigmaData"), track.p(),
+                          track.tpcNSigmaKa());
         antiproton_reg.fill(HIST("histTpcNsigmaData"), track.p(),
                             track.tpcNSigmaPr());
         antideuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(),
                               track.tpcNSigmaDe());
       }
 
+      bool passedPionTPCsel = false;
+      bool passedKaonTPCsel = false;
       bool passedProtTPCsel = false;
       bool passedDeutTPCsel = false;
+
+      if (track.tpcNSigmaPi() > nsigmaTPCMin &&
+          track.tpcNSigmaPi() < nsigmaTPCMax)
+        passedPionTPCsel = true;
+
+      if (track.tpcNSigmaKa() > nsigmaTPCMin &&
+          track.tpcNSigmaKa() < nsigmaTPCMax)
+        passedKaonTPCsel = true;
 
       if (track.tpcNSigmaPr() > nsigmaTPCMin &&
           track.tpcNSigmaPr() < nsigmaTPCMax)
@@ -317,6 +387,13 @@ struct AntimatterAbsorptionHMPID {
 
       if (track.hasTOF()) {
         if (track.sign() > 0) {
+          if (passedPionTPCsel)
+            pion_pos_reg.fill(HIST("histTofNsigmaData"), track.p(),
+                              track.tofNSigmaPi());
+
+          if (passedKaonTPCsel)
+            kaon_pos_reg.fill(HIST("histTofNsigmaData"), track.p(),
+                              track.tofNSigmaKa());
           if (passedProtTPCsel)
             proton_reg.fill(HIST("histTofNsigmaData"), track.p(),
                             track.tofNSigmaPr());
@@ -326,6 +403,13 @@ struct AntimatterAbsorptionHMPID {
         }
 
         if (track.sign() < 0) {
+          if (passedPionTPCsel)
+            pion_neg_reg.fill(HIST("histTofNsigmaData"), track.p(),
+                              track.tofNSigmaPi());
+
+          if (passedKaonTPCsel)
+            kaon_neg_reg.fill(HIST("histTofNsigmaData"), track.p(),
+                              track.tofNSigmaKa());
           if (passedProtTPCsel)
             antiproton_reg.fill(HIST("histTofNsigmaData"), track.p(),
                                 track.tofNSigmaPr());
@@ -345,10 +429,14 @@ struct AntimatterAbsorptionHMPID {
     soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
 
   using TrackCandidates = soa::Filtered<soa::Join<
-    aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPr,
-    aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe,
-    aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe,
-    aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl,
+    aod::Tracks, aod::TracksExtra, aod::TracksDCA,
+    aod::pidTPCLfFullPi, aod::pidTOFFullPi,
+    aod::pidTPCLfFullKa, aod::pidTOFFullKa,
+    aod::pidTPCLfFullPr, aod::pidTOFFullPr,
+    aod::pidTPCLfFullDe, aod::pidTOFFullDe,
+    aod::pidTPCLfFullTr, aod::pidTOFFullTr,
+    aod::pidTPCLfFullHe, aod::pidTOFFullHe,
+    aod::pidTPCLfFullAl, aod::pidTOFFullAl,
     aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal,
     aod::pidTOFmass, aod::pidTOFbeta>>;
 
