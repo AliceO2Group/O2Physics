@@ -213,13 +213,14 @@ struct HfTreeCreatorDplusToPiKPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
-  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
-  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
+  Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
+
+  Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
+  Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
 
   void init(InitContext const&)
   {
@@ -403,20 +404,20 @@ struct HfTreeCreatorDplusToPiKPi {
     // Filling candidate properties
     if (fillOnlySignal) {
       if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(recSig.size());
+        rowCandidateLite.reserve(reconstructedCandSig.size());
       } else {
-        rowCandidateFull.reserve(recSig.size());
+        rowCandidateFull.reserve(reconstructedCandSig.size());
       }
-      for (const auto& candidate : recSig) {
+      for (const auto& candidate : reconstructedCandSig) {
         fillCandidateTable<true>(candidate);
       }
     } else if (fillOnlyBackground) {
       if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(recBg.size());
+        rowCandidateLite.reserve(reconstructedCandBkg.size());
       } else {
-        rowCandidateFull.reserve(recBg.size());
+        rowCandidateFull.reserve(reconstructedCandBkg.size());
       }
-      for (const auto& candidate : recBg) {
+      for (const auto& candidate : reconstructedCandBkg) {
         if (downSampleBkgFactor < 1.) {
           float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
           if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {

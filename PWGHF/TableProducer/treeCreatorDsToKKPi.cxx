@@ -214,18 +214,18 @@ struct HfTreeCreatorDsToKKPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  Filter filterSelectCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanGen == decayChannel;
-
   using candDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using candDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using candDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
+  Filter filterSelectCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
+  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanGen == decayChannel;
+
   Partition<candDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<candDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
-  Partition<candDsMcReco> recSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
-  Partition<candDsMcReco> recBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(DecayType::DsToKKPi));
+  Partition<candDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
+  Partition<candDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(DecayType::DsToKKPi));
 
   void init(InitContext const&)
   {
@@ -436,12 +436,12 @@ struct HfTreeCreatorDsToKKPi {
     // Filling candidate properties
     if (fillOnlySignal) {
       if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(recSig.size());
+        rowCandidateLite.reserve(reconstructedCandSig.size());
       } else {
-        rowCandidateFull.reserve(recSig.size());
+        rowCandidateFull.reserve(reconstructedCandSig.size());
       }
 
-      for (const auto& candidate : recSig) {
+      for (const auto& candidate : reconstructedCandSig) {
         if (candidate.isCandidateSwapped() == 0) {
           fillCandidateTable<true, 0>(candidate);
         }
@@ -451,12 +451,12 @@ struct HfTreeCreatorDsToKKPi {
       }
     } else if (fillOnlyBackground) {
       if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(recBkg.size());
+        rowCandidateLite.reserve(reconstructedCandBkg.size());
       } else {
-        rowCandidateFull.reserve(recBkg.size());
+        rowCandidateFull.reserve(reconstructedCandBkg.size());
       }
 
-      for (const auto& candidate : recBkg) {
+      for (const auto& candidate : reconstructedCandBkg) {
         if (downSampleBkgFactor < 1.) {
           float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
           if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
@@ -473,12 +473,12 @@ struct HfTreeCreatorDsToKKPi {
       }
     } else {
       if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(recSig.size() + recBkg.size());
+        rowCandidateLite.reserve(reconstructedCandSig.size() + reconstructedCandBkg.size());
       } else {
-        rowCandidateFull.reserve(recSig.size() + recBkg.size());
+        rowCandidateFull.reserve(reconstructedCandSig.size() + reconstructedCandBkg.size());
       }
 
-      for (const auto& candidate : recSig) {
+      for (const auto& candidate : reconstructedCandSig) {
         if (candidate.isCandidateSwapped() == 0) {
           fillCandidateTable<true, 0>(candidate);
         }
@@ -487,7 +487,7 @@ struct HfTreeCreatorDsToKKPi {
         }
       }
 
-      for (const auto& candidate : recBkg) {
+      for (const auto& candidate : reconstructedCandBkg) {
         // Bkg candidates are not matched to MC so rely on selections only
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
           fillCandidateTable<true, 0>(candidate);

@@ -36,17 +36,17 @@ struct HfTaskDs {
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
 
-  Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
-
   using candDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using candDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using candDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
+  Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
+
   Partition<candDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<candDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
-  Partition<candDsMcReco> recSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
-  Partition<candDsMcReco> recBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(DecayType::DsToKKPi));
+  Partition<candDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
+  Partition<candDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(DecayType::DsToKKPi));
 
   HistogramRegistry registry{
     "registry",
@@ -232,7 +232,7 @@ struct HfTaskDs {
   void processMc(candDsMcReco const& candidates, candDsMcGen const& particlesMC, aod::BigTracksMC const&)
   {
     // MC rec.
-    for (const auto& candidate : recSig) {
+    for (const auto& candidate : reconstructedCandSig) {
       if (yCandRecoMax >= 0. && std::abs(yDs(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -253,7 +253,7 @@ struct HfTaskDs {
       }
     }
 
-    for (const auto& candidate : recBkg) {
+    for (const auto& candidate : reconstructedCandBkg) {
       if (yCandRecoMax >= 0. && std::abs(yDs(candidate)) > yCandRecoMax) {
         continue;
       }
