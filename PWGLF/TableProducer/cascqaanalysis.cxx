@@ -24,10 +24,6 @@
 #include "PWGLF/DataModel/cascqaanalysis.h"
 #include "TRandom.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <TParticle.h>
-#include <TParticlePDG.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -83,7 +79,7 @@ struct cascqaanalysis {
   Configurable<float> cutzvertex{"cutzvertex", 20.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
 
-  // Selection criteria
+  // Cascade selection criteria
   Configurable<float> scalefactor{"scalefactor", 1.0, "Scaling factor"};
   Configurable<double> casccospa{"casccospa", 0.97, "Casc CosPA"};
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
@@ -96,12 +92,7 @@ struct cascqaanalysis {
   Configurable<float> cascradius{"cascradius", 0.0, "Casc Radius"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
 
-  Configurable<float> maxDCANsigmaScaling{"maxDCANsigmaScaling", 1.0f, "N of 7*sigma scaling factor for DCA to select primaries"};
-  Configurable<float> DCASigma{"DCASigma", 0.004f, "7*sigma for DCA"};
-  Configurable<float> DCAPtScaling{"DCAPtScaling", 0.013f, "pt scaling for DCA"};
-  Configurable<float> maxDCAz{"maxDCAz", 0.5f, "DCA z cut to select primaries"};
-
-  // necessary for particle charges
+  // Necessary for particle charges
   Service<O2DatabasePDG> pdgDB;
 
   TRandom* fRand = new TRandom();
@@ -179,13 +170,6 @@ struct cascqaanalysis {
     return true;
   }
 
-  // OLD isPrimaryTrack check for rec. tracks
-  template <typename TTrack>
-  bool isPrimaryTrack(TTrack track)
-  {
-    return (TMath::Abs(track.dcaXY()) < (maxDCANsigmaScaling * (DCASigma + DCAPtScaling / track.pt()))) && (TMath::Abs(track.dcaZ()) < maxDCAz);
-  }
-
   template <typename TMcParticles>
   bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection)
   {
@@ -201,7 +185,7 @@ struct cascqaanalysis {
       if (particle.isPhysicalPrimary() == 0)
         continue;           // consider only primaries
       etaCharge = {999, 0}; // refresh init. for safety
-      TParticlePDG* p = TDatabasePDG::Instance()->GetParticle(particle.pdgCode());
+      TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
       if (!p) {
         switch (std::to_string(particle.pdgCode()).length()) {
           case 10: // nuclei

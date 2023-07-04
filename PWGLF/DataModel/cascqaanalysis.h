@@ -25,10 +25,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "TRandom.h"
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <TParticle.h>
-#include <TParticlePDG.h>
 
 using namespace o2;
 using namespace o2::framework;
