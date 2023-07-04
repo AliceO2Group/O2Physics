@@ -41,7 +41,7 @@ std::string timeStampToHReadble(time_t rawtime)
   if (rawtime < 0) {
     return std::string(" latest");
   }
-  struct tm* dt;
+  struct tm* dt = new tm();
   char buffer[30];
   rawtime /= 1000;
   localtime_r(&rawtime, dt);

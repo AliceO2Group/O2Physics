@@ -287,7 +287,6 @@ struct tpcPid {
       LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / (tracks_size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / 1000000000 << " s";
     }
 
-    int lastCollisionId = -1; // Last collision ID analysed
     uint64_t count_tracks = 0;
 
     for (auto const& trk : tracks) {
