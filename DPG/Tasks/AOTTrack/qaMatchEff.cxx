@@ -945,7 +945,7 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedKineCuts(T& track)
   {
-    if (!b_useTrackSelections) 
+    if (!b_useTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kPtRange))
       return false;
@@ -2075,4 +2075,139 @@ struct qaMatchEff {
           if (trkWITS && isTrackSelectedITSCuts(track)) {
             histos.get<TH1>(HIST("MC/PID/pthist_its_ka"))->Fill(ITStrackPt);
             histos.get<TH1>(HIST("MC/PID/phihist_its_ka"))->Fill(track.phi());
-            histos.get<TH1>(HIST("MC/PID/etahist_it
+            histos.get<TH1>(HIST("MC/PID/etahist_its_ka"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("MC/PID/pthist_its_kaplus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("MC/PID/phihist_its_kaplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/PID/etahist_its_kaplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("MC/PID/pthist_its_kaminus"))->Fill(ITStrackPt);
+              histos.get<TH1>(HIST("MC/PID/phihist_its_kaminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/PID/etahist_its_kaminus"))->Fill(track.eta());
+            }
+          } //  end if ITS
+          */
+          if (trkWTPC && isTrackSelectedTPCCuts(track)) {
+            histos.get<TH1>(HIST("MC/PID/pthist_tpc_ka"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/PID/phihist_tpc_ka"))->Fill(track.phi());
+            histos.get<TH1>(HIST("MC/PID/etahist_tpc_ka"))->Fill(track.eta());
+            if (positiveTrack) {
+              histos.get<TH1>(HIST("MC/PID/pthist_tpc_kaplus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/PID/phihist_tpc_kaplus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/PID/etahist_tpc_kaplus"))->Fill(track.eta());
+            } else {
+              histos.get<TH1>(HIST("MC/PID/pthist_tpc_kaminus"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/PID/phihist_tpc_kaminus"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/PID/etahist_tpc_kaminus"))->Fill(track.eta());
+            }
+            if (trkWITS && isTrackSelectedITSCuts(track)) {
+              histos.get<TH1>(HIST("MC/PID/pthist_tpcits_ka"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/PID/phihist_tpcits_ka"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/PID/etahist_tpcits_ka"))->Fill(track.eta());
+              if (positiveTrack) {
+                histos.get<TH1>(HIST("MC/PID/pthist_tpcits_kaplus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/PID/phihist_tpcits_kaplus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("MC/PID/etahist_tpcits_kaplus"))->Fill(track.eta());
+              } else {
+                histos.get<TH1>(HIST("MC/PID/pthist_tpcits_kaminus"))->Fill(trackPt);
+                histos.get<TH1>(HIST("MC/PID/phihist_tpcits_kaminus"))->Fill(track.phi());
+                histos.get<TH1>(HIST("MC/PID/etahist_tpcits_kaminus"))->Fill(track.eta());
+              }
+            } //  end if ITS
+          }   //  end if TPC
+        }
+        //
+        // pions and kaons together
+        if (tpPDGCode == 211 || tpPDGCode == 321) {
+          /*
+          if (trkWITS && isTrackSelectedITSCuts(track)) {
+            histos.get<TH1>(HIST("MC/PID/pthist_its_piK"))->Fill(ITStrackPt);
+            histos.get<TH1>(HIST("MC/PID/phihist_its_piK"))->Fill(track.phi());
+            histos.get<TH1>(HIST("MC/PID/etahist_its_piK"))->Fill(track.eta());
+          } //  end if ITS
+          */
+          if (trkWTPC && isTrackSelectedTPCCuts(track)) {
+            histos.get<TH1>(HIST("MC/PID/pthist_tpc_piK"))->Fill(trackPt);
+            histos.get<TH1>(HIST("MC/PID/phihist_tpc_piK"))->Fill(track.phi());
+            histos.get<TH1>(HIST("MC/PID/etahist_tpc_piK"))->Fill(track.eta());
+            if (trkWITS && isTrackSelectedITSCuts(track)) {
+              histos.get<TH1>(HIST("MC/PID/pthist_tpcits_piK"))->Fill(trackPt);
+              histos.get<TH1>(HIST("MC/PID/phihist_tpcits_piK"))->Fill(track.phi());
+              histos.get<TH1>(HIST("MC/PID/etahist_tpcits_piK"))->Fill(track.eta());
+            } //  end if ITS
+          }   //  end if TPC
+        }
+      }
+      //
+      //
+    } //  end loop on tracks
+    //
+    //
+    if (doDebug) {
+      LOGF(info, "Selected tracks: %d ", countData);
+      LOGF(info, "Selected tracks with MC: %d, tracks w/o MC: %d ", countData, countNoMC);
+    }
+  }
+
+  //////////////////////////////////////////////
+  ///   Process MC with collision grouping   ///
+  //////////////////////////////////////////////
+  void processMC(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  {
+    fillHistograms<true>(tracks, mcParticles);
+  }
+  PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
+
+  ////////////////////////////////////////////////////////////
+  ///   Process MC with collision grouping and IU tracks   ///
+  ////////////////////////////////////////////////////////////
+  void processTrkIUMC(aod::Collision const& collision, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  {
+    fillHistograms<true>(tracks, mcParticles);
+  }
+  PROCESS_SWITCH(qaMatchEff, processTrkIUMC, "process MC for IU tracks", false);
+
+  /////////////////////////////////////////////
+  ///   Process MC w/o collision grouping   ///
+  /////////////////////////////////////////////
+  void processMCNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  {
+    fillHistograms<true>(tracks, mcParticles);
+  }
+  PROCESS_SWITCH(qaMatchEff, processMCNoColl, "process MC - no collision grouping", false);
+
+  ////////////////////////////////////////////////
+  ///   Process data with collision grouping   ///
+  ////////////////////////////////////////////////
+  void processData(
+    aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
+  {
+    fillHistograms<false>(tracks, tracks); // 2nd argument not used in this case
+  }
+  PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
+
+  /////////////////////////////////////////////////////////////
+  ///   Process data with collision grouping and IU tracks  ///
+  /////////////////////////////////////////////////////////////
+  void processTrkIUData(aod::Collision const& collision, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
+  {
+    fillHistograms<false>(tracks, tracks); // 2nd argument not used in this case
+  }
+  PROCESS_SWITCH(qaMatchEff, processTrkIUData, "process data", false);
+
+  ///////////////////////////////////////////////
+  ///   Process data w/o collision grouping   ///
+  ///////////////////////////////////////////////
+  void processDataNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
+  {
+    fillHistograms<false>(tracks, tracks); // 2nd argument not used in this case
+  }
+  PROCESS_SWITCH(qaMatchEff, processDataNoColl, "process data - no collision grouping", true);
+
+}; // end of structure
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<qaMatchEff>(cfgc, TaskName{"qa-match-eff"})};
+}
