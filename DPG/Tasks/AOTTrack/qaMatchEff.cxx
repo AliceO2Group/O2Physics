@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file qaMatchEff.cxx
-/// \brief ITS-TPC track matching and prim/sec separation checks
+/// \brief ITS-TPC track matching and prim/sec, identified separation checks
 ///
 /// \author Rosario Turrisi  <rosario.turrisi@pd.infn.it>, INFN-PD
 /// \author Mattia Faggin <mattia.faggin@ts.infn.it>, UniTs & INFN-TS
