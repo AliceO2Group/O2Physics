@@ -58,7 +58,7 @@ struct myTable {
 
   void init(InitContext const&)
   {
-    const AxisSpec axPhi(632, -0.1, 6.31, "#phi")
+    const AxisSpec axPhi(632, -0.1, 6.31, "#phi");
     const AxisSpec axSp(120, -0.1, 1.1, "s_{0}");
     const AxisSpec axMult(10, 0, 10, "Mult");
     const AxisSpec axCtr(1, 0, 1, "CTR");
