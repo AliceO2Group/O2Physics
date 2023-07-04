@@ -85,7 +85,10 @@ struct HfCandidateCreator2Prong {
   }
 
   template <bool doPvRefit = false, typename Cand>
-  void runCreator2Prong(aod::Collisions const& collisions, Cand const& rowsTrackIndexProng2, aod::BigTracks const& tracks, aod::BCsWithTimestamps const& bcWithTimeStamps)
+  void runCreator2Prong(aod::Collisions const& collisions,
+                        Cand const& rowsTrackIndexProng2,
+                        aod::BigTracks const& tracks,
+                        aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df;

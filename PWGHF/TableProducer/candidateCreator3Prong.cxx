@@ -84,7 +84,10 @@ struct HfCandidateCreator3Prong {
   }
 
   template <bool doPvRefit = false, typename Cand>
-  void runCreator3Prong(aod::Collisions const& collisions, Cand const& rowsTrackIndexProng3, aod::BigTracks const& tracks, aod::BCsWithTimestamps const& bcWithTimeStamps)
+  void runCreator3Prong(aod::Collisions const& collisions,
+                        Cand const& rowsTrackIndexProng3,
+                        aod::BigTracks const& tracks,
+                        aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df;

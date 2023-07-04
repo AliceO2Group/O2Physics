@@ -973,6 +973,7 @@ struct HfTrackIndexSkimCreator {
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using TracksWithDCA = soa::Join<aod::BigTracks, aod::TracksDCA>;
   using TracksWithPVRefitAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
+  using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   // filter collisions
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
@@ -982,7 +983,6 @@ struct HfTrackIndexSkimCreator {
 
   // filter track indices
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
-  using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
 
   // FIXME
@@ -1482,7 +1482,10 @@ struct HfTrackIndexSkimCreator {
   } /// end of performPvRefitCandProngs function
 
   template <bool doPvRefit = false, typename TTracks>
-  void run2And3Prongs(SelectedCollisions const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps, FilteredTrackAssocSel const& trackIndices, TTracks const& tracks)
+  void run2And3Prongs(SelectedCollisions const& collisions,
+                      aod::BCsWithTimestamps const& bcWithTimeStamps,
+                      FilteredTrackAssocSel const& trackIndices,
+                      TTracks const& tracks)
   {
 
     // can be added to run over limited collisions per file - for tesing purposes
@@ -2409,7 +2412,7 @@ struct HfTrackIndexSkimCreatorCascades {
   {
     // set the magnetic field from CCDB
     for (const auto& collision : collisions) {
-      auto bc = collision.template bc_as<o2::aod::BCsWithTimestamps>();
+      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
       initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
 
       // Define o2 fitter, 2-prong
