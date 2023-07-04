@@ -143,7 +143,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (!nameStr.compare("jpsiO2MCdebugCuts7_noCorr")) {
-    cut->AddCut(GetAnalysisCut("jpsiStandardKine1"));
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug5_noCorr"));
 
