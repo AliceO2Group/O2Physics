@@ -429,10 +429,14 @@ struct AntimatterAbsorptionHMPID {
     soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
 
   using TrackCandidates = soa::Filtered<soa::Join<
-    aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPr,
-    aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe,
-    aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe,
-    aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl,
+    aod::Tracks, aod::TracksExtra, aod::TracksDCA,
+    aod::pidTPCLfFullPi, aod::pidTOFFullPi,
+    aod::pidTPCLfFullKa, aod::pidTOFFullKa,
+    aod::pidTPCLfFullPr, aod::pidTOFFullPr,
+    aod::pidTPCLfFullDe, aod::pidTOFFullDe,
+    aod::pidTPCLfFullTr, aod::pidTOFFullTr,
+    aod::pidTPCLfFullHe, aod::pidTOFFullHe,
+    aod::pidTPCLfFullAl, aod::pidTOFFullAl,
     aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal,
     aod::pidTOFmass, aod::pidTOFbeta>>;
 
