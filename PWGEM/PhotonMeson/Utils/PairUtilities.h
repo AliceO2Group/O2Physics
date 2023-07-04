@@ -26,6 +26,7 @@ enum PairType {
   kPCMPHOS = 3,
   kPCMEMC = 4,
   kPHOSEMC = 5,
+  kPCMPCMibw = 6,
 };
 //_______________________________________________________________________
 namespace o2::aod

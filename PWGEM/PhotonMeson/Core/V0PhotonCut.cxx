@@ -18,7 +18,7 @@
 
 ClassImp(V0PhotonCut);
 
-const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "V0PtRange", "V0EtaRange", "PsiPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz", "ITSChi2NDF", "IsWithinBeamPipe", "RequireITSTPC", "RequireITSonly", "TPConly", "AntiTPConly"};
+const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "V0PtRange", "V0EtaRange", "AP", " PsiPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz", "ITSChi2NDF", "IsWithinBeamPipe", "RequireITSTPC", "RequireITSonly", "TPConly", "AntiTPConly"};
 
 void V0PhotonCut::SetV0PtRange(float minPt, float maxPt)
 {
@@ -43,6 +43,12 @@ void V0PhotonCut::SetPsiPairRange(float min, float max)
   mMinPsiPair = min;
   mMaxPsiPair = max;
   LOG(info) << "V0 Photon selection, set psi pair range: " << mMinPsiPair << " - " << mMaxPsiPair;
+}
+void V0PhotonCut::SetAPRange(float max_alpha, float max_qt)
+{
+  mMaxAlpha = max_alpha;
+  mMaxQt = max_qt;
+  LOG(info) << "V0 Photon selection, set Armenteroz-Podolanski range: " << mMaxAlpha << " - " << mMaxQt;
 }
 void V0PhotonCut::SetMaxMeePsiPairDep(std::function<float(float)> psiDepCut)
 {
