@@ -53,13 +53,13 @@ struct cascqaanalysis {
   {
     TString hCandidateCounterLabels[5] = {"All candidates", "v0data exists", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[4] = {"All", "z vrtx", "INEL>0", "Associated with rec. collision"};
-    TString hNEventsLabels[4] = {"All", "sel8", "z vrtx", "INEL>0"};
+    TString hNEventsLabels[6] = {"All", "sel8", "z vrtx", "INEL", "INEL>0", "INEL>1"};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{4, 0.f, 4.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{6, 0.f, 6.f}}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }
-    registry.add("hNAssocCollisions", "hNAssocCollisions", {HistType::kTH1F, {{5, -0.5f, 4.5f}}});
+    registry.add("hNAssocMCCollisions", "hNAssocMCCollisions", {HistType::kTH1F, {{5, -0.5f, 4.5f}}});
     registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
     registry.add("hZCollision", "hZCollision", {HistType::kTH1F, {{200, -20.f, 20.f}}});
     registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1F, {{200, -20.f, 20.f}}});
@@ -87,12 +87,6 @@ struct cascqaanalysis {
     AxisSpec allTracks = {2000, 0, 2000, "N_{all tracks}"};
     AxisSpec secondaryTracks = {2000, 0, 2000, "N_{secondary tracks}"};
     registry.add("hINELgt0PrimariesSelection", "hINELgt0PrimariesSelection", {HistType::kTH2F, {allTracks, secondaryTracks}});
-    registry.add("hDCAz_BefCut", "hDCAz_BefCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAz"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
-    registry.add("hDCAz_AfterCut", "hDCAz_AfterCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAz"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
-    registry.add("hDCAxy_BefCut", "hDCAxy_BefCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
-    registry.add("hDCAxy_AfterCut", "hDCAxy_AfterCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
-    registry.add("hNchMultFT0M", "hNchMultFT0M", HistType::kTH2F, {{300, 0.0f, 300.0f, "N_{ch}"}, {10000, 0.f, 10000.f, "FT0M signal"}});
-    registry.add("hNchMultFV0A", "hNchMultFV0A", HistType::kTH2F, {{300, 0.0f, 300.0f, "N_{ch}"}, {15000, 0.f, 15000.f, "FV0A signal"}});
   }
 
   // Event selection criteria
@@ -172,11 +166,14 @@ struct cascqaanalysis {
       registry.fill(HIST("hNEvents"), 2.5);
     }
 
-    if (INELgt0 && !isINELgt0(tracks, isFillEventSelectionQA)) {
-      return false;
-    }
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hNEvents"), 3.5);
+      if (collision.multNTracksPVeta1() > 0) {
+        registry.fill(HIST("hNEvents"), 4.5);
+      }
+      if (collision.multNTracksPVeta1() > 1) {
+        registry.fill(HIST("hNEvents"), 5.5);
+      }
     }
 
     if (isFillEventSelectionQA) {
@@ -191,43 +188,6 @@ struct cascqaanalysis {
   bool isPrimaryTrack(TTrack track)
   {
     return (TMath::Abs(track.dcaXY()) < (maxDCANsigmaScaling * (DCASigma + DCAPtScaling / track.pt()))) && (TMath::Abs(track.dcaZ()) < maxDCAz);
-  }
-
-  template <typename TTracks>
-  bool isINELgt0(TTracks tracks, bool isFillEventSelectionQA)
-  {
-    // INEL > 0 (at least 1 charged track in |eta| < 1.0)
-    std::vector<float> TracksEta(tracks.size());
-    int nTracks = 0;
-    int nRejTracks = 0;
-
-    for (const auto& track : tracks) {
-      registry.fill(HIST("hDCAxy_BefCut"), track.dcaXY(), track.pt());
-      registry.fill(HIST("hDCAz_BefCut"), track.dcaZ(), track.pt());
-
-      if (!isPrimaryTrack(track)) {
-        nRejTracks++;
-        continue; // consider only primaries
-      }
-      TracksEta[nTracks++] = track.eta();
-
-      registry.fill(HIST("hDCAxy_AfterCut"), track.dcaXY(), track.pt());
-      registry.fill(HIST("hDCAz_AfterCut"), track.dcaZ(), track.pt());
-    }
-
-    if (isFillEventSelectionQA) {
-      registry.fill(HIST("hINELgt0PrimariesSelection"), tracks.size(), nRejTracks);
-    }
-
-    auto etaConditionFunc = [](float elem) {
-      return TMath::Abs(elem) < 1.0;
-    };
-
-    if (std::any_of(TracksEta.begin(), TracksEta.end(), etaConditionFunc)) {
-      return true;
-    } else {
-      return false;
-    }
   }
 
   template <typename TMcParticles>
@@ -276,21 +236,6 @@ struct cascqaanalysis {
     }
   }
 
-  template <typename TCollision, typename TTracks>
-  void fillMultHisto(TCollision const& collision, TTracks const& tracks)
-  {
-    double Nch = 0;
-    for (const auto& track : tracks) {
-      if (TMath::Abs(track.eta()) > 0.5)
-        continue;
-      if (!isPrimaryTrack(track))
-        continue;
-      Nch++;
-    }
-    registry.fill(HIST("hNchMultFT0M"), Nch, collision.multFT0A() + collision.multFT0C());
-    registry.fill(HIST("hNchMultFV0A"), Nch, collision.multFV0A());
-  }
-
   void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                    soa::Filtered<aod::CascDataExt> const& Cascades,
                    aod::V0sLinked const&,
@@ -332,6 +277,15 @@ struct cascqaanalysis {
         }
       }
 
+      uint8_t flags = 0;
+      flags |= o2::aod::mycascades::EvFlags::EvINEL;
+      if (collision.multNTracksPVeta1() > 0) {
+        flags |= o2::aod::mycascades::EvFlags::EvINELgt0;
+      }
+      if (collision.multNTracksPVeta1() > 1) {
+        flags |= o2::aod::mycascades::EvFlags::EvINELgt1;
+      }
+
       // c x tau
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
@@ -352,7 +306,7 @@ struct cascqaanalysis {
                      negdau.tofNSigmaPr(), posdau.tofNSigmaPr(), negdau.tofNSigmaPi(), posdau.tofNSigmaPi(), bachelor.tofNSigmaPi(), bachelor.tofNSigmaKa(),
                      posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
                      posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF(),
-                     posdau.pt(), negdau.pt(), bachelor.pt(), -1, -1, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV());
+                     posdau.pt(), negdau.pt(), bachelor.pt(), -1, -1, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), flags);
         }
       }
     }
@@ -370,8 +324,6 @@ struct cascqaanalysis {
     if (!AcceptEvent(collision, Tracks, 1)) {
       return;
     }
-
-    fillMultHisto(collision, Tracks);
 
     float lEventScale = scalefactor;
 
@@ -402,6 +354,15 @@ struct cascqaanalysis {
         if (bachelor.itsClusterMap() & (1 << i)) {
           bachITSNhits++;
         }
+      }
+
+      uint8_t flags = 0;
+      flags |= o2::aod::mycascades::EvFlags::EvINEL;
+      if (collision.multNTracksPVeta1() > 0) {
+        flags |= o2::aod::mycascades::EvFlags::EvINELgt0;
+      }
+      if (collision.multNTracksPVeta1() > 1) {
+        flags |= o2::aod::mycascades::EvFlags::EvINELgt1;
       }
 
       // c x tau
@@ -436,7 +397,7 @@ struct cascqaanalysis {
                      negdau.tofNSigmaPr(), posdau.tofNSigmaPr(), negdau.tofNSigmaPi(), posdau.tofNSigmaPi(), bachelor.tofNSigmaPi(), bachelor.tofNSigmaKa(),
                      posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
                      posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF(),
-                     posdau.pt(), negdau.pt(), bachelor.pt(), lPDG, isPrimary, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV());
+                     posdau.pt(), negdau.pt(), bachelor.pt(), lPDG, isPrimary, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), flags);
         }
       }
     }
@@ -499,7 +460,7 @@ struct cascqaanalysis {
       }
     }
     SelectedEvents.resize(nevts);
-    registry.fill(HIST("hNAssocCollisions"), nAssocColl);
+    registry.fill(HIST("hNAssocMCCollisions"), nAssocColl);
     if (NumberOfContributors.size() == 2) {
       std::sort(NumberOfContributors.begin(), NumberOfContributors.end());
       registry.fill(HIST("hNContributorsCorrelation"), NumberOfContributors[0], NumberOfContributors[1]);
