@@ -541,7 +541,7 @@ struct cascpostprocessing {
       }
     }
   }
-  PROCESS_SWITCH(cascpostprocessing, processGen, "Process Run 3 generated data", false);
+  PROCESS_SWITCH(cascpostprocessing, processGen, "Process Run 3 MC generated data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
