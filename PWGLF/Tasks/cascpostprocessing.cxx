@@ -68,7 +68,7 @@ struct cascpostprocessing {
 
   Configurable<bool> isFT0MforMC{"isFT0MforMC", 0, "Fill with FT0M information or 0s"};
 
-  Configurable<int> evSelFlag{"evSelBit", 2, "1 - INEL; 2 - INEL>0; 3 - INEL>1"};
+  Configurable<int> evSelFlag{"evSelFlag", 2, "1 - INEL; 2 - INEL>0; 3 - INEL>1"};
 
   HistogramRegistry registry{"registryts"};
 
