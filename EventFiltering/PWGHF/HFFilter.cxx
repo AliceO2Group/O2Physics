@@ -135,7 +135,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
   std::array<std::shared_ptr<TH2>, kNV0> hArmPod{};
   std::shared_ptr<TH2> hV0Selected;
-  std::shared_ptr<TH1> hMassXi, hMassAntiXi;
+  std::shared_ptr<TH1> hMassXi;
 
   // Histograms of TPC calibration for pion and proton
   std::array<TH3F*, 2> hMapPion = {nullptr, nullptr};

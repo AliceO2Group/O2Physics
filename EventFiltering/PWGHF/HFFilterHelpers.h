@@ -811,13 +811,13 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& coll
 
   // DCA V0 and V0 daughters
   for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
-    if (TESTBIT(isSelected, iV0) && v0.dcaV0daughters() > 1.f) {
+    if (TESTBIT(isSelected, iV0) && v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > 2.f) { // we want only primary V0s
       CLRBIT(isSelected, iV0);
       if (activateQA > 1) {
-        hV0Selected->Fill(6., iV0);
+        hV0Selected->Fill(5., iV0);
       }
     }
-    if (TESTBIT(isSelected, iV0) && v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > 2.f) { // we want only primary V0s
+    if (TESTBIT(isSelected, iV0) && v0.dcaV0daughters() > 1.f) {
       CLRBIT(isSelected, iV0);
       if (activateQA > 1) {
         hV0Selected->Fill(6., iV0);
