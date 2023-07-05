@@ -77,18 +77,20 @@ double evaluatePhiByVertex(double xVertex1, double xVertex2, double yVertex1, do
 }
 
 // string definitions, used for histogram axis labels
-const TString stringPtD = "#it{p}_{T}^{D} (GeV/#it{c});";
-const TString stringPtDbar = "#it{p}_{T}^{Dbar} (GeV/#it{c});";
-const TString stringDeltaPt = "#it{p}_{T}^{Dbar}-#it{p}_{T}^{D} (GeV/#it{c});";
+const TString stringPtD = "#it{p}_{T}^{D_{1}} (GeV/#it{c});";
+const TString stringPtDbar = "#it{p}_{T}^{D_{2}} (GeV/#it{c});";
+const TString stringDeltaPt = "#it{p}_{T}^{D_{2}}-#it{p}_{T}^{D_{1}} (GeV/#it{c});";
 const TString stringDeltaPtMaxMin = "#it{p}_{T}^{max}-#it{p}_{T}^{min} (GeV/#it{c});";
-const TString stringDeltaEta = "#it{#eta}^{Dbar}-#it{#eta}^{D};";
-const TString stringDeltaY = "#it{y}^{Dbar}-#it{y}^{D};";
-const TString stringDeltaPhi = "#it{#varphi}^{Dbar}-#it{#varphi}^{D} (rad);";
-const TString stringDDbar = "D,Dbar candidates ";
+const TString stringDeltaEta = "#it{#eta}^{D_{2}}-#it{#eta}^{D_{1}};";
+const TString stringDeltaY = "#it{y}^{D_{2}}-#it{y}^{D_{1}};";
+const TString stringDeltaPhi = "#it{#varphi}^{D_{2}}-#it{#varphi}^{D_{1}} (rad);";
+const TString stringDDbar = "D meson pair candidates ";
 const TString stringSignal = "signal region;";
 const TString stringSideband = "sidebands;";
-const TString stringMCParticles = "MC gen - D,Dbar particles;";
-const TString stringMCReco = "MC reco - D,Dbar candidates ";
+const TString stringMCParticles = "MC gen - D meson pair particles;";
+const TString stringMCReco = "MC reco - D meson pair candidates ";
+const TString stringMassD = "inv. mass D_{1} (GeV/#it{c}^{2});";
+const TString stringMassDbar = "inv. mass D_{2} (GeV/#it{c}^{2});";
 
 // definition of vectors for standard ptbin and invariant mass configurables
 const int nPtBinsCorrelations = 8;
@@ -108,6 +110,8 @@ auto vecSidebandRightInner = std::vector<double>{sidebandRightInnerDefault, side
 auto vecSidebandRightOuter = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + nPtBinsCorrelations};
 
 struct HfTaskCorrelationDMesonPairs {
+  // Enable histograms with finer pT and y binning
+  Configurable<bool> enableFinerBinning{"enableFinerBinning", false, "Enable histograms with finer pT and y binning"};
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_d0_to_pi_k (i.e. the mass pT bins), but can be redefined via json files
   Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{vecPtBinsCorrelations}, "pT bin limits for correlation plots"};
   // signal and sideband region edges, to be defined via json file (initialised to empty)
@@ -127,6 +131,7 @@ struct HfTaskCorrelationDMesonPairs {
   HistogramConfigSpec hTH1DeltaPtMaxMin{HistType::kTH1F, {{72, 0., 36.}}};
   HistogramConfigSpec hTH1Phi{HistType::kTH1F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}}};
   HistogramConfigSpec hTH2CorrelPt{HistType::kTH2F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {200, -10., 10.}}};
+  HistogramConfigSpec hTHnMass2DCorrPairsFinerBinning{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {60, 1., 6.}, {60, 1., 6.}, {160, -0.8, 0.8}, {160, -0.8, 0.8}}};
 
   HistogramRegistry registry{
     "registry",
@@ -146,18 +151,18 @@ struct HfTaskCorrelationDMesonPairs {
      {"hCorrel2DVsPtSidebands", stringDDbar + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtDbar + "entries", hTHnCorrel2DVsPt},
      {"hDeltaPtDDbarSidebands", stringDDbar + stringSideband + stringDeltaPt + "entries", hTH1DeltaPtDDbar},
      {"hDeltaPtMaxMinSidebands", stringDDbar + stringSideband + stringDeltaPtMaxMin + "entries", hTH1DeltaPtMaxMin},
-     {"hMass2DCorrelationPairsMCRecBkgBkg", stringDDbar + "2D BkgBkg - MC reco;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsMCRecBkgRef", stringDDbar + "2D BkgRef - MC reco;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsMCRecBkgSig", stringDDbar + "2D BkgSig - MC reco;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsMCRecRefBkg", stringDDbar + "2D RefBkg - MC reco;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsMCRecRefRef", stringDDbar + "2D RefRef - MC reco;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsMCRecRefSig", stringDDbar + "2D RefSig - MC reco;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsMCRecSigBkg", stringDDbar + "2D SigBkg - MC reco;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsMCRecSigRef", stringDDbar + "2D SigRef - MC reco;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsMCRecSigSig", stringDDbar + "2D SigSig - MC reco;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsMCRecBkgBkg", stringDDbar + "2D BkgBkg - MC reco;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsMCRecBkgRef", stringDDbar + "2D BkgRef - MC reco;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsMCRecBkgSig", stringDDbar + "2D BkgSig - MC reco;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsMCRecRefBkg", stringDDbar + "2D RefBkg - MC reco;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsMCRecRefRef", stringDDbar + "2D RefRef - MC reco;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsMCRecRefSig", stringDDbar + "2D RefSig - MC reco;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsMCRecSigBkg", stringDDbar + "2D SigBkg - MC reco;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsMCRecSigRef", stringDDbar + "2D SigRef - MC reco;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsMCRecSigSig", stringDDbar + "2D SigSig - MC reco;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
      {"hDeltaEtaPtIntSignalRegionMCRec", stringMCReco + stringSignal + stringDeltaEta + "entries", hTH1Y},
      {"hDeltaPhiPtIntSignalRegionMCRec", stringMCReco + stringSignal + stringDeltaPhi + "entries", hTH1Phi},
-     {"hDeltaYPtIntSignalRegionMCRec", stringMCReco + stringSignal + stringDeltaEta + "entries", hTH1Y},
+     {"hDeltaYPtIntSignalRegionMCRec", stringMCReco + stringSignal + stringDeltaY + "entries", hTH1Y},
      {"hCorrel2DPtIntSignalRegionMCRec", stringMCReco + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", hTH2CorrelPt},
      {"hDeltaPtDDbarSignalRegionMCRec", stringMCReco + stringSignal + stringDeltaPt + "entries", hTH1DeltaPtDDbar},
      {"hDeltaPtMaxMinSignalRegionMCRec", stringMCReco + stringSignal + stringDeltaPtMaxMin + "entries", hTH1DeltaPtMaxMin},
@@ -185,7 +190,7 @@ struct HfTaskCorrelationDMesonPairs {
      {"hCorrel2DVsPtSidebandsMCRecSigRef", stringMCReco + "SigRef" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtDbar + "entries", hTHnCorrel2DVsPt},
      {"hCorrel2DVsPtSidebandsMCRecSigSig", stringMCReco + "SigSig" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtDbar + "entries", hTHnCorrel2DVsPt},
      {"hDeltaEtaPtIntMCGen", stringMCParticles + stringDeltaEta + "entries", hTH1Y},
-     {"hDeltaYPtIntMCGen", stringMCParticles + stringDeltaEta + "entries", hTH1Y},
+     {"hDeltaYPtIntMCGen", stringMCParticles + stringDeltaY + "entries", hTH1Y},
      {"hDeltaPhiPtIntMCGen", stringMCParticles + stringDeltaPhi + "entries", hTH1Phi},
      {"hCorrel2DPtIntMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + "entries", hTH2CorrelPt},
      {"hCorrel2DVsPtMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtDbar + "entries", hTHnCorrel2DVsPt},
@@ -197,6 +202,29 @@ struct HfTaskCorrelationDMesonPairs {
     // redefinition of pT axes for THnSparse holding correlation entries
     int nBinspTaxis = binsPtCorrelations->size() - 1;
     const double* valuespTaxis = binsPtCorrelations->data();
+
+    if (enableFinerBinning) {
+      registry.add("hMass2DCorrelationPairsFinerBinning", stringDDbar + "2D Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsMCRecBkgBkgFinerBinning", stringDDbar + "2D BkgBkg - MC reco Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsMCRecBkgRefFinerBinning", stringDDbar + "2D BkgBkg - MC reco Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsMCRecBkgSigFinerBinning", stringDDbar + "2D BkgBkg - MC reco Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsMCRecRefBkgFinerBinning", stringDDbar + "2D BkgBkg - MC reco Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsMCRecRefRefFinerBinning", stringDDbar + "2D BkgBkg - MC reco Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsMCRecRefSigFinerBinning", stringDDbar + "2D BkgBkg - MC reco Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsMCRecSigBkgFinerBinning", stringDDbar + "2D BkgBkg - MC reco Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsMCRecSigRefFinerBinning", stringDDbar + "2D BkgBkg - MC reco Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsMCRecSigSigFinerBinning", stringDDbar + "2D BkgBkg - MC reco Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsFinerBinning"))->Sumw2();
+      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgBkgFinerBinning"))->Sumw2();
+      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgRefFinerBinning"))->Sumw2();
+      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgSigFinerBinning"))->Sumw2();
+      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefBkgFinerBinning"))->Sumw2();
+      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefRefFinerBinning"))->Sumw2();
+      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefSigFinerBinning"))->Sumw2();
+      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigBkgFinerBinning"))->Sumw2();
+      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigRefFinerBinning"))->Sumw2();
+      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigSigFinerBinning"))->Sumw2();
+    }
 
     for (int i = 2; i <= 3; i++) {
       registry.get<THnSparse>(HIST("hMass2DCorrelationPairs"))->GetAxis(i)->Set(nBinspTaxis, valuespTaxis);
@@ -382,10 +410,19 @@ struct HfTaskCorrelationDMesonPairs {
       // fill 2D invariant mass plots
       if (pairType == DD && (TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedD))) {
         registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+        if (enableFinerBinning) {
+          registry.fill(HIST("hMass2DCorrelationPairsFinerBinning"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+        }
       } else if (pairType == DDbar && ((TESTBIT(pairEntry.candidateType1(), SelectedD) && TESTBIT(pairEntry.candidateType2(), SelectedDbar)) || (TESTBIT(pairEntry.candidateType1(), SelectedDbar) && TESTBIT(pairEntry.candidateType2(), SelectedD)))) {
         registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+        if (enableFinerBinning) {
+          registry.fill(HIST("hMass2DCorrelationPairsFinerBinning"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+        }
       } else if (pairType == DbarDbar && (TESTBIT(pairEntry.candidateType1(), SelectedDbar) && TESTBIT(pairEntry.candidateType2(), SelectedDbar))) {
         registry.fill(HIST("hMass2DCorrelationPairs"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+        if (enableFinerBinning) {
+          registry.fill(HIST("hMass2DCorrelationPairsFinerBinning"), massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+        }
       }
 
       // reject entries outside pT ranges of interest
@@ -440,6 +477,10 @@ struct HfTaskCorrelationDMesonPairs {
                                                               {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecRefSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecRefRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecRefBkg"))},
                                                               {registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecBkgSig")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecBkgRef")), registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecBkgBkg"))}};
 
+    std::shared_ptr<THnSparse> hMassCorrArrayFinerBinning[3][3] = {{registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigSigFinerBinning")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigRefFinerBinning")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecSigBkgFinerBinning"))},
+                                                                   {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefSigFinerBinning")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefRefFinerBinning")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecRefBkgFinerBinning"))},
+                                                                   {registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgSigFinerBinning")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgRefFinerBinning")), registry.get<THnSparse>(HIST("hMass2DCorrelationPairsMCRecBkgBkgFinerBinning"))}};
+
     for (const auto& pairEntry : pairEntries) {
       if (pairEntry.dataType() != 1) { // Assure that we only analyse Mc reco elements
         continue;
@@ -469,13 +510,23 @@ struct HfTaskCorrelationDMesonPairs {
       switch (pairType) {
         case DD: // D0 D0
           fillMassCorrHists(hMassCorrArray, dMesonCand1, dMesonCand2, massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+          if (enableFinerBinning) {
+            fillMassCorrHists(hMassCorrArrayFinerBinning, dMesonCand1, dMesonCand2, massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+          }
           break;
         case DDbar: // D0 D0bar
           fillMassCorrHists(hMassCorrArray, dMesonCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
           fillMassCorrHists(hMassCorrArray, dMesonBarCand1, dMesonCand2, massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+          if (enableFinerBinning) {
+            fillMassCorrHists(hMassCorrArrayFinerBinning, dMesonCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+            fillMassCorrHists(hMassCorrArrayFinerBinning, dMesonBarCand1, dMesonCand2, massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+          }
           break;
         case DbarDbar: // D0bar D0bar
           fillMassCorrHists(hMassCorrArray, dMesonBarCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+          if (enableFinerBinning) {
+            fillMassCorrHists(hMassCorrArrayFinerBinning, dMesonBarCand1, dMesonBarCand2, massCand1, massCand2, ptCand1, ptCand2, yCand1, yCand2);
+          }
           break;
       }
 

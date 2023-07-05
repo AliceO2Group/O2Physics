@@ -37,6 +37,7 @@ class V0PhotonCut : public TNamed
     kMee = 0,
     kV0PtRange,
     kV0EtaRange,
+    kAP,
     kPsiPair,
     kRxy,
     kCosPA,
@@ -55,8 +56,10 @@ class V0PhotonCut : public TNamed
     kTPCNsigmaPi,
     kDCAxy,
     kDCAz,
+    kITSChi2NDF,
     kIsWithinBeamPipe,
-    kRequireITS,
+    kRequireITSTPC,
+    kRequireITSonly,
     kTPConly,
     kAntiTPConly,
     kNCuts
@@ -76,6 +79,9 @@ class V0PhotonCut : public TNamed
     if (!IsSelectedV0(v0, V0PhotonCuts::kMee)) {
       return false;
     }
+    if (!IsSelectedV0(v0, V0PhotonCuts::kAP)) {
+      return false;
+    }
     if (!IsSelectedV0(v0, V0PhotonCuts::kPsiPair)) {
       return false;
     }
@@ -91,11 +97,19 @@ class V0PhotonCut : public TNamed
     if (!IsSelectedV0(v0, V0PhotonCuts::kRZLine)) {
       return false;
     }
-    if (mIsOnWwireIB && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB)) {
-      return false;
-    }
-    if (mIsOnWwireOB && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireOB)) {
-      return false;
+
+    if (mIsOnWwireIB && mIsOnWwireOB) {
+      if (!IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB) && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireOB)) {
+        return false;
+      }
+    } else if (mIsOnWwireIB) {
+      if (!IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB)) {
+        return false;
+      }
+    } else if (mIsOnWwireOB) {
+      if (!IsSelectedV0(v0, V0PhotonCuts::kOnWwireOB)) {
+        return false;
+      }
     }
 
     auto pos = v0.template posTrack_as<TLeg>();
@@ -114,24 +128,6 @@ class V0PhotonCut : public TNamed
       if (!IsSelectedTrack(track, V0PhotonCuts::kTrackEtaRange)) {
         return false;
       }
-      if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNCls)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, V0PhotonCuts::kTPCCrossedRows)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, V0PhotonCuts::kTPCCrossedRowsOverNCls)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, V0PhotonCuts::kTPCChi2NDF)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaEl)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaPi)) {
-        return false;
-      }
       if (!IsSelectedTrack(track, V0PhotonCuts::kDCAxy)) {
         return false;
       }
@@ -141,7 +137,40 @@ class V0PhotonCut : public TNamed
       if (mIsWithinBP && !IsSelectedTrack(track, V0PhotonCuts::kIsWithinBeamPipe)) {
         return false;
       }
-      if (mRequireITS && !IsSelectedTrack(track, V0PhotonCuts::kRequireITS)) {
+      if (!track.hasITS() && !track.hasTPC()) { // track has to be ITSonly or TPConly
+        return false;
+      }
+
+      bool isITSonly = track.hasITS() & (!track.hasTPC() & !track.hasTOF() & !track.hasTRD());
+      if (isITSonly) { // apply ITS-related cuts to ITSonly track.
+        if (!IsSelectedTrack(track, V0PhotonCuts::kITSChi2NDF)) {
+          return false;
+        }
+      } else { // apply TPC-related cuts, only if track has TPC hits.
+        if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNCls)) {
+          return false;
+        }
+        if (!IsSelectedTrack(track, V0PhotonCuts::kTPCCrossedRows)) {
+          return false;
+        }
+        if (!IsSelectedTrack(track, V0PhotonCuts::kTPCCrossedRowsOverNCls)) {
+          return false;
+        }
+        if (!IsSelectedTrack(track, V0PhotonCuts::kTPCChi2NDF)) {
+          return false;
+        }
+        if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaEl)) {
+          return false;
+        }
+        if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaPi)) {
+          return false;
+        }
+      }
+
+      if (mRequireITSonly && !IsSelectedTrack(track, V0PhotonCuts::kRequireITSonly)) {
+        return false;
+      }
+      if (mRequireITSTPC && !IsSelectedTrack(track, V0PhotonCuts::kRequireITSTPC)) {
         return false;
       }
       if (mRequireTPConly && !IsSelectedTrack(track, V0PhotonCuts::kTPConly)) {
@@ -182,7 +211,6 @@ class V0PhotonCut : public TNamed
   template <typename T>
   bool IsSelectedV0(T const& v0, const V0PhotonCuts& cut) const
   {
-    const float margin = 1.0; // cm
     switch (cut) {
       case V0PhotonCuts::kV0PtRange:
         return v0.pt() >= mMinV0Pt && v0.pt() <= mMaxV0Pt;
@@ -192,6 +220,9 @@ class V0PhotonCut : public TNamed
 
       case V0PhotonCuts::kMee:
         return v0.mGamma() <= ((mMaxMeePsiPairDep) ? mMaxMeePsiPairDep(abs(v0.psipair())) : mMaxMee);
+
+      case V0PhotonCuts::kAP:
+        return pow(v0.alpha() / mMaxAlpha, 2) + pow(v0.qtarm() / mMaxQt, 2) < 1.0;
 
       case V0PhotonCuts::kPsiPair:
         return v0.psipair() >= mMinPsiPair && v0.psipair() <= mMaxPsiPair;
@@ -209,40 +240,51 @@ class V0PhotonCut : public TNamed
         return v0.recalculatedVtxR() > abs(v0.recalculatedVtxZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxV0Eta))) - mMaxMarginZ; // as long as z recalculation is not fixed use this
 
       case V0PhotonCuts::kOnWwireIB: {
-        const float rxy_min = 5.506;          // cm
-        const float rxy_max = 14.846;         // cm
-        const float z_min = -17.56;           // cm
-        const float z_max = +31.15;           // cm
+        const float margin_xy = 1.0; // cm
+        const float margin_z = 20.0; // cm
+        const float rxy_min = 5.506; // cm
+        // const float rxy_max = 14.846;         // cm
+        const float z_min = -17.56; // cm
+        // const float z_max = +31.15;           // cm
         float x = abs(v0.recalculatedVtxX()); // cm, measured secondary vertex of gamma->ee
         float y = v0.recalculatedVtxY();      // cm, measured secondary vertex of gamma->ee
         float z = v0.recalculatedVtxZ();      // cm, measured secondary vertex of gamma->ee
+
         float rxy = sqrt(x * x + y * y);
-        if ((rxy < rxy_min || rxy_max < rxy) || (z < z_min || z_max < z)) {
+        if (rxy < 7.5 || 15.0 < rxy) {
           return false;
         }
-        float x_exp = abs(rxy * TMath::Cos(-8.52 * TMath::DegToRad()));                // cm, expected position x of W wire
-        float y_exp = rxy * TMath::Sin(-8.52 * TMath::DegToRad());                     // cm, expected position y of W wire
+
         float z_exp = z_min + (rxy - rxy_min) / TMath::Tan(10.86 * TMath::DegToRad()); // cm, expected position rxy of W wire as a function of z
-        if (abs(x - x_exp) > margin || abs(y - y_exp) > margin || abs(z - z_exp) > margin) {
+        if (abs(z - z_exp) > margin_z) {
+          return false;
+        }
+
+        float dxy = abs(1.0 * y - x * TMath::Tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(TMath::Tan(-8.52 * TMath::DegToRad()), 2));
+        if (dxy > margin_xy) { // cut in XY plane first
           return false;
         }
         return true;
       }
       case V0PhotonCuts::kOnWwireOB: {
-        const float rxy_min = 30.8 - margin;  // cm
-        const float rxy_max = 30.8 + margin;  // cm
-        const float z_min = -47.0;            // cm
-        const float z_max = +47.0;            // cm
-        float x = abs(v0.recalculatedVtxX()); // cm, measured secondary vertex of gamma->ee
-        float y = v0.recalculatedVtxY();      // cm, measured secondary vertex of gamma->ee
-        float z = v0.recalculatedVtxZ();      // cm, measured secondary vertex of gamma->ee
-        float rxy = sqrt(x * x + y * y);
-        if ((rxy < rxy_min || rxy_max < rxy) || (z < z_min || z_max < z)) {
+        const float margin_x = 2.0;                                         // cm
+        const float margin_y = 0.5;                                         // cm
+        const float margin_z = 5.0;                                         // cm
+        const float rxy_exp = 30.8;                                         // cm
+        const float x_exp = rxy_exp * TMath::Cos(-1.3 * TMath::DegToRad()); // cm, expected position x of W wire
+        const float y_exp = rxy_exp * TMath::Sin(-1.3 * TMath::DegToRad()); // cm, expected position y of W wire
+        const float z_min = -47.0;                                          // cm
+        const float z_max = +47.0;                                          // cm
+        float x = v0.recalculatedVtxX();                                    // cm, measured secondary vertex of gamma->ee
+        float y = v0.recalculatedVtxY();                                    // cm, measured secondary vertex of gamma->ee
+        float z = v0.recalculatedVtxZ();                                    // cm, measured secondary vertex of gamma->ee
+        if (z + margin_z < z_min || z_max < z - margin_z) {
           return false;
         }
-        float x_exp = abs(rxy * TMath::Cos(-1.3 * TMath::DegToRad())); // cm, expected position x of W wire
-        float y_exp = rxy * TMath::Sin(-1.3 * TMath::DegToRad());      // cm, expected position y of W wire
-        if (abs(x - x_exp) > margin || abs(y - y_exp) > margin) {
+        if (abs(x - x_exp) > margin_x) {
+          return false;
+        }
+        if (abs(y - y_exp) > margin_y) {
           return false;
         }
         return true;
@@ -287,18 +329,24 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kDCAz:
         return abs(track.dcaZ()) <= mMaxDcaZ;
 
+      case V0PhotonCuts::kITSChi2NDF:
+        return track.itsChi2NCl() <= mMaxChi2PerClusterITS;
+
       case V0PhotonCuts::kIsWithinBeamPipe: {
         // return track.isWithinBeamPipe();
         if (15.f < abs(track.dcaXY()) && abs(track.dcaXY()) < 100.f) {
           return false;
         }
-        if (abs(abs(track.z()) - 44.f) < 2.f && 15.f < abs(track.dcaXY())) {
+        if (abs(abs(track.z()) - 43.f) < 3.f && 15.f < abs(track.dcaXY())) {
           return false;
         }
         return true;
       }
-      case V0PhotonCuts::kRequireITS:
-        return track.hasITS();
+      case V0PhotonCuts::kRequireITSTPC:
+        return track.hasITS() & track.hasTPC();
+
+      case V0PhotonCuts::kRequireITSonly:
+        return track.hasITS() & (!track.hasTPC() & !track.hasTOF() & !track.hasTRD());
 
       case V0PhotonCuts::kTPConly:
         return track.hasTPC() & (!track.hasITS() & !track.hasTOF() & !track.hasTRD());
@@ -316,6 +364,7 @@ class V0PhotonCut : public TNamed
   void SetV0EtaRange(float minEta = -1e10f, float maxEta = 1e10f);
   void SetMeeRange(float min = 0.f, float max = 0.1);
   void SetPsiPairRange(float min = -3.15, float max = +3.15);
+  void SetAPRange(float max_alpha = 0.95, float max_qt = 0.05); // Armenteros Podolanski
   void SetRxyRange(float min = 0.f, float max = 180.f);
   void SetMinCosPA(float min = 0.95);
   void SetMaxPCA(float max = 2.f);
@@ -337,8 +386,10 @@ class V0PhotonCut : public TNamed
   void SetMaxDcaXY(float maxDcaXY);
   void SetMaxDcaZ(float maxDcaZ);
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
+  void SetMaxChi2PerClusterITS(float maxChi2PerClusterITS);
   void SetIsWithinBeamPipe(bool flag);
-  void SetRequireITS(bool flag);
+  void SetRequireITSTPC(bool flag);
+  void SetRequireITSonly(bool flag);
   void SetRequireTPConly(bool flag);
   void SetRequireAntiTPConly(bool flag);
 
@@ -350,6 +401,7 @@ class V0PhotonCut : public TNamed
   float mMinMee{0.f}, mMaxMee{0.1f};
   float mMinV0Pt{0.f}, mMaxV0Pt{1e10f};      // range in pT
   float mMinV0Eta{-1e10f}, mMaxV0Eta{1e10f}; // range in eta
+  float mMaxAlpha{0.95}, mMaxQt{0.05};
   float mMinPsiPair{-3.15}, mMaxPsiPair{+3.15};
   float mMinRxy{0.f}, mMaxRxy{180.f};
   float mMinCosPA{0.95};
@@ -371,13 +423,15 @@ class V0PhotonCut : public TNamed
   int mMinNClustersTPC{0};                            // min number of TPC clusters
   int mMinNCrossedRowsTPC{0};                         // min number of crossed rows in TPC
   float mMaxChi2PerClusterTPC{1e10f};                 // max tpc fit chi2 per TPC cluster
+  float mMaxChi2PerClusterITS{1e10f};                 // max tpc fit chi2 per ITS cluster
   float mMinNCrossedRowsOverFindableClustersTPC{0.f}; // min ratio crossed rows / findable clusters
 
   float mMaxDcaXY{1e10f};                       // max dca in xy plane
   float mMaxDcaZ{1e10f};                        // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
   bool mIsWithinBP{false};
-  bool mRequireITS{false};
+  bool mRequireITSTPC{false};
+  bool mRequireITSonly{false};
   bool mRequireTPConly{false};
   bool mRequireAntiTPConly{false};
 
