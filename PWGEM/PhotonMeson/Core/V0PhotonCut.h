@@ -56,6 +56,7 @@ class V0PhotonCut : public TNamed
     kTPCNsigmaPi,
     kDCAxy,
     kDCAz,
+    kITSNCls,
     kITSChi2NDF,
     kIsWithinBeamPipe,
     kRequireITSTPC,
@@ -115,8 +116,8 @@ class V0PhotonCut : public TNamed
     auto pos = v0.template posTrack_as<TLeg>();
     auto ele = v0.template negTrack_as<TLeg>();
 
-    // float pos_rxy = sqrt(pos.x() * pos.x() + pos.y()*pos.y());
-    // float ele_rxy = sqrt(ele.x() * ele.x() + ele.y()*ele.y());
+    // float pos_rxy = sqrt(pow(pos.x(),2) + pow(pos.y(),2));
+    // float ele_rxy = sqrt(pow(ele.x(),2) + pow(ele.y(),2));
     // if (v0.recalculatedVtxR() > std::min(pos_rxy, ele_rxy)) {
     //   return false;
     // }
@@ -141,30 +142,26 @@ class V0PhotonCut : public TNamed
         return false;
       }
 
+      bool isITSTPC = track.hasITS() & track.hasTPC();
       bool isITSonly = track.hasITS() & (!track.hasTPC() & !track.hasTOF() & !track.hasTRD());
-      if (isITSonly) { // apply ITS-related cuts to ITSonly track.
-        if (!IsSelectedTrack(track, V0PhotonCuts::kITSChi2NDF)) {
+      bool isTPConly = track.hasTPC() & (!track.hasITS() & !track.hasTOF() & !track.hasTRD());
+
+      if (isITSTPC) {
+        if (!CheckITSCuts(track) || !CheckTPCCuts(track)) {
           return false;
         }
-      } else { // apply TPC-related cuts, only if track has TPC hits.
-        if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNCls)) {
+      } else if (isITSonly) {
+        if (!CheckITSCuts(track)) {
           return false;
         }
-        if (!IsSelectedTrack(track, V0PhotonCuts::kTPCCrossedRows)) {
+      } else if (isTPConly) {
+        if (!CheckTPCCuts(track)) {
           return false;
         }
-        if (!IsSelectedTrack(track, V0PhotonCuts::kTPCCrossedRowsOverNCls)) {
-          return false;
-        }
-        if (!IsSelectedTrack(track, V0PhotonCuts::kTPCChi2NDF)) {
-          return false;
-        }
-        if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaEl)) {
-          return false;
-        }
-        if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaPi)) {
-          return false;
-        }
+      }
+
+      if (mIsOnWwireIB && !CheckITSCuts(track)) { // photon conversion on ibw requires ITS hits.
+        return false;
       }
 
       if (mRequireITSonly && !IsSelectedTrack(track, V0PhotonCuts::kRequireITSonly)) {
@@ -179,6 +176,42 @@ class V0PhotonCut : public TNamed
       if (mRequireAntiTPConly && !IsSelectedTrack(track, V0PhotonCuts::kAntiTPConly)) {
         return false;
       }
+    }
+    return true;
+  }
+
+  template <typename T>
+  bool CheckITSCuts(T const& track) const
+  {
+    if (!IsSelectedTrack(track, V0PhotonCuts::kITSNCls)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, V0PhotonCuts::kITSChi2NDF)) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T>
+  bool CheckTPCCuts(T const& track) const
+  {
+    if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNCls)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, V0PhotonCuts::kTPCCrossedRows)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, V0PhotonCuts::kTPCCrossedRowsOverNCls)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, V0PhotonCuts::kTPCChi2NDF)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaEl)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaPi)) {
+      return false;
     }
     return true;
   }
@@ -315,7 +348,7 @@ class V0PhotonCut : public TNamed
         return track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC;
 
       case V0PhotonCuts::kTPCChi2NDF:
-        return track.tpcChi2NCl() <= mMaxChi2PerClusterTPC;
+        return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
       case V0PhotonCuts::kTPCNsigmaEl:
         return track.tpcNSigmaEl() >= mMinTPCNsigmaEl && track.tpcNSigmaEl() <= mMaxTPCNsigmaEl;
@@ -329,8 +362,11 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kDCAz:
         return abs(track.dcaZ()) <= mMaxDcaZ;
 
+      case V0PhotonCuts::kITSNCls:
+        return mMinNClustersITS <= track.itsNCls() && track.itsNCls() <= mMaxNClustersITS;
+
       case V0PhotonCuts::kITSChi2NDF:
-        return track.itsChi2NCl() <= mMaxChi2PerClusterITS;
+        return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
       case V0PhotonCuts::kIsWithinBeamPipe: {
         // return track.isWithinBeamPipe();
@@ -378,7 +414,9 @@ class V0PhotonCut : public TNamed
   void SetMinNClustersTPC(int minNClustersTPC);
   void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC);
   void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC);
-  void SetMaxChi2PerClusterTPC(float maxChi2PerClusterTPC);
+  void SetChi2PerClusterTPC(float min, float max);
+  void SetNClustersITS(int min, int max);
+  void SetChi2PerClusterITS(float min, float max);
 
   void SetTPCNsigmaElRange(float min = -3, float max = +3);
   void SetTPCNsigmaPiRange(float min = -1e+10, float max = 1e+10);
@@ -386,7 +424,6 @@ class V0PhotonCut : public TNamed
   void SetMaxDcaXY(float maxDcaXY);
   void SetMaxDcaZ(float maxDcaZ);
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
-  void SetMaxChi2PerClusterITS(float maxChi2PerClusterITS);
   void SetIsWithinBeamPipe(bool flag);
   void SetRequireITSTPC(bool flag);
   void SetRequireITSonly(bool flag);
@@ -420,11 +457,12 @@ class V0PhotonCut : public TNamed
   float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f}; // range in eta
 
   // track quality cuts
-  int mMinNClustersTPC{0};                            // min number of TPC clusters
-  int mMinNCrossedRowsTPC{0};                         // min number of crossed rows in TPC
-  float mMaxChi2PerClusterTPC{1e10f};                 // max tpc fit chi2 per TPC cluster
-  float mMaxChi2PerClusterITS{1e10f};                 // max tpc fit chi2 per ITS cluster
-  float mMinNCrossedRowsOverFindableClustersTPC{0.f}; // min ratio crossed rows / findable clusters
+  int mMinNClustersTPC{0};                                           // min number of TPC clusters
+  int mMinNCrossedRowsTPC{0};                                        // min number of crossed rows in TPC
+  float mMinChi2PerClusterTPC{-1e10f}, mMaxChi2PerClusterTPC{1e10f}; // max tpc fit chi2 per TPC cluster
+  float mMinNCrossedRowsOverFindableClustersTPC{0.f};                // min ratio crossed rows / findable clusters
+  int mMinNClustersITS{0}, mMaxNClustersITS{7};                      // range in number of ITS clusters
+  float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f}; // max its fit chi2 per ITS cluster
 
   float mMaxDcaXY{1e10f};                       // max dca in xy plane
   float mMaxDcaZ{1e10f};                        // max dca in z direction

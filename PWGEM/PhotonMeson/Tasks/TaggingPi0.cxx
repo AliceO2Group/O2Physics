@@ -55,7 +55,7 @@ using MyV0Photon = MyV0Photons::iterator;
 
 struct TaggingPi0 {
 
-  Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
+  // Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis1690", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigPCMibwCuts{"cfgPCMibwCuts", "wwire_ib", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
@@ -193,7 +193,7 @@ struct TaggingPi0 {
         fPCMibwCuts.push_back(*pcmcuts::GetCut(cutname));
       }
     }
-    LOGF(info, "Number of PCM cuts = %d", fPCMCuts.size());
+    LOGF(info, "Number of PCM cuts = %d", fPCMibwCuts.size());
   }
   void DefinePHOSCuts()
   {
@@ -346,9 +346,9 @@ struct TaggingPi0 {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.); // pcm
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.); // phos or emc
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              if (abs(v12.Rapidity()) > maxY) {
-                continue;
-              }
+              // if (abs(v12.Rapidity()) > maxY) {
+              //   continue;
+              // }
               reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Same"))->Fill(v12.M(), v1.Pt());
             } // end of combination
           }   // end of pair cut loop
@@ -398,9 +398,9 @@ struct TaggingPi0 {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.); // pcm
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.); // phos or emc
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              if (abs(v12.Rapidity()) > maxY) {
-                continue;
-              }
+              // if (abs(v12.Rapidity()) > maxY) {
+              //   continue;
+              // }
               reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Mixed"))->Fill(v12.M(), v1.Pt());
 
             } // end of different photon combinations
