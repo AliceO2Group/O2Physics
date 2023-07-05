@@ -1322,7 +1322,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     // fill unfiltered track pt
     if (trackUnfiltered.sign() > 0) {
       histos.fill(HIST("Tracks/Kine/ptUnfilteredPositive"), trackUnfiltered.pt());
-    } else if (trackUnfiltered.sign() < 0) {
+    } else {
       histos.fill(HIST("Tracks/Kine/ptUnfilteredNegative"), trackUnfiltered.pt());
     }
     // fill ITS variables
@@ -1368,7 +1368,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/Kine/pt"), track.pt());
     if (track.sign() > 0) {
       histos.fill(HIST("Tracks/Kine/ptFilteredPositive"), track.pt());
-    } else if (track.sign() < 0) {
+    } else {
       histos.fill(HIST("Tracks/Kine/ptFilteredNegative"), track.pt());
     }
     histos.fill(HIST("Tracks/Kine/eta"), track.eta());
