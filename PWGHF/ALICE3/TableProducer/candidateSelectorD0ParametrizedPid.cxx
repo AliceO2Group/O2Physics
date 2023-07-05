@@ -15,12 +15,10 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include "ALICE3/DataModel/RICH.h"
-#include "Common/Core/TrackSelectorPID.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
+
+#include "ALICE3/DataModel/RICH.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"

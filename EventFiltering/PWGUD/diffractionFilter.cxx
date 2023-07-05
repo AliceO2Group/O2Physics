@@ -185,7 +185,7 @@ struct DGFilterRun3 {
       auto bcSlice = udhelpers::compatibleBCs(collision, 0, bcs, nMinBC);
       isDGcandidate = true;
       for (auto const& bc : bcSlice) {
-        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
+        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits());
       }
       registry.get<TH2>(HIST("FIT/cleanFIT"))->Fill(nMinBC, isDGcandidate * 1.);
 
@@ -194,7 +194,7 @@ struct DGFilterRun3 {
         FITlims[n] = 0.;
         isDGcandidate = true;
         for (auto const& bc : bcSlice) {
-          isDGcandidate &= udhelpers::cleanFIT(bc, FITlims);
+          isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), FITlims);
         }
         constexpr int index = n.value;
         registry.fill(HIST(hcFITs[index]), nMinBC, isDGcandidate * 1.);
@@ -210,12 +210,14 @@ struct DGFilterRun3 {
     registry.get<TH1>(HIST("collisions/globalTracksAll"))->Fill(goodTracks.size());
     auto netCharge = udhelpers::netCharge<true>(tracks);
     registry.fill(HIST("collisions/netChargeAll"), collision.numContrib(), netCharge);
+    registry.fill(HIST("collisions/dtcvsrPVtrwTOFAll"), collision.collisionTimeRes(), rgtrwTOF);
     registry.fill(HIST("collisions/rPVtrwTOFAll"), collision.numContrib(), rgtrwTOF);
     if (ccs) {
       registry.fill(HIST("collisions/tracksDG"), tracks.size());
       registry.fill(HIST("collisions/PVTracksDG"), collision.numContrib());
       registry.get<TH1>(HIST("collisions/globalTracksDG"))->Fill(goodTracks.size());
       registry.fill(HIST("collisions/netChargeDG"), collision.numContrib(), netCharge);
+      registry.fill(HIST("collisions/dtcvsrPVtrwTOFDG"), collision.collisionTimeRes(), rgtrwTOF);
       registry.fill(HIST("collisions/rPVtrwTOFDG"), collision.numContrib(), rgtrwTOF);
     }
 
