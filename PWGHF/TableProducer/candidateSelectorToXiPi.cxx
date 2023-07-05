@@ -33,7 +33,7 @@ enum pidInfoStored {
   kPiFromLam = 0,
   kPrFromLam,
   kPiFromCasc,
-  kPiFromCharm 
+  kPiFromCharm
 };
 
 /// Struct for applying Omegac selection cuts
@@ -445,28 +445,28 @@ struct HfCandidateSelectorToXiPi {
         LOGF(fatal, "Check the PID configurables, usePidTpcOnly and usePidTpcTofCombined can't have the same value");
       }
 
-      if(!trackPiFromLam.hasTPC()) {
+      if (!trackPiFromLam.hasTPC()) {
         CLRBIT(infoTpcStored, kPiFromLam);
       }
-      if(!trackPrFromLam.hasTPC()) {
+      if (!trackPrFromLam.hasTPC()) {
         CLRBIT(infoTpcStored, kPrFromLam);
       }
-      if(!trackPiFromCasc.hasTPC()) {
+      if (!trackPiFromCasc.hasTPC()) {
         CLRBIT(infoTpcStored, kPiFromCasc);
       }
-      if(!trackPiFromOmeg.hasTPC()) {
+      if (!trackPiFromOmeg.hasTPC()) {
         CLRBIT(infoTpcStored, kPiFromCharm);
       }
-      if(!trackPiFromLam.hasTOF()) {
+      if (!trackPiFromLam.hasTOF()) {
         CLRBIT(infoTofStored, kPiFromLam);
       }
-      if(!trackPrFromLam.hasTOF()) {
+      if (!trackPrFromLam.hasTOF()) {
         CLRBIT(infoTofStored, kPrFromLam);
       }
-      if(!trackPiFromCasc.hasTOF()) {
+      if (!trackPiFromCasc.hasTOF()) {
         CLRBIT(infoTofStored, kPiFromCasc);
       }
-      if(!trackPiFromOmeg.hasTOF()) {
+      if (!trackPiFromOmeg.hasTOF()) {
         CLRBIT(infoTofStored, kPiFromCharm);
       }
 
