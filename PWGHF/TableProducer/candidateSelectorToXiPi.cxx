@@ -438,36 +438,36 @@ struct HfCandidateSelectorToXiPi {
       bool statusPidCascade = false;
       bool statusPidCharm = false;
 
-      int infoTpcStored{BIT(kPiFromLam) | BIT(kPrFromLam) | BIT(kPiFromCasc) | BIT(kPiFromCharm)};
-      int infoTofStored{BIT(kPiFromLam) | BIT(kPrFromLam) | BIT(kPiFromCasc) | BIT(kPiFromCharm)};
+      int infoTpcStored = 0;
+      int infoTofStored = 0;
 
       if (usePidTpcOnly == usePidTpcTofCombined) {
         LOGF(fatal, "Check the PID configurables, usePidTpcOnly and usePidTpcTofCombined can't have the same value");
       }
 
-      if (!trackPiFromLam.hasTPC()) {
-        CLRBIT(infoTpcStored, kPiFromLam);
+      if (trackPiFromLam.hasTPC()) {
+        SETBIT(infoTpcStored, kPiFromLam);
       }
-      if (!trackPrFromLam.hasTPC()) {
-        CLRBIT(infoTpcStored, kPrFromLam);
+      if (trackPrFromLam.hasTPC()) {
+        SETBIT(infoTpcStored, kPrFromLam);
       }
-      if (!trackPiFromCasc.hasTPC()) {
-        CLRBIT(infoTpcStored, kPiFromCasc);
+      if (trackPiFromCasc.hasTPC()) {
+        SETBIT(infoTpcStored, kPiFromCasc);
       }
-      if (!trackPiFromOmeg.hasTPC()) {
-        CLRBIT(infoTpcStored, kPiFromCharm);
+      if (trackPiFromOmeg.hasTPC()) {
+        SETBIT(infoTpcStored, kPiFromCharm);
       }
-      if (!trackPiFromLam.hasTOF()) {
-        CLRBIT(infoTofStored, kPiFromLam);
+      if (trackPiFromLam.hasTOF()) {
+        SETBIT(infoTofStored, kPiFromLam);
       }
-      if (!trackPrFromLam.hasTOF()) {
-        CLRBIT(infoTofStored, kPrFromLam);
+      if (trackPrFromLam.hasTOF()) {
+        SETBIT(infoTofStored, kPrFromLam);
       }
-      if (!trackPiFromCasc.hasTOF()) {
-        CLRBIT(infoTofStored, kPiFromCasc);
+      if (trackPiFromCasc.hasTOF()) {
+        SETBIT(infoTofStored, kPiFromCasc);
       }
-      if (!trackPiFromOmeg.hasTOF()) {
-        CLRBIT(infoTofStored, kPiFromCharm);
+      if (trackPiFromOmeg.hasTOF()) {
+        SETBIT(infoTofStored, kPiFromCharm);
       }
 
       if (usePidTpcOnly) {
