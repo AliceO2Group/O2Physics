@@ -24,9 +24,9 @@
 #include <vector>
 
 #include "CCDB/CcdbApi.h"
-#include "Tools/ML/model.h"
-
 #include "Framework/Array2D.h"
+
+#include "Tools/ML/model.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
 
@@ -64,16 +64,15 @@ uint8_t tagPID(const T1& track)
 template <typename T1, typename T2>
 T1 getCombinedNSigma(const T1& nSigTpc, const T1& nSigTof, const T2& tagPID)
 {
-  float combinedNSigma{0.};
   if (TESTBIT(tagPID, PIDStatus::TpcAndTof)) {
-    combinedNSigma = std::sqrt((nSigTpc * nSigTpc + nSigTof * nSigTof) / 2);
+    return std::sqrt((nSigTpc * nSigTpc + nSigTof * nSigTof) / 2);
   } else if (TESTBIT(tagPID, PIDStatus::TpcOnly)) {
-    combinedNSigma = std::abs(nSigTpc);
+    return std::abs(nSigTpc);
   } else if (TESTBIT(tagPID, PIDStatus::TofOnly)) {
-    combinedNSigma = std::abs(nSigTof);
+    return std::abs(nSigTof);
   }
 
-  return combinedNSigma;
+  return 0.;
 }
 
 template <typename T = float>
