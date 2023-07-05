@@ -29,6 +29,13 @@ using namespace o2::analysis::pdg;
 using namespace o2::aod::hf_cand_toxipi;
 using namespace o2::aod::hf_sel_toxipi;
 
+enum pidInfoStored {
+  kPiFromLam = 0,
+  kPrFromLam,
+  kPiFromCasc,
+  kPiFromCharm 
+};
+
 /// Struct for applying Omegac selection cuts
 struct HfCandidateSelectorToXiPi {
   Produces<aod::HfSelToXiPi> hfSelToXiPi;
@@ -71,8 +78,6 @@ struct HfCandidateSelectorToXiPi {
   // PID options
   Configurable<bool> usePidTpcOnly{"usePidTpcOnly", true, "Perform PID using only TPC"};
   Configurable<bool> usePidTpcTofCombined{"usePidTpcTofCombined", false, "Perform PID using TPC & TOF"};
-  Configurable<bool> doBasicNSigmaPID{"doBasicNSigmaPID", true, "Perform PID using nSigma values instead of TrackSelectorPID"};
-  Configurable<bool> doPidWDedicatedClass{"doPidWDedicatedClass", false, "Perform PID using TrackSelectorPID"};
 
   // PID - TPC selections
   Configurable<double> ptPiPidTpcMin{"ptPiPidTpcMin", 0.15, "Lower bound of track pT for TPC PID for pion selection"};
@@ -429,121 +434,72 @@ struct HfCandidateSelectorToXiPi {
       int statusPidPiFromCasc = -999;
       int statusPidPiFromCharm = -999;
 
-      // for basic PID
-      bool statusBasicPidPiFromLam = true;
-      bool statusBasicPidPrFromLam = true;
-      bool statusBasicPidPiFromCasc = true;
-      bool statusBasicPidPiFromCharm = true;
-
       bool statusPidLambda = false;
       bool statusPidCascade = false;
       bool statusPidCharm = false;
 
+      int infoTpcStored{BIT(kPiFromLam) | BIT(kPrFromLam) | BIT(kPiFromCasc) | BIT(kPiFromCharm)};
+      int infoTofStored{BIT(kPiFromLam) | BIT(kPrFromLam) | BIT(kPiFromCasc) | BIT(kPiFromCharm)};
+
       if (usePidTpcOnly == usePidTpcTofCombined) {
         LOGF(fatal, "Check the PID configurables, usePidTpcOnly and usePidTpcTofCombined can't have the same value");
       }
-      if (doBasicNSigmaPID == doPidWDedicatedClass) {
-        LOGF(fatal, "Check the PID configurables, doBasicNSigmaPID and doPidWDedicatedClass can't have the same value");
+
+      if(!trackPiFromLam.hasTPC()) {
+        CLRBIT(infoTpcStored, kPiFromLam);
+      }
+      if(!trackPrFromLam.hasTPC()) {
+        CLRBIT(infoTpcStored, kPrFromLam);
+      }
+      if(!trackPiFromCasc.hasTPC()) {
+        CLRBIT(infoTpcStored, kPiFromCasc);
+      }
+      if(!trackPiFromOmeg.hasTPC()) {
+        CLRBIT(infoTpcStored, kPiFromCharm);
+      }
+      if(!trackPiFromLam.hasTOF()) {
+        CLRBIT(infoTofStored, kPiFromLam);
+      }
+      if(!trackPrFromLam.hasTOF()) {
+        CLRBIT(infoTofStored, kPrFromLam);
+      }
+      if(!trackPiFromCasc.hasTOF()) {
+        CLRBIT(infoTofStored, kPiFromCasc);
+      }
+      if(!trackPiFromOmeg.hasTOF()) {
+        CLRBIT(infoTofStored, kPiFromCharm);
       }
 
-      if (doBasicNSigmaPID) {
+      if (usePidTpcOnly) {
+        statusPidPrFromLam = selectorProton.getStatusTrackPIDTPC(trackPrFromLam);
+        statusPidPiFromLam = selectorPion.getStatusTrackPIDTPC(trackPiFromLam);
+        statusPidPiFromCasc = selectorPion.getStatusTrackPIDTPC(trackPiFromCasc);
+        statusPidPiFromCharm = selectorPion.getStatusTrackPIDTPC(trackPiFromOmeg);
+      } else if (usePidTpcTofCombined) {
+        statusPidPrFromLam = selectorProton.getStatusTrackPIDTpcAndTof(trackPrFromLam);
+        statusPidPiFromLam = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromLam);
+        statusPidPiFromCasc = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromCasc);
+        statusPidPiFromCharm = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromOmeg);
+      }
 
-        if (usePidTpcOnly) {
-          if (trackPiFromLam.hasTPC() && std::abs(trackPiFromLam.tpcNSigmaPi()) > nSigmaTpcPiMax) {
-            statusBasicPidPiFromLam = false;
-          }
-          if (trackPrFromLam.hasTPC() && std::abs(trackPrFromLam.tpcNSigmaPr()) > nSigmaTpcPrMax) {
-            statusBasicPidPrFromLam = false;
-          }
-          if (trackPiFromCasc.hasTPC() && std::abs(trackPiFromCasc.tpcNSigmaPi()) > nSigmaTpcPiMax) {
-            statusBasicPidPiFromCasc = false;
-          }
-          if (trackPiFromOmeg.hasTPC() && std::abs(trackPiFromOmeg.tpcNSigmaPi()) > nSigmaTpcPiMax) {
-            statusBasicPidPiFromCharm = false;
-          }
-          if (statusBasicPidPiFromLam && statusBasicPidPrFromLam) {
-            statusPidLambda = true;
-            if (resultSelections) {
-              registry.fill(HIST("hTest"), 0.5);
-            }
-          }
-          if (statusBasicPidPiFromLam && statusBasicPidPrFromLam && statusBasicPidPiFromCasc) {
-            statusPidCascade = true;
-            if (resultSelections) {
-              registry.fill(HIST("hTest"), 1.5);
-            }
-          }
-          if (statusBasicPidPiFromLam && statusBasicPidPrFromLam && statusBasicPidPiFromCasc && statusBasicPidPiFromCharm) {
-            statusPidCharm = true;
-            if (resultSelections) {
-              registry.fill(HIST("hTest"), 2.5);
-            }
-          }
-        } else if (usePidTpcTofCombined) {
-          if ((trackPiFromLam.hasTPC() && std::abs(trackPiFromLam.tpcNSigmaPi()) > nSigmaTpcPiMax) && (trackPiFromLam.hasTOF() && std::abs(trackPiFromLam.tofNSigmaPi()) > nSigmaTofPiMax)) {
-            statusBasicPidPiFromLam = false;
-          }
-          if ((trackPrFromLam.hasTPC() && std::abs(trackPrFromLam.tpcNSigmaPr()) > nSigmaTpcPrMax) && (trackPrFromLam.hasTOF() && std::abs(trackPrFromLam.tofNSigmaPr()) > nSigmaTofPrMax)) {
-            statusBasicPidPrFromLam = false;
-          }
-          if ((trackPiFromCasc.hasTPC() && std::abs(trackPiFromCasc.tpcNSigmaPi()) > nSigmaTpcPiMax) && (trackPiFromCasc.hasTOF() && std::abs(trackPiFromCasc.tofNSigmaPi()) > nSigmaTofPiMax)) {
-            statusBasicPidPiFromCasc = false;
-          }
-          if ((trackPiFromOmeg.hasTPC() && std::abs(trackPiFromOmeg.tpcNSigmaPi()) > nSigmaTpcPiMax) && (trackPiFromOmeg.hasTOF() && std::abs(trackPiFromOmeg.tofNSigmaPi()) > nSigmaTofPiMax)) {
-            statusBasicPidPiFromCharm = false;
-          }
-          if (statusBasicPidPiFromLam && statusBasicPidPrFromLam) {
-            statusPidLambda = true;
-            if (resultSelections) {
-              registry.fill(HIST("hTest"), 0.5);
-            }
-          }
-          if (statusBasicPidPiFromLam && statusBasicPidPrFromLam && statusBasicPidPiFromCasc) {
-            statusPidCascade = true;
-            if (resultSelections) {
-              registry.fill(HIST("hTest"), 1.5);
-            }
-          }
-          if (statusBasicPidPiFromLam && statusBasicPidPrFromLam && statusBasicPidPiFromCasc && statusBasicPidPiFromCharm) {
-            statusPidCharm = true;
-            if (resultSelections) {
-              registry.fill(HIST("hTest"), 2.5);
-            }
-          }
+      if (statusPidPrFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::Status::PIDAccepted) {
+        statusPidLambda = true;
+        if (resultSelections) {
+          registry.fill(HIST("hTest"), 0.5);
         }
-      } else if (doPidWDedicatedClass) {
+      }
 
-        if (usePidTpcOnly) {
-          statusPidPrFromLam = selectorProton.getStatusTrackPIDTPC(trackPrFromLam);
-          statusPidPiFromLam = selectorPion.getStatusTrackPIDTPC(trackPiFromLam);
-          statusPidPiFromCasc = selectorPion.getStatusTrackPIDTPC(trackPiFromCasc);
-          statusPidPiFromCharm = selectorPion.getStatusTrackPIDTPC(trackPiFromOmeg);
-        } else if (usePidTpcTofCombined) {
-          statusPidPrFromLam = selectorProton.getStatusTrackPIDTpcAndTof(trackPrFromLam);
-          statusPidPiFromLam = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromLam);
-          statusPidPiFromCasc = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromCasc);
-          statusPidPiFromCharm = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromOmeg);
+      if (statusPidPrFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromCasc == TrackSelectorPID::Status::PIDAccepted) {
+        statusPidCascade = true;
+        if (resultSelections) {
+          registry.fill(HIST("hTest"), 1.5);
         }
+      }
 
-        if (statusPidPrFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::Status::PIDAccepted) {
-          statusPidLambda = true;
-          if (resultSelections) {
-            registry.fill(HIST("hTest"), 0.5);
-          }
-        }
-
-        if (statusPidPrFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromCasc == TrackSelectorPID::Status::PIDAccepted) {
-          statusPidCascade = true;
-          if (resultSelections) {
-            registry.fill(HIST("hTest"), 1.5);
-          }
-        }
-
-        if (statusPidPrFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromCasc == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromCharm == TrackSelectorPID::Status::PIDAccepted) {
-          statusPidCharm = true;
-          if (resultSelections) {
-            registry.fill(HIST("hTest"), 2.5);
-          }
+      if (statusPidPrFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromCasc == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromCharm == TrackSelectorPID::Status::PIDAccepted) {
+        statusPidCharm = true;
+        if (resultSelections) {
+          registry.fill(HIST("hTest"), 2.5);
         }
       }
 
@@ -586,7 +542,7 @@ struct HfCandidateSelectorToXiPi {
         registry.fill(HIST("hSelMassOme"), 0);
       }
 
-      hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidCharm, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac, resultSelections,
+      hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidCharm, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac, resultSelections, infoTpcStored, infoTofStored,
                   trackPiFromOmeg.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                   trackPiFromOmeg.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
 
