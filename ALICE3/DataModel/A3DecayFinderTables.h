@@ -21,34 +21,33 @@
 // O2 includes
 #include "Framework/AnalysisDataModel.h"
 
-  enum a3selectionBit : uint32_t 
-                    { kDCAxy = 0,
-                      kInnerTOFPion,
-                      kInnerTOFKaon,
-                      kInnerTOFProton,
-                      kOuterTOFPion,
-                      kOuterTOFKaon,
-                      kOuterTOFProton,
-                      kRICHPion,
-                      kRICHKaon,
-                      kRICHProton,
-                      kTruePion,
-                      kTrueKaon,
-                      kTrueProton,
-                      kTruePiPlusFromD,
-                      kTrueKaPlusFromD,
-                      kTruePiMinusFromD,
-                      kTrueKaMinusFromD,
-                      kTruePionFromLc,
-                      kTrueKaonFromLc,
-                      kTrueProtonFromLc };
+enum a3selectionBit : uint32_t { kDCAxy = 0,
+                                 kInnerTOFPion,
+                                 kInnerTOFKaon,
+                                 kInnerTOFProton,
+                                 kOuterTOFPion,
+                                 kOuterTOFKaon,
+                                 kOuterTOFProton,
+                                 kRICHPion,
+                                 kRICHKaon,
+                                 kRICHProton,
+                                 kTruePion,
+                                 kTrueKaon,
+                                 kTrueProton,
+                                 kTruePiPlusFromD,
+                                 kTrueKaPlusFromD,
+                                 kTruePiMinusFromD,
+                                 kTrueKaMinusFromD,
+                                 kTruePionFromLc,
+                                 kTrueKaonFromLc,
+                                 kTrueProtonFromLc };
 
 namespace o2::aod
 {
 namespace a3DecayMap
 {
-DECLARE_SOA_COLUMN(DecayMap, decayMap, uint32_t);     //! simple map to process passing / not passing criteria
-} // namespace upgrade_tof
+DECLARE_SOA_COLUMN(DecayMap, decayMap, uint32_t); //! simple map to process passing / not passing criteria
+} // namespace a3DecayMap
 DECLARE_SOA_TABLE(Alice3DecayMaps, "AOD", "ALICE3DECAYMAP",
                   a3DecayMap::DecayMap);
 

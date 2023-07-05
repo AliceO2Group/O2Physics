@@ -15,8 +15,7 @@
 //
 //    Uses specific ALICE 3 PID and performance for studying
 //    HF decays. Work in progress: use at your own risk!
-// 
-
+//
 
 #include <cmath>
 #include <array>
@@ -62,8 +61,8 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov>;
 
 // For MC association in pre-selection
 using labeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
-using tofTracks = soa::Join<aod::Tracks, aod::UpgradeTofs>; 
-using richTracks = soa::Join<aod::Tracks, aod::RICHs>; 
+using tofTracks = soa::Join<aod::Tracks, aod::UpgradeTofs>;
+using richTracks = soa::Join<aod::Tracks, aod::RICHs>;
 using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels>;
 
 struct alice3decayPreselector {
@@ -92,7 +91,8 @@ struct alice3decayPreselector {
       auto mcParticle = track.template mcParticle_as<aod::McParticles>();
       if (mcParticle.has_mothers()) {
         for (auto& mcParticleMother : mcParticle.template mothers_as<aod::McParticles>()) {
-          if(mcParticle.pdgCode()==pdg && mcParticleMother.pdgCode()==pdgMother) returnValue = true;
+          if (mcParticle.pdgCode() == pdg && mcParticleMother.pdgCode() == pdgMother)
+            returnValue = true;
         }
       }
     } // end association check
@@ -103,7 +103,7 @@ struct alice3decayPreselector {
   void init(InitContext& context)
   {
     // future dev if needed
-    histos.add("hToggle", "hToggle", kTH1F, {{10,-0.5f,9.5f}});
+    histos.add("hToggle", "hToggle", kTH1F, {{10, -0.5f, 9.5f}});
   }
 
   // go declarative: use partitions instead of "if", then just toggle bits to allow for mask selection later
@@ -133,67 +133,67 @@ struct alice3decayPreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processFilterInnerTOF(tofTracks const& tracks)
   {
-    for (auto const& track : pInnerTOFPi) 
+    for (auto const& track : pInnerTOFPi)
       bitoff(selectionMap[track.globalIndex()], kInnerTOFPion);
-    for (auto const& track : pInnerTOFKa) 
+    for (auto const& track : pInnerTOFKa)
       bitoff(selectionMap[track.globalIndex()], kInnerTOFKaon);
-    for (auto const& track : pInnerTOFPr) 
+    for (auto const& track : pInnerTOFPr)
       bitoff(selectionMap[track.globalIndex()], kInnerTOFProton);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processFilterOuterTOF(tofTracks const& tracks)
   {
-    for (auto const& track : pOuterTOFPi) 
+    for (auto const& track : pOuterTOFPi)
       bitoff(selectionMap[track.globalIndex()], kOuterTOFPion);
-    for (auto const& track : pOuterTOFKa) 
+    for (auto const& track : pOuterTOFKa)
       bitoff(selectionMap[track.globalIndex()], kOuterTOFKaon);
-    for (auto const& track : pOuterTOFPr) 
+    for (auto const& track : pOuterTOFPr)
       bitoff(selectionMap[track.globalIndex()], kOuterTOFProton);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processFilterRICH(richTracks const& tracks)
   {
-    for (auto const& track : pRICHPi) 
+    for (auto const& track : pRICHPi)
       bitoff(selectionMap[track.globalIndex()], kRICHPion);
-    for (auto const& track : pRICHKa) 
+    for (auto const& track : pRICHKa)
       bitoff(selectionMap[track.globalIndex()], kRICHKaon);
-    for (auto const& track : pRICHPr) 
+    for (auto const& track : pRICHPr)
       bitoff(selectionMap[track.globalIndex()], kRICHProton);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processFilterOnMonteCarloTruth(labeledTracks const& tracks, aod::McParticles const&)
   {
     for (auto const& track : tracks) {
-      if(!checkPDG(track, 421, -321)) //+421 -> -321 +211
+      if (!checkPDG(track, 421, -321)) //+421 -> -321 +211
       {
         bitoff(selectionMap[track.globalIndex()], kTrueKaMinusFromD);
         histos.fill(HIST("hToggle"), 0.0);
-      }else{
+      } else {
         histos.fill(HIST("hToggle"), 1.0);
       }
-      if(!checkPDG(track,-421, +321)) //-421 -> +321 -211
+      if (!checkPDG(track, -421, +321)) //-421 -> +321 -211
         bitoff(selectionMap[track.globalIndex()], kTrueKaPlusFromD);
-      if(!checkPDG(track, 421, +211)) //+421 -> -321 +211
+      if (!checkPDG(track, 421, +211)) //+421 -> -321 +211
       {
         bitoff(selectionMap[track.globalIndex()], kTruePiPlusFromD);
         histos.fill(HIST("hToggle"), 2.0);
-      }else{
+      } else {
         histos.fill(HIST("hToggle"), 3.0);
       }
-      if(!checkPDG(track,-421, -211)) //-421 -> +321 -211
+      if (!checkPDG(track, -421, -211)) //-421 -> +321 -211
         bitoff(selectionMap[track.globalIndex()], kTruePiMinusFromD);
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processPublishDecision(aod::Tracks const& tracks)
   {
-    for (uint32_t i=0; i<tracks.size(); i++) {
+    for (uint32_t i = 0; i < tracks.size(); i++) {
       a3decayMaps(selectionMap[i]);
     }
     selectionMap.clear();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  
+
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
   PROCESS_SWITCH(alice3decayPreselector, processInitialize, "Initialize (MUST be on)", true);
   PROCESS_SWITCH(alice3decayPreselector, processFilterInnerTOF, "Switch to use inner TOF PID", false);
@@ -216,7 +216,7 @@ struct alice3decayFinder {
   ConfigurableAxis axisEta{"axisEta", {8, -4.0f, +4.0f}, "#eta"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
   ConfigurableAxis axisDCA{"axisDCA", {200, -100, 100}, "DCA (#mum)"};
-  ConfigurableAxis axisDMass{"axisDMass", {200, 1.765f, 1.965f}, "D Inv Mass (GeV/c^{2})"}; 
+  ConfigurableAxis axisDMass{"axisDMass", {200, 1.765f, 1.965f}, "D Inv Mass (GeV/c^{2})"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -224,23 +224,23 @@ struct alice3decayFinder {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Partition<aod::McParticles> trueD = aod::mcparticle::pdgCode == 421;
-  Partition<aod::McParticles> trueDbar = aod::mcparticle::pdgCode ==-421;
+  Partition<aod::McParticles> trueDbar = aod::mcparticle::pdgCode == -421;
 
-  static constexpr uint32_t trackSelectionPiPlusFromD = 1 << kInnerTOFPion | 1 << kOuterTOFPion | 1 << kRICHPion | 1 << kTruePiPlusFromD ;
-  static constexpr uint32_t trackSelectionPiMinusFromD = 1 << kInnerTOFPion | 1 << kOuterTOFPion | 1 << kRICHPion | 1 << kTruePiMinusFromD ;
-  static constexpr uint32_t trackSelectionKaPlusFromD = 1 << kInnerTOFKaon | 1 << kOuterTOFKaon | 1 << kRICHKaon | 1 << kTrueKaPlusFromD ;
-  static constexpr uint32_t trackSelectionKaMinusFromD = 1 << kInnerTOFKaon | 1 << kOuterTOFKaon | 1 << kRICHKaon | 1 << kTrueKaMinusFromD ;
+  static constexpr uint32_t trackSelectionPiPlusFromD = 1 << kInnerTOFPion | 1 << kOuterTOFPion | 1 << kRICHPion | 1 << kTruePiPlusFromD;
+  static constexpr uint32_t trackSelectionPiMinusFromD = 1 << kInnerTOFPion | 1 << kOuterTOFPion | 1 << kRICHPion | 1 << kTruePiMinusFromD;
+  static constexpr uint32_t trackSelectionKaPlusFromD = 1 << kInnerTOFKaon | 1 << kOuterTOFKaon | 1 << kRICHKaon | 1 << kTrueKaPlusFromD;
+  static constexpr uint32_t trackSelectionKaMinusFromD = 1 << kInnerTOFKaon | 1 << kOuterTOFKaon | 1 << kRICHKaon | 1 << kTrueKaMinusFromD;
 
-    Partition<alice3tracks> tracksPiPlusFromD = 
+  Partition<alice3tracks> tracksPiPlusFromD =
     ((aod::a3DecayMap::decayMap & trackSelectionPiPlusFromD) == trackSelectionPiPlusFromD) && aod::track::signed1Pt > 0.0f;
 
-  Partition<alice3tracks> tracksPiMinusFromD = 
+  Partition<alice3tracks> tracksPiMinusFromD =
     ((aod::a3DecayMap::decayMap & trackSelectionPiMinusFromD) == trackSelectionPiMinusFromD) && aod::track::signed1Pt < 0.0f;
 
-  Partition<alice3tracks> tracksKaPlusFromD = 
+  Partition<alice3tracks> tracksKaPlusFromD =
     ((aod::a3DecayMap::decayMap & trackSelectionKaPlusFromD) == trackSelectionKaPlusFromD) && aod::track::signed1Pt > 0.0f;
 
-  Partition<alice3tracks> tracksKaMinusFromD = 
+  Partition<alice3tracks> tracksKaMinusFromD =
     ((aod::a3DecayMap::decayMap & trackSelectionKaMinusFromD) == trackSelectionKaMinusFromD) && aod::track::signed1Pt < 0.0f;
 
   // Helper struct to pass candidate information
@@ -277,13 +277,13 @@ struct alice3decayFinder {
     negTrack.getPxPyPzGlo(negP);
 
     float dcaDau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    if(dcaDau > dcaDaughtersSelection) 
-      return false; 
-    
+    if (dcaDau > dcaDaughtersSelection)
+      return false;
+
     // return mass
     dmeson.mass = RecoDecay::m(array{array{posP[0], posP[1], posP[2]}, array{negP[0], negP[1], negP[2]}}, array{posMass, negMass});
-    dmeson.pt = std::hypot(posP[0]+negP[0], posP[1]+negP[1]);
-    dmeson.eta = RecoDecay::eta(array{posP[0]+negP[0], posP[1]+negP[1], posP[2]+negP[2]});
+    dmeson.pt = std::hypot(posP[0] + negP[0], posP[1] + negP[1]);
+    dmeson.eta = RecoDecay::eta(array{posP[0] + negP[0], posP[1] + negP[1], posP[2] + negP[2]});
     return true;
   }
 
@@ -324,7 +324,7 @@ struct alice3decayFinder {
     fitter.setBz(magneticField);
     fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
-    if(doprocessFindDmesons){
+    if (doprocessFindDmesons) {
       histos.add("h2dGenD", "h2dGenD", kTH2F, {axisPt, axisEta});
       histos.add("h2dGenDbar", "h2dGenDbar", kTH2F, {axisPt, axisEta});
       histos.add("h3dRecD", "h2dRecD", kTH3F, {axisPt, axisEta, axisDMass});
@@ -333,7 +333,7 @@ struct alice3decayFinder {
       histos.add("hMassD", "hMassD", kTH1F, {axisDMass});
       histos.add("hMassDbar", "hMassDbar", kTH1F, {axisDMass});
 
-      if(doDCAplots){
+      if (doDCAplots) {
         histos.add("h2dDCAxyVsPtPiPlusFromD", "h2dDCAxyVsPtPiPlusFromD", kTH2F, {axisPt, axisDCA});
         histos.add("h2dDCAxyVsPtPiMinusFromD", "h2dDCAxyVsPtPiMinusFromD", kTH2F, {axisPt, axisDCA});
         histos.add("h2dDCAxyVsPtKaPlusFromD", "h2dDCAxyVsPtKaPlusFromD", kTH2F, {axisPt, axisDCA});
@@ -354,25 +354,25 @@ struct alice3decayFinder {
     auto tracksPiPlusFromDgrouped = tracksPiPlusFromD->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto tracksKaMinusFromDgrouped = tracksKaMinusFromD->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto tracksKaPlusFromDgrouped = tracksKaPlusFromD->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto tracksPiMinusFromDgrouped = tracksPiMinusFromD->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);        
+    auto tracksPiMinusFromDgrouped = tracksPiMinusFromD->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     // D mesons
-    for (auto const& posTrackRow : tracksPiPlusFromDgrouped){
-      for (auto const& negTrackRow : tracksKaMinusFromDgrouped){
-        if(mcSameMotherCheck&&!checkSameMother(posTrackRow,negTrackRow))
+    for (auto const& posTrackRow : tracksPiPlusFromDgrouped) {
+      for (auto const& negTrackRow : tracksKaMinusFromDgrouped) {
+        if (mcSameMotherCheck && !checkSameMother(posTrackRow, negTrackRow))
           continue;
-        if(!buildDecayCandidate(posTrackRow, negTrackRow, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged)) 
+        if (!buildDecayCandidate(posTrackRow, negTrackRow, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged))
           continue;
         histos.fill(HIST("hMassD"), dmeson.mass);
         histos.fill(HIST("h3dRecD"), dmeson.pt, dmeson.eta, dmeson.mass);
       }
     }
     // D mesons
-    for (auto const& posTrackRow : tracksKaPlusFromDgrouped){
-      for (auto const& negTrackRow : tracksPiMinusFromDgrouped){
-        if(mcSameMotherCheck&&!checkSameMother(posTrackRow,negTrackRow))
+    for (auto const& posTrackRow : tracksKaPlusFromDgrouped) {
+      for (auto const& negTrackRow : tracksPiMinusFromDgrouped) {
+        if (mcSameMotherCheck && !checkSameMother(posTrackRow, negTrackRow))
           continue;
-        if(!buildDecayCandidate(posTrackRow, negTrackRow, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPionCharged))
+        if (!buildDecayCandidate(posTrackRow, negTrackRow, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPionCharged))
           continue;
         histos.fill(HIST("hMassDbar"), dmeson.mass);
         histos.fill(HIST("h3dRecDbar"), dmeson.pt, dmeson.eta, dmeson.mass);
@@ -380,7 +380,7 @@ struct alice3decayFinder {
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  
+
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
   PROCESS_SWITCH(alice3decayFinder, processFindDmesons, "find D mesons", true);
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
