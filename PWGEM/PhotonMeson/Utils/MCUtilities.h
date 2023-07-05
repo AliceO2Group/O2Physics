@@ -107,6 +107,26 @@ bool IsFromWD(TCollision const& mccollision, T const& mctrack, TMCs const& mcTra
 }
 //_______________________________________________________________________
 template <typename T, typename TMCs>
+int IsXFromY(T const& mctrack, TMCs const& mcTracks, const int pdgX, const int pdgY)
+{
+  // is photon from pi0? returns index of mother photon
+  if (mctrack.pdgCode() != pdgX) {
+    return -1;
+  }
+  if (mctrack.has_mothers()) {
+    int motherid = mctrack.mothersIds()[0]; // first mother
+    auto mp = mcTracks.iteratorAt(motherid);
+    int pdg_mother = mp.pdgCode();
+    if (pdg_mother == pdgY) {
+      return motherid;
+    }
+  } else {
+    return -1;
+  }
+  return -1;
+}
+//_______________________________________________________________________
+template <typename T, typename TMCs>
 int IsEleFromPC(T const& mctrack, TMCs const& mcTracks)
 {
   // is election from photon conversion? returns index of mother photon
