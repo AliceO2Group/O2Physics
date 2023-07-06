@@ -243,7 +243,7 @@ int main(int argc, char* argv[])
           }
           outputDir->cd();
           auto outputTree = inputTree->CloneTree(-1, (fastCopy) ? "fast" : "");
-          currentDirSize += outputTree->GetTotBytes();
+          currentDirSize += inputTree->GetTotBytes(); // NOTE outputTree->GetTotBytes() is 0, so we use the inputTree here
           alreadyCopied = true;
           outputTree->SetAutoFlush(0);
           trees[treeName] = outputTree;
