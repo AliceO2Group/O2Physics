@@ -18,9 +18,6 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECUTCULATOR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECUTCULATOR_H_
 
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseV0Selection.h"
 #include <bitset>
 #include <iostream>
 #include <random>
@@ -30,6 +27,10 @@
 #include <iterator>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
+
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseV0Selection.h"
 
 namespace o2::analysis::femtoUniverse
 {
