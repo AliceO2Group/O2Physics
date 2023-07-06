@@ -128,17 +128,17 @@ DECLARE_SOA_TABLE(DPGTracks, "AOD", "DPGTracks", //! Table of the DPG tracks
 
 namespace dpgparticles
 {
-DECLARE_SOA_COLUMN(PtMC, ptMC, float);                           //! Pt MC
-DECLARE_SOA_COLUMN(EtaMC, etaMC, float);                         //! Eta MC
-DECLARE_SOA_COLUMN(PhiMC, phiMC, float);                         //! Phi MC
-DECLARE_SOA_COLUMN(ProductionMode, productionMode, int);         //! ProductionMode i.e. non matched (-1), physical primary (0), weak decay product (1) or material (2)
-DECLARE_SOA_DYNAMIC_COLUMN(IsNonMatched, isNonMatched,           //! True if particle is considered a non matched particle
+DECLARE_SOA_COLUMN(PtMC, ptMC, float);                   //! Pt MC
+DECLARE_SOA_COLUMN(EtaMC, etaMC, float);                 //! Eta MC
+DECLARE_SOA_COLUMN(PhiMC, phiMC, float);                 //! Phi MC
+DECLARE_SOA_COLUMN(ProductionMode, productionMode, int); //! ProductionMode i.e. non matched (-1), physical primary (0), weak decay product (1) or material (2)
+DECLARE_SOA_DYNAMIC_COLUMN(IsNonMatched, isNonMatched,   //! True if particle is considered a non matched particle
                            [](int mode) -> bool { return mode == -1; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, //! True if particle is considered a physical primary according to the ALICE definition
                            [](int mode) -> bool { return mode == 0; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsFromWeakDecay, isFromWeakDecay,     //! True if particle is considered from a weak decay
+DECLARE_SOA_DYNAMIC_COLUMN(IsFromWeakDecay, isFromWeakDecay, //! True if particle is considered from a weak decay
                            [](int mode) -> bool { return mode == 1; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsFromMaterial, isFromMaterial,       //! True if particle is considered from a weak decay
+DECLARE_SOA_DYNAMIC_COLUMN(IsFromMaterial, isFromMaterial, //! True if particle is considered from a weak decay
                            [](int mode) -> bool { return mode == 2; });
 
 } // namespace dpgparticles
