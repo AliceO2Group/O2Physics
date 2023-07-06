@@ -25,18 +25,10 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "TRandom.h"
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <TParticle.h>
-#include <TParticlePDG.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-// using DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
-using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa>;
-using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 
 namespace o2::aod
 {
@@ -133,6 +125,58 @@ DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
                   mycascades::IsINEL<mycascades::EventSelFilterBitMask>,
                   mycascades::IsINELgt0<mycascades::EventSelFilterBitMask>,
                   mycascades::IsINELgt1<mycascades::EventSelFilterBitMask>);
+
+namespace myMCcascades
+{
+
+enum EvFlags : uint8_t {
+  EvINEL = 0x1,    // INEL Event
+  EvINELgt0 = 0x2, // Event with at least 1 PV contributors from the |eta| < 1
+  EvINELgt1 = 0x4  // Event with at least 2 PV contributors from the |eta| < 1
+};
+
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! MC collision of this particle
+DECLARE_SOA_COLUMN(CollisionZ, zcoll, float);
+DECLARE_SOA_COLUMN(Sign, sign, float);
+DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
+DECLARE_SOA_COLUMN(Y, y, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(IsPrimary, isPrimary, bool);
+DECLARE_SOA_COLUMN(NAssocColl, nAssocColl, int); // Number of reconstructed collisions assoceated to the generated one of this cascade
+DECLARE_SOA_COLUMN(NChInFT0M, nChInFT0M, float); // Number of charged particles in FT0M acceptance
+DECLARE_SOA_COLUMN(AssCollisionTypeFilterBitMask, assCollisionTypeFilterBitMask, uint8_t);
+DECLARE_SOA_COLUMN(McCollisionTypeFilterBitMask, mcCollisionTypeFilterBitMask, uint8_t);
+
+DECLARE_SOA_DYNAMIC_COLUMN(IsINELassoc, isINELassoc, //! True if there's at least 1 reconstructed INEL event for the generated one of this cascade
+                           [](uint8_t flags) -> bool { return (flags & EvFlags::EvINEL) == EvFlags::EvINEL; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsINELgt0assoc, isINELgt0assoc, //! True if there's at least 1 reconstructed INEL>0 event for the generated one of this cascade
+                           [](uint8_t flags) -> bool { return (flags & EvFlags::EvINELgt0) == EvFlags::EvINELgt0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsINELgt1assoc, isINELgt1assoc, //! True if there's at least 1 reconstructed INEL>1 event for the generated one of this cascade
+                           [](uint8_t flags) -> bool { return (flags & EvFlags::EvINELgt1) == EvFlags::EvINELgt1; });
+
+DECLARE_SOA_DYNAMIC_COLUMN(IsINEL, isINEL, //! True if the Event belongs to the INEL event class
+                           [](uint8_t flags) -> bool { return (flags & EvFlags::EvINEL) == EvFlags::EvINEL; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsINELgt0, isINELgt0, //! True if the Event belongs to the INELgt0 event class
+                           [](uint8_t flags) -> bool { return (flags & EvFlags::EvINELgt0) == EvFlags::EvINELgt0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsINELgt1, isINELgt1, //! True if the Event belongs to the INELgt1 event class
+                           [](uint8_t flags) -> bool { return (flags & EvFlags::EvINELgt1) == EvFlags::EvINELgt1; });
+} // namespace myMCcascades
+
+DECLARE_SOA_TABLE(MyMCCascades, "AOD", "MYMCCASCADES", o2::soa::Index<>,
+                  myMCcascades::McCollisionId,
+                  myMCcascades::CollisionZ, myMCcascades::Sign, myMCcascades::PdgCode,
+                  myMCcascades::Y, myMCcascades::Eta, myMCcascades::Phi, myMCcascades::Pt,
+                  myMCcascades::IsPrimary, myMCcascades::NAssocColl, myMCcascades::NChInFT0M,
+                  myMCcascades::AssCollisionTypeFilterBitMask,
+                  myMCcascades::McCollisionTypeFilterBitMask,
+                  myMCcascades::IsINELassoc<myMCcascades::AssCollisionTypeFilterBitMask>,
+                  myMCcascades::IsINELgt0assoc<myMCcascades::AssCollisionTypeFilterBitMask>,
+                  myMCcascades::IsINELgt1assoc<myMCcascades::AssCollisionTypeFilterBitMask>,
+                  myMCcascades::IsINEL<myMCcascades::McCollisionTypeFilterBitMask>,
+                  myMCcascades::IsINELgt0<myMCcascades::McCollisionTypeFilterBitMask>,
+                  myMCcascades::IsINELgt1<myMCcascades::McCollisionTypeFilterBitMask>);
 
 } // namespace o2::aod
 
