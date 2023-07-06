@@ -80,7 +80,6 @@ struct HfCandidateCreator2Prong {
     if (doprocessPvRefit && doprocessNoPvRefit) {
       LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
     }
-
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
