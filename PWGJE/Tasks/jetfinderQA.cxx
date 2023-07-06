@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet finder hf QA task
+// jet finder QA task
 //
 // Authors: Nima Zardoshti
 
@@ -20,7 +20,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/HistogramRegistry.h"
-#include "TDatabasePDG.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -28,9 +27,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Common/Core/RecoDecay.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
@@ -41,7 +37,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
 
 #include "Framework/runDataProcessing.h"
 
@@ -110,7 +105,7 @@ struct JetFinderQATask {
   Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   std::string trackSelection;
-  std::vector<double> minJetPt;
+  std::vector<bool> filledJetR;
   std::vector<double> jetRadiiValues;
 
   void init(o2::framework::InitContext&)
@@ -119,7 +114,7 @@ struct JetFinderQATask {
     jetRadiiValues = (std::vector<double>)jetRadii;
 
     for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
-      minJetPt.push_back(0.0);
+      filledJetR.push_back(false);
     }
     auto jetRadiiBins = (std::vector<double>)jetRadii;
     if (jetRadiiBins.size() > 1) {
@@ -325,6 +320,7 @@ struct JetFinderQATask {
                             soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
                             JetTracks const& tracks)
   {
+
     registry.fill(HIST("h_collision_trigger_events"), 0.5); // all events
     if (collision.posZ() > vertexZCut)
       return;
@@ -336,16 +332,14 @@ struct JetFinderQATask {
       registry.fill(HIST("h_collision_trigger_events"), 3.5); // events with triggered jets
 
     for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
-      minJetPt[iJetRadius] = 0.0;
+      filledJetR[iJetRadius] = false;
     }
     for (auto& jet : jets) {
       for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
-        if (jet.r() == round(jetRadiiValues[iJetRadius] * 100.0f)) {
-          for (double pt = jet.pt(); pt > minJetPt[iJetRadius]; pt -= 1.0) {
+        if (jet.r() == round(jetRadiiValues[iJetRadius] * 100.0f) && !filledJetR[iJetRadius]) {
+          filledJetR[iJetRadius] = true;
+          for (double pt = 0.0; pt <= jet.pt(); pt += 1.0) {
             registry.fill(HIST("h2_jet_radius_jet_pT_triggered"), jet.r() / 100.0, pt);
-          }
-          if (jet.pt() > minJetPt[iJetRadius]) {
-            minJetPt[iJetRadius] = jet.pt();
           }
           break;
         }
