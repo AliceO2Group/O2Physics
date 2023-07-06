@@ -79,30 +79,30 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->add((folderName + folderSuffix + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDCA").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{e}", kTH2F, {{100, 0, 10}, {100, 0, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{#pi}", kTH2F, {{100, 0, 10}, {100, 0, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{K}", kTH2F, {{100, 0, 10}, {100, 0, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", kTH2F, {{100, 0, 10}, {100, 0, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", kTH2F, {{100, 0, 10}, {100, 0, 5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{p}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{d}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{e}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{#pi}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{K}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{p}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{d}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{e}", kTH2F, {{600, 0, 6}, {65, 0, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{#pi}", kTH2F, {{600, 0, 6}, {65, 0, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{K}", kTH2F, {{600, 0, 6}, {100, 0, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", kTH2F, {{600, 0, 6}, {100, 0, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", kTH2F, {{600, 0, 6}, {100, 0, 6.5}});
     } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0) {
       mHistogramRegistry->add((folderName + folderSuffix + "/hDaughDCA").c_str(), "; DCA^{daugh} (cm); Entries", kTH1F, {{1000, 0, 10}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hTransRadius").c_str(), "; #it{r}_{xy} (cm); Entries", kTH1F, {{1500, 0, 150}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDecayVtxX").c_str(), "; #it{Vtx}_{x} (cm); Entries", kTH1F, {{2000, 0, 200}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDecayVtxY").c_str(), "; #it{Vtx}_{y} (cm)); Entries", kTH1F, {{2000, 0, 200}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDecayVtxZ").c_str(), "; #it{Vtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassLambda").c_str(), "; M_{#Lambda}; Entries", kTH1F, {{2000, 1.f, 3.f}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassAntiLambda").c_str(), "; M_{#bar{#Lambda}}; Entries", kTH1F, {{2000, 1.f, 3.f}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassLambdaAntiLambda").c_str(), "; M_{#Lambda}; M_{#bar{#Lambda}}", kTH2F, {{2000, 1.f, 3.f}, {2000, 1.f, 3.f}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassLambda").c_str(), "; M_{#Lambda}; Entries", kTH1F, {{5000, 1.f, 1.5f}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassAntiLambda").c_str(), "; M_{#bar{#Lambda}}; Entries", kTH1F, {{5000, 1.f, 1.5f}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassLambdaAntiLambda").c_str(), "; M_{#Lambda}; M_{#bar{#Lambda}}", kTH2F, {{500, 1.f, 1.5f}, {500, 1.f, 1.5f}});
     }
   }
 
