@@ -76,6 +76,10 @@ struct HfCandidateCreator3Prong {
 
   void init(InitContext const&)
   {
+    if (doprocessPvRefit && doprocessNoPvRefit) {
+      LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
+    }
+
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -222,7 +226,7 @@ struct HfCandidateCreator3Prong {
     runCreator3Prong<true>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
   }
 
-  PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefit, "Run candidate creator with PV refit", true);
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefit, "Run candidate creator with PV refit", false);
 
   void processNoPvRefit(aod::Collisions const& collisions,
                         aod::Hf3Prongs const& rowsTrackIndexProng3,
