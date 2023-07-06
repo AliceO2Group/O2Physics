@@ -118,7 +118,7 @@ struct DptDptCorrelationsTask {
       nTrackPairs ///< the number of track pairs
     } trackpairs;
 
-    std::vector<std::string> tname = {"1", "2"}; ///< the external track names, one and two, for histogram creation
+    std::vector<std::string> tname = {"O", "T"}; ///< the external track names, one and two, for histogram creation
     std::vector<std::vector<std::string>> trackPairsNames = {{"OO", "OT"}, {"TO", "TT"}};
     bool ccdbstored = false;
 
