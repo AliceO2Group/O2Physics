@@ -191,7 +191,11 @@ struct qaEventTrack {
     trackRecoEffHist->SetBit(TH1::kIsNotW);
 
     // kine histograms
-    histos.add("Tracks/Kine/pt", "#it{p}_{T}", kTH1D, {axisPt});
+    histos.add("Tracks/Kine/pt", "#it{p}_{T} (filtered)", kTH1D, {axisPt});
+    histos.add("Tracks/Kine/ptFilteredPositive", "positive charge track #it{p}_{T} (filtered)", kTH1D, {axisPt});
+    histos.add("Tracks/Kine/ptFilteredNegative", "negative charge track #it{p}_{T} (filtered)", kTH1D, {axisPt});
+    histos.add("Tracks/Kine/ptUnfilteredPositive", "positive charge track #it{p}_{T} (unfiltered)", kTH1D, {axisPt});
+    histos.add("Tracks/Kine/ptUnfilteredNegative", "negative charge track #it{p}_{T} (unfiltered)", kTH1D, {axisPt});
     histos.add("Tracks/Kine/eta", "#eta", kTH1D, {axisEta});
     histos.add("Tracks/Kine/phi", "#varphi", kTH1D, {axisPhi});
     histos.add("Tracks/Kine/etavsphi", "#eta vs #varphi", kTH2F, {axisEta, axisPhi});
@@ -1315,6 +1319,12 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
   int nPvContrWithTOF = 0;
   int nPvContrWithTRD = 0;
   for (const auto& trackUnfiltered : tracksUnfiltered) {
+    // fill unfiltered track pt
+    if (trackUnfiltered.sign() > 0) {
+      histos.fill(HIST("Tracks/Kine/ptUnfilteredPositive"), trackUnfiltered.pt());
+    } else {
+      histos.fill(HIST("Tracks/Kine/ptUnfilteredNegative"), trackUnfiltered.pt());
+    }
     // fill ITS variables
     int itsNhits = 0;
     for (unsigned int i = 0; i < 7; i++) {
@@ -1356,6 +1366,11 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     }
     // fill kinematic variables
     histos.fill(HIST("Tracks/Kine/pt"), track.pt());
+    if (track.sign() > 0) {
+      histos.fill(HIST("Tracks/Kine/ptFilteredPositive"), track.pt());
+    } else {
+      histos.fill(HIST("Tracks/Kine/ptFilteredNegative"), track.pt());
+    }
     histos.fill(HIST("Tracks/Kine/eta"), track.eta());
     histos.fill(HIST("Tracks/Kine/phi"), track.phi());
     histos.fill(HIST("Tracks/Kine/etavsphi"), track.eta(), track.phi());
