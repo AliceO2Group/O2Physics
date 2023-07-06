@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -12,17 +12,19 @@
 /// \file FemtoUniverseDetaDphiStar.h
 /// \brief FemtoUniverseDetaDphiStar - Checks particles for the close pair rejection.
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
+/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
-
-#include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
+
+using namespace o2;
+using namespace o2::framework;
 
 namespace o2::analysis
 {
@@ -70,8 +72,6 @@ class FemtoUniverseDetaDphiStar
         }
       }
     }
-    if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
-    }
   }
   ///  Check if pair is close or not
   template <typename Part, typename Parts>
@@ -118,9 +118,6 @@ class FemtoUniverseDetaDphiStar
         }
       }
       return pass;
-    } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
-      /// Track-Phi combination
-      return true;
     } else {
       LOG(fatal) << "FemtoUniversePairCleaner: Combination of objects not defined - quitting!";
       return false;
@@ -191,7 +188,7 @@ class FemtoUniverseDetaDphiStar
     std::vector<float> tmpVec2;
     PhiAtRadiiTPC(part1, tmpVec1);
     PhiAtRadiiTPC(part2, tmpVec2);
-    const int num = tmpVec1.size();
+    int num = tmpVec1.size();
     float dPhiAvg = 0;
     for (int i = 0; i < num; i++) {
       float dphi = tmpVec1.at(i) - tmpVec2.at(i);
@@ -201,7 +198,7 @@ class FemtoUniverseDetaDphiStar
         histdetadpiRadii[iHist][i]->Fill(part1.eta() - part2.eta(), dphi);
       }
     }
-    return (dPhiAvg / (static_cast<float>)num);
+    return dPhiAvg / num;
   }
 };
 
