@@ -85,11 +85,14 @@ struct cascpostprocessing {
     AxisSpec ptAxisPID = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec etaAxis = {200, -2.0f, 2.0f, "#eta"};
     ConfigurableAxis centFT0MAxis{"FT0M",
-                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100},
+                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
                                   "FT0M (%)"};
     ConfigurableAxis centFV0AAxis{"FV0A",
-                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100},
+                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
                                   "FV0A (%)"};
+
+    AxisSpec nChargedAxis = {300, -0.5f, 299.5f, "N_{ch in FT0M}"};
+
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
 
@@ -197,9 +200,18 @@ struct cascpostprocessing {
     // Info for eff x acc from MC
     registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
     registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
+
+    registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtXiPlusTrueAssocWithSelColl", "hPtXiPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtXiMinusTrueAssocWithSelColl", "hPtXiMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtOmegaPlusTrueAssocWithSelColl", "hPtOmegaPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtOmegaMinusTrueAssocWithSelColl", "hPtOmegaMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
   }
 
-  void process(aod::MyCascades const& mycascades)
+  void processRec(aod::MyCascades const& mycascades)
   {
     float invmass = 0;
     float ctau = 0;
@@ -449,6 +461,87 @@ struct cascpostprocessing {
       }
     }
   }
+
+  PROCESS_SWITCH(cascpostprocessing, processRec, "Process Run 3 reconstructed data", true);
+
+  void processGen(aod::MyMCCascades const& myMCcascades)
+  {
+    for (auto& genCascade : myMCcascades) {
+      if (genCascade.isPrimary() == 0)
+        continue; // Consider only primaries
+
+      switch (evSelFlag) {
+        case 1: {
+          if (!genCascade.isINEL())
+            continue;
+          break;
+        }
+        case 2: {
+          if (!genCascade.isINELgt0())
+            continue;
+          break;
+        }
+        case 3: {
+          if (!genCascade.isINELgt1())
+            continue;
+          break;
+        }
+        default:
+          LOGF(fatal, "incorrect evSelFlag in cascpostprocessing task");
+          break;
+      }
+
+      // Histos of generated cascades from generated events with accepted z vrtx + chosen event type (evSelFlag) (for signal loss correction)
+      if (genCascade.pdgCode() == -3312) {
+        registry.fill(HIST("hPtXiPlusTrue"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+      if (genCascade.pdgCode() == 3312) {
+        registry.fill(HIST("hPtXiMinusTrue"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+      if (genCascade.pdgCode() == -3334) {
+        registry.fill(HIST("hPtOmegaPlusTrue"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+      if (genCascade.pdgCode() == 3334) {
+        registry.fill(HIST("hPtOmegaMinusTrue"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+
+      // Histos of generated cascades from generated events with good z vrtx + chosen event type (evSelFlag) + associated to the accepted reconstructed event of the same type (for signal loss + efficiency x acceptance correction)
+      switch (evSelFlag) {
+        case 1: {
+          if (!genCascade.isINELassoc())
+            continue;
+          break;
+        }
+        case 2: {
+          if (!genCascade.isINELgt0assoc())
+            continue;
+          break;
+        }
+        case 3: {
+          if (!genCascade.isINELgt1assoc())
+            continue;
+          break;
+        }
+        default:
+          LOGF(fatal, "incorrect evSelFlag in cascpostprocessing task");
+          break;
+      }
+
+      if (genCascade.pdgCode() == -3312) {
+        registry.fill(HIST("hPtXiPlusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+      if (genCascade.pdgCode() == 3312) {
+        registry.fill(HIST("hPtXiMinusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+      if (genCascade.pdgCode() == -3334) {
+        registry.fill(HIST("hPtOmegaPlusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+      if (genCascade.pdgCode() == 3334) {
+        registry.fill(HIST("hPtOmegaMinusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+    }
+  }
+  PROCESS_SWITCH(cascpostprocessing, processGen, "Process Run 3 MC generated data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
