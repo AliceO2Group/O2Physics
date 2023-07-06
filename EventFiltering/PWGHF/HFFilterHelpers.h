@@ -192,8 +192,8 @@ constexpr float cutsV0s[1][6] = {{0.85, 0.95, 0.1, 4., 0.03, 0.01}}; // cosPaGam
 static const std::vector<std::string> labelsColumnsV0s = {"CosPaGamma", "CosPaK0sLambda", "RadiusK0sLambda", "NSigmaPrLambda", "DeltaMassK0s", "DeltaMassLambda"};
 
 // cascades for Xi + bachelor triggers
-constexpr float cutsCascades[1][4] = {{0.15, 0.01, 0.01, 3.}}; // ptXiBachelor, deltaMassXi, deltaMassLambda, nSigmaPid
-static const std::vector<std::string> labelsColumnsCascades = {"PtBachelor", "deltaMassXi", "deltaMassLambda", "NsigmaPid"};
+constexpr float cutsCascades[1][7] = {{0.15, 0.01, 0.01, 0.95, 0.95, 2.0, 3.}}; // ptXiBachelor, deltaMassXi, deltaMassLambda, cosPaXi, cosPaLambda, DCAxyXi, nSigmaPid
+static const std::vector<std::string> labelsColumnsCascades = {"PtBachelor", "deltaMassXi", "deltaMassLambda", "cosPAXi", "cosPALambda", "DCAxyXi", "NsigmaPid"};
 
 // dummy array
 static const std::vector<std::string> labelsEmpty{};
@@ -874,6 +874,10 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const float& v0C
 /// \param minPtXiBachelor is the minimum required pT for the cascade bachelor
 /// \param deltaMassXi is the maximum delta mass for the Xi
 /// \param deltaMassLambda is the maximum delta mass for the Lambda daughter
+/// \param cosPAXi is the minimum value of cosPA for the cascade
+/// \param cosPALambda is the minimum value of cosPA for the Lambda daughter
+/// \param DCAxyXi is the maximum DCAxy of the Xi to the PV
+/// \param maxNsigma is the maximum number of sigma to accept a given PID hypothesis
 /// \param setTPCCalib flag to activate TPC PID postcalibrations
 /// \param hMapProton map of nSigma mean and sigma calibrations for proton
 /// \param hMapPion map of nSigma mean and sigma calibrations for pion
@@ -881,7 +885,7 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const float& v0C
 /// \param hSplinePion spline of pion and anti-pion calibrations
 /// \return true if cascade passes all cuts
 template <typename Casc, typename V0, typename T, typename Coll, typename H3>
-bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTracks, const Coll& collision, const float& minPtXiBachelor, const float& deltaMassXi, const float& deltaMassLambda, const float& maxNsigma, const int& setTPCCalib, H3 hMapPion, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplinePion, const std::array<std::vector<double>, 2>& hSplineProton)
+bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTracks, const Coll& collision, const float& minPtXiBachelor, const float& deltaMassXi, const float& deltaMassLambda, const float& cosPAXi, const float& cosPALambda, const float& DCAxyXi, const float& maxNsigma, const int& setTPCCalib, H3 hMapPion, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplinePion, const std::array<std::vector<double>, 2>& hSplineProton)
 {
   // eta of daughters
   if (std::fabs(dauTracks[0].eta()) > 1. || std::fabs(dauTracks[1].eta()) > 1. || std::fabs(dauTracks[2].eta()) > 1.) { // cut all V0 daughters with |eta| > 1.
@@ -899,12 +903,17 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
   }
 
   // V0 cosp
-  if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < 0.95) {
+  if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cosPALambda) {
     return false;
   }
 
   // cascade cosp
-  if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < 0.95) {
+  if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cosPAXi) {
+    return false;
+  }
+
+  // cascade DCAxy to PV
+  if (std::fabs(casc.dcaXYCascToPV()) > DCAxyXi) {
     return false;
   }
 
@@ -914,12 +923,12 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
   }
 
   // cascade mass
-  if (std::fabs(casc.mXi() - massXi) < deltaMassXi) {
+  if (std::fabs(casc.mXi() - massXi) > deltaMassXi) {
     return false;
   }
 
   // V0 mass
-  if (std::fabs(casc.mLambda() - massLambda) < deltaMassLambda) {
+  if (std::fabs(casc.mLambda() - massLambda) > deltaMassLambda) {
     return false;
   }
 
