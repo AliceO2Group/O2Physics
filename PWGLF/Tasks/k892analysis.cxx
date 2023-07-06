@@ -273,8 +273,7 @@ struct k892analysis {
           if (trk1.sign() > 0) {
             histos.fill(HIST("k892invmassDS"), lResonance.M());
             histos.fill(HIST("h3k892invmassDS"), collision.multV0M(), lResonance.Pt(), lResonance.M());
-          }
-          else {
+          } else {
             histos.fill(HIST("k892invmassDSAnti"), lResonance.M());
             histos.fill(HIST("h3k892invmassDSAnti"), collision.multV0M(), lResonance.Pt(), lResonance.M());
           }
@@ -302,8 +301,7 @@ struct k892analysis {
           if (trk1.sign() > 0) {
             histos.fill(HIST("k892invmassLS"), lResonance.M());
             histos.fill(HIST("h3k892invmassLS"), collision.multV0M(), lResonance.Pt(), lResonance.M());
-          }
-          else {
+          } else {
             histos.fill(HIST("k892invmassLSAnti"), lResonance.M());
             histos.fill(HIST("h3k892invmassLSAnti"), collision.multV0M(), lResonance.Pt(), lResonance.M());
           }
