@@ -39,7 +39,7 @@ DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                                  
 DECLARE_SOA_COLUMN(PProng1, pProng1, float);                                       //! Momentum of prong1 (in GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, float); //! Normalised impact parameter of prong1
 DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);                                     //! Transverse momentum of prong2 (GeV/c)
-DECLARE_SOA_COLUMN(PProng2, pProng2, float);                                       //! Transverse momentum of prong2 (GeV/c)
+DECLARE_SOA_COLUMN(PProng2, pProng2, float);                                       //! Momentum of prong2 (GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, float); //! Normalised impact parameter of prong2
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int);                       //! Selection flag of candidate (output of candidateSelector)
 DECLARE_SOA_COLUMN(M, m, float);                                                   //! Invariant mass of candidate (GeV/c2)
@@ -213,11 +213,14 @@ struct HfTreeCreatorDplusToPiKPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
+  using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
-  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == (int8_t)BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi);
-  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != (int8_t)BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+  Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
+
+  Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
+  Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
 
   void init(InitContext const&)
   {
@@ -236,8 +239,8 @@ struct HfTreeCreatorDplusToPiKPi {
       runNumber);
   }
 
-  template <bool doMc = false, typename T, typename U>
-  void fillCandidateTable(const T& candidate, const U& prong0, const U& prong1, const U& prong2)
+  template <bool doMc = false, typename T>
+  void fillCandidateTable(const T& candidate)
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
@@ -245,6 +248,11 @@ struct HfTreeCreatorDplusToPiKPi {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
     }
+
+    auto prong0 = candidate.template prong0_as<aod::BigTracksPID>();
+    auto prong1 = candidate.template prong1_as<aod::BigTracksPID>();
+    auto prong2 = candidate.template prong2_as<aod::BigTracksPID>();
+
     if (fillCandidateLiteTable) {
       rowCandidateLite(
         candidate.chi2PCA(),
@@ -283,8 +291,8 @@ struct HfTreeCreatorDplusToPiKPi {
         originMc);
     } else {
       rowCandidateFull(
-        prong0.collision().bcId(),
-        prong0.collision().numContrib(),
+        candidate.collision().bcId(),
+        candidate.collision().numContrib(),
         candidate.posX(),
         candidate.posY(),
         candidate.posZ(),
@@ -363,21 +371,19 @@ struct HfTreeCreatorDplusToPiKPi {
     }
 
     // Filling candidate properties
-    rowCandidateFull.reserve(candidates.size());
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
+    } else {
+      rowCandidateFull.reserve(candidates.size());
     }
     for (auto const& candidate : candidates) {
-      if (fillOnlyBackground) {
+      if (downSampleBkgFactor < 1.) {
         float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
       }
-      auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-      auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
-      auto prong2 = candidate.prong2_as<aod::BigTracksPID>();
-      fillCandidateTable(candidate, prong0, prong1, prong2);
+      fillCandidateTable(candidate);
     }
   }
 
@@ -386,7 +392,7 @@ struct HfTreeCreatorDplusToPiKPi {
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
+                 MatchedGenCandidatesMc const& particles,
                  aod::BigTracksPID const&)
   {
     // Filling event properties
@@ -397,57 +403,51 @@ struct HfTreeCreatorDplusToPiKPi {
 
     // Filling candidate properties
     if (fillOnlySignal) {
-      rowCandidateFull.reserve(recSig.size());
       if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(recSig.size());
+        rowCandidateLite.reserve(reconstructedCandSig.size());
+      } else {
+        rowCandidateFull.reserve(reconstructedCandSig.size());
       }
-      for (const auto& candidate : recSig) {
-        auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
-        auto prong2 = candidate.prong2_as<aod::BigTracksPID>();
-        fillCandidateTable<true>(candidate, prong0, prong1, prong2);
+      for (const auto& candidate : reconstructedCandSig) {
+        fillCandidateTable<true>(candidate);
       }
     } else if (fillOnlyBackground) {
-      rowCandidateFull.reserve(recBg.size());
       if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(recBg.size());
+        rowCandidateLite.reserve(reconstructedCandBkg.size());
+      } else {
+        rowCandidateFull.reserve(reconstructedCandBkg.size());
       }
-      for (const auto& candidate : recBg) {
-        float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
-        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
-          continue;
+      for (const auto& candidate : reconstructedCandBkg) {
+        if (downSampleBkgFactor < 1.) {
+          float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
+          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+            continue;
+          }
         }
-        auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
-        auto prong2 = candidate.prong2_as<aod::BigTracksPID>();
-        fillCandidateTable<true>(candidate, prong0, prong1, prong2);
+        fillCandidateTable<true>(candidate);
       }
     } else {
-      rowCandidateFull.reserve(candidates.size());
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(candidates.size());
+      } else {
+        rowCandidateFull.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
-        auto prong2 = candidate.prong2_as<aod::BigTracksPID>();
-        fillCandidateTable<true>(candidate, prong0, prong1, prong2);
+        fillCandidateTable<true>(candidate);
       }
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (auto const& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), DecayType::DplusToPiKPi)) {
-        rowCandidateFullParticles(
-          particle.mcCollision().bcId(),
-          particle.pt(),
-          particle.eta(),
-          particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
-          particle.flagMcMatchGen(),
-          particle.originMcGen());
-      }
+      rowCandidateFullParticles(
+        particle.mcCollision().bcId(),
+        particle.pt(),
+        particle.eta(),
+        particle.phi(),
+        RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+        particle.flagMcMatchGen(),
+        particle.originMcGen());
     }
   }
 
