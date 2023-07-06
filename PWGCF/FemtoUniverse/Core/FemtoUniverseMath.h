@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -11,8 +11,9 @@
 
 /// \file FemtoUniverseMath.h
 /// \brief Definition of the FemtoUniverseMath Container for math calculations of quantities related to pairs
-/// \author Valentina Mantovani Sarti, TU München, valentina.mantovani-sarti@tum.de, Laura Serksnyte, TU München, laura.serksnyte@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
+/// \author Valentina Mantovani Sarti, TU München, valentina.mantovani-sarti@tum.de
+/// \author Laura Serksnyte, TU München, laura.serksnyte@cern.ch
+/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_
@@ -140,4 +141,4 @@ class FemtoUniverseMath
 
 } // namespace o2::analysis::femtoUniverse
 
-#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_"
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_
