@@ -324,6 +324,10 @@ struct SinglePhotonMC {
             reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hPt_Photon_FromWD"))->Fill(v1.Pt());
             reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hY_Photon_FromWD"))->Fill(v1.Rapidity());
             reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hPhi_Photon_FromWD"))->Fill(v1.Phi() < 0.0 ? v1.Phi() + TMath::TwoPi() : v1.Phi());
+          } else {
+            reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hPt_Photon_hs"))->Fill(v1.Pt());
+            reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hY_Photon_hs"))->Fill(v1.Rapidity());
+            reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hPhi_Photon_hs"))->Fill(v1.Phi() < 0.0 ? v1.Phi() + TMath::TwoPi() : v1.Phi());
           }
 
         } // end of photon loop

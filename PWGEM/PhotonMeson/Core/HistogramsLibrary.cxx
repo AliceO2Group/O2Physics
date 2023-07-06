@@ -110,10 +110,10 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(new TH1F("hPt_Photon_FromWD", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                   // for MC feed down correction
       list->Add(new TH2F("hEtaPhi_Photon_FromWD", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f));  // for MC feed down correction
 
-      list->Add(new TH2F("hRZ_Photon_test", "R vs. Z;Z (cm);R_{xy} (cm)", 500, -250.0f, +250, 200, 0, 200));
-      list->Add(new TH1F("hPt_Photon_test", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
-      list->Add(new TH1F("hEta_Photon_test", "rapidity;y", 40, -2.0f, 2.0f));
-      list->Add(new TH1F("hPhi_Photon_test", "#varphi;#varphi (rad.);", 180, 0, TMath::TwoPi()));
+      list->Add(new TH2F("hRZ_Photon_hs", "R vs. Z of photon from hadronic shower in materials;Z (cm);R_{xy} (cm)", 500, -250.0f, +250, 200, 0, 200));
+      list->Add(new TH1F("hPt_Photon_hs", "pT of photon from hadronic shower in materials;p_{T} (GeV/c)", 1000, 0.0f, 10));
+      list->Add(new TH1F("hEta_Photon_hs", "rapidity of photon from hadronic shower in materials;y", 40, -2.0f, 2.0f));
+      list->Add(new TH1F("hPhi_Photon_hs", "#varphi of photon from hadronic shower in materials;#varphi (rad.);", 180, 0, TMath::TwoPi()));
 
       list->Add(new TH2F("hConvPoint_diffX", "conversion point diff X MC;X_{MC} (cm);X_{rec} - X_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
       list->Add(new TH2F("hConvPoint_diffY", "conversion point diff Y MC;Y_{MC} (cm);Y_{rec} - Y_{MC} (cm)", 500, -250, +250, 100, -50.0f, 50.0f));
@@ -148,9 +148,9 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   }
 
   if (TString(histClass) == "singlephoton") {
-    list->Add(new TH1F("hPt", "pT of photon;p_{T} (GeV/c)", 1000, 0.0f, 10));
-    list->Add(new TH1F("hY", "rapidity of photon;y", 40, -2.0f, 2.0f));
-    list->Add(new TH1F("hPhi", "azimuthal angle of photon;#varphi (rad.)", 180, 0, TMath::TwoPi()));
+    list->Add(new TH1F("hPt", "pT of photon candidates;p_{T} (GeV/c)", 1000, 0.0f, 10));
+    list->Add(new TH1F("hY", "rapidity of photon candidates;y", 40, -2.0f, 2.0f));
+    list->Add(new TH1F("hPhi", "azimuthal angle of photon candidates;#varphi (rad.)", 180, 0, TMath::TwoPi()));
     if (TString(subGroup) == "mc") {
       list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                 // for MC efficiency
       list->Add(new TH1F("hY_Photon_Primary", "rapidity;y", 40, -2.0f, 2.0f));                       // for MC efficiency
@@ -158,6 +158,9 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(new TH1F("hPt_Photon_FromWD", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                  // for MC efficiency
       list->Add(new TH1F("hY_Photon_FromWD", "rapidity;y", 40, -2.0f, 2.0f));                        // for MC efficiency
       list->Add(new TH1F("hPhi_Photon_FromWD", "#varphi;#varphi (rad.);", 180, 0, TMath::TwoPi()));  // for MC efficiency
+      list->Add(new TH1F("hPt_Photon_hs", "pT of photon from hadronic shower in materials;p_{T} (GeV/c)", 1000, 0.0f, 10));
+      list->Add(new TH1F("hY_Photon_hs", "rapidity from hadronic shower in materials;y", 40, -2.0f, 2.0f));
+      list->Add(new TH1F("hPhi_Photon_hs", "#varphi from hadronic shower in materials;#varphi (rad.);", 180, 0, TMath::TwoPi()));
     }
   }
 
@@ -251,10 +254,21 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
   }
   if (TString(histClass) == "tagging_pi0_mc") {
-    list->Add(new TH1F("hPt_v0photon_Pi0", "reconstructed v0 photon from pi0;p_{T,ee} (GeV/c);N_{ee}^{#pi^{0}}", npTgg10 - 1, pTgg10));                                                              // denominator for conditional probability
-    list->Add(new TH2F("hMggPt_Pi0", "reconstructed m_{ee#gamma} vs. p_{T,ee} from pi0;m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c);N_{ee}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
-    reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0"))->Sumw2();
+    if (TString(subGroup) == "pcm") {
+      list->Add(new TH1F("hPt_v0photon_Pi0_Primary", "reconstcuted v0 photon from primary #pi^{0};p_{T,ee} (GeV/c);N_{ee}^{#pi^{0}}", npTgg10 - 1, pTgg10)); // denominator for conditional probability
+      reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0_Primary"))->Sumw2();
+      list->Add(new TH1F("hPt_v0photon_Pi0_FromWD", "reconstcuted v0 photon from #pi^{0} from WD;p_{T,ee} (GeV/c);N_{ee}^{#pi^{0}}", npTgg10 - 1, pTgg10)); // denominator for conditional probability
+      reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0_FromWD"))->Sumw2();
+      list->Add(new TH1F("hPt_v0photon_Pi0_hs", "reconstcuted v0 photon from #pi^{0} from hadronic shower in materials;p_{T,ee} (GeV/c);N_{ee}^{#pi^{0}}", npTgg10 - 1, pTgg10)); // denominator for conditional probability
+      reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0_hs"))->Sumw2();
+    } else if (TString(subGroup) == "pair") {
+      list->Add(new TH2F("hMggPt_Pi0_Primary", "reconstructed m_{ee#gamma} vs. p_{T,ee} from primary #pi^{0};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c);N_{ee}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
+      reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0_Primary"))->Sumw2();
+      list->Add(new TH2F("hMggPt_Pi0_FromWD", "reconstructed m_{ee#gamma} vs. p_{T,ee} from #pi^{0} from WD;m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c);N_{ee}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
+      reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0_FromWD"))->Sumw2();
+      list->Add(new TH2F("hMggPt_Pi0_hs", "reconstructed m_{ee#gamma} vs. p_{T,ee} from #pi^{0} from hadronic shower in material;m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c);N_{ee}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
+      reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0_hs"))->Sumw2();
+    }
   }
 
   if (TString(histClass) == "tag_and_probe") {

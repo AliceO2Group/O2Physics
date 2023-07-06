@@ -18,7 +18,7 @@
 
 ClassImp(V0PhotonCut);
 
-const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "V0PtRange", "V0EtaRange", "AP", " PsiPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz", "ITSChi2NDF", "IsWithinBeamPipe", "RequireITSTPC", "RequireITSonly", "TPConly", "AntiTPConly"};
+const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "V0PtRange", "V0EtaRange", "AP", " PsiPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "IsWithinBeamPipe", "RequireITSTPC", "RequireITSonly", "TPConly", "AntiTPConly"};
 
 void V0PhotonCut::SetV0PtRange(float minPt, float maxPt)
 {
@@ -125,10 +125,11 @@ void V0PhotonCut::SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRow
   mMinNCrossedRowsOverFindableClustersTPC = minNCrossedRowsOverFindableClustersTPC;
   LOG(info) << "V0 Photon Cut, set min N crossed rows over findable clusters TPC: " << mMinNCrossedRowsOverFindableClustersTPC;
 }
-void V0PhotonCut::SetMaxChi2PerClusterTPC(float maxChi2PerClusterTPC)
+void V0PhotonCut::SetChi2PerClusterTPC(float min, float max)
 {
-  mMaxChi2PerClusterTPC = maxChi2PerClusterTPC;
-  LOG(info) << "V0 Photon Cut, set max chi2 per cluster TPC: " << mMaxChi2PerClusterTPC;
+  mMinChi2PerClusterTPC = min;
+  mMaxChi2PerClusterTPC = max;
+  LOG(info) << "V0 Photon Cut, set chi2 per cluster TPC range: " << mMinChi2PerClusterTPC << " - " << mMaxChi2PerClusterTPC;
 }
 void V0PhotonCut::SetMaxDcaXY(float maxDcaXY)
 {
@@ -147,10 +148,17 @@ void V0PhotonCut::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
   LOG(info) << "V0 Photon Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
 }
 
-void V0PhotonCut::SetMaxChi2PerClusterITS(float maxChi2PerClusterITS)
+void V0PhotonCut::SetNClustersITS(int min, int max)
 {
-  mMaxChi2PerClusterITS = maxChi2PerClusterITS;
-  LOG(info) << "V0 Photon Cut, set max chi2 per cluster ITS: " << mMaxChi2PerClusterITS;
+  mMinNClustersITS = min;
+  mMaxNClustersITS = max;
+  LOG(info) << "V0 Photon Cut, set N clusters ITS range: " << mMinNClustersITS << " - " << mMaxNClustersITS;
+}
+void V0PhotonCut::SetChi2PerClusterITS(float min, float max)
+{
+  mMinChi2PerClusterITS = min;
+  mMaxChi2PerClusterITS = max;
+  LOG(info) << "V0 Photon Cut, set chi2 per cluster ITS range: " << mMinChi2PerClusterITS << " - " << mMaxChi2PerClusterITS;
 }
 
 void V0PhotonCut::SetIsWithinBeamPipe(bool flag)

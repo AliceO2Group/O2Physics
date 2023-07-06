@@ -75,8 +75,8 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<LabeledArray<float>> cutsGammaK0sLambda{"cutsGammaK0sLambda", {cutsV0s[0], 1, 6, labelsEmpty, labelsColumnsV0s}, "Selections for V0s (gamma, K0s, Lambda) for D+V0 triggers"};
   Configurable<LabeledArray<float>> maxDeltaMassCharmReso{"maxDeltaMassCharmReso", {cutsMassCharmReso[0], 1, 6, labelsEmpty, labelsColumnsDeltaMasseCharmReso}, "maximum invariant-mass delta for charm hadron resonances in GeV/c2"};
 
-  // parameters for charm baryons to Xi + bachelor
-  Configurable<LabeledArray<float>> cutsXiCascades{"cutsXiCascades", {cutsCascades[0], 1, 4, labelsEmpty, labelsColumnsCascades}, "Selections for cascades (Xi) for Xi+bachelor triggers"};
+  // parameters for charm baryons to Xi bachelor
+  Configurable<LabeledArray<float>> cutsXiCascades{"cutsXiCascades", {cutsCascades[0], 1, 7, labelsEmpty, labelsColumnsCascades}, "Selections for cascades (Xi) for Xi+bachelor triggers"};
   Configurable<float> minPtCharmBaryon{"minPtCharmBaryon", 3.f, "minimum pT for Xic and Omegac baryons decaying into Xi pi/K"};
 
   // parameters for ML application with ONNX
@@ -930,7 +930,7 @@ struct HfFilter { // Main struct for HF triggers
           auto v0Element = v0.v0Data_as<aod::V0Datas>();
           auto v0DauPos = v0Element.posTrack_as<BigTracksPID>();
           auto v0DauNeg = v0Element.negTrack_as<BigTracksPID>();
-          if (!isSelectedCascade(casc, v0Element, std::array{bachelorCasc, v0DauPos, v0DauNeg}, collision, cutsXiCascades->get(0u, 0u), cutsXiCascades->get(0u, 1u), cutsXiCascades->get(0u, 2u), cutsXiCascades->get(0u, 3u), setTPCCalib, hMapPion, hMapProton, hBBPion, hBBProton)) {
+          if (!isSelectedCascade(casc, v0Element, std::array{bachelorCasc, v0DauPos, v0DauNeg}, collision, cutsXiCascades->get(0u, 0u), cutsXiCascades->get(0u, 1u), cutsXiCascades->get(0u, 2u), cutsXiCascades->get(0u, 3u), cutsXiCascades->get(0u, 4u), cutsXiCascades->get(0u, 5u), cutsXiCascades->get(0u, 6u), setTPCCalib, hMapPion, hMapProton, hBBPion, hBBProton)) {
             continue;
           }
           if (activateQA) {
