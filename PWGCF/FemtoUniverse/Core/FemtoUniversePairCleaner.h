@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -11,13 +11,14 @@
 
 /// \file FemtoUniversePairCleaner.h
 /// \brief FemtoUniversePairCleaner - Makes sure only proper candidates are paired
-/// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de, Laura Serksnyte <laura.serksnyte@cern.ch>, TU München
-/// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
+/// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Laura Serksnyte, TU München,laura.serksnyte@cern.ch
+/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRCLEANER_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRCLEANER_H_
 
-#include "PWGCF/FemtoUniverse/DataModel/FemtoUniverseDerived.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2::framework;
@@ -69,16 +70,12 @@ class FemtoUniversePairCleaner
         LOG(fatal) << "FemtoUniversePairCleaner: passed arguments don't agree with FemtoUniversePairCleaner instantiation! Please provide second argument kV0 candidate.";
         return false;
       }
-      uint64_t id1 = part2.index() - 2;
-      uint64_t id2 = part2.index() - 1;
-      auto daughter1 = particles.begin() + id1;
-      auto daughter2 = particles.begin() + id2;
-      if ((*daughter1).indices()[0] <= 0 && (*daughter1).indices()[1] <= 0 && (*daughter2).indices()[0] <= 0 && (*daughter2).indices()[1] <= 0) {
+      const auto& posChild = particles.iteratorAt(part2.index() - 2);
+      const auto& negChild = particles.iteratorAt(part2.index() - 1);
+      if (part1.globalIndex() != posChild.globalIndex() || part2.globalIndex() != negChild.globalIndex()) {
         return true;
       }
       return false;
-    } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
-      return true;
     } else {
       LOG(fatal) << "FemtoUniversePairCleaner: Combination of objects not defined - quitting!";
       return false;
