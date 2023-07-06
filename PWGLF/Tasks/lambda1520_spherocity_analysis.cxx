@@ -58,11 +58,13 @@ struct myTable {
 
   void init(InitContext const&)
   {
+    const AxisSpec axPhi(632, -0.1, 6.31, "#phi");
     const AxisSpec axSp(120, -0.1, 1.1, "s_{0}");
     const AxisSpec axMult(10, 0, 10, "Mult");
     const AxisSpec axCtr(1, 0, 1, "CTR");
     histos.add("hCtr", "CTR", kTH1F, {axCtr});
     histos.add("hMult", "MULT", kTH1F, {axMult});
+    histos.add("hPhi", "#phi-distribution", kTH1F, {axPhi});
     histos.add("hSp", "Transverse Spherocity", kTH1F, {axSp});
   }
 
@@ -73,6 +75,7 @@ struct myTable {
     for (auto const& trk1 : tracks) {
       float sum1 = 0;
       float phi1 = trk1.phi();
+      histos.fill(HIST("hPhi"), phi1);
       int ctr = 0;
       for (auto const& trk2 : tracks) {
         ++ctr;
