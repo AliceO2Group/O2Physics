@@ -30,8 +30,25 @@ namespace dpgcollision
 {
 DECLARE_SOA_INDEX_COLUMN(BC, bc);
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
+DECLARE_SOA_COLUMN(IsEventSelected, isEventSelected, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
+DECLARE_SOA_COLUMN(NumTracksAll, numTracksAll, int);
+DECLARE_SOA_COLUMN(NumTracksFiltered, numTracksFiltered, int);
+DECLARE_SOA_COLUMN(GlobalBcInRun, globalBcInRun, int);
+DECLARE_SOA_COLUMN(Ft0PosZ, ft0PosZ, int);
+DECLARE_SOA_COLUMN(SignalFT0A, signalFT0A, int);
+DECLARE_SOA_COLUMN(SignalFT0C, signalFT0C, int);
+DECLARE_SOA_COLUMN(SignalFT0M, signalFT0M, int);
+DECLARE_SOA_COLUMN(SignalV0A, signalV0A, int);
+DECLARE_SOA_COLUMN(CollIDMC, collIDMC, float);
+DECLARE_SOA_COLUMN(PosXMC, posXMC, float);
+DECLARE_SOA_COLUMN(PosYMC, posYMC, float);
+DECLARE_SOA_COLUMN(PosZMC, posZMC, float);
+DECLARE_SOA_COLUMN(CollisionTimeMC, collisionTimeMC, float);
+DECLARE_SOA_COLUMN(DpgCounterCollision, dpgCounterCollision, int);
+DECLARE_SOA_COLUMN(DpgCounterDF, dpgCounterDF, int);
+DECLARE_SOA_COLUMN(IsFakeCollision, isFakeCollision, int);
 } // namespace dpgcollision
 
 DECLARE_SOA_TABLE(DPGCollisions, "AOD", "DPGCollisions", //! Table of the DPG collisions
@@ -39,6 +56,40 @@ DECLARE_SOA_TABLE(DPGCollisions, "AOD", "DPGCollisions", //! Table of the DPG co
                   dpgcollision::IsEventReject,
                   dpgcollision::RunNumber,
                   dpgcollision::NumContrib);
+
+DECLARE_SOA_TABLE(DPGCollsBig, "AOD", "DPGCollsBig", //! Big table of the DPG collisions
+                  dpgcollision::IsEventSelected,
+                  dpgcollision::RunNumber,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
+                  collision::CovXX,
+                  collision::CovXY,
+                  collision::CovXZ,
+                  collision::CovYY,
+                  collision::CovYZ,
+                  collision::CovZZ,
+                  dpgcollision::NumContrib,
+                  dpgcollision::NumTracksAll,
+                  dpgcollision::NumTracksFiltered,
+                  collision::Chi2,
+                  dpgcollision::GlobalBcInRun,
+                  dpgcollision::Ft0PosZ,
+                  dpgcollision::SignalFT0A,
+                  dpgcollision::SignalFT0C,
+                  dpgcollision::SignalFT0M,
+                  dpgcollision::SignalV0A,
+                  collision::CollisionTime,
+                  collision::CollisionTimeRes,
+                  dpgcollision::DpgCounterCollision, /// counter to give a unique ID to each collision
+                  dpgcollision::DpgCounterDF,        /// counter to give a unique ID to data each dataframe
+                  /// MC info
+                  dpgcollision::CollIDMC, /// unique only if combined with DF counter (dpgcollision::DpgCounterDF)
+                  dpgcollision::PosXMC,
+                  dpgcollision::PosYMC,
+                  dpgcollision::PosZMC,
+                  dpgcollision::CollisionTimeMC,
+                  dpgcollision::IsFakeCollision); /// -1: unknown (data); 0: not fake; 1: fake (== it does not correspond to any MC collision)
 
 namespace dpgtrack
 {
@@ -77,17 +128,17 @@ DECLARE_SOA_TABLE(DPGTracks, "AOD", "DPGTracks", //! Table of the DPG tracks
 
 namespace dpgparticles
 {
-DECLARE_SOA_COLUMN(PtMC, ptMC, float);                   //! Pt MC
-DECLARE_SOA_COLUMN(EtaMC, etaMC, float);                 //! Eta MC
-DECLARE_SOA_COLUMN(PhiMC, phiMC, float);                 //! Phi MC
-DECLARE_SOA_COLUMN(ProductionMode, productionMode, int); //! ProductionMode i.e. non matched (-1), physical primary (0), weak decay product (1) or material (2)
-DECLARE_SOA_DYNAMIC_COLUMN(IsNonMatched, isNonMatched,   //! True if particle is considered a non matched particle
+DECLARE_SOA_COLUMN(PtMC, ptMC, float);                           //! Pt MC
+DECLARE_SOA_COLUMN(EtaMC, etaMC, float);                         //! Eta MC
+DECLARE_SOA_COLUMN(PhiMC, phiMC, float);                         //! Phi MC
+DECLARE_SOA_COLUMN(ProductionMode, productionMode, int);         //! ProductionMode i.e. non matched (-1), physical primary (0), weak decay product (1) or material (2)
+DECLARE_SOA_DYNAMIC_COLUMN(IsNonMatched, isNonMatched,           //! True if particle is considered a non matched particle
                            [](int mode) -> bool { return mode == -1; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, //! True if particle is considered a physical primary according to the ALICE definition
                            [](int mode) -> bool { return mode == 0; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsFromWeakDecay, isFromWeakDecay, //! True if particle is considered from a weak decay
+DECLARE_SOA_DYNAMIC_COLUMN(IsFromWeakDecay, isFromWeakDecay,     //! True if particle is considered from a weak decay
                            [](int mode) -> bool { return mode == 1; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsFromMaterial, isFromMaterial, //! True if particle is considered from a weak decay
+DECLARE_SOA_DYNAMIC_COLUMN(IsFromMaterial, isFromMaterial,       //! True if particle is considered from a weak decay
                            [](int mode) -> bool { return mode == 2; });
 
 } // namespace dpgparticles
