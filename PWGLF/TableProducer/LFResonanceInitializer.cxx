@@ -139,8 +139,9 @@ struct reso2initializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 113)     // rho(770)
                                                     || (nabs(aod::mcparticle::pdgCode) == 213)     // rho(770)pm
                                                     || (nabs(aod::mcparticle::pdgCode) == 3224)    // Sigma(1385)+
-                                                    || (nabs(aod::mcparticle::pdgCode) == 3124)    // Sigma(1385)-
+                                                    || (nabs(aod::mcparticle::pdgCode) == 3124)    // Lambda(1520)
                                                     || (nabs(aod::mcparticle::pdgCode) == 3324)    // Xi(1530)0
+                                                    || (nabs(aod::mcparticle::pdgCode) == 10323)   // K1(1270)+
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
