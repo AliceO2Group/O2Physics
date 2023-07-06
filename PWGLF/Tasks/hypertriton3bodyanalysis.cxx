@@ -208,7 +208,7 @@ struct hypertriton3bodyAnalysis {
             registry.fill(HIST("hSelectedCandidatesCounter"), 8.5);
 
             registry.fill(HIST("hPtProton"), vtx.track0pt());
-            registry.fill(HIST("hPtPion"), vtx.track1pt());
+            registry.fill(HIST("hPtAntiPion"), vtx.track1pt());
             registry.fill(HIST("hPtDeuteron"), vtx.track2pt());
             registry.fill(HIST("hMassHypertriton"), vtx.mHypertriton());
             registry.fill(HIST("hMassHypertritonTotal"), vtx.mHypertriton());
