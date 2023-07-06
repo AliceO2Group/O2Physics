@@ -126,6 +126,42 @@ static const std::vector<std::string> labelsPt{};
 static const std::vector<std::string> labelsCutBdt = {"BDTbkg", "BDTprompt", "BDTnonprompt"};
 } // namespace hf_cuts_bdt_multiclass
 
+namespace hf_cuts_ml
+{
+// direction of the cut
+enum CutDirection {
+  CutGreater = 0, // require score < cut value
+  CutSmaller,     // require score > cut value
+  CutNot          // do not cut on score
+};
+
+static constexpr int nBinsPt = 1;
+static constexpr int nCutScores = 3;
+// default values for the pT bin edges, offset by 1 from the bin numbers in cuts array
+constexpr double binsPt[nBinsPt + 1] = {
+  0.,
+  1000};
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+
+// default values for the ML model paths, one model per pT bin
+static const std::vector<std::string> modelPaths = {
+  ""};
+
+// default values for the cut directions
+constexpr int cutDir[nCutScores] = {CutGreater, CutSmaller, CutSmaller};
+auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
+
+// default values for the cuts
+constexpr double cuts[nBinsPt][nCutScores] = {{0.5, 0.5, 0.5}};
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0"};
+
+// column labels
+static const std::vector<std::string> labelsCutScore = {"score class 1", "score class 2", "score class 3"};
+} // namespace hf_cuts_ml
+
 namespace hf_cuts_presel_2prong
 {
 static constexpr int nBinsPt = 2;
