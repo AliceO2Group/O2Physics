@@ -342,8 +342,7 @@ struct JetFragmentation {
             registry.fill(HIST("jets/fakeDetJetPtFrag"), detJet.pt(), detChargeFrag);
           } // if track is not matched
         }   // for detJet tracks
-      }     // if detJet has a match
-      else if (!detJet.has_matchedJetGeo()) {
+      } else if (!detJet.has_matchedJetGeo()) {
         for (const auto& track : detJet.tracks_as<McTracks>()) {
           double detChargeFrag = -1., detTrackProj = -1.;
           detTrackProj = track.px() * detJet.px() + track.py() * detJet.py() + track.pz() * detJet.pz();
