@@ -15,8 +15,11 @@
 #ifndef PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 #define PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 
-#include "Common/Core/TrackSelectorPID.h"
+#include <vector>
+
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelectorPID.h"
+
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
@@ -27,6 +30,7 @@ enum SelectionStep {
   RecoSkims = 0,
   RecoTopol,
   RecoPID,
+  RecoMl,
   NSelectionSteps
 };
 
@@ -97,9 +101,12 @@ DECLARE_SOA_TABLE(HfSelD0Alice3Forward, "AOD", "HFSELD0A3F", //!
 namespace hf_sel_candidate_dplus
 {
 DECLARE_SOA_COLUMN(IsSelDplusToPiKPi, isSelDplusToPiKPi, int); //!
+DECLARE_SOA_COLUMN(MlProbDplusToPiKPi, mlProbDplusToPiKPi, std::vector<float>); //!
 } // namespace hf_sel_candidate_dplus
 DECLARE_SOA_TABLE(HfSelDplusToPiKPi, "AOD", "HFSELDPLUS", //!
                   hf_sel_candidate_dplus::IsSelDplusToPiKPi);
+DECLARE_SOA_TABLE(HfMlDplusToPiKPi, "AOD", "HFMLDPLUS", //!
+                  hf_sel_candidate_dplus::MlProbDplusToPiKPi);
 
 namespace hf_sel_candidate_ds
 {
@@ -351,12 +358,14 @@ DECLARE_SOA_COLUMN(TofNSigmaPiFromOmega, tofNSigmaPiFromOmega, float);
 DECLARE_SOA_COLUMN(TofNSigmaPiFromCasc, tofNSigmaPiFromCasc, float);
 DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
 DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
+DECLARE_SOA_COLUMN(PidTpcInfoStored, pidTpcInfoStored, int);
+DECLARE_SOA_COLUMN(PidTofInfoStored, pidTofInfoStored, int);
 
 } // namespace hf_sel_toxipi
 DECLARE_SOA_TABLE(HfSelToXiPi, "AOD", "HFSELTOXIPI",
                   hf_sel_toxipi::StatusPidLambda, hf_sel_toxipi::StatusPidCascade, hf_sel_toxipi::StatusPidOmegac,
                   hf_sel_toxipi::StatusInvMassLambda, hf_sel_toxipi::StatusInvMassCascade, hf_sel_toxipi::StatusInvMassOmegac,
-                  hf_sel_toxipi::ResultSelections,
+                  hf_sel_toxipi::ResultSelections, hf_sel_toxipi::PidTpcInfoStored, hf_sel_toxipi::PidTofInfoStored,
                   hf_sel_toxipi::TpcNSigmaPiFromOmega, hf_sel_toxipi::TpcNSigmaPiFromCasc, hf_sel_toxipi::TpcNSigmaPiFromLambda, hf_sel_toxipi::TpcNSigmaPrFromLambda,
                   hf_sel_toxipi::TofNSigmaPiFromOmega, hf_sel_toxipi::TofNSigmaPiFromCasc, hf_sel_toxipi::TofNSigmaPiFromLambda, hf_sel_toxipi::TofNSigmaPrFromLambda);
 

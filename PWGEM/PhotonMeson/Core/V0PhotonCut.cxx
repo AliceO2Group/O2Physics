@@ -18,7 +18,7 @@
 
 ClassImp(V0PhotonCut);
 
-const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "V0PtRange", "V0EtaRange", "PsiPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz", "IsWithinBeamPipe", "RequireITS", "TPConly", "AntiTPConly"};
+const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "V0PtRange", "V0EtaRange", "AP", " PsiPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "IsWithinBeamPipe", "RequireITSTPC", "RequireITSonly", "TPConly", "AntiTPConly"};
 
 void V0PhotonCut::SetV0PtRange(float minPt, float maxPt)
 {
@@ -44,6 +44,12 @@ void V0PhotonCut::SetPsiPairRange(float min, float max)
   mMaxPsiPair = max;
   LOG(info) << "V0 Photon selection, set psi pair range: " << mMinPsiPair << " - " << mMaxPsiPair;
 }
+void V0PhotonCut::SetAPRange(float max_alpha, float max_qt)
+{
+  mMaxAlpha = max_alpha;
+  mMaxQt = max_qt;
+  LOG(info) << "V0 Photon selection, set Armenteroz-Podolanski range: " << mMaxAlpha << " - " << mMaxQt;
+}
 void V0PhotonCut::SetMaxMeePsiPairDep(std::function<float(float)> psiDepCut)
 {
   mMaxMeePsiPairDep = psiDepCut;
@@ -64,6 +70,11 @@ void V0PhotonCut::SetMaxPCA(float max)
 {
   mMaxPCA = max;
   LOG(info) << "V0 Photon Cut, set max distance between 2 legs: " << mMaxPCA;
+}
+void V0PhotonCut::SetMaxMarginZ(float max)
+{
+  mMaxMarginZ = max;
+  LOG(info) << "V0 Photon Cut, set max margin z: " << mMaxMarginZ;
 }
 void V0PhotonCut::SetOnWwireIB(bool flag)
 {
@@ -114,10 +125,11 @@ void V0PhotonCut::SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRow
   mMinNCrossedRowsOverFindableClustersTPC = minNCrossedRowsOverFindableClustersTPC;
   LOG(info) << "V0 Photon Cut, set min N crossed rows over findable clusters TPC: " << mMinNCrossedRowsOverFindableClustersTPC;
 }
-void V0PhotonCut::SetMaxChi2PerClusterTPC(float maxChi2PerClusterTPC)
+void V0PhotonCut::SetChi2PerClusterTPC(float min, float max)
 {
-  mMaxChi2PerClusterTPC = maxChi2PerClusterTPC;
-  LOG(info) << "V0 Photon Cut, set max chi2 per cluster TPC: " << mMaxChi2PerClusterTPC;
+  mMinChi2PerClusterTPC = min;
+  mMaxChi2PerClusterTPC = max;
+  LOG(info) << "V0 Photon Cut, set chi2 per cluster TPC range: " << mMinChi2PerClusterTPC << " - " << mMaxChi2PerClusterTPC;
 }
 void V0PhotonCut::SetMaxDcaXY(float maxDcaXY)
 {
@@ -136,28 +148,47 @@ void V0PhotonCut::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
   LOG(info) << "V0 Photon Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
 }
 
+void V0PhotonCut::SetNClustersITS(int min, int max)
+{
+  mMinNClustersITS = min;
+  mMaxNClustersITS = max;
+  LOG(info) << "V0 Photon Cut, set N clusters ITS range: " << mMinNClustersITS << " - " << mMaxNClustersITS;
+}
+void V0PhotonCut::SetChi2PerClusterITS(float min, float max)
+{
+  mMinChi2PerClusterITS = min;
+  mMaxChi2PerClusterITS = max;
+  LOG(info) << "V0 Photon Cut, set chi2 per cluster ITS range: " << mMinChi2PerClusterITS << " - " << mMaxChi2PerClusterITS;
+}
+
 void V0PhotonCut::SetIsWithinBeamPipe(bool flag)
 {
   mIsWithinBP = flag;
   LOG(info) << "V0 Photon Cut, propagated to within beam pipe: " << mIsWithinBP;
 }
 
-void V0PhotonCut::SetRequireITS(bool flag)
+void V0PhotonCut::SetRequireITSTPC(bool flag)
 {
-  mRequireITS = flag;
-  LOG(info) << "V0 Photon Cut, require ITS hit: " << mRequireITS;
+  mRequireITSTPC = flag;
+  LOG(info) << "V0 Photon Cut, require ITS-TPC matched track: " << mRequireITSTPC;
+}
+
+void V0PhotonCut::SetRequireITSonly(bool flag)
+{
+  mRequireITSonly = flag;
+  LOG(info) << "V0 Photon Cut, require ITS only track: " << mRequireITSonly;
 }
 
 void V0PhotonCut::SetRequireTPConly(bool flag)
 {
   mRequireTPConly = flag;
-  LOG(info) << "V0 Photon Cut, require TPConly: " << mRequireTPConly;
+  LOG(info) << "V0 Photon Cut, require TPConly track: " << mRequireTPConly;
 }
 
 void V0PhotonCut::SetRequireAntiTPConly(bool flag)
 {
   mRequireAntiTPConly = flag;
-  LOG(info) << "V0 Photon Cut, require AntiTPConly: " << mRequireAntiTPConly;
+  LOG(info) << "V0 Photon Cut, require AntiTPConly track: " << mRequireAntiTPConly;
 }
 
 void V0PhotonCut::print() const

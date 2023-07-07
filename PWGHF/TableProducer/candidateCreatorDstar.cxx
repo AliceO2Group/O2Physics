@@ -15,17 +15,12 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
 #include "Framework/AnalysisTask.h"
-// #include "DetectorsVertexing/DCAFitterN.h"
-// #include "Common/Core/trackUtilities.h"
-// #include "ReconstructionDataFormats/DCA.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-
 #include "Framework/runDataProcessing.h"
+
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
-// using namespace o2::aod::hf_cand;
-// using namespace o2::aod::hf_cand_2prong;
 
 /// Reconstruction of D* decay candidates
 struct HfCandidateCreatorDstar {

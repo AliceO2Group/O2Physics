@@ -47,6 +47,8 @@ struct DGCandProducer {
   Produces<aod::UDTracksPID> outputTracksPID;
   Produces<aod::UDTracksExtra> outputTracksExtra;
   Produces<aod::UDTracksFlags> outputTracksFlag;
+  Produces<aod::UDFwdTracks> outputFwdTracks;
+  Produces<aod::UDFwdTracksExtra> outputFwdTracksExtra;
 
   // MC tables
   Produces<aod::UDMcCollisions> outputMcCollisions;
@@ -222,8 +224,23 @@ struct DGCandProducer {
                       track.detectorMap());
     outputTracksFlag(track.has_collision(),
                      track.isPVContributor());
-    LOGF(debug, "<DGCandProducer> %d %d  %d %f %f %f %f %f",
-         track.isPVContributor(), track.isQualityTrack(), track.isGlobalTrack(), track.px(), track.py(), track.pz(), track.pt(), track.p());
+  }
+
+  // function to update UDFwdTracks, UDFwdTracksExtra
+  template <typename TFwdTrack>
+  void updateUDFwdTrackTables(TFwdTrack const& fwdtrack, uint64_t const& bcnum)
+  {
+    outputFwdTracks(outputCollisions.lastIndex(),
+                    fwdtrack.px(), fwdtrack.py(), fwdtrack.pz(), fwdtrack.sign(),
+                    bcnum, fwdtrack.trackTime(), fwdtrack.trackTimeRes());
+    outputFwdTracksExtra(fwdtrack.nClusters(),
+                         fwdtrack.pDca(),
+                         fwdtrack.rAtAbsorberEnd(),
+                         fwdtrack.chi2(),
+                         fwdtrack.chi2MatchMCHMID(),
+                         fwdtrack.mchBitMap(),
+                         fwdtrack.midBitMap(),
+                         fwdtrack.midBoards());
   }
 
   // this function properly updates UDMcCollisions and UDMcParticles and returns the value
@@ -345,6 +362,11 @@ struct DGCandProducer {
       // update DGTracks tables
       for (auto& track : tracks) {
         updateUDTrackTables(track, bc.globalBC());
+      }
+
+      // update DGFwdTracks tables
+      for (auto& fwdtrack : fwdtracks) {
+        updateUDFwdTrackTables(fwdtrack, bc.globalBC());
       }
 
       // produce TPC signal histograms for 2-track events

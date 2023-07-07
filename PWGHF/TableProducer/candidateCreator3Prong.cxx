@@ -15,33 +15,26 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include "Framework/AnalysisTask.h"
 #include "DCAFitter/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+
+#include "Common/Core/trackUtilities.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_3prong;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
-  workflowOptions.push_back(optionDoMC);
-}
-
-#include "Framework/runDataProcessing.h"
-
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreator3Prong {
   Produces<aod::HfCand3ProngBase> rowCandidateBase;
 
   // vertexing
-  Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
-  // Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
@@ -54,7 +47,6 @@ struct HfCandidateCreator3Prong {
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
@@ -84,20 +76,22 @@ struct HfCandidateCreator3Prong {
 
   void init(InitContext const&)
   {
+    if (doprocessPvRefit && doprocessNoPvRefit) {
+      LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
+    }
+
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbPathGeo);
-    }
     runNumber = 0;
   }
 
-  void process(aod::Collisions const& collisions,
-               soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
-               aod::BigTracks const& tracks,
-               aod::BCsWithTimestamps const& bcWithTimeStamps)
+  template <bool doPvRefit = false, typename Cand>
+  void runCreator3Prong(aod::Collisions const& collisions,
+                        Cand const& rowsTrackIndexProng3,
+                        aod::BigTracks const& tracks,
+                        aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df;
@@ -112,9 +106,9 @@ struct HfCandidateCreator3Prong {
 
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
-      auto track0 = rowTrackIndexProng3.prong0_as<aod::BigTracks>();
-      auto track1 = rowTrackIndexProng3.prong1_as<aod::BigTracks>();
-      auto track2 = rowTrackIndexProng3.prong2_as<aod::BigTracks>();
+      auto track0 = rowTrackIndexProng3.template prong0_as<aod::BigTracks>();
+      auto track1 = rowTrackIndexProng3.template prong1_as<aod::BigTracks>();
+      auto track2 = rowTrackIndexProng3.template prong2_as<aod::BigTracks>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
@@ -123,7 +117,7 @@ struct HfCandidateCreator3Prong {
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
         initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
@@ -161,7 +155,7 @@ struct HfCandidateCreator3Prong {
       // This modifies track momenta!
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
-      if (doPvRefit) {
+      if constexpr (doPvRefit) {
         /// use PV refit
         /// Using it in the rowCandidateBase all dynamic columns shall take it into account
         // coordinates
@@ -223,6 +217,26 @@ struct HfCandidateCreator3Prong {
       }
     }
   }
+
+  void processPvRefit(aod::Collisions const& collisions,
+                      soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                      aod::BigTracks const& tracks,
+                      aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong<true>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefit, "Run candidate creator with PV refit", false);
+
+  void processNoPvRefit(aod::Collisions const& collisions,
+                        aod::Hf3Prongs const& rowsTrackIndexProng3,
+                        aod::BigTracks const& tracks,
+                        aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefit, "Run candidate creator without PV refit", true);
 };
 
 /// Extends the base table with expression columns.
@@ -247,9 +261,9 @@ struct HfCandidateCreator3ProngExpressions {
     int8_t channel = 0;
     std::vector<int> arrDaughIndex;
     std::array<int, 2> arrPDGDaugh;
-    std::array<int, 2> arrPDGResonant1 = {kProton, 313};  // Λc± → p± K*
-    std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};  // Λc± → Δ(1232)±± K∓
-    std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus}; // Λc± → Λ(1520) π±
+    std::array<int, 2> arrPDGResonant1 = {kProton, 313};       // Λc± → p± K*
+    std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};       // Λc± → Δ(1232)±± K∓
+    std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus};      // Λc± → Λ(1520) π±
     std::array<int, 2> arrPDGResonantDsPhiPi = {333, kPiPlus}; // Ds± → Phi π±
     std::array<int, 2> arrPDGResonantDsKstarK = {313, kKPlus}; // Ds± → K*(892)0bar K±
 

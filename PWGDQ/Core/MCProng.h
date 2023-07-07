@@ -52,8 +52,8 @@ A few non-existent PYTHIA codes are used to select more than one PYTHIA code.
 5001 - open beauty baryons                         5000-5499
 */
 
-#ifndef MCProng_H
-#define MCProng_H
+#ifndef PWGDQ_CORE_MCPRONG_H_
+#define PWGDQ_CORE_MCPRONG_H_
 
 #include "TNamed.h"
 
@@ -78,8 +78,10 @@ class MCProng
 
   MCProng();
   MCProng(int n);
+  MCProng(int n, int m);
   MCProng(int n, std::vector<int> pdgs, std::vector<bool> checkBothCharges, std::vector<bool> excludePDG,
-          std::vector<uint64_t> sourceBits, std::vector<uint64_t> excludeSource, std::vector<bool> useANDonSourceBitMap, bool fCheckGenerationsInTime = false);
+          std::vector<uint64_t> sourceBits, std::vector<uint64_t> excludeSource, std::vector<bool> useANDonSourceBitMap,
+          bool checkGenerationsInTime = false, std::vector<int> checkIfPDGInHistory = {}, std::vector<bool> excludePDGInHistory = {});
   MCProng(const MCProng& c) = default;
   virtual ~MCProng() = default;
 
@@ -100,7 +102,9 @@ class MCProng
   std::vector<uint64_t> fExcludeSource;
   std::vector<bool> fUseANDonSourceBitMap;
   bool fCheckGenerationsInTime;
+  std::vector<int> fPDGInHistory;
+  std::vector<bool> fExcludePDGInHistory;
 
   ClassDef(MCProng, 2);
 };
-#endif
+#endif // PWGDQ_CORE_MCPRONG_H_

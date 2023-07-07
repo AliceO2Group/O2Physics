@@ -19,6 +19,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 #include "SimulationDataFormat/MCTrack.h"
+#include "PWGEM/Dilepton/Utils/MomentumSmearer.h"
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
 #include "TFile.h"
@@ -114,6 +115,10 @@ struct lmeelfcocktail {
   int nbDCAtemplate;
   TH1F** fh_DCAtemplates;
 
+  MomentumSmearer smearer;
+
+  Double_t eMass;
+
   Configurable<int> fCollisionSystem{"cfgCollisionSystem", 200, "set the collision system"};
   Configurable<bool> fConfigWriteTTree{"cfgWriteTTree", false, "write tree output"};
   Configurable<bool> fConfigDoPairing{"cfgDoPairing", true, "do like and unlike sign pairing"};
@@ -126,7 +131,6 @@ struct lmeelfcocktail {
   Configurable<int> fConfigNBinsPtee{"cfgNBinsPtee", 400, "number of bins in pT"};
   Configurable<float> fConfigMinPtee{"cfgMinPtee", 0.0, "lowest bin in pT"};
   Configurable<float> fConfigMaxPtee{"cfgMaxPtee", 10.0, "hightest bin in pT"};
-  Configurable<int> fConfigResolType{"cfgResolType", 2, "set resolution type"};
   Configurable<int> fConfigALTweight{"cfgALTweight", 1, "set alternative weighting type"};
   Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
   Configurable<std::string> fConfigEffFileName{"cfgEffFileName", "", "name of efficiency file"};
@@ -182,16 +186,17 @@ struct lmeelfcocktail {
     }
 
     GetEffHisto(TString(fConfigEffFileName), TString(fConfigEffHistName));
-    if (fConfigResolType == 1) {
-      GetResHisto(TString(fConfigResFileName), TString(fConfigResPHistName));
-    } else if (fConfigResolType == 2) {
-      GetResHisto(TString(fConfigResFileName), TString(fConfigResPtHistName), TString(fConfigResEtaHistName), TString(fConfigResPhiPosHistName), TString(fConfigResPhiNegHistName));
-    }
+
+    InitSmearer(TString(fConfigResFileName), TString(fConfigResPtHistName), TString(fConfigResEtaHistName), TString(fConfigResPhiPosHistName), TString(fConfigResPhiNegHistName));
+
     GetDCATemplates(TString(fConfigDCAFileName), TString(fConfigDCAHistName));
     GetMultHisto(TString(fConfigMultFileName), TString(fConfigMultHistPtName), TString(fConfigMultHistPt2Name), TString(fConfigMultHistMtName), TString(fConfigMultHistMt2Name));
     if (fConfigDoVirtPh) {
       GetPhotonPtParametrization(TString(fConfigPhotonPtFileName), TString(fConfigPhotonPtDirName), TString(fConfigPhotonPtFuncName));
     }
+
+    eMass = (TDatabasePDG::Instance()->GetParticle(11))->Mass();
+
     fillKrollWada();
   }
 
@@ -428,16 +433,17 @@ struct lmeelfcocktail {
 
         // Resolution and acceptance
         //-------------------------
+        int ch1 = 1;
+        int ch2 = 1;
         if (mctrack.GetPdgCode() > 0) {
-          dau1 = ApplyResolution(dau1, -1, fConfigResolType);
-        } else {
-          dau1 = ApplyResolution(dau1, 1, fConfigResolType);
+          ch1 = -1;
         }
         if (mctrack2.GetPdgCode() > 0) {
-          dau2 = ApplyResolution(dau2, -1, fConfigResolType);
-        } else {
-          dau2 = ApplyResolution(dau2, 1, fConfigResolType);
+          ch2 = -1;
         }
+        dau1 = applySmearingPxPyPzE(ch1, dau1);
+        dau2 = applySmearingPxPyPzE(ch2, dau2);
+
         treeWords.fpass = true;
         if (dau1.Pt() < fConfigMinPt || dau2.Pt() < fConfigMinPt)
           treeWords.fpass = false; // leg pT cut
@@ -614,8 +620,8 @@ struct lmeelfcocktail {
 
             // Resolution and acceptance
             //-------------------------
-            dau1 = ApplyResolution(dau1, 1, fConfigResolType);
-            dau2 = ApplyResolution(dau2, -1, fConfigResolType);
+            dau1 = applySmearingPxPyPzE(1, dau1);
+            dau2 = applySmearingPxPyPzE(-1, dau2);
             treeWords.fpass = true;
             if (dau1.Pt() < fConfigMinPt || dau2.Pt() < fConfigMinPt)
               treeWords.fpass = false; // leg pT cut
@@ -707,6 +713,22 @@ struct lmeelfcocktail {
     XYZVector wc = u.Cross(zu);
     outPhiV = TMath::ACos(wc.Unit().Dot(w.Unit()));
     return outPhiV;
+  }
+
+  PxPyPzEVector applySmearingPxPyPzE(int ch, PxPyPzEVector vec)
+  {
+    PxPyPzEVector vecsmeared;
+    float ptsmeared, etasmeared, phismeared;
+    smearer.applySmearing(ch, vec.Pt(), vec.Eta(), vec.Phi(), ptsmeared, etasmeared, phismeared);
+    float sPx = ptsmeared * cos(phismeared);
+    float sPy = ptsmeared * sin(phismeared);
+    float sPz = ptsmeared * sinh(etasmeared);
+    float sP = ptsmeared * cosh(etasmeared);
+    float sE = sqrt(sP * sP + eMass * eMass);
+
+    vecsmeared.SetPxPyPzE(sPx, sPy, sPz, sE);
+
+    return vecsmeared;
   }
 
   void SetHistograms()
@@ -826,109 +848,6 @@ struct lmeelfcocktail {
     tree->Branch("fpass", &treeWords.fpass, "fpass/B");
   }
 
-  PxPyPzEVector ApplyResolution(PxPyPzEVector vec, Char_t ch = 0, Int_t Run = 2)
-  {
-
-    Double_t theta, phi, pt, p, px, py, pz, E, mass, eta;
-    PxPyPzEVector resvec;
-
-    mass = 0.51099906e-3;
-    pt = vec.Pt();
-    p = vec.P();
-    theta = vec.Theta();
-    phi = vec.Phi();
-    eta = vec.Eta();
-
-    if (Run == 0) {
-      resvec = vec;
-    } else if (Run == 1) {
-      TH1D* hisSlice(nullptr);
-      if (fArr) {
-        TH2D* hDeltaPtvsPt = static_cast<TH2D*>(fArr->At(0));
-        // Get the momentum slice histogram for sampling of the smearing
-        // (in some input file versions this also contains a landau fit )
-        // since histogram bins start at 1, we can use the bin number directly for the array index (first slice stored in position 1).
-        Int_t histIndex = hDeltaPtvsPt->GetXaxis()->FindBin(pt);
-        if (histIndex < 1)
-          histIndex = 1; // in case some track is below the first p-bin (which currently starts at 100 MeV).
-        if (histIndex > fArr->GetLast()) {
-          histIndex = fArr->GetLast();
-        }
-        hisSlice = static_cast<TH1D*>(fArr->At(histIndex));
-      }
-      // get smear parameter via random selection from the p slices retreived from the deltaP/P plot
-      Double_t SmearingPPercent(0.);
-      if (hisSlice) {
-        SmearingPPercent = hisSlice->GetRandom();
-      } else {
-        SmearingPPercent = gRandom->Gaus(0, p * sqrt(0.004 * 0.004 + (0.012 * p) * (0.012 * p))) / p; // for B=0.5 Tesla
-      }
-
-      Double_t SmearingP = p * SmearingPPercent;
-      p -= SmearingP;
-      px = p * sin(theta) * cos(phi);
-      py = p * sin(theta) * sin(phi);
-      pz = p * cos(theta);
-      E = sqrt(p * p + mass * mass);
-
-      resvec.SetPxPyPzE(px, py, pz, E);
-
-    } else if (Run == 2) {
-      // smear pt
-      Int_t ptbin = reinterpret_cast<TH2D*>(fArrResoPt->At(0))->GetXaxis()->FindBin(pt);
-      if (ptbin < 1)
-        ptbin = 1;
-      if (ptbin > fArrResoPt->GetLast())
-        ptbin = fArrResoPt->GetLast();
-      Double_t smearing = 0.;
-      TH1D* thisHist = reinterpret_cast<TH1D*>(fArrResoPt->At(ptbin));
-      if (thisHist->GetEntries() > 0) {
-        smearing = thisHist->GetRandom() * pt;
-      }
-      Double_t sPt = pt - smearing;
-
-      // smear eta
-      ptbin = reinterpret_cast<TH2D*>(fArrResoEta->At(0))->GetXaxis()->FindBin(pt);
-      if (ptbin < 1)
-        ptbin = 1;
-      if (ptbin > fArrResoEta->GetLast())
-        ptbin = fArrResoEta->GetLast();
-      smearing = 0.;
-      thisHist = reinterpret_cast<TH1D*>(fArrResoEta->At(ptbin));
-      if (thisHist->GetEntries() > 0) {
-        smearing = thisHist->GetRandom();
-      }
-      Double_t sEta = eta - smearing;
-
-      // smear phi
-      ptbin = reinterpret_cast<TH2D*>(fArrResoPhi_Pos->At(0))->GetXaxis()->FindBin(pt);
-      if (ptbin < 1)
-        ptbin = 1;
-      if (ptbin > fArrResoPhi_Pos->GetLast())
-        ptbin = fArrResoPhi_Pos->GetLast();
-      smearing = 0.;
-      if (ch > 0) {
-        thisHist = reinterpret_cast<TH1D*>(fArrResoPhi_Pos->At(ptbin));
-      } else if (ch < 0) {
-        thisHist = reinterpret_cast<TH1D*>(fArrResoPhi_Neg->At(ptbin));
-      }
-      if (thisHist->GetEntries() > 0) {
-        smearing = thisHist->GetRandom();
-      }
-      Double_t sPhi = phi - smearing;
-
-      Double_t sPx = sPt * cos(sPhi);
-      Double_t sPy = sPt * sin(sPhi);
-      Double_t sPz = sPt * sinh(sEta);
-      Double_t sP = sPt * cosh(sEta);
-      Double_t sE = sqrt(sP * sP + mass * mass);
-
-      resvec.SetPxPyPzE(sPx, sPy, sPz, sE);
-    }
-
-    return resvec;
-  }
-
   void GetEffHisto(TString filename, TString histname)
   {
     // get efficiency histo
@@ -949,71 +868,14 @@ struct lmeelfcocktail {
     fFile->Close();
   }
 
-  void GetResHisto(TString filename, TString ptHistName, TString etaHistName, TString phiPosHistName, TString phiNegHistName)
+  void InitSmearer(TString filename, TString ptHistName, TString etaHistName, TString phiPosHistName, TString phiNegHistName)
   {
-    // get resolutoin histo
-    LOGP(info, "Set Resolution histo");
-    // Get Resolution map
-    TFile* fFile = TFile::Open(filename.Data());
-    if (!fFile) {
-      LOGP(error, "Could not open Resolution file {}", filename.Data());
-      return;
-    }
-    TObjArray* ArrResoPt = nullptr;
-    if (fFile->GetListOfKeys()->Contains(ptHistName.Data())) {
-      ArrResoPt = reinterpret_cast<TObjArray*>(fFile->Get(ptHistName.Data()));
-    } else {
-      LOGP(error, "Could not open {} from file {}", ptHistName.Data(), filename.Data());
-    }
-
-    TObjArray* ArrResoEta = nullptr;
-    if (fFile->GetListOfKeys()->Contains(etaHistName.Data())) {
-      ArrResoEta = reinterpret_cast<TObjArray*>(fFile->Get(etaHistName.Data()));
-    } else {
-      LOGP(error, "Could not open {} from file {}", etaHistName.Data(), filename.Data());
-    }
-
-    TObjArray* ArrResoPhi_Pos = nullptr;
-    if (fFile->GetListOfKeys()->Contains(phiPosHistName.Data())) {
-      ArrResoPhi_Pos = reinterpret_cast<TObjArray*>(fFile->Get(phiPosHistName.Data()));
-    } else {
-      LOGP(error, "Could not open {} from file {}", phiPosHistName.Data(), filename.Data());
-    }
-
-    TObjArray* ArrResoPhi_Neg = nullptr;
-    if (fFile->GetListOfKeys()->Contains(phiNegHistName.Data())) {
-      ArrResoPhi_Neg = reinterpret_cast<TObjArray*>(fFile->Get(phiNegHistName.Data()));
-    } else {
-      LOGP(error, "Could not open {} from file {}", phiNegHistName.Data(), filename.Data());
-    }
-    fArrResoPt = ArrResoPt;
-    fArrResoEta = ArrResoEta;
-    fArrResoPhi_Pos = ArrResoPhi_Pos;
-    fArrResoPhi_Neg = ArrResoPhi_Neg;
-    fFile->Close();
-  }
-
-  void GetResHisto(TString filename, TString pHistName)
-  {
-    // get resolutoin histo
-    LOGP(info, "Set Resolution histo");
-    // Get Resolution map
-    TFile* fFile = TFile::Open(filename.Data());
-    if (!fFile) {
-      LOGP(error, "Could not open Resolution file {}", filename.Data());
-      LOGP(error, "No resolution array set! Using internal parametrization");
-      return;
-    }
-    TObjArray* ArrResoP = 0x0;
-    if (fFile->GetListOfKeys()->Contains(pHistName.Data())) {
-      ArrResoP = reinterpret_cast<TObjArray*>(fFile->Get(pHistName.Data()));
-    } else {
-      LOGP(error, "Could not open {} from file {}", pHistName.Data(), filename.Data());
-      LOGP(error, "No resolution array set! Using internal parametrization");
-    }
-
-    fArr = ArrResoP;
-    fFile->Close();
+    smearer.setResFileName(filename);
+    smearer.setResPtHistName(ptHistName);
+    smearer.setResEtaHistName(etaHistName);
+    smearer.setResPhiPosHistName(phiPosHistName);
+    smearer.setResPhiNegHistName(phiNegHistName);
+    smearer.init();
   }
 
   void GetDCATemplates(TString filename, TString histname)
@@ -1125,15 +987,14 @@ struct lmeelfcocktail {
   {
     // Build Kroll-wada for virtual photon mass parametrization:
     Double_t KWmass = 0.;
-    Double_t emass = (TDatabasePDG::Instance()->GetParticle(11))->Mass();
     // Int_t KWnbins = 10000;
-    Float_t KWmin = 2. * emass;
+    Float_t KWmin = 2. * eMass;
     // Float_t KWmax         = 1.1;
     Double_t KWbinwidth = (fConfigKWMax - KWmin) / (Double_t)fConfigKWNBins;
     fhKW = new TH1F("fhKW", "fhKW", fConfigKWNBins, KWmin, fConfigKWMax);
     for (Int_t ibin = 1; ibin <= fConfigKWNBins; ibin++) {
       KWmass = KWmin + (Double_t)(ibin - 1) * KWbinwidth + KWbinwidth / 2.0;
-      fhKW->AddBinContent(ibin, 2. * (1. / 137.03599911) / 3. / 3.14159265359 / KWmass * sqrt(1. - 4. * emass * emass / KWmass / KWmass) * (1. + 2. * emass * emass / KWmass / KWmass));
+      fhKW->AddBinContent(ibin, 2. * (1. / 137.03599911) / 3. / 3.14159265359 / KWmass * sqrt(1. - 4. * eMass * eMass / KWmass / KWmass) * (1. + 2. * eMass * eMass / KWmass / KWmass));
     }
   }
 };

@@ -15,9 +15,10 @@
 #ifndef PWGHF_CORE_SELECTORCUTS_H_
 #define PWGHF_CORE_SELECTORCUTS_H_
 
-#include <vector>
-#include <string>
-#include "Framework/Configurable.h"
+#include <algorithm> // std::upper_bound
+#include <iterator>  // std::distance
+#include <string>    // std::string
+#include <vector>    // std::vector
 
 namespace o2::analysis
 {
@@ -27,28 +28,28 @@ namespace pdg
 /// \note Follow kCamelCase naming convention
 /// \link https://root.cern/doc/master/TPDGCode_8h.html
 enum Code {
-  kD0 = 421,
-  kD0Bar = -421,
-  kDPlus = 411,
-  kDMinus = -411,
-  kDStar = 413,
-  kDS = 431,
-  kLambdaCPlus = 4122,
-  kXiCZero = 4132,
-  kXiCPlus = 4232,
-  kXiCCPlusPlus = 4422,
-  kLambdaB0 = 5122,
-  kJPsi = 443,
-  kChiC1 = 20443,
   kB0 = 511,
   kB0Bar = -511,
   kBPlus = 521,
   kBS = 531,
-  kX3872 = 9920443,
+  kD0 = 421,
+  kD0Bar = -421,
+  kDMinus = -411,
+  kDPlus = 411,
+  kDS = 431,
+  kDStar = 413,
+  kChiC1 = 20443,
+  kJPsi = 443,
+  kLambdaB0 = 5122,
+  kLambdaCPlus = 4122,
+  kOmegaC0 = 4332,
+  kPhi = 333,
   kSigmaC0 = 4112,
   kSigmaCPlusPlus = 4222,
-  kOmegaC0 = 4332,
-  kPhi = 333
+  kX3872 = 9920443,
+  kXiCCPlusPlus = 4422,
+  kXiCPlus = 4232,
+  kXiCZero = 4132
 };
 } // namespace pdg
 
@@ -124,6 +125,42 @@ static const std::vector<std::string> labelsPt{};
 // column labels
 static const std::vector<std::string> labelsCutBdt = {"BDTbkg", "BDTprompt", "BDTnonprompt"};
 } // namespace hf_cuts_bdt_multiclass
+
+namespace hf_cuts_ml
+{
+// direction of the cut
+enum CutDirection {
+  CutGreater = 0, // require score < cut value
+  CutSmaller,     // require score > cut value
+  CutNot          // do not cut on score
+};
+
+static constexpr int nBinsPt = 1;
+static constexpr int nCutScores = 3;
+// default values for the pT bin edges, offset by 1 from the bin numbers in cuts array
+constexpr double binsPt[nBinsPt + 1] = {
+  0.,
+  1000};
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+
+// default values for the ML model paths, one model per pT bin
+static const std::vector<std::string> modelPaths = {
+  ""};
+
+// default values for the cut directions
+constexpr int cutDir[nCutScores] = {CutGreater, CutSmaller, CutSmaller};
+auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
+
+// default values for the cuts
+constexpr double cuts[nBinsPt][nCutScores] = {{0.5, 0.5, 0.5}};
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0"};
+
+// column labels
+static const std::vector<std::string> labelsCutScore = {"score class 1", "score class 2", "score class 3"};
+} // namespace hf_cuts_ml
 
 namespace hf_cuts_presel_2prong
 {

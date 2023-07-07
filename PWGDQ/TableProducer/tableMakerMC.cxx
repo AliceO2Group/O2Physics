@@ -254,13 +254,11 @@ struct TableMakerMC {
         }
         if (fDoDetailedQA) {
           if (enableBarrelHistos) {
-            histClasses += Form("TrackBarrel_BeforeCuts_%s;", objArray->At(isig)->GetName());
             for (auto& cut : fTrackCuts) {
               histClasses += Form("TrackBarrel_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
             }
           }
           if (enableMuonHistos) {
-            histClasses += Form("Muons_BeforeCuts_%s;", objArray->At(isig)->GetName());
             for (auto& cut : fMuonCuts) {
               histClasses += Form("Muons_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
             }
@@ -408,7 +406,14 @@ struct TableMakerMC {
         mcflags = 0;
         int i = 0;
         for (auto& sig : fMCSignals) {
-          if (sig.CheckSignal(true, mcTracks, mctrack)) {
+          bool checked = false;
+          if constexpr (soa::is_soa_filtered_v<aod::McParticles_001>) {
+            auto mctrack_raw = groupedMcTracks.rawIteratorAt(mctrack.globalIndex());
+            checked = sig.CheckSignal(false, mctrack_raw);
+          } else {
+            checked = sig.CheckSignal(false, mctrack);
+          }
+          if (checked) {
             mcflags |= (uint16_t(1) << i);
           }
           i++;
@@ -523,11 +528,10 @@ struct TableMakerMC {
           int j = 0; // runs over the track cuts
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
-            if (sig.CheckSignal(true, mcTracks, mctrack)) {
+            if (sig.CheckSignal(true, mctrack)) {
               mcflags |= (uint16_t(1) << i);
               if (fDoDetailedQA) {
                 j = 0;
-                fHistMan->FillHistClass(Form("TrackBarrel_BeforeCuts_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth BeforeCuts
                 for (auto& cut : fTrackCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
@@ -680,10 +684,9 @@ struct TableMakerMC {
           int j = 0; // runs over the track cuts
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
-            if (sig.CheckSignal(true, mcTracks, mctrack)) {
+            if (sig.CheckSignal(true, mctrack)) {
               mcflags |= (uint16_t(1) << i);
               if (fDoDetailedQA) {
-                fHistMan->FillHistClass(Form("Muons_BeforeCuts_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth BeforeCuts
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth

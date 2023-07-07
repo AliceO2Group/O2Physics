@@ -23,6 +23,7 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisDataModel.h"
+#include "ALICE3/DataModel/OTFTOF.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -64,6 +65,8 @@ struct Alice3Dilepton {
 
     const AxisSpec axisM{500, 0, 5, "#it{m}_{ll} (GeV/#it{c}^{2})"};
     const AxisSpec axisPt{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisSigmaEl{200, -10, 10, "n#sigma_{El}"};
+    const AxisSpec axisTrackLengthOuterTOF{300, 0., 300., "Track length (cm)"};
     const AxisSpec axisEta{1000, -5, 5, "#it{#eta}"};
     const AxisSpec axisDCAxy{1000, 0, 20, "DCA_{xy,ll} (#sigma)"};
     const AxisSpec axisPhi{360, 0, TMath::TwoPi(), "#it{#varphi} (rad.)"};
@@ -103,6 +106,10 @@ struct Alice3Dilepton {
     registry.add("Reconstructed/Track/Pt", "Track Pt", kTH1F, {axisPt});
     registry.add("Reconstructed/Track/Eta", "Track Eta", kTH1F, {axisEta});
     registry.add("Reconstructed/Track/Phi", "Track Eta", kTH1F, {axisPhi});
+    registry.add("Reconstructed/Track/SigmaOTofvspt", "Track #sigma oTOF", kTH2F, {axisPt, axisSigmaEl});
+    registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
+    registry.add("Reconstructed/Track/outerTOFTrackLength", "Track length outer TOF", kTH1F, {axisTrackLengthOuterTOF});
+
     registry.add("Reconstructed/Pair/ULS/Mass", "Pair Mass", kTH1F, {axisM});
     registry.add("Reconstructed/Pair/ULS/Pt", "Pair Pt", kTH1F, {axisPt});
     registry.add("Reconstructed/Pair/ULS/Eta", "Pair Eta", kTH1F, {axisEta});
@@ -493,7 +500,7 @@ struct Alice3Dilepton {
     } // end of mc collision loop
   }   // end of processGen
 
-  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels>;
+  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs>;
   Filter trackFilter = etaMin < o2::aod::track::eta && o2::aod::track::eta < etaMax && ptMin < o2::aod::track::pt && o2::aod::track::pt < ptMax;
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
@@ -516,9 +523,11 @@ struct Alice3Dilepton {
         // if (!IsInAcceptance(neg) || !IsInAcceptance(pos)) {
         //   continue;
         // }// filtered already
-        // if (fabs(track.nSigmaElectronOuter())>3 ) {
+
+        // if (fabs(track.nSigmaElectronOuterTOF())<3 ) {
         //   continue;
         // }
+
         if (!track.has_mcParticle()) {
           continue;
         }
@@ -529,6 +538,9 @@ struct Alice3Dilepton {
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
+        registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), mcParticle.pt(), track.nSigmaElectronOuterTOF());
+        registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), mcParticle.pt(), track.nSigmaElectronInnerTOF());
+        registry.fill(HIST("Reconstructed/Track/outerTOFTrackLength"), track.outerTOFTrackLength());
         registry.fill(HIST("Reconstructed/Track/Pt"), track.pt());
         registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
         registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());

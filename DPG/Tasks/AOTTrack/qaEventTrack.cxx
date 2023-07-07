@@ -72,6 +72,9 @@ struct qaEventTrack {
   Configurable<float> minPhi{"minPhi", -1.f, "Minimum phi of accepted tracks"};
   Configurable<float> maxPhi{"maxPhi", 10.f, "Maximum phi of accepted tracks"};
 
+  // options to check the track variables only for PV contributors
+  Configurable<bool> checkOnlyPVContributor{"checkOnlyPVContributor", false, "check the track variables only for primary vertex contributors"};
+
   // configurable binning of histograms
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
   ConfigurableAxis binsDeltaPt{"binsDeltaPt", {100, -0.495, 0.505}, ""};
@@ -188,7 +191,11 @@ struct qaEventTrack {
     trackRecoEffHist->SetBit(TH1::kIsNotW);
 
     // kine histograms
-    histos.add("Tracks/Kine/pt", "#it{p}_{T}", kTH1D, {axisPt});
+    histos.add("Tracks/Kine/pt", "#it{p}_{T} (filtered)", kTH1D, {axisPt});
+    histos.add("Tracks/Kine/ptFilteredPositive", "positive charge track #it{p}_{T} (filtered)", kTH1D, {axisPt});
+    histos.add("Tracks/Kine/ptFilteredNegative", "negative charge track #it{p}_{T} (filtered)", kTH1D, {axisPt});
+    histos.add("Tracks/Kine/ptUnfilteredPositive", "positive charge track #it{p}_{T} (unfiltered)", kTH1D, {axisPt});
+    histos.add("Tracks/Kine/ptUnfilteredNegative", "negative charge track #it{p}_{T} (unfiltered)", kTH1D, {axisPt});
     histos.add("Tracks/Kine/eta", "#eta", kTH1D, {axisEta});
     histos.add("Tracks/Kine/phi", "#varphi", kTH1D, {axisPhi});
     histos.add("Tracks/Kine/etavsphi", "#eta vs #varphi", kTH2F, {axisEta, axisPhi});
@@ -1133,6 +1140,9 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
 
   int nFilteredTracks = 0;
   for (const auto& track : tracks) {
+    if (checkOnlyPVContributor && !track.isPVContributor()) {
+      continue;
+    }
     histos.fill(HIST("Tracks/selection"), 1.f);
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
@@ -1309,6 +1319,12 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
   int nPvContrWithTOF = 0;
   int nPvContrWithTRD = 0;
   for (const auto& trackUnfiltered : tracksUnfiltered) {
+    // fill unfiltered track pt
+    if (trackUnfiltered.sign() > 0) {
+      histos.fill(HIST("Tracks/Kine/ptUnfilteredPositive"), trackUnfiltered.pt());
+    } else {
+      histos.fill(HIST("Tracks/Kine/ptUnfilteredNegative"), trackUnfiltered.pt());
+    }
     // fill ITS variables
     int itsNhits = 0;
     for (unsigned int i = 0; i < 7; i++) {
@@ -1342,11 +1358,19 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
 
   // track related histograms
   for (const auto& track : tracks) {
+    if (checkOnlyPVContributor && !track.isPVContributor()) {
+      continue;
+    }
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
     }
     // fill kinematic variables
     histos.fill(HIST("Tracks/Kine/pt"), track.pt());
+    if (track.sign() > 0) {
+      histos.fill(HIST("Tracks/Kine/ptFilteredPositive"), track.pt());
+    } else {
+      histos.fill(HIST("Tracks/Kine/ptFilteredNegative"), track.pt());
+    }
     histos.fill(HIST("Tracks/Kine/eta"), track.eta());
     histos.fill(HIST("Tracks/Kine/phi"), track.phi());
     histos.fill(HIST("Tracks/Kine/etavsphi"), track.eta(), track.phi());

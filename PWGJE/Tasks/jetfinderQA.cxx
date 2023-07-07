@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet finder hf QA task
+// jet finder QA task
 //
 // Authors: Nima Zardoshti
 
@@ -20,7 +20,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/HistogramRegistry.h"
-#include "TDatabasePDG.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -28,9 +27,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Common/Core/RecoDecay.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
@@ -41,7 +37,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
 
 #include "Framework/runDataProcessing.h"
 
@@ -53,16 +48,17 @@ struct JetFinderQATask {
                               {"h_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}, true},
                               {"h_jet_phi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}, true},
                               {"h_jet_ntracks", "jet N tracks;N_{jet tracks};entries", {HistType::kTH1F, {{100, -0.5, 99.5}}}, true},
-                              {"h2_jet_pt_jet_eta", "#it{p}_{T,jet} (GeV/#it{c}); #eta_{jet}", {HistType::kTH2F, {{200, 0.0, 200}, {100, -1.0, 1.0}}}, true},
-                              {"h2_jet_pt_jet_phi", "#it{p}_{T,jet} (GeV/#it{c}); #phi_{jet}", {HistType::kTH2F, {{200, 0.0, 200}, {80, -1.0, 7.}}}, true},
-                              {"h2_jet_pt_jet_ntracks", "#it{p}_{T,jet} (GeV/#it{c}); N_{jet tracks}", {HistType::kTH2F, {{200, 0.0, 200}, {100, -0.5, 99.5}}}, true},
-                              {"h2_jet_r_jet_pt", "#it{R}_{jet}; #it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{10, 0.05, 1.05}, {200, 0.0, 200}}}, true},
-                              {"h2_jet_r_jet_eta", "#it{R}_{jet}; #eta_{jet}", {HistType::kTH2F, {{10, 0.05, 1.05}, {100, -1.0, 1.0}}}, true},
-                              {"h2_jet_r_jet_phi", "#it{R}_{jet}; #phi_{jet}", {HistType::kTH2F, {{10, 0.05, 1.05}, {80, -1.0, 7.}}}, true},
-                              {"h2_jet_r_jet_ntracks", "#it{R}_{jet}; N_{jet tracks}", {HistType::kTH2F, {{10, 0.05, 1.05}, {100, -0.5, 99.5}}}, true},
-                              {"h2_jet_pt_track_pt", "#it{p}_{T,jet} (GeV/#it{c}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {200, 0.0, 200.0}}}, true},
-                              {"h2_jet_pt_track_eta", "#it{p}_{T,jet} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {{200, 0.0, 200}, {100, -1.0, 1.0}}}, true},
-                              {"h2_jet_pt_track_phi", "#it{p}_{T,jet} (GeV/#it{c}); #phi_{track}", {HistType::kTH2F, {{200, 0.0, 200}, {80, -1.0, 7.}}}, true},
+                              {"h2_jet_pt_jet_eta", ";#it{p}_{T,jet} (GeV/#it{c}); #eta_{jet}", {HistType::kTH2F, {{200, 0.0, 200}, {100, -1.0, 1.0}}}, true},
+                              {"h2_jet_pt_jet_phi", ";#it{p}_{T,jet} (GeV/#it{c}); #phi_{jet}", {HistType::kTH2F, {{200, 0.0, 200}, {80, -1.0, 7.}}}, true},
+                              {"h2_jet_pt_jet_ntracks", ";#it{p}_{T,jet} (GeV/#it{c}); N_{jet tracks}", {HistType::kTH2F, {{200, 0.0, 200}, {100, -0.5, 99.5}}}, true},
+                              {"h2_jet_r_jet_pt", ";#it{R}_{jet}; #it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{10, 0.05, 1.05}, {200, 0.0, 200}}}, true},
+                              {"h2_jet_r_jet_eta", ";#it{R}_{jet}; #eta_{jet}", {HistType::kTH2F, {{10, 0.05, 1.05}, {100, -1.0, 1.0}}}, true},
+                              {"h2_jet_r_jet_phi", ";#it{R}_{jet}; #phi_{jet}", {HistType::kTH2F, {{10, 0.05, 1.05}, {80, -1.0, 7.}}}, true},
+                              {"h2_jet_r_jet_ntracks", ";#it{R}_{jet}; N_{jet tracks}", {HistType::kTH2F, {{10, 0.05, 1.05}, {100, -0.5, 99.5}}}, true},
+                              {"h2_jet_pt_track_pt", ";#it{p}_{T,jet} (GeV/#it{c}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {200, 0.0, 200.0}}}, true},
+                              {"h2_jet_pt_track_eta", ";#it{p}_{T,jet} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {{200, 0.0, 200}, {100, -1.0, 1.0}}}, true},
+                              {"h2_jet_pt_track_phi", ";#it{p}_{T,jet} (GeV/#it{c}); #phi_{track}", {HistType::kTH2F, {{200, 0.0, 200}, {80, -1.0, 7.}}}, true},
+                              {"h2_jet_pt_leadingtrack_pt", ";#it{p}_{T,jet} (GeV/#it{c}); #it{p}_{T,leading track} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {200, 0.0, 200.0}}}, true},
                               {"h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0.0, 200.0}}}, true},
                               {"h_track_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}, true},
                               {"h_track_phi", "track #phi;#phi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}, true},
@@ -70,27 +66,27 @@ struct JetFinderQATask {
                               {"h_jet_eta_part", "jet #eta;#eta_{jet}^{part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}, true},
                               {"h_jet_phi_part", "jet #phi;#phi_{jet}^{part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}, true},
                               {"h_jet_ntracks_part", "jet N tracks;N_{jet tracks}^{part};entries", {HistType::kTH1F, {{100, -0.5, 99.5}}}, true},
-                              {"h2_jet_pt_part_jet_eta_part", "#it{p}_{T,jet}^{part} (GeV/#it{c}); #eta_{jet}", {HistType::kTH2F, {{200, 0.0, 200}, {100, -1.0, 1.0}}}, true},
-                              {"h2_jet_pt_part_jet_phi_part", "#it{p}_{T,jet}^{part} (GeV/#it{c}); #phi_{jet}", {HistType::kTH2F, {{200, 0.0, 200}, {80, -1.0, 7.}}}, true},
-                              {"h2_jet_pt_part_jet_ntracks_part", "#it{p}_{T,jet}^{part} (GeV/#it{c}); N_{jet tracks}", {HistType::kTH2F, {{200, 0.0, 200}, {100, -0.5, 99.5}}}, true},
-                              {"h2_jet_r_part_jet_pt_part", "#it{R}_{jet}^{part}; #it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{10, 0.05, 1.05}, {200, 0.0, 200}}}, true},
-                              {"h2_jet_r_part_jet_eta_part", "#it{R}_{jet}^{part}; #eta_{jet}^{part}", {HistType::kTH2F, {{10, 0.05, 1.05}, {100, -1.0, 1.0}}}, true},
-                              {"h2_jet_r_part_jet_phi_part", "#it{R}_{jet}^{part}; #phi_{jet}^{part}", {HistType::kTH2F, {{10, 0.05, 1.05}, {80, -1.0, 7.}}}, true},
-                              {"h2_jet_r_part_jet_ntracks_part", "#it{R}_{jet}^{part}; N_{jet tracks}^{part}", {HistType::kTH2F, {{10, 0.05, 1.05}, {100, -0.5, 99.5}}}, true},
-                              {"h2_jet_pt_part_track_pt_part", "#it{p}_{T,jet}^{part} (GeV/#it{c}); #it{p}_{T,track}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {200, 0.0, 200.0}}}, true},
-                              {"h2_jet_pt_part_track_eta_part", "#it{p}_{T,jet}^{part} (GeV/#it{c}); #eta_{track}^{part}", {HistType::kTH2F, {{200, 0.0, 200}, {100, -1.0, 1.0}}}, true},
-                              {"h2_jet_pt_part_track_phi_part", "#it{p}_{T,jet}^{part} (GeV/#it{c}); #phi_{track}^{part}", {HistType::kTH2F, {{200, 0.0, 200}, {80, -1.0, 7.}}}, true},
+                              {"h2_jet_pt_part_jet_eta_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c}); #eta_{jet}", {HistType::kTH2F, {{200, 0.0, 200}, {100, -1.0, 1.0}}}, true},
+                              {"h2_jet_pt_part_jet_phi_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c}); #phi_{jet}", {HistType::kTH2F, {{200, 0.0, 200}, {80, -1.0, 7.}}}, true},
+                              {"h2_jet_pt_part_jet_ntracks_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c}); N_{jet tracks}", {HistType::kTH2F, {{200, 0.0, 200}, {100, -0.5, 99.5}}}, true},
+                              {"h2_jet_r_part_jet_pt_part", ";#it{R}_{jet}^{part}; #it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{10, 0.05, 1.05}, {200, 0.0, 200}}}, true},
+                              {"h2_jet_r_part_jet_eta_part", ";#it{R}_{jet}^{part}; #eta_{jet}^{part}", {HistType::kTH2F, {{10, 0.05, 1.05}, {100, -1.0, 1.0}}}, true},
+                              {"h2_jet_r_part_jet_phi_part", ";#it{R}_{jet}^{part}; #phi_{jet}^{part}", {HistType::kTH2F, {{10, 0.05, 1.05}, {80, -1.0, 7.}}}, true},
+                              {"h2_jet_r_part_jet_ntracks_part", ";#it{R}_{jet}^{part}; N_{jet tracks}^{part}", {HistType::kTH2F, {{10, 0.05, 1.05}, {100, -0.5, 99.5}}}, true},
+                              {"h2_jet_pt_part_track_pt_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c}); #it{p}_{T,track}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {200, 0.0, 200.0}}}, true},
+                              {"h2_jet_pt_part_track_eta_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c}); #eta_{track}^{part}", {HistType::kTH2F, {{200, 0.0, 200}, {100, -1.0, 1.0}}}, true},
+                              {"h2_jet_pt_part_track_phi_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c}); #phi_{track}^{part}", {HistType::kTH2F, {{200, 0.0, 200}, {80, -1.0, 7.}}}, true},
                               {"h_track_pt_part", "track pT;#it{p}_{T,track}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0.0, 200.0}}}, true},
                               {"h_track_eta_part", "track #eta;#eta_{track}^{part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}, true},
                               {"h_track_phi_part", "track #phi;#phi_{track}^{part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}, true},
-                              {"h2_jet_pt_part_jet_pt", "#it{p}_{T,jet}^{part} (GeV/#it{c}); #it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {200, 0.0, 200}}}, true},
-                              {"h2_jet_eta_part_jet_eta", "#eta_{jet}^{part}; #eta_{jet}", {HistType::kTH2F, {{100, -1.0, 1.0}, {100, -1.0, 1.0}}}, true},
-                              {"h2_jet_phi_part_jet_phi", "#phi_{jet}^{part}; #phi_{jet}", {HistType::kTH2F, {{80, -1.0, 7.}, {80, -1.0, 7.}}}, true},
-                              {"h2_jet_ntracks_part_jet_ntracks", "N_{jet tracks}^{part}; N_{jet tracks}", {HistType::kTH2F, {{100, -0.5, 99.5}, {100, -0.5, 99.5}}}, true},
-                              {"h3_jet_pt_part_jet_eta_part_jet_eta", "#it{p}_{T,jet}^{part} (GeV/#it{c}); #eta_{jet}^{part}; #eta_{jet}", {HistType::kTH3F, {{200, 0.0, 200}, {100, -1.0, 1.0}, {100, -1.0, 1.0}}}, true},
-                              {"h3_jet_pt_part_jet_phi_part_jet_phi", "#it{p}_{T,jet}^{part} (GeV/#it{c}); #phi_{jet}^{part}; #phi_{jet}", {HistType::kTH3F, {{200, 0.0, 200}, {80, -1.0, 7.}, {80, -1.0, 7.}}}, true},
-                              {"h3_jet_pt_part_jet_ntracks_part_jet_ntracks", "#it{p}_{T,jet}^{part} (GeV/#it{c}); N_{jet tracks}^{part}; N_{jet tracks}", {HistType::kTH3F, {{200, 0.0, 200}, {100, -0.5, 99.5}, {100, -0.5, 99.5}}}, true},
-                              {"h2_jet_pt_part_jet_pt_diff", "#it{p}_{T,jet}^{part} (GeV/#it{c}); (#it{p}_{T,jet}^{part} (GeV/#it{c}) - #it{p}_{T,jet} (GeV/#it{c})) / #it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {1000, -5.0, 5.0}}}, true},
+                              {"h2_jet_pt_part_jet_pt", ";#it{p}_{T,jet}^{part} (GeV/#it{c}); #it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {200, 0.0, 200}}}, true},
+                              {"h2_jet_eta_part_jet_eta", ";#eta_{jet}^{part}; #eta_{jet}", {HistType::kTH2F, {{100, -1.0, 1.0}, {100, -1.0, 1.0}}}, true},
+                              {"h2_jet_phi_part_jet_phi", ";#phi_{jet}^{part}; #phi_{jet}", {HistType::kTH2F, {{80, -1.0, 7.}, {80, -1.0, 7.}}}, true},
+                              {"h2_jet_ntracks_part_jet_ntracks", ";N_{jet tracks}^{part}; N_{jet tracks}", {HistType::kTH2F, {{100, -0.5, 99.5}, {100, -0.5, 99.5}}}, true},
+                              {"h3_jet_pt_part_jet_eta_part_jet_eta", ";#it{p}_{T,jet}^{part} (GeV/#it{c}); #eta_{jet}^{part}; #eta_{jet}", {HistType::kTH3F, {{200, 0.0, 200}, {100, -1.0, 1.0}, {100, -1.0, 1.0}}}, true},
+                              {"h3_jet_pt_part_jet_phi_part_jet_phi", ";#it{p}_{T,jet}^{part} (GeV/#it{c}); #phi_{jet}^{part}; #phi_{jet}", {HistType::kTH3F, {{200, 0.0, 200}, {80, -1.0, 7.}, {80, -1.0, 7.}}}, true},
+                              {"h3_jet_pt_part_jet_ntracks_part_jet_ntracks", ";#it{p}_{T,jet}^{part} (GeV/#it{c}); N_{jet tracks}^{part}; N_{jet tracks}", {HistType::kTH3F, {{200, 0.0, 200}, {100, -0.5, 99.5}, {100, -0.5, 99.5}}}, true},
+                              {"h2_jet_pt_part_jet_pt_diff", ";#it{p}_{T,jet}^{part} (GeV/#it{c}); (#it{p}_{T,jet}^{part} (GeV/#it{c}) - #it{p}_{T,jet} (GeV/#it{c})) / #it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {1000, -5.0, 5.0}}}, true},
                               {"h_collision_trigger_events", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}}, true},
                               {"h_track_pt_MB", "track pT for MB events;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0.0, 200.0}}}, true},
                               {"h_track_eta_MB", "track #eta for MB events;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}, true},
@@ -109,7 +105,7 @@ struct JetFinderQATask {
   Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   std::string trackSelection;
-  std::vector<double> minJetPt;
+  std::vector<bool> filledJetR;
   std::vector<double> jetRadiiValues;
 
   void init(o2::framework::InitContext&)
@@ -118,23 +114,33 @@ struct JetFinderQATask {
     jetRadiiValues = (std::vector<double>)jetRadii;
 
     for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
-      minJetPt.push_back(0.0);
+      filledJetR.push_back(false);
     }
     auto jetRadiiBins = (std::vector<double>)jetRadii;
-    jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + 0.1);
-    registry.add("h3_jet_radius_jet_pt_collision", "jet radius;#it{p}_{T,jet} (GeV/#it{c});collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {2, 0.0, 2.0}}});
-    registry.add("h3_jet_radius_jet_eta_collision", "jet radius;#eta_{jet};collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {100, -1.0, 1.0}, {2, 0.0, 2.0}}});
-    registry.add("h3_jet_radius_jet_phi_collision", "jet radius;#phi_{jet};collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {80, -1.0, 7.}, {2, 0.0, 2.0}}});
-    registry.add("h2_jet_radius_jet_pT_triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{jetRadiiBins, ""}, {200, 0., 200.}}});
-    registry.add("h3_jet_radius_jet_pt_track_pt_MB", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {200, 0., 200.}}});
-    registry.add("h3_jet_radius_jet_pt_track_eta_MB", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
-    registry.add("h3_jet_radius_jet_pt_track_phi_MB", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
-    registry.add("h3_jet_radius_jet_pt_track_pt_Triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {200, 0., 200.}}});
-    registry.add("h3_jet_radius_jet_pt_track_eta_Triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
-    registry.add("h3_jet_radius_jet_pt_track_phi_Triggered", "jet radius;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
+    if (jetRadiiBins.size() > 1) {
+      jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + (TMath::Abs(jetRadiiBins[jetRadiiBins.size() - 1] - jetRadiiBins[jetRadiiBins.size() - 2])));
+    } else {
+      jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + 0.1);
+    }
+    registry.add("h3_jet_radius_jet_pt_jet_eta", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#phi_{jet}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
+    registry.add("h3_jet_radius_jet_pt_jet_phi", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#phi_{jet}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
+    registry.add("h3_jet_radius_jet_eta_jet_phi", "#it{R}_{jet};#eta_{jet};#phi_{jet}", {HistType::kTH3F, {{jetRadiiBins, ""}, {100, -1.0, 1.0}, {80, -1.0, 7.}}});
+    registry.add("h3_jet_radius_part_jet_pt_part_jet_eta_part", ";#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#phi_{jet}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
+    registry.add("h3_jet_radius_part_jet_pt_part_jet_phi_part", ";#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#phi_{jet}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
+    registry.add("h3_jet_radius_part_jet_eta_part_jet_phi_part", ";#it{R}_{jet}^{part};#eta_{jet}^{part};#phi_{jet}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {100, -1.0, 1.0}, {80, -1.0, 7.}}});
+    registry.add("h3_jet_radius_jet_pt_collision", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {2, -0.5, 1.5}}});
+    registry.add("h3_jet_radius_jet_eta_collision", "#it{R}_{jet};#eta_{jet};collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {100, -1.0, 1.0}, {2, -0.5, 1.5}}});
+    registry.add("h3_jet_radius_jet_phi_collision", "#it{R}_{jet};#phi_{jet};collision trigger status", {HistType::kTH3F, {{jetRadiiBins, ""}, {80, -1.0, 7.}, {2, -0.5, 1.5}}});
+    registry.add("h2_jet_radius_jet_pT_triggered", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{jetRadiiBins, ""}, {200, 0., 200.}}});
+    registry.add("h3_jet_radius_jet_pt_track_pt_MB", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {200, 0., 200.}}});
+    registry.add("h3_jet_radius_jet_pt_track_eta_MB", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
+    registry.add("h3_jet_radius_jet_pt_track_phi_MB", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
+    registry.add("h3_jet_radius_jet_pt_track_pt_Triggered", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {200, 0., 200.}}});
+    registry.add("h3_jet_radius_jet_pt_track_eta_Triggered", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
+    registry.add("h3_jet_radius_jet_pt_track_phi_Triggered", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet tracks} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {80, -1.0, 7.}}});
   }
 
-  using JetTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
+  using JetTracks = soa::Join<aod::Tracks, aod::TrackSelection>;
 
   template <typename T>
   bool selectTrack(T const& track)
@@ -171,6 +177,10 @@ struct JetFinderQATask {
     registry.fill(HIST("h2_jet_r_jet_phi"), jet.r() / 100.0, jet.phi(), weight);
     registry.fill(HIST("h2_jet_r_jet_ntracks"), jet.r() / 100.0, jet.tracks().size(), weight);
 
+    registry.fill(HIST("h3_jet_radius_jet_pt_jet_eta"), jet.r() / 100.0, jet.pt(), jet.eta(), weight);
+    registry.fill(HIST("h3_jet_radius_jet_pt_jet_phi"), jet.r() / 100.0, jet.pt(), jet.phi(), weight);
+    registry.fill(HIST("h3_jet_radius_jet_eta_jet_phi"), jet.r() / 100.0, jet.eta(), jet.phi(), weight);
+
     for (auto& constituent : jet.template tracks_as<JetTracks>()) {
 
       registry.fill(HIST("h2_jet_pt_track_pt"), jet.pt(), constituent.pt(), weight);
@@ -199,6 +209,10 @@ struct JetFinderQATask {
     registry.fill(HIST("h2_jet_r_part_jet_eta_part"), jet.r() / 100.0, jet.eta(), weight);
     registry.fill(HIST("h2_jet_r_part_jet_phi_part"), jet.r() / 100.0, jet.phi(), weight);
     registry.fill(HIST("h2_jet_r_part_jet_ntracks_part"), jet.r() / 100.0, jet.tracks().size(), weight);
+
+    registry.fill(HIST("h3_jet_radius_part_jet_pt_part_jet_eta_part"), jet.r() / 100.0, jet.pt(), jet.eta(), weight);
+    registry.fill(HIST("h3_jet_radius_part_jet_pt_part_jet_phi_part"), jet.r() / 100.0, jet.pt(), jet.phi(), weight);
+    registry.fill(HIST("h3_jet_radius_part_jet_eta_part_jet_phi_part"), jet.r() / 100.0, jet.eta(), jet.phi(), weight);
 
     for (auto& constituent : jet.template tracks_as<aod::McParticles>()) {
 
@@ -235,6 +249,15 @@ struct JetFinderQATask {
   void processJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet, JetTracks const& tracks)
   {
     fillHistograms(jet);
+    auto leadingTrackpT = -1.0;
+    for (auto const& track : tracks) {
+      if (!selectTrack(track)) {
+        continue;
+      }
+      if (track.pt() > leadingTrackpT)
+        leadingTrackpT = track.pt();
+    }
+    registry.fill(HIST("h2_jet_pt_leadingtrack_pt"), jet.pt(), leadingTrackpT);
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsData, "jet finder QA data", false);
 
@@ -297,6 +320,7 @@ struct JetFinderQATask {
                             soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
                             JetTracks const& tracks)
   {
+
     registry.fill(HIST("h_collision_trigger_events"), 0.5); // all events
     if (collision.posZ() > vertexZCut)
       return;
@@ -308,16 +332,14 @@ struct JetFinderQATask {
       registry.fill(HIST("h_collision_trigger_events"), 3.5); // events with triggered jets
 
     for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
-      minJetPt[iJetRadius] = 0.0;
+      filledJetR[iJetRadius] = false;
     }
     for (auto& jet : jets) {
       for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
-        if (jet.r() == round(jetRadiiValues[iJetRadius] * 100.0f)) {
-          for (double pt = jet.pt(); pt > minJetPt[iJetRadius]; pt -= 1.0) {
+        if (jet.r() == round(jetRadiiValues[iJetRadius] * 100.0f) && !filledJetR[iJetRadius]) {
+          filledJetR[iJetRadius] = true;
+          for (double pt = 0.0; pt <= jet.pt(); pt += 1.0) {
             registry.fill(HIST("h2_jet_radius_jet_pT_triggered"), jet.r() / 100.0, pt);
-          }
-          if (jet.pt() > minJetPt[iJetRadius]) {
-            minJetPt[iJetRadius] = jet.pt();
           }
           break;
         }
