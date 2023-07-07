@@ -154,17 +154,12 @@ struct kinkAnalysis {
 
   float angleCutFunction(int particleName, float x)
   {
-    float par1;
-    float par2;
-    float par3 = M_PI;
+
     float mSigmaMinus = 1.197449, mSigmaPlus = 1.189449, mKaon = 0.493677, mPion = 0.13957018, mXi = 1.321, mOmega = 1.67245;
-
+    float par1 = mSigmaMinus; /// Default value is for SigmaMinus
+    float par2 = 0.8;
+    float par3 = M_PI;
     switch (particleName) {
-      case SigmaMinus:
-        par1 = mSigmaMinus;
-        par2 = 0.8;
-        break;
-
       case SigmaPlusToPi:
         par1 = mSigmaPlus;
         par2 = 0.8;
@@ -202,11 +197,9 @@ struct kinkAnalysis {
     }
 
     if ((particleName == SigmaMinus) || (particleName == SigmaPlusToPi) || (particleName == SigmaPlusToProton) || (particleName == Xi) || (particleName == OmegaToXi) || (particleName == OmegaToL))
-
       return par1 * (par2 / (sqrt((x * x) * (1 - (par2 * par2)) - ((par1 * par1) * (par2 * par2))))) * (180. / par3) + 1;
 
-    if ((particleName == Kaon) || (particleName == Pion))
-      return ((atan(par1 * par2 * (1.0 / (sqrt((x * x) * (1.0 - (par1 * par1)) - (par1 * par1) * (par2 * par2)))))) * 180.) / par3;
+    return ((atan(par1 * par2 * (1.0 / (sqrt((x * x) * (1.0 - (par1 * par1)) - (par1 * par1) * (par2 * par2)))))) * 180.) / par3;
   }
 
   void init(InitContext const&)
