@@ -259,7 +259,7 @@ struct cascademcfinder {
 
     // Step 1: sweep over all mcCollisions and find all relevant candidates
     for (auto const& mcCollision : mcCollisions) {
-      histos.fill(HIST("hNTimesCollRecoed"), mcCollision.hasRecoCollision());
+      histos.fill(HIST("hNTimesCollRecoed"), mcCollision.numRecoCollision());
       int bestCollisionIndex = mcCollision.bestCollisionIndex();
 
       auto mcParticles = allMcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());

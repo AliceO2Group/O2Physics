@@ -305,7 +305,7 @@ struct lambdakzeromcfinder {
 
     // Step 1: sweep over all mcCollisions and find all relevant candidates
     for (auto const& mcCollision : mcCollisions) {
-      histos.fill(HIST("hNTimesCollRecoed"), mcCollision.hasRecoCollision());
+      histos.fill(HIST("hNTimesCollRecoed"), mcCollision.numRecoCollision());
       int bestCollisionIndex = mcCollision.bestCollisionIndex();
 
       auto mcParticles = allMcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
@@ -454,7 +454,7 @@ struct lambdakzeromcfinder {
               // de-reference best collision
               int bestCollisionIndex = -1;
               auto mcCollision = posParticle.mcCollision_as<soa::Join<aod::McCollisions, aod::McCollsExtra>>();
-              if (mcCollision.hasRecoCollision())
+              if (mcCollision.numRecoCollision())
                 bestCollisionIndex = mcCollision.bestCollisionIndex();
 
               // place in list to be passed along, please

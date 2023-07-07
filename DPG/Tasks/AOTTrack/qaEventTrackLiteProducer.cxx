@@ -339,7 +339,7 @@ struct qaEventTrackLiteProducer {
           posYMC = mcCollision.posY();
           posZMC = mcCollision.posZ();
           collTimeMC = mcCollision.t();
-          recoPVsPerMcColl = mcCollision.hasRecoCollision();
+          recoPVsPerMcColl = mcCollision.numRecoCollision();
           isPvHighestContribForMcColl = (mcCollision.bestCollisionIndex() == collision.globalIndex());
         }
       }

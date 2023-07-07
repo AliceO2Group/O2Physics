@@ -292,22 +292,22 @@ struct MultiplicityQa {
       return;
 
     auto mcCollision = col.mcCollision_as<soa::Join<aod::McCollisions, aod::McCollsExtra>>();
-    if (mcCollision.hasRecoCollision() < 1)
+    if (mcCollision.numRecoCollision() < 1)
       return; // total paranoia mode: on
 
     // Profiles
     if (useZeqInProfiles && do2Dplots) {
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFV0"), col.multZeqFV0A(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0"), col.multZeqFT0A() + col.multZeqFT0C(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0A"), col.multZeqFT0A(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0C"), col.multZeqFT0C(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFDD"), col.multZeqFDDA() + col.multZeqFDDC(), mcCollision.hasRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFV0"), col.multZeqFV0A(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0"), col.multZeqFT0A() + col.multZeqFT0C(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0A"), col.multZeqFT0A(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0C"), col.multZeqFT0C(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFDD"), col.multZeqFDDA() + col.multZeqFDDC(), mcCollision.numRecoCollision());
     } else {
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFV0"), col.multFV0A(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0"), col.multFT0A() + col.multFT0C(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0A"), col.multFT0A(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0C"), col.multFT0C(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFDD"), col.multFDDA() + col.multFDDC(), mcCollision.hasRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFV0"), col.multFV0A(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0"), col.multFT0A() + col.multFT0C(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0A"), col.multFT0A(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0C"), col.multFT0C(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFDD"), col.multFDDA() + col.multFDDC(), mcCollision.numRecoCollision());
     }
   }
 
@@ -355,7 +355,7 @@ struct MultiplicityQa {
       return;
 
     // Ingredient one: PV finding versus true multiplicity
-    histos.fill(HIST("multiplicityQa/h2dPVsVsNchT0M"), nchFT0, mcCollision.hasRecoCollision());
+    histos.fill(HIST("multiplicityQa/h2dPVsVsNchT0M"), nchFT0, mcCollision.numRecoCollision());
 
     // Ingredient two: true multiplicity vs reco multiplicity
     // important: reco multiplicity of which collision, exactly?

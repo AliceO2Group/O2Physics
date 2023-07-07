@@ -346,7 +346,7 @@ struct straRecoStudy {
       histos.fill(HIST("hEventSelection"), ii, evselstats[ii]);
   }
 
-  Filter preFilterMcCollisions = aod::mccollisionprop::hasRecoCollision > 0;
+  Filter preFilterMcCollisions = aod::mccollisionprop::numRecoCollision > 0;
 
   Filter preFilterCascade =
     nabs(aod::cascdata::dcapostopv) > v0setting_dcapostopv&& nabs(aod::cascdata::dcanegtopv) > v0setting_dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv&& aod::cascdata::dcaV0daughters < v0setting_dcav0dau&& aod::cascdata::dcacascdaughters<cascadesetting_dcacascdau && aod::mccasclabel::mcParticleId> - 1;
