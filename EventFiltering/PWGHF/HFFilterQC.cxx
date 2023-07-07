@@ -17,18 +17,18 @@
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, Strasbourg University
 
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h> // needed for HFFilterHelpers, to be fixed
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-// needed for HFFilterHelpers, to be fixed
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "EventFiltering/filterTables.h"
 #include "HFFilterHelpers.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -110,10 +110,11 @@ struct HfFilterQc { // Main struct for HF trigger QC
     bool hasDoubleCharm2P = filterDecision.hasHfDoubleCharm2P();
     bool hasDoubleCharm3P = filterDecision.hasHfDoubleCharm3P();
     bool hasDoubleCharmMix = filterDecision.hasHfDoubleCharmMix();
-    bool hasHfSoftGamma2P = filterDecision.hasHfSoftGamma2P();
-    bool hasHfSoftGamma3P = filterDecision.hasHfSoftGamma3P();
-    bool isTriggered = hasHighPt2P || hasHighPt3P || hasBeauty3P || hasBeauty4P || hasFemto2P || hasFemto3P || hasDoubleCharm2P || hasDoubleCharm3P || hasDoubleCharmMix || hasHfSoftGamma2P || hasHfSoftGamma3P;
-    auto triggerDecision = std::array{isTriggered, hasHighPt2P, hasHighPt3P, hasBeauty3P, hasBeauty4P, hasFemto2P, hasFemto3P, hasDoubleCharm2P, hasDoubleCharm3P, hasDoubleCharmMix, hasHfSoftGamma2P, hasHfSoftGamma3P};
+    bool hasHfV02P = filterDecision.hasHfV0Charm2P();
+    bool hasHfV03P = filterDecision.hasHfV0Charm3P();
+    bool hasCharmBarToXiBach = filterDecision.hasHfCharmBarToXiBach();
+    bool isTriggered = hasHighPt2P || hasHighPt3P || hasBeauty3P || hasBeauty4P || hasFemto2P || hasFemto3P || hasDoubleCharm2P || hasDoubleCharm3P || hasDoubleCharmMix || hasHfV02P || hasHfV03P || hasCharmBarToXiBach;
+    auto triggerDecision = std::array{isTriggered, hasHighPt2P, hasHighPt3P, hasBeauty3P, hasBeauty4P, hasFemto2P, hasFemto3P, hasDoubleCharm2P, hasDoubleCharm3P, hasDoubleCharmMix, hasHfV02P, hasHfV03P, hasCharmBarToXiBach};
 
     std::array<int, kNCharmParticles> nPart{0};
     // Loop over the MC particles

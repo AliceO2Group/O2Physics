@@ -20,6 +20,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "PWGLF/DataModel/cascqaanalysis.h"
 
 // constants
 const float ctauxiPDG = 4.91;     // from PDG
@@ -28,89 +29,6 @@ const float ctauomegaPDG = 2.461; // from PDG
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-using DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
-
-namespace o2::aod
-{
-
-namespace mycascades
-{
-
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(CollisionZ, zcoll, float);
-DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
-DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);
-DECLARE_SOA_COLUMN(Sign, sign, float);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(RapXi, rapxi, float);
-DECLARE_SOA_COLUMN(RapOmega, rapomega, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(MassXi, massxi, float);
-DECLARE_SOA_COLUMN(MassOmega, massomega, float);
-DECLARE_SOA_COLUMN(MassLambdaDau, masslambdadau, float);
-DECLARE_SOA_COLUMN(CascRadius, cascradius, float);
-DECLARE_SOA_COLUMN(V0Radius, v0radius, float);
-DECLARE_SOA_COLUMN(CascCosPA, casccospa, float);
-DECLARE_SOA_COLUMN(V0CosPA, v0cospa, float);
-DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);
-DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);
-DECLARE_SOA_COLUMN(DCABachToPV, dcabachtopv, float);
-DECLARE_SOA_COLUMN(DCACascDaughters, dcacascdaughters, float);
-DECLARE_SOA_COLUMN(DCAV0Daughters, dcav0daughters, float);
-DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);
-DECLARE_SOA_COLUMN(PosEta, poseta, float);
-DECLARE_SOA_COLUMN(NegEta, negeta, float);
-DECLARE_SOA_COLUMN(BachEta, bacheta, float);
-DECLARE_SOA_COLUMN(PosITSHits, positshits, float);
-DECLARE_SOA_COLUMN(NegITSHits, negitshits, float);
-DECLARE_SOA_COLUMN(BachITSHits, bachitshits, float);
-DECLARE_SOA_COLUMN(CtauXi, ctauxi, float);
-DECLARE_SOA_COLUMN(CtauOmega, ctauomega, float);
-DECLARE_SOA_COLUMN(NTPCSigmaNegPr, ntpcsigmanegpr, float);
-DECLARE_SOA_COLUMN(NTPCSigmaPosPr, ntpcsigmapospr, float);
-DECLARE_SOA_COLUMN(NTPCSigmaNegPi, ntpcsigmanegpi, float);
-DECLARE_SOA_COLUMN(NTPCSigmaPosPi, ntpcsigmapospi, float);
-DECLARE_SOA_COLUMN(NTPCSigmaBachPi, ntpcsigmabachpi, float);
-DECLARE_SOA_COLUMN(NTPCSigmaBachKa, ntpcsigmabachka, float);
-DECLARE_SOA_COLUMN(NTOFSigmaNegPr, ntofsigmanegpr, float);
-DECLARE_SOA_COLUMN(NTOFSigmaPosPr, ntofsigmapospr, float);
-DECLARE_SOA_COLUMN(NTOFSigmaNegPi, ntofsigmanegpi, float);
-DECLARE_SOA_COLUMN(NTOFSigmaPosPi, ntofsigmapospi, float);
-DECLARE_SOA_COLUMN(NTOFSigmaBachPi, ntofsigmabachpi, float);
-DECLARE_SOA_COLUMN(NTOFSigmaBachKa, ntofsigmabachka, float);
-DECLARE_SOA_COLUMN(PosNTPCClusters, posntpcscls, float);
-DECLARE_SOA_COLUMN(NegNTPCClusters, negntpcscls, float);
-DECLARE_SOA_COLUMN(BachNTPCClusters, bachntpcscls, float);
-DECLARE_SOA_COLUMN(PosHasTOF, poshastof, float);
-DECLARE_SOA_COLUMN(NegHasTOF, neghastof, float);
-DECLARE_SOA_COLUMN(BachHasTOF, bachhastof, float);
-DECLARE_SOA_COLUMN(PosPt, pospt, float);
-DECLARE_SOA_COLUMN(NegPt, negpt, float);
-DECLARE_SOA_COLUMN(BachPt, bachpt, float);
-DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, float); // -1 unknown
-DECLARE_SOA_COLUMN(IsPrimary, isPrimary, float); // -1 unknown, 0 not primary, 1 primary
-DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
-DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
-
-} // namespace mycascades
-
-DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
-                  mycascades::CollisionId, mycascades::CollisionZ, mycascades::MultFT0M, mycascades::MultFV0A, mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega, mycascades::Eta, mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
-                  mycascades::CascCosPA, mycascades::V0CosPA, mycascades::DCAPosToPV, mycascades::DCANegToPV,
-                  mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::PosEta, mycascades::NegEta,
-                  mycascades::BachEta, mycascades::PosITSHits, mycascades::NegITSHits, mycascades::BachITSHits,
-                  mycascades::CtauXi, mycascades::CtauOmega,
-                  mycascades::NTPCSigmaNegPr, mycascades::NTPCSigmaPosPr, mycascades::NTPCSigmaNegPi, mycascades::NTPCSigmaPosPi, mycascades::NTPCSigmaBachPi, mycascades::NTPCSigmaBachKa,
-                  mycascades::NTOFSigmaNegPr, mycascades::NTOFSigmaPosPr, mycascades::NTOFSigmaNegPi,
-                  mycascades::NTOFSigmaPosPi, mycascades::NTOFSigmaBachPi, mycascades::NTOFSigmaBachKa,
-                  mycascades::PosNTPCClusters, mycascades::NegNTPCClusters, mycascades::BachNTPCClusters,
-                  mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF,
-                  mycascades::PosPt, mycascades::NegPt, mycascades::BachPt,
-                  mycascades::McPdgCode, mycascades::IsPrimary,
-                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV);
-
-} // namespace o2::aod
 
 struct cascpostprocessing {
   // Xi or Omega
@@ -150,6 +68,8 @@ struct cascpostprocessing {
 
   Configurable<bool> isFT0MforMC{"isFT0MforMC", 0, "Fill with FT0M information or 0s"};
 
+  Configurable<int> evSelFlag{"evSelFlag", 2, "1 - INEL; 2 - INEL>0; 3 - INEL>1"};
+
   HistogramRegistry registry{"registryts"};
 
   void init(InitContext const&)
@@ -165,11 +85,14 @@ struct cascpostprocessing {
     AxisSpec ptAxisPID = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec etaAxis = {200, -2.0f, 2.0f, "#eta"};
     ConfigurableAxis centFT0MAxis{"FT0M",
-                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100},
+                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
                                   "FT0M (%)"};
     ConfigurableAxis centFV0AAxis{"FV0A",
-                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100},
+                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
                                   "FV0A (%)"};
+
+    AxisSpec nChargedAxis = {300, -0.5f, 299.5f, "N_{ch in FT0M}"};
+
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
 
@@ -277,9 +200,18 @@ struct cascpostprocessing {
     // Info for eff x acc from MC
     registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
     registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
+
+    registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtXiPlusTrueAssocWithSelColl", "hPtXiPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtXiMinusTrueAssocWithSelColl", "hPtXiMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtOmegaPlusTrueAssocWithSelColl", "hPtOmegaPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtOmegaMinusTrueAssocWithSelColl", "hPtOmegaMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
   }
 
-  void process(aod::MyCascades const& mycascades)
+  void processRec(aod::MyCascades const& mycascades)
   {
     float invmass = 0;
     float ctau = 0;
@@ -289,6 +221,27 @@ struct cascpostprocessing {
     bool isCorrectlyRec = 0;
 
     for (auto& candidate : mycascades) {
+
+      switch (evSelFlag) {
+        case 1: {
+          if (!candidate.isINEL())
+            continue;
+          break;
+        }
+        case 2: {
+          if (!candidate.isINELgt0())
+            continue;
+          break;
+        }
+        case 3: {
+          if (!candidate.isINELgt1())
+            continue;
+          break;
+        }
+        default:
+          LOGF(fatal, "incorrect evSelFlag in cascpostprocessing task");
+          break;
+      }
 
       counter = -1;
       registry.fill(HIST("hCandidate"), ++counter);
@@ -508,6 +461,87 @@ struct cascpostprocessing {
       }
     }
   }
+
+  PROCESS_SWITCH(cascpostprocessing, processRec, "Process Run 3 reconstructed data", true);
+
+  void processGen(aod::MyMCCascades const& myMCcascades)
+  {
+    for (auto& genCascade : myMCcascades) {
+      if (genCascade.isPrimary() == 0)
+        continue; // Consider only primaries
+
+      switch (evSelFlag) {
+        case 1: {
+          if (!genCascade.isINEL())
+            continue;
+          break;
+        }
+        case 2: {
+          if (!genCascade.isINELgt0())
+            continue;
+          break;
+        }
+        case 3: {
+          if (!genCascade.isINELgt1())
+            continue;
+          break;
+        }
+        default:
+          LOGF(fatal, "incorrect evSelFlag in cascpostprocessing task");
+          break;
+      }
+
+      // Histos of generated cascades from generated events with accepted z vrtx + chosen event type (evSelFlag) (for signal loss correction)
+      if (genCascade.pdgCode() == -3312) {
+        registry.fill(HIST("hPtXiPlusTrue"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+      if (genCascade.pdgCode() == 3312) {
+        registry.fill(HIST("hPtXiMinusTrue"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+      if (genCascade.pdgCode() == -3334) {
+        registry.fill(HIST("hPtOmegaPlusTrue"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+      if (genCascade.pdgCode() == 3334) {
+        registry.fill(HIST("hPtOmegaMinusTrue"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+
+      // Histos of generated cascades from generated events with good z vrtx + chosen event type (evSelFlag) + associated to the accepted reconstructed event of the same type (for signal loss + efficiency x acceptance correction)
+      switch (evSelFlag) {
+        case 1: {
+          if (!genCascade.isINELassoc())
+            continue;
+          break;
+        }
+        case 2: {
+          if (!genCascade.isINELgt0assoc())
+            continue;
+          break;
+        }
+        case 3: {
+          if (!genCascade.isINELgt1assoc())
+            continue;
+          break;
+        }
+        default:
+          LOGF(fatal, "incorrect evSelFlag in cascpostprocessing task");
+          break;
+      }
+
+      if (genCascade.pdgCode() == -3312) {
+        registry.fill(HIST("hPtXiPlusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+      if (genCascade.pdgCode() == 3312) {
+        registry.fill(HIST("hPtXiMinusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+      if (genCascade.pdgCode() == -3334) {
+        registry.fill(HIST("hPtOmegaPlusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+      if (genCascade.pdgCode() == 3334) {
+        registry.fill(HIST("hPtOmegaMinusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.nChInFT0M());
+      }
+    }
+  }
+  PROCESS_SWITCH(cascpostprocessing, processGen, "Process Run 3 MC generated data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

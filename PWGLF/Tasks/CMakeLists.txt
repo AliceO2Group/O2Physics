@@ -161,6 +161,11 @@ o2physics_add_dpl_workflow(antimatter-abs-hmpid
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(cascadecorrelations
+                    SOURCES cascadecorrelations.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hypertriton3bodyanalysis
                    SOURCES hypertriton3bodyanalysis.cxx
                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore 

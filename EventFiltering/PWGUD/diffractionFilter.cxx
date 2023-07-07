@@ -185,7 +185,7 @@ struct DGFilterRun3 {
       auto bcSlice = udhelpers::compatibleBCs(collision, 0, bcs, nMinBC);
       isDGcandidate = true;
       for (auto const& bc : bcSlice) {
-        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
+        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits());
       }
       registry.get<TH2>(HIST("FIT/cleanFIT"))->Fill(nMinBC, isDGcandidate * 1.);
 
@@ -194,7 +194,7 @@ struct DGFilterRun3 {
         FITlims[n] = 0.;
         isDGcandidate = true;
         for (auto const& bc : bcSlice) {
-          isDGcandidate &= udhelpers::cleanFIT(bc, FITlims);
+          isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), FITlims);
         }
         constexpr int index = n.value;
         registry.fill(HIST(hcFITs[index]), nMinBC, isDGcandidate * 1.);
