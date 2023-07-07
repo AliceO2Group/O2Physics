@@ -86,3 +86,8 @@ o2physics_add_dpl_workflow(em-filter
                            SOURCES PWGEM/photonFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lf-f1proton-filter
+                           SOURCES PWGLF/filterf1proton.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
