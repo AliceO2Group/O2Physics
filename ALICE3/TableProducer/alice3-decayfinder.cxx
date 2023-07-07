@@ -262,28 +262,28 @@ struct alice3decayFinder {
 
   // partitions for D mesons
   Partition<alice3tracks> tracksPiPlusFromD =
-    ((aod::a3DecayMap::decayMap & trackSelectionPiPlusFromD) == trackSelectionPiPlusFromD) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > piFromD_dcaXYconstant + piFromD_dcaXYpTdep * nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionPiPlusFromD) == trackSelectionPiPlusFromD) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > piFromD_dcaXYconstant + piFromD_dcaXYpTdep* nabs(aod::track::signed1Pt);
   Partition<alice3tracks> tracksPiMinusFromD =
-    ((aod::a3DecayMap::decayMap & trackSelectionPiMinusFromD) == trackSelectionPiMinusFromD) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > piFromD_dcaXYconstant + piFromD_dcaXYpTdep * nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionPiMinusFromD) == trackSelectionPiMinusFromD) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > piFromD_dcaXYconstant + piFromD_dcaXYpTdep* nabs(aod::track::signed1Pt);
   Partition<alice3tracks> tracksKaPlusFromD =
-    ((aod::a3DecayMap::decayMap & trackSelectionKaPlusFromD) == trackSelectionKaPlusFromD) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > kaFromD_dcaXYconstant + kaFromD_dcaXYpTdep * nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionKaPlusFromD) == trackSelectionKaPlusFromD) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > kaFromD_dcaXYconstant + kaFromD_dcaXYpTdep* nabs(aod::track::signed1Pt);
   Partition<alice3tracks> tracksKaMinusFromD =
-    ((aod::a3DecayMap::decayMap & trackSelectionKaMinusFromD) == trackSelectionKaMinusFromD) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > kaFromD_dcaXYconstant + kaFromD_dcaXYpTdep * nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionKaMinusFromD) == trackSelectionKaMinusFromD) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > kaFromD_dcaXYconstant + kaFromD_dcaXYpTdep* nabs(aod::track::signed1Pt);
 
   // partitions for Lc baryons
   Partition<alice3tracks> tracksPiPlusFromLc =
-    ((aod::a3DecayMap::decayMap & trackSelectionPiPlusFromLc) == trackSelectionPiPlusFromLc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > piFromLc_dcaXYconstant + piFromLc_dcaXYpTdep * nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionPiPlusFromLc) == trackSelectionPiPlusFromLc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > piFromLc_dcaXYconstant + piFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
   Partition<alice3tracks> tracksKaPlusFromLc =
-    ((aod::a3DecayMap::decayMap & trackSelectionKaPlusFromLc) == trackSelectionKaPlusFromLc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > kaFromLc_dcaXYconstant + kaFromLc_dcaXYpTdep * nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionKaPlusFromLc) == trackSelectionKaPlusFromLc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > kaFromLc_dcaXYconstant + kaFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
   Partition<alice3tracks> tracksPrPlusFromLc =
-    ((aod::a3DecayMap::decayMap & trackSelectionPrPlusFromLc) == trackSelectionPrPlusFromLc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > prFromLc_dcaXYconstant + prFromLc_dcaXYpTdep * nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionPrPlusFromLc) == trackSelectionPrPlusFromLc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > prFromLc_dcaXYconstant + prFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
   // partitions for Lc baryons
   Partition<alice3tracks> tracksPiMinusFromLc =
-    ((aod::a3DecayMap::decayMap & trackSelectionPiMinusFromLc) == trackSelectionPiMinusFromLc) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > piFromLc_dcaXYconstant + piFromLc_dcaXYpTdep * nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionPiMinusFromLc) == trackSelectionPiMinusFromLc) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > piFromLc_dcaXYconstant + piFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
   Partition<alice3tracks> tracksKaMinusFromLc =
-    ((aod::a3DecayMap::decayMap & trackSelectionKaMinusFromLc) == trackSelectionKaMinusFromLc) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > kaFromLc_dcaXYconstant + kaFromLc_dcaXYpTdep * nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionKaMinusFromLc) == trackSelectionKaMinusFromLc) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > kaFromLc_dcaXYconstant + kaFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
   Partition<alice3tracks> tracksPrMinusFromLc =
-    ((aod::a3DecayMap::decayMap & trackSelectionPrMinusFromLc) == trackSelectionPrMinusFromLc) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > prFromLc_dcaXYconstant + prFromLc_dcaXYpTdep * nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionPrMinusFromLc) == trackSelectionPrMinusFromLc) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > prFromLc_dcaXYconstant + prFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
 
   // Helper struct to pass candidate information
   struct {
@@ -471,10 +471,10 @@ struct alice3decayFinder {
         histos.fill(HIST("h2dGenDbar"), mcParticle.pt(), mcParticle.eta());
     }
     if (doprocessFindLcBaryons) {
-        for (auto const& mcParticle : trueLc)
-          histos.fill(HIST("h2dGenLc"), mcParticle.pt(), mcParticle.eta());
-        for (auto const& mcParticle : trueLcbar)
-          histos.fill(HIST("h2dGenLcbar"), mcParticle.pt(), mcParticle.eta());
+      for (auto const& mcParticle : trueLc)
+        histos.fill(HIST("h2dGenLc"), mcParticle.pt(), mcParticle.eta());
+      for (auto const& mcParticle : trueLcbar)
+        histos.fill(HIST("h2dGenLcbar"), mcParticle.pt(), mcParticle.eta());
     }
   }
 
@@ -520,7 +520,6 @@ struct alice3decayFinder {
         histos.fill(HIST("h3dRecDbar"), dmeson.pt, dmeson.eta, dmeson.mass);
       }
     }
-    
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
@@ -554,10 +553,10 @@ struct alice3decayFinder {
     // Lc+ baryons +4122 -> +2212 -321 +211
     for (auto const& proton : tracksPrPlusFromLcgrouped) {
       for (auto const& pion : tracksPiPlusFromLcgrouped) {
-        if(pion.globalIndex() == proton.globalIndex()) 
-          continue; //avoid self
+        if (pion.globalIndex() == proton.globalIndex())
+          continue; // avoid self
         for (auto const& kaon : tracksKaMinusFromLcgrouped) {
-          if (mcSameMotherCheck && (!checkSameMother(proton, kaon)||!checkSameMother(proton, pion)))
+          if (mcSameMotherCheck && (!checkSameMother(proton, kaon) || !checkSameMother(proton, pion)))
             continue;
           if (!buildDecayCandidateThreeBody(proton, kaon, pion, o2::constants::physics::MassProton, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPionCharged))
             continue;
@@ -569,10 +568,10 @@ struct alice3decayFinder {
     // Lc- baryons -4122 -> -2212 +321 -211
     for (auto const& proton : tracksPrMinusFromLcgrouped) {
       for (auto const& pion : tracksPiMinusFromLcgrouped) {
-        if(pion.globalIndex() == proton.globalIndex()) 
-          continue; //avoid self
+        if (pion.globalIndex() == proton.globalIndex())
+          continue; // avoid self
         for (auto const& kaon : tracksKaPlusFromLcgrouped) {
-          if (mcSameMotherCheck && (!checkSameMother(proton, kaon)||!checkSameMother(proton, pion)))
+          if (mcSameMotherCheck && (!checkSameMother(proton, kaon) || !checkSameMother(proton, pion)))
             continue;
           if (!buildDecayCandidateThreeBody(proton, kaon, pion, o2::constants::physics::MassProton, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPionCharged))
             continue;
@@ -581,7 +580,6 @@ struct alice3decayFinder {
         }
       }
     }
-    
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
