@@ -37,9 +37,9 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFQATables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -48,7 +48,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "PWGLF/DataModel/LFQATables.h"
 
 #include <TFile.h>
 #include <TLorentzVector.h>
