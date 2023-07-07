@@ -78,8 +78,10 @@ class MCProng
 
   MCProng();
   MCProng(int n);
+  MCProng(int n, int m);
   MCProng(int n, std::vector<int> pdgs, std::vector<bool> checkBothCharges, std::vector<bool> excludePDG,
-          std::vector<uint64_t> sourceBits, std::vector<uint64_t> excludeSource, std::vector<bool> useANDonSourceBitMap, bool fPDGInHistory = false, bool fCheckGenerationsInTime = false);
+          std::vector<uint64_t> sourceBits, std::vector<uint64_t> excludeSource, std::vector<bool> useANDonSourceBitMap,
+          bool checkGenerationsInTime = false, std::vector<int> checkIfPDGInHistory = {}, std::vector<bool> excludePDGInHistory = {});
   MCProng(const MCProng& c) = default;
   virtual ~MCProng() = default;
 
@@ -99,8 +101,9 @@ class MCProng
   std::vector<uint64_t> fSourceBits;
   std::vector<uint64_t> fExcludeSource;
   std::vector<bool> fUseANDonSourceBitMap;
-  bool fPDGInHistory;
   bool fCheckGenerationsInTime;
+  std::vector<int> fPDGInHistory;
+  std::vector<bool> fExcludePDGInHistory;
 
   ClassDef(MCProng, 2);
 };
