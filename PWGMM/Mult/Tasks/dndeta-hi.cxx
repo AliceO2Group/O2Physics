@@ -423,9 +423,7 @@ struct MultiplicityCounter {
                      soa::SmallGroups<aod::ReassignedTracksCore> const& atracks,
                      soa::Join<aod::MFTTracks, aod::McMFTTrackLabels> const& mfttracks)
   {
-    constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>() || hasCent<MC>();
-    if (hasCentrality) {
-    }
+    [[maybe_unused]] constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>() || hasCent<MC>();
     for (auto& collision : collisions) {
       registry.fill(HIST("Events/Selection"), 1.);
       auto z = collision.posZ();
@@ -517,9 +515,7 @@ struct MultiplicityCounter {
           registry.fill(HIST("Tracks/ProcessMCCounting/hStatusCode"), Double_t(kINEL), Double_t(kAll), track.template mcParticle_as<Particles>().getGenStatusCode());
           registry.fill(HIST("Tracks/ProcessMCCounting/hMCStatusCode"), Double_t(kINEL), Double_t(kAll), track.template mcParticle_as<Particles>().getHepMCStatusCode());
           registry.fill(HIST("Tracks/ProcessMCCounting/hProcessCode"), Double_t(kINEL), Double_t(kAll), track.template mcParticle_as<Particles>().getProcess());
-        }
-
-        else {
+        } else {
           // when secondary
         }
       }
