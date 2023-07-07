@@ -14,6 +14,7 @@
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 /// \since June 1, 2021
 
+#include <cmath>
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -33,7 +34,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "../filterTables.h"
-#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -393,64 +393,64 @@ struct strangenessFilter {
       if (casc.sign() == 1) {
         if (TMath::Abs(casc.dcapostopv()) < dcamesontopv) {
           continue;
-        };
+        }
         if (TMath::Abs(casc.dcanegtopv()) < dcabaryontopv) {
           continue;
-        };
+        }
         if (TMath::Abs(posdau.tpcNSigmaPi()) > nsigmatpcpi) {
           continue;
-        };
+        }
         if (TMath::Abs(negdau.tpcNSigmaPr()) > nsigmatpcpr) {
           continue;
-        };
+        }
       } else {
         if (TMath::Abs(casc.dcanegtopv()) < dcamesontopv) {
           continue;
-        };
+        }
         if (TMath::Abs(casc.dcapostopv()) < dcabaryontopv) {
           continue;
-        };
+        }
         if (TMath::Abs(posdau.tpcNSigmaPr()) > nsigmatpcpr) {
           continue;
-        };
+        }
         if (TMath::Abs(negdau.tpcNSigmaPi()) > nsigmatpcpi) {
           continue;
-        };
+        }
       }
       // these selection differ for Xi and Omegas:
       if (TMath::Abs(posdau.eta()) > etadau) {
         continue;
-      };
+      }
       if (TMath::Abs(negdau.eta()) > etadau) {
         continue;
-      };
+      }
       if (TMath::Abs(bachelor.eta()) > etadau) {
         continue;
-      };
+      }
       if (TMath::Abs(casc.dcabachtopv()) < dcabachtopv) {
         continue;
-      };
+      }
       if (casc.v0radius() < v0radius) {
         continue;
-      };
+      }
       if (casc.cascradius() < cascradius) {
         continue;
-      };
+      }
       if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa) {
         continue;
-      };
+      }
       if (casc.dcaV0daughters() > dcav0dau) {
         continue;
-      };
+      }
       if (casc.dcacascdaughters() > dcacascdau) {
         continue;
-      };
+      }
       if (TMath::Abs(casc.mLambda() - constants::physics::MassLambda) > masslambdalimit) {
         continue;
-      };
+      }
       if (TMath::Abs(casc.eta()) > eta) {
         continue;
-      };
+      }
 
       isXi = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpcpi) &&
              (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaxi) &&
@@ -658,86 +658,86 @@ struct strangenessFilter {
       if (casc.sign() > 0) {
         if (TMath::Abs(casc.dcapostopv()) < dcamesontopv) {
           continue;
-        };
+        }
         hCandidate->Fill(2.5);
         if (TMath::Abs(casc.dcanegtopv()) < dcabaryontopv) {
           continue;
-        };
+        }
         hCandidate->Fill(3.5);
         if (TMath::Abs(posdau.tpcNSigmaPi()) > nsigmatpcpi) {
           continue;
-        };
+        }
         hCandidate->Fill(4.5);
         if (TMath::Abs(negdau.tpcNSigmaPr()) > nsigmatpcpr) {
           continue;
-        };
+        }
         hCandidate->Fill(5.5);
       } else if (casc.sign() < 0) {
         if (TMath::Abs(casc.dcanegtopv()) < dcamesontopv) {
           continue;
-        };
+        }
         hCandidate->Fill(2.5);
         if (TMath::Abs(casc.dcapostopv()) < dcabaryontopv) {
           continue;
-        };
+        }
         hCandidate->Fill(3.5);
         if (TMath::Abs(negdau.tpcNSigmaPi()) > nsigmatpcpi) {
           continue;
-        };
+        }
         hCandidate->Fill(4.5);
         if (TMath::Abs(posdau.tpcNSigmaPr()) > nsigmatpcpr) {
           continue;
-        };
+        }
         hCandidate->Fill(5.5);
       }
       if (TMath::Abs(posdau.eta()) > etadau) {
         continue;
-      };
+      }
       if (TMath::Abs(negdau.eta()) > etadau) {
         continue;
-      };
+      }
       if (TMath::Abs(bachelor.eta()) > etadau) {
         continue;
-      };
+      }
       hCandidate->Fill(6.5);
       if (TMath::Abs(casc.dcabachtopv()) < dcabachtopv) {
         continue;
-      };
+      }
       hCandidate->Fill(7.5);
       if (casc.v0radius() < v0radius) {
         continue;
-      };
+      }
       hCandidate->Fill(8.5);
       if (casc.cascradius() < cascradius) {
         continue;
-      };
+      }
       hCandidate->Fill(9.5);
       if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa) {
         continue;
-      };
+      }
       hCandidate->Fill(10.5);
       if (casc.dcaV0daughters() > dcav0dau) {
         continue;
-      };
+      }
       hCandidate->Fill(11.5);
       if (casc.dcacascdaughters() > dcacascdau) {
         continue;
-      };
+      }
       hCandidate->Fill(12.5);
       if (TMath::Abs(casc.mLambda() - constants::physics::MassLambda) > masslambdalimit) {
         continue;
-      };
+      }
       hCandidate->Fill(13.5);
       if (TMath::Abs(casc.eta()) > eta) {
         continue;
-      };
+      }
       hCandidate->Fill(14.5);
       if (hastof &&
           (!posdau.hasTOF() && posdau.pt() > ptthrtof) &&
           (!negdau.hasTOF() && negdau.pt() > ptthrtof) &&
           (!bachelor.hasTOF() && bachelor.pt() > ptthrtof)) {
         continue;
-      };
+      }
       hCandidate->Fill(15.5);
 
       // Fill selections QA for XiMinus
@@ -899,7 +899,7 @@ struct strangenessFilter {
     for (int i = 0; i < 11; i++) {
       EvtwhMinPt[i] = 0.;
       EvtwhMinPtXi[i] = 0.;
-      ThrdPt[i] = (float)i;
+      ThrdPt[i] = static_cast<float>(i);
     }
 
     // QA tracks
