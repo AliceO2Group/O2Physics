@@ -12,6 +12,7 @@
 // Full Jet Filter
 // Author: Gijs van Weelden
 
+#include <array>
 #include <cmath>
 #include <string>
 #include <TMath.h>
@@ -39,14 +40,19 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
-using filteredJets = o2::soa::Filtered<o2::aod::FullJets>;
 
 struct fullJetFilter {
+  using collisionInfo = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+  using filteredFullJets = o2::soa::Filtered<o2::aod::FullJets>;
+  using filteredNeutralJets = o2::soa::Filtered<o2::aod::NeutralJets>;
+
   enum {
     kEMCALReadout = 0,
     kJetFullHighPt,
+    kJetFullLowPt,
     kJetNeutralHighPt,
+    kJetNeutralLowPt,
     kGammaHighPtEMCAL,
     kGammaHighPtDCAL,
     kGammaLowPtEMCAL,
@@ -66,10 +72,14 @@ struct fullJetFilter {
   OutputObj<TH2F> hEmcClusterPtPhi{"hEmcClusterPtPhi"};
   OutputObj<TH2F> hSelectedClusterPtEta{"hSelectedClusterEta"};
   OutputObj<TH2F> hSelectedClusterPtPhi{"hSelectedClusterPhi"};
+  OutputObj<TH2F> hSelectedClusterPtEtaLow{"hSelectedClusterEtaLow"};
+  OutputObj<TH2F> hSelectedClusterPtPhiLow{"hSelectedClusterPhiLow"};
   OutputObj<TH2F> hEmcJetPtEta{"hEmcJetEta"};
   OutputObj<TH2F> hEmcJetPtPhi{"hEmcJetPhi"};
   OutputObj<TH2F> hSelectedJetPtEta{"hSelectedJetEta"};
   OutputObj<TH2F> hSelectedJetPtPhi{"hSelectedJetPhi"};
+  OutputObj<TH2F> hSelectedJetPtEtaLow{"hSelectedJetEtaLow"};
+  OutputObj<TH2F> hSelectedJetPtPhiLow{"hSelectedJetPhiLow"};
   OutputObj<TH2F> hSelectedGammaEMCALPtEta{"hSelectedGammaEMCALEta"};
   OutputObj<TH2F> hSelectedGammaEMCALPtPhi{"hSelectedGammaEMCALPhi"};
   OutputObj<TH2F> hSelectedGammaDCALPtEta{"hSelectedGammaDCALEta"};
@@ -81,9 +91,9 @@ struct fullJetFilter {
 
   // Configurables
   Configurable<float> f_jetPtMin{"f_jetPtMin", 0.0, "minimum jet pT cut"};
+  Configurable<float> f_jetPtMinLow{"f_jetPtMinLow", 0.0, "minimum jet pT cut (low threshold)"};
   Configurable<float> f_clusterPtMin{"f_clusterPtMin", 0.0, "minimum cluster pT cut"};
   Configurable<int> f_jetR{"f_jetR", 20, "jet R * 100 to trigger on"};
-  Configurable<int> f_JetType{"f_JetType", 0, "Jet type used for the selection (0 - full jets, 1 - neutral jets)"};
   Configurable<int> f_ObservalbeGammaTrigger{"fObservableGammaTrigger", 0, "Observable for the gamma trigger (0 - Energy, 1 - pt)"};
   Configurable<bool> b_PublishReadoutTrigger{"b_publishReadoutTrigger", false, "Publish EMCAL readout status as trigger flag"};
   Configurable<bool> b_PublishNeutralJetTrigger{"b_publishNeutralJetTrigger", false, "Publish trigger on neutral jets"};
@@ -122,10 +132,14 @@ struct fullJetFilter {
     hEmcClusterPtPhi.setObject(new TH2F("hEmcClusterPtPhi", Form("Emc Clusters;%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedClusterPtEta.setObject(new TH2F("hSelectedClusterPtEta", Form("Selected Clusters;%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hSelectedClusterPtPhi.setObject(new TH2F("hSelectedClusterPtPhi", Form("Selected Clusters;%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedClusterPtEtaLow.setObject(new TH2F("hSelectedClusterPtEtaLow", Form("Selected Clusters (low threshold);%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
+    hSelectedClusterPtPhiLow.setObject(new TH2F("hSelectedClusterPtPhiLow", Form("Selected Clusters (low threshold);%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hEmcJetPtEta.setObject(new TH2F("hEmcJetPtEta", "Emc Jets;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
     hEmcJetPtPhi.setObject(new TH2F("hEmcJetPtPhi", "Emc Jets;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedJetPtEta.setObject(new TH2F("hSelectedJetPtEta", "Selected Jets;#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
     hSelectedJetPtPhi.setObject(new TH2F("hSelectedJetPtPhi", "Selected Jets;#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
+    hSelectedJetPtEtaLow.setObject(new TH2F("hSelectedJetPtEtaLow", "Selected Jets (low threshold);#it{p}_{T};#eta", nPtBins, kMinPt, kMaxPt, nEtaBins, kMinEta, kMaxEta));
+    hSelectedJetPtPhiLow.setObject(new TH2F("hSelectedJetPtPhiLow", "Selected Jets (low threshold);#it{p}_{T};#phi", nPtBins, kMinPt, kMaxPt, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedGammaEMCALPtEta.setObject(new TH2F("hSelectedGammaEMCALPtEta", Form("Selected Gammas EMCAL;%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hSelectedGammaEMCALPtPhi.setObject(new TH2F("hSelectedGammaEMCALPtPhi", Form("Selected Gammas EMCAL;%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedGammaDCALPtEta.setObject(new TH2F("hSelectedGammaDCALPtEta", Form("Selected Gammas DCAL;%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
@@ -139,7 +153,7 @@ struct fullJetFilter {
     LOG(info) << "Gamma trigger: " << (b_doJetTrigger ? "on" : "off");
     LOG(info) << "Thresholds gamma trigger: EG1 " << f_gammaPtMinEMCALHigh << " GeV, DG1 " << f_gammaPtMinDCALHigh << " GeV, EG2 " << f_gammaPtMinEMCALLow << " GeV, DG2 " << f_gammaPtMinDCALLow << " GeV";
     LOG(info) << "Gamma trigger observable: " << (f_ObservalbeGammaTrigger == 0 ? "Energy" : "pt");
-    LOG(info) << "Jet trigger: Type: " << (f_JetType == 0 ? "Full jets" : "Neutral jets") << ", R: " << (static_cast<double>(f_jetR) / 100.) << ", pt > " << f_jetPtMin << " cluster(" << f_clusterPtMin << ")";
+    LOG(info) << "Jet trigger: R: " << (static_cast<double>(f_jetR) / 100.) << ", pt (high threshold) > " << f_jetPtMin << " GeV/c, (low threshold) > " << f_jetPtMinLow << " GeV/c, cluster(" << f_clusterPtMin << ")";
     LOG(info) << "Ignore EMCAL flag: " << (b_IgnoreEmcalFlag ? "yes" : "no");
     LOG(info) << "Publishing neutral jet trigger: " << (b_PublishNeutralJetTrigger ? "yes" : "no");
     LOG(info) << "Publishing EMCAL trigger: " << (b_PublishReadoutTrigger ? "yes" : "no");
@@ -152,7 +166,8 @@ struct fullJetFilter {
   Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
   Filter jetRadiusSelection = o2::aod::jet::r == f_jetR;
 
-  Bool_t isJetInEmcal(filteredJets::iterator const& jet)
+  template <typename JetIterator>
+  Bool_t isJetInEmcal(JetIterator const& jet)
   {
     double emcalEtaMin = -0.7, emcalEtaMax = 0.7, emcalPhiMin = 1.40, emcalPhiMax = 3.26; // Phi: 80 - 187 deg
     double R = jet.r() * 1e-2;                                                            // Jet R is saved as round(100*R)
@@ -162,9 +177,18 @@ struct fullJetFilter {
     return false;
   }
 
-  Bool_t isEvtSelected(double const& jetpt)
+  Bool_t isEvtSelectedJet(double const& jetpt, ThresholdType_t thresholdt)
   {
-    if (jetpt > f_jetPtMin) {
+    float threshold = 0.;
+    switch (thresholdt) {
+      case ThresholdType_t::HIGH_THRESHOLD:
+        threshold = f_jetPtMin;
+        break;
+      case ThresholdType_t::LOW_THRESHOLD:
+        threshold = f_jetPtMinLow;
+        break;
+    }
+    if (jetpt > threshold) {
       return true;
     }
     return false;
@@ -217,90 +241,163 @@ struct fullJetFilter {
     return false;
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, filteredJets const& jets, selectedClusters const& clusters)
+  bool isEMCALMinBias(collisionInfo const& collision) const
   {
-    bool keepEvent[kCategories]{false};
-    double maxClusterObservableEMCAL = -1., maxClusterObservableDCAL = -1., maxSelectedJetPt = -1.;
+    return collision.alias_bit(kTVXinEMC);
+  }
 
-    if (!b_IgnoreEmcalFlag && !collision.alias_bit(kTVXinEMC)) {
-      tags(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
-      return; // Skip events where EMCAL is not live
+  bool isEMCALLevel0(collisionInfo const& collision) const
+  {
+    return collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7);
+  }
+
+  bool isEMCALLevel1(collisionInfo const& collision) const
+  {
+    return collision.alias_bit(kEG1) || collision.alias_bit(kEG2) || collision.alias_bit(kDG1) || collision.alias_bit(kDG2) || collision.alias_bit(kEJ1) || collision.alias_bit(kEJ2) || collision.alias_bit(kDJ1) || collision.alias_bit(kDJ2);
+  }
+
+  bool hasEMCALData(collisionInfo const& collision) const
+  {
+    return isEMCALMinBias(collision) || isEMCALLevel0(collision) || isEMCALLevel1(collision);
+  }
+
+  void runGammaTrigger(const selectedClusters& clusters, std::array<bool, kCategories>& keepEvent)
+  {
+    double maxClusterObservableEMCAL = -1., maxClusterObservableDCAL = -1.;
+    static constexpr std::array<ThresholdType_t, 2> thresholds = {{ThresholdType_t::HIGH_THRESHOLD, ThresholdType_t::LOW_THRESHOLD}};
+    static constexpr std::array<o2::emcal::AcceptanceType_t, 2> subdets = {{o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE, o2::emcal::AcceptanceType_t::DCAL_ACCEPTANCE}};
+    std::array<TH2*, 4> acceptanceHistsPtEta{{hSelectedGammaEMCALPtEta.object.get(), hSelectedGammaDCALPtEta.object.get(), hSelectedGammaEMCALPtEtaLow.object.get(), hSelectedGammaDCALPtEtaLow.object.get()}},
+      acceptanceHistsPtPhi{{hSelectedGammaEMCALPtPhi.object.get(), hSelectedGammaDCALPtPhi.object.get(), hSelectedGammaEMCALPtPhiLow.object.get(), hSelectedGammaDCALPtPhiLow.object.get()}};
+    struct ClusterData {
+      float mTriggerObservable;
+      float mEta;
+      float mPhi;
+    };
+    std::vector<ClusterData> analysedClusters;
+    for (const auto& cluster : clusters) {
+      if (b_RejectExoticClusters && cluster.isExotic()) {
+        continue;
+      }
+      if (cluster.time() < f_minClusterTime || cluster.time() > f_maxClusterTime) {
+        continue;
+      }
+      double observableGamma = (f_ObservalbeGammaTrigger == 0) ? cluster.energy() : cluster.energy() / std::cosh(cluster.eta());
+      if (TVector2::Phi_0_2pi(cluster.phi()) < 4 && observableGamma > maxClusterObservableEMCAL) {
+        maxClusterObservableEMCAL = observableGamma;
+      } else if (TVector2::Phi_0_2pi(cluster.phi()) > 4 && observableGamma > maxClusterObservableDCAL) {
+        maxClusterObservableDCAL = observableGamma;
+      }
+      hEmcClusterPtEta->Fill(observableGamma, cluster.eta());
+      hEmcClusterPtPhi->Fill(observableGamma, cluster.phi());
+      analysedClusters.push_back({static_cast<float>(observableGamma), cluster.eta(), cluster.phi()});
     }
-
-    if (b_PublishReadoutTrigger && collision.alias_bit(kTVXinEMC)) {
-      keepEvent[kEMCALReadout] = true;
-    }
-
-    if (b_doJetTrigger) {
-      // Store pt of leading jet inside of the emcal to trigger on
-      for (const auto& jet : jets) {
-        hEmcJetPtEta->Fill(jet.pt(), jet.eta());
-        hEmcJetPtPhi->Fill(jet.pt(), jet.phi());
-        if (jet.pt() > maxSelectedJetPt) {
-          if (b_DoFiducialCut) {
-            if (isJetInEmcal(jet)) {
-              maxSelectedJetPt = jet.pt();
-            }
-          } else {
-            maxSelectedJetPt = jet.pt();
+    for (decltype(thresholds.size()) ithreshold = 0; ithreshold < thresholds.size(); ithreshold++) {
+      for (decltype(thresholds.size()) isubdet = 0; isubdet < subdets.size(); isubdet++) {
+        if (isEvtSelectedGamma(subdets[isubdet] == o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE ? maxClusterObservableEMCAL : maxClusterObservableDCAL, subdets[isubdet], thresholds[ithreshold])) {
+          keepEvent[kGammaHighPtEMCAL + ithreshold * subdets.size() + isubdet] = true;
+          for (auto& cluster : analysedClusters) {
+            acceptanceHistsPtEta[ithreshold * subdets.size() + isubdet]->Fill(cluster.mTriggerObservable, cluster.mEta);
+            acceptanceHistsPtPhi[ithreshold * subdets.size() + isubdet]->Fill(cluster.mTriggerObservable, cluster.mPhi);
           }
         }
       }
-      if (isEvtSelected(maxSelectedJetPt)) {
-        keepEvent[f_JetType == 0 ? kJetFullHighPt : kJetNeutralHighPt] = true;
+    }
+  }
+
+  template <typename JetCollection>
+  void runJetTrigger(JetCollection const& jets, selectedClusters const& clusters, std::array<bool, kCategories>& keepEvent)
+  {
+    int jettype = 0;
+    if constexpr (std::is_same<JetCollection, filteredFullJets>::value) {
+      LOG(detail) << "Running full jet filter";
+      jettype = 0;
+    } else if constexpr (std::is_same<JetCollection, filteredNeutralJets>::value) {
+      LOG(detail) << "Running neutral jet filter";
+      jettype = 1;
+    } else {
+      LOG(error) << "Unknown jet type";
+      return;
+    }
+    double maxSelectedJetPt = 0.;
+    // Store pt of leading jet inside of the emcal to trigger on
+    static constexpr std::array<ThresholdType_t, 2>
+      thresholds = {{ThresholdType_t::HIGH_THRESHOLD, ThresholdType_t::LOW_THRESHOLD}};
+    std::array<TH2*, 2> acceptanceHistsPtEtaSel = {{hSelectedJetPtEta.object.get(), hSelectedJetPtEtaLow.object.get()}},
+                        acceptanceHistsPtPhiSel = {{hSelectedJetPtPhi.object.get(), hSelectedJetPtPhiLow.object.get()}},
+                        acceptanceHistsClusterPtEtaSel = {{hSelectedClusterPtEta.object.get(), hSelectedClusterPtEtaLow.object.get()}},
+                        acceptanceHistsClusterPtPhiSel = {{hSelectedClusterPtPhi.object.get(), hSelectedClusterPtPhiLow.object.get()}};
+    for (const auto& jet : jets) {
+      hEmcJetPtEta->Fill(jet.pt(), jet.eta());
+      hEmcJetPtPhi->Fill(jet.pt(), jet.phi());
+      if (jet.pt() > maxSelectedJetPt) {
+        if (b_DoFiducialCut) {
+          if (isJetInEmcal(jet)) {
+            maxSelectedJetPt = jet.pt();
+          }
+        } else {
+          maxSelectedJetPt = jet.pt();
+        }
+      }
+    }
+    for (decltype(thresholds.size()) ithreshold = 0; ithreshold < thresholds.size(); ithreshold++) {
+      if (isEvtSelectedJet(maxSelectedJetPt, thresholds[ithreshold])) {
+        std::size_t triggerIndex = kCategories;
+        if (jettype == 0) {
+          switch (thresholds[ithreshold]) {
+            case ThresholdType_t::HIGH_THRESHOLD:
+              triggerIndex = kJetFullHighPt;
+              break;
+            case ThresholdType_t::LOW_THRESHOLD:
+              triggerIndex = kJetFullLowPt;
+              break;
+          }
+        } else {
+          switch (thresholds[ithreshold]) {
+            case ThresholdType_t::HIGH_THRESHOLD:
+              triggerIndex = kJetNeutralHighPt;
+              break;
+            case ThresholdType_t::LOW_THRESHOLD:
+              triggerIndex = kJetNeutralLowPt;
+              break;
+          }
+        }
+        keepEvent[triggerIndex] = true;
         for (const auto& jet : jets) {
           if (isJetInEmcal(jet)) {
-            hSelectedJetPtEta->Fill(jet.pt(), jet.eta());
-            hSelectedJetPtPhi->Fill(jet.pt(), jet.phi());
+            acceptanceHistsPtEtaSel[ithreshold]->Fill(jet.pt(), jet.eta());
+            acceptanceHistsPtPhiSel[ithreshold]->Fill(jet.pt(), jet.phi());
           }
         }
         for (const auto& cluster : clusters) {
           double clusterPt = cluster.energy() / std::cosh(cluster.eta());
-          hSelectedClusterPtEta->Fill(clusterPt, cluster.eta());
-          hSelectedClusterPtPhi->Fill(clusterPt, cluster.phi());
+          acceptanceHistsClusterPtEtaSel[ithreshold]->Fill(clusterPt, cluster.eta());
+          acceptanceHistsClusterPtPhiSel[ithreshold]->Fill(clusterPt, cluster.phi());
         }
       }
     }
+  }
+
+  template <typename JetCollection>
+  void runTrigger(collisionInfo const& collision, JetCollection const& jets, selectedClusters const& clusters)
+  {
+    std::array<bool, kCategories> keepEvent;
+    std::fill(keepEvent.begin(), keepEvent.end(), false);
+
+    if (!b_IgnoreEmcalFlag && !hasEMCALData(collision)) {
+      tags(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8]);
+      return; // Skip events where EMCAL is not live
+    }
+
+    if (b_PublishReadoutTrigger && isEMCALMinBias(collision)) {
+      keepEvent[kEMCALReadout] = true;
+    }
+
+    if (b_doJetTrigger) {
+      runJetTrigger(jets, clusters, keepEvent);
+    }
 
     if (b_doGammaTrigger) {
-      static constexpr std::array<ThresholdType_t, 2> thresholds = {{ThresholdType_t::HIGH_THRESHOLD, ThresholdType_t::LOW_THRESHOLD}};
-      static constexpr std::array<o2::emcal::AcceptanceType_t, 2> subdets = {{o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE, o2::emcal::AcceptanceType_t::DCAL_ACCEPTANCE}};
-      std::array<TH2*, 4> acceptanceHistsPtEta{{hSelectedGammaEMCALPtEta.object.get(), hSelectedGammaDCALPtEta.object.get(), hSelectedGammaEMCALPtEtaLow.object.get(), hSelectedGammaDCALPtEtaLow.object.get()}},
-        acceptanceHistsPtPhi{{hSelectedGammaEMCALPtPhi.object.get(), hSelectedGammaDCALPtPhi.object.get(), hSelectedGammaEMCALPtPhiLow.object.get(), hSelectedGammaDCALPtPhiLow.object.get()}};
-      struct ClusterData {
-        float mTriggerObservable;
-        float mEta;
-        float mPhi;
-      };
-      std::vector<ClusterData> analysedClusters;
-      for (const auto& cluster : clusters) {
-        if (b_RejectExoticClusters && cluster.isExotic()) {
-          continue;
-        }
-        if (cluster.time() < f_minClusterTime || cluster.time() > f_maxClusterTime) {
-          continue;
-        }
-        double observableGamma = (f_ObservalbeGammaTrigger == 0) ? cluster.energy() : cluster.energy() / std::cosh(cluster.eta());
-        if (TVector2::Phi_0_2pi(cluster.phi()) < 4 && observableGamma > maxClusterObservableEMCAL) {
-          maxClusterObservableEMCAL = observableGamma;
-        } else if (TVector2::Phi_0_2pi(cluster.phi()) > 4 && observableGamma > maxClusterObservableDCAL) {
-          maxClusterObservableDCAL = observableGamma;
-        }
-        hEmcClusterPtEta->Fill(observableGamma, cluster.eta());
-        hEmcClusterPtPhi->Fill(observableGamma, cluster.phi());
-        analysedClusters.push_back({static_cast<float>(observableGamma), cluster.eta(), cluster.phi()});
-      }
-      for (int ithreshold = 0; ithreshold < thresholds.size(); ithreshold++) {
-        for (int isubdet = 0; isubdet < subdets.size(); isubdet++) {
-          if (isEvtSelectedGamma(subdets[isubdet] == o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE ? maxClusterObservableEMCAL : maxClusterObservableDCAL, subdets[isubdet], thresholds[ithreshold])) {
-            keepEvent[kGammaHighPtEMCAL + ithreshold * subdets.size() + isubdet] = true;
-            for (auto& cluster : analysedClusters) {
-              acceptanceHistsPtEta[ithreshold * subdets.size() + isubdet]->Fill(cluster.mTriggerObservable, cluster.mEta);
-              acceptanceHistsPtPhi[ithreshold * subdets.size() + isubdet]->Fill(cluster.mTriggerObservable, cluster.mPhi);
-            }
-          }
-        }
-      }
+      runGammaTrigger(clusters, keepEvent);
     }
 
     for (int iDecision{0}; iDecision < kCategories; iDecision++) {
@@ -308,8 +405,22 @@ struct fullJetFilter {
         hProcessedEvents->Fill(iDecision);
       }
     }
-    tags(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6]);
-  } // process()
+    tags(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8]);
+  }
+
+  void processFullJetTrigger(collisionInfo const& collision, filteredFullJets const& jets, selectedClusters const& clusters)
+  {
+    // Trigger selection (full jet case)
+    runTrigger(collision, jets, clusters);
+  }
+  PROCESS_SWITCH(fullJetFilter, processFullJetTrigger, "run full jet triggere code", true);
+
+  void processNeutralJetTrigger(collisionInfo const& collision, filteredNeutralJets const& jets, selectedClusters const& clusters)
+  {
+    // Trigger selection (neutral jet case)
+    runTrigger(collision, jets, clusters);
+  }
+  PROCESS_SWITCH(fullJetFilter, processNeutralJetTrigger, "run neutral jet triggere code", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
