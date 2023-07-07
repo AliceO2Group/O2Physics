@@ -47,6 +47,7 @@ struct tofSpectra {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
   Configurable<int> cfgINELCut{"cfgINELCut", 0, "Event selection: 0 no sel, 1 sel8, 2 INEL>0, 3 INEL>1"};
+  Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1f, "Downsampling factor for the events for derived data"};
   Configurable<bool> enableDcaGoodEvents{"enableDcaGoodEvents", true, "Enables the MC plots with the correct match between data and MC"};
   Configurable<bool> enableTrackCutHistograms{"enableTrackCutHistograms", true, "Enables track cut histograms, before and after the cut"};
   Configurable<bool> enableDeltaHistograms{"enableDeltaHistograms", true, "Enables the delta TPC and TOF histograms"};
@@ -1642,12 +1643,16 @@ struct tofSpectra {
 
   Produces<o2::aod::SpColls> tableColl;
   Produces<o2::aod::SpTracks> tableTrack;
+  unsigned int randomSeed = 0;
   void processForDerivedData(CollisionCandidate::iterator const& collision,
                              soa::Join<TrackCandidates,
                                        aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr,
                                        aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr> const& tracks)
   {
     if (!isEventSelected<false, false>(collision, tracks)) {
+      return;
+    }
+    if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
       return;
     }
 
