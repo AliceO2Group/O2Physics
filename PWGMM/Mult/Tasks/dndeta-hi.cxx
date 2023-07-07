@@ -557,20 +557,20 @@ struct MultiplicityCounter {
         if (std::abs(z) < 10 && std::abs(mcz) < 10)
           registry.fill(HIST("Tracks/ProcessMCCounting/Multiplicity"), Double_t(kINELbg0), Ntrk_rec, Ntrk_gen); // multiplicity matrix
         if (std::abs(z) > 10 && std::abs(mcz) < 10)
-          registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_missing"), Double_t(kINELbg0), Ntrk_gen);           // missing trk
+          registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_missing"), Double_t(kINELbg0), Ntrk_gen); // missing trk
         if (std::abs(z) < 10 && std::abs(mcz) > 10)
-          registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_fake"), Double_t(kINELbg0), Ntrk_rec);              // fake trk
+          registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_fake"), Double_t(kINELbg0), Ntrk_rec); // fake trk
         if (std::abs(z) < 10)
-          registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_rec"), Double_t(kINELbg0), Ntrk_rec);               // MC rec trk
+          registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_rec"), Double_t(kINELbg0), Ntrk_rec); // MC rec trk
         if (std::abs(mcz) < 10)
-          registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_gen"), Double_t(kINELbg0), Ntrk_gen);               // MC gen trk
+          registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_gen"), Double_t(kINELbg0), Ntrk_gen); // MC gen trk
       }
-      registry.fill(HIST("Tracks/ProcessMCCounting/Multiplicity"), Double_t(kINEL), Ntrk_rec, Ntrk_gen);        // multiplicity matrix
-      registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_missing"), Double_t(kINEL), Ntrk_gen);                  // missing trk
-      registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_fake"), Double_t(kINEL), Ntrk_rec);                     // fake trk
-      registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_rec"), Double_t(kINEL), Ntrk_rec);                      // MC rec trk
-      registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_gen"), Double_t(kINEL), Ntrk_gen);                      // MC gen trk
-      registry.fill(HIST("Tracks/ProcessMCCounting/Zvtx"), z, mcz);                                             // zvtx matrix
+      registry.fill(HIST("Tracks/ProcessMCCounting/Multiplicity"), Double_t(kINEL), Ntrk_rec, Ntrk_gen); // multiplicity matrix
+      registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_missing"), Double_t(kINEL), Ntrk_gen);           // missing trk
+      registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_fake"), Double_t(kINEL), Ntrk_rec);              // fake trk
+      registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_rec"), Double_t(kINEL), Ntrk_rec);               // MC rec trk
+      registry.fill(HIST("Tracks/ProcessMCCounting/Ntrk_gen"), Double_t(kINEL), Ntrk_gen);               // MC gen trk
+      registry.fill(HIST("Tracks/ProcessMCCounting/Zvtx"), z, mcz);                                      // zvtx matrix
     }
   }
   template <typename C>
@@ -688,7 +688,7 @@ struct MultiplicityCounter {
 
       if (useEvSel && !collision.sel8()) // event selection cut
         continue;
-      if (!collision.has_mcCollision())  // check mc particle
+      if (!collision.has_mcCollision()) // check mc particle
         continue;
 
       for (auto& v0 : fullV0s) {
