@@ -113,6 +113,9 @@ struct hypertriton3bodyAnalysis {
       {"hPtPion", "hPtPion", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hPtAntiDeuteron", "hPtAntiDeuteron", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"h3dMassHypertriton", "h3dMassHypertriton", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"hTPCPIDProton", "hTPCPIDProton", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+      {"hTPCPIDPion", "hTPCPIDPion", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+      {"hTPCPIDDeuteron", "hTPCPIDDeuteron", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
       {"h3dMassAntiHypertriton", "h3dMassAntiHypertriton", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
       {"h3dTotalHypertriton", "h3dTotalHypertriton", {HistType::kTH3F, {{50, 0, 50, "ct(cm)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
     },
@@ -210,6 +213,9 @@ struct hypertriton3bodyAnalysis {
             registry.fill(HIST("hPtProton"), vtx.track0pt());
             registry.fill(HIST("hPtAntiPion"), vtx.track1pt());
             registry.fill(HIST("hPtDeuteron"), vtx.track2pt());
+            registry.fill(HIST("hTPCPIDProton"), vtx.track0_as<MyTracks>().tpcNSigmaPr());
+            registry.fill(HIST("hTPCPIDPion"), vtx.track1_as<MyTracks>().tpcNSigmaPi());
+            registry.fill(HIST("hTPCPIDDeuteron"), vtx.track2_as<MyTracks>().tpcNSigmaDe());
             registry.fill(HIST("hMassHypertriton"), vtx.mHypertriton());
             registry.fill(HIST("hMassHypertritonTotal"), vtx.mHypertriton());
             registry.fill(HIST("h3dMassHypertriton"), 0., vtx.pt(), vtx.mHypertriton()); // collision.centV0M() instead of 0. once available
@@ -222,7 +228,7 @@ struct hypertriton3bodyAnalysis {
       }
 
       // AntiHypertriton
-      if (TMath::Abs(vtx.track1_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(vtx.track2_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(vtx.track2_as<MyTracks>().tpcNSigmaDe()) < TpcPidNsigmaCut) {
+      if (TMath::Abs(vtx.track0_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(vtx.track1_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(vtx.track2_as<MyTracks>().tpcNSigmaDe()) < TpcPidNsigmaCut) {
 
         registry.fill(HIST("hSelectedCandidatesCounter"), 6.5);
 
@@ -231,9 +237,12 @@ struct hypertriton3bodyAnalysis {
           if (TMath::Abs(vtx.dcatrack0topv()) > dcapiontopv) {
             registry.fill(HIST("hSelectedCandidatesCounter"), 8.5);
 
-            registry.fill(HIST("hPtAntiProton"), vtx.track0pt());
-            registry.fill(HIST("hPtPion"), vtx.track1pt());
+            registry.fill(HIST("hPtAntiProton"), vtx.track1pt());
+            registry.fill(HIST("hPtPion"), vtx.track0pt());
             registry.fill(HIST("hPtAntiDeuteron"), vtx.track2pt());
+            registry.fill(HIST("hTPCPIDProton"), vtx.track1_as<MyTracks>().tpcNSigmaPr());
+            registry.fill(HIST("hTPCPIDPion"), vtx.track0_as<MyTracks>().tpcNSigmaPi());
+            registry.fill(HIST("hTPCPIDDeuteron"), vtx.track2_as<MyTracks>().tpcNSigmaDe());
             registry.fill(HIST("hMassAntiHypertriton"), vtx.mAntiHypertriton());
             registry.fill(HIST("hMassHypertritonTotal"), vtx.mAntiHypertriton());
             registry.fill(HIST("h3dMassAntiHypertriton"), 0., vtx.pt(), vtx.mAntiHypertriton()); // collision.centV0M() instead of 0. once available
