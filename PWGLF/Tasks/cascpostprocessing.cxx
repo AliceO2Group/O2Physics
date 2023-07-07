@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief post processing
+/// \brief post processing for Cascade analysis
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 /// \modified by Chiara De Martin (chiara.de.martin@cern.ch)
 /// \since March 20, 2023
@@ -61,6 +61,7 @@ struct cascpostprocessing {
   Configurable<float> nsigmatofPi{"nsigmatofPi", 6, "N sigma TOF Pion"};
   Configurable<float> nsigmatofPr{"nsigmatofPr", 6, "N sigma TOF Proton"};
   Configurable<float> nsigmatofKa{"nsigmatofKa", 6, "N sigma TOF Kaon"};
+  Configurable<int> mintpccrrows{"mintpccrrows", 50, "min N TPC crossed rows"};
 
   Configurable<bool> isSelectBachBaryon{"isSelectBachBaryon", 0, "Bachelor-baryon cascade selection"};
   Configurable<float> bachBaryonCosPA{"bachBaryonCosPA", 0.9999, "Bachelor baryon CosPA"};
@@ -99,7 +100,7 @@ struct cascpostprocessing {
     TString CutLabel[22] = {"All", "MassWin", "y", "EtaDau", "DCADauToPV", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "ctau", "CompDecayMass", "Bach-baryon"};
     TString CutLabelSummary[25] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegtopv", "dcabachtopv", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "proplifetime", "rejcomp", "ptthrtof", "bachBaryonCosPA", "bachBaryonDCAxyToPV"};
 
-    registry.add("hCandidate", "hCandidate", HistType::kTH1F, {{22, -0.5, 21.5}});
+    registry.add("hCandidate", "hCandidate", HistType::kTH1F, {{23, -0.5, 22.5}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hCandidate"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hCandidate"))->GetXaxis()->SetBinLabel(n, CutLabel[n - 1]);
     }
@@ -374,6 +375,9 @@ struct cascpostprocessing {
       if (isSelectBachBaryon && (candidate.bachBaryonCosPA() > bachBaryonCosPA || fabs(candidate.bachBaryonDCAxyToPV()) < bachBaryonDCAxyToPV)) { // Bach-baryon selection if required
         continue;
       }
+      registry.fill(HIST("hCandidate"), ++counter);
+      if (candidate.posntpccrrows() < mintpccrrows || candidate.negntpccrrows() < mintpccrrows || candidate.bachntpccrrows() < mintpccrrows)
+        continue;
       registry.fill(HIST("hCandidate"), ++counter);
 
       registry.fill(HIST("hPt"), candidate.pt());
