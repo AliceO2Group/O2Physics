@@ -37,6 +37,8 @@ DECLARE_SOA_COLUMN(Nsd, nsd, float); //!
 
 namespace jetoutput
 {
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                //!
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);            //!
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);                       //!
 DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);                     //!
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);                     //!
@@ -45,21 +47,21 @@ DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int);   //!
 } // namespace jetoutput
 
 // Defines the jet substrcuture table definition
-#define JETSUBSTRUCTURE_TABLE_DEF(_jet_type_, _cand_type_, _name_, _description_)                                                                                                                                                  \
-  namespace _name_##substructure                                                                                                                                                                                                   \
-  {                                                                                                                                                                                                                                \
-    DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                                                                                                                                                                                     \
-    DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, _cand_type_, "_0");                                                                                                                                                   \
-    DECLARE_SOA_DYNAMIC_COLUMN(Dummy##_jet_type_, dummy##_jet_type_, []() -> int { return 0; });                                                                                                                                   \
-  }                                                                                                                                                                                                                                \
-  DECLARE_SOA_TABLE(_jet_type_##Substructures, "AOD", _description_ "SS", jetsubstructure::Zg, jetsubstructure::Rg, jetsubstructure::Nsd, _name_##substructure::Dummy##_jet_type_<>);                                              \
-  DECLARE_SOA_TABLE(_jet_type_##Output, "AOD", _description_ "O", _name_##substructure::_jet_type_##Id, _name_##substructure::Candidate##Id, jetoutput::JetPt, jetoutput::JetPhi, jetoutput::JetEta, jetoutput::JetNConstituents); \
+#define JETSUBSTRUCTURE_TABLE_DEF(_collision_type_, _jet_type_, _cand_type_, _name_, _description_)                                                                                                                                                                 \
+  namespace _name_##substructure                                                                                                                                                                                                                                    \
+  {                                                                                                                                                                                                                                                                 \
+    DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                                                                                                                                                                                                                      \
+    DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, _cand_type_, "_0");                                                                                                                                                                                    \
+    DECLARE_SOA_DYNAMIC_COLUMN(Dummy##_jet_type_, dummy##_jet_type_, []() -> int { return 0; });                                                                                                                                                                    \
+  }                                                                                                                                                                                                                                                                 \
+  DECLARE_SOA_TABLE(_jet_type_##Substructures, "AOD", _description_ "SS", jetsubstructure::Zg, jetsubstructure::Rg, jetsubstructure::Nsd, _name_##substructure::Dummy##_jet_type_<>);                                                                               \
+  DECLARE_SOA_TABLE(_jet_type_##Output, "AOD", _description_ "O", jetoutput::_collision_type_##Id, _name_##substructure::_jet_type_##Id, _name_##substructure::Candidate##Id, jetoutput::JetPt, jetoutput::JetPhi, jetoutput::JetEta, jetoutput::JetNConstituents); \
   DECLARE_SOA_TABLE(_jet_type_##SubstructureOutput, "AOD", _description_ "SSO", _name_##substructure::_jet_type_##Id, jetsubstructure::Zg, jetsubstructure::Rg, jetsubstructure::Nsd);
 
-#define JETSUBSTRUCTURE_TABLES_DEF(_jet_type_, _cand_type_, _description_)                                                    \
-  JETSUBSTRUCTURE_TABLE_DEF(_jet_type_##Jet, _cand_type_, _jet_type_##jet, _description_)                                     \
-  JETSUBSTRUCTURE_TABLE_DEF(_jet_type_##MCDetectorLevelJet, _cand_type_, _jet_type_##mcdetectorleveljet, _description_ "MCD") \
-  JETSUBSTRUCTURE_TABLE_DEF(_jet_type_##MCParticleLevelJet, McParticles, _jet_type_##mcparticleleveljet, _description_ "MCP")
+#define JETSUBSTRUCTURE_TABLES_DEF(_jet_type_, _cand_type_, _description_)                                                               \
+  JETSUBSTRUCTURE_TABLE_DEF(Collision, _jet_type_##Jet, _cand_type_, _jet_type_##jet, _description_)                                     \
+  JETSUBSTRUCTURE_TABLE_DEF(Collision, _jet_type_##MCDetectorLevelJet, _cand_type_, _jet_type_##mcdetectorleveljet, _description_ "MCD") \
+  JETSUBSTRUCTURE_TABLE_DEF(McCollision, _jet_type_##MCParticleLevelJet, McParticles, _jet_type_##mcparticleleveljet, _description_ "MCP")
 
 JETSUBSTRUCTURE_TABLES_DEF(Charged, HfCand2Prong, "C");
 JETSUBSTRUCTURE_TABLES_DEF(D0Charged, HfCand2Prong, "D0");

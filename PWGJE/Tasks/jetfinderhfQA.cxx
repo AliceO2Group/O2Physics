@@ -69,6 +69,8 @@ struct JetFinderHFQATask {
                               {"h_candidate_eta", "candidate #eta;#eta_{candidate};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"h_candidate_phi", "candidate #phi;#phi_{candidate};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
                               {"h_candidate_y", "candidate y;y_{candidate};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
+                              {"h3_candidate_invmass_jet_pt_candidate_pt", ";#it{m}_{inv, candidate} (GeV/#it{c}^{2}); #it{p}_{T,jet} (GeV/#it{c}) ;#it{p}_{T,candidate} (GeV/#it{c})", {HistType::kTH2F, {{5000, 0.0, 5.0}, {200, 0.0, 200.0}, {200, 0.0, 200.0}}}},
+                              {"h3_candidatebar_invmass_jet_pt_candidate_pt", ";#it{m}_{inv, candidate bar} (GeV/#it{c}^{2}); #it{p}_{T,jet} (GeV/#it{c}) ;#it{p}_{T,candidate} (GeV/#it{c})", {HistType::kTH2F, {{5000, 0.0, 5.0}, {200, 0.0, 200.0}, {200, 0.0, 200.0}}}},
                               {"h2_jet_pt_candidate_pt", ";#it{p}_{T,jet} (GeV/#it{c}); #it{p}_{T,candidate} (GeV/#it{c})", {HistType::kTH2F, {{200, 0.0, 200}, {200, 0.0, 200}}}},
                               {"h_jet_pt_part", "jet pT;#it{p}_{T,jet}^{part}(GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}, true},
                               {"h_jet_eta_part", "jet #eta;#eta_{jet}^{part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}, true},
@@ -121,8 +123,10 @@ struct JetFinderHFQATask {
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum pT acceptance for tracks"};
   Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
+  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   std::string trackSelection;
-  std::vector<double> minJetPt;
+  std::vector<bool> filledJetR;
   std::vector<double> jetRadiiValues;
 
   void init(o2::framework::InitContext&)
@@ -131,7 +135,7 @@ struct JetFinderHFQATask {
     jetRadiiValues = (std::vector<double>)jetRadii;
 
     for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
-      minJetPt.push_back(0.0);
+      filledJetR.push_back(0.0);
     }
     auto jetRadiiBins = (std::vector<double>)jetRadii;
     if (jetRadiiBins.size() > 1) {
@@ -236,6 +240,13 @@ struct JetFinderHFQATask {
       registry.fill(HIST("h_candidate_phi"), hfcandidate.phi(), weight);
       registry.fill(HIST("h_candidate_y"), hfcandidate.y(RecoDecay::getMassPDG(421)), weight);
       registry.fill(HIST("h2_jet_pt_candidate_pt"), jet.pt(), hfcandidate.pt(), weight);
+
+      if (hfcandidate.isSelD0() >= selectionFlagD0) {
+        registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), invMassD0ToPiK(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+      }
+      if (hfcandidate.isSelD0bar() >= selectionFlagD0bar) {
+        registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), invMassD0barToKPi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+      }
     }
   }
 
@@ -285,6 +296,13 @@ struct JetFinderHFQATask {
       registry.fill(HIST("h_candidate_phi"), hfcandidate.phi(), weight);
       registry.fill(HIST("h_candidate_y"), hfcandidate.y(RecoDecay::getMassPDG(421)), weight);
       registry.fill(HIST("h2_jet_pt_candidate_pt"), jet.pt(), hfcandidate.pt(), weight);
+
+      if (hfcandidate.isSelD0() >= selectionFlagD0 && hfcandidate.flagMcMatchRec() == (1 << DecayType::D0ToPiK)) {
+        registry.fill(HIST("h3_candidate_invmass_jet_pt_candidate_pt"), invMassD0ToPiK(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+      }
+      if (hfcandidate.isSelD0bar() >= selectionFlagD0bar && hfcandidate.flagMcMatchRec() == -(1 << DecayType::D0ToPiK)) {
+        registry.fill(HIST("h3_candidatebar_invmass_jet_pt_candidate_pt"), invMassD0barToKPi(hfcandidate), jet.pt(), hfcandidate.pt(), weight);
+      }
     }
   }
 
@@ -476,16 +494,14 @@ struct JetFinderHFQATask {
       registry.fill(HIST("h_collision_trigger_events"), 3.5); // events with triggered jets
 
     for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
-      minJetPt[iJetRadius] = 0.0;
+      filledJetR[iJetRadius] = false;
     }
     for (auto& jet : jets) {
       for (auto iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
-        if (jet.r() == round(jetRadiiValues[iJetRadius] * 100.0f)) {
-          for (double pt = jet.pt(); pt > minJetPt[iJetRadius]; pt -= 1.0) {
+        if (jet.r() == round(jetRadiiValues[iJetRadius] * 100.0f) && !filledJetR[iJetRadius]) {
+          filledJetR[iJetRadius] = true;
+          for (double pt = 0.0; pt <= jet.pt(); pt += 1.0) {
             registry.fill(HIST("h2_jet_radius_jet_pT_triggered"), jet.r() / 100.0, pt);
-          }
-          if (jet.pt() > minJetPt[iJetRadius]) {
-            minJetPt[iJetRadius] = jet.pt();
           }
           break;
         }
