@@ -46,6 +46,8 @@ DECLARE_SOA_COLUMN(PosXMC, posXMC, float);
 DECLARE_SOA_COLUMN(PosYMC, posYMC, float);
 DECLARE_SOA_COLUMN(PosZMC, posZMC, float);
 DECLARE_SOA_COLUMN(CollisionTimeMC, collisionTimeMC, float);
+DECLARE_SOA_COLUMN(RecoPVsPerMcColl, recoPVsPerMcColls, int);                       // from LF MCcollisionExtra
+DECLARE_SOA_COLUMN(IsPvHighestContribForMcColl, IsPvHighestContribForMcColls, int); // from LF MCcollisionExtra
 DECLARE_SOA_COLUMN(DpgCounterCollision, dpgCounterCollision, int);
 DECLARE_SOA_COLUMN(DpgCounterDF, dpgCounterDF, int);
 DECLARE_SOA_COLUMN(IsFakeCollision, isFakeCollision, int);
@@ -89,7 +91,9 @@ DECLARE_SOA_TABLE(DPGCollsBig, "AOD", "DPGCollsBig", //! Big table of the DPG co
                   dpgcollision::PosYMC,
                   dpgcollision::PosZMC,
                   dpgcollision::CollisionTimeMC,
-                  dpgcollision::IsFakeCollision); /// -1: unknown (data); 0: not fake; 1: fake (== it does not correspond to any MC collision)
+                  dpgcollision::IsFakeCollision, /// -1: unknown (data); 0: not fake; 1: fake (== it does not correspond to any MC collision)
+                  dpgcollision::RecoPVsPerMcColl,
+                  dpgcollision::IsPvHighestContribForMcColl);
 
 namespace dpgtrack
 {
