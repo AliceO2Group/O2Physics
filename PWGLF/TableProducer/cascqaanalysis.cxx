@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief QA task for V0 analysis using derived data
+/// \brief QA task for Cascade analysis using derived data
 ///
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 
@@ -285,6 +285,7 @@ struct cascqaanalysis {
                      ctauXi, ctauOmega, negdau.tpcNSigmaPr(), posdau.tpcNSigmaPr(), negdau.tpcNSigmaPi(), posdau.tpcNSigmaPi(), bachelor.tpcNSigmaPi(), bachelor.tpcNSigmaKa(),
                      negdau.tofNSigmaPr(), posdau.tofNSigmaPr(), negdau.tofNSigmaPi(), posdau.tofNSigmaPi(), bachelor.tofNSigmaPi(), bachelor.tofNSigmaKa(),
                      posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
+                     posdau.tpcNClsCrossedRows(), negdau.tpcNClsCrossedRows(), bachelor.tpcNClsCrossedRows(),
                      posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF(),
                      posdau.pt(), negdau.pt(), bachelor.pt(), -1, -1, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), flags);
         }
@@ -376,6 +377,7 @@ struct cascqaanalysis {
                      ctauXi, ctauOmega, negdau.tpcNSigmaPr(), posdau.tpcNSigmaPr(), negdau.tpcNSigmaPi(), posdau.tpcNSigmaPi(), bachelor.tpcNSigmaPi(), bachelor.tpcNSigmaKa(),
                      negdau.tofNSigmaPr(), posdau.tofNSigmaPr(), negdau.tofNSigmaPi(), posdau.tofNSigmaPi(), bachelor.tofNSigmaPi(), bachelor.tofNSigmaKa(),
                      posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
+                     posdau.tpcNClsCrossedRows(), negdau.tpcNClsCrossedRows(), bachelor.tpcNClsCrossedRows(),
                      posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF(),
                      posdau.pt(), negdau.pt(), bachelor.pt(), lPDG, isPrimary, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), flags);
         }
@@ -517,43 +519,48 @@ struct myCascades {
 
   HistogramRegistry registry{"registry"};
 
+  // QA
+  Configurable<bool> doQA{"doQA", 0, "Fill QA histograms"};
+
   void init(InitContext const&)
   {
     TString PGDlabels[3] = {"Unknown", "3312", "3334"};
     registry.add("hPt", "hPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}});
-    registry.add("hMassXi", "hMassXi", {HistType::kTH1F, {{3000, 0.0f, 3.0f}}});
-    registry.add("hMassOmega", "hMassOmega", {HistType::kTH1F, {{3000, 0.0f, 3.0f}}});
-    registry.add("hCascRadius", "hCascRadius", {HistType::kTH1D, {{100, 0.0f, 40.0f}}});
-    registry.add("hV0Radius", "hV0Radius", {HistType::kTH1D, {{100, 0.0f, 40.0f}}});
-    registry.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
-    registry.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
-    registry.add("hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
-    registry.add("hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
-    registry.add("hDCABachToPV", "hDCABachToPV", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
-    registry.add("hDCACascDaughters", "hDCACascDaughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
-    registry.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
-    registry.add("hCtauXi", "hCtauXi", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
-    registry.add("hCtauOmega", "hCtauOmega", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
-    registry.add("hTPCNSigmaPosPi", "hTPCNSigmaPosPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-    registry.add("hTPCNSigmaNegPi", "hTPCNSigmaNegPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-    registry.add("hTPCNSigmaPosPr", "hTPCNSigmaPosPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-    registry.add("hTPCNSigmaNegPr", "hTPCNSigmaNegPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-    registry.add("hTPCNSigmaBachPi", "hTPCNSigmaBachPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-    registry.add("hTOFNSigmaPosPi", "hTOFNSigmaPosPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-    registry.add("hTOFNSigmaNegPi", "hTOFNSigmaNegPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-    registry.add("hTOFNSigmaPosPr", "hTOFNSigmaPosPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-    registry.add("hTOFNSigmaNegPr", "hTOFNSigmaNegPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-    registry.add("hTOFNSigmaBachPi", "hTOFNSigmaBachPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-    registry.add("hPosITSHits", "hPosITSHits", {HistType::kTH1F, {{8, -0.5f, 7.5f}}});
-    registry.add("hNegITSHits", "hNegITSHits", {HistType::kTH1F, {{8, -0.5f, 7.5f}}});
-    registry.add("hBachITSHits", "hBachITSHits", {HistType::kTH1F, {{8, -0.5f, 7.5f}}});
-    registry.add("hIsPrimary", "hIsPrimary", {HistType::kTH1F, {{3, -1.5f, 1.5f}}});
-    registry.add("hPDGcode", "hPDGcode", {HistType::kTH1F, {{3, -1.5f, 1.5f}}});
-    for (Int_t n = 1; n <= registry.get<TH1>(HIST("hPDGcode"))->GetNbinsX(); n++) {
-      registry.get<TH1>(HIST("hPDGcode"))->GetXaxis()->SetBinLabel(n, PGDlabels[n - 1]);
+    registry.add("hMassXi", "hMassXi", {HistType::kTH1F, {{1000, 1.0f, 2.0f}}});
+    registry.add("hMassOmega", "hMassOmega", {HistType::kTH1F, {{1000, 1.0f, 2.0f}}});
+    if (doQA) {
+      registry.add("hCascRadius", "hCascRadius", {HistType::kTH1D, {{100, 0.0f, 40.0f}}});
+      registry.add("hV0Radius", "hV0Radius", {HistType::kTH1D, {{100, 0.0f, 40.0f}}});
+      registry.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
+      registry.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
+      registry.add("hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
+      registry.add("hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
+      registry.add("hDCABachToPV", "hDCABachToPV", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
+      registry.add("hDCACascDaughters", "hDCACascDaughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
+      registry.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
+      registry.add("hCtauXi", "hCtauXi", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
+      registry.add("hCtauOmega", "hCtauOmega", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
+      registry.add("hTPCNSigmaPosPi", "hTPCNSigmaPosPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+      registry.add("hTPCNSigmaNegPi", "hTPCNSigmaNegPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+      registry.add("hTPCNSigmaPosPr", "hTPCNSigmaPosPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+      registry.add("hTPCNSigmaNegPr", "hTPCNSigmaNegPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+      registry.add("hTPCNSigmaBachPi", "hTPCNSigmaBachPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+      registry.add("hTOFNSigmaPosPi", "hTOFNSigmaPosPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+      registry.add("hTOFNSigmaNegPi", "hTOFNSigmaNegPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+      registry.add("hTOFNSigmaPosPr", "hTOFNSigmaPosPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+      registry.add("hTOFNSigmaNegPr", "hTOFNSigmaNegPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+      registry.add("hTOFNSigmaBachPi", "hTOFNSigmaBachPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+      registry.add("hPosITSHits", "hPosITSHits", {HistType::kTH1F, {{8, -0.5f, 7.5f}}});
+      registry.add("hNegITSHits", "hNegITSHits", {HistType::kTH1F, {{8, -0.5f, 7.5f}}});
+      registry.add("hBachITSHits", "hBachITSHits", {HistType::kTH1F, {{8, -0.5f, 7.5f}}});
+      registry.add("hIsPrimary", "hIsPrimary", {HistType::kTH1F, {{3, -1.5f, 1.5f}}});
+      registry.add("hPDGcode", "hPDGcode", {HistType::kTH1F, {{3, -1.5f, 1.5f}}});
+      for (Int_t n = 1; n <= registry.get<TH1>(HIST("hPDGcode"))->GetNbinsX(); n++) {
+        registry.get<TH1>(HIST("hPDGcode"))->GetXaxis()->SetBinLabel(n, PGDlabels[n - 1]);
+      }
+      registry.add("hBachBaryonCosPA", "hBachBaryonCosPA", {HistType::kTH1F, {{100, 0.0f, 1.0f}}});
+      registry.add("hBachBaryonDCAxyToPV", "hBachBaryonDCAxyToPV", {HistType::kTH1F, {{300, -3.0f, 3.0f}}});
     }
-    registry.add("hBachBaryonCosPA", "hBachBaryonCosPA", {HistType::kTH1F, {{100, 0.0f, 1.0f}}});
-    registry.add("hBachBaryonDCAxyToPV", "hBachBaryonDCAxyToPV", {HistType::kTH1F, {{300, -3.0f, 3.0f}}});
   }
 
   void process(aod::MyCascades const& mycascades)
@@ -563,38 +570,40 @@ struct myCascades {
       registry.fill(HIST("hMassXi"), candidate.massxi());
       registry.fill(HIST("hMassOmega"), candidate.massomega());
       registry.fill(HIST("hPt"), candidate.pt());
-      registry.fill(HIST("hCascRadius"), candidate.cascradius());
-      registry.fill(HIST("hV0Radius"), candidate.v0radius());
-      registry.fill(HIST("hCascCosPA"), candidate.casccospa());
-      registry.fill(HIST("hV0CosPA"), candidate.v0cospa());
-      registry.fill(HIST("hDCANegToPV"), candidate.dcanegtopv());
-      registry.fill(HIST("hDCAPosToPV"), candidate.dcapostopv());
-      registry.fill(HIST("hDCABachToPV"), candidate.dcabachtopv());
-      registry.fill(HIST("hDCACascDaughters"), candidate.dcacascdaughters());
-      registry.fill(HIST("hDCAV0Daughters"), candidate.dcav0daughters());
-      registry.fill(HIST("hCtauXi"), candidate.ctauxi());
-      registry.fill(HIST("hCtauOmega"), candidate.ctauomega());
-      registry.fill(HIST("hTPCNSigmaPosPi"), candidate.ntpcsigmapospi());
-      registry.fill(HIST("hTPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
-      registry.fill(HIST("hTPCNSigmaPosPr"), candidate.ntpcsigmapospr());
-      registry.fill(HIST("hTPCNSigmaNegPr"), candidate.ntpcsigmanegpr());
-      registry.fill(HIST("hTPCNSigmaBachPi"), candidate.ntpcsigmabachpi());
-      registry.fill(HIST("hTOFNSigmaPosPi"), candidate.ntofsigmapospi());
-      registry.fill(HIST("hTOFNSigmaNegPi"), candidate.ntofsigmanegpi());
-      registry.fill(HIST("hTOFNSigmaPosPr"), candidate.ntofsigmapospr());
-      registry.fill(HIST("hTOFNSigmaNegPr"), candidate.ntofsigmanegpr());
-      registry.fill(HIST("hTOFNSigmaBachPi"), candidate.ntofsigmabachpi());
-      registry.fill(HIST("hPosITSHits"), candidate.positshits());
-      registry.fill(HIST("hNegITSHits"), candidate.negitshits());
-      registry.fill(HIST("hBachITSHits"), candidate.bachitshits());
-      registry.fill(HIST("hIsPrimary"), candidate.isPrimary());
-      registry.fill(HIST("hBachBaryonCosPA"), candidate.bachBaryonCosPA());
-      registry.fill(HIST("hBachBaryonDCAxyToPV"), candidate.bachBaryonDCAxyToPV());
+      if (doQA) {
+        registry.fill(HIST("hCascRadius"), candidate.cascradius());
+        registry.fill(HIST("hV0Radius"), candidate.v0radius());
+        registry.fill(HIST("hCascCosPA"), candidate.casccospa());
+        registry.fill(HIST("hV0CosPA"), candidate.v0cospa());
+        registry.fill(HIST("hDCANegToPV"), candidate.dcanegtopv());
+        registry.fill(HIST("hDCAPosToPV"), candidate.dcapostopv());
+        registry.fill(HIST("hDCABachToPV"), candidate.dcabachtopv());
+        registry.fill(HIST("hDCACascDaughters"), candidate.dcacascdaughters());
+        registry.fill(HIST("hDCAV0Daughters"), candidate.dcav0daughters());
+        registry.fill(HIST("hCtauXi"), candidate.ctauxi());
+        registry.fill(HIST("hCtauOmega"), candidate.ctauomega());
+        registry.fill(HIST("hTPCNSigmaPosPi"), candidate.ntpcsigmapospi());
+        registry.fill(HIST("hTPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
+        registry.fill(HIST("hTPCNSigmaPosPr"), candidate.ntpcsigmapospr());
+        registry.fill(HIST("hTPCNSigmaNegPr"), candidate.ntpcsigmanegpr());
+        registry.fill(HIST("hTPCNSigmaBachPi"), candidate.ntpcsigmabachpi());
+        registry.fill(HIST("hTOFNSigmaPosPi"), candidate.ntofsigmapospi());
+        registry.fill(HIST("hTOFNSigmaNegPi"), candidate.ntofsigmanegpi());
+        registry.fill(HIST("hTOFNSigmaPosPr"), candidate.ntofsigmapospr());
+        registry.fill(HIST("hTOFNSigmaNegPr"), candidate.ntofsigmanegpr());
+        registry.fill(HIST("hTOFNSigmaBachPi"), candidate.ntofsigmabachpi());
+        registry.fill(HIST("hPosITSHits"), candidate.positshits());
+        registry.fill(HIST("hNegITSHits"), candidate.negitshits());
+        registry.fill(HIST("hBachITSHits"), candidate.bachitshits());
+        registry.fill(HIST("hIsPrimary"), candidate.isPrimary());
+        registry.fill(HIST("hBachBaryonCosPA"), candidate.bachBaryonCosPA());
+        registry.fill(HIST("hBachBaryonDCAxyToPV"), candidate.bachBaryonDCAxyToPV());
 
-      if (TMath::Abs(candidate.mcPdgCode()) == 3312 || TMath::Abs(candidate.mcPdgCode()) == 3334) {
-        registry.fill(HIST("hPDGcode"), TMath::Abs(candidate.mcPdgCode()) == 3312 ? 0 : 1); // 0 if Xi, 1 if Omega
-      } else {
-        registry.fill(HIST("hPDGcode"), -1); // -1 if unknown
+        if (TMath::Abs(candidate.mcPdgCode()) == 3312 || TMath::Abs(candidate.mcPdgCode()) == 3334) {
+          registry.fill(HIST("hPDGcode"), TMath::Abs(candidate.mcPdgCode()) == 3312 ? 0 : 1); // 0 if Xi, 1 if Omega
+        } else {
+          registry.fill(HIST("hPDGcode"), -1); // -1 if unknown
+        }
       }
     }
   }

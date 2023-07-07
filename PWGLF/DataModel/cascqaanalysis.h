@@ -87,6 +87,9 @@ DECLARE_SOA_COLUMN(NTOFSigmaBachKa, ntofsigmabachka, float);
 DECLARE_SOA_COLUMN(PosNTPCClusters, posntpcscls, float);
 DECLARE_SOA_COLUMN(NegNTPCClusters, negntpcscls, float);
 DECLARE_SOA_COLUMN(BachNTPCClusters, bachntpcscls, float);
+DECLARE_SOA_COLUMN(PosNTPCCrossedRows, posntpccrrows, float);
+DECLARE_SOA_COLUMN(NegNTPCCrossedRows, negntpccrrows, float);
+DECLARE_SOA_COLUMN(BachNTPCCrossedRows, bachntpccrrows, float);
 DECLARE_SOA_COLUMN(PosHasTOF, poshastof, float);
 DECLARE_SOA_COLUMN(NegHasTOF, neghastof, float);
 DECLARE_SOA_COLUMN(BachHasTOF, bachhastof, float);
@@ -117,6 +120,7 @@ DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
                   mycascades::NTOFSigmaNegPr, mycascades::NTOFSigmaPosPr, mycascades::NTOFSigmaNegPi,
                   mycascades::NTOFSigmaPosPi, mycascades::NTOFSigmaBachPi, mycascades::NTOFSigmaBachKa,
                   mycascades::PosNTPCClusters, mycascades::NegNTPCClusters, mycascades::BachNTPCClusters,
+                  mycascades::PosNTPCCrossedRows, mycascades::NegNTPCCrossedRows, mycascades::BachNTPCCrossedRows,
                   mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF,
                   mycascades::PosPt, mycascades::NegPt, mycascades::BachPt,
                   mycascades::McPdgCode, mycascades::IsPrimary,
