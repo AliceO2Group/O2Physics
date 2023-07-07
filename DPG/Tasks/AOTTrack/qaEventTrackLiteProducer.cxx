@@ -32,6 +32,8 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
+#include "PWGLF/DataModel/LFQATables.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -302,6 +304,7 @@ struct qaEventTrackLiteProducer {
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
   using CollsBigTable = soa::Join<CollisionTableData, aod::Mults>;
   using CollsBigTableMC = soa::Join<CollsBigTable, aod::McCollisionLabels>;
+  using McCollsWithExtra = soa::Join<aod::McCollisions, aod::McCollsExtra>;
 
   template <bool IS_MC, typename COLLS, typename MCCOLLS, typename TFILT, typename TALL>
   void fillCollsBigTable(COLLS& collisions, MCCOLLS& mcCollisions, TFILT& tracksFiltered, TALL& tracksAll, soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse> const& bcs, aod::FT0s const& ft0s)
@@ -324,17 +327,21 @@ struct qaEventTrackLiteProducer {
       float posZMC = -9999.;
       float collTimeMC = -9999.;
       int isFakeCollision = -1;
+      int recoPVsPerMcColl = -1;            // how many reco. PV are associated to this MC collision
+      int isPvHighestContribForMcColl = -1; // the "best" PV associated to this MC collision, i.e. the one with the highest number of PV contributors
       if constexpr (IS_MC) {
         if (!collision.has_mcCollision()) {
           isFakeCollision = 1;
         } else {
           isFakeCollision = 0;
-          const auto& mcCollision = collision.mcCollision();
+          const auto& mcCollision = collision.template mcCollision_as<MCCOLLS>();
           collIDMC = mcCollision.globalIndex();
           posXMC = mcCollision.posX();
           posYMC = mcCollision.posY();
           posZMC = mcCollision.posZ();
           collTimeMC = mcCollision.t();
+          recoPVsPerMcColl = mcCollision.hasRecoCollision();
+          isPvHighestContribForMcColl = (mcCollision.bestCollisionIndex() == collision.globalIndex());
         }
       }
 
@@ -352,7 +359,8 @@ struct qaEventTrackLiteProducer {
                     collIDMC,
                     posXMC, posYMC, posZMC,
                     collTimeMC,
-                    isFakeCollision);
+                    isFakeCollision,
+                    recoPVsPerMcColl, isPvHighestContribForMcColl);
 
       /// update the collision global counter
       counterColl++;
@@ -376,7 +384,7 @@ struct qaEventTrackLiteProducer {
 
   /// Processing MC
   void processTableMCCollsBig(CollsBigTableMC const& collisions,
-                              aod::McCollisions const& mcCollisions,
+                              McCollsWithExtra const& mcCollisions,
                               soa::Filtered<TrackTableData> const& tracksFiltered,
                               TrackTableData const& tracksAll,
                               BCsWithRun3Matchings const& bcs, aod::FT0s const& ft0s)
