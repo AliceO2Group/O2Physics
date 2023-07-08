@@ -389,7 +389,7 @@ struct NucleiHistTask {
 
   // Replacement for globalTrack filter
   Configurable<float> minReqClusterITS{"minReqClusterITS", 1.0, "min number of clusters required in ITS"};                            // ITS_nCls
-  Configurable<float> minReqClusterITSib{"minReqClusterITSib", 1.0, "min number of clusters required in ITS inner barrel"};                            // ITS_nCls
+  Configurable<float> minReqClusterITSib{"minReqClusterITSib", 1.0, "min number of clusters required in ITS inner barrel"};           // ITS_nCls
   Configurable<float> minTPCnClsFound{"minTPCnClsFound", 0.0f, "min number of crossed rows TPC"};                                     // TPC_nCls_found
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of crossed rows TPC"};                              // TPC_nCls_crossed_Rows
   Configurable<float> minRatioCrossedRowsTPC{"minRatioCrossedRowsTPC", 0.8f, "min ratio of crossed rows over findable clusters TPC"}; // TPC_crossed_Rows_over_findable_Cls_min
@@ -431,7 +431,6 @@ struct NucleiHistTask {
     bool keepEvent_antiHe3 = kFALSE;
     bool keepEvent_antiHe4 = kFALSE;
 
-
     if (event_selection_sel8 && event.sel8()) {
       spectra_reg.fill(HIST("histRecVtxZData"), event.posZ());
     }
@@ -451,7 +450,7 @@ struct NucleiHistTask {
       float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
       float Chi2perClusterTPC = track.tpcChi2NCl();
       float Chi2perClusterITS = track.itsChi2NCl();
-      
+
       if (track.sign() > 0) {
         spectra_reg.fill(HIST("histDcaVsPtData_particle"), track.pt(), track.dcaXY());
         spectra_reg.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
@@ -472,17 +471,17 @@ struct NucleiHistTask {
       if (enable_PVcontributor_global && !(track.isPVContributor())) {
         continue;
       }
-/*
-      if (track.sign() > 0) {
-        spectra_reg.fill(HIST("histDcaVsPtData_particle"), track.pt(), track.dcaXY());
-        spectra_reg.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
-      }
+      /*
+            if (track.sign() > 0) {
+              spectra_reg.fill(HIST("histDcaVsPtData_particle"), track.pt(), track.dcaXY());
+              spectra_reg.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
+            }
 
-      if (track.sign() < 0) {
-        spectra_reg.fill(HIST("histDcaVsPtData_antiparticle"), track.pt(), track.dcaXY());
-        spectra_reg.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
-      }
-*/
+            if (track.sign() < 0) {
+              spectra_reg.fill(HIST("histDcaVsPtData_antiparticle"), track.pt(), track.dcaXY());
+              spectra_reg.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
+            }
+      */
       if (TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
         continue;
       }
