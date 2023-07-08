@@ -29,6 +29,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -51,6 +52,7 @@ struct HfFilter { // Main struct for HF triggers
   Produces<aod::HFOptimisationTreeCollisions> optimisationTreeCollisions;
 
   Configurable<int> activateQA{"activateQA", 0, "flag to enable QA histos (0 no QA, 1 basic QA, 2 extended QA, 3 very extended QA)"};
+  Configurable<bool> applyEventSelection{"applyEventSelection", false, "flag to enable event selection (sel8 + Zvt)"};
 
   // parameters for all triggers
   // nsigma PID (except for V0 and cascades)
@@ -70,6 +72,7 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameters for femto triggers
   Configurable<float> femtoMaxRelativeMomentum{"femtoMaxRelativeMomentum", 2., "Maximal allowed value for relative momentum between charm-proton pairs in GeV/c"};
+  Configurable<LabeledArray<int>> enableFemtoChannels{"enableFemtoChannels", {activeFemtoChannels[0], 1, 5, labelsEmpty, labelsColumnsFemtoChannels}, "Flags to enable/disable femto channels"};
 
   // parameters for V0 + charm triggers
   Configurable<LabeledArray<float>> cutsGammaK0sLambda{"cutsGammaK0sLambda", {cutsV0s[0], 1, 6, labelsEmpty, labelsColumnsV0s}, "Selections for V0s (gamma, K0s, Lambda) for D+V0 triggers"};
@@ -258,6 +261,7 @@ struct HfFilter { // Main struct for HF triggers
 
   using BigTracksMCPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::McTrackLabels>;
   using BigTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
+  using CollsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
@@ -265,7 +269,7 @@ struct HfFilter { // Main struct for HF triggers
   Preslice<aod::Hf3Prongs> hf3ProngPerCollision = aod::track_association::collisionId;
   Preslice<aod::CascDatas> cascPerCollision = aod::cascdata::collisionId;
 
-  void process(aod::Collisions const& collisions,
+  void process(CollsWithEvSel const& collisions,
                aod::BCsWithTimestamps const&,
                aod::V0Datas const& theV0s,
                aod::V0sLinked const& v0Links,
@@ -276,6 +280,13 @@ struct HfFilter { // Main struct for HF triggers
                BigTracksPID const& tracks)
   {
     for (const auto& collision : collisions) {
+
+      bool keepEvent[kNtriggersHF]{false};
+      if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f)) { // safety margin for Zvtx
+        tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach]);
+        continue;
+      }
+
       auto thisCollId = collision.globalIndex();
 
       if (applyOptimisation) {
@@ -326,10 +337,6 @@ struct HfFilter { // Main struct for HF triggers
       }
 
       hProcessedEvents->Fill(0);
-
-      // collision process loop
-      bool keepEvent[kNtriggersHF]{false};
-      //
 
       std::vector<std::vector<int64_t>> indicesDau2Prong{};
 
@@ -511,7 +518,7 @@ struct HfFilter { // Main struct for HF triggers
           } // end beauty selection
 
           // 2-prong femto
-          if (!keepEvent[kFemto2P] && isCharmTagged && track.collisionId() == thisCollId) {
+          if (!keepEvent[kFemto2P] && enableFemtoChannels->get(0u, 0u) && isCharmTagged && track.collisionId() == thisCollId) {
             bool isProton = isSelectedProton4Femto(track, trackParThird, minPtCuts->get(0u, 2u), nSigmaPidCuts->get(0u, 3u), setTPCCalib, hMapProton, hBBProton, activateQA, hProtonTPCPID, hProtonTOFPID);
             if (isProton) {
               float relativeMomentum = computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
@@ -821,7 +828,7 @@ struct HfFilter { // Main struct for HF triggers
           bool isProton = isSelectedProton4Femto(track, trackParFourth, minPtCuts->get(0u, 2u), nSigmaPidCuts->get(0u, 3u), setTPCCalib, hMapProton, hBBProton, activateQA, hProtonTPCPID, hProtonTOFPID);
           if (isProton && track.collisionId() == thisCollId) {
             for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
-              if (isCharmTagged[iHypo]) {
+              if (isCharmTagged[iHypo] && enableFemtoChannels->get(0u, iHypo + 1)) {
                 float relativeMomentum = computeRelativeMomentum(pVecFourth, pVec3Prong, massCharmHypos[iHypo]);
                 if (applyOptimisation) {
                   optimisationTreeFemto(thisCollId, charmParticleID[iHypo], pt3Prong, scoresToFill[iHypo][0], scoresToFill[iHypo][1], scoresToFill[iHypo][2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr());
