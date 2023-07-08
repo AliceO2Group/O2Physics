@@ -41,27 +41,30 @@ struct JetSubstructureOutputTask {
   Produces<OutputTable> jetOutputTable;
   Produces<SubstructureOutputTable> jetSubstructureOutputTable;
 
-  template <typename T>
-  void fillTables(T const& jet)
+  template <typename T, typename U>
+  void fillTables(T const& collision, U const& jets)
   {
-    jetOutputTable(jet.globalIndex(), -1, jet.pt(), jet.phi(), jet.eta(), jet.tracks().size());
-    jetSubstructureOutputTable(jet.globalIndex(), jet.zg(), jet.rg(), jet.nsd());
+    for (const auto& jet : jets) {
+      jetOutputTable(collision.globalIndex(), jet.globalIndex(), -1, jet.pt(), jet.phi(), jet.eta(), jet.tracks().size());
+      jetSubstructureOutputTable(jet.globalIndex(), jet.zg(), jet.rg(), jet.nsd());
+    }
   }
 
   void processDummy(aod::Tracks const& track) {}
   PROCESS_SWITCH(JetSubstructureOutputTask, processDummy, "Dummy process function turned on by default", true);
 
-  void processData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures>::iterator const& jet, // add template back
+  void processData(aod::Collision const& collision,
+                   soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures> const& jets,
                    aod::Tracks const& tracks)
   {
-    fillTables(jet);
+    fillTables(collision, jets);
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processData, "jet substructure output on data", false);
 
-  void processMCD(soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures>::iterator const& jet, aod::Tracks const& tracks) { fillTables(jet); }
+  void processMCD(aod::Collision const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures> const& jets, aod::Tracks const& tracks) { fillTables(collision, jets); }
   PROCESS_SWITCH(JetSubstructureOutputTask, processMCD, "jet substructure output on MC detector level", false);
 
-  void processMCP(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures>::iterator const& jet, aod::McParticles const& particles) { fillTables(jet); }
+  void processMCP(aod::McCollision const& collision, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures> const& jets, aod::McParticles const& particles) { fillTables(collision, jets); }
   PROCESS_SWITCH(JetSubstructureOutputTask, processMCP, "jet substructure output on MC particle level", false);
 };
 using JetSubstructureOutputData = JetSubstructureOutputTask<aod::ChargedJetOutput, aod::ChargedJetSubstructureOutput>;

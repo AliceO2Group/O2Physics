@@ -192,8 +192,8 @@ constexpr float cutsV0s[1][6] = {{0.85, 0.95, 0.1, 4., 0.03, 0.01}}; // cosPaGam
 static const std::vector<std::string> labelsColumnsV0s = {"CosPaGamma", "CosPaK0sLambda", "RadiusK0sLambda", "NSigmaPrLambda", "DeltaMassK0s", "DeltaMassLambda"};
 
 // cascades for Xi + bachelor triggers
-constexpr float cutsCascades[1][4] = {{0.15, 0.01, 0.01, 3.}}; // ptXiBachelor, deltaMassXi, deltaMassLambda, nSigmaPid
-static const std::vector<std::string> labelsColumnsCascades = {"PtBachelor", "deltaMassXi", "deltaMassLambda", "NsigmaPid"};
+constexpr float cutsCascades[1][7] = {{0.15, 0.01, 0.01, 0.95, 0.95, 2.0, 3.}}; // ptXiBachelor, deltaMassXi, deltaMassLambda, cosPaXi, cosPaLambda, DCAxyXi, nSigmaPid
+static const std::vector<std::string> labelsColumnsCascades = {"PtBachelor", "deltaMassXi", "deltaMassLambda", "cosPAXi", "cosPALambda", "DCAxyXi", "NsigmaPid"};
 
 // dummy array
 static const std::vector<std::string> labelsEmpty{};
@@ -309,7 +309,7 @@ bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& fe
     return false;
   }
 
-  if (track.isGlobalTrack()) {
+  if (!track.isGlobalTrack()) {
     return false; // use only global tracks
   }
 
@@ -715,7 +715,7 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
 /// Basic selection of gamma candidates
 /// \param v0 is the v0 candidate
 /// \param dauTracks is a 2-element array with positive and negative V0 daughter tracks
-/// \param v0CosinePa is the cosp of the V0
+/// \param collision is the current collision
 /// \param minGammaCosinePa is the minimum required cosp of the gamma
 /// \param minV0CosinePa is the minimum required cosp of K0S/Lambda
 /// \param minV0Radius is the minimum required K0S/Lambda radius
@@ -729,8 +729,8 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
 /// \param hV0Selected is the pointer to the QA histo for selected gammas
 /// \param hArmPod is the pointer to an array of QA histo AP plot before selection
 /// \return an integer passes all cuts
-template <typename V0, typename T, typename H, typename H2, typename H3>
-int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const float& v0CosinePa, const float& minGammaCosinePa, const float& minV0CosinePa, const float& minV0Radius, const float& maxNsigmaPrForLambda, const float& deltaMassK0s, const float& deltaMassLambda, const int& setTPCCalib, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplineProton, const int& activateQA, H hV0Selected, H2 hArmPod)
+template <typename V0, typename Coll, typename T, typename H2, typename H3>
+int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& collision, const float& minGammaCosinePa, const float& minV0CosinePa, const float& minV0Radius, const float& maxNsigmaPrForLambda, const float& deltaMassK0s, const float& deltaMassLambda, const int& setTPCCalib, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplineProton, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
 {
   int8_t isSelected{BIT(kPhoton) | BIT(kK0S) | BIT(kLambda) | BIT(kAntiLambda)};
 
@@ -766,6 +766,7 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const float& v0C
     }
   }
 
+  auto v0CosinePa = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
   // cosine of pointing angle
   if (TESTBIT(isSelected, kPhoton) && v0CosinePa < minGammaCosinePa) {
     CLRBIT(isSelected, kPhoton);
@@ -782,39 +783,45 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const float& v0C
     }
   }
 
-  // DCA V0 daughters (K0S/Lambda only)
-  for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
-    if (TESTBIT(isSelected, iV0) && v0.dcaV0daughters() > 1.f) {
-      CLRBIT(isSelected, iV0);
-      if (activateQA > 1) {
-        hV0Selected->Fill(4., iV0);
-      }
-    }
-  }
-
   // armenteros-podolanski / mass
   if (TESTBIT(isSelected, kPhoton) && (std::pow(v0.alpha() / 0.95, 2) + std::pow(v0.qtarm() / 0.05, 2)) >= 1) {
     CLRBIT(isSelected, kPhoton);
     if (activateQA > 1) {
-      hV0Selected->Fill(5., kPhoton);
+      hV0Selected->Fill(4., kPhoton);
     }
   }
   if (TESTBIT(isSelected, kK0S) && std::fabs(v0.mK0Short() - massK0S) > deltaMassK0s) {
     CLRBIT(isSelected, kK0S);
     if (activateQA > 1) {
-      hV0Selected->Fill(5., kK0S);
+      hV0Selected->Fill(4., kK0S);
     }
   }
   if (TESTBIT(isSelected, kLambda) && std::fabs(v0.mLambda() - massLambda) > deltaMassLambda) {
     CLRBIT(isSelected, kLambda);
     if (activateQA > 1) {
-      hV0Selected->Fill(5., kLambda);
+      hV0Selected->Fill(4., kLambda);
     }
   }
   if (TESTBIT(isSelected, kAntiLambda) && std::fabs(v0.mAntiLambda() - massLambda) > deltaMassLambda) {
     CLRBIT(isSelected, kAntiLambda);
     if (activateQA > 1) {
-      hV0Selected->Fill(5., kAntiLambda);
+      hV0Selected->Fill(4., kAntiLambda);
+    }
+  }
+
+  // DCA V0 and V0 daughters
+  for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
+    if (TESTBIT(isSelected, iV0) && v0.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > 2.f) { // we want only primary V0s
+      CLRBIT(isSelected, iV0);
+      if (activateQA > 1) {
+        hV0Selected->Fill(5., iV0);
+      }
+    }
+    if (TESTBIT(isSelected, iV0) && v0.dcaV0daughters() > 1.f) {
+      CLRBIT(isSelected, iV0);
+      if (activateQA > 1) {
+        hV0Selected->Fill(6., iV0);
+      }
     }
   }
 
@@ -822,7 +829,7 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const float& v0C
   if (TESTBIT(isSelected, kPhoton) && std::fabs(v0.psipair()) > 0.1) {
     CLRBIT(isSelected, kPhoton);
     if (activateQA > 1) {
-      hV0Selected->Fill(6., kPhoton);
+      hV0Selected->Fill(7., kPhoton);
     }
   }
 
@@ -842,13 +849,13 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const float& v0C
   if (TESTBIT(isSelected, kLambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0] > maxNsigmaPrForLambda)) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0] > maxNsigmaPrForLambda)))) {
     CLRBIT(isSelected, kLambda);
     if (activateQA > 1) {
-      hV0Selected->Fill(7., kLambda);
+      hV0Selected->Fill(8., kLambda);
     }
   }
   if (TESTBIT(isSelected, kAntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1] > maxNsigmaPrForLambda)) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1] > maxNsigmaPrForLambda)))) {
     CLRBIT(isSelected, kAntiLambda);
     if (activateQA > 1) {
-      hV0Selected->Fill(7., kAntiLambda);
+      hV0Selected->Fill(8., kAntiLambda);
     }
   }
 
@@ -857,7 +864,7 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const float& v0C
       if (TESTBIT(isSelected, iV0)) {
         hArmPod[iV0]->Fill(v0.alpha(), v0.qtarm());
         if (activateQA > 1) {
-          hV0Selected->Fill(8., iV0);
+          hV0Selected->Fill(9., iV0);
         }
       }
     }
@@ -874,6 +881,10 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const float& v0C
 /// \param minPtXiBachelor is the minimum required pT for the cascade bachelor
 /// \param deltaMassXi is the maximum delta mass for the Xi
 /// \param deltaMassLambda is the maximum delta mass for the Lambda daughter
+/// \param cosPAXi is the minimum value of cosPA for the cascade
+/// \param cosPALambda is the minimum value of cosPA for the Lambda daughter
+/// \param DCAxyXi is the maximum DCAxy of the Xi to the PV
+/// \param maxNsigma is the maximum number of sigma to accept a given PID hypothesis
 /// \param setTPCCalib flag to activate TPC PID postcalibrations
 /// \param hMapProton map of nSigma mean and sigma calibrations for proton
 /// \param hMapPion map of nSigma mean and sigma calibrations for pion
@@ -881,7 +892,7 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const float& v0C
 /// \param hSplinePion spline of pion and anti-pion calibrations
 /// \return true if cascade passes all cuts
 template <typename Casc, typename V0, typename T, typename Coll, typename H3>
-bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTracks, const Coll& collision, const float& minPtXiBachelor, const float& deltaMassXi, const float& deltaMassLambda, const float& maxNsigma, const int& setTPCCalib, H3 hMapPion, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplinePion, const std::array<std::vector<double>, 2>& hSplineProton)
+bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTracks, const Coll& collision, const float& minPtXiBachelor, const float& deltaMassXi, const float& deltaMassLambda, const float& cosPAXi, const float& cosPALambda, const float& DCAxyXi, const float& maxNsigma, const int& setTPCCalib, H3 hMapPion, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplinePion, const std::array<std::vector<double>, 2>& hSplineProton)
 {
   // eta of daughters
   if (std::fabs(dauTracks[0].eta()) > 1. || std::fabs(dauTracks[1].eta()) > 1. || std::fabs(dauTracks[2].eta()) > 1.) { // cut all V0 daughters with |eta| > 1.
@@ -899,12 +910,17 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
   }
 
   // V0 cosp
-  if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < 0.95) {
+  if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cosPALambda) {
     return false;
   }
 
   // cascade cosp
-  if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < 0.95) {
+  if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cosPAXi) {
+    return false;
+  }
+
+  // cascade DCAxy to PV
+  if (std::fabs(casc.dcaXYCascToPV()) > DCAxyXi) {
     return false;
   }
 
@@ -914,12 +930,12 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
   }
 
   // cascade mass
-  if (std::fabs(casc.mXi() - massXi) < deltaMassXi) {
+  if (std::fabs(casc.mXi() - massXi) > deltaMassXi) {
     return false;
   }
 
   // V0 mass
-  if (std::fabs(casc.mLambda() - massLambda) < deltaMassLambda) {
+  if (std::fabs(casc.mLambda() - massLambda) > deltaMassLambda) {
     return false;
   }
 
@@ -988,14 +1004,15 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
 /// Single-track cuts for bachelor track of charm baryon candidates
 /// \param track is a track
 /// \param minPt is the minimum pT
-/// \param maxNsigma is the maximum nSigma TPC/TOF for pions and kaons
+/// \param maxNsigmaTPC is the maximum nSigma TPC for pions and kaons
+/// \param maxNsigmaTOF is the maximum nSigma TOF for pions and kaons
 /// \param setTPCCalib flag to activate TPC PID postcalibrations
 /// \param hMapPion map of nSigma mean and sigma calibrations for pion
 /// \param hSplinePion spline of pion and anti-pion calibrations
 /// \param hSplineKaon spline of kaon and anti-kaon calibrations
 /// \return 0 if rejected, or a bitmap that contains the information whether it is selected as pion and/or kaon
 template <typename T, typename H3>
-int8_t isSelectedBachelorForCharmBaryon(const T& track, const float& minPt, const float& maxNsigma, const int& setTPCCalib, H3 hMapPion, const std::array<std::vector<double>, 2>& hSplinePion, const std::array<std::vector<double>, 2>& hSplineKaon)
+int8_t isSelectedBachelorForCharmBaryon(const T& track, const float& minPt, const float& maxNsigmaTPC, const float& maxNsigmaTOF, const int& setTPCCalib, H3 hMapPion, const std::array<std::vector<double>, 2>& hSplinePion, const std::array<std::vector<double>, 2>& hSplineKaon)
 {
   int8_t retValue{BIT(kPionForCharmBaryon) | BIT(kKaonForCharmBaryon)};
 
@@ -1027,10 +1044,10 @@ int8_t isSelectedBachelorForCharmBaryon(const T& track, const float& minPt, cons
     nSigmaKaTpc = getTPCSplineCalib(track, massK, (track.sign() > 0) ? hSplineKaon[0] : hSplineKaon[1]);
   }
 
-  if ((track.hasTPC() && std::fabs(nSigmaPiTpc > maxNsigma)) && (track.hasTOF() && std::fabs(nSigmaPiTof > maxNsigma))) {
+  if ((track.hasTPC() && std::fabs(nSigmaPiTpc > maxNsigmaTPC)) && (track.hasTOF() && std::fabs(nSigmaPiTof > maxNsigmaTOF))) {
     CLRBIT(retValue, kPionForCharmBaryon);
   }
-  if ((track.hasTPC() && std::fabs(nSigmaKaTpc > maxNsigma)) && (track.hasTOF() && std::fabs(nSigmaKaTof > maxNsigma))) {
+  if ((track.hasTPC() && std::fabs(nSigmaKaTpc > maxNsigmaTPC)) && (track.hasTOF() && std::fabs(nSigmaKaTof > maxNsigmaTOF))) {
     CLRBIT(retValue, kKaonForCharmBaryon);
   }
 

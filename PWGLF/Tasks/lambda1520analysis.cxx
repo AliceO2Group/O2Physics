@@ -32,18 +32,19 @@ struct lambda1520analysis {
 
   // Configurables
   // Eta-asymmetry switch
-  Configurable<bool> isEtaAssym{"isEtaAssym", false, "isEtaAssym"};
+  Configurable<bool> isEtaAssym{"isEtaAssym", false, "Turn on EtaAssym calculation"};
 
   // Pre-selection Track cuts
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+  Configurable<float> cfgCutEta{"cfgCutEta", 1.0f, "Eta range for tracks"};
   Configurable<float> cMinPtcut{"cMinPtcut", 0.2f, "Minimal pT for tracks"};
   Configurable<float> cMaxPtcut{"cMaxPtcut", 10.0f, "Maximal pT for tracks"};
   Configurable<int> cMinTPCncr{"cMinTPCncr", 70, "Minimum number of TPC X rows"};
   // DCA Selections
   // DCAr to PV
+  Configurable<bool> IsDCAr7SigCut{"IsDCAr7SigCut", true, "Track DCAr 7 Sigma cut to PV Maximum"};
   Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.12f, "Track DCAr cut to PV Maximum"};
   // DCAz to PV
-  Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
+  Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 0.5f, "Track DCAz cut to PV Maximum"};
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0f, "Track DCAz cut to PV Minimum"};
 
   /// PID Selections
@@ -127,7 +128,6 @@ struct lambda1520analysis {
     histos.add("QA/QAafter/Proton/TPC_CR", "# TPC Xrows distribution of selected Protons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTH2F, {axisPt, axisTPCXrow});
     histos.add("QA/QAafter/Proton/pT", "pT distribution of Protons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
     histos.add("QA/QAafter/Proton/eta", "#eta distribution of Protons; #eta; Counts;", {HistType::kTH1F, {axisEta}});
-
     if (!doprocessMC || !doprocessMCLight || !doprocessMCTrue) {
       // Mass QA 1D for quick check
       histos.add("Result/Data/lambda1520invmass", "Invariant mass of #Lambda(1520) K^{#pm}p^{#mp}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
@@ -162,7 +162,8 @@ struct lambda1520analysis {
           histos.add("Result/Data/h3lambda1520invmassMixedCside", "Invariant mass of #Lambda(1520) Mixed C side", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
         }
       }
-    } else if (doprocessMC || doprocessMCLight || doprocessMCTrue) {
+    }
+    if (doprocessMC || doprocessMCLight || doprocessMCTrue) {
       histos.add("Result/MC/h3recolambda1520invmass", "Invariant mass of Reconstructed MC #Lambda(1520)", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
       histos.add("Result/MC/truelambda1520pt", "pT distribution of True MC #Lambda(1520); #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
       histos.add("Result/MC/recolambda1520pt", "pT distribution of Reconstructed MC #Lambda(1520); #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
@@ -179,8 +180,13 @@ struct lambda1520analysis {
     // basic track cuts
     if (track.pt() < cMinPtcut || track.pt() > cMaxPtcut)
       return false;
-    if (fabs(track.dcaXY()) > cMaxDCArToPVcut)
-      return false;
+    if (IsDCAr7SigCut) {
+      if (fabs(track.dcaXY()) > (0.004f + 0.0130f / (track.pt()))) // 7 - Sigma cut
+        return false;
+    } else {
+      if (fabs(track.dcaXY()) > cMaxDCArToPVcut)
+        return false;
+    }
     if (fabs(track.dcaZ()) < cMinDCAzToPVcut || fabs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
     if (track.tpcNClsCrossedRows() < cMinTPCncr)
@@ -406,8 +412,8 @@ struct lambda1520analysis {
           auto mother2 = trk2.motherId();
           if (mother1 == mother2) {              // Same mother
             if (abs(trk1.motherPDG()) == 3124) { // lambda1520(0)
-              histos.fill(HIST("Result/MC/reconlambda1520pt"), lResonance.Pt());
-              histos.fill(HIST("Result/MC/reconlambda1520invmass"), lResonance.M());
+              histos.fill(HIST("Result/MC/recolambda1520pt"), lResonance.Pt());
+              histos.fill(HIST("Result/MC/recolambda1520invmass"), lResonance.M());
               histos.fill(HIST("Result/MC/h3recolambda1520invmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
             }
           }
