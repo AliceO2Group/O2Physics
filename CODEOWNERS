@@ -17,7 +17,7 @@
 /ALICE3 @alibuild @njacazio @ginnocen @vkucera @hscheid
 /DPG @alibuild @chiarazampolli @noferini
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
-/DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio
+/DPG/Tasks/AOTTrack @alibuild @mfaggin @belikov @njacazio
 /EventFiltering @alibuild @mpuccio @strogolo
 /EventFiltering/PWGHF @alibuild @fgrosa @vkucera @mpuccio @strogolo
 /EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @strogolo
