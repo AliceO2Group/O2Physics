@@ -16,21 +16,23 @@
 /// \brief  Header for the spectraTOF task for the analysis of the spectra with the TOF and TPC detectors.
 ///
 
-#ifndef PWGLF_TASKS_SPECTRATOF_H_
-#define PWGLF_TASKS_SPECTRATOF_H_
+#ifndef PWGLF_DATAMODEL_SPECTRATOF_H_
+#define PWGLF_DATAMODEL_SPECTRATOF_H_
 
 // O2 includes
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/StaticFor.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/TrackSelection.h"
-#include "Framework/StaticFor.h"
+#include "Common/DataModel/FT0Corrected.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 
@@ -233,4 +235,115 @@ static constexpr std::string_view hdcazmat[NpCharge] = {"dcazmat/pos/el", "dcazm
                                                         "dcazmat/neg/ka", "dcazmat/neg/pr", "dcazmat/neg/de",
                                                         "dcazmat/neg/tr", "dcazmat/neg/he", "dcazmat/neg/al"};
 
-#endif // PWGLF_TASKS_SPECTRATOF_H_
+// Derived data model for cut variation
+namespace o2::aod
+{
+namespace spectra
+{
+
+template <typename binningType, typename T>
+void packInTable(const float& valueToBin, T& table)
+{
+  if (valueToBin <= binningType::binned_min) {
+    table(binningType::underflowBin);
+  } else if (valueToBin >= binningType::binned_max) {
+    table(binningType::overflowBin);
+  } else if (valueToBin >= 0) {
+    table(static_cast<typename binningType::binned_t>((valueToBin / binningType::bin_width) + 0.5f));
+  } else {
+    table(static_cast<typename binningType::binned_t>((valueToBin / binningType::bin_width) - 0.5f));
+  }
+}
+// Function to unpack a binned value into a float
+template <typename binningType>
+float unPack(const typename binningType::binned_t& valueToUnpack)
+{
+  return binningType::bin_width * static_cast<float>(valueToUnpack);
+}
+
+struct binningDCA {
+ public:
+  typedef int16_t binned_t;
+  static constexpr int nbins = (1 << 8 * sizeof(binned_t)) - 2;
+  static constexpr binned_t overflowBin = nbins >> 1;
+  static constexpr binned_t underflowBin = -(nbins >> 1);
+  static constexpr float binned_max = 6.0;
+  static constexpr float binned_min = -6.0;
+  static constexpr float bin_width = (binned_max - binned_min) / nbins;
+};
+
+DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occurred
+DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(MultFV0M, multFV0M, float);
+
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //! Index to the collision
+DECLARE_SOA_COLUMN(PtSigned, ptSigned, float);                    //! Pt (signed) of the track
+DECLARE_SOA_COLUMN(Eta, eta, float);                              //! Eta of the track
+DECLARE_SOA_COLUMN(Phi, phi, float);                              //! Phi of the track
+DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);                //! Event time of the track computed with the T0AC
+DECLARE_SOA_COLUMN(EvTimeT0ACErr, evTimeT0ACErr, float);          //! Resolution of the event time of the track computed with the T0AC
+DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);       //! IsPVContributor
+DECLARE_SOA_COLUMN(DCAxyStore, dcaxyStore, binningDCA::binned_t); //! Stored binned dcaxy
+DECLARE_SOA_COLUMN(DCAzStore, dcazStore, binningDCA::binned_t);   //! Stored binned dcaz
+DECLARE_SOA_DYNAMIC_COLUMN(DCAxy, dcaxy,                          //! Unpacked dcaxy
+                           [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
+DECLARE_SOA_DYNAMIC_COLUMN(DCAz, dcaz, //! Unpacked dcaz
+                           [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
+DECLARE_SOA_COLUMN(LastTRDCluster, lastTRDCluster, int8_t); //! Index of the last cluster in the TRD, -1 if no TRD information
+DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,                  //! Flag to check if track has a TOF measurement
+                           [](float tofSignal) -> bool { return tofSignal > 0; });
+
+} // namespace spectra
+
+DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
+                  o2::soa::Index<>,
+                  spectra::CollisionId,
+                  collision::NumContrib,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
+                  spectra::MultFV0M,
+                  spectra::IsEventReject,
+                  spectra::RunNumber);
+using SpColl = SpColls::iterator;
+
+DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
+                  o2::soa::Index<>,
+                  spectra::CollisionId,
+                  pidtpc_tiny::TPCNSigmaStorePi, pidtpc_tiny::TPCNSigmaStoreKa, pidtpc_tiny::TPCNSigmaStorePr,
+                  pidtof_tiny::TOFNSigmaStorePi, pidtof_tiny::TOFNSigmaStoreKa, pidtof_tiny::TOFNSigmaStorePr,
+                  spectra::PtSigned, spectra::Eta, spectra::Phi,
+                  track::Length,
+                  track::TPCSignal,
+                  track::TPCChi2NCl, track::ITSChi2NCl, track::TOFChi2,
+                  track::TPCNClsShared,
+                  track::TPCNClsFindable,
+                  track::TPCNClsFindableMinusFound,
+                  track::TPCNClsFindableMinusCrossedRows,
+                  spectra::IsPVContributor,
+                  //   pidtofevtime::EvTimeTOF,
+                  //   pidtofevtime::EvTimeTOFErr,
+                  //   pidtofevtime::EvTimeTOFMult,
+                  // spectra::EvTimeT0AC,
+                  // spectra::EvTimeT0ACErr,
+                  // collision::CollisionTime,
+                  // collision::CollisionTimeRes,
+                  pidflags::TOFFlags,
+                  spectra::DCAxyStore,
+                  spectra::DCAzStore,
+                  spectra::DCAxy<spectra::DCAxyStore>,
+                  spectra::DCAz<spectra::DCAzStore>,
+                  track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  pidtof_tiny::TOFNSigmaPi<pidtof_tiny::TOFNSigmaStorePi>,
+                  pidtof_tiny::TOFNSigmaKa<pidtof_tiny::TOFNSigmaStoreKa>,
+                  pidtof_tiny::TOFNSigmaPr<pidtof_tiny::TOFNSigmaStorePr>,
+                  pidtpc_tiny::TPCNSigmaPi<pidtpc_tiny::TPCNSigmaStorePi>,
+                  pidtpc_tiny::TPCNSigmaKa<pidtpc_tiny::TPCNSigmaStoreKa>,
+                  pidtpc_tiny::TPCNSigmaPr<pidtpc_tiny::TPCNSigmaStorePr>);
+} // namespace o2::aod
+
+#endif // PWGLF_DATAMODEL_SPECTRATOF_H_
