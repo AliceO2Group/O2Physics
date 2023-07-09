@@ -129,7 +129,8 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   o2::aod::pidtpc::TPCNSigmaPr,
                   o2::aod::pidtof::TOFNSigmaPi,
                   o2::aod::pidtof::TOFNSigmaKa,
-                  o2::aod::pidtof::TOFNSigmaPr);
+                  o2::aod::pidtof::TOFNSigmaPr,
+                  o2::aod::track::TPCSignal);
 using ResoTrack = ResoTracks::iterator;
 
 DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0S",
