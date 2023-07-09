@@ -49,28 +49,28 @@ struct multiplicityPbPb {
   {
     // define axes you want to use
     const AxisSpec axisEta{nBinsEta, -2, 2, "#eta"};
-    const AxisSpec axisPt{nBinsPt, 0, 6, "pT"};
+    const AxisSpec axisPt{nBinsPt, 0, 5, "p_T"};
     const AxisSpec axisDeltaPt{100, -1.0, +1.0, "#Delta(p_{T})"};
 
     const AxisSpec axisCounter{1, 0, +1, ""};
 
-    const AxisSpec axisDCAxy{nBinsDCA, -1, 1, "DCA_{xy} (cm)"};
-    const AxisSpec axisDCAz{nBinsDCA, -1, 1, "DCA_{z} (cm)"};
+    const AxisSpec axisDCAxy{nBinsDCA, -0.22, 0.22, "DCA_{xy} (cm)"};
+    const AxisSpec axisDCAz{nBinsDCA, -0.22, 0.22, "DCA_{z} (cm)"};
 
-    const AxisSpec axisNtrk{nBinsMult, 0, 100, "N_{trk}"};
+    const AxisSpec axisNtrk{nBinsMult, 0, 300, "N_{trk}"};
 
-    const AxisSpec axisPhi{nBinsPhi, -10, 10, "#phi"};
+    const AxisSpec axisPhi{nBinsPhi, -0.4, 6.8, "#phi"};
     const AxisSpec axisZvtx{nBinsZvtx, -30, 30, "Z_{vtx} (cm)"};
 
-    histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
-    histos.add("ptHistogram", "ptHistogram", kTH1F, {axisPt});
+    histos.add("etaHistogram", "; ", kTH1F, {axisEta});
+    histos.add("ptHistogram", "; ", kTH1F, {axisPt});
     //
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
 
     histos.add("DCAxy", "; DCA_{xy} (cm)", kTH1F, {axisDCAxy});
     histos.add("DCAz", "; DCA_{z} (cm)", kTH1F, {axisDCAz});
     // do not know how:
-    histos.add("Multiplicity", "Multiplicity; tracks; events", kTH1F, {axisNtrk});
+    histos.add("Multiplicity", "; tracks; events", kTH1F, {axisNtrk});
 
     histos.add("Anton/PhiTracks", "; #phi; tracks", kTH1F, {axisPhi});
     histos.add("Anton/ZvtxEvents", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx});
