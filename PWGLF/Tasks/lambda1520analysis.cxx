@@ -32,7 +32,8 @@ struct lambda1520analysis {
 
   // Configurables
   // Eta-asymmetry switch
-  Configurable<bool> isEtaAssym{"isEtaAssym", false, "Turn on EtaAssym calculation"};
+  Configurable<bool> isEtaAssym{"isEtaAssym", false, "Turn on/off EtaAssym calculation"};
+  Configurable<bool> isFillQA{"isFillQA", false, "Turn on/off QA plots"};
 
   // Pre-selection Track cuts
   Configurable<float> cfgCutEta{"cfgCutEta", 1.0f, "Eta range for tracks"};
@@ -75,6 +76,7 @@ struct lambda1520analysis {
   ConfigurableAxis binsDCA{"binsDCA", {1000, -5, 5}, ""};
   ConfigurableAxis binsTPCXrows{"binsTPCXrows", {200, 0, 200}, ""};
   ConfigurableAxis binsnSigma{"binsnSigma", {130, -6.5, 6.5}, ""};
+  ConfigurableAxis binsnTPCSignal{"binsnTPCSignal", {1000, 0, 1000}, ""};
 
   void init(o2::framework::InitContext&)
   {
@@ -86,6 +88,7 @@ struct lambda1520analysis {
     AxisSpec axisDCA{binsDCA, ""};
     AxisSpec axisTPCXrow{binsTPCXrows, ""};
     AxisSpec pidQAAxis = {binsnSigma, ""};
+    AxisSpec axisTPCSignal = {binsnTPCSignal, ""};
 
     // Track QA before cuts
     //  --- Track
@@ -114,6 +117,7 @@ struct lambda1520analysis {
     histos.add("QA/QAafter/Kaon/TPC_CR", "# TPC Xrows distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTH2F, {axisPt, axisTPCXrow});
     histos.add("QA/QAafter/Kaon/pT", "pT distribution of Kaons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
     histos.add("QA/QAafter/Kaon/eta", "#eta distribution of Kaons; #eta; Counts;", {HistType::kTH1F, {axisEta}});
+    histos.add("QA/QAafter/Kaon/TPC_Signal_ka_all", "TPC Signal for Kaon;#it{p}_{T} (GeV/#it{c});TPC Signal (A.U.)", {HistType::kTH2D, {axisPt, axisTPCSignal}});
 
     //  --- Proton
     histos.add("QA/QAafter/Proton/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;#sigma_{TOF}^{Proton};#sigma_{TPC}^{Proton}", {HistType::kTH2D, {pidQAAxis, pidQAAxis}});
@@ -125,6 +129,7 @@ struct lambda1520analysis {
     histos.add("QA/QAafter/Proton/TPC_CR", "# TPC Xrows distribution of selected Protons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTH2F, {axisPt, axisTPCXrow});
     histos.add("QA/QAafter/Proton/pT", "pT distribution of Protons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
     histos.add("QA/QAafter/Proton/eta", "#eta distribution of Protons; #eta; Counts;", {HistType::kTH1F, {axisEta}});
+    histos.add("QA/QAafter/Proton/TPC_Signal_pr_all", "TPC Signal for Proton;#it{p}_{T} (GeV/#it{c});TPC Signal (A.U.)", {HistType::kTH2D, {axisPt, axisTPCSignal}});
 
     if (!doprocessMC || !doprocessMCLight || !doprocessMCTrue) {
       // Mass QA 1D for quick check
@@ -306,28 +311,30 @@ struct lambda1520analysis {
 
       //// QA plots before the selection
       //  --- Track QA all
-      histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_pr_all"), trk1ptPr, trk1NSigmaPrTPC);
-      if (isTrk1hasTOF) {
-        histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_pr_all"), trk1ptPr, trk1NSigmaPrTOF);
-        histos.fill(HIST("QA/QAbefore/Track/TOF_TPC_Map_pr_all"), trk1NSigmaPrTOF, trk1NSigmaPrTPC);
-      }
-      if (!isTrk1hasTOF) {
-        histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_pr_only"), trk1ptPr, trk1NSigmaPrTPC);
-      }
-      histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTPC);
-      if (isTrk2hasTOF) {
-        histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
-        histos.fill(HIST("QA/QAbefore/Track/TOF_TPC_Map_ka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
-      }
-      if (!isTrk2hasTOF) {
-        histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_ka_only"), trk2ptKa, trk2NSigmaKaTPC);
-      }
+      if (isFillQA) {
+        histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_pr_all"), trk1ptPr, trk1NSigmaPrTPC);
+        if (isTrk1hasTOF) {
+          histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_pr_all"), trk1ptPr, trk1NSigmaPrTOF);
+          histos.fill(HIST("QA/QAbefore/Track/TOF_TPC_Map_pr_all"), trk1NSigmaPrTOF, trk1NSigmaPrTPC);
+        }
+        if (!isTrk1hasTOF) {
+          histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_pr_only"), trk1ptPr, trk1NSigmaPrTPC);
+        }
+        histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTPC);
+        if (isTrk2hasTOF) {
+          histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
+          histos.fill(HIST("QA/QAbefore/Track/TOF_TPC_Map_ka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
+        }
+        if (!isTrk2hasTOF) {
+          histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_ka_only"), trk2ptKa, trk2NSigmaKaTPC);
+        }
 
-      histos.fill(HIST("QA/QAbefore/Track/dcaZ"), trk1ptPr, trk1.dcaZ());
-      histos.fill(HIST("QA/QAbefore/Track/dcaXY"), trk1ptPr, trk1.dcaXY());
-      histos.fill(HIST("QA/QAbefore/Track/TPC_CR"), trk1ptPr, trk1.tpcNClsCrossedRows());
-      histos.fill(HIST("QA/QAbefore/Track/pT"), trk1ptPr);
-      histos.fill(HIST("QA/QAbefore/Track/eta"), trk1.eta());
+        histos.fill(HIST("QA/QAbefore/Track/dcaZ"), trk1ptPr, trk1.dcaZ());
+        histos.fill(HIST("QA/QAbefore/Track/dcaXY"), trk1ptPr, trk1.dcaXY());
+        histos.fill(HIST("QA/QAbefore/Track/TPC_CR"), trk1ptPr, trk1.tpcNClsCrossedRows());
+        histos.fill(HIST("QA/QAbefore/Track/pT"), trk1ptPr);
+        histos.fill(HIST("QA/QAbefore/Track/eta"), trk1.eta());
+      }
 
       // apply the track cut
       if (!trackCut(trk1) || !trackCut(trk2))
@@ -338,36 +345,38 @@ struct lambda1520analysis {
         continue;
 
       //// QA plots after the selection
-      //  --- PID QA Proton
-      histos.fill(HIST("QA/QAafter/Proton/TPC_Nsigma_pr_all"), trk1ptPr, trk1NSigmaPrTPC);
-      if (isTrk1hasTOF) {
-        histos.fill(HIST("QA/QAafter/Proton/TOF_Nsigma_pr_all"), trk1ptPr, trk1NSigmaPrTOF);
-        histos.fill(HIST("QA/QAafter/Proton/TOF_TPC_Map_pr_all"), trk1NSigmaPrTOF, trk1NSigmaPrTPC);
-      }
-      if (!isTrk1hasTOF) {
-        histos.fill(HIST("QA/QAafter/Proton/TPC_Nsigma_pr_TPConly"), trk1ptPr, trk1NSigmaPrTPC);
-      }
-      histos.fill(HIST("QA/QAafter/Proton/dcaZ"), trk1ptPr, trk1.dcaZ());
-      histos.fill(HIST("QA/QAafter/Proton/dcaXY"), trk1ptPr, trk1.dcaXY());
-      histos.fill(HIST("QA/QAafter/Proton/TPC_CR"), trk1ptPr, trk1.tpcNClsCrossedRows());
-      histos.fill(HIST("QA/QAafter/Proton/pT"), trk1ptPr);
-      histos.fill(HIST("QA/QAafter/Proton/eta"), trk1.eta());
+      if (isFillQA) { //  --- PID QA Proton
+        histos.fill(HIST("QA/QAafter/Proton/TPC_Nsigma_pr_all"), trk1ptPr, trk1NSigmaPrTPC);
+        histos.fill(HIST("QA/QAafter/Proton/TPC_Signal_pr_all"), trk1ptPr, trk1.tpcSignal());
+        if (isTrk1hasTOF) {
+          histos.fill(HIST("QA/QAafter/Proton/TOF_Nsigma_pr_all"), trk1ptPr, trk1NSigmaPrTOF);
+          histos.fill(HIST("QA/QAafter/Proton/TOF_TPC_Map_pr_all"), trk1NSigmaPrTOF, trk1NSigmaPrTPC);
+        }
+        if (!isTrk1hasTOF) {
+          histos.fill(HIST("QA/QAafter/Proton/TPC_Nsigma_pr_TPConly"), trk1ptPr, trk1NSigmaPrTPC);
+        }
+        histos.fill(HIST("QA/QAafter/Proton/dcaZ"), trk1ptPr, trk1.dcaZ());
+        histos.fill(HIST("QA/QAafter/Proton/dcaXY"), trk1ptPr, trk1.dcaXY());
+        histos.fill(HIST("QA/QAafter/Proton/TPC_CR"), trk1ptPr, trk1.tpcNClsCrossedRows());
+        histos.fill(HIST("QA/QAafter/Proton/pT"), trk1ptPr);
+        histos.fill(HIST("QA/QAafter/Proton/eta"), trk1.eta());
 
-      //  --- PID QA Kaon
-      histos.fill(HIST("QA/QAafter/Kaon/TPC_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTPC);
-      if (isTrk2hasTOF) {
-        histos.fill(HIST("QA/QAafter/Kaon/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
-        histos.fill(HIST("QA/QAafter/Kaon/TOF_TPC_Map_ka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
+        //  --- PID QA Kaon
+        histos.fill(HIST("QA/QAafter/Kaon/TPC_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTPC);
+        histos.fill(HIST("QA/QAafter/Kaon/TPC_Signal_ka_all"), trk2ptKa, trk2.tpcSignal());
+        if (isTrk2hasTOF) {
+          histos.fill(HIST("QA/QAafter/Kaon/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
+          histos.fill(HIST("QA/QAafter/Kaon/TOF_TPC_Map_ka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
+        }
+        if (!isTrk2hasTOF) {
+          histos.fill(HIST("QA/QAafter/Kaon/TPC_Nsigma_ka_TPConly"), trk2ptKa, trk2NSigmaKaTPC);
+        }
+        histos.fill(HIST("QA/QAafter/Kaon/dcaZ"), trk2ptKa, trk2.dcaZ());
+        histos.fill(HIST("QA/QAafter/Kaon/dcaXY"), trk2ptKa, trk2.dcaXY());
+        histos.fill(HIST("QA/QAafter/Kaon/TPC_CR"), trk2ptKa, trk2.tpcNClsCrossedRows());
+        histos.fill(HIST("QA/QAafter/Kaon/pT"), trk2ptKa);
+        histos.fill(HIST("QA/QAafter/Kaon/eta"), trk2.eta());
       }
-      if (!isTrk2hasTOF) {
-        histos.fill(HIST("QA/QAafter/Kaon/TPC_Nsigma_ka_TPConly"), trk2ptKa, trk2NSigmaKaTPC);
-      }
-      histos.fill(HIST("QA/QAafter/Kaon/dcaZ"), trk2ptKa, trk2.dcaZ());
-      histos.fill(HIST("QA/QAafter/Kaon/dcaXY"), trk2ptKa, trk2.dcaXY());
-      histos.fill(HIST("QA/QAafter/Kaon/TPC_CR"), trk2ptKa, trk2.tpcNClsCrossedRows());
-      histos.fill(HIST("QA/QAafter/Kaon/pT"), trk2ptKa);
-      histos.fill(HIST("QA/QAafter/Kaon/eta"), trk2.eta());
-
       //// Resonance reconstruction
       lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPr);
       lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
