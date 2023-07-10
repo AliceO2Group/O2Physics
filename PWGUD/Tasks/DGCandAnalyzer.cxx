@@ -74,7 +74,7 @@ struct DGCandAnalyzer {
 
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using UDCollisionFull = UDCollisionsFull::iterator;
-  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
 
   template <typename TTrack>
   void fillSignalHists(DGParticle ivm, TTrack const& dgtracks, DGPIDSelector pidsel)
@@ -138,7 +138,8 @@ struct DGCandAnalyzer {
     }
     bcnums.clear();
 
-    registry.add("stat/candCase", "DG candidate types", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+    registry.add("stat/candCaseAll", "Types of all DG candidates", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+    registry.add("stat/candCaseSel", "Types of all selectedDG candidates", {HistType::kTH1F, {{5, -0.5, 4.5}}});
     registry.add("stat/nDGperRun", "Number of DG collisions per run", {HistType::kTH1D, {{1, 0, 1}}});
 
     const AxisSpec axisIVM{IVMAxis, "IVM axis for histograms"};
@@ -186,8 +187,8 @@ struct DGCandAnalyzer {
     registry.add("2Prong/TPCNCl2", "Number of found TPC clusters of track 2", {HistType::kTH1F, {{200, 0., 200.}}});
     registry.add("2Prong/TPCChi2NCl1", "TPC chi2 of track 1", {HistType::kTH1F, {{200, 0., 50.}}});
     registry.add("2Prong/TPCChi2NCl2", "TPC chi2 of track 2", {HistType::kTH1F, {{200, 0., 50.}}});
-    registry.add("2Prong/pTPCsignal1", "TPC signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
-    registry.add("2Prong/pTPCsignal2", "TPC signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
+    registry.add("2Prong/TPCsignal1", "TPC signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
+    registry.add("2Prong/TPCsignal2", "TPC signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
     registry.add("2Prong/sig1VsSig2TPC", "TPC signals of track 1 versus track 2", {HistType::kTH2F, {{300, 0., 300.}, {300, 0., 300.}}});
     registry.add("2Prong/TOFsignal1", "TOF signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {400, -100., 100.}}});
     registry.add("2Prong/TOFsignal2", "TOF signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {400, -100., 100.}}});
@@ -207,7 +208,7 @@ struct DGCandAnalyzer {
   void process(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
   {
     // count collisions
-    registry.fill(HIST("stat/candCase"), 0., 1.);
+    registry.fill(HIST("stat/candCaseAll"), 0., 1.);
 
     // accept only selected run numbers
     int run = dgcand.runNumber();
@@ -246,6 +247,7 @@ struct DGCandAnalyzer {
     if (candCaseSel > 0 && candCase != candCaseSel) {
       return;
     }
+    registry.fill(HIST("stat/candCaseAll"), candCase, 1.);
 
     // skip events with too few/many tracks
     Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
@@ -311,7 +313,7 @@ struct DGCandAnalyzer {
       // check bcnum
       if (bcnums.find(bcnum) != bcnums.end()) {
         LOGF(info, "candCase %i bcnum %i allready found! ", candCase, bcnum);
-        registry.fill(HIST("stat/candCase"), 4, 1.);
+        registry.fill(HIST("stat/candCaseSel"), 4, 1.);
         return;
       } else {
         bcnums.insert(bcnum);
@@ -322,7 +324,7 @@ struct DGCandAnalyzer {
     }
 
     // update histogram stat/candCase and stat/nDGperRun
-    registry.fill(HIST("stat/candCase"), candCase, 1.);
+    registry.fill(HIST("stat/candCaseSel"), candCase, 1.);
     registry.get<TH1>(HIST("stat/nDGperRun"))->Fill(Form("%d", run), 1);
 
     // update histograms
@@ -375,7 +377,7 @@ struct DGCandAnalyzer {
     }
 
     // fill histograms with PV track information of collisions with DG candidates
-    registry.fill(HIST("stat/nIVMs"), goodIVMs, 1.);
+    registry.fill(HIST("system/nIVMs"), goodIVMs, 1.);
     if (goodIVMs > 0) {
 
       // loop over PV tracks and update histograms
@@ -386,10 +388,10 @@ struct DGCandAnalyzer {
         registry.fill(HIST("tracks/trackHits"), 3., track.hasTRD() * 1.);
         registry.fill(HIST("tracks/trackHits"), 4., track.hasTOF() * 1.);
 
-        // registry.fill(HIST("dcaXYDG"), track.dcaXY());
-        // registry.fill(HIST("ptTrkdcaXYDG"), track.pt(), track.dcaXY());
-        // registry.fill(HIST("dcaZDG"), track.dcaZ());
-        // registry.fill(HIST("ptTrkdcaZDG"), track.pt(), track.dcaZ());
+        registry.fill(HIST("tracks/dcaXYDG"), track.dcaXY());
+        registry.fill(HIST("tracks/ptTrkdcaXYDG"), track.pt(), track.dcaXY());
+        registry.fill(HIST("tracks/dcaZDG"), track.dcaZ());
+        registry.fill(HIST("tracks/ptTrkdcaZDG"), track.pt(), track.dcaZ());
         registry.fill(HIST("tracks/TPCNCl"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound(), 1.);
         registry.fill(HIST("tracks/TPCChi2NCl"), track.tpcChi2NCl(), 1.);
 

@@ -65,13 +65,17 @@ class DGSelector
 
     // no global tracks which are not vtx tracks
     // no vtx tracks which are not global tracks
+    // no PV tracks with ITS only
     auto rgtrwTOF = 0.; // fraction of PV tracks with TOF hit
     for (auto& track : tracks) {
       if (track.isGlobalTrack() && !track.isPVContributor()) {
         return 3;
       }
-      if (diffCuts.globalTracksOnly() && !track.isGlobalTrack() && track.isPVContributor()) {
+      if (diffCuts.globalTracksOnly() && track.isPVContributor() && !track.isGlobalTrack()) {
         return 4;
+      }
+      if (!diffCuts.ITSOnlyTracks() && track.isPVContributor() && !track.hasTPC()) {
+        return 5;
       }
 
       // update fraction of PV tracks with TOF hit
@@ -83,12 +87,12 @@ class DGSelector
       rgtrwTOF /= collision.numContrib();
     }
     if (rgtrwTOF < diffCuts.minRgtrwTOF()) {
-      return 5;
+      return 6;
     }
 
     // number of vertex tracks
     if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
-      return 6;
+      return 7;
     }
 
     // PID, pt, and eta of tracks, invariant mass, and net charge
@@ -109,18 +113,18 @@ class DGSelector
 
         // PID
         // if (!udhelpers::hasGoodPID(diffCuts, track)) {
-        //   return 7;
+        //   return 8;
         // }
 
         // pt
         lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
         if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
-          return 8;
+          return 9;
         }
 
         // eta
         if (lvtmp.Eta() < diffCuts.minEta() || lvtmp.Eta() > diffCuts.maxEta()) {
-          return 9;
+          return 10;
         }
         netCharge += track.sign();
         ivm += lvtmp;
@@ -130,11 +134,11 @@ class DGSelector
     // net charge
     auto netChargeValues = diffCuts.netCharges();
     if (std::find(netChargeValues.begin(), netChargeValues.end(), netCharge) == netChargeValues.end()) {
-      return 10;
+      return 11;
     }
     // invariant mass
     if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
-      return 11;
+      return 12;
     }
 
     // if we arrive here then the event is good!
@@ -164,7 +168,7 @@ class DGSelector
 
     // number of tracks
     if (static_cast<int>(tracks.size()) < diffCuts.minNTracks() || static_cast<int>(tracks.size()) > diffCuts.maxNTracks()) {
-      return 6;
+      return 7;
     }
 
     // PID, pt, and eta of tracks, invariant mass, and net charge
@@ -181,18 +185,18 @@ class DGSelector
     for (auto& track : tracks) {
       // PID
       if (!udhelpers::hasGoodPID(diffCuts, track)) {
-        return 7;
+        return 8;
       }
 
       // pt
       lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
       if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
-        return 8;
+        return 9;
       }
 
       // eta
       if (lvtmp.Eta() < diffCuts.minEta() || lvtmp.Eta() > diffCuts.maxEta()) {
-        return 9;
+        return 10;
       }
       netCharge += track.sign();
       ivm += lvtmp;
@@ -201,12 +205,12 @@ class DGSelector
     // net charge
     auto netChargeValues = diffCuts.netCharges();
     if (std::find(netChargeValues.begin(), netChargeValues.end(), netCharge) == netChargeValues.end()) {
-      return 10;
+      return 11;
     }
 
     // invariant mass
     if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
-      return 11;
+      return 12;
     }
 
     // if we arrive here then the event is good!

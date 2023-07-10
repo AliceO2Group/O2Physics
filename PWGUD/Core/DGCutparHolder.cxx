@@ -28,6 +28,10 @@ void DGCutparHolder::SetGlobalTracksOnly(bool globalTracksOnly)
 {
   mGlobalTracksOnly = globalTracksOnly;
 }
+void DGCutparHolder::SetITSOnlyTracks(bool ITSonlyTracks)
+{
+  mITSOnlyTracks = ITSonlyTracks;
+}
 void DGCutparHolder::SetMinRgtrwTOF(float rgtrwTOF)
 {
   mMinRgtrwTOF = rgtrwTOF;
@@ -88,6 +92,7 @@ int DGCutparHolder::NDtcoll() const { return mNDtcoll; }
 int DGCutparHolder::minNBCs() const { return mMinNBCs; }
 bool DGCutparHolder::withFwdTracks() const { return mWithFwdTracks; }
 bool DGCutparHolder::globalTracksOnly() const { return mGlobalTracksOnly; }
+bool DGCutparHolder::ITSOnlyTracks() const { return mITSOnlyTracks; }
 float DGCutparHolder::minRgtrwTOF() const { return mMinRgtrwTOF; }
 int DGCutparHolder::minNTracks() const { return mMinNTracks; }
 int DGCutparHolder::maxNTracks() const { return mMaxNTracks; }
