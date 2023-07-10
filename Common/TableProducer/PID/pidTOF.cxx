@@ -62,6 +62,7 @@ struct tofPid {
   Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
   Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
 
+  Configurable<bool> requireITS{"requireITS", false, "Flag to require ITS tracks for tracks to compute the NSigma (affects the analyses that use TPC only tracks)"};
   Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
   Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
   Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
@@ -365,6 +366,14 @@ struct tofPid {
           makeTableEmpty(pidId);
         }
         continue;
+      }
+      if (requireITS) {        // In case the task is configured to skip tracks without ITS
+        if (!track.hasITS()) { // Track does not have the ITS -> filling with empty table
+          for (auto const& pidId : mEnabledParticles) {
+            makeTableEmpty(pidId);
+          }
+          continue;
+        }
       }
 
       if (enableTimeDependentResponse && (track.collisionId() != mLastCollisionId)) { // Time dependent calib is enabled and this is a new collision
