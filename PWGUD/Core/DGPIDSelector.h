@@ -110,6 +110,8 @@ struct DGAnaparHolder {
   DGAnaparHolder(int MinNTracks = 0, int MaxNTracks = 10000, float minrgtrwTOF = 0.,
                  float maxDCAxy = 100., float maxDCAz = 100,
                  int dBCMin = 0, int dBCMax = 0,
+                 bool ITSonlyTracks = true,
+                 int minNCLTPC = 0, int maxNCLTPC = 200,
                  float minpt = 0.0, float maxpt = 100.0,
                  float mineta = -2.0, float maxeta = 2.0,
                  float minalpha = 0.0, float maxalpha = 3.2,
@@ -117,7 +119,7 @@ struct DGAnaparHolder {
                  int nCombine = 2,
                  std::vector<int> netCharges = {0},
                  std::vector<int> DGPIDs = {211, 211},
-                 std::vector<float> DGPIDCutValues = {}) : mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinRgtrwTOF{minrgtrwTOF}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mdBCMin{dBCMin}, mdBCMax{dBCMax}, mMinpt{minpt}, mMaxpt{maxpt}, mMineta{mineta}, mMaxeta{maxeta}, mMinAlpha{minalpha}, mMaxAlpha{maxalpha}, mMinptsys{minptsys}, mMaxptsys{maxptsys}, mNCombine{nCombine}, mNetCharges{netCharges}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
+                 std::vector<float> DGPIDCutValues = {}) : mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinRgtrwTOF{minrgtrwTOF}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mdBCMin{dBCMin}, mdBCMax{dBCMax}, mITSOnlyTracks{ITSonlyTracks}, mMinNCLTPC{minNCLTPC}, mMaxNCLTPC{maxNCLTPC}, mMinpt{minpt}, mMaxpt{maxpt}, mMineta{mineta}, mMaxeta{maxeta}, mMinAlpha{minalpha}, mMaxAlpha{maxalpha}, mMinptsys{minptsys}, mMaxptsys{maxptsys}, mNCombine{nCombine}, mNetCharges{netCharges}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
   {
     if (mdBCMin < -16) {
       mdBCMin = -16;
@@ -144,6 +146,9 @@ struct DGAnaparHolder {
   float maxDCAz() const { return mMaxDCAz; }
   int dBCMin() const { return mdBCMin; }
   int dBCMax() const { return mdBCMax; }
+  bool ITSOnlyTracks() { return mITSOnlyTracks; }
+  int minNCLTPC() { return mMinNCLTPC; }
+  int maxNCLTPC() { return mMaxNCLTPC; }
   float minpt() const { return mMinpt; }
   float maxpt() const { return mMaxpt; }
   float mineta() const { return mMineta; }
@@ -172,6 +177,9 @@ struct DGAnaparHolder {
   float mMaxDCAz;
   int mdBCMin;
   int mdBCMax;
+  bool mITSOnlyTracks;
+  int mMinNCLTPC;
+  int mMaxNCLTPC;
   float mMinpt;
   float mMaxpt;
   float mMineta;
@@ -272,6 +280,15 @@ struct DGPIDSelector {
     // unknown PID
     auto pidhypo = pid2ind(pid);
     if (pidhypo < 0) {
+      return false;
+    }
+
+    // check ITS only
+    if (!mAnaPars.ITSOnlyTracks() && !track.hasTPC()) {
+      return false;
+    }
+    // check ncluster TPC
+    if (track.tpcNClsCrossedRows() < mAnaPars.minNCLTPC() || track.tpcNClsCrossedRows() > mAnaPars.maxNCLTPC()) {
       return false;
     }
 
