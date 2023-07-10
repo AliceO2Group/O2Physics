@@ -196,6 +196,14 @@ struct lambda1520analysis {
       return false;
     if (fabs(track.eta()) > cfgCutEta)
       return false;
+    if (!track.passedITSRefit() || !track.passedTPCRefit())
+      return false;
+    if (track.tpcCrossedRowsOverFindableCls() < 0.8)
+      return false;
+    if (track.itsChi2NCl() > 36)
+      return false;
+    if (track.tpcChi2NCl() > 4)
+      return false;
 
     return true;
   }
