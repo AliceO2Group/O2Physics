@@ -138,26 +138,22 @@ class V0PhotonCut : public TNamed
       if (mIsWithinBP && !IsSelectedTrack(track, V0PhotonCuts::kIsWithinBeamPipe)) {
         return false;
       }
-      if (!track.hasITS() && !track.hasTPC()) { // track has to be ITSonly or TPConly
+      if (!track.hasITS() && !track.hasTPC()) { // track has to be ITSonly or TPConly or ITS-TPC
         return false;
       }
 
-      bool isITSTPC = track.hasITS() & track.hasTPC();
       bool isITSonly = track.hasITS() & (!track.hasTPC() & !track.hasTOF() & !track.hasTRD());
-      bool isTPConly = track.hasTPC() & (!track.hasITS() & !track.hasTOF() & !track.hasTRD());
 
-      if (isITSTPC) {
-        if (!CheckITSCuts(track) || !CheckTPCCuts(track)) {
-          return false;
-        }
-      } else if (isITSonly) {
+      if (isITSonly) {
         if (!CheckITSCuts(track)) {
           return false;
         }
-      } else if (isTPConly) {
+      } else if (track.hasTPC()) {
         if (!CheckTPCCuts(track)) {
           return false;
         }
+      } else { // remove ITS-TRD, ITS-TOF, ITS-TRD-TOF that are unrealistic tracks.
+        return false;
       }
 
       if (mIsOnWwireIB && !CheckITSCuts(track)) { // photon conversion on ibw requires ITS hits.
@@ -370,10 +366,10 @@ class V0PhotonCut : public TNamed
 
       case V0PhotonCuts::kIsWithinBeamPipe: {
         // return track.isWithinBeamPipe();
-        if (15.f < abs(track.dcaXY()) && abs(track.dcaXY()) < 100.f) {
+        if (abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 15.f) {
           return false;
         }
-        if (abs(abs(track.z()) - 43.f) < 3.f && 15.f < abs(track.dcaXY())) {
+        if (track.x() > 82.9 && abs(track.y()) < 20.f && abs(abs(track.z()) - 43.5f) < 3.5f && 15.f < abs(track.dcaXY())) {
           return false;
         }
         return true;
