@@ -584,6 +584,7 @@ struct alice3decayFinder {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
+  PROCESS_SWITCH(alice3decayFinder, processGenerated, "fill MC-only histograms", true);
   PROCESS_SWITCH(alice3decayFinder, processFindDmesons, "find D mesons", true);
   PROCESS_SWITCH(alice3decayFinder, processFindLcBaryons, "find Lc Baryons", true);
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
