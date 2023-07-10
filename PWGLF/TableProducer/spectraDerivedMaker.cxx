@@ -44,8 +44,8 @@ struct spectraDerivedMaker {
   Configurable<float> cfgNSigmaCut{"cfgNSigmaCut", 10.f, "Value of the Nsigma cut"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+  Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
   Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1f, "Downsampling factor for the events for derived data"};
-  Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to require in TRD for track selection. -1 does not require any TRD cluster"};
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Binning for multiplicity"};
   ConfigurableAxis binsPercentile{"binsPercentile", {100, 0, 100}, "Binning for percentiles"};
   Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1, 8 CentralityFT0C, 9 CentralityFT0M, 10 CentralityFV0A"};
@@ -99,6 +99,7 @@ struct spectraDerivedMaker {
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
 
     histos.add("event/vertexz", "", HistType::kTH1D, {vtxZAxis});
+    histos.add("event/sampledvertexz", "Sampled collisions", HistType::kTH1D, {vtxZAxis});
     auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1D, {{10, 0.5, 10.5}});
     h->GetXaxis()->SetBinLabel(1, "Events read");
     h->GetXaxis()->SetBinLabel(2, "INEL>0");
@@ -145,10 +146,6 @@ struct spectraDerivedMaker {
     histos.add("Mult/NTracksPVeta1", "MultNTracksPVeta1", HistType::kTH1D, {{binsMultiplicity, "MultNTracksPVeta1"}});
 
     if (doprocessMC) {
-      histos.add("MC/fake/pos", "Fake positive tracks", kTH1D, {ptAxis});
-      histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
-      histos.add("MC/no_collision/pos", "No collision pos track", kTH1D, {ptAxis});
-      histos.add("MC/no_collision/neg", "No collision neg track", kTH1D, {ptAxis});
       auto hh = histos.add<TH1>("MC/GenRecoCollisions", "Generated and Reconstructed MC Collisions", kTH1D, {{10, 0.5, 10.5}});
       hh->GetXaxis()->SetBinLabel(1, "Collisions generated");
       hh->GetXaxis()->SetBinLabel(2, "Collisions reconstructed");
@@ -225,6 +222,14 @@ struct spectraDerivedMaker {
         histos.fill(HIST("Mult/NTracksPVeta1"), collision.multNTracksPVeta1());
       }
     }
+
+    // Last thing, check the sampling
+    if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
+      return false;
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("event/sampledvertexz"), collision.posZ());
+    }
     return true;
   }
 
@@ -276,27 +281,6 @@ struct spectraDerivedMaker {
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("tracksel"), 2);
-      if (enableTrackCutHistograms) {
-        if (track.hasITS() && track.hasTPC()) {
-          histos.fill(HIST("track/ITS/itsNCls"), track.itsNCls(), track.sign());
-          histos.fill(HIST("track/ITS/itsChi2NCl"), track.itsChi2NCl(), track.sign());
-
-          histos.fill(HIST("track/TPC/tpcNClsFindable"), track.tpcNClsFindable(), track.sign());
-          histos.fill(HIST("track/TPC/tpcNClsFound"), track.tpcNClsFound(), track.sign());
-          histos.fill(HIST("track/TPC/tpcNClsShared"), track.tpcNClsShared(), track.sign());
-          histos.fill(HIST("track/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows(), track.sign());
-          histos.fill(HIST("track/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls(), track.sign());
-          histos.fill(HIST("track/TPC/tpcFractionSharedCls"), track.tpcFractionSharedCls(), track.sign());
-          histos.fill(HIST("track/TPC/tpcChi2NCl"), track.tpcChi2NCl(), track.sign());
-
-          histos.fill(HIST("track/TRD/trdSignal"), track.p(), track.trdSignal(), track.sign());
-          if (track.hasTRD()) {
-            histos.fill(HIST("track/TRD/length"), track.length());
-          } else {
-            histos.fill(HIST("track/TRD/lengthnotrd"), track.length());
-          }
-        }
-      }
     }
 
     if (!passesCutWoDCA(track)) {
@@ -307,18 +291,6 @@ struct spectraDerivedMaker {
       histos.fill(HIST("tracksel"), 3);
       if (track.hasTOF()) {
         histos.fill(HIST("tracksel"), 4);
-      }
-      if (enableTrackCutHistograms) {
-        histos.fill(HIST("track/selected/ITS/itsNCls"), track.itsNCls(), track.sign());
-        histos.fill(HIST("track/selected/ITS/itsChi2NCl"), track.itsChi2NCl(), track.sign());
-
-        histos.fill(HIST("track/selected/TPC/tpcNClsFindable"), track.tpcNClsFindable(), track.sign());
-        histos.fill(HIST("track/selected/TPC/tpcNClsFound"), track.tpcNClsFound(), track.sign());
-        histos.fill(HIST("track/selected/TPC/tpcNClsShared"), track.tpcNClsShared(), track.sign());
-        histos.fill(HIST("track/selected/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows(), track.sign());
-        histos.fill(HIST("track/selected/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls(), track.sign());
-        histos.fill(HIST("track/selected/TPC/tpcFractionSharedCls"), track.tpcFractionSharedCls(), track.sign());
-        histos.fill(HIST("track/selected/TPC/tpcChi2NCl"), track.tpcChi2NCl(), track.sign());
       }
     }
     if constexpr (fillHistograms) {
@@ -413,11 +385,9 @@ struct spectraDerivedMaker {
   void processData(CollisionCandidate::iterator const& collision,
                    soa::Join<TrackCandidates,
                              aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr,
-                             aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr> const& tracks)
+                             aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr> const& tracks,
+                   aod::BCs const&)
   {
-    if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
-      return;
-    }
     if (!isEventSelected<true, true>(collision, tracks)) {
       return;
     }
@@ -427,7 +397,7 @@ struct spectraDerivedMaker {
               collision.posX(),
               collision.posY(),
               collision.posZ(),
-              collision.multFV0M(),
+              collision.centFT0M(),
               collision.sel8(),
               collision.bc().runNumber());
 
@@ -449,6 +419,8 @@ struct spectraDerivedMaker {
                  trk.tpcNClsFindableMinusFound(),
                  trk.tpcNClsFindableMinusCrossedRows(),
                  trk.isPVContributor(),
+                 trk.itsClusterMap(),
+                 trk.hasTRD(),
                  trk.tofFlags(),
                  trk.dcaXY(), trk.dcaZ());
     }
@@ -470,47 +442,12 @@ struct spectraDerivedMaker {
     // Fill number of generated and reconstructed collisions for normalization
     histos.fill(HIST("MC/GenRecoCollisions"), 1.f, mcCollisions.size());
     histos.fill(HIST("MC/GenRecoCollisions"), 2.f, collisions.size());
-    // LOGF(info, "Enter processMC!");
-    for (const auto& track : tracks) {
-      if (!track.has_collision()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("MC/no_collision/pos"), track.pt());
-        } else {
-          histos.fill(HIST("MC/no_collision/neg"), track.pt());
-        }
-        continue;
-      }
-      if (!track.collision_as<CollisionCandidateMC>().sel8()) {
-        continue;
-      }
-      if (!passesCutWoDCA(track)) {
-        continue;
-      }
-      if (!track.has_mcParticle()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("MC/fake/pos"), track.pt());
-        } else {
-          histos.fill(HIST("MC/fake/neg"), track.pt());
-        }
-        continue;
-      }
-      const auto& mcParticle = track.mcParticle();
 
-      static_for<0, 17>([&](auto i) {
-        fillTrackHistograms_MC<i>(track, mcParticle, track.collision_as<CollisionCandidateMC>());
-      });
-    }
-
+    // Loop on generated particles
     for (const auto& mcParticle : mcParticles) {
-      // if (std::abs(mcParticle.eta()) > cfgCutEta) {
-      //   continue;
-      // }
       if (std::abs(mcParticle.y()) > cfgCutY) {
         continue;
       }
-      static_for<0, 17>([&](auto i) {
-        fillParticleHistograms_MC<i>(mcParticle, mcParticle.mcCollision_as<CollisionCandidateMC>());
-      });
     }
 
     // Loop on reconstructed collisions
@@ -523,9 +460,6 @@ struct spectraDerivedMaker {
         if (std::abs(mcParticle.y()) > cfgCutY) {
           continue;
         }
-        static_for<0, 17>([&](auto i) {
-          fillParticleHistograms_MCRecoEvs<i>(mcParticle, collision);
-        });
       }
     }
 
@@ -552,9 +486,6 @@ struct spectraDerivedMaker {
         if (std::abs(mcParticle.y()) > cfgCutY) {
           continue;
         }
-        static_for<0, 17>([&](auto i) {
-          fillParticleHistograms_MCGenEvs<i>(mcParticle, mcCollision);
-        });
       }
       if (nInelPart >= 1) {
         histos.fill(HIST("MC/GenRecoCollisions"), 3.f);

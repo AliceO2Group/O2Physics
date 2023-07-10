@@ -47,7 +47,6 @@ struct tofSpectra {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
   Configurable<int> cfgINELCut{"cfgINELCut", 0, "Event selection: 0 no sel, 1 sel8, 2 INEL>0, 3 INEL>1"};
-  Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1f, "Downsampling factor for the events for derived data"};
   Configurable<bool> enableDcaGoodEvents{"enableDcaGoodEvents", true, "Enables the MC plots with the correct match between data and MC"};
   Configurable<bool> enableTrackCutHistograms{"enableTrackCutHistograms", true, "Enables track cut histograms, before and after the cut"};
   Configurable<bool> enableDeltaHistograms{"enableDeltaHistograms", true, "Enables the delta TPC and TOF histograms"};
@@ -984,8 +983,8 @@ struct tofSpectra {
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
 
-  void process(CollisionCandidate::iterator const& collision,
-               TrackCandidates const& tracks)
+  void processStandard(CollisionCandidate::iterator const& collision,
+                       TrackCandidates const& tracks)
   {
     if (!isEventSelected<true, true>(collision, tracks)) {
       return;
@@ -996,6 +995,21 @@ struct tofSpectra {
       }
     }
   } // end of the process function
+  PROCESS_SWITCH(tofSpectra, processStandard, "Standard processor from AO2D", true);
+
+  void processDerived(aod::SpColl const& collision,
+                      aod::SpTracks const& tracks)
+  {
+    if (!isEventSelected<true, true>(collision, tracks)) {
+      return;
+    }
+    for (const auto& track : tracks) {
+      if (!isTrackSelected<true>(track)) {
+        continue;
+      }
+    }
+  } // end of the process function
+  PROCESS_SWITCH(tofSpectra, processDerived, "Derived data processor", false);
 
 #define makeProcessFunction(processorName, inputPid, particleId, isFull, tofTable, tpcTable)   \
   void process##processorName##inputPid(CollisionCandidate::iterator const& collision,         \
