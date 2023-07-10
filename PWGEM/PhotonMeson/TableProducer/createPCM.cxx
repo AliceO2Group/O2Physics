@@ -174,16 +174,6 @@ struct createPCM {
     }
   }
 
-  template <typename TTrack>
-  bool IsTPConlyTrack(TTrack const& track)
-  {
-    if (track.hasTPC() && (!track.hasITS() && !track.hasTOF() && !track.hasTRD())) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   template <typename TCollision, typename TTrack>
   void fillV0Table(TCollision const& collision, TTrack const& ele, TTrack const& pos)
   {
@@ -280,12 +270,6 @@ struct createPCM {
         if (!isSelected(ele) || !isSelected(pos)) {
           continue;
         }
-        // if(ele.hasITS() && (!ele.hasTPC() && !ele.hasTOF() && !ele.hasTRD())){
-        //   LOGF(info, "ele : ITSonly track %d", ele.globalIndex());
-        // }
-        // if(pos.hasITS() && (!pos.hasTPC() && !pos.hasTOF() && !pos.hasTRD())){
-        //   LOGF(info, "pos : ITSonly track %d", pos.globalIndex());
-        // }
         fillV0Table(collision, ele, pos);
       }
     } // end of collision loop
