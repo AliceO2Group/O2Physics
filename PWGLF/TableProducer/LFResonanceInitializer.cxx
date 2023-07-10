@@ -331,7 +331,12 @@ struct reso2initializer {
                 track.tofNSigmaPi(),
                 track.tofNSigmaKa(),
                 track.tofNSigmaPr(),
-                track.tpcSignal());
+                track.tpcSignal(),
+                track.passedITSRefit(),
+                track.passedTPCRefit(),
+                track.tpcCrossedRowsOverFindableCls(),
+                track.itsChi2NCl(),
+                track.tpcChi2NCl());
       if constexpr (isMC) {
         fillMCTrack(track);
       }
