@@ -35,13 +35,13 @@ o2physics_add_dpl_workflow(candidate-selector-bplus-to-d0-pi-reduced
 
 # Data creators
 
-o2physics_add_dpl_workflow(data-creator-dplus-pi-reduced
-                    SOURCES dataCreatorDplusPiReduced.cxx
+o2physics_add_dpl_workflow(data-creator-d0-pi-reduced
+                    SOURCES dataCreatorD0PiReduced.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(data-creator-d0-pi-reduced
-                    SOURCES dataCreatorD0PiReduced.cxx
+o2physics_add_dpl_workflow(data-creator-dplus-pi-reduced
+                    SOURCES dataCreatorDplusPiReduced.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
