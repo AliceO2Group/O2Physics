@@ -275,7 +275,32 @@ struct binningDCA {
 DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occurred
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-DECLARE_SOA_COLUMN(MultFV0M, multFV0M, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(Sel8, sel8, bool);
+DECLARE_SOA_DYNAMIC_COLUMN(CentFV0A, centFV0A, //! Dummy
+                           [](bool v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(CentFT0A, centFT0A, //! Dummy
+                           [](bool v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(CentFT0C, centFT0C, //! Dummy
+                           [](bool v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFV0A, multZeqFV0A, //! Dummy
+                           [](bool v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFT0A, multZeqFT0A, //! Dummy
+                           [](bool v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFT0C, multZeqFT0C, //! Dummy
+                           [](bool v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFDDA, multZeqFDDA, //! Dummy
+                           [](bool v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFDDC, multZeqFDDC, //! Dummy
+                           [](bool v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, //! Dummy
+                           [](bool v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, //! Dummy
+                           [](bool v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(MultTracklets, multTracklets, //! Dummy
+                           [](bool v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(MultTPC, multTPC, //! Dummy
+                           [](bool v) -> float { return 0.f; });
 
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //! Index to the collision
 DECLARE_SOA_COLUMN(PtSigned, ptSigned, float);                    //! Pt (signed) of the track
@@ -284,15 +309,29 @@ DECLARE_SOA_COLUMN(Phi, phi, float);                              //! Phi of the
 DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);                //! Event time of the track computed with the T0AC
 DECLARE_SOA_COLUMN(EvTimeT0ACErr, evTimeT0ACErr, float);          //! Resolution of the event time of the track computed with the T0AC
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);       //! IsPVContributor
+DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);            //! Detector map: see enum DetectorMapEnum
+DECLARE_SOA_COLUMN(LastTRDCluster, lastTRDCluster, int8_t);       //! Index of the last cluster in the TRD, -1 if no TRD information
+DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                         //! Has or not the TRD match
 DECLARE_SOA_COLUMN(DCAxyStore, dcaxyStore, binningDCA::binned_t); //! Stored binned dcaxy
 DECLARE_SOA_COLUMN(DCAzStore, dcazStore, binningDCA::binned_t);   //! Stored binned dcaz
-DECLARE_SOA_DYNAMIC_COLUMN(DCAxy, dcaxy,                          //! Unpacked dcaxy
+DECLARE_SOA_DYNAMIC_COLUMN(DCAxy, dcaXY,                          //! Unpacked dcaxy
                            [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
-DECLARE_SOA_DYNAMIC_COLUMN(DCAz, dcaz, //! Unpacked dcaz
+DECLARE_SOA_DYNAMIC_COLUMN(DCAz, dcaZ, //! Unpacked dcaz
                            [](binningDCA::binned_t binned) -> float { return unPack<binningDCA>(binned); });
-DECLARE_SOA_COLUMN(LastTRDCluster, lastTRDCluster, int8_t); //! Index of the last cluster in the TRD, -1 if no TRD information
-DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,                  //! Flag to check if track has a TOF measurement
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! Absolute value of signed pT
+                           [](float signedPt) -> float { return std::abs(signedPt); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasITS, hasITS, //! Dummy
+                           [](float v) -> bool { return true; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasTPC, hasTPC, //! Dummy
+                           [](float v) -> bool { return true; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF, //! Flag to check if track has a TOF measurement
                            [](float tofSignal) -> bool { return tofSignal > 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(TRDSignal, trdSignal, //! Dummy
+                           [](float v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float signedpt, float eta) -> float { return std::abs(signedpt) * cosh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float v) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, [](float v) -> bool { return true; });
+DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float v) -> uint32_t { return 0; }); // Dummy
 
 } // namespace spectra
 
@@ -303,9 +342,23 @@ DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
-                  spectra::MultFV0M,
-                  spectra::IsEventReject,
-                  spectra::RunNumber);
+                  spectra::CentFT0M,
+                  spectra::Sel8,
+                  spectra::RunNumber,
+                  spectra::CentFV0A<spectra::Sel8>,
+                  spectra::CentFT0A<spectra::Sel8>,
+                  spectra::CentFT0C<spectra::Sel8>,
+                  spectra::MultZeqFV0A<spectra::Sel8>,
+                  spectra::MultZeqFT0A<spectra::Sel8>,
+                  spectra::MultZeqFT0C<spectra::Sel8>,
+                  spectra::MultZeqFDDA<spectra::Sel8>,
+                  spectra::MultZeqFDDC<spectra::Sel8>,
+                  spectra::MultZeqNTracksPV<spectra::Sel8>,
+                  spectra::MultNTracksPVeta1<spectra::Sel8>,
+                  spectra::MultTracklets<spectra::Sel8>,
+                  spectra::MultTPC<spectra::Sel8>
+
+);
 using SpColl = SpColls::iterator;
 
 DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
@@ -322,6 +375,8 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   track::TPCNClsFindableMinusFound,
                   track::TPCNClsFindableMinusCrossedRows,
                   spectra::IsPVContributor,
+                  track::ITSClusterMap,
+                  spectra::HasTRD,
                   //   pidtofevtime::EvTimeTOF,
                   //   pidtofevtime::EvTimeTOFErr,
                   //   pidtofevtime::EvTimeTOFMult,
@@ -334,6 +389,18 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   spectra::DCAzStore,
                   spectra::DCAxy<spectra::DCAxyStore>,
                   spectra::DCAz<spectra::DCAzStore>,
+                  spectra::Pt<spectra::PtSigned>,
+                  track::Sign<spectra::PtSigned>,
+                  spectra::P<spectra::PtSigned, spectra::Eta>,
+                  spectra::HasITS<track::ITSClusterMap>,
+                  spectra::HasTPC<track::TPCChi2NCl>,
+                  spectra::HasTOF<track::TOFChi2>,
+                  spectra::TRDSignal<track::TOFChi2>,
+                  spectra::Flags<track::TOFChi2>,
+                  spectra::TrackType<track::TOFChi2>,
+                  spectra::IsGlobalTrackWoDCA<track::TOFChi2>,
+                  track::ITSNCls<track::ITSClusterMap>, track::ITSNClsInnerBarrel<track::ITSClusterMap>,
+                  track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
@@ -345,5 +412,20 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   pidtpc_tiny::TPCNSigmaKa<pidtpc_tiny::TPCNSigmaStoreKa>,
                   pidtpc_tiny::TPCNSigmaPr<pidtpc_tiny::TPCNSigmaStorePr>);
 } // namespace o2::aod
+
+struct MultCodes {
+  static constexpr int kNoMultiplicity = 0;
+  static constexpr int kMultFV0M = 1;
+  static constexpr int kMultFT0M = 2;
+  static constexpr int kMultFDDM = 3;
+  static constexpr int kMultTracklets = 4;
+  static constexpr int kMultTPC = 5;
+  static constexpr int kMultNTracksPV = 6;
+  static constexpr int kMultNTracksPVeta1 = 7;
+  static constexpr int kCentralityFT0C = 8;
+  static constexpr int kCentralityFT0M = 9;
+  static constexpr int kCentralityFV0A = 10;
+  static constexpr int kNMults = 10;
+};
 
 #endif // PWGLF_DATAMODEL_SPECTRATOF_H_
