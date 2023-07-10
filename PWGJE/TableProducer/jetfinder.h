@@ -62,12 +62,12 @@ using CandidateLcMC = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, a
 template <typename T>
 bool selectTrack(T const& track, std::string trackSelection)
 {
-  if (trackSelection == "globalTracks" && !track.isGlobalTrackWoPtEta()) {
-    return false;
-  } else if (trackSelection == "QualityTracks" && !track.isQualityTrack()) {
-    return false;
-  } else if (trackSelection == "hybridTracksJE" && !track.trackCutFlagFb5()) {
-    return false;
+  if (trackSelection == "globalTracks") {
+    return track.isGlobalTrackWoPtEta();
+  } else if (trackSelection == "QualityTracks") {
+    return track.isQualityTrack();
+  } else if (trackSelection == "hybridTracksJE") {
+    return track.trackCutFlagFb5();
   } else {
     return true;
   }
@@ -238,11 +238,10 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, float par
 template <typename T>
 bool selectCollision(T const& collision, std::string eventSelection)
 {
-  if (eventSelection == "sel8" & !collision.sel8()) {
-    return false;
-  }
-  if (eventSelection == "sel7" & !collision.sel7()) {
-    return false;
+  if (eventSelection == "sel8") {
+    return collision.sel8();
+  } else if (eventSelection == "sel7") {
+    return collision.sel7();
   } else {
     return true;
   }
