@@ -346,4 +346,19 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   pidtpc_tiny::TPCNSigmaPr<pidtpc_tiny::TPCNSigmaStorePr>);
 } // namespace o2::aod
 
+struct MultCodes {
+  static constexpr int kNoMultiplicity = 0;
+  static constexpr int kMultFV0M = 1;
+  static constexpr int kMultFT0M = 2;
+  static constexpr int kMultFDDM = 3;
+  static constexpr int kMultTracklets = 4;
+  static constexpr int kMultTPC = 5;
+  static constexpr int kMultNTracksPV = 6;
+  static constexpr int kMultNTracksPVeta1 = 7;
+  static constexpr int kCentralityFT0C = 8;
+  static constexpr int kCentralityFT0M = 9;
+  static constexpr int kCentralityFV0A = 10;
+  static constexpr int kNMults = 10;
+};
+
 #endif // PWGLF_DATAMODEL_SPECTRATOF_H_
