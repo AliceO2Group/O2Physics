@@ -289,18 +289,18 @@ struct tpcPidFull {
 
     for (auto const& trk : tracks) {
       // Loop on Tracks
-      const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
-      if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrization only if the initial timestamp is 0
-
-        if (recoPass.value == "") {
-          LOGP(info, "Retrieving latest TPC response object for timestamp {}:", bc.timestamp());
-        } else {
-          LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
+      if (trk.has_collision()) {
+        const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
+        if (useCCDBParam && ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrization only if the initial timestamp is 0
+          if (recoPass.value == "") {
+            LOGP(info, "Retrieving latest TPC response object for timestamp {}:", bc.timestamp());
+          } else {
+            LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
+          }
+          response.SetParameters(ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata));
+          response.PrintAll();
         }
-        response.SetParameters(ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata));
-        response.PrintAll();
       }
-
       // Check and fill enabled tables
       auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracks_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
         if (flag.value != 1) {
