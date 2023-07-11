@@ -39,7 +39,6 @@ class JetFinder
 {
 
  public:
-
   /// Performs jet finding
   /// \note the input particle and jet lists are passed by reference
   /// \param inputParticles vector of input particles/tracks
@@ -127,7 +126,6 @@ class JetFinder
   fastjet::ClusterSequenceArea findJets(std::vector<fastjet::PseudoJet>& inputParticles, std::vector<fastjet::PseudoJet>& jets); // ideally find a way of passing the cluster sequence as a reeference
 
  private:
-
   ClassDefNV(JetFinder, 1);
 };
 
