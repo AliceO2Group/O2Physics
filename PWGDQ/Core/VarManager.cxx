@@ -73,6 +73,28 @@ void VarManager::SetVariableDependencies()
   if (fgUsedVars[kKFTracksDCAxyMax]) {
     fgUsedVars[kKFTrack0DCAxy] = kTRUE;
     fgUsedVars[kKFTrack1DCAxy] = kTRUE;
+  if (fgUsedVars[kVertexingTauxy]) {
+    fgUsedVars[kVertexingLxy] = kTRUE;
+  }
+
+  if (fgUsedVars[kVertexingTauzErr]) {
+    fgUsedVars[kVertexingLzErr] = kTRUE;
+  }
+
+  if (fgUsedVars[kVertexingTauxyErr]) {
+    fgUsedVars[kVertexingLxyErr] = kTRUE;
+  }
+  
+  if (fgUsedVars[kCosPointingAngle]) {
+    fgUsedVars[kVertexingLxyz] = kTRUE;
+  }
+
+  if (fgUsedVars[kKFVertexingTauxyErr]) {
+    fgUsedVars[kKFVertexingLxyErr] = kTRUE;
+  }
+
+  if (fgUsedVars[kKFCosPointingAngle]) {
+    fgUsedVars[kKFVertexingLxyz] = kTRUE;
   }
 }
 
@@ -333,6 +355,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTPCncls] = "";
   fgVariableNames[kTPCnclsCR] = "TPC #cls crossed rows";
   fgVariableUnits[kTPCnclsCR] = "";
+  fgVariableNames[kTPCnclsFoundRatio] = "TPC #cls / TPC #cls crossed rows";
+  fgVariableUnits[kTPCnclsFoundRatio] = "";
   fgVariableNames[kTPCchi2] = "TPC chi2";
   fgVariableUnits[kTPCchi2] = "";
   fgVariableNames[kTPCsignal] = "TPC dE/dx";
@@ -451,26 +475,52 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCandidateId] = "";
   fgVariableNames[kPairType] = "Pair type";
   fgVariableUnits[kPairType] = "";
-  fgVariableNames[kVertexingLxy] = "Pair Lxy";
-  fgVariableUnits[kVertexingLxy] = "cm";
-  fgVariableNames[kVertexingLz] = "Pair Lz";
-  fgVariableUnits[kVertexingLz] = "cm";
-  fgVariableNames[kVertexingLxyz] = "Pair Lxyz";
+  fgVariableNames[kVertexingLxyz] = "Lxyz";
   fgVariableUnits[kVertexingLxyz] = "cm";
-  fgVariableNames[kVertexingLxyErr] = "Pair Lxy err.";
-  fgVariableUnits[kVertexingLxyErr] = "cm";
-  fgVariableNames[kVertexingLzErr] = "Pair Lz err.";
-  fgVariableUnits[kVertexingLzErr] = "cm";
-  fgVariableNames[kVertexingLxyzErr] = "Pair Lxyz err.";
+  fgVariableNames[kVertexingLxy] = "Lxy";
+  fgVariableUnits[kVertexingLxy] = "cm";
+  fgVariableNames[kVertexingLz] = "Lz";
+  fgVariableUnits[kVertexingLz] = "cm";
+  fgVariableNames[kVertexingLxyzErr] = "Lxyz err.";
   fgVariableUnits[kVertexingLxyzErr] = "cm";
-  fgVariableNames[kVertexingTauz] = "Pair pseudo-proper Tauz";
+  fgVariableNames[kVertexingLxyErr] = "Lxy err.";
+  fgVariableUnits[kVertexingLxyErr] = "cm";
+  fgVariableNames[kVertexingLzErr] = "Lz err.";
+  fgVariableUnits[kVertexingLzErr] = "cm";
+  fgVariableNames[kVertexingLxyzProjected] = "Lxyz"; // run 2 definitions
+  fgVariableUnits[kVertexingLxyzProjected] = "cm";
+  fgVariableNames[kVertexingLxyProjected] = "Lxy"; // run 2 definitions
+  fgVariableUnits[kVertexingLxyProjected] = "cm";
+  fgVariableNames[kVertexingTauz] = "Pseudo-proper Tauz";
   fgVariableUnits[kVertexingTauz] = "ns";
-  fgVariableNames[kVertexingTauxy] = "Pair pseudo-proper Tauxy";
+  fgVariableNames[kVertexingTauxy] = "Pseudo-proper Tauxy";
   fgVariableUnits[kVertexingTauxy] = "ns";
-  fgVariableNames[kVertexingTauzErr] = "Pair pseudo-proper Tauz err.";
+  fgVariableNames[kVertexingTauzErr] = "Pseudo-proper Tauz err.";
   fgVariableUnits[kVertexingTauzErr] = "ns";
-  fgVariableNames[kVertexingTauxyErr] = "Pair pseudo-proper Tauxy err.";
+  fgVariableNames[kVertexingTauxyErr] = "Pseudo-proper Tauxy err.";
   fgVariableUnits[kVertexingTauxyErr] = "ns";
+  fgVariableNames[kVertexingTauxyProjected] = "Pseudo-proper Tauxy";
+  fgVariableUnits[kVertexingTauxyProjected] = "ns";
+  fgVariableNames[kCosPointingAngle] = "cos(#theta_{pointing})";
+  fgVariableUnits[kCosPointingAngle] = "";
+  fgVariableNames[kKFVertexingLxyz] = "KF Lxyz";
+  fgVariableUnits[kKFVertexingLxyz] = "cm";
+  fgVariableNames[kKFVertexingLxy] = "KF Lxy";
+  fgVariableUnits[kKFVertexingLxy] = "cm";
+  fgVariableNames[kKFVertexingLz] = "KF Lz";
+  fgVariableUnits[kKFVertexingLz] = "cm";
+  fgVariableNames[kKFVertexingLxyzErr] = "KF Lxyz err.";
+  fgVariableUnits[kKFVertexingLxyzErr] = "cm";
+  fgVariableNames[kKFVertexingLxyErr] = "KF Lxy err.";
+  fgVariableUnits[kKFVertexingLxyErr] = "cm";
+  fgVariableNames[kKFVertexingLzErr] = "KF Lz err.";
+  fgVariableUnits[kKFVertexingLzErr] = "cm";
+  fgVariableNames[kKFVertexingTauxy] = "KF Pseudo-proper Tauxy";
+  fgVariableUnits[kKFVertexingTauxy] = "ns";
+  fgVariableNames[kKFVertexingTauxyErr] = "KF Pseudo-proper Tauxy err.";
+  fgVariableUnits[kKFVertexingTauxyErr] = "ns";
+  fgVariableNames[kKFCosPointingAngle] = "KF cos(#theta_{pointing})";
+  fgVariableUnits[kKFCosPointingAngle] = "";
   fgVariableNames[kVertexingProcCode] = "DCAFitterN<2> processing code";
   fgVariableUnits[kVertexingProcCode] = "";
   fgVariableNames[kVertexingChi2PCA] = "Pair #chi^{2} at PCA";

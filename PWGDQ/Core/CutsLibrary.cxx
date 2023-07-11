@@ -317,16 +317,23 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (!nameStr.compare("kaonPID")) {
-    cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
+    cut->AddCut(GetAnalysisCut("PIDStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
-    cut->AddCut(GetAnalysisCut("kaonPIDnsigma"));
+    cut->AddCut(GetAnalysisCut("kaonPIDnsigma")); // todo: change this to kaonPIDsigma once new skims 
     return cut;
   }
 
   if (!nameStr.compare("kaonPID2")) {
-    cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
+    cut->AddCut(GetAnalysisCut("AssocKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("kaonPIDnsigma2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonPID3")) {
+    cut->AddCut(GetAnalysisCut("AssocKine")); // standard kine cuts usually are applied via Filter in the task
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("kaonPID_TPCnTOF"));
     return cut;
   }
   // NOTE Below there are several TPC pid cuts used for studies of the Run3 TPC post PID calib.
@@ -366,6 +373,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("lmee_TPCPID_debug1"));
     return cut;
   }
+  
 
   //---------------------------------------------------------------
   // Cuts for the selection of legs from dalitz decay
@@ -2043,6 +2051,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("kaonPIDnsigma")) {
+    cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0);
+    return cut;
+  }
+
   if (!nameStr.compare("kaonPIDnsigma2")) {
     cut->AddCut(VarManager::kTPCnSigmaKa, -2.0, 2.0);
     return cut;
@@ -2050,6 +2063,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("kaonPIDnsigma2")) {
     cut->AddCut(VarManager::kTPCnSigmaKa, -2.0, 2.0);
+  if (!nameStr.compare("kaonPID_TPCnTOF")) {
+    cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0);
+    cut->AddCut(VarManager::kTOFnSigmaKa, -3., 3.);
+    return cut;
+  }
+
+  if (!nameStr.compare("AssocKine")) {
+    cut->AddCut(VarManager::kPt, 1.0, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
     return cut;
   }
 
