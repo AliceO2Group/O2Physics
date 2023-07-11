@@ -136,7 +136,6 @@ struct kinkAnalysis {
   float neutronM = 0;
   float mass;
   float radToDeg = 180. / M_PI;
-  int particlePdgCode; //default value
 
   o2::track::TrackParCov SigmaTr;
   o2::track::TrackParCov SigmaTr2;
