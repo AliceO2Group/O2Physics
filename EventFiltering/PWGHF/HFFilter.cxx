@@ -79,7 +79,7 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameters for charm baryons to Xi bachelor
   Configurable<LabeledArray<float>> cutsXiCascades{"cutsXiCascades", {cutsCascades[0], 1, 7, labelsEmpty, labelsColumnsCascades}, "Selections for cascades (Xi) for Xi+bachelor triggers"};
-  Configurable<float> minPtCharmBaryon{"minPtCharmBaryon", 3.f, "minimum pT for Xic and Omegac baryons decaying into Xi pi/K"};
+  Configurable<LabeledArray<double>> cutsXiBachelor{"cutsXiBachelor", {cutsCharmBaryons[0], 1, 4, labelsEmpty, labelsColumnsCharmBaryons, "Selections for charm baryons (Xi+Pi and Xi+Ka)"};
   Configurable<LabeledArray<double>> cutsTrackCharmBaryonBachelor{"cutsTrackCharmBaryonBachelor", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for charm-baryon bachelor candidates"};
   std::array<LabeledArray<double>, 3> cutsSingleTrack;
 
@@ -979,14 +979,10 @@ struct HfFilter { // Main struct for HF triggers
             }
 
             auto ptCharmBaryon = RecoDecay::pt(RecoDecay::pVec(pVecCascade, pVecBachelor));
-            if (ptCharmBaryon < minPtCharmBaryon) {
-              continue;
-            }
 
-            float massLimits[2] = {2.35f, 2.8f};
             if (TESTBIT(isSelBachelor, kPionForCharmBaryon)) {
               auto massXiPi = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{massXi, massPi});
-              if (massXiPi >= massLimits[0] && massXiPi <= massLimits[1]) {
+              if (ptCharmBaryon > cutsXiBachelor->get(0u, 0u) && massXiPi >= cutsXiBachelor->get(0u, 1u) && massXiPi <= 2.8f) {
                 keepEvent[kCharmBarToXiBach] = true;
                 if (activateQA) {
                   hMassVsPtC[kNCharmParticles + 6]->Fill(ptCharmBaryon, massXiPi);
@@ -995,7 +991,7 @@ struct HfFilter { // Main struct for HF triggers
             }
             if (!keepEvent[kCharmBarToXiBach] && TESTBIT(isSelBachelor, kKaonForCharmBaryon)) {
               auto massXiKa = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{massXi, massK});
-              if (massXiKa >= massLimits[0] && massXiKa <= massLimits[1]) {
+              if (ptCharmBaryon > cutsXiBachelor->get(0u, 2u) && massXiKa >= cutsXiBachelor->get(0u, 3u) && massXiKa <= 2.8f) {
                 keepEvent[kCharmBarToXiBach] = true;
                 if (activateQA) {
                   hMassVsPtC[kNCharmParticles + 7]->Fill(ptCharmBaryon, massXiKa);
