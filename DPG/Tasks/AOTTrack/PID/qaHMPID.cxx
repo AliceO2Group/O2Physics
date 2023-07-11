@@ -74,4 +74,4 @@ struct pidHmpidQa {
 #endif
   };
 
-  WorkflowSpec defineDataProcessing(ConfigContext const& cfg) { return WorkflowSpec{adaptAnalysisTask<pidHMPIDQA>(cfg)}; }
+  WorkflowSpec defineDataProcessing(ConfigContext const& cfg) { return WorkflowSpec{adaptAnalysisTask<pidHmpidQa>(cfg)}; }
