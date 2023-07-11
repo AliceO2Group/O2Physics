@@ -201,7 +201,7 @@ struct AnalysisTrackSelection {
   //  for candidate electron selection (+ eventual prefilter cuts) and other needs like quarkonium - hadron correlations
   // The user must ensure using them properly in the tasks downstream
   // NOTE: For now, the candidate electron cuts must be provided first, then followed by any other needed selections
-  Configurable<string> fConfigCuts{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
+  Configurable<string> fConfigCuts{"cfgTrackCuts", "jpsiO2MCdebugCuts", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
   Configurable<int> fConfigPrefilterCutId{"cfgPrefilterCutId", 32, "Id of the Prefilter track cut (starting at 0)"}; // In order to create another column prefilter (should be temporary before improving cut selection in configurables, then displaced to AnalysisPrefilterSelection)
@@ -723,7 +723,7 @@ struct AnalysisSameEventPairing {
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
-  Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
+  Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<string> fConfigMuonCuts{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
   Configurable<string> fConfigPairCuts{"cfgPairCuts", "", "Comma separated list of pair cuts"};
   Configurable<string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -1148,7 +1148,7 @@ struct AnalysisDileptonHadron {
 
   OutputObj<THashList> fOutputList{"output"};
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
-  Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
+  Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "jpsiO2MCdebugCuts", "Comma separated list of barrel track cuts"};
   // comment: add list of subgroups (must define subgroups under )
   Configurable<std::string> fConfigAddDileptonHadHistogram{"cfgAddDileptonHadHistogram", "", "Comma separated list of histograms"};
 
@@ -1254,6 +1254,7 @@ struct AnalysisDileptonHadron {
   void processSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Filtered<MyPairCandidatesSelected> const& dileptons)
   {
     runDileptonHadron<VarManager::kBtoJpsiEEK, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, dileptons);
+
   }
   void processDummy(MyEvents&)
   {
