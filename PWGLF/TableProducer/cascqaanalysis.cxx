@@ -91,11 +91,10 @@ struct cascqaanalysis {
     registry.add("hZCollision", "hZCollision", {HistType::kTH1F, {{200, -20.f, 20.f}}});
     registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1F, {{200, -20.f, 20.f}}});
 
-    if(isMC){
+    if (isMC) {
       registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {axisMultFT0, {3, -0.5f, 2.5f}, axisMultNTracks}});
       registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {axisMultFT0, {3, -0.5f, 2.5f}, axisMultNTracks}});
-    }
-    else{
+    } else {
       registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, {3, -0.5, 2.5}, axisMultNTracks}});
       registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, {3, -0.5, 2.5}, axisMultNTracks}});
     }
@@ -193,11 +192,10 @@ struct cascqaanalysis {
       auto tracksGroupedPVcontr = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       int ntracksPVcontr = tracksGroupedPVcontr.size();
 
-      if(isMC){
+      if (isMC) {
         registry.fill(HIST("hFT0MpvContr"), collision.multFT0A() + collision.multFT0C(), evFlag, ntracksPVcontr);
         registry.fill(HIST("hFT0Mglobal"), collision.multFT0A() + collision.multFT0C(), evFlag, ntracksGlobal);
-      }
-      else{
+      } else {
         registry.fill(HIST("hFT0MpvContr"), collision.centFT0M(), evFlag, ntracksPVcontr);
         registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), evFlag, ntracksGlobal);
       }
