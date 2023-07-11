@@ -850,13 +850,13 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& coll
     }
   }
 
-  if (TESTBIT(isSelected, kLambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0] > maxNsigmaPrForLambda)) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0] > maxNsigmaPrForLambda)))) {
+  if (TESTBIT(isSelected, kLambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0]) > maxNsigmaPrForLambda) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0]) > maxNsigmaPrForLambda))) {
     CLRBIT(isSelected, kLambda);
     if (activateQA > 1) {
       hV0Selected->Fill(8., kLambda);
     }
   }
-  if (TESTBIT(isSelected, kAntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1] > maxNsigmaPrForLambda)) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1] > maxNsigmaPrForLambda)))) {
+  if (TESTBIT(isSelected, kAntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > maxNsigmaPrForLambda) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > maxNsigmaPrForLambda))) {
     CLRBIT(isSelected, kAntiLambda);
     if (activateQA > 1) {
       hV0Selected->Fill(8., kAntiLambda);
@@ -968,17 +968,17 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
 
   // PID to V0 tracks
   if (dauTracks[0].sign() < 0) { // Xi-
-    if ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1] > maxNsigma)) && (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1] > maxNsigma))) {
+    if ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > maxNsigma) && (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > maxNsigma)) {
       return false;
     }
-    if ((dauTracks[2].hasTPC() && std::fabs(nSigmaPiTpc[2] > maxNsigma)) && (dauTracks[2].hasTOF() && std::fabs(nSigmaPiTof[2] > maxNsigma))) {
+    if ((dauTracks[2].hasTPC() && std::fabs(nSigmaPiTpc[2]) > maxNsigma) && (dauTracks[2].hasTOF() && std::fabs(nSigmaPiTof[2]) > maxNsigma)) {
       return false;
     }
   } else if (dauTracks[0].sign() > 0) { // Xi+
-    if ((dauTracks[2].hasTPC() && std::fabs(nSigmaPrTpc[2] > maxNsigma)) && (dauTracks[2].hasTOF() && std::fabs(nSigmaPrTof[2] > maxNsigma))) {
+    if ((dauTracks[2].hasTPC() && std::fabs(nSigmaPrTpc[2]) > maxNsigma) && (dauTracks[2].hasTOF() && std::fabs(nSigmaPrTof[2]) > maxNsigma)) {
       return false;
     }
-    if ((dauTracks[1].hasTPC() && std::fabs(nSigmaPiTpc[1] > maxNsigma)) && (dauTracks[1].hasTOF() && std::fabs(nSigmaPiTof[1] > maxNsigma))) {
+    if ((dauTracks[1].hasTPC() && std::fabs(nSigmaPiTpc[1]) > maxNsigma) && (dauTracks[1].hasTOF() && std::fabs(nSigmaPiTof[1]) > maxNsigma)) {
       return false;
     }
   }
