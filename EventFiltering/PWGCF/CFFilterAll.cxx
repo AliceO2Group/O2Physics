@@ -18,6 +18,7 @@
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
 #include <TMath.h>
+#include <TRandom3.h>
 #include <fairlogger/Logger.h>
 #include <iostream>
 #include <iterator>
@@ -96,6 +97,7 @@ static const std::vector<std::string> PidCutsName{"TPC min", "TPC max", "TOF min
 static const std::vector<std::string> PtCutsName{"Pt min", "Pt max", "P thres"};
 static const std::vector<std::string> ThreeBodyFilterNames{"PPP", "PPL", "PLL", "LLL"};
 static const std::vector<std::string> TwoBodyFilterNames{"PD", "LD"};
+static const std::vector<std::string> ParticleNames{"PPP", "aPaPaP", "PPL", "aPaPaL", "PLL", "aPaLaL", "LLL", "aLaLaL", "PD", "aPaD", "LD", "aLaD"};
 
 static const int nPidRejection = 2;
 static const int nTracks = 2;
@@ -103,6 +105,7 @@ static const int nPidAvg = 4;
 static const int nPidCutsDaughers = 2;
 static const int nPtCuts = 3;
 static const int nAllTriggers = 6;
+static const int nTriggerAllNames = 12;
 
 static const float pidcutsTable[nTracks][kNPIDLimits]{
   {-6.f, 6.f, -6.f, 6.f, 6.f},
@@ -133,8 +136,14 @@ static const float triggerSwitches[1][nAllTriggers]{
 
 static const float Q3Limits[1][kNThreeBodyTriggers]{
   {0.6f, 0.6f, 0.6f, 0.6f}};
+
 static const float KstarLimits[1][kNTwoBodyTriggers]{
   {1.2f, 1.2f}};
+
+static const float Downsample[2][nTriggerAllNames]{
+  {-1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1},
+  {1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.}};
+
 } // namespace CFTrigger
 
 namespace o2::aod
@@ -154,6 +163,9 @@ struct CFFilter {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
+
+  Configurable<int> ConfRngSeed{"ConfRngSeed", 69, "Seed for downsampling"};
+  TRandom3* rng;
 
   // Configs for events
   Configurable<bool> ConfIsRun3{
@@ -428,12 +440,19 @@ struct CFFilter {
     {CFTrigger::KstarLimits[0], 1, CFTrigger::kNTwoBodyTriggers, std::vector<std::string>{"Limit"}, CFTrigger::TwoBodyFilterNames},
     "kstar limit for two body trigger"};
 
+  Configurable<LabeledArray<float>> ConfDownsample{
+    "ConfDownsample",
+    {CFTrigger::Downsample[0], 2, CFTrigger::nTriggerAllNames, std::vector<std::string>{"Switch", "Factor"}, CFTrigger::ParticleNames},
+    "Downsample individual particle species (Switch has to be larger than 0, Factor has to smaller than 1)"};
+
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   // HistogramRegistry registryQA{"registryQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   std::vector<double> BBProton, BBAntiproton, BBDeuteron, BBAntideuteron, BBPion, BBAntipion, BBElectron, BBAntielectron, TPCTOFAvg;
   void init(o2::framework::InitContext&)
   {
+
+    rng = new TRandom3(ConfRngSeed.value);
 
     // init the ccdb
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -678,37 +697,49 @@ struct CFFilter {
     registry.add("ppp/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{1000, 0, 1000}});
     registry.add("ppp/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{1000, -15, 15}});
     registry.add("ppp/fSE_particle", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("ppp/fSE_particle_downsample", "Same Event distribution (downsampled)", HistType::kTH1F, {{8000, 0, 8}});
     registry.add("ppp/fSE_antiparticle", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("ppp/fSE_antiparticle_downsample", "Same Event distribution (downsampled)", HistType::kTH1F, {{8000, 0, 8}});
 
     // for ppl
     registry.add("ppl/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{1000, 0, 1000}});
     registry.add("ppl/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{1000, -15, 15}});
     registry.add("ppl/fSE_particle", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("ppl/fSE_particle_downsample", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
     registry.add("ppl/fSE_antiparticle", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("ppl/fSE_antiparticle_downsample", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
 
     // for pll
     registry.add("pll/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{1000, 0, 1000}});
     registry.add("pll/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{1000, -15, 15}});
     registry.add("pll/fSE_particle", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("pll/fSE_particle_downsample", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
     registry.add("pll/fSE_antiparticle", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("pll/fSE_antiparticle_downsample", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
 
     // for pll
     registry.add("lll/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{1000, 0, 1000}});
     registry.add("lll/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{1000, -15, 15}});
     registry.add("lll/fSE_particle", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("lll/fSE_particle_downsample", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
     registry.add("lll/fSE_antiparticle", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("lll/fSE_antiparticle_downsample", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
 
     // for pd
     registry.add("pd/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{1000, 0, 1000}});
     registry.add("pd/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{1000, -15, 15}});
     registry.add("pd/fSE_particle", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("pd/fSE_particle_downsample", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
     registry.add("pd/fSE_antiparticle", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("pd/fSE_antiparticle_downsample", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
 
     // for ld
     registry.add("ld/fMultiplicity", "Multiplicity of all processed events", HistType::kTH1F, {{1000, 0, 1000}});
     registry.add("ld/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{1000, -15, 15}});
     registry.add("ld/fSE_particle", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("ld/fSE_particle_downsample", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
     registry.add("ld/fSE_antiparticle", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("ld/fSE_antiparticle_downsample", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
   }
 
   float mMassElectron = o2::constants::physics::MassElectron;
@@ -1453,7 +1484,6 @@ struct CFFilter {
       }
 
       float Q3 = 999.f, kstar = 999.f;
-      // if(ConfTriggerSwitches->get(static_cast<uint>(0), CFTrigger::)>0.){
       if (ConfTriggerSwitches->get("Switch", "ppp") > 0.) {
         // ppp trigger
         for (auto iProton1 = protons.begin(); iProton1 != protons.end(); ++iProton1) {
@@ -1464,7 +1494,14 @@ struct CFFilter {
               Q3 = getQ3(*iProton1, *iProton2, *iProton3);
               registry.fill(HIST("ppp/fSE_particle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kPPP)) {
-                lowQ3Triplets[CFTrigger::kPPP] += 1;
+                if (ConfDownsample->get("Switch", "PPP") > 0) {
+                  if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "PPP")) {
+                    registry.fill(HIST("ppp/fSE_particle_downsample"), Q3);
+                    lowQ3Triplets[CFTrigger::kPPP] += 1;
+                  }
+                } else {
+                  lowQ3Triplets[CFTrigger::kPPP] += 1;
+                }
               }
             }
           }
@@ -1477,7 +1514,14 @@ struct CFFilter {
               Q3 = getQ3(*iAntiProton1, *iAntiProton2, *iAntiProton3);
               registry.fill(HIST("ppp/fSE_antiparticle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kPPP)) {
-                lowQ3Triplets[CFTrigger::kPPP] += 1;
+                if (ConfDownsample->get("Switch", "aPaPaP") > 0) {
+                  if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "aPaPaP")) {
+                    registry.fill(HIST("ppp/fSE_antiparticle_downsample"), Q3);
+                    lowQ3Triplets[CFTrigger::kPPP] += 1;
+                  }
+                } else {
+                  lowQ3Triplets[CFTrigger::kPPP] += 1;
+                }
               }
             }
           }
@@ -1500,7 +1544,14 @@ struct CFFilter {
               Q3 = getQ3(*iProton1, *iProton2, *iLambda1);
               registry.fill(HIST("ppl/fSE_particle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kPPL)) {
-                lowQ3Triplets[CFTrigger::kPPL] += 1;
+                if (ConfDownsample->get("Switch", "PPL") > 0) {
+                  if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "PPL")) {
+                    registry.fill(HIST("ppl/fSE_particle_downsample"), Q3);
+                    lowQ3Triplets[CFTrigger::kPPL] += 1;
+                  }
+                } else {
+                  lowQ3Triplets[CFTrigger::kPPL] += 1;
+                }
               }
             }
           }
@@ -1520,7 +1571,14 @@ struct CFFilter {
               Q3 = getQ3(*iAntiProton1, *iAntiProton2, *iAntiLambda1);
               registry.fill(HIST("ppl/fSE_antiparticle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kPPL)) {
-                lowQ3Triplets[CFTrigger::kPPL] += 1;
+                if (ConfDownsample->get("Switch", "aPaPaL") > 0) {
+                  if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "aPaPaL")) {
+                    registry.fill(HIST("ppl/fSE_antiparticle_downsample"), Q3);
+                    lowQ3Triplets[CFTrigger::kPPL] += 1;
+                  }
+                } else {
+                  lowQ3Triplets[CFTrigger::kPPL] += 1;
+                }
               }
             }
           }
@@ -1548,7 +1606,14 @@ struct CFFilter {
               Q3 = getQ3(*iLambda1, *iLambda2, *iProton1);
               registry.fill(HIST("pll/fSE_particle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kPLL)) {
-                lowQ3Triplets[CFTrigger::kPLL] += 1;
+                if (ConfDownsample->get("Switch", "PLL") > 0) {
+                  if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "PLL")) {
+                    registry.fill(HIST("pll/fSE_particle_downsample"), Q3);
+                    lowQ3Triplets[CFTrigger::kPLL] += 1;
+                  }
+                } else {
+                  lowQ3Triplets[CFTrigger::kPLL] += 1;
+                }
               }
             }
           }
@@ -1573,7 +1638,14 @@ struct CFFilter {
               Q3 = getQ3(*iAntiLambda1, *iAntiLambda2, *iAntiProton1);
               registry.fill(HIST("pll/fSE_antiparticle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kPLL)) {
-                lowQ3Triplets[CFTrigger::kPLL] += 1;
+                if (ConfDownsample->get("Switch", "aPaLaL") > 0) {
+                  if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "aPaLaL")) {
+                    registry.fill(HIST("pll/fSE_antiparticle_downsample"), Q3);
+                    lowQ3Triplets[CFTrigger::kPLL] += 1;
+                  }
+                } else {
+                  lowQ3Triplets[CFTrigger::kPLL] += 1;
+                }
               }
             }
           }
@@ -1604,7 +1676,14 @@ struct CFFilter {
               Q3 = getQ3(*iLambda1, *iLambda2, *iLambda3);
               registry.fill(HIST("lll/fSE_particle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kLLL)) {
-                lowQ3Triplets[CFTrigger::kLLL] += 1;
+                if (ConfDownsample->get("Switch", "LLL") > 0) {
+                  if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "LLL")) {
+                    registry.fill(HIST("lll/fSE_particle_downsample"), Q3);
+                    lowQ3Triplets[CFTrigger::kLLL] += 1;
+                  }
+                } else {
+                  lowQ3Triplets[CFTrigger::kLLL] += 1;
+                }
               }
             }
           }
@@ -1632,7 +1711,14 @@ struct CFFilter {
               Q3 = getQ3(*iAntiLambda1, *iAntiLambda2, *iAntiLambda3);
               registry.fill(HIST("lll/fSE_antiparticle"), Q3);
               if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kLLL)) {
-                lowQ3Triplets[CFTrigger::kLLL] += 1;
+                if (ConfDownsample->get("Switch", "aLaLaL") > 0) {
+                  if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "aLaLaL")) {
+                    registry.fill(HIST("lll/fSE_antiparticle_downsample"), Q3);
+                    lowQ3Triplets[CFTrigger::kLLL] += 1;
+                  }
+                } else {
+                  lowQ3Triplets[CFTrigger::kLLL] += 1;
+                }
               }
             }
           }
@@ -1645,16 +1731,31 @@ struct CFFilter {
             kstar = getkstar(*iProton, *iDeuteron);
             registry.fill(HIST("pd/fSE_particle"), kstar);
             if (kstar < ConfKstarLimits->get(static_cast<uint>(0), CFTrigger::kPD)) {
-              lowKstarPairs[CFTrigger::kPD] += 1;
+              if (ConfDownsample->get("Switch", "PD") > 0) {
+                if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "PD")) {
+                  registry.fill(HIST("pd/fSE_particle_downsample"), kstar);
+                  lowKstarPairs[CFTrigger::kPD] += 1;
+                }
+              } else {
+                lowKstarPairs[CFTrigger::kPD] += 1;
+              }
             }
           }
         }
+
         for (auto iAntiProton = antiprotons.begin(); iAntiProton != antiprotons.end(); ++iAntiProton) {
           for (auto iAntiDeuteron = antideuterons.begin(); iAntiDeuteron != antideuterons.end(); ++iAntiDeuteron) {
             kstar = getkstar(*iAntiProton, *iAntiDeuteron);
             registry.fill(HIST("pd/fSE_antiparticle"), kstar);
             if (kstar < ConfKstarLimits->get(static_cast<uint>(0), CFTrigger::kPD)) {
-              lowKstarPairs[CFTrigger::kPD] += 1;
+              if (ConfDownsample->get("Switch", "aPaD") > 0) {
+                if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "aPaD")) {
+                  registry.fill(HIST("pd/fSE_antiparticle_downsample"), kstar);
+                  lowKstarPairs[CFTrigger::kPD] += 1;
+                }
+              } else {
+                lowKstarPairs[CFTrigger::kPD] += 1;
+              }
             }
           }
         }
@@ -1666,7 +1767,14 @@ struct CFFilter {
             kstar = getkstar(*iDeuteron, *iLambda);
             registry.fill(HIST("ld/fSE_particle"), kstar);
             if (kstar < ConfKstarLimits->get(static_cast<uint>(0), CFTrigger::kLD)) {
-              lowKstarPairs[CFTrigger::kLD] += 1;
+              if (ConfDownsample->get("Switch", "LD") > 0) {
+                if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "LD")) {
+                  registry.fill(HIST("ld/fSE_particle_downsample"), kstar);
+                  lowKstarPairs[CFTrigger::kLD] += 1;
+                }
+              } else {
+                lowKstarPairs[CFTrigger::kLD] += 1;
+              }
             }
           }
         }
@@ -1675,12 +1783,18 @@ struct CFFilter {
             kstar = getkstar(*iAntiDeuteron, *iAntiLambda);
             registry.fill(HIST("ld/fSE_antiparticle"), kstar);
             if (kstar < ConfKstarLimits->get(static_cast<uint>(0), CFTrigger::kLD)) {
-              lowKstarPairs[CFTrigger::kLD] += 1;
+              if (ConfDownsample->get("Switch", "aLaD") > 0) {
+                if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "aLaD")) {
+                  registry.fill(HIST("ld/fSE_antiparticle_downsample"), kstar);
+                  lowKstarPairs[CFTrigger::kLD] += 1;
+                }
+              } else {
+                lowKstarPairs[CFTrigger::kLD] += 1;
+              }
             }
           }
         }
       }
-
     } // if(isSelectedEvent)
 
     // create tags for three body triggers
