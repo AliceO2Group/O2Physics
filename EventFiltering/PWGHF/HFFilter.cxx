@@ -274,7 +274,7 @@ struct HfFilter { // Main struct for HF triggers
                aod::BCsWithTimestamps const&,
                aod::V0Datas const& theV0s,
                aod::V0sLinked const& v0Links,
-               soa::Join<aod::CascDatas, aod::CascCovs> const& cascades,
+               aod::CascDatas const& cascades,
                aod::Hf2Prongs const& cand2Prongs,
                aod::Hf3Prongs const& cand3Prongs,
                aod::TrackAssoc const& trackIndices,
