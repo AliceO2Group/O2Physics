@@ -47,7 +47,6 @@ struct pidHmpidQa {
                const aod::HMPIDs& hmpids,
                const aod::Collisions& colls)
   {
-#if 0
     for (const auto& t : hmpids) {
 
       if (t.track_as<TrackCandidates>().isGlobalTrack() != (uint8_t) true) {
@@ -71,7 +70,6 @@ struct pidHmpidQa {
       histos.fill(HIST("qa/signalvsP"), t.track_as<TrackCandidates>().p(), t.hmpidSignal());
     }
   }
-#endif
-  };
+};
 
-  WorkflowSpec defineDataProcessing(ConfigContext const& cfg) { return WorkflowSpec{adaptAnalysisTask<pidHmpidQa>(cfg)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfg) { return WorkflowSpec{adaptAnalysisTask<pidHmpidQa>(cfg)}; }
