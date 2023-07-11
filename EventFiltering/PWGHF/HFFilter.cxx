@@ -982,7 +982,7 @@ struct HfFilter { // Main struct for HF triggers
 
             if (TESTBIT(isSelBachelor, kPionForCharmBaryon)) {
               auto massXiPi = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{massXi, massPi});
-              if (ptCharmBaryon > cutsXiBachelor->get(0u, 0u) && massXiPi >= cutsXiBachelor->get(0u, 1u) && massXiPi <= 2.8f) {
+              if (ptCharmBaryon > cutsXiBachelor->get(0u, 0u) && massXiPi >= cutsXiBachelor->get(0u, 2u) && massXiPi <= 2.8f) {
                 keepEvent[kCharmBarToXiBach] = true;
                 if (activateQA) {
                   hMassVsPtC[kNCharmParticles + 6]->Fill(ptCharmBaryon, massXiPi);
@@ -991,7 +991,7 @@ struct HfFilter { // Main struct for HF triggers
             }
             if (!keepEvent[kCharmBarToXiBach] && TESTBIT(isSelBachelor, kKaonForCharmBaryon)) {
               auto massXiKa = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{massXi, massK});
-              if (ptCharmBaryon > cutsXiBachelor->get(0u, 2u) && massXiKa >= cutsXiBachelor->get(0u, 3u) && massXiKa <= 2.8f) {
+              if (ptCharmBaryon > cutsXiBachelor->get(0u, 1u) && massXiKa >= cutsXiBachelor->get(0u, 3u) && massXiKa <= 2.8f) {
                 keepEvent[kCharmBarToXiBach] = true;
                 if (activateQA) {
                   hMassVsPtC[kNCharmParticles + 7]->Fill(ptCharmBaryon, massXiKa);
