@@ -71,10 +71,10 @@ constexpr std::array<float, 7> LayerRadii{2.33959f, 3.14076f, 3.91924f, 19.6213f
 struct kinkAnalysis {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
- enum strParticleAdDecay { SigmaMinus,
+  enum strParticleAdDecay { SigmaMinus,
                             SigmaPlusToPi,
                             SigmaPlusToProton,
                             Kaon,
