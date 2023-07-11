@@ -25,12 +25,12 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
-#include "PWGCF/FemtoDream/FemtoDreamCollisionSelection.h"
+#include "PWGCF/FemtoWorld/FemtoWorldCollisionSelection.h"
 
 #include "TPDGCode.h"
 
 using namespace o2;
-using namespace o2::analysis::femtoDream;
+using namespace o2::analysis::femtoWorld;
 using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -60,7 +60,7 @@ struct femtoWorldEficiencyTask {
   Configurable<float> tofPtCut{"tofPtCut", 0.5f, "From what pT TOF is used"};
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run 3 data"}; // Choose if running on converted data or  run 3 data
   /// Event cuts
-  o2::analysis::femtoDream::FemtoDreamCollisionSelection colCuts;
+  o2::analysis::femtoworld::FemtoWorldCollisionSelection colCuts;
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
@@ -71,7 +71,7 @@ struct femtoWorldEficiencyTask {
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&registryQAevent);
 
-    // event cuts - already done in FemtoDreamCollisionSelection.h
+    // event cuts - already done in FemtoWorldCollisionSelection.h
     // registryQAevent.add("before/reco/zvtx", "vtx_{#it{z}}", kTH1F, {{300, -15.0, 15.0, "vtx_{#it{z}} (cm)"}});
     // registryQAevent.add("before/reco/multiplicity", "V0M multiplicity class", kTH1F, {{100, 0.0, 100.0, "V0M multiplicity (%)"}});
 
