@@ -14,15 +14,17 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLDCOLLISIONSELECTION_H_
-#define FEMTOWORLDCOLLISIONSELECTION_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCOLLISIONSELECTION_H_ 
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCOLLISIONSELECTION_H_ 
+
+#include <string>
+#include <iostream>
 
 #include "Common/CCDB/TriggerAliases.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 
-#include <string>
-#include <iostream>
+
 
 using namespace o2::framework;
 
@@ -150,4 +152,4 @@ class FemtoWorldCollisionSelection
 };
 } // namespace o2::analysis::femtoWorld
 
-#endif /* FEMTOWORLDCOLLISIONSELECTION_H_ */
+#endif /* PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCOLLISIONSELECTION_H_  */
