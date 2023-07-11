@@ -118,6 +118,10 @@ struct k892analysis {
 
     if (doprocessMC || doprocessMCLight) {
       // MC QA
+      histos.add("QAMCTrue/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
+      histos.add("QAMCTrue/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
+      histos.add("QAMCTrue/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
+      histos.add("QAMCTrue/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {dcazAxis});
       histos.add("h3recok892invmass", "Invariant mass of Reconstructed MC K(892)0", kTH3F, {multAxis, ptAxis, invMassAxis});
       histos.add("truek892pt", "pT distribution of True MC K(892)0", kTH1F, {ptAxis});
       histos.add("reconk892pt", "pT distribution of Reconstructed MC K(892)0", kTH1F, {ptAxis});
@@ -216,49 +220,53 @@ struct k892analysis {
         }
       }
 
-      //// QA plots before the selection
-      //  --- PID QA Pion
-      histos.fill(HIST("QAbefore/TPC_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTPC);
-      if (isTrk1hasTOF) {
-        histos.fill(HIST("QAbefore/TOF_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTOF);
-        histos.fill(HIST("QAbefore/TOF_TPC_Map_pi_all"), trk1NSigmaPiTOF, trk1NSigmaPiTPC);
+      if constexpr (!IsMix) {
+        //// QA plots before the selection
+        //  --- PID QA Pion
+        histos.fill(HIST("QAbefore/TPC_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTPC);
+        if (isTrk1hasTOF) {
+          histos.fill(HIST("QAbefore/TOF_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTOF);
+          histos.fill(HIST("QAbefore/TOF_TPC_Map_pi_all"), trk1NSigmaPiTOF, trk1NSigmaPiTPC);
+        }
+        //  --- PID QA Kaon
+        histos.fill(HIST("QAbefore/TPC_Nsigmaka_all"), trk2ptKa, trk2NSigmaKaTPC);
+        if (isTrk1hasTOF) {
+          histos.fill(HIST("QAbefore/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
+          histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
+        }
+        histos.fill(HIST("QAbefore/trkpT_pi"), trk1ptPi);
+        histos.fill(HIST("QAbefore/trkpT_ka"), trk2ptKa);
+        histos.fill(HIST("QAbefore/trkDCAxy_pi"), trk1.dcaXY());
+        histos.fill(HIST("QAbefore/trkDCAxy_ka"), trk2.dcaXY());
+        histos.fill(HIST("QAbefore/trkDCAz_pi"), trk1.dcaZ());
+        histos.fill(HIST("QAbefore/trkDCAz_ka"), trk2.dcaZ());
       }
-      //  --- PID QA Kaon
-      histos.fill(HIST("QAbefore/TPC_Nsigmaka_all"), trk2ptKa, trk2NSigmaKaTPC);
-      if (isTrk1hasTOF) {
-        histos.fill(HIST("QAbefore/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
-        histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
-      }
-      histos.fill(HIST("QAbefore/trkpT_pi"), trk1ptPi);
-      histos.fill(HIST("QAbefore/trkpT_ka"), trk2ptKa);
-      histos.fill(HIST("QAbefore/trkDCAxy_pi"), trk1.dcaXY());
-      histos.fill(HIST("QAbefore/trkDCAxy_ka"), trk2.dcaXY());
-      histos.fill(HIST("QAbefore/trkDCAz_pi"), trk1.dcaZ());
-      histos.fill(HIST("QAbefore/trkDCAz_ka"), trk2.dcaZ());
 
       //// Apply the selection
       if (!isTrk1Selected || !isTrk2Selected)
         continue;
 
-      //// QA plots after the selection
-      //  --- PID QA Pion
-      histos.fill(HIST("QAafter/TPC_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTPC);
-      if (isTrk1hasTOF) {
-        histos.fill(HIST("QAafter/TOF_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTOF);
-        histos.fill(HIST("QAafter/TOF_TPC_Map_pi_all"), trk1NSigmaPiTOF, trk1NSigmaPiTPC);
+      if constexpr (!IsMix) {
+        //// QA plots after the selection
+        //  --- PID QA Pion
+        histos.fill(HIST("QAafter/TPC_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTPC);
+        if (isTrk1hasTOF) {
+          histos.fill(HIST("QAafter/TOF_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTOF);
+          histos.fill(HIST("QAafter/TOF_TPC_Map_pi_all"), trk1NSigmaPiTOF, trk1NSigmaPiTPC);
+        }
+        //  --- PID QA Kaon
+        histos.fill(HIST("QAafter/TPC_Nsigmaka_all"), trk2ptKa, trk2NSigmaKaTPC);
+        if (isTrk1hasTOF) {
+          histos.fill(HIST("QAafter/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
+          histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
+        }
+        histos.fill(HIST("QAafter/trkpT_pi"), trk1ptPi);
+        histos.fill(HIST("QAafter/trkpT_ka"), trk2ptKa);
+        histos.fill(HIST("QAafter/trkDCAxy_pi"), trk1.dcaXY());
+        histos.fill(HIST("QAafter/trkDCAxy_ka"), trk2.dcaXY());
+        histos.fill(HIST("QAafter/trkDCAz_pi"), trk1.dcaZ());
+        histos.fill(HIST("QAafter/trkDCAz_ka"), trk2.dcaZ());
       }
-      //  --- PID QA Kaon
-      histos.fill(HIST("QAafter/TPC_Nsigmaka_all"), trk2ptKa, trk2NSigmaKaTPC);
-      if (isTrk1hasTOF) {
-        histos.fill(HIST("QAafter/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
-        histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
-      }
-      histos.fill(HIST("QAafter/trkpT_pi"), trk1ptPi);
-      histos.fill(HIST("QAafter/trkpT_ka"), trk2ptKa);
-      histos.fill(HIST("QAafter/trkDCAxy_pi"), trk1.dcaXY());
-      histos.fill(HIST("QAafter/trkDCAxy_ka"), trk2.dcaXY());
-      histos.fill(HIST("QAafter/trkDCAz_pi"), trk1.dcaZ());
-      histos.fill(HIST("QAafter/trkDCAz_ka"), trk2.dcaZ());
 
       //// Resonance reconstruction
       lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
@@ -290,6 +298,11 @@ struct k892analysis {
           auto mother2 = trk2.motherId();
           if (mother1 == mother2) {             // Same mother
             if (abs(trk1.motherPDG()) == 313) { // k892(0)
+              histos.fill(HIST("QAMCTrue/trkDCAxy_pi"), trk1.dcaXY());
+              histos.fill(HIST("QAMCTrue/trkDCAxy_ka"), trk2.dcaXY());
+              histos.fill(HIST("QAMCTrue/trkDCAz_pi"), trk1.dcaZ());
+              histos.fill(HIST("QAMCTrue/trkDCAz_ka"), trk2.dcaZ());
+
               histos.fill(HIST("reconk892pt"), lResonance.Pt());
               histos.fill(HIST("reconk892invmass"), lResonance.M());
               histos.fill(HIST("h3recok892invmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
