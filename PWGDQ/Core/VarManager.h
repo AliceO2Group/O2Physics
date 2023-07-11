@@ -517,7 +517,7 @@ class VarManager : public TObject
   static void SetupFwdDCAFitterNoCorr()
   {
     fgFitterTwoProngFwd.setTGeoMat(false);
-
+  }
   // Setup the 3 prong KFParticle
   static void SetupThreeProngKFParticle(float magField)
   {
@@ -1669,10 +1669,10 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
       values[kKFNContributorsPV] = kfpVertex.GetNContributors();
       KFParticle KFPV(kfpVertex);
+      double dxPair2PV = KFGeoTwoProngBarrel.GetX() - KFPV.GetX();
+      double dyPair2PV = KFGeoTwoProngBarrel.GetY() - KFPV.GetY();
+      double dzPair2PV = KFGeoTwoProngBarrel.GetZ() - KFPV.GetZ();
       if (fgUsedVars[kVertexingLxy] || fgUsedVars[kVertexingLz] || fgUsedVars[kVertexingLxyz] || fgUsedVars[kVertexingLxyErr] || fgUsedVars[kVertexingLzErr] || fgUsedVars[kVertexingTauxy] || fgUsedVars[kVertexingLxyOverErr] || fgUsedVars[kVertexingLzOverErr] || fgUsedVars[kVertexingLxyzOverErr]) {
-        double dxPair2PV = KFGeoTwoProngBarrel.GetX() - KFPV.GetX();
-        double dyPair2PV = KFGeoTwoProngBarrel.GetY() - KFPV.GetY();
-        double dzPair2PV = KFGeoTwoProngBarrel.GetZ() - KFPV.GetZ();
         values[kVertexingLxy] = std::sqrt(dxPair2PV * dxPair2PV + dyPair2PV * dyPair2PV);
         values[kVertexingLz] = std::sqrt(dzPair2PV * dzPair2PV);
         values[kVertexingLxyz] = std::sqrt(dxPair2PV * dxPair2PV + dyPair2PV * dyPair2PV + dzPair2PV * dzPair2PV);

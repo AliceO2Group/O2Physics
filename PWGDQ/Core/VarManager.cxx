@@ -73,26 +73,22 @@ void VarManager::SetVariableDependencies()
   if (fgUsedVars[kKFTracksDCAxyMax]) {
     fgUsedVars[kKFTrack0DCAxy] = kTRUE;
     fgUsedVars[kKFTrack1DCAxy] = kTRUE;
+  }
   if (fgUsedVars[kVertexingTauxy]) {
     fgUsedVars[kVertexingLxy] = kTRUE;
   }
-
   if (fgUsedVars[kVertexingTauzErr]) {
     fgUsedVars[kVertexingLzErr] = kTRUE;
   }
-
   if (fgUsedVars[kVertexingTauxyErr]) {
     fgUsedVars[kVertexingLxyErr] = kTRUE;
   }
-  
   if (fgUsedVars[kCosPointingAngle]) {
     fgUsedVars[kVertexingLxyz] = kTRUE;
   }
-
   if (fgUsedVars[kKFVertexingTauxyErr]) {
     fgUsedVars[kKFVertexingLxyErr] = kTRUE;
   }
-
   if (fgUsedVars[kKFCosPointingAngle]) {
     fgUsedVars[kKFVertexingLxyz] = kTRUE;
   }

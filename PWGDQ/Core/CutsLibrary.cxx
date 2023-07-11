@@ -2063,6 +2063,8 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("kaonPIDnsigma2")) {
     cut->AddCut(VarManager::kTPCnSigmaKa, -2.0, 2.0);
+  }
+  
   if (!nameStr.compare("kaonPID_TPCnTOF")) {
     cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0);
     cut->AddCut(VarManager::kTOFnSigmaKa, -3., 3.);
