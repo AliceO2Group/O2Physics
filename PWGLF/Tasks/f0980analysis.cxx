@@ -43,7 +43,7 @@ struct f0980analysis {
   Configurable<float> cfgMaxTOF{"cfgMaxTOF", 3.0, "Maximum TOF PID with TPC"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
-  Configurable<uint8_t> cfgMinTPCncr{"cfgMinTPCncr", 70, "minimum TPC cluster"};
+  Configurable<int> cfgMinTPCncr{"cfgMinTPCncr", 70, "minimum TPC cluster"};
 
   void init(o2::framework::InitContext&)
   {
