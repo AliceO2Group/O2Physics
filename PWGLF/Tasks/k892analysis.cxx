@@ -45,7 +45,7 @@ struct k892analysis {
   /// Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
   /// Pre-selection cuts
   Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minium pt cut"};
   /// DCA Selections
@@ -66,7 +66,9 @@ struct k892analysis {
   void init(o2::framework::InitContext&)
   {
     AxisSpec centAxis = {binsCent, "V0M (%)"};
-    AxisSpec multAxis = {0, 0, 100, "V0M (%)"}; // for future
+    AxisSpec multAxis = {130, 0, 130, "V0M (%)"};
+    AxisSpec dcaxyAxis = {150, 0.0, 1.5, "DCA_{#it{xy}} (cm)"};
+    AxisSpec dcazAxis = {300, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
     AxisSpec ptAxis = {binsPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisQA = {binsPtQA, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec invMassAxis = {900, 0.6, 1.5, "Invariant Mass (GeV/#it{c}^2)"};
@@ -74,8 +76,19 @@ struct k892analysis {
 
     // Mass QA (quick check)
     histos.add("k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTH1F, {invMassAxis});
+    histos.add("k892invmassDSAnti", "Invariant mass of Anti-K(892)0 differnt sign", kTH1F, {invMassAxis});
     histos.add("k892invmassLS", "Invariant mass of K(892)0 like sign", kTH1F, {invMassAxis});
+    histos.add("k892invmassLSAnti", "Invariant mass of Anti-K(892)0 like sign", kTH1F, {invMassAxis});
     histos.add("k892invmassME", "Invariant mass of K(892)0 mixed event", kTH1F, {invMassAxis});
+    // DCA QA
+    histos.add("QAbefore/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
+    histos.add("QAbefore/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
+    histos.add("QAbefore/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
+    histos.add("QAbefore/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {dcazAxis});
+    histos.add("QAafter/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
+    histos.add("QAafter/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
+    histos.add("QAafter/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
+    histos.add("QAafter/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {dcazAxis});
     // pT QA
     histos.add("QAbefore/trkpT_pi", "pT distribution of pion track candidates", kTH1F, {ptAxis});
     histos.add("QAbefore/trkpT_ka", "pT distribution of kaon track candidates", kTH1F, {ptAxis});
@@ -97,13 +110,15 @@ struct k892analysis {
     histos.add("QAafter/TPC_Nsigmaka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2D, {ptAxisQA, pidQAAxis}});
 
     // 3d histogram
-    histos.add("h3k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTH3F, {{300, 0, 3000}, ptAxis, invMassAxis}); // TODO: multiplicity bin has to be updatde.
-    histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTH3F, {{300, 0, 3000}, ptAxis, invMassAxis});     // TODO: multiplicity bin has to be updatde.
-    histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTH3F, {{300, 0, 3000}, ptAxis, invMassAxis});   // TODO: multiplicity bin has to be updatde.
+    histos.add("h3k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTH3F, {multAxis, ptAxis, invMassAxis});
+    histos.add("h3k892invmassDSAnti", "Invariant mass of Anti-K(892)0 differnt sign", kTH3F, {multAxis, ptAxis, invMassAxis});
+    histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTH3F, {multAxis, ptAxis, invMassAxis});
+    histos.add("h3k892invmassLSAnti", "Invariant mass of Anti-K(892)0 same sign", kTH3F, {multAxis, ptAxis, invMassAxis});
+    histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTH3F, {multAxis, ptAxis, invMassAxis});
 
-    if (doprocessMC) {
+    if (doprocessMC || doprocessMCLight) {
       // MC QA
-      histos.add("h3recok892invmass", "Invariant mass of Reconstructed MC K(892)0", kTH3F, {{300, 0, 3000}, ptAxis, invMassAxis}); // TODO: multiplicity bin has to be updatde.
+      histos.add("h3recok892invmass", "Invariant mass of Reconstructed MC K(892)0", kTH3F, {multAxis, ptAxis, invMassAxis});
       histos.add("truek892pt", "pT distribution of True MC K(892)0", kTH1F, {ptAxis});
       histos.add("reconk892pt", "pT distribution of Reconstructed MC K(892)0", kTH1F, {ptAxis});
       histos.add("reconk892invmass", "Inv mass distribution of Reconstructed MC Phi", kTH1F, {invMassAxis});
@@ -115,6 +130,20 @@ struct k892analysis {
 
   double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
   double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
+
+  template <typename TrackType>
+  bool trackCut(const TrackType track)
+  {
+    // basic track cuts
+    if (track.pt() < cMinPtcut)
+      return false;
+    if (track.dcaXY() > cMaxDCArToPVcut)
+      return false;
+    if (track.dcaZ() < cMinDCAzToPVcut || track.dcaZ() > cMaxDCAzToPVcut)
+      return false;
+
+    return true;
+  }
 
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
@@ -143,6 +172,12 @@ struct k892analysis {
       auto trk2ptKa = trk2.pt();
       auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
       auto trk2NSigmaKaTOF = -999.;
+
+      // apply the track cut
+      if (!trackCut(trk1))
+        isTrk1Selected = false;
+      if (!trackCut(trk2))
+        isTrk2Selected = false;
 
       // hasTOF?
       if ((trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
@@ -196,6 +231,10 @@ struct k892analysis {
       }
       histos.fill(HIST("QAbefore/trkpT_pi"), trk1ptPi);
       histos.fill(HIST("QAbefore/trkpT_ka"), trk2ptKa);
+      histos.fill(HIST("QAbefore/trkDCAxy_pi"), trk1.dcaXY());
+      histos.fill(HIST("QAbefore/trkDCAxy_ka"), trk2.dcaXY());
+      histos.fill(HIST("QAbefore/trkDCAz_pi"), trk1.dcaZ());
+      histos.fill(HIST("QAbefore/trkDCAz_ka"), trk2.dcaZ());
 
       //// Apply the selection
       if (!isTrk1Selected || !isTrk2Selected)
@@ -216,6 +255,10 @@ struct k892analysis {
       }
       histos.fill(HIST("QAafter/trkpT_pi"), trk1ptPi);
       histos.fill(HIST("QAafter/trkpT_ka"), trk2ptKa);
+      histos.fill(HIST("QAafter/trkDCAxy_pi"), trk1.dcaXY());
+      histos.fill(HIST("QAafter/trkDCAxy_ka"), trk2.dcaXY());
+      histos.fill(HIST("QAafter/trkDCAz_pi"), trk1.dcaZ());
+      histos.fill(HIST("QAafter/trkDCAz_ka"), trk2.dcaZ());
 
       //// Resonance reconstruction
       lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
@@ -227,11 +270,16 @@ struct k892analysis {
       //// Un-like sign pair only
       if (trk1.sign() * trk2.sign() < 0) {
         if constexpr (!IsMix) {
-          histos.fill(HIST("k892invmassDS"), lResonance.M());
-          histos.fill(HIST("h3k892invmassDS"), collision.multV0M(), lResonance.Pt(), lResonance.M()); // TODO: multV0M has to be updatde.
+          if (trk1.sign() > 0) {
+            histos.fill(HIST("k892invmassDS"), lResonance.M());
+            histos.fill(HIST("h3k892invmassDS"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          } else {
+            histos.fill(HIST("k892invmassDSAnti"), lResonance.M());
+            histos.fill(HIST("h3k892invmassDSAnti"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          }
         } else {
           histos.fill(HIST("k892invmassME"), lResonance.M());
-          histos.fill(HIST("h3k892invmassME"), collision.multV0M(), lResonance.Pt(), lResonance.M()); // TODO: multV0M has to be updatde.
+          histos.fill(HIST("h3k892invmassME"), collision.multV0M(), lResonance.Pt(), lResonance.M());
         }
 
         // MC
@@ -244,14 +292,19 @@ struct k892analysis {
             if (abs(trk1.motherPDG()) == 313) { // k892(0)
               histos.fill(HIST("reconk892pt"), lResonance.Pt());
               histos.fill(HIST("reconk892invmass"), lResonance.M());
-              histos.fill(HIST("h3recok892invmass"), collision.multV0M(), lResonance.Pt(), lResonance.M()); // TODO: multV0M has to be updatde.
+              histos.fill(HIST("h3recok892invmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
             }
           }
         }
       } else {
         if constexpr (!IsMix) {
-          histos.fill(HIST("k892invmassLS"), lResonance.M());
-          histos.fill(HIST("h3k892invmassLS"), collision.multV0M(), lResonance.Pt(), lResonance.M()); // TODO: multV0M has to be updatde.
+          if (trk1.sign() > 0) {
+            histos.fill(HIST("k892invmassLS"), lResonance.M());
+            histos.fill(HIST("h3k892invmassLS"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          } else {
+            histos.fill(HIST("k892invmassLSAnti"), lResonance.M());
+            histos.fill(HIST("h3k892invmassLSAnti"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          }
         }
       }
     }
@@ -346,13 +399,13 @@ struct k892analysis {
   PROCESS_SWITCH(k892analysis, processMCTrue, "Process Event for MC", false);
 
   // Processing Event Mixing
-  using BinningTypeVetZTPCtemp = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultTPCtemp>; // TODO: MultTPCtemp has to be updatde.
-  BinningTypeVetZTPCtemp colBinning{{CfgVtxBins, CfgMultBins}, true};
+  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
+  BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     LOGF(debug, "Event Mixing Started");
     auto tracksTuple = std::make_tuple(resotracks);
-    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVetZTPCtemp> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -365,6 +418,17 @@ struct k892analysis {
     }
   };
   PROCESS_SWITCH(k892analysis, processME, "Process EventMixing", false);
+
+  void processMELight(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
+  {
+    auto tracksTuple = std::make_tuple(resotracks);
+    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+      fillHistograms<false, true>(collision1, tracks1, tracks2);
+    }
+  };
+  PROCESS_SWITCH(k892analysis, processMELight, "Process EventMixing light without partition", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

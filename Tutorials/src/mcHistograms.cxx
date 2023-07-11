@@ -146,7 +146,7 @@ struct AccessMcTruth {
   }
 };
 
-// Loop over MCColisions and get corresponding collisions (there can be more than one)
+// Loop over MCCollisions and get corresponding collisions (there can be more than one)
 // For each of them get the corresponding tracks
 // Note the use of "SmallGroups" template, that allows to handle both Run 2, where
 // we have exactly 1-to-1 correspondence between collisions and mc collisions, and

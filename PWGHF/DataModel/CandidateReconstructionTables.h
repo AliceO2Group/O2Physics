@@ -21,11 +21,12 @@
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
 
+#include "Framework/AnalysisDataModel.h"
+
 #include "ALICE3/DataModel/ECAL.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/AnalysisDataModel.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 

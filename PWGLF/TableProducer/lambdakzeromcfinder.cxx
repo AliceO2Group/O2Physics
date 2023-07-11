@@ -47,6 +47,8 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "PWGLF/DataModel/LFQATables.h"
 
 #include <TFile.h>
 #include <TLorentzVector.h>
@@ -80,6 +82,7 @@ struct lambdakzeromcfinder {
   Configurable<bool> requireITS{"requireITS", false, "require ITS information used in tracks"};
   Configurable<bool> doUnassociatedV0s{"doUnassociatedV0s", true, "generate also unassociated V0s (for cascades!)"};
   Configurable<bool> doQA{"doQA", true, "do qa plots"};
+  Configurable<bool> doSameCollisionOnly{"doSameCollisionOnly", false, "stick to decays in which tracks are assoc to same collision"};
   Configurable<int> qaNbins{"qaNbins", 200, "qa plots: binning"};
   Configurable<float> yPreFilter{"yPreFilter", 2.5, "broad y pre-filter for speed"};
   ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
@@ -90,6 +93,12 @@ struct lambdakzeromcfinder {
   std::vector<int> v0positiveIndex;
   std::vector<int> v0negativeIndex;
   std::vector<int> v0mcLabel;
+
+  std::vector<int> searchedV0PDG;
+  std::vector<int> searchedV0PositivePDG;
+  std::vector<int> searchedV0NegativePDG;
+  std::vector<float> searchedV0PositiveMass;
+  std::vector<float> searchedV0NegativeMass;
 
   void init(InitContext& context)
   {
@@ -133,6 +142,50 @@ struct lambdakzeromcfinder {
       histos.add("hPtAntiLambdaDaughters", "hPtAntiLambdaDaughters", kTH2F, {axisPtQA, axisPtQA});
       histos.add("hPtHypertritonDaughters", "hPtHypertritonDaughters", kTH2F, {axisPtQA, axisPtQA});
       histos.add("hPtAntiHypertritonDaughters", "hPtAntiHypertritonDaughters", kTH2F, {axisPtQA, axisPtQA});
+    }
+
+    // initialise search vectors
+    if (findGamma) {
+      searchedV0PDG.emplace_back(22);
+      searchedV0PositivePDG.emplace_back(-11);
+      searchedV0NegativePDG.emplace_back(+11);
+      searchedV0PositiveMass.emplace_back(0.0f);
+      searchedV0NegativeMass.emplace_back(0.0f);
+    }
+    if (findK0Short) {
+      searchedV0PDG.emplace_back(310);
+      searchedV0PositivePDG.emplace_back(+211);
+      searchedV0NegativePDG.emplace_back(-211);
+      searchedV0PositiveMass.emplace_back(o2::constants::physics::MassPionCharged);
+      searchedV0NegativeMass.emplace_back(o2::constants::physics::MassPionCharged);
+    }
+    if (findLambda) {
+      searchedV0PDG.emplace_back(3122);
+      searchedV0PositivePDG.emplace_back(+2212);
+      searchedV0NegativePDG.emplace_back(-211);
+      searchedV0PositiveMass.emplace_back(o2::constants::physics::MassProton);
+      searchedV0NegativeMass.emplace_back(o2::constants::physics::MassPionCharged);
+    }
+    if (findAntiLambda) {
+      searchedV0PDG.emplace_back(-3122);
+      searchedV0PositivePDG.emplace_back(+211);
+      searchedV0NegativePDG.emplace_back(-2212);
+      searchedV0PositiveMass.emplace_back(o2::constants::physics::MassPionCharged);
+      searchedV0NegativeMass.emplace_back(o2::constants::physics::MassProton);
+    }
+    if (findHyperTriton) {
+      searchedV0PDG.emplace_back(+1010010030);
+      searchedV0PositivePDG.emplace_back(+1000020030);
+      searchedV0NegativePDG.emplace_back(-211);
+      searchedV0PositiveMass.emplace_back(o2::constants::physics::MassHelium3);
+      searchedV0NegativeMass.emplace_back(o2::constants::physics::MassPionCharged);
+    }
+    if (findAntiHyperTriton) {
+      searchedV0PDG.emplace_back(-1010010030);
+      searchedV0PositivePDG.emplace_back(+211);
+      searchedV0NegativePDG.emplace_back(-1000020030);
+      searchedV0PositiveMass.emplace_back(o2::constants::physics::MassPionCharged);
+      searchedV0NegativeMass.emplace_back(o2::constants::physics::MassHelium3);
     }
   }
 
@@ -244,7 +297,7 @@ struct lambdakzeromcfinder {
     return reconstructed;
   }
 
-  void process(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, aod::McParticles const& allMcParticles)
+  void processFromMcParticles(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, aod::McParticles const& allMcParticles)
   {
     v0collisionId.clear();
     v0positiveIndex.clear();
@@ -355,6 +408,84 @@ struct lambdakzeromcfinder {
       }
     }
   }
+
+  // this improved process function does not start from MC particles, as that would be too costly
+  // rather, it starts from appropriately detected prongs of the correct charge.
+  Partition<LabeledTracks> posTracks = aod::track::signed1Pt > 0.0f;
+  Partition<LabeledTracks> negTracks = aod::track::signed1Pt < 0.0f;
+
+  void processFromSingleProngs(aod::Collisions const& collisions, LabeledTracks const& tracks, soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, aod::McParticles const& allMcParticles)
+  {
+    v0collisionId.clear();
+    v0positiveIndex.clear();
+    v0negativeIndex.clear();
+    v0mcLabel.clear();
+
+    // This will take place once per TF!
+    for (auto& posTrack : posTracks) { //<- no grouping, deliberately
+      int v0pdgIndex = -1;
+      int motherIndex = -1;
+      if (!posTrack.has_mcParticle())
+        continue;
+      auto posParticle = posTrack.mcParticle_as<aod::McParticles>();
+      if (!posParticle.has_mothers())
+        continue;
+      for (auto& posMotherParticle : posParticle.mothers_as<aod::McParticles>()) {
+        // determine if mother particle satisfies any condition curently being searched for
+        for (uint16_t ipdg = 0; ipdg < searchedV0PDG.size(); ipdg++)
+          if (searchedV0PDG[ipdg] == posMotherParticle.pdgCode()) {
+            v0pdgIndex = ipdg; // index mapping to desired V0 species
+            motherIndex = posMotherParticle.globalIndex();
+            continue;
+          }
+        if (v0pdgIndex < 0 || posParticle.pdgCode() != searchedV0PositivePDG[v0pdgIndex])
+          continue; // not interesting, skip
+
+        // if we got here, we need to search for the other prong
+        for (auto& negTrack : negTracks) { //<- no grouping, deliberately
+          if (doSameCollisionOnly && negTrack.collisionId() != posTrack.collisionId())
+            continue; // skip if requested to look only at the same collision (fixme: could be better)
+          if (!negTrack.has_mcParticle())
+            continue;
+          auto negParticle = negTrack.mcParticle_as<aod::McParticles>();
+          if (!negParticle.has_mothers())
+            continue;
+          for (auto& negMotherParticle : negParticle.mothers_as<aod::McParticles>()) {
+            if (negMotherParticle.globalIndex() == posMotherParticle.globalIndex() && negMotherParticle.pdgCode() == searchedV0NegativePDG[v0pdgIndex]) {
+              // de-reference best collision
+              int bestCollisionIndex = -1;
+              auto mcCollision = posParticle.mcCollision_as<soa::Join<aod::McCollisions, aod::McCollsExtra>>();
+              if (mcCollision.hasRecoCollision())
+                bestCollisionIndex = mcCollision.bestCollisionIndex();
+
+              // place in list to be passed along, please
+              v0collisionId.emplace_back(bestCollisionIndex);
+              v0positiveIndex.emplace_back(posTrack.globalIndex());
+              v0negativeIndex.emplace_back(negTrack.globalIndex());
+              v0mcLabel.emplace_back(motherIndex);
+            }
+          }
+        }
+      }
+    }
+
+    // sort according to collision ID
+    auto sortedIndices = sort_indices(v0collisionId);
+
+    // V0 list established, populate
+    for (auto ic : sortedIndices) {
+      if (v0collisionId[ic] >= 0 || doUnassociatedV0s) {
+        v0(v0collisionId[ic], v0positiveIndex[ic], v0negativeIndex[ic]);
+        fullv0labels(v0mcLabel[ic]);
+      }
+    }
+  }
+
+  //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
+  /// basic building options (one of them must be chosen)
+  PROCESS_SWITCH(lambdakzeromcfinder, processFromMcParticles, "Switch to generate from mc particle list (slower)", false);
+  PROCESS_SWITCH(lambdakzeromcfinder, processFromSingleProngs, "Switch to generate from single prong combinations (faster)", true);
+  //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

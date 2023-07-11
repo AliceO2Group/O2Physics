@@ -131,10 +131,10 @@ class FemtoDreamCutculator
 
   /// Automatically retrieves track PID from the dpl-config.json
   /// \param prefix Prefix which is added to the name of the Configurable
-  void setPIDSelectionFromFile(const char* prefixPID, const char* prefixTrack)
+  void setPIDSelectionFromFile(const char* prefix)
   {
-    std::string PIDnodeName = std::string(prefixPID) + "species";
-    std::string PIDNsigmaNodeName = std::string(prefixTrack) + "PIDnSigmaMax";
+    std::string PIDnodeName = std::string(prefix) + "PIDspecies";
+    std::string PIDNsigmaNodeName = std::string(prefix) + "PIDnSigmaMax";
     try {
       boost::property_tree::ptree& pidNode = mConfigTree.get_child(PIDnodeName);
       boost::property_tree::ptree& pidValues = pidNode.get_child("values");
@@ -233,7 +233,7 @@ class FemtoDreamCutculator
         std::cout << input << std::endl;
       }
     } else {
-      if (selVec.size() == 0) {
+      if (selVec.size() == 1) {
         input = selVec[0].getSelectionValue();
         std::cout << input << std::endl;
       } else {
