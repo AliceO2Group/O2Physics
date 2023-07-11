@@ -439,7 +439,7 @@ struct propagatorQa {
   }
   PROCESS_SWITCH(propagatorQa, processData, "process data", false);
 
-    void processMatLUTTest(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA> const& tracks, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracksIU, aod::BCsWithTimestamps const&)
+  void processMatLUTTest(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA> const& tracks, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracksIU, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -451,7 +451,7 @@ struct propagatorQa {
         continue; // skip if not enough TPC clusters
 
       if (trackIU.trackType() != aod::track::TrackIU && trackIU.x() > maxXtoConsider)
-        continue; // skip if not track IU or if beyong the max X to be considered 
+        continue; // skip if not track IU or if beyong the max X to be considered
 
       o2::track::TrackParCov trackParCov = getTrackParCov(trackIU);
 
