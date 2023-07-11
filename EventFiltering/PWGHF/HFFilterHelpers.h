@@ -187,15 +187,19 @@ static const std::vector<std::string> labelsColumnsHighPtThresholds = {"2Prongs"
 constexpr float cutsDeltaMassB[1][kNBeautyParticles + 1] = {{0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.04}}; // B+, B0, B0toDstar, Bs, Lb, Xib, charm daughter
 static const std::vector<std::string> labelsColumnsDeltaMassB = {"Bplus", "BZero", "BZeroToDstar", "Bs", "Lb", "Xib", "CharmDau"};
 
+// double charm
+constexpr int activeDoubleCharmChannels[1][3] = {{1, 1, 1}}; // kDoubleCharm2P, kDoubleCharm3P, kDoubleCharmMix
+static const std::vector<std::string> labelsColumnsDoubleCharmChannels = {"DoubleCharm2Prong", "DoubleCharm3Prong", "DoubleCharmMix"};
+
 // charm resonances
-constexpr float cutsMassCharmReso[1][6] = {{0.01, 0.4, 0.4, 0.88, 0.88, 1.4}}; // D*+, D*0, Ds*0, Ds1+, Ds2*+, Xic*
+constexpr float cutsMassCharmReso[1][6] = {{0.01, 0.3, 0.3, 0.88, 0.88, 1.4}}; // D*+, D*0, Ds*0, Ds1+, Ds2*+, Xic*
 static const std::vector<std::string> labelsColumnsDeltaMasseCharmReso = {"DstarPlus", "DstarZero", "DsStarZero", "Ds1Plus", "Ds2StarPlus", "XicStar"};
 // V0s for charm resonances
 constexpr float cutsV0s[1][6] = {{0.85, 0.97, 0.5, 4., 0.02, 0.01}}; // cosPaGamma, cosPaK0sLambda, radiusK0sLambda, nSigmaPrLambda, deltaMassK0S, deltaMassLambda
 static const std::vector<std::string> labelsColumnsV0s = {"CosPaGamma", "CosPaK0sLambda", "RadiusK0sLambda", "NSigmaPrLambda", "DeltaMassK0s", "DeltaMassLambda"};
 
 // cascades for Xi + bachelor triggers
-constexpr float cutsCascades[1][7] = {{0.2, 0.01, 0.01, 0.97, 0.97, 0.3, 3.}}; // ptXiBachelor, deltaMassXi, deltaMassLambda, cosPaXi, cosPaLambda, DCAxyXi, nSigmaPid
+constexpr float cutsCascades[1][7] = {{0.2, 0.01, 0.01, 0.99, 0.99, 0.3, 3.}}; // ptXiBachelor, deltaMassXi, deltaMassLambda, cosPaXi, cosPaLambda, DCAxyXi, nSigmaPid
 static const std::vector<std::string> labelsColumnsCascades = {"PtBachelor", "DeltaMassXi", "DeltaMassLambda", "CosPAXi", "CosPaLambda", "DCAxyXi", "NsigmaPid"};
 constexpr float cutsCharmBaryons[1][4] = {{3., 3., 2.35, 2.60}}; // MinPtXiPi, MinPtXiKa, MinMassXiPi, MinMassXiKa
 static const std::vector<std::string> labelsColumnsCharmBaryons = {"MinPtXiPi", "MinPtXiKa", "MinMassXiPi", "MinMassXiKa"};
@@ -282,6 +286,10 @@ int isSelectedTrackForSoftPionOrBeauty(const T track, const T1& trackPar, const 
   }
   if (std::fabs(dca[0]) > cutsSingleTrackBeauty.get(pTBinTrack, 1u)) {
     return kRejected; // maximum DCAxy
+  }
+
+  if (std::fabs(dca[1]) > 2.f) {
+    return kRejected; // maximum DCAz
   }
 
   // below only regular beauty tracks, not required for soft pions
@@ -753,7 +761,7 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& coll
         hV0Selected->Fill(1., iV0);
       }
     }
-    return 0;
+    return kRejected;
   }
 
   // V0 radius
@@ -823,7 +831,7 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& coll
         hV0Selected->Fill(5., iV0);
       }
     }
-    if (TESTBIT(isSelected, iV0) && v0.dcaV0daughters() > 1.f) {
+    if (TESTBIT(isSelected, iV0) && (v0.dcaV0daughters() > 1.f || v0.dcapostopv() < 0.02f || v0.dcanegtopv() < 0.02f)) {
       CLRBIT(isSelected, iV0);
       if (activateQA > 1) {
         hV0Selected->Fill(6., iV0);
@@ -935,6 +943,11 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
     return false;
   }
 
+  // dau dca
+  if (std::fabs(casc.dcaV0daughters()) > 1.f || std::fabs(casc.dcacascdaughters()) > 1.f) {
+    return false;
+  }
+
   // cascade mass
   if (std::fabs(casc.mXi() - massXi) > deltaMassXi) {
     return false;
@@ -1043,6 +1056,10 @@ int8_t isSelectedBachelorForCharmBaryon(const T& track, const T2& dca, const flo
   }
   if (std::fabs(dca[0]) > cutsSingleTrack.get(pTBinTrack, 1u)) {
     return kRejected; // maximum DCAxy
+  }
+
+  if (std::fabs(dca[1]) > 2.f) {
+    return kRejected; // maximum DCAz
   }
 
   if (track.tpcNClsFound() < 70) {
