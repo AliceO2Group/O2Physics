@@ -41,7 +41,7 @@ o2physics_add_dpl_workflow(skimmergammacalo
 
 o2physics_add_dpl_workflow(skimmer-phos
                     SOURCES skimmerPHOS.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::PHOSBase
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(gamma-table-producer

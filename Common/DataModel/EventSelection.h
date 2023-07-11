@@ -46,9 +46,8 @@ enum Run2EventCuts {
 // collision-joinable event selection decisions
 namespace evsel
 {
-// TODO bool arrays are not supported? Storing in int32 for the moment
-DECLARE_SOA_COLUMN(Alias, alias, int32_t[kNaliases]);
-DECLARE_SOA_COLUMN(Selection, selection, int32_t[kNsel]);
+DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
+DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 64);
 DECLARE_SOA_COLUMN(BBV0A, bbV0A, bool);                                     //! Beam-beam time in V0A
 DECLARE_SOA_COLUMN(BBV0C, bbV0C, bool);                                     //! Beam-beam time in V0C
 DECLARE_SOA_COLUMN(BGV0A, bgV0A, bool);                                     //! Beam-gas time in V0A

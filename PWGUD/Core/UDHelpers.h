@@ -97,56 +97,15 @@ float rPVtrwTOF(TCs tracks, int nPVTracks)
 // By default a collision is associated with the BC closest in time.
 // Any BC falling within a BC window of meanBC +- deltaBC could potentially be the
 // true BC.
-// The bcIter is ideally placed within [minBC, maxBC], but it does not need to be.
+//
+template <typename T>
+T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs);
+
 template <typename I, typename T>
-T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
-{
-  // range of BCs to consider
-  uint64_t minBC = (uint64_t)deltaBC < meanBC ? meanBC - (uint64_t)deltaBC : 0;
-  uint64_t maxBC = meanBC + (uint64_t)deltaBC;
-  LOGF(debug, "  minBC %d maxBC %d bcIterator %d (%d)", minBC, maxBC, bcIter.globalBC(), bcIter.globalIndex());
+T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs);
 
-  // find slice of BCs table with BC in [minBC, maxBC]
-  int64_t minBCId = bcIter.globalIndex();
-  int64_t maxBCId = bcIter.globalIndex();
-
-  // lower limit
-  if (bcIter.globalBC() < minBC) {
-    while (bcIter != bcs.end() && bcIter.globalBC() < minBC) {
-      ++bcIter;
-      minBCId = bcIter.globalIndex();
-    }
-  } else {
-    while (bcIter.globalIndex() > 0 && bcIter.globalBC() >= minBC) {
-      minBCId = bcIter.globalIndex();
-      --bcIter;
-    }
-  }
-
-  // upper limit limit
-  if (bcIter.globalBC() < maxBC) {
-    while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC) {
-      maxBCId = bcIter.globalIndex();
-      ++bcIter;
-    }
-
-  } else {
-    while (bcIter.globalIndex() > 0 && bcIter.globalBC() > maxBC) {
-      --bcIter;
-      maxBCId = bcIter.globalIndex();
-    }
-  }
-  LOGF(debug, "  BC range: %d - %d", minBCId, maxBCId);
-
-  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
-  bcs.copyIndexBindings(slice);
-  LOGF(debug, "  size of slice %d", slice.size());
-  return slice;
-}
-
-// -----------------------------------------------------------------------------
-// The range of compatible BCs is calculated from the collision time and the time
-// resolution dt. Typically the range is +- 4*dt.
+// In this variant of compatibleBCs the range of compatible BCs is calculated from the
+// collision time and the time resolution dt. Typically the range is +- 4*dt.
 template <typename T>
 T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
 {
@@ -170,6 +129,108 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
     deltaBC = nMinBCs;
   }
   LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
+
+  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
+}
+
+// same as above but with an other collision iterator as input
+template <typename T>
+T compatibleBCs1(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
+{
+  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
+
+  // return if collisions has no associated BC
+  if (!collision.has_foundBC()) {
+    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+  }
+
+  // get associated BC
+  auto bcIter = collision.foundBC_as<T>();
+
+  // due to the filling scheme the most probable BC may not be the one estimated from the collision time
+  uint64_t mostProbableBC = bcIter.globalBC();
+  uint64_t meanBC = mostProbableBC + std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+
+  // enforce minimum number for deltaBC
+  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
+  if (deltaBC < nMinBCs) {
+    deltaBC = nMinBCs;
+  }
+  LOGF(debug, "BC %d,  deltaBC %d", bcIter.globalIndex(), deltaBC);
+
+  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
+}
+
+// In this variant of compatibleBCs the bcIter is ideally placed within
+// [minBC, maxBC], but it does not need to be. The range is given by +- delatBC.
+template <typename I, typename T>
+T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
+{
+  // range of BCs to consider
+  uint64_t minBC = (uint64_t)deltaBC < meanBC ? meanBC - (uint64_t)deltaBC : 0;
+  uint64_t maxBC = meanBC + (uint64_t)deltaBC;
+  LOGF(debug, "  minBC %d maxBC %d bcIterator %d (%d)", minBC, maxBC, bcIter.globalBC(), bcIter.globalIndex());
+
+  // check [min,max]BC to overlap with [bcs.iteratorAt([0,bcs.size() - 1])
+  if (maxBC < bcs.iteratorAt(0).globalBC() || minBC > bcs.iteratorAt(bcs.size() - 1).globalBC()) {
+    LOGF(info, "<compatibleBCs> No overlap of [%d, %d] and [%d, %d]", minBC, maxBC, bcs.iteratorAt(0).globalBC(), bcs.iteratorAt(bcs.size() - 1).globalBC());
+    return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+  }
+
+  // find slice of BCs table with BC in [minBC, maxBC]
+  int moveCount = 0;
+  int64_t minBCId = bcIter.globalIndex();
+  int64_t maxBCId = bcIter.globalIndex();
+
+  // lower limit
+  if (bcIter.globalBC() < minBC) {
+    while (bcIter != bcs.end() && bcIter.globalBC() < minBC) {
+      ++bcIter;
+      ++moveCount;
+      minBCId = bcIter.globalIndex();
+    }
+  } else {
+    while (bcIter.globalIndex() > 0 && bcIter.globalBC() >= minBC) {
+      minBCId = bcIter.globalIndex();
+      --bcIter;
+      --moveCount;
+    }
+  }
+
+  // upper limit limit
+  if (bcIter.globalBC() < maxBC) {
+    while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC) {
+      maxBCId = bcIter.globalIndex();
+      ++bcIter;
+      ++moveCount;
+    }
+
+  } else {
+    while (bcIter.globalIndex() > 0 && bcIter.globalBC() > maxBC) {
+      --bcIter;
+      --moveCount;
+      maxBCId = bcIter.globalIndex();
+    }
+  }
+  LOGF(debug, "  BC range: %d - %d", minBCId, maxBCId);
+
+  // reset bcIter
+  bcIter.moveByIndex(-moveCount);
+
+  // create bc slice
+  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
+  bcs.copyIndexBindings(slice);
+  LOGF(debug, "  size of slice %d", slice.size());
+  return slice;
+}
+
+// In this variant of compatibleBCs the range of compatible BCs is defined by meanBC +- deltaBC.
+template <typename T>
+T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs)
+{
+  // find BC with globalBC ~ meanBC
+  uint64_t ind = (uint64_t)(bcs.size() / 2);
+  auto bcIter = bcs.iteratorAt(ind);
 
   return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
 }
@@ -199,18 +260,6 @@ T MCcompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels
   if (deltaBC < nMinBCs) {
     deltaBC = nMinBCs;
   }
-
-  return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
-}
-
-// -----------------------------------------------------------------------------
-// In this case the range of compatible BCs is defied by meanBC +- deltaBC.
-template <typename T>
-T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs)
-{
-  // find BC with globalBC ~ meanBC
-  uint64_t ind = (uint64_t)(bcs.size() / 2);
-  auto bcIter = bcs.iteratorAt(ind);
 
   return compatibleBCs(bcIter, meanBC, deltaBC, bcs);
 }
@@ -328,11 +377,12 @@ int16_t FDDAmplitudeC(aod::FDD&& fdd)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFV0(T& bc, float limitA)
+bool cleanFV0(T& bc, float maxFITtime, float limitA)
 {
   if (bc.has_foundFV0()) {
+    bool ota = std::abs(bc.foundFV0().time()) <= maxFITtime;
     bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
-    return oma;
+    return ota && oma;
   } else {
     return true;
   }
@@ -340,11 +390,13 @@ bool cleanFV0(T& bc, float limitA)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFT0(T& bc, float limitA, float limitC)
+bool cleanFT0(T& bc, float maxFITtime, float limitA, float limitC)
 {
   if (bc.has_foundFT0()) {
 
-    // check amplitudes
+    // check times and amplitudes
+    bool ota = std::abs(bc.foundFT0().timeA()) <= maxFITtime;
+    bool otc = std::abs(bc.foundFT0().timeC()) <= maxFITtime;
     bool oma = FT0AmplitudeA(bc.foundFT0()) <= limitA;
     bool omc = FT0AmplitudeC(bc.foundFT0()) <= limitC;
 
@@ -352,9 +404,9 @@ bool cleanFT0(T& bc, float limitA, float limitC)
     std::bitset<8> triggers = bc.foundFT0().triggerMask();
     bool ora = !triggers[o2::ft0::Triggers::bitA];
     bool orc = !triggers[o2::ft0::Triggers::bitC];
-    LOGF(debug, "ora/FT0AmplitudeA %d/%d orc/FT0AmplitudeC %d/%d", ora, oma, orc, omc);
+    LOGF(debug, "ota %f otc %f ora/FT0AmplitudeA %d/%d orc/FT0AmplitudeC %d/%d", bc.foundFT0().timeA(), bc.foundFT0().timeC(), ora, oma, orc, omc);
 
-    return oma && omc;
+    return ota && oma && otc && omc;
   } else {
     return true;
   }
@@ -362,12 +414,14 @@ bool cleanFT0(T& bc, float limitA, float limitC)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFDD(T& bc, float limitA, float limitC)
+bool cleanFDD(T& bc, float maxFITtime, float limitA, float limitC)
 {
   if (bc.has_foundFDD()) {
+    bool ota = std::abs(bc.foundFDD().timeA()) <= maxFITtime;
+    bool otc = std::abs(bc.foundFDD().timeC()) <= maxFITtime;
     bool oma = FDDAmplitudeA(bc.foundFDD()) <= limitA;
     bool omc = FDDAmplitudeC(bc.foundFDD()) <= limitC;
-    return oma && omc;
+    return ota && oma && otc && omc;
   } else {
     return true;
   }
@@ -382,24 +436,28 @@ bool cleanFDD(T& bc, float limitA, float limitC)
 //  lims[4]: FDDC
 
 template <typename T>
-bool cleanFIT(T& bc, std::vector<float> lims)
+bool cleanFIT(T& bc, float maxFITtime, std::vector<float> lims)
 {
-  return cleanFV0(bc, lims[0]) && cleanFT0(bc, lims[1], lims[2]) && cleanFDD(bc, lims[3], lims[4]);
+  return cleanFV0(bc, maxFITtime, lims[0]) &&
+         cleanFT0(bc, maxFITtime, lims[1], lims[2]) &&
+         cleanFDD(bc, maxFITtime, lims[3], lims[4]);
 }
 template <typename T>
-bool cleanFITCollision(T& col, std::vector<float> lims)
+bool cleanFITCollision(T& col, float maxFITtime, std::vector<float> lims)
 {
   bool isCleanFV0 = true;
   if (col.has_foundFV0()) {
-    isCleanFV0 = (FV0AmplitudeA(col.foundFV0()) < lims[0]);
+    isCleanFV0 = (std::abs(col.foundFV0().time()) <= maxFITtime) && (FV0AmplitudeA(col.foundFV0()) < lims[0]);
   }
   bool isCleanFT0 = true;
   if (col.has_foundFT0()) {
-    isCleanFT0 = (FT0AmplitudeA(col.foundFT0()) < lims[1]) && (FT0AmplitudeC(col.foundFT0()) < lims[2]);
+    isCleanFT0 = (std::abs(col.foundFT0().timeA()) <= maxFITtime) && (FT0AmplitudeA(col.foundFT0()) < lims[1]) &&
+                 (std::abs(col.foundFT0().timeC()) <= maxFITtime) && (FT0AmplitudeC(col.foundFT0()) < lims[2]);
   }
   bool isCleanFDD = true;
   if (col.has_foundFDD()) {
-    isCleanFDD = (FDDAmplitudeA(col.foundFDD()) < lims[3]) && (FDDAmplitudeC(col.foundFDD()) < lims[4]);
+    isCleanFDD = (std::abs(col.foundFDD().timeA()) <= maxFITtime) && (FDDAmplitudeA(col.foundFDD()) < lims[3]) &&
+                 (std::abs(col.foundFDD().timeC()) <= maxFITtime) && (FDDAmplitudeC(col.foundFDD()) < lims[4]);
   }
   return (isCleanFV0 && isCleanFT0 && isCleanFDD);
 }

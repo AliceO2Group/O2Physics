@@ -41,9 +41,10 @@ class PHOSPhotonCut : public TNamed
   static const char* mCutNames[static_cast<int>(PHOSPhotonCuts::kNCuts)];
 
   // Temporary function to check if track passes selection criteria. To be replaced by framework filters.
-  template <typename T>
-  bool IsSelected(T const& cluster) const
+  template <typename T, typename Cluster>
+  bool IsSelected(Cluster const& cluster) const
   {
+    // auto track = cluster.template MatchedTrack_as<T>(); //please implement a column to point matched track index (DECLARE_SOA_ARRAY_INDEX_COLUMN) in SkimPHOSClusters table.
     if (!IsSelectedCluster(cluster, PHOSPhotonCuts::kEnergy)) {
       return false;
     }
@@ -53,12 +54,28 @@ class PHOSPhotonCut : public TNamed
     if (!IsSelectedCluster(cluster, PHOSPhotonCuts::kCPV)) {
       return false;
     }
+
+    // only temporary solution to avoid noisy channels.
+    if (-1.20 + 10.2 * sqrt(cluster.e()) < cluster.nCells()) {
+      return false;
+    }
+    if (cluster.nCells() < -3.04 + 3.14 * sqrt(cluster.e())) {
+      return false;
+    }
+
+    if (cluster.m20() < 0.1 || 2.0 < cluster.m20()) {
+      return false;
+    }
+    if (cluster.m02() > 4.0) {
+      return false;
+    }
+
     return true;
   }
 
   // Temporary function to check if track passes a given selection criteria. To be replaced by framework filters.
-  template <typename T>
-  bool IsSelectedCluster(T const& cls, const PHOSPhotonCuts& cut) const
+  template <typename Cluster>
+  bool IsSelectedCluster(Cluster const& cls, const PHOSPhotonCuts& cut) const
   {
     switch (cut) {
       case PHOSPhotonCuts::kEnergy:

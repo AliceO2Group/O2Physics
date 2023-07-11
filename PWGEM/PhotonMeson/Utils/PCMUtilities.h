@@ -16,9 +16,6 @@
 #define PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
 
 #include "Framework/AnalysisTask.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 //_______________________________________________________________________
 bool checkAP(float alpha, float qt)

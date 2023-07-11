@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -91,7 +91,7 @@ class FemtoDreamCollisionSelection
         return false;
       }
     } else {
-      if (mCheckTrigger && !col.alias()[mTrigger]) {
+      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
         return false;
       }
       if (mCheckOffline && !col.sel7()) {

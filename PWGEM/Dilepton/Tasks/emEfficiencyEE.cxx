@@ -83,6 +83,7 @@ using MyBarrelTracksSelectedNoSkimmed = soa::Join<aod::Tracks, aod::TracksExtra,
                                                   aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                                   aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                                   aod::BarrelTrackCuts, aod::McTrackLabels>;
+using MyMCTrackNoSkimmed = soa::Join<aod::McParticles, aod::SmearedTracks>;
 
 constexpr static uint32_t gkEventFillMapNoSkimmed = VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkMCEventFillMapNoSkimmed = VarManager::ObjTypes::CollisionMC;
@@ -95,7 +96,7 @@ using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtende
 using MyMCEventsSelected = soa::Join<aod::ReducedMCEvents, aod::EventMCCuts>;
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
 using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelLabels>;
-
+using MyMCReducedTracks = soa::Join<ReducedMCTracks, aod::SmearedTracks>;
 //
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkMCEventFillMap = VarManager::ObjTypes::ReducedEventMC;
@@ -206,8 +207,8 @@ struct AnalysisEventQa {
     registry.add("RecEvent", "", HistType::kTH1D, {{1, 0., 1.}}, true);
   }
 
-  Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
-  Preslice<aod::McParticles_001> perMcCollision = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackMCFillMap, typename TEvents, typename TEventsMC, typename TTracksMC>
   void runSelection(TEvents const& events, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
@@ -294,7 +295,7 @@ struct AnalysisEventQa {
     runSelection<gkEventFillMap, gkMCEventFillMap, gkParticleMCFillMap>(events, eventsMC, tracksMC);
   }
 
-  void processNoSkimmed(soa::Filtered<MyEventsSelectedNoSkimmed> const& events, aod::McCollisions const& eventsMC, aod::McParticles_001 const& tracksMC)
+  void processNoSkimmed(soa::Filtered<MyEventsSelectedNoSkimmed> const& events, aod::McCollisions const& eventsMC, aod::McParticles const& tracksMC)
   {
     runSelection<gkEventFillMapNoSkimmed, gkMCEventFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(events, eventsMC, tracksMC);
   }
@@ -608,10 +609,10 @@ struct AnalysisTrackSelection {
     fOutputQA.setObject(fQASingleElectronList);
   }
 
-  Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
   Preslice<MyBarrelTracks> perReducedEventTracks = aod::reducedtrack::reducedeventId;
 
-  Preslice<aod::McParticles_001> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   Preslice<MyBarrelTracksNoSkimmed> perCollisionTracks = aod::track::collisionId;
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TEvents, typename TTracks, typename TEventsMC, typename TTracksMC>
@@ -658,13 +659,13 @@ struct AnalysisTrackSelection {
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
             auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
             groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-            runMCGenTrack(groupedMCTracks);
+            runMCGenTrack<false>(groupedMCTracks);
           }
           // Not skimmed data
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
             auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
             groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-            runMCGenTrack(groupedMCTracks);
+            runMCGenTrack<false>(groupedMCTracks);
           }
         }
       }
@@ -687,6 +688,7 @@ struct AnalysisTrackSelection {
 
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
+    VarManager::FillEvent<TEventFillMap>(event);
 
     runRecTrack<TTrackFillMap>(tracks, tracksMC, true, write);
   }
@@ -694,7 +696,9 @@ struct AnalysisTrackSelection {
   template <uint32_t TEventMCFillMap, uint32_t TTrackMCFillMap, typename TEventsMC, typename TTracksMC>
   void runMCFill(TEventsMC const& eventMC, TTracksMC const& tracksMC)
   {
-    runMCGenTrack(tracksMC);
+    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+    VarManager::FillEvent<TEventMCFillMap>(eventMC);
+    runMCGenTrack<true>(tracksMC);
   }
 
   template <uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TTracks, typename TTracksMC>
@@ -704,7 +708,7 @@ struct AnalysisTrackSelection {
     runRecTrack<TTrackFillMap>(tracks, tracksMC, false, true);
   }
 
-  template <typename TTracksMC>
+  template <bool smeared, typename TTracksMC>
   void runMCGenTrack(TTracksMC const& groupedMCTracks)
   {
 
@@ -712,11 +716,22 @@ struct AnalysisTrackSelection {
       VarManager::FillTrackMC(groupedMCTracks, mctrack);
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
-        if ((*sig).CheckSignal(true, groupedMCTracks, mctrack)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto mctrack_raw = groupedMCTracks.rawIteratorAt(mctrack.globalIndex());
+          checked = (*sig).CheckSignal(true, mctrack_raw);
+        } else {
+          checked = (*sig).CheckSignal(true, mctrack);
+        }
+        if (checked) {
           if (mctrack.pdgCode() > 0) {
             fHistGenNegPart[isig]->Fill(mctrack.pt(), mctrack.eta(), mctrack.phi());
+            if constexpr (smeared)
+              fHistGenSmearedNegPart[isig]->Fill(mctrack.ptSmeared(), mctrack.etaSmeared(), mctrack.phiSmeared());
           } else {
             fHistGenPosPart[isig]->Fill(mctrack.pt(), mctrack.eta(), mctrack.phi());
+            if constexpr (smeared)
+              fHistGenSmearedPosPart[isig]->Fill(mctrack.ptSmeared(), mctrack.etaSmeared(), mctrack.phiSmeared());
           }
           if (fConfigQA)
             fHistManQA->FillHistClass(Form("MCTruthGen_%s", (*sig).GetName()), VarManager::fgValues);
@@ -744,7 +759,7 @@ struct AnalysisTrackSelection {
       if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
         // If no MC particle is found, skip the track
         if (track.has_mcParticle()) {
-          auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
+          auto mctrack = track.template mcParticle_as<aod::McParticles>();
           VarManager::FillTrackMC(tracksMC, mctrack);
         }
       }
@@ -776,14 +791,14 @@ struct AnalysisTrackSelection {
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
 
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
-          if ((*sig).CheckSignal(true, tracksMC, track.reducedMCTrack())) {
+          if ((*sig).CheckSignal(true, track.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
           if (track.has_mcParticle()) {
-            auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
-            if ((*sig).CheckSignal(true, tracksMC, mctrack)) {
+            auto mctrack = track.template mcParticle_as<aod::McParticles>();
+            if ((*sig).CheckSignal(true, mctrack)) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }
@@ -817,7 +832,7 @@ struct AnalysisTrackSelection {
               }
               if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
                 if (track.has_mcParticle()) {
-                  auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
+                  auto mctrack = track.template mcParticle_as<aod::McParticles>();
                   mcpt = mctrack.pt();
                   mceta = mctrack.eta();
                   mcphi = mctrack.phi();
@@ -847,7 +862,7 @@ struct AnalysisTrackSelection {
               }
               if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
                 if (track.has_mcParticle()) {
-                  auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
+                  auto mctrack = track.template mcParticle_as<aod::McParticles>();
                   mcpt = mctrack.pt();
                   mceta = mctrack.eta();
                   mcphi = mctrack.phi();
@@ -885,7 +900,7 @@ struct AnalysisTrackSelection {
     runDataFill<gkEventFillMap, gkTrackFillMap, gkParticleMCFillMap>(event, tracks, tracksMC, true);
   }
 
-  void processMCSkimmed(soa::Filtered<MyMCEventsSelected> const& eventsMC, ReducedMCTracks const& tracksMC)
+  void processMCSkimmed(soa::Filtered<MyMCEventsSelected> const& eventsMC, MyMCReducedTracks const& tracksMC)
   {
     for (auto& eventMC : eventsMC) {
       auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, eventMC.globalIndex());
@@ -894,17 +909,17 @@ struct AnalysisTrackSelection {
     }
   }
 
-  void processDataSelectionNoSkimmed(MyBarrelTracksNoSkimmed const& tracks, aod::McParticles_001 const& tracksMC)
+  void processDataSelectionNoSkimmed(MyBarrelTracksNoSkimmed const& tracks, aod::McParticles const& tracksMC)
   {
     runDataSelection<gkTrackFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(tracks, tracksMC);
   }
 
-  void processMCNoSkimmed(soa::Filtered<MyMCEventsSelectedNoSkimmed>::iterator const& eventMC, aod::McParticles_001 const& tracksMC)
+  void processMCNoSkimmed(soa::Filtered<MyMCEventsSelectedNoSkimmed>::iterator const& eventMC, MyMCTrackNoSkimmed const& tracksMC)
   {
     runMCFill<gkMCEventFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(eventMC, tracksMC);
   }
 
-  void processDataNoSkimmed(soa::Filtered<MyEventsSelectedNoSkimmed>::iterator const& event, MyBarrelTracksNoSkimmed const& tracks, aod::McParticles_001 const& tracksMC)
+  void processDataNoSkimmed(soa::Filtered<MyEventsSelectedNoSkimmed>::iterator const& event, MyBarrelTracksNoSkimmed const& tracks, aod::McParticles const& tracksMC)
   {
     runDataFill<gkEventFillMapNoSkimmed, gkTrackFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(event, tracks, tracksMC, false);
   }
@@ -939,7 +954,7 @@ struct AnalysisSameEventPairing {
 
   // Partition
   // Partition<ReducedMCTracks> mcSkimmedElectrons = nabs(o2::aod::mcparticle::pdgCode) == 11;
-  // Partition<aod::McParticles_001> mcNotSkimmedElectrons = nabs(o2::aod::mcparticle::pdgCode) == 11;
+  // Partition<aod::McParticles> mcNotSkimmedElectrons = nabs(o2::aod::mcparticle::pdgCode) == 11;
 
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMCSignals{"cfgBarrelMCSignals", "", "Comma separated list of MC signals"};
@@ -1041,10 +1056,10 @@ struct AnalysisSameEventPairing {
     }
   }
 
-  Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
   Preslice<MyBarrelTracks> perReducedEventTracks = aod::reducedtrack::reducedeventId;
 
-  Preslice<aod::McParticles_001> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   Preslice<MyBarrelTracksNoSkimmed> perCollisionTracks = aod::track::collisionId;
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTracks, typename TEventsMC, typename TTracksMC>
@@ -1084,13 +1099,13 @@ struct AnalysisSameEventPairing {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
           auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
           groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-          runMCGenPair(groupedMCTracks);
+          runMCGenPair<false>(groupedMCTracks);
         }
         // Not skimmed data
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
           auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
           groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-          runMCGenPair(groupedMCTracks);
+          runMCGenPair<false>(groupedMCTracks);
         }
       }
 
@@ -1110,7 +1125,7 @@ struct AnalysisSameEventPairing {
   void runMCPairing(TEventMC const& eventMC, TTracksMC const& tracksMC)
   {
 
-    runMCGenPair(tracksMC);
+    runMCGenPair<true>(tracksMC);
 
   } // end loop pairing function
 
@@ -1125,7 +1140,7 @@ struct AnalysisSameEventPairing {
 
   } // end loop pairing function
 
-  template <typename TTracksMC>
+  template <bool smeared, typename TTracksMC>
   void runMCGenPair(TTracksMC const& groupedMCTracks)
   {
     //
@@ -1145,6 +1160,7 @@ struct AnalysisSameEventPairing {
       if (!fConfigFillLS && (t1.pdgCode() * t2.pdgCode() > 0))
         continue; // ULS only
 
+      // True MC values
       TLorentzVector Lvec1;
       TLorentzVector Lvec2;
       Lvec1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), masse);
@@ -1152,16 +1168,42 @@ struct AnalysisSameEventPairing {
       TLorentzVector LvecM = Lvec1 + Lvec2;
       double mass = LvecM.M();
       double pairpt = LvecM.Pt();
-      // double opangle = Lvec1.Angle(Lvec2.Vect());
+      // Smeared MC values
+      double masssmeared = -1.;
+      double pairptsmeared = -1.;
+      if constexpr (smeared) {
+        TLorentzVector Lvec1smeared;
+        TLorentzVector Lvec2smeared;
+        Lvec1smeared.SetPtEtaPhiM(t1.ptSmeared(), t1.etaSmeared(), t1.phiSmeared(), masse);
+        Lvec2smeared.SetPtEtaPhiM(t2.ptSmeared(), t2.etaSmeared(), t2.phiSmeared(), masse);
+        TLorentzVector LvecMsmeared = Lvec1smeared + Lvec2smeared;
+        masssmeared = LvecMsmeared.M();
+        pairptsmeared = LvecMsmeared.Pt();
+      }
 
-      // Fiducial cut
+      // Fiducial cut MC value
       Bool_t genfidcut = kTRUE;
       if ((t1.eta() > fConfigMaxEta) || (t2.eta() > fConfigMaxEta) || (t1.eta() < fConfigMinEta) || (t2.eta() < fConfigMinEta) || (t1.pt() > fConfigMaxPt) || (t2.pt() > fConfigMaxPt) || (t1.pt() < fConfigMinPt) || (t2.pt() < fConfigMinPt))
         genfidcut = kFALSE;
 
+      // Fiducial cut Smeared values
+      Bool_t genfidcutsmeared = kTRUE;
+      if constexpr (smeared) {
+        if ((t1.etaSmeared() > fConfigMaxEta) || (t2.etaSmeared() > fConfigMaxEta) || (t1.etaSmeared() < fConfigMinEta) || (t2.etaSmeared() < fConfigMinEta) || (t1.ptSmeared() > fConfigMaxPt) || (t2.ptSmeared() > fConfigMaxPt) || (t1.ptSmeared() < fConfigMinPt) || (t2.ptSmeared() < fConfigMinPt))
+          genfidcutsmeared = kFALSE;
+      }
+
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
-        if ((*sig).CheckSignal(true, groupedMCTracks, t1, t2)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
+          auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
+          checked = (*sig).CheckSignal(true, t1_raw, t2_raw);
+        } else {
+          checked = (*sig).CheckSignal(true, t1, t2);
+        }
+        if (checked) {
 
           // not smeared after fiducial cuts
           if (genfidcut) {
@@ -1175,7 +1217,20 @@ struct AnalysisSameEventPairing {
               }
             }
           }
-          // need to implement smeared
+          // Smeared
+          if constexpr (smeared) {
+            if (genfidcutsmeared) {
+              if (!fConfigFillLS) {
+                fHistGenSmearedPair[isig]->Fill(masssmeared, pairptsmeared);
+              } else {
+                if (t1.pdgCode() * t2.pdgCode() < 0) {
+                  fHistGenSmearedPair[isig * 2]->Fill(masssmeared, pairptsmeared);
+                } else {
+                  fHistGenSmearedPair[isig * 2 + 1]->Fill(masssmeared, pairptsmeared);
+                }
+              }
+            }
+          }
         }
       }
     } // end of true pairing loop
@@ -1226,20 +1281,20 @@ struct AnalysisSameEventPairing {
             if (!t1.reducedMCTrack().isPhysicalPrimary() || !t2.reducedMCTrack().isPhysicalPrimary())
               continue;
           }
-          if ((*sig).CheckSignal(true, tracksMC, t1.reducedMCTrack(), t2.reducedMCTrack())) {
+          if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
 
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
           if (t1.has_mcParticle() && t2.has_mcParticle()) {
-            auto mct1 = t1.template mcParticle_as<aod::McParticles_001>();
-            auto mct2 = t2.template mcParticle_as<aod::McParticles_001>();
+            auto mct1 = t1.template mcParticle_as<aod::McParticles>();
+            auto mct2 = t2.template mcParticle_as<aod::McParticles>();
             if (fConfigIsPrimary) {
               if (!mct1.isPhysicalPrimary() || !mct2.isPhysicalPrimary())
                 continue;
             }
-            if ((*sig).CheckSignal(true, tracksMC, mct1, mct2)) {
+            if ((*sig).CheckSignal(true, mct1, mct2)) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }
@@ -1286,8 +1341,8 @@ struct AnalysisSameEventPairing {
           }
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
             if (t1.has_mcParticle() && t2.has_mcParticle()) {
-              auto mctrack1 = t1.template mcParticle_as<aod::McParticles_001>();
-              auto mctrack2 = t2.template mcParticle_as<aod::McParticles_001>();
+              auto mctrack1 = t1.template mcParticle_as<aod::McParticles>();
+              auto mctrack2 = t2.template mcParticle_as<aod::McParticles>();
               TLorentzVector Lvec2, Lvec1;
               Lvec1.SetPtEtaPhiM(mctrack1.pt(), mctrack1.eta(), mctrack1.phi(), masse);
               Lvec2.SetPtEtaPhiM(mctrack2.pt(), mctrack2.eta(), mctrack2.phi(), masse);
@@ -1335,7 +1390,7 @@ struct AnalysisSameEventPairing {
   }
 
   void processMCToEESkimmed(soa::Filtered<MyMCEventsSelected> const& eventsMC,
-                            ReducedMCTracks const& tracksMC)
+                            MyMCReducedTracks const& tracksMC)
   {
     for (auto& eventMC : eventsMC) {
       auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, eventMC.globalIndex());
@@ -1346,12 +1401,12 @@ struct AnalysisSameEventPairing {
 
   void processDataToEENoSkimmed(soa::Filtered<MyEventsSelectedNoSkimmed>::iterator const& event,
                                 soa::Filtered<MyBarrelTracksSelectedNoSkimmed> const& tracks,
-                                aod::McParticles_001 const& tracksMC)
+                                aod::McParticles const& tracksMC)
   {
     runDataPairing<gkEventFillMapNoSkimmed, gkTrackFillMapNoSkimmed>(event, tracks, tracksMC);
   }
 
-  void processMCToEENoSkimmed(soa::Filtered<MyMCEventsSelectedNoSkimmed>::iterator const& eventMC, aod::McParticles_001 const& tracksMC)
+  void processMCToEENoSkimmed(soa::Filtered<MyMCEventsSelectedNoSkimmed>::iterator const& eventMC, MyMCTrackNoSkimmed const& tracksMC)
   {
     runMCPairing<gkMCEventFillMapNoSkimmed, gkTrackFillMapNoSkimmed>(eventMC, tracksMC);
   }

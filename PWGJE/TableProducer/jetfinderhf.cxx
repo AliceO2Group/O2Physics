@@ -19,6 +19,22 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+/*
+void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
+{
+  std::vector<ConfigParamSpec> hfjetworkflows{{"d0-data-charged", VariantType::Int, 1, {"D0 jets charged data"}},
+                                       {"d0-mcd-charged", VariantType::Int, 0, {"D0 jets charged MCD"}},
+                                       {"d0-mcp-charged", VariantType::Int, 0, {"D0 jets charged MCD"}},
+                                       {"bplus-data-charged", VariantType::Int, 0, {"B+ jets charged MCD"}},
+                                       {"bplus-mcd-charged", VariantType::Int, 0, {"B+ jets charged MCD"}},
+                                       {"bplus-mcp-charged", VariantType::Int, 0, {"B+ jets charged MCD"}},
+                                       {"lc-data-charged", VariantType::Int, 0, {"Lc jets charged MCD"}},
+                                       {"lc-mcd-charged", VariantType::Int, 0, {"Lc jets charged MCD"}},
+                                       {"lc-mcp-charged", VariantType::Int, 0, {"Lc jets charged MCD"}}};
+  std::swap(workflowOptions, hfjetworkflows);
+}
+*/
+
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
@@ -34,11 +50,12 @@ struct JetFinderHFTask {
   // track level configurables
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
   Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum track pT"};
-  Configurable<float> trackEtaMin{"trackEtaMin", -0.8, "minimum track eta"};
-  Configurable<float> trackEtaMax{"trackEtaMax", 0.8, "maximum track eta"};
+  Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum track eta"};
+  Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
@@ -66,6 +83,8 @@ struct JetFinderHFTask {
   Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
   Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
   Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
+  Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
   Configurable<int> jetTypeParticleLevel{"jetTypeParticleLevel", 1, "Type of stored jets. 0 = full, 1 = charged, 2 = neutral"};
   Configurable<int> jetAlgorithm{"jetAlgorithm", 2, "jet clustering algorithm. 0 = kT, 1 = C/A, 2 = Anti-kT"};
   Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "jet recombination scheme. 0 = E-scheme, 1 = pT-scheme, 2 = pT2-scheme"};
@@ -74,6 +93,7 @@ struct JetFinderHFTask {
 
   Service<O2DatabasePDG> pdg;
   std::string trackSelection;
+  std::string eventSelection;
 
   JetFinder jetFinder;
   std::vector<fastjet::PseudoJet> inputParticles;
@@ -86,11 +106,14 @@ struct JetFinderHFTask {
   void init(InitContext const&)
   {
     trackSelection = static_cast<std::string>(trackSelections);
+    eventSelection = static_cast<std::string>(eventSelections);
 
     jetFinder.etaMin = trackEtaMin;
     jetFinder.etaMax = trackEtaMax;
     jetFinder.jetPtMin = jetPtMin;
     jetFinder.jetPtMax = jetPtMax;
+    jetFinder.jetEtaMin = jetEtaMin;
+    jetFinder.jetEtaMax = jetEtaMax;
     jetFinder.algorithm = static_cast<fastjet::JetAlgorithm>(static_cast<int>(jetAlgorithm));
     jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(static_cast<int>(jetRecombScheme));
     jetFinder.ghostArea = jetGhostArea;
@@ -135,7 +158,7 @@ struct JetFinderHFTask {
   template <typename T, typename U, typename M>
   void analyseData(T const& collision, U const& tracks, M const& candidates)
   {
-    if (!selectCollision(collision)) {
+    if (!selectCollision(collision, eventSelection)) {
       return;
     }
 
@@ -153,7 +176,7 @@ struct JetFinderHFTask {
   template <typename T, typename U, typename M>
   void analyseMCD(T const& collision, U const& tracks, M const& candidates)
   {
-    if (!selectCollision(collision)) {
+    if (!selectCollision(collision, eventSelection)) {
       return;
     }
 
@@ -262,7 +285,7 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processBplusJetsMCP, "B+ HF jet finding on MC particle level", false);
 };
-
+/*
 using JetFinderD0DataCharged = JetFinderHFTask<o2::aod::D0ChargedJets, o2::aod::D0ChargedJetConstituents, o2::aod::D0ChargedJetConstituentsSub>;
 using JetFinderD0MCDetectorLevelCharged = JetFinderHFTask<o2::aod::D0ChargedMCDetectorLevelJets, o2::aod::D0ChargedMCDetectorLevelJetConstituents, o2::aod::D0ChargedMCDetectorLevelJetConstituentsSub>;
 using JetFinderD0MCParticleLevelCharged = JetFinderHFTask<o2::aod::D0ChargedMCParticleLevelJets, o2::aod::D0ChargedMCParticleLevelJetConstituents, o2::aod::D0ChargedMCParticleLevelJetConstituentsSub>;
@@ -317,3 +340,39 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   return WorkflowSpec{tasks};
 }
+*/
+/*
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  auto workflow = WorkflowSpec{adaptAnalysisTask<JetFinderD0DataCharged>(cfgc)};
+  workflow.clear();
+  if (cfgc.hfjetworkflows().get<int>("d0-data-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderD0DataCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("d0-mcd-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderD0MCDetectorLevelCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("d0-mcp-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderD0MCParticleLevelCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("bplus-data-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderBplusDataCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("bplus-mcd-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderBplusMCDetectorLevelCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("bplus-mcp-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderBplusMCParticleLevelCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("lc-data-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderLcDataCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("lc-mcd-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderLcMCDetectorLevelCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("lc-mcp-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderLcMCParticleLevelCharged>(cfgc));
+  }
+  return workflow;
+}
+*/

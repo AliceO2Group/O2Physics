@@ -64,6 +64,10 @@ struct multFilter {
   Configurable<float> avPyT0A{"avPyT0A", 8.16, "nch from pythia T0A"};
   Configurable<float> avPyT0C{"avPyT0C", 8.83, "nch from pythia T0C"};
   Configurable<float> avPyFV0{"avPyFV0", 21.44, "nch from pythia FV0"};
+
+  Configurable<float> maxFV0FT0Cm{"maxFV0FT0Cm", 10000., "upper cut on FV0+FT0C mult"};
+  Configurable<float> maxFT0m{"maxFT0m", 10000., "upper cut on FT0 mult"};
+
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch",
                                 "URL of the CCDB database"};
 
@@ -495,8 +499,20 @@ struct multFilter {
     static_for<0, 7>([&](auto i) {
       constexpr int index = i.value;
       if (estimator[index] > cut[index]) {
-        multiplicity.fill(HIST(nhEst_after[index]), estimator[index]);
-        keepEvent[index] = true;
+        if (index == 3) {
+          if (estimator[index] < maxFT0m) {
+            multiplicity.fill(HIST(nhEst_after[index]), estimator[index]);
+            keepEvent[index] = true;
+          }
+        } else if (index == 5) {
+          if (estimator[index] < maxFV0FT0Cm) {
+            multiplicity.fill(HIST(nhEst_after[index]), estimator[index]);
+            keepEvent[index] = true;
+          }
+        } else {
+          multiplicity.fill(HIST(nhEst_after[index]), estimator[index]);
+          keepEvent[index] = true;
+        }
       }
     });
 

@@ -15,14 +15,16 @@
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
 ///         Paul Buehler, <paul.buehler@oeaw.ac.at>, Vienna
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "DCAFitter/DCAFitterN.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "Common/Core/trackUtilities.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
+
+#include "Common/Core/trackUtilities.h"
+
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsDebugLcToK0sP.h"
 
 using namespace o2;
@@ -62,7 +64,6 @@ struct HfCandidateCreatorCascade {
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
@@ -95,9 +96,6 @@ struct HfCandidateCreatorCascade {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbPathGeo);
-    }
     runNumber = 0;
   }
 
@@ -264,13 +262,17 @@ struct HfCandidateCreatorCascadeMc {
                  aod::McParticles const& particlesMC)
   {
     int8_t sign = 0;
+    int8_t origin = 0;
+    int indexRec = -1;
     std::vector<int> arrDaughLcIndex;
     std::array<int, 3> arrDaughLcPDG;
     std::array<int, 3> arrDaughLcPDGRef = {2212, 211, -211};
 
     // Match reconstructed candidates.
     rowCandidateCasc->bindExternalIndices(&tracks);
-    for (auto& candidate : *rowCandidateCasc) {
+    for (const auto& candidate : *rowCandidateCasc) {
+
+      origin = 0;
 
       const auto& bach = candidate.prong0_as<aod::BigTracksMC>();
       const auto& trackV0DaughPos = candidate.posTrack_as<aod::BigTracksMC>();
@@ -299,16 +301,23 @@ struct HfCandidateCreatorCascadeMc {
         // then we check the Lc
         MY_DEBUG_MSG(sign, LOG(info) << "K0S was correct! now we check the Lc");
         MY_DEBUG_MSG(sign, LOG(info) << "index proton = " << indexBach);
-        RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
         MY_DEBUG_MSG(sign, LOG(info) << "Lc found with sign " << sign; printf("\n"));
       }
 
-      rowMcMatchRec(sign);
+      // Check whether the particle is non-prompt (from a b quark).
+      if (sign != 0) {
+        auto particle = particlesMC.rawIteratorAt(indexRec);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+      }
+
+      rowMcMatchRec(sign, origin);
     }
     //}
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
+      origin = 0;
       // checking if I have a Lc --> K0S + p
       RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaCPlus, array{+kProton, +kK0Short}, true, &sign, 2);
       if (sign != 0) {
@@ -329,7 +338,11 @@ struct HfCandidateCreatorCascadeMc {
           MY_DEBUG_MSG(sign == 0, LOG(info) << "Pity, the three final daughters are not p, pi+, pi-, but " << arrDaughLcPDG[0] << ", " << arrDaughLcPDG[1] << ", " << arrDaughLcPDG[2]);
         }
       }
-      rowMcMatchGen(sign);
+      // Check whether the particle is non-prompt (from a b quark).
+      if (sign != 0) {
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+      }
+      rowMcMatchGen(sign, origin);
     }
   }
 
