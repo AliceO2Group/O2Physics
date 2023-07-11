@@ -142,10 +142,10 @@ struct kinkAnalysis {
   o2::track::TrackParCov PionTr;
 
   float mMother, mChargedDaughter, mNeutralDaughter;
-  
+
   using CompleteTracks = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
   using CompleteCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  
+
   struct TrackCand {
     int Idxtr;
     VBracket vBracket{};
@@ -160,40 +160,40 @@ struct kinkAnalysis {
     float par3 = M_PI;
 
     switch (particleName) {
-    case SigmaPlusToPi:
-      par1 = mSigmaPlus;
-      par2 = 0.8;
-      break;
+      case SigmaPlusToPi:
+        par1 = mSigmaPlus;
+        par2 = 0.8;
+        break;
 
-    case SigmaPlusToProton:
-      par1 = mSigmaPlus;
-      par2 = 0.2;
-      break;
+      case SigmaPlusToProton:
+        par1 = mSigmaPlus;
+        par2 = 0.2;
+        break;
 
-    case Xi:
-      par1 = mXi;
-      par2 = 0.68;
-      break;
+      case Xi:
+        par1 = mXi;
+        par2 = 0.68;
+        break;
 
-    case OmegaToL:
-      par1 = mOmega;
-      par2 = 0.68;
-      break;
+      case OmegaToL:
+        par1 = mOmega;
+        par2 = 0.68;
+        break;
 
-    case OmegaToXi:
-      par1 = mOmega;
-      par2 = 0.68;
-      break;
+      case OmegaToXi:
+        par1 = mOmega;
+        par2 = 0.68;
+        break;
 
-    case Kaon:
-      par1 = mKaon;
-      par2 = 0.9127037;
-      break;
+      case Kaon:
+        par1 = mKaon;
+        par2 = 0.9127037;
+        break;
 
-    case Pion:
-      par1 = mPion;
-      par2 = 0.2731374;
-      break;
+      case Pion:
+        par1 = mPion;
+        par2 = 0.2731374;
+        break;
     }
 
     if ((particleName == SigmaMinus) || (particleName == SigmaPlusToPi) || (particleName == SigmaPlusToProton) || (particleName == Xi) || (particleName == OmegaToXi) || (particleName == OmegaToL))
@@ -366,10 +366,10 @@ struct kinkAnalysis {
         if (track.isPVContributor()) {
           thresholdTime = trackTimeRes;
         } else if (TESTBIT(track.flags(), o2::aod::track::TrackTimeResIsRange)) {
-          thresholdTime = std::sqrt(sigmaTimeRes2); 
+          thresholdTime = std::sqrt(sigmaTimeRes2);
         } else {
           // thresholdTime = nSigmaForTimeCompat * std::sqrt(sigmaTimeRes2); // + timeMargin;
-          thresholdTime = 4. * std::sqrt(sigmaTimeRes2); 
+          thresholdTime = 4. * std::sqrt(sigmaTimeRes2);
         }
 
         histos.fill(HIST("hdeltatime"), deltaTime);
@@ -408,47 +408,47 @@ struct kinkAnalysis {
     const int poolCh2 = chargeD < 0 ? 1 : 0;
 
     switch (particleName) {
-    case SigmaMinus:
-      mMother = 1.197449;
-      mChargedDaughter = 0.13957039;
-      mNeutralDaughter = 0.9395654205;
-      break;
+      case SigmaMinus:
+        mMother = 1.197449;
+        mChargedDaughter = 0.13957039;
+        mNeutralDaughter = 0.9395654205;
+        break;
 
-    case SigmaPlusToPi:
-      mMother = 1.18937;
-      mChargedDaughter = 0.13957039;
-      mNeutralDaughter = 0.9395654205;
-      break;
+      case SigmaPlusToPi:
+        mMother = 1.18937;
+        mChargedDaughter = 0.13957039;
+        mNeutralDaughter = 0.9395654205;
+        break;
 
-    case SigmaPlusToProton:
-      mMother = 1.18937;
-      mChargedDaughter = 0.93827208816;
-      mNeutralDaughter = 0.1349768;
-      break;
+      case SigmaPlusToProton:
+        mMother = 1.18937;
+        mChargedDaughter = 0.93827208816;
+        mNeutralDaughter = 0.1349768;
+        break;
 
-    case Kaon:
-      mMother = 0.493677;
-      mChargedDaughter = 0.1056583755;
-      mNeutralDaughter = 0.;
-      break;
+      case Kaon:
+        mMother = 0.493677;
+        mChargedDaughter = 0.1056583755;
+        mNeutralDaughter = 0.;
+        break;
 
-    case Xi:
-      mMother = 1.32171;
-      mChargedDaughter = 0.13957039;
-      mNeutralDaughter = 1.115683;
-      break;
+      case Xi:
+        mMother = 1.32171;
+        mChargedDaughter = 0.13957039;
+        mNeutralDaughter = 1.115683;
+        break;
 
-    case OmegaToL:
-      mMother = 1.67245;
-      mChargedDaughter = 0.493677;
-      mNeutralDaughter = 1.115683;
-      break;
+      case OmegaToL:
+        mMother = 1.67245;
+        mChargedDaughter = 0.493677;
+        mNeutralDaughter = 1.115683;
+        break;
 
-    case OmegaToXi:
-      mMother = 1.67245;
-      mChargedDaughter = 0.13957039;
-      mNeutralDaughter = 1.31486;
-      break;
+      case OmegaToXi:
+        mMother = 1.67245;
+        mChargedDaughter = 0.13957039;
+        mNeutralDaughter = 1.31486;
+        break;
     }
 
     o2::dataformats::VertexBase primaryVertex;
@@ -473,7 +473,7 @@ struct kinkAnalysis {
       }
     }
 
-    for (int itp = 0; itp < ntrInner; itp++) { 
+    for (int itp = 0; itp < ntrInner; itp++) {
       auto& seedP = trackPoolM[poolCh1][itp];
       int firstN = mVtxSecondTrack[poolCh2][seedP.vBracket.getMin()];
       if (firstN < 0) {
@@ -643,15 +643,15 @@ struct kinkAnalysis {
               if ((chargeM == 1) && (chargeD == -1)) {
                 histos.fill(HIST("hBackgroundPosNegPt"), mass, sigmaPt);
               }
-	      
+
             } // true
           } catch (std::runtime_error& e) {
             continue;
           }
           //} //dca fitter option
-	  
+
         } // try
-	
+
       } // inner track loop
     }   // outer track loop
   }
@@ -678,7 +678,7 @@ struct kinkAnalysis {
 
   } // process
 };
-  
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
