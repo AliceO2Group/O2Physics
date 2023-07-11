@@ -108,6 +108,7 @@ struct femtoDreamProducerReducedTask {
   Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry Registry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
   float mMagField;
@@ -135,7 +136,7 @@ struct femtoDreamProducerReducedTask {
     trackCuts.setnSigmaPIDOffset(ConfTrkPIDnSigmaOffsetTPC, ConfTrkPIDnSigmaOffsetTOF);
     trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack,
                    aod::femtodreamparticle::TrackType::kNoChild,
-                   aod::femtodreamparticle::cutContainerType>(&qaRegistry);
+                   aod::femtodreamparticle::cutContainerType>(&qaRegistry, &Registry);
     mRunNumber = 0;
     mMagField = 0.0;
     /// Initializing CCDB

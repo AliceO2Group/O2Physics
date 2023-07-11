@@ -202,10 +202,8 @@ struct femtoDreamProducerTaskV0Only {
   // (aod::v0data::v0radius > V0TranRadV0Min.value); to be added, not working
   // for now do not know why
 
-  HistogramRegistry qaRegistry{
-    "QAHistos",
-    {},
-    OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry Registry{"Producer", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
   float mMagField;
@@ -276,7 +274,7 @@ struct femtoDreamProducerTaskV0Only {
                                 ConfV0DaughTPIDspecies);
       v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0,
                   aod::femtodreamparticle::ParticleType::kV0Child,
-                  aod::femtodreamparticle::cutContainerType>(&qaRegistry);
+                  aod::femtodreamparticle::cutContainerType>(&qaRegistry, &Registry);
       v0Cuts.setInvMassLimits(ConfInvMassLowLimit, ConfInvMassUpLimit);
       v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kPosTrack,
                                                ConfRejectNotPropagatedTracks);

@@ -61,7 +61,7 @@ bool isPIDSelected(aod::femtodreamparticle::cutContainerType pidcut,
 {
   int iNsigma = getPIDselection(nSigma, vNsigma);
   int nDet = static_cast<int>(kDetector::kNdetectors);
-  int bit_to_check = 1 + (vNsigma.size() - (iNsigma + 1)) * nDet * nSpecies + (nSpecies - (vSpecies + 1)) * nSpecies + (nDet - 1 - iDet);
+  int bit_to_check = (vNsigma.size() - (iNsigma + 1)) * nDet * nSpecies + (nSpecies - (vSpecies + 1)) * nSpecies + (nDet - 1 - iDet);
   return ((pidcut >> (bit_to_check)) & 1) == 1;
 };
 
