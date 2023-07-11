@@ -466,11 +466,11 @@ struct k1analysis {
               histos.fill(HIST("hReconK1pt"), lResonanceK1.Pt());
               histos.fill(HIST("QAMCafter/InvMass_piK_pipi"), lResonanceK892.M(), tempPiPi.M());
 
-              if ((bTrack.sign() > 0) && (trk2.sign() > 0)) { // Matter
+              if ((bTrack.sign() > 0) && (trk2.sign() > 0)) {        // Matter
                 histos.fill(HIST("hK1invmass_MM_MC"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
                 histos.fill(HIST("k1invmass_MC"), lResonanceK1.M()); // quick check
               }
-              if ((bTrack.sign() < 0) && (trk2.sign() < 0)) {  // Anti-matter
+              if ((bTrack.sign() < 0) && (trk2.sign() < 0)) {        // Anti-matter
                 histos.fill(HIST("hK1invmass_AA_MC"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
                 histos.fill(HIST("k1invmass_MC"), lResonanceK1.M()); // quick check
               }
