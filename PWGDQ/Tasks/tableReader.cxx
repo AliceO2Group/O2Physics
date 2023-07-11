@@ -64,15 +64,15 @@ DECLARE_SOA_COLUMN(IsBarrelSelected, isBarrelSelected, int);
 DECLARE_SOA_COLUMN(IsMuonSelected, isMuonSelected, int);
 DECLARE_SOA_COLUMN(IsBarrelSelectedPrefilter, isBarrelSelectedPrefilter, int);
 DECLARE_SOA_COLUMN(IsPrefilterVetoed, isPrefilterVetoed, int);
-DECLARE_SOA_COLUMN(massBcandidate, MBcandidate, float); 
+DECLARE_SOA_COLUMN(massBcandidate, MBcandidate, float);
 DECLARE_SOA_COLUMN(pTBcandidate, PtBcandidate, float);
-DECLARE_SOA_COLUMN(LxyBcandidate, lxyBcandidate, float); 
-DECLARE_SOA_COLUMN(LxyzBcandidate, lxyzBcandidate, float); 
-DECLARE_SOA_COLUMN(LzBcandidate, lzBcandidate, float); 
-DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float); 
-DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);  
-DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float); 
-DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float); 
+DECLARE_SOA_COLUMN(LxyBcandidate, lxyBcandidate, float);
+DECLARE_SOA_COLUMN(LxyzBcandidate, lxyzBcandidate, float);
+DECLARE_SOA_COLUMN(LzBcandidate, lzBcandidate, float);
+DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float);
+DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);
+DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
+DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
@@ -80,7 +80,7 @@ DECLARE_SOA_TABLE(MixingHashes, "AOD", "DQANAMIXHASH", dqanalysisflags::MixingHa
 DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBarrelSelected, dqanalysisflags::IsBarrelSelectedPrefilter);
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefilterVetoed);
-DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate,dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate);
+DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate);
 } // namespace o2::aod
 
 // Declarations of various short names
@@ -981,8 +981,8 @@ struct AnalysisSameEventPairing {
 
       // TODO: FillPair functions need to provide a template argument to discriminate between cases when cov matrix is available or not
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
-      if constexpr ((TPairType == pairTypeEE) || (TPairType == pairTypeMuMu)) { // call this just for ee or mumu pairs  
-        // last checkpoint passed 
+      if constexpr ((TPairType == pairTypeEE) || (TPairType == pairTypeMuMu)) { // call this just for ee or mumu pairs
+        // last checkpoint passed
         VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
         if constexpr (eventHasQvector) {
           VarManager::FillPairVn<TPairType>(t1, t2);
@@ -1208,8 +1208,8 @@ struct AnalysisDileptonHadron {
     TString configCutNamesStr = fConfigTrackCuts.value;
     if (!configCutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(configCutNamesStr.Tokenize(","));
-      //Giacomos MC production: fNHadronCutBit = objArray->GetEntries() - 1;
-      fNHadronCutBit = objArray->GetEntries() - 1; 
+      // Giacomos MC production: fNHadronCutBit = objArray->GetEntries() - 1;
+      fNHadronCutBit = objArray->GetEntries() - 1;
     } else {
       fNHadronCutBit = 0;
     }
@@ -1221,7 +1221,7 @@ struct AnalysisDileptonHadron {
   {
     // set up KF or DCAfitter
     if (fCurrentRun != event.runNumber()) { // start: runNumber
-      if (fUseRemoteField.value) { 
+      if (fUseRemoteField.value) {
         grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, event.timestamp());
         if (grpmag != nullptr) {
           mMagField = grpmag->getNominalL3Field();
@@ -1241,8 +1241,7 @@ struct AnalysisDileptonHadron {
         }
       }
       fCurrentRun = event.runNumber();
-    } // end: runNumber 
-
+    } // end: runNumber
 
     VarManager::ResetValues(0, VarManager::kNVars, fValuesHadron);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
@@ -1275,7 +1274,7 @@ struct AnalysisDileptonHadron {
       if (lepton1.sign() * lepton2.sign() > 0) {
         continue;
       }
- 
+
       // loop over hadrons
       for (auto& hadron : tracks) {
         if (!(uint32_t(hadron.isBarrelSelected()) & (uint32_t(1) << fNHadronCutBit))) {
@@ -1292,7 +1291,7 @@ struct AnalysisDileptonHadron {
         VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, hadron, fValuesHadron);
         fHistMan->FillHistClass("DileptonHadronInvMass", fValuesHadron);
         fHistMan->FillHistClass("DileptonHadronCorrelation", fValuesHadron);
-        BmesonsTable(fValuesHadron[VarManager::kPairMass],fValuesHadron[VarManager::kPairPt],fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz],fValuesHadron[VarManager::kVertexingLz],fValuesHadron[VarManager::kVertexingTauxy],fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],fValuesHadron[VarManager::kVertexingChi2PCA]);
+        BmesonsTable(fValuesHadron[VarManager::kPairMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz], fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle], fValuesHadron[VarManager::kVertexingChi2PCA]);
       }
     }
   }
@@ -1300,7 +1299,6 @@ struct AnalysisDileptonHadron {
   void processSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Filtered<MyPairCandidatesSelected> const& dileptons)
   {
     runDileptonHadron<VarManager::kBtoJpsiEEK, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, dileptons);
-
   }
   void processDummy(MyEvents&)
   {

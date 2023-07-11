@@ -319,7 +319,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("kaonPID")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
-    cut->AddCut(GetAnalysisCut("kaonPIDnsigma")); // todo: change this to kaonPIDsigma once new skims 
+    cut->AddCut(GetAnalysisCut("kaonPIDnsigma")); // todo: change this to kaonPIDsigma once new skims
     return cut;
   }
 
@@ -373,7 +373,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("lmee_TPCPID_debug1"));
     return cut;
   }
-  
 
   //---------------------------------------------------------------
   // Cuts for the selection of legs from dalitz decay
@@ -2064,7 +2063,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("kaonPIDnsigma2")) {
     cut->AddCut(VarManager::kTPCnSigmaKa, -2.0, 2.0);
   }
-  
+
   if (!nameStr.compare("kaonPID_TPCnTOF")) {
     cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0);
     cut->AddCut(VarManager::kTOFnSigmaKa, -3., 3.);
