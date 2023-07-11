@@ -392,8 +392,7 @@ struct spectraDerivedMaker {
       return;
     }
 
-    tableColl(collision.globalIndex(),
-              collision.numContrib(),
+    tableColl(collision.numContrib(),
               collision.posX(),
               collision.posY(),
               collision.posZ(),
@@ -407,7 +406,7 @@ struct spectraDerivedMaker {
         continue;
       }
 
-      tableTrack(trk.collisionId(),
+      tableTrack(tableColl.lastIndex(),
                  trk.tpcNSigmaPi(), trk.tpcNSigmaKa(), trk.tpcNSigmaPr(),
                  trk.tofNSigmaPi(), trk.tofNSigmaKa(), trk.tofNSigmaPr(),
                  trk.pt() * trk.sign(), trk.eta(), trk.phi(),
