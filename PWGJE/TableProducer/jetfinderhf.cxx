@@ -19,6 +19,22 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+/*
+void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
+{
+  std::vector<ConfigParamSpec> hfjetworkflows{{"d0-data-charged", VariantType::Int, 1, {"D0 jets charged data"}},
+                                       {"d0-mcd-charged", VariantType::Int, 0, {"D0 jets charged MCD"}},
+                                       {"d0-mcp-charged", VariantType::Int, 0, {"D0 jets charged MCD"}},
+                                       {"bplus-data-charged", VariantType::Int, 0, {"B+ jets charged MCD"}},
+                                       {"bplus-mcd-charged", VariantType::Int, 0, {"B+ jets charged MCD"}},
+                                       {"bplus-mcp-charged", VariantType::Int, 0, {"B+ jets charged MCD"}},
+                                       {"lc-data-charged", VariantType::Int, 0, {"Lc jets charged MCD"}},
+                                       {"lc-mcd-charged", VariantType::Int, 0, {"Lc jets charged MCD"}},
+                                       {"lc-mcp-charged", VariantType::Int, 0, {"Lc jets charged MCD"}}};
+  std::swap(workflowOptions, hfjetworkflows);
+}
+*/
+
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
@@ -276,7 +292,7 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processBplusJetsMCP, "B+ HF jet finding on MC particle level", false);
 };
-
+/*
 using JetFinderD0DataCharged = JetFinderHFTask<o2::aod::D0ChargedJets, o2::aod::D0ChargedJetConstituents, o2::aod::D0ChargedJetConstituentsSub>;
 using JetFinderD0MCDetectorLevelCharged = JetFinderHFTask<o2::aod::D0ChargedMCDetectorLevelJets, o2::aod::D0ChargedMCDetectorLevelJetConstituents, o2::aod::D0ChargedMCDetectorLevelJetConstituentsSub>;
 using JetFinderD0MCParticleLevelCharged = JetFinderHFTask<o2::aod::D0ChargedMCParticleLevelJets, o2::aod::D0ChargedMCParticleLevelJetConstituents, o2::aod::D0ChargedMCParticleLevelJetConstituentsSub>;
@@ -331,3 +347,39 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   return WorkflowSpec{tasks};
 }
+*/
+/*
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  auto workflow = WorkflowSpec{adaptAnalysisTask<JetFinderD0DataCharged>(cfgc)};
+  workflow.clear();
+  if (cfgc.hfjetworkflows().get<int>("d0-data-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderD0DataCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("d0-mcd-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderD0MCDetectorLevelCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("d0-mcp-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderD0MCParticleLevelCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("bplus-data-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderBplusDataCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("bplus-mcd-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderBplusMCDetectorLevelCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("bplus-mcp-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderBplusMCParticleLevelCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("lc-data-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderLcDataCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("lc-mcd-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderLcMCDetectorLevelCharged>(cfgc));
+  }
+  if (cfgc.hfjetworkflows().get<int>("lc-mcp-charged")) {
+    workflow.push_back(adaptAnalysisTask<JetFinderLcMCParticleLevelCharged>(cfgc));
+  }
+  return workflow;
+}
+*/
