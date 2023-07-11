@@ -322,19 +322,19 @@ struct tofSpectra {
           break;
         case 2:
         case Np + 2:
-          if (doprocessFullPi == false && doprocessLfFullPi == false) {
+          if (doprocessFullPi == false && doprocessLfFullPi == false && doprocessDerived == false) {
             continue;
           }
           break;
         case 3:
         case Np + 3:
-          if (doprocessFullKa == false && doprocessLfFullKa == false) {
+          if (doprocessFullKa == false && doprocessLfFullKa == false && doprocessDerived == false) {
             continue;
           }
           break;
         case 4:
         case Np + 4:
-          if (doprocessFullPr == false && doprocessLfFullPr == false) {
+          if (doprocessFullPr == false && doprocessLfFullPr == false && doprocessDerived == false) {
             continue;
           }
           break;
@@ -997,16 +997,22 @@ struct tofSpectra {
   } // end of the process function
   PROCESS_SWITCH(tofSpectra, processStandard, "Standard processor from AO2D", true);
 
+  Preslice<aod::SpTracks> spPerCol = aod::spectra::collisionId;
+  SliceCache cacheTrk;
   void processDerived(aod::SpColl const& collision,
                       aod::SpTracks const& tracks)
   {
     if (!isEventSelected<true, true>(collision, tracks)) {
       return;
     }
-    for (const auto& track : tracks) {
+    const auto& tracksInCollision = tracks.sliceByCached(aod::spectra::collisionId, collision.globalIndex(), cacheTrk);
+    for (const auto& track : tracksInCollision) {
       if (!isTrackSelected<true>(track)) {
         continue;
       }
+      fillParticleHistos<false, PID::Pion>(track, collision);
+      fillParticleHistos<false, PID::Kaon>(track, collision);
+      fillParticleHistos<false, PID::Proton>(track, collision);
     }
   } // end of the process function
   PROCESS_SWITCH(tofSpectra, processDerived, "Derived data processor", false);
