@@ -984,7 +984,7 @@ struct AnalysisSameEventPairing {
       dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
 
       constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
-      if constexpr ((TPairType == pairTypeEE) && trackHasCov) {
+      if constexpr ((TPairType == pairTypeEE) && trackHasCov) { 
         dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
       }
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
@@ -1210,7 +1210,7 @@ struct AnalysisDileptonHadron {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
       fHistMan->FillHistClass("DileptonsSelected", fValuesDilepton);
 
-      // get the index of the electron legs
+      // get the index of the electron legs 
       int indexLepton1 = dilepton.index0Id();
       int indexLepton2 = dilepton.index1Id();
 
@@ -1231,7 +1231,6 @@ struct AnalysisDileptonHadron {
       if (lepton1.sign() * lepton2.sign() > 0) {
         continue;
       }
-
       // loop over hadrons
       for (auto& hadron : tracks) {
         if (!(uint32_t(hadron.isBarrelSelected()) & (uint32_t(1) << fNHadronCutBit))) {
