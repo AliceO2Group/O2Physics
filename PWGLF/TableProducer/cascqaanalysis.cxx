@@ -92,12 +92,12 @@ struct cascqaanalysis {
     registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1F, {{200, -20.f, 20.f}}});
 
     if(isMC){
-      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {axisMultFT0, {3, -0.5f, 2.5f}, axisMultNTracks}});
-      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {axisMultFT0, {3, -0.5f, 2.5f}, axisMultNTracks}});
+      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {axisMultFT0, axisMultNTracks, {3, -0.5, 2.5}}});
+      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {axisMultFT0, axisMultNTracks, {3, -0.5, 2.5}}});
     }
     else{
-      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, {3, -0.5, 2.5}, axisMultNTracks}});
-      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, {3, -0.5, 2.5}, axisMultNTracks}});
+      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, axisMultNTracks, {3, -0.5, 2.5}}});
+      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, axisMultNTracks, {3, -0.5, 2.5}}});
     }
 
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH2F, {{1055, 0.f, 105.5f}, {3, -0.5, 2.5}}});
@@ -194,12 +194,12 @@ struct cascqaanalysis {
       int ntracksPVcontr = tracksGroupedPVcontr.size();
 
       if(isMC){
-        registry.fill(HIST("hFT0MpvContr"), collision.multFT0A() + collision.multFT0C(), evFlag, ntracksPVcontr);
-        registry.fill(HIST("hFT0Mglobal"), collision.multFT0A() + collision.multFT0C(), evFlag, ntracksGlobal);
+        registry.fill(HIST("hFT0MpvContr"), collision.multFT0A() + collision.multFT0C(), ntracksPVcontr, evFlag);
+        registry.fill(HIST("hFT0Mglobal"), collision.multFT0A() + collision.multFT0C(), ntracksGlobal, evFlag);
       }
       else{
-        registry.fill(HIST("hFT0MpvContr"), collision.centFT0M(), evFlag, ntracksPVcontr);
-        registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), evFlag, ntracksGlobal);
+        registry.fill(HIST("hFT0MpvContr"), collision.centFT0M(), ntracksPVcontr, evFlag);
+        registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), ntracksGlobal, evFlag);
       }
       registry.fill(HIST("hCentFV0A"), collision.centFV0A(), evFlag);
     }
