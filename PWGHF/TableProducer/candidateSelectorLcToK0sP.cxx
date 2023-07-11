@@ -30,7 +30,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_casc;
 using namespace o2::analysis::hf_cuts_lc_to_k0s_p;
-using namespace o2::ml;
 
 using MyBigTracksBayes = soa::Join<aod::BigTracksPID, aod::pidBayesPr, aod::pidBayesEl, aod::pidBayesMu, aod::pidBayesKa, aod::pidBayesPi>;
 
@@ -55,22 +54,31 @@ struct HfCandidateSelectorLcToK0sP {
   // Bayesian
   Configurable<double> probBayesMinLowP{"probBayesMinLowP", 0.8, "min. Bayes probability for bachelor at low p [%]"};
   Configurable<double> probBayesMinHighP{"probBayesMinHighP", 0.8, "min. Bayes probability for bachelor at high p [%]"};
-
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_k0s_p::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
-
-  // ONNX ML
-  Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
-  Configurable<std::string> onnxFile{"onnxFile", "", "ONNX file for ML model for Lc+ candidates"};
-  Configurable<std::vector<double>> binsPtML{"binsPtML", std::vector<double>{hf_cuts_bdt_multiclass::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> thresholdBdtScore{"thresholdBdtScore", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc+ candidates"};
+  // ML inference
+  Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
+  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<std::string>> modelPathsMl{"modelPathsMl", std::vector<std::string>{hf_cuts_ml::modelPaths}, "Paths of the ML models, one for each pT bin"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
   Configurable<std::vector<std::string>> inputFeaturesML{"inputFeaturesML", {""}, "List of input features for the ML model"};
-  
+  // CCDB configuration
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "EventFiltering/PWGHF/BDTLcToK0sP", "Path on CCDB"};
+  Configurable<std::vector<std::string>> onnxFilesCCDB{"onnxFilesCCDB", std::vector<std::string>{"ModelHandler_onnx_LcToK0sP.onnx"}, "ONNX file names on CCDB, for each pT bin"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  int dataTypeML;
-  OnnxModel model;
+  o2::analysis::HfMlResponse<float> hfMlResponse;
   std::vector<bool> selectedInputFeatures;
+
+  o2::ccdb::CcdbApi ccdbApi;
+
+  std::vector<std::shared_ptr<TH1>> hModelScore;
+  std::vector<std::shared_ptr<TH2>> hModelScoreVsPtCand;
 
   HistogramRegistry registry{"registry", {}};
 
@@ -83,23 +91,24 @@ struct HfCandidateSelectorLcToK0sP {
       LOGF(fatal, "Cannot enable processWithStandardPID and processWithBayesPID at the same time. Please choose one.");
     }
 
-    if (applyML) {
-      AxisSpec axisBdt = {100, 0, 1, "score"};
-      AxisSpec axisBinsPt = {binsPtML, "#it{p}_{T} (GeV/#it{c})"};
-      registry.add<TH1>("hBdtScoreBkg", "BDT score distribution for Lc;BDT score;counts", HistType::kTH1F, {axisBdt});
-      registry.add<TH2>("hBdtScoreBkgVsPtCand", "BDT score distribution for Lc;BDT score;counts", HistType::kTH2F, {axisBdt, axisBinsPt});
-      registry.add<TH1>("hBdtScorePrompt", "BDT score distribution for Lc;BDT score;counts", HistType::kTH1F, {axisBdt});
-      registry.add<TH2>("hBdtScorePromptVsPtCand", "BDT score distribution for Lc;BDT score;counts", HistType::kTH2F, {axisBdt, axisBinsPt});
-      registry.add<TH1>("hBdtScoreNonPrompt", "BDT score distribution for Lc;BDT score;counts", HistType::kTH1F, {axisBdt});
-      registry.add<TH2>("hBdtScoreNonPromptVsPtCand", "BDT score distribution for Lc;BDT score;counts", HistType::kTH2F, {axisBdt, axisBinsPt});
+    if (applyMl) {
+      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl, modelPathsMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFilesCCDB, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+      }
+      hfMlResponse.init();
 
+      // load histograms for ML score
+      AxisSpec axisScore = {100, 0, 1, "score"};
+      AxisSpec axisBinsPt = {binsPtMl, "#it{p}_{T} (GeV/#it{c})"};
+      for (int classMl = 0; classMl < nClassesMl; classMl++) {
+        hModelScore.push_back(registry.add<TH1>(Form("hMlScoreClass%d", classMl), "Model core distribution for Lc;Model score;counts", HistType::kTH1F, {axisScore}));
+        hModelScoreVsPtCand.push_back(registry.add<TH2>(Form("hMlScoreClass%dVsPtCand", classMl), "Model score distribution for Lc;Model score;counts", HistType::kTH2F, {axisScore, axisBinsPt}));
+      }
+
+      // set the selected input features
       initInputFeatures();
-      // for the moment only local onnx file, no ccdb call
-      model.initModel(onnxFile, false, 1);
-      auto session = model.getSession();
-      std::vector<float> dummyInput(model.getNumInputNodes(), 1.);
-      model.evalModel(dummyInput); // Init the model evaluations
-      dataTypeML = session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetElementType();
     }
   }
 
@@ -171,23 +180,21 @@ struct HfCandidateSelectorLcToK0sP {
       "eta",
       "phi",
       "y",
-      "e"
-    };
+      "e"};
 
     // check for each possible input feature if it is included in the list of selected input features or not
-    for (const auto& inputFeature : inputFeaturesAll){
-      if (std::find(std::begin(inputFeaturesML.value), std::end(inputFeaturesML.value), inputFeature) != std::end(inputFeaturesML.value)){
+    for (const auto& inputFeature : inputFeaturesAll) {
+      if (std::find(std::begin(inputFeaturesML.value), std::end(inputFeaturesML.value), inputFeature) != std::end(inputFeaturesML.value)) {
         selectedInputFeatures.push_back(true);
         LOG(info) << "Included \'" << inputFeature << "\' in list of ML input features.";
-      }
-      else {
+      } else {
         selectedInputFeatures.push_back(false);
       }
     }
 
     // check if all given input features are recongnized
-    for (const auto& inputFeature : inputFeaturesML.value){
-      if (std::find(std::begin(inputFeaturesAll), std::end(inputFeaturesAll), inputFeature) == std::end(inputFeaturesAll)){
+    for (const auto& inputFeature : inputFeaturesML.value) {
+      if (std::find(std::begin(inputFeaturesAll), std::end(inputFeaturesAll), inputFeature) == std::end(inputFeaturesAll)) {
         LOG(fatal) << "Can not find \'" << inputFeature << "\' in list of possible ML input features.";
       }
     }
@@ -199,199 +206,199 @@ struct HfCandidateSelectorLcToK0sP {
   {
     std::vector<float> inputFeatures;
 
-    if (selectedInputFeatures[0]){
+    if (selectedInputFeatures[0]) {
       inputFeatures.push_back(bach.collision().numContrib());
     }
-    if (selectedInputFeatures[1]){
+    if (selectedInputFeatures[1]) {
       inputFeatures.push_back(candidate.posX());
     }
-    if (selectedInputFeatures[2]){
+    if (selectedInputFeatures[2]) {
       inputFeatures.push_back(candidate.posY());
     }
-    if (selectedInputFeatures[3]){
-      inputFeatures.push_back( candidate.posZ());
+    if (selectedInputFeatures[3]) {
+      inputFeatures.push_back(candidate.posZ());
     }
-    if (selectedInputFeatures[4]){
+    if (selectedInputFeatures[4]) {
       inputFeatures.push_back(candidate.xSecondaryVertex());
     }
-    if (selectedInputFeatures[5]){
+    if (selectedInputFeatures[5]) {
       inputFeatures.push_back(candidate.ySecondaryVertex());
     }
-    if (selectedInputFeatures[6]){
+    if (selectedInputFeatures[6]) {
       inputFeatures.push_back(candidate.zSecondaryVertex());
     }
-    if (selectedInputFeatures[7]){
+    if (selectedInputFeatures[7]) {
       inputFeatures.push_back(candidate.errorDecayLength());
     }
-    if (selectedInputFeatures[8]){
+    if (selectedInputFeatures[8]) {
       inputFeatures.push_back(candidate.errorDecayLengthXY());
     }
-    if (selectedInputFeatures[9]){
+    if (selectedInputFeatures[9]) {
       inputFeatures.push_back(candidate.chi2PCA());
     }
-    if (selectedInputFeatures[10]){
+    if (selectedInputFeatures[10]) {
       inputFeatures.push_back(candidate.rSecondaryVertex());
     }
-    if (selectedInputFeatures[11]){
+    if (selectedInputFeatures[11]) {
       inputFeatures.push_back(candidate.decayLength());
     }
-    if (selectedInputFeatures[12]){
+    if (selectedInputFeatures[12]) {
       inputFeatures.push_back(candidate.decayLengthXY());
     }
-    if (selectedInputFeatures[13]){
+    if (selectedInputFeatures[13]) {
       inputFeatures.push_back(candidate.decayLengthNormalised());
     }
-    if (selectedInputFeatures[14]){
+    if (selectedInputFeatures[14]) {
       inputFeatures.push_back(candidate.decayLengthXYNormalised());
     }
-    if (selectedInputFeatures[15]){
+    if (selectedInputFeatures[15]) {
       inputFeatures.push_back(candidate.impactParameterNormalised0());
     }
-    if (selectedInputFeatures[16]){
+    if (selectedInputFeatures[16]) {
       inputFeatures.push_back(candidate.ptProng0());
     }
-    if (selectedInputFeatures[17]){
+    if (selectedInputFeatures[17]) {
       inputFeatures.push_back(RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()));
     }
-    if (selectedInputFeatures[18]){
+    if (selectedInputFeatures[18]) {
       inputFeatures.push_back(candidate.impactParameterNormalised1());
     }
-    if (selectedInputFeatures[19]){
+    if (selectedInputFeatures[19]) {
       inputFeatures.push_back(candidate.ptProng1());
     }
-    if (selectedInputFeatures[20]){
+    if (selectedInputFeatures[20]) {
       inputFeatures.push_back(RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()));
     }
-    if (selectedInputFeatures[21]){
+    if (selectedInputFeatures[21]) {
       inputFeatures.push_back(candidate.pxProng0());
     }
-    if (selectedInputFeatures[22]){
+    if (selectedInputFeatures[22]) {
       inputFeatures.push_back(candidate.pyProng0());
     }
-    if (selectedInputFeatures[23]){
+    if (selectedInputFeatures[23]) {
       inputFeatures.push_back(candidate.pzProng0());
     }
-    if (selectedInputFeatures[24]){
+    if (selectedInputFeatures[24]) {
       inputFeatures.push_back(candidate.pxProng1());
     }
-    if (selectedInputFeatures[25]){
+    if (selectedInputFeatures[25]) {
       inputFeatures.push_back(candidate.pyProng1());
     }
-    if (selectedInputFeatures[26]){
+    if (selectedInputFeatures[26]) {
       inputFeatures.push_back(candidate.pzProng1());
     }
-    if (selectedInputFeatures[27]){
+    if (selectedInputFeatures[27]) {
       inputFeatures.push_back(candidate.impactParameter0());
     }
-    if (selectedInputFeatures[28]){
+    if (selectedInputFeatures[28]) {
       inputFeatures.push_back(candidate.impactParameter1());
     }
-    if (selectedInputFeatures[29]){
+    if (selectedInputFeatures[29]) {
       inputFeatures.push_back(candidate.errorImpactParameter0());
     }
-    if (selectedInputFeatures[30]){
+    if (selectedInputFeatures[30]) {
       inputFeatures.push_back(candidate.errorImpactParameter1());
     }
-    if (selectedInputFeatures[31]){
+    if (selectedInputFeatures[31]) {
       inputFeatures.push_back(candidate.v0x());
     }
-    if (selectedInputFeatures[32]){
+    if (selectedInputFeatures[32]) {
       inputFeatures.push_back(candidate.v0y());
     }
-    if (selectedInputFeatures[33]){
+    if (selectedInputFeatures[33]) {
       inputFeatures.push_back(candidate.v0z());
     }
-    if (selectedInputFeatures[34]){
+    if (selectedInputFeatures[34]) {
       inputFeatures.push_back(candidate.v0radius());
     }
-    if (selectedInputFeatures[35]){
+    if (selectedInputFeatures[35]) {
       inputFeatures.push_back(candidate.v0cosPA());
     }
-    if (selectedInputFeatures[36]){
+    if (selectedInputFeatures[36]) {
       inputFeatures.push_back(candidate.mLambda());
     }
-    if (selectedInputFeatures[37]){
+    if (selectedInputFeatures[37]) {
       inputFeatures.push_back(candidate.mAntiLambda());
     }
-    if (selectedInputFeatures[38]){
+    if (selectedInputFeatures[38]) {
       inputFeatures.push_back(candidate.mK0Short());
     }
-    if (selectedInputFeatures[39]){
+    if (selectedInputFeatures[39]) {
       inputFeatures.push_back(candidate.mGamma());
     }
-    if (selectedInputFeatures[40]){
+    if (selectedInputFeatures[40]) {
       inputFeatures.push_back(o2::aod::hf_cand_casc::ctV0K0s(candidate));
     }
-    if (selectedInputFeatures[41]){
+    if (selectedInputFeatures[41]) {
       inputFeatures.push_back(o2::aod::hf_cand_casc::ctV0Lambda(candidate));
     }
-    if (selectedInputFeatures[42]){
+    if (selectedInputFeatures[42]) {
       inputFeatures.push_back(candidate.dcaV0daughters());
     }
-    if (selectedInputFeatures[43]){
+    if (selectedInputFeatures[43]) {
       inputFeatures.push_back(candidate.pxpos());
     }
-    if (selectedInputFeatures[44]){
+    if (selectedInputFeatures[44]) {
       inputFeatures.push_back(candidate.pypos());
     }
-    if (selectedInputFeatures[45]){
+    if (selectedInputFeatures[45]) {
       inputFeatures.push_back(candidate.pzpos());
     }
-    if (selectedInputFeatures[46]){
+    if (selectedInputFeatures[46]) {
       inputFeatures.push_back(candidate.ptV0Pos());
     }
-    if (selectedInputFeatures[47]){
+    if (selectedInputFeatures[47]) {
       inputFeatures.push_back(candidate.dcapostopv());
     }
-    if (selectedInputFeatures[48]){
+    if (selectedInputFeatures[48]) {
       inputFeatures.push_back(candidate.pxneg());
     }
-    if (selectedInputFeatures[49]){
+    if (selectedInputFeatures[49]) {
       inputFeatures.push_back(candidate.pyneg());
     }
-    if (selectedInputFeatures[50]){
+    if (selectedInputFeatures[50]) {
       inputFeatures.push_back(candidate.pzneg());
     }
-    if (selectedInputFeatures[51]){
+    if (selectedInputFeatures[51]) {
       inputFeatures.push_back(candidate.ptV0Neg());
     }
-    if (selectedInputFeatures[52]){
+    if (selectedInputFeatures[52]) {
       inputFeatures.push_back(candidate.dcanegtopv());
     }
-    if (selectedInputFeatures[53]){
+    if (selectedInputFeatures[53]) {
       inputFeatures.push_back(bach.tpcNSigmaPr());
     }
-    if (selectedInputFeatures[54]){
+    if (selectedInputFeatures[54]) {
       inputFeatures.push_back(bach.tofNSigmaPr());
     }
-    if (selectedInputFeatures[55]){
+    if (selectedInputFeatures[55]) {
       inputFeatures.push_back(o2::aod::hf_cand_casc::invMassLcToK0sP(candidate));
     }
-    if (selectedInputFeatures[56]){
+    if (selectedInputFeatures[56]) {
       inputFeatures.push_back(candidate.pt());
     }
-    if (selectedInputFeatures[57]){
+    if (selectedInputFeatures[57]) {
       inputFeatures.push_back(candidate.p());
     }
-    if (selectedInputFeatures[58]){
+    if (selectedInputFeatures[58]) {
       inputFeatures.push_back(candidate.cpa());
     }
-    if (selectedInputFeatures[59]){
+    if (selectedInputFeatures[59]) {
       inputFeatures.push_back(candidate.cpaXY());
     }
-    if (selectedInputFeatures[60]){
+    if (selectedInputFeatures[60]) {
       inputFeatures.push_back(o2::aod::hf_cand_3prong::ctLc(candidate));
     }
-    if (selectedInputFeatures[61]){
+    if (selectedInputFeatures[61]) {
       inputFeatures.push_back(candidate.eta());
     }
-    if (selectedInputFeatures[62]){
+    if (selectedInputFeatures[62]) {
       inputFeatures.push_back(candidate.phi());
     }
-    if (selectedInputFeatures[63]){
+    if (selectedInputFeatures[63]) {
       inputFeatures.push_back(o2::aod::hf_cand_3prong::yLc(candidate));
     }
-    if (selectedInputFeatures[64]){
+    if (selectedInputFeatures[64]) {
       inputFeatures.push_back(o2::aod::hf_cand_3prong::eLc(candidate));
     }
 
@@ -497,38 +504,21 @@ struct HfCandidateSelectorLcToK0sP {
   }
 
   template <typename T, typename U>
-  bool selectionML(const T& hfCandCascade, const U& bach)
+  bool selectionMl(const T& hfCandCascade, const U& bach)
   {
 
-    auto candPt = hfCandCascade.pt();
-    int ptBin = findBin(binsPtML, candPt);
-    if (ptBin == -1) {
-      return false;
-    }
-
+    auto ptCand = hfCandCascade.pt();
     std::vector<float> inputFeatures = setInputFeatures(hfCandCascade, bach);
+    std::vector<float> outputMl = {};
 
-    float scores[3] = {-1.f, -1.f, -1.f};
-    auto scoresRaw = model.evalModel(inputFeatures);
-    for (int iScore = 0; iScore < 3; ++iScore) {
-      scores[iScore] = scoresRaw[iScore];
+    bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
+
+    for (int classMl = 0; classMl < nClassesMl; classMl++) {
+      hModelScore[classMl]->Fill(outputMl[classMl]);
+      hModelScoreVsPtCand[classMl]->Fill(outputMl[classMl], ptCand);
     }
 
-    registry.fill(HIST("hBdtScoreBkg"), scores[0]);
-    registry.fill(HIST("hBdtScoreBkgVsPtCand"), scores[0], candPt);
-    registry.fill(HIST("hBdtScorePrompt"), scores[1]);
-    registry.fill(HIST("hBdtScorePromptVsPtCand"), scores[1], candPt);
-    registry.fill(HIST("hBdtScoreNonPrompt"), scores[2]);
-    registry.fill(HIST("hBdtScoreNonPromptVsPtCand"), scores[2], candPt);
-
-    if (scores[0] > thresholdBdtScore->get(ptBin, "BDTbkg")) {
-      return false;
-    }
-    if (scores[1] <= thresholdBdtScore->get(ptBin, "BDTprompt") && scores[2] <= thresholdBdtScore->get(ptBin, "BDTnonprompt")) {
-      return false;
-    }
-
-    return true;
+    return isSelectedMl;
   }
 
   void processWithStandardPID(aod::HfCandCascade const& candidates, aod::BigTracksPID const& tracks)
@@ -552,7 +542,7 @@ struct HfCandidateSelectorLcToK0sP {
         continue;
       }
 
-      if (applyML && !selectionML(candidate, bach)) {
+      if (applyMl && !selectionMl(candidate, bach)) {
         hfSelLcToK0sPCandidate(statusLc);
         continue;
       }
@@ -583,7 +573,7 @@ struct HfCandidateSelectorLcToK0sP {
         continue;
       }
 
-      if (applyML && !selectionML(candidate, bach)) {
+      if (applyMl && !selectionMl(candidate, bach)) {
         hfSelLcToK0sPCandidate(statusLc);
         continue;
       }
