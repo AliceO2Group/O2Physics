@@ -331,13 +331,22 @@ DECLARE_SOA_DYNAMIC_COLUMN(TRDSignal, trdSignal, //! Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float signedpt, float eta) -> float { return std::abs(signedpt) * cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float v) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, [](float v) -> bool { return true; });
-DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float v) -> uint32_t { return 0; }); // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrack, isGlobalTrack, [](float v) -> bool { return true; });
+DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float v) -> uint32_t { return 0; });          // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(TRDPattern, trdPattern, [](float v) -> uint8_t { return 0; }); // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                            //! Track rapidity, computed under the mass assumption given as input
+                           [](float signedPt, float eta, float mass) -> float {
+                             const auto pt = std::abs(signedPt);
+                             const auto p = std::abs(signedPt) * cosh(eta);
+                             const auto pz = std::sqrt(p * p - pt * pt);
+                             const auto energy = sqrt(p * p + mass * mass);
+                             return 0.5f * log((energy + pz) / (energy - pz));
+                           });
 
 } // namespace spectra
 
 DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
                   o2::soa::Index<>,
-                  spectra::CollisionId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -392,19 +401,26 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   spectra::Pt<spectra::PtSigned>,
                   track::Sign<spectra::PtSigned>,
                   spectra::P<spectra::PtSigned, spectra::Eta>,
+                  spectra::Rapidity<spectra::PtSigned, spectra::Eta>,
                   spectra::HasITS<track::ITSClusterMap>,
                   spectra::HasTPC<track::TPCChi2NCl>,
                   spectra::HasTOF<track::TOFChi2>,
                   spectra::TRDSignal<track::TOFChi2>,
                   spectra::Flags<track::TOFChi2>,
                   spectra::TrackType<track::TOFChi2>,
+                  spectra::IsGlobalTrack<track::TOFChi2>,
                   spectra::IsGlobalTrackWoDCA<track::TOFChi2>,
+                  spectra::TRDPattern<track::TOFChi2>,
                   track::ITSNCls<track::ITSClusterMap>, track::ITSNClsInnerBarrel<track::ITSClusterMap>,
                   track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  pidflags::IsEvTimeDefined<pidflags::TOFFlags>,
+                  pidflags::IsEvTimeTOF<pidflags::TOFFlags>,
+                  pidflags::IsEvTimeT0AC<pidflags::TOFFlags>,
+                  pidflags::IsEvTimeTOFT0AC<pidflags::TOFFlags>,
                   pidtof_tiny::TOFNSigmaPi<pidtof_tiny::TOFNSigmaStorePi>,
                   pidtof_tiny::TOFNSigmaKa<pidtof_tiny::TOFNSigmaStoreKa>,
                   pidtof_tiny::TOFNSigmaPr<pidtof_tiny::TOFNSigmaStorePr>,
