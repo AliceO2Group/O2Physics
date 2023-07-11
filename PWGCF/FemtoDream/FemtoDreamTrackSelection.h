@@ -484,6 +484,7 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
   cutContainerType output = 0;
   size_t counter = 0;
   cutContainerType outputPID = 0;
+  size_t counterPID = 0;
   const auto sign = track.sign();
   const auto pT = track.pt();
   const auto eta = track.eta();
@@ -512,8 +513,8 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
         auto pidTPCVal = pidTPC.at(i) - nSigmaPIDOffsetTPC;
         auto pidTOFVal = pidTOF.at(i) - nSigmaPIDOffsetTOF;
         auto pidComb = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal);
-        sel.checkSelectionSetBitPID(pidTPCVal, outputPID);
-        sel.checkSelectionSetBitPID(pidComb, outputPID);
+        sel.checkSelectionSetBitPID(pidTPCVal, outputPID, counterPID, mHistogramRegistry);
+        sel.checkSelectionSetBitPID(pidComb, outputPID, counterPID, mHistogramRegistry);
       }
     } else {
       /// for the rest it's all the same
