@@ -165,6 +165,9 @@ static const std::array<AxisSpec, kNCharmParticles + 8> massAxisC = {AxisSpec{10
 static const std::array<AxisSpec, kNBeautyParticles> massAxisB = {AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 4.8f, 6.0f}, AxisSpec{240, 5.0f, 6.2f}, AxisSpec{240, 5.0f, 6.2f}};
 
 // default values for configurables
+// channels to trigger on for femto
+constexpr int activeFemtoChannels[1][5] = {{1, 1, 1, 1, 0}}; // pD0, pD+, pDs, pLc, pXic
+static const std::vector<std::string> labelsColumnsFemtoChannels = {"protonDZero", "protonDPlus", "protonDs", "protonLc", "protonXic"};
 
 // min pT for all tracks combined  (except for V0 and cascades)
 constexpr float cutsMinPt[1][4] = {{0.5, 0.1, 0.8, 0.5}}; // beauty, D*, femto, charm baryons
@@ -712,7 +715,7 @@ int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackS
   return retValue;
 }
 
-/// Basic selection of gamma candidates
+/// Basic selection of V0 candidates
 /// \param v0 is the v0 candidate
 /// \param dauTracks is a 2-element array with positive and negative V0 daughter tracks
 /// \param collision is the current collision
@@ -873,7 +876,7 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& coll
   return isSelected;
 }
 
-/// Basic selection of gamma candidates
+/// Basic selection of cascade candidates
 /// \param casc is the cascade candidate
 /// \param v0 is the cascade daughter
 /// \param dauTracks is a 3-element array with bachelor, positive and negative V0 daughter tracks

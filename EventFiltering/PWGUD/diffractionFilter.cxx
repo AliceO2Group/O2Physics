@@ -48,15 +48,16 @@ struct DGFilterRun3 {
   //   2: DG candidate
   //   3: FIT veto
   //   4: number of FwdTracks > 0
-  //   5: not all global tracks are vtx tracks
-  //   6: not all vtx tracks are global tracks
-  //   7: fraction of tracks with TOF hit too low
-  //   8: number of vtx tracks out of range
-  //   9: has not good PID information
-  //  10: track pt out of range
-  //  11: track eta out of range
-  //  12: net charge out of range
-  //  13: IVM out of range
+  //   5: not all global tracks are PV tracks
+  //   6: not all PV tracks are global tracks
+  //   7: ITS only PV tracks
+  //   8: fraction of tracks with TOF hit too low
+  //   9: number of PV tracks out of range
+  //  10: PV tracks without good PID information
+  //  11: PV track pt out of range
+  //  13: PV track eta out of range
+  //  14: net charge out of range
+  //  15: IVM out of range
   // initinitialize HistogramRegistry
   static constexpr std::string_view hcFITs[5] = {"FIT/cleanFITFV0A", "FIT/cleanFITFT0A", "FIT/cleanFITFT0C", "FIT/cleanFITFDDA", "FIT/cleanFITFDDC"};
   HistogramRegistry registry{
@@ -77,7 +78,7 @@ struct DGFilterRun3 {
 
     // create histograms
     // stat
-    registry.add("stat/aftercuts", "Cut efficiencies", {HistType::kTH1F, {{13, -0.5, 12.5}}});
+    registry.add("stat/aftercuts", "Cut efficiencies", {HistType::kTH1F, {{14, -0.5, 13.5}}});
 
     // FIT
     registry.add("FIT/cleanFIT", "Rejection by FIT veto versus tested BC range", {HistType::kTH2F, {{21, -0.5, 20.5}, {2, -0.5, 1.5}}});
