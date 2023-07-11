@@ -25,6 +25,8 @@
 #include "Framework/StepTHn.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "TDatabasePDG.h"
+#include "ReconstructionDataFormats/PID.h"
+#include "Common/DataModel/PIDResponse.h"
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
@@ -59,6 +61,13 @@ struct femtoUniversePairTaskTrackTrack {
 
   /// Table for both particles
   struct : o2::framework::ConfigurableGroup {
+    Configurable<float> ConfNsigmaCombinedKaon{"ConfNsigmaCombinedKaon", 3.0, "TPC and TOF Kaon Sigma (combined) for momentum > 0.4"};
+    Configurable<float> ConfNsigmaTPCKaon{"ConfNsigmaTPCKaon", 3.0, "TPC Kaon Sigma for momentum < 0.4"};
+    Configurable<float> ConfNsigmaCombinedProton{"ConfNsigmaCombinedProton", 3.0, "TPC and TOF Proton Sigma (combined) for momentum > 0.5"};
+    Configurable<float> ConfNsigmaTPCProton{"ConfNsigmaTPCProton", 3.0, "TPC Proton Sigma for momentum < 0.5"};
+    Configurable<float> ConfNsigmaCombinedPion{"ConfNsigmaCombinedPion", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > 0.5"};
+    Configurable<float> ConfNsigmaTPCPion{"ConfNsigmaTPCPion", 3.0, "TPC Pion Sigma for momentum < 0.5"};
+
     Configurable<LabeledArray<float>> ConfCutTable{"ConfCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
     Configurable<int> ConfNspecies{"ConfNspecies", 2, "Number of particle spieces with PID info"};
     Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
@@ -68,6 +77,7 @@ struct femtoUniversePairTaskTrackTrack {
 
   /// Particle 1
   struct : o2::framework::ConfigurableGroup {
+    Configurable<int> ConfTrackChoicePartOne{"ConfTrackChoicePartOne", 0, "Type of particle (track1): {0:Proton, 1:Pion, 2:Kaon}"};
     Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
     // Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
     Configurable<int> ConfPIDPartOne{"ConfPIDPartOne", 2, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
@@ -83,6 +93,7 @@ struct femtoUniversePairTaskTrackTrack {
   /// Particle 2
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
   struct : o2::framework::ConfigurableGroup {
+    Configurable<int> ConfTrackChoicePartTwo{"ConfTrackChoicePartTwo", 0, "Type of particle (track1): {0:Proton, 1:Pion, 2:Kaon}"};
     Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
     // Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 5542474, "Particle 2 - Selection bit"};
     Configurable<int> ConfPIDPartTwo{"ConfPIDPartTwo", 2, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
@@ -136,6 +147,122 @@ struct femtoUniversePairTaskTrackTrack {
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry MixQaRegistry{"MixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  // PID for protons
+  bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
+  {
+    //|nsigma_TPC| < 3 for p < 0.5 GeV/c
+    //|nsigma_combined| < 3 for p > 0.5
+
+    // using configurables:
+    // ConfNsigmaTPCProton -> TPC Kaon Sigma for momentum < 0.5
+    // ConfNsigmaCombinedProton -> TPC and TOF Kaon Sigma (combined) for momentum > 0.5
+
+    if (mom < 0.5) {
+      if (TMath::Abs(nsigmaTPCPr) < twotracksconfigs.ConfNsigmaTPCProton) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom > 0.4) {
+      if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < twotracksconfigs.ConfNsigmaCombinedProton) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    //|nsigma_TPC| < 3 for p < 0.5 GeV/c
+    //|nsigma_combined| < 3 for p > 0.5
+
+    // using configurables:
+    // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
+    // ConfNsigmaTPCKaon -> TPC Kaon Sigma for momentum < 0.5
+    // ConfNsigmaCombinedKaon -> TPC and TOF Kaon Sigma (combined) for momentum > 0.5
+    if (true) {
+      if (mom < 0.5) {
+        if (TMath::Abs(nsigmaTPCK) < twotracksconfigs.ConfNsigmaTPCKaon) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom > 0.5) {
+        if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < twotracksconfigs.ConfNsigmaCombinedKaon) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
+    return false;
+  }
+
+  bool IsPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
+  {
+    //|nsigma_TPC| < 3 for p < 0.5 GeV/c
+    //|nsigma_combined| < 3 for p > 0.5
+
+    // using configurables:
+    // ConfNsigmaTPCPion -> TPC Kaon Sigma for momentum < 0.5
+    // ConfNsigmaCombinedPion -> TPC and TOF Pion Sigma (combined) for momentum > 0.5
+    if (true) {
+      if (mom < 0.5) {
+        if (TMath::Abs(nsigmaTPCPi) < twotracksconfigs.ConfNsigmaTPCPion) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom > 0.5) {
+        if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < twotracksconfigs.ConfNsigmaCombinedPion) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
+    return false;
+  }
+
+  bool IsParticleNSigma(int8_t particle_number, float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    if (particle_number == 1) {
+      switch (trackonefilter.ConfTrackChoicePartOne) {
+        case 0: // Proton
+          return IsProtonNSigma(mom, nsigmaTPCPr, nsigmaTOFPr);
+          break;
+        case 1: // Pion
+          return IsPionNSigma(mom, nsigmaTPCPi, nsigmaTOFPi);
+          break;
+        case 2: // Kaon
+          return IsKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
+          break;
+        default:
+          return false;
+      }
+      return false;
+    } else if (particle_number == 2) {
+      switch (tracktwofilter.ConfTrackChoicePartTwo) {
+        case 0: // Proton
+          return IsProtonNSigma(mom, nsigmaTPCPr, nsigmaTOFPr);
+          break;
+        case 1: // Pion
+          return IsPionNSigma(mom, nsigmaTPCPi, nsigmaTOFPi);
+          break;
+        case 2: // Kaon
+          return IsKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
+          break;
+        default:
+          return false;
+      }
+      return false;
+    } else {
+      LOGF(fatal, "Wrong number of particle chosen! It should be 1 or 2. It is -> %d", particle_number);
+    }
+  }
+
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
@@ -184,19 +311,22 @@ struct femtoUniversePairTaskTrackTrack {
 
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
-      if (part.p() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxP") || part.pt() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxPt")) {
-        continue;
-      }
-      if (!isFullPIDSelected(part.pidcut(),
-                             part.p(),
-                             twotracksconfigs.ConfCutTable->get("PartOne", "PIDthr"),
-                             vPIDPartOne,
-                             twotracksconfigs.ConfNspecies,
-                             kNsigma,
-                             twotracksconfigs.ConfCutTable->get("PartOne", "nSigmaTPC"),
-                             twotracksconfigs.ConfCutTable->get("PartOne", "nSigmaTPCTOF"))) {
-        continue;
-      }
+      // if (part.p() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxP") || part.pt() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxPt")) {
+      //   continue;
+      // }
+      // if (!isFullPIDSelected(part.pidcut(),
+      //                        part.p(),
+      //                        twotracksconfigs.ConfCutTable->get("PartOne", "PIDthr"),
+      //                        vPIDPartOne,
+      //                        twotracksconfigs.ConfNspecies,
+      //                        kNsigma,
+      //                        twotracksconfigs.ConfCutTable->get("PartOne", "nSigmaTPC"),
+      //                        twotracksconfigs.ConfCutTable->get("PartOne", "nSigmaTPCTOF"))) {
+      //   continue;
+      // }
+      // if(!IsParticleNSigma((int8_t) 1, part.p(), part.tpcNSigmaPi(), part.tofNSigmaPi())){
+      //   continue;
+      // }
 
       trackHistoPartOne.fillQA<isMC, false>(part);
     }
