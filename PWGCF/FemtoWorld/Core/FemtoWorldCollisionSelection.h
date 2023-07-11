@@ -150,4 +150,4 @@ class FemtoWorldCollisionSelection
 };
 } // namespace o2::analysis::femtoWorld
 
-#endif /* PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCOLLISIONSELECTION_H_  */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDCOLLISIONSELECTION_H_
