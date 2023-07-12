@@ -12,10 +12,10 @@
 #ifndef PWGLF_DATAMODEL_VTX3BODYTABLES_H_
 #define PWGLF_DATAMODEL_VTX3BODYTABLES_H_
 
+#include <cmath>
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include <cmath>
 
 namespace o2::aod
 {
