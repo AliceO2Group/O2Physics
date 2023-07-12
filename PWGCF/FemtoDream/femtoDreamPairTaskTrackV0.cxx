@@ -129,10 +129,10 @@ struct femtoDreamPairTaskTrackV0 {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry, ConfTrkTempFitVarpTBins, ConfTrkTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfTrkPDGCodePartOne);
-    trackHistoPartTwo.init(&qaRegistry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, ConfV0TempFitVarInvMassBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfV0PDGCodePartTwo);
-    posChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, false, false);
-    negChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, false, false);
+    trackHistoPartOne.init(&qaRegistry, ConfTrkTempFitVarpTBins, ConfTrkTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfTrkPDGCodePartOne);
+    trackHistoPartTwo.init(&qaRegistry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfV0PDGCodePartTwo);
+    posChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, false, false);
+    negChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, false, false);
 
     sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfIsMC, ConfUse3D);
     sameEventCont.setPDGCodes(ConfTrkPDGCodePartOne, ConfV0PDGCodePartTwo);
