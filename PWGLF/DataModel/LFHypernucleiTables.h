@@ -50,9 +50,10 @@ DECLARE_SOA_COLUMN(TPCmomHe, tpcMomHe, float);          // TPC momentum of the H
 DECLARE_SOA_COLUMN(TPCmomPi, tpcMomPi, float);          // TPC momentum of the Pi daughter
 DECLARE_SOA_COLUMN(DcaHe, dcaHe, float);                // DCA between He daughter and V0
 DECLARE_SOA_COLUMN(DcaPi, dcaPi, float);                // DCA between pi daughter and V0
-DECLARE_SOA_COLUMN(GenPt, genPt, float);                // Momentum of the candidate (x direction)
-DECLARE_SOA_COLUMN(GenPhi, genPhi, float);              // Momentum of the candidate (y direction)
-DECLARE_SOA_COLUMN(GenEta, genEta, float);              // Momentum of the candidate (z direction)
+DECLARE_SOA_COLUMN(GenPt, genPt, float);                // Pt of the hypertriton
+DECLARE_SOA_COLUMN(GenPhi, genPhi, float);              // Phi of the hypertriton
+DECLARE_SOA_COLUMN(GenEta, genEta, float);              // Eta of the hypertriton
+DECLARE_SOA_COLUMN(GenPtHe3, genPtHe3, float);          // Pt of the He daughter (to be used for the recalibration)
 DECLARE_SOA_COLUMN(GenXDecVtx, genXDecVtx, float);      // Decay vertex of the candidate (x direction)
 DECLARE_SOA_COLUMN(GenYDecVtx, genYDecVtx, float);      // Decay vertex of the candidate (y direction)
 DECLARE_SOA_COLUMN(GenZDecVtx, genZDecVtx, float);      // Decay vertex of the candidate (z direction)
@@ -114,6 +115,7 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::GenPt,
                   hyperrec::GenPhi,
                   hyperrec::GenEta,
+                  hyperrec::GenPtHe3,
                   hyperrec::GenXDecVtx,
                   hyperrec::GenYDecVtx,
                   hyperrec::GenZDecVtx,

@@ -63,6 +63,7 @@ struct hyperCandidate {
   float recoPhiPi() const { return std::atan2(momPi[1], momPi[0]); }
   float recoEtaPi() const { return std::asinh(momPi[2] / recoPtPi()); }
   float genPt() const { return std::hypot(gMom[0], gMom[1]); }
+  float genPtHe3() const { return std::hypot(gMomHe3[0], gMomHe3[1]); }
   float genPhi() const { return std::atan2(gMom[1], gMom[0]); }
   float genEta() const { return std::asinh(gMom[2] / genPt()); }
 
@@ -79,7 +80,8 @@ struct hyperCandidate {
   std::array<float, 3> momPi;
   std::array<float, 3> primVtx;
   std::array<float, 3> decVtx;
-  std::array<float, 3> gMom;
+  std::array<float, 3> gMom;  
+  std::array<float, 3> gMomHe3;
   std::array<float, 3> gDecVtx;
   uint16_t tpcSignalHe3 = 0u;
   uint16_t tpcSignalPi = 0u;
@@ -397,10 +399,10 @@ struct hyperRecoTask {
                 continue;
               auto posPrimVtx = array{posMother.vx(), posMother.vy(), posMother.vz()};
               auto secVtx = array{mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
-              auto posMom = array{posMother.px(), posMother.py(), posMother.pz()};
+              hypCand.gMom = array{posMother.px(), posMother.py(), posMother.pz()};
+              hypCand.gMomHe3 = mcTrackPos.pdgCode() == heDauPdg ? array{mcTrackPos.px(), mcTrackPos.py(), mcTrackPos.pz()} : array{mcTrackNeg.px(), mcTrackNeg.py(), mcTrackNeg.pz()};
               for (int i = 0; i < 3; i++) {
                 hypCand.gDecVtx[i] = secVtx[i] - posPrimVtx[i];
-                hypCand.gMom[i] = posMom[i];
               }
               hypCand.isSignal = true;
               hypCand.pdgCode = posMother.pdgCode();
@@ -418,10 +420,12 @@ struct hyperRecoTask {
       std::array<float, 3> secVtx;
       std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
       std::array<float, 3> momMother = {mcPart.px(), mcPart.py(), mcPart.pz()};
+      std::array<float, 3> momHe3;
       bool isHeFound = false;
       for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
         if (std::abs(mcDaught.pdgCode()) == heDauPdg) {
           secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
+          momHe3 = {mcDaught.px(), mcDaught.py(), mcDaught.pz()};
           isHeFound = true;
           break;
         }
@@ -448,6 +452,7 @@ struct hyperRecoTask {
       for (int i = 0; i < 3; i++) {
         hypCand.gDecVtx[i] = secVtx[i] - primVtx[i];
         hypCand.gMom[i] = momMother[i];
+        hypCand.gMomHe3[i] = momHe3[i];
       }
       hypCand.posTrackID = -1;
       hypCand.negTrackID = -1;
@@ -536,7 +541,7 @@ struct hyperRecoTask {
                     hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                     hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                     hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                    chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(),
+                    chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
     }
   }
