@@ -191,7 +191,7 @@ struct tofSpectra {
 
     h = histos.add<TH1>("tracksel", "tracksel", HistType::kTH1D, {{10, 0.5, 10.5}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
-    h->GetXaxis()->SetBinLabel(2, Form(" %.2f < |#eta| < %.2f ", cfgCutEtaMin.value, cfgCutEtaMax.value));
+    h->GetXaxis()->SetBinLabel(2, Form(" %.2f < #eta < %.2f ", cfgCutEtaMin.value, cfgCutEtaMax.value));
     h->GetXaxis()->SetBinLabel(3, "Quality passed");
     h->GetXaxis()->SetBinLabel(4, "TOF passed (partial)");
 
