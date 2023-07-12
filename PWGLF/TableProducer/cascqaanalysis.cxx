@@ -24,20 +24,20 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "PWGLF/DataModel/cascqaanalysis.h"
-#include "TRandom.h"
+#include "TRandom2.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// using DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
+// using DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTOFPi, aod::pidTOFPr>;
 using DauTracks = soa::Join<aod::TracksIU, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa>;
 using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 
 struct cascqaanalysis {
 
-  // Produces
+  // Tables to produce
   Produces<aod::MyCascades> mycascades;
   Produces<aod::MyMCCascades> myMCcascades;
 
@@ -45,10 +45,11 @@ struct cascqaanalysis {
 
   AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
   AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
-  ConfigurableAxis axisMultNTracks{"axisMultNTracks", {500, 0, 500}, "N_{tracks}"};
-
   AxisSpec centFT0MAxis = {1055, 0.f, 105.5f, "FT0M (%)"};
-  ConfigurableAxis axisMultFT0{"axisMultFT0", {10000, 0, 40000}, "FT0 amplitude"};
+  AxisSpec eventTypeAxis = {9, -0.5f, 2.5f};
+
+  ConfigurableAxis multNTracksAxis{"multNTracksAxis", {500, 0, 500}, "N_{tracks}"};
+  ConfigurableAxis multFT0Axis{"multFT0Axis", {10000, 0, 40000}, "FT0 amplitude"};
 
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 20.0f, "Accepted z-vertex range (cm)"};
@@ -67,6 +68,7 @@ struct cascqaanalysis {
   Configurable<float> cascradius{"cascradius", 0.0, "Casc Radius"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
 
+  // Switch between Data/MC-dedicated FT0M X-axes
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
 
   // Necessary for particle charges
@@ -74,7 +76,8 @@ struct cascqaanalysis {
 
   SliceCache cache;
 
-  TRandom* fRand = new TRandom();
+  // Random number generator for event scaling
+  TRandom2* fRand = new TRandom2();
 
   void init(InitContext const&)
   {
@@ -91,12 +94,13 @@ struct cascqaanalysis {
     registry.add("hZCollision", "hZCollision", {HistType::kTH1F, {{200, -20.f, 20.f}}});
     registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1F, {{200, -20.f, 20.f}}});
 
-    if (isMC) {
-      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {axisMultFT0, axisMultNTracks, {3, -0.5, 2.5}}});
-      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {axisMultFT0, axisMultNTracks, {3, -0.5, 2.5}}});
-    } else {
-      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, axisMultNTracks, {3, -0.5, 2.5}}});
-      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, axisMultNTracks, {3, -0.5, 2.5}}});
+    if(isMC){
+      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {multFT0Axis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {multFT0Axis, multNTracksAxis, eventTypeAxis}});
+    }
+    else{
+      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
     }
 
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH2F, {{1055, 0.f, 105.5f}, {3, -0.5, 2.5}}});
@@ -110,9 +114,6 @@ struct cascqaanalysis {
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hCandidateCounter"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hCandidateCounter"))->GetXaxis()->SetBinLabel(n, hCandidateCounterLabels[n - 1]);
     }
-
-    AxisSpec allTracks = {2000, 0, 2000, "N_{all tracks}"};
-    AxisSpec secondaryTracks = {2000, 0, 2000, "N_{secondary tracks}"};
   }
 
   Filter preFilter =
@@ -186,18 +187,19 @@ struct cascqaanalysis {
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hZCollision"), collision.posZ());
 
-      auto tracksGroupedGlobal = globalTracksIUEta05->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      int ntracksGlobal = tracksGroupedGlobal.size();
-
       auto tracksGroupedPVcontr = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      int ntracksPVcontr = tracksGroupedPVcontr.size();
+      int nTracksPVcontr = tracksGroupedPVcontr.size();
 
-      if (isMC) {
-        registry.fill(HIST("hFT0MpvContr"), collision.multFT0A() + collision.multFT0C(), ntracksPVcontr, evFlag);
-        registry.fill(HIST("hFT0Mglobal"), collision.multFT0A() + collision.multFT0C(), ntracksGlobal, evFlag);
-      } else {
-        registry.fill(HIST("hFT0MpvContr"), collision.centFT0M(), ntracksPVcontr, evFlag);
-        registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), ntracksGlobal, evFlag);
+      auto tracksGroupedGlobal = globalTracksIUEta05->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      int nTracksGlobal = tracksGroupedGlobal.size();
+
+      if(isMC){
+        registry.fill(HIST("hFT0MpvContr"), collision.multFT0A() + collision.multFT0C(), nTracksPVcontr, evFlag);
+        registry.fill(HIST("hFT0Mglobal"), collision.multFT0A() + collision.multFT0C(), nTracksGlobal, evFlag);
+      }
+      else{
+        registry.fill(HIST("hFT0MpvContr"), collision.centFT0M(), nTracksPVcontr, evFlag);
+        registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), nTracksGlobal, evFlag);
       }
       registry.fill(HIST("hCentFV0A"), collision.centFV0A(), evFlag);
     }
@@ -207,7 +209,7 @@ struct cascqaanalysis {
   template <typename TMcParticles>
   bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection)
   {
-    // INEL > 0 (at least 1 charged particle in |eta| < 1.0)
+    // INEL > N (at least N+1 charged particles in |eta| < 1.0)
     typedef struct EtaCharge {
       double eta;
       int charge;
@@ -327,8 +329,6 @@ struct cascqaanalysis {
     }
   }
 
-  PROCESS_SWITCH(cascqaanalysis, processData, "Process Run 3 data", true);
-
   void processMCrec(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                     soa::Filtered<LabeledCascades> const& Cascades,
                     aod::V0sLinked const&,
@@ -418,8 +418,6 @@ struct cascqaanalysis {
       }
     }
   }
-
-  PROCESS_SWITCH(cascqaanalysis, processMCrec, "Process Run 3 mc, reconstructed", false);
 
   void processMCgen(aod::McCollision const& mcCollision,
                     aod::McParticles const& mcParticles,
@@ -546,6 +544,9 @@ struct cascqaanalysis {
                    flagsGen);
     }
   }
+
+  PROCESS_SWITCH(cascqaanalysis, processData, "Process Run 3 data", true);
+  PROCESS_SWITCH(cascqaanalysis, processMCrec, "Process Run 3 mc, reconstructed", false);
   PROCESS_SWITCH(cascqaanalysis, processMCgen, "Process Run 3 mc, genereated", false);
 };
 
