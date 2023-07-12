@@ -53,6 +53,10 @@ struct femtoDreamDebugTrack {
   ConfigurableAxis ConfTempFitVarBins{"ConfDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
 
+  ConfigurableAxis ConfTempFitVarpBins{"ConfTempFitVarpBins", {600, 0, 6}, "p binning for the p vs Nsigma TPC/TOF plot"};
+  ConfigurableAxis ConfTempFitVarNsigmaTPCBins{"ConfTempFitVarNsigmaTPCBins", {1600, -8, 8}, "binning of Nsigma TPC plot"};
+  ConfigurableAxis ConfTempFitVarNsigmaTOFBins{"ConfTempFitVarNsigmaTOFBins", {3000, -15, 15}, "binning of the Nsigma TOF plot"};
+
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
   Preslice<FemtoFullParticles> perColReco = aod::femtodreamparticle::fdCollisionId;
@@ -76,7 +80,7 @@ struct femtoDreamDebugTrack {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    trackHisto.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfIsMC, ConfPDGCodePartOne.value, true);
+    trackHisto.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfTempFitVarpBins, ConfTempFitVarNsigmaTPCBins, ConfTempFitVarNsigmaTOFBins, ConfIsMC, ConfPDGCodePartOne.value, true);
     vPIDPartOne = ConfPIDPartOne.value;
     kNsigma = ConfTrkPIDnSigmaMax.value;
   }

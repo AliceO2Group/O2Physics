@@ -62,8 +62,8 @@ class FemtoDreamParticleHisto
   }
 
   // comment
-  template <o2::aod::femtodreamMCparticle::MCType mc>
-  void init_debug(std::string folderName)
+  template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
+  void init_debug(std::string folderName, T& tempFitVarpAxis, T& tempFitVarNsigmaTPCAxis, T& tempFitVarNsigmaTOFAxis)
   {
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[mc]).c_str();
     if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack || mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
@@ -79,7 +79,8 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->add((folderName + folderSuffix + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDCA").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
+      // mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_el").c_str(), "n#sigma_{TPC}^{e}", kTH2F, {tempFitVarpAxis, tempFitVarNsigmaTPCAxis});
       mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{p}", kTH2F, {{600, 0, 6}, {130, -6.5, 6.5}});
@@ -153,7 +154,10 @@ class FemtoDreamParticleHisto
   /// \param tempFitVarBins binning of the tempFitVar (DCA_xy in case of tracks, CPA in case of V0s, etc.)
   /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T>
-  void init(HistogramRegistry* registry, T& tempFitVarpTBins, T& tempFitVarBins, bool isMC, int pdgCode, bool isDebug = false)
+  void init(HistogramRegistry* registry,
+            T& tempFitVarpTBins, T& tempFitVarBins,
+            T& tempFitVarpBins, T& tempFitVarNsigmaTPCBins, T& tempFitVarNsigmaTOFBins,
+            bool isMC, int pdgCode, bool isDebug = false)
   {
     mPDG = pdgCode;
     if (registry) {
@@ -173,15 +177,19 @@ class FemtoDreamParticleHisto
         LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
       }
 
-      framework::AxisSpec tempFitVarpTAxis = {tempFitVarpTBins, "#it{p}_{T} (GeV/#it{c})"}; // the pT binning may vary
+      framework::AxisSpec tempFitVarpTAxis = {tempFitVarpTBins, "#it{p}_{T} (GeV/#it{c})"};
       framework::AxisSpec tempFitVarAxis = {tempFitVarBins, tempFitVarAxisTitle};
+
+      framework::AxisSpec tempFitVarpAxis = {tempFitVarpBins, "#it{p}_{reco} (GeV/#it{c})"};
+      framework::AxisSpec tempFitVarNsigmaTPCAxis = {tempFitVarNsigmaTPCBins, "n#sigma_{TPC}"};
+      framework::AxisSpec tempFitVarNsigmaTOFAxis = {tempFitVarNsigmaTOFBins, "n#sigma_{TOF}"};
 
       std::string folderName = (static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]).c_str() + static_cast<std::string>(mFolderSuffix[mFolderSuffixType])).c_str();
 
       // Fill here the actual histogramms by calling init_base and init_MC
       init_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
       if (isDebug) {
-        init_debug<o2::aod::femtodreamMCparticle::MCType::kRecon>(folderName);
+        init_debug<o2::aod::femtodreamMCparticle::MCType::kRecon>(folderName, tempFitVarpAxis, tempFitVarNsigmaTPCAxis, tempFitVarNsigmaTOFAxis);
       }
       if (isMC) {
         init_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
