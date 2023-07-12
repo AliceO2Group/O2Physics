@@ -413,6 +413,7 @@ struct spectraDerivedMaker {
                  o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaPi()),
                  o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaKa()),
                  o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaPr()),
+
                  trk.pt() * trk.sign(), trk.eta(), trk.phi(),
                  trk.length(),
                  trk.tpcSignal(),

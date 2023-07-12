@@ -1027,7 +1027,6 @@ struct tofSpectra {
           continue;
         }
         histos.fill(HIST("track/Eta"), track.eta());
-
         fillParticleHistos<false, PID::Pion>(track, collision);
         fillParticleHistos<false, PID::Kaon>(track, collision);
         fillParticleHistos<false, PID::Proton>(track, collision);
