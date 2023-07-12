@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Example V0 analysis task
+// Example StoredVtx3BodyDatas analysis task
 // ========================
 //
-// This code loops over a V0Data table and produces some
+// This code loops over a StoredVtx3BodyDatas table and produces some
 // standard analysis output. It requires either
 // the hypertriton3bodybuilder or hypertriton3bodyfinder (not recommaended) tasks
 // to have been executed in the workflow (before).
