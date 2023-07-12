@@ -407,8 +407,12 @@ struct spectraDerivedMaker {
       }
 
       tableTrack(tableColl.lastIndex(),
-                 trk.tpcNSigmaPi(), trk.tpcNSigmaKa(), trk.tpcNSigmaPr(),
-                 trk.tofNSigmaPi(), trk.tofNSigmaKa(), trk.tofNSigmaPr(),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaStorePi()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaStoreKa()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaStorePr()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaStorePi()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaStoreKa()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaStorePr()),
                  trk.pt() * trk.sign(), trk.eta(), trk.phi(),
                  trk.length(),
                  trk.tpcSignal(),
@@ -421,7 +425,8 @@ struct spectraDerivedMaker {
                  trk.itsClusterMap(),
                  trk.hasTRD(),
                  trk.tofFlags(),
-                 trk.dcaXY(), trk.dcaZ());
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaXY()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaZ()));
     }
   }
   PROCESS_SWITCH(spectraDerivedMaker, processData, "Process data for derived dataset production", true);
