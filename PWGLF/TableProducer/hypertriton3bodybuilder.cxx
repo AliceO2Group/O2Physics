@@ -11,6 +11,10 @@
 
 // Builder task for hypertriton 3-body decay reconstruction
 
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -20,6 +24,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/Vtx3BodyTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -31,21 +36,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
-
-#include "TPCBase/ParameterGas.h"
-#include "PWGLF/DataModel/Vtx3BodyTables.h"
-
-#include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <Math/Vector4D.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;

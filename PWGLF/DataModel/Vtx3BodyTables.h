@@ -144,6 +144,7 @@ DECLARE_SOA_TABLE_FULL(StoredVtx3BodyDatas, "Vtx3BodyDatas", "AOD", "Vtx3BodyDAT
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(Vtx3BodyDatas, StoredVtx3BodyDatas, "Vtx3BodyDATAEXT", //!
+                                vtx3body::Px, vtx3body::Py, vtx3body::Pz);
 
 using Vtx3BodyData = Vtx3BodyDatas::iterator;
 namespace vtx3body
