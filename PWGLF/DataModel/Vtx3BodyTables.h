@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef VTX3BODYTABLES_H_
-#define VTX3BODYTABLES_H_
+#ifndef PWGLF_DATAMODEL_VTX3BODYTABLES_H_
+#define PWGLF_DATAMODEL_VTX3BODYTABLES_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
@@ -21,7 +21,6 @@ namespace o2::aod
 {
 namespace vtx3body
 {
-// Needed to have shorter table that does not rely on existing one (filtering!)
 DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, Tracks, "_0"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Track1, track1, int, Tracks, "_1"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Track2, track2, int, Tracks, "_2"); //!
@@ -145,7 +144,6 @@ DECLARE_SOA_TABLE_FULL(StoredVtx3BodyDatas, "Vtx3BodyDatas", "AOD", "Vtx3BodyDAT
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(Vtx3BodyDatas, StoredVtx3BodyDatas, "Vtx3BodyDATAEXT", //!
-                                vtx3body::Px, vtx3body::Py, vtx3body::Pz);             // the table name has here to be the one with EXT which is not nice and under study
 
 using Vtx3BodyData = Vtx3BodyDatas::iterator;
 namespace vtx3body
@@ -160,4 +158,4 @@ using Vtxs3BodyLinked = soa::Join<Decay3Bodys, Vtx3BodyDataLink>;
 using Vtx3BodyLinked = Vtxs3BodyLinked::iterator;
 
 } // namespace o2::aod
-#endif
+#endif // PWGLF_DATAMODEL_VTX3BODYTABLES_H_
