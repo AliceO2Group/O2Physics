@@ -80,7 +80,7 @@ struct hyperCandidate {
   std::array<float, 3> momPi;
   std::array<float, 3> primVtx;
   std::array<float, 3> decVtx;
-  std::array<float, 3> gMom;  
+  std::array<float, 3> gMom;
   std::array<float, 3> gMomHe3;
   std::array<float, 3> gDecVtx;
   uint16_t tpcSignalHe3 = 0u;
