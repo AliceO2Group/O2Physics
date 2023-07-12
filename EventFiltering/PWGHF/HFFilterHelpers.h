@@ -831,7 +831,7 @@ int8_t isSelectedV0(const V0& v0, const array<T, 2>& dauTracks, const Coll& coll
         hV0Selected->Fill(5., iV0);
       }
     }
-    if (TESTBIT(isSelected, iV0) && (v0.dcaV0daughters() > 1.f || v0.dcapostopv() < 0.02f || v0.dcanegtopv() < 0.02f)) {
+    if (TESTBIT(isSelected, iV0) && (v0.dcaV0daughters() > 1.f || std::fabs(v0.dcapostopv()) < 0.05f || std::fabs(v0.dcanegtopv()) < 0.05f)) {
       CLRBIT(isSelected, iV0);
       if (activateQA > 1) {
         hV0Selected->Fill(6., iV0);
