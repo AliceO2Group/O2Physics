@@ -16,14 +16,12 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct pidHMPIDQA {
+struct pidHmpidQa {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> nBinsP{"nBinsP", 500, "Number of momentum bins"};
   Configurable<float> minP{"minP", 0.01f, "Minimum momentum plotted (GeV/c)"};
@@ -74,8 +72,4 @@ struct pidHMPIDQA {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
-{
-  WorkflowSpec workflow{adaptAnalysisTask<pidHMPIDQA>(cfg, TaskName{"pidHMPID-qa"})};
-  return workflow;
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfg) { return WorkflowSpec{adaptAnalysisTask<pidHmpidQa>(cfg)}; }
