@@ -38,7 +38,7 @@ struct JetFinderTask {
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
-  Configurable<std::string> evSel{"evSel", "evSel8", "choose event selection"};
+  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
@@ -55,6 +55,8 @@ struct JetFinderTask {
   Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
   Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
   Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
+  Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
   Configurable<int> jetTypeParticleLevel{"jetTypeParticleLevel", 1, "Type of stored jets at MC particle leevel. 0 = full, 1 = charged, 2 = neutral"};
   Configurable<int> jetAlgorithm{"jetAlgorithm", 2, "jet clustering algorithm. 0 = kT, 1 = C/A, 2 = Anti-kT"};
   Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "jet recombination scheme. 0 = E-scheme, 1 = pT-scheme, 2 = pT2-scheme"};
@@ -66,6 +68,7 @@ struct JetFinderTask {
 
   Service<O2DatabasePDG> pdg;
   std::string trackSelection;
+  std::string eventSelection;
 
   JetFinder jetFinder;
   std::vector<fastjet::PseudoJet> inputParticles;
@@ -73,6 +76,7 @@ struct JetFinderTask {
   void init(InitContext const&)
   {
     trackSelection = static_cast<std::string>(trackSelections);
+    eventSelection = static_cast<std::string>(eventSelections);
 
     if (DoRhoAreaSub) {
       jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
@@ -85,6 +89,8 @@ struct JetFinderTask {
     jetFinder.etaMax = trackEtaMax;
     jetFinder.jetPtMin = jetPtMin;
     jetFinder.jetPtMax = jetPtMax;
+    jetFinder.jetEtaMin = jetEtaMin;
+    jetFinder.jetEtaMax = jetEtaMax;
     jetFinder.algorithm = static_cast<fastjet::JetAlgorithm>(static_cast<int>(jetAlgorithm));
     jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(static_cast<int>(jetRecombScheme));
     jetFinder.ghostArea = jetGhostArea;
@@ -109,7 +115,7 @@ struct JetFinderTask {
   void processChargedJets(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                           JetTracks const& tracks)
   {
-    if (!selectCollision(collision, evSel)) {
+    if (!selectCollision(collision, eventSelection)) {
       return;
     }
     inputParticles.clear();

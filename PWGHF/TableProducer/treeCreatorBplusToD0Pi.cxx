@@ -196,7 +196,7 @@ struct HfTreeCreatorBplusToD0Pi {
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi> const& candidates,
-               soa::Join<aod::McParticles_000, aod::HfCandBplusMcGen> const& particles,
+               soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& particles,
                aod::BigTracksPID const& tracks,
                aod::HfCand2Prong const&)
   {

@@ -36,16 +36,18 @@ DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
 DECLARE_SOA_COLUMN(NumTracksAll, numTracksAll, int);
 DECLARE_SOA_COLUMN(NumTracksFiltered, numTracksFiltered, int);
 DECLARE_SOA_COLUMN(GlobalBcInRun, globalBcInRun, int);
-DECLARE_SOA_COLUMN(Ft0PosZ, ft0PosZ, int);
-DECLARE_SOA_COLUMN(SignalFT0A, signalFT0A, int);
-DECLARE_SOA_COLUMN(SignalFT0C, signalFT0C, int);
-DECLARE_SOA_COLUMN(SignalFT0M, signalFT0M, int);
-DECLARE_SOA_COLUMN(SignalV0A, signalV0A, int);
-DECLARE_SOA_COLUMN(CollIDMC, collIDMC, float);
+DECLARE_SOA_COLUMN(Ft0PosZ, ft0PosZ, float);
+DECLARE_SOA_COLUMN(SignalFT0A, signalFT0A, float);
+DECLARE_SOA_COLUMN(SignalFT0C, signalFT0C, float);
+DECLARE_SOA_COLUMN(SignalFT0M, signalFT0M, float);
+DECLARE_SOA_COLUMN(SignalV0A, signalV0A, float);
+DECLARE_SOA_COLUMN(CollIDMC, collIDMC, int);
 DECLARE_SOA_COLUMN(PosXMC, posXMC, float);
 DECLARE_SOA_COLUMN(PosYMC, posYMC, float);
 DECLARE_SOA_COLUMN(PosZMC, posZMC, float);
 DECLARE_SOA_COLUMN(CollisionTimeMC, collisionTimeMC, float);
+DECLARE_SOA_COLUMN(RecoPVsPerMcColl, recoPVsPerMcColls, int);                       // from LF MCcollisionExtra
+DECLARE_SOA_COLUMN(IsPvHighestContribForMcColl, IsPvHighestContribForMcColls, int); // from LF MCcollisionExtra
 DECLARE_SOA_COLUMN(DpgCounterCollision, dpgCounterCollision, int);
 DECLARE_SOA_COLUMN(DpgCounterDF, dpgCounterDF, int);
 DECLARE_SOA_COLUMN(IsFakeCollision, isFakeCollision, int);
@@ -89,7 +91,9 @@ DECLARE_SOA_TABLE(DPGCollsBig, "AOD", "DPGCollsBig", //! Big table of the DPG co
                   dpgcollision::PosYMC,
                   dpgcollision::PosZMC,
                   dpgcollision::CollisionTimeMC,
-                  dpgcollision::IsFakeCollision); /// -1: unknown (data); 0: not fake; 1: fake (== it does not correspond to any MC collision)
+                  dpgcollision::IsFakeCollision, /// -1: unknown (data); 0: not fake; 1: fake (== it does not correspond to any MC collision)
+                  dpgcollision::RecoPVsPerMcColl,
+                  dpgcollision::IsPvHighestContribForMcColl);
 
 namespace dpgtrack
 {
