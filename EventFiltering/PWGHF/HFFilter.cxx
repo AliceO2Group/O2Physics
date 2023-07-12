@@ -73,6 +73,9 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<float> femtoMaxRelativeMomentum{"femtoMaxRelativeMomentum", 2., "Maximal allowed value for relative momentum between charm-proton pairs in GeV/c"};
   Configurable<LabeledArray<int>> enableFemtoChannels{"enableFemtoChannels", {activeFemtoChannels[0], 1, 5, labelsEmpty, labelsColumnsFemtoChannels}, "Flags to enable/disable femto channels"};
 
+  // double charm
+  Configurable<LabeledArray<int>> enableDoubleCharmChannels{"enableDoubleCharmChannels", {activeDoubleCharmChannels[0], 1, 3, labelsEmpty, labelsColumnsDoubleCharmChannels}, "Flags to enable/disable double charm channels"};
+
   // parameters for V0 + charm triggers
   Configurable<LabeledArray<float>> cutsGammaK0sLambda{"cutsGammaK0sLambda", {cutsV0s[0], 1, 6, labelsEmpty, labelsColumnsV0s}, "Selections for V0s (gamma, K0s, Lambda) for D+V0 triggers"};
   Configurable<LabeledArray<float>> maxDeltaMassCharmReso{"maxDeltaMassCharmReso", {cutsMassCharmReso[0], 1, 6, labelsEmpty, labelsColumnsDeltaMasseCharmReso}, "maximum invariant-mass delta for charm hadron resonances in GeV/c2"};
@@ -980,7 +983,7 @@ struct HfFilter { // Main struct for HF triggers
 
             auto ptCharmBaryon = RecoDecay::pt(RecoDecay::pVec(pVecCascade, pVecBachelor));
 
-            if (TESTBIT(isSelBachelor, kPionForCharmBaryon)) {
+            if (!keepEvent[kCharmBarToXiBach] && TESTBIT(isSelBachelor, kPionForCharmBaryon)) {
               auto massXiPi = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{massXi, massPi});
               if (ptCharmBaryon > cutsXiBachelor->get(0u, 0u) && massXiPi >= cutsXiBachelor->get(0u, 2u) && massXiPi <= 2.8f) {
                 keepEvent[kCharmBarToXiBach] = true;
@@ -1012,13 +1015,13 @@ struct HfFilter { // Main struct for HF triggers
         hN3ProngCharmCand->Fill(n3Prongs);
       }
 
-      if (n2Prongs > 1) {
+      if (n2Prongs > 1 && enableDoubleCharmChannels->get(0u, 0u)) {
         keepEvent[kDoubleCharm2P] = true;
       }
-      if (n3Prongs > 1) {
+      if (n3Prongs > 1 && enableDoubleCharmChannels->get(0u, 1u)) {
         keepEvent[kDoubleCharm3P] = true;
       }
-      if (n23Prongs > 1) {
+      if (n23Prongs > 1 && enableDoubleCharmChannels->get(0u, 2u)) {
         keepEvent[kDoubleCharmMix] = true;
       }
 
