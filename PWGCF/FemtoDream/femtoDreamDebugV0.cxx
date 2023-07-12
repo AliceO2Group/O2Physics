@@ -52,10 +52,6 @@ struct femtoDreamDebugV0 {
   ConfigurableAxis ConfChildTempFitVarNsigmaTOFBins{"ConfChildTempFitVarNsigmaTOFBins", {3000, -15, 15}, "binning of the Nsigma TOF plot"};
   ConfigurableAxis ConfChildTempFitVarNsigmaTPCTOFBins{"ConfChildTempFitVarNsigmaTPCTOFBins", {1000, 0, 10}, "binning of the Nsigma TPC+TOF plot"};
 
-  ConfigurableAxis ConfTempFitVarpBins{"ConfTempFitVarpBins", {600, 0, 6}, "p binning for the p vs Nsigma TPC/TOF plot"};
-  ConfigurableAxis ConfTempFitVarNsigmaTPCBins{"ConfTempFitVarNsigmaTPCBins", {1600, -8, 8}, "binning of Nsigma TPC plot"};
-  ConfigurableAxis ConfTempFitVarNsigmaTOFBins{"ConfTempFitVarNsigmaTOFBins", {3000, -15, 15}, "binning of the Nsigma TOF plot"};
-
   Configurable<uint32_t> ConfCutChildPos{"ConfCutChildPos", 150, "Positive Child of V0 - Selection bit from cutCulator"};
   Configurable<uint32_t> ConfCutChildNeg{"ConfCutChildNeg", 149, "Negative Child of V0 - Selection bit from cutCulator"};
   Configurable<float> ConfChildPosPidnSigmaMax{"ConfChildPosPidnSigmaMax", 3.f, "Positive Child of V0 - Selection bit from cutCulator"};
@@ -84,9 +80,9 @@ struct femtoDreamDebugV0 {
   void init(InitContext&)
   {
     eventHisto.init(&EventRegistry);
-    posChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, ConfTempFitVarpBins, ConfTempFitVarNsigmaTPCBins, ConfTempFitVarNsigmaTOFBins, false, ConfPDGCodeChildPos.value, true);
-    negChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, ConfTempFitVarpBins, ConfTempFitVarNsigmaTPCBins, ConfTempFitVarNsigmaTOFBins, false, ConfPDGCodeChildNeg, true);
-    V0Histos.init(&V0Registry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, ConfTempFitVarpBins, ConfTempFitVarNsigmaTPCBins, ConfTempFitVarNsigmaTOFBins, false, ConfPDGCodeV0.value, true);
+    posChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, ConfV0TempFitVarInvMassBins, ConfChildTempFitVarpBins, ConfChildTempFitVarNsigmaTPCBins, ConfChildTempFitVarNsigmaTOFBins, ConfChildTempFitVarNsigmaTPCTOFBins, false, ConfPDGCodeChildPos.value, true);
+    negChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, ConfV0TempFitVarInvMassBins, ConfChildTempFitVarpBins, ConfChildTempFitVarNsigmaTPCBins, ConfChildTempFitVarNsigmaTOFBins, ConfChildTempFitVarNsigmaTPCTOFBins, false, ConfPDGCodeChildNeg, true);
+    V0Histos.init(&V0Registry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, ConfV0TempFitVarInvMassBins, ConfChildTempFitVarpBins, ConfChildTempFitVarNsigmaTPCBins, ConfChildTempFitVarNsigmaTOFBins, ConfChildTempFitVarNsigmaTPCTOFBins, false, ConfPDGCodeV0.value, true);
   }
 
   /// Porduce QA plots for V0 selection in FemtoDream framework

@@ -49,9 +49,14 @@ using FemtoFullCollision =
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks =
-  soa::Join<aod::FullTracks, aod::TracksDCA,
-            aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-            aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+  soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullEl,
+            aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+            aod::pidTPCFullDe, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+
+// using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join
+// table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s>
+// to be used when we add v0Filter
 } // namespace o2::aod
 
 template <typename T>
@@ -286,23 +291,14 @@ struct femtoDreamProducerTask {
                        (uint8_t)particle.tpcNClsFound(),
                        particle.tpcNClsFindable(),
                        (uint8_t)particle.tpcNClsCrossedRows(),
-                       particle.tpcNClsShared(),
-                       particle.tpcInnerParam(),
-                       particle.itsNCls(),
-                       particle.itsNClsInnerBarrel(),
-                       particle.dcaXY(),
-                       particle.dcaZ(),
-                       particle.tpcSignal(),
-                       particle.tpcNSigmaEl(),
-                       particle.tpcNSigmaPi(),
-                       particle.tpcNSigmaKa(),
-                       particle.tpcNSigmaPr(),
-                       particle.tpcNSigmaDe(),
-                       particle.tofNSigmaEl(),
-                       particle.tofNSigmaPi(),
-                       particle.tofNSigmaKa(),
-                       particle.tofNSigmaPr(),
-                       particle.tofNSigmaDe(),
+                       particle.tpcNClsShared(), particle.tpcInnerParam(),
+                       particle.itsNCls(), particle.itsNClsInnerBarrel(),
+                       particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
+                       particle.tpcNSigmaEl(), particle.tpcNSigmaPi(),
+                       particle.tpcNSigmaKa(), particle.tpcNSigmaPr(),
+                       particle.tpcNSigmaDe(), particle.tofNSigmaEl(),
+                       particle.tofNSigmaPi(), particle.tofNSigmaKa(),
+                       particle.tofNSigmaPr(), particle.tofNSigmaDe(),
                        -999., -999., -999., -999., -999., -999.);
     } else {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,

@@ -111,7 +111,7 @@ class FemtoDreamSelection
     if (isSelected(observable)) {
       cutContainer |= 1UL << counter;
       if (registry) {
-        registry->fill(HIST("AnalysisQA/CutCounter"), 1 + sizeof(o2::aod::femtodreamparticle::cutContainerType));
+        registry->fill(HIST("AnalysisQA/CutCounter"), sizeof(o2::aod::femtodreamparticle::cutContainerType));
       }
     } else {
       if (registry) {
@@ -122,18 +122,15 @@ class FemtoDreamSelection
   }
 
   template <typename T>
-  void checkSelectionSetBitPID(selValDataType observable, T& cutContainer, std::size_t& counter, HistogramRegistry* registry)
+  void checkSelectionSetBitPID(selValDataType observable, T& cutContainer)
   {
     /// If the selection is fulfilled the bit at the specified position (counter) within the bit-wise container is set to 1
     if (isSelected(observable)) {
-      cutContainer |= 1UL << counter;
-      if (registry) {
-        registry->fill(HIST("AnalysisQA/PIDCutCounter"), 1 + sizeof(o2::aod::femtodreamparticle::cutContainerType));
-      }
+      cutContainer |= 1UL;
     } else {
-      registry->fill(HIST("AnalysisQA/PIDCutCounter"), counter);
+      cutContainer |= 0UL;
     }
-    ++counter;
+    cutContainer <<= 1;
   }
 
  private:

@@ -369,6 +369,8 @@ auto FemtoDreamTrackSelection::getNsigmaTPC(T const& track, o2::track::PID pid)
 {
   if (pid == o2::track::PID::Electron)
     return track.tpcNSigmaEl();
+  else if (pid == o2::track::PID::Muon)
+    return track.tpcNSigmaMu();
   else if (pid == o2::track::PID::Pion)
     return track.tpcNSigmaPi();
   else if (pid == o2::track::PID::Kaon)
@@ -390,6 +392,8 @@ auto FemtoDreamTrackSelection::getNsigmaTOF(T const& track, o2::track::PID pid)
   }
   if (pid == o2::track::PID::Electron)
     return track.tofNSigmaEl();
+  else if (pid == o2::track::PID::Muon)
+    return track.tofNSigmaMu();
   else if (pid == o2::track::PID::Pion)
     return track.tofNSigmaPi();
   else if (pid == o2::track::PID::Kaon)
@@ -399,7 +403,8 @@ auto FemtoDreamTrackSelection::getNsigmaTOF(T const& track, o2::track::PID pid)
   else if (pid == o2::track::PID::Deuteron)
     return track.tofNSigmaDe();
   else
-    return 999.f;
+    LOG(info) << "what";
+  return 999.f;
 }
 
 template <typename T>
@@ -484,7 +489,6 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
   cutContainerType output = 0;
   size_t counter = 0;
   cutContainerType outputPID = 0;
-  size_t counterPID = 0;
   const auto sign = track.sign();
   const auto pT = track.pt();
   const auto eta = track.eta();
@@ -513,8 +517,8 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
         auto pidTPCVal = pidTPC.at(i) - nSigmaPIDOffsetTPC;
         auto pidTOFVal = pidTOF.at(i) - nSigmaPIDOffsetTOF;
         auto pidComb = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal);
-        sel.checkSelectionSetBitPID(pidTPCVal, outputPID, counterPID, mHistogramRegistry);
-        sel.checkSelectionSetBitPID(pidComb, outputPID, counterPID, mHistogramRegistry);
+        sel.checkSelectionSetBitPID(pidTPCVal, outputPID);
+        sel.checkSelectionSetBitPID(pidComb, outputPID);
       }
     } else {
       /// for the rest it's all the same

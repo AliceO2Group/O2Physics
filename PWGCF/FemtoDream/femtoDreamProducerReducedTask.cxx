@@ -303,7 +303,12 @@ struct femtoDreamProducerReducedTask {
                          track.tofNSigmaKa(),
                          track.tofNSigmaPr(),
                          track.tofNSigmaDe(),
-                         -999., -999., -999., -999., -999., -999.);
+                         -999.,
+                         -999.,
+                         -999.,
+                         -999.,
+                         -999.,
+                         -999.);
       }
     }
   }
