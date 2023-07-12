@@ -538,7 +538,7 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkEventFillMap, gkMCEventFillMap, gkTrackFillMap>(event, tracks, tracks, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    // runMCGen(groupedMCTracks);
+    runMCGen(groupedMCTracks);
   }
 
   void processDecayToEEVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
@@ -553,7 +553,7 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkEventFillMapWithCov, gkMCEventFillMap, gkTrackFillMapWithCov>(event, tracks, tracks, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    // runMCGen(groupedMCTracks);
+    runMCGen(groupedMCTracks);
   }
 
   void processDummy(MyEvents&)
