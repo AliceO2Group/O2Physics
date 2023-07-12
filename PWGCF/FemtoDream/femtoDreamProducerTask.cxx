@@ -49,10 +49,10 @@ using FemtoFullCollision =
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks =
-  soa::Join<aod::FullTracks, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl,
-            aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
-            aod::pidTPCDe, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-            aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
+  soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullEl,
+            aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+            aod::pidTPCFullDe, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 
 // using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join
 // table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s>
@@ -316,11 +316,11 @@ struct femtoDreamProducerTask {
                        particle.tpcNClsShared(), particle.tpcInnerParam(),
                        particle.itsNCls(), particle.itsNClsInnerBarrel(),
                        particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
-                       particle.tpcNSigmaStoreEl(), particle.tpcNSigmaStorePi(),
-                       particle.tpcNSigmaStoreKa(), particle.tpcNSigmaStorePr(),
-                       particle.tpcNSigmaStoreDe(), particle.tofNSigmaStoreEl(),
-                       particle.tofNSigmaStorePi(), particle.tofNSigmaStoreKa(),
-                       particle.tofNSigmaStorePr(), particle.tofNSigmaStoreDe(),
+                       particle.tpcNSigmaEl(), particle.tpcNSigmaPi(),
+                       particle.tpcNSigmaKa(), particle.tpcNSigmaPr(),
+                       particle.tpcNSigmaDe(), particle.tofNSigmaEl(),
+                       particle.tofNSigmaPi(), particle.tofNSigmaKa(),
+                       particle.tofNSigmaPr(), particle.tofNSigmaDe(),
                        -999., -999., -999., -999., -999., -999.);
     } else {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,

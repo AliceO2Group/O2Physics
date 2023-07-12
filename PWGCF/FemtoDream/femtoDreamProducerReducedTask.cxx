@@ -54,10 +54,10 @@ using FemtoFullCollisionMC = soa::Join<aod::Collisions,
                                        aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks = soa::Join<aod::FullTracks, aod::TracksDCA,
-                                  aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
-                                  aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
-                                  aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-                                  aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
+                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                  aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 } // namespace o2::aod
 
 struct femtoDreamProducerReducedTask {
@@ -293,16 +293,16 @@ struct femtoDreamProducerReducedTask {
                          track.dcaXY(),
                          track.dcaZ(),
                          track.tpcSignal(),
-                         track.tpcNSigmaStoreEl(),
-                         track.tpcNSigmaStorePi(),
-                         track.tpcNSigmaStoreKa(),
-                         track.tpcNSigmaStorePr(),
-                         track.tpcNSigmaStoreDe(),
-                         track.tofNSigmaStoreEl(),
-                         track.tofNSigmaStorePi(),
-                         track.tofNSigmaStoreKa(),
-                         track.tofNSigmaStorePr(),
-                         track.tofNSigmaStoreDe(),
+                         track.tpcNSigmaEl(),
+                         track.tpcNSigmaPi(),
+                         track.tpcNSigmaKa(),
+                         track.tpcNSigmaPr(),
+                         track.tpcNSigmaDe(),
+                         track.tofNSigmaEl(),
+                         track.tofNSigmaPi(),
+                         track.tofNSigmaKa(),
+                         track.tofNSigmaPr(),
+                         track.tofNSigmaDe(),
                          -999.,
                          -999.,
                          -999.,
