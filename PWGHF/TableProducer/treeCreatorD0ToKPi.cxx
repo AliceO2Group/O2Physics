@@ -240,12 +240,12 @@ struct HfTreeCreatorD0ToKPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates,
-                   aod::BigTracksPID const&)
+                   aod::BigTracksPID const&, aod::BCs const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto const& collision : collisions) {
-      fillEvent(collision, 0, 1); // TODO: drop or fill run number properly?
+      fillEvent(collision, 0, collision.bc().runNumber());
     }
 
     // Filling candidate properties
@@ -267,12 +267,12 @@ struct HfTreeCreatorD0ToKPi {
                  aod::McCollisions const&,
                  soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particles,
-                 aod::BigTracksPID const&)
+                 aod::BigTracksPID const&, aod::BCs const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto const& collision : collisions) {
-      fillEvent(collision, 0, 1);
+      fillEvent(collision, 0, collision.bc().runNumber());
     }
 
     // Filling candidate properties

@@ -195,7 +195,7 @@ struct HfTreeCreatorLcToPKPi {
                  aod::McCollisions const& mccollisions,
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
-                 aod::BigTracksPID const& tracks)
+                 aod::BigTracksPID const& tracks, aod::BCs const&)
   {
 
     // Filling event properties
@@ -208,7 +208,7 @@ struct HfTreeCreatorLcToPKPi {
         collision.posY(),
         collision.posZ(),
         0,
-        1); // TODO: drop or fill properly?
+        collision.bc().runNumber());
     }
 
     // Filling candidate properties
@@ -325,7 +325,7 @@ struct HfTreeCreatorLcToPKPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
-                   aod::BigTracksPID const& tracks)
+                   aod::BigTracksPID const& tracks, aod::BCs const&)
   {
 
     // Filling event properties
@@ -338,7 +338,7 @@ struct HfTreeCreatorLcToPKPi {
         collision.posY(),
         collision.posZ(),
         0,
-        1);
+        collision.bc().runNumber());
     }
 
     // Filling candidate properties
