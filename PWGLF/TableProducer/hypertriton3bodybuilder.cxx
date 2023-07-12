@@ -9,7 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -58,7 +57,7 @@ using MyTracksIU = FullTracksExtIU;
 // in case requested
 using LabeledTracks = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
-struct hypertriton3bodybuilder{
+struct hypertriton3bodybuilder {
 
   Produces<aod::StoredVtx3BodyDatas> vtx3bodydata;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -68,10 +67,10 @@ struct hypertriton3bodybuilder{
 
   HistogramRegistry registry{
     "registry",
-      {
-        {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-        {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{7, 0.0f, 7.0f}}}},
-      },
+    {
+      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+      {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{7, 0.0f, 7.0f}}}},
+    },
   };
 
   // Selection criteria
@@ -90,8 +89,8 @@ struct hypertriton3bodybuilder{
 
   int mRunNumber;
   float d_bz;
-  float maxSnp;  //max sine phi for propagation
-  float maxStep; //max step size (cm) for propagation
+  float maxSnp;  // max sine phi for propagation
+  float maxStep; // max step size (cm) for propagation
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<3> fitter3body;
 
@@ -99,10 +98,10 @@ struct hypertriton3bodybuilder{
   {
     mRunNumber = 0;
     d_bz = 0;
-    maxSnp = 0.85f;  //could be changed later
-    maxStep = 2.00f; //could be changed later
+    maxSnp = 0.85f;  // could be changed later
+    maxStep = 2.00f; // could be changed later
     fitter3body.setPropagateToPCA(true);
-    fitter3body.setMaxR(200.);//->maxRIni3body
+    fitter3body.setMaxR(200.); //->maxRIni3body
     fitter3body.setMinParamChange(1e-3);
     fitter3body.setMinRelChi2Change(0.9);
     fitter3body.setMaxDZIni(1e9);
@@ -190,7 +189,8 @@ struct hypertriton3bodybuilder{
   }
   //------------------------------------------------------------------
 
-  void process( aod::Collision const& collision, MyTracksIU const& tracks, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&) {
+  void process(aod::Collision const& collision, MyTracksIU const& tracks, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
@@ -203,12 +203,12 @@ struct hypertriton3bodybuilder{
       auto t0 = vtx3body.track0_as<MyTracksIU>();
       auto t1 = vtx3body.track1_as<MyTracksIU>();
       auto t2 = vtx3body.track2_as<MyTracksIU>();
-      if (t0.collisionId() != t1.collisionId() || t0.collisionId() != t2.collisionId() ) {
+      if (t0.collisionId() != t1.collisionId() || t0.collisionId() != t2.collisionId()) {
         continue;
       }
       registry.fill(HIST("hVtx3BodyCounter"), 1.5);
 
-      if (t0.tpcNClsCrossedRows() < mincrossedrows && t1.tpcNClsCrossedRows() < mincrossedrows && t2.tpcNClsCrossedRows() < mincrossedrows ){
+      if (t0.tpcNClsCrossedRows() < mincrossedrows && t1.tpcNClsCrossedRows() < mincrossedrows && t2.tpcNClsCrossedRows() < mincrossedrows) {
         continue;
       }
       registry.fill(HIST("hVtx3BodyCounter"), 2.5);
@@ -254,7 +254,7 @@ struct hypertriton3bodybuilder{
         pos[i] = vtxXYZ[i];
       }
 
-      std::array<float, 3> p0={0.}, p1={0.}, p2{0.};
+      std::array<float, 3> p0 = {0.}, p1 = {0.}, p2{0.};
       Track0.getPxPyPzGlo(p0);
       Track1.getPxPyPzGlo(p1);
       Track2.getPxPyPzGlo(p2);
@@ -271,18 +271,15 @@ struct hypertriton3bodybuilder{
       }
       registry.fill(HIST("hVtx3BodyCounter"), 6.5);
 
-      vtx3bodydata( 
-          t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(), 
-          pos[0], pos[1], pos[2], 
-          p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
-          fitter3body.getChi2AtPCACandidate(),
-          t0.dcaXY(), t1.dcaXY(), t2.dcaXY()
-          );
-
+      vtx3bodydata(
+        t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(),
+        pos[0], pos[1], pos[2],
+        p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
+        fitter3body.getChi2AtPCACandidate(),
+        t0.dcaXY(), t1.dcaXY(), t2.dcaXY());
     }
   }
 };
-
 
 struct hypertriton3bodyLabelBuilder {
 
@@ -291,19 +288,20 @@ struct hypertriton3bodyLabelBuilder {
   // for bookkeeping purposes: how many V0s come from same mother etc
   HistogramRegistry registry{
     "registry",
-      {
-        {"hLabelCounter", "hLabelCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
-        {"hHypertritonCounter", "hHypertritonCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
-        {"hPIDCounter", "hPIDCounter", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
-        {"hHypertriton", "hHypertriton", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-        {"hAntiHypertriton", "hAntiHypertriton", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-        {"hHypertritonMass", "hHypertritonMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
-        {"hAntiHypertritonMass", "hAntiHypertritonMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
-        {"h3dTotalTrueHypertriton", "h3dTotalTrueHypertriton", {HistType::kTH3F, {{50, 0, 50, "ct(cm)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
-      },
+    {
+      {"hLabelCounter", "hLabelCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hHypertritonCounter", "hHypertritonCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
+      {"hPIDCounter", "hPIDCounter", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
+      {"hHypertriton", "hHypertriton", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+      {"hAntiHypertriton", "hAntiHypertriton", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+      {"hHypertritonMass", "hHypertritonMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
+      {"hAntiHypertritonMass", "hAntiHypertritonMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
+      {"h3dTotalTrueHypertriton", "h3dTotalTrueHypertriton", {HistType::kTH3F, {{50, 0, 50, "ct(cm)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
+    },
   };
 
-  void init(InitContext const&) {
+  void init(InitContext const&)
+  {
     registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(1, "H3L");
     registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(2, "H3L daughters pass PID");
     registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(3, "#bar{H3L}");
@@ -360,64 +358,62 @@ struct hypertriton3bodyLabelBuilder {
               lLabel = lMother1.globalIndex();
               lPt = lMother1.pt();
               lPDG = lMother1.pdgCode();
-              MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz())*2.991/lMother2.p();  
+              MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz()) * 2.991 / lMother2.p();
               is3bodyDecay = true; // vtxs with the same mother
             }
           }
         }
       } // end association check
-      if (!is3bodyDecay){
+      if (!is3bodyDecay) {
         vtxlabels(-1);
         continue;
-      } 
+      }
       registry.fill(HIST("hLabelCounter"), 1.5);
 
       // Intended for cross-checks only
       // N.B. no rapidity cut!
-      if (lPDG == 1010010030 && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == 1000010020)
-      {
-        double hypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus), 1.87561}); 
+      if (lPDG == 1010010030 && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == 1000010020) {
+        double hypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus), 1.87561});
         registry.fill(HIST("hHypertritonCounter"), 0.5);
         registry.fill(HIST("hHypertriton"), lPt);
         registry.fill(HIST("hHypertritonMass"), hypertritonMCMass);
         registry.fill(HIST("h3dTotalTrueHypertriton"), MClifetime, lPt, hypertritonMCMass);
-        if (TMath::Abs( lTrack0.tpcNSigmaPr()) > TpcPidNsigmaCut) {
+        if (TMath::Abs(lTrack0.tpcNSigmaPr()) > TpcPidNsigmaCut) {
           registry.fill(HIST("hPIDCounter"), 0.5);
         }
-        if( TMath::Abs(lTrack1.tpcNSigmaPi()) > TpcPidNsigmaCut ){
+        if (TMath::Abs(lTrack1.tpcNSigmaPi()) > TpcPidNsigmaCut) {
           registry.fill(HIST("hPIDCounter"), 1.5);
         }
-        if( TMath::Abs( lTrack2.tpcNSigmaDe()) > TpcPidNsigmaCut ) {
+        if (TMath::Abs(lTrack2.tpcNSigmaDe()) > TpcPidNsigmaCut) {
           registry.fill(HIST("hPIDCounter"), 2.5);
         }
-        if (TMath::Abs( lTrack0.tpcNSigmaPr())  < TpcPidNsigmaCut && TMath::Abs(lTrack1.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs( lTrack2.tpcNSigmaDe()) < TpcPidNsigmaCut ) {
+        if (TMath::Abs(lTrack0.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(lTrack1.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(lTrack2.tpcNSigmaDe()) < TpcPidNsigmaCut) {
           registry.fill(HIST("hHypertritonCounter"), 1.5);
         }
       }
-      if (lPDG == -1010010030 && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -1000010020)
-      {
-        double antiHypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kProton), 1.87561}); 
+      if (lPDG == -1010010030 && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -1000010020) {
+        double antiHypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kProton), 1.87561});
         registry.fill(HIST("hHypertritonCounter"), 2.5);
         registry.fill(HIST("hAntiHypertriton"), lPt);
         registry.fill(HIST("hAntiHypertritonMass"), antiHypertritonMCMass);
         registry.fill(HIST("h3dTotalTrueHypertriton"), MClifetime, lPt, antiHypertritonMCMass);
-        if (TMath::Abs( lTrack0.tpcNSigmaPi()) > TpcPidNsigmaCut) {
+        if (TMath::Abs(lTrack0.tpcNSigmaPi()) > TpcPidNsigmaCut) {
           registry.fill(HIST("hPIDCounter"), 4.5);
         }
-        if( TMath::Abs(lTrack1.tpcNSigmaPr()) > TpcPidNsigmaCut ){
+        if (TMath::Abs(lTrack1.tpcNSigmaPr()) > TpcPidNsigmaCut) {
           registry.fill(HIST("hPIDCounter"), 3.5);
         }
-        if( TMath::Abs( lTrack2.tpcNSigmaDe()) > TpcPidNsigmaCut ) {
+        if (TMath::Abs(lTrack2.tpcNSigmaDe()) > TpcPidNsigmaCut) {
           registry.fill(HIST("hPIDCounter"), 5.5);
         }
-        if (TMath::Abs( lTrack0.tpcNSigmaPi())  < TpcPidNsigmaCut && TMath::Abs(lTrack1.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs( lTrack2.tpcNSigmaDe()) < TpcPidNsigmaCut ) {
+        if (TMath::Abs(lTrack0.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(lTrack1.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(lTrack2.tpcNSigmaDe()) < TpcPidNsigmaCut) {
           registry.fill(HIST("hHypertritonCounter"), 3.5);
         }
       }
 
       // Construct label table (note: this will be joinable with V0Datas)
       vtxlabels(
-          lLabel);
+        lLabel);
     }
   }
   PROCESS_SWITCH(hypertriton3bodyLabelBuilder, processBuildLabels, "Produce MC label tables", false);
