@@ -461,7 +461,7 @@ struct propagatorQa {
       // Recalculate the propagation with this instance of the matLUT
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCov, maxPropagStep, matCorr, &dcaInfo);
 
-      auto track = tracks.iteratorAt(trackIU.globalIndex());
+      auto track = tracks.iteratorAt(trackIU.globalIndex() - tracksIU.offset());
 
       histos.fill(HIST("hDeltaTanLambdaVsPt"), track.tgl(), track.tgl() - trackParCov.getTgl());
       histos.fill(HIST("hDeltaPtVsPt"), track.pt(), track.pt() - trackParCov.getPt());
