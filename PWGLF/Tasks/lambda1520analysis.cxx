@@ -34,7 +34,7 @@ struct lambda1520analysis {
   // Eta-asymmetry switch
   Configurable<bool> isEtaAssym{"isEtaAssym", false, "Turn on/off EtaAssym calculation"};
   Configurable<bool> isFillQA{"isFillQA", false, "Turn on/off QA plots"};
-  Configurable<bool> IsAddlTrackcut{"IsAddlTrackcut", false, "Switch to turn on/off Additional track cut"};
+  Configurable<bool> IsAddlTrackcut{"IsAddlTrackcut", true, "Switch to turn on/off Additional track cut"};
 
   // Pre-selection Track cuts
   Configurable<float> cfgCutEta{"cfgCutEta", 1.0f, "Eta range for tracks"};
