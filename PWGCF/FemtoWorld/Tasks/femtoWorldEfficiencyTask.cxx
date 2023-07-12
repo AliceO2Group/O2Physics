@@ -25,7 +25,7 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
-#include "PWGCF/FemtoWorld/FemtoWorldCollisionSelection.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldCollisionSelection.h"
 
 #include "TPDGCode.h"
 
@@ -60,7 +60,7 @@ struct femtoWorldEficiencyTask {
   Configurable<float> tofPtCut{"tofPtCut", 0.5f, "From what pT TOF is used"};
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run 3 data"}; // Choose if running on converted data or  run 3 data
   /// Event cuts
-  o2::analysis::femtoworld::FemtoWorldCollisionSelection colCuts;
+  o2::analysis::femtoWorld::FemtoWorldCollisionSelection colCuts;
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
