@@ -34,6 +34,7 @@ struct lambda1520analysis {
   // Eta-asymmetry switch
   Configurable<bool> isEtaAssym{"isEtaAssym", false, "Turn on/off EtaAssym calculation"};
   Configurable<bool> isFillQA{"isFillQA", false, "Turn on/off QA plots"};
+  Configurable<bool> IsAddlTrackcut{"IsAddlTrackcut", true, "Switch to turn on/off Additional track cut"};
 
   // Pre-selection Track cuts
   Configurable<float> cfgCutEta{"cfgCutEta", 1.0f, "Eta range for tracks"};
@@ -200,14 +201,16 @@ struct lambda1520analysis {
       return false;
     if (fabs(track.eta()) > cfgCutEta)
       return false;
-    if (!track.passedITSRefit() || !track.passedTPCRefit())
-      return false;
-    if (track.tpcCrossedRowsOverFindableCls() < cMinRtpccut)
-      return false;
-    if (track.itsChi2NCl() > cMaxChi2ITScut)
-      return false;
-    if (track.tpcChi2NCl() > cMaxChi2TPCcut)
-      return false;
+    if (IsAddlTrackcut) {
+      if (!track.passedITSRefit() || !track.passedTPCRefit())
+        return false;
+      if (track.tpcCrossedRowsOverFindableCls() < cMinRtpccut)
+        return false;
+      if (track.itsChi2NCl() > cMaxChi2ITScut)
+        return false;
+      if (track.tpcChi2NCl() > cMaxChi2TPCcut)
+        return false;
+    }
 
     return true;
   }
