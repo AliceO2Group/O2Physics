@@ -35,7 +35,7 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
 DECLARE_SOA_COLUMN(NumTracksAll, numTracksAll, int);
 DECLARE_SOA_COLUMN(NumTracksFiltered, numTracksFiltered, int);
-DECLARE_SOA_COLUMN(GlobalBcInRun, globalBcInRun, int);
+DECLARE_SOA_COLUMN(GlobalBcInRun, globalBcInRun, uint64_t);
 DECLARE_SOA_COLUMN(Ft0PosZ, ft0PosZ, float);
 DECLARE_SOA_COLUMN(SignalFT0A, signalFT0A, float);
 DECLARE_SOA_COLUMN(SignalFT0C, signalFT0C, float);
