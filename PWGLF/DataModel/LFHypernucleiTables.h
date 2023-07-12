@@ -25,9 +25,15 @@ namespace o2::aod
 namespace hyperrec
 {
 DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);           // bool: true for matter
-DECLARE_SOA_COLUMN(Pt, pt, float);                      // Momentum of the candidate (x direction)
-DECLARE_SOA_COLUMN(Phi, phi, float);                    // Momentum of the candidate (y direction)
-DECLARE_SOA_COLUMN(Eta, eta, float);                    // Momentum of the candidate (z direction)
+DECLARE_SOA_COLUMN(PtHe3, ptHe3, float);                // Pt of the He daughter
+DECLARE_SOA_COLUMN(PhiHe3, phiHe3, float);              // Phi of the He daughter
+DECLARE_SOA_COLUMN(EtaHe3, etaHe3, float);              // Eta of the He daughter
+DECLARE_SOA_COLUMN(PtPi, ptPi, float);                  // Pt of the Pi daughter
+DECLARE_SOA_COLUMN(PhiPi, phiPi, float);                // Phi of the Pi daughter
+DECLARE_SOA_COLUMN(EtaPi, etaPi, float);                // Eta of the Pi daughter
+DECLARE_SOA_COLUMN(XPrimVtx, xPrimVtx, float);          // Decay vertex of the candidate (x direction)
+DECLARE_SOA_COLUMN(YPrimVtx, yPrimVtx, float);          // Decay vertex of the candidate (y direction)
+DECLARE_SOA_COLUMN(ZPrimVtx, zPrimVtx, float);          // Decay vertex of the candidate (z direction)
 DECLARE_SOA_COLUMN(XDecVtx, xDecVtx, float);            // Decay vertex of the candidate (x direction)
 DECLARE_SOA_COLUMN(YDecVtx, yDecVtx, float);            // Decay vertex of the candidate (y direction)
 DECLARE_SOA_COLUMN(ZDecVtx, zDecVtx, float);            // Decay vertex of the candidate (z direction)
@@ -57,39 +63,47 @@ DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);           // bool: true for signal
 DECLARE_SOA_TABLE(DataHypCands, "AOD", "DATAHYPCANDS",
                   o2::soa::Index<>,
                   hyperrec::IsMatter,
-                  hyperrec::Pt,
-                  hyperrec::Phi,
-                  hyperrec::Eta,
+                  hyperrec::PtHe3,
+                  hyperrec::PhiHe3,
+                  hyperrec::EtaHe3,
+                  hyperrec::PtPi,
+                  hyperrec::PhiPi,
+                  hyperrec::EtaPi,
+                  hyperrec::XPrimVtx,
+                  hyperrec::YPrimVtx,
+                  hyperrec::ZPrimVtx,
                   hyperrec::XDecVtx,
                   hyperrec::YDecVtx,
                   hyperrec::ZDecVtx,
-                  hyperrec::MassH3L,
-                  hyperrec::MassH4L,
                   hyperrec::DcaV0Daug,
-                  hyperrec::CosPA,
+                  hyperrec::DcaHe,
+                  hyperrec::DcaPi,
                   hyperrec::NSigmaHe,
                   hyperrec::NTPCclusHe,
                   hyperrec::NTPCclusPi,
                   hyperrec::TPCmomHe,
                   hyperrec::TPCmomPi,
                   hyperrec::TPCsignalHe,
-                  hyperrec::TPCsignalPi,
-                  hyperrec::DcaHe,
-                  hyperrec::DcaPi);
+                  hyperrec::TPCsignalPi);
 
 DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   o2::soa::Index<>,
                   hyperrec::IsMatter,
-                  hyperrec::Pt,
-                  hyperrec::Phi,
-                  hyperrec::Eta,
+                  hyperrec::PtHe3,
+                  hyperrec::PhiHe3,
+                  hyperrec::EtaHe3,
+                  hyperrec::PtPi,
+                  hyperrec::PhiPi,
+                  hyperrec::EtaPi,
+                  hyperrec::XPrimVtx,
+                  hyperrec::YPrimVtx,
+                  hyperrec::ZPrimVtx,
                   hyperrec::XDecVtx,
                   hyperrec::YDecVtx,
                   hyperrec::ZDecVtx,
-                  hyperrec::MassH3L,
-                  hyperrec::MassH4L,
                   hyperrec::DcaV0Daug,
-                  hyperrec::CosPA,
+                  hyperrec::DcaHe,
+                  hyperrec::DcaPi,
                   hyperrec::NSigmaHe,
                   hyperrec::NTPCclusHe,
                   hyperrec::NTPCclusPi,
@@ -97,8 +111,6 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::TPCmomPi,
                   hyperrec::TPCsignalHe,
                   hyperrec::TPCsignalPi,
-                  hyperrec::DcaHe,
-                  hyperrec::DcaPi,
                   hyperrec::GenPt,
                   hyperrec::GenPhi,
                   hyperrec::GenEta,
