@@ -999,20 +999,22 @@ struct tofSpectra {
 
   Preslice<aod::SpTracks> spPerCol = aod::spectra::collisionId;
   SliceCache cacheTrk;
-  void processDerived(aod::SpColl const& collision,
+  void processDerived(aod::SpColls const& collisions,
                       aod::SpTracks const& tracks)
   {
-    if (!isEventSelected<true, true>(collision, tracks)) {
-      return;
-    }
-    const auto& tracksInCollision = tracks.sliceByCached(aod::spectra::collisionId, collision.globalIndex(), cacheTrk);
-    for (const auto& track : tracksInCollision) {
-      if (!isTrackSelected<true>(track)) {
-        continue;
+    for (const auto& collision : collisions) {
+      if (!isEventSelected<true, true>(collision, tracks)) {
+        return;
       }
-      fillParticleHistos<false, PID::Pion>(track, collision);
-      fillParticleHistos<false, PID::Kaon>(track, collision);
-      fillParticleHistos<false, PID::Proton>(track, collision);
+      const auto& tracksInCollision = tracks.sliceByCached(aod::spectra::collisionId, collision.globalIndex(), cacheTrk);
+      for (const auto& track : tracksInCollision) {
+        if (!isTrackSelected<true>(track)) {
+          continue;
+        }
+        fillParticleHistos<false, PID::Pion>(track, collision);
+        fillParticleHistos<false, PID::Kaon>(track, collision);
+        fillParticleHistos<false, PID::Proton>(track, collision);
+      }
     }
   } // end of the process function
   PROCESS_SWITCH(tofSpectra, processDerived, "Derived data processor", false);
