@@ -25,6 +25,14 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
+/// includes KFParticle
+#include "Tools/KFparticle/KFUtilities.h"
+#include "KFParticle.h"
+#include "KFPTrack.h"
+#include "KFPVertex.h"
+#include "KFParticleBase.h"
+#include "KFVertex.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
@@ -35,6 +43,8 @@ struct HfCandidateCreator2Prong {
   Produces<aod::HfCand2ProngBase> rowCandidateBase;
 
   // vertexing
+  Configurable<bool> useDCAFitterN{"useDCAFitterN", true, "calculate vertex with DCAFitterN"};
+  Configurable<bool> useKFParticle{"useKFParticle", false, "calculate vertex with KFParticle"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
@@ -74,6 +84,8 @@ struct HfCandidateCreator2Prong {
   OutputObj<TH1F> hCovSVZZ{TH1F("hCovSVZZ", "2-prong candidates;ZZ element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   OutputObj<TH2F> hDcaXYProngs{TH2F("hDcaXYProngs", "DCAxy of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
   OutputObj<TH2F> hDcaZProngs{TH2F("hDcaZProngs", "DCAz of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
+  OutputObj<TH1F> hUseKForDCAFitter{TH1F("hUseKForDCAFitter", ";Use KF or DCAFitterN;entries", 2, -0.5, 1.5)};  // 0 for KF, 1 for DCAFitterN
+  OutputObj<TH1F> hKFMassFailed{TH1F("hKFMassFailed", ";KF geometrical fitting failed;entries", 3, -0.5, 2.5)}; // 0 for D0 failed, 1 for D0bar failed
 
   void init(InitContext const&)
   {
@@ -95,14 +107,26 @@ struct HfCandidateCreator2Prong {
   {
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df;
-    // df.setBz(bz);
-    df.setPropagateToPCA(propagateToPCA);
-    df.setMaxR(maxR);
-    df.setMaxDZIni(maxDZIni);
-    df.setMinParamChange(minParamChange);
-    df.setMinRelChi2Change(minRelChi2Change);
-    df.setUseAbsDCA(useAbsDCA);
-    df.setWeightedFinalPCA(useWeightedFinalPCA);
+    if (useDCAFitterN) {
+      // df.setBz(bz);
+      df.setPropagateToPCA(propagateToPCA);
+      df.setMaxR(maxR);
+      df.setMaxDZIni(maxDZIni);
+      df.setMinParamChange(minParamChange);
+      df.setMinRelChi2Change(minRelChi2Change);
+      df.setUseAbsDCA(useAbsDCA);
+      df.setWeightedFinalPCA(useWeightedFinalPCA);
+      hUseKForDCAFitter->Fill(1.0);
+    }
+    if (useKFParticle) {
+      hUseKForDCAFitter->Fill(0.0);
+    }
+    if (!useDCAFitterN && !useKFParticle) {
+      LOGP(fatal, "At least one package between useDCAFitterN and useDCAFitterN should be enabled at a time.");
+    }
+    if (useDCAFitterN && useKFParticle) {
+      LOGP(fatal, "Only one package between useDCAFitterN and useDCAFitterN can be enabled at a time.");
+    }
 
     // loop over pairs of track indices
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
@@ -124,88 +148,195 @@ struct HfCandidateCreator2Prong {
         // df.setBz(bz); /// put it outside the 'if'! Otherwise we have a difference wrt bz Configurable (< 1 permille) in Run2 conv. data
         // df.print();
       }
-      df.setBz(bz);
 
-      // reconstruct the 2-prong secondary vertex
-      if (df.process(trackParVarPos1, trackParVarNeg1) == 0) {
-        continue;
+      if (useDCAFitterN) {
+        df.setBz(bz);
+
+        // reconstruct the 2-prong secondary vertex
+        if (df.process(trackParVarPos1, trackParVarNeg1) == 0) {
+          continue;
+        }
+        const auto& secondaryVertex = df.getPCACandidate();
+        auto chi2PCA = df.getChi2AtPCACandidate();
+        auto covMatrixPCA = df.calcPCACovMatrixFlat();
+        hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
+        hCovSVYY->Fill(covMatrixPCA[2]);
+        hCovSVXZ->Fill(covMatrixPCA[3]);
+        hCovSVZZ->Fill(covMatrixPCA[5]);
+        auto trackParVar0 = df.getTrack(0);
+        auto trackParVar1 = df.getTrack(1);
+
+        // get track momenta
+        array<float, 3> pvec0;
+        array<float, 3> pvec1;
+        trackParVar0.getPxPyPzGlo(pvec0);
+        trackParVar1.getPxPyPzGlo(pvec1);
+
+        // get track impact parameters
+        // This modifies track momenta!
+        auto primaryVertex = getPrimaryVertex(collision);
+        auto covMatrixPV = primaryVertex.getCov();
+        if constexpr (doPvRefit) {
+          /// use PV refit
+          /// Using it in the rowCandidateBase all dynamic columns shall take it into account
+          // coordinates
+          primaryVertex.setX(rowTrackIndexProng2.pvRefitX());
+          primaryVertex.setY(rowTrackIndexProng2.pvRefitY());
+          primaryVertex.setZ(rowTrackIndexProng2.pvRefitZ());
+          // covariance matrix
+          primaryVertex.setSigmaX2(rowTrackIndexProng2.pvRefitSigmaX2());
+          primaryVertex.setSigmaXY(rowTrackIndexProng2.pvRefitSigmaXY());
+          primaryVertex.setSigmaY2(rowTrackIndexProng2.pvRefitSigmaY2());
+          primaryVertex.setSigmaXZ(rowTrackIndexProng2.pvRefitSigmaXZ());
+          primaryVertex.setSigmaYZ(rowTrackIndexProng2.pvRefitSigmaYZ());
+          primaryVertex.setSigmaZ2(rowTrackIndexProng2.pvRefitSigmaZ2());
+          covMatrixPV = primaryVertex.getCov();
+        }
+        hCovPVXX->Fill(covMatrixPV[0]);
+        hCovPVYY->Fill(covMatrixPV[2]);
+        hCovPVXZ->Fill(covMatrixPV[3]);
+        hCovPVZZ->Fill(covMatrixPV[5]);
+        o2::dataformats::DCA impactParameter0;
+        o2::dataformats::DCA impactParameter1;
+        trackParVar0.propagateToDCA(primaryVertex, bz, &impactParameter0);
+        trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
+        hDcaXYProngs->Fill(track0.pt(), impactParameter0.getY() * toMicrometers);
+        hDcaXYProngs->Fill(track1.pt(), impactParameter1.getY() * toMicrometers);
+        hDcaZProngs->Fill(track0.pt(), impactParameter0.getZ() * toMicrometers);
+        hDcaZProngs->Fill(track1.pt(), impactParameter1.getZ() * toMicrometers);
+
+        // get uncertainty of the decay length
+        double phi, theta;
+        getPointDirection(array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
+        auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
+        auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
+
+        // fill candidate table rows
+        rowCandidateBase(collision.globalIndex(),
+                         primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
+                         secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
+                         errorDecayLength, errorDecayLengthXY,
+                         chi2PCA,
+                         pvec0[0], pvec0[1], pvec0[2],
+                         pvec1[0], pvec1[1], pvec1[2],
+                         impactParameter0.getY(), impactParameter1.getY(),
+                         std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
+                         rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(),
+                         rowTrackIndexProng2.hfflag());
+
+        // fill histograms
+        if (fillHistograms) {
+          // calculate invariant masses
+          auto arrayMomenta = array{pvec0, pvec1};
+          massPiK = RecoDecay::m(arrayMomenta, array{massPi, massK});
+          massKPi = RecoDecay::m(arrayMomenta, array{massK, massPi});
+          hMass2->Fill(massPiK);
+          hMass2->Fill(massKPi);
+        }
       }
-      const auto& secondaryVertex = df.getPCACandidate();
-      auto chi2PCA = df.getChi2AtPCACandidate();
-      auto covMatrixPCA = df.calcPCACovMatrixFlat();
-      hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
-      hCovSVYY->Fill(covMatrixPCA[2]);
-      hCovSVXZ->Fill(covMatrixPCA[3]);
-      hCovSVZZ->Fill(covMatrixPCA[5]);
-      auto trackParVar0 = df.getTrack(0);
-      auto trackParVar1 = df.getTrack(1);
 
-      // get track momenta
-      array<float, 3> pvec0;
-      array<float, 3> pvec1;
-      trackParVar0.getPxPyPzGlo(pvec0);
-      trackParVar1.getPxPyPzGlo(pvec1);
+      if (useKFParticle) {
+        Float_t covMatrixPV[6];
 
-      // get track impact parameters
-      // This modifies track momenta!
-      auto primaryVertex = getPrimaryVertex(collision);
-      auto covMatrixPV = primaryVertex.getCov();
-      if constexpr (doPvRefit) {
-        /// use PV refit
-        /// Using it in the rowCandidateBase all dynamic columns shall take it into account
-        // coordinates
-        primaryVertex.setX(rowTrackIndexProng2.pvRefitX());
-        primaryVertex.setY(rowTrackIndexProng2.pvRefitY());
-        primaryVertex.setZ(rowTrackIndexProng2.pvRefitZ());
-        // covariance matrix
-        primaryVertex.setSigmaX2(rowTrackIndexProng2.pvRefitSigmaX2());
-        primaryVertex.setSigmaXY(rowTrackIndexProng2.pvRefitSigmaXY());
-        primaryVertex.setSigmaY2(rowTrackIndexProng2.pvRefitSigmaY2());
-        primaryVertex.setSigmaXZ(rowTrackIndexProng2.pvRefitSigmaXZ());
-        primaryVertex.setSigmaYZ(rowTrackIndexProng2.pvRefitSigmaYZ());
-        primaryVertex.setSigmaZ2(rowTrackIndexProng2.pvRefitSigmaZ2());
-        covMatrixPV = primaryVertex.getCov();
-      }
-      hCovPVXX->Fill(covMatrixPV[0]);
-      hCovPVYY->Fill(covMatrixPV[2]);
-      hCovPVXZ->Fill(covMatrixPV[3]);
-      hCovPVZZ->Fill(covMatrixPV[5]);
-      o2::dataformats::DCA impactParameter0;
-      o2::dataformats::DCA impactParameter1;
-      trackParVar0.propagateToDCA(primaryVertex, bz, &impactParameter0);
-      trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
-      hDcaXYProngs->Fill(track0.pt(), impactParameter0.getY() * toMicrometers);
-      hDcaXYProngs->Fill(track1.pt(), impactParameter1.getY() * toMicrometers);
-      hDcaZProngs->Fill(track0.pt(), impactParameter0.getZ() * toMicrometers);
-      hDcaZProngs->Fill(track1.pt(), impactParameter1.getZ() * toMicrometers);
+        KFParticle::SetField(bz);
+        KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
 
-      // get uncertainty of the decay length
-      double phi, theta;
-      getPointDirection(array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
-      auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
-      auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
+        if constexpr (doPvRefit) {
+          /// use PV refit
+          /// Using it in the rowCandidateBase all dynamic columns shall take it into account
+          // coordinates
+          kfpVertex.SetXYZ(rowTrackIndexProng2.pvRefitX(), rowTrackIndexProng2.pvRefitY(), rowTrackIndexProng2.pvRefitZ());
+          // covariance matrix
+          kfpVertex.SetCovarianceMatrix(rowTrackIndexProng2.pvRefitSigmaX2(), rowTrackIndexProng2.pvRefitSigmaXY(), rowTrackIndexProng2.pvRefitSigmaY2(), rowTrackIndexProng2.pvRefitSigmaXZ(), rowTrackIndexProng2.pvRefitSigmaYZ(), rowTrackIndexProng2.pvRefitSigmaZ2());
+        }
+        kfpVertex.GetCovarianceMatrix(covMatrixPV);
+        KFParticle KFPV(kfpVertex);
+        hCovPVXX->Fill(covMatrixPV[0]);
+        hCovPVYY->Fill(covMatrixPV[2]);
+        hCovPVXZ->Fill(covMatrixPV[3]);
+        hCovPVZZ->Fill(covMatrixPV[5]);
 
-      // fill candidate table rows
-      rowCandidateBase(collision.globalIndex(),
-                       primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
-                       secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
-                       errorDecayLength, errorDecayLengthXY,
-                       chi2PCA,
-                       pvec0[0], pvec0[1], pvec0[2],
-                       pvec1[0], pvec1[1], pvec1[2],
-                       impactParameter0.getY(), impactParameter1.getY(),
-                       std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
-                       rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(),
-                       rowTrackIndexProng2.hfflag());
+        KFPTrack kfpTrackPosPi;
+        KFPTrack kfpTrackNegPi;
+        KFPTrack kfpTrackPosKa;
+        KFPTrack kfpTrackNegKa;
 
-      // fill histograms
-      if (fillHistograms) {
-        // calculate invariant masses
-        auto arrayMomenta = array{pvec0, pvec1};
-        massPiK = RecoDecay::m(arrayMomenta, array{massPi, massK});
-        massKPi = RecoDecay::m(arrayMomenta, array{massK, massPi});
-        hMass2->Fill(massPiK);
-        hMass2->Fill(massKPi);
+        if (track0.sign() == 1 && track1.sign() == -1) {
+          kfpTrackPosPi = createKFPTrackFromTrack(track0);
+          kfpTrackNegKa = createKFPTrackFromTrack(track1);
+          kfpTrackPosKa = createKFPTrackFromTrack(track0);
+          kfpTrackNegPi = createKFPTrackFromTrack(track1);
+        }
+
+        KFParticle KFPosPion(kfpTrackPosPi, 211);
+        KFParticle KFNegPion(kfpTrackNegPi, 211);
+        KFParticle KFPosKaon(kfpTrackPosKa, 321);
+        KFParticle KFNegKaon(kfpTrackNegKa, 321);
+
+        float impactParameter0XY = 0., errImpactParameter0XY = 0., impactParameter1XY = 0., errImpactParameter1XY = 0.;
+        if (!KFPosPion.GetDistanceFromVertexXY(KFPV, impactParameter0XY, errImpactParameter0XY)) {
+          hDcaXYProngs->Fill(track0.pt(), impactParameter0XY * toMicrometers);
+          hDcaZProngs->Fill(track0.pt(), sqrt(KFPosPion.GetDistanceFromVertex(KFPV) * KFPosPion.GetDistanceFromVertex(KFPV) - impactParameter0XY * impactParameter0XY) * toMicrometers);
+        }
+        if (KFPosPion.GetDistanceFromVertexXY(KFPV, impactParameter0XY, errImpactParameter0XY)) {
+          hDcaXYProngs->Fill(track0.pt(), -999.);
+          hDcaZProngs->Fill(track0.pt(), -999.);
+        }
+        if (!KFNegPion.GetDistanceFromVertexXY(KFPV, impactParameter1XY, errImpactParameter1XY)) {
+          hDcaXYProngs->Fill(track1.pt(), impactParameter1XY * toMicrometers);
+          hDcaZProngs->Fill(track1.pt(), sqrt(KFNegPion.GetDistanceFromVertex(KFPV) * KFNegPion.GetDistanceFromVertex(KFPV) - impactParameter1XY * impactParameter1XY) * toMicrometers);
+        }
+        if (KFNegPion.GetDistanceFromVertexXY(KFPV, impactParameter1XY, errImpactParameter1XY)) {
+          hDcaXYProngs->Fill(track1.pt(), -999.);
+          hDcaZProngs->Fill(track1.pt(), -999.);
+        }
+
+        KFParticle KFDZero;
+        const KFParticle* D0Daughters[2] = {&KFPosPion, &KFNegKaon};
+        KFDZero.SetConstructMethod(2);
+        KFDZero.Construct(D0Daughters, 2);
+        KFParticle KFDZeroBar;
+        const KFParticle* D0BarDaughters[2] = {&KFNegPion, &KFPosKaon};
+        KFDZeroBar.SetConstructMethod(2);
+        KFDZeroBar.Construct(D0BarDaughters, 2);
+
+        hCovSVXX->Fill(KFDZero.Covariance(0, 0));
+        hCovSVYY->Fill(KFDZero.Covariance(1, 1));
+        hCovSVXZ->Fill(KFDZero.Covariance(2, 0));
+        hCovSVZZ->Fill(KFDZero.Covariance(2, 2));
+        auto covMatrixSV = KFDZero.CovarianceMatrix();
+
+        double phi, theta;
+        getPointDirection(array{KFPV.GetX(), KFPV.GetY(), KFPV.GetZ()}, array{KFDZero.GetX(), KFDZero.GetY(), KFDZero.GetZ()}, phi, theta);
+        auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
+        auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
+
+        // fill candidate table rows
+        rowCandidateBase(collision.globalIndex(),
+                         KFPV.GetX(), KFPV.GetY(), KFPV.GetZ(),
+                         KFDZero.GetX(), KFDZero.GetY(), KFDZero.GetZ(),
+                         errorDecayLength, errorDecayLengthXY, // TODO: much different from the DCAFitterN one
+                         KFDZero.GetChi2() / KFDZero.GetNDF(), // TODO: to make sure it should be chi2 only or chi2/ndf, much different from the DCAFitterN one
+                         KFPosPion.GetPx(), KFPosPion.GetPy(), KFPosPion.GetPz(),
+                         KFNegKaon.GetPx(), KFNegKaon.GetPy(), KFNegKaon.GetPz(),
+                         impactParameter0XY, impactParameter1XY,
+                         errImpactParameter0XY, errImpactParameter1XY,
+                         rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(),
+                         rowTrackIndexProng2.hfflag());
+
+        // fill histograms
+        if (fillHistograms) {
+          Float_t massDZero = 0., errMassDZero = 0.;
+          Float_t massDZeroBar = 0., errMassDZeroBar = 0.;
+          if (!KFDZero.GetMass(massDZero, errMassDZero))
+            hMass2->Fill(massDZero);
+          if (KFDZero.GetMass(massDZero, errMassDZero))
+            hKFMassFailed->Fill(0);
+          if (!KFDZeroBar.GetMass(massDZeroBar, errMassDZeroBar))
+            hMass2->Fill(massDZeroBar);
+          if (KFDZeroBar.GetMass(massDZeroBar, errMassDZeroBar))
+            hKFMassFailed->Fill(1);
+        }
       }
     }
   }
