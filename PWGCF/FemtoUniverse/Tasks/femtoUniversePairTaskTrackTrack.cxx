@@ -35,6 +35,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoUniverse;
@@ -142,6 +143,7 @@ struct femtoUniversePairTaskTrackTrack {
   FemtoUniverseContainer<femtoUniverseContainer::EventType::mixed, femtoUniverseContainer::Observable::kstar> mixedEventCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kTrack> pairCleaner;
   FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kTrack> pairCloseRejection;
+  FemtoUniverseTrackSelection trackCuts;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -260,7 +262,9 @@ struct femtoUniversePairTaskTrackTrack {
       return false;
     } else {
       LOGF(fatal, "Wrong number of particle chosen! It should be 1 or 2. It is -> %d", particle_number);
+      return false;
     }
+    return false;
   }
 
   void init(InitContext&)
@@ -328,22 +332,30 @@ struct femtoUniversePairTaskTrackTrack {
       //   continue;
       // }
 
+      if (!IsParticleNSigma((int8_t)1, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
+        continue;
+      }
+
       trackHistoPartOne.fillQA<isMC, false>(part);
     }
 
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
-        if (part.p() > twotracksconfigs.ConfCutTable->get("PartTwo", "MaxP") || part.pt() > twotracksconfigs.ConfCutTable->get("PartTwo", "MaxPt")) {
-          continue;
-        }
-        if (!isFullPIDSelected(part.pidcut(),
-                               part.p(),
-                               twotracksconfigs.ConfCutTable->get("PartTwo", "PIDthr"),
-                               vPIDPartTwo,
-                               twotracksconfigs.ConfNspecies,
-                               kNsigma,
-                               twotracksconfigs.ConfCutTable->get("PartTwo", "nSigmaTPC"),
-                               twotracksconfigs.ConfCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
+        // if (part.p() > twotracksconfigs.ConfCutTable->get("PartTwo", "MaxP") || part.pt() > twotracksconfigs.ConfCutTable->get("PartTwo", "MaxPt")) {
+        //   continue;
+        // }
+        // if (!isFullPIDSelected(part.pidcut(),
+        //                        part.p(),
+        //                        twotracksconfigs.ConfCutTable->get("PartTwo", "PIDthr"),
+        //                        vPIDPartTwo,
+        //                        twotracksconfigs.ConfNspecies,
+        //                        kNsigma,
+        //                        twotracksconfigs.ConfCutTable->get("PartTwo", "nSigmaTPC"),
+        //                        twotracksconfigs.ConfCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
+        //   continue;
+        // }
+
+        if (!IsParticleNSigma((int8_t)2, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
           continue;
         }
         trackHistoPartTwo.fillQA<isMC, false>(part);
@@ -351,25 +363,32 @@ struct femtoUniversePairTaskTrackTrack {
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
-      if (p1.p() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxP") || p1.pt() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxPt") || p2.p() > twotracksconfigs.ConfCutTable->get("PartTwo", "MaxP") || p2.pt() > twotracksconfigs.ConfCutTable->get("PartTwo", "MaxPt")) {
+      // if (p1.p() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxP") || p1.pt() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxPt") || p2.p() > twotracksconfigs.ConfCutTable->get("PartTwo", "MaxP") || p2.pt() > twotracksconfigs.ConfCutTable->get("PartTwo", "MaxPt")) {
+      //   continue;
+      // }
+      // if (!isFullPIDSelected(p1.pidcut(),
+      //                        p1.p(),
+      //                        twotracksconfigs.ConfCutTable->get("PartOne", "PIDthr"),
+      //                        vPIDPartOne,
+      //                        twotracksconfigs.ConfNspecies,
+      //                        kNsigma,
+      //                        twotracksconfigs.ConfCutTable->get("PartOne", "nSigmaTPC"),
+      //                        twotracksconfigs.ConfCutTable->get("PartOne", "nSigmaTPCTOF")) ||
+      //     !isFullPIDSelected(p2.pidcut(),
+      //                        p2.p(),
+      //                        twotracksconfigs.ConfCutTable->get("PartTwo", "PIDthr"),
+      //                        vPIDPartTwo,
+      //                        twotracksconfigs.ConfNspecies,
+      //                        kNsigma,
+      //                        twotracksconfigs.ConfCutTable->get("PartTwo", "nSigmaTPC"),
+      //                        twotracksconfigs.ConfCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
+      //   continue;
+      // }
+
+      if (!IsParticleNSigma((int8_t)1, p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon))) {
         continue;
       }
-      if (!isFullPIDSelected(p1.pidcut(),
-                             p1.p(),
-                             twotracksconfigs.ConfCutTable->get("PartOne", "PIDthr"),
-                             vPIDPartOne,
-                             twotracksconfigs.ConfNspecies,
-                             kNsigma,
-                             twotracksconfigs.ConfCutTable->get("PartOne", "nSigmaTPC"),
-                             twotracksconfigs.ConfCutTable->get("PartOne", "nSigmaTPCTOF")) ||
-          !isFullPIDSelected(p2.pidcut(),
-                             p2.p(),
-                             twotracksconfigs.ConfCutTable->get("PartTwo", "PIDthr"),
-                             vPIDPartTwo,
-                             twotracksconfigs.ConfNspecies,
-                             kNsigma,
-                             twotracksconfigs.ConfCutTable->get("PartTwo", "nSigmaTPC"),
-                             twotracksconfigs.ConfCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
+      if (!IsParticleNSigma((int8_t)2, p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon))) {
         continue;
       }
 

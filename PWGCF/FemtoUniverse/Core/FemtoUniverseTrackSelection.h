@@ -374,9 +374,9 @@ template <typename T>
 auto FemtoUniverseTrackSelection::getNsigmaTOF(T const& track, o2::track::PID pid)
 {
   /// skip tracks without TOF signal
-  if (!track.hasTOF()) {
-    return 999.f;
-  }
+  // if (!track.hasTOF()) {
+  //   return 999.f;
+  // }
 
   return o2::aod::pidutils::tofNSigma(pid, track);
 }
