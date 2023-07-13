@@ -28,9 +28,9 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFQATables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
@@ -346,7 +346,7 @@ struct straRecoStudy {
       histos.fill(HIST("hEventSelection"), ii, evselstats[ii]);
   }
 
-  Filter preFilterMcCollisions = aod::mccollisionprop::hasRecoCollision > 0;
+  Filter preFilterMcCollisions = aod::mccollisionprop::numRecoCollision > 0;
 
   Filter preFilterCascade =
     nabs(aod::cascdata::dcapostopv) > v0setting_dcapostopv&& nabs(aod::cascdata::dcanegtopv) > v0setting_dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv&& aod::cascdata::dcaV0daughters < v0setting_dcav0dau&& aod::cascdata::dcacascdaughters<cascadesetting_dcacascdau && aod::mccasclabel::mcParticleId> - 1;
