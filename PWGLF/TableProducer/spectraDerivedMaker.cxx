@@ -384,8 +384,8 @@ struct spectraDerivedMaker {
   unsigned int randomSeed = 0;
   void processData(CollisionCandidate::iterator const& collision,
                    soa::Join<TrackCandidates,
-                             aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr,
-                             aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr> const& tracks,
+                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
+                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr> const& tracks,
                    aod::BCs const&)
   {
     if (!isEventSelected<true, true>(collision, tracks)) {
@@ -407,12 +407,13 @@ struct spectraDerivedMaker {
       }
 
       tableTrack(tableColl.lastIndex(),
-                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaStorePi()),
-                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaStoreKa()),
-                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaStorePr()),
-                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaStorePi()),
-                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaStoreKa()),
-                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaStorePr()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaPi()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaKa()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaPr()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaPi()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaKa()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaPr()),
+
                  trk.pt() * trk.sign(), trk.eta(), trk.phi(),
                  trk.length(),
                  trk.tpcSignal(),

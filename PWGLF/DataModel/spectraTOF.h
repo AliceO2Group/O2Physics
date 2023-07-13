@@ -278,8 +278,8 @@ struct binningNSigma {
   static constexpr int nbins = (1 << 8 * sizeof(binned_t)) - 2;
   static constexpr binned_t overflowBin = nbins >> 1;
   static constexpr binned_t underflowBin = -(nbins >> 1);
-  static constexpr float binned_max = 6.0;
-  static constexpr float binned_min = -6.0;
+  static constexpr float binned_max = 10.0;
+  static constexpr float binned_min = -10.0;
   static constexpr float bin_width = (binned_max - binned_min) / nbins;
 };
 
