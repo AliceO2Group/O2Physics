@@ -116,6 +116,10 @@ struct femtoDreamProducerReducedTask {
 
   void init(InitContext&)
   {
+
+    int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
+    Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
+
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&qaRegistry);
 
