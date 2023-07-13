@@ -30,7 +30,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.998);
+    cut->SetMinCosPA(0.995);
     cut->SetMaxPCA(0.5);
     cut->SetRxyRange(1, 90);
     cut->SetMaxMeePsiPairDep([](float psipair) { return psipair < 0.4 ? 0.06 : 0.015; });
@@ -48,7 +48,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.998);
+    cut->SetMinCosPA(0.995);
     cut->SetMaxPCA(0.5);
     cut->SetRxyRange(1, 90);
     return cut;
@@ -65,7 +65,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.998);
+    cut->SetMinCosPA(0.995);
     cut->SetMaxPCA(0.5);
     cut->SetRxyRange(1, 6);
     return cut;
@@ -82,7 +82,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.998);
+    cut->SetMinCosPA(0.995);
     cut->SetMaxPCA(0.5);
     cut->SetRxyRange(16, 90);
     return cut;
@@ -280,7 +280,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.998);
+    cut->SetMinCosPA(0.995);
     cut->SetMaxPCA(0.5);
     cut->SetRxyRange(1, 90);
     return cut;

@@ -167,6 +167,7 @@ struct HfCorrelatorDsHadrons {
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
+  Configurable<float> ptCandMax{"ptCandMax", 50., "max. cand pT"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
   Configurable<float> ptTrackMax{"ptTrackMax", 50., "max. track pT"};
   Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
@@ -176,7 +177,7 @@ struct HfCorrelatorDsHadrons {
 
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
   Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
-  Filter trackFilter = (aod::track::eta < std::abs(etaTrackMax)) && (aod::track::pt > ptTrackMin) && (aod::track::dcaXY < std::abs(dcaXYTrackMax)) && (aod::track::dcaZ < std::abs(dcaZTrackMax));
+  Filter trackFilter = (aod::track::eta < std::abs(etaTrackMax)) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (aod::track::dcaXY < std::abs(dcaXYTrackMax)) && (aod::track::dcaZ < std::abs(dcaZTrackMax));
 
   using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;      // collisionFilter applied
   using SelCollisionsWithDsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;              // collisionFilter applied
@@ -373,7 +374,7 @@ struct HfCorrelatorDsHadrons {
         if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
           continue;
         }
-        if (candidate.pt() > ptTrackMax) {
+        if (candidate.pt() > ptCandMax) {
           continue;
         }
         double efficiencyWeight = 1.;
@@ -458,7 +459,7 @@ struct HfCorrelatorDsHadrons {
         if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
           continue;
         }
-        if (candidate.pt() >= ptTrackMax) {
+        if (candidate.pt() >= ptCandMax) {
           continue;
         }
         double efficiencyWeight = 1.;
@@ -538,7 +539,7 @@ struct HfCorrelatorDsHadrons {
       if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
         continue;
       }
-      if (candidate.pt() > ptTrackMax) {
+      if (candidate.pt() > ptCandMax) {
         continue;
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
@@ -689,7 +690,7 @@ struct HfCorrelatorDsHadrons {
       if (tracks1.size() == 0) {
         continue;
       }
-      LOGF(info, "Mixed event collisions: Index = (%d, %d), tracks Size: (%d, %d), Z Vertex: (%f, %f), Pool Bin: (%d, %d)", c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size(), c1.posZ(), c2.posZ(), corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFV0M())), corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M())));
+      // LOGF(info, "Mixed event collisions: Index = (%d, %d), tracks Size: (%d, %d), Z Vertex: (%f, %f), Pool Bin: (%d, %d)", c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size(), c1.posZ(), c2.posZ(), corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFV0M())), corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M())));
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
       int poolBinDs = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFV0M()));
       registry.fill(HIST("hTracksPoolBin"), poolBin);
@@ -704,7 +705,7 @@ struct HfCorrelatorDsHadrons {
 
         // DsToKKPi and DsToPiKK division
         if (cand.isSelDsToKKPi() >= selectionFlagDs) {
-          LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d), KKPi", cand.index(), pAssoc.index(), c1.index(), c2.index(), cand.collision().index(), pAssoc.collision().index());
+          // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d), KKPi", cand.index(), pAssoc.index(), c1.index(), c2.index(), cand.collision().index(), pAssoc.collision().index());
           entryDsHadronPair(getDeltaPhi(cand.phi(), pAssoc.phi()),
                             cand.eta() - pAssoc.eta(),
                             cand.pt(),
@@ -713,7 +714,7 @@ struct HfCorrelatorDsHadrons {
           entryDsHadronRecoInfo(invMassDsToKKPi(cand), false);
           entryDsHadronGenInfo(false);
         } else if (cand.isSelDsToPiKK() >= selectionFlagDs) {
-          LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d), PiKK", cand.index(), pAssoc.index(), c1.index(), c2.index(), cand.collision().index(), pAssoc.collision().index());
+          // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d), PiKK", cand.index(), pAssoc.index(), c1.index(), c2.index(), cand.collision().index(), pAssoc.collision().index());
           entryDsHadronPair(getDeltaPhi(cand.phi(), pAssoc.phi()),
                             cand.eta() - pAssoc.eta(),
                             cand.pt(),
@@ -736,7 +737,7 @@ struct HfCorrelatorDsHadrons {
       if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
         continue;
       }
-      if (candidate.pt() > ptTrackMax) {
+      if (candidate.pt() > ptCandMax) {
         continue;
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
