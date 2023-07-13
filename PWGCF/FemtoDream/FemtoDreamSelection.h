@@ -111,7 +111,7 @@ class FemtoDreamSelection
     if (isSelected(observable)) {
       cutContainer |= 1UL << counter;
       if (registry) {
-        registry->fill(HIST("AnalysisQA/CutCounter"), sizeof(o2::aod::femtodreamparticle::cutContainerType));
+        registry->fill(HIST("AnalysisQA/CutCounter"), 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType));
       }
     } else {
       if (registry) {

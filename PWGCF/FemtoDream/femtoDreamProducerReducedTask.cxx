@@ -243,11 +243,13 @@ struct femtoDreamProducerReducedTask {
     }
 
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
-    /// That includes checking if there are any usable tracks in a collision
-    if (!colCuts.isSelectedCollision(col)) {
-      return;
-    }
-    if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
+    // If the basic selection is NOT fulfilled:
+    // in case of skimming run - don't store such collisions
+    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
+    if (!colCuts.isSelectedCollision(col, tracks, trackCuts)) {
+      if (ConfIsTrigger) {
+        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+      }
       return;
     }
 

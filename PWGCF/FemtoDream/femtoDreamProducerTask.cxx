@@ -49,14 +49,9 @@ using FemtoFullCollision =
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks =
-  soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullEl,
-            aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-            aod::pidTPCFullDe, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
-
-// using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join
-// table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s>
-// to be used when we add v0Filter
+  soa::Join<aod::FullTracks, aod::TracksDCA,
+            aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+            aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 } // namespace o2::aod
 
 template <typename T>
@@ -170,9 +165,7 @@ struct femtoDreamProducerTask {
 
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
-    TrackRegistry.add("AnalysisQA/PIDCutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
     V0Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
-    V0Registry.add("AnalysisQA/PIDCutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
 
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&qaRegistry);
@@ -365,7 +358,20 @@ struct femtoDreamProducerTask {
 
     // check whether the basic event selection criteria are fulfilled
     // that included checking if there is at least on usable track or V0
-    if (!colCuts.isSelectedCollision(col)) {
+    bool keepCollsion = false;
+    if (ConfIsActivateV0.value) {
+      if (colCuts.isSelectedCollision(col, tracks, trackCuts) || colCuts.isSelectedCollision(col, fullV0s, v0Cuts, tracks)) {
+        keepCollsion = true;
+      }
+    } else if (colCuts.isSelectedCollision(col, tracks, trackCuts)) {
+      keepCollsion = true;
+    }
+    // if the basic selection is NOT fulfilled
+    // in case of trigger store the collision even though there are no particles
+    if (!keepCollsion) {
+      if (ConfIsTrigger) {
+        outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+      }
       return;
     }
     if (ConfIsActivateV0.value) {

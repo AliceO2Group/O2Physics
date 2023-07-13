@@ -369,8 +369,6 @@ auto FemtoDreamTrackSelection::getNsigmaTPC(T const& track, o2::track::PID pid)
 {
   if (pid == o2::track::PID::Electron)
     return track.tpcNSigmaEl();
-  else if (pid == o2::track::PID::Muon)
-    return track.tpcNSigmaMu();
   else if (pid == o2::track::PID::Pion)
     return track.tpcNSigmaPi();
   else if (pid == o2::track::PID::Kaon)
@@ -392,8 +390,6 @@ auto FemtoDreamTrackSelection::getNsigmaTOF(T const& track, o2::track::PID pid)
   }
   if (pid == o2::track::PID::Electron)
     return track.tofNSigmaEl();
-  else if (pid == o2::track::PID::Muon)
-    return track.tofNSigmaMu();
   else if (pid == o2::track::PID::Pion)
     return track.tofNSigmaPi();
   else if (pid == o2::track::PID::Kaon)
@@ -403,8 +399,7 @@ auto FemtoDreamTrackSelection::getNsigmaTOF(T const& track, o2::track::PID pid)
   else if (pid == o2::track::PID::Deuteron)
     return track.tofNSigmaDe();
   else
-    LOG(info) << "what";
-  return 999.f;
+    return 999.f;
 }
 
 template <typename T>
