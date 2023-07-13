@@ -167,8 +167,8 @@ struct HfCorrelatorDsHadrons {
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
+  Configurable<float> ptCandMax{"ptCandMax", 50., "max. track pT"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
-  Configurable<float> ptTrackMax{"ptTrackMax", 50., "max. track pT"};
   Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
@@ -373,7 +373,7 @@ struct HfCorrelatorDsHadrons {
         if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
           continue;
         }
-        if (candidate.pt() > ptTrackMax) {
+        if (candidate.pt() > ptCandMax) {
           continue;
         }
         double efficiencyWeight = 1.;
@@ -458,7 +458,7 @@ struct HfCorrelatorDsHadrons {
         if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
           continue;
         }
-        if (candidate.pt() >= ptTrackMax) {
+        if (candidate.pt() >= ptCandMax) {
           continue;
         }
         double efficiencyWeight = 1.;
@@ -538,7 +538,7 @@ struct HfCorrelatorDsHadrons {
       if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
         continue;
       }
-      if (candidate.pt() > ptTrackMax) {
+      if (candidate.pt() > ptCandMax) {
         continue;
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
@@ -736,7 +736,7 @@ struct HfCorrelatorDsHadrons {
       if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
         continue;
       }
-      if (candidate.pt() > ptTrackMax) {
+      if (candidate.pt() > ptCandMax) {
         continue;
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
