@@ -240,7 +240,7 @@ struct HfTaskLcToK0sP {
   }
 
   void
-    process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates, aod::BigTracksPID const&)
+    process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates)
   {
     // Printf("Candidates: %d", candidates.size());
     for (auto& candidate : candidates) {
@@ -335,22 +335,19 @@ struct HfTaskLcToK0sP {
       registry.fill(HIST("hCtCand"), ctLc);
       registry.fill(HIST("hCtCandVsPtCand"), ctLc, ptCand);
 
-      const auto& bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor track
-      auto tpcNSigmaPr = bach.tpcNSigmaPr();
-      auto pBach = bach.p();
+      auto tpcNSigmaPr = candidate.tpcNSigmaPr();
+      auto pBach = RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1());
       registry.fill(HIST("hTPCNSigmaPrBach"), tpcNSigmaPr);
       registry.fill(HIST("hPBachVsTPCNSigmaPrBach"), pBach, tpcNSigmaPr);
-      if (bach.hasTOF()) {
-        auto tofNSigmaPr = bach.tofNSigmaPr();
+      if (candidate.hasTOF()) {
+        auto tofNSigmaPr = candidate.tofNSigmaPr();
         registry.fill(HIST("hTOFNSigmaPrBach"), tofNSigmaPr);
         registry.fill(HIST("hPBachVsTOFNSigmaPrBach"), pBach, tofNSigmaPr);
       }
     }
   }
 
-  void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMcRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particlesMC,
-                 aod::BigTracksMC const& tracks, aod::BigTracksPID const&)
+  void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMcRec>> const& candidates)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
@@ -387,9 +384,8 @@ struct HfTaskLcToK0sP {
       auto decayLengthXY = candidate.decayLengthXY();
       auto ctLc = o2::aod::hf_cand_3prong::ctLc(candidate);
 
-      const auto& bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor track
-      auto tpcNSigmaPr = bach.tpcNSigmaPr();
-      auto pBach = bach.p();
+      auto tpcNSigmaPr = candidate.tpcNSigmaPr();
+      auto pBach = RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1());
 
       if (std::abs(candidate.flagMcMatchRec()) == 1) {
         registry.fill(HIST("MC/Rec/hPtCandRecSig"), ptCand);
@@ -445,8 +441,8 @@ struct HfTaskLcToK0sP {
         registry.fill(HIST("MC/Rec/hCtCandVsPtCandRecSig"), ctLc, ptCand);
         registry.fill(HIST("MC/Rec/hTPCNSigmaPrBachRecSig"), tpcNSigmaPr);
         registry.fill(HIST("MC/Rec/hPBachVsTPCNSigmaPrBachRecSig"), pBach, tpcNSigmaPr);
-        if (bach.hasTOF()) {
-          auto tofNSigmaPr = bach.tofNSigmaPr();
+        if (candidate.hasTOF()) {
+          auto tofNSigmaPr = candidate.tofNSigmaPr();
           registry.fill(HIST("MC/Rec/hTOFNSigmaPrBachRecSig"), tofNSigmaPr);
           registry.fill(HIST("MC/Rec/hPBachVsTOFNSigmaPrBachRecSig"), pBach, tofNSigmaPr);
         }
@@ -504,15 +500,19 @@ struct HfTaskLcToK0sP {
         registry.fill(HIST("MC/Rec/hCtCandVsPtCandRecBg"), ctLc, ptCand);
         registry.fill(HIST("MC/Rec/hTPCNSigmaPrBachRecBg"), tpcNSigmaPr);
         registry.fill(HIST("MC/Rec/hPBachVsTPCNSigmaPrBachRecBg"), pBach, tpcNSigmaPr);
-        if (bach.hasTOF()) {
-          auto tofNSigmaPr = bach.tofNSigmaPr();
+        if (candidate.hasTOF()) {
+          auto tofNSigmaPr = candidate.tofNSigmaPr();
           registry.fill(HIST("MC/Rec/hTOFNSigmaPrBachRecBg"), tofNSigmaPr);
           registry.fill(HIST("MC/Rec/hPBachVsTOFNSigmaPrBachRecBg"), pBach, tofNSigmaPr);
         }
       }
     }
-    // MC gen.
-    // Printf("MC Particles: %d", particlesMC.size());
+  }
+
+  PROCESS_SWITCH(HfTaskLcToK0sP, processMc, "Process MC data", false);
+
+  void processMcGen(soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particlesMC)
+  {
     for (auto& particle : particlesMC) {
       if (etaCandMax >= 0. && std::abs(particle.eta()) > etaCandMax) {
         // Printf("MC Gen.: eta rejection: %g", particle.eta());
@@ -532,7 +532,7 @@ struct HfTaskLcToK0sP {
     }
   }
 
-  PROCESS_SWITCH(HfTaskLcToK0sP, processMc, "Process MC data", false);
+  PROCESS_SWITCH(HfTaskLcToK0sP, processMcGen, "Process MCGen data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

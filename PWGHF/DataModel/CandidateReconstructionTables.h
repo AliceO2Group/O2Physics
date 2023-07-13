@@ -545,6 +545,8 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin,
 DECLARE_SOA_COLUMN(V0X, v0x, float);                        //! X position of V0 decay
 DECLARE_SOA_COLUMN(V0Y, v0y, float);                        //! Y position of V0 decay
 DECLARE_SOA_COLUMN(V0Z, v0z, float);                        //! Z position of V0 decay
+DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                   //! has TPC information
+DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                   //! has TOF information
 
 template <typename T>
 auto invMassLcToK0sP(const T& candidate)
@@ -589,6 +591,19 @@ DECLARE_SOA_TABLE(HfCandCascBase, "AOD", "HFCANDCASCBASE", //!
                   v0data::DCAV0Daughters,
                   v0data::DCAPosToPV, // this is the impact param wrt prim vtx in xy!
                   v0data::DCANegToPV, // this is the impact param wrt prim vtx in xy!
+                  // PID
+                  pidtpc::TPCNSigmaEl,
+                  pidtpc::TPCNSigmaMu,
+                  pidtpc::TPCNSigmaPi,
+                  pidtpc::TPCNSigmaKa,
+                  pidtpc::TPCNSigmaPr,
+                  pidtof::TOFNSigmaEl,
+                  pidtof::TOFNSigmaMu,
+                  pidtof::TOFNSigmaPi,
+                  pidtof::TOFNSigmaKa,
+                  pidtof::TOFNSigmaPr,
+                  hf_cand_casc::HasTPC,
+                  hf_cand_casc::HasTOF,
                   /* dynamic columns */
                   hf_cand_2prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_2prong::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,

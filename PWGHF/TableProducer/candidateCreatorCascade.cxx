@@ -40,7 +40,7 @@ using MyBigTracks = aod::BigTracksMC;
     cmd;                             \
   }
 #else
-using MyBigTracks = aod::BigTracks;
+using MyBigTracks = aod::BigTracksPID;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
@@ -234,7 +234,19 @@ struct HfCandidateCreatorCascade {
                        v0.pxneg(), v0.pyneg(), v0.pzneg(),
                        v0.dcaV0daughters(),
                        v0.dcapostopv(),
-                       v0.dcanegtopv());
+                       v0.dcanegtopv(),
+                       bach.tpcNSigmaEl(),
+                       bach.tpcNSigmaMu(),
+                       bach.tpcNSigmaPi(),
+                       bach.tpcNSigmaKa(),
+                       bach.tpcNSigmaPr(),
+                       bach.tofNSigmaEl(),
+                       bach.tofNSigmaMu(),
+                       bach.tofNSigmaPi(),
+                       bach.tofNSigmaKa(),
+                       bach.tofNSigmaPr(),
+                       bach.hasTPC(),
+                       bach.hasTOF());
 
       // fill histograms
       if (fillHistograms) {
