@@ -15,6 +15,8 @@
 //    Please write to: daiki.sekihata@cern.ch
 
 #include <array>
+#include <vector>
+#include <algorithm>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -31,6 +33,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -52,6 +55,7 @@ struct createPCM {
     "createPCM",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
+      // {"hAP", "AP plot", {HistType::kTH2F, {{200, -1, +1}, {250, 0, 0.25}}}},
     },
   };
 
@@ -73,13 +77,16 @@ struct createPCM {
   Configurable<float> v0Rmax{"v0Rmax", 180.0, "v0Rmax"};
   Configurable<float> dcamin{"dcamin", 0.1, "dcamin"};
   Configurable<float> dcamax{"dcamax", 1e+10, "dcamax"};
-  Configurable<float> maxX{"maxX", 90.0, "maximum X (starting point of track X)"}; // maxX is equal to or smaller than minPropagationDistance in trackPropagation.cxx for DCA
+  Configurable<int> nsw{"nsw", 1, "number of searching window in collisions"};
+  Configurable<float> maxX{"maxX", 83.1, "maximum X (starting point X of track iu)"};
+  Configurable<float> maxY{"maxY", 20.0, "maximum Y (starting point Y of track iu)"};
   Configurable<float> minpt{"minpt", 0.01, "min pT for single track in GeV/c"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance for single track"};
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
   Configurable<float> min_tpcdEdx{"min_tpcdEdx", 30.0, "min TPC dE/dx"};
   Configurable<float> max_tpcdEdx{"max_tpcdEdx", 110.0, "max TPC dE/dx"};
+  Configurable<float> margin_r{"margin_r", 7.0, "margin for r cut"};
 
   int mRunNumber;
   float d_bz;
@@ -174,8 +181,68 @@ struct createPCM {
     }
   }
 
+  float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+  {
+    float momTot = RecoDecay::p(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+    float lQlNeg = RecoDecay::dotProd(array{pxneg, pyneg, pzneg}, array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
+    float lQlPos = RecoDecay::dotProd(array{pxpos, pypos, pzpos}, array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
+    return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
+  }
+  float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+  {
+    float momTot = RecoDecay::p2(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+    float dp = RecoDecay::dotProd(array{pxneg, pyneg, pzneg}, array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg});
+    return std::sqrt(RecoDecay::p2(pxneg, pyneg, pzneg) - dp * dp / momTot);
+  }
+
+  template <typename TTrack>
+  bool reconstructV0(TTrack const& ele, TTrack const& pos)
+  {
+    // fitter is memeber variable.
+    auto pTrack = getTrackParCov(pos); // positive
+    auto nTrack = getTrackParCov(ele); // negative
+    array<float, 3> svpos = {0.};      // secondary vertex position
+    array<float, 3> pvec0 = {0.};
+    array<float, 3> pvec1 = {0.};
+
+    int nCand = fitter.process(pTrack, nTrack);
+    if (nCand != 0) {
+      fitter.propagateTracksToVertex();
+      const auto& vtx = fitter.getPCACandidate();
+      for (int i = 0; i < 3; i++) {
+        svpos[i] = vtx[i];
+      }
+      fitter.getTrack(0).getPxPyPzGlo(pvec0); // positive
+      fitter.getTrack(1).getPxPyPzGlo(pvec1); // negative
+    } else {
+      return false;
+    }
+
+    float v0dca = fitter.getChi2AtPCACandidate(); // distance between 2 legs.
+    if (v0dca > maxdcav0dau) {
+      return false;
+    }
+
+    if (!checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), 0.95, 0.05)) { // store only photon conversions
+      return false;
+    }
+    if (ele.hasITS() && pos.hasITS() && !checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), 0.95, 0.02)) { // store only photon conversions
+      return false;
+    }
+
+    float xyz[3] = {0.f, 0.f, 0.f};
+    Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz);
+    float recalculatedVtxR = sqrt(pow(xyz[0], 2) + pow(xyz[1], 2));
+    // LOGF(info, "recalculated vtx : x = %f , y = %f , z = %f", xyz[0], xyz[1], xyz[2]);
+    if (recalculatedVtxR > std::min(pos.x(), ele.x()) + margin_r && (pos.x() > 1.f && ele.x() > 1.f)) {
+      return false;
+    }
+
+    return true;
+  }
+
   template <typename TCollision, typename TTrack>
-  void fillV0Table(TCollision const& collision, TTrack const& ele, TTrack const& pos)
+  void fillV0Table(TCollision const& collision, TTrack const& ele, TTrack const& pos, const bool filltable)
   {
     array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
     array<float, 3> svpos = {0.}; // secondary vertex position
@@ -209,19 +276,31 @@ struct createPCM {
     if (v0dca > maxdcav0dau) {
       return;
     }
-    if (v0radius < v0Rmin || v0Rmax < v0radius) {
-      return;
-    }
     if (v0CosinePA < minv0cospa) {
       return;
     }
+    // registry.fill(HIST("hAP"), v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]));
 
-    v0data(pos.globalIndex(), ele.globalIndex(), collision.globalIndex(), -1,
-           fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
-           svpos[0], svpos[1], svpos[2],
-           pvec0[0], pvec0[1], pvec0[2],
-           pvec1[0], pvec1[1], pvec1[2],
-           v0dca, pos.dcaXY(), ele.dcaXY());
+    if (!checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]))) { // store only photon conversions
+      return;
+    }
+
+    if (filltable) {
+      if (v0radius < v0Rmin || v0Rmax < v0radius) {
+        return;
+      }
+      v0data(pos.globalIndex(), ele.globalIndex(), collision.globalIndex(), -1,
+             fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
+             svpos[0], svpos[1], svpos[2],
+             pvec0[0], pvec0[1], pvec0[2],
+             pvec1[0], pvec1[1], pvec1[2],
+             v0dca, pos.dcaXY(), ele.dcaXY());
+
+    } else {
+      // LOGF(info, "storing: collision.globalIndex() = %d , pos.globalIndex() = %d , ele.globalIndex() = %d, cospa = %f", collision.globalIndex(), pos.globalIndex(), ele.globalIndex(), v0CosinePA);
+      pca_map[std::make_tuple(pos.globalIndex(), ele.globalIndex(), collision.globalIndex())] = v0dca;
+      cospa_map[std::make_tuple(pos.globalIndex(), ele.globalIndex(), collision.globalIndex())] = v0CosinePA;
+    } // store indices
   }
 
   template <typename TTrack>
@@ -248,32 +327,145 @@ struct createPCM {
     return true;
   }
 
-  Filter trackFilter = o2::aod::track::x < maxX && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& dcamin < nabs(o2::aod::track::dcaXY) && nabs(o2::aod::track::dcaXY) < dcamax;
+  Filter trackFilter = o2::aod::track::x < maxX && nabs(o2::aod::track::y) < maxY && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& dcamin < nabs(o2::aod::track::dcaXY) && nabs(o2::aod::track::dcaXY) < dcamax && ((min_tpcdEdx < o2::aod::track::tpcSignal && o2::aod::track::tpcSignal < max_tpcdEdx) || o2::aod::track::tpcSignal < -10.f);
   using MyFilteredTracks = soa::Filtered<FullTracksExtIU>;
+
+  std::map<std::tuple<int32_t, int32_t, int32_t>, float> pca_map;
+  std::map<std::tuple<int32_t, int32_t, int32_t>, float> cospa_map;
+
+  // Partition<MyFilteredTracks> orphan_posTracks = o2::aod::track::signed1Pt > 0.f && o2::aod::track::collisionId < int32_t(0);
+  // Partition<MyFilteredTracks> orphan_negTracks = o2::aod::track::signed1Pt < 0.f && o2::aod::track::collisionId < int32_t(0);
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
+  vector<decltype(negTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> negTracks_sw;
+  vector<decltype(posTracks->sliceByCached(o2::aod::track::collisionId, 0, cache))> posTracks_sw;
 
   void processSA(MyFilteredTracks const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
-    for (auto& collision : collisions) {
-      registry.fill(HIST("hEventCounter"), 1);
+    // LOGF(info, "collisions.size() = %d, tracks.size() = %d", collisions.size(), tracks.size());
+    for (int64_t icoll = 0; icoll < collisions.size(); icoll += nsw) { // don't repeat the same collision
+      auto collision = collisions.rawIteratorAt(icoll);
+      // LOGF(info, "collision.globalIndex() = %d", collision.globalIndex());
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
+      // registry.fill(HIST("hEventCounter"), 1);
 
-      auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-      auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      int32_t min_sw = std::max(int64_t(0), collision.globalIndex());
+      int32_t max_sw = std::min(int64_t(min_sw + nsw), int64_t(collisions.size()));
 
-      // LOGF(info, "collision.globalIndex() = %d , negTracks_coll.size() = %d , posTracks_coll.size() = %d", collision.globalIndex(), negTracks_coll.size(), posTracks_coll.size());
+      // LOGF(info, "orphan_posTracks.size() = %d, orphan_negTracks.size() = %d", orphan_posTracks.size(), orphan_negTracks.size());
+      negTracks_sw.reserve(max_sw - min_sw);
+      posTracks_sw.reserve(max_sw - min_sw);
 
-      for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
-        if (!isSelected(ele) || !isSelected(pos)) {
-          continue;
-        }
-        fillV0Table(collision, ele, pos);
+      int npos = 0, nneg = 0;
+      for (int32_t isw = min_sw; isw < max_sw; isw++) {
+        negTracks_sw.emplace_back(negTracks->sliceByCached(o2::aod::track::collisionId, isw, cache));
+        posTracks_sw.emplace_back(posTracks->sliceByCached(o2::aod::track::collisionId, isw, cache));
+        npos += posTracks_sw.back().size();
+        nneg += negTracks_sw.back().size();
+        // LOGF(info, "collision.globalIndex() = %d , posTracks_sw.back().size() = %d , negTracks_sw.back().size() = %d", collision.globalIndex(), posTracks_sw.back().size(), negTracks_sw.back().size());
       }
+      // LOGF(info, "min_sw = %d , max_sw = %d , collision.globalIndex() = %d , n posTracks_sw = %d , n negTracks_sw = %d", min_sw, max_sw, collision.globalIndex(), npos, nneg);
+
+      for (auto& negTracks_coll : negTracks_sw) {
+        for (auto& posTracks_coll : posTracks_sw) {
+          for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
+            if (!isSelected(ele) || !isSelected(pos)) {
+              continue;
+            }
+            if (!reconstructV0(ele, pos)) { // this is needed for speed-up.
+              continue;
+            }
+
+            for (int32_t isw = min_sw; isw < max_sw; isw++) {
+              auto collision_in_sw = collisions.rawIteratorAt(isw);
+
+              if (ele.isPVContributor() && isw != ele.collisionId()) {
+                continue;
+              }
+              if (pos.isPVContributor() && isw != pos.collisionId()) {
+                continue;
+              }
+
+              // LOGF(info, "pairing: collision_in_sw.globalIndex() = %d , ele.collisionId() = %d , pos.collisionId() = %d ele.globalIndex() = %d , pos.globalIndex() = %d",
+              //     collision_in_sw.globalIndex(), ele.collisionId(), pos.collisionId(), ele.globalIndex(), pos.globalIndex());
+              fillV0Table(collision_in_sw, ele, pos, false);
+            } // end of searching window loop
+          }   // end of pairing loop
+        }     // end of pos track loop in sw
+      }       // end of pos track loop in sw
+
+      // LOGF(info, "possible number of V0 = %d", cospa_map.size());
+      std::map<std::pair<uint32_t, uint32_t>, bool> used_pair_map;
+
+      for (const auto& [key, value] : cospa_map) {
+        auto pos = tracks.rawIteratorAt(std::get<0>(key));
+        auto ele = tracks.rawIteratorAt(std::get<1>(key));
+
+        // LOGF(info, "candidate : pos.globalIndex() = %d , ele.globalIndex() = %d , collision.globalIndex() = %d , cospa = %f , pca = %f", std::get<0>(key), std::get<1>(key), std::get<2>(key), value, pca_map[key]);
+
+        std::vector<float> vec_cospa; // vector for each searching window
+        vec_cospa.reserve(max_sw - min_sw);
+        for (int32_t isw = min_sw; isw < max_sw; isw++) {
+          auto collision_in_sw = collisions.rawIteratorAt(isw);
+          if (cospa_map.find(std::make_tuple(pos.globalIndex(), ele.globalIndex(), collision_in_sw.globalIndex())) != cospa_map.end()) {
+            vec_cospa.emplace_back(cospa_map[std::make_tuple(pos.globalIndex(), ele.globalIndex(), collision_in_sw.globalIndex())]);
+          } else {
+            vec_cospa.emplace_back(-999.f);
+          }
+        } // end of searching window loop
+
+        // search for the most probable collision where V0 belongs by maximal cospa.
+        int32_t collision_id_most_prob = std::distance(vec_cospa.begin(), std::max_element(vec_cospa.begin(), vec_cospa.end())) + min_sw;
+        auto collision_most_prob = collisions.rawIteratorAt(collision_id_most_prob);
+        // float max_cospa = *std::max_element(vec_cospa.begin(), vec_cospa.end());
+        // LOGF(info, "max cospa is found! collision_most_prob.globalIndex() = %d , pos.collisionId() = %d , ele.collisionId() = %d, max_cospa = %f", collision_most_prob.globalIndex(), pos.collisionId(), ele.collisionId(), max_cospa);
+        vec_cospa.clear();
+        vec_cospa.shrink_to_fit();
+
+        // next, check pca between 2 legs in this searching window and select V0s that have the smallest pca to avoid double counting of legs.
+        float v0pca = pca_map[std::make_tuple(pos.globalIndex(), ele.globalIndex(), collision_most_prob.globalIndex())];
+        bool is_closest_v0 = true;
+        for (const auto& [key_tmp, value_tmp] : pca_map) {
+          auto pos_tmp = tracks.rawIteratorAt(std::get<0>(key_tmp));
+          auto ele_tmp = tracks.rawIteratorAt(std::get<1>(key_tmp));
+
+          float v0pca_tmp = value_tmp;
+          // float v0pca_tmp = 999.f;
+          // if(pca_map.find(std::make_tuple(pos_tmp.globalIndex(), ele_tmp.globalIndex(), collision_most_prob.globalIndex())) != pca_map.end()){
+          //   v0pca_tmp = pca_map[std::make_tuple(pos_tmp.globalIndex(), ele_tmp.globalIndex(), collision_most_prob.globalIndex())];
+          // }
+
+          if (ele.globalIndex() == ele_tmp.globalIndex() && pos.globalIndex() == pos_tmp.globalIndex()) { // skip exactly the same V0
+            continue;
+          }
+          if ((ele.globalIndex() == ele_tmp.globalIndex() || pos.globalIndex() == pos_tmp.globalIndex()) && v0pca > v0pca_tmp) {
+            // LOGF(info, "!reject! | collision id = %d | posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f",
+            // collision.globalIndex(), pos.globalIndex(), ele.globalIndex(), pos_tmp.globalIndex(), ele_tmp.globalIndex(), v0pca, v0pca_tmp);
+            is_closest_v0 = false;
+            break;
+          }
+        } // end of pca_map loop
+
+        if (is_closest_v0 && used_pair_map.find(std::make_pair(pos.globalIndex(), ele.globalIndex())) == used_pair_map.end()) {
+          // LOGF(info, "store : pos.globalIndex() = %d , ele.globalIndex() = %d , collision.globalIndex() = %d , cospa = %f , pca = %f", std::get<0>(key), std::get<1>(key), std::get<2>(key), value, pca_map[key]);
+          fillV0Table(collision_most_prob, ele, pos, true);
+          used_pair_map[std::make_pair(pos.globalIndex(), ele.globalIndex())] = true;
+        }
+      } // end of pca_map loop
+      used_pair_map.clear();
+
+      pca_map.clear();
+      cospa_map.clear();
+
+      negTracks_sw.clear();
+      posTracks_sw.clear();
+      negTracks_sw.shrink_to_fit();
+      posTracks_sw.shrink_to_fit();
     } // end of collision loop
-  }   // end of process
+
+  } // end of process
   PROCESS_SWITCH(createPCM, processSA, "create V0s with stand-alone way", true);
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
@@ -301,9 +493,9 @@ struct createPCM {
         }
 
         if (ele.sign() < 0) {
-          fillV0Table(collision, ele, pos);
+          fillV0Table(collision, ele, pos, true);
         } else {
-          fillV0Table(collision, pos, ele);
+          fillV0Table(collision, pos, ele, true);
         }
       }
     } // end of collision loop
