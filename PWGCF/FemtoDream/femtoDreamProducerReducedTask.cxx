@@ -280,7 +280,6 @@ struct femtoDreamProducerReducedTask {
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
                   track.dcaXY(), childIDs, 0, 0);
-
       if constexpr (isMC) {
         fillMCParticle(track, o2::aod::femtodreamparticle::ParticleType::kTrack);
       }
