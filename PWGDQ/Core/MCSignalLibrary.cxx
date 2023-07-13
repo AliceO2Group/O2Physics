@@ -351,7 +351,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("eFromAnyHc")) {
     MCProng prong(1, {11}, {true}, {false}, {0}, {0}, {false}, false, {402}, {false});
-    signal = new MCSignal(name, "Electrons from open charm hadron decays", {prong}, {-1});
+    signal = new MCSignal(name, "Electrons from any open charm hadron decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromHb")) {
@@ -361,7 +361,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("eFromAnyHb")) {
     MCProng prong(1, {11}, {true}, {false}, {0}, {0}, {false}, false, {502}, {false});
-    signal = new MCSignal(name, "Electrons from open beauty hadron decays", {prong}, {-1});
+    signal = new MCSignal(name, "Electrons from any open beauty hadron decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromHbc")) {
