@@ -243,7 +243,7 @@ struct femtoDreamProducerReducedTask {
     // If the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
-    if (!colCuts.isSelected(col)) {
+    if (!colCuts.isSelectedCollision(col, tracks, trackCuts)) {
       if (ConfIsTrigger) {
         outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
       }

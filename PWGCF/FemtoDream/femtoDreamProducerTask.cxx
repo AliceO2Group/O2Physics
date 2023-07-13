@@ -49,22 +49,10 @@ using FemtoFullCollision =
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks =
-  soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullEl,
-            aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-            aod::pidTPCFullDe, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
-
-// using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join
-// table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s>
-// to be used when we add v0Filter
+  soa::Join<aod::FullTracks, aod::TracksDCA,
+            aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+            aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 } // namespace o2::aod
-
-/// \todo fix how to pass array to setSelection, getRow() passing a different
-/// type!
-// static constexpr float arrayV0Sel[3][3] = {{100.f, 100.f, 100.f}, {0.2f,
-// 0.2f, 0.2f}, {100.f, 100.f, 100.f}}; unsigned int rows = sizeof(arrayV0Sel) /
-// sizeof(arrayV0Sel[0]); unsigned int columns = sizeof(arrayV0Sel[0]) /
-// sizeof(arrayV0Sel[0][0]);
 
 template <typename T>
 int getRowDaughters(int daughID, T const& vecID)
@@ -188,9 +176,7 @@ struct femtoDreamProducerTask {
 
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
-    TrackRegistry.add("AnalysisQA/PIDCutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
     V0Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
-    V0Registry.add("AnalysisQA/PIDCutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
 
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&qaRegistry);
@@ -383,11 +369,18 @@ struct femtoDreamProducerTask {
     }
 
     // check whether the basic event selection criteria are fulfilled
-    // if the basic selection is NOT fulfilled:
-    // in case of skimming run - don't store such collisions
-    // in case of trigger run - store such collisions but don't store any
-    // particle candidates for such collisions
-    if (!colCuts.isSelected(col)) {
+    // that included checking if there is at least on usable track or V0
+    bool keepCollsion = false;
+    if (ConfIsActivateV0.value) {
+      if (colCuts.isSelectedCollision(col, tracks, trackCuts) || colCuts.isSelectedCollision(col, fullV0s, v0Cuts, tracks)) {
+        keepCollsion = true;
+      }
+    } else if (colCuts.isSelectedCollision(col, tracks, trackCuts)) {
+      keepCollsion = true;
+    }
+    // if the basic selection is NOT fulfilled
+    // in case of trigger store the collision even though there are no particles
+    if (!keepCollsion) {
       if (ConfIsTrigger) {
         outputCollision(vtxZ, mult, multNtr, spher, mMagField);
       }
@@ -531,13 +524,12 @@ struct femtoDreamProducerTask {
   PROCESS_SWITCH(femtoDreamProducerTask, processData,
                  "Provide experimental data", true);
 
-  void
-    processMC(aod::FemtoFullCollisionMC const& col,
-              aod::BCsWithTimestamps const&,
-              soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-              aod::McCollisions const& mcCollisions,
-              aod::McParticles const& mcParticles,
-              soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
+  void processMC(aod::FemtoFullCollisionMC const& col,
+                 aod::BCsWithTimestamps const&,
+                 soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                 aod::McCollisions const& mcCollisions,
+                 aod::McParticles const& mcParticles,
+                 soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());

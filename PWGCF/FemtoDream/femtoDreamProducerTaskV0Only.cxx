@@ -378,7 +378,7 @@ struct femtoDreamProducerTaskV0Only {
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
-    if (!colCuts.isSelected(col)) {
+    if (!colCuts.isSelectedCollision(col, fullV0s, v0Cuts, tracks)) {
       if (ConfIsTrigger) {
         outputCollision(vtxZ, mult, multNtr, spher, mMagField);
       }
@@ -395,13 +395,9 @@ struct femtoDreamProducerTaskV0Only {
                   // track table row <-> aod::track table global index
 
     if (ConfStoreV0) {
-      for (auto& v0 : fullV0s) {
-        auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
-        auto negtrack =
-          v0.negTrack_as<aod::FemtoFullTracks>(); ///\tocheck funnily enough
-                                                  /// if we apply the filter
-                                                  /// the sign of Pos and Neg
-                                                  /// track is always negative
+      for (auto const& v0 : fullV0s) {
+        const auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
+        const auto negtrack = v0.negTrack_as<aod::FemtoFullTracks>();
         // const auto dcaXYpos = postrack.dcaXY();
         // const auto dcaZpos = postrack.dcaZ();
         // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
