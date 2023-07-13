@@ -586,7 +586,7 @@ struct NucleiHistTask {
 
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
-          spectra_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2); 
+          spectra_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
         }
       }
 
