@@ -43,14 +43,6 @@ struct cascqaanalysis {
 
   HistogramRegistry registry{"registry"};
 
-  AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-  AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
-  AxisSpec centFT0MAxis = {1055, 0.f, 105.5f, "FT0M (%)"};
-  AxisSpec eventTypeAxis = {9, -0.5f, 2.5f};
-
-  ConfigurableAxis multNTracksAxis{"multNTracksAxis", {500, 0, 500}, "N_{tracks}"};
-  ConfigurableAxis multFT0Axis{"multFT0Axis", {10000, 0, 40000}, "FT0 amplitude"};
-
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 20.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
@@ -81,6 +73,16 @@ struct cascqaanalysis {
 
   void init(InitContext const&)
   {
+    AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
+    AxisSpec centFT0MAxis = {1055, 0.f, 105.5f, "FT0M (%)"};
+    AxisSpec centFV0AAxis = {1055, 0.f, 105.5f, "FV0A (%)"};
+    AxisSpec eventTypeAxis = {3, -0.5f, 2.5f, "Event Type"};
+    AxisSpec nAssocCollAxis = {5, -0.5f, 4.5f, "N_{assoc.}"};
+    AxisSpec nChargedGenAxis = {500, 0, 500, "N_{FT0M, gen.}"};
+    AxisSpec multNTracksAxis = {500, 0, 500, "N_{tracks}"};
+    AxisSpec multFT0Axis = {10000, 0, 40000, "FT0 amplitude"};
+
     TString hCandidateCounterLabels[5] = {"All candidates", "v0data exists", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[6] = {"All", "z vrtx", "INEL", "INEL>0", "INEL>1", "Associated with rec. collision"};
     TString hNEventsLabels[6] = {"All", "sel8", "z vrtx", "INEL", "INEL>0", "INEL>1"};
@@ -89,30 +91,31 @@ struct cascqaanalysis {
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }
-    registry.add("hNAssocMCCollisions", "hNAssocMCCollisions", {HistType::kTH1F, {{5, -0.5f, 4.5f}}});
-    registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
     registry.add("hZCollision", "hZCollision", {HistType::kTH1F, {{200, -20.f, 20.f}}});
-    registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1F, {{200, -20.f, 20.f}}});
-
-    if (isMC) {
-      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {multFT0Axis, multNTracksAxis, eventTypeAxis}});
-      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {multFT0Axis, multNTracksAxis, eventTypeAxis}});
-    } else {
-      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
-      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
-    }
-
-    registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH2F, {{1055, 0.f, 105.5f}, {3, -0.5, 2.5}}});
-
-    registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{6, 0.0f, 6.0f}}});
-    for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
-      registry.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
-    }
 
     registry.add("hCandidateCounter", "hCandidateCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hCandidateCounter"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hCandidateCounter"))->GetXaxis()->SetBinLabel(n, hCandidateCounterLabels[n - 1]);
     }
+    if (isMC) {
+      // Rec. lvl
+      registry.add("hNchFT0MPVContr", "hNchFT0MPVContr", {HistType::kTH3F, {nChargedGenAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3F, {nChargedGenAxis, multNTracksAxis, eventTypeAxis}});
+      // Gen. lvl
+      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{6, 0.0f, 6.0f}}});
+      for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
+        registry.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
+      }
+      registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1F, {{200, -20.f, 20.f}}});
+      registry.add("hNchFT0MNAssocMCCollisions", "hNchFT0MNAssocMCCollisions", {HistType::kTH2F, {nChargedGenAxis, nAssocCollAxis}});
+      registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
+      registry.add("hNchFT0MGenEvType", "hNchFT0MGenEvType", {HistType::kTH2F, {nChargedGenAxis, eventTypeAxis}});
+    } else {
+      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
+    }
+
+    registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {centFV0AAxis}});
   }
 
   Filter preFilter =
@@ -149,6 +152,47 @@ struct cascqaanalysis {
     }
   }
 
+  template <typename TMcParticles>
+  uint16_t GetGenNchInFT0Mregion(TMcParticles particles)
+  {
+    // Particle counting in FITFT0: -3.3<η<-2.1; 3.5<η<4.9
+    uint16_t nchFT0 = 0;
+    for (auto& mcParticle : particles) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+      const auto& pdgInfo = pdgDB->GetParticle(mcParticle.pdgCode());
+      if (!pdgInfo) {
+        continue;
+      }
+      if (pdgInfo->Charge() == 0) {
+        continue;
+      }
+      if (mcParticle.eta() < -3.3 || mcParticle.eta() > 4.9 || (mcParticle.eta() > -2.1 && mcParticle.eta() < 3.5)) {
+        continue; // select on T0M Nch region
+      }
+      nchFT0++; // increment
+    }
+    return nchFT0;
+  }
+
+  template <typename TCollision>
+  int GetEventTypeFlag(TCollision const& collision)
+  {
+    // 0 - INEL, 1 - INEL > 0, 2 - INEL>1
+    int evFlag = 0;
+    registry.fill(HIST("hNEvents"), 3.5); // INEL
+    if (collision.multNTracksPVeta1() > 0) {
+      evFlag += 1;
+      registry.fill(HIST("hNEvents"), 4.5); // INEL>0
+    }
+    if (collision.multNTracksPVeta1() > 1) {
+      evFlag += 1;
+      registry.fill(HIST("hNEvents"), 5.5); // INEL>1
+    }
+    return evFlag;
+  }
+
   template <typename TCollision, typename TTracks>
   bool AcceptEvent(TCollision const& collision, TTracks const& tracks, bool isFillEventSelectionQA)
   {
@@ -163,6 +207,7 @@ struct cascqaanalysis {
       registry.fill(HIST("hNEvents"), 1.5);
     }
 
+    // Z vertex selection
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
       return false;
     }
@@ -170,36 +215,9 @@ struct cascqaanalysis {
       registry.fill(HIST("hNEvents"), 2.5);
     }
 
-    int evFlag = 0;
-    if (isFillEventSelectionQA) {
-      registry.fill(HIST("hNEvents"), 3.5);
-      if (collision.multNTracksPVeta1() > 0) {
-        evFlag += 1;
-        registry.fill(HIST("hNEvents"), 4.5);
-      }
-      if (collision.multNTracksPVeta1() > 1) {
-        evFlag += 1;
-        registry.fill(HIST("hNEvents"), 5.5);
-      }
-    }
-
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hZCollision"), collision.posZ());
-
-      auto tracksGroupedPVcontr = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      int nTracksPVcontr = tracksGroupedPVcontr.size();
-
-      auto tracksGroupedGlobal = globalTracksIUEta05->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      int nTracksGlobal = tracksGroupedGlobal.size();
-
-      if (isMC) {
-        registry.fill(HIST("hFT0MpvContr"), collision.multFT0A() + collision.multFT0C(), nTracksPVcontr, evFlag);
-        registry.fill(HIST("hFT0Mglobal"), collision.multFT0A() + collision.multFT0C(), nTracksGlobal, evFlag);
-      } else {
-        registry.fill(HIST("hFT0MpvContr"), collision.centFT0M(), nTracksPVcontr, evFlag);
-        registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), nTracksGlobal, evFlag);
-      }
-      registry.fill(HIST("hCentFV0A"), collision.centFV0A(), evFlag);
+      registry.fill(HIST("hCentFV0A"), collision.centFV0A());
     }
     return true;
   }
@@ -259,6 +277,17 @@ struct cascqaanalysis {
     if (!AcceptEvent(collision, Tracks, 1)) {
       return;
     }
+
+    int evType = GetEventTypeFlag(collision);
+
+    auto tracksGroupedPVcontr = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    int nTracksPVcontr = tracksGroupedPVcontr.size();
+
+    auto tracksGroupedGlobal = globalTracksIUEta05->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    int nTracksGlobal = tracksGroupedGlobal.size();
+
+    registry.fill(HIST("hFT0MpvContr"), collision.centFT0M(), nTracksPVcontr, evType);
+    registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), nTracksGlobal, evType);
 
     float lEventScale = scalefactor;
 
@@ -327,16 +356,33 @@ struct cascqaanalysis {
     }
   }
 
-  void processMCrec(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+
+  void processMCrec(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                     soa::Filtered<LabeledCascades> const& Cascades,
                     aod::V0sLinked const&,
                     aod::V0Datas const&,
                     DauTracks const& Tracks,
-                    aod::McParticles const&)
+                    aod::McCollisions const&,
+                    aod::McParticles const& mcParticles)
   {
     if (!AcceptEvent(collision, Tracks, 1)) {
       return;
     }
+    int evType = GetEventTypeFlag(collision);
+
+    auto tracksGroupedPVcontr = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    int nTracksPVcontr = tracksGroupedPVcontr.size();
+
+    auto tracksGroupedGlobal = globalTracksIUEta05->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    int nTracksGlobal = tracksGroupedGlobal.size();
+
+    // N charged in FT0M region in corresponding gen. MC collision
+    auto mcPartSlice = mcParticles.sliceBy(perMcCollision, collision.mcCollision_as<aod::McCollisions>().globalIndex());
+    uint16_t nchFT0 = GetGenNchInFT0Mregion(mcPartSlice);
+
+    registry.fill(HIST("hNchFT0MPVContr"), nchFT0, nTracksPVcontr, evType);
+    registry.fill(HIST("hNchFT0Mglobal"), nchFT0, nTracksGlobal, evType);
 
     float lEventScale = scalefactor;
 
@@ -401,7 +447,7 @@ struct cascqaanalysis {
         }
         // Fill table
         if (fRand->Rndm() < lEventScale) {
-          mycascades(casc.globalIndex(), collision.posZ(), collision.multFT0A() + collision.multFT0C(), collision.multFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
+          mycascades(casc.globalIndex(), collision.posZ(), nchFT0, collision.multFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
                      casc.mXi(), casc.mOmega(), casc.mLambda(), casc.cascradius(), casc.v0radius(),
                      casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                      casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(), casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
@@ -433,19 +479,25 @@ struct cascqaanalysis {
     registry.fill(HIST("hNEventsMC"), 1.5);
 
     // Define the type of generated MC collision
+    int evType = 0;
     uint8_t flagsGen = 0;
     flagsGen |= o2::aod::myMCcascades::EvFlags::EvINEL;
     registry.fill(HIST("hNEventsMC"), 2.5);
     // Generated collision is INEL>=0
     if (isINELgtNmc(mcParticles, 0)) {
       flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
+      evType++;
       registry.fill(HIST("hNEventsMC"), 3.5);
     }
     // Generated collision is INEL>=1
     if (isINELgtNmc(mcParticles, 1)) {
       flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
+      evType++;
       registry.fill(HIST("hNEventsMC"), 4.5);
     }
+
+    uint16_t nchFT0 = GetGenNchInFT0Mregion(mcParticles);
+    registry.fill(HIST("hNchFT0MGenEvType"), nchFT0, evType);
 
     typedef struct CollisionIndexAndType {
       int64_t index;
@@ -478,7 +530,9 @@ struct cascqaanalysis {
       }
     }
     SelectedEvents.resize(nevts);
-    registry.fill(HIST("hNAssocMCCollisions"), nAssocColl);
+
+    registry.fill(HIST("hNchFT0MNAssocMCCollisions"), nchFT0, nAssocColl);
+
     if (NumberOfContributors.size() == 2) {
       std::sort(NumberOfContributors.begin(), NumberOfContributors.end());
       registry.fill(HIST("hNContributorsCorrelation"), NumberOfContributors[0], NumberOfContributors[1]);
@@ -504,25 +558,6 @@ struct cascqaanalysis {
     }
     if (evtReconstructedAndINELgt1) {
       flagsAssoc |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
-    }
-
-    // Particle counting in FITFT0: -3.3<η<-2.1; 3.5<η<4.9
-    uint16_t nchFT0 = 0;
-    for (auto& mcParticle : mcParticles) {
-      if (!mcParticle.isPhysicalPrimary()) {
-        continue;
-      }
-      const auto& pdgInfo = pdgDB->GetParticle(mcParticle.pdgCode());
-      if (!pdgInfo) {
-        continue;
-      }
-      if (pdgInfo->Charge() == 0) {
-        continue;
-      }
-      if (mcParticle.eta() < -3.3 || mcParticle.eta() > 4.9 || (mcParticle.eta() > -2.1 && mcParticle.eta() < 3.5)) {
-        continue; // select on T0M Nch region
-      }
-      nchFT0++; // increment
     }
 
     for (const auto& mcParticle : mcParticles) {
