@@ -175,3 +175,13 @@ o2physics_add_dpl_workflow(lambda1520spheroctiyanalysis
                     SOURCES lambda1520_spherocity_analysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypertriton3bodyanalysis
+                   SOURCES hypertriton3bodyanalysis.cxx
+                   PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+                   COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypertriton3bodymcqa
+                   SOURCES hypertriton3bodyMCQA.cxx
+                   PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+                   COMPONENT_NAME Analysis)

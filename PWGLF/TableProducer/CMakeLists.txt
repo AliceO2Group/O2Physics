@@ -98,6 +98,16 @@ o2physics_add_dpl_workflow(threebodymcfinder
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(hypertriton3bodybuilder
+                    SOURCES hypertriton3bodybuilder.cxx
+                    PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypertriton3bodyfinder
+                    SOURCES hypertriton3bodyfinder.cxx
+                    PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 # Resonances
 o2physics_add_dpl_workflow(reso2initializer
                     SOURCES LFResonanceInitializer.cxx
