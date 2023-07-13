@@ -235,30 +235,6 @@ struct skimmerGammaConversions {
     return true;
   }
 
-  // template <typename TLeg>
-  // bool checkV0leg(TLeg const& leg)
-  //{
-  //   if (abs(leg.eta()) > maxeta) {
-  //     return false;
-  //   }
-  //   if (abs(leg.tpcNSigmaEl()) > maxTPCNsigmaEl) {
-  //     return false;
-  //   }
-  //   if (leg.tpcChi2NCl() > maxchi2tpc) {
-  //     return false;
-  //   }
-  //   if (leg.tpcNClsCrossedRows() < mincrossedrows) {
-  //     return false;
-  //   }
-  //   if (abs(leg.dcaXY()) < dcamin) {
-  //     return false;
-  //   }
-  //   if (dcamax < abs(leg.dcaXY())) {
-  //     return false;
-  //   }
-  //   return true;
-  // }
-
   template <typename TTrack, typename TCollision, typename TV0>
   void fillV0KF(TCollision const& collision, TV0 const& v0, recalculatedVertexParameters recalculatedVertex)
   {
@@ -315,7 +291,7 @@ struct skimmerGammaConversions {
 
   // ============================ FUNCTION DEFINITIONS ====================================================
 
-  Preslice<aod::V0Datas> perCollision = aod::v0data::collisionId;
+  PresliceUnsorted<aod::V0Datas> perCollision = aod::v0data::collisionId;
 
   void processRec(aod::Collisions const& collisions,
                   aod::BCsWithTimestamps const& bcs,
@@ -335,33 +311,6 @@ struct skimmerGammaConversions {
         auto pos = v0.template posTrack_as<tracksAndTPCInfo>(); // positive daughter
         auto ele = v0.template negTrack_as<tracksAndTPCInfo>(); // negative daughter
         if (!checkV0leg(pos) || !checkV0leg(ele)) {
-          continue;
-        }
-
-        bool flag_closer = true;
-        for (auto& v0tmp : groupedV0s) {
-          if (!checkAP(v0tmp.alpha(), v0tmp.qtarm())) { // store only photon conversions
-            continue;
-          }
-          auto pos_tmp = v0tmp.template posTrack_as<tracksAndTPCInfo>(); // positive daughter
-          auto ele_tmp = v0tmp.template negTrack_as<tracksAndTPCInfo>(); // negative daughter
-          if (!checkV0leg(pos_tmp) || !checkV0leg(ele_tmp)) {
-            continue;
-          }
-
-          if (v0.index() == v0tmp.index()) { // don't check onviously, exactly the same v0.
-            // LOGF(info, "don't check the exactly the same 2 V0s");
-            continue;
-          }
-          if ((ele.globalIndex() == ele_tmp.globalIndex() || pos.globalIndex() == pos_tmp.globalIndex()) && v0.dcaV0daughters() > v0tmp.dcaV0daughters()) {
-            // LOGF(info, "!reject! | collision id = %d | g1 id = %d , g2 id = %d , posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f",
-            //     collision.globalIndex(), v0.index(), v0tmp.index(), pos.globalIndex(), ele.globalIndex(), pos_tmp.globalIndex(), ele_tmp.globalIndex(), v0.dcaV0daughters(), v0tmp.dcaV0daughters());
-            flag_closer = false;
-            break;
-          }
-        } // end of v0tmp loop
-
-        if (!flag_closer) {
           continue;
         }
 
@@ -415,33 +364,6 @@ struct skimmerGammaConversions {
         auto pos = v0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
         auto ele = v0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
         if (!checkV0leg(pos) || !checkV0leg(ele)) {
-          continue;
-        }
-
-        bool flag_closer = true;
-        for (auto& v0tmp : lGroupedV0s) {
-          if (!checkAP(v0tmp.alpha(), v0tmp.qtarm())) { // store only photon conversions
-            continue;
-          }
-          auto pos_tmp = v0tmp.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
-          auto ele_tmp = v0tmp.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
-          if (!checkV0leg(pos_tmp) || !checkV0leg(ele_tmp)) {
-            continue;
-          }
-
-          if (v0.index() == v0tmp.index()) { // don't check onviously, exactly the same v0.
-            // LOGF(info, "don't check the exactly the same 2 V0s");
-            continue;
-          }
-          if ((ele.globalIndex() == ele_tmp.globalIndex() || pos.globalIndex() == pos_tmp.globalIndex()) && v0.dcaV0daughters() > v0tmp.dcaV0daughters()) {
-            // LOGF(info, "!reject! | collision id = %d | g1 id = %d , g2 id = %d , posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f",
-            //     collision.globalIndex(), v0.index(), v0tmp.index(), pos.globalIndex(), ele.globalIndex(), pos_tmp.globalIndex(), ele_tmp.globalIndex(), v0.dcaV0daughters(), v0tmp.dcaV0daughters());
-            flag_closer = false;
-            break;
-          }
-        } // end of v0tmp loop
-
-        if (!flag_closer) {
           continue;
         }
 
