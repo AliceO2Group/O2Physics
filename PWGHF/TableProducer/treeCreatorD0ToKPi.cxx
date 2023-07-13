@@ -31,6 +31,7 @@ namespace o2::aod
 {
 namespace full
 {
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);
@@ -64,17 +65,16 @@ DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);
 DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
-// Events
-DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
-DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t); // is prompt or non-prompt, reco level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); // is prompt or non-prompt, Gen level
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand2Prong, "_0");
+// Events
+DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
-                  collision::BCId,
-                  collision::NumContrib,
+                  full::CollisionId,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -131,7 +131,7 @@ DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
                   full::CandidateId);
 
 DECLARE_SOA_TABLE(HfCand2ProngFullEvents, "AOD", "HFCAND2PFullE",
-                  collision::BCId,
+                  full::CollisionId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -140,7 +140,7 @@ DECLARE_SOA_TABLE(HfCand2ProngFullEvents, "AOD", "HFCAND2PFullE",
                   full::RunNumber);
 
 DECLARE_SOA_TABLE(HfCand2ProngFullParticles, "AOD", "HFCAND2PFullP",
-                  collision::BCId,
+                  full::CollisionId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
@@ -165,7 +165,7 @@ struct HfTreeCreatorD0ToKPi {
   void fillEvent(const T& collision, int isEventReject, int runNumber)
   {
     rowCandidateFullEvents(
-      collision.bcId(),
+      collision.globalIndex(),
       collision.numContrib(),
       collision.posX(),
       collision.posY(),
@@ -180,8 +180,7 @@ struct HfTreeCreatorD0ToKPi {
   {
     if (selection >= 1) {
       rowCandidateFull(
-        prong0.collision().bcId(),
-        prong0.collision().numContrib(),
+        candidate.collisionId(),
         candidate.posX(),
         candidate.posY(),
         candidate.posZ(),
@@ -241,12 +240,12 @@ struct HfTreeCreatorD0ToKPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates,
-                   aod::BigTracksPID const&)
+                   aod::BigTracksPID const&, aod::BCs const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto const& collision : collisions) {
-      fillEvent(collision, 0, 1);
+      fillEvent(collision, 0, collision.bc().runNumber());
     }
 
     // Filling candidate properties
@@ -268,12 +267,12 @@ struct HfTreeCreatorD0ToKPi {
                  aod::McCollisions const&,
                  soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particles,
-                 aod::BigTracksPID const&)
+                 aod::BigTracksPID const&, aod::BCs const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto const& collision : collisions) {
-      fillEvent(collision, 0, 1);
+      fillEvent(collision, 0, collision.bc().runNumber());
     }
 
     // Filling candidate properties
@@ -293,7 +292,7 @@ struct HfTreeCreatorD0ToKPi {
     for (auto const& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
         rowCandidateFullParticles(
-          particle.mcCollision().bcId(),
+          particle.mcCollisionId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
