@@ -716,7 +716,14 @@ struct AnalysisTrackSelection {
       VarManager::FillTrackMC(groupedMCTracks, mctrack);
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
-        if ((*sig).CheckSignal<TTracksMC>(true, groupedMCTracks, mctrack)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto mctrack_raw = groupedMCTracks.rawIteratorAt(mctrack.globalIndex());
+          checked = (*sig).CheckSignal(true, mctrack_raw);
+        } else {
+          checked = (*sig).CheckSignal(true, mctrack);
+        }
+        if (checked) {
           if (mctrack.pdgCode() > 0) {
             fHistGenNegPart[isig]->Fill(mctrack.pt(), mctrack.eta(), mctrack.phi());
             if constexpr (smeared)
@@ -784,14 +791,14 @@ struct AnalysisTrackSelection {
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
 
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
-          if ((*sig).CheckSignal(true, tracksMC, track.reducedMCTrack())) {
+          if ((*sig).CheckSignal(true, track.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
           if (track.has_mcParticle()) {
             auto mctrack = track.template mcParticle_as<aod::McParticles>();
-            if ((*sig).CheckSignal(true, tracksMC, mctrack)) {
+            if ((*sig).CheckSignal(true, mctrack)) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }
@@ -1188,7 +1195,15 @@ struct AnalysisSameEventPairing {
 
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
-        if ((*sig).CheckSignal(true, groupedMCTracks, t1, t2)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
+          auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
+          checked = (*sig).CheckSignal(true, t1_raw, t2_raw);
+        } else {
+          checked = (*sig).CheckSignal(true, t1, t2);
+        }
+        if (checked) {
 
           // not smeared after fiducial cuts
           if (genfidcut) {
@@ -1266,7 +1281,7 @@ struct AnalysisSameEventPairing {
             if (!t1.reducedMCTrack().isPhysicalPrimary() || !t2.reducedMCTrack().isPhysicalPrimary())
               continue;
           }
-          if ((*sig).CheckSignal(true, tracksMC, t1.reducedMCTrack(), t2.reducedMCTrack())) {
+          if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -1279,7 +1294,7 @@ struct AnalysisSameEventPairing {
               if (!mct1.isPhysicalPrimary() || !mct2.isPhysicalPrimary())
                 continue;
             }
-            if ((*sig).CheckSignal(true, tracksMC, mct1, mct2)) {
+            if ((*sig).CheckSignal(true, mct1, mct2)) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }

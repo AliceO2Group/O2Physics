@@ -17,10 +17,8 @@
 ///
 /// \author Antonio Palasciano <antonio.palasciano@ba.infn.it>, Università & INFN, Bari
 
-#include "Common/Core/trackUtilities.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -198,7 +196,7 @@ struct HfTreeCreatorBplusToD0Pi {
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi> const& candidates,
-               soa::Join<aod::McParticles_000, aod::HfCandBplusMcGen> const& particles,
+               soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& particles,
                aod::BigTracksPID const& tracks,
                aod::HfCand2Prong const&)
   {

@@ -14,13 +14,10 @@
 ///
 /// \author Jochen Klein
 
-#include "TDatabasePDG.h"
-#include "TPDGCode.h"
+#include <TDatabasePDG.h>
+#include <TPDGCode.h>
 
 #include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -28,9 +25,14 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoA.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 

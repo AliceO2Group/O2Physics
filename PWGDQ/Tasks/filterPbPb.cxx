@@ -197,14 +197,18 @@ struct DQFilterPbPbTask {
   Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:2:5", "<track-cut>:<nmin>:<nmax>,[<track-cut>:<nmin>:<nmax>],..."};
   Configurable<int> fConfigNDtColl{"cfgNDtColl", 4, "Number of standard deviations to consider in BC range"};
   Configurable<int> fConfigMinNBCs{"cfgMinNBCs", 7, "Minimum number of BCs to consider in BC range"};
-  Configurable<float> fConfigFV0AmpLimit{"cfgFV0AmpLimit", 0, "FV0 amplitude limit for double gap event selection"};
-  Configurable<float> fConfigFT0AAmpLimit{"cfgFT0AAmpLimit", 0, "FT0A amplitude limit for double gap event selection"};
-  Configurable<float> fConfigFT0CAmpLimit{"cfgFT0CAmpLimit", 0, "FT0C amplitude limit for double gap event selection"};
-  Configurable<float> fConfigFDDAAmpLimit{"cfgFDDAAmpLimit", 0, "FDDA amplitude limit for double gap event selection"};
-  Configurable<float> fConfigFDDCAmpLimit{"cfgFDDCAmpLimit", 0, "FDDC amplitude limit for double gap event selection"};
-  Configurable<bool> fConfigUseFV0{"cfgUseFV0", true, "Whether to use FV0 for DG veto"};
-  Configurable<bool> fConfigUseFT0{"cfgUseFT0", true, "Whether to use FT0 for DG veto"};
-  Configurable<bool> fConfigUseFDD{"cfgUseFDD", true, "Whether to use FDD for DG veto"};
+  Configurable<float> fConfigFV0AmpLimit{"cfgFV0AmpLimit", 0, "FV0 amplitude limit for event selection"};
+  Configurable<float> fConfigFT0AAmpLimit{"cfgFT0AAmpLimit", 0, "FT0A amplitude limit for event selection"};
+  Configurable<float> fConfigFT0CAmpLimit{"cfgFT0CAmpLimit", 0, "FT0C amplitude limit for event selection"};
+  Configurable<float> fConfigFDDAAmpLimit{"cfgFDDAAmpLimit", 0, "FDDA amplitude limit for event selection"};
+  Configurable<float> fConfigFDDCAmpLimit{"cfgFDDCAmpLimit", 0, "FDDC amplitude limit for event selection"};
+  Configurable<bool> fConfigUseFV0{"cfgUseFV0", true, "Whether to use FV0 for veto"};
+  Configurable<bool> fConfigUseFT0{"cfgUseFT0", true, "Whether to use FT0 for veto"};
+  Configurable<bool> fConfigUseFDD{"cfgUseFDD", true, "Whether to use FDD for veto"};
+  Configurable<bool> fConfigUseSideA{"cfgUseSideA", true, "Whether to use side A of FIT to perform veto"};
+  Configurable<bool> fConfigUseSideC{"cfgUseSideC", true, "Whether to use side C of FIT to perform veto"};
+  Configurable<bool> fConfigVetoForward{"cfgVetoForward", true, "Whether to veto on forward tracks"};
+  Configurable<bool> fConfigVetoBarrel{"cfgVetoBarrel", false, "Whether to veto on barrel tracks"};
 
   Filter filterBarrelTrackSelected = aod::dqppfilter::isDQBarrelSelected > uint32_t(0);
 
@@ -215,7 +219,7 @@ struct DQFilterPbPbTask {
   // Helper function for selecting DG events
   bool isEventDG(MyEvents::iterator const& collision, MyBCs const& bcs, MyBarrelTracksSelected const& tracks, MyMuons const& muons,
                  aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
-                 std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, bool useFV0, bool useFT0, bool useFDD)
+                 std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, bool useFV0, bool useFT0, bool useFDD, bool useSideA, bool useSideC, bool doVetoFwd, bool doVetoBarrel)
   {
     // Find BC associated with collision
     if (!collision.has_foundBC()) {
@@ -270,7 +274,7 @@ struct DQFilterPbPbTask {
     bool cleanFIT = true;
 
     for (auto const& bc : bcrange) {
-      if (useFV0) {
+      if (useFV0 && useSideA) {
         if (bc.has_foundFV0()) {
           auto fv0a = fv0as.iteratorAt(bc.foundFV0Id());
           float FV0Amplitude = 0;
@@ -293,7 +297,7 @@ struct DQFilterPbPbTask {
           for (auto amp : ft0.amplitudeC()) {
             FT0CAmplitude += amp;
           }
-          if (FT0AAmplitude > FITAmpLimits[1] || FT0CAmplitude > FITAmpLimits[2]) {
+          if ((useSideA && FT0AAmplitude > FITAmpLimits[1]) || (useSideC && FT0CAmplitude > FITAmpLimits[2])) {
             cleanFIT = false;
           }
         }
@@ -309,7 +313,7 @@ struct DQFilterPbPbTask {
           for (auto amp : fdd.chargeC()) {
             FDDCAmplitude += amp;
           }
-          if (FDDAAmplitude > FITAmpLimits[3] || FDDCAmplitude > FITAmpLimits[4]) {
+          if ((useSideA && FDDAAmplitude > FITAmpLimits[3]) || (useSideC && FDDCAmplitude > FITAmpLimits[4])) {
             cleanFIT = false;
           }
         }
@@ -326,12 +330,17 @@ struct DQFilterPbPbTask {
       barrelEmpty = false;
     }
 
-    // Compute decision. For now only check if FIT is empty and there are no forward tracks
-    if (cleanFIT && muonsEmpty) {
-      return 1;
+    bool decision = 0;
+    // Compute decision
+    if (doVetoFwd) {
+      decision = cleanFIT && muonsEmpty;
+    } else if (doVetoBarrel) {
+      decision = cleanFIT && barrelEmpty;
     } else {
-      return 0;
+      decision = cleanFIT;
     }
+
+    return decision;
   }
 
   void DefineCuts()
@@ -376,7 +385,7 @@ struct DQFilterPbPbTask {
     fStats->Fill(-2.0);
 
     std::vector<float> FITAmpLimits = {fConfigFV0AmpLimit, fConfigFT0AAmpLimit, fConfigFT0CAmpLimit, fConfigFDDAAmpLimit, fConfigFDDCAmpLimit};
-    bool isDG = isEventDG(collision, bcs, tracks, muons, ft0s, fv0as, fdds, FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigUseFV0, fConfigUseFT0, fConfigUseFDD);
+    bool isDG = isEventDG(collision, bcs, tracks, muons, ft0s, fv0as, fdds, FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigUseFV0, fConfigUseFT0, fConfigUseFDD, fConfigUseSideA, fConfigUseSideC, fConfigVetoForward, fConfigVetoBarrel);
     fStats->Fill(-1.0, isDG);
 
     std::vector<int> objCountersBarrel(fNBarrelCuts, 0); // init all counters to zero
@@ -394,7 +403,7 @@ struct DQFilterPbPbTask {
     filter |= isDG;
     for (int i = 0; i < fNBarrelCuts; i++) {
       if (objCountersBarrel[i] >= fBarrelNminTracks[i] && objCountersBarrel[i] <= fBarrelNmaxTracks[i]) {
-        filter |= (uint64_t(1) << i + 1);
+        filter |= (uint64_t(1) << (i + 1));
         fStats->Fill(static_cast<float>(i));
       }
     }

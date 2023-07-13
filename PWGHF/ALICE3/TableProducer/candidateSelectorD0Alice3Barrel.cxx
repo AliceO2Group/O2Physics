@@ -15,12 +15,10 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include "ALICE3/DataModel/RICH.h"
-#include "Common/Core/TrackSelectorPID.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
+
+#include "ALICE3/DataModel/RICH.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -233,10 +231,10 @@ struct HfCandidateSelectorD0Alice3Barrel {
       int pdgPositive = 0;
       int pdgNegative = 0;
       if (trackPos.has_mcParticle()) {
-        pdgPositive = trackPos.mcParticle_as<aod::McParticles_000>().pdgCode();
+        pdgPositive = trackPos.mcParticle_as<aod::McParticles>().pdgCode();
       }
       if (trackNeg.has_mcParticle()) {
-        pdgNegative = trackNeg.mcParticle_as<aod::McParticles_000>().pdgCode();
+        pdgNegative = trackNeg.mcParticle_as<aod::McParticles>().pdgCode();
       }
 
       float nsigmaTOFNegKaon = -5000.0;

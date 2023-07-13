@@ -83,10 +83,12 @@ struct tpcPid {
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
+  Configurable<std::string> recoPass{"recoPass", "", "Reconstruction pass name for CCDB query (automatically takes latest object for timestamp if blank)"};
   Configurable<int64_t> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
   // Parameters for loading network from a file / downloading the file
   Configurable<bool> useNetworkCorrection{"useNetworkCorrection", 0, "(bool) Wether or not to use the network correction for the TPC dE/dx signal"};
   Configurable<bool> autofetchNetworks{"autofetchNetworks", 1, "(bool) Automatically fetches networks from CCDB for the correct run number"};
+  Configurable<bool> skipTPCOnly{"skipTPCOnly", false, "Flag to skip TPC only tracks (faster but affects the analyses that use TPC only tracks)"};
   Configurable<std::string> networkPathLocally{"networkPathLocally", "network.onnx", "(std::string) Path to the local .onnx file. If autofetching is enabled, then this is where the files will be downloaded"};
   Configurable<bool> enableNetworkOptimizations{"enableNetworkOptimizations", 1, "(bool) If the neural network correction is used, this enables GraphOptimizationLevel::ORT_ENABLE_EXTENDED in the ONNX session"};
   Configurable<std::string> networkPathCCDB{"networkPathCCDB", "Analysis/PID/TPC/ML", "Path on CCDB"};
@@ -121,6 +123,14 @@ struct tpcPid {
     enableFlag("He", pidHe);
     enableFlag("Al", pidAl);
 
+    // Initialise metadata object for CCDB calls
+    if (recoPass.value == "") {
+      LOGP(info, "Reco pass not specified; CCDB will take latest available object");
+    } else {
+      LOGP(info, "CCDB object will be requested for reconstruction pass {}", recoPass.value);
+      metadata["RecoPassName"] = recoPass.value;
+    }
+
     /// TPC PID Response
     const TString fname = paramfile.value;
     if (fname != "") { // Loading the parametrization from file
@@ -132,6 +142,7 @@ struct tpcPid {
       } catch (...) {
         LOGF(fatal, "Loading the TPC PID Response from file {} failed!", fname);
       }
+      response.PrintAll();
     } else {
       useCCDBParam = true;
       const std::string path = ccdbPath.value;
@@ -142,13 +153,11 @@ struct tpcPid {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       if (time != 0) {
-        LOGP(info, "Initialising TPC PID response for fixed timestamp {}:", time);
+        LOGP(info, "Initialising TPC PID response for fixed timestamp {} and reco pass {}:", time, recoPass.value);
         ccdb->setTimestamp(time);
-        response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time));
-      } else {
-        LOGP(info, "Initialising default TPC PID response:");
+        response.SetParameters(ccdb->getSpecific<o2::pid::tpc::Response>(path, time, metadata));
+        response.PrintAll();
       }
-      response.PrintAll();
     }
 
     /// Neural network init for TPC PID
@@ -156,6 +165,9 @@ struct tpcPid {
     if (!useNetworkCorrection) {
       return;
     } else {
+      if (skipTPCOnly) {
+        LOG(fatal) << "Cannot skip TPC only tracks when using the neural network correction";
+      }
       /// CCDB and auto-fetching
       ccdbApi.init(url);
       if (!autofetchNetworks) {
@@ -279,15 +291,22 @@ struct tpcPid {
       LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / (tracks_size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / 1000000000 << " s";
     }
 
-    int lastCollisionId = -1; // Last collision ID analysed
     uint64_t count_tracks = 0;
 
     for (auto const& trk : tracks) {
       // Loop on Tracks
-      if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
-        lastCollisionId = trk.collisionId();
+      if (trk.has_collision()) {
         const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
-        response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp()));
+        if (useCCDBParam && ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrization only if the initial timestamp is 0
+
+          if (recoPass.value == "") {
+            LOGP(info, "Retrieving latest TPC response object for timestamp {}:", bc.timestamp());
+          } else {
+            LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
+          }
+          response.SetParameters(ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata));
+          response.PrintAll();
+        }
       }
       // Check and fill enabled tables
       auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracks_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
@@ -313,6 +332,12 @@ struct tpcPid {
             LOGF(fatal, "Network output-dimensions incompatible!");
           }
         } else {
+          if (skipTPCOnly) {
+            if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
+              table(aod::pidtpc_tiny::binning::underflowBin);
+              return;
+            }
+          }
           aod::pidutils::packInTable<aod::pidtpc_tiny::binning>(response.GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid), table);
         }
       };

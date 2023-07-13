@@ -82,6 +82,7 @@ DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                //! Sign 
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);   //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(TPCPIDselectionFlag, tpcPIDselectionFlag, uint8_t); //! TPC PID selection
 DECLARE_SOA_COLUMN(TOFPIDselectionFlag, tofPIDselectionFlag, uint8_t); //! TOF PID selection
+DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);                         //! DCA between daughters
 DECLARE_SOA_COLUMN(CascDaughDCA, cascdaughDCA, float);                 //! DCA between daughters from cascade
 DECLARE_SOA_COLUMN(V0CosPA, v0CosPA, float);                           //! V0 Cosine of Pointing Angle
@@ -129,7 +130,13 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   o2::aod::pidtpc::TPCNSigmaPr,
                   o2::aod::pidtof::TOFNSigmaPi,
                   o2::aod::pidtof::TOFNSigmaKa,
-                  o2::aod::pidtof::TOFNSigmaPr);
+                  o2::aod::pidtof::TOFNSigmaPr,
+                  o2::aod::track::TPCSignal,
+                  o2::aod::track::PassedITSRefit,
+                  o2::aod::track::PassedTPCRefit,
+                  resodaughter::TPCCrossedRowsOverFindableCls,
+                  o2::aod::track::ITSChi2NCl,
+                  o2::aod::track::TPCChi2NCl);
 using ResoTrack = ResoTracks::iterator;
 
 DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0S",
@@ -227,7 +234,7 @@ using ResoMCParent = ResoMCParents::iterator;
 using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra
 using Reso2TracksMC = soa::Join<aod::FullTracks, McTrackLabels>;
 using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
-using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksDCA>; // Without Extra
+using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksDCA, aod::TrackSelectionExtension>; // Without Extra
 
 } // namespace o2::aod
 #endif // PWGLF_DATAMODEL_LFRESONANCETABLES_H_

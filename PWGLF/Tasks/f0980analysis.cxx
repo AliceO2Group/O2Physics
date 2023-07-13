@@ -43,6 +43,7 @@ struct f0980analysis {
   Configurable<float> cfgMaxTOF{"cfgMaxTOF", 3.0, "Maximum TOF PID with TPC"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
+  Configurable<int> cfgMinTPCncr{"cfgMinTPCncr", 70, "minimum TPC cluster"};
 
   void init(o2::framework::InitContext&)
   {
@@ -57,9 +58,16 @@ struct f0980analysis {
     AxisSpec massAxis = {400, 0.2, 2.2};
     AxisSpec epAxis = {20, -constants::math::PI, constants::math::PI};
 
+    AxisSpec PIDqaAxis = {120, -6, 6};
+    AxisSpec pTqaAxis = {100, 0, 20};
+
     histos.add("hInvMass_f0980_US", "unlike invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
     histos.add("hInvMass_f0980_LSpp", "++ invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
     histos.add("hInvMass_f0980_LSmm", "-- invariant mass", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+
+    histos.add("QA/Nsigma_TPC", "", {HistType::kTH2F, {pTqaAxis, PIDqaAxis}});
+    histos.add("QA/Nsigma_TOF", "", {HistType::kTH2F, {pTqaAxis, PIDqaAxis}});
+    histos.add("QA/TPC_TOF", "", {HistType::kTH2F, {PIDqaAxis, PIDqaAxis}});
 
     histos.print();
   }
@@ -100,13 +108,19 @@ struct f0980analysis {
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks)
   {
     TLorentzVector Pion1, Pion2, Reco;
-    for (auto& [trk1, trk2] : combinations(CombinationsStrictlyUpperIndexPolicy(dTracks, dTracks))) {
+    for (auto& [trk1, trk2] : combinations(CombinationsUpperIndexPolicy(dTracks, dTracks))) {
+
+      if (trk1.index() == trk2.index()) {
+        histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
+        histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tofNSigmaPi());
+        histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
+        continue;
+      }
+
       if (!SelTrack(trk1) || !SelTrack(trk2))
         continue;
       if (!SelPion(trk1) || !SelPion(trk2))
         continue;
-
-      LOGF(debug, "Accepted");
 
       Pion1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
       Pion2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
@@ -115,7 +129,6 @@ struct f0980analysis {
       if (Reco.Rapidity() > cfgMaxRap || Reco.Rapidity() < cfgMinRap)
         continue;
 
-      LOGF(debug, "Rap Accepted");
       if (trk1.sign() * trk2.sign() < 0) {
         histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(), collision.multV0M());
       } else if (trk1.sign() > 0 && trk2.sign() > 0) {
@@ -131,7 +144,7 @@ struct f0980analysis {
   {
     LOGF(debug, "[DATA] Processing %d collisions", collisions.size());
     for (auto& collision : collisions) {
-      Partition<aod::ResoTracks> selectedTracks = o2::aod::track::pt > static_cast<float_t>(cfgMinPt) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cfgMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cfgMaxDCArToPVcut));
+      Partition<aod::ResoTracks> selectedTracks = requireTOFPIDPionCutInFilter() && o2::aod::track::pt > static_cast<float_t>(cfgMinPt) && (nabs(o2::aod::track::dcaZ) < static_cast<float_t>(cfgMaxDCAzToPVcut)) && (nabs(o2::aod::track::dcaXY) < static_cast<float_t>(cfgMaxDCArToPVcut)) && (aod::resodaughter::tpcNClsCrossedRows > static_cast<uint8_t>(cfgMinTPCncr));
       selectedTracks.bindTable(resotracks);
       auto colTracks = selectedTracks->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
       fillHistograms<false>(collision, colTracks);

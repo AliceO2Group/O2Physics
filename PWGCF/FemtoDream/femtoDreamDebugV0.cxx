@@ -97,8 +97,8 @@ struct femtoDreamDebugV0 {
       // check cuts on V0 children
       if ((posChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) && (posChild.cut() & ConfCutChildPos) == ConfCutChildPos) &&
           (negChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) && (negChild.cut() & ConfCutChildNeg) == ConfCutChildNeg) &&
-          isFullPIDSelected(posChild.pidcut(), 0.f, 1.f, std::vector<int>(ConfChildPosIndex.value), ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildPosPidnSigmaMax.value, 1.f) &&
-          isFullPIDSelected(negChild.pidcut(), 0.f, 1.f, std::vector<int>(ConfChildNegIndex.value), ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildNegPidnSigmaMax.value, 1.f)) {
+          isFullPIDSelected(posChild.pidcut(), posChild.p(), 999.f, ConfChildPosIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildPosPidnSigmaMax.value, 1.f) &&
+          isFullPIDSelected(negChild.pidcut(), negChild.p(), 999.f, ConfChildNegIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildNegPidnSigmaMax.value, 1.f)) {
         V0Histos.fillQA<false, true>(part);
         posChildHistos.fillQA<false, true>(posChild);
         negChildHistos.fillQA<false, true>(negChild);

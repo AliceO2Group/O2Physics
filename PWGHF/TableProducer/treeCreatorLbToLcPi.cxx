@@ -18,14 +18,10 @@
 /// \author Panos Christakoglou <Panos.Christakoglou@cern.ch>, Nikhef
 /// \author Maurice Jongerhuis <m.v.jongerhuis@students.uu.nl>, University Utrecht
 
-#include "ALICE3/DataModel/RICH.h"
-#include "Common/Core/TrackSelectorPID.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/PID.h"
+
+#include "ALICE3/DataModel/RICH.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"

@@ -110,7 +110,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
 /*****************************************************************/
 
 lutEntry_t*
-  TrackSmearer::getLUTEntry(int pdg, float nch, float radius, float eta, float pt)
+  TrackSmearer::getLUTEntry(int pdg, float nch, float radius, float eta, float pt, float& interpolatedEff)
 {
   auto ipdg = getIndexPDG(pdg);
   if (!mLUTHeader[ipdg])
@@ -119,12 +119,54 @@ lutEntry_t*
   auto irad = mLUTHeader[ipdg]->radmap.find(radius);
   auto ieta = mLUTHeader[ipdg]->etamap.find(eta);
   auto ipt = mLUTHeader[ipdg]->ptmap.find(pt);
+
+  // Interpolate if requested
+  auto fraction = mLUTHeader[ipdg]->nchmap.fracPositionWithinBin(nch);
+  if (mInterpolateEfficiency) {
+    if (fraction > 0.5) {
+      if (mWhatEfficiency == 1) {
+        if (inch < mLUTHeader[ipdg]->nchmap.nbins - 1) {
+          interpolatedEff = (1.5f - fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (-0.5f + fraction) * mLUTEntry[ipdg][inch + 1][irad][ieta][ipt]->eff;
+        } else {
+          interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
+        }
+      }
+      if (mWhatEfficiency == 2) {
+        if (inch < mLUTHeader[ipdg]->nchmap.nbins - 1) {
+          interpolatedEff = (1.5f - fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2 + (-0.5f + fraction) * mLUTEntry[ipdg][inch + 1][irad][ieta][ipt]->eff2;
+        } else {
+          interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
+        }
+      }
+    } else {
+      float comparisonValue = mLUTHeader[ipdg]->nchmap.log ? log10(nch) : nch;
+      if (mWhatEfficiency == 1) {
+        if (inch > 0 && comparisonValue < mLUTHeader[ipdg]->nchmap.max) {
+          interpolatedEff = (0.5f + fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (0.5f - fraction) * mLUTEntry[ipdg][inch - 1][irad][ieta][ipt]->eff;
+        } else {
+          interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
+        }
+      }
+      if (mWhatEfficiency == 2) {
+        if (inch > 0 && comparisonValue < mLUTHeader[ipdg]->nchmap.max) {
+          interpolatedEff = (0.5f + fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2 + (0.5f - fraction) * mLUTEntry[ipdg][inch - 1][irad][ieta][ipt]->eff2;
+        } else {
+          interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
+        }
+      }
+    }
+  } else {
+    if (mWhatEfficiency == 1)
+      interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
+    if (mWhatEfficiency == 2)
+      interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
+  }
   return mLUTEntry[ipdg][inch][irad][ieta][ipt];
 } //;
 
 /*****************************************************************/
 
-bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry)
+bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float interpolatedEff)
 {
   // generate efficiency
   if (mUseEfficiency) {
@@ -133,6 +175,8 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry)
       eff = lutEntry->eff;
     if (mWhatEfficiency == 2)
       eff = lutEntry->eff2;
+    if (mInterpolateEfficiency)
+      eff = interpolatedEff;
     if (gRandom->Uniform() > eff)
       return false;
   }
@@ -171,17 +215,19 @@ bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
     pt *= 2.f;
   }
   auto eta = o2track.getEta();
-  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt);
+  float interpolatedEff = 0.0f;
+  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, interpolatedEff);
   if (!lutEntry || !lutEntry->valid)
     return false;
-  return smearTrack(o2track, lutEntry);
+  return smearTrack(o2track, lutEntry, interpolatedEff);
 }
 
 /*****************************************************************/
 // relative uncertainty on pt
 double TrackSmearer::getPtRes(int pdg, float nch, float eta, float pt)
 {
-  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt);
+  float dummy = 0.0f;
+  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
   auto val = sqrt(lutEntry->covm[14]) * lutEntry->pt;
   return val;
 }
@@ -189,13 +235,21 @@ double TrackSmearer::getPtRes(int pdg, float nch, float eta, float pt)
 // relative uncertainty on eta
 double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
 {
-  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt);
+  float dummy = 0.0f;
+  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
   auto sigmatgl = sqrt(lutEntry->covm[9]);           // sigmatgl2
   auto etaRes = 1 / (sqrt(1 + sigmatgl * sigmatgl)); // propagate tgl to eta uncertainty
   etaRes /= lutEntry->eta;                           // relative uncertainty
   return etaRes;
 }
-
+/*****************************************************************/
+// efficiency
+double TrackSmearer::getEfficiency(int pdg, float nch, float eta, float pt)
+{
+  float efficiency = 0.0f;
+  getLUTEntry(pdg, nch, 0., eta, pt, efficiency);
+  return efficiency;
+}
 /*****************************************************************/
 // Only in DelphesO2
 // bool TrackSmearer::smearTrack(Track& track, bool atDCA)

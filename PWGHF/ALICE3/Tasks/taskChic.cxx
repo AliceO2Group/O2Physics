@@ -15,8 +15,6 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Cagliari University
 
-#include <iostream>
-
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 
@@ -167,7 +165,7 @@ struct HfTaskChicMc {
       }
       if (candidate.flagMcMatchRec() == 1 << decayMode) {
         // FIXME the access to the MC particle gen not yet functional
-        // int indexMother = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.prong1().mcParticle_as<aod::McParticles_000>().globalIndex()), 20443);
+        // int indexMother = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.prong1().mcParticle_as<aod::McParticles>().globalIndex()), 20443);
         // auto particleMother = particlesMC.rawIteratorAt(indexMother);
         // registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());

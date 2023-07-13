@@ -288,7 +288,7 @@ struct DiffMCQA {
       auto bcSlice = udhelpers::MCcompatibleBCs(collision, NDtcoll, bct0s, 0);
       isDGcandidate = true;
       for (auto& bc : bcSlice) {
-        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
+        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits());
       }
       if (isPythiaDiff) {
         registry.get<TH2>(HIST("MBRDiff/cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
@@ -367,13 +367,13 @@ struct DiffMCQA {
     // no FIT signal in bcSlice / collision
     if (doCleanFITBC) {
       for (auto const& bc : bcSlice) {
-        if (!udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits())) {
+        if (!udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
           isDGcandidate = false;
           break;
         }
       }
     } else {
-      if (!udhelpers::cleanFITCollision(collision, diffCuts.FITAmpLimits())) {
+      if (!udhelpers::cleanFITCollision(collision, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
         isDGcandidate = false;
       }
     }
