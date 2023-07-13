@@ -363,13 +363,15 @@ struct femtoDreamProducerTask {
       if (colCuts.isSelectedCollision(col, tracks, trackCuts) || colCuts.isSelectedCollision(col, fullV0s, v0Cuts, tracks)) {
         keepCollsion = true;
       }
-    } else if (colCuts.isSelectedCollision(col, tracks, trackCuts)) {
-      keepCollsion = true;
+    } else {
+      if (colCuts.isSelectedCollision(col, tracks, trackCuts)) {
+        keepCollsion = true;
+      }
     }
     // if the basic selection is NOT fulfilled
     // in case of trigger store the collision even though there are no particles
     if (!keepCollsion) {
-      if (ConfIsTrigger) {
+      if (ConfIsTrigger.value) {
         outputCollision(vtxZ, mult, multNtr, spher, mMagField);
       }
       return;
