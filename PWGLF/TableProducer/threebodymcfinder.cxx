@@ -33,9 +33,9 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFQATables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -214,7 +214,7 @@ struct threebodymcfinder {
 
     // Step 1: sweep over all mcCollisions and find all relevant candidates
     for (auto const& mcCollision : mcCollisions) {
-      histos.fill(HIST("hNTimesCollRecoed"), mcCollision.hasRecoCollision());
+      histos.fill(HIST("hNTimesCollRecoed"), mcCollision.numRecoCollision());
       int bestCollisionIndex = mcCollision.bestCollisionIndex();
 
       auto mcParticles = allMcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());

@@ -11,8 +11,8 @@
 
 // Helper tables to correlate collisions if needed
 
-#ifndef PWGLF_DATAMODEL_LFQATABLES_H_
-#define PWGLF_DATAMODEL_LFQATABLES_H_
+#ifndef COMMON_DATAMODEL_MCCOLLISIONEXTRA_H_
+#define COMMON_DATAMODEL_MCCOLLISIONEXTRA_H_
 
 #include <cmath>
 #include "Framework/AnalysisDataModel.h"
@@ -21,11 +21,11 @@ namespace o2::aod
 {
 namespace mccollisionprop
 {
-DECLARE_SOA_COLUMN(HasRecoCollision, hasRecoCollision, int);     //! stores N times this PV was recoed
+DECLARE_SOA_COLUMN(NumRecoCollision, numRecoCollision, int);     //! stores N times this PV was recoed
 DECLARE_SOA_COLUMN(BestCollisionIndex, bestCollisionIndex, int); //! stores N times this PV was recoed
 } // namespace mccollisionprop
 DECLARE_SOA_TABLE(McCollsExtra, "AOD", "MCCOLLSEXTRA",
-                  mccollisionprop::HasRecoCollision, mccollisionprop::BestCollisionIndex);
+                  mccollisionprop::NumRecoCollision, mccollisionprop::BestCollisionIndex);
 } // namespace o2::aod
 
-#endif // PWGLF_DATAMODEL_LFQATABLES_H_
+#endif // COMMON_DATAMODEL_MCCOLLISIONEXTRA_H_
