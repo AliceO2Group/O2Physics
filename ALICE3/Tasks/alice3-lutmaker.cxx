@@ -206,7 +206,7 @@ struct Alice3LutMaker {
     int ntrks = 0;
 
     for (const auto& track : tracks) {
-      if(!track.has_mcParticle()) 
+      if (!track.has_mcParticle())
         continue;
       const auto mcParticle = track.mcParticle_as<aod::McParticles>();
       if (mcParticle.pdgCode() != pdg) {
