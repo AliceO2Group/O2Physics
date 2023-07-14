@@ -500,8 +500,8 @@ struct tofSpectra {
     if (abs(track.rapidity(PID::getMass(id))) > cfgCutY) {
       return;
     }
-    if constexpr (id == PID::Kaon){
-      if(ckeckKaonIsPvContrib && !track.isPVContributor()){
+    if constexpr (id == PID::Kaon) {
+      if (ckeckKaonIsPvContrib && !track.isPVContributor()) {
         return;
       }
     }
