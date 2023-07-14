@@ -42,6 +42,9 @@ struct Alice3SingleParticle {
   Configurable<int> prodBins{"prod-bins", 100, "Number of production vertex bins"};
   Configurable<float> prodMin{"prod-min", -1.f, "Lower limit in production vertex"};
   Configurable<float> prodMax{"prod-max", 1.f, "Upper limit in production vertex"};
+  Configurable<int> prodBinsZ{"prod-bins-z", 100, "Number of production vertex bins"};
+  Configurable<float> prodMinZ{"prod-min-z", -10.f, "Lower limit in production vertex along Z"};
+  Configurable<float> prodMaxZ{"prod-max-z", 10.f, "Upper limit in production vertex along Z"};
   Configurable<float> charge{"charge", 1.f, "Particle charge to scale the reconstructed momentum"};
   Configurable<bool> doPrint{"doPrint", false, "Flag to print debug messages"};
 
@@ -80,7 +83,7 @@ struct Alice3SingleParticle {
     const AxisSpec axisE{etaBins, 0, 1000, "E"};
     const AxisSpec axisProdx{prodBins, prodMin, prodMax, "Prod. Vertex X (cm)"};
     const AxisSpec axisPrody{prodBins, prodMin, prodMax, "Prod. Vertex Y (cm)"};
-    const AxisSpec axisProdz{prodBins, prodMin, prodMax, "Prod. Vertex Z (cm)"};
+    const AxisSpec axisProdz{prodBinsZ, prodMinZ, prodMaxZ, "Prod. Vertex Z (cm)"};
     const AxisSpec axisProdRadius{prodBins, 0., 2. * prodMax, "Prod. Vertex Radius (cm)"};
 
     histos.add("event/VtxX", "Vertex X", kTH1D, {axisVx});
@@ -197,6 +200,9 @@ struct Alice3SingleParticle {
         continue;
       }
       if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax) {
+        continue;
+      }
+      if (mcParticle.vz() < prodMinZ || mcParticle.vz() > prodMaxZ) {
         continue;
       }
       histos.fill(HIST("particle/Pt"), mcParticle.pt());
