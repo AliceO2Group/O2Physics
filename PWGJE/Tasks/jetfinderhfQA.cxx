@@ -48,7 +48,7 @@ struct JetFinderHFQATask {
 
   Configurable<float> selectedJetsRadius{"selectedJetsRadius", 0.4, "resolution parameter for histograms without radius"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-  Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.2, 0.3, 0.4, 0.5, 0.6}, "jet resolution parameters"};
+  Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum pT acceptance for tracks"};
