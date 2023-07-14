@@ -384,8 +384,8 @@ struct spectraDerivedMaker {
   unsigned int randomSeed = 0;
   void processData(CollisionCandidate::iterator const& collision,
                    soa::Join<TrackCandidates,
-                             aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr,
-                             aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr> const& tracks,
+                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
+                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr> const& tracks,
                    aod::BCs const&)
   {
     if (!isEventSelected<true, true>(collision, tracks)) {
@@ -407,8 +407,13 @@ struct spectraDerivedMaker {
       }
 
       tableTrack(tableColl.lastIndex(),
-                 trk.tpcNSigmaPi(), trk.tpcNSigmaKa(), trk.tpcNSigmaPr(),
-                 trk.tofNSigmaPi(), trk.tofNSigmaKa(), trk.tofNSigmaPr(),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaPi()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaKa()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaPr()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaPi()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaKa()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaPr()),
+
                  trk.pt() * trk.sign(), trk.eta(), trk.phi(),
                  trk.length(),
                  trk.tpcSignal(),
@@ -421,7 +426,8 @@ struct spectraDerivedMaker {
                  trk.itsClusterMap(),
                  trk.hasTRD(),
                  trk.tofFlags(),
-                 trk.dcaXY(), trk.dcaZ());
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaXY()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaZ()));
     }
   }
   PROCESS_SWITCH(spectraDerivedMaker, processData, "Process data for derived dataset production", true);

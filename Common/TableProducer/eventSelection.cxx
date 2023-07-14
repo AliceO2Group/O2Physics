@@ -207,7 +207,7 @@ struct BcSelectionTask {
     int triggerBcShift = confTriggerBcShift;
     if (confTriggerBcShift == 999) {
       int run = bcs.iteratorAt(0).runNumber();
-      triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734) ? 0 : 294;
+      triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734 || run >= 534091) ? 0 : 294;
     }
 
     for (auto bc : bcs) {

@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file qaMatchEff.cxx
-/// \brief ITS-TPC track matching checks, also per charge and with PID
+/// \brief ITS-TPC track matching checks, per charge and with PID
 ///
 /// \author Rosario Turrisi  <rosario.turrisi@pd.infn.it>, INFN-PD
 /// \author Mattia Faggin <mattia.faggin@ts.infn.it>, UniTs & INFN-TS
@@ -50,7 +50,7 @@ struct qaMatchEff {
   Configurable<float> etaMaxCut{"etaMaxCut", 2.0f, "Maximum pseudorapidity"};
   Configurable<float> dcaXYMaxCut{"dcaXYMaxCut", 1000000.0f, "Maximum dcaXY (cm)"};
   Configurable<bool> b_useTPCinnerWallPt{"b_useTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
-  Configurable<bool> b_useTPCinnerWallPtForITS{"b_useTPCinnerWallPtForITS", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off just for ITS-tagged (not TPC tagged) histos."};
+  //  Configurable<bool> b_useTPCinnerWallPtForITS{"b_useTPCinnerWallPtForITS", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off just for ITS-tagged (not TPC tagged) histos."};
   // TPC
   Configurable<int> tpcNClusterMin{"tpcNClusterMin", 0, "Minimum number of clusters in TPC"};
   Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 70, "Minimum number of crossed rows in TPC"};
@@ -144,6 +144,15 @@ struct qaMatchEff {
   Configurable<bool> isPIDKaonRequired{"isPIDKaonRequired", false, "choose if apply kaon PID"};
   Configurable<bool> isPIDProtonRequired{"isPIDProtonRequired", false, "choose if apply proton PID"};
   //
+  // limit for z position of primary vertex
+  Configurable<float> zPrimVtxMax{"zPrimVtxax", 999.f, "Maximum asbolute value of z of primary vertex"};
+  //
+  //
+  //      ******     BE VERY CAREFUL!   --  FILTERS !!!  *****
+  //
+  Filter zPrimVtxLim = nabs(aod::collision::posZ) < zPrimVtxMax;
+  //
+  //
   //
   // Init function
   //
@@ -217,6 +226,10 @@ struct qaMatchEff {
 
     /// control plots
     histos.add("data/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
+    histos.add("data/control/zPrimary", "Position of primary vertex along beam axis;z position [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("data/control/yPrimary", "Position of primary vertex along y axis;y position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
+    histos.add("data/control/xPrimary", "Position of primary vertex along x axis;x position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
+    histos.add("data/control/chi2Prim", "#chi^2 of primary vertex fit;#chi^2", kTH1D, {{200, 0., 100.0}}, true);
 
     /// compare pt's (tracking and innerParamTPC)
     if (makept2d) {
@@ -231,7 +244,6 @@ struct qaMatchEff {
 
     // Q/pt
     histos.add("data/qopthist_tpc", "Q/#it{p}_{T} distribution - data TPC tag", kTH1D, {axisQoPt}, true);
-    // histos.add("data/qopthist_its", "Q/#it{p}_{T} distribution - data ITS tag", kTH1D, {axisQoPt}, true);
     histos.add("data/qopthist_tpcits", "Q/#it{p}_{T} distribution - data TPC+ITS tag", kTH1D, {axisQoPt}, true);
 
     // pt, phi, eta
@@ -536,6 +548,11 @@ struct qaMatchEff {
 
     /// control plots
     histos.add("MC/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
+    histos.add("MC/control/zPrimary", "Position of primary vertex along beam axis;z position [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    histos.add("MC/control/yPrimary", "Position of primary vertex along y axis;y position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
+    histos.add("MC/control/xPrimary", "Position of primary vertex along x axis;x position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
+    histos.add("MC/control/chi2Prim", "#chi^2 of primary vertex fit;#chi^2", kTH1D, {{200, 0., 100.0}}, true);
+
     /// compare pt's (tracking and innerParamTPC)
     if (makept2d) {
       histos.add("MC/control/ptptconfTPCall", "Tracking pt vs TPC inner wall pt - TPC tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
@@ -549,7 +566,6 @@ struct qaMatchEff {
 
     // Q/pt
     histos.add("MC/qopthist_tpc", "Q/#it{p}_{T} distribution - MC TPC tag", kTH1D, {axisQoPt}, true);
-    // histos.add("MC/qopthist_its", "Q/#it{p}_{T} distribution - MC ITS tag", kTH1D, {axisQoPt}, true);
     histos.add("MC/qopthist_tpcits", "Q/#it{p}_{T} distribution - MC TPC+ITS tag", kTH1D, {axisQoPt}, true);
     //
     //  TOF tag
@@ -773,7 +789,7 @@ struct qaMatchEff {
 
   } // end initMC
 
-  /// Function calculatind the pt at inner wall of TPC
+  /// Function calculating the pt at inner wall of TPC
   template <typename T>
   float computePtInParamTPC(T& track)
   {
@@ -832,7 +848,27 @@ struct qaMatchEff {
       return false;
     return true;
   }
-
+  //
+  //
+  // fill collision control plots
+  //
+  template <bool IS_MC, typename T>
+  void fillGeneralHistos(T& coll)
+  {
+    if constexpr (IS_MC) {
+      histos.fill(HIST("MC/control/zPrimary"), coll.posZ());
+      histos.fill(HIST("MC/control/yPrimary"), coll.posY());
+      histos.fill(HIST("MC/control/xPrimary"), coll.posX());
+      histos.fill(HIST("MC/control/chi2Prim"), coll.chi2());
+    } else {
+      histos.fill(HIST("data/control/zPrimary"), coll.posZ());
+      histos.fill(HIST("data/control/yPrimary"), coll.posY());
+      histos.fill(HIST("data/control/xPrimary"), coll.posX());
+      histos.fill(HIST("data/control/chi2Prim"), coll.chi2());
+    }
+    return;
+  }
+  //
   // define global variables
   int count = 0;
   int countData = 0;
@@ -841,7 +877,12 @@ struct qaMatchEff {
   int tpPDGCode = 0;
   std::vector<int>::iterator itr_pdg;
   float pdg_fill = 0.0;
-
+  //
+  //
+  //
+  /******************************************************************/
+  //
+  //
   /////////////////////////////////////////////////////
   ///   Template function to perform the analysis   ///
   /////////////////////////////////////////////////////
@@ -849,7 +890,7 @@ struct qaMatchEff {
   void fillHistograms(T& tracks, P& mcParticles)
   {
     //
-    float trackPt = 0, ITStrackPt = 0;
+    float trackPt = 0; //, ITStrackPt = 0;
     //
     //
     float tpcNSigmaPion = -999.f;
@@ -897,10 +938,10 @@ struct qaMatchEff {
       /// Using pt calculated at the inner wall of TPC
       /// Caveat: tgl still from tracking: this is not the value of tgl at the
       /// inner wall of TPC
-      if (b_useTPCinnerWallPtForITS)
-        ITStrackPt = tpcinner_pt;
-      else
-        ITStrackPt = reco_pt;
+      // if (b_useTPCinnerWallPtForITS)
+      //   ITStrackPt = tpcinner_pt;
+      // else
+      //   ITStrackPt = reco_pt;
 
       countData++;
       //
@@ -1756,18 +1797,20 @@ struct qaMatchEff {
   //////////////////////////////////////////////
   ///   Process MC with collision grouping   ///
   //////////////////////////////////////////////
-  void processMC(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  void processMC(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
     fillHistograms<true>(tracks, mcParticles);
+    fillGeneralHistos<true>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
 
   ////////////////////////////////////////////////////////////
   ///   Process MC with collision grouping and IU tracks   ///
   ////////////////////////////////////////////////////////////
-  void processTrkIUMC(aod::Collision const& collision, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  void processTrkIUMC(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
     fillHistograms<true>(tracks, mcParticles);
+    fillGeneralHistos<true>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processTrkIUMC, "process MC for IU tracks", false);
 
@@ -1783,19 +1826,20 @@ struct qaMatchEff {
   ////////////////////////////////////////////////
   ///   Process data with collision grouping   ///
   ////////////////////////////////////////////////
-  void processData(
-    aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
+  void processData(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
   {
     fillHistograms<false>(tracks, tracks); // 2nd argument not used in this case
+    fillGeneralHistos<false>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
 
   /////////////////////////////////////////////////////////////
   ///   Process data with collision grouping and IU tracks  ///
   /////////////////////////////////////////////////////////////
-  void processTrkIUData(aod::Collision const& collision, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
+  void processTrkIUData(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
   {
     fillHistograms<false>(tracks, tracks); // 2nd argument not used in this case
+    fillGeneralHistos<false>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processTrkIUData, "process data", false);
 
