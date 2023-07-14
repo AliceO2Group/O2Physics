@@ -13,6 +13,8 @@
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 /// \modified by Chiara De Martin (chiara.de.martin@cern.ch)
 /// \since March 20, 2023
+/// \modified by Roman Nepeivoda (roman.nepeivoda@cern.ch)
+/// \since June 1, 2023
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -67,7 +69,7 @@ struct cascpostprocessing {
   Configurable<float> bachBaryonCosPA{"bachBaryonCosPA", 0.9999, "Bachelor baryon CosPA"};
   Configurable<float> bachBaryonDCAxyToPV{"bachBaryonDCAxyToPV", 0.05, "DCA bachelor baryon to PV"};
 
-  Configurable<bool> isFT0MforMC{"isFT0MforMC", 0, "Fill with FT0M information or 0s"};
+  Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
 
   Configurable<int> evSelFlag{"evSelFlag", 2, "1 - INEL; 2 - INEL>0; 3 - INEL>1"};
 
@@ -85,6 +87,7 @@ struct cascpostprocessing {
     AxisSpec ptAxisTopoVar = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisPID = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec etaAxis = {200, -2.0f, 2.0f, "#eta"};
+
     ConfigurableAxis centFT0MAxis{"FT0M",
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
                                   "FT0M (%)"};
@@ -92,7 +95,7 @@ struct cascpostprocessing {
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
                                   "FV0A (%)"};
 
-    AxisSpec nChargedAxis = {300, -0.5f, 299.5f, "N_{ch in FT0M}"};
+    AxisSpec nChargedFT0MGenAxis = {500, 0, 500, "N_{FT0M, gen.}"};
 
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
@@ -144,8 +147,8 @@ struct cascpostprocessing {
     registry.add("hPt", "hPt", {HistType::kTH1F, {ptAxis}});
     registry.add("hCascMinusInvMassvsPt", "hCascMinusInvMassvsPt", HistType::kTH2F, {ptAxis, massAxis});
     registry.add("hCascPlusInvMassvsPt", "hCascPlusInvMassvsPt", HistType::kTH2F, {ptAxis, massAxis});
-    registry.add("hCascMinusInvMassvsPt_FT0M", "hCascMinusInvMassvsPt_FT0M", HistType::kTH3F, {centFT0MAxis, ptAxis, massAxis});
-    registry.add("hCascPlusInvMassvsPt_FT0M", "hCascPlusInvMassvsPt_FT0M", HistType::kTH3F, {centFT0MAxis, ptAxis, massAxis});
+    registry.add("hCascMinusInvMassvsPt_FT0M", "hCascMinusInvMassvsPt_FT0M", HistType::kTH3F, {isMC ? nChargedFT0MGenAxis : centFT0MAxis, ptAxis, massAxis});
+    registry.add("hCascPlusInvMassvsPt_FT0M", "hCascPlusInvMassvsPt_FT0M", HistType::kTH3F, {isMC ? nChargedFT0MGenAxis : centFT0MAxis, ptAxis, massAxis});
     registry.add("hCascMinusInvMassvsPt_FV0A", "hCascMinusInvMassvsPt_FV0A", HistType::kTH3F, {centFV0AAxis, ptAxis, massAxis});
     registry.add("hCascPlusInvMassvsPt_FV0A", "hCascPlusInvMassvsPt_FV0A", HistType::kTH3F, {centFV0AAxis, ptAxis, massAxis});
     registry.add("hXiMinusInvMassvsPt_BefSels", "hXiMinusInvMassvsPt_BefSels", HistType::kTH2F, {ptAxis, ximassAxis});
@@ -199,17 +202,17 @@ struct cascpostprocessing {
     registry.add("hCascMinusEtaBach", "hCascMinusEtaBach", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
 
     // Info for eff x acc from MC
-    registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
-    registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
+    registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
 
-    registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
-    registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
-    registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
-    registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
-    registry.add("hPtXiPlusTrueAssocWithSelColl", "hPtXiPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
-    registry.add("hPtXiMinusTrueAssocWithSelColl", "hPtXiMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
-    registry.add("hPtOmegaPlusTrueAssocWithSelColl", "hPtOmegaPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
-    registry.add("hPtOmegaMinusTrueAssocWithSelColl", "hPtOmegaMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedAxis}});
+    registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    registry.add("hPtXiPlusTrueAssocWithSelColl", "hPtXiPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    registry.add("hPtXiMinusTrueAssocWithSelColl", "hPtXiMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    registry.add("hPtOmegaPlusTrueAssocWithSelColl", "hPtOmegaPlusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    registry.add("hPtOmegaMinusTrueAssocWithSelColl", "hPtOmegaMinusTrueAssocWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
   }
 
   void processRec(aod::MyCascades const& mycascades)
@@ -449,19 +452,19 @@ struct cascpostprocessing {
 
       if (candidate.sign() < 0) {
         if (isCorrectlyRec) {
-          registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, (isFT0MforMC ? candidate.multFT0M() : 0));
+          registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, candidate.multFT0M()); // 3rd axis is N charged in FT0M region from gen. MC
         }
         registry.fill(HIST("hCascMinusInvMassvsPt"), candidate.pt(), invmass);
         registry.fill(HIST("hCascMinusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
-        registry.fill(HIST("hCascMinusInvMassvsPt_FV0A"), candidate.multFV0A(), candidate.pt(), invmass);
+        registry.fill(HIST("hCascMinusInvMassvsPt_FV0A"), isMC ? 0 : candidate.multFV0A(), candidate.pt(), invmass);
       }
       if (candidate.sign() > 0) {
         if (isCorrectlyRec) {
-          registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, (isFT0MforMC ? candidate.multFT0M() : 0));
+          registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, candidate.multFT0M()); // 3rd axis is N charged in FT0M region from gen. MC
         }
         registry.fill(HIST("hCascPlusInvMassvsPt"), candidate.pt(), invmass);
         registry.fill(HIST("hCascPlusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
-        registry.fill(HIST("hCascPlusInvMassvsPt_FV0A"), candidate.multFV0A(), candidate.pt(), invmass);
+        registry.fill(HIST("hCascPlusInvMassvsPt_FV0A"), isMC ? 0 : candidate.multFV0A(), candidate.pt(), invmass);
       }
     }
   }
