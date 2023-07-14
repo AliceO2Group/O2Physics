@@ -80,8 +80,8 @@ class FemtoDreamCollisionSelection
   /// \tparam T type of the collision
   /// \param col Collision
   /// \return whether or not the collisions fulfills the specified selections
-  template <typename T>
-  bool isSelected(T const& col)
+  template <typename C>
+  bool isSelectedCollision(C const& col)
   {
     if (std::abs(col.posZ()) > mZvtxMax) {
       return false;
@@ -95,6 +95,32 @@ class FemtoDreamCollisionSelection
         return false;
       }
       if (mCheckOffline && !col.sel7()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  template <typename C, typename T, typename TC>
+  bool isEmptyCollision(C const& col, T const& tracks, TC& trackCuts)
+  {
+    // check if there is no selected track
+    for (auto const& track : tracks) {
+      if (trackCuts.isSelectedMinimal(track)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  template <typename C, typename V, typename VC, typename T>
+  bool isEmptyCollision(C const& col, V const& V0s, VC& V0Cuts, T const& Tracks)
+  {
+    // check if there is no selected V0
+    for (auto const& V0 : V0s) {
+      auto postrack = V0.template posTrack_as<T>();
+      auto negtrack = V0.template negTrack_as<T>();
+      if (V0Cuts.isSelectedMinimal(col, V0, postrack, negtrack)) {
         return false;
       }
     }
