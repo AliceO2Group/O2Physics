@@ -202,7 +202,7 @@ struct Alice3SingleParticle {
       if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax) {
         continue;
       }
-      if (mcParticle.vz() < prodMinZ || mcParticle.vz() > prodMaxZ){
+      if (mcParticle.vz() < prodMinZ || mcParticle.vz() > prodMaxZ) {
         continue;
       }
       histos.fill(HIST("particle/Pt"), mcParticle.pt());
