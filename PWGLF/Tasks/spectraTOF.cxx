@@ -45,7 +45,7 @@ struct tofSpectra {
   Configurable<float> cfgNSigmaCut{"cfgNSigmaCut", 3, "Value of the Nsigma cut"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEtaMax{"cfgCutEtaMax", 0.8f, "Max eta range for tracks"};
-  Configurable<float> cfgCutEtaMin{"cfgCutEtaMin", 0.8f, "Min eta range for tracks"};
+  Configurable<float> cfgCutEtaMin{"cfgCutEtaMin", -0.8f, "Min eta range for tracks"};
   Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
   Configurable<int> cfgINELCut{"cfgINELCut", 0, "Event selection: 0 no sel, 1 sel8, 2 INEL>0, 3 INEL>1"};
   Configurable<bool> enableDcaGoodEvents{"enableDcaGoodEvents", true, "Enables the MC plots with the correct match between data and MC"};
