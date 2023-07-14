@@ -81,12 +81,6 @@ struct femtoDreamProducerTaskV0Only {
   Produces<aod::FDExtParticles> outputDebugParts;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
-
-  // Choose if filtering or skimming version is run
-
-  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"};
-
-  // Choose if running on converted data or Run3  / Pilot
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
 
@@ -202,10 +196,8 @@ struct femtoDreamProducerTaskV0Only {
   // (aod::v0data::v0radius > V0TranRadV0Min.value); to be added, not working
   // for now do not know why
 
-  HistogramRegistry qaRegistry{
-    "QAHistos",
-    {},
-    OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry Registry{"Producer", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
   float mMagField;
@@ -276,7 +268,7 @@ struct femtoDreamProducerTaskV0Only {
                                 ConfV0DaughTPIDspecies);
       v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0,
                   aod::femtodreamparticle::ParticleType::kV0Child,
-                  aod::femtodreamparticle::cutContainerType>(&qaRegistry);
+                  aod::femtodreamparticle::cutContainerType>(&qaRegistry, &Registry);
       v0Cuts.setInvMassLimits(ConfInvMassLowLimit, ConfInvMassUpLimit);
       v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kPosTrack,
                                                ConfRejectNotPropagatedTracks);
@@ -374,16 +366,12 @@ struct femtoDreamProducerTaskV0Only {
       multNtr = col.multTPC();
     }
 
-    /// First thing to do is to check whether the basic event selection criteria
-    /// are fulfilled
-    // If the basic selection is NOT fulfilled:
-    // in case of skimming run - don't store such collisions
-    // in case of trigger run - store such collisions but don't store any
-    // particle candidates for such collisions
-    if (!colCuts.isSelected(col)) {
-      if (ConfIsTrigger) {
-        outputCollision(vtxZ, mult, multNtr, spher, mMagField);
-      }
+    /// First thing to do is to check whether the basic event selection criteria are fullfilled
+    /// that includes checking if there is at least one usable V0 in the collision
+    if (!colCuts.isSelectedCollision(col)) {
+      return;
+    }
+    if (colCuts.isEmptyCollision(col, fullV0s, v0Cuts, tracks)) {
       return;
     }
 
@@ -397,13 +385,9 @@ struct femtoDreamProducerTaskV0Only {
                   // track table row <-> aod::track table global index
 
     if (ConfStoreV0) {
-      for (auto& v0 : fullV0s) {
-        auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
-        auto negtrack =
-          v0.negTrack_as<aod::FemtoFullTracks>(); ///\tocheck funnily enough
-                                                  /// if we apply the filter
-                                                  /// the sign of Pos and Neg
-                                                  /// track is always negative
+      for (auto const& v0 : fullV0s) {
+        const auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
+        const auto negtrack = v0.negTrack_as<aod::FemtoFullTracks>();
         // const auto dcaXYpos = postrack.dcaXY();
         // const auto dcaZpos = postrack.dcaZ();
         // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));

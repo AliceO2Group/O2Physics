@@ -17,6 +17,11 @@
 #define PWGCF_FEMTODREAM_FEMTODREAMSELECTION_H_
 
 #include <cmath>
+#include "Framework/HistogramRegistry.h"
+#include "PWGCF/DataModel/FemtoDerived.h"
+
+using namespace o2;
+using namespace o2::framework;
 
 namespace o2::analysis::femtoDream
 {
@@ -100,11 +105,18 @@ class FemtoDreamSelection
   /// \param cutContainer Bit-wise container for the systematic variations
   /// \param counter Position in the bit-wise container for the systematic variations to be modified
   template <typename T>
-  void checkSelectionSetBit(selValDataType observable, T& cutContainer, size_t& counter)
+  void checkSelectionSetBit(selValDataType observable, T& cutContainer, size_t& counter, HistogramRegistry* registry)
   {
     /// If the selection is fulfilled the bit at the specified position (counter) within the bit-wise container is set to 1
     if (isSelected(observable)) {
       cutContainer |= 1UL << counter;
+      if (registry) {
+        registry->fill(HIST("AnalysisQA/CutCounter"), 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType));
+      }
+    } else {
+      if (registry) {
+        registry->fill(HIST("AnalysisQA/CutCounter"), counter);
+      }
     }
     ++counter;
   }
