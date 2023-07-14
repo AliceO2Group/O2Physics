@@ -51,6 +51,7 @@ struct femtoWorldEficiencyTask {
   HistogramRegistry registryQAtrack{"QAHistosTrack", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryPID{"PIDHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryPDG{"PDGHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry registryPri{"PriHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   HistogramRegistry registryMCtruth{"MCtruthHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
@@ -108,13 +109,15 @@ struct femtoWorldEficiencyTask {
     registryPDG.add("minus/PDGKa", "PDGKa;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 10}, {8001, -4000.5, 4000.5}}});
     registryPDG.add("minus/PDGPr", "PDGPr;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 10}, {8001, -4000.5, 4000.5}}});
 
-    registryPDG.add("plus/PDGPiPri", "PDGPiPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryPDG.add("plus/PDGKaPri", "PDGKaPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryPDG.add("plus/PDGPrPri", "PDGPrPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+    registryPri.add("plus/PiPri", "PiPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+    registryPri.add("plus/KaPri", "KaPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+    registryPri.add("plus/PrPri", "PrPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+    registryPri.add("plus/AllPri", "AllPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
 
-    registryPDG.add("minus/PDGPiPri", "PDGPiPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryPDG.add("minus/PDGKaPri", "PDGKaPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryPDG.add("minus/PDGPrPri", "PDGPrPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+    registryPri.add("minus/PiPri", "PiPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+    registryPri.add("minus/KaPri", "KaPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+    registryPri.add("minus/PrPri", "PrPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+    registryPri.add("minus/AllPri", "AllPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
 
     // MC truth
     registryMCtruth.add("plus/MCtruthPi", "MC truth pions;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
@@ -277,25 +280,27 @@ struct femtoWorldEficiencyTask {
 
       if (mcParticle.isPhysicalPrimary()) {
         if (track.sign() > 0) {
+          registryPri.fill(HIST("plus/AllPri"), track.pt(), track.eta());
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt())) {
-            registryPDG.fill(HIST("plus/PDGPiPri"), track.pt(), track.eta());
+            registryPri.fill(HIST("plus/PiPri"), track.pt(), track.eta());
           }
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt())) {
-            registryPDG.fill(HIST("plus/PDGKaPri"), track.pt(), track.eta());
+            registryPri.fill(HIST("plus/KaPri"), track.pt(), track.eta());
           }
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt())) {
-            registryPDG.fill(HIST("plus/PDGPrPri"), track.pt(), track.eta());
+            registryPri.fill(HIST("plus/PrPri"), track.pt(), track.eta());
           }
         }
         if (track.sign() < 0) {
+          registryPri.fill(HIST("minus/AllPri"), track.pt(), track.eta());
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt())) {
-            registryPDG.fill(HIST("minus/PDGPiPri"), track.pt(), track.eta());
+            registryPri.fill(HIST("minus/PiPri"), track.pt(), track.eta());
           }
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt())) {
-            registryPDG.fill(HIST("minus/PDGKaPri"), track.pt(), track.eta());
+            registryPri.fill(HIST("minus/KaPri"), track.pt(), track.eta());
           }
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt())) {
-            registryPDG.fill(HIST("minus/PDGPrPri"), track.pt(), track.eta());
+            registryPri.fill(HIST("minus/PrPri"), track.pt(), track.eta());
           }
         }
       }
