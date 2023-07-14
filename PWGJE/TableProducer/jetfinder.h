@@ -43,8 +43,8 @@
 using JetTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 using JetClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 
-using JetParticles2Prong = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
-using JetParticles3Prong = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+using JetParticlesD0 = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
+using JetParticlesLc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 using JetParticlesBplus = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
 
 using CandidateD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
