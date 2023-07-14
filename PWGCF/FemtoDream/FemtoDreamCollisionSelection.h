@@ -81,7 +81,7 @@ class FemtoDreamCollisionSelection
   /// \param col Collision
   /// \return whether or not the collisions fulfills the specified selections
   template <typename C>
-  bool isSelectedCollision_base(C const& col)
+  bool isSelectedCollision(C const& col)
   {
     if (std::abs(col.posZ()) > mZvtxMax) {
       return false;
@@ -102,42 +102,29 @@ class FemtoDreamCollisionSelection
   }
 
   template <typename C, typename T, typename TC>
-  bool isSelectedCollision(C const& col, T const& tracks, TC& trackCuts)
+  bool isEmptyCollision(C const& col, T const& tracks, TC& trackCuts)
   {
-    if (!isSelectedCollision_base(col)) {
-      return false;
-    }
-
-    // check if there is at least one selected track in the collision
-    bool keepCollision = false;
+    // check if there is no selected track
     for (auto const& track : tracks) {
       if (trackCuts.isSelectedMinimal(track)) {
-        keepCollision = true;
-        break;
+        return false;
       }
     }
-    return keepCollision;
+    return true;
   }
 
   template <typename C, typename V, typename VC, typename T>
-  bool isSelectedCollision(C const& col, V const& V0s, VC& V0Cuts, T const& Tracks)
+  bool isEmptyCollision(C const& col, V const& V0s, VC& V0Cuts, T const& Tracks)
   {
-    if (!isSelectedCollision_base(col)) {
-      return false;
-    }
-    // check if there is at least one selected V0 in the collision
-    bool keepCollision = false;
+    // check if there is no selected V0
     for (auto const& V0 : V0s) {
-      const auto postrack = V0.template posTrack_as<T>();
-      const auto negtrack = V0.template negTrack_as<T>();
+      auto postrack = V0.template posTrack_as<T>();
+      auto negtrack = V0.template negTrack_as<T>();
       if (V0Cuts.isSelectedMinimal(col, V0, postrack, negtrack)) {
-        keepCollision = true;
-        break;
+        return false;
       }
     }
-    // if no track has been found, return false
-    // otherwise true
-    return keepCollision;
+    return true;
   }
 
   /// Some basic QA of the event

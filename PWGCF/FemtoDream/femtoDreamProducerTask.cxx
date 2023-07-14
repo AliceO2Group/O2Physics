@@ -284,14 +284,23 @@ struct femtoDreamProducerTask {
                        (uint8_t)particle.tpcNClsFound(),
                        particle.tpcNClsFindable(),
                        (uint8_t)particle.tpcNClsCrossedRows(),
-                       particle.tpcNClsShared(), particle.tpcInnerParam(),
-                       particle.itsNCls(), particle.itsNClsInnerBarrel(),
-                       particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
-                       particle.tpcNSigmaEl(), particle.tpcNSigmaPi(),
-                       particle.tpcNSigmaKa(), particle.tpcNSigmaPr(),
-                       particle.tpcNSigmaDe(), particle.tofNSigmaEl(),
-                       particle.tofNSigmaPi(), particle.tofNSigmaKa(),
-                       particle.tofNSigmaPr(), particle.tofNSigmaDe(),
+                       particle.tpcNClsShared(),
+                       particle.tpcInnerParam(),
+                       particle.itsNCls(),
+                       particle.itsNClsInnerBarrel(),
+                       particle.dcaXY(),
+                       particle.dcaZ(),
+                       particle.tpcSignal(),
+                       particle.tpcNSigmaEl(),
+                       particle.tpcNSigmaPi(),
+                       particle.tpcNSigmaKa(),
+                       particle.tpcNSigmaPr(),
+                       particle.tpcNSigmaDe(),
+                       particle.tofNSigmaEl(),
+                       particle.tofNSigmaPi(),
+                       particle.tofNSigmaKa(),
+                       particle.tofNSigmaPr(),
+                       particle.tofNSigmaDe(),
                        -999., -999., -999., -999., -999., -999.);
     } else {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
@@ -358,22 +367,7 @@ struct femtoDreamProducerTask {
 
     // check whether the basic event selection criteria are fulfilled
     // that included checking if there is at least on usable track or V0
-    bool keepCollsion = false;
-    if (ConfIsActivateV0.value) {
-      if (colCuts.isSelectedCollision(col, tracks, trackCuts) || colCuts.isSelectedCollision(col, fullV0s, v0Cuts, tracks)) {
-        keepCollsion = true;
-      }
-    } else {
-      if (colCuts.isSelectedCollision(col, tracks, trackCuts)) {
-        keepCollsion = true;
-      }
-    }
-    // if the basic selection is NOT fulfilled
-    // in case of trigger store the collision even though there are no particles
-    if (!keepCollsion) {
-      if (ConfIsTrigger.value) {
-        outputCollision(vtxZ, mult, multNtr, spher, mMagField);
-      }
+    if (!colCuts.isSelectedCollision(col)) {
       return;
     }
     if (ConfIsActivateV0.value) {

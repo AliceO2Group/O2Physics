@@ -119,7 +119,7 @@ struct femtoDreamProducerReducedTask {
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
 
-    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
+    colCuts.setCuts(ConfEvtZvtx.value, ConfEvtTriggerCheck.value, ConfEvtTriggerSel.value, ConfEvtOfflineCheck.value, ConfIsRun3.value);
     colCuts.init(&qaRegistry);
 
     trackCuts.setSelection(ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
@@ -243,13 +243,11 @@ struct femtoDreamProducerReducedTask {
     }
 
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
-    // If the basic selection is NOT fulfilled:
-    // in case of skimming run - don't store such collisions
-    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
-    if (!colCuts.isSelectedCollision(col, tracks, trackCuts)) {
-      if (ConfIsTrigger) {
-        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-      }
+    /// That includes checking if there are any usable tracks in a collision
+    if (!colCuts.isSelectedCollision(col)) {
+      return;
+    }
+    if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
       return;
     }
 
@@ -305,12 +303,7 @@ struct femtoDreamProducerReducedTask {
                          track.tofNSigmaKa(),
                          track.tofNSigmaPr(),
                          track.tofNSigmaDe(),
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.);
+                         -999., -999., -999., -999., -999., -999.);
       }
     }
   }

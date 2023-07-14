@@ -366,16 +366,12 @@ struct femtoDreamProducerTaskV0Only {
       multNtr = col.multTPC();
     }
 
-    /// First thing to do is to check whether the basic event selection criteria
-    /// are fulfilled
-    // If the basic selection is NOT fulfilled:
-    // in case of skimming run - don't store such collisions
-    // in case of trigger run - store such collisions but don't store any
-    // particle candidates for such collisions
-    if (!colCuts.isSelectedCollision(col, fullV0s, v0Cuts, tracks)) {
-      if (ConfIsTrigger) {
-        outputCollision(vtxZ, mult, multNtr, spher, mMagField);
-      }
+    /// First thing to do is to check whether the basic event selection criteria are fullfilled
+    /// that includes checking if there is at least one usable V0 in the collision
+    if (!colCuts.isSelectedCollision(col)) {
+      return;
+    }
+    if (colCuts.isEmptyCollision(col, fullV0s, v0Cuts, tracks)) {
       return;
     }
 
