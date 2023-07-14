@@ -381,8 +381,8 @@ struct AntimatterAbsorptionHMPID {
     }
   }
 
-  Filter collisionFilter = (nabs(aod::collision::posZ) < zVertexRange);
-  Filter trackFilter = (nabs(aod::track::eta) < 0.8f && requireGlobalTrackWoDCAInFilter());
+  // Filter collisionFilter = (nabs(aod::collision::posZ) < zVertexRange);
+  // Filter trackFilter = (nabs(aod::track::eta) < 0.8f && requireGlobalTrackWoDCAInFilter());
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels>;
   // using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
@@ -390,7 +390,7 @@ struct AntimatterAbsorptionHMPID {
   /*
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;
   */
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
 
   void processData(EventCandidates::iterator const& event,
                    TrackCandidates const& tracks)
@@ -400,7 +400,7 @@ struct AntimatterAbsorptionHMPID {
   PROCESS_SWITCH(AntimatterAbsorptionHMPID, processData, "process data", true);
 
   // Process MC
-  void processMC(EventCandidates::iterator const& event, TrackCandidates const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+  void processMC(EventCandidates::iterator const& event, soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
   {
 
     float radius_hmpid = 500;
