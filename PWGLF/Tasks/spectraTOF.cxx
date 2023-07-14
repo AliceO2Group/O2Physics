@@ -157,8 +157,8 @@ struct tofSpectra {
       LOG(info) << "\tminTPCNClsFound=" << minTPCNClsFound.value;
       LOG(info) << "\tmaxChi2PerClusterITS=" << maxChi2PerClusterITS.value;
       LOG(info) << "\tmaxDcaZ=" << maxDcaZ.value;
-      LOG(info) << "\tmakeTHnSparseChoice=" << makeTHnSparseChoice.value; 
-      LOG(info) << "\tckeckKaonIsPvContrib=" << ckeckKaonIsPvContrib.value; 
+      LOG(info) << "\tmakeTHnSparseChoice=" << makeTHnSparseChoice.value;
+      LOG(info) << "\tckeckKaonIsPvContrib=" << ckeckKaonIsPvContrib.value;
 
       customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value);
       LOG(info) << "Customizing track cuts:";
