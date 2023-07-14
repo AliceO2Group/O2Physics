@@ -123,9 +123,25 @@ struct lfpidqa {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext&)
   {
+    if (doprocessPiKaPr && doprocessAll) {
+      LOG(fatal) << "Cannot enable processPiKaPr and processAll at the same time";
+    }
+
     const AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     for (int id = 0; id < Np; id++) {
-
+      if (doprocessPiKaPr) {
+        bool keepIt = false;
+        switch (id) {
+          case o2::track::PID::Pion:
+          case o2::track::PID::Kaon:
+          case o2::track::PID::Proton:
+            keepIt = true;
+            break;
+        }
+        if (!keepIt) {
+          continue;
+        }
+      }
       const char* axisTitle = Form("N_{#sigma}^{TPC}(%s)", pT[id]);
       const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, axisTitle};
       histos.add(hnsigma[id].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
@@ -197,15 +213,15 @@ struct lfpidqa {
 
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
-  void process(soa::Filtered<CollisionCandidate> const& collisions,
-               soa::Filtered<soa::Join<TrackCandidates,
-                                       aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                       aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                                       aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl>> const& tracks,
-               soa::Filtered<soa::Join<TrackCandidates,
-                                       aod::pidTPCLfFullEl, aod::pidTPCLfFullMu, aod::pidTPCLfFullPi,
-                                       aod::pidTPCLfFullKa, aod::pidTPCLfFullPr, aod::pidTPCLfFullDe,
-                                       aod::pidTPCLfFullTr, aod::pidTPCLfFullHe, aod::pidTPCLfFullAl>> const& lftracks)
+  void processAll(soa::Filtered<CollisionCandidate> const& collisions,
+                  soa::Filtered<soa::Join<TrackCandidates,
+                                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                          aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                          aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl>> const& tracks,
+                  soa::Filtered<soa::Join<TrackCandidates,
+                                          aod::pidTPCLfFullEl, aod::pidTPCLfFullMu, aod::pidTPCLfFullPi,
+                                          aod::pidTPCLfFullKa, aod::pidTPCLfFullPr, aod::pidTPCLfFullDe,
+                                          aod::pidTPCLfFullTr, aod::pidTPCLfFullHe, aod::pidTPCLfFullAl>> const& lftracks)
   {
     for (const auto& trk : tracks) {
       static_for<0, 8>([&](auto i) {
@@ -219,6 +235,25 @@ struct lfpidqa {
       });
     }
   }
+  PROCESS_SWITCH(lfpidqa, processAll, "Process All particles", false);
+
+  void processPiKaPr(soa::Filtered<CollisionCandidate> const& collisions,
+                     soa::Filtered<soa::Join<TrackCandidates, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>> const& tracks,
+                     soa::Filtered<soa::Join<TrackCandidates, aod::pidTPCLfFullPi, aod::pidTPCLfFullKa, aod::pidTPCLfFullPr>> const& lftracks)
+  {
+    for (const auto& trk : tracks) {
+      fillStd<o2::track::PID::Pion>(trk);
+      fillStd<o2::track::PID::Kaon>(trk);
+      fillStd<o2::track::PID::Proton>(trk);
+    }
+
+    for (const auto& trk : lftracks) {
+      fillLf<o2::track::PID::Pion>(trk);
+      fillLf<o2::track::PID::Kaon>(trk);
+      fillLf<o2::track::PID::Proton>(trk);
+    }
+  }
+  PROCESS_SWITCH(lfpidqa, processPiKaPr, "Process only Pi Ka Pr", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<lfpidqa>(cfgc)}; }
