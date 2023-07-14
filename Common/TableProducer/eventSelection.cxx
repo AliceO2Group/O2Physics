@@ -368,7 +368,7 @@ struct EventSelectionTask {
     // applying selections depending on the number of tracklets
     auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
     int nTkl = trackletsGrouped.size();
-    int spdClusters =  bc.spdClustersL0() + bc.spdClustersL1();
+    int spdClusters = bc.spdClustersL0() + bc.spdClustersL1();
 
     selection |= (spdClusters < par->fSPDClsVsTklA + nTkl * par->fSPDClsVsTklB) ? BIT(kNoSPDClsVsTklBG) : 0;
     selection |= !(nTkl < 6 && multV0C012 > par->fV0C012vsTklA + nTkl * par->fV0C012vsTklB) ? BIT(kNoV0C012vsTklBG) : 0;
@@ -433,8 +433,8 @@ struct EventSelectionTask {
     }
 
     // protection against empty FT0 maps
-    if (mapGlobalBcWithTOR.size()==0 || mapGlobalBcWithTVX.size()==0) {
-      LOGP(error,"FT0 table is empty or corrupted. Filling evsel table with dummy values");
+    if (mapGlobalBcWithTOR.size() == 0 || mapGlobalBcWithTVX.size() == 0) {
+      LOGP(error, "FT0 table is empty or corrupted. Filling evsel table with dummy values");
       for (auto& col : cols) {
         auto bc = col.bc_as<BCsWithBcSelsRun3>();
         int32_t foundBC = bc.globalIndex();
@@ -442,7 +442,7 @@ struct EventSelectionTask {
         int32_t foundFV0 = bc.foundFV0Id();
         int32_t foundFDD = bc.foundFDDId();
         int32_t foundZDC = bc.foundZDCId();
-        evsel(bc.alias_raw(),bc.selection_raw(), kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC);
+        evsel(bc.alias_raw(), bc.selection_raw(), kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC);
       }
       return;
     }
@@ -479,13 +479,13 @@ struct EventSelectionTask {
       LOGP(debug, "nContrib={} nITStracks={} nTPCtracks={} nTOFtracks={} nTRDtracks={}", col.numContrib(), nITStracks, nTPCtracks, nTOFtracks, nTRDtracks);
 
       if (nTRDtracks > 0) {
-        meanBC += TMath::Nint(timeFromTRDtracks / nTRDtracks / bcNS);      // assign collision bc using TRD-matched tracks
-        deltaBC = 0;                                                       // use precise bc from TRD-matched tracks
+        meanBC += TMath::Nint(timeFromTRDtracks / nTRDtracks / bcNS); // assign collision bc using TRD-matched tracks
+        deltaBC = 0;                                                  // use precise bc from TRD-matched tracks
       } else if (nTOFtracks > 0) {
         meanBC += TMath::FloorNint(timeFromTOFtracks / nTOFtracks / bcNS); // assign collision bc using TOF-matched tracks
         deltaBC = 4;                                                       // use precise bc from TOF tracks with +/-4 bc margin
       } else if (nTPCtracks > 0) {
-        deltaBC += 30;                                                     // extend deltaBC for collisions built with ITS-TPC tracks only
+        deltaBC += 30; // extend deltaBC for collisions built with ITS-TPC tracks only
       }
 
       int64_t minBC = meanBC - deltaBC;
@@ -495,7 +495,7 @@ struct EventSelectionTask {
       int64_t tvxBC = bcs.iteratorAt(indexClosestTVX).globalBC();
       if (tvxBC >= minBC && tvxBC <= maxBC) { // closest TVX within search region
         bc.setCursor(indexClosestTVX);
-      } else {                                // no TVX within search region, searching for TOR = T0A | T0C
+      } else { // no TVX within search region, searching for TOR = T0A | T0C
         int32_t indexClosestTOR = findClosest(meanBC, mapGlobalBcWithTOR);
         int64_t torBC = bcs.iteratorAt(indexClosestTOR).globalBC();
         if (torBC >= minBC && torBC <= maxBC) {

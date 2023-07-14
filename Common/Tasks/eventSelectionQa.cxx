@@ -386,7 +386,7 @@ struct EventSelectionQaTask {
       float multRingV0C012 = multV0C - multRingV0C3;
       float onV0M = bc.v0TriggerChargeA() + bc.v0TriggerChargeC();
       float ofV0M = multV0A + multV0C - multRingV0A[0];
-      int spdClusters =  bc.spdClustersL0() + bc.spdClustersL1();
+      int spdClusters = bc.spdClustersL0() + bc.spdClustersL1();
 
       auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
       int nTracklets = trackletsGrouped.size();

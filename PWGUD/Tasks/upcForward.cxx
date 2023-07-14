@@ -79,9 +79,9 @@ struct UPCForward {
     bool isBeamGasV0C = !bc.selection_bit(kNoBGV0C);
 
     bool isBeamBeamFDA = bc.selection_bit(kIsBBFDA);
-    bool isBeamGasFDA =  !bc.selection_bit(kNoBGFDA);
-    bool isBeamBeamFDC =  bc.selection_bit(kIsBBFDC);
-    bool isBeamGasFDC =  !bc.selection_bit(kNoBGFDC);
+    bool isBeamGasFDA = !bc.selection_bit(kNoBGFDA);
+    bool isBeamBeamFDC = bc.selection_bit(kIsBBFDC);
+    bool isBeamGasFDC = !bc.selection_bit(kNoBGFDC);
 
     // offline V0 and FD selection
     bool isV0Selection = isBeamBeamV0A || isBeamGasV0A || isBeamGasV0C;
