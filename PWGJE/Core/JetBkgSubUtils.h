@@ -161,6 +161,6 @@ class JetBkgSubUtils
   fastjet::Selector selRho = fastjet::Selector();
   fastjet::Selector selRemoveHFCand = !FastJetUtilities::SelectorIsHFCand();
 
-};     // class JetBkgSubUtils
+}; // class JetBkgSubUtils
 
 #endif // PWGJE_CORE_JETBKGSUBUTILS_H_
