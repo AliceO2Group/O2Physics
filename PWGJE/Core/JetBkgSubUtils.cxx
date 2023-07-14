@@ -36,7 +36,7 @@ JetBkgSubUtils::JetBkgSubUtils(float jetBkgR_out, float constSubAlpha_out, float
   selRho = fastjet::SelectorRapRange(bkgEtaMin, bkgEtaMax) && fastjet::SelectorPhiRange(bkgPhiMin, bkgPhiMax) && !fastjet::SelectorNHardest(nHardReject); // here we have to put rap range, to be checked!
 }
 
-std::tuple<double, double> JetBkgSubUtils::estimateRhoAreaMedian(const std::vector<fastjet::PseudoJet>& inputParticles)
+std::tuple<double, double> JetBkgSubUtils::estimateRhoAreaMedian(const std::vector<fastjet::PseudoJet>& inputParticles, bool doSparseSub)
 {
 
   if (inputParticles.size() == 0) {
@@ -44,14 +44,14 @@ std::tuple<double, double> JetBkgSubUtils::estimateRhoAreaMedian(const std::vect
   }
 
   // cluster the kT jets
-  fastjet::ClusterSequenceArea clusterSeq(inputParticles, jetDefBkg, areaDefBkg);
+  fastjet::ClusterSequenceArea clusterSeq(removeHFCand ? selRemoveHFCand(inputParticles) : inputParticles, jetDefBkg, areaDefBkg);
 
   // select jets in detector acceptance
   std::vector<fastjet::PseudoJet> alljets = selRho(clusterSeq.inclusive_jets());
 
   double totaljetAreaPhys(0), totalAreaCovered(0);
   std::vector<double> rhovector;
-  std::vector<double> rhoMvector;
+  std::vector<double> rhoMdvector;
 
   // Fill a vector for pT/area to be used for the median
   for (auto& ijet : alljets) {
@@ -59,7 +59,7 @@ std::tuple<double, double> JetBkgSubUtils::estimateRhoAreaMedian(const std::vect
     // Physical area/ Physical jets (no ghost)
     if (!clusterSeq.is_pure_ghost(ijet)) {
       rhovector.push_back(ijet.perp() / ijet.area());
-      rhoMvector.push_back(getM(ijet) / ijet.area());
+      rhoMdvector.push_back(getMd(ijet) / ijet.area());
 
       totaljetAreaPhys += ijet.area();
     }
@@ -68,7 +68,7 @@ std::tuple<double, double> JetBkgSubUtils::estimateRhoAreaMedian(const std::vect
   }
   // calculate Rho as the median of the jet pT / jet area
   double rho = TMath::Median<double>(rhovector.size(), rhovector.data());
-  double rhoM = TMath::Median<double>(rhoMvector.size(), rhoMvector.data());
+  double rhoM = TMath::Median<double>(rhoMdvector.size(), rhoMdvector.data());
 
   if (doSparseSub) {
     // calculate The ocupancy factor, which the ratio of covered area / total area
@@ -87,10 +87,13 @@ std::tuple<double, double> JetBkgSubUtils::estimateRhoPerpCone(const std::vector
     return std::make_tuple(0.0, 0.0);
   }
 
+  // Select a list of particles without the HF candidate
+  std::vector<fastjet::PseudoJet> inputPartnoHF = removeHFCand ? selRemoveHFCand(inputParticles) : inputParticles;
+
   double perpPtDensity1 = 0;
   double perpPtDensity2 = 0;
-  double perpMtDensity1 = 0;
-  double perpMtDensity2 = 0;
+  double perpMdDensity1 = 0;
+  double perpMdDensity2 = 0;
 
   fastjet::Selector selectJet = fastjet::SelectorEtaRange(bkgEtaMin, bkgEtaMax) && fastjet::SelectorPhiRange(bkgPhiMin, bkgPhiMax);
 
@@ -110,127 +113,93 @@ std::tuple<double, double> JetBkgSubUtils::estimateRhoPerpCone(const std::vector
   PerpendicularConeAxisPhi1 = RecoDecay::constrainAngle<double, double>(leadingJet.phi() + (M_PI / 2.)); // This will contrain the angel between 0-2Pi
   PerpendicularConeAxisPhi2 = RecoDecay::constrainAngle<double, double>(leadingJet.phi() - (M_PI / 2.)); // This will contrain the angel between 0-2Pi
 
-  for (auto& particle : inputParticles) {
+  for (auto& particle : inputPartnoHF) {
     // sum the momentum of all paricles that fill the two cones
     dPhi1 = particle.phi() - PerpendicularConeAxisPhi1;
-    dPhi1 = RecoDecay::constrainAngle<double, double>(dPhi1, -M_PI);
+    dPhi1 = RecoDecay::constrainAngle<double, double>(dPhi1, -M_PI); // This will contrain the angel between -pi & Pi
     dPhi2 = particle.phi() - PerpendicularConeAxisPhi2;
-    dPhi2 = RecoDecay::constrainAngle<double, double>(dPhi2, -M_PI);
-    dEta = leadingJet.eta() - particle.eta();
+    dPhi2 = RecoDecay::constrainAngle<double, double>(dPhi2, -M_PI); // This will contrain the angel between -pi & Pi
+    dEta = leadingJet.eta() - particle.eta();                        // The perp cone eta is the same as the leading jet since the cones are perpendicular only in phi
     if (TMath::Sqrt(dPhi1 * dPhi1 + dEta * dEta) <= jetBkgR) {
       perpPtDensity1 += particle.perp();
-      perpMtDensity1 += particle.mt();
+      perpMdDensity1 += TMath::Sqrt(particle.m() * particle.m() + particle.pt() * particle.pt()) - particle.pt();
     }
 
     if (TMath::Sqrt(dPhi2 * dPhi2 + dEta * dEta) <= jetBkgR) {
       perpPtDensity2 += particle.perp();
-      perpMtDensity2 += particle.mt();
+      perpMdDensity2 += TMath::Sqrt(particle.m() * particle.m() + particle.pt() * particle.pt()) - particle.pt();
     }
   }
 
   // Caculate rho as the ratio of average pT of the two cones / the cone area
   double perpPtDensity = (perpPtDensity1 + perpPtDensity2) / (2 * M_PI * jetBkgR * jetBkgR);
-  double perpMtDensity = (perpMtDensity1 + perpMtDensity2) / (2 * M_PI * jetBkgR * jetBkgR);
+  double perpMdDensity = (perpMdDensity1 + perpMdDensity2) / (2 * M_PI * jetBkgR * jetBkgR);
 
-  return std::make_tuple(perpPtDensity, perpMtDensity);
+  return std::make_tuple(perpPtDensity, perpMdDensity);
 }
 
-/// Sets the background subtraction object
-fastjet::Subtractor JetBkgSubUtils::setSub(std::vector<fastjet::PseudoJet>& inputParticles, std::vector<fastjet::PseudoJet>& jets, float& rhoParam, float& rhoMParam, BkgSubEstimator bkgSubEst, BkgSubMode bkgSubMode)
+std::vector<fastjet::PseudoJet> JetBkgSubUtils::doRhoAreaSub(std::vector<fastjet::PseudoJet>& jets, float& rhoParam, float& rhoMParam)
 {
 
-  if (bkgSubEst == BkgSubEstimator::medianRhoSparse) {
-    doSparseSub = true;
+  fastjet::Subtractor sub = fastjet::Subtractor(rhoParam, rhoMParam);
+  return sub(jets);
+}
+
+std::vector<fastjet::PseudoJet> JetBkgSubUtils::doEventConstSub(std::vector<fastjet::PseudoJet>& inputParticles, float& rhoParam, float& rhoMParam)
+{
+
+  fastjet::contrib::ConstituentSubtractor constituentSub(rhoParam, rhoMParam);
+  constituentSub.set_distance_type(fastjet::contrib::ConstituentSubtractor::deltaR); /// deltaR=sqrt((y_i-y_j)^2+(phi_i-phi_j)^2)), longitudinal Lorentz invariant
+  constituentSub.set_max_distance(constSubRMax);
+  constituentSub.set_alpha(constSubAlpha);
+  constituentSub.set_ghost_area(ghostAreaSpec.ghost_area());
+  constituentSub.set_max_eta(bkgEtaMax);
+  if (removeHFCand) {
+    constituentSub.set_particle_selector(&selRemoveHFCand);
   }
 
-  fastjet::Subtractor sub;
-  fastjet::Selector selRemoveHFCand = !FastJetUtilities::SelectorIsHFCand();
-
-  if (bkgSubEst == BkgSubEstimator::medianRho || bkgSubEst == BkgSubEstimator::medianRhoSparse) {
-
-    std::tie(rhoParam, rhoMParam) = estimateRhoAreaMedian(removeHFCand ? selRemoveHFCand(inputParticles) : inputParticles);
-  } else if (bkgSubEst == BkgSubEstimator::perpCone) {
-
-    if (jets.size() == 0) {
-      return sub;
-    }
-    std::tie(rhoParam, rhoMParam) = estimateRhoPerpCone(removeHFCand ? selRemoveHFCand(inputParticles) : inputParticles, jets);
-  } else {
-    rhoParam = 0.;
-    rhoMParam = 0.;
-    if (bkgSubEst != BkgSubEstimator::none) {
-      LOGF(error, "requested estimator not implemented!");
-    }
-  }
-
-  if (bkgSubMode == BkgSubMode::eventConstSub) { // eventwise subtraction
-
-    fastjet::contrib::ConstituentSubtractor constituentSub(rhoParam, rhoMParam);
-    constituentSub.set_distance_type(fastjet::contrib::ConstituentSubtractor::deltaR); /// deltaR=sqrt((y_i-y_j)^2+(phi_i-phi_j)^2)), longitudinal Lorentz invariant
-    constituentSub.set_max_distance(constSubRMax);
-    constituentSub.set_alpha(constSubAlpha);
-    constituentSub.set_ghost_area(ghostAreaSpec.ghost_area());
-    constituentSub.set_max_eta(bkgEtaMax);
-    if (removeHFCand) {
-      constituentSub.set_particle_selector(&selRemoveHFCand);
-    }
-
+  // by default, the masses of all particles are set to zero. With this flag the jet mass will also be subtracted
+  if (doRhoMassSub) {
     constituentSub.set_do_mass_subtraction();
-
-    inputParticles = constituentSub.subtract_event(inputParticles);
-
-    for (auto& track : inputParticles) {
-      if (track.template user_info<FastJetUtilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidateHF)) {
-        std::cout << "HF candidate found after eventwise constituent subtraction\n";
-      }
-    }
-
-  } else if (bkgSubMode == BkgSubMode::jetConstSub) { // jetwise subtraction
-
-    if (jets.size() == 0) {
-      return sub;
-    }
-
-    // FIXME There is a bug in fastjet ConstituentSubtractor at line 180, subtraction should be done on selected particles
-    // The ConstituentSubtractor also needs to be modified such that it write the area information into the output jet
-    fastjet::contrib::ConstituentSubtractor subtractor(rhoParam, rhoMParam);
-    subtractor.set_distance_type(fastjet::contrib::ConstituentSubtractor::deltaR); /// deltaR=sqrt((y_i-y_j)^2+(phi_i-phi_j)^2)), longitudinal Lorentz invariant
-    subtractor.set_max_distance(constSubRMax);
-    subtractor.set_alpha(constSubAlpha);
-    subtractor.set_ghost_area(ghostAreaSpec.ghost_area());
-    subtractor.set_max_eta(bkgEtaMax);
-    if (removeHFCand) {
-      subtractor.set_particle_selector(&selRemoveHFCand);
-    }
-
-    // by default, the masses of all particles are set to zero. With this flag the jet mass will also be subtracted
-    subtractor.set_do_mass_subtraction();
-
-    // FIXME There are some problems with this method, it doesn't propagate the constituents user_info
-    // Another problem is that, This method doesn't propagate the area information, since after constituent subtraction
-    // the jet structure will change, so it no longer has the same area. fastjet developers said calculatig the area
-    // information will difficult
-    jets = subtractor(jets);
-
-  } else if (bkgSubMode == BkgSubMode::rhoAreaSub) {
-    sub = fastjet::Subtractor(rhoParam, rhoMParam);
-  } else {
-    rhoParam = 0.;
-    rhoMParam = 0.;
-    if (bkgSubMode != BkgSubMode::none) {
-      LOGF(error, "requested subtraction mode not implemented!");
-    }
   }
 
-  return sub;
+  return constituentSub.subtract_event(inputParticles);
 }
 
-double JetBkgSubUtils::getM(fastjet::PseudoJet jet) const
+std::vector<fastjet::PseudoJet> JetBkgSubUtils::doJetConstSub(std::vector<fastjet::PseudoJet>& jets, float& rhoParam, float& rhoMParam)
 {
 
+  if (jets.size() == 0) {
+    return std::vector<fastjet::PseudoJet>();
+  }
+
+  fastjet::contrib::ConstituentSubtractor constituentSub(rhoParam, rhoMParam);
+  constituentSub.set_distance_type(fastjet::contrib::ConstituentSubtractor::deltaR); /// deltaR=sqrt((y_i-y_j)^2+(phi_i-phi_j)^2)), longitudinal Lorentz invariant
+  constituentSub.set_max_distance(constSubRMax);
+  constituentSub.set_alpha(constSubAlpha);
+  constituentSub.set_ghost_area(ghostAreaSpec.ghost_area());
+  constituentSub.set_max_eta(bkgEtaMax);
+  if (removeHFCand) {
+    constituentSub.set_particle_selector(&selRemoveHFCand);
+  }
+
+  // by default, the masses of all particles are set to zero. With this flag the jet mass will also be subtracted
+  if (doRhoMassSub) {
+    constituentSub.set_do_mass_subtraction();
+  }
+
+  // FIXME, This method doesn't propagate the area information, since after constituent subtraction
+  // the jet structure will change, so it no longer has the same area. fastjet developers said calculatig the area
+  // information will difficult
+  return constituentSub(jets);
+}
+
+double JetBkgSubUtils::getMd(fastjet::PseudoJet jet) const
+{
+  // Refere to https://arxiv.org/abs/1211.2811 for the rhoM caclulation
   double sum(0);
-  for (auto cons : jet.constituents()) {
-    sum += TMath::Sqrt(cons.m() * cons.m() + cons.pt() * cons.pt()) - cons.pt(); // sqrt(E^2-P^2+pt^2)=sqrt(E^2-pz^2)
+  for (auto constituent : jet.constituents()) {
+    sum += TMath::Sqrt(constituent.m() * constituent.m() + constituent.pt() * constituent.pt()) - constituent.pt();
   }
 
   return sum;

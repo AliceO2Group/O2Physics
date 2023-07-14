@@ -11,7 +11,7 @@
 
 // jet finder task
 //
-// Authors: Nima Zardoshti, Jochen Klein, Hadi Hassan
+// Authors: Nima Zardoshti, Jochen Klein
 
 #ifndef PWGJE_CORE_JETFINDER_H_
 #define PWGJE_CORE_JETFINDER_H_

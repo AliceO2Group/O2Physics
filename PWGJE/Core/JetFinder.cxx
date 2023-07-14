@@ -11,7 +11,7 @@
 
 // jet finder task
 //
-// Author: Jochen Klein, Nima Zardoshti, Hadi Hassan
+// Author: Jochen Klein, Nima Zardoshti
 #include "PWGJE/Core/JetFinder.h"
 #include "Framework/Logger.h"
 
@@ -52,7 +52,7 @@ fastjet::ClusterSequenceArea JetFinder::findJets(std::vector<fastjet::PseudoJet>
   jets.clear();
 
   fastjet::ClusterSequenceArea clusterSeq(inputParticles, jetDef, areaDef);
-  std::vector<fastjet::PseudoJet> inclusiveJets = clusterSeq.inclusive_jets();
+  jets = clusterSeq.inclusive_jets();
 
   jets = selJets(jets);
   jets = sorted_by_pt(jets);
