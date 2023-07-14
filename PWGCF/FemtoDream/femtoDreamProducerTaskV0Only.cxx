@@ -81,12 +81,6 @@ struct femtoDreamProducerTaskV0Only {
   Produces<aod::FDExtParticles> outputDebugParts;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
-
-  // Choose if filtering or skimming version is run
-
-  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"};
-
-  // Choose if running on converted data or Run3  / Pilot
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
 
@@ -372,16 +366,12 @@ struct femtoDreamProducerTaskV0Only {
       multNtr = col.multTPC();
     }
 
-    /// First thing to do is to check whether the basic event selection criteria
-    /// are fulfilled
-    // If the basic selection is NOT fulfilled:
-    // in case of skimming run - don't store such collisions
-    // in case of trigger run - store such collisions but don't store any
-    // particle candidates for such collisions
-    if (!colCuts.isSelectedCollision(col, fullV0s, v0Cuts, tracks)) {
-      if (ConfIsTrigger) {
-        outputCollision(vtxZ, mult, multNtr, spher, mMagField);
-      }
+    /// First thing to do is to check whether the basic event selection criteria are fullfilled
+    /// that includes checking if there is at least one usable V0 in the collision
+    if (!colCuts.isSelectedCollision(col)) {
+      return;
+    }
+    if (colCuts.isEmptyCollision(col, fullV0s, v0Cuts, tracks)) {
       return;
     }
 

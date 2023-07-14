@@ -77,9 +77,6 @@ struct femtoDreamProducerTask {
   Produces<aod::FDExtMCParticles> outputDebugPartsMC;
 
   Configurable<bool> ConfIsDebug{"ConfIsDebug", true, "Enable Debug tables"};
-  // Choose if filtering or skimming version is run
-  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"};
-  // Choose if running on converted data or Run3  / Pilot
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
 
@@ -229,11 +226,6 @@ struct femtoDreamProducerTask {
       if (ConfV0RejectKaons) {
         v0Cuts.setKaonInvMassLimits(ConfV0InvKaonMassLowLimit, ConfV0InvKaonMassUpLimit);
       }
-      // if (ConfRejectITSHitandTOFMissing) {
-      //   o2PhysicsTrackSelection = new
-      //   TrackSelection(getGlobalTrackSelection());
-      //   o2PhysicsTrackSelection->SetRequireHitsInITSLayers(1, {0, 1, 2, 3});
-      // }
     }
 
     mRunNumber = 0;
@@ -288,25 +280,38 @@ struct femtoDreamProducerTask {
   void fillDebugParticle(ParticleType const& particle)
   {
     if constexpr (isTrackOrV0) {
-      outputDebugParts(particle.sign(), (uint8_t)particle.tpcNClsFound(),
+      outputDebugParts(particle.sign(),
+                       (uint8_t)particle.tpcNClsFound(),
                        particle.tpcNClsFindable(),
                        (uint8_t)particle.tpcNClsCrossedRows(),
-                       particle.tpcNClsShared(), particle.tpcInnerParam(),
-                       particle.itsNCls(), particle.itsNClsInnerBarrel(),
-                       particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
-                       particle.tpcNSigmaEl(), particle.tpcNSigmaPi(),
-                       particle.tpcNSigmaKa(), particle.tpcNSigmaPr(),
-                       particle.tpcNSigmaDe(), particle.tofNSigmaEl(),
-                       particle.tofNSigmaPi(), particle.tofNSigmaKa(),
-                       particle.tofNSigmaPr(), particle.tofNSigmaDe(),
+                       particle.tpcNClsShared(),
+                       particle.tpcInnerParam(),
+                       particle.itsNCls(),
+                       particle.itsNClsInnerBarrel(),
+                       particle.dcaXY(),
+                       particle.dcaZ(),
+                       particle.tpcSignal(),
+                       particle.tpcNSigmaEl(),
+                       particle.tpcNSigmaPi(),
+                       particle.tpcNSigmaKa(),
+                       particle.tpcNSigmaPr(),
+                       particle.tpcNSigmaDe(),
+                       particle.tofNSigmaEl(),
+                       particle.tofNSigmaPi(),
+                       particle.tofNSigmaKa(),
+                       particle.tofNSigmaPr(),
+                       particle.tofNSigmaDe(),
                        -999., -999., -999., -999., -999., -999.);
     } else {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999.,
-                       particle.dcaV0daughters(), particle.v0radius(),
-                       particle.x(), particle.y(), particle.z(),
-                       particle.mK0Short()); // QA for v0
+                       particle.dcaV0daughters(),
+                       particle.v0radius(),
+                       particle.x(),
+                       particle.y(),
+                       particle.z(),
+                       particle.mK0Short());
     }
   }
 
@@ -362,23 +367,17 @@ struct femtoDreamProducerTask {
 
     // check whether the basic event selection criteria are fulfilled
     // that included checking if there is at least on usable track or V0
-    bool keepCollsion = false;
+    if (!colCuts.isSelectedCollision(col)) {
+      return;
+    }
     if (ConfIsActivateV0.value) {
-      if (colCuts.isSelectedCollision(col, tracks, trackCuts) || colCuts.isSelectedCollision(col, fullV0s, v0Cuts, tracks)) {
-        keepCollsion = true;
+      if (colCuts.isEmptyCollision(col, tracks, trackCuts) && colCuts.isEmptyCollision(col, fullV0s, v0Cuts, tracks)) {
+        return;
       }
     } else {
-      if (colCuts.isSelectedCollision(col, tracks, trackCuts)) {
-        keepCollsion = true;
+      if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
+        return;
       }
-    }
-    // if the basic selection is NOT fulfilled
-    // in case of trigger store the collision even though there are no particles
-    if (!keepCollsion) {
-      if (ConfIsTrigger.value) {
-        outputCollision(vtxZ, mult, multNtr, spher, mMagField);
-      }
-      return;
     }
 
     colCuts.fillQA(col);

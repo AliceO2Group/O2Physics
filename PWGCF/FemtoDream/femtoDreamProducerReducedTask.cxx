@@ -70,9 +70,10 @@ struct femtoDreamProducerReducedTask {
   Produces<aod::FDExtMCParticles> outputDebugPartsMC;
 
   Configurable<bool> ConfIsDebug{"ConfIsDebug", true, "Enable Debug tables"};
-  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"}; // Choose if filtering or skimming version is run
-  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or Run2"};    // Choose if running on converted data or Run3
+  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or Run2"}; // Choose if running on converted data or Run3
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
+
+  Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   // Event cuts
   FemtoDreamCollisionSelection colCuts;
@@ -83,9 +84,7 @@ struct femtoDreamProducerReducedTask {
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
   Configurable<bool> ConfTrkRejectNotPropagated{"ConfTrkRejectNotPropagated", false, "True: reject not propagated tracks"};
-  Configurable<bool> ConfRejectITSHitandTOFMissing{"ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
 
-  Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
   Configurable<int> ConfTrkPDGCode{"ConfTrkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"};
   // Track cuts
   FemtoDreamTrackSelection trackCuts;
@@ -120,7 +119,7 @@ struct femtoDreamProducerReducedTask {
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
 
-    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
+    colCuts.setCuts(ConfEvtZvtx.value, ConfEvtTriggerCheck.value, ConfEvtTriggerSel.value, ConfEvtOfflineCheck.value, ConfIsRun3.value);
     colCuts.init(&qaRegistry);
 
     trackCuts.setSelection(ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
@@ -244,13 +243,11 @@ struct femtoDreamProducerReducedTask {
     }
 
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
-    // If the basic selection is NOT fulfilled:
-    // in case of skimming run - don't store such collisions
-    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
-    if (!colCuts.isSelectedCollision(col, tracks, trackCuts)) {
-      if (ConfIsTrigger) {
-        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-      }
+    /// That includes checking if there are any usable tracks in a collision
+    if (!colCuts.isSelectedCollision(col)) {
+      return;
+    }
+    if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
       return;
     }
 
@@ -306,17 +303,13 @@ struct femtoDreamProducerReducedTask {
                          track.tofNSigmaKa(),
                          track.tofNSigmaPr(),
                          track.tofNSigmaDe(),
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.);
+                         -999., -999., -999., -999., -999., -999.);
       }
     }
   }
 
-  void processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
+  void
+    processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
