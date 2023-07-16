@@ -34,12 +34,17 @@ struct lambda1520analysis {
   // Eta-asymmetry switch
   Configurable<bool> isEtaAssym{"isEtaAssym", false, "Turn on/off EtaAssym calculation"};
   Configurable<bool> isFillQA{"isFillQA", false, "Turn on/off QA plots"};
+  Configurable<bool> IsAddlTrackcut{"IsAddlTrackcut", true, "Switch to turn on/off Additional track cut"};
 
   // Pre-selection Track cuts
   Configurable<float> cfgCutEta{"cfgCutEta", 1.0f, "Eta range for tracks"};
   Configurable<float> cMinPtcut{"cMinPtcut", 0.2f, "Minimal pT for tracks"};
   Configurable<float> cMaxPtcut{"cMaxPtcut", 10.0f, "Maximal pT for tracks"};
   Configurable<int> cMinTPCncr{"cMinTPCncr", 70, "Minimum number of TPC X rows"};
+  Configurable<float> cMinRtpccut{"cMinRtpccut", 0.8f, "minimum ratio of number of Xrows to findable clusters in TPC"};
+  Configurable<float> cMaxChi2ITScut{"cMaxChi2ITScut", 36.0f, "Maximal pT for Chi2/cluster for ITS"};
+  Configurable<float> cMaxChi2TPCcut{"cMaxChi2TPCcut", 4.0f, "Maximal pT for Chi2/cluster for TPC"};
+
   // DCA Selections
   // DCAr to PV
   Configurable<bool> IsDCAr7SigCut{"IsDCAr7SigCut", true, "Track DCAr 7 Sigma cut to PV Maximum"};
@@ -196,6 +201,16 @@ struct lambda1520analysis {
       return false;
     if (fabs(track.eta()) > cfgCutEta)
       return false;
+    if (IsAddlTrackcut) {
+      if (!track.passedITSRefit() || !track.passedTPCRefit())
+        return false;
+      if (track.tpcCrossedRowsOverFindableCls() < cMinRtpccut)
+        return false;
+      if (track.itsChi2NCl() > cMaxChi2ITScut)
+        return false;
+      if (track.tpcChi2NCl() > cMaxChi2TPCcut)
+        return false;
+    }
 
     return true;
   }

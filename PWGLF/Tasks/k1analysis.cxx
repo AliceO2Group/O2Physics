@@ -32,27 +32,6 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 struct k1analysis {
-  enum k1Type { kMatterPos = 1,
-                kMatterNeg,
-                kAntiPos,
-                kAntiNeg,
-                kMatterPos_Mix,
-                kMatterNeg_Mix,
-                kAntiPos_Mix,
-                kAntiNeg_Mix,
-                kNk1Type };
-  enum k892Type {
-    kK892Matter = 1,
-    kK892Anti,
-    kK892Matter_Mix,
-    kK892Anti_Mix,
-    kNk892Type
-  };
-  enum kMCType {
-    kInput = 1,
-    kRecon, // signal loss can be added.
-    kNkMCType
-  };
   SliceCache cache;
   Preslice<aod::ResoTracks> perRCol = aod::resodaughter::resoCollisionId;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
@@ -96,21 +75,39 @@ struct k1analysis {
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> centBinning = {0., 1., 5., 10., 15., 20., 25., 30., 35., 40., 45., 50., 55., 60., 65., 70., 80., 90., 100.};
-    AxisSpec centAxis = {centBinning, "V0M (%)"};
-    AxisSpec multAxis = {0, 0, 100, "V0M (%)"}; // for future
+    std::vector<double> centBinning = {0., 1., 5., 10., 15., 20., 25., 30., 35., 40., 45., 50., 55., 60., 65., 70., 80., 90., 100., 200.};
+    AxisSpec centAxis = {centBinning, "T0M (%)"};
     AxisSpec ptAxis = {200, 0, 20, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec dcaxyAxis = {300, 0, 3, "DCA_{#it{xy}} (cm)"};
+    AxisSpec dcazAxis = {500, 0, 5, "DCA_{#it{xy}} (cm)"};
     AxisSpec invMassAxis = {900, 0.6, 1.5, "Invariant Mass (GeV/#it{c}^2)"};        // K(892)0
     AxisSpec invMassAxisReso = {1600, 0.9f, 2.5f, "Invariant Mass (GeV/#it{c}^2)"}; // K1
     AxisSpec invMassAxisScan = {250, 0, 2.5, "Invariant Mass (GeV/#it{c}^2)"};      // For selection
     AxisSpec pidQAAxis = {130, -6.5, 6.5};
     AxisSpec dataTypeAxis = {9, 0, 9, "Histogram types"};
     AxisSpec mcTypeAxis = {4, 0, 4, "Histogram types"};
-    AxisSpec tempmultAxis = {3000, 0, 3000, "Raw Multiplicity"};
 
     // Mass QA (quick check)
     histos.add("k892invmass", "Invariant mass of K(892)0", HistType::kTH1F, {invMassAxis});
     histos.add("k1invmass", "Invariant mass of K1(1270)pm", HistType::kTH1F, {invMassAxisReso});
+    histos.add("k1invmass_LS", "Invariant mass of K1(1270)pm", HistType::kTH1F, {invMassAxisReso});
+    histos.add("k1invmass_Mix", "Invariant mass of K1(1270)pm", HistType::kTH1F, {invMassAxisReso});
+    if (doprocessMC || doprocessMCLight) {
+      histos.add("k1invmass_MC", "Invariant mass of K1(1270)pm", HistType::kTH1F, {invMassAxisReso});
+    }
+    // DCA QA
+    histos.add("QAbefore/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
+    histos.add("QAbefore/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
+    histos.add("QAbefore/trkDCAxy_pi_bach", "DCAxy distribution of bachelor pion track candidates", HistType::kTH1F, {dcaxyAxis});
+    histos.add("QAbefore/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
+    histos.add("QAbefore/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {dcazAxis});
+    histos.add("QAbefore/trkDCAz_pi_bach", "DCAz distribution of bachelor pion track candidates", HistType::kTH1F, {dcazAxis});
+    histos.add("QAafter/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
+    histos.add("QAafter/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
+    histos.add("QAafter/trkDCAxy_pi_bach", "DCAxy distribution of bachelor pion track candidates", HistType::kTH1F, {dcaxyAxis});
+    histos.add("QAafter/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
+    histos.add("QAafter/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {dcazAxis});
+    histos.add("QAafter/trkDCAz_pi_bach", "DCAz distribution of bachelor pion track candidates", HistType::kTH1F, {dcazAxis});
 
     // pT QA
     histos.add("QAbefore/trkpT_pi", "pT distribution of pion track candidates", HistType::kTH1F, {ptAxis});
@@ -142,16 +139,33 @@ struct k1analysis {
 
     histos.add("QAMCbefore/InvMass_piK_pipi", "Invariant mass of pion + kaon and pion+pion;Invariant Mass (GeV/#it{c}^{2});Invariant Mass (GeV/#it{c}^{2});", {HistType::kTH2F, {invMassAxisScan, invMassAxisScan}});
 
-    // THnSparse for Invariant mass
-    histos.add("THnK892invmass", "Invariant mass of K(892)0", HistType::kTHnSparseD, {dataTypeAxis, tempmultAxis, ptAxis, invMassAxis});          // TODO: multiplicity bin has to be updatde.
-    histos.add("THnK1invmass", "Invariant mass of K(892)0 + pion", HistType::kTHnSparseD, {dataTypeAxis, tempmultAxis, ptAxis, invMassAxisReso}); // TODO: multiplicity bin has to be updatde.
+    // Invariant mass histograms
+    histos.add("hK892invmass_MM", "Invariant mass of K(892)0 (Matter + Matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxis});
+    histos.add("hK892invmass_MA", "Invariant mass of K(892)0 (Matter + Anti-matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxis});
+    histos.add("hK892invmass_AM", "Invariant mass of K(892)0 (Anti-matter + Matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxis});
+    histos.add("hK892invmass_AA", "Invariant mass of K(892)0 (Anti-matter + Anti-matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxis});
+    histos.add("hK1invmass_MM", "Invariant mass of K(892)0 + pion (Matter + Matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxisReso});
+    histos.add("hK1invmass_MA", "Invariant mass of K(892)0 + pion (Matter + Anti-matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxisReso});
+    histos.add("hK1invmass_AM", "Invariant mass of K(892)0 + pion (Anti-matter + Matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxisReso});
+    histos.add("hK1invmass_AA", "Invariant mass of K(892)0 + pion (Anti-matter + Anti-matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxisReso});
+
+    histos.add("hK1invmass_MM_Mix", "Invariant mass of K(892)0 + pion (Matter + Matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxisReso});
+    histos.add("hK1invmass_MA_Mix", "Invariant mass of K(892)0 + pion (Matter + Anti-matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxisReso});
+    histos.add("hK1invmass_AM_Mix", "Invariant mass of K(892)0 + pion (Anti-matter + Matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxisReso});
+    histos.add("hK1invmass_AA_Mix", "Invariant mass of K(892)0 + pion (Anti-matter + Anti-matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxisReso});
 
     if (doprocessMC || doprocessMCLight) {
       // MC QA
-      histos.add("THnK1invmassMC", "Invariant mass of MC K(892)0 + pion", HistType::kTHnSparseD, {dataTypeAxis, tempmultAxis, ptAxis, invMassAxisReso}); // TODO: multiplicity bin has to be updatde.
-      /*
-      histos.add("hTrueK892pt", "pT distribution of True MC K(892)0", HistType::kTH1F, {ptAxis});
-      */
+      histos.add("QAMCTrue/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
+      histos.add("QAMCTrue/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
+      histos.add("QAMCTrue/trkDCAxy_pi_bach", "DCAxy distribution of bachelor pion track candidates", HistType::kTH1F, {dcaxyAxis});
+      histos.add("QAMCTrue/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
+      histos.add("QAMCTrue/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {dcazAxis});
+      histos.add("QAMCTrue/trkDCAz_pi_bach", "DCAz distribution of bachelor pion track candidates", HistType::kTH1F, {dcazAxis});
+
+      histos.add("hK1invmass_MM_MC", "Invariant mass of K(892)0 + pion (Matter + Matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxisReso});
+      histos.add("hK1invmass_AA_MC", "Invariant mass of K(892)0 + pion (Anti-matter + Anti-matter)", HistType::kTH3F, {centAxis, ptAxis, invMassAxisReso});
+
       histos.add("hReconK892pt", "pT distribution of Reconstructed MC K(892)0", HistType::kTH1F, {ptAxis});
       histos.add("hTrueK1pt", "pT distribution of True MC K1", HistType::kTH1F, {ptAxis});
       histos.add("hReconK1pt", "pT distribution of Reconstructed MC K1", HistType::kTH1F, {ptAxis});
@@ -173,7 +187,6 @@ struct k1analysis {
       return false;
     if (track.dcaZ() < cMinDCAzToPVcut || track.dcaZ() > cMaxDCAzToPVcut)
       return false;
-
     return true;
   }
 
@@ -190,9 +203,8 @@ struct k1analysis {
     for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks2, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
-        continue;                        // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
-      if (trk1.sign() * trk2.sign() > 0) // always choose opposite sign pairs
-        continue;
+        continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
+
       isK892Anti = false;
       //// Initialize variables
       // Trk1: Pion, Trk2: Kaon
@@ -209,9 +221,9 @@ struct k1analysis {
 
       // apply the track cut
       if (!trackCut(trk1))
-        continue;
+        isTrk1Selected = false;
       if (!trackCut(trk2))
-        continue;
+        isTrk2Selected = false;
 
       // hasTOF?
       if ((trk1.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
@@ -266,6 +278,11 @@ struct k1analysis {
         }
         histos.fill(HIST("QAbefore/trkpT_pi"), trk1ptPi);
         histos.fill(HIST("QAbefore/trkpT_ka"), trk2ptKa);
+
+        histos.fill(HIST("QAbefore/trkDCAxy_pi"), trk1.dcaXY());
+        histos.fill(HIST("QAbefore/trkDCAxy_ka"), trk2.dcaXY());
+        histos.fill(HIST("QAbefore/trkDCAz_pi"), trk1.dcaZ());
+        histos.fill(HIST("QAbefore/trkDCAz_ka"), trk2.dcaZ());
       }
 
       //// Apply the selection
@@ -288,6 +305,11 @@ struct k1analysis {
         }
         histos.fill(HIST("QAafter/trkpT_pi"), trk1ptPi);
         histos.fill(HIST("QAafter/trkpT_ka"), trk2ptKa);
+
+        histos.fill(HIST("QAafter/trkDCAxy_pi"), trk1.dcaXY());
+        histos.fill(HIST("QAafter/trkDCAxy_ka"), trk2.dcaXY());
+        histos.fill(HIST("QAafter/trkDCAz_pi"), trk1.dcaZ());
+        histos.fill(HIST("QAafter/trkDCAz_ka"), trk2.dcaZ());
       }
 
       //// Resonance reconstruction
@@ -295,27 +317,36 @@ struct k1analysis {
       lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
       lResonanceK892 = lDecayDaughter1 + lDecayDaughter2;
 
-      if (trk2.sign() > 0)
-        isK892Anti = true;
       if constexpr (!IsMix) {
         histos.fill(HIST("k892invmass"), lResonanceK892.M()); // quick check
-        histos.fill(HIST("THnK892invmass"), (isK892Anti) ? kK892Anti : kK892Matter, collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M());
+        if (trk1.sign() > 0) {                                // Positive pion
+          if (trk2.sign() > 0)                                // Positive kaon
+            histos.fill(HIST("hK892invmass_MM"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M());
+          else                                                                                                  // Negative kaon
+            histos.fill(HIST("hK892invmass_AM"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M()); // Anti-K(892)0
+        } else {                                                                                                // Negative pion
+          if (trk2.sign() > 0)                                                                                  // Positive kaon
+            histos.fill(HIST("hK892invmass_MA"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M()); // K(892)0
+          else                                                                                                  // Negative kaon
+            histos.fill(HIST("hK892invmass_AA"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M());
+        }
       }
+      // Like-sign rejection
+      if (trk1.sign() * trk2.sign() > 0)
+        continue;
       // Mass window cut
       if (std::abs(lResonanceK892.M() - massK892) > cK892masswindow)
         continue;
       // Add one more track loop for K1 reconstruction
       for (auto bTrack : dTracks1) {
-
         // ID cut
         if (bTrack.index() == trk1.index() || bTrack.index() == trk2.index())
           continue;
-
+        isbTrkSelected = true;
         // Track cut
         if (!trackCut(bTrack))
-          continue;
+          isbTrkSelected = false;
 
-        isbTrkSelected = true;
         auto bTrkPt = bTrack.pt();
         auto bTrkTPCnSigmaPi = bTrack.tpcNSigmaPi();
         auto bTrack_TOFnSigma = -99.0;
@@ -340,6 +371,8 @@ struct k1analysis {
             histos.fill(HIST("QAbefore/TOF_Nsigma_pi_bach"), bTrkPt, bTrack_TOFnSigma);
             histos.fill(HIST("QAbefore/TOF_TPC_Map_pi_bach"), bTrack_TOFnSigma, bTrkTPCnSigmaPi);
           }
+          histos.fill(HIST("QAbefore/trkDCAxy_pi_bach"), bTrack.dcaXY());
+          histos.fill(HIST("QAbefore/trkDCAz_pi_bach"), bTrack.dcaZ());
         }
 
         if (!isbTrkSelected) // bachelor track selection
@@ -353,6 +386,8 @@ struct k1analysis {
             histos.fill(HIST("QAafter/TOF_Nsigma_pi_bach"), bTrkPt, bTrack_TOFnSigma);
             histos.fill(HIST("QAafter/TOF_TPC_Map_pi_bach"), bTrack_TOFnSigma, bTrkTPCnSigmaPi);
           }
+          histos.fill(HIST("QAafter/trkDCAxy_pi_bach"), bTrack.dcaXY());
+          histos.fill(HIST("QAafter/trkDCAz_pi_bach"), bTrack.dcaZ());
         }
 
         // K1 reconstruction
@@ -370,40 +405,38 @@ struct k1analysis {
         if (tempPiPi.M() < cPiPiMin || tempPiPi.M() > cPiPiMax)
           continue;
 
-        if constexpr (!IsMix) {
-          if (bTrack.sign() > 0) {
-            // bachelor pi+
-            if (!isK892Anti) {
+        if constexpr (!IsMix) {                                 // Same event pair
+          if (bTrack.sign() > 0) {                              // bachelor pi+
+            if (trk2.sign() > 0) {                              // kaon + means K(892)0 is matter.
               histos.fill(HIST("k1invmass"), lResonanceK1.M()); // quick check
-              histos.fill(HIST("THnK1invmass"), kMatterPos, collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+              histos.fill(HIST("hK1invmass_MM"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
             } else {
-              histos.fill(HIST("THnK1invmass"), kAntiPos, collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+              histos.fill(HIST("k1invmass_LS"), lResonanceK1.M()); // quick check
+              histos.fill(HIST("hK1invmass_AM"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
             }
-          } else {
-            // bachelor pi-
-            if (!isK892Anti) {
-              histos.fill(HIST("THnK1invmass"), kMatterNeg, collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+          } else {                                                 // bachelor pi-
+            if (trk2.sign() > 0) {                                 // kaon + means K(892)0 is matter.
+              histos.fill(HIST("k1invmass_LS"), lResonanceK1.M()); // quick check
+              histos.fill(HIST("hK1invmass_MA"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
             } else {
               histos.fill(HIST("k1invmass"), lResonanceK1.M()); // quick check
-              histos.fill(HIST("THnK1invmass"), kAntiNeg, collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+              histos.fill(HIST("hK1invmass_AA"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
             }
           }
-        } else {
-          if (bTrack.sign() > 0) {
-            // bachelor pi+
-            if (!isK892Anti) {
-              histos.fill(HIST("k1invmass"), lResonanceK1.M()); // quick check
-              histos.fill(HIST("THnK1invmass"), kMatterPos_Mix, collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+        } else {                                                    // Mixed event pair
+          if (bTrack.sign() > 0) {                                  // bachelor pi+
+            if (trk2.sign() > 0) {                                  // kaon + means K(892)0 is matter.
+              histos.fill(HIST("k1invmass_Mix"), lResonanceK1.M()); // quick check
+              histos.fill(HIST("hK1invmass_MM_Mix"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
             } else {
-              histos.fill(HIST("THnK1invmass"), kAntiPos_Mix, collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+              histos.fill(HIST("hK1invmass_AM_Mix"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
             }
-          } else {
-            // bachelor pi-
-            if (!isK892Anti) {
-              histos.fill(HIST("THnK1invmass"), kMatterNeg_Mix, collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+          } else {                 // bachelor pi-
+            if (trk2.sign() > 0) { // kaon + means K(892)0 is matter.
+              histos.fill(HIST("hK1invmass_MA_Mix"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
             } else {
-              histos.fill(HIST("k1invmass"), lResonanceK1.M()); // quick check
-              histos.fill(HIST("THnK1invmass"), kAntiNeg_Mix, collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+              histos.fill(HIST("k1invmass_Mix"), lResonanceK1.M()); // quick check
+              histos.fill(HIST("hK1invmass_AA_Mix"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
             }
           }
         }
@@ -419,10 +452,27 @@ struct k1analysis {
               if (abs(bTrack.pdgCode()) != kPiPlus)
                 continue;
               // TODO: check if the 313 and bTrack have the same mother
-              if (abs(bTrack.motherPDG()) == 10323) {
-                histos.fill(HIST("hReconK1pt"), lResonanceK1.Pt());
-                histos.fill(HIST("THnK1invmassMC"), kRecon, collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M()); // TODO: multV0M has to be updatde.
-                histos.fill(HIST("QAMCafter/InvMass_piK_pipi"), lResonanceK892.M(), tempPiPi.M());
+              if (abs(bTrack.motherPDG()) != 10323)
+                continue;
+              if constexpr (IsMix)
+                continue;
+              histos.fill(HIST("QAMCTrue/trkDCAxy_pi"), trk1.dcaXY());
+              histos.fill(HIST("QAMCTrue/trkDCAxy_ka"), trk2.dcaXY());
+              histos.fill(HIST("QAMCTrue/trkDCAz_pi"), trk1.dcaZ());
+              histos.fill(HIST("QAMCTrue/trkDCAz_ka"), trk2.dcaZ());
+              histos.fill(HIST("QAMCTrue/trkDCAxy_pi_bach"), bTrack.dcaXY());
+              histos.fill(HIST("QAMCTrue/trkDCAz_pi_bach"), bTrack.dcaZ());
+
+              histos.fill(HIST("hReconK1pt"), lResonanceK1.Pt());
+              histos.fill(HIST("QAMCafter/InvMass_piK_pipi"), lResonanceK892.M(), tempPiPi.M());
+
+              if ((bTrack.sign() > 0) && (trk2.sign() > 0)) { // Matter
+                histos.fill(HIST("hK1invmass_MM_MC"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("k1invmass_MC"), lResonanceK1.M()); // quick check
+              }
+              if ((bTrack.sign() < 0) && (trk2.sign() < 0)) { // Anti-matter
+                histos.fill(HIST("hK1invmass_AA_MC"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
+                histos.fill(HIST("k1invmass_MC"), lResonanceK1.M()); // quick check
               }
             }
           }
@@ -514,20 +564,19 @@ struct k1analysis {
         if (!pass1 || !pass2) // If we have both decay products
           continue;
         histos.fill(HIST("hTrueK1pt"), part.pt());
-        // histos.fill(HIST("THnK1invmassMC"), kInput, collision.multV0M(), part.pt(), part.weight()); // TODO: multV0M has to be updatde.
       }
     }
   }
   PROCESS_SWITCH(k1analysis, processMCTrue, "Process Event for MC True", false);
 
   // Processing Event Mixing
-  using BinningTypeVetZTPCtemp = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultTPCtemp>; // TODO: MultTPCtemp has to be updatde.
-  BinningTypeVetZTPCtemp colBinning{{CfgVtxBins, CfgMultBins}, true};
+  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
+  BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     LOGF(debug, "Event Mixing Started");
     auto tracksTuple = std::make_tuple(resotracks);
-    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVetZTPCtemp> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -540,6 +589,17 @@ struct k1analysis {
     }
   };
   PROCESS_SWITCH(k1analysis, processME, "Process EventMixing", false);
+
+  void processMELight(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
+  {
+    auto tracksTuple = std::make_tuple(resotracks);
+    SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+      fillHistograms<false, true>(collision1, tracks1, tracks2);
+    }
+  };
+  PROCESS_SWITCH(k1analysis, processMELight, "Process EventMixing light without partition", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

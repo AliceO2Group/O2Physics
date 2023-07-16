@@ -351,7 +351,8 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("eFromAnyHc")) {
     MCProng prong(1, {11}, {true}, {false}, {0}, {0}, {false}, false, {402}, {false});
-    signal = new MCSignal(name, "Electrons from open charm hadron decays", {prong}, {-1});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);
+    signal = new MCSignal(name, "Electrons from any open charm hadron decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromHb")) {
@@ -361,7 +362,8 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("eFromAnyHb")) {
     MCProng prong(1, {11}, {true}, {false}, {0}, {0}, {false}, false, {502}, {false});
-    signal = new MCSignal(name, "Electrons from open beauty hadron decays", {prong}, {-1});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);
+    signal = new MCSignal(name, "Electrons from any open beauty hadron decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromHbc")) {
@@ -477,6 +479,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("HFdecayToE")) {
     MCProng prong(2, {902, 11}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    // prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);  // set source to be ALICE primary particles
+    prong.SetSignalInTime(true); // set direction to check for daughters (true, in time) or for mothers (false, back in time)
+    signal = new MCSignal(name, "Open charm and beauty to electrons", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("AnyHFdecayToE")) {
+    MCProng prong(1, {902}, {true}, {false}, {0}, {0}, {false}, true, {11}, {false});
     // prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);  // set source to be ALICE primary particles
     prong.SetSignalInTime(true); // set direction to check for daughters (true, in time) or for mothers (false, back in time)
     signal = new MCSignal(name, "Open charm and beauty to electrons", {prong}, {-1});

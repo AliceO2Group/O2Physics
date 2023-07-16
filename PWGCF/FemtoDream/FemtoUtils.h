@@ -38,7 +38,8 @@ int getPIDselection(float nSigma, std::vector<float> vNsigma)
   std::sort(vNsigma.begin(), vNsigma.end(), std::greater<>());
   auto it = std::find(vNsigma.begin(), vNsigma.end(), nSigma);
   if (it == vNsigma.end()) {
-    LOG(warn) << "Invalid value of nSigma: " << nSigma << ". Return the largest value of the vector: " << *it;
+    it = vNsigma.begin() + 1;
+    LOG(warn) << "Invalid value of nSigma: " << nSigma << ". Return the first value of the vector: " << *(it);
   }
   return std::distance(vNsigma.begin(), it);
 }

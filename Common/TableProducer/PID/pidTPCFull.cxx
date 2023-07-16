@@ -88,6 +88,7 @@ struct tpcPidFull {
   // Parameters for loading network from a file / downloading the file
   Configurable<bool> useNetworkCorrection{"useNetworkCorrection", 0, "(bool) Wether or not to use the network correction for the TPC dE/dx signal"};
   Configurable<bool> autofetchNetworks{"autofetchNetworks", 1, "(bool) Automatically fetches networks from CCDB for the correct run number"};
+  Configurable<bool> skipTPCOnly{"skipTPCOnly", false, "Flag to skip TPC only tracks (faster but affects the analyses that use TPC only tracks)"};
   Configurable<std::string> networkPathLocally{"networkPathLocally", "network.onnx", "(std::string) Path to the local .onnx file. If autofetching is enabled, then this is where the files will be downloaded"};
   Configurable<std::string> networkPathCCDB{"networkPathCCDB", "Analysis/PID/TPC/ML", "Path on CCDB"};
   Configurable<bool> enableNetworkOptimizations{"enableNetworkOptimizations", 1, "(bool) If the neural network correction is used, this enables GraphOptimizationLevel::ORT_ENABLE_EXTENDED in the ONNX session"};
@@ -164,6 +165,10 @@ struct tpcPidFull {
     if (!useNetworkCorrection) {
       return;
     } else {
+      if (skipTPCOnly) {
+        LOG(fatal) << "Cannot skip TPC only tracks when using the neural network correction";
+      }
+
       /// CCDB and auto-fetching
       ccdbApi.init(url);
       if (!autofetchNetworks) {
@@ -289,18 +294,18 @@ struct tpcPidFull {
 
     for (auto const& trk : tracks) {
       // Loop on Tracks
-      const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
-      if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrization only if the initial timestamp is 0
-
-        if (recoPass.value == "") {
-          LOGP(info, "Retrieving latest TPC response object for timestamp {}:", bc.timestamp());
-        } else {
-          LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
+      if (trk.has_collision()) {
+        const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
+        if (useCCDBParam && ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrization only if the initial timestamp is 0
+          if (recoPass.value == "") {
+            LOGP(info, "Retrieving latest TPC response object for timestamp {}:", bc.timestamp());
+          } else {
+            LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
+          }
+          response.SetParameters(ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata));
+          response.PrintAll();
         }
-        response.SetParameters(ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata));
-        response.PrintAll();
       }
-
       // Check and fill enabled tables
       auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracks_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
         if (flag.value != 1) {
@@ -329,6 +334,13 @@ struct tpcPidFull {
             LOGF(fatal, "Network output-dimensions incompatible!");
           }
         } else {
+          if (skipTPCOnly) {
+            if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
+              table(-999.f, -999.f);
+              return;
+            }
+          }
+
           table(response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid),
                 response.GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid));
         }

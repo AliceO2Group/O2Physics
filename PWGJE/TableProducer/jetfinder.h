@@ -43,18 +43,18 @@
 using JetTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 using JetClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 
-using JetParticles2Prong = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
-using JetParticles3Prong = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-using JetParticlesBplus = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
+using ParticlesD0 = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
+using ParticlesLc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+using ParticlesBplus = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
 
-using CandidateD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
-using CandidateD0MC = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
+using CandidatesD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
+using CandidatesD0MCD = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
 
-using CandidateBplusData = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>>;
-using CandidateBplusMC = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>;
+using CandidatesBplusData = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>>;
+using CandidatesBplusMCD = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>>;
 
-using CandidateLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
-using CandidateLcMC = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
+using CandidatesLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
+using CandidatesLcMCD = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
 
 // functions for track, cluster and candidate selection
 
@@ -62,12 +62,12 @@ using CandidateLcMC = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, a
 template <typename T>
 bool selectTrack(T const& track, std::string trackSelection)
 {
-  if (trackSelection == "globalTracks" && !track.isGlobalTrackWoPtEta()) {
-    return false;
-  } else if (trackSelection == "QualityTracks" && !track.isQualityTrack()) {
-    return false;
-  } else if (trackSelection == "hybridTracksJE" && !track.trackCutFlagFb5()) {
-    return false;
+  if (trackSelection == "globalTracks") {
+    return track.isGlobalTrackWoPtEta();
+  } else if (trackSelection == "QualityTracks") {
+    return track.isQualityTrack();
+  } else if (trackSelection == "hybridTracksJE") {
+    return track.trackCutFlagFb5();
   } else {
     return true;
   }
@@ -83,19 +83,19 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
     }
     if (candidate != std::nullopt) {
       auto cand = candidate.value();
-      if constexpr (std::is_same_v<std::decay_t<U>, CandidateD0Data::iterator> || std::is_same_v<std::decay_t<U>, CandidateD0Data::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateD0MC::iterator> || std::is_same_v<std::decay_t<U>, CandidateD0MC::filtered_iterator>) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidatesD0Data::iterator> || std::is_same_v<std::decay_t<U>, CandidatesD0Data::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidatesD0MCD::iterator> || std::is_same_v<std::decay_t<U>, CandidatesD0MCD::filtered_iterator>) {
         if (cand.template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
       }
 
-      if constexpr (std::is_same_v<std::decay_t<U>, CandidateLcData::iterator> || std::is_same_v<std::decay_t<U>, CandidateLcData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateLcMC::iterator> || std::is_same_v<std::decay_t<U>, CandidateLcMC::filtered_iterator>) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidatesLcData::iterator> || std::is_same_v<std::decay_t<U>, CandidatesLcData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidatesLcMCD::iterator> || std::is_same_v<std::decay_t<U>, CandidatesLcMCD::filtered_iterator>) {
         if (cand.template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong2_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
       }
 
-      if constexpr (std::is_same_v<std::decay_t<U>, CandidateBplusData::iterator> || std::is_same_v<std::decay_t<U>, CandidateBplusData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidateBplusMC::iterator> || std::is_same_v<std::decay_t<U>, CandidateBplusMC::filtered_iterator>) {
+      if constexpr (std::is_same_v<std::decay_t<U>, CandidatesBplusData::iterator> || std::is_same_v<std::decay_t<U>, CandidatesBplusData::filtered_iterator> || std::is_same_v<std::decay_t<U>, CandidatesBplusMCD::iterator> || std::is_same_v<std::decay_t<U>, CandidatesBplusMCD::filtered_iterator>) {
         if (cand.template prong0_as<aod::HfCand2Prong>().template prong0_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong0_as<aod::HfCand2Prong>().template prong1_as<JetTracks>().globalIndex() == track.globalIndex() || cand.template prong1_as<JetTracks>().globalIndex() == track.globalIndex()) {
           continue;
         }
@@ -238,11 +238,10 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, float par
 template <typename T>
 bool selectCollision(T const& collision, std::string eventSelection)
 {
-  if (eventSelection == "sel8" & !collision.sel8()) {
-    return false;
-  }
-  if (eventSelection == "sel7" & !collision.sel7()) {
-    return false;
+  if (eventSelection == "sel8") {
+    return collision.sel8();
+  } else if (eventSelection == "sel7") {
+    return collision.sel7();
   } else {
     return true;
   }

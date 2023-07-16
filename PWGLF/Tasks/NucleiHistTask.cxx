@@ -81,12 +81,16 @@ struct NucleiHistTask {
     }
 
     std::vector<double> ptBinning = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
+    std::vector<double> ptBinning_reduced = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 1.0, 1.3, 1.6, 1.9, 2.2, 2.5, 2.8, 3.1, 3.4, 3.7, 4., 5., 6., 8., 10., 12., 14.};
     std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
+    std::vector<double> etaBinning = {-1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
 
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptAxis_reduced = {ptBinning_reduced, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec centAxis = {centBinning, "V0M (%)"};
     AxisSpec centralityAxis = {100, 0.0, 100.0, "VT0C (%)"};
     AxisSpec centralityAxis_extended = {105, 0.0, 105.0, "VT0C (%)"};
+    AxisSpec etaAxis = {etaBinning, "#eta"};
 
     // +++++++++++++++++++++ Data ++++++++++++++++++++++++
 
@@ -123,6 +127,9 @@ struct NucleiHistTask {
     proton_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (p) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, centralityAxis});
     proton_reg.add("histTofNsigmaData_cent", "n-sigma TOF (p) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, centralityAxis});
     proton_reg.add("histTofm2_cent", "mass^2 TOF (p) centrality", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{p}"}, centralityAxis});
+    proton_reg.add("histTpcNsigmaData_eta", "n-sigma TPC (p) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    proton_reg.add("histTofNsigmaData_eta", "n-sigma TOF (p) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    proton_reg.add("histTofm2_eta", "mass^2 TOF (p) vs eta", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{p}"}, etaAxis});
 
     // histograms for antiProton
     aproton_reg.add("histKeepEventData", "skimming histogram (antip)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -141,6 +148,9 @@ struct NucleiHistTask {
     aproton_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (antip) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{antip}"}, centralityAxis});
     aproton_reg.add("histTofNsigmaData_cent", "n-sigma TOF (antip) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{antip}"}, centralityAxis});
     aproton_reg.add("histTofm2_cent", "mass^2 TOF (antip) centrality", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{antip}"}, centralityAxis});
+    aproton_reg.add("histTpcNsigmaData_eta", "n-sigma TPC (antip) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    aproton_reg.add("histTofNsigmaData_eta", "n-sigma TOF (antip) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    aproton_reg.add("histTofm2_eta", "mass^2 TOF (antip) vs eta", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{p}"}, etaAxis});
 
     // histograms for Deuterons
     deuteron_reg.add("histKeepEventData", "skimming histogram (d)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -150,15 +160,18 @@ struct NucleiHistTask {
     deuteron_reg.add("histDcaZVsPtData", "dcaZ vs Pt (d)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     deuteron_reg.add("histTOFm2", "TOF m^2 vs Pt (d)", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
     deuteron_reg.add("histTpcNsigmaData", "n-sigma TPC (d)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
-    deuteron_reg.add("histTofNsigmaData", "n-sigma TOF (d)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
+    deuteron_reg.add("histTofNsigmaData", "n-sigma TOF (d)", HistType::kTH2F, {ptAxis_reduced, {160, -20., +20., "n#sigma_{d}"}});
     deuteron_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (d)", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     deuteron_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (d)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     deuteron_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (d)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     deuteron_reg.add("histChi2TPC", "chi^2 TPC vs Pt (d)", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     deuteron_reg.add("histChi2ITS", "chi^2 ITS vs Pt (d)", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
     deuteron_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (d) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}, centralityAxis});
-    deuteron_reg.add("histTofNsigmaData_cent", "n-sigma TOF (d) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}, centralityAxis});
+    deuteron_reg.add("histTofNsigmaData_cent", "n-sigma TOF (d) centrality", HistType::kTH3F, {ptAxis_reduced, {160, -20., +20., "n#sigma_{d}"}, centralityAxis});
     deuteron_reg.add("histTofm2_cent", "mass^2 TOF (d) centrality", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{d}"}, centralityAxis});
+    deuteron_reg.add("histTpcNsigmaData_eta", "n-sigma TPC (d) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    deuteron_reg.add("histTofNsigmaData_eta", "n-sigma TOF (d) vs eta", HistType::kTH3F, {ptAxis_reduced, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    deuteron_reg.add("histTofm2_eta", "mass^2 TOF (d) vs eta", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{p}"}, etaAxis});
 
     // histograms for antiDeuterons
     adeuteron_reg.add("histKeepEventData", "skimming histogram (antid)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -168,15 +181,18 @@ struct NucleiHistTask {
     adeuteron_reg.add("histDcaZVsPtData", "dcaZ vs Pt (antid)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     adeuteron_reg.add("histTOFm2", "TOF m^2 vs Pt (antid)", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
     adeuteron_reg.add("histTpcNsigmaData", "n-sigma TPC (antid)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{antid}"}});
-    adeuteron_reg.add("histTofNsigmaData", "n-sigma TOF (antid)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{antid}"}});
+    adeuteron_reg.add("histTofNsigmaData", "n-sigma TOF (antid)", HistType::kTH2F, {ptAxis_reduced, {160, -20., +20., "n#sigma_{antid}"}});
     adeuteron_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (antid)", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     adeuteron_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (antid)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     adeuteron_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (antid)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     adeuteron_reg.add("histChi2TPC", "chi^2 TPC vs Pt (antid)", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     adeuteron_reg.add("histChi2ITS", "chi^2 ITS vs Pt (antid)", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
     adeuteron_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (antid) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{antid}"}, centralityAxis});
-    adeuteron_reg.add("histTofNsigmaData_cent", "n-sigma TOF (antid) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{antid}"}, centralityAxis});
+    adeuteron_reg.add("histTofNsigmaData_cent", "n-sigma TOF (antid) centrality", HistType::kTH3F, {ptAxis_reduced, {160, -20., +20., "n#sigma_{antid}"}, centralityAxis});
     adeuteron_reg.add("histTofm2_cent", "mass^2 TOF (antid) centrality", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{antid}"}, centralityAxis});
+    adeuteron_reg.add("histTpcNsigmaData_eta", "n-sigma TPC (antid) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    adeuteron_reg.add("histTofNsigmaData_eta", "n-sigma TOF (antid) vs eta", HistType::kTH3F, {ptAxis_reduced, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    adeuteron_reg.add("histTofm2_eta", "mass^2 TOF (antid) vs eta", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{p}"}, etaAxis});
 
     // histograms for Triton
     triton_reg.add("histKeepEventData", "skimming histogram (t)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -195,6 +211,9 @@ struct NucleiHistTask {
     triton_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (t) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}, centralityAxis});
     triton_reg.add("histTofNsigmaData_cent", "n-sigma TOF (t) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}, centralityAxis});
     triton_reg.add("histTofm2_cent", "mass^2 TOF (t) centrality", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{t}"}, centralityAxis});
+    triton_reg.add("histTpcNsigmaData_eta", "n-sigma TPC (t) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    triton_reg.add("histTofNsigmaData_eta", "n-sigma TOF (t) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    triton_reg.add("histTofm2_eta", "mass^2 TOF (t) vs eta", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{p}"}, etaAxis});
 
     // histograms for antiTriton
     atriton_reg.add("histKeepEventData", "skimming histogram (antit)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -213,6 +232,9 @@ struct NucleiHistTask {
     atriton_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (antit) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{antit}"}, centralityAxis});
     atriton_reg.add("histTofNsigmaData_cent", "n-sigma TOF (antit) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{antit}"}, centralityAxis});
     atriton_reg.add("histTofm2_cent", "mass^2 TOF (antit) centrality", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{antit}"}, centralityAxis});
+    atriton_reg.add("histTpcNsigmaData_eta", "n-sigma TPC (antit) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    atriton_reg.add("histTofNsigmaData_eta", "n-sigma TOF (antit) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    atriton_reg.add("histTofm2_eta", "mass^2 TOF (antit) vs eta", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{p}"}, etaAxis});
 
     // histograms for Helium-3
     Helium3_reg.add("histKeepEventData", "skimming histogram (He-3)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -231,6 +253,9 @@ struct NucleiHistTask {
     Helium3_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (He-3) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{He-3}"}, centralityAxis});
     Helium3_reg.add("histTofNsigmaData_cent", "n-sigma TOF (He-3) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{He-3}"}, centralityAxis});
     Helium3_reg.add("histTofm2_cent", "mass^2 TOF (He-3) centrality", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{He-3}"}, centralityAxis});
+    Helium3_reg.add("histTpcNsigmaData_eta", "n-sigma TPC (He-3) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    Helium3_reg.add("histTofNsigmaData_eta", "n-sigma TOF (He-3) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    Helium3_reg.add("histTofm2_eta", "mass^2 TOF (He-3) vs eta", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{p}"}, etaAxis});
 
     // histograms for antiHelium-3
     aHelium3_reg.add("histKeepEventData", "skimming histogram (antiHe-3)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -249,6 +274,9 @@ struct NucleiHistTask {
     aHelium3_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (antiHe-3) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{antiHe-3}"}, centralityAxis});
     aHelium3_reg.add("histTofNsigmaData_cent", "n-sigma TOF (antiHe-3) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{antiHe-3}"}, centralityAxis});
     aHelium3_reg.add("histTofm2_cent", "mass^2 TOF (antiHe-3) centrality", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{antiHe-3}"}, centralityAxis});
+    aHelium3_reg.add("histTpcNsigmaData_eta", "n-sigma TPC (antiHe-3) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    aHelium3_reg.add("histTofNsigmaData_eta", "n-sigma TOF (antiHe-3) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    aHelium3_reg.add("histTofm2_eta", "mass^2 TOF (antiHe-3) vs eta", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{p}"}, etaAxis});
 
     // histograms for Helium-4 (alpha)
     Helium4_reg.add("histKeepEventData", "skimming histogram (He-4)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -267,6 +295,9 @@ struct NucleiHistTask {
     Helium4_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (He-4) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{He-4}"}, centralityAxis});
     Helium4_reg.add("histTofNsigmaData_cent", "n-sigma TOF (He-4) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{He-4}"}, centralityAxis});
     Helium4_reg.add("histTofm2_cent", "mass^2 TOF (He-4) centrality", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{He-4}"}, centralityAxis});
+    Helium4_reg.add("histTpcNsigmaData_eta", "n-sigma TPC (He-4) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    Helium4_reg.add("histTofNsigmaData_eta", "n-sigma TOF (He-4) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    Helium4_reg.add("histTofm2_eta", "mass^2 TOF (He-4) vs eta", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{p}"}, etaAxis});
 
     // histograms for antiHelium-4 (alpha)
     aHelium4_reg.add("histKeepEventData", "skimming histogram (antiHe-4)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -285,6 +316,9 @@ struct NucleiHistTask {
     aHelium4_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (antiHe-4) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}, centralityAxis});
     aHelium4_reg.add("histTofNsigmaData_cent", "n-sigma TOF (antiHe-4) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}, centralityAxis});
     aHelium4_reg.add("histTofm2_cent", "mass^2 TOF (antiHe-4) centrality", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{antiHe-4}"}, centralityAxis});
+    aHelium4_reg.add("histTpcNsigmaData_eta", "n-sigma TPC (antiHe-4) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    aHelium4_reg.add("histTofNsigmaData_eta", "n-sigma TOF (antiHe-4) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}, etaAxis});
+    aHelium4_reg.add("histTofm2_eta", "mass^2 TOF (antiHe-4) vs eta", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{p}"}, etaAxis});
 
     // +++++++++++++++++++++ MC ++++++++++++++++++++++++++
 
@@ -528,6 +562,12 @@ struct NucleiHistTask {
         Helium3_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe3);
         Helium4_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe4);
 
+        proton_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), nSigmaProton, track.eta());
+        deuteron_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), nSigmaDeut, track.eta());
+        triton_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), nSigmaTriton, track.eta());
+        Helium3_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt() * 2.0, nSigmaHe3, track.eta());
+        Helium4_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt() * 2.0, nSigmaHe4, track.eta());
+
         //  fill TOF m^2 histogram
         if (track.hasTOF()) {
 
@@ -556,6 +596,12 @@ struct NucleiHistTask {
         atriton_reg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaTriton);
         aHelium3_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe3);
         aHelium4_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe4);
+
+        aproton_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), nSigmaProton, track.eta());
+        adeuteron_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), nSigmaDeut, track.eta());
+        atriton_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), nSigmaTriton, track.eta());
+        aHelium3_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt() * 2.0, nSigmaHe3, track.eta());
+        aHelium4_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt() * 2.0, nSigmaHe4, track.eta());
 
         // fill TOF m^2 histogram
         if (track.hasTOF()) {
@@ -620,6 +666,8 @@ struct NucleiHistTask {
             proton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             proton_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             proton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPr());
+            proton_reg.fill(HIST("histTofm2_eta"), track.pt(), TOFmass2, track.eta());
+            proton_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaPr(), track.eta());
           }
         }
 
@@ -660,6 +708,8 @@ struct NucleiHistTask {
             aproton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             aproton_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             aproton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPr());
+            aproton_reg.fill(HIST("histTofm2_eta"), track.pt(), TOFmass2, track.eta());
+            aproton_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaPr(), track.eta());
           }
         }
 
@@ -724,6 +774,8 @@ struct NucleiHistTask {
             deuteron_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             deuteron_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             deuteron_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
+            deuteron_reg.fill(HIST("histTofm2_eta"), track.pt(), TOFmass2, track.eta());
+            deuteron_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaDe(), track.eta());
           }
         }
 
@@ -764,6 +816,8 @@ struct NucleiHistTask {
             adeuteron_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             adeuteron_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             adeuteron_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
+            adeuteron_reg.fill(HIST("histTofm2_eta"), track.pt(), TOFmass2, track.eta());
+            adeuteron_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaDe(), track.eta());
           }
         }
 
@@ -827,6 +881,8 @@ struct NucleiHistTask {
             triton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             triton_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             triton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaTr());
+            triton_reg.fill(HIST("histTofm2_eta"), track.pt(), TOFmass2, track.eta());
+            triton_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaTr(), track.eta());
           }
         }
 
@@ -867,6 +923,8 @@ struct NucleiHistTask {
             atriton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             atriton_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             atriton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaTr());
+            atriton_reg.fill(HIST("histTofm2_eta"), track.pt(), TOFmass2, track.eta());
+            atriton_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaTr(), track.eta());
           }
         }
 
@@ -930,6 +988,8 @@ struct NucleiHistTask {
             Helium3_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             Helium3_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0, beta);
             Helium3_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
+            Helium3_reg.fill(HIST("histTofm2_eta"), track.pt() * 2.0, TOFmass2, track.eta());
+            Helium3_reg.fill(HIST("histTofNsigmaData_eta"), track.pt() * 2.0, track.tofNSigmaHe(), track.eta());
           }
         }
 
@@ -969,6 +1029,8 @@ struct NucleiHistTask {
             aHelium3_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             aHelium3_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0, beta);
             aHelium3_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
+            aHelium3_reg.fill(HIST("histTofm2_eta"), track.pt() * 2.0, TOFmass2, track.eta());
+            aHelium3_reg.fill(HIST("histTofNsigmaData_eta"), track.pt() * 2.0, track.tofNSigmaHe(), track.eta());
           }
         }
 
@@ -1032,6 +1094,8 @@ struct NucleiHistTask {
             Helium4_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             Helium4_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0, beta);
             Helium4_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaAl());
+            Helium4_reg.fill(HIST("histTofm2_eta"), track.pt() * 2.0, TOFmass2, track.eta());
+            Helium4_reg.fill(HIST("histTofNsigmaData_eta"), track.pt() * 2.0, track.tofNSigmaAl(), track.eta());
           }
         }
 
@@ -1071,6 +1135,8 @@ struct NucleiHistTask {
             aHelium4_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             aHelium4_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0, beta);
             aHelium4_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaAl());
+            aHelium4_reg.fill(HIST("histTofm2_eta"), track.pt() * 2.0, TOFmass2, track.eta());
+            aHelium4_reg.fill(HIST("histTofNsigmaData_eta"), track.pt() * 2.0, track.tofNSigmaAl(), track.eta());
           }
         }
 

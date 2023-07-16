@@ -36,40 +36,49 @@ using namespace o2::framework::expressions;
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-template <typename OutputTable, typename SubstructureOutputTable>
+template <typename CollisionTable, typename JetTable, typename OutputTable, typename SubstructureOutputTable>
 struct JetSubstructureOutputTask {
   Produces<OutputTable> jetOutputTable;
   Produces<SubstructureOutputTable> jetSubstructureOutputTable;
+
+  Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT cut"};
+  Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
+
+  std::vector<double> jetRadiiValues;
+
+  void init(InitContext const&)
+  {
+    jetRadiiValues = (std::vector<double>)jetRadii;
+  }
+
+  Filter jetSelection = aod::jet::pt >= jetPtMin;
 
   template <typename T, typename U>
   void fillTables(T const& collision, U const& jets)
   {
     for (const auto& jet : jets) {
-      jetOutputTable(collision.globalIndex(), jet.globalIndex(), -1, jet.pt(), jet.phi(), jet.eta(), jet.tracks().size());
-      jetSubstructureOutputTable(jet.globalIndex(), jet.zg(), jet.rg(), jet.nsd());
+      for (const auto& jetRadiiValue : jetRadiiValues) {
+        if (jet.r() == round(jetRadiiValue * 100.0f)) {
+          jetOutputTable(collision.globalIndex(), jet.globalIndex(), -1, jet.pt(), jet.phi(), jet.eta(), jet.r(), jet.tracks().size());
+          jetSubstructureOutputTable(jet.globalIndex(), jet.zg(), jet.rg(), jet.nsd());
+        }
+      }
     }
   }
 
-  void processDummy(aod::Tracks const& track) {}
+  void processDummy(typename CollisionTable::iterator const& collision) {}
   PROCESS_SWITCH(JetSubstructureOutputTask, processDummy, "Dummy process function turned on by default", true);
 
-  void processData(aod::Collision const& collision,
-                   soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures> const& jets,
-                   aod::Tracks const& tracks)
+  void processOutput(typename CollisionTable::iterator const& collision,
+                     JetTable const& jets)
   {
     fillTables(collision, jets);
   }
-  PROCESS_SWITCH(JetSubstructureOutputTask, processData, "jet substructure output on data", false);
-
-  void processMCD(aod::Collision const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures> const& jets, aod::Tracks const& tracks) { fillTables(collision, jets); }
-  PROCESS_SWITCH(JetSubstructureOutputTask, processMCD, "jet substructure output on MC detector level", false);
-
-  void processMCP(aod::McCollision const& collision, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures> const& jets, aod::McParticles const& particles) { fillTables(collision, jets); }
-  PROCESS_SWITCH(JetSubstructureOutputTask, processMCP, "jet substructure output on MC particle level", false);
+  PROCESS_SWITCH(JetSubstructureOutputTask, processOutput, "jet substructure output", false);
 };
-using JetSubstructureOutputData = JetSubstructureOutputTask<aod::ChargedJetOutput, aod::ChargedJetSubstructureOutput>;
-using JetSubstructureOutputMCDetectorLevel = JetSubstructureOutputTask<aod::ChargedMCDetectorLevelJetOutput, aod::ChargedMCDetectorLevelJetSubstructureOutput>;
-using JetSubstructureOutputMCParticleLevel = JetSubstructureOutputTask<aod::ChargedMCParticleLevelJetOutput, aod::ChargedMCParticleLevelJetSubstructureOutput>;
+using JetSubstructureOutputData = JetSubstructureOutputTask<aod::Collisions, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures>>, aod::ChargedJetOutput, aod::ChargedJetSubstructureOutput>;
+using JetSubstructureOutputMCDetectorLevel = JetSubstructureOutputTask<aod::Collisions, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures>>, aod::ChargedMCDetectorLevelJetOutput, aod::ChargedMCDetectorLevelJetSubstructureOutput>;
+using JetSubstructureOutputMCParticleLevel = JetSubstructureOutputTask<aod::McCollisions, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures>>, aod::ChargedMCParticleLevelJetOutput, aod::ChargedMCParticleLevelJetSubstructureOutput>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
