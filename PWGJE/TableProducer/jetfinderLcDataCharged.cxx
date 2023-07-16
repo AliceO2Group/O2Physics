@@ -15,7 +15,7 @@
 
 #include "PWGJE/TableProducer/jetfinderhf.cxx"
 
-using JetFinderLcDataCharged = JetFinderHFTask<o2::aod::LcChargedJets, o2::aod::LcChargedJetConstituents, o2::aod::LcChargedJetConstituentsSub>;
+using JetFinderLcDataCharged = JetFinderHFTask<CandidatesLcData, CandidatesLcMCD, ParticlesLc, o2::aod::LcChargedJets, o2::aod::LcChargedJetConstituents, o2::aod::LcChargedJetConstituentsSub>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

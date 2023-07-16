@@ -36,7 +36,7 @@ using namespace o2::framework::expressions;
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-template <typename OutputTable, typename SubstructureOutputTable>
+template <typename CollisionTable, typename JetTable, typename OutputTable, typename SubstructureOutputTable>
 struct JetSubstructureOutputTask {
   Produces<OutputTable> jetOutputTable;
   Produces<SubstructureOutputTable> jetSubstructureOutputTable;
@@ -50,26 +50,19 @@ struct JetSubstructureOutputTask {
     }
   }
 
-  void processDummy(aod::Tracks const& track) {}
+  void processDummy(typename CollisionTable::iterator const& collision) {}
   PROCESS_SWITCH(JetSubstructureOutputTask, processDummy, "Dummy process function turned on by default", true);
 
-  void processData(aod::Collision const& collision,
-                   soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures> const& jets,
-                   aod::Tracks const& tracks)
+  void processOutput(typename CollisionTable::iterator const& collision,
+                     JetTable const& jets)
   {
     fillTables(collision, jets);
   }
-  PROCESS_SWITCH(JetSubstructureOutputTask, processData, "jet substructure output on data", false);
-
-  void processMCD(aod::Collision const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures> const& jets, aod::Tracks const& tracks) { fillTables(collision, jets); }
-  PROCESS_SWITCH(JetSubstructureOutputTask, processMCD, "jet substructure output on MC detector level", false);
-
-  void processMCP(aod::McCollision const& collision, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures> const& jets, aod::McParticles const& particles) { fillTables(collision, jets); }
-  PROCESS_SWITCH(JetSubstructureOutputTask, processMCP, "jet substructure output on MC particle level", false);
+  PROCESS_SWITCH(JetSubstructureOutputTask, processOutput, "jet substructure output", false);
 };
-using JetSubstructureOutputData = JetSubstructureOutputTask<aod::ChargedJetOutput, aod::ChargedJetSubstructureOutput>;
-using JetSubstructureOutputMCDetectorLevel = JetSubstructureOutputTask<aod::ChargedMCDetectorLevelJetOutput, aod::ChargedMCDetectorLevelJetSubstructureOutput>;
-using JetSubstructureOutputMCParticleLevel = JetSubstructureOutputTask<aod::ChargedMCParticleLevelJetOutput, aod::ChargedMCParticleLevelJetSubstructureOutput>;
+using JetSubstructureOutputData = JetSubstructureOutputTask<aod::Collisions, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures>, aod::ChargedJetOutput, aod::ChargedJetSubstructureOutput>;
+using JetSubstructureOutputMCDetectorLevel = JetSubstructureOutputTask<aod::Collisions, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures>, aod::ChargedMCDetectorLevelJetOutput, aod::ChargedMCDetectorLevelJetSubstructureOutput>;
+using JetSubstructureOutputMCParticleLevel = JetSubstructureOutputTask<aod::McCollisions, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures>, aod::ChargedMCParticleLevelJetOutput, aod::ChargedMCParticleLevelJetSubstructureOutput>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
