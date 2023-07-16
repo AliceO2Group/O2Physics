@@ -56,6 +56,7 @@ struct tofSpectra {
   Configurable<int> selectEvTime{"selectEvTime", 0, "Select event time flags; 0: any event time, 1: isEvTimeDefined, 2: IsEvTimeTOF, 3: IsEvTimeT0AC, 4: IsEvTimeTOFT0AV, 5: NOT isEvTimeDefined"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
   ConfigurableAxis binsnsigmaTPC{"binsnsigmaTPC", {200, -10, 10}, "Binning of the nsigmaTPC axis"};
+  ConfigurableAxis binseta{"binseta", {16, -0.8, 0.8}, "Binning of the eta axis"};
   ConfigurableAxis binsnsigmaTOF{"binsnsigmaTOF", {200, -10, 10}, "Binning of the nsigmaTOF axis"};
   ConfigurableAxis binsdeltaTPC{"binsdeltaTPC", {500, -1000, 1000}, "Binning of the nsigmaTPC axis"};
   ConfigurableAxis binsdeltaTOF{"binsdeltaTOF", {500, -1000, 1000}, "Binning of the nsigmaTOF axis"};
@@ -179,12 +180,14 @@ struct tofSpectra {
       customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
       customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10000.f; }); // No DCAxy cut will be used, this is done via the member function of the task
       customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
+      //customTrackCuts.SetMakeTHnSparseChoice(makeTHnSparseChoice.value);
       customTrackCuts.print();
     }
     // Histograms
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec pAxis{binsPt, "#it{p} (GeV/#it{c})"};
     const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec etaAxis{binseta, "#it{#eta}"};
 
     histos.add("event/vertexz", "", HistType::kTH1D, {vtxZAxis});
     auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1D, {{10, 0.5, 10.5}});
@@ -419,8 +422,8 @@ struct tofSpectra {
           histos.add(hdeltatpc[i].data(), pTCharge[i], kTH2D, {ptAxis, deltaTPCAxis});
         }
       } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice) {                               // RD
-        histos.add(hnsigmatof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTOFAxis, multAxis, dcaXyAxis, dcaZAxis}); // RD
-        histos.add(hnsigmatpc[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTPCAxis, multAxis, dcaXyAxis, dcaZAxis}); // RD
+        histos.add(hnsigmatof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTOFAxis, multAxis, dcaXyAxis, dcaZAxis, etaAxis}); // RD
+        histos.add(hnsigmatpc[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTPCAxis, multAxis, dcaXyAxis, dcaZAxis, etaAxis}); // RD
 
       } else {
 
@@ -547,9 +550,9 @@ struct tofSpectra {
       }
     } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice) {                   // RD
       if (track.sign() > 0) {                                                                       // RD
-        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ());      // RD
+        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY(), track.dcaZ(), track.eta());      // RD
       } else {                                                                                      // RD
-        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaZ()); // RD
+        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY(), track.dcaZ(), track.eta()); // RD
       }                                                                                             // RD
     } else {
       if (track.sign() > 0) {
@@ -667,9 +670,9 @@ struct tofSpectra {
       }
     } else if (multiplicityEstimator != kNoMultiplicity && makeTHnSparseChoice) {                   // RD
       if (track.sign() > 0) {                                                                       // RD
-        histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ());      // RD
+        histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ(), track.eta());      // RD
       } else {                                                                                      // RD
-        histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ()); // RD
+        histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ(), track.eta()); // RD
       }                                                                                             // RD
     } else {
       if (track.sign() > 0) {
