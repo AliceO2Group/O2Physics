@@ -31,7 +31,7 @@
 #include "Framework/StaticFor.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "spectraTOF.h"
+#include "PWGLF/DataModel/spectraTOF.h"
 
 #include "TPDGCode.h"
 
