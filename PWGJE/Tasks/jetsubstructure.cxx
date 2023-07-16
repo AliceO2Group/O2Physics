@@ -47,10 +47,8 @@ struct JetSubstructureTask {
   OutputObj<TH2F> hRg{"h_jet_rg_jet_pt"};
   OutputObj<TH2F> hNsd{"h_jet_nsd_jet_pt"};
 
-  Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT cut"};
   Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
   Configurable<float> beta{"beta", 0.0, "soft drop beta"};
-  Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
 
   std::vector<fastjet::PseudoJet> jetConstituents;
   std::vector<fastjet::PseudoJet> jetReclustered;
@@ -64,11 +62,10 @@ struct JetSubstructureTask {
                            10, 0.0, 0.5, 200, 0.0, 200.0));
     hNsd.setObject(new TH2F("h_jet_nsd_jet_pt", ";n_{SD}; #it{p}_{T,jet} (GeV/#it{c})",
                             7, -0.5, 6.5, 200, 0.0, 200.0));
+
     jetReclusterer.isReclustering = true;
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
   }
-
-  Filter jetSelection = o2::aod::jet::r == nround(jetR.node() * 100.0f) && aod::jet::pt >= jetPtMin;
 
   template <typename T>
   void jetReclustering(T const& jet)
@@ -89,7 +86,7 @@ struct JetSubstructureTask {
       }
       auto z = parentSubJet2.perp() / (parentSubJet1.perp() + parentSubJet2.perp());
       auto theta = parentSubJet1.delta_R(parentSubJet2);
-      if (z >= zCut * TMath::Power(theta / jetR, beta)) {
+      if (z >= zCut * TMath::Power(theta / (jet.r() / 100.f), beta)) {
         if (!softDropped) {
           zg = z;
           rg = theta;
@@ -132,9 +129,9 @@ struct JetSubstructureTask {
   }
   PROCESS_SWITCH(JetSubstructureTask, processChargedJetsMCP, "charged jet substructure on MC particle level", false);
 };
-using JetSubstructureDataLevel = JetSubstructureTask<soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>>, o2::aod::ChargedJetSubstructures>;
-using JetSubstructureMCDetectorLevel = JetSubstructureTask<soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>>, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>>, o2::aod::ChargedMCDetectorLevelJetSubstructures>;
-using JetSubstructureMCParticleLevel = JetSubstructureTask<soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>>, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>>, o2::aod::ChargedMCParticleLevelJetSubstructures>;
+using JetSubstructureDataLevel = JetSubstructureTask<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>, o2::aod::ChargedJetSubstructures>;
+using JetSubstructureMCDetectorLevel = JetSubstructureTask<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>, o2::aod::ChargedMCDetectorLevelJetSubstructures>;
+using JetSubstructureMCParticleLevel = JetSubstructureTask<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>, o2::aod::ChargedMCParticleLevelJetSubstructures>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
