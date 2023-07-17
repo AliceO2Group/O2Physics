@@ -19,7 +19,6 @@ alien:///alice/data/2015/LHC15o/000246392/pass5_lowIR/PWGZZ/Run3_Conversion/148_
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
 #include "iostream"
-#include "Common/DataModel/EventSelection.h"
 #include <TH1D.h>
 #include <TH2D.h>
 #include <TString.h>
@@ -73,15 +72,15 @@ struct UPCForward {
     bool isnegative = kFALSE;
 
     // V0 and FD information
-    bool isBeamBeamV0A = bc.bbV0A();
-    bool isBeamGasV0A = bc.bgV0A();
-    // bool isBeamBeamV0C = bc.bbV0C();
-    bool isBeamGasV0C = bc.bgV0C();
+    bool isBeamBeamV0A = bc.selection_bit(kIsBBV0A);
+    bool isBeamGasV0A = !bc.selection_bit(kNoBGV0A);
+    // bool isBeamBeamV0C = bc.selection_bit(kIsBBV0C);
+    bool isBeamGasV0C = !bc.selection_bit(kNoBGV0C);
 
-    bool isBeamBeamFDA = bc.bbFDA();
-    bool isBeamGasFDA = bc.bgFDA();
-    bool isBeamBeamFDC = bc.bbFDC();
-    bool isBeamGasFDC = bc.bgFDC();
+    bool isBeamBeamFDA = bc.selection_bit(kIsBBFDA);
+    bool isBeamGasFDA = !bc.selection_bit(kNoBGFDA);
+    bool isBeamBeamFDC = bc.selection_bit(kIsBBFDC);
+    bool isBeamGasFDC = !bc.selection_bit(kNoBGFDC);
 
     // offline V0 and FD selection
     bool isV0Selection = isBeamBeamV0A || isBeamGasV0A || isBeamGasV0C;

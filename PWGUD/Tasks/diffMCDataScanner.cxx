@@ -147,7 +147,6 @@ struct collisionsInfo {
 
     // update histograms with track information
     LOGF(debug, "Number of tracks: Vertex %d, total %d, global %d", collision.numContrib(), cntAll, cntGlobal);
-    LOGF(debug, "Number of SPD cluster: %d", collision.spdClusters());
     registry.get<TH1>(HIST("numberTracks"))->Fill(cntAll);
     registry.get<TH1>(HIST("numberVtxTracks"))->Fill(collision.numContrib());
     registry.get<TH1>(HIST("numberGlobalTracks"))->Fill(cntGlobal);
