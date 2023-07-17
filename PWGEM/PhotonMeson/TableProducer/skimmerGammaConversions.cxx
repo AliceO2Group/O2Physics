@@ -235,30 +235,6 @@ struct skimmerGammaConversions {
     return true;
   }
 
-  // template <typename TLeg>
-  // bool checkV0leg(TLeg const& leg)
-  //{
-  //   if (abs(leg.eta()) > maxeta) {
-  //     return false;
-  //   }
-  //   if (abs(leg.tpcNSigmaEl()) > maxTPCNsigmaEl) {
-  //     return false;
-  //   }
-  //   if (leg.tpcChi2NCl() > maxchi2tpc) {
-  //     return false;
-  //   }
-  //   if (leg.tpcNClsCrossedRows() < mincrossedrows) {
-  //     return false;
-  //   }
-  //   if (abs(leg.dcaXY()) < dcamin) {
-  //     return false;
-  //   }
-  //   if (dcamax < abs(leg.dcaXY())) {
-  //     return false;
-  //   }
-  //   return true;
-  // }
-
   template <typename TTrack, typename TCollision, typename TV0>
   void fillV0KF(TCollision const& collision, TV0 const& v0, recalculatedVertexParameters recalculatedVertex)
   {
@@ -315,7 +291,7 @@ struct skimmerGammaConversions {
 
   // ============================ FUNCTION DEFINITIONS ====================================================
 
-  Preslice<aod::V0Datas> perCollision = aod::v0data::collisionId;
+  PresliceUnsorted<aod::V0Datas> perCollision = aod::v0data::collisionId;
 
   void processRec(aod::Collisions const& collisions,
                   aod::BCsWithTimestamps const& bcs,
@@ -338,35 +314,13 @@ struct skimmerGammaConversions {
           continue;
         }
 
-        bool flag_closer = true;
-        for (auto& v0tmp : groupedV0s) {
-          if (!checkAP(v0tmp.alpha(), v0tmp.qtarm())) { // store only photon conversions
-            continue;
-          }
-          auto pos_tmp = v0tmp.template posTrack_as<tracksAndTPCInfo>(); // positive daughter
-          auto ele_tmp = v0tmp.template negTrack_as<tracksAndTPCInfo>(); // negative daughter
-          if (!checkV0leg(pos_tmp) || !checkV0leg(ele_tmp)) {
-            continue;
-          }
-
-          if (v0.index() == v0tmp.index()) { // don't check onviously, exactly the same v0.
-            // LOGF(info, "don't check the exactly the same 2 V0s");
-            continue;
-          }
-          if ((ele.globalIndex() == ele_tmp.globalIndex() || pos.globalIndex() == pos_tmp.globalIndex()) && v0.dcaV0daughters() > v0tmp.dcaV0daughters()) {
-            // LOGF(info, "!reject! | collision id = %d | g1 id = %d , g2 id = %d , posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f",
-            //     collision.globalIndex(), v0.index(), v0tmp.index(), pos.globalIndex(), ele.globalIndex(), pos_tmp.globalIndex(), ele_tmp.globalIndex(), v0.dcaV0daughters(), v0tmp.dcaV0daughters());
-            flag_closer = false;
-            break;
-          }
-        } // end of v0tmp loop
-
-        if (!flag_closer) {
-          continue;
-        }
-
+        float xyz[3] = {0.f, 0.f, 0.f};
+        Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz);
         recalculatedVertexParameters recalculatedVertex;
-        Vtx_recalculation(pos, ele, &recalculatedVertex);
+        recalculatedVertex.recalculatedConversionPoint[0] = xyz[0];
+        recalculatedVertex.recalculatedConversionPoint[1] = xyz[1];
+        recalculatedVertex.recalculatedConversionPoint[2] = xyz[2];
+
         v0photons(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   v0.x(), v0.y(), v0.z(),
                   v0.pxpos(), v0.pypos(), v0.pzpos(),
@@ -418,43 +372,19 @@ struct skimmerGammaConversions {
           continue;
         }
 
-        bool flag_closer = true;
-        for (auto& v0tmp : lGroupedV0s) {
-          if (!checkAP(v0tmp.alpha(), v0tmp.qtarm())) { // store only photon conversions
-            continue;
-          }
-          auto pos_tmp = v0tmp.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
-          auto ele_tmp = v0tmp.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
-          if (!checkV0leg(pos_tmp) || !checkV0leg(ele_tmp)) {
-            continue;
-          }
-
-          if (v0.index() == v0tmp.index()) { // don't check onviously, exactly the same v0.
-            // LOGF(info, "don't check the exactly the same 2 V0s");
-            continue;
-          }
-          if ((ele.globalIndex() == ele_tmp.globalIndex() || pos.globalIndex() == pos_tmp.globalIndex()) && v0.dcaV0daughters() > v0tmp.dcaV0daughters()) {
-            // LOGF(info, "!reject! | collision id = %d | g1 id = %d , g2 id = %d , posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f",
-            //     collision.globalIndex(), v0.index(), v0tmp.index(), pos.globalIndex(), ele.globalIndex(), pos_tmp.globalIndex(), ele_tmp.globalIndex(), v0.dcaV0daughters(), v0tmp.dcaV0daughters());
-            flag_closer = false;
-            break;
-          }
-        } // end of v0tmp loop
-
-        if (!flag_closer) {
-          continue;
-        }
-
         if (!ele.has_mcParticle() || !pos.has_mcParticle()) {
           continue; // If no MC particle is found, skip the v0
         }
 
         eV0Confirmation v0Status = isTrueV0(v0, pos, ele);
-
         fRegistry.get<TH1>(HIST("hV0Confirmation"))->Fill(v0Status);
 
+        float xyz[3] = {0.f, 0.f, 0.f};
+        Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz);
         recalculatedVertexParameters recalculatedVertex;
-        Vtx_recalculation(pos, ele, &recalculatedVertex);
+        recalculatedVertex.recalculatedConversionPoint[0] = xyz[0];
+        recalculatedVertex.recalculatedConversionPoint[1] = xyz[1];
+        recalculatedVertex.recalculatedConversionPoint[2] = xyz[2];
 
         v0photons(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   v0.x(), v0.y(), v0.z(),
@@ -578,84 +508,6 @@ struct skimmerGammaConversions {
       break; // because we only want to look at the first mother. If there are more it will show up in fMotherSizesHisto
     }
     return kGoodMcMother;
-  }
-
-  template <typename TrackPrecision = float, typename T>
-  void Vtx_recalculation(T lTrackPos, T lTrackNeg, recalculatedVertexParameters* recalculatedVertex)
-  {
-    o2::base::Propagator* prop = o2::base::Propagator::Instance(); // This singleton propagator requires some initialisation of the CCDB object.
-    float bz = prop->getNominalBz();
-
-    //*******************************************************
-
-    // o2::track::TrackParametrizationWithError<TrackPrecision> = TrackParCov, I use the full version to have control over the data type
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); // first get an object that stores Track information (positive)
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg); // first get an object that stores Track information (negative)
-
-    o2::track::TrackAuxPar helixPos(trackPosInformation, bz); // This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
-    o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); // This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
-
-    recalculatedVertex->recalculatedConversionPoint[0] = (helixPos.xC * helixNeg.rC + helixNeg.xC * helixPos.rC) / (helixPos.rC + helixNeg.rC); // This calculates the coordinates of the conversion point as an weighted average of the two helix centers. xC and yC should be the global coordinates for the helix center as far as I understand. But you can double check the code of trackPosInformation.getCircleParamsLoc
-    recalculatedVertex->recalculatedConversionPoint[1] = (helixPos.yC * helixNeg.rC + helixNeg.yC * helixPos.rC) / (helixPos.rC + helixNeg.rC); // If this calculation doesn't work check if the rotateZ function, because the "documentation" says I get global coordinates but maybe i don't.
-
-    // I am unsure about the Z calculation but this is how it is done in AliPhysics as far as I understand
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackPosInformation);
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackNegInformation);
-
-    // I think this calculation gets the closest point on the track to the conversion point
-    // This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point
-    Double_t alphaPos = TMath::Pi() + TMath::ATan2(-(recalculatedVertex->recalculatedConversionPoint[1] - helixPos.yC), (recalculatedVertex->recalculatedConversionPoint[0] - helixPos.xC));
-    Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(recalculatedVertex->recalculatedConversionPoint[1] - helixNeg.yC), (recalculatedVertex->recalculatedConversionPoint[0] - helixNeg.xC));
-
-    Double_t vertexXPos = helixPos.xC + helixPos.rC * TMath::Cos(alphaPos);
-    Double_t vertexYPos = helixPos.yC + helixPos.rC * TMath::Sin(alphaPos);
-    Double_t vertexXNeg = helixNeg.xC + helixNeg.rC * TMath::Cos(alphaNeg);
-    Double_t vertexYNeg = helixNeg.yC + helixNeg.rC * TMath::Sin(alphaNeg);
-
-    TVector2 vertexPos(vertexXPos, vertexYPos);
-    TVector2 vertexNeg(vertexXNeg, vertexYNeg);
-
-    // Convert to local coordinate system
-    TVector2 vertexPosRot = vertexPos.Rotate(-trackPosInformationCopy.getAlpha());
-    TVector2 vertexNegRot = vertexNeg.Rotate(-trackNegInformationCopy.getAlpha());
-
-    prop->propagateToX(trackPosInformationCopy,
-                       vertexPosRot.X(),
-                       bz,
-                       o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
-                       o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
-                       o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrNONE);
-    // o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrLUT);
-    prop->propagateToX(trackNegInformationCopy,
-                       vertexNegRot.X(),
-                       bz,
-                       o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
-                       o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
-                       o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrNONE);
-    // o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrLUT);
-
-    // TODO: This is still off and needs to be checked...
-    recalculatedVertex->recalculatedConversionPoint[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
-
-    KFPTrack kFTrackPos = createKFPTrackFromTrackParCov(trackPosInformationCopy, lTrackPos.sign(), lTrackPos.tpcNClsFound(), lTrackPos.tpcChi2NCl());
-    int pdg_ePlus = -11; // e+
-    KFParticle kFParticleEPlus(kFTrackPos, pdg_ePlus);
-
-    KFPTrack kFTrackNeg = createKFPTrackFromTrackParCov(trackNegInformationCopy, lTrackNeg.sign(), lTrackNeg.tpcNClsFound(), lTrackNeg.tpcChi2NCl());
-    int pdg_eMinus = 11; // e-
-    KFParticle kFParticleEMinus(kFTrackNeg, pdg_eMinus);
-
-    KFParticle gammaKF;
-    gammaKF.SetConstructMethod(2);
-    gammaKF.AddDaughter(kFParticleEPlus);
-    gammaKF.AddDaughter(kFParticleEMinus);
-    gammaKF.SetNonlinearMassConstraint(kfMassConstrain);
-
-    if (gammaKF.GetNDF() == 0) {
-      recalculatedVertex->KFParticleChi2DividedByNDF = -1.f;
-    } else {
-      recalculatedVertex->KFParticleChi2DividedByNDF = gammaKF.GetChi2() / gammaKF.GetNDF();
-    }
   }
 };
 
