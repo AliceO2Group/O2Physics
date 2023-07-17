@@ -46,7 +46,7 @@ struct createEMReducedEvent {
 
   HistogramRegistry registry{"registry"};
 
-  Preslice<aod::V0Photons> perCollision_pcm = aod::v0photon::collisionId;
+  Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photon::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
@@ -130,7 +130,7 @@ struct createEMReducedEvent {
 
   } // end of process
 
-  void process_PCM(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0Photons const& v0photons)
+  void process_PCM(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons)
   {
     process<kPCM>(collisions, bcs, v0photons, nullptr, nullptr);
   }
@@ -142,12 +142,12 @@ struct createEMReducedEvent {
   {
     process<kEMC>(collisions, bcs, nullptr, nullptr, emcclusters);
   }
-  void process_PCM_PHOS(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0Photons const& v0photons, aod::PHOSClusters const& phosclusters)
+  void process_PCM_PHOS(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::PHOSClusters const& phosclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS;
     process<sysflag>(collisions, bcs, v0photons, phosclusters, nullptr);
   }
-  void process_PCM_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters)
+  void process_PCM_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::SkimEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPCM | kEMC;
     process<sysflag>(collisions, bcs, v0photons, nullptr, emcclusters);
@@ -157,7 +157,7 @@ struct createEMReducedEvent {
     const uint8_t sysflag = kPHOS | kEMC;
     process<sysflag>(collisions, bcs, nullptr, phosclusters, emcclusters);
   }
-  void process_PCM_PHOS_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0Photons const& v0photons, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
+  void process_PCM_PHOS_EMC(MyCollisions const& collisions, aod::BCs const& bcs, aod::V0PhotonsKF const& v0photons, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS | kEMC;
     process<sysflag>(collisions, bcs, v0photons, phosclusters, emcclusters);
