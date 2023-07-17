@@ -178,7 +178,7 @@ struct tofSpectra {
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec pAxis{binsPt, "#it{p} (GeV/#it{c})"};
     const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
-    //const AxisSpec etaAxis{binsEta, "#eta tracks"};
+    // const AxisSpec etaAxis{binsEta, "#eta tracks"};
 
     histos.add("event/vertexz", "", HistType::kTH1D, {vtxZAxis});
     auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1D, {{10, 0.5, 10.5}});
@@ -561,7 +561,7 @@ struct tofSpectra {
       }
     } else if (makeTHnSparseChoice) {                                                                             // RD
       if (track.sign() > 0) {                                                                                     // RD
-        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY(), track.dcaZ(), track.eta());      // RD
+        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY(), track.dcaZ(), track.eta()); // RD
       } else {                                                                                                    // RD
         histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY(), track.dcaZ(), track.eta()); // RD
       }                                                                                                           // RD
@@ -681,7 +681,7 @@ struct tofSpectra {
       }
     } else if (multiplicityEstimator != MultCodes::kNoMultiplicity && makeTHnSparseChoice) {                      // RD
       if (track.sign() > 0) {                                                                                     // RD
-        histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ(), track.eta());      // RD
+        histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ(), track.eta()); // RD
       } else {                                                                                                    // RD
         histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ(), track.eta()); // RD
       }                                                                                                           // RD
