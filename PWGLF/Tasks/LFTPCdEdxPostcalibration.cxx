@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \author Alberto Caliva (alberto.caliva@cern.ch), Nicolò Jacazio
-/// (nicolo.jacazio@cern.ch) \since July 14, 2023
+/// \author Alberto Caliva (alberto.caliva@cern.ch)
+/// \since July 17, 2023
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
