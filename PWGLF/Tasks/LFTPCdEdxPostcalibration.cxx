@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 ///
 /// \author Alberto Caliva (alberto.caliva@cern.ch)
-/// \since June 28, 2023
+/// \since June 27, 2023
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
