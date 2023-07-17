@@ -39,9 +39,9 @@ using DHadronPairFull = soa::Join<aod::DHadronPair, aod::DHadronRecoInfo>;
 ///
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
 ///
-double getDeltaPhi(double phiD, double phiDbar)
+double getDeltaPhi(double phiHadron, double phiD)
 {
-  return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
+  return RecoDecay::constrainAngle(phiHadron - phiD, -o2::constants::math::PIHalf);
 }
 
 ///
@@ -60,8 +60,8 @@ const TString stringDeltaPhi = "#it{#varphi}^{Hadron}-#it{#varphi}^{D} (rad);";
 const TString stringDHadron = "D,Hadron candidates ";
 const TString stringSignal = "signal region;";
 const TString stringSideband = "sidebands;";
-const TString stringMCParticles = "MC gen - D,Hadron particles;";
-const TString stringMCReco = "MC reco - D,Hadron candidates ";
+const TString stringMcParticles = "MC gen - D,Hadron particles;";
+const TString stringMcReco = "MC reco - D,Hadron candidates ";
 
 // definition of vectors for standard ptbin and invariant mass configurables
 const int nPtBinsCorrelations = 8;
@@ -178,10 +178,10 @@ struct HfTaskCorrelationD0Hadrons {
      {"hDeltaEtaPtIntSidebandsSoftPiRecBg", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
      {"hDeltaPhiPtIntSidebandsSoftPiRecBg", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
      // correlation histograms for MCGen
-     {"hCorrel2DVsPtGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}}, // note: axes 3 and 4 (the pT) are updated in the init(),
-     {"hCorrel2DPtIntGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
-     {"hDeltaEtaPtIntGen", stringMCParticles + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
-     {"hDeltaPhiPtIntGen", stringMCParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}}}};
+     {"hCorrel2DVsPtGen", stringMcParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}}, // note: axes 3 and 4 (the pT) are updated in the init(),
+     {"hCorrel2DPtIntGen", stringMcParticles + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
+     {"hDeltaEtaPtIntGen", stringMcParticles + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+     {"hDeltaPhiPtIntGen", stringMcParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}}}};
 
   void init(o2::framework::InitContext&)
   {
