@@ -240,12 +240,15 @@ DECLARE_SOA_COLUMN(Px, px, float);
 DECLARE_SOA_COLUMN(Py, py, float);
 DECLARE_SOA_COLUMN(Pz, pz, float);
 DECLARE_SOA_COLUMN(MGamma, mGamma, float);
+DECLARE_SOA_COLUMN(MGammaKFPV, mGammaKFPV, float);
+DECLARE_SOA_COLUMN(MGammaKFSV, mGammaKFSV, float);
 DECLARE_SOA_COLUMN(CosPA, cospa, float); //!
 DECLARE_SOA_COLUMN(PCA, pca, float);     //!
 
 DECLARE_SOA_COLUMN(Alpha, alpha, float);
 DECLARE_SOA_COLUMN(QtArm, qtarm, float);
 DECLARE_SOA_COLUMN(PsiPair, psipair, float);
+DECLARE_SOA_COLUMN(PhiV, phiv, float);
 DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float); // Chi2 / NDF of the reconstructed V0
 
 DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float px, float py, float pz, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz, m); }); //! energy of v0 photn, mass to be given as argument when getter is called!
@@ -260,8 +263,9 @@ DECLARE_SOA_TABLE(V0PhotonsKF, "AOD", "V0PHOTONKF", //!
                   o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::V0PhotonId, v0photon::PosTrackId, v0photon::NegTrackId,
                   v0photonkf::Vx, v0photonkf::Vy, v0photonkf::Vz,
                   v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz,
-                  v0photonkf::MGamma, v0photonkf::CosPA, v0photonkf::PCA,
-                  v0photonkf::Alpha, v0photonkf::QtArm, v0photonkf::PsiPair,
+                  v0photonkf::MGamma, v0photonkf::MGammaKFPV, v0photonkf::MGammaKFSV,
+                  v0photonkf::CosPA, v0photonkf::PCA,
+                  v0photonkf::Alpha, v0photonkf::QtArm, v0photonkf::PsiPair, v0photonkf::PhiV,
                   v0photonkf::ChiSquareNDF,
                   // dynamic column
                   v0photonkf::E<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
