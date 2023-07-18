@@ -40,7 +40,7 @@ namespace o2::aod
 {
 using FemtoWorldParticlesMerged = aod::FemtoWorldParticles;
 using FemtoWorldParticleMerged = FemtoWorldParticlesMerged::iterator;
-}
+} // namespace o2::aod
 
 struct femtoWorldPairTaskProtonAntiproton {
   SliceCache cache;
