@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet utilities
+// jet derived data utilities
 //
 // Author: Nima Zardoshti
-#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"

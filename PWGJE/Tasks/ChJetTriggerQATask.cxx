@@ -33,6 +33,7 @@
 
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/TableProducer/jetfinder.h"
@@ -55,7 +56,7 @@ using namespace o2::framework::expressions;
 
 struct ChJetTriggerQATask {
 
-  Configurable<std::string> evSel{"evSel", "evSel8", "choose event selection"};
+  Configurable<std::string> evSel{"evSel", "sel8", "choose event selection"};
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0,
                                    "Accepted z-vertex range"};
   Configurable<float> cfgTPCVolume{"cfgTPCVolume", 0.9,
@@ -169,36 +170,39 @@ struct ChJetTriggerQATask {
        {HistType::kTH3F, {{100, 0., +100.}, {40, -1., 1.}, {60, 0., TMath::TwoPi()}}}} //
     }};
 
+  int eventSelection = -1;
+  int trackSelection = -1;
   void init(o2::framework::InitContext&)
   {
     fiducialVolume = static_cast<float>(cfgTPCVolume) - static_cast<float>(cfgJetR);
+    eventSelection = JetDerivedDataUtilities::initialiseEventSelection(static_cast<std::string>(evSel));
+    trackSelection = JetDerivedDataUtilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
   }
 
   // declare filters on collisions
-  Filter collisionFilter = (nabs(aod::collision::posZ) < static_cast<float>(cfgVertexCut));
+  Filter collisionFilter = (nabs(aod::jcollision::posZ) < static_cast<float>(cfgVertexCut));
 
   // declare filters on tracks
-  Filter trackFilter = (nabs(aod::track::eta) < static_cast<float>(cfgTPCVolume)) && (aod::track::phi > static_cast<float>(cfgTrackPhiMinCut)) && (aod::track::phi < static_cast<float>(cfgTrackPhiMaxCut)) && (aod::track::pt > static_cast<float>(cfgJetPtMin));
+  Filter trackFilter = (nabs(aod::jtrack::eta) < static_cast<float>(cfgTPCVolume)) && (aod::jtrack::phi > static_cast<float>(cfgTrackPhiMinCut)) && (aod::jtrack::phi < static_cast<float>(cfgTrackPhiMaxCut)) && (aod::jtrack::pt > static_cast<float>(cfgJetPtMin));
 
   // declare filters on jets
   Filter jetRadiusSelection = o2::aod::jet::r == nround(cfgJetR.node() * 100.0f);
 
   using filteredJets = o2::soa::Filtered<o2::aod::ChargedJets>;
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra,
-                                    aod::TracksDCA, aod::TrackSelection>;
+  using TrackCandidates = aod::JTracks;
 
   void
-    process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels,
-                                    aod::JetFilters>>::iterator const& collision,
+    process(soa::Filtered<soa::Join<aod::JCollisions,
+                                    aod::JChTrigSels>>::iterator const& collision,
             soa::Filtered<TrackCandidates> const& tracks, o2::soa::Filtered<soa::Join<o2::aod::ChargedJets, aod::ChargedJetConstituents>> const& jets)
   // soa::Filtered<TrackCandidates> const& tracks, filteredJets const& jets)
   {
 
-    if (!selectCollision(collision, evSel)) {
+    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)) {
       return;
     }
 
-    if (collision.hasJetChHighPt() >= static_cast<int>(bTriggerDecision)) {
+    if (JetDerivedDataUtilities::selectChargedTrigger(collision, JetDerivedDataUtilities::JTrigSelCh::charged) >= static_cast<int>(bTriggerDecision)) {
 
       float leadingJetPt = -1.0;
       float leadingJetEta = -2.0;
@@ -219,7 +223,7 @@ struct ChJetTriggerQATask {
 
       for (auto& trk : tracks) { //loop over filtered tracks in full TPC volume having pT > 100 MeV
 
-        if (!selectTrack(trk, trackSelections)) {
+        if (!JetDerivedDataUtilities::selectTrack(trk, trackSelection)) {
           continue;
         }
         v.SetPtEtaPhiM(trk.pt(), trk.eta(), trk.phi(), 0.139);

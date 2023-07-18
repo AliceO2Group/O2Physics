@@ -151,9 +151,9 @@ struct JetFinderFullQATask {
     }
   }
 
-  using JetTracks = soa::Join<aod::Tracks, aod::TrackSelection>;
+  using JetTracks = aod::JTracks;
   using JetClusters = o2::aod::EMCALClusters;
-  using JetParticles = aod::McParticles;
+  using JetParticles = aod::JMcParticles;
   using JetTableDataJoined = soa::Join<JetTableData, JetConstituentTableData>;
   using JetTableMCDJoined = soa::Join<JetTableMCD, JetConstituentTableMCD>;
   using JetTableMCDWeightedJoined = soa::Join<JetTableMCD, JetConstituentTableMCD, JetTableMCDWeighted>;
@@ -164,6 +164,7 @@ struct JetFinderFullQATask {
   using JetTableMCPMatchedJoined = soa::Join<JetTableMCP, JetConstituentTableMCP, JetMatchingTableMCPMCD>;
   using JetTableMCPMatchedWeightedJoined = soa::Join<JetTableMCD, JetConstituentTableMCP, JetMatchingTableMCPMCD, JetTableMCPWeighted>;
 
+Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
   o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
   Filter clusterFilter = (o2::aod::emcalcluster::definition == static_cast<int>(clusterDefinition) && aod::emcalcluster::eta > clusterEtaMin && aod::emcalcluster::eta < clusterEtaMax && aod::emcalcluster::phi >= clusterPhiMin && aod::emcalcluster::phi <= clusterPhiMax && aod::emcalcluster::energy >= clusterEnergyMin && aod::emcalcluster::time > clusterTimeMin && aod::emcalcluster::time < clusterTimeMax && (clusterRejectExotics && aod::emcalcluster::isExotic != true));
 
@@ -182,24 +183,6 @@ struct JetFinderFullQATask {
     return found;
   }
 
-  template <typename T>
-  bool selectTrack(T const& track)
-  {
-    if (trackSelection == "globalTracks") {
-      if (track.pt() >= trackPtMin && track.pt() < trackPtMax && track.eta() >= trackEtaMin && track.eta() <= trackEtaMax) {
-        return track.isGlobalTrackWoPtEta();
-      } else {
-        return false;
-      }
-    }
-    if (trackSelection == "QualityTracks") {
-      return track.isQualityTrack();
-    }
-    if (trackSelection == "hybridTracksJE") { // isQualityTrack
-      return track.trackCutFlagFb5();
-    }
-    return true;
-  }
 
   template <typename T>
   void fillHistograms(T const& jet, float weight = 1.0)
@@ -281,7 +264,7 @@ struct JetFinderFullQATask {
     }
   }
 
-  void processDummy(aod::Collisions const& collision)
+  void processDummy(aod::JCollisions const& collision)
   {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processDummy, "dummy task", true);
@@ -316,7 +299,7 @@ struct JetFinderFullQATask {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCPWeighted, "jet finder HF QA mcp on weighted events", false);
 
-  void processJetsMCPMCDMatched(aod::Collisions::iterator const& collision,
+  void processJetsMCPMCDMatched(aod::JCollisions::iterator const& collision,
                                 JetTableMCDMatchedJoined const& mcdjets,
                                 JetTableMCPMatchedJoined const& mcpjets,
                                 JetTracks const& tracks,
@@ -331,7 +314,7 @@ struct JetFinderFullQATask {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCPMCDMatched, "jet finder HF QA matched mcp and mcd", false);
 
-  void processJetsMCPMCDMatchedWeighted(aod::Collisions::iterator const& collision,
+  void processJetsMCPMCDMatchedWeighted(aod::JCollisions::iterator const& collision,
                                         JetTableMCDMatchedWeightedJoined const& mcdjets,
                                         JetTableMCPMatchedWeightedJoined const& mcpjets,
                                         JetTracks const& tracks,
@@ -346,25 +329,25 @@ struct JetFinderFullQATask {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCPMCDMatchedWeighted, "jet finder HF QA matched mcp and mcd on weighted events", false);
 
-  void processMCCollisionsWeighted(aod::McCollision const& collision)
+  void processMCCollisionsWeighted(aod::JMcCollision const& collision)
   {
 
     registry.fill(HIST("h_collision_eventweight_part"), collision.weight());
   }
   PROCESS_SWITCH(JetFinderFullQATask, processMCCollisionsWeighted, "collision QA for weighted events", false);
 
-  void processTracks(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                     JetTracks const& tracks,
+  void processTracks(JCollision const& collision,
+                     soa::Filtered<JetTracks> const& tracks,
                      soa::Filtered<JetClusters> const& clusters)
   {
 
     registry.fill(HIST("h_collisions"), 0.5);
-    if (!hasEMCAL(collision)) {
+    if (!JetDerivedDataUtilities::eventEMCAL(collision)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
     for (auto const& track : tracks) {
-      if (!selectTrack(track)) {
+      if (!JetDerivedDataUtilities::selectTrack(track, trackSelection) || !JetDerivedDataUtilities::applyTrackKinematics(trackPtMin,trackPtMax,trackEtaMin,trackEtaMax)) {
         continue;
       }
       registry.fill(HIST("h_track_pt"), track.pt());

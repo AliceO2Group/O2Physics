@@ -109,8 +109,8 @@ template <typename T>
 void fillTracks(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track), double mass = mPion)
 {
   if (status == static_cast<int>(JetConstituentStatus::track) || status == static_cast<int>(JetConstituentStatus::candidateHF)) {
-    auto p = std::sqrt((constituent.px() * constituent.px()) + (constituent.py() * constituent.py()) + (constituent.pz() * constituent.pz()));
-    auto energy = std::sqrt((p * p) + (mass * mass));
+    // auto p = std::sqrt((constituent.px() * constituent.px()) + (constituent.py() * constituent.py()) + (constituent.pz() * constituent.pz()));
+    auto energy = std::sqrt((constituent.p() * constituent.p()) + (mass * mass));
     constituents.emplace_back(constituent.px(), constituent.py(), constituent.pz(), energy);
   }
   setFastJetUserInfo(constituents, index, status);

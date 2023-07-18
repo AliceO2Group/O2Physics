@@ -16,8 +16,8 @@
 /// generated via macros. Usually this would be avoided, but maintaining a collection of
 /// (nearly) identical tables was judged to be more the larger maintenance burden.
 ///
-/// \author Jochen Klein
-/// \author Nima Zardoshti
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// \author Jochen Klein <jochen.klein@cern.ch>
 /// \author Raymond Ehlers
 
 #ifndef PWGJE_DATAMODEL_JET_H_
@@ -26,14 +26,16 @@
 #include <cmath>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 namespace o2::aod
 {
+
 namespace jet
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
+DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
+DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);         //!
 DECLARE_SOA_COLUMN(Eta, eta, float);       //!
 DECLARE_SOA_COLUMN(Phi, phi, float);       //!
@@ -170,9 +172,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 
 // generate tables for data-, detector- and particle-level jets
 #define DECLARE_JET_TABLES_LEVELS(_jet_type_, _hfcand_type_, _shortname_)                                      \
-  DECLARE_JET_TABLES(Collision, _jet_type_, Track, _hfcand_type_, _shortname_ "JET")                           \
-  DECLARE_JET_TABLES(Collision, _jet_type_##MCDetectorLevel, Track, _hfcand_type_, _shortname_ "DJET")         \
-  DECLARE_JET_TABLES(McCollision, _jet_type_##MCParticleLevel, McParticle, McParticles, _shortname_ "PJET")    \
+  DECLARE_JET_TABLES(JCollision, _jet_type_, JTrack, _hfcand_type_, _shortname_ "JET")                         \
+  DECLARE_JET_TABLES(JCollision, _jet_type_##MCDetectorLevel, JTrack, _hfcand_type_, _shortname_ "DJET")       \
+  DECLARE_JET_TABLES(JMcCollision, _jet_type_##MCParticleLevel, JMcParticle, JMcParticles, _shortname_ "PJET") \
   DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCParticleLevel, _shortname_ "JETMD2P")   \
   DECLARE_JETMATCHING_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCDetectorLevel, _shortname_ "JETMP2D")   \
   DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCDetectorLevel, _shortname_ "JETMDEW") \
@@ -188,7 +190,7 @@ DECLARE_JET_TABLES_LEVELS(LcCharged, HfCand3Prong, "Lc");
 DECLARE_JET_TABLES_LEVELS(BplusCharged, HfCandBplus, "BPl");
 
 // Hybrid intermediate
-DECLARE_JET_TABLES(Collision, HybridIntermediate, Track, HfCand2Prong, "JEHYIN");
+DECLARE_JET_TABLES(JCollision, HybridIntermediate, JTrack, HfCand2Prong, "JEHYIN");
 } // namespace o2::aod
 
 #endif // PWGJE_DATAMODEL_JET_H_

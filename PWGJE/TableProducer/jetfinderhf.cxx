@@ -11,7 +11,8 @@
 
 // jet finder hf task
 //
-// Authors: Nima Zardoshti, Jochen Klein
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// \author Jochen Klein <jochen.klein@cern.ch>
 
 #include "PWGJE/TableProducer/jetfinder.h"
 #include "Common/Core/RecoDecay.h"
@@ -106,8 +107,8 @@ struct JetFinderHFTask {
 
   void init(InitContext const&)
   {
-    trackSelection = static_cast<std::string>(trackSelections);
-    eventSelection = static_cast<std::string>(eventSelections);
+    trackSelection = JetDerivedDataUtilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelection = JetDerivedDataUtilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
     particleSelection = static_cast<std::string>(particleSelections);
 
     jetFinder.etaMin = trackEtaMin;
@@ -139,9 +140,9 @@ struct JetFinderHFTask {
   }
 
   o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
-  Filter collisionFilter = (nabs(aod::collision::posZ) < vertexZCut);
-  Filter trackCuts = (aod::track::pt >= trackPtMin && aod::track::pt < trackPtMax && aod::track::eta > trackEtaMin && aod::track::eta < trackEtaMax && aod::track::phi >= trackPhiMin && aod::track::phi <= trackPhiMax);
-  Filter partCuts = (aod::mcparticle::pt >= trackPtMin && aod::mcparticle::pt < trackPtMax);
+  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut);
+  Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax && aod::jtrack::phi >= trackPhiMin && aod::jtrack::phi <= trackPhiMax);
+  Filter partCuts = (aod::jmcparticle::pt >= trackPtMin && aod::jmcparticle::pt < trackPtMax);
   Filter clusterFilter = (o2::aod::emcalcluster::definition == static_cast<int>(clusterDefinition) && aod::emcalcluster::eta > clusterEtaMin && aod::emcalcluster::eta < clusterEtaMax && aod::emcalcluster::phi >= clusterPhiMin && aod::emcalcluster::phi <= clusterPhiMax);
   // Filter candidateCuts = (aod::hfcand::pt >= candPtMin && aod::hfcand::pt < candPtMax && aod::hfcand::y >= candYMin && aod::hfcand::y < candYMax);
   Filter candidateCutsD0 = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
@@ -152,7 +153,7 @@ struct JetFinderHFTask {
   template <typename T, typename U, typename M>
   void analyseData(T const& collision, U const& tracks, M const& candidates)
   {
-    if (!selectCollision(collision, eventSelection)) {
+    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)) {
       return;
     }
 
@@ -170,7 +171,7 @@ struct JetFinderHFTask {
   template <typename T, typename U, typename M>
   void analyseMCD(T const& collision, U const& tracks, M const& candidates)
   {
-    if (!selectCollision(collision, eventSelection)) {
+    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)) {
       return;
     }
 
@@ -186,7 +187,7 @@ struct JetFinderHFTask {
 
   // function that generalically processes gen level events
   template <typename T, typename U>
-  void analyseMCP(T const& collision, U const& particles)
+  void analyseMCP(T const& collision, U const& particles, int jetTypeParticleLevel)
   {
     inputParticles.clear();
     std::vector<typename U::iterator> candidates;
@@ -211,21 +212,21 @@ struct JetFinderHFTask {
     }
   }
 
-  void processDummy(aod::Collisions const& collision)
+  void processDummy(aod::JCollision const& collision)
   {
   }
   PROCESS_SWITCH(JetFinderHFTask, processDummy, "Dummy process function turned on by default", true);
 
-  void processChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, JetTracks const& tracks, CandidateTableData const& candidates) { analyseData(collision, tracks, candidates); }
+  void processChargedJetsData(soa::Filtered<aod::JCollisions>::iterator const& collision, JetTracks const& tracks, CandidateTableData const& candidates) { analyseData(collision, tracks, candidates); }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsData, "charged hf jet finding on data", false);
 
-  void processChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, JetTracks const& tracks, CandidateTableMCD const& candidates) { analyseMCD(collision, tracks, candidates); }
+  void processChargedJetsMCD(soa::Filtered<aod::JCollisions>::iterator const& collision, JetTracks const& tracks, CandidateTableMCD const& candidates) { analyseMCD(collision, tracks, candidates); }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsMCD, "charged hf jet finding on MC detector level", false);
 
-  void processChargedJetsMCP(aod::McCollision const& collision,
+  void processChargedJetsMCP(aod::JMcCollision const& collision,
                              ParticleTable const& particles)
   {
-    analyseMCP(collision, particles);
+    analyseMCP(collision, particles, 1);
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsMCP, "hf jet finding on MC particle level", false);
 };
