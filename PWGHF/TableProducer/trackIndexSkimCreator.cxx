@@ -263,6 +263,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   Configurable<bool> debug{"debug", true, "debug mode"};
+  Configurable<bool> debugPvRefit{"debugPvRefit", false, "debug lines for primary vertex refit"};
   // Configurable<double> bz{"bz", 5., "bz field"};
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
@@ -659,7 +660,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         registry.fill(HIST("PvRefit/hNContribPvRefitNotDoable"), collision.numContrib());
       }
     }
-    if (debug) {
+    if (debugPvRefit) {
       LOG(info) << "prepareVertexRefit = " << pvRefitDoable << " Ncontrib= " << vecPvContributorTrackParCov.size() << " Ntracks= " << collision.numContrib() << " Vtx= " << primVtx.asString();
     }
 
@@ -684,11 +685,11 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
         auto primVtxRefitted = vertexer.refitVertex(vecPvRefitContributorUsed, primVtx); // vertex refit
         // LOG(info) << "refit " << cnt << "/" << ntr << " result = " << primVtxRefitted.asString();
-        if (debug) {
+        if (debugPvRefit) {
           LOG(info) << "refit for track with global index " << static_cast<int>(myTrack.globalIndex()) << " " << primVtxRefitted.asString();
         }
         if (primVtxRefitted.getChi2() < 0) {
-          if (debug) {
+          if (debugPvRefit) {
             LOG(info) << "---> Refitted vertex has bad chi2 = " << primVtxRefitted.getChi2();
           }
           if (fillHistograms) {
@@ -801,7 +802,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       pvRefitDcaPerTrack.resize(tracks.size());
       pvRefitPvCoordPerTrack.resize(tracks.size());
       pvRefitPvCovMatrixPerTrack.resize(tracks.size());
-      if (debug) {
+      if (debugPvRefit) {
         LOG(info) << ">>> number of tracks: " << tracks.size();
         LOG(info) << ">>> number of collisions: " << collisions.size();
       }
@@ -843,12 +844,12 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
             vecPvContributorGlobId.push_back(contributor.globalIndex());
             vecPvContributorTrackParCov.push_back(getTrackParCov(contributor));
           }
-          if (debug) {
+          if (debugPvRefit) {
             LOG(info) << "### vecPvContributorGlobId.size()=" << vecPvContributorGlobId.size() << ", vecPvContributorTrackParCov.size()=" << vecPvContributorTrackParCov.size() << ", N. original contributors=" << collision.numContrib();
           }
 
           /// Perform the PV refit only for tracks with an assigned collision
-          if (debug) {
+          if (debugPvRefit) {
             LOG(info) << "[BEFORE performPvRefitTrack] track.collision().globalIndex(): " << collision.globalIndex();
           }
           performPvRefitTrack(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, track, pvRefitPvCoord, pvRefitPvCovMatrix, pvRefitDcaXYDcaZ);
@@ -907,6 +908,7 @@ struct HfTrackIndexSkimCreator {
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<int> do3Prong{"do3Prong", 0, "do 3 prong"};
   Configurable<bool> debug{"debug", false, "debug mode"};
+  Configurable<bool> debugPvRefit{"debugPvRefit", false, "debug lines for primary vertex refit"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   ConfigurableAxis axisNumTracks{"axisNumTracks", {250, -0.5f, 249.5f}, "Number of tracks"};
   ConfigurableAxis axisNumCands{"axisNumCands", {200, -0.5f, 199.f}, "Number of candidates"};
@@ -1385,7 +1387,7 @@ struct HfTrackIndexSkimCreator {
         registry.fill(HIST("PvRefit/hNContribPvRefitNotDoable"), collision.numContrib());
       }
     }
-    if (debug) {
+    if (debugPvRefit) {
       LOG(info) << "prepareVertexRefit = " << pvRefitDoable << " Ncontrib= " << vecPvContributorTrackParCov.size() << " Ntracks= " << collision.numContrib() << " Vtx= " << primVtx.asString();
     }
 
@@ -1409,14 +1411,14 @@ struct HfTrackIndexSkimCreator {
       }
 
       /// do the PV refit excluding the candidate daughters that originally contributed to fit it
-      if (debug) {
+      if (debugPvRefit) {
         LOG(info) << "### PV refit after removing " << nCandContr << " tracks";
       }
       auto primVtxRefitted = vertexer.refitVertex(vecPvRefitContributorUsed, primVtx); // vertex refit
       // LOG(info) << "refit " << cnt << "/" << ntr << " result = " << primVtxRefitted.asString();
       // LOG(info) << "refit for track with global index " << static_cast<int>(myTrack.globalIndex()) << " " << primVtxRefitted.asString();
       if (primVtxRefitted.getChi2() < 0) {
-        if (debug) {
+        if (debugPvRefit) {
           LOG(info) << "---> Refitted vertex has bad chi2 = " << primVtxRefitted.getChi2();
         }
         if (fillHistograms) {
@@ -1519,13 +1521,13 @@ struct HfTrackIndexSkimCreator {
             vecPvContributorGlobId.push_back(trackUnfiltered.globalIndex());
             vecPvContributorTrackParCov.push_back(getTrackParCov(trackUnfiltered));
             nContrib++;
-            if (debug) {
+            if (debugPvRefit) {
               LOG(info) << "---> a contributor! stuff saved";
               LOG(info) << "vec_contrib size: " << vecPvContributorTrackParCov.size() << ", nContrib: " << nContrib;
             }
           }
         }
-        if (debug) {
+        if (debugPvRefit) {
           LOG(info) << "===> nTrk: " << nTrk << ",   nContrib: " << nContrib << ",   nNonContrib: " << nNonContrib;
           if ((uint16_t)vecPvContributorTrackParCov.size() != collision.numContrib() || (uint16_t)nContrib != collision.numContrib()) {
             LOG(info) << "!!! Some problem here !!! vecPvContributorTrackParCov.size()= " << vecPvContributorTrackParCov.size() << ", nContrib=" << nContrib << ", collision.numContrib()" << collision.numContrib();
@@ -1676,7 +1678,7 @@ struct HfTrackIndexSkimCreator {
                 bool isTrackSecondContr = true;
                 if (trackFirstIt == vecPvContributorGlobId.end()) {
                   /// This track did not contribute to the original PV refit
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "--- [2 Prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
                   }
                   nCandContr--;
@@ -1684,7 +1686,7 @@ struct HfTrackIndexSkimCreator {
                 }
                 if (trackSecondIt == vecPvContributorGlobId.end()) {
                   /// This track did not contribute to the original PV refit
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "--- [2 Prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
                   }
                   nCandContr--;
@@ -1692,13 +1694,13 @@ struct HfTrackIndexSkimCreator {
                 }
                 if (nCandContr == 2) {
                   /// Both the daughter tracks were used for the original PV refit, let's refit it after excluding them
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "### [2 Prong] Calling performPvRefitCandProngs for HF 2 prong candidate";
                   }
                   performPvRefitCandProngs(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, {trackPos1.globalIndex(), trackNeg1.globalIndex()}, pvRefitCoord2Prong, pvRefitCovMatrix2Prong);
                 } else if (nCandContr == 1) {
                   /// Only one daughter was a contributor, let's use then the PV recalculated by excluding only it
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "####### [2 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
                   }
                   if (fillHistograms) {
@@ -1718,7 +1720,7 @@ struct HfTrackIndexSkimCreator {
                   if (fillHistograms) {
                     registry.fill(HIST("PvRefit/verticesPerCandidate"), 6);
                   }
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "####### [2 Prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
                   }
                 }
@@ -1869,7 +1871,7 @@ struct HfTrackIndexSkimCreator {
                 bool isTrackThirdContr = true;
                 if (trackFirstIt == vecPvContributorGlobId.end()) {
                   /// This track did not contribute to the original PV refit
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "--- [3 prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
                   }
                   nCandContr--;
@@ -1877,7 +1879,7 @@ struct HfTrackIndexSkimCreator {
                 }
                 if (trackSecondIt == vecPvContributorGlobId.end()) {
                   /// This track did not contribute to the original PV refit
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "--- [3 prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
                   }
                   nCandContr--;
@@ -1885,7 +1887,7 @@ struct HfTrackIndexSkimCreator {
                 }
                 if (trackThirdIt == vecPvContributorGlobId.end()) {
                   /// This track did not contribute to the original PV refit
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "--- [3 prong] trackPos2 with globalIndex " << trackPos2.globalIndex() << " was not a PV contributor";
                   }
                   nCandContr--;
@@ -1906,13 +1908,13 @@ struct HfTrackIndexSkimCreator {
 
                 if (nCandContr == 3 || nCandContr == 2) {
                   /// At least two of the daughter tracks were used for the original PV refit, let's refit it after excluding them
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "### [3 prong] Calling performPvRefitCandProngs for HF 3 prong candidate, removing " << nCandContr << " daughters";
                   }
                   performPvRefitCandProngs(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, vecCandPvContributorGlobId, pvRefitCoord3Prong2Pos1Neg, pvRefitCovMatrix3Prong2Pos1Neg);
                 } else if (nCandContr == 1) {
                   /// Only one daughter was a contributor, let's use then the PV recalculated by excluding only it
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "####### [3 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
                   }
                   if (fillHistograms) {
@@ -1936,7 +1938,7 @@ struct HfTrackIndexSkimCreator {
                   if (fillHistograms) {
                     registry.fill(HIST("PvRefit/verticesPerCandidate"), 6);
                   }
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
                   }
                 }
@@ -2089,7 +2091,7 @@ struct HfTrackIndexSkimCreator {
                 bool isTrackThirdContr = true;
                 if (trackFirstIt == vecPvContributorGlobId.end()) {
                   /// This track did not contribute to the original PV refit
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "--- [3 prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
                   }
                   nCandContr--;
@@ -2097,7 +2099,7 @@ struct HfTrackIndexSkimCreator {
                 }
                 if (trackSecondIt == vecPvContributorGlobId.end()) {
                   /// This track did not contribute to the original PV refit
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "--- [3 prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
                   }
                   nCandContr--;
@@ -2105,7 +2107,7 @@ struct HfTrackIndexSkimCreator {
                 }
                 if (trackThirdIt == vecPvContributorGlobId.end()) {
                   /// This track did not contribute to the original PV refit
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "--- [3 prong] trackNeg2 with globalIndex " << trackNeg2.globalIndex() << " was not a PV contributor";
                   }
                   nCandContr--;
@@ -2126,13 +2128,13 @@ struct HfTrackIndexSkimCreator {
 
                 if (nCandContr == 3 || nCandContr == 2) {
                   /// At least two of the daughter tracks were used for the original PV refit, let's refit it after excluding them
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "### [3 prong] Calling performPvRefitCandProngs for HF 3 prong candidate, removing " << nCandContr << " daughters";
                   }
                   performPvRefitCandProngs(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, vecCandPvContributorGlobId, pvRefitCoord3Prong1Pos2Neg, pvRefitCovMatrix3Prong1Pos2Neg);
                 } else if (nCandContr == 1) {
                   /// Only one daughter was a contributor, let's use then the PV recalculated by excluding only it
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "####### [3 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
                   }
                   if (fillHistograms) {
@@ -2156,7 +2158,7 @@ struct HfTrackIndexSkimCreator {
                   if (fillHistograms) {
                     registry.fill(HIST("PvRefit/verticesPerCandidate"), 6);
                   }
-                  if (debug) {
+                  if (debugPvRefit) {
                     LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
                   }
                 }
