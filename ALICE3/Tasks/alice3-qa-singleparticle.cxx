@@ -50,8 +50,18 @@ struct Alice3SingleParticle {
 
   void init(InitContext&)
   {
-    if (doprocessStandard && doprocessNonIU) {
-      LOG(fatal) << "You can't process both standard and non-IU data at the same time, enable only one process function";
+    int nEnabled = 0;
+    if (doprocessStandard) {
+      nEnabled++;
+    }
+    if (doprocessParticleOnly) {
+      nEnabled++;
+    }
+    if (doprocessNonIU) {
+      nEnabled++;
+    }
+    if (nEnabled == 0 || nEnabled > 1) {
+      LOG(fatal) << "You can't process with " << nEnabled << " process functions, pick one";
     }
 
     pdg->AddParticle("deuteron", "deuteron", 1.8756134, kTRUE, 0.0, 3, "Nucleus", 1000010020);
@@ -86,9 +96,11 @@ struct Alice3SingleParticle {
     const AxisSpec axisProdz{prodBinsZ, prodMinZ, prodMaxZ, "Prod. Vertex Z (cm)"};
     const AxisSpec axisProdRadius{prodBins, 0., 2. * prodMax, "Prod. Vertex Radius (cm)"};
 
-    histos.add("event/VtxX", "Vertex X", kTH1D, {axisVx});
-    histos.add("event/VtxY", "Vertex Y", kTH1D, {axisVy});
-    histos.add("event/VtxZ", "Vertex Z", kTH1D, {axisVz});
+    if (!doprocessParticleOnly) {
+      histos.add("event/VtxX", "Vertex X", kTH1D, {axisVx});
+      histos.add("event/VtxY", "Vertex Y", kTH1D, {axisVy});
+      histos.add("event/VtxZ", "Vertex Z", kTH1D, {axisVz});
+    }
 
     histos.add("particle/PDGs", "Particle PDGs", kTH2D, {axisPDGs, axisCharge});
     histos.add("particle/PDGsPrimaries", "Particle PDGs of Primaries", kTH2D, {axisPDGs, axisCharge});
@@ -143,7 +155,9 @@ struct Alice3SingleParticle {
     histos.add("particle/mothers/prodVz", "Mothers Prod. Vertex Z " + tit, kTH1D, {axisProdz});
     histos.add("particle/mothers/prodRadiusVsPt", "Mothers Prod. Vertex Radius " + tit, kTH2D, {axisPt, axisProdRadius});
     histos.add("particle/mothers/prodRadius3DVsPt", "Mothers Prod. Vertex Radius XYZ " + tit, kTH2D, {axisPt, axisProdRadius});
-
+    if (doprocessParticleOnly) {
+      return;
+    }
     histos.add("track/PDGs", "Track PDGs", kTH2D, {axisPDGs, axisCharge});
     histos.add("track/withoutParticle", "Tracks without particles", kTH1D, {axisPt});
     histos.add("track/tofPDGs", "Track wTOF PDGs", kTH2D, {axisPDGs, axisCharge});
@@ -348,6 +362,115 @@ struct Alice3SingleParticle {
     }
   }
   PROCESS_SWITCH(Alice3SingleParticle, processStandard, "Process IU tracks", true);
+
+  void processParticleOnly(const aod::McParticles& mcParticles)
+  {
+    for (const auto& mcParticle : mcParticles) {
+      const auto& pdgString = getPdgCodeString(mcParticle);
+      const auto& pdgCharge = getCharge(mcParticle);
+      histos.get<TH2>(HIST("particle/PDGs"))->Fill(pdgString, pdgCharge, 1.f);
+      if (mcParticle.isPhysicalPrimary()) {
+        histos.get<TH2>(HIST("particle/PDGsPrimaries"))->Fill(pdgString, pdgCharge, 1.f);
+      } else {
+        histos.get<TH2>(HIST("particle/PDGsSecondaries"))->Fill(pdgString, pdgCharge, 1.f);
+      }
+      if (mcParticle.pdgCode() != PDG) {
+        continue;
+      }
+      if (mcParticle.y() < yMin || mcParticle.y() > yMax) {
+        continue;
+      }
+      if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax) {
+        continue;
+      }
+      if (mcParticle.vz() < prodMinZ || mcParticle.vz() > prodMaxZ) {
+        continue;
+      }
+      histos.fill(HIST("particle/Pt"), mcParticle.pt());
+      histos.fill(HIST("particle/P"), mcParticle.p());
+      histos.fill(HIST("particle/Eta"), mcParticle.eta());
+      if (mcParticle.isPhysicalPrimary()) {
+        histos.fill(HIST("particle/primariesPt"), mcParticle.pt());
+        histos.fill(HIST("particle/primariesP"), mcParticle.p());
+        histos.fill(HIST("particle/primariesEta"), mcParticle.eta());
+      } else {
+        histos.fill(HIST("particle/secondariesPt"), mcParticle.pt());
+        histos.fill(HIST("particle/secondariesP"), mcParticle.p());
+        histos.fill(HIST("particle/secondariesEta"), mcParticle.eta());
+      }
+      histos.fill(HIST("particle/EvsPz"), mcParticle.e(), mcParticle.pz());
+      histos.fill(HIST("particle/Y"), mcParticle.y());
+      histos.fill(HIST("particle/YvzPz"), mcParticle.y(), mcParticle.pz());
+      histos.fill(HIST("particle/EtavzPz"), mcParticle.eta(), mcParticle.pz());
+      histos.fill(HIST("particle/PvzPz"), mcParticle.p(), mcParticle.pz());
+      histos.fill(HIST("particle/PtvzPz"), mcParticle.pt(), mcParticle.pz());
+      histos.fill(HIST("particle/Px"), mcParticle.px());
+      histos.fill(HIST("particle/Py"), mcParticle.py());
+      histos.fill(HIST("particle/Pz"), mcParticle.pz());
+      histos.fill(HIST("particle/prodVx"), mcParticle.vx());
+      histos.fill(HIST("particle/prodVy"), mcParticle.vy());
+      histos.fill(HIST("particle/prodVz"), mcParticle.vz());
+      if (mcParticle.has_daughters()) {
+        auto daughters = mcParticle.daughters_as<aod::McParticles>();
+        for (const auto& daughter : daughters) {
+          const auto& pdgStringDau = getPdgCodeString(daughter);
+          const auto& pdgChargeDau = getCharge(daughter);
+
+          histos.get<TH2>(HIST("particle/daughters/PDGs"))->Fill(pdgStringDau, pdgChargeDau, 1.f);
+          if (mcParticle.isPhysicalPrimary()) {
+            histos.get<TH2>(HIST("particle/daughters/PDGsPrimaries"))->Fill(pdgStringDau, pdgChargeDau, 1.f);
+          } else {
+            histos.get<TH2>(HIST("particle/daughters/PDGsSecondaries"))->Fill(pdgStringDau, pdgChargeDau, 1.f);
+          }
+
+          histos.fill(HIST("particle/daughters/prodVx"), daughter.vx());
+          histos.fill(HIST("particle/daughters/prodVy"), daughter.vy());
+          histos.fill(HIST("particle/daughters/prodVz"), daughter.vz());
+          histos.fill(HIST("particle/daughters/prodRadiusVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy()));
+          histos.fill(HIST("particle/daughters/prodRadius3DVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy() + mcParticle.vz() * mcParticle.vz()));
+        }
+      }
+      if (mcParticle.has_mothers()) {
+        auto mothers = mcParticle.mothers_as<aod::McParticles>();
+        for (const auto& mother : mothers) {
+          const auto& pdgStringMot = getPdgCodeString(mother);
+          const auto& pdgChargeMot = getCharge(mother);
+
+          histos.get<TH2>(HIST("particle/mothers/PDGs"))->Fill(pdgStringMot, pdgChargeMot, 1.f);
+          if (mcParticle.isPhysicalPrimary()) {
+            histos.get<TH2>(HIST("particle/mothers/PDGsPrimaries"))->Fill(pdgStringMot, pdgChargeMot, 1.f);
+          } else {
+            histos.get<TH2>(HIST("particle/mothers/PDGsSecondaries"))->Fill(pdgStringMot, pdgChargeMot, 1.f);
+          }
+
+          histos.fill(HIST("particle/mothers/prodVx"), mother.vx());
+          histos.fill(HIST("particle/mothers/prodVy"), mother.vy());
+          histos.fill(HIST("particle/mothers/prodVz"), mother.vz());
+          histos.fill(HIST("particle/mothers/prodRadiusVsPt"), mother.pt(), std::sqrt(mother.vx() * mother.vx() + mother.vy() * mother.vy()));
+          histos.fill(HIST("particle/mothers/prodRadius3DVsPt"), mother.pt(), std::sqrt(mother.vx() * mother.vx() + mother.vy() * mother.vy() + mother.vz() * mother.vz()));
+        }
+      }
+
+      histos.fill(HIST("particle/prodRadius"), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy()));
+      histos.fill(HIST("particle/prodVxVy"), mcParticle.vx(), mcParticle.vy());
+      if (!mcParticle.isPhysicalPrimary()) {
+        if (mcParticle.getProcess() == 4) {
+          histos.fill(HIST("particle/prodVxVyStr"), mcParticle.vx(), mcParticle.vy());
+        } else {
+          histos.fill(HIST("particle/prodVxVyMat"), mcParticle.vx(), mcParticle.vy());
+        }
+      } else {
+        histos.fill(HIST("particle/prodVxVyPrm"), mcParticle.vx(), mcParticle.vy());
+      }
+      histos.fill(HIST("particle/prodVxVsPt"), mcParticle.pt(), mcParticle.vx());
+      histos.fill(HIST("particle/prodVyVsPt"), mcParticle.pt(), mcParticle.vy());
+      histos.fill(HIST("particle/prodVzVsPt"), mcParticle.pt(), mcParticle.vz());
+      histos.fill(HIST("particle/prodRadiusVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy()));
+      histos.fill(HIST("particle/prodRadiusVsEta"), mcParticle.eta(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy()));
+      histos.fill(HIST("particle/prodRadius3DVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy() + mcParticle.vz() * mcParticle.vz()));
+    }
+  }
+  PROCESS_SWITCH(Alice3SingleParticle, processParticleOnly, "Process Particle only", false);
 
   void processNonIU(const o2::aod::McCollisions& colls,
                     const soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels, o2::aod::TracksExtra>& tracks,
