@@ -701,9 +701,9 @@ struct femtoUniverseProducerTask {
                     0,
                     -999, // v0.v0cosPA(col.posX(), col.posY(), col.posZ()),
                     indexChildID,
-                    -999, // v0.mLambda(),
-                    -999  // v0.mAntiLambda()
-        );
+                    -999,  // v0.mLambda(),
+                    -999); // v0.mAntiLambda()
+
         if (ConfIsDebug) {
           fillDebugParticle<true, false>(p1); // QA for positive daughter
           fillDebugParticle<true, false>(p2); // QA for negative daughter
