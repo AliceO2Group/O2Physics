@@ -109,6 +109,8 @@ struct NucleiHistTask {
     spectra_reg.add("histChi2TPC", "chi^2 TPC vs Pt", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     spectra_reg.add("histChi2ITS", "chi^2 ITS vs Pt", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
     spectra_reg.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
+    spectra_reg.add("histEtaWithOverFlow", "Pseudorapidity 0 - 105%% centrality", HistType::kTH1F, {etaAxis});
+    spectra_reg.add("histEta", "Pseudorapidity with centrality cut", HistType::kTH1F, {etaAxis});
 
     // histograms for Proton
     proton_reg.add("histKeepEventData", "skimming histogram (p)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -420,6 +422,9 @@ struct NucleiHistTask {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> nsigmacutLow{"nsigmacutLow", -3.0, "Value of the Nsigma cut"};
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +3.0, "Value of the Nsigma cut"};
+  Configurable<float> minCentrality{"minCentrality", 0.0, "min Centrality used"};
+  Configurable<float> maxCentrality{"maxCentrality", 80.0, "max Centrality used"};
+  Configurable<bool> enable_Centrality_cut_global{"enable_Centrality_cut_global", true, "use Centrality cut"};
 
   // Replacement for globalTrack filter
   Configurable<float> minReqClusterITS{"minReqClusterITS", 1.0, "min number of clusters required in ITS"};                            // ITS_nCls
@@ -505,17 +510,6 @@ struct NucleiHistTask {
       if (enable_PVcontributor_global && !(track.isPVContributor())) {
         continue;
       }
-      /*
-            if (track.sign() > 0) {
-              spectra_reg.fill(HIST("histDcaVsPtData_particle"), track.pt(), track.dcaXY());
-              spectra_reg.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
-            }
-
-            if (track.sign() < 0) {
-              spectra_reg.fill(HIST("histDcaVsPtData_antiparticle"), track.pt(), track.dcaXY());
-              spectra_reg.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
-            }
-      */
       if (TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
         continue;
       }
@@ -562,12 +556,6 @@ struct NucleiHistTask {
         Helium3_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe3);
         Helium4_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe4);
 
-        proton_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), nSigmaProton, track.eta());
-        deuteron_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), nSigmaDeut, track.eta());
-        triton_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), nSigmaTriton, track.eta());
-        Helium3_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt() * 2.0, nSigmaHe3, track.eta());
-        Helium4_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt() * 2.0, nSigmaHe4, track.eta());
-
         //  fill TOF m^2 histogram
         if (track.hasTOF()) {
 
@@ -596,12 +584,6 @@ struct NucleiHistTask {
         atriton_reg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaTriton);
         aHelium3_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe3);
         aHelium4_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe4);
-
-        aproton_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), nSigmaProton, track.eta());
-        adeuteron_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), nSigmaDeut, track.eta());
-        atriton_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), nSigmaTriton, track.eta());
-        aHelium3_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt() * 2.0, nSigmaHe3, track.eta());
-        aHelium4_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt() * 2.0, nSigmaHe4, track.eta());
 
         // fill TOF m^2 histogram
         if (track.hasTOF()) {
@@ -666,8 +648,6 @@ struct NucleiHistTask {
             proton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             proton_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             proton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPr());
-            proton_reg.fill(HIST("histTofm2_eta"), track.pt(), TOFmass2, track.eta());
-            proton_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaPr(), track.eta());
           }
         }
 
@@ -708,8 +688,6 @@ struct NucleiHistTask {
             aproton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             aproton_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             aproton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPr());
-            aproton_reg.fill(HIST("histTofm2_eta"), track.pt(), TOFmass2, track.eta());
-            aproton_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaPr(), track.eta());
           }
         }
 
@@ -774,8 +752,6 @@ struct NucleiHistTask {
             deuteron_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             deuteron_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             deuteron_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
-            deuteron_reg.fill(HIST("histTofm2_eta"), track.pt(), TOFmass2, track.eta());
-            deuteron_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaDe(), track.eta());
           }
         }
 
@@ -816,8 +792,6 @@ struct NucleiHistTask {
             adeuteron_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             adeuteron_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             adeuteron_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
-            adeuteron_reg.fill(HIST("histTofm2_eta"), track.pt(), TOFmass2, track.eta());
-            adeuteron_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaDe(), track.eta());
           }
         }
 
@@ -881,8 +855,6 @@ struct NucleiHistTask {
             triton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             triton_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             triton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaTr());
-            triton_reg.fill(HIST("histTofm2_eta"), track.pt(), TOFmass2, track.eta());
-            triton_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaTr(), track.eta());
           }
         }
 
@@ -923,8 +895,6 @@ struct NucleiHistTask {
             atriton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             atriton_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam(), beta);
             atriton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaTr());
-            atriton_reg.fill(HIST("histTofm2_eta"), track.pt(), TOFmass2, track.eta());
-            atriton_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaTr(), track.eta());
           }
         }
 
@@ -988,8 +958,6 @@ struct NucleiHistTask {
             Helium3_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             Helium3_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0, beta);
             Helium3_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
-            Helium3_reg.fill(HIST("histTofm2_eta"), track.pt() * 2.0, TOFmass2, track.eta());
-            Helium3_reg.fill(HIST("histTofNsigmaData_eta"), track.pt() * 2.0, track.tofNSigmaHe(), track.eta());
           }
         }
 
@@ -1029,8 +997,6 @@ struct NucleiHistTask {
             aHelium3_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             aHelium3_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0, beta);
             aHelium3_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
-            aHelium3_reg.fill(HIST("histTofm2_eta"), track.pt() * 2.0, TOFmass2, track.eta());
-            aHelium3_reg.fill(HIST("histTofNsigmaData_eta"), track.pt() * 2.0, track.tofNSigmaHe(), track.eta());
           }
         }
 
@@ -1094,8 +1060,6 @@ struct NucleiHistTask {
             Helium4_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             Helium4_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0, beta);
             Helium4_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaAl());
-            Helium4_reg.fill(HIST("histTofm2_eta"), track.pt() * 2.0, TOFmass2, track.eta());
-            Helium4_reg.fill(HIST("histTofNsigmaData_eta"), track.pt() * 2.0, track.tofNSigmaAl(), track.eta());
           }
         }
 
@@ -1135,8 +1099,6 @@ struct NucleiHistTask {
             aHelium4_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             aHelium4_reg.fill(HIST("histTofSignalData"), track.tpcInnerParam() * 2.0, beta);
             aHelium4_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaAl());
-            aHelium4_reg.fill(HIST("histTofm2_eta"), track.pt() * 2.0, TOFmass2, track.eta());
-            aHelium4_reg.fill(HIST("histTofNsigmaData_eta"), track.pt() * 2.0, track.tofNSigmaAl(), track.eta());
           }
         }
 
@@ -1194,6 +1156,16 @@ struct NucleiHistTask {
         continue;
       }
 
+      if (enable_Centrality_cut_global && (event.centFT0C() < minCentrality) && (event.centFT0C() > maxCentrality)) {
+        continue;
+      }
+
+      spectra_reg.fill(HIST("histEtaWithOverFlow"), track.eta());
+
+      if ((event.centFT0C() > minCentrality) && (event.centFT0C() < maxCentrality)) {
+        spectra_reg.fill(HIST("histEta"), track.eta());
+      }
+
       float TPCnumberClsFound = track.tpcNClsFound();
       float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
       float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
@@ -1239,31 +1211,52 @@ struct NucleiHistTask {
         Helium3_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, track.tpcNSigmaHe(), event.centFT0C());
         Helium4_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, track.tpcNSigmaAl(), event.centFT0C());
 
-        if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
-          int lastLayer = 0;
-          for (int l = 7; l >= 0; l--) {
-            if (track.trdPattern() & (1 << l)) {
-              lastLayer = l;
-              break;
-            }
-          }
-          if (lastLayer < lastRequiredTrdCluster) {
-            continue;
-          }
+        if ((event.centFT0C() > minCentrality) && (event.centFT0C() < maxCentrality)) {
+          proton_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), track.tpcNSigmaPr(), track.eta());
+          deuteron_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), track.tpcNSigmaDe(), track.eta());
+          triton_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), track.tpcNSigmaTr(), track.eta());
+          Helium3_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt() * 2.0, track.tpcNSigmaHe(), track.eta());
+          Helium4_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt() * 2.0, track.tpcNSigmaAl(), track.eta());
         }
 
-        proton_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaPr(), event.centFT0C());
-        deuteron_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaDe(), event.centFT0C());
-        triton_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaTr(), event.centFT0C());
-        Helium3_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaHe(), event.centFT0C());
-        Helium4_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaAl(), event.centFT0C());
-
         if (track.hasTOF()) {
+          if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+            int lastLayer = 0;
+            for (int l = 7; l >= 0; l--) {
+              if (track.trdPattern() & (1 << l)) {
+                lastLayer = l;
+                break;
+              }
+            }
+            if (lastLayer < lastRequiredTrdCluster) {
+              continue;
+            }
+          }
+
+          proton_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaPr(), event.centFT0C());
+          deuteron_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaDe(), event.centFT0C());
+          triton_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaTr(), event.centFT0C());
+          Helium3_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaHe(), event.centFT0C());
+          Helium4_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaAl(), event.centFT0C());
+
           proton_reg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
           deuteron_reg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
           triton_reg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
           Helium3_reg.fill(HIST("histTofm2_cent"), track.pt() * 2.0, track.mass() * track.mass(), event.centFT0C());
           Helium4_reg.fill(HIST("histTofm2_cent"), track.pt() * 2.0, track.mass() * track.mass(), event.centFT0C());
+
+          if ((event.centFT0C() > minCentrality) && (event.centFT0C() < maxCentrality)) {
+            proton_reg.fill(HIST("histTofm2_eta"), track.pt(), track.mass() * track.mass(), track.eta());
+            proton_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaPr(), track.eta());
+            deuteron_reg.fill(HIST("histTofm2_eta"), track.pt(), track.mass() * track.mass(), track.eta());
+            deuteron_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaDe(), track.eta());
+            triton_reg.fill(HIST("histTofm2_eta"), track.pt(), track.mass() * track.mass(), track.eta());
+            triton_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaTr(), track.eta());
+            Helium3_reg.fill(HIST("histTofm2_eta"), track.pt() * 2.0, track.mass() * track.mass(), track.eta());
+            Helium3_reg.fill(HIST("histTofNsigmaData_eta"), track.pt() * 2.0, track.tofNSigmaHe(), track.eta());
+            Helium4_reg.fill(HIST("histTofm2_eta"), track.pt() * 2.0, track.mass() * track.mass(), track.eta());
+            Helium4_reg.fill(HIST("histTofNsigmaData_eta"), track.pt() * 2.0, track.tofNSigmaAl(), track.eta());
+          }
         }
       }
 
@@ -1275,31 +1268,52 @@ struct NucleiHistTask {
         aHelium3_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, track.tpcNSigmaHe(), event.centFT0C());
         aHelium4_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt() * 2.0, track.tpcNSigmaAl(), event.centFT0C());
 
-        if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
-          int lastLayer = 0;
-          for (int l = 7; l >= 0; l--) {
-            if (track.trdPattern() & (1 << l)) {
-              lastLayer = l;
-              break;
-            }
-          }
-          if (lastLayer < lastRequiredTrdCluster) {
-            continue;
-          }
+        if ((event.centFT0C() > minCentrality) && (event.centFT0C() < maxCentrality)) {
+          aproton_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), track.tpcNSigmaPr(), track.eta());
+          adeuteron_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), track.tpcNSigmaDe(), track.eta());
+          atriton_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt(), track.tpcNSigmaTr(), track.eta());
+          aHelium3_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt() * 2.0, track.tpcNSigmaHe(), track.eta());
+          aHelium4_reg.fill(HIST("histTpcNsigmaData_eta"), track.pt() * 2.0, track.tpcNSigmaAl(), track.eta());
         }
 
-        aproton_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaPr(), event.centFT0C());
-        adeuteron_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaDe(), event.centFT0C());
-        atriton_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaTr(), event.centFT0C());
-        aHelium3_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaHe(), event.centFT0C());
-        aHelium4_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaAl(), event.centFT0C());
-
         if (track.hasTOF()) {
+          if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+            int lastLayer = 0;
+            for (int l = 7; l >= 0; l--) {
+              if (track.trdPattern() & (1 << l)) {
+                lastLayer = l;
+                break;
+              }
+            }
+            if (lastLayer < lastRequiredTrdCluster) {
+              continue;
+            }
+          }
+
+          aproton_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaPr(), event.centFT0C());
+          adeuteron_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaDe(), event.centFT0C());
+          atriton_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaTr(), event.centFT0C());
+          aHelium3_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaHe(), event.centFT0C());
+          aHelium4_reg.fill(HIST("histTofNsigmaData_cent"), track.pt() * 2.0, track.tofNSigmaAl(), event.centFT0C());
+
           aproton_reg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
           adeuteron_reg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
           atriton_reg.fill(HIST("histTofm2_cent"), track.pt(), track.mass() * track.mass(), event.centFT0C());
           aHelium3_reg.fill(HIST("histTofm2_cent"), track.pt() * 2.0, track.mass() * track.mass(), event.centFT0C());
           aHelium4_reg.fill(HIST("histTofm2_cent"), track.pt() * 2.0, track.mass() * track.mass(), event.centFT0C());
+
+          if ((event.centFT0C() > minCentrality) && (event.centFT0C() < maxCentrality)) {
+            aproton_reg.fill(HIST("histTofm2_eta"), track.pt(), track.mass() * track.mass(), track.eta());
+            aproton_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaPr(), track.eta());
+            adeuteron_reg.fill(HIST("histTofm2_eta"), track.pt(), track.mass() * track.mass(), track.eta());
+            adeuteron_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaDe(), track.eta());
+            atriton_reg.fill(HIST("histTofm2_eta"), track.pt(), track.mass() * track.mass(), track.eta());
+            atriton_reg.fill(HIST("histTofNsigmaData_eta"), track.pt(), track.tofNSigmaTr(), track.eta());
+            aHelium3_reg.fill(HIST("histTofm2_eta"), track.pt() * 2.0, track.mass() * track.mass(), track.eta());
+            aHelium3_reg.fill(HIST("histTofNsigmaData_eta"), track.pt() * 2.0, track.tofNSigmaHe(), track.eta());
+            aHelium4_reg.fill(HIST("histTofm2_eta"), track.pt() * 2.0, track.mass() * track.mass(), track.eta());
+            aHelium4_reg.fill(HIST("histTofNsigmaData_eta"), track.pt() * 2.0, track.tofNSigmaAl(), track.eta());
+          }
         }
       }
     }
