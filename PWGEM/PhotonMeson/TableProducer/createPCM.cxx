@@ -87,6 +87,7 @@ struct createPCM {
   Configurable<float> min_tpcdEdx{"min_tpcdEdx", 30.0, "min TPC dE/dx"};
   Configurable<float> max_tpcdEdx{"max_tpcdEdx", 110.0, "max TPC dE/dx"};
   Configurable<float> margin_r{"margin_r", 7.0, "margin for r cut"};
+  Configurable<float> max_qt_arm{"max_qt_arm", 0.03, "max qt for AP cut in GeV/c"};
 
   int mRunNumber;
   float d_bz;
@@ -223,7 +224,7 @@ struct createPCM {
       return false;
     }
 
-    if (!checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), 0.95, 0.05)) { // store only photon conversions
+    if (!checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), 0.95, max_qt_arm)) { // store only photon conversions
       return false;
     }
     if (ele.hasITS() && pos.hasITS() && !checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), 0.95, 0.02)) { // store only photon conversions
