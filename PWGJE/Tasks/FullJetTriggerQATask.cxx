@@ -43,7 +43,8 @@ struct JetTriggerQA {
 
   enum TriggerType_t {
     kMinBias,
-    kEmcal,
+    kEmcalAny,
+    kEmcalMB,
     kEmcalJetFull,
     kEmcalJetFullLow,
     kEmcalJetNeutral,
@@ -127,26 +128,27 @@ struct JetTriggerQA {
     registry.add("jetRPtEtaPhiNoFiducial", "JetRPtEtaPhiNoFiducial", hJetRPtEtaPhiNoFiducial);
     registry.add("jetRMaxPtEtaPhiNoFiducial", "JetRMaxPtEtaPhiNoFiducial", hJetRMaxPtEtaPhiNoFiducial);
 
-    registry.add("hProcessedEvents", "Processed events", HistType::kTH1D, {{16, -0.5, 15.5, "Trigger type"}});
+    registry.add("hProcessedEvents", "Processed events", HistType::kTH1D, {{17, -0.5, 16.5, "Trigger type"}});
     auto histProcessed = registry.get<TH1>(HIST("hProcessedEvents"));
     histProcessed->GetXaxis()->SetBinLabel(1, "MB");
-    histProcessed->GetXaxis()->SetBinLabel(2, "EMC");
-    histProcessed->GetXaxis()->SetBinLabel(3, "Selected Full Jet high");
-    histProcessed->GetXaxis()->SetBinLabel(4, "Selected Full Jet low");
-    histProcessed->GetXaxis()->SetBinLabel(5, "Selected Neutral Jet high");
-    histProcessed->GetXaxis()->SetBinLabel(6, "Selected Neutral Jet low");
-    histProcessed->GetXaxis()->SetBinLabel(7, "Selected Gamma high EMCAL");
-    histProcessed->GetXaxis()->SetBinLabel(8, "Selected Gamma high DCAL");
-    histProcessed->GetXaxis()->SetBinLabel(9, "Selected Gamma low EMCAL");
-    histProcessed->GetXaxis()->SetBinLabel(10, "Selected Gamma low DCAL");
-    histProcessed->GetXaxis()->SetBinLabel(11, "Selected full jet high and Gamma high EMCAL");
-    histProcessed->GetXaxis()->SetBinLabel(12, "Selected full jet high and Gamma high DCAL");
-    histProcessed->GetXaxis()->SetBinLabel(13, "Selected neutral jet high and Gamma high EMCAL");
-    histProcessed->GetXaxis()->SetBinLabel(14, "Selected neutral jet high and Gamma high DCAL");
-    histProcessed->GetXaxis()->SetBinLabel(15, "Selected Gamma high EMCAL and high Gamma DCAL");
-    histProcessed->GetXaxis()->SetBinLabel(16, "Selected full jet high and neutral jet high");
+    histProcessed->GetXaxis()->SetBinLabel(2, "Any EMC trigger");
+    histProcessed->GetXaxis()->SetBinLabel(3, "EMC Min. bias");
+    histProcessed->GetXaxis()->SetBinLabel(4, "Selected Full Jet high");
+    histProcessed->GetXaxis()->SetBinLabel(5, "Selected Full Jet low");
+    histProcessed->GetXaxis()->SetBinLabel(6, "Selected Neutral Jet high");
+    histProcessed->GetXaxis()->SetBinLabel(7, "Selected Neutral Jet low");
+    histProcessed->GetXaxis()->SetBinLabel(8, "Selected Gamma high EMCAL");
+    histProcessed->GetXaxis()->SetBinLabel(9, "Selected Gamma high DCAL");
+    histProcessed->GetXaxis()->SetBinLabel(10, "Selected Gamma low EMCAL");
+    histProcessed->GetXaxis()->SetBinLabel(11, "Selected Gamma low DCAL");
+    histProcessed->GetXaxis()->SetBinLabel(12, "Selected full jet high and Gamma high EMCAL");
+    histProcessed->GetXaxis()->SetBinLabel(13, "Selected full jet high and Gamma high DCAL");
+    histProcessed->GetXaxis()->SetBinLabel(14, "Selected neutral jet high and Gamma high EMCAL");
+    histProcessed->GetXaxis()->SetBinLabel(15, "Selected neutral jet high and Gamma high DCAL");
+    histProcessed->GetXaxis()->SetBinLabel(16, "Selected Gamma high EMCAL and high Gamma DCAL");
+    histProcessed->GetXaxis()->SetBinLabel(17, "Selected full jet high and neutral jet high");
 
-    std::array<std::string, TriggerType_t::kNTriggers> triggerlabels = {{"MB", "EMC", "EMC jet full high", "EMC jet full low", "EMC jet neutral high", "EMC jet neutral low", "EMC gamma high", "DCL gamma high", "EMC gamma low", "DCL gamma low"}};
+    std::array<std::string, TriggerType_t::kNTriggers> triggerlabels = {{"MB", "EMC Any", "EMC MB", "EMC jet full high", "EMC jet full low", "EMC jet neutral high", "EMC jet neutral low", "EMC gamma high", "DCL gamma high", "EMC gamma low", "DCL gamma low"}};
     registry.add("hTriggerCorrelation", "Correlation between EMCAL triggers", HistType::kTH2D, {{TriggerType_t::kNTriggers, -0.5, TriggerType_t::kNTriggers - 0.5, "Main trigger"}, {TriggerType_t::kNTriggers, -0.5, TriggerType_t::kNTriggers - 0.5, "Associated trigger"}});
     auto triggerCorrelation = registry.get<TH2>(HIST("hTriggerCorrelation"));
     for (std::size_t triggertype = 0; triggertype < TriggerType_t::kNTriggers; triggertype++) {
@@ -296,7 +298,7 @@ struct JetTriggerQA {
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
   Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
 
-  double check_dphi(double dphi)
+  double check_dphi(double dphi) const
   {
     if (dphi > TMath::Pi()) {
       dphi -= TMath::Pi();
@@ -315,6 +317,19 @@ struct JetTriggerQA {
       return true;
     }
     return false;
+  }
+
+  bool hasEMCAL(soa::Join<aod::Collisions, aod::EvSels, aod::FullJetFilters>::iterator const& collision) const
+  {
+    std::array<triggerAliases, 11> selectAliases = {{triggerAliases::kTVXinEMC, triggerAliases::kEMC7, triggerAliases::kDMC7, triggerAliases::kEG1, triggerAliases::kEG2, triggerAliases::kDG1, triggerAliases::kDG2, triggerAliases::kEJ1, triggerAliases::kEJ2, triggerAliases::kDJ1, triggerAliases::kDJ2}};
+    bool found = false;
+    for (auto alias : selectAliases) {
+      if (collision.alias_bit(alias)) {
+        found = true;
+        break;
+      }
+    }
+    return found;
   }
 
   Bool_t isClusterInEmcal(selectedClusters::iterator const& cluster)
@@ -585,61 +600,66 @@ struct JetTriggerQA {
     fillEventSelectionCounter(0);
     setTrigger(TriggerType_t::kMinBias);
 
+    if (hasEMCAL(collision)) {
+      fillEventSelectionCounter(1);
+      setTrigger(TriggerType_t::kEmcalAny);
+    }
+
     // fill event counters and correlation matrix without constraint on the EMCAL trigger flag
     if (collision.alias_bit(kTVXinEMC)) {
-      fillEventSelectionCounter(1);
-      setTrigger(TriggerType_t::kEmcal);
+      fillEventSelectionCounter(2);
+      setTrigger(TriggerType_t::kEmcalMB);
     }
 
     if (collision.hasJetFullHighPt()) {
-      fillEventSelectionCounter(2);
+      fillEventSelectionCounter(3);
       setTrigger(TriggerType_t::kEmcalJetFull);
     }
     if (collision.hasJetFullLowPt()) {
-      fillEventSelectionCounter(3);
+      fillEventSelectionCounter(4);
       setTrigger(TriggerType_t::kEmcalJetFullLow);
     }
     if (collision.hasJetNeutralHighPt()) {
-      fillEventSelectionCounter(4);
+      fillEventSelectionCounter(5);
       setTrigger(TriggerType_t::kEmcalJetNeutral);
     }
     if (collision.hasJetNeutralLowPt()) {
-      fillEventSelectionCounter(5);
+      fillEventSelectionCounter(6);
       setTrigger(TriggerType_t::kEmcalJetNeutralLow);
     }
     if (collision.hasGammaHighPtEMCAL()) {
-      fillEventSelectionCounter(6);
+      fillEventSelectionCounter(7);
       setTrigger(TriggerType_t::kEmcalGammaHigh);
     }
     if (collision.hasGammaHighPtDCAL()) {
-      fillEventSelectionCounter(7);
+      fillEventSelectionCounter(8);
       setTrigger(TriggerType_t::kDcalGammaHigh);
     }
     if (collision.hasGammaLowPtEMCAL()) {
-      fillEventSelectionCounter(8);
+      fillEventSelectionCounter(9);
       setTrigger(TriggerType_t::kEmcalGammaLow);
     }
     if (collision.hasGammaLowPtDCAL()) {
-      fillEventSelectionCounter(9);
+      fillEventSelectionCounter(10);
       setTrigger(TriggerType_t::kDcalGammaLow);
     }
     if (collision.hasJetFullHighPt() && collision.hasGammaHighPtEMCAL()) {
-      fillEventSelectionCounter(10);
-    }
-    if (collision.hasJetFullHighPt() && collision.hasGammaHighPtDCAL()) {
       fillEventSelectionCounter(11);
     }
-    if (collision.hasJetNeutralHighPt() && collision.hasGammaHighPtEMCAL()) {
+    if (collision.hasJetFullHighPt() && collision.hasGammaHighPtDCAL()) {
       fillEventSelectionCounter(12);
     }
-    if (collision.hasJetNeutralHighPt() && collision.hasGammaHighPtDCAL()) {
+    if (collision.hasJetNeutralHighPt() && collision.hasGammaHighPtEMCAL()) {
       fillEventSelectionCounter(13);
     }
-    if (collision.hasJetFullHighPt() && collision.hasJetNeutralHighPt()) {
+    if (collision.hasJetNeutralHighPt() && collision.hasGammaHighPtDCAL()) {
       fillEventSelectionCounter(14);
     }
-    if (collision.hasGammaHighPtEMCAL() && collision.hasGammaHighPtDCAL()) {
+    if (collision.hasJetFullHighPt() && collision.hasJetNeutralHighPt()) {
       fillEventSelectionCounter(15);
+    }
+    if (collision.hasGammaHighPtEMCAL() && collision.hasGammaHighPtDCAL()) {
+      fillEventSelectionCounter(16);
     }
 
     // Create correlationMatrix
@@ -656,7 +676,7 @@ struct JetTriggerQA {
     // Discard collisions without EMCAL if it is not respecifically required to discard the the EMCAL flag
     // If ignore is true, we don't check for the flag and accept all events
     if (!b_IgnoreEmcalFlag) {
-      if (!collision.alias_bit(kTVXinEMC)) {
+      if (isTrigger(TriggerType_t::kEmcalAny)) {
         return; // Only consider events where EMCAL is live
       }
     }
