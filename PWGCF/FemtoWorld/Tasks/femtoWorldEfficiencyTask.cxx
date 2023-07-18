@@ -253,7 +253,7 @@ struct femtoWorldEficiencyTask {
 
     // Loop over tracks
     for (auto& track : tracks) {
-      if (!track.has_mcParticle()){
+      if (!track.has_mcParticle()) {
         continue;
       }
       const auto mcParticle = track.mcParticle();
