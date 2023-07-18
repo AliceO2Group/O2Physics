@@ -51,6 +51,9 @@ struct EventSelectionQaTask {
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternC;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB;
 
+  SliceCache cache;
+  Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
+
   void init(InitContext&)
   {
     minGlobalBC = uint64_t(minOrbit) * 3564;
@@ -299,7 +302,7 @@ struct EventSelectionQaTask {
 
     // collision-based event selection qa
     for (auto& col : cols) {
-      bool sel1 = col.selection_bit(kIsINT1) & col.selection_bit(kNoBGV0A) & col.selection_bit(kNoBGV0C) & col.selection_bit(kNoTPCLaserWarmUp) & col.selection_bit(kNoTPCHVdip);
+      bool sel1 = col.selection_bit(kIsINT1) && col.selection_bit(kNoBGV0A) && col.selection_bit(kNoBGV0C) && col.selection_bit(kNoTPCLaserWarmUp) && col.selection_bit(kNoTPCHVdip);
 
       for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
         if (!col.alias_bit(iAlias)) {
@@ -345,6 +348,27 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hBcFDD"), localBC);
       }
 
+      // Calculate V0 multiplicity per ring
+      float multRingV0A[5] = {0.};
+      float multRingV0C[4] = {0.};
+      float multV0A = 0;
+      float multV0C = 0;
+      if (bc.has_fv0a()) {
+        for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
+          int ring = bc.fv0a().channel()[i] / 8;
+          multRingV0A[ring] += bc.fv0a().amplitude()[i];
+          multV0A += bc.fv0a().amplitude()[i];
+        }
+      }
+
+      if (bc.has_fv0c()) {
+        for (unsigned int i = 0; i < bc.fv0c().amplitude().size(); ++i) {
+          int ring = bc.fv0c().channel()[i] / 8;
+          multRingV0C[ring] += bc.fv0c().amplitude()[i];
+          multV0C += bc.fv0c().amplitude()[i];
+        }
+      }
+
       float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
       float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;
       float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
@@ -357,15 +381,15 @@ struct EventSelectionQaTask {
       float znDif = timeZNA - timeZNC;
       float ofSPD = bc.spdFiredChipsL0() + bc.spdFiredChipsL1();
       float onSPD = bc.spdFiredFastOrL0() + bc.spdFiredFastOrL1();
-      float multV0A = col.multRingV0A()[0] + col.multRingV0A()[1] + col.multRingV0A()[2] + col.multRingV0A()[3];
-      float multV0C = col.multRingV0C()[0] + col.multRingV0C()[1] + col.multRingV0C()[2] + col.multRingV0C()[3];
       float multV0M = multV0A + multV0C;
-      float multRingV0C3 = col.multRingV0C()[3];
+      float multRingV0C3 = multRingV0C[3];
       float multRingV0C012 = multV0C - multRingV0C3;
       float onV0M = bc.v0TriggerChargeA() + bc.v0TriggerChargeC();
-      float ofV0M = multV0A + multV0C - col.multRingV0A()[0];
-      int nTracklets = col.nTracklets();
-      int spdClusters = col.spdClusters();
+      float ofV0M = multV0A + multV0C - multRingV0A[0];
+      int spdClusters = bc.spdClustersL0() + bc.spdClustersL1();
+
+      auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
+      int nTracklets = trackletsGrouped.size();
 
       float multT0A = 0;
       float multT0C = 0;

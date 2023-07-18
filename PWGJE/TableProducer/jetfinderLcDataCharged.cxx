@@ -9,21 +9,21 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet finder d0 data charged task
+// jet finder lc data charged task
 //
 // Authors: Nima Zardoshti
 
 #include "PWGJE/TableProducer/jetfinderhf.cxx"
 
-using JetFinderD0DataCharged = JetFinderHFTask<CandidatesD0Data, CandidatesD0MCD, ParticlesD0, o2::aod::D0ChargedJets, o2::aod::D0ChargedJetConstituents, o2::aod::D0ChargedJetConstituentsSub>;
+using JetFinderLcDataCharged = JetFinderHFTask<CandidatesLcData, CandidatesLcMCD, ParticlesLc, o2::aod::LcChargedJets, o2::aod::LcChargedJetConstituents, o2::aod::LcChargedJetConstituentsSub>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
-  tasks.emplace_back(adaptAnalysisTask<JetFinderD0DataCharged>(cfgc,
+  tasks.emplace_back(adaptAnalysisTask<JetFinderLcDataCharged>(cfgc,
                                                                SetDefaultProcesses{},
-                                                               TaskName{"jet-finder-d0-data-charged"}));
+                                                               TaskName{"jet-finder-lc-data-charged"}));
 
   return WorkflowSpec{tasks};
 }
