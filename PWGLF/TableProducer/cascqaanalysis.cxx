@@ -77,11 +77,11 @@ struct cascqaanalysis {
   {
     AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
-    AxisSpec centFT0MAxis = {1055, 0.f, 105.5f, "FT0M (%)"};
-    AxisSpec centFV0AAxis = {1055, 0.f, 105.5f, "FV0A (%)"};
+    AxisSpec centFT0MAxis = {10550, 0.f, 105.5f, "FT0M (%)"};
+    AxisSpec centFV0AAxis = {10550, 0.f, 105.5f, "FV0A (%)"};
     AxisSpec eventTypeAxis = {3, -0.5f, 2.5f, "Event Type"};
     AxisSpec nAssocCollAxis = {5, -0.5f, 4.5f, "N_{assoc.}"};
-    AxisSpec nChargedGenAxis = {500, 0, 500, "N_{FT0M, gen.}"};
+    AxisSpec nChargedFT0MGenAxis = {500, 0, 500, "N_{FT0M, gen.}"};
     AxisSpec multNTracksAxis = {500, 0, 500, "N_{tracks}"};
     AxisSpec multFT0Axis = {10000, 0, 40000, "FT0 amplitude"};
 
@@ -101,17 +101,17 @@ struct cascqaanalysis {
     }
     if (isMC) {
       // Rec. lvl
-      registry.add("hNchFT0MPVContr", "hNchFT0MPVContr", {HistType::kTH3F, {nChargedGenAxis, multNTracksAxis, eventTypeAxis}});
-      registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3F, {nChargedGenAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hNchFT0MPVContr", "hNchFT0MPVContr", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
       // Gen. lvl
       registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{6, 0.0f, 6.0f}}});
       for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
         registry.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
       }
       registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1F, {{200, -20.f, 20.f}}});
-      registry.add("hNchFT0MNAssocMCCollisions", "hNchFT0MNAssocMCCollisions", {HistType::kTH2F, {nChargedGenAxis, nAssocCollAxis}});
+      registry.add("hNchFT0MNAssocMCCollisions", "hNchFT0MNAssocMCCollisions", {HistType::kTH2F, {nChargedFT0MGenAxis, nAssocCollAxis}});
       registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
-      registry.add("hNchFT0MGenEvType", "hNchFT0MGenEvType", {HistType::kTH2F, {nChargedGenAxis, eventTypeAxis}});
+      registry.add("hNchFT0MGenEvType", "hNchFT0MGenEvType", {HistType::kTH2F, {nChargedFT0MGenAxis, eventTypeAxis}});
     } else {
       registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
       registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
