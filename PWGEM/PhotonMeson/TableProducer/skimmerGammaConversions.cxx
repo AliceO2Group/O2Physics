@@ -42,15 +42,18 @@
 #include "DCAFitter/HelixHelper.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "Common/Core/trackUtilities.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 #include <TMath.h>
 #include <TVector2.h>
+#include "Math/Vector4D.h"
 
 #include "Tools/KFparticle/KFUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 // using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::TracksCov>;
 using tracksAndTPCInfo = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::TracksCovIU>;
@@ -256,6 +259,8 @@ struct skimmerGammaConversions {
     KFParticle KFPV(kfpVertex);
 
     float xyz[3] = {recalculatedVertex.recalculatedConversionPoint[0], recalculatedVertex.recalculatedConversionPoint[1], recalculatedVertex.recalculatedConversionPoint[2]};
+    // LOGF(info, "recalculated vtx : x = %f , y = %f , z = %f", xyz[0], xyz[1], xyz[2]);
+    // LOGF(info, "primary vtx : x = %f , y = %f , z = %f", collision.posX(), collision.posY(), collision.posZ());
 
     // Transport the gamma to the recalculated decay vertex
     KFParticle gammaKF_DecayVtx = gammaKF; // with respect to (0,0,0)
@@ -267,6 +272,9 @@ struct skimmerGammaConversions {
 
     KFParticle gammaKF_DecayVtx2 = gammaKF_PV; // with respect to the PV
     gammaKF_DecayVtx2.TransportToPoint(xyz);
+    // LOGF(info, "px = %f (KF at SV1) , %f (KF at PV) , %f (KF at SV2)", gammaKF_DecayVtx.GetPx(), gammaKF_PV.GetPx(), gammaKF_DecayVtx2.GetPx());
+    // LOGF(info, "py = %f (KF at SV1) , %f (KF at PV) , %f (KF at SV2)", gammaKF_DecayVtx.GetPy(), gammaKF_PV.GetPy(), gammaKF_DecayVtx2.GetPy());
+    // LOGF(info, "pz = %f (KF at SV1) , %f (KF at PV) , %f (KF at SV2)", gammaKF_DecayVtx.GetPz(), gammaKF_PV.GetPz(), gammaKF_DecayVtx2.GetPz());
 
     // LOGF(info, "cpaFromKF(gammaKF_DecayVtx, KFPV) = %f", cpaFromKF(gammaKF_DecayVtx, KFPV));
     // LOGF(info, "cpaFromKF(gammaKF_DecayVtx2, KFPV) = %f", cpaFromKF(gammaKF_DecayVtx2, KFPV));
@@ -278,15 +286,41 @@ struct skimmerGammaConversions {
       chi2kf = gammaKF_DecayVtx.GetChi2() / gammaKF_DecayVtx.GetNDF();
     }
 
-    // LOGF(info, "mee = %f (DCAFitter) , %f (KF)", v0.mGamma(), gammaKF_DecayVtx.GetMass());
+    KFParticle kfp_pos_PV = kfp_pos;
+    KFParticle kfp_ele_PV = kfp_ele;
+    kfp_pos_PV.SetProductionVertex(KFPV);
+    kfp_ele_PV.SetProductionVertex(KFPV);
+
+    KFParticle kfp_pos_DecayVtx = kfp_pos_PV;
+    KFParticle kfp_ele_DecayVtx = kfp_ele_PV;
+    kfp_pos_DecayVtx.TransportToPoint(xyz);
+    kfp_ele_DecayVtx.TransportToPoint(xyz);
+    // LOGF(info, "ele px = %f (original) , %f (KF at init) , %f (KF at PV) , %f (KF at SV)", ele.px(), kfp_ele.GetPx(), kfp_ele_PV.GetPx(), kfp_ele_DecayVtx.GetPx());
+    // LOGF(info, "pos px = %f (original) , %f (KF at init) , %f (KF at PV) , %f (KF at SV)", pos.px(), kfp_pos.GetPx(), kfp_pos_PV.GetPx(), kfp_pos_DecayVtx.GetPx());
+
+    ROOT::Math::PtEtaPhiMVector vpos_pv(kfp_pos_PV.GetPt(), kfp_pos_PV.GetEta(), kfp_pos_PV.GetPhi(), o2::constants::physics::MassElectron);
+    ROOT::Math::PtEtaPhiMVector vele_pv(kfp_ele_PV.GetPt(), kfp_ele_PV.GetEta(), kfp_ele_PV.GetPhi(), o2::constants::physics::MassElectron);
+    ROOT::Math::PtEtaPhiMVector v0_pv = vpos_pv + vele_pv;
+
+    ROOT::Math::PtEtaPhiMVector vpos_sv(kfp_pos_DecayVtx.GetPt(), kfp_pos_DecayVtx.GetEta(), kfp_pos_DecayVtx.GetPhi(), o2::constants::physics::MassElectron);
+    ROOT::Math::PtEtaPhiMVector vele_sv(kfp_ele_DecayVtx.GetPt(), kfp_ele_DecayVtx.GetEta(), kfp_ele_DecayVtx.GetPhi(), o2::constants::physics::MassElectron);
+    ROOT::Math::PtEtaPhiMVector v0_sv = vpos_sv + vele_sv;
+    // LOGF(info, "mee = %f (KF at PV) , %f (KF at SV)", v0_pv.M(), v0_sv.M());
+
+    // calculate psipair, phiv at the decay vertex
+    float phiv = getPhivPair(kfp_pos_DecayVtx, kfp_ele_DecayVtx, o2::base::Propagator::Instance()->getNominalBz());
+    float psipair = getPsiPair(kfp_pos_DecayVtx, kfp_ele_DecayVtx);
+    // LOGF(info, "bz = %f , phiv = %f , psipair = %f", bz, phiv, psipair);
 
     // float pca_kf = kfp_pos.GetDistanceFromParticle(kfp_ele);
+    // LOGF(info, "pca = %f (DCAFitter) , %f (KF at SV)", v0.dcaV0daughters(), pca_kf);
 
     v0photonskf(collision.globalIndex(), v0photons.lastIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                 gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                 gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
-                v0.mGamma(), cpaFromKF(gammaKF_DecayVtx, KFPV), v0.dcaV0daughters(),
-                v0.alpha(), v0.qtarm(), v0.psipair(), chi2kf);
+                v0.mGamma(), v0_pv.M(), v0_sv.M(),
+                cpaFromKF(gammaKF_DecayVtx, KFPV), v0.dcaV0daughters(),
+                v0.alpha(), v0.qtarm(), psipair, phiv, chi2kf);
   }
 
   // ============================ FUNCTION DEFINITIONS ====================================================

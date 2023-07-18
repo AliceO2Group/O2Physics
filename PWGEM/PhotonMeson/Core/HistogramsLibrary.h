@@ -69,12 +69,13 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hEtaPhi"))->Fill(obj.phi(), obj.eta());
     reinterpret_cast<TH2F*>(list->FindObject("hRadius"))->Fill(obj.vz(), obj.v0radius());
     reinterpret_cast<TH2F*>(list->FindObject("hRadius_recalc"))->Fill(obj.recalculatedVtxZ(), obj.recalculatedVtxR());
-    reinterpret_cast<TH1F*>(list->FindObject("hCosPA"))->Fill(abs(obj.cospa()));
+    reinterpret_cast<TH1F*>(list->FindObject("hCosPA"))->Fill(obj.cospa());
     reinterpret_cast<TH1F*>(list->FindObject("hPCA"))->Fill(obj.pca());
     reinterpret_cast<TH2F*>(list->FindObject("hAPplot"))->Fill(obj.alpha(), obj.qtarm());
     reinterpret_cast<TH2F*>(list->FindObject("hMassGamma"))->Fill(obj.v0radius(), obj.mGamma());
     reinterpret_cast<TH2F*>(list->FindObject("hMassGamma_recalc"))->Fill(obj.recalculatedVtxR(), obj.mGamma());
-    reinterpret_cast<TH2F*>(list->FindObject("hGammaPsiPair"))->Fill(obj.psipair(), obj.mGamma());
+    reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_SV_Rxy"))->Fill(obj.recalculatedVtxR(), obj.mGammaKFSV());
+    reinterpret_cast<TH2F*>(list->FindObject("hGammaPsiPair"))->Fill(abs(obj.psipair()), obj.mGamma());
     reinterpret_cast<TH2F*>(list->FindObject("hGammaRxy"))->Fill(obj.vx(), obj.vy());
     reinterpret_cast<TH2F*>(list->FindObject("hGammaRxy_recalc"))->Fill(obj.recalculatedVtxX(), obj.recalculatedVtxY());
     reinterpret_cast<TProfile2D*>(list->FindObject("hGammaRxy_KFChi2"))->Fill(obj.recalculatedVtxX(), obj.recalculatedVtxY(), obj.chiSquareNDF(), 1.0);
@@ -83,6 +84,10 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsX"))->Fill(obj.recalculatedVtxX(), obj.chiSquareNDF());
     reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsY"))->Fill(obj.recalculatedVtxY(), obj.chiSquareNDF());
     reinterpret_cast<TH2F*>(list->FindObject("hKFChi2vsZ"))->Fill(obj.recalculatedVtxZ(), obj.chiSquareNDF());
+    reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_PV_SV"))->Fill(obj.mGammaKFPV(), obj.mGammaKFSV());
+    reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_SV_PsiPair"))->Fill(abs(obj.psipair()), obj.mGammaKFSV());
+    reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_SV_PhiV"))->Fill(obj.phiv(), obj.mGammaKFSV());
+    reinterpret_cast<TH2F*>(list->FindObject("hMassGammaKF_PsiPair_PhiV"))->Fill(obj.phiv(), abs(obj.psipair()));
 
     float phi_recalc = atan2(obj.recalculatedVtxY(), obj.recalculatedVtxX());
     float r3d = sqrt(pow(obj.recalculatedVtxX(), 2) + pow(obj.recalculatedVtxY(), 2) + pow(obj.recalculatedVtxZ(), 2));

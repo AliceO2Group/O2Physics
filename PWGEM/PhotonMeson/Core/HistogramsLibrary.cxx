@@ -76,6 +76,11 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hGammaPsiPair", "#psi_{pair} for photon conversion;#psi_{pair} (rad.);m_{ee} (GeV/c^{2})", 150, 0, TMath::PiOver2(), 100, 0.0f, 0.1f));
     list->Add(new TH2F("hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hMassGamma_recalc", "recalc. hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_SV_Rxy", "recalc. hMassGamma KF SV;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_PV_SV", "hMassGamma;m_{ee} at PV (GeV/c^{2});m_{ee} at SV (GeV/c^{2})", 300, 0.0f, 0.3f, 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_SV_PsiPair", "#psi_{pair} for photon conversion;#psi_{pair} (rad.);m_{ee} at SV (GeV/c^{2})", 150, 0, TMath::PiOver2(), 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_SV_PhiV", "#varphi_{V} for photon conversion;#varphi_{V} (rad.);m_{ee} at SV (GeV/c^{2})", 100, 0, TMath::Pi(), 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_PsiPair_PhiV", "#psi_{pair} vs. #varphi_{V} for photon conversion;#varphi_{V} (rad.);#psi_{pair} (rad.)", 100, 0, TMath::Pi(), 150, 0, TMath::PiOver2()));
     list->Add(new TH2F("hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TH2F("hGammaRxy_recalc", "recalc. conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TProfile2D("hGammaRxy_KFChi2", "recalc. conversion point in XY;V_{x} (cm);V_{y} (cm);KF #chi^{2}/ndf", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f, 0, 100, "s"));
