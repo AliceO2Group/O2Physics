@@ -60,7 +60,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hNclsITS", "number of ITS clusters", 8, -0.5, 7.5));
     list->Add(new TH1F("hChi2ITS", "chi2/number of ITS clusters", 360, 0, 36));
     list->Add(new TH2F("hXY", "X vs. Y;X;Y", 100, 0, 100, 100, -50, 50));
-    list->Add(new TH2F("hZX", "Z vs. X;Z;X", 1000, -100, 100, 100, 0, 100));
+    list->Add(new TH2F("hZX", "Z vs. X;Z;X", 400, -100, 100, 100, 0, 100));
     list->Add(new TH2F("hZY", "Z vs. Y;Z;Y", 200, -100, 100, 100, -50, 50));
     list->Add(new TH2F("hDCAxyEta", "DCAxy vs. #eta;#eta;DCA_{xy} (cm)", 400, -2, +2, 100, -50, 50));
     list->Add(new TH2F("hDCAxyZ", "DCAxy vs. Z;Z (cm);DCA_{xy} (cm)", 200, -100, +100, 100, -50, 50));
@@ -76,6 +76,11 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hGammaPsiPair", "#psi_{pair} for photon conversion;#psi_{pair} (rad.);m_{ee} (GeV/c^{2})", 150, 0, TMath::PiOver2(), 100, 0.0f, 0.1f));
     list->Add(new TH2F("hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
     list->Add(new TH2F("hMassGamma_recalc", "recalc. hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_SV_Rxy", "recalc. hMassGamma KF SV;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_PV_SV", "hMassGamma;m_{ee} at PV (GeV/c^{2});m_{ee} at SV (GeV/c^{2})", 300, 0.0f, 0.3f, 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_SV_PsiPair", "#psi_{pair} for photon conversion;#psi_{pair} (rad.);m_{ee} at SV (GeV/c^{2})", 150, 0, TMath::PiOver2(), 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_SV_PhiV", "#varphi_{V} for photon conversion;#varphi_{V} (rad.);m_{ee} at SV (GeV/c^{2})", 100, 0, TMath::Pi(), 100, 0.0f, 0.1f));
+    list->Add(new TH2F("hMassGammaKF_PsiPair_PhiV", "#psi_{pair} vs. #varphi_{V} for photon conversion;#varphi_{V} (rad.);#psi_{pair} (rad.)", 100, 0, TMath::Pi(), 150, 0, TMath::PiOver2()));
     list->Add(new TH2F("hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TH2F("hGammaRxy_recalc", "recalc. conversion point in XY;V_{x} (cm);V_{y} (cm)", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f));
     list->Add(new TProfile2D("hGammaRxy_KFChi2", "recalc. conversion point in XY;V_{x} (cm);V_{y} (cm);KF #chi^{2}/ndf", 400, -100.0f, 100.0f, 400, -100.0f, 100.0f, 0, 100, "s"));
@@ -85,6 +90,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hKFChi2vsY", "KF chi2 vs. recalc. conversion point in Y;Y (cm);KF chi2/NDF", 400, -200.0f, 200.0f, 100, 0.f, 100.0f));
     list->Add(new TH2F("hKFChi2vsZ", "KF chi2 vs. recalc. conversion point in Z;Z (cm);KF chi2/NDF", 500, -250.0f, 250.0f, 100, 0.f, 100.0f));
     list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
+    list->Add(new TH2F("hV0R_minTrackX", "V0R vs. trackiu x;R_{xy} of V0 (cm);min TrackIU X (cm)", 100, 0.0f, 100.0f, 200, 0.f, 100.0f));
 
     const int nrxy = 102;
     double rxy[nrxy] = {0.f};
