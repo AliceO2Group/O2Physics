@@ -539,7 +539,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         // every 10 MeV from 0 to 1.1 GeV/c2
         // every 50 MeV from 1.1 to 2.7 GeV/c2
         // every 10 MeV from 2.7 to 3.2 GeV/c2
-        // every 50 MeV from 3.2 to 10 GeV/c2
+        // every 50 MeV from 3.2 to 12 GeV/c2
         double mee_bins[329];
         for (int i = 0; i <= 110; i++)
           mee_bins[i] = 0.01 * i;
@@ -547,7 +547,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
           mee_bins[110 + i] = 1.1 + 0.05 * i;
         for (int i = 1; i <= 50; i++)
           mee_bins[142 + i] = 2.7 + 0.01 * i;
-        for (int i = 1; i <= 136; i++)
+        for (int i = 1; i <= 176; i++)
           mee_bins[192 + i] = 3.2 + 0.05 * i;
         int nbins_mee = sizeof(mee_bins) / sizeof(*mee_bins) - 1;
 
