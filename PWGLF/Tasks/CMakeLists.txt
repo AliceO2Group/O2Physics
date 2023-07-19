@@ -186,7 +186,7 @@ o2physics_add_dpl_workflow(hypertriton3bodymcqa
                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                    COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lf-pid-dedx-postcalib
-                           SOURCES LFTPCdEdxPostcalibration.cxx
-                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(pid-dedx-postcalib
+                   SOURCES LFTPCdEdxPostcalibration.cxx
+                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                   COMPONENT_NAME Analysis)
