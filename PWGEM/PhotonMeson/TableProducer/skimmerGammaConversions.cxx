@@ -298,13 +298,13 @@ struct skimmerGammaConversions {
     // LOGF(info, "ele px = %f (original) , %f (KF at init) , %f (KF at PV) , %f (KF at SV)", ele.px(), kfp_ele.GetPx(), kfp_ele_PV.GetPx(), kfp_ele_DecayVtx.GetPx());
     // LOGF(info, "pos px = %f (original) , %f (KF at init) , %f (KF at PV) , %f (KF at SV)", pos.px(), kfp_pos.GetPx(), kfp_pos_PV.GetPx(), kfp_pos_DecayVtx.GetPx());
 
-    ROOT::Math::PtEtaPhiMVector vpos_pv(kfp_pos_PV.GetPt(), kfp_pos_PV.GetEta(), kfp_pos_PV.GetPhi(), o2::constants::physics::MassElectron);
-    ROOT::Math::PtEtaPhiMVector vele_pv(kfp_ele_PV.GetPt(), kfp_ele_PV.GetEta(), kfp_ele_PV.GetPhi(), o2::constants::physics::MassElectron);
-    ROOT::Math::PtEtaPhiMVector v0_pv = vpos_pv + vele_pv;
+    ROOT::Math::PxPyPzMVector vpos_pv(kfp_pos_PV.GetPx(), kfp_pos_PV.GetPy(), kfp_pos_PV.GetPz(), o2::constants::physics::MassElectron);
+    ROOT::Math::PxPyPzMVector vele_pv(kfp_ele_PV.GetPx(), kfp_ele_PV.GetPy(), kfp_ele_PV.GetPz(), o2::constants::physics::MassElectron);
+    ROOT::Math::PxPyPzMVector v0_pv = vpos_pv + vele_pv;
 
-    ROOT::Math::PtEtaPhiMVector vpos_sv(kfp_pos_DecayVtx.GetPt(), kfp_pos_DecayVtx.GetEta(), kfp_pos_DecayVtx.GetPhi(), o2::constants::physics::MassElectron);
-    ROOT::Math::PtEtaPhiMVector vele_sv(kfp_ele_DecayVtx.GetPt(), kfp_ele_DecayVtx.GetEta(), kfp_ele_DecayVtx.GetPhi(), o2::constants::physics::MassElectron);
-    ROOT::Math::PtEtaPhiMVector v0_sv = vpos_sv + vele_sv;
+    ROOT::Math::PxPyPzMVector vpos_sv(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), o2::constants::physics::MassElectron);
+    ROOT::Math::PxPyPzMVector vele_sv(kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz(), o2::constants::physics::MassElectron);
+    ROOT::Math::PxPyPzMVector v0_sv = vpos_sv + vele_sv;
     // LOGF(info, "mee = %f (KF at PV) , %f (KF at SV)", v0_pv.M(), v0_sv.M());
 
     // calculate psipair, phiv at the decay vertex

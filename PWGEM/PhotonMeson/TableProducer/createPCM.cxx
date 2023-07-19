@@ -55,7 +55,6 @@ struct createPCM {
     "createPCM",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
-      // {"hAP", "AP plot", {HistType::kTH2F, {{200, -1, +1}, {250, 0, 0.25}}}},
     },
   };
 
@@ -239,6 +238,10 @@ struct createPCM {
       return false;
     }
 
+    if (recalculatedVtxR < 16.f && (!pos.hasITS() || !ele.hasITS())) {
+      return false;
+    }
+
     return true;
   }
 
@@ -280,7 +283,6 @@ struct createPCM {
     if (v0CosinePA < minv0cospa) {
       return;
     }
-    // registry.fill(HIST("hAP"), v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]));
 
     if (!checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]))) { // store only photon conversions
       return;
