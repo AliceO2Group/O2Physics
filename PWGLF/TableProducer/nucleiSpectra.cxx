@@ -429,7 +429,7 @@ struct nucleiSpectra {
           flag |= BIT(iS);
 
           nuclei::candidates.emplace_back(NucleusCandidate{static_cast<int>(track.globalIndex()), fvector.pt(), fvector.eta(), fvector.phi(), track.tpcInnerParam(), beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(),
-track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound())});
+                                                           track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound())});
         }
       }
     } // end loop over tracks
