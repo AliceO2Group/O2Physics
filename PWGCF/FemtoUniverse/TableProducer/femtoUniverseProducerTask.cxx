@@ -643,7 +643,12 @@ struct femtoUniverseProducerTask {
         float phiPt = sumVec.Pt();
         // float phiP = sumVec.P();
         float phiPhi = sumVec.Phi();
-        // float phiM = sumVec.M(); //mass of the reconstructed Phi meson
+        if (sumVec.Phi() < 0) {
+          phiPhi = sumVec.Phi() + 2 * o2::constants::math::PI;
+        } else if (sumVec.Phi() >= 0) {
+          phiPhi = sumVec.Phi();
+        }
+        float phiM = sumVec.M(); // mass of the reconstructed Phi meson
 
         // this cut probably is not doing anything, check it
         //  if (((phiM < ConfPhiCommon.ConfInvMassLowLimitPhi) || (phiM > ConfPhiCommon.ConfInvMassUpLimitPhi))) {
@@ -701,7 +706,7 @@ struct femtoUniverseProducerTask {
                     0,
                     -999, // v0.v0cosPA(col.posX(), col.posY(), col.posZ()),
                     indexChildID,
-                    -999,  // v0.mLambda(),
+                    phiM,  // phi.mLambda(), //for now it will have a mLambda getter, maybe we will change it in the future so it's more logical
                     -999); // v0.mAntiLambda()
 
         if (ConfIsDebug) {
