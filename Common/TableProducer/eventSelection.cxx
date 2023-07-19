@@ -24,7 +24,9 @@ using namespace o2::framework;
 #include "Framework/HistogramRegistry.h"
 #include "DataFormatsFT0/Digit.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/GRPECSObject.h"
 #include "TH1D.h"
+
 using namespace evsel;
 
 using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
@@ -47,6 +49,13 @@ struct BcSelectionTask {
     ccdb->setLocalObjectValidityChecking();
 
     histos.add("hCounterTVX", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTCE", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZNC", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVX", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTCE", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiZEM", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiZNC", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
   }
 
   void processRun2(
@@ -271,11 +280,40 @@ struct BcSelectionTask {
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
       int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
       int32_t foundZDC = bc.has_zdc() ? bc.zdc().globalIndex() : -1;
-      LOGP(debug, "foundFT0={}\n", foundFT0);
+      LOGP(debug, "foundFT0={}", foundFT0);
+
+      // Temporary workaround to get visible cross section. TODO: store run-by-run visible cross sections in CCDB
+      int run = bc.runNumber();
+      const char* srun = Form("%d", run);
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", bc.timestamp());
+      int beamZ1 = grplhcif->getBeamZ(o2::constants::lhc::BeamA);
+      int beamZ2 = grplhcif->getBeamZ(o2::constants::lhc::BeamC);
+      bool isPP = beamZ1 == 1 && beamZ2 == 1;
+      bool injectionEnergy = (run >= 500000 && run <= 520099) || (run >= 534133 && run <= 534468);
+      // Cross sections in ub. Using dummy -1 if lumi estimator is not reliable
+      float csTVX = isPP ? (injectionEnergy ? 0.0355e6 : 0.0594e6) : -1.;
+      float csTCE = isPP ? -1. : 10.36e6;
+      float csZEM = isPP ? -1. : 415.2e6;
+      float csZNC = isPP ? -1. : 214.5e6;
 
       // Fill TVX (T0 vertex) counters
       if (TESTBIT(selection, kIsTriggerTVX)) {
-        histos.get<TH1>(HIST("hCounterTVX"))->Fill(Form("%d", bc.runNumber()), 1);
+        histos.get<TH1>(HIST("hCounterTVX"))->Fill(srun, 1);
+        histos.get<TH1>(HIST("hLumiTVX"))->Fill(srun, 1. / csTVX);
+      }
+      // Fill counters and lumi histograms for Pb-Pb lumi monitoring
+      // TODO: introduce pileup correction
+      if (bc.has_ft0() ? TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitCen) : 0) {
+        histos.get<TH1>(HIST("hCounterTCE"))->Fill(srun, 1);
+        histos.get<TH1>(HIST("hLumiTCE"))->Fill(srun, 1. / csTCE);
+      }
+      if (TESTBIT(selection, kIsBBZNA) || TESTBIT(selection, kIsBBZNC)) {
+        histos.get<TH1>(HIST("hCounterZEM"))->Fill(srun, 1);
+        histos.get<TH1>(HIST("hLumiZEM"))->Fill(srun, 1. / csZEM);
+      }
+      if (TESTBIT(selection, kIsBBZNC)) {
+        histos.get<TH1>(HIST("hCounterZNC"))->Fill(srun, 1);
+        histos.get<TH1>(HIST("hLumiZNC"))->Fill(srun, 1. / csZNC);
       }
 
       // Fill bc selection columns
