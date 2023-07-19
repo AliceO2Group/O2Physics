@@ -89,5 +89,90 @@ void Vtx_recalculation(o2::base::Propagator* prop, T lTrackPos, T lTrackNeg, flo
   xyz[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
 }
 //_______________________________________________________________________
+template <typename T>
+float getPhivPair(T const& t1, T const& t2, const float bz)
+{
+  // cos(phiv) = w*a /|w||a|
+  // with w = u x v
+  // and  a = u x z / |u x z|   , unit vector perpendicular to v12 and z-direction (magnetic field)
+  // u = v12 / |v12|            , the unit vector of v12
+  // v = v1 x v2 / |v1 x v2|    , unit vector perpendicular to v1 and v2
+
+  // momentum of e+ and e- in (ax,ay,az) axis. Note that az=0 by definition.
+  // vector product of pep X pem
+  std::array<float, 3> arr_pos{t1.GetPx(), t1.GetPy(), t1.GetPz()};
+  std::array<float, 3> arr_ele{t2.GetPx(), t2.GetPy(), t2.GetPz()};
+  std::array<double, 3> pos_x_ele{0, 0, 0};
+  // LOGF(info, "Q1 = %d , Q2 = %d", t1.GetQ(), t2.GetQ());
+
+  if (t1.GetQ() * t2.GetQ() > 0) { // Like Sign
+    if (bz < 0) {
+      if (t1.GetQ() > 0) {
+        pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
+      } else {
+        pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
+      }
+    } else {
+      if (t1.GetQ() > 0) {
+        pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
+      } else {
+        pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
+      }
+    }
+  } else { // Unlike Sign
+    if (bz > 0) {
+      if (t1.GetQ() > 0) {
+        pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
+      } else {
+        pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
+      }
+    } else {
+      if (t1.GetQ() > 0) {
+        pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
+      } else {
+        pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
+      }
+    }
+  }
+
+  // unit vector of pep X pem
+  float vx = pos_x_ele[0] / RecoDecay::sqrtSumOfSquares(pos_x_ele[0], pos_x_ele[1], pos_x_ele[2]);
+  float vy = pos_x_ele[1] / RecoDecay::sqrtSumOfSquares(pos_x_ele[0], pos_x_ele[1], pos_x_ele[2]);
+  float vz = pos_x_ele[2] / RecoDecay::sqrtSumOfSquares(pos_x_ele[0], pos_x_ele[1], pos_x_ele[2]);
+
+  // unit vector of (pep+pem)
+  float ux = (t1.GetPx() + t2.GetPx()) / RecoDecay::sqrtSumOfSquares(t1.GetPx() + t2.GetPx(), t1.GetPy() + t2.GetPy(), t1.GetPz() + t2.GetPz());
+  float uy = (t1.GetPy() + t2.GetPy()) / RecoDecay::sqrtSumOfSquares(t1.GetPx() + t2.GetPx(), t1.GetPy() + t2.GetPy(), t1.GetPz() + t2.GetPz());
+  float uz = (t1.GetPz() + t2.GetPz()) / RecoDecay::sqrtSumOfSquares(t1.GetPx() + t2.GetPx(), t1.GetPy() + t2.GetPy(), t1.GetPz() + t2.GetPz());
+
+  float ax = uy / TMath::Sqrt(ux * ux + uy * uy);
+  float ay = -ux / TMath::Sqrt(ux * ux + uy * uy);
+
+  // The third axis defined by vector product (ux,uy,uz)X(vx,vy,vz)
+  float wx = uy * vz - uz * vy;
+  float wy = uz * vx - ux * vz;
+  // by construction, (wx,wy,wz) must be a unit vector. Measure angle between (wx,wy,wz) and (ax,ay,0).
+  // The angle between them should be small if the pair is conversion. This function then returns values close to pi!
+  return TMath::ACos(wx * ax + wy * ay); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
+}
+//_______________________________________________________________________
+template <typename T>
+float getPsiPair(T const& t1, T const& t2)
+{
+  float pxpos = t1.GetPx();
+  float pypos = t1.GetPy();
+  float pzpos = t1.GetPz();
+  float pxneg = t2.GetPx();
+  float pyneg = t2.GetPy();
+  float pzneg = t2.GetPz();
+
+  auto clipToPM1 = [](float x) { return x < -1.f ? -1.f : (x > 1.f ? 1.f : x); };
+  float ptot2 = RecoDecay::p2(pxpos, pypos, pzpos) * RecoDecay::p2(pxneg, pyneg, pzneg);
+  float argcos = RecoDecay::dotProd(array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}) / std::sqrt(ptot2);
+  float thetaPos = std::atan2(RecoDecay::sqrtSumOfSquares(pxpos, pypos), pzpos);
+  float thetaNeg = std::atan2(RecoDecay::sqrtSumOfSquares(pxneg, pyneg), pzneg);
+  float argsin = (thetaNeg - thetaPos) / std::acos(clipToPM1(argcos));
+  return std::asin(clipToPM1(argsin));
+}
 //_______________________________________________________________________
 #endif // PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
