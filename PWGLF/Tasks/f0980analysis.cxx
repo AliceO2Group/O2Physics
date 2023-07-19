@@ -112,7 +112,7 @@ struct f0980analysis {
 
       if (trk1.index() == trk2.index()) {
         histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
-        histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tofNSigmaPi());
+        histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
         histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
         continue;
       }
