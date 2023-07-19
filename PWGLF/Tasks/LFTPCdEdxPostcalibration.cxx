@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 ///
 /// \author Alberto Caliva (alberto.caliva@cern.ch)
-/// \since July 17, 2023
+/// \since June 27, 2023
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -29,35 +29,66 @@ using namespace o2;
 using namespace o2::framework;
 
 using PIDTracks = soa::Join<
-    aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta,
-    aod::pidTOFmass, aod::TrackSelection, aod::TrackSelectionExtension,
-    aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-    aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTOFFullPi, aod::pidTOFFullKa,
-    aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe>;
+  aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta,
+  aod::pidTOFmass, aod::TrackSelection, aod::TrackSelectionExtension,
+  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+  aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTOFFullPi, aod::pidTOFFullKa,
+  aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe>;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
 struct LFTPCdEdxPostcalibration {
 
+  // dE/dx for all charged particles
+  HistogramRegistry registryCh{
+    "registryCh",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
   // dE/dx and nsigma_{TPC} for different hadron species
   HistogramRegistry registryPi{
-      "registryPi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+    "registryPi",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
   HistogramRegistry registryKa{
-      "registryKa", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+    "registryKa",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
   HistogramRegistry registryPr{
-      "registryPr", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+    "registryPr",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
   HistogramRegistry registryDe{
-      "registryDe", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+    "registryDe",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
   HistogramRegistry registryTr{
-      "registryTr", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+    "registryTr",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
   HistogramRegistry registryHe{
-      "registryHe", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+    "registryHe",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
 
   // External Parameters
   Configurable<float> minTPCnClsFound{"minTPCnClsFound", 70.0f,
                                       "min number of found TPC clusters"};
   Configurable<float> minNCrossedRowsTPC{
-      "minNCrossedRowsTPC", 70.0f, "min number of found TPC crossed rows"};
+    "minNCrossedRowsTPC", 70.0f, "min number of found TPC crossed rows"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f,
                                  "max chi2 per cluster TPC"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f,
@@ -79,56 +110,66 @@ struct LFTPCdEdxPostcalibration {
   Configurable<float> maxMassLambda{"maxMassLambda", 1.1f,
                                     "Maximum Mass Lambda"};
   Configurable<float> minReqClusterITS{
-      "minReqClusterITS", 4.0f, "min number of clusters required in ITS"};
+    "minReqClusterITS", 4.0f, "min number of clusters required in ITS"};
   Configurable<float> maxDCAxy{"maxDCAxy", 0.1f, "maxDCAxy"};
   Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
+  Configurable<bool> useTOFpi{"useTOFpi", true, "use TOF for pion ID"};
+  Configurable<bool> useTOFpr{"useTOFpr", true, "use TOF for proton ID"};
 
-  void init(InitContext const &) {
+  void init(InitContext const&)
+  {
     // Raw dE/dx vs. TPC momentum
+    registryCh.add(
+      "dEdx_vs_Momentum", "dE/dx", HistType::kTH2F,
+      {{200, -10.0, 10.0, "z#cdot p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
     registryPi.add(
-        "dEdx_vs_Momentum_Pi", "dE/dx", HistType::kTH2F,
-        {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      "dEdx_vs_Momentum_Pi", "dE/dx", HistType::kTH2F,
+      {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
     registryKa.add(
-        "dEdx_vs_Momentum_Ka", "dE/dx", HistType::kTH2F,
-        {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      "dEdx_vs_Momentum_Ka", "dE/dx", HistType::kTH2F,
+      {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
     registryPr.add(
-        "dEdx_vs_Momentum_Pr", "dE/dx", HistType::kTH2F,
-        {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      "dEdx_vs_Momentum_Pr", "dE/dx", HistType::kTH2F,
+      {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
     registryDe.add(
-        "dEdx_vs_Momentum_De", "dE/dx", HistType::kTH2F,
-        {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      "dEdx_vs_Momentum_De", "dE/dx", HistType::kTH2F,
+      {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
     registryTr.add(
-        "dEdx_vs_Momentum_Tr", "dE/dx", HistType::kTH2F,
-        {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      "dEdx_vs_Momentum_Tr", "dE/dx", HistType::kTH2F,
+      {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
     registryHe.add(
-        "dEdx_vs_Momentum_He", "dE/dx", HistType::kTH2F,
-        {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      "dEdx_vs_Momentum_He", "dE/dx", HistType::kTH2F,
+      {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
 
     // nsigma_(TPC) vs. TPC momentum
     registryPi.add(
-        "nsigmaTPC_vs_Momentum_Pi", "nsigmaTPC", HistType::kTH2F,
-        {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      "nsigmaTPC_vs_Momentum_Pi", "nsigmaTPC", HistType::kTH2F,
+      {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryKa.add(
-        "nsigmaTPC_vs_Momentum_Ka", "nsigmaTPC", HistType::kTH2F,
-        {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      "nsigmaTPC_vs_Momentum_Ka", "nsigmaTPC", HistType::kTH2F,
+      {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryPr.add(
-        "nsigmaTPC_vs_Momentum_Pr", "nsigmaTPC", HistType::kTH2F,
-        {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      "nsigmaTPC_vs_Momentum_Pr", "nsigmaTPC", HistType::kTH2F,
+      {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryDe.add(
-        "nsigmaTPC_vs_Momentum_De", "nsigmaTPC", HistType::kTH2F,
-        {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      "nsigmaTPC_vs_Momentum_De", "nsigmaTPC", HistType::kTH2F,
+      {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryTr.add(
-        "nsigmaTPC_vs_Momentum_Tr", "nsigmaTPC", HistType::kTH2F,
-        {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      "nsigmaTPC_vs_Momentum_Tr", "nsigmaTPC", HistType::kTH2F,
+      {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryHe.add(
-        "nsigmaTPC_vs_Momentum_He", "nsigmaTPC", HistType::kTH2F,
-        {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      "nsigmaTPC_vs_Momentum_He", "nsigmaTPC", HistType::kTH2F,
+      {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+
+    // Event Counter
+    registryCh.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20.0, +20.0, "z_{vtx} (cm)"}});
   }
 
   // Single-Track Selection
   template <typename T1, typename C>
-  bool passedSingleTrackSelection(const T1 &track, const C &collision) {
+  bool passedSingleTrackSelection(const T1& track, const C& collision)
+  {
     // Single-Track Selections
     if (!track.hasTPC())
       return false;
@@ -146,7 +187,8 @@ struct LFTPCdEdxPostcalibration {
 
   // General V0 Selections
   template <typename T1, typename C>
-  bool passedV0Selection(const T1 &v0, const C &collision) {
+  bool passedV0Selection(const T1& v0, const C& collision)
+  {
     if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) <
         v0cospaMin)
       return false;
@@ -158,16 +200,17 @@ struct LFTPCdEdxPostcalibration {
 
   // K0s Selections
   template <typename T1, typename T2, typename C>
-  bool passedK0Selection(const T1 &v0, const T2 &ntrack, const T2 &ptrack,
-                         const C &collision) {
+  bool passedK0Selection(const T1& v0, const T2& ntrack, const T2& ptrack,
+                         const C& collision)
+  {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack, collision))
       return false;
     if (!passedSingleTrackSelection(ntrack, collision))
       return false;
-    if (!ptrack.hasTOF())
+    if (useTOFpi && (!ptrack.hasTOF()))
       return false;
-    if (!ntrack.hasTOF())
+    if (useTOFpi && (!ntrack.hasTOF()))
       return false;
     if (TMath::Abs(ptrack.tofNSigmaPi()) > nsigmaTOFmax)
       return false;
@@ -183,16 +226,17 @@ struct LFTPCdEdxPostcalibration {
 
   // Lambda Selections
   template <typename T1, typename T2, typename C>
-  bool passedLambdaSelection(const T1 &v0, const T2 &ntrack, const T2 &ptrack,
-                             const C &collision) {
+  bool passedLambdaSelection(const T1& v0, const T2& ntrack, const T2& ptrack,
+                             const C& collision)
+  {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack, collision))
       return false;
     if (!passedSingleTrackSelection(ntrack, collision))
       return false;
-    if (!ptrack.hasTOF())
+    if (useTOFpr && (!ptrack.hasTOF()))
       return false;
-    if (!ntrack.hasTOF())
+    if (useTOFpi && (!ntrack.hasTOF()))
       return false;
     if (TMath::Abs(ntrack.tofNSigmaPi()) > nsigmaTOFmax)
       return false;
@@ -208,17 +252,18 @@ struct LFTPCdEdxPostcalibration {
 
   // AntiLambda Selections
   template <typename T1, typename T2, typename C>
-  bool passedAntiLambdaSelection(const T1 &v0, const T2 &ntrack,
-                                 const T2 &ptrack, const C &collision) {
+  bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
+                                 const T2& ptrack, const C& collision)
+  {
 
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack, collision))
       return false;
     if (!passedSingleTrackSelection(ntrack, collision))
       return false;
-    if (!ptrack.hasTOF())
+    if (useTOFpr && (!ntrack.hasTOF()))
       return false;
-    if (!ntrack.hasTOF())
+    if (useTOFpi && (!ptrack.hasTOF()))
       return false;
     if (TMath::Abs(ptrack.tofNSigmaPi()) > nsigmaTOFmax)
       return false;
@@ -233,14 +278,18 @@ struct LFTPCdEdxPostcalibration {
   }
 
   // Process Data
-  void process(SelectedCollisions::iterator const &collision,
-               aod::V0Datas const &fullV0s, PIDTracks const &tracks) {
+  void process(SelectedCollisions::iterator const& collision,
+               aod::V0Datas const& fullV0s, PIDTracks const& tracks)
+  {
     // Event Selection
     if (!collision.sel8())
       return;
 
+    // Event Counter
+    registryCh.fill(HIST("histRecVtxZData"), collision.posZ());
+
     // Kaons and nuclei
-    for (auto &trk : tracks) {
+    for (auto& trk : tracks) {
 
       if (!passedSingleTrackSelection(trk, collision))
         continue;
@@ -256,6 +305,9 @@ struct LFTPCdEdxPostcalibration {
         continue;
       if (trk.itsChi2NCl() > maxChi2ITS)
         continue;
+
+      // Charged Particles
+      registryCh.fill(HIST("dEdx_vs_Momentum"), trk.sign() * trk.tpcInnerParam(), trk.tpcSignal());
 
       // Kaons
       if (trk.hasTOF() && TMath::Abs(trk.tofNSigmaKa()) < 2.0) {
@@ -289,7 +341,7 @@ struct LFTPCdEdxPostcalibration {
     }
 
     // Loop over Reconstructed V0s
-    for (auto &v0 : fullV0s) {
+    for (auto& v0 : fullV0s) {
 
       // Standard V0 Selections
       if (!passedV0Selection(v0, collision)) {
@@ -301,8 +353,8 @@ struct LFTPCdEdxPostcalibration {
       }
 
       // Positive and Negative Tracks
-      const auto &posTrack = v0.posTrack_as<PIDTracks>();
-      const auto &negTrack = v0.negTrack_as<PIDTracks>();
+      const auto& posTrack = v0.posTrack_as<PIDTracks>();
+      const auto& negTrack = v0.negTrack_as<PIDTracks>();
 
       if (!posTrack.passedTPCRefit())
         continue;
@@ -348,6 +400,7 @@ struct LFTPCdEdxPostcalibration {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<LFTPCdEdxPostcalibration>(cfgc)};
 }
