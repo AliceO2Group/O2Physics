@@ -359,12 +359,12 @@ struct createPCM {
       negTracks_sw.reserve(max_sw - min_sw);
       posTracks_sw.reserve(max_sw - min_sw);
 
-      int npos = 0, nneg = 0;
+      // int npos = 0, nneg = 0;
       for (int32_t isw = min_sw; isw < max_sw; isw++) {
         negTracks_sw.emplace_back(negTracks->sliceByCached(o2::aod::track::collisionId, isw, cache));
         posTracks_sw.emplace_back(posTracks->sliceByCached(o2::aod::track::collisionId, isw, cache));
-        npos += posTracks_sw.back().size();
-        nneg += negTracks_sw.back().size();
+        // npos += posTracks_sw.back().size();
+        // nneg += negTracks_sw.back().size();
         // LOGF(info, "collision.globalIndex() = %d , posTracks_sw.back().size() = %d , negTracks_sw.back().size() = %d", collision.globalIndex(), posTracks_sw.back().size(), negTracks_sw.back().size());
       }
       // LOGF(info, "min_sw = %d , max_sw = %d , collision.globalIndex() = %d , n posTracks_sw = %d , n negTracks_sw = %d", min_sw, max_sw, collision.globalIndex(), npos, nneg);
