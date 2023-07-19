@@ -158,21 +158,6 @@ DECLARE_SOA_COLUMN(CPA, cpa, float);                 //! Cosinus pointing angle
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float); //! Decay length in cm
 DECLARE_SOA_COLUMN(InvMass, invMass, float);         //! Invariant mass of 2prong candidate in GeV/c2
 
-template <typename T>
-auto invMassD0ToPiK(const T& pVec0, const T& pVec1)
-{
-  return RecoDecay::m(std::array{pVec0, pVec1},
-                      std::array{RecoDecay::getMassPDG(kPiPlus),
-                                 RecoDecay::getMassPDG(kKPlus)});
-}
-
-template <typename T>
-auto invMassD0barToKPi(const T& pVec0, const T& pVec1)
-{
-  return RecoDecay::m(std::array{pVec0, pVec1},
-                      std::array{RecoDecay::getMassPDG(kKPlus),
-                                 RecoDecay::getMassPDG(kPiPlus)});
-}
 } // namespace hf_cand_2prong_reduced
 
 DECLARE_SOA_TABLE(HfCand2ProngReduced, "AOD", "HFCAND2PRONGRED", //! Table with 2prong candidate information for reduced workflow

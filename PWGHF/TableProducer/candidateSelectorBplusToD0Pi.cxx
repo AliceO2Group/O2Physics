@@ -155,7 +155,6 @@ struct HfCandidateSelectorBplusToD0Pi {
       }
 
       // D0 is always index0 and pi is index1 by default
-      // auto candD0 = hfCandB.prong0_as<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>();
       auto trackPi = hfCandB.prong1_as<TracksPIDWithSel>();
 
       // topological cuts
@@ -178,7 +177,6 @@ struct HfCandidateSelectorBplusToD0Pi {
       if (usePid) {
         int pidTrackPi = selectorPion.getStatusTrackPIDTpcAndTof(trackPi);
         if (!selectionPID(pidTrackPi)) {
-          // LOGF(info, "B+ candidate selection failed at PID selection");
           hfSelBplusToD0PiCandidate(statusBplus);
           continue;
         }

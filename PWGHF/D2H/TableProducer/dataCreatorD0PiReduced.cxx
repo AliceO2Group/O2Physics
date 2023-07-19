@@ -307,12 +307,6 @@ struct HfDataCreatorD0PiReduced {
             continue;
           }
 
-          /* if (candD0.isSelD0() >= selectionFlagD0) {
-            invMassD0 = hf_cand_2prong_reduced::invMassD0barToKPi(pVec0, pVec1);
-          }
-          if (candD0.isSelD0bar() >= selectionFlagD0bar) {
-            invMassD0 = hf_cand_2prong_reduced::invMassD0ToPiK(pVec0, pVec1);
-          } */
           // fill Pion tracks table
           // if information on track already stored, go to next track
           if (!std::count(selectedTracksPion.begin(), selectedTracksPion.end(), trackPion.globalIndex())) {
