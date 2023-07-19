@@ -40,6 +40,7 @@ struct JetTriggerQA {
   using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
   using fullJetInfos = soa::Join<aod::FullJets, aod::FullJetConstituents>;
   using neutralJetInfos = soa::Join<aod::NeutralJets, aod::NeutralJetConstituents>;
+  using collisionWithTrigger = soa::Join<aod::Collisions, aod::EvSels, aod::FullJetFilters>::iterator;
 
   enum TriggerType_t {
     kMinBias,
@@ -319,7 +320,7 @@ struct JetTriggerQA {
     return false;
   }
 
-  bool hasEMCAL(soa::Join<aod::Collisions, aod::EvSels, aod::FullJetFilters>::iterator const& collision) const
+  bool hasEMCAL(collisionWithTrigger const& collision) const
   {
     std::array<triggerAliases, 11> selectAliases = {{triggerAliases::kTVXinEMC, triggerAliases::kEMC7, triggerAliases::kDMC7, triggerAliases::kEG1, triggerAliases::kEG2, triggerAliases::kDG1, triggerAliases::kDG2, triggerAliases::kEJ1, triggerAliases::kEJ2, triggerAliases::kDJ1, triggerAliases::kDJ2}};
     bool found = false;
@@ -584,7 +585,7 @@ struct JetTriggerQA {
   }
 
   template <typename JetCollection>
-  void runQA(soa::Join<aod::Collisions, aod::EvSels, aod::FullJetFilters>::iterator const& collision,
+  void runQA(collisionWithTrigger const& collision,
              JetCollection const& jets,
              aod::Tracks const& tracks,
              selectedClusters const& clusters)
@@ -676,7 +677,7 @@ struct JetTriggerQA {
     // Discard collisions without EMCAL if it is not respecifically required to discard the the EMCAL flag
     // If ignore is true, we don't check for the flag and accept all events
     if (!b_IgnoreEmcalFlag) {
-      if (isTrigger(TriggerType_t::kEmcalAny)) {
+      if (!isTrigger(TriggerType_t::kEmcalAny)) {
         return; // Only consider events where EMCAL is live
       }
     }
@@ -721,7 +722,7 @@ struct JetTriggerQA {
 
   } // process
 
-  void processFullJets(soa::Join<aod::Collisions, aod::EvSels, aod::FullJetFilters>::iterator const& collision,
+  void processFullJets(collisionWithTrigger const& collision,
                        fullJetInfos const& jets,
                        aod::Tracks const& tracks,
                        selectedClusters const& clusters)
@@ -730,7 +731,7 @@ struct JetTriggerQA {
   }
   PROCESS_SWITCH(JetTriggerQA, processFullJets, "Run QA for full jets", true);
 
-  void processNeutralJets(soa::Join<aod::Collisions, aod::EvSels, aod::FullJetFilters>::iterator const& collision,
+  void processNeutralJets(collisionWithTrigger const& collision,
                           neutralJetInfos const& jets,
                           aod::Tracks const& tracks,
                           selectedClusters const& clusters)
