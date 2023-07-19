@@ -15,6 +15,7 @@
 /// \note
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
+/// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Bari
 
 #ifndef PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
 #define PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
@@ -151,6 +152,23 @@ DECLARE_SOA_TABLE(HfTracksPidReduced, "AOD", "HFTRACKPIDRED", //! Table with PID
                   pidtof::TOFNSigmaKa,
                   pidtof::TOFNSigmaPr);
 
+namespace hf_cand_2prong_reduced
+{
+DECLARE_SOA_COLUMN(CPA, cpa, float);                 //! Cosinus pointing angle
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float); //! Decay length in cm
+DECLARE_SOA_COLUMN(InvMass, invMass, float);         //! Invariant mass of 2prong candidate in GeV/c2
+
+} // namespace hf_cand_2prong_reduced
+
+DECLARE_SOA_TABLE(HfCand2ProngReduced, "AOD", "HFCAND2PRONGRED", //! Table with 2prong candidate information for reduced workflow
+                  o2::soa::Index<>,
+                  hf_track_index::Prong0Id, hf_track_index::Prong1Id,
+                  hf_track_index_reduced::HfReducedCollisionId,
+                  HFTRACKPARCOV_COLUMNS,
+                  hf_cand_2prong_reduced::CPA,
+                  hf_cand_2prong_reduced::DecayLength,
+                  hf_cand_2prong_reduced::InvMass);
+
 namespace hf_cand_3prong_reduced
 {
 DECLARE_SOA_COLUMN(CPA, cpa, float);                 //! Cosinus pointing angle
@@ -231,10 +249,65 @@ DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int8_t); //! Flag to filt
 DECLARE_SOA_TABLE(HfCandB0Config, "AOD", "HFCANDB0CONFIG", //! Table with configurables information for reduced workflow
                   hf_cand_b0_config::MySelectionFlagD);
 
+namespace hf_bplus_mc
+{
+// MC Rec
+DECLARE_SOA_COLUMN(PtMother, ptMother, float); //! Transverse momentum of the mother in GeV/c
+// MC Gen
+DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);     //! Transverse momentum of the track in GeV/c
+DECLARE_SOA_COLUMN(YTrack, yTrack, float);       //! Rapidity of the track
+DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);   //! Pseudorapidity of the track
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);   //! Transverse momentum of the track's prong0 in GeV/c
+DECLARE_SOA_COLUMN(YProng0, yProng0, float);     //! Rapidity of the track's prong0
+DECLARE_SOA_COLUMN(EtaProng0, etaProng0, float); //! Pseudorapidity of the track's prong0
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);   //! Transverse momentum of the track's prong1 in GeV/c
+DECLARE_SOA_COLUMN(YProng1, yProng1, float);     //! Rapidity of the track's prong1
+DECLARE_SOA_COLUMN(EtaProng1, etaProng1, float); //! Pseudorapidity of the track's prong1
+} // namespace hf_bplus_mc
+
+// table with results of reconstruction level MC matching
+DECLARE_SOA_TABLE(HfD0PiMcRecReduced, "AOD", "HFD0PIMCRECRED", //! Table with reconstructed MC information on D0Pi(<-B+) pairs for reduced workflow
+                  hf_cand_bplus::Prong0Id,
+                  hf_track_index::Prong1Id,
+                  hf_cand_bplus::FlagMcMatchRec,
+                  hf_cand_bplus::OriginMcRec,
+                  hf_bplus_mc::PtMother);
+
+// Table with same size as HFCANDBPLUS
+DECLARE_SOA_TABLE(HfBpMcRecReduced, "AOD", "HFBPMCRECRED", //! Reconstruction-level MC information on B+ candidates for reduced workflow
+                  hf_cand_bplus::FlagMcMatchRec,
+                  hf_cand_bplus::OriginMcRec,
+                  hf_bplus_mc::PtMother);
+
+DECLARE_SOA_TABLE(HfBpMcGenReduced, "AOD", "HFBPMCGENRED", //! Generation-level MC information on B+ candidates for reduced workflow
+                  hf_cand_bplus::FlagMcMatchGen,
+                  hf_cand_bplus::OriginMcGen,
+                  hf_bplus_mc::PtTrack,
+                  hf_bplus_mc::YTrack,
+                  hf_bplus_mc::EtaTrack,
+                  hf_bplus_mc::PtProng0,
+                  hf_bplus_mc::YProng0,
+                  hf_bplus_mc::EtaProng0,
+                  hf_bplus_mc::PtProng1,
+                  hf_bplus_mc::YProng1,
+                  hf_bplus_mc::EtaProng1);
+
+// store all configurables values used in the first part of the workflow
+// so we can use them in the Bplus part
+namespace hf_cand_bplus_config
+{
+DECLARE_SOA_COLUMN(MySelectionFlagD0, mySelectionFlagD0, int8_t);       //! Flag to filter selected D0 mesons
+DECLARE_SOA_COLUMN(MySelectionFlagD0bar, mySelectionFlagD0bar, int8_t); //! Flag to filter selected D0 mesons
+} // namespace hf_cand_bplus_config
+
+DECLARE_SOA_TABLE(HfCandBpConfig, "AOD", "HFCANDBPCONFIG", //! Table with configurables information for reduced workflow
+                  hf_cand_bplus_config::MySelectionFlagD0,
+                  hf_cand_bplus_config::MySelectionFlagD0bar);
 } // namespace aod
 
 namespace soa
 {
+DECLARE_EQUIVALENT_FOR_INDEX(aod::HfCand2ProngBase, aod::HfCand2ProngReduced);
 DECLARE_EQUIVALENT_FOR_INDEX(aod::HfCand3ProngBase, aod::HfCand3ProngReduced);
 DECLARE_EQUIVALENT_FOR_INDEX(aod::StoredTracks, aod::HfTracksReduced);
 DECLARE_EQUIVALENT_FOR_INDEX(aod::StoredTracks, aod::HfTracksPidReduced);

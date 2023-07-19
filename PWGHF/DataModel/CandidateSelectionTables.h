@@ -299,6 +299,72 @@ DECLARE_SOA_TABLE(HfSelB0ToDPi, "AOD", "HFSELB0", //!
 namespace hf_sel_candidate_bplus
 {
 DECLARE_SOA_COLUMN(IsSelBplusToD0Pi, isSelBplusToD0Pi, int); //!
+// Apply topological cuts as defined in SelectorCuts.h
+/// \param candBp B+ candidate
+/// \param cuts B+ candidate selection per pT bin"
+/// \param binsPt pT bin limits
+/// \return true if candidate passes all selections
+template <typename T1, typename T2, typename T3>
+bool selectionTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
+{
+  auto ptcandBp = candBp.pt();
+  auto ptPi = RecoDecay::pt(candBp.pxProng1(), candBp.pyProng1());
+
+  int pTBin = findBin(binsPt, ptcandBp);
+  if (pTBin == -1) {
+    return false;
+  }
+
+  // B+ mass cut
+  if (std::abs(invMassBplusToD0Pi(candBp) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
+    return false;
+  }
+
+  // pion pt
+  if (ptPi < cuts->get(pTBin, "pT Pi")) {
+    return false;
+  }
+
+  // d0(D0)xd0(pi)
+  if (candBp.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
+    return false;
+  }
+
+  // B Decay length
+  if (candBp.decayLength() < cuts->get(pTBin, "B decLen")) {
+    return false;
+  }
+
+  // B Decay length XY
+  if (candBp.decayLengthXY() < cuts->get(pTBin, "B decLenXY")) {
+    return false;
+  }
+
+  // B+ CPA cut
+  if (candBp.cpa() < cuts->get(pTBin, "CPA")) {
+    return false;
+  }
+
+  return true;
+}
+
+/// Apply PID selection
+/// \param pidTrackPi PID status of trackPi (prong1 of B+ candidate)
+/// \param acceptPIDNotApplicable switch to accept Status::PIDNotApplicable
+/// \return true if prong1 of B+ candidate passes all selections
+template <typename T1 = int, typename T2 = bool>
+bool selectionPID(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+{
+  if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
+    return false;
+  }
+  if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Status::PIDRejected) {
+    return false;
+  }
+
+  return true;
+}
+
 } // namespace hf_sel_candidate_bplus
 DECLARE_SOA_TABLE(HfSelBplusToD0Pi, "AOD", "HFSELBPLUS", //!
                   hf_sel_candidate_bplus::IsSelBplusToD0Pi);
