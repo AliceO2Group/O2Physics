@@ -21,11 +21,6 @@ o2physics_add_dpl_workflow(nuclei-batask
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(nuclei-batask-light
-                    SOURCES LFNucleiBATaskLight.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(mc-spectra-efficiency
                     SOURCES mcspectraefficiency.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
