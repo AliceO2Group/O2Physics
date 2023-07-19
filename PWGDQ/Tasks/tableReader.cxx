@@ -1167,6 +1167,8 @@ struct AnalysisDileptonHadron {
   //      The current condition should be replaced when bitwise operators will become available in Filter expressions
   int fNHadronCutBit;
 
+  NoBinningPolicy<aod::dqanalysisflags::MixingHash> hashBin;
+
   void init(o2::framework::InitContext& context)
   {
     fValuesDilepton = new float[VarManager::kNVars];
@@ -1179,7 +1181,7 @@ struct AnalysisDileptonHadron {
     // TODO: Create separate histogram directories for each selection used in the creation of the dileptons
     // TODO: Implement possibly multiple selections for the associated track ?
     if (context.mOptions.get<bool>("processSkimmed")) {
-      DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelation", fConfigAddDileptonHadHistogram); // define all histograms
+      DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronInvMassME;DileptonHadronCorrelation", fConfigAddDileptonHadHistogram); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars());
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
@@ -1256,12 +1258,45 @@ struct AnalysisDileptonHadron {
   {
     runDileptonHadron<VarManager::kBtoJpsiEEK, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, dileptons);
   }
+
+  Preslice<soa::Filtered<MyPairCandidatesSelected>> perEventsPairs = aod::reducedpair::reducedeventId;
+  void processMixedEvent(soa::Filtered<MyEventsHashSelected>& events, soa::Filtered<MyPairCandidatesSelected> const& dileptons, MyBarrelTracksSelected const& tracks)
+  {
+    events.bindExternalIndices(&dileptons);
+    events.bindExternalIndices(&tracks);
+    int mixingDepth = 10;
+    for (auto& [event1, event2] : selfCombinations(hashBin, mixingDepth, -1, events, events)) {
+      VarManager::ResetValues(0, VarManager::kNVars);
+      VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
+
+      auto evDileptons = tracks.sliceBy(perEventPairs, event1.globalIndex());
+      evDileptons.bindExternalIndices(&events);
+
+      auto evTracks = tracks.sliceBy(perEventPairs, event2.globalIndex());
+      evTracks.bindExternalIndices(&events);
+
+      for (auto dilepton : evDileptons) {
+        for (auto& track : evTracks) {
+          
+          if (!(uint32_t(track.isBarrelSelected()) & (uint32_t(1) << fNHadronCutBit))) {
+            continue;
+          }
+
+          VarManager::FillDileptonHadron(dilepton, track, VarManager::fgValues);
+          fHistMan->FillHistClass("DileptonHadronInvMassME", fValuesHadron);
+        }     // end for (track)
+      }       // end for (dilepton)
+      
+    } // end event loop
+  }
+
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisDileptonHadron, processSkimmed, "Run dilepton-hadron pairing, using skimmed data", false);
+  PROCESS_SWITCH(AnalysisDileptonHadron, processMixedEvent, "Run dilepton-hadron mixed event pairing", false);
   PROCESS_SWITCH(AnalysisDileptonHadron, processDummy, "Dummy function", false);
 };
 
