@@ -112,16 +112,16 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFind
                            [](uint8_t tpcNClsFindable, uint8_t tpcNClsCrossedRows) -> float {
                              return (float)tpcNClsCrossedRows / (float)tpcNClsFindable;
                            });
-DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, float);
-DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float);
-DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float);
-DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float);
-DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float);
-DECLARE_SOA_COLUMN(TOFNSigmaEl, tofNSigmaEl, float);
-DECLARE_SOA_COLUMN(TOFNSigmaPi, tofNSigmaPi, float);
-DECLARE_SOA_COLUMN(TOFNSigmaKa, tofNSigmaKa, float);
-DECLARE_SOA_COLUMN(TOFNSigmaPr, tofNSigmaPr, float);
-DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float);
+DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, float); //! Nsigma separation with the TPC detector for electron
+DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma separation with the TPC detector for pion
+DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma separation with the TPC detector for kaon
+DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float); //! Nsigma separation with the TPC detector for proton
+DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float); //! Nsigma separation with the TPC detector for deuteron
+DECLARE_SOA_COLUMN(TOFNSigmaEl, tofNSigmaEl, float); //! Nsigma separation with the TPC detector for electron
+DECLARE_SOA_COLUMN(TOFNSigmaPi, tofNSigmaPi, float); //! Nsigma separation with the TPC detector for pion
+DECLARE_SOA_COLUMN(TOFNSigmaKa, tofNSigmaKa, float); //! Nsigma separation with the TPC detector for kaon
+DECLARE_SOA_COLUMN(TOFNSigmaPr, tofNSigmaPr, float); //! Nsigma separation with the TPC detector for proton
+DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //! Nsigma separation with the TPC detector for deuteron
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);       //! DCA between daughters
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse radius of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! X position of the decay vertex
