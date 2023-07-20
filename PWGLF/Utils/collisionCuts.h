@@ -20,7 +20,6 @@
 #ifndef PWGLF_UTILS_COLLISIONCUTS_H_
 #define PWGLF_UTILS_COLLISIONCUTS_H_
 
-#include "Common/CCDB/TriggerAliases.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 
@@ -44,7 +43,7 @@ class CollisonCuts
     mCutsSet = true;
     mZvtxMax = zvtxMax;
     mCheckTrigger = checkTrigger;
-    mTrigger = static_cast<triggerAliases>(trig);
+    mTrigger = trig;
     mCheckOffline = checkOffline;
     mCheckIsRun3 = checkRun3;
   }
@@ -85,29 +84,29 @@ class CollisonCuts
       LOGF(debug, "Vertex out of range");
       return false;
     }
-    if (mCheckIsRun3) {
+    if (mCheckIsRun3) { // Run3 case
       if (mCheckOffline && !col.sel8()) {
         LOGF(debug, "Offline selection failed (Run3)");
         return false;
       }
-    } else {
-      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
-        LOGF(debug, "Trigger selection failed");
-        if (mInitialTriggerScan) {
-          LOGF(debug, "Trigger scan initialized");
-          for (int i = 0; i < kNaliases; i++) {
-            if (col.alias_bit(i)) {
-              LOGF(debug, "Trigger %d fired", i);
-            }
-          }
-          mInitialTriggerScan = false;
-        }
-        return false;
-      }
+    } else { // Run2 case
       if (mCheckOffline && !col.sel7()) {
         LOGF(debug, "Offline selection failed (sel7)");
         return false;
       }
+    }
+    if (mCheckTrigger && !col.alias_bit(mTrigger)) {
+      LOGF(debug, "Trigger selection failed");
+      if (mInitialTriggerScan) { // Print out the trigger bits
+        LOGF(debug, "Trigger scan initialized");
+        for (int i = 0; i < kNaliases; i++) {
+          if (col.alias_bit(i)) {
+            LOGF(debug, "Trigger %d fired", i);
+          }
+        }
+        mInitialTriggerScan = false;
+      }
+      return false;
     }
     return true;
   }
@@ -128,8 +127,7 @@ class CollisonCuts
     }
   }
 
-  /// \todo to be implemented!
-  /// Compute the sphericity of an event
+  /// Compute the spherocity of an event
   /// Important here is that the filter on tracks does not interfere here!
   /// In Run 2 we used here global tracks within |eta| < 0.8
   /// \tparam T1 type of the collision
@@ -138,9 +136,28 @@ class CollisonCuts
   /// \param tracks All tracks
   /// \return value of the sphericity of the event
   template <typename T1, typename T2>
-  float computeSphericity(T1 const& col, T2 const& tracks)
+  float computeSpherocity(T1 const& col, T2 const& tracks)
   {
-    return 2.f;
+    int size = tracks.size();
+    float Sp = 1;
+    for (auto const& trk1 : tracks) {
+      float sum1 = 0;
+      float phi1 = trk1.phi();
+      int ctr = 0;
+      for (auto const& trk2 : tracks) {
+        ++ctr;
+        if (trk1.index() == trk2.index())
+          continue;
+        float phi2 = trk2.phi();
+        sum1 += abs(sin(phi1 - phi2));
+      }
+      float sph = pow(sum1 / static_cast<float>(size), 2);
+      if (sph < Sp) {
+        Sp = sph;
+      }
+    }
+    float spherocity = pow(M_PI_2, 2) * Sp;
+    return spherocity;
   }
 
  private:
@@ -150,7 +167,7 @@ class CollisonCuts
   bool mCheckOffline = false;                      ///< Check for offline criteria (might change)
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   bool mInitialTriggerScan = false;                ///< Check trigger when the event is first selected
-  triggerAliases mTrigger = kINT7;                 ///< Trigger to check for
+  int mTrigger = kINT7;                            ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
 };
 } // namespace o2::analysis
