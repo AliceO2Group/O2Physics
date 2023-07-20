@@ -53,10 +53,12 @@ enum ParticleType {
   kV0Child,         //! Child track of a V0
   kCascade,         //! Cascade
   kCascadeBachelor, //! Bachelor track of a cascade
+  kPhi,             //! Phi meson
+  kPhiChild,        //! Child track of a Phi meson
   kNParticleTypes   //! Number of particle types
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "kPhi", "kPhiChild"}; //! Naming of the different particle types
 static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
