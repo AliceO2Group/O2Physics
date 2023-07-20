@@ -74,7 +74,7 @@ struct reso2initializer {
   o2::analysis::CollisonCuts colCuts;
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
-  Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT8, "Evt sel: trigger"};
+  Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", 8, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
   Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "The name of multiplicity estimator"};
@@ -125,7 +125,6 @@ struct reso2initializer {
   // Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && ((nabs(aod::pidtof::tofNSigmaPi) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaKa) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < pidnSigmaPreSelectionCut))); // TOF
   Filter tpcPIDFilter = nabs(aod::pidtpc::tpcNSigmaPi) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaKa) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < pidnSigmaPreSelectionCut; // TPC
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta;                                                                                                                                                    // Eta cut
-  Filter trackCutFilter = requireGlobalTrackInFilter();                                                                                                                                                      // Global track cuts
   Filter collisionFilter = nabs(aod::collision::posZ) < ConfEvtZvtx;
 
   // MC Resonance parent filter
@@ -334,6 +333,9 @@ struct reso2initializer {
                 track.tpcSignal(),
                 track.passedITSRefit(),
                 track.passedTPCRefit(),
+                track.isGlobalTrackWoDCA(),
+                track.isPrimaryTrack(),
+                track.isPVContributor(),
                 track.tpcCrossedRowsOverFindableCls(),
                 track.itsChi2NCl(),
                 track.tpcChi2NCl());
