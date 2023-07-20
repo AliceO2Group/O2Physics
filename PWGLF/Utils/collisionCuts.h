@@ -129,19 +129,14 @@ class CollisonCuts
   }
 
   /// \todo to be implemented!
-  /// Compute the sphericity of an event
+  /// Compute the spherocity of an event
   /// Important here is that the filter on tracks does not interfere here!
   /// In Run 2 we used here global tracks within |eta| < 0.8
   /// \tparam T1 type of the collision
   /// \tparam T2 type of the tracks
   /// \param col Collision
   /// \param tracks All tracks
-  /// \return value of the sphericity of the event
-  template <typename T1, typename T2>
-  float computeSphericity(T1 const& col, T2 const& tracks)
-  {
-    return 2.f;
-  }
+  /// \return value of the spherocity of the event
 
   template <typename T1, typename T2>
   float computeSpherocity(T1 const& col, T2 const& tracks)
