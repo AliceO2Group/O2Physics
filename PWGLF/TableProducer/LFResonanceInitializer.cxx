@@ -69,12 +69,13 @@ struct reso2initializer {
   // Configurables
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Pilot beam"}; // Choose if running on converted data or pilot beam
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+  Configurable<bool> ConfFillQA{"ConfFillQA", false, "Fill QA histograms"};
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
-  Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
+  Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", 8, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
   Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "The name of multiplicity estimator"};
@@ -111,21 +112,12 @@ struct reso2initializer {
   Configurable<double> cMinCascRadius{"cMinCascRadius", 0.0, "Minimum Cascade radius from PV"};
   Configurable<double> cCascMassResol{"cCascMassResol", 999, "Cascade mass resolution"};
 
-  HistogramRegistry qaRegistry{"QAHistos", {
-                                             {"hGoodTrackIndices", "hGoodTrackIndices", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
-                                             {"hGoodMCTrackIndices", "hGoodMCTrackIndices", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
-                                             {"hGoodV0Indices", "hGoodV0Indices", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
-                                             {"hGoodMCV0Indices", "hGoodMCV0Indices", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
-                                             {"hGoodCascIndices", "hGoodCascIndices", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
-                                             {"hGoodMCCascIndices", "hGoodMCCascIndices", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
-                                           },
-                               OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Pre-filters for efficient process
   // Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && ((nabs(aod::pidtof::tofNSigmaPi) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaKa) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < pidnSigmaPreSelectionCut))); // TOF
   Filter tpcPIDFilter = nabs(aod::pidtpc::tpcNSigmaPi) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaKa) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < pidnSigmaPreSelectionCut; // TPC
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta;                                                                                                                                                    // Eta cut
-  Filter trackCutFilter = requireGlobalTrackInFilter();                                                                                                                                                      // Global track cuts
   Filter collisionFilter = nabs(aod::collision::posZ) < ConfEvtZvtx;
 
   // MC Resonance parent filter
@@ -158,13 +150,16 @@ struct reso2initializer {
   bool IsTrackSelected(CollisionType const& collision, TrackType const& track)
   {
     // Track selection
-    qaRegistry.fill(HIST("hGoodTrackIndices"), 0.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodTrackIndices"), 0.5);
     // MC case can be handled here
     if constexpr (isMC) {
       // MC check
-      qaRegistry.fill(HIST("hGoodMCTrackIndices"), 0.5);
+      if (ConfFillQA)
+        qaRegistry.fill(HIST("hGoodMCTrackIndices"), 0.5);
     }
-    qaRegistry.fill(HIST("hGoodTrackIndices"), 1.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodTrackIndices"), 1.5);
     return true;
   }
 
@@ -172,7 +167,8 @@ struct reso2initializer {
   bool IsV0Selected(CollisionType const& collision, V0Type const& v0, TrackType const& track)
   {
     // V0 selection
-    qaRegistry.fill(HIST("hGoodV0Indices"), 0.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodV0Indices"), 0.5);
 
     auto postrack = v0.template posTrack_as<TrackType>();
     auto negtrack = v0.template negTrack_as<TrackType>();
@@ -181,25 +177,30 @@ struct reso2initializer {
       return false;
     if (negtrack.tpcNClsCrossedRows() < mincrossedrows)
       return false;
-    qaRegistry.fill(HIST("hGoodV0Indices"), 1.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodV0Indices"), 1.5);
 
     if (fabs(postrack.dcaXY()) < cMinV0PosDCArToPVcut)
       return false;
     if (fabs(negtrack.dcaXY()) < cMinV0NegDCArToPVcut)
       return false;
-    qaRegistry.fill(HIST("hGoodV0Indices"), 2.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodV0Indices"), 2.5);
 
     if ((v0.v0radius() > cMaxV0Radius) || (v0.v0radius() < cMinV0Radius))
       return false;
-    qaRegistry.fill(HIST("hGoodV0Indices"), 3.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodV0Indices"), 3.5);
     if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cMinV0CosPA)
       return false;
-    qaRegistry.fill(HIST("hGoodV0Indices"), 4.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodV0Indices"), 4.5);
 
     // MC case can be handled here
     if constexpr (isMC) {
       // MC check
-      qaRegistry.fill(HIST("hGoodMCV0Indices"), 0.5);
+      if (ConfFillQA)
+        qaRegistry.fill(HIST("hGoodMCV0Indices"), 0.5);
     }
     return true;
   }
@@ -208,7 +209,8 @@ struct reso2initializer {
   bool IsCascSelected(CollisionType const& collision, CascType const& casc, TrackType const& track)
   {
     // V0 selection
-    qaRegistry.fill(HIST("hGoodCascIndices"), 0.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodCascIndices"), 0.5);
 
     auto trackBach = casc.template bachelor_as<TrackType>();
     // auto trackPos = casc.template posTrack_as<TrackType>();
@@ -217,50 +219,58 @@ struct reso2initializer {
     // track cuts
     if (trackBach.tpcNClsCrossedRows() < mincrossedrows_cascbach)
       return false;
-    qaRegistry.fill(HIST("hGoodCascIndices"), 1.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodCascIndices"), 1.5);
 
     if (fabs(trackBach.dcaXY()) < cMinCascBachDCArToPVcut)
       return false;
     if (fabs(trackBach.dcaXY()) > cMaxCascBachDCArToPVcut)
       return false;
-    qaRegistry.fill(HIST("hGoodCascIndices"), 2.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodCascIndices"), 2.5);
 
     // DCA daugthers
     if (casc.dcaV0daughters() > cMaxCascDCAV0Daughters)
       return false;
     if (casc.dcacascdaughters() > cMaxCascDCACascDaughters)
       return false;
-    qaRegistry.fill(HIST("hGoodCascIndices"), 3.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodCascIndices"), 3.5);
 
     // CPA cuts
     if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cMinCascCosPA)
       return false;
     if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cMinCascV0CosPA)
       return false;
-    qaRegistry.fill(HIST("hGoodCascIndices"), 4.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodCascIndices"), 4.5);
 
     // V0 radius
     auto v0radius = casc.v0radius();
     if ((v0radius > cMaxCascV0Radius) || (v0radius < cMinCascV0Radius))
       return false;
-    qaRegistry.fill(HIST("hGoodCascIndices"), 5.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodCascIndices"), 5.5);
 
     // Casc radius
     auto cascradius = casc.cascradius();
     if ((cascradius > cMaxCascRadius) || (cascradius < cMinCascRadius))
       return false;
-    qaRegistry.fill(HIST("hGoodCascIndices"), 6.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodCascIndices"), 6.5);
 
     // Casc mass
     auto cascMass = casc.mXi();
     if (abs(cascMass - cXiMass) > cCascMassResol)
       return false;
-    qaRegistry.fill(HIST("hGoodCascIndices"), 7.5);
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodCascIndices"), 7.5);
 
     // MC case can be handled here
     if constexpr (isMC) {
       // MC check
-      qaRegistry.fill(HIST("hGoodMCCascIndices"), 0.5);
+      if (ConfFillQA)
+        qaRegistry.fill(HIST("hGoodMCCascIndices"), 0.5);
     }
     return true;
   }
@@ -334,6 +344,9 @@ struct reso2initializer {
                 track.tpcSignal(),
                 track.passedITSRefit(),
                 track.passedTPCRefit(),
+                track.isGlobalTrackWoDCA(),
+                track.isPrimaryTrack(),
+                track.isPVContributor(),
                 track.tpcCrossedRowsOverFindableCls(),
                 track.itsChi2NCl(),
                 track.tpcChi2NCl());
@@ -662,6 +675,17 @@ struct reso2initializer {
     ccdb->setFatalWhenNull(cfgFatalWhenNull);
     uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
+
+    // QA histograms
+    if (ConfFillQA) {
+      AxisSpec idxAxis = {8, 0, 8, "Index"};
+      qaRegistry.add("hGoodTrackIndices", "hGoodTrackIndices", kTH1F, {idxAxis});
+      qaRegistry.add("hGoodMCTrackIndices", "hGoodMCTrackIndices", kTH1F, {idxAxis});
+      qaRegistry.add("hGoodV0Indices", "hGoodV0Indices", kTH1F, {idxAxis});
+      qaRegistry.add("hGoodMCV0Indices", "hGoodMCV0Indices", kTH1F, {idxAxis});
+      qaRegistry.add("hGoodCascIndices", "hGoodCascIndices", kTH1F, {idxAxis});
+      qaRegistry.add("hGoodMCCascIndices", "hGoodMCCascIndices", kTH1F, {idxAxis});
+    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc) // Simple copy from LambdaKzeroFinder.cxx
@@ -718,9 +742,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -740,9 +764,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -764,9 +788,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -787,9 +811,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
@@ -813,9 +837,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
@@ -841,9 +865,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
