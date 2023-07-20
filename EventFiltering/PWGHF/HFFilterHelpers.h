@@ -967,17 +967,17 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
     for (int iDau{0}; iDau < 3; ++iDau) {
       nSigmaPiTpc[iDau] = getTPCPostCalib(hMapPion, dauTracks[iDau], kPi);
       if (iDau == 0) {
-        return false;
+        continue;
       }
-      nSigmaPrTpc[iDau - 1] = getTPCPostCalib(hMapProton, dauTracks[iDau], kPr);
+      nSigmaPrTpc[iDau] = getTPCPostCalib(hMapProton, dauTracks[iDau], kPr);
     }
   } else if (setTPCCalib == 2) {
     for (int iDau{0}; iDau < 3; ++iDau) {
       nSigmaPiTpc[iDau] = getTPCSplineCalib(dauTracks[iDau], massPi, (dauTracks[iDau].sign() > 0) ? hSplinePion[0] : hSplinePion[1]);
       if (iDau == 0) {
-        return false;
+        continue;
       }
-      nSigmaPrTpc[iDau - 1] = getTPCSplineCalib(dauTracks[iDau], massProton, (dauTracks[iDau].sign() > 0) ? hSplineProton[0] : hSplineProton[1]);
+      nSigmaPrTpc[iDau] = getTPCSplineCalib(dauTracks[iDau], massProton, (dauTracks[iDau].sign() > 0) ? hSplineProton[0] : hSplineProton[1]);
     }
   }
 
