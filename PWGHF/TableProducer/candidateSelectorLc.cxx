@@ -143,7 +143,7 @@ struct HfCandidateSelectorLc {
 
   void process(aod::HfCand3Prong const& candidates, TrksPID const&)
   {
-    TrackSelectorPIDHadrons selectorPion(kPiPlus);
+    TrackSelectorPIDPiKaPr selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
     selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -152,10 +152,10 @@ struct HfCandidateSelectorLc {
     selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
 
-    TrackSelectorPIDHadrons selectorKaon(selectorPion);
+    TrackSelectorPIDPiKaPr selectorKaon(selectorPion);
     selectorKaon.setPDG(kKPlus);
 
-    TrackSelectorPIDHadrons selectorProton(selectorPion);
+    TrackSelectorPIDPiKaPr selectorProton(selectorPion);
     selectorProton.setPDG(kProton);
 
     // looping over 3-prong candidates

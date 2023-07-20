@@ -24,7 +24,7 @@
 
 /// Class for track selection using PID detectors
 
-template <bool hasPi = true, bool hasKa = true, bool hasPr = true, bool hasEl = true, bool hasMu = true>
+template <bool hasEl = true, bool hasMu = true, bool hasPi = true, bool hasKa = true, bool hasPr = true>
 class TrackSelectorPIDBase
 {
  public:
@@ -54,42 +54,41 @@ class TrackSelectorPIDBase
     switch (mPdg) {
       case kElectron: {
         if constexpr (!hasEl) {
-          LOGF(fatal, "Species not implemented for PDG %d", mPdg);
+          errorPdg();
         }
         mSpecies = o2::track::PID::Electron;
         break;
       }
       case kMuonMinus: {
         if constexpr (!hasMu) {
-          LOGF(fatal, "Species not implemented for PDG %d", mPdg);
+          errorPdg();
         }
         mSpecies = o2::track::PID::Muon;
         break;
       }
       case kPiPlus: {
         if constexpr (!hasPi) {
-          LOGF(fatal, "Species not implemented for PDG %d", mPdg);
+          errorPdg();
         }
         mSpecies = o2::track::PID::Pion;
         break;
       }
       case kKPlus: {
         if constexpr (!hasKa) {
-          LOGF(fatal, "Species not implemented for PDG %d", mPdg);
+          errorPdg();
         }
         mSpecies = o2::track::PID::Kaon;
         break;
       }
       case kProton: {
         if constexpr (!hasPr) {
-          LOGF(fatal, "Species not implemented for PDG %d", mPdg);
+          errorPdg();
         }
         mSpecies = o2::track::PID::Proton;
         break;
       }
       default: {
-        LOGF(error, "Species not implemented for PDG %d", mPdg);
-        assert(false);
+        errorPdg();
       }
     }
   }
@@ -173,8 +172,7 @@ class TrackSelectorPIDBase
         break;
       }
       default: {
-        LOGF(error, "TPC PID not implemented for PDG %d", mPdg);
-        assert(false);
+        errorPdg();
       }
     }
 
@@ -285,8 +283,7 @@ class TrackSelectorPIDBase
         break;
       }
       default: {
-        LOGF(error, "TOF PID not implemented for PDG %d", mPdg);
-        assert(false);
+        errorPdg();
       }
     }
 
@@ -370,28 +367,37 @@ class TrackSelectorPIDBase
     double nSigma = 100.;
     switch (mPdg) {
       case kElectron: {
-        nSigma = track.rich().richNsigmaEl();
+        if constexpr (hasEl) {
+          nSigma = track.rich().richNsigmaEl();
+        }
         break;
       }
       case kMuonMinus: {
-        nSigma = track.rich().richNsigmaMu();
+        if constexpr (hasMu) {
+          nSigma = track.rich().richNsigmaMu();
+        }
         break;
       }
       case kPiPlus: {
-        nSigma = track.rich().richNsigmaPi();
+        if constexpr (hasPi) {
+          nSigma = track.rich().richNsigmaPi();
+        }
         break;
       }
       case kKPlus: {
-        nSigma = track.rich().richNsigmaKa();
+        if constexpr (hasKa) {
+          nSigma = track.rich().richNsigmaKa();
+        }
         break;
       }
       case kProton: {
-        nSigma = track.rich().richNsigmaPr();
+        if constexpr (hasPr) {
+          nSigma = track.rich().richNsigmaPr();
+        }
         break;
       }
       default: {
-        LOGF(error, "RICH PID not implemented for PDG %d", mPdg);
-        assert(false);
+        errorPdg();
       }
     }
 
@@ -624,28 +630,37 @@ class TrackSelectorPIDBase
     double prob = 0.;
     switch (mPdg) {
       case kElectron: {
-        prob = track.bayesEl();
+        if constexpr (hasEl) {
+          prob = track.bayesEl();
+        }
         break;
       }
       case kMuonMinus: {
-        prob = track.bayesMu();
+        if constexpr (hasMu) {
+          prob = track.bayesMu();
+        }
         break;
       }
       case kPiPlus: {
-        prob = track.bayesPi();
+        if constexpr (hasPi) {
+          prob = track.bayesPi();
+        }
         break;
       }
       case kKPlus: {
-        prob = track.bayesKa();
+        if constexpr (hasKa) {
+          prob = track.bayesKa();
+        }
         break;
       }
       case kProton: {
-        prob = track.bayesPr();
+        if constexpr (hasPr) {
+          prob = track.bayesPr();
+        }
         break;
       }
       default: {
-        LOGF(error, "Bayes PID not implemented for PDG %d", mPdg);
-        assert(false);
+        errorPdg();
       }
     }
 
@@ -688,7 +703,7 @@ class TrackSelectorPIDBase
 
  private:
   uint mPdg = kPiPlus;                  ///< PDG code of the expected particle
-  uint mSpecies = o2::track::PID::Pion; ///< Expected species of the track
+  uint mSpecies = o2::track::PID::Pion; ///< Expected species of the track for the Bayesian selection
 
   // TPC
   float mPtTPCMin = 0.;                ///< minimum pT for TPC PID [GeV/c]
@@ -718,11 +733,24 @@ class TrackSelectorPIDBase
   float mPtBayesMin = 0.;    ///< minimum pT for Bayesian PID [GeV/c]
   float mPtBayesMax = 100.;  ///< maximum pT for Bayesian PID [GeV/c]
   float mProbBayesMin = -1.; ///< minimum Bayesian probability [%]
+
+  /// Throw fatal for unsupported PDG values.
+  void errorPdg() {
+    LOGF(fatal, "Species with PDG code %d not supported", mPdg);
+  }
 };
 
-// using TrackSelectorPID = TrackSelectorPIDBase<>;
-using TrackSelectorPID = TrackSelectorPIDBase<true, true, true, true, true>;
-using TrackSelectorPIDHadrons = TrackSelectorPIDBase<true, true, true, false, false>;
-using TrackSelectorPIDLeptons = TrackSelectorPIDBase<false, false, false, true, true>;
+// Predefined instances
+using TrackSelectorPID = TrackSelectorPIDBase<true, true, true, true, true>; // all species
+// single species
+using TrackSelectorPIDEl = TrackSelectorPIDBase<true, false, false, false, false>; // El
+using TrackSelectorPIDMu = TrackSelectorPIDBase<false, true, false, false, false>; // Mu
+using TrackSelectorPIDPi = TrackSelectorPIDBase<false, false, true, false, false>; // Pi
+using TrackSelectorPIDKa = TrackSelectorPIDBase<false, false, false, true, false>; // Ka
+using TrackSelectorPIDPr = TrackSelectorPIDBase<false, false, false, false, true>; // Pr
+// multiple species
+using TrackSelectorPIDPiKa = TrackSelectorPIDBase<false, false, true, true, false>; // Pi Ka
+using TrackSelectorPIDPiKaPr = TrackSelectorPIDBase<false, false, true, true, true>; // Pi Ka Pr
+using TrackSelectorPIDElMu = TrackSelectorPIDBase<true, true, false, false, false>; // El Mu
 
 #endif // COMMON_CORE_TRACKSELECTORPID_H_
