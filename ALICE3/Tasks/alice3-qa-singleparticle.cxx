@@ -33,7 +33,7 @@ struct Alice3SingleParticle {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> ptBins{"pt-bins", 500, "Number of pT bins"};
   Configurable<float> ptMin{"pt-min", 0.f, "Lower limit in pT"};
-  Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
+  Configurable<float> ptMax{"pt-max", 10.f, "Upper limit in pT"};
   Configurable<int> etaBins{"eta-bins", 500, "Number of eta bins"};
   Configurable<float> etaMin{"eta-min", -3.f, "Lower limit in eta"};
   Configurable<float> etaMax{"eta-max", 3.f, "Upper limit in eta"};
@@ -214,6 +214,9 @@ struct Alice3SingleParticle {
         continue;
       }
       if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax) {
+        continue;
+      }
+      if (mcParticle.pt() < ptMin || mcParticle.pt() > ptMax) {
         continue;
       }
       if (mcParticle.vz() < prodMinZ || mcParticle.vz() > prodMaxZ) {
@@ -498,6 +501,9 @@ struct Alice3SingleParticle {
         continue;
       }
       if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax) {
+        continue;
+      }
+      if (mcParticle.pt() < ptMin || mcParticle.pt() > ptMax) {
         continue;
       }
       histos.fill(HIST("particle/Pt"), mcParticle.pt());
