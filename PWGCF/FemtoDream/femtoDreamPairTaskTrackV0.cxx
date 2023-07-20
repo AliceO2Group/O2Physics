@@ -162,7 +162,7 @@ struct femtoDreamPairTaskTrackV0 {
           !isFullPIDSelected(part.pidcut(), part.p(), ConfTrkCutTable->get("Track", "PIDthr"), vPIDPartOne, ConfNspecies, kNsigma, ConfTrkCutTable->get("Track", "nSigmaTPC"), ConfTrkCutTable->get("Track", "nSigmaTPCTOF"))) {
         continue;
       }
-      trackHistoPartOne.fillQA<isMC, false>(part);
+      trackHistoPartOne.fillQA<isMC, false>(part, 0);
     }
 
     for (auto& part : groupPartsTwo) {
@@ -174,9 +174,9 @@ struct femtoDreamPairTaskTrackV0 {
           !isFullPIDSelected(negChild.pidcut(), negChild.p(), ConfV0ChildrenCutTable->get("PosChild", "PIDthr"), ConfChildNegIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPC"), ConfV0ChildrenCutTable->get("NegChild", "nSigmaTPCTOF"))) {
         continue;
       }
-      trackHistoPartTwo.fillQA<isMC, false>(part);
-      posChildHistos.fillQA<isMC, false>(posChild);
-      negChildHistos.fillQA<isMC, false>(negChild);
+      trackHistoPartTwo.fillQA<isMC, false>(part, 0);
+      posChildHistos.fillQA<false, false>(posChild, 0);
+      negChildHistos.fillQA<false, false>(negChild, 0);
     }
 
     /// Now build the combinations

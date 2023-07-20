@@ -69,9 +69,9 @@ class FemtoDreamParticleHisto
 
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[mc]).c_str();
 
-    mHistogramRegistry->add((folderName + folderSuffix + "/hMometum").c_str(), "; #it{p} (GeV/#it{c})", kTH1F, {tempFitVarMomentumAxis});
-    mHistogramRegistry->add((folderName + folderSuffix + "/hMometumVsEta").c_str(), "; #it{p} (GeV/#it{c}); #eta", kTH2F, {{500, 0, 10}, {300, -1.5, 1.5}});
-    mHistogramRegistry->add((folderName + folderSuffix + "/hMometumVsPhi").c_str(), "; #it{p} (GeV/#it{c}); #phi", kTH2F, {{500, 0, 10}, {360, 0., TMath::TwoPi()}});
+    mHistogramRegistry->add((folderName + folderSuffix + "/hMomentum").c_str(), "; #it{p} (GeV/#it{c})", kTH1F, {tempFitVarMomentumAxis});
+    mHistogramRegistry->add((folderName + folderSuffix + "/hMomentumVsEta").c_str(), "; #it{p} (GeV/#it{c}); #eta", kTH2F, {{500, 0, 10}, {300, -1.5, 1.5}});
+    mHistogramRegistry->add((folderName + folderSuffix + "/hMomentumVsPhi").c_str(), "; #it{p} (GeV/#it{c}); #phi", kTH2F, {{500, 0, 10}, {360, 0., TMath::TwoPi()}});
     mHistogramRegistry->add((folderName + folderSuffix + "/hEtaVsPhi").c_str(), "; #eta; #phi", kTH2F, {{300, -1.5, 1.5}, {360, 0., TMath::TwoPi()}});
 
     if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack || mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
@@ -227,28 +227,28 @@ class FemtoDreamParticleHisto
   }
 
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void fillQA_debug(T const& part, int MomemtumType)
+  void fillQA_debug(T const& part, int MomentumType)
   {
     float momentum;
-    switch (MomemtumType) {
-      case 0:
+    switch (MomentumType) {
+      case aod::femtodreamparticle::kPt:
         momentum = part.pt();
         break;
-      case 1:
+      case aod::femtodreamparticle::kPreco:
         momentum = part.p();
         break;
-      case 2:
-        LOG(warn) << "Mometum at TPC inner wall is only available if the Producer Task generates debug information.";
+      case aod::femtodreamparticle::kPtpc:
+        LOG(warn) << "Momentum at TPC inner wall is only available if the Producer Task generates debug information.";
         momentum = part.tpcInnerParam();
         break;
       default:
-        LOG(warn) << "MomentumType " << momentum << " no implemented. Use pT of the Track for debug Histograms.";
+        LOG(warn) << "MomentumType " << MomentumType << " no implemented. Use pT of the Track for debug Histograms.";
         momentum = part.pt();
     }
 
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hMometum"), momentum, momentum);
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hMometumVsEta"), momentum, part.eta());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hMometumVsPhi"), momentum, part.phi());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hMomentum"), momentum, momentum);
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hMomentumVsEta"), momentum, part.eta());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hMomentumVsPhi"), momentum, part.phi());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hEtaVsPhi"), part.eta(), part.phi());
 
     // Histograms holding further debug information
@@ -346,19 +346,19 @@ class FemtoDreamParticleHisto
         /// V0 histograms
         switch (mctruthorigin) {
           case (o2::aod::femtodreamMCparticle::kPrimary):
-            mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/CPA_Primary"),
+            mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hCPA_Primary"),
                                      part.pt(), part.tempFitVar());
             break;
           case (o2::aod::femtodreamMCparticle::kDaughter):
-            mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/CPA_Daughter"),
+            mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hCPA_Daughter"),
                                      part.pt(), part.tempFitVar());
             break;
           case (o2::aod::femtodreamMCparticle::kMaterial):
-            mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/CPA_Material"),
+            mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hCPA_Material"),
                                      part.pt(), part.tempFitVar());
             break;
           case (o2::aod::femtodreamMCparticle::kFake):
-            mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/CPA_Fake"),
+            mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hCPA_Fake"),
                                      part.pt(), part.tempFitVar());
             break;
           default:

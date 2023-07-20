@@ -56,6 +56,12 @@ enum ParticleType {
   kNParticleTypes   //! Number of particle types
 };
 
+enum MomentumType {
+  kPt,    //! transverse momentum
+  kPreco, //! reconstructed/propagated momentum at the vertex
+  kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
+};
+
 static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
 static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy"};
 
