@@ -94,7 +94,7 @@ static const std::vector<std::string> SpeciesMinTPCClustersName{"Proton", "Deute
 static const std::vector<std::string> SpeciesAvgTPCTOFName{"Proton", "AntiProton", "Deuteron", "AntiDeuteron"};
 static const std::vector<std::string> TPCTOFAvgName{"TPC Avg", "TOF Avg"};
 static const std::vector<std::string> PidCutsName{"TPC min", "TPC max", "TOF min", "TOF max", "TPCTOF max"};
-static const std::vector<std::string> PtCutsName{"Pt min", "Pt max", "P thres"};
+static const std::vector<std::string> PtCutsName{"Pt min (particle)", "Pt max (particle)", "Pt min (antiparticle)", "Pt max (antiparticle)", "P thres"};
 static const std::vector<std::string> ThreeBodyFilterNames{"PPP", "PPL", "PLL", "LLL"};
 static const std::vector<std::string> TwoBodyFilterNames{"PD", "LD"};
 static const std::vector<std::string> ParticleNames{"PPP", "aPaPaP", "PPL", "aPaPaL", "PLL", "aPaLaL", "LLL", "aLaLaL", "PD", "aPaD", "LD", "aLaD"};
@@ -103,7 +103,7 @@ static const int nPidRejection = 2;
 static const int nTracks = 2;
 static const int nPidAvg = 4;
 static const int nPidCutsDaughers = 2;
-static const int nPtCuts = 3;
+static const int nPtCuts = 5;
 static const int nAllTriggers = 6;
 static const int nTriggerAllNames = 12;
 
@@ -125,9 +125,9 @@ static const float pidcutsV0DaughterTable[kNV0Daughters][nPidCutsDaughers]{
   {-6.f, 6.f},
   {-6.f, 6.f}};
 static const float ptcutsTable[kNParticleRejection][nPtCuts]{
-  {0.35f, 6.f, 0.75f},
-  {0.35f, 1.6f, 99.f},
-  {0.35f, 6.f, 99.f}};
+  {0.35f, 6.f, 0.35f, 6.0f, 0.75f},
+  {0.35f, 1.6f, 0.35f, 1.6f, 99.f},
+  {0.f, 6.f, 0.f, 6.f, 99.f}};
 static const float NClustersMin[1][nTracks]{
   {60.0f, 60.0f}};
 
@@ -346,7 +346,7 @@ struct CFFilter {
     "Particle PID selections for antiparticles; perfect case scenario identical to particles"};
   Configurable<LabeledArray<float>> ConfPtCuts{
     "ConfPtCuts",
-    {CFTrigger::ptcutsTable[0], CFTrigger::kNParticleRejection, CFTrigger::nPtCuts, CFTrigger::SpeciesNameAll, CFTrigger::PtCutsName},
+    {CFTrigger::ptcutsTable[0], CFTrigger::kNParticleSpecies, CFTrigger::nPtCuts, CFTrigger::SpeciesNameAll, CFTrigger::PtCutsName},
     "Particle Momentum selections"};
   Configurable<bool> ConfRejectNOTDeuteron{
     "ConfRejectNOTDeuteron",
@@ -765,6 +765,7 @@ struct CFFilter {
   template <typename T>
   bool isSelectedTrack(T const& track, CFTrigger::ParticleSpecies partSpecies)
   {
+    const auto charge = track.sign();
     const auto pT = track.pt();
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
@@ -776,12 +777,23 @@ struct CFFilter {
     const auto dcaXY = track.dcaXY();
     const auto dcaZ = track.dcaZ();
 
-    if (pT < ConfPtCuts->get(partSpecies, "Pt min")) {
-      return false;
+    if (charge > 0) {
+      if (pT < ConfPtCuts->get(partSpecies, "Pt min (particle)")) {
+        return false;
+      }
+      if (pT > ConfPtCuts->get(partSpecies, "Pt max (particle)")) {
+        return false;
+      }
     }
-    if (pT > ConfPtCuts->get(partSpecies, "Pt max")) {
-      return false;
+    if (charge < 0) {
+      if (pT < ConfPtCuts->get(partSpecies, "Pt min (antiparticle)")) {
+        return false;
+      }
+      if (pT > ConfPtCuts->get(partSpecies, "Pt max (antiparticle)")) {
+        return false;
+      }
     }
+
     if (std::abs(eta) > ConfTrkEta) {
       return false;
     }
