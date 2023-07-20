@@ -85,8 +85,6 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 
 DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
                   full::CollisionId,
-                  collision::BCId,
-                  collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -231,8 +229,6 @@ struct HfTreeCreatorXicToPKPi {
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
             candidate.collisionId(),
-            trackPos1.collision().bcId(),
-            trackPos1.collision().numContrib(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
@@ -365,8 +361,6 @@ struct HfTreeCreatorXicToPKPi {
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
             candidate.collisionId(),
-            trackPos1.collision().bcId(),
-            trackPos1.collision().numContrib(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
