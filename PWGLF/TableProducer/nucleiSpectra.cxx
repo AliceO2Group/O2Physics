@@ -173,7 +173,7 @@ struct nucleiSpectra {
     kHe4 = BIT(3),
     kHasTOF = BIT(4),
     kIsReconstructed = BIT(5),
-    kIsAmbiguous = BIT(6),       /// just a placeholder now
+    kIsAmbiguous = BIT(6), /// just a placeholder now
     kPositive = BIT(7),
     kIsPhysicalPrimary = BIT(8), /// MC flags starting from the second half of the short
     kIsSecondaryFromMaterial = BIT(9),
