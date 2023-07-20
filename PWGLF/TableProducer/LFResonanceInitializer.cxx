@@ -718,9 +718,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -740,9 +740,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -764,9 +764,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     fillTracks<false>(collision, tracks);
@@ -787,9 +787,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
@@ -813,9 +813,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
@@ -841,9 +841,9 @@ struct reso2initializer {
     colCuts.fillQA(collision);
 
     if (ConfIsRun3) {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), MultEst(collision), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSphericity(collision, tracks), d_bz, bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), collision.multTPC(), colCuts.computeSpherocity(collision, tracks), d_bz, bc.timestamp());
     }
 
     // Loop over tracks
