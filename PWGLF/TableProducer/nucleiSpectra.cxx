@@ -173,7 +173,8 @@ struct nucleiSpectra {
     kHe4 = BIT(3),
     kHasTOF = BIT(4),
     kIsReconstructed = BIT(5),
-    kIsAmbiguous = BIT(6),       /// just a placeholder now
+    kIsAmbiguous = BIT(6), /// just a placeholder now
+    kPositive = BIT(7),
     kIsPhysicalPrimary = BIT(8), /// MC flags starting from the second half of the short
     kIsSecondaryFromMaterial = BIT(9),
     kIsSecondaryFromWeakDecay = BIT(10)
@@ -384,7 +385,14 @@ struct nucleiSpectra {
       float beta{responseBeta.GetBeta(track)};
       spectra.fill(HIST("hTpcSignalDataSelected"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
       spectra.fill(HIST("hTofSignalData"), track.tpcInnerParam(), beta);
-      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be chec
+      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+      uint16_t flag{kIsReconstructed};
+      if (track.hasTOF()) {
+        flag |= kHasTOF;
+      }
+      if (!iC) {
+        flag |= kPositive;
+      }
       for (int iS{0}; iS < nuclei::species; ++iS) {
         bool selectedTOF{false};
         if (std::abs(dcaInfo[1]) > cfgDCAcut->get(iS, 1)) {
@@ -392,9 +400,6 @@ struct nucleiSpectra {
         }
         ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{trackParCov.getPt() * nuclei::charges[iS], trackParCov.getEta(), trackParCov.getPhi(), nuclei::masses[iS]};
         float y{fvector.Rapidity() + cfgCMrapidity};
-        if (cfgCutOnReconstructedRapidity && (y < cfgCutRapidityMin || y > cfgCutRapidityMax)) {
-          continue;
-        }
 
         for (int iPID{0}; iPID < 2; ++iPID) {
           if (selectedTPC[iS]) {
@@ -403,34 +408,34 @@ struct nucleiSpectra {
             } else if (iPID) {
               selectedTOF = true;
             }
-            nuclei::hDCAxy[iPID][iS][iC]->Fill(1., fvector.pt(), dcaInfo[0]);
-            nuclei::hDCAz[iPID][iS][iC]->Fill(1., fvector.pt(), dcaInfo[1]);
-            if (std::abs(dcaInfo[0]) < cfgDCAcut->get(iS, 0u)) {
-              if (!iPID) { /// temporary exclusion of the TOF nsigma PID for the He3 and Alpha
-                nuclei::hNsigma[iPID][iS][iC]->Fill(1., fvector.pt(), nSigma[iPID][iS]);
-                nuclei::hNsigmaEta[iPID][iS][iC]->Fill(fvector.eta(), fvector.pt(), nSigma[iPID][iS]);
-              }
-              if (iPID) {
-                float mass{track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS]};
-                nuclei::hTOFmass[iS][iC]->Fill(1., fvector.pt(), mass);
-                nuclei::hTOFmassEta[iS][iC]->Fill(fvector.eta(), fvector.pt(), mass);
+            if (!cfgCutOnReconstructedRapidity || (y > cfgCutRapidityMin && y < cfgCutRapidityMax)) {
+              nuclei::hDCAxy[iPID][iS][iC]->Fill(1., fvector.pt(), dcaInfo[0]);
+              nuclei::hDCAz[iPID][iS][iC]->Fill(1., fvector.pt(), dcaInfo[1]);
+              if (std::abs(dcaInfo[0]) < cfgDCAcut->get(iS, 0u)) {
+                if (!iPID) { /// temporary exclusion of the TOF nsigma PID for the He3 and Alpha
+                  nuclei::hNsigma[iPID][iS][iC]->Fill(1., fvector.pt(), nSigma[iPID][iS]);
+                  nuclei::hNsigmaEta[iPID][iS][iC]->Fill(fvector.eta(), fvector.pt(), nSigma[iPID][iS]);
+                }
+                if (iPID) {
+                  float mass{track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS]};
+                  nuclei::hTOFmass[iS][iC]->Fill(1., fvector.pt(), mass);
+                  nuclei::hTOFmassEta[iS][iC]->Fill(fvector.eta(), fvector.pt(), mass);
+                }
               }
             }
           }
         }
-        uint16_t flag{kIsReconstructed};
+
         if (cfgTreeConfig->get(iS, 0u) && selectedTPC[iS]) {
           if (cfgTreeConfig->get(iS, 1u) && !selectedTOF) {
             continue;
           }
-          if (track.hasTOF()) {
-            flag |= kHasTOF;
-          }
           flag |= BIT(iS);
-
-          nuclei::candidates.emplace_back(NucleusCandidate{static_cast<int>(track.globalIndex()), fvector.pt(), fvector.eta(), fvector.phi(), track.tpcInnerParam(), beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(),
-                                                           track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound())});
         }
+      }
+      if (flag & (kDeuteron | kTriton | kHe3 | kHe4)) {
+        nuclei::candidates.emplace_back(NucleusCandidate{static_cast<int>(track.globalIndex()), (1 - 2 * iC) * trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), track.tpcInnerParam(), beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(),
+                                                         track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound())});
       }
     } // end loop over tracks
 
