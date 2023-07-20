@@ -677,13 +677,15 @@ struct reso2initializer {
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
 
     // QA histograms
-    AxisSpec idxAxis = {8, 0, 8, "Index"};
-    qaRegistry.add("hGoodTrackIndices", "hGoodTrackIndices", kTH1F, {idxAxis});
-    qaRegistry.add("hGoodMCTrackIndices", "hGoodMCTrackIndices", kTH1F, {idxAxis});
-    qaRegistry.add("hGoodV0Indices", "hGoodV0Indices", kTH1F, {idxAxis});
-    qaRegistry.add("hGoodMCV0Indices", "hGoodMCV0Indices", kTH1F, {idxAxis});
-    qaRegistry.add("hGoodCascIndices", "hGoodCascIndices", kTH1F, {idxAxis});
-    qaRegistry.add("hGoodMCCascIndices", "hGoodMCCascIndices", kTH1F, {idxAxis});
+    if (ConfFillQA) {
+      AxisSpec idxAxis = {8, 0, 8, "Index"};
+      qaRegistry.add("hGoodTrackIndices", "hGoodTrackIndices", kTH1F, {idxAxis});
+      qaRegistry.add("hGoodMCTrackIndices", "hGoodMCTrackIndices", kTH1F, {idxAxis});
+      qaRegistry.add("hGoodV0Indices", "hGoodV0Indices", kTH1F, {idxAxis});
+      qaRegistry.add("hGoodMCV0Indices", "hGoodMCV0Indices", kTH1F, {idxAxis});
+      qaRegistry.add("hGoodCascIndices", "hGoodCascIndices", kTH1F, {idxAxis});
+      qaRegistry.add("hGoodMCCascIndices", "hGoodMCCascIndices", kTH1F, {idxAxis});
+    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc) // Simple copy from LambdaKzeroFinder.cxx
