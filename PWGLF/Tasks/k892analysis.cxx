@@ -13,7 +13,7 @@
 /// \brief Reconstruction of track-track decay resonance candidates
 ///
 ///
-/// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
+/// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>, Sawan Sawan <sawan.sawan@cern.ch>
 
 #include <TLorentzVector.h>
 
