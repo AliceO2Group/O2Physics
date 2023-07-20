@@ -24,20 +24,21 @@
 
 /// Class for track selection using PID detectors
 
-class TrackSelectorPID
+template <bool hasPi = true, bool hasKa = true, bool hasPr = true, bool hasEl = true, bool hasMu = true>
+class TrackSelectorPIDBase
 {
  public:
   /// Default constructor
-  TrackSelectorPID() = default;
+  TrackSelectorPIDBase() = default;
 
   /// Standard constructor with PDG code initialisation
-  explicit TrackSelectorPID(int pdg)
+  explicit TrackSelectorPIDBase(int pdg)
   {
     setPDG(pdg);
   }
 
   /// Default destructor
-  ~TrackSelectorPID() = default;
+  ~TrackSelectorPIDBase() = default;
 
   /// Selection status
   enum Status {
@@ -52,27 +53,42 @@ class TrackSelectorPID
     mPdg = std::abs(pdg);
     switch (mPdg) {
       case kElectron: {
+        if constexpr (!hasEl) {
+          LOGF(fatal, "Species not implemented for PDG %d", mPdg);
+        }
         mSpecies = o2::track::PID::Electron;
         break;
       }
       case kMuonMinus: {
+        if constexpr (!hasMu) {
+          LOGF(fatal, "Species not implemented for PDG %d", mPdg);
+        }
         mSpecies = o2::track::PID::Muon;
         break;
       }
       case kPiPlus: {
+        if constexpr (!hasPi) {
+          LOGF(fatal, "Species not implemented for PDG %d", mPdg);
+        }
         mSpecies = o2::track::PID::Pion;
         break;
       }
       case kKPlus: {
+        if constexpr (!hasKa) {
+          LOGF(fatal, "Species not implemented for PDG %d", mPdg);
+        }
         mSpecies = o2::track::PID::Kaon;
         break;
       }
       case kProton: {
+        if constexpr (!hasPr) {
+          LOGF(fatal, "Species not implemented for PDG %d", mPdg);
+        }
         mSpecies = o2::track::PID::Proton;
         break;
       }
       default: {
-        LOGF(error, "ERROR: Species not implemented for PDG %d", mPdg);
+        LOGF(error, "Species not implemented for PDG %d", mPdg);
         assert(false);
       }
     }
@@ -127,27 +143,37 @@ class TrackSelectorPID
     double nSigma = 100.;
     switch (mPdg) {
       case kElectron: {
+      if constexpr (hasEl) {
         nSigma = track.tpcNSigmaEl();
+      }
         break;
       }
       case kMuonMinus: {
+      if constexpr (hasMu) {
         nSigma = track.tpcNSigmaMu();
+      }
         break;
       }
       case kPiPlus: {
+      if constexpr (hasPi) {
         nSigma = track.tpcNSigmaPi();
+      }
         break;
       }
       case kKPlus: {
+      if constexpr (hasKa) {
         nSigma = track.tpcNSigmaKa();
+      }
         break;
       }
       case kProton: {
+      if constexpr (hasPr) {
         nSigma = track.tpcNSigmaPr();
+      }
         break;
       }
       default: {
-        LOGF(error, "ERROR: TPC PID not implemented for PDG %d", mPdg);
+        LOGF(error, "TPC PID not implemented for PDG %d", mPdg);
         assert(false);
       }
     }
@@ -162,7 +188,7 @@ class TrackSelectorPID
 
   /// Returns status of TPC PID selection for a given track.
   /// \param track  track
-  /// \return TPC selection status (see TrackSelectorPID::Status)
+  /// \return TPC selection status (see TrackSelectorPIDBase::Status)
   template <typename T>
   int getStatusTrackPIDTPC(const T& track)
   {
@@ -229,27 +255,37 @@ class TrackSelectorPID
     double nSigma = 100.;
     switch (mPdg) {
       case kElectron: {
+      if constexpr (hasEl) {
         nSigma = track.tofNSigmaEl();
+      }
         break;
       }
       case kMuonMinus: {
+      if constexpr (hasMu) {
         nSigma = track.tofNSigmaMu();
+      }
         break;
       }
       case kPiPlus: {
+      if constexpr (hasPi) {
         nSigma = track.tofNSigmaPi();
+      }
         break;
       }
       case kKPlus: {
+      if constexpr (hasKa) {
         nSigma = track.tofNSigmaKa();
+      }
         break;
       }
       case kProton: {
+      if constexpr (hasPr) {
         nSigma = track.tofNSigmaPr();
+      }
         break;
       }
       default: {
-        LOGF(error, "ERROR: TOF PID not implemented for PDG %d", mPdg);
+        LOGF(error, "TOF PID not implemented for PDG %d", mPdg);
         assert(false);
       }
     }
@@ -264,7 +300,7 @@ class TrackSelectorPID
 
   /// Returns status of TOF PID selection for a given track.
   /// \param track  track
-  /// \return TOF selection status (see TrackSelectorPID::Status)
+  /// \return TOF selection status (see TrackSelectorPIDBase::Status)
   template <typename T>
   int getStatusTrackPIDTOF(const T& track)
   {
@@ -354,7 +390,7 @@ class TrackSelectorPID
         break;
       }
       default: {
-        LOGF(error, "ERROR: RICH PID not implemented for PDG %d", mPdg);
+        LOGF(error, "RICH PID not implemented for PDG %d", mPdg);
         assert(false);
       }
     }
@@ -369,7 +405,7 @@ class TrackSelectorPID
 
   /// Returns status of RICH PID selection for a given track.
   /// \param track  track
-  /// \return RICH selection status (see TrackSelectorPID::Status)
+  /// \return RICH selection status (see TrackSelectorPIDBase::Status)
   template <typename T>
   int getStatusTrackPIDRICH(const T& track)
   {
@@ -412,7 +448,7 @@ class TrackSelectorPID
 
   /// Returns status of MID PID selection for a given track.
   /// \param track  track
-  /// \return MID selection status (see TrackSelectorPID::Status)
+  /// \return MID selection status (see TrackSelectorPIDBase::Status)
   template <typename T>
   int getStatusTrackPIDMID(const T& track)
   {
@@ -434,7 +470,7 @@ class TrackSelectorPID
 
   /// Returns status of combined PID (TPC or TOF) selection for a given track.
   /// \param track  track
-  /// \return status of combined PID (TPC or TOF) (see TrackSelectorPID::Status)
+  /// \return status of combined PID (TPC or TOF) (see TrackSelectorPIDBase::Status)
   template <typename T>
   int getStatusTrackPIDTpcOrTof(const T& track)
   {
@@ -455,7 +491,7 @@ class TrackSelectorPID
 
   /// Returns status of combined PID (TPC and TOF) selection for a given track when both detectors are applicable. Returns status of single PID otherwise.
   /// \param track  track
-  /// \return status of combined PID (TPC and TOF) (see TrackSelectorPID::Status)
+  /// \return status of combined PID (TPC and TOF) (see TrackSelectorPIDBase::Status)
   template <typename T>
   int getStatusTrackPIDTpcAndTof(const T& track)
   {
@@ -608,7 +644,7 @@ class TrackSelectorPID
         break;
       }
       default: {
-        LOGF(error, "ERROR: Bayes PID not implemented for PDG %d", mPdg);
+        LOGF(error, "Bayes PID not implemented for PDG %d", mPdg);
         assert(false);
       }
     }
@@ -618,7 +654,7 @@ class TrackSelectorPID
 
   /// Returns status of Bayesian PID selection for a given track, based on the most probable particle species.
   /// \param track  track
-  /// \return Bayesian selection status (see TrackSelectorPID::Status)
+  /// \return Bayesian selection status (see TrackSelectorPIDBase::Status)
   template <typename T>
   int getStatusTrackBayesPID(const T& track)
   {
@@ -635,7 +671,7 @@ class TrackSelectorPID
 
   /// Returns status of Bayesian PID selection for a given track, based on the probability for a given particle species.
   /// \param track  track
-  /// \return Bayesian selection status (see TrackSelectorPID::Status)
+  /// \return Bayesian selection status (see TrackSelectorPIDBase::Status)
   template <typename T>
   int getStatusTrackBayesProbPID(const T& track)
   {
@@ -681,7 +717,12 @@ class TrackSelectorPID
   // Bayesian
   float mPtBayesMin = 0.;    ///< minimum pT for Bayesian PID [GeV/c]
   float mPtBayesMax = 100.;  ///< maximum pT for Bayesian PID [GeV/c]
-  float mProbBayesMin = -1.; ///< minium Bayesian probability [%]
+  float mProbBayesMin = -1.; ///< minimum Bayesian probability [%]
 };
+
+// using TrackSelectorPID = TrackSelectorPIDBase<>;
+using TrackSelectorPID = TrackSelectorPIDBase<true, true, true, true, true>;
+using TrackSelectorPIDHadrons = TrackSelectorPIDBase<true, true, true, false, false>;
+using TrackSelectorPIDLeptons = TrackSelectorPIDBase<false, false, false, true, true>;
 
 #endif // COMMON_CORE_TRACKSELECTORPID_H_

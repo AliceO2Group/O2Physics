@@ -86,6 +86,12 @@ using BigTracksMC = soa::Join<BigTracks, McTrackLabels>;
 using BigTracksPID = soa::Join<BigTracks,
                                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+using BigTracksPidPiKaPr = soa::Join<BigTracks,
+                               aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                               aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+using BigTracksPidElMu = soa::Join<BigTracks,
+                               aod::pidTPCFullEl, aod::pidTPCFullMu,
+                               aod::pidTOFFullEl, aod::pidTOFFullMu>;
 using BigTracksPIDExtended = soa::Join<BigTracksPID, aod::TracksDCA>;
 
 // FIXME: this is a workaround until we get the index columns to work with joins.

@@ -266,6 +266,8 @@ struct HfCandidateSelectorD0 {
         pidTrackNegPion = selectorPion.getStatusTrackPIDTpcOrTof(trackNeg);
       }
 
+      // int pidBayesTrackPos1Pion = selectorPion.getStatusTrackBayesPID(trackPos);
+
       int pidD0 = -1;
       int pidD0bar = -1;
 
