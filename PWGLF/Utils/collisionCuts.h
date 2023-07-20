@@ -20,7 +20,6 @@
 #ifndef PWGLF_UTILS_COLLISIONCUTS_H_
 #define PWGLF_UTILS_COLLISIONCUTS_H_
 
-#include "Common/CCDB/TriggerAliases.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 
@@ -44,7 +43,7 @@ class CollisonCuts
     mCutsSet = true;
     mZvtxMax = zvtxMax;
     mCheckTrigger = checkTrigger;
-    mTrigger = static_cast<triggerAliases>(trig);
+    mTrigger = trig;
     mCheckOffline = checkOffline;
     mCheckIsRun3 = checkRun3;
   }
@@ -150,7 +149,7 @@ class CollisonCuts
   bool mCheckOffline = false;                      ///< Check for offline criteria (might change)
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   bool mInitialTriggerScan = false;                ///< Check trigger when the event is first selected
-  triggerAliases mTrigger = kINT7;                 ///< Trigger to check for
+  int mTrigger = kINT7;                 ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
 };
 } // namespace o2::analysis
