@@ -85,29 +85,29 @@ class CollisonCuts
       LOGF(debug, "Vertex out of range");
       return false;
     }
-    if (mCheckIsRun3) {
+    if (mCheckIsRun3) { // Run3 case
       if (mCheckOffline && !col.sel8()) {
         LOGF(debug, "Offline selection failed (Run3)");
         return false;
       }
-    } else {
-      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
-        LOGF(debug, "Trigger selection failed");
-        if (mInitialTriggerScan) {
-          LOGF(debug, "Trigger scan initialized");
-          for (int i = 0; i < kNaliases; i++) {
-            if (col.alias_bit(i)) {
-              LOGF(debug, "Trigger %d fired", i);
-            }
-          }
-          mInitialTriggerScan = false;
-        }
-        return false;
-      }
+    } else { // Run2 case
       if (mCheckOffline && !col.sel7()) {
         LOGF(debug, "Offline selection failed (sel7)");
         return false;
       }
+    }
+    if (mCheckTrigger && !col.alias_bit(mTrigger)) {
+      LOGF(debug, "Trigger selection failed");
+      if (mInitialTriggerScan) { // Print out the trigger bits
+        LOGF(debug, "Trigger scan initialized");
+        for (int i = 0; i < kNaliases; i++) {
+          if (col.alias_bit(i)) {
+            LOGF(debug, "Trigger %d fired", i);
+          }
+        }
+        mInitialTriggerScan = false;
+      }
+      return false;
     }
     return true;
   }
