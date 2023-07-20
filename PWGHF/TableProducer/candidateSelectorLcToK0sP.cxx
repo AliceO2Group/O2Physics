@@ -31,6 +31,76 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_casc;
 using namespace o2::analysis::hf_cuts_lc_to_k0s_p;
 
+// possible input features for ML
+enum MLInputFeatures {
+  numContrib = 0,
+  posX,
+  posY,
+  posZ,
+  xSecondaryVertex,
+  ySecondaryVertex,
+  zSecondaryVertex,
+  errorDecayLength,
+  errorDecayLengthXY,
+  chi2PCA,
+  rSecondaryVertex,
+  decayLength,
+  decayLengthXY,
+  decayLengthNormalised,
+  decayLengthXYNormalised,
+  impactParameterNormalised0,
+  ptProng0,
+  pProng0,
+  impactParameterNormalised1,
+  ptProng1,
+  pProng1,
+  pxProng0,
+  pyProng0,
+  pzProng0,
+  pxProng1,
+  pyProng1,
+  pzProng1,
+  impactParameter0,
+  impactParameter1,
+  errorImpactParameter0,
+  errorImpactParameter1,
+  v0X,
+  v0Y,
+  v0Z,
+  v0Radius,
+  v0CosPA,
+  v0MLambda,
+  v0MAntiLambda,
+  v0MK0Short,
+  v0MGamma,
+  v0CtK0Short,
+  v0CtLambda,
+  dcaV0Daughters,
+  pxPos,
+  pyPos,
+  pzPos,
+  ptV0Pos,
+  dcaPosToPV,
+  pxNeg,
+  pyNeg,
+  pzNeg,
+  ptV0Neg,
+  dcaNegToPV,
+  nSigmaTPCPr0,
+  nSigmaTOFPr0,
+  m,
+  pt,
+  p,
+  cpa,
+  cpaXY,
+  ct,
+  eta,
+  phi,
+  y,
+  e,
+  NInputFeatures
+};
+
 using MyBigTracksBayes = soa::Join<aod::BigTracksPID, aod::pidBayesPr, aod::pidBayesEl, aod::pidBayesMu, aod::pidBayesKa, aod::pidBayesPi>;
 
 struct HfCandidateSelectorLcToK0sP {
@@ -73,7 +143,7 @@ struct HfCandidateSelectorLcToK0sP {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponse<float> hfMlResponse;
-  std::vector<bool> selectedInputFeatures;
+  std::vector<bool> selectedInputFeatures{vector<bool>(MLInputFeatures::NInputFeatures, false)};
 
   o2::ccdb::CcdbApi ccdbApi;
 
@@ -115,86 +185,93 @@ struct HfCandidateSelectorLcToK0sP {
   // Check the list of selected input features for ML model
   void initInputFeatures()
   {
-    std::string inputFeaturesAll[] = {
-      "numContrib",
-      "posX",
-      "posY",
-      "posZ",
-      "xSecondaryVertex",
-      "ySecondaryVertex",
-      "zSecondaryVertex",
-      "errorDecayLength",
-      "errorDecayLengthXY",
-      "chi2PCA",
-      "rSecondaryVertex",
-      "decayLength",
-      "decayLengthXY",
-      "decayLengthNormalised",
-      "decayLengthXYNormalised",
-      "impactParameterNormalised0",
-      "ptProng0",
-      "pProng0",
-      "impactParameterNormalised1",
-      "ptProng1",
-      "pProng1",
-      "pxProng0",
-      "pyProng0",
-      "pzProng0",
-      "pxProng1",
-      "pyProng1",
-      "pzProng1",
-      "impactParameter0",
-      "impactParameter1",
-      "errorImpactParameter0",
-      "errorImpactParameter1",
-      "v0X",
-      "v0Y",
-      "v0Z",
-      "v0Radius",
-      "v0CosPA",
-      "v0MLambda",
-      "v0MAntiLambda",
-      "v0MK0Short",
-      "v0MGamma",
-      "v0CtK0Short",
-      "v0CtLambda",
-      "dcaV0Daughters",
-      "pxPos",
-      "pyPos",
-      "pzPos",
-      "ptV0Pos",
-      "dcaPosToPV",
-      "pxNeg",
-      "pyNeg",
-      "pzNeg",
-      "ptV0Neg",
-      "dcaNegToPV",
-      "nSigmaTPCPr0",
-      "nSigmaTOFPr0",
-      "m",
-      "pt",
-      "p",
-      "cpa",
-      "cpaXY",
-      "ct",
-      "eta",
-      "phi",
-      "y",
-      "e"};
+    std::map<MLInputFeatures, std::string> inputFeatureNames{
+      {numContrib, "numContrib"},
+      {posX, "posX"},
+      {posY, "posY"},
+      {posZ, "posZ"},
+      {xSecondaryVertex, "xSecondaryVertex"},
+      {ySecondaryVertex, "ySecondaryVertex"},
+      {zSecondaryVertex, "zSecondaryVertex"},
+      {errorDecayLength, "errorDecayLength"},
+      {errorDecayLengthXY, "errorDecayLengthXY"},
+      {chi2PCA, "chi2PCA"},
+      {rSecondaryVertex, "rSecondaryVertex"},
+      {decayLength, "decayLength"},
+      {decayLengthXY, "decayLengthXY"},
+      {decayLengthNormalised, "decayLengthNormalised"},
+      {decayLengthXYNormalised, "decayLengthXYNormalised"},
+      {impactParameterNormalised0, "impactParameterNormalised0"},
+      {ptProng0, "ptProng0"},
+      {pProng0, "pProng0"},
+      {impactParameterNormalised1, "impactParameterNormalised1"},
+      {ptProng1, "ptProng1"},
+      {pProng1, "pProng1"},
+      {pxProng0, "pxProng0"},
+      {pyProng0, "pyProng0"},
+      {pzProng0, "pzProng0"},
+      {pxProng1, "pxProng1"},
+      {pyProng1, "pyProng1"},
+      {pzProng1, "pzProng1"},
+      {impactParameter0, "impactParameter0"},
+      {impactParameter1, "impactParameter1"},
+      {errorImpactParameter0, "errorImpactParameter0"},
+      {errorImpactParameter1, "errorImpactParameter1"},
+      {v0X, "v0X"},
+      {v0Y, "v0Y"},
+      {v0Z, "v0Z"},
+      {v0Radius, "v0Radius"},
+      {v0CosPA, "v0CosPA"},
+      {v0MLambda, "v0MLambda"},
+      {v0MAntiLambda, "v0MAntiLambda"},
+      {v0MK0Short, "v0MK0Short"},
+      {v0MGamma, "v0MGamma"},
+      {v0CtK0Short, "v0CtK0Short"},
+      {v0CtLambda, "v0CtLambda"},
+      {dcaV0Daughters, "dcaV0Daughters"},
+      {pxPos, "pxPos"},
+      {pyPos, "pyPos"},
+      {pzPos, "pzPos"},
+      {ptV0Pos, "ptV0Pos"},
+      {dcaPosToPV, "dcaPosToPV"},
+      {pxNeg, "pxNeg"},
+      {pyNeg, "pyNeg"},
+      {pzNeg, "pzNeg"},
+      {ptV0Neg, "ptV0Neg"},
+      {dcaNegToPV, "dcaNegToPV"},
+      {nSigmaTPCPr0, "nSigmaTPCPr0"},
+      {nSigmaTOFPr0, "nSigmaTOFPr0"},
+      {m, "m"},
+      {pt, "pt"},
+      {p, "p"},
+      {cpa, "cpa"},
+      {cpaXY, "cpaXY"},
+      {ct, "ct"},
+      {eta, "eta"},
+      {phi, "phi"},
+      {y, "y"},
+      {e, "e"}};
 
     // check for each possible input feature if it is included in the list of selected input features or not
-    for (const auto& inputFeature : inputFeaturesAll) {
-      if (std::find(std::begin(inputFeaturesML.value), std::end(inputFeaturesML.value), inputFeature) != std::end(inputFeaturesML.value)) {
-        selectedInputFeatures.push_back(true);
-        LOG(info) << "Included \'" << inputFeature << "\' in list of ML input features.";
+    for (const auto& inputFeature : inputFeatureNames) {
+      if (std::find(std::begin(inputFeaturesML.value), std::end(inputFeaturesML.value), inputFeature.second) != std::end(inputFeaturesML.value)) {
+        selectedInputFeatures[inputFeature.first] = true;
+        LOG(info) << "Included \'" << inputFeature.second << "\' in list of ML input features.";
       } else {
-        selectedInputFeatures.push_back(false);
+        selectedInputFeatures[inputFeature.first] = false;
       }
     }
 
     // check if all given input features are recongnized
     for (const auto& inputFeature : inputFeaturesML.value) {
-      if (std::find(std::begin(inputFeaturesAll), std::end(inputFeaturesAll), inputFeature) == std::end(inputFeaturesAll)) {
+      bool found = false;
+      for (const auto& inputFeatureName : inputFeatureNames) {
+        if (inputFeatureName.second == inputFeature) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
         LOG(fatal) << "Can not find \'" << inputFeature << "\' in list of possible ML input features.";
       }
     }
@@ -206,199 +283,199 @@ struct HfCandidateSelectorLcToK0sP {
   {
     std::vector<float> inputFeatures;
 
-    if (selectedInputFeatures[0]) {
+    if (selectedInputFeatures[MLInputFeatures::numContrib]) {
       inputFeatures.push_back(bach.collision().numContrib());
     }
-    if (selectedInputFeatures[1]) {
+    if (selectedInputFeatures[MLInputFeatures::posX]) {
       inputFeatures.push_back(candidate.posX());
     }
-    if (selectedInputFeatures[2]) {
+    if (selectedInputFeatures[MLInputFeatures::posY]) {
       inputFeatures.push_back(candidate.posY());
     }
-    if (selectedInputFeatures[3]) {
+    if (selectedInputFeatures[MLInputFeatures::posZ]) {
       inputFeatures.push_back(candidate.posZ());
     }
-    if (selectedInputFeatures[4]) {
+    if (selectedInputFeatures[MLInputFeatures::xSecondaryVertex]) {
       inputFeatures.push_back(candidate.xSecondaryVertex());
     }
-    if (selectedInputFeatures[5]) {
+    if (selectedInputFeatures[MLInputFeatures::ySecondaryVertex]) {
       inputFeatures.push_back(candidate.ySecondaryVertex());
     }
-    if (selectedInputFeatures[6]) {
+    if (selectedInputFeatures[MLInputFeatures::zSecondaryVertex]) {
       inputFeatures.push_back(candidate.zSecondaryVertex());
     }
-    if (selectedInputFeatures[7]) {
+    if (selectedInputFeatures[MLInputFeatures::errorDecayLength]) {
       inputFeatures.push_back(candidate.errorDecayLength());
     }
-    if (selectedInputFeatures[8]) {
+    if (selectedInputFeatures[MLInputFeatures::errorDecayLengthXY]) {
       inputFeatures.push_back(candidate.errorDecayLengthXY());
     }
-    if (selectedInputFeatures[9]) {
+    if (selectedInputFeatures[MLInputFeatures::chi2PCA]) {
       inputFeatures.push_back(candidate.chi2PCA());
     }
-    if (selectedInputFeatures[10]) {
+    if (selectedInputFeatures[MLInputFeatures::rSecondaryVertex]) {
       inputFeatures.push_back(candidate.rSecondaryVertex());
     }
-    if (selectedInputFeatures[11]) {
+    if (selectedInputFeatures[MLInputFeatures::decayLength]) {
       inputFeatures.push_back(candidate.decayLength());
     }
-    if (selectedInputFeatures[12]) {
+    if (selectedInputFeatures[MLInputFeatures::decayLengthXY]) {
       inputFeatures.push_back(candidate.decayLengthXY());
     }
-    if (selectedInputFeatures[13]) {
+    if (selectedInputFeatures[MLInputFeatures::decayLengthNormalised]) {
       inputFeatures.push_back(candidate.decayLengthNormalised());
     }
-    if (selectedInputFeatures[14]) {
+    if (selectedInputFeatures[MLInputFeatures::decayLengthXYNormalised]) {
       inputFeatures.push_back(candidate.decayLengthXYNormalised());
     }
-    if (selectedInputFeatures[15]) {
+    if (selectedInputFeatures[MLInputFeatures::impactParameterNormalised0]) {
       inputFeatures.push_back(candidate.impactParameterNormalised0());
     }
-    if (selectedInputFeatures[16]) {
+    if (selectedInputFeatures[MLInputFeatures::ptProng0]) {
       inputFeatures.push_back(candidate.ptProng0());
     }
-    if (selectedInputFeatures[17]) {
+    if (selectedInputFeatures[MLInputFeatures::pProng0]) {
       inputFeatures.push_back(RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()));
     }
-    if (selectedInputFeatures[18]) {
+    if (selectedInputFeatures[MLInputFeatures::impactParameterNormalised1]) {
       inputFeatures.push_back(candidate.impactParameterNormalised1());
     }
-    if (selectedInputFeatures[19]) {
+    if (selectedInputFeatures[MLInputFeatures::ptProng1]) {
       inputFeatures.push_back(candidate.ptProng1());
     }
-    if (selectedInputFeatures[20]) {
+    if (selectedInputFeatures[MLInputFeatures::pProng1]) {
       inputFeatures.push_back(RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()));
     }
-    if (selectedInputFeatures[21]) {
+    if (selectedInputFeatures[MLInputFeatures::pxProng0]) {
       inputFeatures.push_back(candidate.pxProng0());
     }
-    if (selectedInputFeatures[22]) {
+    if (selectedInputFeatures[MLInputFeatures::pyProng0]) {
       inputFeatures.push_back(candidate.pyProng0());
     }
-    if (selectedInputFeatures[23]) {
+    if (selectedInputFeatures[MLInputFeatures::pzProng0]) {
       inputFeatures.push_back(candidate.pzProng0());
     }
-    if (selectedInputFeatures[24]) {
+    if (selectedInputFeatures[MLInputFeatures::pxProng1]) {
       inputFeatures.push_back(candidate.pxProng1());
     }
-    if (selectedInputFeatures[25]) {
+    if (selectedInputFeatures[MLInputFeatures::pyProng1]) {
       inputFeatures.push_back(candidate.pyProng1());
     }
-    if (selectedInputFeatures[26]) {
+    if (selectedInputFeatures[MLInputFeatures::pzProng1]) {
       inputFeatures.push_back(candidate.pzProng1());
     }
-    if (selectedInputFeatures[27]) {
+    if (selectedInputFeatures[MLInputFeatures::errorImpactParameter0]) {
       inputFeatures.push_back(candidate.impactParameter0());
     }
-    if (selectedInputFeatures[28]) {
+    if (selectedInputFeatures[MLInputFeatures::impactParameter1]) {
       inputFeatures.push_back(candidate.impactParameter1());
     }
-    if (selectedInputFeatures[29]) {
+    if (selectedInputFeatures[MLInputFeatures::errorImpactParameter0]) {
       inputFeatures.push_back(candidate.errorImpactParameter0());
     }
-    if (selectedInputFeatures[30]) {
+    if (selectedInputFeatures[MLInputFeatures::errorImpactParameter1]) {
       inputFeatures.push_back(candidate.errorImpactParameter1());
     }
-    if (selectedInputFeatures[31]) {
+    if (selectedInputFeatures[MLInputFeatures::v0X]) {
       inputFeatures.push_back(candidate.v0x());
     }
-    if (selectedInputFeatures[32]) {
+    if (selectedInputFeatures[MLInputFeatures::v0Y]) {
       inputFeatures.push_back(candidate.v0y());
     }
-    if (selectedInputFeatures[33]) {
+    if (selectedInputFeatures[MLInputFeatures::v0Z]) {
       inputFeatures.push_back(candidate.v0z());
     }
-    if (selectedInputFeatures[34]) {
+    if (selectedInputFeatures[MLInputFeatures::v0Radius]) {
       inputFeatures.push_back(candidate.v0radius());
     }
-    if (selectedInputFeatures[35]) {
+    if (selectedInputFeatures[MLInputFeatures::v0CosPA]) {
       inputFeatures.push_back(candidate.v0cosPA());
     }
-    if (selectedInputFeatures[36]) {
+    if (selectedInputFeatures[MLInputFeatures::v0MLambda]) {
       inputFeatures.push_back(candidate.mLambda());
     }
-    if (selectedInputFeatures[37]) {
+    if (selectedInputFeatures[MLInputFeatures::v0MAntiLambda]) {
       inputFeatures.push_back(candidate.mAntiLambda());
     }
-    if (selectedInputFeatures[38]) {
+    if (selectedInputFeatures[MLInputFeatures::v0MK0Short]) {
       inputFeatures.push_back(candidate.mK0Short());
     }
-    if (selectedInputFeatures[39]) {
+    if (selectedInputFeatures[MLInputFeatures::v0MGamma]) {
       inputFeatures.push_back(candidate.mGamma());
     }
-    if (selectedInputFeatures[40]) {
+    if (selectedInputFeatures[MLInputFeatures::v0CtK0Short]) {
       inputFeatures.push_back(o2::aod::hf_cand_casc::ctV0K0s(candidate));
     }
-    if (selectedInputFeatures[41]) {
+    if (selectedInputFeatures[MLInputFeatures::v0CtK0Short]) {
       inputFeatures.push_back(o2::aod::hf_cand_casc::ctV0Lambda(candidate));
     }
-    if (selectedInputFeatures[42]) {
+    if (selectedInputFeatures[MLInputFeatures::dcaV0Daughters]) {
       inputFeatures.push_back(candidate.dcaV0daughters());
     }
-    if (selectedInputFeatures[43]) {
+    if (selectedInputFeatures[MLInputFeatures::pxPos]) {
       inputFeatures.push_back(candidate.pxpos());
     }
-    if (selectedInputFeatures[44]) {
+    if (selectedInputFeatures[MLInputFeatures::pyPos]) {
       inputFeatures.push_back(candidate.pypos());
     }
-    if (selectedInputFeatures[45]) {
+    if (selectedInputFeatures[MLInputFeatures::pzPos]) {
       inputFeatures.push_back(candidate.pzpos());
     }
-    if (selectedInputFeatures[46]) {
+    if (selectedInputFeatures[MLInputFeatures::ptV0Pos]) {
       inputFeatures.push_back(candidate.ptV0Pos());
     }
-    if (selectedInputFeatures[47]) {
+    if (selectedInputFeatures[MLInputFeatures::dcaPosToPV]) {
       inputFeatures.push_back(candidate.dcapostopv());
     }
-    if (selectedInputFeatures[48]) {
+    if (selectedInputFeatures[MLInputFeatures::pxNeg]) {
       inputFeatures.push_back(candidate.pxneg());
     }
-    if (selectedInputFeatures[49]) {
+    if (selectedInputFeatures[MLInputFeatures::pyNeg]) {
       inputFeatures.push_back(candidate.pyneg());
     }
-    if (selectedInputFeatures[50]) {
+    if (selectedInputFeatures[MLInputFeatures::pzNeg]) {
       inputFeatures.push_back(candidate.pzneg());
     }
-    if (selectedInputFeatures[51]) {
+    if (selectedInputFeatures[MLInputFeatures::ptV0Neg]) {
       inputFeatures.push_back(candidate.ptV0Neg());
     }
-    if (selectedInputFeatures[52]) {
+    if (selectedInputFeatures[MLInputFeatures::dcaNegToPV]) {
       inputFeatures.push_back(candidate.dcanegtopv());
     }
-    if (selectedInputFeatures[53]) {
+    if (selectedInputFeatures[MLInputFeatures::nSigmaTPCPr0]) {
       inputFeatures.push_back(bach.tpcNSigmaPr());
     }
-    if (selectedInputFeatures[54]) {
+    if (selectedInputFeatures[MLInputFeatures::nSigmaTOFPr0]) {
       inputFeatures.push_back(bach.tofNSigmaPr());
     }
-    if (selectedInputFeatures[55]) {
+    if (selectedInputFeatures[MLInputFeatures::m]) {
       inputFeatures.push_back(o2::aod::hf_cand_casc::invMassLcToK0sP(candidate));
     }
-    if (selectedInputFeatures[56]) {
+    if (selectedInputFeatures[MLInputFeatures::pt]) {
       inputFeatures.push_back(candidate.pt());
     }
-    if (selectedInputFeatures[57]) {
+    if (selectedInputFeatures[MLInputFeatures::p]) {
       inputFeatures.push_back(candidate.p());
     }
-    if (selectedInputFeatures[58]) {
+    if (selectedInputFeatures[MLInputFeatures::cpa]) {
       inputFeatures.push_back(candidate.cpa());
     }
-    if (selectedInputFeatures[59]) {
+    if (selectedInputFeatures[MLInputFeatures::cpaXY]) {
       inputFeatures.push_back(candidate.cpaXY());
     }
-    if (selectedInputFeatures[60]) {
+    if (selectedInputFeatures[MLInputFeatures::ct]) {
       inputFeatures.push_back(o2::aod::hf_cand_3prong::ctLc(candidate));
     }
-    if (selectedInputFeatures[61]) {
+    if (selectedInputFeatures[MLInputFeatures::eta]) {
       inputFeatures.push_back(candidate.eta());
     }
-    if (selectedInputFeatures[62]) {
+    if (selectedInputFeatures[MLInputFeatures::phi]) {
       inputFeatures.push_back(candidate.phi());
     }
-    if (selectedInputFeatures[63]) {
+    if (selectedInputFeatures[MLInputFeatures::y]) {
       inputFeatures.push_back(o2::aod::hf_cand_3prong::yLc(candidate));
     }
-    if (selectedInputFeatures[64]) {
+    if (selectedInputFeatures[MLInputFeatures::e]) {
       inputFeatures.push_back(o2::aod::hf_cand_3prong::eLc(candidate));
     }
 
