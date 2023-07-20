@@ -67,16 +67,16 @@ struct reso2initializer {
   Configurable<bool> cfgFatalWhenNull{"cfgFatalWhenNull", true, "Fatal when null"};
 
   // Configurables
-  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Pilot beam"}; // Choose if running on converted data or pilot beam
+  Configurable<bool> ConfIsRun3{"ConfIsRun3", true, "Running on Pilot beam"}; // Choose if running on converted data or pilot beam
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> ConfFillQA{"ConfFillQA", false, "Fill QA histograms"};
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
-  Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
+  Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", false, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", 8, "Evt sel: trigger"};
-  Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
+  Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", true, "Evt sel: check for offline selection"};
 
   Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "The name of multiplicity estimator"};
 
@@ -87,14 +87,14 @@ struct reso2initializer {
 
   /// DCA Selections for V0
   // DCAr to PV
-  Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.05, "Track DCAr cut to PV Maximum"};
+  Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 2.0, "Track DCAr cut to PV Maximum"};
   Configurable<double> cMinV0PosDCArToPVcut{"cMinV0PosDCArToPVcut", 0.05f, "V0 Positive Track DCAr cut to PV Minimum"}; // Pre-selection
   Configurable<double> cMinV0NegDCArToPVcut{"cMinV0NegDCArToPVcut", 0.05f, "V0 Negative Track DCAr cut to PV Minimum"}; // Pre-selection
   // DCAz to PV
   Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
 
-  Configurable<double> cMinV0Radius{"cMinV0Radius", 5.0, "Minimum V0 radius from PV"};
+  Configurable<double> cMinV0Radius{"cMinV0Radius", 0.0, "Minimum V0 radius from PV"};
   Configurable<double> cMaxV0Radius{"cMaxV0Radius", 200.0, "Maximum V0 radius from PV"};
   Configurable<double> cMinV0CosPA{"cMinV0CosPA", 0.995, "Minimum V0 CosPA to PV"};
 
@@ -158,8 +158,19 @@ struct reso2initializer {
       if (ConfFillQA)
         qaRegistry.fill(HIST("hGoodMCTrackIndices"), 0.5);
     }
+    // DCAxy cut
+    if (fabs(track.dcaXY()) > cMaxDCArToPVcut)
+      return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodTrackIndices"), 1.5);
+    // DCAz cut
+    if (fabs(track.dcaZ()) > cMaxDCAzToPVcut || fabs(track.dcaZ()) < cMinDCAzToPVcut)
+      return false;
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodTrackIndices"), 2.5);
+
+    if (ConfFillQA)
+      qaRegistry.fill(HIST("hGoodTrackIndices"), 7.5);
     return true;
   }
 
