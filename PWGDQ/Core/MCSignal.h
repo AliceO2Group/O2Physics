@@ -252,8 +252,8 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
     std::vector<int> pdgInHistory;
 
     // while find mothers, check if the provided PDG codes are included or excluded in the particle decay history
-    int nIncludedPDG = 0;
-    for (int k = 0; k < fProngs[i].fPDGInHistory.size(); k++) {
+    unsigned int nIncludedPDG = 0;
+    for (unsigned int k = 0; k < fProngs[i].fPDGInHistory.size(); k++) {
       currentMCParticle = track;
       if (!fProngs[i].fExcludePDGInHistory[k])
         nIncludedPDG++;
