@@ -56,6 +56,12 @@ enum ParticleType {
   kNParticleTypes   //! Number of particle types
 };
 
+enum MomentumType {
+  kPt,    //! transverse momentum
+  kPreco, //! reconstructed/propagated momentum at the vertex
+  kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
+};
+
 static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
 static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy"};
 
@@ -186,25 +192,25 @@ namespace femtodreamMCparticle
 {
 /// Distinuishes the different particle origins
 enum ParticleOriginMCTruth {
-  kPrimary,           //! Primary track or V0
-  kDaughter,          //! Particle from a decay
-  kMaterial,          //! Particle from a material
-  kNotPrimary,        //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
-  kFake,              //! particle, that has NOT the PDG code of the current analysed particle
-  kDaughterLambda,    //! Daughter from a Lambda decay
-  kDaughterSigmaplus, //! Daughter from a Sigma^plus decay
+  kPrimary,                    //! Primary track or V0
+  kSecondary,                  //! Particle from a decay
+  kMaterial,                   //! Particle from a material
+  kNotPrimary,                 //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
+  kFake,                       //! particle, that has NOT the PDG code of the current analysed particle
+  kSecondaryDaughterLambda,    //! Daughter from a Lambda decay
+  kSecondaryDaughterSigmaplus, //! Daughter from a Sigma^plus decay
   kNOriginMCTruthTypes
 };
 
 //! Naming of the different OriginMCTruth types
 static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes] = {
   "_Primary",
-  "_Daughter",
+  "_Secondary",
   "_Material",
   "_NotPrimary",
   "_Fake",
-  "_DaughterLambda",
-  "DaughterSigmaPlus"};
+  "_SecondaryDaughterLambda",
+  "_SecondaryDaughterSigmaPlus"};
 
 /// Distinguished between reconstructed and truth
 enum MCType {
