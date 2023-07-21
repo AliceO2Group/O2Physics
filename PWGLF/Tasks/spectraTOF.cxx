@@ -233,7 +233,8 @@ struct tofSpectra {
 
     if (enableTrackCutHistograms) {
       const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
-      histos.add("track/Eta", "Eta", HistType::kTH1D, {{binsEta, "#eta tracks"}});
+      histos.add("track/pos/Eta", "Eta Positive tracks", HistType::kTH1D, {{binsEta, "#eta tracks"}});
+      histos.add("track/neg/Eta", "Eta Negative tracks", HistType::kTH1D, {{binsEta, "#eta tracks"}});
       // its histograms
       histos.add("track/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH2D, {{8, -0.5, 7.5}, chargeAxis});
       histos.add("track/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH2D, {{100, 0, 40}, chargeAxis});
@@ -877,6 +878,11 @@ struct tofSpectra {
     if constexpr (fillHistograms) {
       histos.fill(HIST("tracksel"), 2);
       if (enableTrackCutHistograms) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("track/pos/Eta"), track.eta());
+        } else {
+          histos.fill(HIST("track/neg/Eta"), track.eta());
+        }
         if (track.hasITS() && track.hasTPC()) {
           histos.fill(HIST("track/ITS/itsNCls"), track.itsNCls(), track.sign());
           histos.fill(HIST("track/ITS/itsChi2NCl"), track.itsChi2NCl(), track.sign());
@@ -1036,7 +1042,6 @@ struct tofSpectra {
         if (!isTrackSelected<true>(track)) {
           continue;
         }
-        histos.fill(HIST("track/Eta"), track.eta());
         fillParticleHistos<false, PID::Pion>(track, collision);
         fillParticleHistos<false, PID::Kaon>(track, collision);
         fillParticleHistos<false, PID::Proton>(track, collision);
