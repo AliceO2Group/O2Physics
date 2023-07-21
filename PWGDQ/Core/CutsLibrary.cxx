@@ -295,8 +295,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("coherentRho0")) {
-    cut->AddCut(GetAnalysisCut("lowMultTrackCut"));
+  if (!nameStr.compare("rho0Cuts")) {
+    cut->AddCut(GetAnalysisCut("rho0TrackCut"));
     cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
     return cut;
   }
@@ -1235,6 +1235,16 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairPtLow3")) {
+    cut->AddCut(GetAnalysisCut("pairPtLow3"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairPtLow4")) {
+    cut->AddCut(GetAnalysisCut("pairPtLow4"));
+    return cut;
+  }
+
   if (!nameStr.compare("pairMassLow3")) {
     cut->AddCut(GetAnalysisCut("pairMassLow3"));
     return cut;
@@ -1333,7 +1343,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (!nameStr.compare("pairCoherentRho0")) {
-    cut->AddCut(GetAnalysisCut("pairPtLow1"));
+    cut->AddCut(GetAnalysisCut("pairPtLow3"));
     return cut;
   }
 
@@ -1501,6 +1511,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("eventTPCMult3")) {
+    cut->AddCut(VarManager::kMultTPC, 3, 3);
+    return cut;
+  }
+
   if (!nameStr.compare("int7vtxZ5")) {
     cut->AddCut(VarManager::kVtxZ, -5.0, 5.0);
     cut->AddCut(VarManager::kIsINT7, 0.5, 1.5);
@@ -1571,7 +1586,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("lowMultTrackCut")) {
+  if (!nameStr.compare("rho0TrackCut")) {
     cut->AddCut(VarManager::kPt, 0.15, 1000.0);
     cut->AddCut(VarManager::kTPCncls, 50.0, 159);
     return cut;
@@ -2511,6 +2526,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairPtLow3")) {
     cut->AddCut(VarManager::kPt, 0, 0.15);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairPtLow4")) {
+    cut->AddCut(VarManager::kPt, 0, 10.0);
     return cut;
   }
 

@@ -15,8 +15,11 @@
 #include <array>
 #include <cmath>
 #include <string>
+#include <string_view>
 #include <TMath.h>
 
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsCTP/Configuration.h"
 #include "EMCALBase/Geometry.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
@@ -43,6 +46,7 @@ using namespace o2::framework::expressions;
 
 struct fullJetFilter {
   using collisionInfo = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  using BCsWithBcSelsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
   using filteredFullJets = o2::soa::Filtered<o2::aod::FullJets>;
   using filteredNeutralJets = o2::soa::Filtered<o2::aod::NeutralJets>;
@@ -63,6 +67,12 @@ struct fullJetFilter {
   enum class ThresholdType_t {
     HIGH_THRESHOLD,
     LOW_THRESHOLD
+  };
+
+  enum class EMCALHWTriggerConfiguration {
+    MB_ONLY,
+    EMC_TRIGGERD,
+    UNKNOWN
   };
 
   Produces<aod::FullJetFilters> tags;
@@ -92,6 +102,8 @@ struct fullJetFilter {
   // Configurables
   Configurable<float> f_jetPtMin{"f_jetPtMin", 0.0, "minimum jet pT cut"};
   Configurable<float> f_jetPtMinLow{"f_jetPtMinLow", 0.0, "minimum jet pT cut (low threshold)"};
+  Configurable<float> f_jetPtMinMB{"f_jetPtMinMB", 0.0, "minimum jet pT cut (MB-only runs)"};
+  Configurable<float> f_jetPtMinLowMB{"f_jetPtMinLowMB", 0.0, "minimum jet pT cut (low threshold, MB-only runs)"};
   Configurable<float> f_clusterPtMin{"f_clusterPtMin", 0.0, "minimum cluster pT cut"};
   Configurable<int> f_jetR{"f_jetR", 20, "jet R * 100 to trigger on"};
   Configurable<int> f_ObservalbeGammaTrigger{"fObservableGammaTrigger", 0, "Observable for the gamma trigger (0 - Energy, 1 - pt)"};
@@ -101,6 +113,10 @@ struct fullJetFilter {
   Configurable<float> f_gammaPtMinEMCALLow{"f_gammaPtMinEMCALLow", 1.5, "minimum gamma pT cut in EMCAL low threshold"};
   Configurable<float> f_gammaPtMinDCALHigh{"f_gammaPtMinDCALHigh", 4.0, "minimum gamma pT cut in DCAL high threshold"};
   Configurable<float> f_gammaPtMinDCALLow{"f_gammaPtMinDCALLow", 1.5, "minimum gamma pT cut in DCAL low threshold"};
+  Configurable<float> f_gammaPtMinEMCALHighMB{"f_gammaPtMinEMCALHighMB", 4.0, "minimum gamma pT cut in EMCAL high threshold (MB-only runs)"};
+  Configurable<float> f_gammaPtMinEMCALLowMB{"f_gammaPtMinEMCALLowMB", 1.5, "minimum gamma pT cut in EMCAL low threshold (MB-only runs)"};
+  Configurable<float> f_gammaPtMinDCALHighMB{"f_gammaPtMinDCALHighMB", 4.0, "minimum gamma pT cut in DCAL high threshold (MB-only runs)"};
+  Configurable<float> f_gammaPtMinDCALLowMB{"f_gammaPtMinDCALLowMB", 1.5, "minimum gamma pT cut in DCAL low threshold (MB-only runs)"};
   Configurable<float> f_minClusterTime{"f_minClusterTime", -999, "Min. cluster time for gamma trigger (ns)"};
   Configurable<float> f_maxClusterTime{"f_maxClusterTime", 999, "Max. cluster time for gamma trigger (ns)"};
   Configurable<float> f_PhiEmcalOrDcal{"f_PhiEmcalOrDcal", 4, "if cluster phi is less than this value, count it to be EMCAL"};
@@ -111,6 +127,11 @@ struct fullJetFilter {
   Configurable<bool> b_IgnoreEmcalFlag{"b_IgnoreEmcalFlag", false, "ignore the EMCAL live flag check"};
   Configurable<bool> b_DoFiducialCut{"b_DoFiducialCut", false, "do a fiducial cut on jets to check if they are in the emcal"};
   Configurable<bool> b_RejectExoticClusters{"b_RejectExoticClusters", true, "Reject exotic clusters"};
+
+  int lastRun = -1;
+  EMCALHWTriggerConfiguration mHardwareTriggerConfig = EMCALHWTriggerConfiguration::UNKNOWN;
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   void init(o2::framework::InitContext&)
   {
@@ -151,9 +172,11 @@ struct fullJetFilter {
 
     LOG(info) << "Jet trigger: " << (b_doJetTrigger ? "on" : "off");
     LOG(info) << "Gamma trigger: " << (b_doJetTrigger ? "on" : "off");
-    LOG(info) << "Thresholds gamma trigger: EG1 " << f_gammaPtMinEMCALHigh << " GeV, DG1 " << f_gammaPtMinDCALHigh << " GeV, EG2 " << f_gammaPtMinEMCALLow << " GeV, DG2 " << f_gammaPtMinDCALLow << " GeV";
+    LOG(info) << "Thresholds gamma trigger (L0-triggered runs): EG1 " << f_gammaPtMinEMCALHigh << " GeV, DG1 " << f_gammaPtMinDCALHigh << " GeV, EG2 " << f_gammaPtMinEMCALLow << " GeV, DG2 " << f_gammaPtMinDCALLow << " GeV";
+    LOG(info) << "Thresholds gamma trigger (MB-triggered runs): EG1 " << f_gammaPtMinEMCALHighMB << " GeV, DG1 " << f_gammaPtMinDCALHighMB << " GeV, EG2 " << f_gammaPtMinEMCALLowMB << " GeV, DG2 " << f_gammaPtMinDCALLowMB << " GeV";
     LOG(info) << "Gamma trigger observable: " << (f_ObservalbeGammaTrigger == 0 ? "Energy" : "pt");
     LOG(info) << "Jet trigger: R: " << (static_cast<double>(f_jetR) / 100.) << ", pt (high threshold) > " << f_jetPtMin << " GeV/c, (low threshold) > " << f_jetPtMinLow << " GeV/c, cluster(" << f_clusterPtMin << ")";
+    LOG(info) << "Jet thresholds min-bias triggered runs: High " << f_jetPtMinMB << " GeV/c, low " << f_jetPtMinLowMB << " GeV/c";
     LOG(info) << "Ignore EMCAL flag: " << (b_IgnoreEmcalFlag ? "yes" : "no");
     LOG(info) << "Publishing neutral jet trigger: " << (b_PublishNeutralJetTrigger ? "yes" : "no");
     LOG(info) << "Publishing EMCAL trigger: " << (b_PublishReadoutTrigger ? "yes" : "no");
@@ -177,16 +200,110 @@ struct fullJetFilter {
     return false;
   }
 
-  Bool_t isEvtSelectedJet(double const& jetpt, ThresholdType_t thresholdt)
+  EMCALHWTriggerConfiguration getHWTriggerConfiguration(o2::ctp::CTPConfiguration& ctpconfig)
+  {
+    EMCALHWTriggerConfiguration result = EMCALHWTriggerConfiguration::UNKNOWN;
+    bool hasMinBias = false, hasL0 = false;
+    for (auto& cls : ctpconfig.getCTPClasses()) {
+      std::string_view trgclsname = cls.name;
+      if (trgclsname.find("-EMC") == std::string::npos) {
+        // Not an EMCAL trigger class
+        continue;
+      }
+      std::vector<std::string> tokens;
+      std::stringstream tokenizer(trgclsname.data());
+      std::string buf;
+      while (std::getline(tokenizer, buf, '-')) {
+        tokens.emplace_back(buf);
+      }
+      if (tokens[1] != "B") {
+        // Not bucket in both beams
+        continue;
+      }
+      std::cout << "Found trigger class: " << trgclsname << std::endl;
+      if (tokens[0] == "C0TVX") {
+        hasMinBias = true;
+      }
+      if (tokens[0] == "CTVXEMC" || tokens[0] == "CTVXDMC") {
+        hasL0 = true;
+      }
+    }
+    if (hasL0) {
+      result = EMCALHWTriggerConfiguration::EMC_TRIGGERD;
+    } else if (hasMinBias) {
+      result = EMCALHWTriggerConfiguration::MB_ONLY;
+    }
+    return result;
+  }
+
+  float getGammaThreshold(o2::emcal::AcceptanceType_t subdet, ThresholdType_t thresholdt, bool mblike)
+  {
+    float threshold = 0;
+    switch (subdet) {
+      case o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE: {
+        switch (thresholdt) {
+          case ThresholdType_t::HIGH_THRESHOLD: {
+            threshold = mblike ? f_gammaPtMinEMCALHighMB : f_gammaPtMinEMCALHigh;
+            break;
+          }
+          case ThresholdType_t::LOW_THRESHOLD: {
+            threshold = mblike ? f_gammaPtMinEMCALLowMB : f_gammaPtMinEMCALLow;
+            break;
+          }
+        }
+        break;
+      }
+      case o2::emcal::AcceptanceType_t::DCAL_ACCEPTANCE: {
+        switch (thresholdt) {
+          case ThresholdType_t::HIGH_THRESHOLD: {
+            threshold = mblike ? f_gammaPtMinDCALHighMB : f_gammaPtMinDCALHigh;
+            break;
+          }
+          case ThresholdType_t::LOW_THRESHOLD: {
+            threshold = mblike ? f_gammaPtMinDCALLowMB : f_gammaPtMinDCALLow;
+            break;
+          }
+        }
+        break;
+      }
+      case o2::emcal::AcceptanceType_t::NON_ACCEPTANCE: {
+        threshold = FLT_MAX;
+        break;
+      }
+    }
+    return threshold;
+  }
+
+  double getJetThreshold(ThresholdType_t thresholdt, bool mblike)
   {
     float threshold = 0.;
     switch (thresholdt) {
       case ThresholdType_t::HIGH_THRESHOLD:
-        threshold = f_jetPtMin;
+        threshold = mblike ? f_jetPtMinMB : f_jetPtMin;
         break;
       case ThresholdType_t::LOW_THRESHOLD:
-        threshold = f_jetPtMinLow;
+        threshold = mblike ? f_jetPtMinLowMB : f_jetPtMinLow;
         break;
+    }
+    return threshold;
+  }
+
+  Bool_t isEvtSelectedJet(double const& jetpt, ThresholdType_t thresholdt)
+  {
+    float threshold = 0;
+    switch (mHardwareTriggerConfig) {
+      case EMCALHWTriggerConfiguration::EMC_TRIGGERD: {
+        threshold = getJetThreshold(thresholdt, false);
+        break;
+      }
+      case EMCALHWTriggerConfiguration::MB_ONLY: {
+        threshold = getJetThreshold(thresholdt, true);
+        break;
+      }
+      case EMCALHWTriggerConfiguration::UNKNOWN: {
+        // No EMCAL trigger present in run - cannot select thresholds
+        return false;
+      }
     }
     if (jetpt > threshold) {
       return true;
@@ -197,35 +314,19 @@ struct fullJetFilter {
   Bool_t isEvtSelectedGamma(double const& gammapt, o2::emcal::AcceptanceType_t subdet, ThresholdType_t thresholdt)
   {
     float threshold = 0;
-    switch (subdet) {
-      case o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE: {
-        switch (thresholdt) {
-          case ThresholdType_t::HIGH_THRESHOLD: {
-            threshold = f_gammaPtMinEMCALHigh;
-            break;
-          }
-          case ThresholdType_t::LOW_THRESHOLD: {
-            threshold = f_gammaPtMinEMCALLow;
-            break;
-          }
-        }
+    switch (mHardwareTriggerConfig) {
+      case EMCALHWTriggerConfiguration::EMC_TRIGGERD: {
+        threshold = getGammaThreshold(subdet, thresholdt, false);
         break;
       }
-      case o2::emcal::AcceptanceType_t::DCAL_ACCEPTANCE: {
-        switch (thresholdt) {
-          case ThresholdType_t::HIGH_THRESHOLD: {
-            threshold = f_gammaPtMinDCALHigh;
-            break;
-          }
-          case ThresholdType_t::LOW_THRESHOLD: {
-            threshold = f_gammaPtMinDCALLow;
-            break;
-          }
-        }
+      case EMCALHWTriggerConfiguration::MB_ONLY: {
+        threshold = getGammaThreshold(subdet, thresholdt, true);
         break;
       }
-      case o2::emcal::AcceptanceType_t::NON_ACCEPTANCE:
+      case EMCALHWTriggerConfiguration::UNKNOWN: {
+        // No EMCAL trigger present in run - cannot select thresholds
         return false;
+      }
     }
     if (gammapt > threshold) {
       return true;
@@ -378,8 +479,30 @@ struct fullJetFilter {
   }
 
   template <typename JetCollection>
-  void runTrigger(collisionInfo const& collision, JetCollection const& jets, selectedClusters const& clusters)
+  void runTrigger(collisionInfo const& collision, JetCollection const& jets, selectedClusters const& clusters, BCsWithBcSelsRun3 const& bcs)
   {
+    int run = bcs.iteratorAt(0).runNumber();
+    // extract bc pattern from CCDB for data or anchored MC only
+    if (run != lastRun && run >= 500000) {
+      lastRun = run;
+      int64_t ts = bcs.iteratorAt(0).timestamp();
+      mHardwareTriggerConfig = getHWTriggerConfiguration(*(ccdb->getForTimeStamp<o2::ctp::CTPConfiguration>("CTP/Config/Config", ts)));
+      switch (mHardwareTriggerConfig) {
+        case EMCALHWTriggerConfiguration::MB_ONLY: {
+          std::cout << "Found hardware trigger configuration Min. bias only" << std::endl;
+          break;
+        }
+        case EMCALHWTriggerConfiguration::EMC_TRIGGERD: {
+          std::cout << "Found hardware trigger configuration L0-triggered" << std::endl;
+          break;
+        }
+        case EMCALHWTriggerConfiguration::UNKNOWN: {
+          std::cout << "No EMCAL trigger class found for run, event selection will not be possible" << std::endl;
+          break;
+        }
+      }
+    }
+
     std::array<bool, kCategories> keepEvent;
     std::fill(keepEvent.begin(), keepEvent.end(), false);
 
@@ -408,17 +531,17 @@ struct fullJetFilter {
     tags(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8]);
   }
 
-  void processFullJetTrigger(collisionInfo const& collision, filteredFullJets const& jets, selectedClusters const& clusters)
+  void processFullJetTrigger(collisionInfo const& collision, filteredFullJets const& jets, selectedClusters const& clusters, BCsWithBcSelsRun3 const& bcs)
   {
     // Trigger selection (full jet case)
-    runTrigger(collision, jets, clusters);
+    runTrigger(collision, jets, clusters, bcs);
   }
   PROCESS_SWITCH(fullJetFilter, processFullJetTrigger, "run full jet triggere code", true);
 
-  void processNeutralJetTrigger(collisionInfo const& collision, filteredNeutralJets const& jets, selectedClusters const& clusters)
+  void processNeutralJetTrigger(collisionInfo const& collision, filteredNeutralJets const& jets, selectedClusters const& clusters, BCsWithBcSelsRun3 const& bcs)
   {
     // Trigger selection (neutral jet case)
-    runTrigger(collision, jets, clusters);
+    runTrigger(collision, jets, clusters, bcs);
   }
   PROCESS_SWITCH(fullJetFilter, processNeutralJetTrigger, "run neutral jet triggere code", false);
 };
