@@ -1293,7 +1293,16 @@ DECLARE_SOA_COLUMN(MDbar, mDbar, float);               //! Invariant mass of D0b
 DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);   //! Tag for D0,D0bar
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);             //! Pool Bin for the MixedEvent
 
-enum ParticleType {
+enum ParticleTypeData {
+  isOnlyD0 = 1,    // Identified as D0
+  isOnlyD0bar,        // Identified as D0bar
+  isBothD0D0bar,         // Identified as both D0 and D0bar
+  isOnlyD0SoftPi = 11,     // Identified as D0 with soft pion
+  isOnlyD0barSoftPi,     // Identified as D0bar with soft pion
+  isBothD0D0barSoftPi     // Identified as both D0 and D0bar with soft pion
+};
+
+enum ParticleTypeMcRec {
   kD0Sig = 0,    // D0 signal
   kD0Ref,        // D0 reflection
   kD0Bg,         // D0 background
