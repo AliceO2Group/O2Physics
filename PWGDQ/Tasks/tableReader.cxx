@@ -1151,9 +1151,13 @@ struct AnalysisDileptonHadron {
   Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
   // comment: add list of subgroups (must define subgroups under )
   Configurable<std::string> fConfigAddDileptonHadHistogram{"cfgAddDileptonHadHistogram", "", "Comma separated list of histograms"};
+  Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
+  Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2.8, "Low mass cut for the dileptons used in analysis"};
+  Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 3.2, "High mass cut for the dileptons used in analysis"};
 
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
-  Filter dileptonFilter = aod::reducedpair::mass > 2.92f && aod::reducedpair::mass < 3.16f && aod::reducedpair::sign == 0;
+  Filter dileptonFilter = aod::reducedpair::mass > fConfigDileptonLowMass.value && aod::reducedpair::mass < fConfigDileptonHighMass.value && aod::reducedpair::sign == 0;
+  Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
 
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
 
@@ -1181,10 +1185,15 @@ struct AnalysisDileptonHadron {
     // TODO: Create separate histogram directories for each selection used in the creation of the dileptons
     // TODO: Implement possibly multiple selections for the associated track ?
     if (context.mOptions.get<bool>("processSkimmed")) {
-      DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronInvMassME;DileptonHadronCorrelation", fConfigAddDileptonHadHistogram); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars());
-      fOutputList.setObject(fHistMan->GetMainHistogramList());
+      DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelation", fConfigAddDileptonHadHistogram); // define all histograms
     }
+    if (context.mOptions.get<bool>("processMixedEvent")) {
+      DefineHistograms(fHistMan, "DileptonHadronInvMassME", fConfigAddDileptonHadHistogram); // define all histograms
+    }
+
+    VarManager::SetUseVars(fHistMan->GetUsedVars());
+    fOutputList.setObject(fHistMan->GetMainHistogramList());
+    
 
     TString configCutNamesStr = fConfigTrackCuts.value;
     if (!configCutNamesStr.IsNull()) {
@@ -1259,20 +1268,22 @@ struct AnalysisDileptonHadron {
     runDileptonHadron<VarManager::kBtoJpsiEEK, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, dileptons);
   }
 
-  Preslice<soa::Filtered<MyPairCandidatesSelected>> perEventsPairs = aod::reducedpair::reducedeventId;
-  void processMixedEvent(soa::Filtered<MyEventsHashSelected>& events, soa::Filtered<MyPairCandidatesSelected> const& dileptons, MyBarrelTracksSelected const& tracks)
+  Preslice<soa::Filtered<MyPairCandidatesSelected>> perEventPairs = aod::reducedpair::reducedeventId;
+  Preslice<soa::Filtered<MyBarrelTracksSelected>> perEventTracks = aod::reducedtrack::reducedeventId;
+
+  void processMixedEvent(soa::Filtered<MyEventsHashSelected>& events, soa::Filtered<MyPairCandidatesSelected> const& dileptons, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
     events.bindExternalIndices(&dileptons);
     events.bindExternalIndices(&tracks);
-    int mixingDepth = 10;
-    for (auto& [event1, event2] : selfCombinations(hashBin, mixingDepth, -1, events, events)) {
+    
+    for (auto& [event1, event2] : selfCombinations(hashBin, fConfigMixingDepth.value, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
-      VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
+      VarManager::FillEvent<gkEventFillMap>(event1, VarManager::fgValues);
 
-      auto evDileptons = tracks.sliceBy(perEventPairs, event1.globalIndex());
+      auto evDileptons = dileptons.sliceBy(perEventPairs, event1.globalIndex());
       evDileptons.bindExternalIndices(&events);
 
-      auto evTracks = tracks.sliceBy(perEventPairs, event2.globalIndex());
+      auto evTracks = tracks.sliceBy(perEventTracks, event2.globalIndex());
       evTracks.bindExternalIndices(&events);
 
       for (auto dilepton : evDileptons) {
@@ -1283,7 +1294,7 @@ struct AnalysisDileptonHadron {
           }
 
           VarManager::FillDileptonHadron(dilepton, track, VarManager::fgValues);
-          fHistMan->FillHistClass("DileptonHadronInvMassME", fValuesHadron);
+          fHistMan->FillHistClass("DileptonHadronInvMassME", VarManager::fgValues);
         }     // end for (track)
       }       // end for (dilepton)
       
