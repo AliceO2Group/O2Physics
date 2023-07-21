@@ -293,7 +293,7 @@ struct HfCandidateCreatorBplus {
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-          int hfFlag = 1 << hf_cand_bplus::DecayType::BplusToD0Pi;
+          int hfFlag = BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
 
           // calculate invariant mass and fill the Invariant Mass control plot
           massD0Pi = RecoDecay::m(array{pVecD0, pVecBach}, array{massD0, massPi});
@@ -355,7 +355,7 @@ struct HfCandidateCreatorBplusExpressions {
       // B± → D0bar(D0) π± → (K± π∓) π±
       // Printf("Checking B± → D0(bar) π±");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kBPlus, array{+kPiPlus, +kKPlus, -kPiPlus}, true, &signB, 2);
-      indexRecD0 = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersD0, pdg::Code::kD0, array{-kKPlus, +kPiPlus}, true, &signD0, 1);
+      indexRecD0 = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersD0, -pdg::Code::kD0, array{+kKPlus, -kPiPlus}, true, &signD0, 1);
 
       if (indexRecD0 > -1 && indexRec > -1) {
         flag = signB * (1 << hf_cand_bplus::DecayType::BplusToD0Pi);

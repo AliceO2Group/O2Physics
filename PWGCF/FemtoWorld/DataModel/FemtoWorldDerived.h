@@ -31,6 +31,7 @@ namespace femtoworldcollision
 DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
 DECLARE_SOA_COLUMN(MagField, magField, float);     //! Sphericity of the event
+DECLARE_SOA_COLUMN(RunCentrality, runCent, float); //! Sphericity of the event
 
 } // namespace femtoworldcollision
 
@@ -40,7 +41,7 @@ DECLARE_SOA_TABLE(FemtoWorldCollisions, "AOD", "FEMTOWORLDCOLS",
                   femtoworldcollision::MultV0M,
                   femtoworldcollision::Sphericity,
                   femtoworldcollision::MagField,
-                  o2::aod::cent::CentRun2V0M);
+                  femtoworldcollision::RunCentrality);
 using FemtoWorldCollision = FemtoWorldCollisions::iterator;
 
 /// FemtoWorldTrack

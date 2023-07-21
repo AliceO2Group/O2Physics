@@ -77,21 +77,23 @@ float getBinCenter(uint8_t bin, double max)
 }
 
 struct NucleusCandidate {
-  NucleusCandidate(int idx, float aPt, float aEta, float aphi, uint8_t z, uint8_t aITSclsMap, uint8_t aTPCnCls, uint8_t aDCAxy, uint8_t aDCAz, uint16_t aFlags, uint8_t aTPCnsigma, uint8_t aTOFmass) : globalIndex{idx}, pt{aPt}, eta{aEta}, phi{aphi}, zVertex{z}, ITSclsMap{aITSclsMap}, TPCnCls{aTPCnCls}, DCAxy{aDCAxy}, DCAz{aDCAz}, flags{aFlags}, TPCnsigma{aTPCnsigma}, TOFmass{aTOFmass}
-  {
-  }
   int globalIndex;
   float pt;
   float eta;
   float phi;
-  uint8_t zVertex;
+  float tpcInnerParam;
+  float beta;
+  float zVertex;
+  float DCAxy;
+  float DCAz;
+  float TPCsignal;
+  float ITSchi2;
+  float TPCchi2;
+  uint16_t flags;
+  uint8_t TPCfindableCls;
+  uint8_t TPCcrossedRows;
   uint8_t ITSclsMap;
   uint8_t TPCnCls;
-  uint8_t DCAxy;
-  uint8_t DCAz;
-  uint16_t flags;
-  uint8_t TPCnsigma;
-  uint8_t TOFmass;
 };
 
 namespace nuclei
@@ -171,7 +173,8 @@ struct nucleiSpectra {
     kHe4 = BIT(3),
     kHasTOF = BIT(4),
     kIsReconstructed = BIT(5),
-    kIsAmbiguous = BIT(6),       /// just a placeholder now
+    kIsAmbiguous = BIT(6), /// just a placeholder now
+    kPositive = BIT(7),
     kIsPhysicalPrimary = BIT(8), /// MC flags starting from the second half of the short
     kIsSecondaryFromMaterial = BIT(9),
     kIsSecondaryFromWeakDecay = BIT(10)
@@ -334,7 +337,6 @@ struct nucleiSpectra {
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
 
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
-    uint8_t zVert{getBinnedValue(collision.posZ(), 10.16)};
 
     const double bgScalings[4][2]{
       {nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / nuclei::masses[0], nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / nuclei::masses[0]},
@@ -383,7 +385,14 @@ struct nucleiSpectra {
       float beta{responseBeta.GetBeta(track)};
       spectra.fill(HIST("hTpcSignalDataSelected"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
       spectra.fill(HIST("hTofSignalData"), track.tpcInnerParam(), beta);
-      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be chec
+      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+      uint16_t flag{kIsReconstructed};
+      if (track.hasTOF()) {
+        flag |= kHasTOF;
+      }
+      if (!iC) {
+        flag |= kPositive;
+      }
       for (int iS{0}; iS < nuclei::species; ++iS) {
         bool selectedTOF{false};
         if (std::abs(dcaInfo[1]) > cfgDCAcut->get(iS, 1)) {
@@ -391,9 +400,6 @@ struct nucleiSpectra {
         }
         ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{trackParCov.getPt() * nuclei::charges[iS], trackParCov.getEta(), trackParCov.getPhi(), nuclei::masses[iS]};
         float y{fvector.Rapidity() + cfgCMrapidity};
-        if (cfgCutOnReconstructedRapidity && (y < cfgCutRapidityMin || y > cfgCutRapidityMax)) {
-          continue;
-        }
 
         for (int iPID{0}; iPID < 2; ++iPID) {
           if (selectedTPC[iS]) {
@@ -402,39 +408,34 @@ struct nucleiSpectra {
             } else if (iPID) {
               selectedTOF = true;
             }
-            nuclei::hDCAxy[iPID][iS][iC]->Fill(1., fvector.pt(), dcaInfo[0]);
-            nuclei::hDCAz[iPID][iS][iC]->Fill(1., fvector.pt(), dcaInfo[1]);
-            if (std::abs(dcaInfo[0]) < cfgDCAcut->get(iS, 0u)) {
-              if (!iPID) { /// temporary exclusion of the TOF nsigma PID for the He3 and Alpha
-                nuclei::hNsigma[iPID][iS][iC]->Fill(1., fvector.pt(), nSigma[iPID][iS]);
-                nuclei::hNsigmaEta[iPID][iS][iC]->Fill(fvector.eta(), fvector.pt(), nSigma[iPID][iS]);
-              }
-              if (iPID) {
-                float mass{track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS]};
-                nuclei::hTOFmass[iS][iC]->Fill(1., fvector.pt(), mass);
-                nuclei::hTOFmassEta[iS][iC]->Fill(fvector.eta(), fvector.pt(), mass);
+            if (!cfgCutOnReconstructedRapidity || (y > cfgCutRapidityMin && y < cfgCutRapidityMax)) {
+              nuclei::hDCAxy[iPID][iS][iC]->Fill(1., fvector.pt(), dcaInfo[0]);
+              nuclei::hDCAz[iPID][iS][iC]->Fill(1., fvector.pt(), dcaInfo[1]);
+              if (std::abs(dcaInfo[0]) < cfgDCAcut->get(iS, 0u)) {
+                if (!iPID) { /// temporary exclusion of the TOF nsigma PID for the He3 and Alpha
+                  nuclei::hNsigma[iPID][iS][iC]->Fill(1., fvector.pt(), nSigma[iPID][iS]);
+                  nuclei::hNsigmaEta[iPID][iS][iC]->Fill(fvector.eta(), fvector.pt(), nSigma[iPID][iS]);
+                }
+                if (iPID) {
+                  float mass{track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS]};
+                  nuclei::hTOFmass[iS][iC]->Fill(1., fvector.pt(), mass);
+                  nuclei::hTOFmassEta[iS][iC]->Fill(fvector.eta(), fvector.pt(), mass);
+                }
               }
             }
           }
         }
-        uint16_t flag{kIsReconstructed};
+
         if (cfgTreeConfig->get(iS, 0u) && selectedTPC[iS]) {
-          uint8_t massTOF{0u};
           if (cfgTreeConfig->get(iS, 1u) && !selectedTOF) {
             continue;
           }
-          if (track.hasTOF()) {
-            flag |= kHasTOF;
-            float mass{track.tpcInnerParam() * nuclei::charges[iS] * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS]};
-            massTOF = getBinnedValue(mass, cfgBinnedVariables->get(3u, 1u));
-          }
           flag |= BIT(iS);
-          uint8_t dcaxy = getBinnedValue(dcaInfo[0], cfgBinnedVariables->get(0u, 1u));
-          uint8_t dcaz = getBinnedValue(dcaInfo[1], cfgBinnedVariables->get(1u, 1u));
-          uint8_t nsigmaTPC = getBinnedValue(nSigma[0][iS], cfgBinnedVariables->get(2u, 1u));
-
-          nuclei::candidates.emplace_back(track.globalIndex(), track.sign() * fvector.pt(), fvector.eta(), fvector.phi(), zVert, track.itsClusterMap(), track.tpcNClsFound(), dcaxy, dcaz, flag, nsigmaTPC, massTOF);
         }
+      }
+      if (flag & (kDeuteron | kTriton | kHe3 | kHe4)) {
+        nuclei::candidates.emplace_back(NucleusCandidate{static_cast<int>(track.globalIndex()), (1 - 2 * iC) * trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), track.tpcInnerParam(), beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(),
+                                                         track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound())});
       }
     } // end loop over tracks
 
@@ -446,7 +447,7 @@ struct nucleiSpectra {
   {
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
-      nucleiTable(c.pt, c.eta, c.phi, c.zVertex, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFmass);
+      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processData, "Data analysis", true);
@@ -474,7 +475,7 @@ struct nucleiSpectra {
         c.flags |= kIsSecondaryFromMaterial;
       }
 
-      nucleiTableMC(c.pt, c.eta, c.phi, c.zVertex, c.ITSclsMap, c.TPCnCls, c.DCAxy, c.DCAz, c.flags, c.TPCnsigma, c.TOFmass, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode());
+      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode());
       for (int iS{0}; iS < nuclei::species; ++iS) {
         if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
           nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt), 1. - std::abs(c.pt) / particle.pt());
@@ -503,7 +504,7 @@ struct nucleiSpectra {
         }
 
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
-          nucleiTableMC(0, 0, 0, 0, 0, 0, 0, 0, flags, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode());
+          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, flags, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode());
         }
         break;
       }

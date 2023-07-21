@@ -39,6 +39,13 @@ using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
 struct LFTPCdEdxPostcalibration {
 
+  // dE/dx for all charged particles
+  HistogramRegistry registryCh{
+    "registryCh",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
   // dE/dx and nsigma_{TPC} for different hadron species
   HistogramRegistry registryPi{
     "registryPi",
@@ -107,10 +114,15 @@ struct LFTPCdEdxPostcalibration {
   Configurable<float> maxDCAxy{"maxDCAxy", 0.1f, "maxDCAxy"};
   Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
+  Configurable<bool> useTOFpi{"useTOFpi", true, "use TOF for pion ID"};
+  Configurable<bool> useTOFpr{"useTOFpr", true, "use TOF for proton ID"};
 
   void init(InitContext const&)
   {
     // Raw dE/dx vs. TPC momentum
+    registryCh.add(
+      "dEdx_vs_Momentum", "dE/dx", HistType::kTH2F,
+      {{200, -10.0, 10.0, "z#cdot p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
     registryPi.add(
       "dEdx_vs_Momentum_Pi", "dE/dx", HistType::kTH2F,
       {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
@@ -149,6 +161,9 @@ struct LFTPCdEdxPostcalibration {
     registryHe.add(
       "nsigmaTPC_vs_Momentum_He", "nsigmaTPC", HistType::kTH2F,
       {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+
+    // Event Counter
+    registryCh.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20.0, +20.0, "z_{vtx} (cm)"}});
   }
 
   // Single-Track Selection
@@ -193,9 +208,9 @@ struct LFTPCdEdxPostcalibration {
       return false;
     if (!passedSingleTrackSelection(ntrack, collision))
       return false;
-    if (!ptrack.hasTOF())
+    if (useTOFpi && (!ptrack.hasTOF()))
       return false;
-    if (!ntrack.hasTOF())
+    if (useTOFpi && (!ntrack.hasTOF()))
       return false;
     if (TMath::Abs(ptrack.tofNSigmaPi()) > nsigmaTOFmax)
       return false;
@@ -219,9 +234,9 @@ struct LFTPCdEdxPostcalibration {
       return false;
     if (!passedSingleTrackSelection(ntrack, collision))
       return false;
-    if (!ptrack.hasTOF())
+    if (useTOFpr && (!ptrack.hasTOF()))
       return false;
-    if (!ntrack.hasTOF())
+    if (useTOFpi && (!ntrack.hasTOF()))
       return false;
     if (TMath::Abs(ntrack.tofNSigmaPi()) > nsigmaTOFmax)
       return false;
@@ -246,9 +261,9 @@ struct LFTPCdEdxPostcalibration {
       return false;
     if (!passedSingleTrackSelection(ntrack, collision))
       return false;
-    if (!ptrack.hasTOF())
+    if (useTOFpr && (!ntrack.hasTOF()))
       return false;
-    if (!ntrack.hasTOF())
+    if (useTOFpi && (!ptrack.hasTOF()))
       return false;
     if (TMath::Abs(ptrack.tofNSigmaPi()) > nsigmaTOFmax)
       return false;
@@ -270,6 +285,9 @@ struct LFTPCdEdxPostcalibration {
     if (!collision.sel8())
       return;
 
+    // Event Counter
+    registryCh.fill(HIST("histRecVtxZData"), collision.posZ());
+
     // Kaons and nuclei
     for (auto& trk : tracks) {
 
@@ -287,6 +305,9 @@ struct LFTPCdEdxPostcalibration {
         continue;
       if (trk.itsChi2NCl() > maxChi2ITS)
         continue;
+
+      // Charged Particles
+      registryCh.fill(HIST("dEdx_vs_Momentum"), trk.sign() * trk.tpcInnerParam(), trk.tpcSignal());
 
       // Kaons
       if (trk.hasTOF() && TMath::Abs(trk.tofNSigmaKa()) < 2.0) {

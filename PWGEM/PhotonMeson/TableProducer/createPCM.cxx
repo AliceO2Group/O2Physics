@@ -55,7 +55,6 @@ struct createPCM {
     "createPCM",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
-      // {"hAP", "AP plot", {HistType::kTH2F, {{200, -1, +1}, {250, 0, 0.25}}}},
     },
   };
 
@@ -87,6 +86,7 @@ struct createPCM {
   Configurable<float> min_tpcdEdx{"min_tpcdEdx", 30.0, "min TPC dE/dx"};
   Configurable<float> max_tpcdEdx{"max_tpcdEdx", 110.0, "max TPC dE/dx"};
   Configurable<float> margin_r{"margin_r", 7.0, "margin for r cut"};
+  Configurable<float> max_qt_arm{"max_qt_arm", 0.03, "max qt for AP cut in GeV/c"};
 
   int mRunNumber;
   float d_bz;
@@ -223,7 +223,7 @@ struct createPCM {
       return false;
     }
 
-    if (!checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), 0.95, 0.05)) { // store only photon conversions
+    if (!checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), 0.95, max_qt_arm)) { // store only photon conversions
       return false;
     }
     if (ele.hasITS() && pos.hasITS() && !checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), 0.95, 0.02)) { // store only photon conversions
@@ -235,6 +235,10 @@ struct createPCM {
     float recalculatedVtxR = sqrt(pow(xyz[0], 2) + pow(xyz[1], 2));
     // LOGF(info, "recalculated vtx : x = %f , y = %f , z = %f", xyz[0], xyz[1], xyz[2]);
     if (recalculatedVtxR > std::min(pos.x(), ele.x()) + margin_r && (pos.x() > 1.f && ele.x() > 1.f)) {
+      return false;
+    }
+
+    if (recalculatedVtxR < 16.f && (!pos.hasITS() || !ele.hasITS())) {
       return false;
     }
 
@@ -279,7 +283,6 @@ struct createPCM {
     if (v0CosinePA < minv0cospa) {
       return;
     }
-    // registry.fill(HIST("hAP"), v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]));
 
     if (!checkAP(v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]), v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]))) { // store only photon conversions
       return;
@@ -358,12 +361,12 @@ struct createPCM {
       negTracks_sw.reserve(max_sw - min_sw);
       posTracks_sw.reserve(max_sw - min_sw);
 
-      int npos = 0, nneg = 0;
+      // int npos = 0, nneg = 0;
       for (int32_t isw = min_sw; isw < max_sw; isw++) {
         negTracks_sw.emplace_back(negTracks->sliceByCached(o2::aod::track::collisionId, isw, cache));
         posTracks_sw.emplace_back(posTracks->sliceByCached(o2::aod::track::collisionId, isw, cache));
-        npos += posTracks_sw.back().size();
-        nneg += negTracks_sw.back().size();
+        // npos += posTracks_sw.back().size();
+        // nneg += negTracks_sw.back().size();
         // LOGF(info, "collision.globalIndex() = %d , posTracks_sw.back().size() = %d , negTracks_sw.back().size() = %d", collision.globalIndex(), posTracks_sw.back().size(), negTracks_sw.back().size());
       }
       // LOGF(info, "min_sw = %d , max_sw = %d , collision.globalIndex() = %d , n posTracks_sw = %d , n negTracks_sw = %d", min_sw, max_sw, collision.globalIndex(), npos, nneg);

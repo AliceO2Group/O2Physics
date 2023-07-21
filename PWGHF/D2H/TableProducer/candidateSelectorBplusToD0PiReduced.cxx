@@ -9,64 +9,61 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorBplusToD0Pi.cxx
-/// \brief B± → D0bar(D0) π± candidate selector
+/// \file CandidateSelectorBplusToD0PiReduced.cxx
+/// \brief B+ → D0bar π+ candidate selector
 ///
-/// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Sezione di Bari
-/// \author Deepa Thomas <deepa.thomas@cern.ch>, UT Austin
+/// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
 
 #include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_bplus;
+using namespace o2::aod::hf_cand_bplus; // from CandidateReconstructionTables.h
 using namespace o2::analysis;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_bplus_to_d0_pi;
+using namespace o2::analysis::hf_cuts_bplus_to_d0_pi; // from SelectorCuts.h
 
-struct HfCandidateSelectorBplusToD0Pi {
-  Produces<aod::HfSelBplusToD0Pi> hfSelBplusToD0PiCandidate;
+struct HfCandidateSelectorBplusToD0PiReduced {
+  Produces<aod::HfSelBplusToD0Pi> hfSelBplusToD0PiCandidate; // table defined in CandidateSelectionTables.h
 
-  // Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
-  // Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+  Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
-  Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID at filtering level"};
+  Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
   Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
-  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 999, "Lower bound of track pT for TPC PID"};
-  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 9999, "Upper bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 5., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
   // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> ptPidTofMax{"ptPidTofMax", 50., "Upper bound of track pT for TOF PID"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
-  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 999., "Nsigma cut on TOF combined with TPC"};
+  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bplus_to_d0_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "B+ candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
-
-  // check if selectionFlagD (defined in candidateCreatorBplus.cxx) and usePid configurables are in sync
   bool selectionFlagDAndUsePidInSync = true;
+  // variable that will store the value of selectionFlagD (defined in dataCreatorD0PiReduced.cxx)
+  int mySelectionFlagD0 = -1;
+  int mySelectionFlagD0bar = -1;
 
   TrackSelectorPID selectorPion;
 
-  using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
-
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext& initContext)
+  void init(InitContext const& initContext)
   {
     if (usePid) {
       selectorPion.setPDG(kPiPlus);
@@ -91,109 +88,85 @@ struct HfCandidateSelectorBplusToD0Pi {
         registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
     }
+  }
 
-    int selectionFlagD0 = -1;
-    int selectionFlagD0bar = -1;
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec const& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-bplus") == 0) {
-        for (auto const& option : device.options) {
-          if (option.name.compare("selectionFlagD0") == 0) {
-            selectionFlagD0 = option.defaultValue.get<int>();
-            LOGF(info, "selectionFlagD0 = %d", selectionFlagD0);
-          }
-          if (option.name.compare("selectionFlagD0bar") == 0) {
-            selectionFlagD0bar = option.defaultValue.get<int>();
-            LOGF(info, "selectionFlagD0bar = %d", selectionFlagD0bar);
-          }
-        }
+  void process(HfCandBplus const& hfCandBs,
+               HfCand2ProngReduced const&,
+               HfTracksPidReduced const&,
+               HfCandBpConfig const& configs)
+  {
+    // get DplusPi creator configurable
+    for (const auto& config : configs) {
+      mySelectionFlagD0 = config.mySelectionFlagD0();
+      mySelectionFlagD0bar = config.mySelectionFlagD0bar();
+
+      if ((usePid && !mySelectionFlagD0) || (usePid && !mySelectionFlagD0bar)) {
+        selectionFlagDAndUsePidInSync = false;
+        LOG(warning) << "PID selections required on B+ daughters (usePid=true) but no PID selections on D candidates were required a priori.";
+      }
+      if ((!usePid && mySelectionFlagD0) || (!usePid && mySelectionFlagD0bar)) {
+        selectionFlagDAndUsePidInSync = false;
+        LOG(warning) << "No PID selections required on Bp daughters (usePid=false) but PID selections on D candidates were required a priori.";
       }
     }
-    if ((usePid && !selectionFlagD0) || (usePid && !selectionFlagD0bar)) {
-      selectionFlagDAndUsePidInSync = false;
-      LOG(warning) << "PID selections required on B+ daughters (usePid=true) but no PID selections on D candidates were required a priori.";
-    }
-    if ((!usePid && selectionFlagD0) || (!usePid && selectionFlagD0bar)) {
-      selectionFlagDAndUsePidInSync = false;
-      LOG(warning) << "No PID selections required on Bp daughters (usePid=false) but PID selections on D candidates were required a priori.";
-    }
-  }
 
-  /// Apply PID selection
-  /// \param pidTrackPi is the PID status of trackPi (prong1 of B+ candidate)
-  /// \return true if prong1 of B+ candidate passes all selections
-  template <typename T = int>
-  bool selectionPID(const T& pidTrackPi)
-  {
-    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
-      return false;
-    }
-    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Status::PIDRejected) {
-      return false;
-    }
-
-    return true;
-  }
-
-  void process(aod::HfCandBplus const& hfCandBs, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, TracksPIDWithSel const&)
-  {
-
-    for (auto& hfCandB : hfCandBs) { // looping over Bplus candidates
-
+    for (const auto& hfCandBp : hfCandBs) {
       int statusBplus = 0;
-      auto ptCandB = hfCandB.pt();
+      auto ptCandBplus = hfCandBp.pt();
+      // auto candD0 = hfCandBp.prong0_as<HfCand2ProngReduced>();
+      // auto trackPi = hfCandBp.prong1_as<HfTracksPidReduced>();
 
-      // check if flagged as B+ --> D0bar Pi
-      if (!(hfCandB.hfflag() & 1 << hf_cand_bplus::DecayType::BplusToD0Pi)) {
+      // check if flagged as B+ → D π
+      if (!TESTBIT(hfCandBp.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
         hfSelBplusToD0PiCandidate(statusBplus);
-        // Printf("B+ candidate selection failed at hfflag check");
+        if (activateQA) {
+          registry.fill(HIST("hSelections"), 1, ptCandBplus);
+        }
+        // LOGF(info, "B+ candidate selection failed at hfflag check");
         continue;
       }
       SETBIT(statusBplus, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusBplus = 1
       if (activateQA) {
-        registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandB);
+        registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandBplus);
       }
 
-      // D0 is always index0 and pi is index1 by default
-      auto trackPi = hfCandB.prong1_as<TracksPIDWithSel>();
-
       // topological cuts
-      if (!hf_sel_candidate_bplus::selectionTopol(hfCandB, cuts, binsPt)) {
+      if (!hf_sel_candidate_bplus::selectionTopol(hfCandBp, cuts, binsPt)) {
         hfSelBplusToD0PiCandidate(statusBplus);
-        // Printf("B+ candidate selection failed at topology selection");
+        // LOGF(info, "B+ candidate selection failed at topology selection");
         continue;
       }
       SETBIT(statusBplus, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusBplus = 3
       if (activateQA) {
-        registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoTopol, ptCandB);
+        registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoTopol, ptCandBplus);
       }
 
-      // checking if selectionFlagD0(D0bar) and usePid are in sync
+      // checking if selectionFlagD and usePid are in sync
       if (!selectionFlagDAndUsePidInSync) {
         hfSelBplusToD0PiCandidate(statusBplus);
         continue;
       }
       // track-level PID selection
       if (usePid) {
+        auto trackPi = hfCandBp.prong1_as<HfTracksPidReduced>();
         int pidTrackPi = selectorPion.getStatusTrackPIDTpcAndTof(trackPi);
-        if (!selectionPID(pidTrackPi)) {
+        if (!hf_sel_candidate_bplus::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
+          // LOGF(info, "B+ candidate selection failed at PID selection");
           hfSelBplusToD0PiCandidate(statusBplus);
           continue;
         }
         SETBIT(statusBplus, SelectionStep::RecoPID); // RecoPID = 2 --> statusBplus = 7
         if (activateQA) {
-          registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoPID, ptCandB);
+          registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoPID, ptCandBplus);
         }
       }
-
       hfSelBplusToD0PiCandidate(statusBplus);
-      // LOGF(info, "Successful B+ candidate selection");
+      // LOGF(info, "B+ candidate selection passed all selections");
     }
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorBplusToD0Pi>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorBplusToD0PiReduced>(cfgc)};
 }

@@ -1151,9 +1151,13 @@ struct AnalysisDileptonHadron {
   Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
   // comment: add list of subgroups (must define subgroups under )
   Configurable<std::string> fConfigAddDileptonHadHistogram{"cfgAddDileptonHadHistogram", "", "Comma separated list of histograms"};
+  Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
+  Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2.8, "Low mass cut for the dileptons used in analysis"};
+  Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 3.2, "High mass cut for the dileptons used in analysis"};
 
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
-  Filter dileptonFilter = aod::reducedpair::mass > 2.92f && aod::reducedpair::mass < 3.16f && aod::reducedpair::sign == 0;
+  Filter dileptonFilter = aod::reducedpair::mass > fConfigDileptonLowMass.value&& aod::reducedpair::mass < fConfigDileptonHighMass.value&& aod::reducedpair::sign == 0;
+  Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
 
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
 
@@ -1166,6 +1170,8 @@ struct AnalysisDileptonHadron {
   //       and the associated hadrons (n+1 bit) --> see the barrel track selection task
   //      The current condition should be replaced when bitwise operators will become available in Filter expressions
   int fNHadronCutBit;
+
+  NoBinningPolicy<aod::dqanalysisflags::MixingHash> hashBin;
 
   void init(o2::framework::InitContext& context)
   {
@@ -1180,9 +1186,13 @@ struct AnalysisDileptonHadron {
     // TODO: Implement possibly multiple selections for the associated track ?
     if (context.mOptions.get<bool>("processSkimmed")) {
       DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelation", fConfigAddDileptonHadHistogram); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars());
-      fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
+    if (context.mOptions.get<bool>("processMixedEvent")) {
+      DefineHistograms(fHistMan, "DileptonHadronInvMassME", fConfigAddDileptonHadHistogram); // define all histograms
+    }
+
+    VarManager::SetUseVars(fHistMan->GetUsedVars());
+    fOutputList.setObject(fHistMan->GetMainHistogramList());
 
     TString configCutNamesStr = fConfigTrackCuts.value;
     if (!configCutNamesStr.IsNull()) {
@@ -1256,12 +1266,47 @@ struct AnalysisDileptonHadron {
   {
     runDileptonHadron<VarManager::kBtoJpsiEEK, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, dileptons);
   }
+
+  Preslice<soa::Filtered<MyPairCandidatesSelected>> perEventPairs = aod::reducedpair::reducedeventId;
+  Preslice<soa::Filtered<MyBarrelTracksSelected>> perEventTracks = aod::reducedtrack::reducedeventId;
+
+  void processMixedEvent(soa::Filtered<MyEventsHashSelected>& events, soa::Filtered<MyPairCandidatesSelected> const& dileptons, soa::Filtered<MyBarrelTracksSelected> const& tracks)
+  {
+    events.bindExternalIndices(&dileptons);
+    events.bindExternalIndices(&tracks);
+
+    for (auto& [event1, event2] : selfCombinations(hashBin, fConfigMixingDepth.value, -1, events, events)) {
+      VarManager::ResetValues(0, VarManager::kNVars);
+      VarManager::FillEvent<gkEventFillMap>(event1, VarManager::fgValues);
+
+      auto evDileptons = dileptons.sliceBy(perEventPairs, event1.globalIndex());
+      evDileptons.bindExternalIndices(&events);
+
+      auto evTracks = tracks.sliceBy(perEventTracks, event2.globalIndex());
+      evTracks.bindExternalIndices(&events);
+
+      for (auto dilepton : evDileptons) {
+        for (auto& track : evTracks) {
+
+          if (!(uint32_t(track.isBarrelSelected()) & (uint32_t(1) << fNHadronCutBit))) {
+            continue;
+          }
+
+          VarManager::FillDileptonHadron(dilepton, track, VarManager::fgValues);
+          fHistMan->FillHistClass("DileptonHadronInvMassME", VarManager::fgValues);
+        } // end for (track)
+      }   // end for (dilepton)
+
+    } // end event loop
+  }
+
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisDileptonHadron, processSkimmed, "Run dilepton-hadron pairing, using skimmed data", false);
+  PROCESS_SWITCH(AnalysisDileptonHadron, processMixedEvent, "Run dilepton-hadron mixed event pairing", false);
   PROCESS_SWITCH(AnalysisDileptonHadron, processDummy, "Dummy function", false);
 };
 
