@@ -416,7 +416,7 @@ struct JetMatching {
           fillJetIdArraysBaseToTag(jetsBasePerColl, jetsTagPerColl, baseToTagGeo, baseToTagPt, baseToTagHF);
           fillJetIdArraysTagToBase(jetsBasePerColl, jetsTagPerColl, tagToBaseGeo, tagToBasePt, tagToBaseHF);
         }
-        if (i_collision > 1) {                  // collision is split
+        if (i_collision > 1) { // collision is split
           for (std::size_t colli = 1; colli < collisionsPerMcColl.size(); colli++) {
             if (jetsBaseIsMC && !jetsTagIsMC) { // (if both are MC, allowing this line below to happen would make duplicates in the matching table)
               fillJetIdArraysBaseToTag(jetsBasePerColl, jetsTagPerColl, baseToTagGeo, baseToTagPt, baseToTagHF);
