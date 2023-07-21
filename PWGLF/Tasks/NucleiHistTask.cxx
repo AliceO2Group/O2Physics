@@ -111,6 +111,7 @@ struct NucleiHistTask {
     spectra_reg.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
     spectra_reg.add("histEtaWithOverFlow", "Pseudorapidity 0 - 105%% centrality", HistType::kTH1F, {etaAxis});
     spectra_reg.add("histEta", "Pseudorapidity with centrality cut", HistType::kTH1F, {etaAxis});
+    spectra_reg.add("histEta_cent", "Pseudorapidity vs Centrality", HistType::kTH2F, {centralityAxis_extended, etaAxis});
 
     // histograms for Proton
     proton_reg.add("histKeepEventData", "skimming histogram (p)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
@@ -1161,6 +1162,7 @@ struct NucleiHistTask {
       }
 
       spectra_reg.fill(HIST("histEtaWithOverFlow"), track.eta());
+      spectra_reg.fill(HIST("histEta_cent"), event.centFT0C(), track.eta());
 
       if ((event.centFT0C() > minCentrality) && (event.centFT0C() < maxCentrality)) {
         spectra_reg.fill(HIST("histEta"), track.eta());
