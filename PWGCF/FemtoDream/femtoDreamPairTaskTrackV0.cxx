@@ -119,7 +119,7 @@ struct femtoDreamPairTaskTrackV0 {
   ConfigurableAxis ConfmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfUse3D>> to true in order to use)"};
   ConfigurableAxis ConfmultBins3D{"ConfMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfUse3D>> to true in order to use)"};
   ConfigurableAxis ConfDummy{"ConfDummy", {1, 0, 1}, "Dummy axis"};
-  
+
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
@@ -155,7 +155,7 @@ struct femtoDreamPairTaskTrackV0 {
   template <bool isMC, typename PartitionType, typename PartType>
   void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol)
   {
-    
+
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
       if (part.p() > ConfTrkCutTable->get("Track", "MaxP") || part.pt() > ConfTrkCutTable->get("Track", "MaxPt") ||
@@ -164,7 +164,6 @@ struct femtoDreamPairTaskTrackV0 {
       }
       trackHistoPartOne.fillQA<isMC, false>(part, 0);
     }
-
     for (auto& part : groupPartsTwo) {
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
@@ -206,45 +205,32 @@ struct femtoDreamPairTaskTrackV0 {
     }
   }
 
-  
   void processSameEvent(o2::aod::FDCollision& col,
                         o2::aod::FDParticles& parts)
   {
     eventHisto.fillQA(col);
-    
+
     auto thegroupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
 
     doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEvent, "Enable processing same event", true);
-  
-  void processSameEventMC(o2::aod::FDCollision& col,
-                          soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
-                          o2::aod::FDMCParticles&)
+
+  void processSameEventMC(o2::aod::FDCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
     eventHisto.fillQA(col);
-    
     auto thegroupPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTwo = partsTwoMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-
     doSameEvent<true>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEventMC, "Enable processing same event MC", false);
-
-
-
-
-
-
 
   /// This function processes the mixed event
   /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
   template <bool isMC, typename PartitionType, typename PartType>
   void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol)
   {
-
-
 
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
       if (p1.p() > ConfTrkCutTable->get("Track", "MaxP") || p1.pt() > ConfTrkCutTable->get("Track", "MaxPt") ||
@@ -272,7 +258,6 @@ struct femtoDreamPairTaskTrackV0 {
     }
   }
 
-  
   void processMixedEvent(o2::aod::FDCollisions& cols,
                          o2::aod::FDParticles& parts)
   {
@@ -288,13 +273,13 @@ struct femtoDreamPairTaskTrackV0 {
       if (magFieldTesla1 != magFieldTesla2) {
         continue;
       }
-      
+
       doMixedEvent<false>(groupPartsOne, groupPartsTwo, parts, magFieldTesla1, multCol);
     }
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processMixedEvent, "Enable processing mixed events", true);
-  
-  void processMixedEventMC(o2::aod::FDCollisions& cols, o2::aod::FDParticles& parts)
+
+  void processMixedEventMC(o2::aod::FDCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
       const int multCol = collision1.multNtr();
@@ -308,7 +293,7 @@ struct femtoDreamPairTaskTrackV0 {
       if (magFieldTesla1 != magFieldTesla2) {
         continue;
       }
-      
+
       doMixedEvent<true>(groupPartsOne, groupPartsTwo, parts, magFieldTesla1, multCol);
     }
   }
