@@ -1156,7 +1156,7 @@ struct AnalysisDileptonHadron {
   Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 3.2, "High mass cut for the dileptons used in analysis"};
 
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
-  Filter dileptonFilter = aod::reducedpair::mass > fConfigDileptonLowMass.value && aod::reducedpair::mass < fConfigDileptonHighMass.value && aod::reducedpair::sign == 0;
+  Filter dileptonFilter = aod::reducedpair::mass > fConfigDileptonLowMass.value&& aod::reducedpair::mass < fConfigDileptonHighMass.value&& aod::reducedpair::sign == 0;
   Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
 
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
@@ -1193,7 +1193,6 @@ struct AnalysisDileptonHadron {
 
     VarManager::SetUseVars(fHistMan->GetUsedVars());
     fOutputList.setObject(fHistMan->GetMainHistogramList());
-    
 
     TString configCutNamesStr = fConfigTrackCuts.value;
     if (!configCutNamesStr.IsNull()) {
@@ -1275,7 +1274,7 @@ struct AnalysisDileptonHadron {
   {
     events.bindExternalIndices(&dileptons);
     events.bindExternalIndices(&tracks);
-    
+
     for (auto& [event1, event2] : selfCombinations(hashBin, fConfigMixingDepth.value, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMap>(event1, VarManager::fgValues);
@@ -1288,16 +1287,16 @@ struct AnalysisDileptonHadron {
 
       for (auto dilepton : evDileptons) {
         for (auto& track : evTracks) {
-          
+
           if (!(uint32_t(track.isBarrelSelected()) & (uint32_t(1) << fNHadronCutBit))) {
             continue;
           }
 
           VarManager::FillDileptonHadron(dilepton, track, VarManager::fgValues);
           fHistMan->FillHistClass("DileptonHadronInvMassME", VarManager::fgValues);
-        }     // end for (track)
-      }       // end for (dilepton)
-      
+        } // end for (track)
+      }   // end for (dilepton)
+
     } // end event loop
   }
 
