@@ -71,11 +71,17 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "MultTPC", "MultTPC", false, 100, 0.0, 25000.0, VarManager::kMultTPC);
       hm->AddHistogram(histClass, "MultTPCLow", "MultTPCLow", false, 50, 0.0, 50.0, VarManager::kMultTPC);
       hm->AddHistogram(histClass, "MultFV0A", "MultFV0A", false, 100, 0.0, 25000.0, VarManager::kMultFV0A);
+      hm->AddHistogram(histClass, "MultFV0ALow", "MultFV0ALow", false, 50, 0.0, 50.0, VarManager::kMultFV0A);
       hm->AddHistogram(histClass, "MultFV0C", "MultFV0C", false, 100, 0.0, 25000.0, VarManager::kMultFV0C);
+      hm->AddHistogram(histClass, "MultFV0CLow", "MultFV0CLow", false, 50, 0.0, 50.0, VarManager::kMultFV0C);
       hm->AddHistogram(histClass, "MultFT0A", "MultFT0A", false, 100, 0.0, 25000.0, VarManager::kMultFT0A);
+      hm->AddHistogram(histClass, "MultFT0ALow", "MultFT0ALow", false, 50, 0.0, 50.0, VarManager::kMultFT0A);
       hm->AddHistogram(histClass, "MultFT0C", "MultFT0C", false, 100, 0.0, 25000.0, VarManager::kMultFT0C);
+      hm->AddHistogram(histClass, "MultFT0CLow", "MultFT0CLow", false, 50, 0.0, 50.0, VarManager::kMultFT0C);
       hm->AddHistogram(histClass, "MultFDDA", "MultFDDA", false, 100, 0.0, 25000.0, VarManager::kMultFDDA);
+      hm->AddHistogram(histClass, "MultFDDALow", "MultFDDALow", false, 50, 0.0, 50.0, VarManager::kMultFDDA);
       hm->AddHistogram(histClass, "MultFDDC", "MultFDDC", false, 100, 0.0, 25000.0, VarManager::kMultFDDC);
+      hm->AddHistogram(histClass, "MultFDDCLow", "MultFDDCLow", false, 50, 0.0, 50.0, VarManager::kMultFDDC);
       hm->AddHistogram(histClass, "MultZNA", "MultZNA", false, 100, 0.0, 25000.0, VarManager::kMultZNA);
       hm->AddHistogram(histClass, "MultZNC", "MultZNC", false, 100, 0.0, 25000.0, VarManager::kMultZNC);
       hm->AddHistogram(histClass, "MultTracklets", "MultTracklets", false, 100, 0.0, 25000.0, VarManager::kMultTracklets);

@@ -205,8 +205,7 @@ struct DQFilterPbPbTask {
   Configurable<bool> fConfigUseFV0{"cfgUseFV0", true, "Whether to use FV0 for veto"};
   Configurable<bool> fConfigUseFT0{"cfgUseFT0", true, "Whether to use FT0 for veto"};
   Configurable<bool> fConfigUseFDD{"cfgUseFDD", true, "Whether to use FDD for veto"};
-  Configurable<bool> fConfigUseSideA{"cfgUseSideA", true, "Whether to use side A of FIT to perform veto"};
-  Configurable<bool> fConfigUseSideC{"cfgUseSideC", true, "Whether to use side C of FIT to perform veto"};
+  Configurable<std::string> fConfigFITSides{"cfgFITSides", "both", "both, either, A, C, neither"};
   Configurable<bool> fConfigVetoForward{"cfgVetoForward", true, "Whether to veto on forward tracks"};
   Configurable<bool> fConfigVetoBarrel{"cfgVetoBarrel", false, "Whether to veto on barrel tracks"};
 
@@ -216,10 +215,13 @@ struct DQFilterPbPbTask {
   std::vector<int> fBarrelNminTracks; // minimal number of tracks in barrel
   std::vector<int> fBarrelNmaxTracks; // maximal number of tracks in barrel
 
+  int FITVetoSides = -1; // Integer to encode which side(s) of the FIT to use for veto
+  std::vector<std::string> FITVetoSidesOptions = {"both", "either", "A", "C", "neither"};
+
   // Helper function for selecting DG events
   bool isEventDG(MyEvents::iterator const& collision, MyBCs const& bcs, MyBarrelTracksSelected const& tracks, MyMuons const& muons,
                  aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
-                 std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, bool useFV0, bool useFT0, bool useFDD, bool useSideA, bool useSideC, bool doVetoFwd, bool doVetoBarrel)
+                 std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, bool useFV0, bool useFT0, bool useFDD, int FITSide, bool doVetoFwd, bool doVetoBarrel)
   {
     // Find BC associated with collision
     if (!collision.has_foundBC()) {
@@ -271,10 +273,11 @@ struct DQFilterPbPbTask {
     MyBCs bcrange{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
 
     // DG condition: Check FIT activity in BC range
-    bool cleanFIT = true;
+    bool isSideAClean = true;
+    bool isSideCClean = true;
 
     for (auto const& bc : bcrange) {
-      if (useFV0 && useSideA) {
+      if (useFV0) {
         if (bc.has_foundFV0()) {
           auto fv0a = fv0as.iteratorAt(bc.foundFV0Id());
           float FV0Amplitude = 0;
@@ -282,7 +285,7 @@ struct DQFilterPbPbTask {
             FV0Amplitude += amp;
           }
           if (FV0Amplitude > FITAmpLimits[0]) {
-            cleanFIT = false;
+            isSideAClean = false;
           }
         }
       }
@@ -297,8 +300,11 @@ struct DQFilterPbPbTask {
           for (auto amp : ft0.amplitudeC()) {
             FT0CAmplitude += amp;
           }
-          if ((useSideA && FT0AAmplitude > FITAmpLimits[1]) || (useSideC && FT0CAmplitude > FITAmpLimits[2])) {
-            cleanFIT = false;
+          if (FT0AAmplitude > FITAmpLimits[1]) {
+            isSideAClean = false;
+          }
+          if (FT0CAmplitude > FITAmpLimits[2]) {
+            isSideCClean = false;
           }
         }
       }
@@ -313,8 +319,11 @@ struct DQFilterPbPbTask {
           for (auto amp : fdd.chargeC()) {
             FDDCAmplitude += amp;
           }
-          if ((useSideA && FDDAAmplitude > FITAmpLimits[3]) || (useSideC && FDDCAmplitude > FITAmpLimits[4])) {
-            cleanFIT = false;
+          if (FDDAAmplitude > FITAmpLimits[3]) {
+            isSideAClean = false;
+          }
+          if (FDDCAmplitude > FITAmpLimits[4]) {
+            isSideCClean = false;
           }
         }
       }
@@ -330,14 +339,26 @@ struct DQFilterPbPbTask {
       barrelEmpty = false;
     }
 
-    bool decision = 0;
     // Compute decision
+    bool FITDecision = 0;
+    if (FITSide == 0) {
+      FITDecision = isSideAClean && isSideCClean;
+    } else if (FITSide == 1) {
+      FITDecision = isSideAClean || isSideCClean;
+    } else if (FITSide == 2) {
+      FITDecision = isSideAClean;
+    } else if (FITSide == 3) {
+      FITDecision = isSideCClean;
+    } else if (FITSide == 4) {
+      FITDecision = 1;
+    }
+    bool decision = 0;
     if (doVetoFwd) {
-      decision = cleanFIT && muonsEmpty;
+      decision = FITDecision && muonsEmpty;
     } else if (doVetoBarrel) {
-      decision = cleanFIT && barrelEmpty;
+      decision = FITDecision && barrelEmpty;
     } else {
-      decision = cleanFIT;
+      decision = FITDecision;
     }
 
     return decision;
@@ -376,6 +397,15 @@ struct DQFilterPbPbTask {
   void init(o2::framework::InitContext&)
   {
     DefineCuts();
+
+    for (int i = 0; i < 5; i++) {
+      if (fConfigFITSides.value == FITVetoSidesOptions[i]) {
+        FITVetoSides = i;
+      }
+    }
+    if (FITVetoSides == -1) {
+      LOGF(fatal, "Invalid choice of FIT side(s) for veto: %s", fConfigFITSides.value);
+    }
   }
 
   template <uint32_t TEventFillMap>
@@ -385,7 +415,7 @@ struct DQFilterPbPbTask {
     fStats->Fill(-2.0);
 
     std::vector<float> FITAmpLimits = {fConfigFV0AmpLimit, fConfigFT0AAmpLimit, fConfigFT0CAmpLimit, fConfigFDDAAmpLimit, fConfigFDDCAmpLimit};
-    bool isDG = isEventDG(collision, bcs, tracks, muons, ft0s, fv0as, fdds, FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigUseFV0, fConfigUseFT0, fConfigUseFDD, fConfigUseSideA, fConfigUseSideC, fConfigVetoForward, fConfigVetoBarrel);
+    bool isDG = isEventDG(collision, bcs, tracks, muons, ft0s, fv0as, fdds, FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigUseFV0, fConfigUseFT0, fConfigUseFDD, FITVetoSides, fConfigVetoForward, fConfigVetoBarrel);
     fStats->Fill(-1.0, isDG);
 
     std::vector<int> objCountersBarrel(fNBarrelCuts, 0); // init all counters to zero
