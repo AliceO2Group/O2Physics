@@ -298,9 +298,9 @@ struct JetFinderHFQATask {
   template <typename T, typename U, typename M, typename O>
   void fillMCMatchedHistograms(T const& mcdjet, float weight = 1.0)
   {
-    if (mcdjet.has_matchedJetCand() && mcdjet.matchedJetCandId() >= 0) {
-      const auto& mcpjet = mcdjet.template matchedJetCand_as<std::decay_t<U>>();
-
+    // if (mcdjet.has_matchedJetCand() && mcdjet.matchedJetCandId() >= 0) {old version
+    //   const auto& mcpjet = mcdjet.template matchedJetCand_as<std::decay_t<U>>();old version
+    for (auto& mcpjet : mcdjet.template matchedJetCand_as<std::decay_t<U>>()) {
       auto mcdCandPt = 0.0;
       auto mcdCandPhi = 0.0;
       auto mcdCandEta = 0.0;

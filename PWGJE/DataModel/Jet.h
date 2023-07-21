@@ -73,39 +73,42 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 } // namespace o2::aod
 
 // Defines the jet table definition
-#define DECLARE_JET_TABLE(_collision_name_, _jet_type_, _name_, _description_)                \
-  namespace _name_##util                                                                      \
-  {                                                                                           \
-    DECLARE_SOA_DYNAMIC_COLUMN(Dummy##_jet_type_##s, dummy##_jet_type##s,                     \
-                               []() -> int { return 0; });                                    \
-  }                                                                                           \
-  DECLARE_SOA_TABLE(_jet_type_##s, "AOD", _description_,                                      \
-                    o2::soa::Index<>,                                                         \
-                    jet::_collision_name_##Id,                                                \
-                    jet::Pt,                                                                  \
-                    jet::Eta,                                                                 \
-                    jet::Phi,                                                                 \
-                    jet::Energy,                                                              \
-                    jet::Mass,                                                                \
-                    jet::Area,                                                                \
-                    jet::R,                                                                   \
-                    jet::Px<jet::Pt, jet::Phi>,                                               \
-                    jet::Py<jet::Pt, jet::Phi>,                                               \
-                    jet::Pz<jet::Pt, jet::Eta>,                                               \
-                    jet::P<jet::Pt, jet::Eta>,                                                \
-                    _name_##util::Dummy##_jet_type_##s<>);                                    \
-  namespace _name_##matchingGeo                                                               \
-  {                                                                                           \
-    DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetGeo, int32_t, _jet_type_##s, "_geo"); \
-  }                                                                                           \
-  namespace _name_##matchingPt                                                                \
-  {                                                                                           \
-    DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetPt, int32_t, _jet_type_##s, "_pt");   \
-  }                                                                                           \
-  namespace _name_##matchingCand                                                              \
-  {                                                                                           \
-    DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetCand, int32_t, _jet_type_##s, "_hf"); \
+#define DECLARE_JET_TABLE(_collision_name_, _jet_type_, _name_, _description_)                      \
+  namespace _name_##util                                                                            \
+  {                                                                                                 \
+    DECLARE_SOA_DYNAMIC_COLUMN(Dummy##_jet_type_##s, dummy##_jet_type##s,                           \
+                               []() -> int { return 0; });                                          \
+  }                                                                                                 \
+  DECLARE_SOA_TABLE(_jet_type_##s, "AOD", _description_,                                            \
+                    o2::soa::Index<>,                                                               \
+                    jet::_collision_name_##Id,                                                      \
+                    jet::Pt,                                                                        \
+                    jet::Eta,                                                                       \
+                    jet::Phi,                                                                       \
+                    jet::Energy,                                                                    \
+                    jet::Mass,                                                                      \
+                    jet::Area,                                                                      \
+                    jet::R,                                                                         \
+                    jet::Px<jet::Pt, jet::Phi>,                                                     \
+                    jet::Py<jet::Pt, jet::Phi>,                                                     \
+                    jet::Pz<jet::Pt, jet::Eta>,                                                     \
+                    jet::P<jet::Pt, jet::Eta>,                                                      \
+                    _name_##util::Dummy##_jet_type_##s<>);                                          \
+  namespace _name_##matchingGeo                                                                     \
+  {                                                                                                 \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL(_jet_type_, matchedJetGeo, int32_t, _jet_type_##s, "_geo"); \
+  }                                                                                                 \
+  namespace _name_##matchingPt                                                                      \
+  {                                                                                                 \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL(_jet_type_, matchedJetPt, int32_t, _jet_type_##s, "_pt");   \
+  }                                                                                                 \
+  namespace _name_##matchingCand                                                                    \
+  {                                                                                                 \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL(_jet_type_, matchedJetCand, int32_t, _jet_type_##s, "_hf"); \
   }
+  // DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetGeo, int32_t, _jet_type_##s, "_geo");
+  // DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetPt, int32_t, _jet_type_##s, "_pt");
+  // DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetCand, int32_t, _jet_type_##s, "_hf");
 
 #define DECLARE_CONSTITUENTS_TABLE(_jet_type_, _name_, _Description_, _track_type_, _cand_type_)      \
   namespace _name_##constituents                                                                      \
@@ -149,9 +152,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 
 #define DECLARE_JETMATCHING_TABLE(_jet_type_base_, _jet_type_tag_, _description_)               \
   DECLARE_SOA_TABLE(_jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jets, "AOD", _description_, \
-                    _jet_type_tag_##jetmatchingGeo::_jet_type_tag_##JetId,                      \
-                    _jet_type_tag_##jetmatchingPt::_jet_type_tag_##JetId,                       \
-                    _jet_type_tag_##jetmatchingCand::_jet_type_tag_##JetId);                    \
+                    _jet_type_tag_##jetmatchingGeo::_jet_type_tag_##JetIds,                     \
+                    _jet_type_tag_##jetmatchingPt::_jet_type_tag_##JetIds,                      \
+                    _jet_type_tag_##jetmatchingCand::_jet_type_tag_##JetIds);                   \
   using _jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jet = _jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jets::iterator;
 
 #define DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_, _name_, _description_) \
