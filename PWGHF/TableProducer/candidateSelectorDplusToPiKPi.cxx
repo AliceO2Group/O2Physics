@@ -72,8 +72,8 @@ struct HfCandidateSelectorDplusToPiKPi {
 
   o2::ccdb::CcdbApi ccdbApi;
 
-  TrackSelectorPID selectorPion;
-  TrackSelectorPID selectorKaon;
+  TrackSelectorPIDPiKa selectorPion;
+  TrackSelectorPIDPiKa selectorKaon;
 
   HistogramRegistry registry{"registry"};
 

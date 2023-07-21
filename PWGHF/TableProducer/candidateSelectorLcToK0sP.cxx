@@ -133,7 +133,7 @@ struct HfCandidateSelectorLcToK0sP {
   template <typename T>
   bool selectionStandardPID(const T& track)
   {
-    TrackSelectorPID selectorProton = TrackSelectorPID(kProton);
+    TrackSelectorPIDPr selectorProton(kProton);
     if (track.p() < pPidThreshold) {
       selectorProton.setRangeNSigmaTPC(-nSigmaTpcMaxLowP, nSigmaTpcMaxLowP);
       selectorProton.setRangeNSigmaTOF(-nSigmaTofMaxLowP, nSigmaTofMaxLowP);
@@ -156,7 +156,7 @@ struct HfCandidateSelectorLcToK0sP {
       return false;
     }
 
-    TrackSelectorPID selectorProton = TrackSelectorPID(kProton);
+    TrackSelectorPIDPr selectorProton((kProton));
     if (track.p() < pPidThreshold) {
       selectorProton.setProbBayesMin(probBayesMinLowP);
     } else {

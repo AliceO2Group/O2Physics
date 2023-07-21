@@ -162,7 +162,7 @@ struct HfCandidateSelectorToXiPi {
 
   void process(aod::HfCandToXiPi const& candidates, MyTrackInfo const&)
   {
-    TrackSelectorPID selectorPion(kPiPlus);
+    TrackSelectorPIDPi selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPiPidTpcMin, ptPiPidTpcMax);
     selectorPion.setRangeNSigmaTPC(-nSigmaTpcPiMax, nSigmaTpcPiMax);
     selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
@@ -170,7 +170,7 @@ struct HfCandidateSelectorToXiPi {
     selectorPion.setRangeNSigmaTOF(-nSigmaTofPiMax, nSigmaTofPiMax);
     selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
 
-    TrackSelectorPID selectorProton(kProton);
+    TrackSelectorPIDPr selectorProton(kProton);
     selectorProton.setRangePtTPC(ptPrPidTpcMin, ptPrPidTpcMax);
     selectorProton.setRangeNSigmaTPC(-nSigmaTpcPrMax, nSigmaTpcPrMax);
     selectorProton.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPrMax, nSigmaTpcCombinedPrMax);

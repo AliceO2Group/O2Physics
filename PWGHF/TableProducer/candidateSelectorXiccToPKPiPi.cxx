@@ -128,7 +128,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
 
   void process(aod::HfCandXicc const& hfCandXiccs, aod::HfCand3Prong const&, aod::BigTracksPID const&)
   {
-    TrackSelectorPID selectorPion(kPiPlus);
+    TrackSelectorPIDPi selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
     selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
