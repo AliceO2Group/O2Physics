@@ -24,7 +24,7 @@
 
 /// Class for track selection using PID detectors
 
-template <bool hasEl = true, bool hasMu = true, bool hasPi = true, bool hasKa = true, bool hasPr = true>
+template <bool hasEl, bool hasMu, bool hasPi, bool hasKa, bool hasPr>
 class TrackSelectorPIDBase
 {
  public:
