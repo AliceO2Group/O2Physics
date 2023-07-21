@@ -171,11 +171,7 @@ struct femtoWorldPairTaskTrackD0 {
                               {"hbetaDaughters", "; p (GeV/#it{c}); TOF #beta", {HistType::kTH2F, {{300, 0., 15.}, {200, 0., 2.}}}},
                               {"hdEdxDaughters", "; p (GeV/#it{c}); TPC dE/dx (KeV/cm)", {HistType::kTH2F, {{300, 0., 15.}, {500, 0., 500.}}}},
                               {"hDCAxyDaughters", "; #it{DCA}_{xy} (cm); counts", {HistType::kTH1F, {{140, 0., 0.14}}}},
-                              {"hDCAzDaughters", "; #it{DCA}_{z} (cm); counts", {HistType::kTH1F, {{140, 0., 0.14}}}},
-                              {"hMassD0check", ";#it{M}(K#pi) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {{300, 1.75, 2.05}}}},
-                              {"hPtD0check", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 15.}}}},
-                              {"hMassD0barcheck", ";#it{M}(K#pi) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {{300, 1.75, 2.05}}}},
-                              {"hPtD0barcheck", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 15.}}}}}};
+                              {"hDCAzDaughters", "; #it{DCA}_{z} (cm); counts", {HistType::kTH1F, {{140, 0., 0.14}}}}}};
 
   // PID for protons
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
@@ -300,7 +296,7 @@ struct femtoWorldPairTaskTrackD0 {
 
     for (auto& d0d0bar : groupPartsD0D0bar) {
       if (d0d0bar.flagD0() == 1) {
-        registry.fill(HIST("hInvMassD0"), d0d0bar.mass());
+        registry.fill(HIST("hInvMassD0"), d0d0bar.massD0());
         registry.fill(HIST("hMomentumD0"), d0d0bar.p());
         registry.fill(HIST("hPtD0"), d0d0bar.pt());
         registry.fill(HIST("hPhiD0"), d0d0bar.phi());
@@ -308,7 +304,7 @@ struct femtoWorldPairTaskTrackD0 {
         registry.fill(HIST("hDecayLengthD0"), d0d0bar.decayLength());
       }
       if (d0d0bar.flagD0bar() == 1) {
-        registry.fill(HIST("hInvMassD0bar"), d0d0bar.mass());
+        registry.fill(HIST("hInvMassD0bar"), d0d0bar.massD0bar());
         registry.fill(HIST("hMomentumD0bar"), d0d0bar.p());
         registry.fill(HIST("hPtD0bar"), d0d0bar.pt());
         registry.fill(HIST("hPhiD0bar"), d0d0bar.phi());
@@ -349,6 +345,7 @@ struct femtoWorldPairTaskTrackD0 {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
     auto groupPartsThree = partsThree->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsD0D0bar = partsD0D0barMesons->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
 
     const int multCol = col.multV0M();
     eventHisto.fillQA(col);
@@ -387,8 +384,27 @@ struct femtoWorldPairTaskTrackD0 {
 
       sameEventCont.setPair(p1, p2, multCol);
     }
-  }
+    /// Now build the combinations track-D0/D0bar
+    for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsD0D0bar)) {
+      if (!(IsParticleNSigma(p1.p(), p1.tpcNSigmaPr(), p1.tofNSigmaPr(), p1.tpcNSigmaPi(), p1.tofNSigmaPi(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
+        continue;
+      }
+      // TODO: Include pairCloseRejection and pairCleaner
+      /*
+      if (ConfIsCPR) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+          continue;
+        }
+      }
+      */
+      // track cleaning
+      /*if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+        continue;
+      }*/
 
+      sameEventCont.setPair(p1, p2, multCol);
+    }
+  }
   PROCESS_SWITCH(femtoWorldPairTaskTrackD0, processSameEvent, "Enable processing same event", false);
 
   /// This function processes the mixed event
@@ -403,6 +419,7 @@ struct femtoWorldPairTaskTrackD0 {
       auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
       auto groupPartsThree = partsThree->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
+      auto groupPartsD0D0bar = partsD0D0barMesons->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -426,7 +443,6 @@ struct femtoWorldPairTaskTrackD0 {
       }
     }
   }
-
   PROCESS_SWITCH(femtoWorldPairTaskTrackD0, processMixedEvent, "Enable processing mixed events", false);
 };
 
