@@ -51,20 +51,21 @@ struct HfCandidateSelectorXicToPKPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xic_to_p_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Xic candidate selection per pT bin"};
 
-  /*
-  /// Selection on goodness of daughter tracks
-  /// \note should be applied at candidate selection
-  /// \param track is daughter track
-  /// \return true if track is good
-  template <typename T>
-  bool daughterSelection(const T& track)
+  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPIDKa selectorKaon;
+  TrackSelectorPIDPr selectorProton;
+
+  void init(InitContext const&)
   {
-    if (track.tpcNClsFound() == 0) {
-      return false; //is it clusters findable or found - need to check
-    }
-    return true;
+    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorKaon = selectorPion;
+    selectorProton = selectorPion;
   }
-  */
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
@@ -162,20 +163,6 @@ struct HfCandidateSelectorXicToPKPi {
 
   void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
   {
-    TrackSelectorPIDPi selectorPion;
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-
-    TrackSelectorPIDKa selectorKaon(selectorPion);
-    // selectorKaon.setPDG(kKPlus);
-
-    TrackSelectorPIDPr selectorProton(selectorPion);
-    // selectorProton.setPDG(kProton);
-
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {
 

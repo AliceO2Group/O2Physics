@@ -75,10 +75,24 @@ struct HfCandidateSelectorLcMl {
   int dataTypeML;
   OnnxModel model;
 
+  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPIDKa selectorKaon;
+  TrackSelectorPIDPr selectorProton;
+
   using TrksPID = soa::Join<aod::BigTracksPIDExtended, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
+    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
+    selectorKaon = selectorPion;
+    selectorProton = selectorPion;
+
     AxisSpec bdtAxis{100, 0.f, 1.f};
     if (applyML && activateQA != 0) {
       registry.add<TH1>("hLcBDTScoreBkg", "BDT background score distribution for Lc;BDT background score;counts", HistType::kTH1F, {bdtAxis});
@@ -121,39 +135,8 @@ struct HfCandidateSelectorLcMl {
     }
   }
 
-  /*
-  /// Selection on goodness of daughter tracks
-  /// \note should be applied at candidate selection
-  /// \param track is daughter track
-  /// \return true if track is good
-  template <typename T>
-  bool daughterSelection(const T& track)
+  void process(aod::HfCand3Prong const& candidates, TrksPID const&)
   {
-    if (track.tpcNClsFound() == 0) {
-      return false; //is it clusters findable or found - need to check
-    }
-    return true;
-  }
-  */
-
-  void
-    process(aod::HfCand3Prong const& candidates, TrksPID const&)
-  {
-    TrackSelectorPIDPi selectorPion;
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
-
-    TrackSelectorPIDKa selectorKaon(selectorPion);
-    // selectorKaon.setPDG(kKPlus);
-
-    TrackSelectorPIDPr selectorProton(selectorPion);
-    // selectorProton.setPDG(kProton);
-
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {
 
@@ -169,14 +152,6 @@ struct HfCandidateSelectorLcMl {
       auto trackPos1 = candidate.prong0_as<TrksPID>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.prong1_as<TrksPID>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.prong2_as<TrksPID>(); // positive daughter (negative for the antiparticles)
-
-      /*
-      // daughter track validity selection
-      if (!daughterSelection(trackPos1) || !daughterSelection(trackNeg) || !daughterSelection(trackPos2)) {
-        hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
-        continue;
-      }
-      */
 
       // implement filter bit 4 cut - should be done before this task at the track selection level
 

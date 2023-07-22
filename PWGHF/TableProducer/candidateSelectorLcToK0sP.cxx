@@ -37,7 +37,6 @@ struct HfCandidateSelectorLcToK0sP {
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
-
   // PID
   Configurable<double> pPidThreshold{"pPidThreshold", 1.0, "Threshold to switch between low and high p TrackSelectors"};
   // TPC
@@ -53,10 +52,12 @@ struct HfCandidateSelectorLcToK0sP {
   // Bayesian
   Configurable<double> probBayesMinLowP{"probBayesMinLowP", 0.8, "min. Bayes probability for bachelor at low p [%]"};
   Configurable<double> probBayesMinHighP{"probBayesMinHighP", 0.8, "min. Bayes probability for bachelor at high p [%]"};
-
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_k0s_p::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
+
+  TrackSelectorPIDPr selectorProtonLowP;
+  TrackSelectorPIDPr selectorProtonHighP;
 
   void init(InitContext&)
   {
@@ -66,9 +67,21 @@ struct HfCandidateSelectorLcToK0sP {
     if (doprocessWithStandardPID && doprocessWithBayesPID) {
       LOGF(fatal, "Cannot enable processWithStandardPID and processWithBayesPID at the same time. Please choose one.");
     }
+
+    selectorProtonLowP.setRangeNSigmaTPC(-nSigmaTpcMaxLowP, nSigmaTpcMaxLowP);
+    selectorProtonLowP.setRangeNSigmaTOF(-nSigmaTofMaxLowP, nSigmaTofMaxLowP);
+    selectorProtonLowP.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMaxLowP, nSigmaTpcCombinedMaxLowP);
+    selectorProtonLowP.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMaxLowP, nSigmaTofCombinedMaxLowP);
+    selectorProtonLowP.setProbBayesMin(probBayesMinLowP);
+
+    selectorProtonHighP.setRangeNSigmaTPC(-nSigmaTpcMaxHighP, nSigmaTpcMaxHighP);
+    selectorProtonHighP.setRangeNSigmaTOF(-nSigmaTofMaxHighP, nSigmaTofMaxHighP);
+    selectorProtonHighP.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMaxHighP, nSigmaTpcCombinedMaxHighP);
+    selectorProtonHighP.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMaxHighP, nSigmaTofCombinedMaxHighP);
+    selectorProtonHighP.setProbBayesMin(probBayesMinHighP);
   }
 
-  /// Conjugate independent toplogical cuts
+  /// Conjugate independent topological cuts
   /// \param hfCandCascade is candidate
   /// \return true if candidate passes all cuts
   template <typename T>
@@ -133,20 +146,11 @@ struct HfCandidateSelectorLcToK0sP {
   template <typename T>
   bool selectionStandardPID(const T& track)
   {
-    TrackSelectorPIDPr selectorProton;
     if (track.p() < pPidThreshold) {
-      selectorProton.setRangeNSigmaTPC(-nSigmaTpcMaxLowP, nSigmaTpcMaxLowP);
-      selectorProton.setRangeNSigmaTOF(-nSigmaTofMaxLowP, nSigmaTofMaxLowP);
-      selectorProton.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMaxLowP, nSigmaTpcCombinedMaxLowP);
-      selectorProton.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMaxLowP, nSigmaTofCombinedMaxLowP);
+      return selectorProtonLowP.getStatusTrackPIDTpcAndTof(track) == TrackSelectorPID::Status::PIDAccepted;
     } else {
-      selectorProton.setRangeNSigmaTPC(-nSigmaTpcMaxHighP, nSigmaTpcMaxHighP);
-      selectorProton.setRangeNSigmaTOF(-nSigmaTofMaxHighP, nSigmaTofMaxHighP);
-      selectorProton.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMaxHighP, nSigmaTpcCombinedMaxHighP);
-      selectorProton.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMaxHighP, nSigmaTofCombinedMaxHighP);
+      return selectorProtonHighP.getStatusTrackPIDTpcAndTof(track) == TrackSelectorPID::Status::PIDAccepted;
     }
-
-    return selectorProton.getStatusTrackPIDTpcAndTof(track) == TrackSelectorPID::Status::PIDAccepted;
   }
 
   template <typename T>
@@ -156,14 +160,11 @@ struct HfCandidateSelectorLcToK0sP {
       return false;
     }
 
-    TrackSelectorPIDPr selectorProton;
     if (track.p() < pPidThreshold) {
-      selectorProton.setProbBayesMin(probBayesMinLowP);
+      return selectorProtonLowP.getStatusTrackBayesProbPID(track) == TrackSelectorPID::Status::PIDAccepted;
     } else {
-      selectorProton.setProbBayesMin(probBayesMinHighP);
+      return selectorProtonHighP.getStatusTrackBayesProbPID(track) == TrackSelectorPID::Status::PIDAccepted;
     }
-
-    return selectorProton.getStatusTrackBayesProbPID(track) == TrackSelectorPID::Status::PIDAccepted;
   }
 
   void processWithStandardPID(aod::HfCandCascade const& candidates, aod::BigTracksPID const& tracks)

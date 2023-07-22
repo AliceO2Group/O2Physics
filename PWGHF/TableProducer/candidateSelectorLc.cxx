@@ -56,22 +56,24 @@ struct HfCandidateSelectorLc {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
 
+  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPIDKa selectorKaon;
+  TrackSelectorPIDPr selectorProton;
+
   using TrksPID = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
-  /*
-  /// Selection on goodness of daughter tracks
-  /// \note should be applied at candidate selection
-  /// \param track is daughter track
-  /// \return true if track is good
-  template <typename T>
-  bool daughterSelection(const T& track)
+  void init(InitContext const&)
   {
-    if (track.tpcNClsFound() == 0) {
-      return false; //is it clusters findable or found - need to check
-    }
-    return true;
+    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
+    selectorKaon = selectorPion;
+    selectorProton = selectorPion;
   }
-  */
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
@@ -143,25 +145,6 @@ struct HfCandidateSelectorLc {
 
   void process(aod::HfCand3Prong const& candidates, TrksPID const&)
   {
-    TrackSelectorPIDPi selectorPion;
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
-
-    TrackSelectorPIDKa selectorKaon(selectorPion);
-    // selectorKaon.setPDG(kKPlus);
-
-    TrackSelectorPIDPr selectorProton = static_cast<TrackSelectorPIDPr>(selectorPion);
-    TrackSelectorPIDPr selectorProton2 = selectorPion;
-    // selectorProton.setPDG(kProton);
-
-    Printf("Test message");
-    LOGF(info, "n sigma TPC: Pi: %g, Ka: %g, Pr: %g, Pr2: %g", selectorPion.getNSigmaTPCMin(), selectorKaon.getNSigmaTPCMin(), selectorProton.getNSigmaTPCMin(), selectorProton2.getNSigmaTPCMin());
-
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {
 

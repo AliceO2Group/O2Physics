@@ -56,8 +56,8 @@ struct HfCandidateSelectorB0ToDPi {
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // check if selectionFlagD (defined in candidateCreatorB0.cxx) and usePid configurables are in sync
-  bool selectionFlagDAndUsePidInSync = true;
 
+  bool selectionFlagDAndUsePidInSync = true;
   TrackSelectorPIDPi selectorPion;
 
   using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
@@ -67,7 +67,6 @@ struct HfCandidateSelectorB0ToDPi {
   void init(InitContext& initContext)
   {
     if (usePid) {
-      // selectorPion.setPDG(kPiPlus);
       selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);

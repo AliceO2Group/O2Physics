@@ -59,7 +59,6 @@ struct HfCandidateSelectorBplusToD0Pi {
 
   // check if selectionFlagD (defined in candidateCreatorBplus.cxx) and usePid configurables are in sync
   bool selectionFlagDAndUsePidInSync = true;
-
   TrackSelectorPIDPi selectorPion;
 
   using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
@@ -69,7 +68,6 @@ struct HfCandidateSelectorBplusToD0Pi {
   void init(InitContext& initContext)
   {
     if (usePid) {
-      // selectorPion.setPDG(kPiPlus);
       selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);

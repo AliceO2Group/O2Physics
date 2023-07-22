@@ -79,16 +79,13 @@ struct HfCandidateSelectorDplusToPiKPi {
 
   void init(InitContext const&)
   {
-    // selectorPion.setPDG(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
     selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
     selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
     selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
     selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-
     selectorKaon = selectorPion;
-    // selectorKaon.setPDG(kKPlus);
 
     if (activateQA) {
       constexpr int kNBinsSelections = 1 + aod::SelectionStep::NSelectionSteps;

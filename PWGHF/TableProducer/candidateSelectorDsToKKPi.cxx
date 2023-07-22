@@ -46,6 +46,18 @@ struct HfCandidateSelectorDsToKKPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_ds_to_k_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Ds candidate selection per pT bin"};
 
+  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPIDKa selectorKaon;
+
+  void init(InitContext const&)
+  {
+    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorKaon = selectorPion;
+  }
+
   /// Candidate selections independent from the daugther-mass hypothesis
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
@@ -139,15 +151,6 @@ struct HfCandidateSelectorDsToKKPi {
 
   void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
   {
-    TrackSelectorPIDPi selectorPion;
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-
-    TrackSelectorPIDKa selectorKaon(selectorPion);
-    // selectorKaon.setPDG(kKPlus);
-
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {
 

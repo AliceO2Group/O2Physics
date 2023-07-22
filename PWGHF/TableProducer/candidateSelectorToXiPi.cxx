@@ -113,6 +113,9 @@ struct HfCandidateSelectorToXiPi {
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- Omegac"};
 
+  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPIDPr selectorProton;
+
   using MyTrackInfo = aod::BigTracksPIDExtended;
 
   HistogramRegistry registry{"registry"}; // for QA of selections
@@ -122,6 +125,20 @@ struct HfCandidateSelectorToXiPi {
 
   void init(InitContext const&)
   {
+    selectorPion.setRangePtTPC(ptPiPidTpcMin, ptPiPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpcPiMax, nSigmaTpcPiMax);
+    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
+    selectorPion.setRangePtTOF(ptPiPidTofMin, ptPiPidTofMax);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTofPiMax, nSigmaTofPiMax);
+    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
+
+    selectorProton.setRangePtTPC(ptPrPidTpcMin, ptPrPidTpcMax);
+    selectorProton.setRangeNSigmaTPC(-nSigmaTpcPrMax, nSigmaTpcPrMax);
+    selectorProton.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPrMax, nSigmaTpcCombinedPrMax);
+    selectorProton.setRangePtTOF(ptPrPidTofMin, ptPrPidTofMax);
+    selectorProton.setRangeNSigmaTOF(-nSigmaTofPrMax, nSigmaTofPrMax);
+    selectorProton.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPrMax, nSigmaTofCombinedPrMax);
+
     registry.add("hSelPID", "hSelPID;status;entries", {HistType::kTH1F, {{12, 0., 12.}}});
     registry.add("hTest", "Test status consecutive;status;entries", {HistType::kTH1F, {{12, 0., 12.}}});
 
@@ -162,22 +179,6 @@ struct HfCandidateSelectorToXiPi {
 
   void process(aod::HfCandToXiPi const& candidates, MyTrackInfo const&)
   {
-    TrackSelectorPIDPi selectorPion;
-    selectorPion.setRangePtTPC(ptPiPidTpcMin, ptPiPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcPiMax, nSigmaTpcPiMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
-    selectorPion.setRangePtTOF(ptPiPidTofMin, ptPiPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofPiMax, nSigmaTofPiMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
-
-    TrackSelectorPIDPr selectorProton;
-    selectorProton.setRangePtTPC(ptPrPidTpcMin, ptPrPidTpcMax);
-    selectorProton.setRangeNSigmaTPC(-nSigmaTpcPrMax, nSigmaTpcPrMax);
-    selectorProton.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPrMax, nSigmaTpcCombinedPrMax);
-    selectorProton.setRangePtTOF(ptPrPidTofMin, ptPrPidTofMax);
-    selectorProton.setRangeNSigmaTOF(-nSigmaTofPrMax, nSigmaTofPrMax);
-    selectorProton.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPrMax, nSigmaTofCombinedPrMax);
-
     double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
     double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);
 
