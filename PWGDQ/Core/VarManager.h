@@ -459,6 +459,9 @@ class VarManager : public TObject
     return fgRunStr;
   }
 
+  // Setup the collision system
+  static void SetCollisionSystem(TString system, float energy);
+
   // Setup the 2 prong KFParticle
   static void SetupTwoProngKFParticle(float magField)
   {
@@ -577,9 +580,11 @@ class VarManager : public TObject
   static bool fgUsedKF;
   static void SetVariableDependencies(); // toggle those variables on which other used variables might depend
 
-  static std::map<int, int> fgRunMap; // map of runs to be used in histogram axes
-  static TString fgRunStr;            // semi-colon separated list of runs, to be used for histogram axis labels
-  static std::vector<int> fgRunList;  // vector of runs, to be used for histogram axis
+  static std::map<int, int> fgRunMap;   // map of runs to be used in histogram axes
+  static TString fgRunStr;              // semi-colon separated list of runs, to be used for histogram axis labels
+  static std::vector<int> fgRunList;    // vector of runs, to be used for histogram axis
+  static float CenterOfMassEnergy;      // collision energy
+  static float MassofCollidingParticle; // mass of the colliding particle
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
@@ -1256,10 +1261,8 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     values[kPsiPair] = (t1.sign() > 0) ? TMath::ASin((v1.Theta() - v2.Theta()) / xipair) : TMath::ASin((v2.Theta() - v1.Theta()) / xipair);
   }
 
-  // set as default values
   // TO DO: get the correct values from CCDB
-  double CenterOfMassEnergy = 13600.;                                                                       // GeV
-  double BeamMomentum = TMath::Sqrt(CenterOfMassEnergy * CenterOfMassEnergy / 4 - MassProton * MassProton); // GeV
+  double BeamMomentum = TMath::Sqrt(CenterOfMassEnergy * CenterOfMassEnergy / 4 - MassofCollidingParticle * MassofCollidingParticle); // GeV
   ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, CenterOfMassEnergy / 2);
   ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, CenterOfMassEnergy / 2);
 
