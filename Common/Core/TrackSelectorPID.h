@@ -83,8 +83,6 @@ class TrackSelectorPIDBase : TrackSelectorPID
     mNSigmaTPCMax = nsMax;
   }
 
-  float getNSigmaTPCMin() { return mNSigmaTPCMin; }
-
   /// Set TPC nσ range in which a track should be conditionally accepted if combined with TOF. Set to 0 to disable.
   void setRangeNSigmaTPCCondTOF(float nsMin, float nsMax)
   {
@@ -140,7 +138,7 @@ class TrackSelectorPIDBase : TrackSelectorPID
 
   /// Returns status of TPC PID selection for a given track.
   /// \param track  track
-  /// \return TPC selection status (see TrackSelectorPIDBase::Status)
+  /// \return TPC selection status (see TrackSelectorPID::Status)
   template <typename T>
   int getStatusTrackPIDTPC(const T& track)
   {
@@ -229,7 +227,7 @@ class TrackSelectorPIDBase : TrackSelectorPID
 
   /// Returns status of TOF PID selection for a given track.
   /// \param track  track
-  /// \return TOF selection status (see TrackSelectorPIDBase::Status)
+  /// \return TOF selection status (see TrackSelectorPID::Status)
   template <typename T>
   int getStatusTrackPIDTOF(const T& track)
   {
@@ -321,7 +319,7 @@ class TrackSelectorPIDBase : TrackSelectorPID
 
   /// Returns status of RICH PID selection for a given track.
   /// \param track  track
-  /// \return RICH selection status (see TrackSelectorPIDBase::Status)
+  /// \return RICH selection status (see TrackSelectorPID::Status)
   template <typename T>
   int getStatusTrackPIDRICH(const T& track)
   {
@@ -371,7 +369,7 @@ class TrackSelectorPIDBase : TrackSelectorPID
 
   /// Returns status of MID PID selection for a given track.
   /// \param track  track
-  /// \return MID selection status (see TrackSelectorPIDBase::Status)
+  /// \return MID selection status (see TrackSelectorPID::Status)
   template <typename T>
   int getStatusTrackPIDMID(const T& track)
   {
@@ -395,7 +393,7 @@ class TrackSelectorPIDBase : TrackSelectorPID
 
   /// Returns status of combined PID (TPC or TOF) selection for a given track.
   /// \param track  track
-  /// \return status of combined PID (TPC or TOF) (see TrackSelectorPIDBase::Status)
+  /// \return status of combined PID (TPC or TOF) (see TrackSelectorPID::Status)
   template <typename T>
   int getStatusTrackPIDTpcOrTof(const T& track)
   {
@@ -416,7 +414,7 @@ class TrackSelectorPIDBase : TrackSelectorPID
 
   /// Returns status of combined PID (TPC and TOF) selection for a given track when both detectors are applicable. Returns status of single PID otherwise.
   /// \param track  track
-  /// \return status of combined PID (TPC and TOF) (see TrackSelectorPIDBase::Status)
+  /// \return status of combined PID (TPC and TOF) (see TrackSelectorPID::Status)
   template <typename T>
   int getStatusTrackPIDTpcAndTof(const T& track)
   {
@@ -580,7 +578,7 @@ class TrackSelectorPIDBase : TrackSelectorPID
 
   /// Returns status of Bayesian PID selection for a given track, based on the most probable particle species.
   /// \param track  track
-  /// \return Bayesian selection status (see TrackSelectorPIDBase::Status)
+  /// \return Bayesian selection status (see TrackSelectorPID::Status)
   template <typename T>
   int getStatusTrackBayesPID(const T& track)
   {
@@ -597,7 +595,7 @@ class TrackSelectorPIDBase : TrackSelectorPID
 
   /// Returns status of Bayesian PID selection for a given track, based on the probability for a given particle species.
   /// \param track  track
-  /// \return Bayesian selection status (see TrackSelectorPIDBase::Status)
+  /// \return Bayesian selection status (see TrackSelectorPID::Status)
   template <typename T>
   int getStatusTrackBayesProbPID(const T& track)
   {
