@@ -142,17 +142,16 @@ class TrackSelectorPIDBase : TrackSelectorPID
   template <typename T>
   int getStatusTrackPIDTPC(const T& track)
   {
-    if (isValidTrackPIDTPC(track)) {
-      bool condTOF = false;
-      if (isSelectedTrackPIDTPC(track, condTOF)) {
-        return Status::PIDAccepted; // accepted
-      } else if (condTOF) {
-        return Status::PIDConditional; // potential to be accepted if combined with TOF
-      } else {
-        return Status::PIDRejected; // rejected
-      }
-    } else {
+    if (!isValidTrackPIDTPC(track)) {
       return Status::PIDNotApplicable; // PID not applicable
+    }
+    bool condTOF = false;
+    if (isSelectedTrackPIDTPC(track, condTOF)) {
+      return Status::PIDAccepted; // accepted
+    } else if (condTOF) {
+      return Status::PIDConditional; // potential to be accepted if combined with TOF
+    } else {
+      return Status::PIDRejected; // rejected
     }
   }
 
@@ -231,17 +230,16 @@ class TrackSelectorPIDBase : TrackSelectorPID
   template <typename T>
   int getStatusTrackPIDTOF(const T& track)
   {
-    if (isValidTrackPIDTOF(track)) {
-      bool condTPC = false;
-      if (isSelectedTrackPIDTOF(track, condTPC)) {
-        return Status::PIDAccepted; // accepted
-      } else if (condTPC) {
-        return Status::PIDConditional; // potential to be accepted if combined with TPC
-      } else {
-        return Status::PIDRejected; // rejected
-      }
-    } else {
+    if (!isValidTrackPIDTOF(track)) {
       return Status::PIDNotApplicable; // PID not applicable
+    }
+    bool condTPC = false;
+    if (isSelectedTrackPIDTOF(track, condTPC)) {
+      return Status::PIDAccepted; // accepted
+    } else if (condTPC) {
+      return Status::PIDConditional; // potential to be accepted if combined with TPC
+    } else {
+      return Status::PIDRejected; // rejected
     }
   }
 
@@ -323,17 +321,16 @@ class TrackSelectorPIDBase : TrackSelectorPID
   template <typename T>
   int getStatusTrackPIDRICH(const T& track)
   {
-    if (isValidTrackPIDRICH(track)) {
-      bool condTOF = false;
-      if (isSelectedTrackPIDRICH(track, condTOF)) {
-        return Status::PIDAccepted; // accepted
-      } else if (condTOF) {
-        return Status::PIDConditional; // potential to be accepted if combined with TOF
-      } else {
-        return Status::PIDRejected; // rejected
-      }
-    } else {
+    if (!isValidTrackPIDRICH(track)) {
       return Status::PIDNotApplicable; // PID not applicable
+    }
+    bool condTOF = false;
+    if (isSelectedTrackPIDRICH(track, condTOF)) {
+      return Status::PIDAccepted; // accepted
+    } else if (condTOF) {
+      return Status::PIDConditional; // potential to be accepted if combined with TOF
+    } else {
+      return Status::PIDRejected; // rejected
     }
   }
 
@@ -374,14 +371,13 @@ class TrackSelectorPIDBase : TrackSelectorPID
   int getStatusTrackPIDMID(const T& track)
   {
     if constexpr (pdg == kMuonMinus) {
-      if (isValidTrackPIDMID(track)) {
-        if (isSelectedTrackPIDMID(track)) {
-          return Status::PIDAccepted; // accepted
-        } else {
-          return Status::PIDRejected; // rejected
-        }
-      } else {
+      if (!isValidTrackPIDMID(track)) {
         return Status::PIDNotApplicable; // PID not applicable
+      }
+      if (isSelectedTrackPIDMID(track)) {
+        return Status::PIDAccepted; // accepted
+      } else {
+        return Status::PIDRejected; // rejected
       }
     } else {
       errorPdg();
