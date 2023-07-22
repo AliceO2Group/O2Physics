@@ -199,7 +199,7 @@ struct HfCorrelatorDsHadrons {
      {"hEtaVsPtPartAssoc", "Particles associated", {HistType::kTH2F, {{axisEta}, {axisPtD}}}},
      {"hPhi", "Ds,Hadron candidates", {HistType::kTH1F, {axisPhi}}},
      {"hPhiVsPtCand", "Ds,Hadron candidates", {HistType::kTH2F, {{axisPhi}, {axisPtD}}}},
-     {"hEtaVsPtPartAssoc", "Particles associated", {HistType::kTH2F, {{axisPhi}, {axisPtD}}}},
+     {"hPhiVsPtPartAssoc", "Particles associated", {HistType::kTH2F, {{axisPhi}, {axisPtD}}}},
      {"hY", "Ds,Hadron candidates", {HistType::kTH1F, {axisY}}},
      {"hPtCandMcRecSig", "Ds,Hadron candidates - MC Reco", {HistType::kTH1F, {axisPtD}}},
      {"hPtCandMcRecSigPrompt", "Ds,Hadron candidates Prompt - MC Reco", {HistType::kTH1F, {axisPtD}}},
