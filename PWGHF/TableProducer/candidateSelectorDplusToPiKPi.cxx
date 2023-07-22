@@ -72,14 +72,14 @@ struct HfCandidateSelectorDplusToPiKPi {
 
   o2::ccdb::CcdbApi ccdbApi;
 
-  TrackSelectorPIDPiKa selectorPion;
-  TrackSelectorPIDPiKa selectorKaon;
+  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPIDKa selectorKaon;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
-    selectorPion.setPDG(kPiPlus);
+    // selectorPion.setPDG(kPiPlus);
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
     selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -88,7 +88,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
 
     selectorKaon = selectorPion;
-    selectorKaon.setPDG(kKPlus);
+    // selectorKaon.setPDG(kKPlus);
 
     if (activateQA) {
       constexpr int kNBinsSelections = 1 + aod::SelectionStep::NSelectionSteps;

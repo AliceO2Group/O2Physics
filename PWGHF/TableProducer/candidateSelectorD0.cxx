@@ -189,7 +189,7 @@ struct HfCandidateSelectorD0 {
 
   void process(aod::HfCand2Prong const& candidates, aod::BigTracksPIDExtended const&)
   {
-    TrackSelectorPIDPiKa selectorPion(kPiPlus);
+    TrackSelectorPIDPi selectorPion;
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
     selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -197,8 +197,8 @@ struct HfCandidateSelectorD0 {
     selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
     selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
 
-    TrackSelectorPIDPiKa selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus);
+    TrackSelectorPIDKa selectorKaon(selectorPion);
+    // selectorKaon.setPDG(kKPlus);
 
     // looping over 2-prong candidates
     for (auto& candidate : candidates) {

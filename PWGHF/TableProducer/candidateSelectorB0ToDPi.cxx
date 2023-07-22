@@ -67,7 +67,7 @@ struct HfCandidateSelectorB0ToDPi {
   void init(InitContext& initContext)
   {
     if (usePid) {
-      selectorPion.setPDG(kPiPlus);
+      // selectorPion.setPDG(kPiPlus);
       selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);

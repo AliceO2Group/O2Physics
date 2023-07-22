@@ -162,7 +162,7 @@ struct HfCandidateSelectorXicToPKPi {
 
   void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
   {
-    TrackSelectorPIDPiKaPr selectorPion(kPiPlus);
+    TrackSelectorPIDPi selectorPion;
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
     selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -170,11 +170,11 @@ struct HfCandidateSelectorXicToPKPi {
     selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
     selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
 
-    TrackSelectorPIDPiKaPr selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus);
+    TrackSelectorPIDKa selectorKaon(selectorPion);
+    // selectorKaon.setPDG(kKPlus);
 
-    TrackSelectorPIDPiKaPr selectorProton(selectorPion);
-    selectorProton.setPDG(kProton);
+    TrackSelectorPIDPr selectorProton(selectorPion);
+    // selectorProton.setPDG(kProton);
 
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {

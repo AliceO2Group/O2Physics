@@ -143,7 +143,7 @@ struct HfCandidateSelectorLc {
 
   void process(aod::HfCand3Prong const& candidates, TrksPID const&)
   {
-    TrackSelectorPIDPiKaPr selectorPion(kPiPlus);
+    TrackSelectorPIDPi selectorPion;
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
     selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -152,11 +152,15 @@ struct HfCandidateSelectorLc {
     selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
 
-    TrackSelectorPIDPiKaPr selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus);
+    TrackSelectorPIDKa selectorKaon(selectorPion);
+    // selectorKaon.setPDG(kKPlus);
 
-    TrackSelectorPIDPiKaPr selectorProton(selectorPion);
-    selectorProton.setPDG(kProton);
+    TrackSelectorPIDPr selectorProton = static_cast<TrackSelectorPIDPr>(selectorPion);
+    TrackSelectorPIDPr selectorProton2 = selectorPion;
+    // selectorProton.setPDG(kProton);
+
+    Printf("Test message");
+    LOGF(info, "n sigma TPC: Pi: %g, Ka: %g, Pr: %g, Pr2: %g", selectorPion.getNSigmaTPCMin(), selectorKaon.getNSigmaTPCMin(), selectorProton.getNSigmaTPCMin(), selectorProton2.getNSigmaTPCMin());
 
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {

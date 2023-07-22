@@ -139,14 +139,14 @@ struct HfCandidateSelectorDsToKKPi {
 
   void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
   {
-    TrackSelectorPIDPiKa selectorPion(kPiPlus);
+    TrackSelectorPIDPi selectorPion;
     selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
     selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
     selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
 
-    TrackSelectorPIDPiKa selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus);
+    TrackSelectorPIDKa selectorKaon(selectorPion);
+    // selectorKaon.setPDG(kKPlus);
 
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {

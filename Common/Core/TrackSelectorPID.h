@@ -24,22 +24,8 @@
 
 /// Class for track selection using PID detectors
 
-template <bool hasEl, bool hasMu, bool hasPi, bool hasKa, bool hasPr>
-class TrackSelectorPIDBase
+struct TrackSelectorPID
 {
- public:
-  /// Default constructor
-  TrackSelectorPIDBase() = default;
-
-  /// Standard constructor with PDG code initialisation
-  explicit TrackSelectorPIDBase(int pdg)
-  {
-    setPDG(pdg);
-  }
-
-  /// Default destructor
-  ~TrackSelectorPIDBase() = default;
-
   /// Selection status
   enum Status {
     PIDNotApplicable = 0,
@@ -47,51 +33,39 @@ class TrackSelectorPIDBase
     PIDConditional,
     PIDAccepted
   };
+};
 
-  void setPDG(int pdg)
-  {
-    mPdg = std::abs(pdg);
-    switch (mPdg) {
-      case kElectron: {
-        if constexpr (!hasEl) {
-          errorPdg();
-        }
-        mSpecies = o2::track::PID::Electron;
-        break;
-      }
-      case kMuonMinus: {
-        if constexpr (!hasMu) {
-          errorPdg();
-        }
-        mSpecies = o2::track::PID::Muon;
-        break;
-      }
-      case kPiPlus: {
-        if constexpr (!hasPi) {
-          errorPdg();
-        }
-        mSpecies = o2::track::PID::Pion;
-        break;
-      }
-      case kKPlus: {
-        if constexpr (!hasKa) {
-          errorPdg();
-        }
-        mSpecies = o2::track::PID::Kaon;
-        break;
-      }
-      case kProton: {
-        if constexpr (!hasPr) {
-          errorPdg();
-        }
-        mSpecies = o2::track::PID::Proton;
-        break;
-      }
-      default: {
-        errorPdg();
-      }
-    }
+template <uint64_t pdg = kPiPlus>
+class TrackSelectorPIDBase : TrackSelectorPID
+{
+ public:
+  /// Default constructor
+  TrackSelectorPIDBase() = default;
+
+  /// Conversion operator
+  template <uint64_t pdgNew>
+  operator TrackSelectorPIDBase<pdgNew>() const {
+    TrackSelectorPIDBase<pdgNew> objNew;
+    // TPC
+    objNew.setRangePtTPC(mPtTPCMin, mPtTPCMax);
+    objNew.setRangeNSigmaTPC(mNSigmaTPCMin, mNSigmaTPCMax);
+    objNew.setRangeNSigmaTPCCondTOF(mNSigmaTPCMinCondTOF, mNSigmaTPCMaxCondTOF);
+    // TOF
+    objNew.setRangePtTOF(mPtTOFMin, mPtTOFMax);
+    objNew.setRangeNSigmaTOF(mNSigmaTOFMin, mNSigmaTOFMax);
+    objNew.setRangeNSigmaTOFCondTPC(mNSigmaTOFMinCondTPC, mNSigmaTOFMaxCondTPC);
+    // RICH
+    objNew.setRangePtRICH(mPtRICHMin, mPtRICHMax);
+    objNew.setRangeNSigmaRICH(mNSigmaRICHMin, mNSigmaRICHMax);
+    objNew.setRangeNSigmaRICHCondTOF(mNSigmaRICHMinCondTOF, mNSigmaRICHMaxCondTOF);
+    // Bayesian
+    objNew.setRangePtBayes(mPtBayesMin, mPtBayesMax);
+    objNew.setProbBayesMin(mProbBayesMin);
+    return objNew;
   }
+
+  /// Default destructor
+  ~TrackSelectorPIDBase() = default;
 
   // TPC
 
@@ -108,6 +82,8 @@ class TrackSelectorPIDBase
     mNSigmaTPCMin = nsMin;
     mNSigmaTPCMax = nsMax;
   }
+
+  float getNSigmaTPCMin() { return mNSigmaTPCMin; }
 
   /// Set TPC nσ range in which a track should be conditionally accepted if combined with TOF. Set to 0 to disable.
   void setRangeNSigmaTPCCondTOF(float nsMin, float nsMax)
@@ -140,41 +116,23 @@ class TrackSelectorPIDBase
 
     // Get nσ for a given particle hypothesis.
     double nSigma = 100.;
-    switch (mPdg) {
-      case kElectron: {
-      if constexpr (hasEl) {
+      if constexpr (pdg == kElectron) {
         nSigma = track.tpcNSigmaEl();
       }
-        break;
-      }
-      case kMuonMinus: {
-      if constexpr (hasMu) {
+      if constexpr (pdg == kMuonMinus) {
         nSigma = track.tpcNSigmaMu();
-      }
-        break;
-      }
-      case kPiPlus: {
-      if constexpr (hasPi) {
+      } else
+      if constexpr (pdg == kPiPlus) {
         nSigma = track.tpcNSigmaPi();
-      }
-        break;
-      }
-      case kKPlus: {
-      if constexpr (hasKa) {
+      } else
+      if constexpr (pdg == kKPlus) {
         nSigma = track.tpcNSigmaKa();
-      }
-        break;
-      }
-      case kProton: {
-      if constexpr (hasPr) {
+      } else
+      if constexpr (pdg == kProton) {
         nSigma = track.tpcNSigmaPr();
-      }
-        break;
-      }
-      default: {
+      } else {
         errorPdg();
       }
-    }
 
     if (mNSigmaTPCMinCondTOF < -999. && mNSigmaTPCMaxCondTOF > 999.) {
       conditionalTOF = true;
@@ -251,41 +209,23 @@ class TrackSelectorPIDBase
 
     // Get nσ for a given particle hypothesis.
     double nSigma = 100.;
-    switch (mPdg) {
-      case kElectron: {
-      if constexpr (hasEl) {
+      if constexpr (pdg == kElectron) {
         nSigma = track.tofNSigmaEl();
-      }
-        break;
-      }
-      case kMuonMinus: {
-      if constexpr (hasMu) {
+      } else
+      if constexpr (pdg == kMuonMinus) {
         nSigma = track.tofNSigmaMu();
-      }
-        break;
-      }
-      case kPiPlus: {
-      if constexpr (hasPi) {
+      } else
+      if constexpr (pdg == kPiPlus) {
         nSigma = track.tofNSigmaPi();
-      }
-        break;
-      }
-      case kKPlus: {
-      if constexpr (hasKa) {
+      } else
+      if constexpr (pdg == kKPlus) {
         nSigma = track.tofNSigmaKa();
-      }
-        break;
-      }
-      case kProton: {
-      if constexpr (hasPr) {
+      } else
+      if constexpr (pdg == kProton) {
         nSigma = track.tofNSigmaPr();
-      }
-        break;
-      }
-      default: {
+      } else {
         errorPdg();
       }
-    }
 
     if (mNSigmaTOFMinCondTPC < -999. && mNSigmaTOFMaxCondTPC > 999.) {
       conditionalTPC = true;
@@ -365,41 +305,23 @@ class TrackSelectorPIDBase
 
     // Get nσ for a given particle hypothesis.
     double nSigma = 100.;
-    switch (mPdg) {
-      case kElectron: {
-        if constexpr (hasEl) {
+        if constexpr (pdg == kElectron) {
           nSigma = track.rich().richNsigmaEl();
-        }
-        break;
-      }
-      case kMuonMinus: {
-        if constexpr (hasMu) {
+        } else
+        if constexpr (pdg == kMuonMinus) {
           nSigma = track.rich().richNsigmaMu();
-        }
-        break;
-      }
-      case kPiPlus: {
-        if constexpr (hasPi) {
+        } else
+        if constexpr (pdg == kPiPlus) {
           nSigma = track.rich().richNsigmaPi();
-        }
-        break;
-      }
-      case kKPlus: {
-        if constexpr (hasKa) {
+        } else
+        if constexpr (pdg == kKPlus) {
           nSigma = track.rich().richNsigmaKa();
-        }
-        break;
-      }
-      case kProton: {
-        if constexpr (hasPr) {
+        } else
+        if constexpr (pdg == kProton) {
           nSigma = track.rich().richNsigmaPr();
+        } else {
+          errorPdg();
         }
-        break;
-      }
-      default: {
-        errorPdg();
-      }
-    }
 
     if (mNSigmaRICHMinCondTOF < -999. && mNSigmaRICHMaxCondTOF > 999.) {
       conditionalTOF = true;
@@ -437,7 +359,12 @@ class TrackSelectorPIDBase
   template <typename T>
   bool isValidTrackPIDMID(const T& track)
   {
-    return track.midId() > -1;
+    if constexpr (pdg == kMuonMinus) {
+      return track.midId() > -1;
+    } else {
+      errorPdg();
+      return false;
+    }
   }
 
   /// Checks if track is compatible with muon hypothesis in the MID detector.
@@ -446,10 +373,12 @@ class TrackSelectorPIDBase
   template <typename T>
   bool isSelectedTrackPIDMID(const T& track)
   {
-    if (mPdg != kMuonMinus) {
+    if constexpr (pdg == kMuonMinus) {
+      return track.mid().midIsMuon() == 1; // FIXME: change to return track.midIsMuon() once the column is bool.
+    } else {
+      errorPdg();
       return false;
     }
-    return track.mid().midIsMuon() == 1; // FIXME: change to return track.midIsMuon() once the column is bool.
   }
 
   /// Returns status of MID PID selection for a given track.
@@ -458,17 +387,19 @@ class TrackSelectorPIDBase
   template <typename T>
   int getStatusTrackPIDMID(const T& track)
   {
-    if (mPdg != kMuonMinus) {
-      return Status::PIDRejected;
-    }
-    if (isValidTrackPIDMID(track)) {
-      if (isSelectedTrackPIDMID(track)) {
-        return Status::PIDAccepted; // accepted
+    if constexpr (pdg == kMuonMinus) {
+      if (isValidTrackPIDMID(track)) {
+        if (isSelectedTrackPIDMID(track)) {
+          return Status::PIDAccepted; // accepted
+        } else {
+          return Status::PIDRejected; // rejected
+        }
       } else {
-        return Status::PIDRejected; // rejected
+        return Status::PIDNotApplicable; // PID not applicable
       }
     } else {
-      return Status::PIDNotApplicable; // PID not applicable
+      errorPdg();
+      return Status::PIDRejected;
     }
   }
 
@@ -501,7 +432,6 @@ class TrackSelectorPIDBase
   template <typename T>
   int getStatusTrackPIDTpcAndTof(const T& track)
   {
-
     int statusTPC = Status::PIDNotApplicable;
     if (track.hasTPC()) {
       statusTPC = getStatusTrackPIDTPC(track);
@@ -583,6 +513,8 @@ class TrackSelectorPIDBase
     return isSelRICH || isSelTOF;
   }
 
+  // Bayesian
+
   /// Set pT range where Bayes PID is applicable.
   void setRangePtBayes(float ptMin, float ptMax)
   {
@@ -613,7 +545,24 @@ class TrackSelectorPIDBase
   bool isSelectedTrackBayesPID(const T& track)
   {
     // Get index of the most probable species for a given track.
-    return track.bayesID() == mSpecies;
+    if constexpr (pdg == kElectron) {
+      return track.bayesID() == o2::track::PID::Electron;
+    } else
+    if constexpr (pdg == kMuonMinus) {
+      return track.bayesID() == o2::track::PID::Muon;
+    } else
+    if constexpr (pdg == kPiPlus) {
+      return track.bayesID() == o2::track::PID::Pion;
+    } else
+    if constexpr (pdg == kKPlus) {
+      return track.bayesID() == o2::track::PID::Kaon;
+    } else
+    if constexpr (pdg == kProton) {
+      return track.bayesID() == o2::track::PID::Proton;
+    } else {
+      errorPdg();
+      return false;
+    }
   }
 
   /// Checks if track is compatible with given particle species hypothesis within given Bayesian probability range.
@@ -628,41 +577,23 @@ class TrackSelectorPIDBase
 
     // Get probability for a given particle hypothesis.
     double prob = 0.;
-    switch (mPdg) {
-      case kElectron: {
-        if constexpr (hasEl) {
+        if constexpr (pdg == kElectron) {
           prob = track.bayesEl();
-        }
-        break;
-      }
-      case kMuonMinus: {
-        if constexpr (hasMu) {
+        } else
+        if constexpr (pdg == kMuonMinus) {
           prob = track.bayesMu();
-        }
-        break;
-      }
-      case kPiPlus: {
-        if constexpr (hasPi) {
+        } else
+        if constexpr (pdg == kPiPlus) {
           prob = track.bayesPi();
-        }
-        break;
-      }
-      case kKPlus: {
-        if constexpr (hasKa) {
+        } else
+        if constexpr (pdg == kKPlus) {
           prob = track.bayesKa();
-        }
-        break;
-      }
-      case kProton: {
-        if constexpr (hasPr) {
+        } else
+        if constexpr (pdg == kProton) {
           prob = track.bayesPr();
-        }
-        break;
-      }
-      default: {
+        } else {
         errorPdg();
       }
-    }
 
     return mProbBayesMin <= prob;
   }
@@ -702,9 +633,6 @@ class TrackSelectorPIDBase
   }
 
  private:
-  uint mPdg = kPiPlus;                  ///< PDG code of the expected particle
-  uint mSpecies = o2::track::PID::Pion; ///< Expected species of the track for the Bayesian selection
-
   // TPC
   float mPtTPCMin = 0.;                ///< minimum pT for TPC PID [GeV/c]
   float mPtTPCMax = 100.;              ///< maximum pT for TPC PID [GeV/c]
@@ -736,21 +664,15 @@ class TrackSelectorPIDBase
 
   /// Throw fatal for unsupported PDG values.
   void errorPdg() {
-    LOGF(fatal, "Species with PDG code %d not supported", mPdg);
+    LOGF(fatal, "Species with PDG code %d not supported", pdg);
   }
 };
 
-// Predefined instances
-using TrackSelectorPID = TrackSelectorPIDBase<true, true, true, true, true>; // all species
-// single species
-using TrackSelectorPIDEl = TrackSelectorPIDBase<true, false, false, false, false>; // El
-using TrackSelectorPIDMu = TrackSelectorPIDBase<false, true, false, false, false>; // Mu
-using TrackSelectorPIDPi = TrackSelectorPIDBase<false, false, true, false, false>; // Pi
-using TrackSelectorPIDKa = TrackSelectorPIDBase<false, false, false, true, false>; // Ka
-using TrackSelectorPIDPr = TrackSelectorPIDBase<false, false, false, false, true>; // Pr
-// multiple species
-using TrackSelectorPIDPiKa = TrackSelectorPIDBase<false, false, true, true, false>; // Pi Ka
-using TrackSelectorPIDPiKaPr = TrackSelectorPIDBase<false, false, true, true, true>; // Pi Ka Pr
-using TrackSelectorPIDElMu = TrackSelectorPIDBase<true, true, false, false, false>; // El Mu
+// Predefined types
+using TrackSelectorPIDEl = TrackSelectorPIDBase<kElectron>;  // El
+using TrackSelectorPIDMu = TrackSelectorPIDBase<kMuonMinus>; // Mu
+using TrackSelectorPIDPi = TrackSelectorPIDBase<kPiPlus>;    // Pi
+using TrackSelectorPIDKa = TrackSelectorPIDBase<kKPlus>;     // Ka
+using TrackSelectorPIDPr = TrackSelectorPIDBase<kProton>;    // Pr
 
 #endif // COMMON_CORE_TRACKSELECTORPID_H_
