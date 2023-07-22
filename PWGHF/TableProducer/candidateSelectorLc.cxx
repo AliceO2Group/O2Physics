@@ -161,14 +161,6 @@ struct HfCandidateSelectorLc {
       auto trackNeg = candidate.prong1_as<TrksPID>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.prong2_as<TrksPID>(); // positive daughter (negative for the antiparticles)
 
-      /*
-      // daughter track validity selection
-      if (!daughterSelection(trackPos1) || !daughterSelection(trackNeg) || !daughterSelection(trackPos2)) {
-        hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
-        continue;
-      }
-      */
-
       // implement filter bit 4 cut - should be done before this task at the track selection level
 
       // conjugate-independent topological selection

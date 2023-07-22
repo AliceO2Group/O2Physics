@@ -179,14 +179,6 @@ struct HfCandidateSelectorXicToPKPi {
       auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
 
-      /*
-      // daughter track validity selection
-      if (!daughterSelection(trackPos1) || !daughterSelection(trackNeg) || !daughterSelection(trackPos2)) {
-        hfSelXicToPKPiCandidate(statusXicToPKPi, statusXicToPiKP);
-        continue;
-      }
-      */
-
       // implement filter bit 4 cut - should be done before this task at the track selection level
 
       // conjugate-independent topological selection

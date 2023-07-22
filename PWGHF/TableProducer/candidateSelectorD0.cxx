@@ -208,13 +208,6 @@ struct HfCandidateSelectorD0 {
       auto trackPos = candidate.prong0_as<aod::BigTracksPIDExtended>(); // positive daughter
       auto trackNeg = candidate.prong1_as<aod::BigTracksPIDExtended>(); // negative daughter
 
-      /*
-      if (!daughterSelection(trackPos) || !daughterSelection(trackNeg)) {
-        hfSelD0Candidate(statusD0, statusD0bar);
-        continue;
-      }
-      */
-
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);

@@ -113,21 +113,6 @@ struct HfCandidateSelectorDplusToPiKPi {
     }
   }
 
-  /*
-  /// Selection on goodness of daughter tracks
-  /// \note should be applied at candidate selection
-  /// \param track is daughter track
-  /// \return true if track is good
-  template <typename T>
-  bool daughterSelection(const T& track)
-  {
-    if (track.tpcNClsFound() == 0) {
-      return false; //is it clusters findable or found - need to check
-    }
-    return true;
-  }
-  */
-
   /// Candidate selections
   /// \param candidate is candidate
   /// \param trackPion1 is the first track with the pion hypothesis
@@ -224,16 +209,6 @@ struct HfCandidateSelectorDplusToPiKPi {
       auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-
-      /*
-      // daughter track validity selection
-      if (!daughterSelection(trackPos1) ||
-          !daughterSelection(trackNeg) ||
-          !daughterSelection(trackPos2)) {
-        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
-        continue;
-      }
-      */
 
       // topological selection
       if (!selection(candidate, trackPos1, trackNeg, trackPos2)) {
