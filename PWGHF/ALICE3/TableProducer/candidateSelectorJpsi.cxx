@@ -83,8 +83,24 @@ struct HfCandidateSelectorJpsi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_jpsi_to_e_e::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
+  TrackSelectorPIDEl selectorElectron;
+  TrackSelectorPIDMu selectorMuon;
+
   using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
   using ExtendedTracksPID = soa::Join<TracksPID, aod::TracksDCA>;
+
+  void init(InitContext const& initContext)
+  {
+    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
+    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
+    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
+    selectorMuon = selectorElectron;
+  }
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
@@ -143,16 +159,6 @@ struct HfCandidateSelectorJpsi {
 
   void processAlice2(aod::HfCand2Prong const& candidates, aod::BigTracksPIDExtended const&)
   {
-    TrackSelectorPID selectorElectron(kElectron);
-    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
-    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
-
     // looping over 2-prong candidates
     for (auto& candidate : candidates) {
 
@@ -222,18 +228,6 @@ struct HfCandidateSelectorJpsi {
 
   void processAlice3(aod::HfCand2Prong const& candidates, ExtendedTracksPID const&, aod::RICHs const&, aod::MIDs const&)
   {
-    TrackSelectorPID selectorElectron(kElectron);
-    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
-    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
-
-    TrackSelectorPID selectorMuon(kMuonMinus);
-
     // looping over 2-prong candidates
     for (auto& candidate : candidates) {
 

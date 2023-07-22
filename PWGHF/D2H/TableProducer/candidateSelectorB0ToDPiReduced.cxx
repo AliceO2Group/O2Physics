@@ -59,14 +59,13 @@ struct HfCandidateSelectorB0ToDPiReduced {
   // variable that will store the value of selectionFlagD (defined in dataCreatorDplusPiReduced.cxx)
   int mySelectionFlagD = -1;
 
-  TrackSelectorPID selectorPion;
+  TrackSelectorPIDPi selectorPion;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const& initContext)
   {
     if (usePid) {
-      selectorPion.setPDG(kPiPlus);
       selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);

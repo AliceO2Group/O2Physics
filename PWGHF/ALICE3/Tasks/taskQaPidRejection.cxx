@@ -93,6 +93,12 @@ struct HfTaskQaPidRejection {
   Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 0., "Nsigma cut on RICH combined with TOF"};
 
+  TrackSelectorPIDEl selectorElectron;
+  TrackSelectorPIDMu selectorMuon;
+  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPIDKa selectorKaon;
+  TrackSelectorPIDPr selectorProton;
+
   static constexpr PDG_t PDGs[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
   static_assert(particle < 5 && "Maximum of particles reached");
   static constexpr int particlePDG = PDGs[particle];
@@ -102,6 +108,19 @@ struct HfTaskQaPidRejection {
 
   void init(InitContext&)
   {
+    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
+    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
+    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
+    selectorMuon = selectorElectron;
+    selectorPion = selectorElectron;
+    selectorKaon = selectorElectron;
+    selectorProton = selectorElectron;
+
     AxisSpec ptAxis{nBinsPt, ptMin, ptMax};
     AxisSpec etaAxis{nBinsEta, etaMin, etaMax};
 
@@ -143,27 +162,6 @@ struct HfTaskQaPidRejection {
                const o2::aod::McCollisions& mcCollisions,
                const o2::aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
   {
-    TrackSelectorPID selectorElectron(kElectron);
-    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
-    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
-
-    auto selectorPion(selectorElectron);
-    selectorPion.setPDG(kPiPlus);
-
-    auto selectorKaon(selectorElectron);
-    selectorKaon.setPDG(kKPlus);
-
-    auto selectorProton(selectorElectron);
-    selectorProton.setPDG(kProton);
-
-    TrackSelectorPID selectorMuon(kMuonPlus);
-
     std::vector<int64_t> recoEvt(collisions.size());
     std::vector<int64_t> recoTracks(tracks.size());
     LOGF(info, "%d", particlePDG);
@@ -272,12 +270,31 @@ struct HfTaskQaPidRejectionGeneral {
   Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 0., "Nsigma cut on RICH combined with TOF"};
 
+  TrackSelectorPIDEl selectorElectron;
+  TrackSelectorPIDMu selectorMuon;
+  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPIDKa selectorKaon;
+  TrackSelectorPIDPr selectorProton;
+
   using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
 
   HistogramRegistry histos{"HistogramsRejection"};
 
   void init(InitContext&)
   {
+    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
+    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
+    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
+    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
+    selectorMuon = selectorElectron;
+    selectorPion = selectorElectron;
+    selectorKaon = selectorElectron;
+    selectorProton = selectorElectron;
+
     AxisSpec ptAxis{nBinsPt, ptMin, ptMax};
     AxisSpec etaAxis{nBinsEta, etaMin, etaMax};
 
@@ -336,27 +353,6 @@ struct HfTaskQaPidRejectionGeneral {
                const o2::aod::McCollisions& mcCollisions,
                const o2::aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
   {
-    TrackSelectorPID selectorElectron(kElectron);
-    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
-    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
-
-    auto selectorPion(selectorElectron);
-    selectorPion.setPDG(kPiPlus);
-
-    auto selectorKaon(selectorElectron);
-    selectorKaon.setPDG(kKPlus);
-
-    auto selectorProton(selectorElectron);
-    selectorProton.setPDG(kProton);
-
-    TrackSelectorPID selectorMuon(kMuonPlus);
-
     for (const auto& track : tracks) {
 
       if (std::abs(track.eta()) > etaMaxSel || track.pt() < ptMinSel) {
