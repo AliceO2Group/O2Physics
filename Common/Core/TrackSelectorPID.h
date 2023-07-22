@@ -118,17 +118,13 @@ class TrackSelectorPIDBase : TrackSelectorPID
     double nSigma = 100.;
       if constexpr (pdg == kElectron) {
         nSigma = track.tpcNSigmaEl();
-      }
-      if constexpr (pdg == kMuonMinus) {
+      } else if constexpr (pdg == kMuonMinus) {
         nSigma = track.tpcNSigmaMu();
-      } else
-      if constexpr (pdg == kPiPlus) {
+      } else if constexpr (pdg == kPiPlus) {
         nSigma = track.tpcNSigmaPi();
-      } else
-      if constexpr (pdg == kKPlus) {
+      } else if constexpr (pdg == kKPlus) {
         nSigma = track.tpcNSigmaKa();
-      } else
-      if constexpr (pdg == kProton) {
+      } else if constexpr (pdg == kProton) {
         nSigma = track.tpcNSigmaPr();
       } else {
         errorPdg();
@@ -211,17 +207,13 @@ class TrackSelectorPIDBase : TrackSelectorPID
     double nSigma = 100.;
       if constexpr (pdg == kElectron) {
         nSigma = track.tofNSigmaEl();
-      } else
-      if constexpr (pdg == kMuonMinus) {
+      } else if constexpr (pdg == kMuonMinus) {
         nSigma = track.tofNSigmaMu();
-      } else
-      if constexpr (pdg == kPiPlus) {
+      } else if constexpr (pdg == kPiPlus) {
         nSigma = track.tofNSigmaPi();
-      } else
-      if constexpr (pdg == kKPlus) {
+      } else if constexpr (pdg == kKPlus) {
         nSigma = track.tofNSigmaKa();
-      } else
-      if constexpr (pdg == kProton) {
+      } else if constexpr (pdg == kProton) {
         nSigma = track.tofNSigmaPr();
       } else {
         errorPdg();
@@ -307,17 +299,13 @@ class TrackSelectorPIDBase : TrackSelectorPID
     double nSigma = 100.;
         if constexpr (pdg == kElectron) {
           nSigma = track.rich().richNsigmaEl();
-        } else
-        if constexpr (pdg == kMuonMinus) {
+        } else if constexpr (pdg == kMuonMinus) {
           nSigma = track.rich().richNsigmaMu();
-        } else
-        if constexpr (pdg == kPiPlus) {
+        } else if constexpr (pdg == kPiPlus) {
           nSigma = track.rich().richNsigmaPi();
-        } else
-        if constexpr (pdg == kKPlus) {
+        } else if constexpr (pdg == kKPlus) {
           nSigma = track.rich().richNsigmaKa();
-        } else
-        if constexpr (pdg == kProton) {
+        } else if constexpr (pdg == kProton) {
           nSigma = track.rich().richNsigmaPr();
         } else {
           errorPdg();
@@ -547,17 +535,13 @@ class TrackSelectorPIDBase : TrackSelectorPID
     // Get index of the most probable species for a given track.
     if constexpr (pdg == kElectron) {
       return track.bayesID() == o2::track::PID::Electron;
-    } else
-    if constexpr (pdg == kMuonMinus) {
+    } else if constexpr (pdg == kMuonMinus) {
       return track.bayesID() == o2::track::PID::Muon;
-    } else
-    if constexpr (pdg == kPiPlus) {
+    } else if constexpr (pdg == kPiPlus) {
       return track.bayesID() == o2::track::PID::Pion;
-    } else
-    if constexpr (pdg == kKPlus) {
+    } else if constexpr (pdg == kKPlus) {
       return track.bayesID() == o2::track::PID::Kaon;
-    } else
-    if constexpr (pdg == kProton) {
+    } else if constexpr (pdg == kProton) {
       return track.bayesID() == o2::track::PID::Proton;
     } else {
       errorPdg();
@@ -579,17 +563,13 @@ class TrackSelectorPIDBase : TrackSelectorPID
     double prob = 0.;
         if constexpr (pdg == kElectron) {
           prob = track.bayesEl();
-        } else
-        if constexpr (pdg == kMuonMinus) {
+        } else if constexpr (pdg == kMuonMinus) {
           prob = track.bayesMu();
-        } else
-        if constexpr (pdg == kPiPlus) {
+        } else if constexpr (pdg == kPiPlus) {
           prob = track.bayesPi();
-        } else
-        if constexpr (pdg == kKPlus) {
+        } else if constexpr (pdg == kKPlus) {
           prob = track.bayesKa();
-        } else
-        if constexpr (pdg == kProton) {
+        } else if constexpr (pdg == kProton) {
           prob = track.bayesPr();
         } else {
         errorPdg();
