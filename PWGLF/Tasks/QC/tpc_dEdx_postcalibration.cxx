@@ -37,7 +37,7 @@ using PIDTracks = soa::Join<
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
-struct LFTPCdEdxPostcalibration {
+struct tpc_dEdx_postcalibration {
 
   // dE/dx for all charged particles
   HistogramRegistry registryCh{
@@ -89,6 +89,8 @@ struct LFTPCdEdxPostcalibration {
                                       "min number of found TPC clusters"};
   Configurable<float> minNCrossedRowsTPC{
     "minNCrossedRowsTPC", 70.0f, "min number of found TPC crossed rows"};
+  Configurable<float> minNClsTPCdEdx{
+    "minNClsTPCdEdx", 50.0f, "min number of TPC clusters for PID"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f,
                                  "max chi2 per cluster TPC"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f,
@@ -104,10 +106,10 @@ struct LFTPCdEdxPostcalibration {
                                         "Maximum DCA Daughters"};
   Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", 3.0f, "Maximum nsigma TOF"};
   Configurable<float> minMassK0s{"minMassK0s", 0.4f, "Minimum Mass K0s"};
-  Configurable<float> maxMassK0s{"maxMassK0s", 0.5f, "Maximum Mass K0s"};
-  Configurable<float> minMassLambda{"minMassLambda", 1.0f,
+  Configurable<float> maxMassK0s{"maxMassK0s", 0.6f, "Maximum Mass K0s"};
+  Configurable<float> minMassLambda{"minMassLambda", 1.1f,
                                     "Minimum Mass Lambda"};
-  Configurable<float> maxMassLambda{"maxMassLambda", 1.1f,
+  Configurable<float> maxMassLambda{"maxMassLambda", 1.2f,
                                     "Maximum Mass Lambda"};
   Configurable<float> minReqClusterITS{
     "minReqClusterITS", 4.0f, "min number of clusters required in ITS"};
@@ -177,6 +179,8 @@ struct LFTPCdEdxPostcalibration {
       return false;
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
       return false;
+    // if (track.tpcSignalN() < minNClsTPCdEdx)
+    // return false;
     if (track.tpcChi2NCl() > maxChi2TPC)
       return false;
     if (track.eta() < etaMin || track.eta() > etaMax)
@@ -189,8 +193,7 @@ struct LFTPCdEdxPostcalibration {
   template <typename T1, typename C>
   bool passedV0Selection(const T1& v0, const C& collision)
   {
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) <
-        v0cospaMin)
+    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospaMin)
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
@@ -208,14 +211,20 @@ struct LFTPCdEdxPostcalibration {
       return false;
     if (!passedSingleTrackSelection(ntrack, collision))
       return false;
-    if (useTOFpi && (!ptrack.hasTOF()))
-      return false;
-    if (useTOFpi && (!ntrack.hasTOF()))
-      return false;
-    if (TMath::Abs(ptrack.tofNSigmaPi()) > nsigmaTOFmax)
-      return false;
-    if (TMath::Abs(ntrack.tofNSigmaPi()) > nsigmaTOFmax)
-      return false;
+
+    if (ptrack.tpcInnerParam() > 0.6) {
+      if (!ptrack.hasTOF())
+        return false;
+      if (TMath::Abs(ptrack.tofNSigmaPi()) > nsigmaTOFmax)
+        return false;
+    }
+
+    if (ntrack.tpcInnerParam() > 0.6) {
+      if (!ntrack.hasTOF())
+        return false;
+      if (TMath::Abs(ntrack.tofNSigmaPi()) > nsigmaTOFmax)
+        return false;
+    }
 
     // Invariant-Mass Selection
     if (v0.mK0Short() < minMassK0s || v0.mK0Short() > maxMassK0s)
@@ -234,14 +243,20 @@ struct LFTPCdEdxPostcalibration {
       return false;
     if (!passedSingleTrackSelection(ntrack, collision))
       return false;
-    if (useTOFpr && (!ptrack.hasTOF()))
-      return false;
-    if (useTOFpi && (!ntrack.hasTOF()))
-      return false;
-    if (TMath::Abs(ntrack.tofNSigmaPi()) > nsigmaTOFmax)
-      return false;
-    if (TMath::Abs(ptrack.tofNSigmaPr()) > nsigmaTOFmax)
-      return false;
+
+    if (ptrack.tpcInnerParam() > 0.6) {
+      if (!ptrack.hasTOF())
+        return false;
+      if (TMath::Abs(ptrack.tofNSigmaPr()) > nsigmaTOFmax)
+        return false;
+    }
+
+    if (ntrack.tpcInnerParam() > 0.6) {
+      if (!ntrack.hasTOF())
+        return false;
+      if (TMath::Abs(ntrack.tofNSigmaPi()) > nsigmaTOFmax)
+        return false;
+    }
 
     // Invariant-Mass Selection
     if (v0.mLambda() < minMassLambda || v0.mLambda() > maxMassLambda)
@@ -261,14 +276,20 @@ struct LFTPCdEdxPostcalibration {
       return false;
     if (!passedSingleTrackSelection(ntrack, collision))
       return false;
-    if (useTOFpr && (!ntrack.hasTOF()))
-      return false;
-    if (useTOFpi && (!ptrack.hasTOF()))
-      return false;
-    if (TMath::Abs(ptrack.tofNSigmaPi()) > nsigmaTOFmax)
-      return false;
-    if (TMath::Abs(ntrack.tofNSigmaPr()) > nsigmaTOFmax)
-      return false;
+
+    if (ptrack.tpcInnerParam() > 0.6) {
+      if (!ptrack.hasTOF())
+        return false;
+      if (TMath::Abs(ptrack.tofNSigmaPi()) > nsigmaTOFmax)
+        return false;
+    }
+
+    if (ntrack.tpcInnerParam() > 0.6) {
+      if (!ntrack.hasTOF())
+        return false;
+      if (TMath::Abs(ntrack.tofNSigmaPr()) > nsigmaTOFmax)
+        return false;
+    }
 
     // Invariant-Mass Selection
     if (v0.mAntiLambda() < minMassLambda || v0.mAntiLambda() > maxMassLambda)
@@ -293,24 +314,21 @@ struct LFTPCdEdxPostcalibration {
 
       if (!passedSingleTrackSelection(trk, collision))
         continue;
-      if (!trk.passedITSRefit())
-        continue;
       if (!trk.passedTPCRefit())
-        continue;
-      if (trk.itsNCls() < minReqClusterITS)
-        continue;
-      if (TMath::Abs(trk.dcaXY()) > maxDCAxy)
-        continue;
-      if (TMath::Abs(trk.dcaZ()) > maxDCAz)
-        continue;
-      if (trk.itsChi2NCl() > maxChi2ITS)
         continue;
 
       // Charged Particles
       registryCh.fill(HIST("dEdx_vs_Momentum"), trk.sign() * trk.tpcInnerParam(), trk.tpcSignal());
 
       // Kaons
-      if (trk.hasTOF() && TMath::Abs(trk.tofNSigmaKa()) < 2.0) {
+      if (trk.tpcInnerParam() > 0.4 && trk.hasTOF() && TMath::Abs(trk.tofNSigmaKa()) < 2.0) {
+        registryKa.fill(HIST("dEdx_vs_Momentum_Ka"), trk.tpcInnerParam(),
+                        trk.tpcSignal());
+        registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), trk.tpcInnerParam(),
+                        trk.tpcNSigmaKa());
+      }
+
+      if (trk.tpcInnerParam() < 0.4) {
         registryKa.fill(HIST("dEdx_vs_Momentum_Ka"), trk.tpcInnerParam(),
                         trk.tpcSignal());
         registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), trk.tpcInnerParam(),
@@ -322,7 +340,14 @@ struct LFTPCdEdxPostcalibration {
         continue;
 
       // Deuterons
-      if (trk.hasTOF() && TMath::Abs(trk.tofNSigmaDe()) < 3.0) {
+      if (trk.tpcInnerParam() > 1.0 && trk.hasTOF() && TMath::Abs(trk.tofNSigmaDe()) < 3.0) {
+        registryDe.fill(HIST("dEdx_vs_Momentum_De"), trk.tpcInnerParam(),
+                        trk.tpcSignal());
+        registryDe.fill(HIST("nsigmaTPC_vs_Momentum_De"), trk.tpcInnerParam(),
+                        trk.tpcNSigmaDe());
+      }
+
+      if (trk.tpcInnerParam() < 1.0) {
         registryDe.fill(HIST("dEdx_vs_Momentum_De"), trk.tpcInnerParam(),
                         trk.tpcSignal());
         registryDe.fill(HIST("nsigmaTPC_vs_Momentum_De"), trk.tpcInnerParam(),
@@ -402,5 +427,5 @@ struct LFTPCdEdxPostcalibration {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<LFTPCdEdxPostcalibration>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<tpc_dEdx_postcalibration>(cfgc)};
 }
