@@ -83,6 +83,7 @@ struct createPCM {
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance for single track"};
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
+  Configurable<float> maxchi2its{"maxchi2its", 5.0, "max chi2/NclsITS"};
   Configurable<float> min_tpcdEdx{"min_tpcdEdx", 30.0, "min TPC dE/dx"};
   Configurable<float> max_tpcdEdx{"max_tpcdEdx", 110.0, "max TPC dE/dx"};
   Configurable<float> margin_r{"margin_r", 7.0, "margin for r cut"};
@@ -326,6 +327,11 @@ struct createPCM {
       if (track.tpcSignal() < min_tpcdEdx || max_tpcdEdx < track.tpcSignal()) {
         return false;
       }
+    }
+
+    bool isITSonly = track.hasITS() & !track.hasTPC() & !track.hasTRD() & !track.hasTOF();
+    if (isITSonly && track.itsChi2NCl() > maxchi2its) {
+      return false;
     }
     return true;
   }

@@ -308,8 +308,8 @@ struct skimmerGammaConversions {
     // LOGF(info, "mee = %f (KF at PV) , %f (KF at SV)", v0_pv.M(), v0_sv.M());
 
     // calculate psipair, phiv at the decay vertex
-    float phiv = getPhivPair(kfp_pos_DecayVtx, kfp_ele_DecayVtx, o2::base::Propagator::Instance()->getNominalBz());
-    float psipair = getPsiPair(kfp_pos_DecayVtx, kfp_ele_DecayVtx);
+    float phiv = getPhivPair(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz(), kfp_pos_DecayVtx.GetQ(), kfp_ele_DecayVtx.GetQ(), o2::base::Propagator::Instance()->getNominalBz());
+    float psipair = getPsiPair(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
     // LOGF(info, "bz = %f , phiv = %f , psipair = %f", bz, phiv, psipair);
 
     // float pca_kf = kfp_pos.GetDistanceFromParticle(kfp_ele);
