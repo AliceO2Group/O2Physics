@@ -55,6 +55,6 @@ UseTab:          Never
 Language: Proto
 DisableFormat: true
 ---
-Language: Json
-# O2 dumps JSON files with 4-space indents.
-IndentWidth: 4
+# Language: Json
+# # O2 dumps JSON files with 4-space indents.
+# IndentWidth: 4
