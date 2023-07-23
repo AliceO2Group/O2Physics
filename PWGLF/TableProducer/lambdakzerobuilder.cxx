@@ -144,6 +144,7 @@ struct lambdakzeroBuilder {
 
   // for topo var QA
   ConfigurableAxis axisTopoVarPointingAngle{"axisTopoVarPointingAngle", {50, 0.0, 1.0}, "pointing angle"};
+  ConfigurableAxis axisTopoVarRAP{"axisTopoVarRAP", {50, 0.0, 1.0}, "radius x pointing angle axis"};
   ConfigurableAxis axisTopoVarV0Radius{"axisTopoVarV0Radius", {500, 0.0, 100.0}, "V0 decay radius (cm)"};
   ConfigurableAxis axisTopoVarDCAV0Dau{"axisTopoVarDCAV0Dau", {200, 0.0, 2.0}, "DCA between V0 daughters (cm)"};
   ConfigurableAxis axisTopoVarDCAToPV{"axisTopoVarDCAToPV", {200, -1, 1.0}, "single track DCA to PV (cm)"};
@@ -276,6 +277,7 @@ struct lambdakzeroBuilder {
 
       // QA plots of topological variables using axisPtQA
       registry.add("h2dTopoVarPointingAngle", "h2dTopoVarPointingAngle", kTH2D, {axisPtQA, axisTopoVarPointingAngle});
+      registry.add("h2dTopoVarRAP", "h2dTopoVarRAP", kTH2D, {axisPtQA, axisTopoVarRAP});
       registry.add("h2dTopoVarV0Radius", "h2dTopoVarV0Radius", kTH2D, {axisPtQA, axisTopoVarV0Radius});
       registry.add("h2dTopoVarDCAV0Dau", "h2dTopoVarDCAV0Dau", kTH2D, {axisPtQA, axisTopoVarDCAV0Dau});
       registry.add("h2dTopoVarPosDCAToPV", "h2dTopoVarPosDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
@@ -646,6 +648,7 @@ struct lambdakzeroBuilder {
       float dcaV0toPV = std::sqrt((std::pow((primaryVertex.getY() - v0candidate.pos[1]) * pz - (primaryVertex.getZ() - v0candidate.pos[2]) * py, 2) + std::pow((primaryVertex.getX() - v0candidate.pos[0]) * pz - (primaryVertex.getZ() - v0candidate.pos[2]) * px, 2) + std::pow((primaryVertex.getX() - v0candidate.pos[0]) * py - (primaryVertex.getY() - v0candidate.pos[1]) * px, 2)) / (px * px + py * py + pz * pz));
 
       registry.fill(HIST("h2dTopoVarPointingAngle"), lPt, TMath::ACos(v0candidate.cosPA));
+      registry.fill(HIST("h2dTopoVarRAP"), lPt, TMath::ACos(v0candidate.cosPA) * v0candidate.V0radius);
       registry.fill(HIST("h2dTopoVarV0Radius"), lPt, v0candidate.V0radius);
       registry.fill(HIST("h2dTopoVarDCAV0Dau"), lPt, v0candidate.dcaV0dau);
       registry.fill(HIST("h2dTopoVarPosDCAToPV"), lPt, v0candidate.posDCAxy);
@@ -750,6 +753,7 @@ struct lambdakzeroPreselector {
   Configurable<bool> dIfMCgenerateGamma{"dIfMCgenerateGamma", false, "if MC, generate MC true gamma (yes/no)"};
   Configurable<bool> dIfMCgenerateHypertriton{"dIfMCgenerateHypertriton", false, "if MC, generate MC true hypertritons (yes/no)"};
   Configurable<bool> dIfMCgenerateAntiHypertriton{"dIfMCgenerateAntiHypertriton", false, "if MC, generate MC true antihypertritons (yes/no)"};
+  Configurable<int> dIfMCselectV0MotherPDG{"dIfMCselectV0MotherPDG", 0, "if MC, selects based on mother particle (zero for no selection)"};
 
   Configurable<bool> ddEdxPreSelectK0Short{"ddEdxPreSelectK0Short", true, "pre-select dE/dx compatibility with K0Short (yes/no)"};
   Configurable<bool> ddEdxPreSelectLambda{"ddEdxPreSelectLambda", true, "pre-select dE/dx compatibility with Lambda (yes/no)"};
@@ -826,6 +830,18 @@ struct lambdakzeroPreselector {
           for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
             if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
               lPDG = lNegMother.pdgCode();
+
+              // additionally check PDG of the mother particle if requested
+              if (dIfMCselectV0MotherPDG != 0) {
+                lPDG = 0; // this is not the species you're looking for
+                if (lNegMother.has_mothers()) {
+                  for (auto& lNegGrandMother : lNegMother.template mothers_as<aod::McParticles>()) {
+                    if (lNegGrandMother.pdgCode() == dIfMCselectV0MotherPDG)
+                      lPDG = lNegMother.pdgCode();
+                  }
+                }
+              }
+              // end extra PDG of mother check
             }
           }
         }
