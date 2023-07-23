@@ -425,9 +425,19 @@ struct HfCandidateSelectorD0 {
   Configurable<double> cpaMin{"cpaMin", 0.98, "Min. cosine of pointing angle"};
   Configurable<double> massWindow{"massWindow", 0.4, "Half-width of the invariant-mass window"};
 
+  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPIDKa selectorKaon;
+
   using TracksWithPid = soa::Join<Tracks,
                                   aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                   aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+
+  void init(InitContext const&)
+  {
+    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTpc, nSigmaTpc);
+    selectorKaon = selectorPion;
+  }
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
@@ -471,13 +481,6 @@ struct HfCandidateSelectorD0 {
   void process(aod::HfCandProng2 const& candidates,
                TracksWithPid const&)
   {
-    TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpc, nSigmaTpc);
-
-    TrackSelectorPID selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus);
-
     // looping over 2-prong candidates
     for (auto const& candidate : candidates) {
 
