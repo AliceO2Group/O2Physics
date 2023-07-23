@@ -845,7 +845,7 @@ struct cascadeBuilder {
 
       // do specific topological variable QA too
       registry.fill(HIST("h2dTopoVarCascPointingAngle"), lPt, TMath::ACos(cascadecandidate.cosPA));
-      registry.fill(HIST("h2dTopoVarCascRAP"), lPt, TMath::ACos(cascadecandidate.cosPA)*cascadecandidate.cascradius);
+      registry.fill(HIST("h2dTopoVarCascRAP"), lPt, TMath::ACos(cascadecandidate.cosPA) * cascadecandidate.cascradius);
       registry.fill(HIST("h2dTopoVarCascRadius"), lPt, cascadecandidate.cascradius);
     }
     return true;
@@ -1245,17 +1245,17 @@ struct cascadePreselector {
                   if (lV0Mother == lBachMother) {
                     lPDG = lV0Mother.pdgCode();
 
-                    // additionally check PDG of the mother particle if requested 
-                    if ( dIfMCselectV0MotherPDG != 0 ){
+                    // additionally check PDG of the mother particle if requested
+                    if (dIfMCselectV0MotherPDG != 0) {
                       lPDG = 0; // this is not the species you're looking for
-                      if(lBachMother.has_mothers()){
+                      if (lBachMother.has_mothers()) {
                         for (auto& lBachGrandMother : lBachMother.template mothers_as<aod::McParticles>()) {
-                          if(lBachGrandMother.pdgCode() == dIfMCselectV0MotherPDG)
+                          if (lBachGrandMother.pdgCode() == dIfMCselectV0MotherPDG)
                             lPDG = lV0Mother.pdgCode();
                         }
                       }
                     }
-                    //end extra PDG of mother check
+                    // end extra PDG of mother check
                   }
                 }
               } // end conditional V0-bach pair

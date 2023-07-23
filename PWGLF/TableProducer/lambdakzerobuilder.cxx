@@ -648,7 +648,7 @@ struct lambdakzeroBuilder {
       float dcaV0toPV = std::sqrt((std::pow((primaryVertex.getY() - v0candidate.pos[1]) * pz - (primaryVertex.getZ() - v0candidate.pos[2]) * py, 2) + std::pow((primaryVertex.getX() - v0candidate.pos[0]) * pz - (primaryVertex.getZ() - v0candidate.pos[2]) * px, 2) + std::pow((primaryVertex.getX() - v0candidate.pos[0]) * py - (primaryVertex.getY() - v0candidate.pos[1]) * px, 2)) / (px * px + py * py + pz * pz));
 
       registry.fill(HIST("h2dTopoVarPointingAngle"), lPt, TMath::ACos(v0candidate.cosPA));
-      registry.fill(HIST("h2dTopoVarRAP"), lPt, TMath::ACos(v0candidate.cosPA)*v0candidate.V0radius);
+      registry.fill(HIST("h2dTopoVarRAP"), lPt, TMath::ACos(v0candidate.cosPA) * v0candidate.V0radius);
       registry.fill(HIST("h2dTopoVarV0Radius"), lPt, v0candidate.V0radius);
       registry.fill(HIST("h2dTopoVarDCAV0Dau"), lPt, v0candidate.dcaV0dau);
       registry.fill(HIST("h2dTopoVarPosDCAToPV"), lPt, v0candidate.posDCAxy);
@@ -831,17 +831,17 @@ struct lambdakzeroPreselector {
             if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
               lPDG = lNegMother.pdgCode();
 
-              // additionally check PDG of the mother particle if requested 
-              if ( dIfMCselectV0MotherPDG != 0 ){
+              // additionally check PDG of the mother particle if requested
+              if (dIfMCselectV0MotherPDG != 0) {
                 lPDG = 0; // this is not the species you're looking for
-                if(lNegMother.has_mothers()){
+                if (lNegMother.has_mothers()) {
                   for (auto& lNegGrandMother : lNegMother.template mothers_as<aod::McParticles>()) {
-                    if(lNegGrandMother.pdgCode() == dIfMCselectV0MotherPDG)
+                    if (lNegGrandMother.pdgCode() == dIfMCselectV0MotherPDG)
                       lPDG = lNegMother.pdgCode();
                   }
                 }
               }
-              //end extra PDG of mother check
+              // end extra PDG of mother check
             }
           }
         }
