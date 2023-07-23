@@ -36,7 +36,7 @@ struct TrackSelectorPID
 };
 
 template <uint64_t pdg = kPiPlus>
-class TrackSelectorPIDBase : TrackSelectorPID
+class TrackSelectorPIDBase
 {
  public:
   /// Default constructor
@@ -143,15 +143,15 @@ class TrackSelectorPIDBase : TrackSelectorPID
   int getStatusTrackPIDTPC(const T& track)
   {
     if (!isValidTrackPIDTPC(track)) {
-      return Status::PIDNotApplicable; // PID not applicable
+      return TrackSelectorPID::PIDNotApplicable; // PID not applicable
     }
     bool condTOF = false;
     if (isSelectedTrackPIDTPC(track, condTOF)) {
-      return Status::PIDAccepted; // accepted
+      return TrackSelectorPID::PIDAccepted; // accepted
     } else if (condTOF) {
-      return Status::PIDConditional; // potential to be accepted if combined with TOF
+      return TrackSelectorPID::PIDConditional; // potential to be accepted if combined with TOF
     } else {
-      return Status::PIDRejected; // rejected
+      return TrackSelectorPID::PIDRejected; // rejected
     }
   }
 
@@ -231,15 +231,15 @@ class TrackSelectorPIDBase : TrackSelectorPID
   int getStatusTrackPIDTOF(const T& track)
   {
     if (!isValidTrackPIDTOF(track)) {
-      return Status::PIDNotApplicable; // PID not applicable
+      return TrackSelectorPID::PIDNotApplicable; // PID not applicable
     }
     bool condTPC = false;
     if (isSelectedTrackPIDTOF(track, condTPC)) {
-      return Status::PIDAccepted; // accepted
+      return TrackSelectorPID::PIDAccepted; // accepted
     } else if (condTPC) {
-      return Status::PIDConditional; // potential to be accepted if combined with TPC
+      return TrackSelectorPID::PIDConditional; // potential to be accepted if combined with TPC
     } else {
-      return Status::PIDRejected; // rejected
+      return TrackSelectorPID::PIDRejected; // rejected
     }
   }
 
@@ -322,15 +322,15 @@ class TrackSelectorPIDBase : TrackSelectorPID
   int getStatusTrackPIDRICH(const T& track)
   {
     if (!isValidTrackPIDRICH(track)) {
-      return Status::PIDNotApplicable; // PID not applicable
+      return TrackSelectorPID::PIDNotApplicable; // PID not applicable
     }
     bool condTOF = false;
     if (isSelectedTrackPIDRICH(track, condTOF)) {
-      return Status::PIDAccepted; // accepted
+      return TrackSelectorPID::PIDAccepted; // accepted
     } else if (condTOF) {
-      return Status::PIDConditional; // potential to be accepted if combined with TOF
+      return TrackSelectorPID::PIDConditional; // potential to be accepted if combined with TOF
     } else {
-      return Status::PIDRejected; // rejected
+      return TrackSelectorPID::PIDRejected; // rejected
     }
   }
 
@@ -372,16 +372,16 @@ class TrackSelectorPIDBase : TrackSelectorPID
   {
     if constexpr (pdg == kMuonMinus) {
       if (!isValidTrackPIDMID(track)) {
-        return Status::PIDNotApplicable; // PID not applicable
+        return TrackSelectorPID::PIDNotApplicable; // PID not applicable
       }
       if (isSelectedTrackPIDMID(track)) {
-        return Status::PIDAccepted; // accepted
+        return TrackSelectorPID::PIDAccepted; // accepted
       } else {
-        return Status::PIDRejected; // rejected
+        return TrackSelectorPID::PIDRejected; // rejected
       }
     } else {
       errorPdg();
-      return Status::PIDRejected;
+      return TrackSelectorPID::PIDRejected;
     }
   }
 
@@ -396,16 +396,16 @@ class TrackSelectorPIDBase : TrackSelectorPID
     int statusTPC = getStatusTrackPIDTPC(track);
     int statusTOF = getStatusTrackPIDTOF(track);
 
-    if (statusTPC == Status::PIDAccepted || statusTOF == Status::PIDAccepted) {
-      return Status::PIDAccepted;
+    if (statusTPC == TrackSelectorPID::PIDAccepted || statusTOF == TrackSelectorPID::PIDAccepted) {
+      return TrackSelectorPID::PIDAccepted;
     }
-    if (statusTPC == Status::PIDConditional && statusTOF == Status::PIDConditional) {
-      return Status::PIDAccepted;
+    if (statusTPC == TrackSelectorPID::PIDConditional && statusTOF == TrackSelectorPID::PIDConditional) {
+      return TrackSelectorPID::PIDAccepted;
     }
-    if (statusTPC == Status::PIDRejected || statusTOF == Status::PIDRejected) {
-      return Status::PIDRejected;
+    if (statusTPC == TrackSelectorPID::PIDRejected || statusTOF == TrackSelectorPID::PIDRejected) {
+      return TrackSelectorPID::PIDRejected;
     }
-    return Status::PIDNotApplicable; // (NotApplicable for one detector) and (NotApplicable or Conditional for the other)
+    return TrackSelectorPID::PIDNotApplicable; // (NotApplicable for one detector) and (NotApplicable or Conditional for the other)
   }
 
   /// Returns status of combined PID (TPC and TOF) selection for a given track when both detectors are applicable. Returns status of single PID otherwise.
@@ -414,31 +414,31 @@ class TrackSelectorPIDBase : TrackSelectorPID
   template <typename T>
   int getStatusTrackPIDTpcAndTof(const T& track)
   {
-    int statusTPC = Status::PIDNotApplicable;
+    int statusTPC = TrackSelectorPID::PIDNotApplicable;
     if (track.hasTPC()) {
       statusTPC = getStatusTrackPIDTPC(track);
     }
-    int statusTOF = Status::PIDNotApplicable;
+    int statusTOF = TrackSelectorPID::PIDNotApplicable;
     if (track.hasTOF()) {
       statusTOF = getStatusTrackPIDTOF(track);
     }
 
-    if (statusTPC == Status::PIDAccepted && statusTOF == Status::PIDAccepted) {
-      return Status::PIDAccepted;
+    if (statusTPC == TrackSelectorPID::PIDAccepted && statusTOF == TrackSelectorPID::PIDAccepted) {
+      return TrackSelectorPID::PIDAccepted;
     }
-    if (statusTPC == Status::PIDAccepted && (statusTOF == Status::PIDNotApplicable || statusTOF == Status::PIDConditional)) {
-      return Status::PIDAccepted;
+    if (statusTPC == TrackSelectorPID::PIDAccepted && (statusTOF == TrackSelectorPID::PIDNotApplicable || statusTOF == TrackSelectorPID::PIDConditional)) {
+      return TrackSelectorPID::PIDAccepted;
     }
-    if ((statusTPC == Status::PIDNotApplicable || statusTPC == Status::PIDConditional) && statusTOF == Status::PIDAccepted) {
-      return Status::PIDAccepted;
+    if ((statusTPC == TrackSelectorPID::PIDNotApplicable || statusTPC == TrackSelectorPID::PIDConditional) && statusTOF == TrackSelectorPID::PIDAccepted) {
+      return TrackSelectorPID::PIDAccepted;
     }
-    if (statusTPC == Status::PIDConditional && statusTOF == Status::PIDConditional) {
-      return Status::PIDAccepted;
+    if (statusTPC == TrackSelectorPID::PIDConditional && statusTOF == TrackSelectorPID::PIDConditional) {
+      return TrackSelectorPID::PIDAccepted;
     }
-    if (statusTPC == Status::PIDRejected || statusTOF == Status::PIDRejected) {
-      return Status::PIDRejected;
+    if (statusTPC == TrackSelectorPID::PIDRejected || statusTOF == TrackSelectorPID::PIDRejected) {
+      return TrackSelectorPID::PIDRejected;
     }
-    return Status::PIDNotApplicable; // (NotApplicable for one detector) and (NotApplicable or Conditional for the other)
+    return TrackSelectorPID::PIDNotApplicable; // (NotApplicable for one detector) and (NotApplicable or Conditional for the other)
   }
 
   /// Checks whether a track is identified as electron and rejected as pion by TOF or RICH.
@@ -580,12 +580,12 @@ class TrackSelectorPIDBase : TrackSelectorPID
   {
     if (isValidTrackBayesPID(track)) {
       if (isSelectedTrackBayesPID(track)) {
-        return Status::PIDAccepted; // accepted
+        return TrackSelectorPID::PIDAccepted; // accepted
       } else {
-        return Status::PIDRejected; // rejected
+        return TrackSelectorPID::PIDRejected; // rejected
       }
     } else {
-      return Status::PIDNotApplicable; // PID not applicable
+      return TrackSelectorPID::PIDNotApplicable; // PID not applicable
     }
   }
 
@@ -597,12 +597,12 @@ class TrackSelectorPIDBase : TrackSelectorPID
   {
     if (isValidTrackBayesPID(track)) {
       if (isSelectedTrackBayesProbPID(track)) {
-        return Status::PIDAccepted; // accepted
+        return TrackSelectorPID::PIDAccepted; // accepted
       } else {
-        return Status::PIDRejected; // rejected
+        return TrackSelectorPID::PIDRejected; // rejected
       }
     } else {
-      return Status::PIDNotApplicable; // PID not applicable
+      return TrackSelectorPID::PIDNotApplicable; // PID not applicable
     }
   }
 

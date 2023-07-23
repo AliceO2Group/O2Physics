@@ -166,15 +166,15 @@ struct HfCandidateSelectorDplusToPiKPi {
   bool selectionPID(const T& pidTrackPos1Pion, const T& pidTrackNegKaon, const T& pidTrackPos2Pion)
   {
     if (!acceptPIDNotApplicable &&
-        (pidTrackPos1Pion != TrackSelectorPID::Status::PIDAccepted ||
-         pidTrackNegKaon != TrackSelectorPID::Status::PIDAccepted ||
-         pidTrackPos2Pion != TrackSelectorPID::Status::PIDAccepted)) {
+        (pidTrackPos1Pion != TrackSelectorPID::PIDAccepted ||
+         pidTrackNegKaon != TrackSelectorPID::PIDAccepted ||
+         pidTrackPos2Pion != TrackSelectorPID::PIDAccepted)) {
       return false;
     }
     if (acceptPIDNotApplicable &&
-        (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
-         pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-         pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected)) {
+        (pidTrackPos1Pion == TrackSelectorPID::PIDRejected ||
+         pidTrackNegKaon == TrackSelectorPID::PIDRejected ||
+         pidTrackPos2Pion == TrackSelectorPID::PIDRejected)) {
       return false;
     }
 

@@ -212,22 +212,22 @@ struct HfCandidateSelectorXicToPKPi {
         auto pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
         auto pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
 
-        if (pidTrackPos1Proton == TrackSelectorPID::Status::PIDAccepted &&
-            pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
-            pidTrackPos2Pion == TrackSelectorPID::Status::PIDAccepted) {
+        if (pidTrackPos1Proton == TrackSelectorPID::PIDAccepted &&
+            pidTrackNegKaon == TrackSelectorPID::PIDAccepted &&
+            pidTrackPos2Pion == TrackSelectorPID::PIDAccepted) {
           pidXicToPKPi = 1; // accept XicpKpi
-        } else if (pidTrackPos1Proton == TrackSelectorPID::Status::PIDRejected ||
-                   pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                   pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) {
+        } else if (pidTrackPos1Proton == TrackSelectorPID::PIDRejected ||
+                   pidTrackNegKaon == TrackSelectorPID::PIDRejected ||
+                   pidTrackPos2Pion == TrackSelectorPID::PIDRejected) {
           pidXicToPKPi = 0; // exclude XicpKpi
         }
-        if (pidTrackPos2Proton == TrackSelectorPID::Status::PIDAccepted &&
-            pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
-            pidTrackPos1Pion == TrackSelectorPID::Status::PIDAccepted) {
+        if (pidTrackPos2Proton == TrackSelectorPID::PIDAccepted &&
+            pidTrackNegKaon == TrackSelectorPID::PIDAccepted &&
+            pidTrackPos1Pion == TrackSelectorPID::PIDAccepted) {
           pidXicToPiKP = 1; // accept XicpiKp
-        } else if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
-                   pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                   pidTrackPos2Proton == TrackSelectorPID::Status::PIDRejected) {
+        } else if (pidTrackPos1Pion == TrackSelectorPID::PIDRejected ||
+                   pidTrackNegKaon == TrackSelectorPID::PIDRejected ||
+                   pidTrackPos2Proton == TrackSelectorPID::PIDRejected) {
           pidXicToPiKP = 0; // exclude XicpiKp
         }
       }

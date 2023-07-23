@@ -170,15 +170,15 @@ struct HfTaskQaPidRejection {
       if (particlePDG != 0 && mcParticle.pdgCode() != particlePDG) { // Checking PDG code
         continue;
       }
-      bool isTOFhpElectron = !(selectorElectron.getStatusTrackPIDTOF(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isRICHhpElectron = !(selectorElectron.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isTOFhpPion = !(selectorPion.getStatusTrackPIDTOF(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isRICHhpPion = !(selectorPion.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isTOFhpKaon = !(selectorKaon.getStatusTrackPIDTOF(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isRICHhpKaon = !(selectorKaon.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isTOFhpProton = !(selectorProton.getStatusTrackPIDTOF(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isRICHhpProton = !(selectorProton.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isMIDhpMuon = (selectorMuon.getStatusTrackPIDMID(track) == TrackSelectorPID::Status::PIDAccepted);
+      bool isTOFhpElectron = !(selectorElectron.getStatusTrackPIDTOF(track) == TrackSelectorPID::PIDRejected);
+      bool isRICHhpElectron = !(selectorElectron.getStatusTrackPIDRICH(track) == TrackSelectorPID::PIDRejected);
+      bool isTOFhpPion = !(selectorPion.getStatusTrackPIDTOF(track) == TrackSelectorPID::PIDRejected);
+      bool isRICHhpPion = !(selectorPion.getStatusTrackPIDRICH(track) == TrackSelectorPID::PIDRejected);
+      bool isTOFhpKaon = !(selectorKaon.getStatusTrackPIDTOF(track) == TrackSelectorPID::PIDRejected);
+      bool isRICHhpKaon = !(selectorKaon.getStatusTrackPIDRICH(track) == TrackSelectorPID::PIDRejected);
+      bool isTOFhpProton = !(selectorProton.getStatusTrackPIDTOF(track) == TrackSelectorPID::PIDRejected);
+      bool isRICHhpProton = !(selectorProton.getStatusTrackPIDRICH(track) == TrackSelectorPID::PIDRejected);
+      bool isMIDhpMuon = (selectorMuon.getStatusTrackPIDMID(track) == TrackSelectorPID::PIDAccepted);
 
       if (mcParticle.isPhysicalPrimary()) {
         histos.fill(HIST("tracking/pteta"), track.pt(), track.eta());
@@ -373,11 +373,11 @@ struct HfTaskQaPidRejectionGeneral {
         histos.fill(HIST("hKaonNoSel/pteta"), track.pt(), track.eta());
       }
 
-      bool isRICHhpElectron = !(selectorElectron.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      // bool isRICHhpPion = !(selectorPion.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      // bool isRICHhpKaon = !(selectorKaon.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      // bool isRICHhpProton = !(selectorProton.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isMIDhpMuon = (selectorMuon.getStatusTrackPIDMID(track) == TrackSelectorPID::Status::PIDAccepted);
+      bool isRICHhpElectron = !(selectorElectron.getStatusTrackPIDRICH(track) == TrackSelectorPID::PIDRejected);
+      // bool isRICHhpPion = !(selectorPion.getStatusTrackPIDRICH(track) == TrackSelectorPID::PIDRejected);
+      // bool isRICHhpKaon = !(selectorKaon.getStatusTrackPIDRICH(track) == TrackSelectorPID::PIDRejected);
+      // bool isRICHhpProton = !(selectorProton.getStatusTrackPIDRICH(track) == TrackSelectorPID::PIDRejected);
+      bool isMIDhpMuon = (selectorMuon.getStatusTrackPIDMID(track) == TrackSelectorPID::PIDAccepted);
 
       bool isRICHElLoose = isRICHhpElectron;
 

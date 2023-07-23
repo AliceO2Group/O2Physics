@@ -483,21 +483,21 @@ struct HfCandidateSelectorToXiPi {
         statusPidPiFromCharm = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromOmeg);
       }
 
-      if (statusPidPrFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::Status::PIDAccepted) {
+      if (statusPidPrFromLam == TrackSelectorPID::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::PIDAccepted) {
         statusPidLambda = true;
         if (resultSelections) {
           registry.fill(HIST("hTest"), 0.5);
         }
       }
 
-      if (statusPidPrFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromCasc == TrackSelectorPID::Status::PIDAccepted) {
+      if (statusPidPrFromLam == TrackSelectorPID::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::PIDAccepted && statusPidPiFromCasc == TrackSelectorPID::PIDAccepted) {
         statusPidCascade = true;
         if (resultSelections) {
           registry.fill(HIST("hTest"), 1.5);
         }
       }
 
-      if (statusPidPrFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromCasc == TrackSelectorPID::Status::PIDAccepted && statusPidPiFromCharm == TrackSelectorPID::Status::PIDAccepted) {
+      if (statusPidPrFromLam == TrackSelectorPID::PIDAccepted && statusPidPiFromLam == TrackSelectorPID::PIDAccepted && statusPidPiFromCasc == TrackSelectorPID::PIDAccepted && statusPidPiFromCharm == TrackSelectorPID::PIDAccepted) {
         statusPidCharm = true;
         if (resultSelections) {
           registry.fill(HIST("hTest"), 2.5);

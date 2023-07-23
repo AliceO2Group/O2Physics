@@ -123,10 +123,10 @@ struct HfCandidateSelectorBplusToD0Pi {
   template <typename T = int>
   bool selectionPID(const T& pidTrackPi)
   {
-    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
+    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::PIDAccepted) {
       return false;
     }
-    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Status::PIDRejected) {
+    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::PIDRejected) {
       return false;
     }
 
