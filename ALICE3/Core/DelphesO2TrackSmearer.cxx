@@ -231,6 +231,7 @@ double TrackSmearer::getPtRes(int pdg, float nch, float eta, float pt)
   auto val = sqrt(lutEntry->covm[14]) * lutEntry->pt;
   return val;
 }
+
 /*****************************************************************/
 // relative uncertainty on eta
 double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
