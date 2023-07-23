@@ -45,6 +45,7 @@ struct HfCandidateCreator2Prong {
   // vertexing
   Configurable<bool> useDCAFitterN{"useDCAFitterN", true, "calculate vertex with DCAFitterN"};
   Configurable<bool> useKFParticle{"useKFParticle", false, "calculate vertex with KFParticle"};
+  Configurable<bool> useKFTop2PV{"useKFTop2PV", false, "constraint KFParticle to PV, only if useKFParticle is true"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
@@ -74,6 +75,7 @@ struct HfCandidateCreator2Prong {
   double bz = 0.;
 
   OutputObj<TH1F> hMass2{TH1F("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  OutputObj<TH2F> hKFMassFailed{TH2F("hKFMassFailed", ";KF fit failed;entries", 500, 0., 5., 3, -0.5, 2.5)}; // 0 for D0 failed, 1 for D0bar failed
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   OutputObj<TH1F> hCovPVYY{TH1F("hCovPVYY", "2-prong candidates;YY element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
@@ -217,6 +219,7 @@ struct HfCandidateCreator2Prong {
                          secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                          errorDecayLength, errorDecayLengthXY,
                          chi2PCA,
+                         -999., -999.,
                          pvec0[0], pvec0[1], pvec0[2],
                          pvec1[0], pvec1[1], pvec1[2],
                          impactParameter0.getY(), impactParameter1.getY(),
@@ -311,12 +314,33 @@ struct HfCandidateCreator2Prong {
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
 
+        Float_t topChi2PerNDF_DZero = -999.;
+        Float_t topChi2PerNDF_DZeroBar = -999.;
+
+        KFParticle KFDZeroTop2PV, KFDZeroBarTop2PV;
+        KFParticle KFDZeroTop2PV_DV, KFDZeroBarTop2PV_DV;
+        if (useKFTop2PV) {
+          KFDZeroTop2PV = KFDZero;
+          KFDZeroTop2PV.SetProductionVertex(KFPV);
+          KFDZeroTop2PV_DV = KFDZeroTop2PV;
+          KFDZeroTop2PV_DV.TransportToDecayVertex();
+
+          KFDZeroBarTop2PV = KFDZeroBar;
+          KFDZeroBarTop2PV.SetProductionVertex(KFPV);
+          KFDZeroBarTop2PV_DV = KFDZeroBarTop2PV;
+          KFDZeroBarTop2PV_DV.TransportToDecayVertex();
+
+          topChi2PerNDF_DZero = KFDZeroTop2PV.GetChi2() / KFDZeroTop2PV.GetNDF();
+          topChi2PerNDF_DZeroBar = KFDZeroBarTop2PV.GetChi2() / KFDZeroBarTop2PV.GetNDF();
+        }
+
         // fill candidate table rows
         rowCandidateBase(collision.globalIndex(),
                          KFPV.GetX(), KFPV.GetY(), KFPV.GetZ(),
                          KFDZero.GetX(), KFDZero.GetY(), KFDZero.GetZ(),
                          errorDecayLength, errorDecayLengthXY, // TODO: much different from the DCAFitterN one
                          KFDZero.GetChi2() / KFDZero.GetNDF(), // TODO: to make sure it should be chi2 only or chi2/ndf, much different from the DCAFitterN one
+                         topChi2PerNDF_DZero, topChi2PerNDF_DZeroBar,
                          KFPosPion.GetPx(), KFPosPion.GetPy(), KFPosPion.GetPz(),
                          KFNegKaon.GetPx(), KFNegKaon.GetPy(), KFNegKaon.GetPz(),
                          impactParameter0XY, impactParameter1XY,
@@ -326,16 +350,16 @@ struct HfCandidateCreator2Prong {
 
         // fill histograms
         if (fillHistograms) {
-          Float_t massDZero = 0., errMassDZero = 0.;
-          Float_t massDZeroBar = 0., errMassDZeroBar = 0.;
-          if (!KFDZero.GetMass(massDZero, errMassDZero))
-            hMass2->Fill(massDZero);
-          if (KFDZero.GetMass(massDZero, errMassDZero))
-            hKFMassFailed->Fill(0);
-          if (!KFDZeroBar.GetMass(massDZeroBar, errMassDZeroBar))
-            hMass2->Fill(massDZeroBar);
-          if (KFDZeroBar.GetMass(massDZeroBar, errMassDZeroBar))
-            hKFMassFailed->Fill(1);
+          hMass2->Fill(KFDZero.GetMass());
+          hMass2->Fill(KFDZeroBar.GetMass());
+          if (useKFTop2PV) {
+            Float_t massDZeroTop = 0., errMassDZeroTop = 0.;
+            Float_t massDZeroBarTop = 0., errMassDZeroBarTop = 0.;
+            if (KFDZeroTop2PV.GetMass(massDZeroTop, errMassDZeroTop))
+              hKFMassFailed->Fill(KFDZero.GetMass(), 0); // Set topological constraint to DZero failed
+            if (KFDZeroBarTop2PV.GetMass(massDZeroBarTop, errMassDZeroBarTop))
+              hKFMassFailed->Fill(KFDZeroBar.GetMass(), 1); // Set topological constraint to DZeroBar failed
+          }
         }
       }
     }

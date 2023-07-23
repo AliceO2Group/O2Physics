@@ -253,6 +253,8 @@ DECLARE_SOA_COLUMN(ZSecondaryVertex, zSecondaryVertex, float); //!
 DECLARE_SOA_DYNAMIC_COLUMN(RSecondaryVertex, rSecondaryVertex, //!
                            [](float xVtxS, float yVtxS) -> float { return RecoDecay::sqrtSumOfSquares(xVtxS, yVtxS); });
 DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float); //! sum of (non-weighted) distances of the secondary vertex to its prongs
+DECLARE_SOA_COLUMN(KFTopChi2OverNDF_DZero, kfTopChi2OverNDF_DZero, float);       //!
+DECLARE_SOA_COLUMN(KFTopChi2OverNDF_DZeroBar, kfTopChi2OverNDF_DZeroBar, float); //!
 // prong properties
 DECLARE_SOA_COLUMN(PxProng0, pxProng0, float); //!
 DECLARE_SOA_COLUMN(PyProng0, pyProng0, float); //!
@@ -475,6 +477,8 @@ DECLARE_SOA_TABLE(HfCand2ProngBase, "AOD", "HFCAND2PBASE", //!
                   o2::soa::Index<>,
                   // general columns
                   HFCAND_COLUMNS,
+                  hf_cand::KFTopChi2OverNDF_DZero,
+                  hf_cand::KFTopChi2OverNDF_DZeroBar,
                   // 2-prong specific columns
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
