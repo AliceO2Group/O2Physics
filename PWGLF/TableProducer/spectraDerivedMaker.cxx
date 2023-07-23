@@ -45,7 +45,7 @@ struct spectraDerivedMaker {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
-  Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1f, "Downsampling factor for the events for derived data"};
+  Configurable<float> fractionOfEvents{"fractionOfEvents", 2.f, "Downsampling factor for the events for derived data"};
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Binning for multiplicity"};
   ConfigurableAxis binsPercentile{"binsPercentile", {100, 0, 100}, "Binning for percentiles"};
   Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1, 8 CentralityFT0C, 9 CentralityFT0M, 10 CentralityFV0A"};
@@ -384,8 +384,8 @@ struct spectraDerivedMaker {
   unsigned int randomSeed = 0;
   void processData(CollisionCandidate::iterator const& collision,
                    soa::Join<TrackCandidates,
-                             aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr,
-                             aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr> const& tracks,
+                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
+                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr> const& tracks,
                    aod::BCs const&)
   {
     if (!isEventSelected<true, true>(collision, tracks)) {
@@ -407,8 +407,13 @@ struct spectraDerivedMaker {
       }
 
       tableTrack(tableColl.lastIndex(),
-                 trk.tpcNSigmaPi(), trk.tpcNSigmaKa(), trk.tpcNSigmaPr(),
-                 trk.tofNSigmaPi(), trk.tofNSigmaKa(), trk.tofNSigmaPr(),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaPi()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaKa()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tpcNSigmaPr()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaPi()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaKa()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaPr()),
+
                  trk.pt() * trk.sign(), trk.eta(), trk.phi(),
                  trk.length(),
                  trk.tpcSignal(),
@@ -421,7 +426,8 @@ struct spectraDerivedMaker {
                  trk.itsClusterMap(),
                  trk.hasTRD(),
                  trk.tofFlags(),
-                 trk.dcaXY(), trk.dcaZ());
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaXY()),
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaZ()));
     }
   }
   PROCESS_SWITCH(spectraDerivedMaker, processData, "Process data for derived dataset production", true);

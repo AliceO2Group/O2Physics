@@ -88,6 +88,7 @@ struct tpcPid {
   // Parameters for loading network from a file / downloading the file
   Configurable<bool> useNetworkCorrection{"useNetworkCorrection", 0, "(bool) Wether or not to use the network correction for the TPC dE/dx signal"};
   Configurable<bool> autofetchNetworks{"autofetchNetworks", 1, "(bool) Automatically fetches networks from CCDB for the correct run number"};
+  Configurable<bool> skipTPCOnly{"skipTPCOnly", false, "Flag to skip TPC only tracks (faster but affects the analyses that use TPC only tracks)"};
   Configurable<std::string> networkPathLocally{"networkPathLocally", "network.onnx", "(std::string) Path to the local .onnx file. If autofetching is enabled, then this is where the files will be downloaded"};
   Configurable<bool> enableNetworkOptimizations{"enableNetworkOptimizations", 1, "(bool) If the neural network correction is used, this enables GraphOptimizationLevel::ORT_ENABLE_EXTENDED in the ONNX session"};
   Configurable<std::string> networkPathCCDB{"networkPathCCDB", "Analysis/PID/TPC/ML", "Path on CCDB"};
@@ -164,6 +165,9 @@ struct tpcPid {
     if (!useNetworkCorrection) {
       return;
     } else {
+      if (skipTPCOnly) {
+        LOG(fatal) << "Cannot skip TPC only tracks when using the neural network correction";
+      }
       /// CCDB and auto-fetching
       ccdbApi.init(url);
       if (!autofetchNetworks) {
@@ -328,6 +332,12 @@ struct tpcPid {
             LOGF(fatal, "Network output-dimensions incompatible!");
           }
         } else {
+          if (skipTPCOnly) {
+            if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
+              table(aod::pidtpc_tiny::binning::underflowBin);
+              return;
+            }
+          }
           aod::pidutils::packInTable<aod::pidtpc_tiny::binning>(response.GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid), table);
         }
       };

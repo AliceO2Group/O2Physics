@@ -30,7 +30,7 @@ namespace o2::analysis::femtoUniverse
 
 /// \class FemtoUniverseParticleHisto
 /// \brief Class for histogramming particle properties
-/// \tparam particleType Type of the particle (Track/V0/Cascade/...)
+/// \tparam particleType Type of the particle (Track/V0/Cascade/Phi/...)
 /// \tparam suffixType (optional) Takes care of the suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
 template <o2::aod::femtouniverseparticle::ParticleType particleType, int suffixType = 0>
 class FemtoUniverseParticleHisto
