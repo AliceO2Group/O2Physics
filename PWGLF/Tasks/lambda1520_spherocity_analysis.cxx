@@ -31,7 +31,8 @@ using namespace o2::framework::expressions;
 
 struct lambdaAnalysis {
 
-  // // Configurables.
+  // Configurables.
+  // Histograms bins.
   Configurable<int> nBinsPt{"nBinsPt", 500, "N bins in pT histogram."};
   Configurable<int> nBinsMult{"nBinsMult", 1000,
                               "N bins in Multiplicity histograms."};
