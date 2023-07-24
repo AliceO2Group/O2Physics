@@ -435,8 +435,8 @@ struct JetTriggerQA {
     } // for clusters
 
     if (maxClusterObservableEMCAL > 0) {
-      // hClusterMaxPtEta->Fill(maxClusterPt, maxCluster.eta());
-      // hClusterMaxPtPhi->Fill(maxClusterPt, maxCluster.phi());
+      registry.fill(HIST("hClusterMaxPtEta"), maxClusterObservableEMCAL, maxClusterEMCAL.eta());
+      registry.fill(HIST("hClusterMaxPtPhi"), maxClusterObservableEMCAL, maxClusterEMCAL.phi());
       registry.fill(HIST("hClusterEMCALMaxPtEtaPhi"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
       for (const auto& cluster : analysedClusters) {
         if (cluster.mEMCALcluster) {
@@ -460,6 +460,8 @@ struct JetTriggerQA {
       }
     }
     if (maxClusterObservableDCAL > 0) {
+      registry.fill(HIST("hClusterMaxPtEta"), maxClusterObservableDCAL, maxClusterDCAL.eta());
+      registry.fill(HIST("hClusterMaxPtPhi"), maxClusterObservableDCAL, maxClusterDCAL.phi());
       registry.fill(HIST("hClusterDCALMaxPtEtaPhi"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
       for (const auto& cluster : analysedClusters) {
         if (!cluster.mEMCALcluster) {

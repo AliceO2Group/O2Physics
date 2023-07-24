@@ -77,7 +77,7 @@ struct fullJetFilter {
 
   Produces<aod::FullJetFilters> tags;
 
-  OutputObj<TH1I> hProcessedEvents{"hProcessedEvents"};
+  OutputObj<TH1D> hProcessedEvents{"hProcessedEvents"};
   OutputObj<TH2F> hEmcClusterPtEta{"hEmcClusterPtEta"};
   OutputObj<TH2F> hEmcClusterPtPhi{"hEmcClusterPtPhi"};
   OutputObj<TH2F> hSelectedClusterPtEta{"hSelectedClusterEta"};
@@ -98,6 +98,15 @@ struct fullJetFilter {
   OutputObj<TH2F> hSelectedGammaEMCALPtPhiLow{"hSelectedGammaEMCALPhiLow"};
   OutputObj<TH2F> hSelectedGammaDCALPtEtaLow{"hSelectedGammaDCALEtaLow"};
   OutputObj<TH2F> hSelectedGammaDCALPtPhiLow{"hSelectedGammaDCALPhiLow"};
+  OutputObj<TH1D> hMaxJetPt{"hMaxJetPt"};
+  OutputObj<TH1D> hSelectMaxJetPt{"hSelectMaxJetPt"};
+  OutputObj<TH1D> hSelectMaxJetPtLow{"hSelectMaxJetPtLow"};
+  OutputObj<TH1D> hMaxClusterEMCAL{"hMaxClusterEMCAL"};
+  OutputObj<TH1D> hMaxClusterDCAL{"hMaxClusterDCAL"};
+  OutputObj<TH1D> hSelectGammaMaxClusterEMCAL{"hSelectGammaMaxClusterEMCAL"};
+  OutputObj<TH1D> hSelectGammaLowMaxClusterEMCAL{"hSelectLowGammaMaxClusterEMCAL"};
+  OutputObj<TH1D> hSelectGammaMaxClusterDCAL{"hSelectGammaMaxClusterDCAL"};
+  OutputObj<TH1D> hSelectGammaLowMaxClusterDCAL{"hSelectLowGammaMaxClusterDCAL"};
 
   // Configurables
   Configurable<float> f_jetPtMin{"f_jetPtMin", 0.0, "minimum jet pT cut"};
@@ -147,7 +156,7 @@ struct fullJetFilter {
     Float_t kMinEta = -1.;
     Float_t kMaxEta = 1.;
 
-    hProcessedEvents.setObject(new TH1I("hProcessedEvents", ";;Number of filtered events", kCategories, -0.5, kCategories - 0.5));
+    hProcessedEvents.setObject(new TH1D("hProcessedEvents", ";;Number of filtered events", kCategories, -0.5, kCategories - 0.5));
 
     hEmcClusterPtEta.setObject(new TH2F("hEmcClusterPtEta", Form("Emc Clusters;%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hEmcClusterPtPhi.setObject(new TH2F("hEmcClusterPtPhi", Form("Emc Clusters;%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
@@ -169,6 +178,16 @@ struct fullJetFilter {
     hSelectedGammaEMCALPtPhiLow.setObject(new TH2F("hSelectedGammaEMCALPtPhiLow", Form("Selected Gammas EMCAL (low threshold);%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
     hSelectedGammaDCALPtEtaLow.setObject(new TH2F("hSelectedGammaDCALPtEtaLow", Form("Selected Gammas DCAL (low threshold);%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hSelectedGammaDCALPtPhiLow.setObject(new TH2F("hSelectedGammaDCALPtPhiLow", Form("Selected Gammas DCAL (low threshold);%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));
+
+    hMaxJetPt.setObject(new TH1D("hMaxJetPt", "Max. jet pt", nPtBins, kMinPt, kMaxPt));
+    hSelectMaxJetPt.setObject(new TH1D("hSelectMaxJetPt", "Max. jet pt selected collisions", nPtBins, kMinPt, kMaxPt));
+    hSelectMaxJetPtLow.setObject(new TH1D("hSelectMaxJetPtLow", "Max. jet pt selected collisions (low threshold)", nPtBins, kMinPt, kMaxPt));
+    hMaxClusterEMCAL.setObject(new TH1D("hMaxClusterEMCAL", "Max.cluster pt EMCAL", nPtBins, kMinPt, kMaxPt));
+    hMaxClusterDCAL.setObject(new TH1D("hMaxClusterDCAL", "Max. cluster pt DCAL", nPtBins, kMinPt, kMaxPt));
+    hSelectGammaMaxClusterEMCAL.setObject(new TH1D("hSelectGammaMaxClusterEMCAL", "Max. cluster pt selected Gamms EMCAL", nPtBins, kMinPt, kMaxPt));
+    hSelectGammaLowMaxClusterEMCAL.setObject(new TH1D("hSelectGammaLowMaxClusterEMCAL", "Max. cluster pt selected Gamms EMCAL (low threshold)", nPtBins, kMinPt, kMaxPt));
+    hSelectGammaMaxClusterDCAL.setObject(new TH1D("hSelectGammaMaxClusterDCAL", "Max. cluster pt selected Gamms DCAL", nPtBins, kMinPt, kMaxPt));
+    hSelectGammaLowMaxClusterDCAL.setObject(new TH1D("hSelectGammaLowMaxClusterDCAL", "Max. cluster pt selected Gamms DCAL (low threshold)", nPtBins, kMinPt, kMaxPt));
 
     LOG(info) << "Jet trigger: " << (b_doJetTrigger ? "on" : "off");
     LOG(info) << "Gamma trigger: " << (b_doJetTrigger ? "on" : "off");
@@ -220,7 +239,7 @@ struct fullJetFilter {
         // Not bucket in both beams
         continue;
       }
-      std::cout << "Found trigger class: " << trgclsname << std::endl;
+      LOG(info) << "Found trigger class: " << trgclsname;
       if (tokens[0] == "C0TVX") {
         hasMinBias = true;
       }
@@ -369,6 +388,7 @@ struct fullJetFilter {
     static constexpr std::array<o2::emcal::AcceptanceType_t, 2> subdets = {{o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE, o2::emcal::AcceptanceType_t::DCAL_ACCEPTANCE}};
     std::array<TH2*, 4> acceptanceHistsPtEta{{hSelectedGammaEMCALPtEta.object.get(), hSelectedGammaDCALPtEta.object.get(), hSelectedGammaEMCALPtEtaLow.object.get(), hSelectedGammaDCALPtEtaLow.object.get()}},
       acceptanceHistsPtPhi{{hSelectedGammaEMCALPtPhi.object.get(), hSelectedGammaDCALPtPhi.object.get(), hSelectedGammaEMCALPtPhiLow.object.get(), hSelectedGammaDCALPtPhiLow.object.get()}};
+    std::array<TH1*, 4> maxClusterPtHists = {{hSelectGammaMaxClusterEMCAL.object.get(), hSelectGammaMaxClusterDCAL.object.get(), hSelectGammaLowMaxClusterEMCAL.object.get(), hSelectGammaLowMaxClusterDCAL.object.get()}};
     struct ClusterData {
       float mTriggerObservable;
       float mEta;
@@ -392,9 +412,12 @@ struct fullJetFilter {
       hEmcClusterPtPhi->Fill(observableGamma, cluster.phi());
       analysedClusters.push_back({static_cast<float>(observableGamma), cluster.eta(), cluster.phi()});
     }
+    hMaxClusterEMCAL->Fill(maxClusterObservableEMCAL);
+    hMaxClusterDCAL->Fill(maxClusterObservableDCAL);
     for (decltype(thresholds.size()) ithreshold = 0; ithreshold < thresholds.size(); ithreshold++) {
       for (decltype(thresholds.size()) isubdet = 0; isubdet < subdets.size(); isubdet++) {
         if (isEvtSelectedGamma(subdets[isubdet] == o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE ? maxClusterObservableEMCAL : maxClusterObservableDCAL, subdets[isubdet], thresholds[ithreshold])) {
+          maxClusterPtHists[ithreshold * subdets.size() + isubdet]->Fill(subdets[isubdet] == o2::emcal::AcceptanceType_t::EMCAL_ACCEPTANCE ? maxClusterObservableEMCAL : maxClusterObservableDCAL);
           keepEvent[kGammaHighPtEMCAL + ithreshold * subdets.size() + isubdet] = true;
           for (auto& cluster : analysedClusters) {
             acceptanceHistsPtEta[ithreshold * subdets.size() + isubdet]->Fill(cluster.mTriggerObservable, cluster.mEta);
@@ -427,6 +450,7 @@ struct fullJetFilter {
                         acceptanceHistsPtPhiSel = {{hSelectedJetPtPhi.object.get(), hSelectedJetPtPhiLow.object.get()}},
                         acceptanceHistsClusterPtEtaSel = {{hSelectedClusterPtEta.object.get(), hSelectedClusterPtEtaLow.object.get()}},
                         acceptanceHistsClusterPtPhiSel = {{hSelectedClusterPtPhi.object.get(), hSelectedClusterPtPhiLow.object.get()}};
+    std::array<TH1*, 2> maxJetPtHists = {{hSelectMaxJetPt.object.get(), hSelectMaxJetPtLow.object.get()}};
     for (const auto& jet : jets) {
       hEmcJetPtEta->Fill(jet.pt(), jet.eta());
       hEmcJetPtPhi->Fill(jet.pt(), jet.phi());
@@ -440,8 +464,10 @@ struct fullJetFilter {
         }
       }
     }
+    hMaxJetPt->Fill(maxSelectedJetPt);
     for (decltype(thresholds.size()) ithreshold = 0; ithreshold < thresholds.size(); ithreshold++) {
       if (isEvtSelectedJet(maxSelectedJetPt, thresholds[ithreshold])) {
+        maxJetPtHists[ithreshold]->Fill(maxSelectedJetPt);
         std::size_t triggerIndex = kCategories;
         if (jettype == 0) {
           switch (thresholds[ithreshold]) {
@@ -485,15 +511,23 @@ struct fullJetFilter {
     // extract bc pattern from CCDB for data or anchored MC only
     if (run != lastRun && run >= 500000) {
       lastRun = run;
+      constexpr bool isFullJets = std::is_same<JetCollection, filteredFullJets>::value;
+      constexpr bool isNeutralJets = std::is_same<JetCollection, filteredNeutralJets>::value;
       int64_t ts = bcs.iteratorAt(0).timestamp();
       mHardwareTriggerConfig = getHWTriggerConfiguration(*(ccdb->getForTimeStamp<o2::ctp::CTPConfiguration>("CTP/Config/Config", ts)));
       switch (mHardwareTriggerConfig) {
         case EMCALHWTriggerConfiguration::MB_ONLY: {
-          std::cout << "Found hardware trigger configuration Min. bias only" << std::endl;
+          LOG(info) << "Found hardware trigger configuration Min. bias only";
+          LOG(info) << "Gamma thresholds: High " << f_gammaPtMinEMCALHighMB << ", Low " << f_gammaPtMinEMCALLowMB << " (EMCAL), High " << f_gammaPtMinDCALHighMB << ", Low " << f_gammaPtMinDCALLowMB << " (DCAL)";
+          LOG(info) << "Jet thresholds: High " << f_jetPtMinMB << ", Low " << f_jetPtMinLowMB;
+          LOG(info) << "Jet type: full jets " << (isFullJets ? "yes" : "no") << ", neutral jets " << (isNeutralJets ? "yes" : "no");
           break;
         }
         case EMCALHWTriggerConfiguration::EMC_TRIGGERD: {
-          std::cout << "Found hardware trigger configuration L0-triggered" << std::endl;
+          LOG(info) << "Found hardware trigger configuration L0-triggered";
+          LOG(info) << "Gamma thresholds: High " << f_gammaPtMinEMCALHigh << ", Low " << f_gammaPtMinEMCALLow << " (EMCAL), High " << f_gammaPtMinDCALHigh << ", Low " << f_gammaPtMinDCALLow << " (DCAL)";
+          LOG(info) << "Jet thresholds: High " << f_jetPtMin << ", Low " << f_jetPtMinLow;
+          LOG(info) << "Jet type: full jets " << (isFullJets ? "yes" : "no") << ", neutral jets " << (isNeutralJets ? "yes" : "no");
           break;
         }
         case EMCALHWTriggerConfiguration::UNKNOWN: {
