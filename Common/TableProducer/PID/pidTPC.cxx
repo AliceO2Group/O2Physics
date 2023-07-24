@@ -210,7 +210,8 @@ struct tpcPid {
   {
 
     const uint64_t outTable_size = tracks.size();
-    auto reserveTable = [&outTable_size](const Configurable<int>& flag, auto& table) {      if (flag.value != 1) {
+    auto reserveTable = [&outTable_size](const Configurable<int>& flag, auto& table) {
+      if (flag.value != 1) {
         return;
       }
       table.reserve(outTable_size);
@@ -350,8 +351,8 @@ struct tpcPid {
           return;
         }
         if (!trk.hasTPC()) {
-            table(aod::pidtpc_tiny::binning::underflowBin);
-            return;
+          table(aod::pidtpc_tiny::binning::underflowBin);
+          return;
         }
         if (skipTPCOnly) {
           if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
