@@ -122,7 +122,7 @@ struct OnTheFlyTracker {
   };
 
   // necessary for particle charges
-  Service<O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   // for handling basic QA histograms if requested
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};

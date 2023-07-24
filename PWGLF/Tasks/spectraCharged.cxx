@@ -33,7 +33,7 @@ using namespace o2::framework;
 struct chargedSpectra {
 
   HistogramRegistry histos;
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   // task settings that can be steered via hyperloop
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
