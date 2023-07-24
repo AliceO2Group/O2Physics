@@ -99,7 +99,7 @@ struct JetMatching {
     std::vector<int> baseToTagGeo(jetsBasePerColl.size(), -1);
     std::vector<int> tagToBaseGeo(jetsTagPerColl.size(), -1);
     if (doMatchingGeo) {
-      LOGF(info, "performing geometric matching for collision %d (%d / %d jets)",
+      LOGF(debug, "performing geometric matching for collision %d (%d / %d jets)",
            collision.globalIndex(), jetsBasePerColl.size(), jetsTagPerColl.size());
       std::vector<double> jetsBasePhi;
       std::vector<double> jetsBaseEta;
@@ -128,9 +128,9 @@ struct JetMatching {
     std::vector<int> tagToBaseHF(jetsTagPerColl.size(), -1);
     if constexpr (getHfFlag() > 0) {
       if (doMatchingHf) {
-        LOGF(info, "performing HF matching for collision %d", collision.globalIndex());
+        LOGF(debug, "performing HF matching for collision %d", collision.globalIndex());
         for (const auto& bjet : jetsBasePerColl) {
-          LOGF(info, "jet index: %d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
+          LOGF(debug, "jet index: %d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
                bjet.index(), bjet.collisionId(), bjet.pt(), bjet.phi(), bjet.tracks().size(), bjet.hfcandidates().size());
 
           const auto hfcand = bjet.template hfcandidates_first_as<HfCandidates>();
@@ -140,7 +140,7 @@ struct JetMatching {
             for (const auto& tjet : jetsTagPerColl) {
               const auto cand = tjet.template hfcandidates_first_as<McParticles>();
               if (cand.globalIndex() == hfCandMcId) {
-                LOGF(info, "Found HF match: %d (pt %g) <-> %d (pt %g)",
+                LOGF(debug, "Found HF match: %d (pt %g) <-> %d (pt %g)",
                      bjet.globalIndex(), bjet.pt(), tjet.globalIndex(), tjet.pt());
                 baseToTagHF[bjet.index()] = tjet.globalIndex();
                 tagToBaseHF[tjet.index()] = bjet.globalIndex();
@@ -155,7 +155,7 @@ struct JetMatching {
     std::vector<int> baseToTagPt(jetsBasePerColl.size(), -1);
     std::vector<int> tagToBasePt(jetsTagPerColl.size(), -1);
     if (doMatchingPt) {
-      LOGF(info, "performing pt matching for collision %d", collision.globalIndex());
+      LOGF(debug, "performing pt matching for collision %d", collision.globalIndex());
       for (const auto& bjet : jetsBasePerColl) {
         for (const auto& tjet : jetsTagPerColl) {
           float ptSum = 0;
@@ -169,7 +169,7 @@ struct JetMatching {
             }
           }
           if (ptSum > tjet.pt() * minPtFraction) {
-            LOGF(info, "Found pt match: %d (pt %g) <-> %d (pt %g)",
+            LOGF(debug, "Found pt match: %d (pt %g) <-> %d (pt %g)",
                  bjet.globalIndex(), bjet.pt(), tjet.globalIndex(), tjet.pt());
             baseToTagPt[bjet.index()] = tjet.globalIndex();
           }
@@ -189,7 +189,7 @@ struct JetMatching {
             }
           }
           if (ptSum > bjet.pt() * minPtFraction) {
-            LOGF(info, "Found pt match: %d (pt %g) <-> %d (pt %g)",
+            LOGF(debug, "Found pt match: %d (pt %g) <-> %d (pt %g)",
                  tjet.globalIndex(), tjet.pt(), bjet.globalIndex(), bjet.pt());
             tagToBasePt[tjet.index()] = bjet.globalIndex();
           }
@@ -203,7 +203,7 @@ struct JetMatching {
         geojetid = jetsTagPerColl.iteratorAt(geojetid).globalIndex();
       else
         geojetid = -1;
-      LOGF(info, "registering matches for base jet %d (%d): geo -> %d (%d), HF -> %d",
+      LOGF(debug, "registering matches for base jet %d (%d): geo -> %d (%d), HF -> %d",
            jet.index(), jet.globalIndex(), geojetid, baseToTagGeo[jet.index()], baseToTagHF[jet.index()]);
       jetsBaseToTag(geojetid, baseToTagPt[jet.index()], baseToTagHF[jet.index()]);
     }
@@ -214,7 +214,7 @@ struct JetMatching {
         geojetid = jetsBasePerColl.iteratorAt(geojetid).globalIndex();
       else
         geojetid = -1;
-      LOGF(info, "registering matches for tag jet %d (%d): geo -> %d (%d), HF -> %d",
+      LOGF(debug, "registering matches for tag jet %d (%d): geo -> %d (%d), HF -> %d",
            jet.index(), jet.globalIndex(), geojetid, tagToBaseGeo[jet.index()], tagToBaseHF[jet.index()]);
       jetsTagToBase(geojetid, tagToBasePt[jet.index()], tagToBaseHF[jet.index()]);
     }
