@@ -75,7 +75,8 @@ struct HfCandidateCreator2Prong {
   double bz = 0.;
 
   OutputObj<TH1F> hMass2{TH1F("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-  OutputObj<TH2F> hKFMassFailed{TH2F("hKFMassFailed", ";KF fit failed;entries", 500, 0., 5., 3, -0.5, 2.5)}; // 0 for D0 failed, 1 for D0bar failed
+  OutputObj<TH2F> hKFMassFailed{TH2F("hKFMassFailed", ";inv. mass with topo fit failed;entries", 500, 0., 5., 3, -0.5, 2.5)}; // 0 for D0 failed, 1 for D0bar failed
+  OutputObj<TH1F> hMassTop2{TH1F("hMassTop2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 600, -1.0, 5.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   OutputObj<TH1F> hCovPVYY{TH1F("hCovPVYY", "2-prong candidates;YY element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
@@ -86,8 +87,7 @@ struct HfCandidateCreator2Prong {
   OutputObj<TH1F> hCovSVZZ{TH1F("hCovSVZZ", "2-prong candidates;ZZ element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   OutputObj<TH2F> hDcaXYProngs{TH2F("hDcaXYProngs", "DCAxy of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
   OutputObj<TH2F> hDcaZProngs{TH2F("hDcaZProngs", "DCAz of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
-  OutputObj<TH1F> hUseKForDCAFitter{TH1F("hUseKForDCAFitter", ";Use KF or DCAFitterN;entries", 2, -0.5, 1.5)};  // 0 for KF, 1 for DCAFitterN
-  OutputObj<TH1F> hKFMassFailed{TH1F("hKFMassFailed", ";KF geometrical fitting failed;entries", 3, -0.5, 2.5)}; // 0 for D0 failed, 1 for D0bar failed
+  OutputObj<TH1F> hUseKForDCAFitter{TH1F("hUseKForDCAFitter", ";Use KF or DCAFitterN;entries", 2, -0.5, 1.5)}; // 0 for KF, 1 for DCAFitterN
 
   void init(InitContext const&)
   {
@@ -355,6 +355,8 @@ struct HfCandidateCreator2Prong {
           if (useKFTop2PV) {
             Float_t massDZeroTop = 0., errMassDZeroTop = 0.;
             Float_t massDZeroBarTop = 0., errMassDZeroBarTop = 0.;
+            hMassTop2->Fill(KFDZeroTop2PV.GetMass());
+            hMassTop2->Fill(KFDZeroBarTop2PV.GetMass());
             if (KFDZeroTop2PV.GetMass(massDZeroTop, errMassDZeroTop))
               hKFMassFailed->Fill(KFDZero.GetMass(), 0); // Set topological constraint to DZero failed
             if (KFDZeroBarTop2PV.GetMass(massDZeroBarTop, errMassDZeroBarTop))
