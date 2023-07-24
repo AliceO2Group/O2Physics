@@ -408,5 +408,5 @@ struct lambdaAnalysis {
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
-  return WorkflowSpec{adaptAnalysisTask<lambdaAnalysis>(cfgc)
-};
+  return WorkflowSpec{adaptAnalysisTask<lambdaAnalysis>(cfgc)};
+}
