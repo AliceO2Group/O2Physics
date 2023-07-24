@@ -45,8 +45,10 @@ struct cascpostprocessing {
   Configurable<float> masswintpc{"masswintpc", 0.075, "Mass window limit for Nsigma TPC daughters"};
   Configurable<float> rejcomp{"rejcomp", 0.008, "Competing Cascade rejection"};
   Configurable<float> lambdamasswin{"lambdamasswin", 0.008, "V0 Mass window limit"};
-  Configurable<float> v0radius{"v0radius", 1.2, "V0 Radius"};
-  Configurable<float> cascradius{"cascradius", 0.6, "Casc Radius"};
+  Configurable<float> v0radiusMin{"v0radiusMin", 1.2, "V0 Minimum Radius"};
+  Configurable<float> v0radiusMax{"v0radiusMax", 1000, "V0 Maximum Radius"};
+  Configurable<float> cascradiusMin{"cascradiusMin", 0.6, "Casc Minimum Radius"};
+  Configurable<float> cascradiusMax{"cascradiusMax", 1000, "Casc Maximum Radius"};
   Configurable<double> casccospa{"casccospa", 0.97, "Casc CosPA"};
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
   Configurable<float> dcanegtopv{"dcanegtopv", 0.03, "DCA Neg To PV"};
@@ -101,15 +103,15 @@ struct cascpostprocessing {
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
 
-    TString CutLabel[24] = {"All", "MassWin", "y", "EtaDau", "DCADauToPV", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "ctau", "CompDecayMass", "Bach-baryon", "NTPCrows", "OOBRej"};
-    TString CutLabelSummary[27] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegtopv", "dcabachtopv", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "proplifetime", "rejcomp", "ptthrtof", "bachBaryonCosPA", "bachBaryonDCAxyToPV", "NTPCrows", "OOBRej"};
+    TString CutLabel[26] = {"All", "MassWin", "y", "EtaDau", "DCADauToPV", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rCascMax", "rV0", "rV0Max", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "ctau", "CompDecayMass", "Bach-baryon", "NTPCrows", "OOBRej"};
+    TString CutLabelSummary[29] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegtopv", "dcabachtopv", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "proplifetime", "rejcomp", "ptthrtof", "bachBaryonCosPA", "bachBaryonDCAxyToPV", "NTPCrows", "OOBRej", "rCascMax", "rV0Max"};
 
     registry.add("hCandidate", "hCandidate", HistType::kTH1F, {{25, -0.5, 24.5}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hCandidate"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hCandidate"))->GetXaxis()->SetBinLabel(n, CutLabel[n - 1]);
     }
 
-    registry.add("CascadeSelectionSummary", "CascadeSelectionSummary", HistType::kTH1F, {{27, -0.5, 26.5}});
+    registry.add("CascadeSelectionSummary", "CascadeSelectionSummary", HistType::kTH1F, {{29, -0.5, 26.5}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("CascadeSelectionSummary"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("CascadeSelectionSummary"))->GetXaxis()->SetBinLabel(n, CutLabelSummary[n - 1]);
     }
@@ -123,8 +125,8 @@ struct cascpostprocessing {
     registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(8, v0cospa);
     registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(9, dcacascdau);
     registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(10, dcav0dau);
-    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(11, cascradius);
-    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(12, v0radius);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(11, cascradiusMin);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(12, v0radiusMin);
     registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(13, dcav0topv);
     registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(14, lambdamasswin);
     registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(15, nsigmatpcPr);
@@ -146,6 +148,8 @@ struct cascpostprocessing {
     }
     registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(26, mintpccrrows);
     registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(27, dooobrej);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(28, cascradiusMax);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(29, v0radiusMax);
 
     registry.add("hPt", "hPt", {HistType::kTH1F, {ptAxis}});
     registry.add("hCascMinusInvMassvsPt", "hCascMinusInvMassvsPt", HistType::kTH2F, {ptAxis, massAxis});
@@ -298,10 +302,16 @@ struct cascpostprocessing {
       if (candidate.dcav0daughters() > dcav0dau)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
-      if (candidate.cascradius() < cascradius)
+      if (candidate.cascradius() < cascradiusMin)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
-      if (candidate.v0radius() < v0radius)
+      if (candidate.cascradius() > cascradiusMax)
+        continue;
+      registry.fill(HIST("hCandidate"), ++counter);
+      if (candidate.v0radius() < v0radiusMin)
+        continue;
+      registry.fill(HIST("hCandidate"), ++counter);
+      if (candidate.v0radius() > v0radiusMax)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
       if (TMath::Abs(candidate.dcav0topv()) < dcav0topv)
