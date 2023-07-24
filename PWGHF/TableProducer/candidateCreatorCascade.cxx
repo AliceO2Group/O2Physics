@@ -266,7 +266,7 @@ struct HfCandidateCreatorCascadeMc {
     int indexRec = -1;
     std::vector<int> arrDaughLcIndex;
     std::array<int, 3> arrDaughLcPDG;
-    std::array<int, 3> arrDaughLcPDGRef = {2212, 211, -211};
+    std::array<int, 3> arrDaughLcPDGRef = {+kProton, +kPiPlus, -kPiPlus};
 
     // Match reconstructed candidates.
     rowCandidateCasc->bindExternalIndices(&tracks);
