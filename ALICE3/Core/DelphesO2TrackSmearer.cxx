@@ -168,6 +168,7 @@ lutEntry_t*
 
 bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float interpolatedEff)
 {
+  bool isReconstructed = true;
   // generate efficiency
   if (mUseEfficiency) {
     auto eff = 0.;
@@ -178,7 +179,7 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float inte
     if (mInterpolateEfficiency)
       eff = interpolatedEff;
     if (gRandom->Uniform() > eff)
-      return false;
+      isReconstructed = false;
   }
   // transform params vector and smear
   double params_[5];
@@ -202,7 +203,7 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float inte
   // set covariance matrix
   for (int i = 0; i < 15; ++i)
     o2track.setCov(lutEntry->covm[i], i);
-  return true;
+  return isReconstructed;
 }
 
 /*****************************************************************/
@@ -231,6 +232,7 @@ double TrackSmearer::getPtRes(int pdg, float nch, float eta, float pt)
   auto val = sqrt(lutEntry->covm[14]) * lutEntry->pt;
   return val;
 }
+
 /*****************************************************************/
 // relative uncertainty on eta
 double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)

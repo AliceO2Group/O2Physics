@@ -193,20 +193,20 @@ struct lambda1520analysis {
     // basic track cuts
     if (track.pt() < cMinPtcut || track.pt() > cMaxPtcut)
       return false;
-    if (IsDCAr7SigCut) {
+    /*if (IsDCAr7SigCut) {
       if (fabs(track.dcaXY()) > (0.004f + 0.0130f / (track.pt()))) // 7 - Sigma cut
         return false;
-    } else {
-      if (fabs(track.dcaXY()) > cMaxDCArToPVcut)
-        return false;
-    }
+    } else {*/
+    if (fabs(track.dcaXY()) > cMaxDCArToPVcut)
+      return false;
+    //}
     if (fabs(track.dcaZ()) < cMinDCAzToPVcut || fabs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
     if (track.tpcNClsCrossedRows() < cMinTPCncr)
       return false;
     if (fabs(track.eta()) > cfgCutEta)
       return false;
-    if (IsAddlTrackcut) {
+    /*if (IsAddlTrackcut) {
       if (!track.passedITSRefit() || !track.passedTPCRefit())
         return false;
       if (track.tpcCrossedRowsOverFindableCls() < cMinRtpccut)
@@ -215,7 +215,7 @@ struct lambda1520analysis {
         return false;
       if (track.tpcChi2NCl() > cMaxChi2TPCcut)
         return false;
-    }
+    }*/
     if (cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
     if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())

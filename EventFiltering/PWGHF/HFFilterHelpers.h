@@ -98,6 +98,7 @@ enum bachelorTrackSelection {
   kRejected = 0,
   kSoftPion,
   kForBeauty,
+  kSoftPionForBeauty,
   kPionForCharmBaryon,
   kKaonForCharmBaryon
 };
@@ -255,10 +256,13 @@ double getTPCSplineCalib(const T& track, const float mMassPar, const std::vector
 /// \param pTMinBeautyBachelor min pT for beauty bachelor pions
 /// \param pTBinsTrack pT bins for dca cuts
 /// \param cutsSingleTrackBeauty cuts for all tracks
-/// \return 0 if track is rejected, 1 if track is soft pion, 2 if it is regular beauty
+/// \return a flag that encodes the selection for soft pions BIT(kSoftPion), tracks for beauty BIT(kForBeauty), or soft pions for beauty BIT(kSoftPionForBeauty)
 template <typename T, typename T1, typename T2, typename T3, typename T4>
-int isSelectedTrackForSoftPionOrBeauty(const T track, const T1& trackPar, const T2& dca, const float& pTMinSoftPion, const float& pTMinBeautyBachelor, const T3& pTBinsTrack, const T4& cutsSingleTrackBeauty)
+int8_t isSelectedTrackForSoftPionOrBeauty(const T track, const T1& trackPar, const T2& dca, const float& pTMinSoftPion, const float& pTMinBeautyBachelor, const T3& pTBinsTrack, const T4& cutsSingleTrackBeauty)
 {
+
+  int8_t retValue{BIT(kSoftPion) | BIT(kForBeauty) | BIT(kSoftPionForBeauty)};
+
   if (!track.isGlobalTrackWoDCA()) {
     return kRejected;
   }
@@ -281,23 +285,21 @@ int isSelectedTrackForSoftPionOrBeauty(const T track, const T1& trackPar, const 
     return kRejected;
   }
 
-  if (std::fabs(dca[0]) < cutsSingleTrackBeauty.get(pTBinTrack, 0u)) {
-    return kRejected; // minimum DCAxy
-  }
-  if (std::fabs(dca[0]) > cutsSingleTrackBeauty.get(pTBinTrack, 1u)) {
-    return kRejected; // maximum DCAxy
-  }
-
-  if (std::fabs(dca[1]) > 2.f) {
-    return kRejected; // maximum DCAz
-  }
-
   // below only regular beauty tracks, not required for soft pions
   if (pT < pTMinBeautyBachelor) {
-    return kSoftPion;
+    CLRBIT(retValue, kForBeauty);
   }
 
-  return kForBeauty;
+  if (std::fabs(dca[0]) < cutsSingleTrackBeauty.get(pTBinTrack, 0u)) { // minimum DCAxy
+    CLRBIT(retValue, kForBeauty);
+    CLRBIT(retValue, kSoftPionForBeauty);
+  }
+  if (std::fabs(dca[0]) > cutsSingleTrackBeauty.get(pTBinTrack, 1u)) { // maximum DCAxy
+    CLRBIT(retValue, kForBeauty);
+    CLRBIT(retValue, kSoftPionForBeauty);
+  }
+
+  return retValue;
 }
 
 /// Basic selection of proton candidates
