@@ -64,6 +64,7 @@ struct cascpostprocessing {
   Configurable<float> nsigmatofPr{"nsigmatofPr", 6, "N sigma TOF Proton"};
   Configurable<float> nsigmatofKa{"nsigmatofKa", 6, "N sigma TOF Kaon"};
   Configurable<int> mintpccrrows{"mintpccrrows", 50, "min N TPC crossed rows"};
+  Configurable<int> dooobrej{"dooobrej", 0, "OOB rejection: 0 no selection, 1 = ITS||TOF, 2 = TOF only for pT > ptthrtof"};
 
   Configurable<bool> isSelectBachBaryon{"isSelectBachBaryon", 0, "Bachelor-baryon cascade selection"};
   Configurable<float> bachBaryonCosPA{"bachBaryonCosPA", 0.9999, "Bachelor baryon CosPA"};
@@ -100,15 +101,15 @@ struct cascpostprocessing {
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
     AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
 
-    TString CutLabel[22] = {"All", "MassWin", "y", "EtaDau", "DCADauToPV", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "ctau", "CompDecayMass", "Bach-baryon"};
-    TString CutLabelSummary[25] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegtopv", "dcabachtopv", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "proplifetime", "rejcomp", "ptthrtof", "bachBaryonCosPA", "bachBaryonDCAxyToPV"};
+    TString CutLabel[24] = {"All", "MassWin", "y", "EtaDau", "DCADauToPV", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "ctau", "CompDecayMass", "Bach-baryon", "NTPCrows", "OOBRej"};
+    TString CutLabelSummary[27] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegtopv", "dcabachtopv", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "proplifetime", "rejcomp", "ptthrtof", "bachBaryonCosPA", "bachBaryonDCAxyToPV", "NTPCrows", "OOBRej"};
 
-    registry.add("hCandidate", "hCandidate", HistType::kTH1F, {{23, -0.5, 22.5}});
+    registry.add("hCandidate", "hCandidate", HistType::kTH1F, {{25, -0.5, 24.5}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hCandidate"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hCandidate"))->GetXaxis()->SetBinLabel(n, CutLabel[n - 1]);
     }
 
-    registry.add("CascadeSelectionSummary", "CascadeSelectionSummary", HistType::kTH1F, {{25, -0.5, 24.5}});
+    registry.add("CascadeSelectionSummary", "CascadeSelectionSummary", HistType::kTH1F, {{27, -0.5, 26.5}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("CascadeSelectionSummary"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("CascadeSelectionSummary"))->GetXaxis()->SetBinLabel(n, CutLabelSummary[n - 1]);
     }
@@ -143,6 +144,8 @@ struct cascpostprocessing {
       registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(24, bachBaryonCosPA);
       registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(25, bachBaryonDCAxyToPV);
     }
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(26, mintpccrrows);
+    registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(27, dooobrej);
 
     registry.add("hPt", "hPt", {HistType::kTH1F, {ptAxis}});
     registry.add("hCascMinusInvMassvsPt", "hCascMinusInvMassvsPt", HistType::kTH2F, {ptAxis, massAxis});
@@ -382,6 +385,19 @@ struct cascpostprocessing {
       if (candidate.posntpccrrows() < mintpccrrows || candidate.negntpccrrows() < mintpccrrows || candidate.bachntpccrrows() < mintpccrrows)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
+      bool kHasTOF = (candidate.poshastof() || candidate.neghastof() || candidate.bachhastof());
+      bool kHasITS = ((candidate.positshits() > 1) || (candidate.negitshits() > 1) || (candidate.bachitshits() > 1));
+      if (dooobrej == 1) {
+        if (!kHasTOF && !kHasITS)
+          continue;
+        registry.fill(HIST("hCandidate"), ++counter);
+      } else if (dooobrej == 2) {
+        if (!kHasTOF && (candidate.pt() > ptthrtof))
+          continue;
+        registry.fill(HIST("hCandidate"), ++counter);
+      } else {
+        ++counter;
+      }
 
       registry.fill(HIST("hPt"), candidate.pt());
       registry.fill(HIST("hDCANegToPV"), candidate.pt(), candidate.dcanegtopv());

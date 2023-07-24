@@ -42,7 +42,7 @@ struct VertexDistribution {
 // Simple analysis of PhysicalPrimary particles
 struct PhysicalPrimaryCharge {
   OutputObj<TH1F> charge{TH1F("charge_prim", "charge_prim", 100, -5, 5)};
-  Service<O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void process(aod::McParticles const& mcParticles)
   {

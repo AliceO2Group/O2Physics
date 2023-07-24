@@ -53,6 +53,11 @@ struct lambda1520analysis {
   Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 0.5f, "Track DCAz cut to PV Maximum"};
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0f, "Track DCAz cut to PV Minimum"};
 
+  // Track selections
+  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
+  Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
+  Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};           // PV Contriuibutor
+
   /// PID Selections
   // Kaon
   Configurable<std::vector<double>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {999.}, "pT intervals for Kaon TPC PID cuts"};
@@ -188,20 +193,20 @@ struct lambda1520analysis {
     // basic track cuts
     if (track.pt() < cMinPtcut || track.pt() > cMaxPtcut)
       return false;
-    if (IsDCAr7SigCut) {
+    /*if (IsDCAr7SigCut) {
       if (fabs(track.dcaXY()) > (0.004f + 0.0130f / (track.pt()))) // 7 - Sigma cut
         return false;
-    } else {
-      if (fabs(track.dcaXY()) > cMaxDCArToPVcut)
-        return false;
-    }
+    } else {*/
+    if (fabs(track.dcaXY()) > cMaxDCArToPVcut)
+      return false;
+    //}
     if (fabs(track.dcaZ()) < cMinDCAzToPVcut || fabs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
     if (track.tpcNClsCrossedRows() < cMinTPCncr)
       return false;
     if (fabs(track.eta()) > cfgCutEta)
       return false;
-    if (IsAddlTrackcut) {
+    /*if (IsAddlTrackcut) {
       if (!track.passedITSRefit() || !track.passedTPCRefit())
         return false;
       if (track.tpcCrossedRowsOverFindableCls() < cMinRtpccut)
@@ -210,7 +215,13 @@ struct lambda1520analysis {
         return false;
       if (track.tpcChi2NCl() > cMaxChi2TPCcut)
         return false;
-    }
+    }*/
+    if (cfgPrimaryTrack && !track.isPrimaryTrack())
+      return false;
+    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
+      return false;
+    if (cfgPVContributor && !track.isPVContributor())
+      return false;
 
     return true;
   }

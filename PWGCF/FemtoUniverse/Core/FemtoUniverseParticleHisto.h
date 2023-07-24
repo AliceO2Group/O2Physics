@@ -30,7 +30,7 @@ namespace o2::analysis::femtoUniverse
 
 /// \class FemtoUniverseParticleHisto
 /// \brief Class for histogramming particle properties
-/// \tparam particleType Type of the particle (Track/V0/Cascade/...)
+/// \tparam particleType Type of the particle (Track/V0/Cascade/Phi/...)
 /// \tparam suffixType (optional) Takes care of the suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
 template <o2::aod::femtouniverseparticle::ParticleType particleType, int suffixType = 0>
 class FemtoUniverseParticleHisto
@@ -55,7 +55,6 @@ class FemtoUniverseParticleHisto
     mHistogramRegistry->add((folderName + folderSuffix + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
     mHistogramRegistry->add((folderName + folderSuffix + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
     mHistogramRegistry->add((folderName + folderSuffix + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-    // mHistogramRegistry->add((folderName + folderSuffix + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
 
     /// particle specific histogramms for the TempFitVar column in FemtoUniverseParticles
     if constexpr (o2::aod::femtouniverseMCparticle::MCType::kRecon == mc) {
@@ -203,7 +202,6 @@ class FemtoUniverseParticleHisto
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/hPt"), part.pt());
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/hEta"), part.eta());
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/hPhi"), part.phi());
-    // mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/hTPCdEdX"), part.pt(), part.tpcSignal());
 
     /// particle specific histogramms for the TempFitVar column in FemtoUniverseParticles
     if constexpr (mc == o2::aod::femtouniverseMCparticle::MCType::kRecon) {
