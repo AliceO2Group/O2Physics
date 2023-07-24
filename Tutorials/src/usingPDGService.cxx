@@ -18,7 +18,7 @@ using namespace o2;
 using namespace o2::framework;
 
 struct UsePdgDatabase {
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
   OutputObj<TH1F> particleCharges{TH1F("charges", ";charge;entries", 201, -10.1, 10.1)};
 
   void process(aod::McCollision const&, aod::McParticles const& particles)

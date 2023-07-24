@@ -66,7 +66,7 @@ struct cascqaanalysis {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
 
   // Necessary for particle charges
-  Service<O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   SliceCache cache;
 

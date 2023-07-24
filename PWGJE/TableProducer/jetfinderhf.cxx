@@ -91,7 +91,7 @@ struct JetFinderHFTask {
   Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
   Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
 
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
   std::string trackSelection;
   std::string eventSelection;
 

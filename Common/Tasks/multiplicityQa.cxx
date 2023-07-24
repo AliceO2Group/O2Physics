@@ -61,7 +61,7 @@ struct MultiplicityQa {
   Configurable<bool> useZeqInProfiles{"useZeqInProfiles", true, "use Z-equalized signals in midrap Nch profiles"};
 
   // necessary for particle charges
-  Service<O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   SliceCache cache;
 

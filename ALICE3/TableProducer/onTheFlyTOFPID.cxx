@@ -55,7 +55,7 @@ struct OnTheFlyTOFPID {
   Produces<aod::UpgradeTof> upgradeTof;
 
   // necessary for particle charges
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   // these are the settings governing the TOF layers to be used
   // note that there are two layers foreseen for now: inner and outer TOF

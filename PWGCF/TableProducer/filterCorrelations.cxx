@@ -44,7 +44,7 @@ using CFMultiplicity = CFMultiplicities::iterator;
 } // namespace o2::aod
 
 struct FilterCF {
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   // Configuration
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 7.0f, "Accepted z-vertex range")

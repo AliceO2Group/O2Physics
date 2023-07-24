@@ -72,7 +72,7 @@ struct PseudorapidityDensityMFT {
   Preslice<aod::McParticles> perMcCol = aod::mcparticle::mcCollisionId;
   Preslice<aod::Tracks> perColCentral = aod::track::collisionId;
 
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
 

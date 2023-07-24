@@ -54,7 +54,7 @@ struct JetSubstructureHFTask {
   Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
   Configurable<float> beta{"beta", 0.0, "soft drop beta"};
 
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
   int candPDG;
 
   std::vector<fastjet::PseudoJet> jetConstituents;
