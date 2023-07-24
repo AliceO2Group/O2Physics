@@ -355,10 +355,10 @@ bool selectionTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
 template <typename T1 = int, typename T2 = bool>
 bool selectionPID(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
 {
-  if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
+  if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::PIDAccepted) {
     return false;
   }
-  if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Status::PIDRejected) {
+  if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::PIDRejected) {
     return false;
   }
 
