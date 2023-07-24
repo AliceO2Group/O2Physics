@@ -109,7 +109,7 @@ struct cascqaanalysis {
         registry.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
       }
       registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1F, {{200, -20.f, 20.f}}});
-      registry.add("hNchFT0MNAssocMCCollisions", "hNchFT0MNAssocMCCollisions", {HistType::kTH2F, {nChargedFT0MGenAxis, nAssocCollAxis}});
+      registry.add("hNchFT0MNAssocMCCollisions", "hNchFT0MNAssocMCCollisions", {HistType::kTH3F, {nChargedFT0MGenAxis, nAssocCollAxis, eventTypeAxis}});
       registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
       registry.add("hNchFT0MGenEvType", "hNchFT0MGenEvType", {HistType::kTH2F, {nChargedFT0MGenAxis, eventTypeAxis}});
     } else {
@@ -533,7 +533,7 @@ struct cascqaanalysis {
     }
     SelectedEvents.resize(nevts);
 
-    registry.fill(HIST("hNchFT0MNAssocMCCollisions"), nchFT0, nAssocColl);
+    registry.fill(HIST("hNchFT0MNAssocMCCollisions"), nchFT0, nAssocColl, evType);
 
     if (NumberOfContributors.size() == 2) {
       std::sort(NumberOfContributors.begin(), NumberOfContributors.end());
