@@ -17,11 +17,11 @@
 
 #include <TLorentzVector.h>
 
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
@@ -32,62 +32,41 @@ using namespace o2::framework::expressions;
 struct lambdaAnalysis {
 
   // Configurables.
-  // Histograms bins.
   Configurable<int> nBinsPt{"nBinsPt", 500, "N bins in pT histogram."};
-  Configurable<int> nBinsMult{"nBinsMult", 1000,
-                              "N bins in Multiplicity histograms."};
-  Configurable<int> nBinsInvM{"nBinsInvM", 500,
-                              "N bins in InvMass histograms."};
+  Configurable<int> nBinsMult{"nBinsMult", 1000, "N bins in Multiplicity histograms."};
+  Configurable<int> nBinsInvM{"nBinsInvM", 500, "N bins in InvMass histograms."};
 
   // Tracks
   Configurable<float> cfgPtMin{"ptMin", 0.15, "Minimum Track pT"};
   Configurable<float> cfgEtaCut{"etaCut", 0.8, "Pseudorapidity cut"};
   Configurable<float> cfgDcaz{"dcazMin", 1., "Minimum DCAz"};
   Configurable<float> cfgDcaxy{"dcaxyMin", 0.1, "Minimum DCAxy"};
-  Configurable<float> cfgPIDprecut{"cfgPIDprecut", 6,
-                                   "Preselection PID TPC TOF cut"};
-  Configurable<bool> cfgGlobalTrackWoDCA{"cfgGlobalTrackWoDCA", true,
-                                         "Global Track Selection"};
-  Configurable<bool> cfgPVContributor{"cfgPVContributor", true,
-                                      "PV Contributor Track Selection"};
+  Configurable<float> cfgPIDprecut{"cfgPIDprecut", 6, "Preselection PID TPC TOF cut"};
+  Configurable<bool> cfgGlobalTrackWoDCA{"cfgGlobalTrackWoDCA", true, "Global Track Selection"};
+  Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV Contributor Track Selection"};
 
   // TPC TOF Protons
-  Configurable<std::vector<float>> protonTPCPIDpt{
-      "protonTPCPIDpt", {999.}, "pT dependent TPC cuts protons"};
-  Configurable<std::vector<int>> protonTPCPIDcut{
-      "protonTPCPIDcut", {3}, "TPC cuts protons"};
-  Configurable<std::vector<float>> protonTOFPIDpt{
-      "protonTOFPIDpt", {999.}, "pT dependent TOF cuts protons"};
-  Configurable<std::vector<int>> protonTOFPIDcut{
-      "protonTOFPIDCut", {3}, "TOF cuts protons"};
+  Configurable<std::vector<float>> protonTPCPIDpt{"protonTPCPIDpt", {999.}, "pT dependent TPC cuts protons"};
+  Configurable<std::vector<int>> protonTPCPIDcut{"protonTPCPIDcut", {3}, "TPC cuts protons"};
+  Configurable<std::vector<float>> protonTOFPIDpt{"protonTOFPIDpt", {999.}, "pT dependent TOF cuts protons"};
+  Configurable<std::vector<int>> protonTOFPIDcut{"protonTOFPIDCut", {3}, "TOF cuts protons"};
 
   // TPC TOF Protons
-  Configurable<std::vector<float>> kaonTPCPIDpt{
-      "kaonTPCPIDpt", {999.}, "pT dependent TPC cuts kaons"};
-  Configurable<std::vector<int>> kaonTPCPIDcut{
-      "kaonTPCPIDcut", {3}, "TPC cuts kaons"};
-  Configurable<std::vector<float>> kaonTOFPIDpt{
-      "kaonTOFPIDpt", {999.}, "pT dependent TOF cuts kaons"};
-  Configurable<std::vector<int>> kaonTOFPIDcut{
-      "kaonTOFPIDcut", {3}, "TOF cuts kaons"};
+  Configurable<std::vector<float>> kaonTPCPIDpt{"kaonTPCPIDpt", {999.}, "pT dependent TPC cuts kaons"};
+  Configurable<std::vector<int>> kaonTPCPIDcut{"kaonTPCPIDcut", {3}, "TPC cuts kaons"};
+  Configurable<std::vector<float>> kaonTOFPIDpt{"kaonTOFPIDpt", {999.}, "pT dependent TOF cuts kaons"};
+  Configurable<std::vector<int>> kaonTOFPIDcut{"kaonTOFPIDcut", {3}, "TOF cuts kaons"};
 
   // Event Mixing.
   Configurable<int> nMix{"nMix", 5, "Number of Events to be mixed"};
-  ConfigurableAxis cfgVtxBins{"cfgVtxBins",
-                              {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f,
-                               0.f, 2.f, 4.f, 6.f, 8.f, 10.f},
-                              "Mixing bins - z-vertex"};
-  ConfigurableAxis cfgMultBins{"cfgMultBins",
-                               {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f,
-                                40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f,
-                                100.0f, 200.0f},
-                               "Mixing bins - multiplicity"};
+  ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
 
   // Histogram Registry.
-  HistogramRegistry histos{
-      "histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  void init(InitContext const &) {
+  void init(InitContext const&)
+  {
 
     // Define Axis.
     const AxisSpec axisEv(1, 0, 1, "N_{Ev}");
@@ -108,85 +87,53 @@ struct lambdaAnalysis {
     histos.add("Event/hVtxZ", "posZ of Collisions", kTH1F, {axisPosZ});
     histos.add("Event/hMult", "Event Multiplicity", kTH1F, {axisMult});
     histos.add("Event/hSph", "Event Spherocity", kTH1F, {axisSp});
-    histos.add("QAbefore/Proton/hTPCNsigma", "N_{TPC}^{sigma} Protons", kTH2F,
-               {axisPt, axisTPCNsigma});
-    histos.add("QAbefore/Proton/hTOFNsigma", "N_{TOF}^{sigma} Protons", kTH2F,
-               {axisPt, axisTOFNsigma});
-    histos.add("QAbefore/Proton/hTpcTofNsigma",
-               "N_{TPC}^{sigma} vs N_{TOF}^{sigma} Protons", kTH2F,
-               {axisTPCNsigma, axisTOFNsigma});
-    histos.add("QAbefore/Kaon/hTPCNsigma", "N_{TPC}^{sigma} Kaons", kTH2F,
-               {axisPt, axisTPCNsigma});
-    histos.add("QAbefore/Kaon/hTOFNsigma", "N_{TOF}^{sigma} Kaons", kTH2F,
-               {axisPt, axisTOFNsigma});
-    histos.add("QAbefore/Kaon/hTpcTofNsigma",
-               "N_{TPC}^{sigma} vs N_{TOF}^{sigma} Kaons", kTH2F,
-               {axisTPCNsigma, axisTOFNsigma});
-    histos.add("QAafter/Proton/hDcaZ", "dca_{z} Protons", kTH2F,
-               {axisPt, axisDCAz});
-    histos.add("QAafter/Proton/hDcaXY", "dca_{xy} Protons", kTH2F,
-               {axisPt, axisDCAxy});
-    histos.add("QAafter/Proton/hTPCNsigma", "N_{TPC}^{sigma} Protons", kTH2F,
-               {axisPt, axisTPCNsigma});
-    histos.add("QAafter/Proton/hTOFNsigma", "N_{TOF}^{sigma} Protons", kTH2F,
-               {axisPt, axisTOFNsigma});
-    histos.add("QAafter/Proton/hTpcTofNsigma",
-               "N_{TPC}^{sigma} vs N_{TOF}^{sigma} Protons", kTH2F,
-               {axisTPCNsigma, axisTOFNsigma});
-    histos.add("QAafter/Kaon/hDcaZ", "dca_{z} Kaons", kTH2F,
-               {axisPt, axisDCAz});
-    histos.add("QAafter/Kaon/hDcaXY", "dca_{xy} Kaons", kTH2F,
-               {axisPt, axisDCAxy});
-    histos.add("QAafter/Kaon/hTPCNsigma", "N_{TPC}^{sigma} Kaons", kTH2F,
-               {axisPt, axisTPCNsigma});
-    histos.add("QAafter/Kaon/hTOFNsigma", "N_{TOF}^{sigma} Kaons", kTH2F,
-               {axisPt, axisTOFNsigma});
-    histos.add("QAafter/Kaon/hTpcTofNsigma",
-               "N_{TPC}^{sigma} vs N_{TOF}^{sigma} Kaons", kTH2F,
-               {axisTPCNsigma, axisTOFNsigma});
+    histos.add("QAbefore/Proton/hTPCNsigma", "N_{TPC}^{sigma} Protons", kTH2F, {axisPt, axisTPCNsigma});
+    histos.add("QAbefore/Proton/hTOFNsigma", "N_{TOF}^{sigma} Protons", kTH2F, {axisPt, axisTOFNsigma});
+    histos.add("QAbefore/Proton/hTpcTofNsigma", "N_{TPC}^{sigma} vs N_{TOF}^{sigma} Protons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
+    histos.add("QAbefore/Kaon/hTPCNsigma", "N_{TPC}^{sigma} Kaons", kTH2F, {axisPt, axisTPCNsigma});
+    histos.add("QAbefore/Kaon/hTOFNsigma", "N_{TOF}^{sigma} Kaons", kTH2F, {axisPt, axisTOFNsigma});
+    histos.add("QAbefore/Kaon/hTpcTofNsigma", "N_{TPC}^{sigma} vs N_{TOF}^{sigma} Kaons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
+    histos.add("QAafter/Proton/hDcaZ", "dca_{z} Protons", kTH2F, {axisPt, axisDCAz});
+    histos.add("QAafter/Proton/hDcaXY", "dca_{xy} Protons", kTH2F, {axisPt, axisDCAxy});
+    histos.add("QAafter/Proton/hTPCNsigma", "N_{TPC}^{sigma} Protons", kTH2F, {axisPt, axisTPCNsigma});
+    histos.add("QAafter/Proton/hTOFNsigma", "N_{TOF}^{sigma} Protons", kTH2F, {axisPt, axisTOFNsigma});
+    histos.add("QAafter/Proton/hTpcTofNsigma", "N_{TPC}^{sigma} vs N_{TOF}^{sigma} Protons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
+    histos.add("QAafter/Kaon/hDcaZ", "dca_{z} Kaons", kTH2F, {axisPt, axisDCAz});
+    histos.add("QAafter/Kaon/hDcaXY", "dca_{xy} Kaons", kTH2F, {axisPt, axisDCAxy});
+    histos.add("QAafter/Kaon/hTPCNsigma", "N_{TPC}^{sigma} Kaons", kTH2F, {axisPt, axisTPCNsigma});
+    histos.add("QAafter/Kaon/hTOFNsigma", "N_{TOF}^{sigma} Kaons", kTH2F, {axisPt, axisTOFNsigma});
+    histos.add("QAafter/Kaon/hTpcTofNsigma", "N_{TPC}^{sigma} vs N_{TOF}^{sigma} Kaons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
     histos.add("Analysis/hPtProton", "Protons p_{T}", kTH1F, {axisPt});
     histos.add("Analysis/hEtaProton", "Protons #eta", kTH1F, {axisEta});
     histos.add("Analysis/hPtKaon", "Kaons p_{T}", kTH1F, {axisPt});
     histos.add("Analysis/hEtaKaon", "Kaons #eta", kTH1F, {axisEta});
     histos.add("Analysis/hInvMass", "#Lambda(1520) M_{inv}", kTH1F, {axisInvM});
     histos.add("Analysis/hInvMassLS", "Like Signs M_{inv}", kTH1F, {axisInvM});
-    histos.add("Analysis/hInvMassMix", "Mixed Events M_{inv}", kTH1F,
-               {axisInvM});
-    histos.add("Analysis/h3Lambda1", "THn #Lambda to p K^{-}", kTHnSparseF,
-               {axisInvM, axisPt, axisSp});
-    histos.add("Analysis/h3Lambda2", "THn #Lambda to #bar{p} K^{+}",
-               kTHnSparseF, {axisInvM, axisPt, axisSp});
-    histos.add("Analysis/h3LikeSign1", "THn p K^{+}", kTHnSparseF,
-               {axisInvM, axisPt, axisSp});
-    histos.add("Analysis/h3LikeSign2", "THn #bar{p} K^{-}", kTHnSparseF,
-               {axisInvM, axisPt, axisSp});
-    histos.add("Analysis/h3Mixed", "THn Mixed Events", kTHnSparseF,
-               {axisInvM, axisPt, axisSp});
+    histos.add("Analysis/hInvMassMix", "Mixed Events M_{inv}", kTH1F, {axisInvM});
+    histos.add("Analysis/h3Lambda1", "THn #Lambda to p K^{-}", kTHnSparseF, {axisInvM, axisPt, axisSp});
+    histos.add("Analysis/h3Lambda2", "THn #Lambda to #bar{p} K^{+}", kTHnSparseF, {axisInvM, axisPt, axisSp});
+    histos.add("Analysis/h3LikeSign1", "THn p K^{+}", kTHnSparseF, {axisInvM, axisPt, axisSp});
+    histos.add("Analysis/h3LikeSign2", "THn #bar{p} K^{-}", kTHnSparseF, {axisInvM, axisPt, axisSp});
+    histos.add("Analysis/h3Mixed", "THn Mixed Events", kTHnSparseF, {axisInvM, axisPt, axisSp});
   }
 
   template <bool before, typename T>
-  void fillQA(T const &trkPr, T const &trkKa, bool &trk1HasTOF,
-              bool &trk2HasTOF) {
+  void fillQA(T const& trkPr, T const& trkKa, bool& trk1HasTOF, bool& trk2HasTOF)
+  {
 
     if (before) {
       if (std::abs(trkPr.tpcNSigmaPr()) < cfgPIDprecut) {
-        histos.fill(HIST("QAbefore/Proton/hTPCNsigma"), trkPr.pt(),
-                    trkPr.tpcNSigmaPr());
+        histos.fill(HIST("QAbefore/Proton/hTPCNsigma"), trkPr.pt(), trkPr.tpcNSigmaPr());
         if (trk1HasTOF && std::abs(trkPr.tofNSigmaPr()) < cfgPIDprecut) {
-          histos.fill(HIST("QAbefore/Proton/hTOFNsigma"), trkPr.pt(),
-                      trkPr.tofNSigmaPr());
-          histos.fill(HIST("QAbefore/Proton/hTpcTofNsigma"),
-                      trkPr.tpcNSigmaPr(), trkPr.tofNSigmaPr());
+          histos.fill(HIST("QAbefore/Proton/hTOFNsigma"), trkPr.pt(), trkPr.tofNSigmaPr());
+          histos.fill(HIST("QAbefore/Proton/hTpcTofNsigma"), trkPr.tpcNSigmaPr(), trkPr.tofNSigmaPr());
         }
       }
       if (std::abs(trkKa.tpcNSigmaKa()) < cfgPIDprecut) {
-        histos.fill(HIST("QAbefore/Kaon/hTPCNsigma"), trkKa.pt(),
-                    trkKa.tpcNSigmaKa());
+        histos.fill(HIST("QAbefore/Kaon/hTPCNsigma"), trkKa.pt(), trkKa.tpcNSigmaKa());
         if (trk2HasTOF && std::abs(trkKa.tofNSigmaKa()) < cfgPIDprecut) {
-          histos.fill(HIST("QAbefore/Kaon/hTOFNsigma"), trkKa.pt(),
-                      trkKa.tofNSigmaKa());
-          histos.fill(HIST("QAbefore/Kaon/hTpcTofNsigma"), trkKa.tpcNSigmaKa(),
-                      trkKa.tofNSigmaKa());
+          histos.fill(HIST("QAbefore/Kaon/hTOFNsigma"), trkKa.pt(), trkKa.tofNSigmaKa());
+          histos.fill(HIST("QAbefore/Kaon/hTpcTofNsigma"), trkKa.tpcNSigmaKa(), trkKa.tofNSigmaKa());
         }
       }
     }
@@ -194,28 +141,24 @@ struct lambdaAnalysis {
     if (!before) {
       histos.fill(HIST("QAafter/Proton/hDcaZ"), trkPr.pt(), trkPr.dcaZ());
       histos.fill(HIST("QAafter/Proton/hDcaXY"), trkPr.pt(), trkPr.dcaXY());
-      histos.fill(HIST("QAafter/Proton/hTPCNsigma"), trkPr.pt(),
-                  trkPr.tpcNSigmaPr());
+      histos.fill(HIST("QAafter/Proton/hTPCNsigma"), trkPr.pt(), trkPr.tpcNSigmaPr());
       if (trk1HasTOF) {
-        histos.fill(HIST("QAafter/Proton/hTOFNsigma"), trkPr.pt(),
-                    trkPr.tofNSigmaPr());
-        histos.fill(HIST("QAafter/Proton/hTpcTofNsigma"), trkPr.tpcNSigmaPr(),
-                    trkPr.tofNSigmaPr());
+        histos.fill(HIST("QAafter/Proton/hTOFNsigma"), trkPr.pt(), trkPr.tofNSigmaPr());
+        histos.fill(HIST("QAafter/Proton/hTpcTofNsigma"), trkPr.tpcNSigmaPr(), trkPr.tofNSigmaPr());
       }
       histos.fill(HIST("QAafter/Kaon/hDcaZ"), trkKa.pt(), trkKa.dcaZ());
       histos.fill(HIST("QAafter/Kaon/hDcaXY"), trkKa.pt(), trkKa.dcaXY());
-      histos.fill(HIST("QAafter/Kaon/hTPCNsigma"), trkKa.pt(),
-                  trkKa.tpcNSigmaKa());
+      histos.fill(HIST("QAafter/Kaon/hTPCNsigma"), trkKa.pt(), trkKa.tpcNSigmaKa());
       if (trk2HasTOF) {
-        histos.fill(HIST("QAafter/Kaon/hTOFNsigma"), trkKa.pt(),
-                    trkKa.tofNSigmaKa());
-        histos.fill(HIST("QAafter/Kaon/hTpcTofNsigma"), trkKa.tpcNSigmaKa(),
-                    trkKa.tofNSigmaKa());
+        histos.fill(HIST("QAafter/Kaon/hTOFNsigma"), trkKa.pt(), trkKa.tofNSigmaKa());
+        histos.fill(HIST("QAafter/Kaon/hTpcTofNsigma"), trkKa.tpcNSigmaKa(), trkKa.tofNSigmaKa());
       }
     }
   }
 
-  template <typename T> void selTracks(T const &track, bool &trackFlag) {
+  template <typename T>
+  void selTracks(T const& track, bool& trackFlag)
+  {
 
     if (track.pt() < cfgPtMin)
       trackFlag = false;
@@ -234,11 +177,10 @@ struct lambdaAnalysis {
   }
 
   template <bool mix, bool mc, typename trackType>
-  void fillDataHistos(trackType const &trk1, trackType const &trk2,
-                      float const &sph) {
+  void fillDataHistos(trackType const& trk1, trackType const& trk2, float const& sph)
+  {
 
-    bool isTrk1Proton{true}, isTrk2Kaon{true}, trk1HasTOF{false},
-        trk2HasTOF{false};
+    bool isTrk1Proton{true}, isTrk2Kaon{true}, trk1HasTOF{false}, trk2HasTOF{false};
 
     auto prTpcPIDpt = static_cast<std::vector<float>>(protonTPCPIDpt);
     auto prTpcPIDcut = static_cast<std::vector<int>>(protonTPCPIDcut);
@@ -253,8 +195,7 @@ struct lambdaAnalysis {
     float massProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
     float massKaon = TDatabasePDG::Instance()->GetParticle(321)->Mass();
 
-    for (auto const &[trkPr, trkKa] :
-         soa::combinations(soa::CombinationsFullIndexPolicy(trk1, trk2))) {
+    for (auto const& [trkPr, trkKa] : soa::combinations(soa::CombinationsFullIndexPolicy(trk1, trk2))) {
       // Do not analyse same index tracks.
       if (trkPr.index() == trkKa.index())
         continue;
@@ -278,8 +219,7 @@ struct lambdaAnalysis {
       }
 
       // TOF Check.
-      if ((trkPr.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) ==
-          aod::resodaughter::kHasTOF) {
+      if ((trkPr.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
         trk1HasTOF = true;
         for (int i = 0; i < static_cast<int>(prTofPIDpt.size()); ++i) {
           if (trkPr.pt() < prTofPIDpt[i]) {
@@ -303,8 +243,7 @@ struct lambdaAnalysis {
         }
       }
 
-      if ((trkKa.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) ==
-          aod::resodaughter::kHasTOF) {
+      if ((trkKa.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
         trk2HasTOF = true;
         for (int i = 0; i < static_cast<int>(kaTofPIDpt.size()); ++i) {
           if (trkKa.pt() < kaTofPIDpt[i]) {
@@ -370,8 +309,8 @@ struct lambdaAnalysis {
   using resoCols = aod::ResoCollisions;
   using resoTracks = aod::ResoTracks;
 
-  void processData(resoCols::iterator const &collision,
-                   resoTracks const &tracks) {
+  void processData(resoCols::iterator const& collision, resoTracks const& tracks)
+  {
 
     if (tracks.size() < 3)
       return;
@@ -384,23 +323,20 @@ struct lambdaAnalysis {
     fillDataHistos<false, false>(tracks, tracks, collision.spherocity());
   }
 
-  PROCESS_SWITCH(lambdaAnalysis, processData, "Process for Same Event Data",
-                 true);
+  PROCESS_SWITCH(lambdaAnalysis, processData, "Process for Same Event Data", true);
 
   // Processing Event Mixing
   SliceCache cache;
-  using BinningType =
-      ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
   BinningType binningPositions{{cfgVtxBins, cfgMultBins}, true};
 
-  void processMix(resoCols &collisions, resoTracks const &tracks) {
+  void processMix(resoCols& collisions, resoTracks const& tracks)
+  {
 
     LOGF(debug, "Event Mixing Started");
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<resoCols, resoTracks, BinningType> pairs{
-        binningPositions, nMix,  -1, collisions,
-        tracksTuple,      &cache}; // -1 is the number of the bin to skip
-    for (auto &[c1, t1, c2, t2] : pairs) {
+    SameKindPair<resoCols, resoTracks, BinningType> pairs{binningPositions, nMix, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    for (auto& [c1, t1, c2, t2] : pairs) {
       fillDataHistos<true, false>(t1, t2, c1.spherocity());
     }
   }
@@ -408,6 +344,7 @@ struct lambdaAnalysis {
   PROCESS_SWITCH(lambdaAnalysis, processMix, "Process for Mixed Events", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<lambdaAnalysis>(cfgc)};
 }
