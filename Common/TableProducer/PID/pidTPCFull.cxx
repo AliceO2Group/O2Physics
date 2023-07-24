@@ -238,6 +238,24 @@ struct tpcPidFull {
       auto start_network_total = std::chrono::high_resolution_clock::now();
       if (autofetchNetworks) {
         auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
+        // Initialise correct TPC response object before NN setup (for NCl normalisation)
+        if (useCCDBParam && ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrisation only if the initial timestamp is 0
+          if (recoPass.value == "") {
+            LOGP(info, "Retrieving latest TPC response object for timestamp {}:", bc.timestamp());
+          } else {
+            LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
+          }
+          response = ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata);
+          if (!response) {
+            LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", recoPass.value);
+            response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
+            if (!response) {
+              LOGP(fatal, "Could not find ANY TPC response object for the timestamp {}!", bc.timestamp());
+            }
+          }
+          response->PrintAll();
+        }
+
         if (bc.timestamp() < network.getValidityFrom() || bc.timestamp() > network.getValidityUntil()) { // fetches network only if the runnumbers change
           LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
           bool retrieveSuccess = ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, bc.timestamp(), false, networkPathLocally.value);
@@ -310,7 +328,7 @@ struct tpcPidFull {
       // Loop on Tracks
       if (trk.has_collision()) {
         const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
-        if (useCCDBParam && ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrization only if the initial timestamp is 0
+        if (useCCDBParam && ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrisation only if the initial timestamp is 0
           if (recoPass.value == "") {
             LOGP(info, "Retrieving latest TPC response object for timestamp {}:", bc.timestamp());
           } else {
