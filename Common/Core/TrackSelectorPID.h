@@ -140,7 +140,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return TPC selection status (see TrackSelectorPID::Status)
   template <typename T>
-  int statusTpc(const T& track)
+  TrackSelectorPID::Status statusTpc(const T& track)
   {
     if (!isValidForTpc(track)) {
       return TrackSelectorPID::NotApplicable;
@@ -228,7 +228,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return TOF selection status (see TrackSelectorPID::Status)
   template <typename T>
-  int statusTof(const T& track)
+  TrackSelectorPID::Status statusTof(const T& track)
   {
     if (!isValidForTof(track)) {
       return TrackSelectorPID::NotApplicable;
@@ -319,7 +319,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return RICH selection status (see TrackSelectorPID::Status)
   template <typename T>
-  int statusRich(const T& track)
+  TrackSelectorPID::Status statusRich(const T& track)
   {
     if (!isValidForRich(track)) {
       return TrackSelectorPID::NotApplicable;
@@ -368,7 +368,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return MID selection status (see TrackSelectorPID::Status)
   template <typename T>
-  int statusMid(const T& track)
+  TrackSelectorPID::Status statusMid(const T& track)
   {
     if constexpr (pdg == kMuonMinus) {
       if (!isValidForMid(track)) {
@@ -391,7 +391,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return status of combined PID (TPC or TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  int statusTpcOrTof(const T& track)
+  TrackSelectorPID::Status statusTpcOrTof(const T& track)
   {
     int pidTpc = statusTpc(track);
     int pidTof = statusTof(track);
@@ -412,7 +412,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return status of combined PID (TPC and TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  int statusTpcAndTof(const T& track)
+  TrackSelectorPID::Status statusTpcAndTof(const T& track)
   {
     int pidTpc = TrackSelectorPID::NotApplicable;
     if (track.hasTPC()) {
@@ -576,7 +576,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return Bayesian selection status (see TrackSelectorPID::Status)
   template <typename T>
-  int statusBayes(const T& track)
+  TrackSelectorPID::Status statusBayes(const T& track)
   {
     if (!isValidForBayes(track)) {
       return TrackSelectorPID::NotApplicable;
@@ -592,7 +592,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return Bayesian selection status (see TrackSelectorPID::Status)
   template <typename T>
-  int statusBayesProb(const T& track)
+  TrackSelectorPID::Status statusBayesProb(const T& track)
   {
     if (!isValidForBayes(track)) {
       return TrackSelectorPID::NotApplicable;
