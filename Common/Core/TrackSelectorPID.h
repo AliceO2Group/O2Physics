@@ -143,15 +143,15 @@ class TrackSelectorPidBase
   int statusTpc(const T& track)
   {
     if (!isValidForTpc(track)) {
-      return TrackSelectorPID::NotApplicable; // PID not applicable
+      return TrackSelectorPID::NotApplicable;
     }
     bool condTof = false;
     if (isSelectedByTpc(track, condTof)) {
-      return TrackSelectorPID::Accepted; // accepted
+      return TrackSelectorPID::Accepted;
     } else if (condTof) {
       return TrackSelectorPID::Conditional; // potential to be accepted if combined with TOF
     } else {
-      return TrackSelectorPID::Rejected; // rejected
+      return TrackSelectorPID::Rejected;
     }
   }
 
@@ -231,15 +231,15 @@ class TrackSelectorPidBase
   int statusTof(const T& track)
   {
     if (!isValidForTof(track)) {
-      return TrackSelectorPID::NotApplicable; // PID not applicable
+      return TrackSelectorPID::NotApplicable;
     }
     bool condTpc = false;
     if (isSelectedByTof(track, condTpc)) {
-      return TrackSelectorPID::Accepted; // accepted
+      return TrackSelectorPID::Accepted;
     } else if (condTpc) {
       return TrackSelectorPID::Conditional; // potential to be accepted if combined with TPC
     } else {
-      return TrackSelectorPID::Rejected; // rejected
+      return TrackSelectorPID::Rejected;
     }
   }
 
@@ -322,15 +322,15 @@ class TrackSelectorPidBase
   int statusRich(const T& track)
   {
     if (!isValidForRich(track)) {
-      return TrackSelectorPID::NotApplicable; // PID not applicable
+      return TrackSelectorPID::NotApplicable;
     }
     bool condTof = false;
     if (isSelectedByRich(track, condTof)) {
-      return TrackSelectorPID::Accepted; // accepted
+      return TrackSelectorPID::Accepted;
     } else if (condTof) {
       return TrackSelectorPID::Conditional; // potential to be accepted if combined with TOF
     } else {
-      return TrackSelectorPID::Rejected; // rejected
+      return TrackSelectorPID::Rejected;
     }
   }
 
@@ -372,12 +372,12 @@ class TrackSelectorPidBase
   {
     if constexpr (pdg == kMuonMinus) {
       if (!isValidForMid(track)) {
-        return TrackSelectorPID::NotApplicable; // PID not applicable
+        return TrackSelectorPID::NotApplicable;
       }
       if (isSelectedByMid(track)) {
-        return TrackSelectorPID::Accepted; // accepted
+        return TrackSelectorPID::Accepted;
       } else {
-        return TrackSelectorPID::Rejected; // rejected
+        return TrackSelectorPID::Rejected;
       }
     } else {
       errorPdg();
@@ -579,12 +579,12 @@ class TrackSelectorPidBase
   int statusBayes(const T& track)
   {
     if (!isValidForBayes(track)) {
-      return TrackSelectorPID::NotApplicable; // PID not applicable
+      return TrackSelectorPID::NotApplicable;
     }
     if (isSelectedByBayes(track)) {
-      return TrackSelectorPID::Accepted; // accepted
+      return TrackSelectorPID::Accepted;
     } else {
-      return TrackSelectorPID::Rejected; // rejected
+      return TrackSelectorPID::Rejected;
     }
   }
 
@@ -595,12 +595,12 @@ class TrackSelectorPidBase
   int statusBayesProb(const T& track)
   {
     if (!isValidForBayes(track)) {
-      return TrackSelectorPID::NotApplicable; // PID not applicable
+      return TrackSelectorPID::NotApplicable;
     }
     if (isSelectedByBayesProb(track)) {
-      return TrackSelectorPID::Accepted; // accepted
+      return TrackSelectorPID::Accepted;
     } else {
-      return TrackSelectorPID::Rejected; // rejected
+      return TrackSelectorPID::Rejected;
     }
   }
 
