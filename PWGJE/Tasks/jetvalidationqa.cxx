@@ -390,7 +390,7 @@ struct mcJetTrackCollisionQa {
   {
     for (const auto& track : mct) {
       if ((!selectTrack(track, trackSelection)) || !(track.collisionId() == collision.globalIndex())) {
-        continue;;
+        continue;
       }
       if (mc == true) {
         if (track.has_mcParticle()) {
