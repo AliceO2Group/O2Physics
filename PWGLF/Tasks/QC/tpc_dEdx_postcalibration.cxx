@@ -124,45 +124,45 @@ struct tpc_dEdx_postcalibration {
     // Raw dE/dx vs. TPC momentum
     registryCh.add(
       "dEdx_vs_Momentum", "dE/dx", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#cdot p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
     registryPi.add(
       "dEdx_vs_Momentum_Pi", "dE/dx", HistType::kTH2F,
-      {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
     registryKa.add(
       "dEdx_vs_Momentum_Ka", "dE/dx", HistType::kTH2F,
-      {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
     registryPr.add(
       "dEdx_vs_Momentum_Pr", "dE/dx", HistType::kTH2F,
-      {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
     registryDe.add(
       "dEdx_vs_Momentum_De", "dE/dx", HistType::kTH2F,
-      {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
     registryTr.add(
       "dEdx_vs_Momentum_Tr", "dE/dx", HistType::kTH2F,
-      {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
     registryHe.add(
       "dEdx_vs_Momentum_He", "dE/dx", HistType::kTH2F,
-      {{100, 0.0, 10.0, "p (GeV/c)"}, {1400, 0, 1400, "dE/dx (a. u.)"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
 
     // nsigma_(TPC) vs. TPC momentum
     registryPi.add(
       "nsigmaTPC_vs_Momentum_Pi", "nsigmaTPC", HistType::kTH2F,
-      {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryKa.add(
       "nsigmaTPC_vs_Momentum_Ka", "nsigmaTPC", HistType::kTH2F,
-      {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryPr.add(
       "nsigmaTPC_vs_Momentum_Pr", "nsigmaTPC", HistType::kTH2F,
-      {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryDe.add(
       "nsigmaTPC_vs_Momentum_De", "nsigmaTPC", HistType::kTH2F,
-      {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryTr.add(
       "nsigmaTPC_vs_Momentum_Tr", "nsigmaTPC", HistType::kTH2F,
-      {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryHe.add(
       "nsigmaTPC_vs_Momentum_He", "nsigmaTPC", HistType::kTH2F,
-      {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
 
     // Event Counter
     registryCh.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20.0, +20.0, "z_{vtx} (cm)"}});
@@ -322,16 +322,16 @@ struct tpc_dEdx_postcalibration {
 
       // Kaons
       if (trk.tpcInnerParam() > 0.4 && trk.hasTOF() && TMath::Abs(trk.tofNSigmaKa()) < 2.0) {
-        registryKa.fill(HIST("dEdx_vs_Momentum_Ka"), trk.tpcInnerParam(),
+        registryKa.fill(HIST("dEdx_vs_Momentum_Ka"), trk.sign() * trk.tpcInnerParam(),
                         trk.tpcSignal());
-        registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), trk.tpcInnerParam(),
+        registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), trk.sign() * trk.tpcInnerParam(),
                         trk.tpcNSigmaKa());
       }
 
       if (trk.tpcInnerParam() < 0.4) {
-        registryKa.fill(HIST("dEdx_vs_Momentum_Ka"), trk.tpcInnerParam(),
+        registryKa.fill(HIST("dEdx_vs_Momentum_Ka"), trk.sign() * trk.tpcInnerParam(),
                         trk.tpcSignal());
-        registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), trk.tpcInnerParam(),
+        registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), trk.sign() * trk.tpcInnerParam(),
                         trk.tpcNSigmaKa());
       }
 
@@ -341,28 +341,28 @@ struct tpc_dEdx_postcalibration {
 
       // Deuterons
       if (trk.tpcInnerParam() > 1.0 && trk.hasTOF() && TMath::Abs(trk.tofNSigmaDe()) < 3.0) {
-        registryDe.fill(HIST("dEdx_vs_Momentum_De"), trk.tpcInnerParam(),
+        registryDe.fill(HIST("dEdx_vs_Momentum_De"), trk.sign() * trk.tpcInnerParam(),
                         trk.tpcSignal());
-        registryDe.fill(HIST("nsigmaTPC_vs_Momentum_De"), trk.tpcInnerParam(),
+        registryDe.fill(HIST("nsigmaTPC_vs_Momentum_De"), trk.sign() * trk.tpcInnerParam(),
                         trk.tpcNSigmaDe());
       }
 
       if (trk.tpcInnerParam() < 1.0) {
-        registryDe.fill(HIST("dEdx_vs_Momentum_De"), trk.tpcInnerParam(),
+        registryDe.fill(HIST("dEdx_vs_Momentum_De"), trk.sign() * trk.tpcInnerParam(),
                         trk.tpcSignal());
-        registryDe.fill(HIST("nsigmaTPC_vs_Momentum_De"), trk.tpcInnerParam(),
+        registryDe.fill(HIST("nsigmaTPC_vs_Momentum_De"), trk.sign() * trk.tpcInnerParam(),
                         trk.tpcNSigmaDe());
       }
 
       // Heavier Nuclei
-      registryTr.fill(HIST("dEdx_vs_Momentum_Tr"), trk.tpcInnerParam(),
+      registryTr.fill(HIST("dEdx_vs_Momentum_Tr"), trk.sign() * trk.tpcInnerParam(),
                       trk.tpcSignal());
-      registryTr.fill(HIST("nsigmaTPC_vs_Momentum_Tr"), trk.tpcInnerParam(),
+      registryTr.fill(HIST("nsigmaTPC_vs_Momentum_Tr"), trk.sign() * trk.tpcInnerParam(),
                       trk.tpcNSigmaTr());
-      registryHe.fill(HIST("dEdx_vs_Momentum_He"), 2.0 * trk.tpcInnerParam(),
+      registryHe.fill(HIST("dEdx_vs_Momentum_He"), 2.0 * trk.sign() * trk.tpcInnerParam(),
                       trk.tpcSignal());
       registryHe.fill(HIST("nsigmaTPC_vs_Momentum_He"),
-                      2.0 * trk.tpcInnerParam(), trk.tpcNSigmaHe());
+                      2.0 * trk.sign() * trk.tpcInnerParam(), trk.tpcNSigmaHe());
     }
 
     // Loop over Reconstructed V0s
@@ -388,38 +388,38 @@ struct tpc_dEdx_postcalibration {
 
       // K0s Selection
       if (passedK0Selection(v0, negTrack, posTrack, collision)) {
-        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), negTrack.tpcInnerParam(),
+        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), negTrack.sign() * negTrack.tpcInnerParam(),
                         negTrack.tpcSignal());
-        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), posTrack.tpcInnerParam(),
+        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), posTrack.sign() * posTrack.tpcInnerParam(),
                         posTrack.tpcSignal());
         registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pi"),
-                        negTrack.tpcInnerParam(), negTrack.tpcNSigmaPi());
+                        negTrack.sign() * negTrack.tpcInnerParam(), negTrack.tpcNSigmaPi());
         registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pi"),
-                        posTrack.tpcInnerParam(), posTrack.tpcNSigmaPi());
+                        posTrack.sign() * posTrack.tpcInnerParam(), posTrack.tpcNSigmaPi());
       }
 
       // Lambda Selection
       if (passedLambdaSelection(v0, negTrack, posTrack, collision)) {
-        registryPr.fill(HIST("dEdx_vs_Momentum_Pr"), posTrack.tpcInnerParam(),
+        registryPr.fill(HIST("dEdx_vs_Momentum_Pr"), posTrack.sign() * posTrack.tpcInnerParam(),
                         posTrack.tpcSignal());
         registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Pr"),
-                        posTrack.tpcInnerParam(), posTrack.tpcNSigmaPr());
-        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), negTrack.tpcInnerParam(),
+                        posTrack.sign() * posTrack.tpcInnerParam(), posTrack.tpcNSigmaPr());
+        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), negTrack.sign() * negTrack.tpcInnerParam(),
                         negTrack.tpcSignal());
         registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pi"),
-                        negTrack.tpcInnerParam(), negTrack.tpcNSigmaPi());
+                        negTrack.sign() * negTrack.tpcInnerParam(), negTrack.tpcNSigmaPi());
       }
 
       // AntiLambda Selection
       if (passedAntiLambdaSelection(v0, negTrack, posTrack, collision)) {
-        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), posTrack.tpcInnerParam(),
+        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), posTrack.sign() * posTrack.tpcInnerParam(),
                         posTrack.tpcSignal());
         registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pi"),
-                        posTrack.tpcInnerParam(), posTrack.tpcNSigmaPi());
-        registryPr.fill(HIST("dEdx_vs_Momentum_Pr"), negTrack.tpcInnerParam(),
+                        posTrack.sign() * posTrack.tpcInnerParam(), posTrack.tpcNSigmaPi());
+        registryPr.fill(HIST("dEdx_vs_Momentum_Pr"), negTrack.sign() * negTrack.tpcInnerParam(),
                         negTrack.tpcSignal());
         registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Pr"),
-                        negTrack.tpcInnerParam(), negTrack.tpcNSigmaPr());
+                        negTrack.sign() * negTrack.tpcInnerParam(), negTrack.tpcNSigmaPr());
       }
     }
   }
