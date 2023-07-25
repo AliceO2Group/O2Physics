@@ -57,7 +57,7 @@ class TrackSelection
   };
 
   // Flags for the selection of the DCAxy
-  enum GlobalTrackRun3DCAxyCut {
+  enum GlobalTrackRun3DCAxyCut : int {
     Default,
     ppPass3
   };
