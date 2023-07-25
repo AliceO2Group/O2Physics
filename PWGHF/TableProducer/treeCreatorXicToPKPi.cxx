@@ -83,7 +83,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandXicFull, "AOD", "HFCANDXICFULL",
+DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::CollisionId,
                   collision::PosX,
                   collision::PosY,
@@ -157,7 +157,7 @@ DECLARE_SOA_TABLE(HfCandXicFull, "AOD", "HFCANDXICFULL",
                   full::IsCandidateSwapped,
                   full::CandidateId);
 
-DECLARE_SOA_TABLE(HfCandXicFullE, "AOD", "HFCANDXICFULLE",
+DECLARE_SOA_TABLE(HfCandXicFullEvs, "AOD", "HFCANDXICFULLEV",
                   full::CollisionId,
                   collision::BCId,
                   collision::NumContrib,
@@ -167,7 +167,7 @@ DECLARE_SOA_TABLE(HfCandXicFullE, "AOD", "HFCANDXICFULLE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandXicFullP, "AOD", "HFCANDXICFULLP",
+DECLARE_SOA_TABLE(HfCandXicFullPs, "AOD", "HFCANDXICFULLP",
                   full::CollisionId,
                   collision::BCId,
                   full::Pt,
@@ -182,9 +182,9 @@ DECLARE_SOA_TABLE(HfCandXicFullP, "AOD", "HFCANDXICFULLP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorXicToPKPi {
-  Produces<o2::aod::HfCandXicFull> rowCandidateFull;
-  Produces<o2::aod::HfCandXicFullE> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandXicFullP> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandXicFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandXicFullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandXicFullPs> rowCandidateFullParticles;
 
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 

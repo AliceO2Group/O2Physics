@@ -75,7 +75,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandD0Lite, "AOD", "HFCANDD0LITE",
+DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   hf_cand::Chi2PCA,
                   full::DecayLength,
                   full::DecayLengthXY,
@@ -108,7 +108,7 @@ DECLARE_SOA_TABLE(HfCandD0Lite, "AOD", "HFCANDD0LITE",
                   full::FlagMc,
                   full::OriginMcRec)
 
-DECLARE_SOA_TABLE(HfCandD0Full, "AOD", "HFCANDD0FULL",
+DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   full::CollisionId,
                   collision::PosX,
                   collision::PosY,
@@ -150,6 +150,7 @@ DECLARE_SOA_TABLE(HfCandD0Full, "AOD", "HFCANDD0FULL",
                   full::NSigTofKa1,
                   full::CandidateSelFlag,
                   full::M,
+                  full::MaxNormalisedDeltaIP,
                   full::ImpactParameterProduct,
                   full::CosThetaStar,
                   full::Pt,
@@ -165,7 +166,7 @@ DECLARE_SOA_TABLE(HfCandD0Full, "AOD", "HFCANDD0FULL",
                   full::OriginMcRec,
                   full::CandidateId);
 
-DECLARE_SOA_TABLE(HfCandD0FullEv, "AOD", "HFCANDD0FULLEV",
+DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
                   full::CollisionId,
                   collision::NumContrib,
                   collision::PosX,
@@ -174,7 +175,7 @@ DECLARE_SOA_TABLE(HfCandD0FullEv, "AOD", "HFCANDD0FULLEV",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandD0FullP, "AOD", "HFCANDD0FULLP",
+DECLARE_SOA_TABLE(HfCandD0FullPs, "AOD", "HFCANDD0FULLP",
                   full::CollisionId,
                   full::Pt,
                   full::Eta,
@@ -188,10 +189,10 @@ DECLARE_SOA_TABLE(HfCandD0FullP, "AOD", "HFCANDD0FULLP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorD0ToKPi {
-  Produces<o2::aod::HfCandD0Full> rowCandidateFull;
-  Produces<o2::aod::HfCandD0FullEv> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandD0FullP> rowCandidateFullParticles;
-  Produces<o2::aod::HfCandD0Lite> rowCandidateLite;
+  Produces<o2::aod::HfCandD0Fulls> rowCandidateFull;
+  Produces<o2::aod::HfCandD0FullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandD0FullPs> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandD0Lites> rowCandidateLite;
 
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples
@@ -306,6 +307,7 @@ struct HfTreeCreatorD0ToKPi {
         prong1.tofNSigmaKa(),
         1 << candFlag,
         invMass,
+        candidate.maxNormalisedDeltaIP(),
         candidate.impactParameterProduct(),
         cosThetaStar,
         candidate.pt(),

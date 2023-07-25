@@ -62,7 +62,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandChicFull, "AOD", "HFCANDChicFull",
+DECLARE_SOA_TABLE(HfCandChicFulls, "AOD", "HFCANDCHICFULL",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -94,7 +94,7 @@ DECLARE_SOA_TABLE(HfCandChicFull, "AOD", "HFCANDChicFull",
                   full::MCflag,
                   full::OriginMcRec);
 
-DECLARE_SOA_TABLE(HfCandChicFullEvents, "AOD", "HFCANDChicFullE",
+DECLARE_SOA_TABLE(HfCandChicFullEs, "AOD", "HFCANDCHICFULLE",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -103,7 +103,7 @@ DECLARE_SOA_TABLE(HfCandChicFullEvents, "AOD", "HFCANDChicFullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandChicFullParticles, "AOD", "HFCANDChicFullP",
+DECLARE_SOA_TABLE(HfCandChicFullPs, "AOD", "HFCANDCHICFULLP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -117,9 +117,9 @@ DECLARE_SOA_TABLE(HfCandChicFullParticles, "AOD", "HFCANDChicFullP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorChicToJpsiGamma {
-  Produces<o2::aod::HfCandChicFull> rowCandidateFull;
-  Produces<o2::aod::HfCandChicFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandChicFullParticles> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandChicFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandChicFullEs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandChicFullPs> rowCandidateFullParticles;
 
   void init(InitContext const&)
   {
