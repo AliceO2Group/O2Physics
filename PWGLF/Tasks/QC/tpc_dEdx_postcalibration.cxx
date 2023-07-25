@@ -124,45 +124,45 @@ struct tpc_dEdx_postcalibration {
     // Raw dE/dx vs. TPC momentum
     registryCh.add(
       "dEdx_vs_Momentum", "dE/dx", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {1500, 0, 1500, "dE/dx (a. u.)"}});
     registryPi.add(
       "dEdx_vs_Momentum_Pi", "dE/dx", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
     registryKa.add(
       "dEdx_vs_Momentum_Ka", "dE/dx", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
     registryPr.add(
       "dEdx_vs_Momentum_Pr", "dE/dx", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
     registryDe.add(
       "dEdx_vs_Momentum_De", "dE/dx", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {{2000, -3.0, 3.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
     registryTr.add(
       "dEdx_vs_Momentum_Tr", "dE/dx", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {{200, -3.0, 3.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
     registryHe.add(
       "dEdx_vs_Momentum_He", "dE/dx", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
 
     // nsigma_(TPC) vs. TPC momentum
     registryPi.add(
       "nsigmaTPC_vs_Momentum_Pi", "nsigmaTPC", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryKa.add(
       "nsigmaTPC_vs_Momentum_Ka", "nsigmaTPC", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryPr.add(
       "nsigmaTPC_vs_Momentum_Pr", "nsigmaTPC", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryDe.add(
       "nsigmaTPC_vs_Momentum_De", "nsigmaTPC", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryTr.add(
       "nsigmaTPC_vs_Momentum_Tr", "nsigmaTPC", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
     registryHe.add(
       "nsigmaTPC_vs_Momentum_He", "nsigmaTPC", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
 
     // Event Counter
     registryCh.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20.0, +20.0, "z_{vtx} (cm)"}});
