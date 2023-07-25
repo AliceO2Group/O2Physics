@@ -255,7 +255,7 @@ struct jetTrackCollisionQa {
     // jet QA hists per jet in this collision
     for (const auto& j : jets) {
       if (j.collisionId() != collision.globalIndex()) {
-        return;
+        continue;
       }
       fillJetQA(j);
       if (j.pt() > leadingJetPt) {
@@ -390,7 +390,7 @@ struct mcJetTrackCollisionQa {
   {
     for (const auto& track : mct) {
       if ((!selectTrack(track, trackSelection)) || !(track.collisionId() == collision.globalIndex())) {
-        return;
+        continue;;
       }
       if (mc == true) {
         if (track.has_mcParticle()) {
