@@ -126,7 +126,7 @@ struct reso2initializer {
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
   Filter tpcPIDFilter = nabs(aod::pidtpc::tpcNSigmaPi) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaKa) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < pidnSigmaPreSelectionCut; // TPC
-  Filter trackEtaFilter = nabs(aod::track::eta) < cfgCutEta;                                                                                                                                                    // Eta cut
+  Filter trackEtaFilter = nabs(aod::track::eta) < cfgCutEta;                                                                                                                                                 // Eta cut
   Filter collisionFilter = nabs(aod::collision::posZ) < ConfEvtZvtx;
 
   // MC Resonance parent filter
