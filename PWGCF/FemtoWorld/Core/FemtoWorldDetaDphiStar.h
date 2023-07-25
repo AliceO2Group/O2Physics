@@ -70,6 +70,8 @@ class FemtoWorldDetaDphiStar
     }
     if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
     }
+    if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kD0D0bar) {
+    }
   }
   ///  Check if pair is close or not
   template <typename Part, typename Parts>
@@ -118,6 +120,9 @@ class FemtoWorldDetaDphiStar
       return pass;
     } else if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
       /// Track-Phi combination
+      return true;
+    } else if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kD0D0bar) {
+      /// Track-D0 combination
       return true;
     } else {
       LOG(fatal) << "FemtoWorldPairCleaner: Combination of objects not defined - quitting!";
