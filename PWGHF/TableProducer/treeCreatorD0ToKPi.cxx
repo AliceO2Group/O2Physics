@@ -75,7 +75,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCand2PLite, "AOD", "HFCAND2PLITE",
+DECLARE_SOA_TABLE(HfCandD0Lite, "AOD", "HFCANDD0LITE",
                   hf_cand::Chi2PCA,
                   full::DecayLength,
                   full::DecayLengthXY,
@@ -108,7 +108,7 @@ DECLARE_SOA_TABLE(HfCand2PLite, "AOD", "HFCAND2PLITE",
                   full::FlagMc,
                   full::OriginMcRec)
 
-DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
+DECLARE_SOA_TABLE(HfCandD0Full, "AOD", "HFCANDD0FULL",
                   full::CollisionId,
                   collision::PosX,
                   collision::PosY,
@@ -165,7 +165,7 @@ DECLARE_SOA_TABLE(HfCand2ProngFull, "AOD", "HFCAND2PFull",
                   full::OriginMcRec,
                   full::CandidateId);
 
-DECLARE_SOA_TABLE(HfCand2ProngFullEvents, "AOD", "HFCAND2PFullE",
+DECLARE_SOA_TABLE(HfCandD0FullEv, "AOD", "HFCANDD0FULLEV",
                   full::CollisionId,
                   collision::NumContrib,
                   collision::PosX,
@@ -174,7 +174,7 @@ DECLARE_SOA_TABLE(HfCand2ProngFullEvents, "AOD", "HFCAND2PFullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCand2ProngFullParticles, "AOD", "HFCAND2PFullP",
+DECLARE_SOA_TABLE(HfCandD0FullP, "AOD", "HFCANDD0FULLP",
                   full::CollisionId,
                   full::Pt,
                   full::Eta,
@@ -188,10 +188,10 @@ DECLARE_SOA_TABLE(HfCand2ProngFullParticles, "AOD", "HFCAND2PFullP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorD0ToKPi {
-  Produces<o2::aod::HfCand2ProngFull> rowCandidateFull;
-  Produces<o2::aod::HfCand2ProngFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCand2ProngFullParticles> rowCandidateFullParticles;
-  Produces<o2::aod::HfCand2PLite> rowCandidateLite;
+  Produces<o2::aod::HfCandD0Full> rowCandidateFull;
+  Produces<o2::aod::HfCandD0FullEv> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandD0FullP> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandD0Lite> rowCandidateLite;
 
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples

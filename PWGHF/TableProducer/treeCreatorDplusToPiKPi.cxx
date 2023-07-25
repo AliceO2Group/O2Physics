@@ -74,7 +74,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCand3ProngLite, "AOD", "HFCAND3PLite",
+DECLARE_SOA_TABLE(HfCandDpLite, "AOD", "HFCANDDPLITE",
                   hf_cand::Chi2PCA,
                   full::DecayLength,
                   full::DecayLengthXY,
@@ -110,7 +110,7 @@ DECLARE_SOA_TABLE(HfCand3ProngLite, "AOD", "HFCAND3PLite",
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec)
 
-DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
+DECLARE_SOA_TABLE(HfCandDpFull, "AOD", "HFCANDDPFULL",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -178,7 +178,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec);
 
-DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
+DECLARE_SOA_TABLE(HfCandDpFullE, "AOD", "HFCANDDPFULLE",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -187,7 +187,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
+DECLARE_SOA_TABLE(HfCandDpFullP, "AOD", "HFCANDDPFULLP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -199,10 +199,10 @@ DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorDplusToPiKPi {
-  Produces<o2::aod::HfCand3ProngFull> rowCandidateFull;
-  Produces<o2::aod::HfCand3ProngFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCand3ProngFullParticles> rowCandidateFullParticles;
-  Produces<o2::aod::HfCand3ProngLite> rowCandidateLite;
+  Produces<o2::aod::HfCandDpFull> rowCandidateFull;
+  Produces<o2::aod::HfCandDpFullE> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandDpFullP> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandDpLite> rowCandidateLite;
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};

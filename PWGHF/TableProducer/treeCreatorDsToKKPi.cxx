@@ -75,7 +75,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandDsLite, "AOD", "HFCANDDsLite",
+DECLARE_SOA_TABLE(HfCandDsLite, "AOD", "HFCANDDSLITE",
                   full::PtProng0,
                   full::PtProng1,
                   full::PtProng2,
@@ -115,7 +115,7 @@ DECLARE_SOA_TABLE(HfCandDsLite, "AOD", "HFCANDDsLite",
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec)
 
-DECLARE_SOA_TABLE(HfCandDsFull, "AOD", "HFCANDDsFull",
+DECLARE_SOA_TABLE(HfCandDsFull, "AOD", "HFCANDDSFULL",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -178,7 +178,7 @@ DECLARE_SOA_TABLE(HfCandDsFull, "AOD", "HFCANDDsFull",
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec);
 
-DECLARE_SOA_TABLE(HfCandDsFullEvents, "AOD", "HFCANDDsFullE",
+DECLARE_SOA_TABLE(HfCandDsFullE, "AOD", "HFCANDDSFULLE",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -187,7 +187,7 @@ DECLARE_SOA_TABLE(HfCandDsFullEvents, "AOD", "HFCANDDsFullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandDsFullParticles, "AOD", "HFCANDDsFullP",
+DECLARE_SOA_TABLE(HfCandDsFullP, "AOD", "HFCANDDSFULLP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -200,8 +200,8 @@ DECLARE_SOA_TABLE(HfCandDsFullParticles, "AOD", "HFCANDDsFullP",
 /// Writes the full information in an output TTree
 struct HfTreeCreatorDsToKKPi {
   Produces<o2::aod::HfCandDsFull> rowCandidateFull;
-  Produces<o2::aod::HfCandDsFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandDsFullParticles> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandDsFullE> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandDsFullP> rowCandidateFullParticles;
   Produces<o2::aod::HfCandDsLite> rowCandidateLite;
 
   Configurable<int> decayChannel{"decayChannel", 1, "Switch between decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
