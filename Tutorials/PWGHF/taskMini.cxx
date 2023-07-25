@@ -429,8 +429,8 @@ struct HfCandidateSelectorD0 {
   TrackSelectorKa selectorKaon;
 
   using TracksWithPid = soa::Join<Tracks,
-                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+                                  aod::pidTPCFullPi, aod::pidTPCFullKa,
+                                  aod::pidTOFFullPi, aod::pidTOFFullKa>;
 
   void init(InitContext const&)
   {
