@@ -39,9 +39,6 @@ using namespace o2::framework::expressions;
 using TracksPID = soa::Join<aod::FullTracks, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>; // for helper task with "full"
 // using TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>; // This is okay for "no full"
 
-// using TracksPID = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>; // This shows an error.
-
-// using CollisionsEvSel = soa::Join<aod::Collisions, aod::EvSels, aod::BcSels, aod::Mults>;
 using CollisionsEvSel = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 
 // Femto World Efficiency task
@@ -119,6 +116,16 @@ struct femtoWorldEficiencyTask {
     registryPri.add("minus/PrPri", "PrPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
     registryPri.add("minus/AllPri", "AllPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
 
+    registryPri.add("plus/PiPriPt", "PiPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryPri.add("plus/KaPriPt", "KaPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryPri.add("plus/PrPriPt", "PrPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPri.add("plus/AllPriPt", "AllPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+
+    registryPri.add("minus/PiPriPt", "PiPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryPri.add("minus/KaPriPt", "KaPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryPri.add("minus/PrPriPt", "PrPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPri.add("minus/AllPriPt", "AllPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+
     // MC truth
     registryMCtruth.add("plus/MCtruthPi", "MC truth pions;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
     registryMCtruth.add("plus/MCtruthKa", "MC truth kaons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
@@ -127,6 +134,16 @@ struct femtoWorldEficiencyTask {
     registryMCtruth.add("minus/MCtruthPi", "MC truth pions;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
     registryMCtruth.add("minus/MCtruthKa", "MC truth kaons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
     registryMCtruth.add("minus/MCtruthPr", "MC truth protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+
+    registryMCtruth.add("plus/MCtruthPiPt", "MC truth pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryMCtruth.add("plus/MCtruthKaPt", "MC truth kaons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryMCtruth.add("plus/MCtruthPrPt", "MC truth protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCtruth.add("plus/MCtruthAllPt", "MC truth all;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+
+    registryMCtruth.add("minus/MCtruthPiPt", "MC truth pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryMCtruth.add("minus/MCtruthKaPt", "MC truth kaons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryMCtruth.add("minus/MCtruthPrPt", "MC truth protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCtruth.add("minus/MCtruthAllPt", "MC truth all;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
   }
 
   bool IsNSigmaAccept(float nsigmaTPC, float nsigmaTOF, float mom)
@@ -247,86 +264,117 @@ struct femtoWorldEficiencyTask {
   PROCESS_SWITCH(femtoWorldEficiencyTask, processReco, "Process reconstructed data", true);
 
   using BigTracksMC = soa::Join<TracksPID, aod::McTrackLabels>;
-  void processMCTruth(const CollisionsEvSel::iterator& collision,
-                      soa::Filtered<BigTracksMC> const& tracks, aod::McParticles const& mcparticles, aod::BCsWithTimestamps const&)
+  Preslice<BigTracksMC> perCollisionID = aod::track::collisionId;
+
+  void processMCTruth(aod::McCollision const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, aod::McParticles const& mcparticles, soa::Filtered<BigTracksMC> const& tracks)
   {
+    // Loop over reconstructed collisions corresponding to MC collision
+    for (auto& collision : collisions) {
 
-    // Loop over tracks
-    for (auto& track : tracks) {
-      if (!track.has_mcParticle()) {
-        continue;
-      }
-      const auto mcParticle = track.mcParticle();
+      // Group tracks belonging to collision
+      auto groupedTracks = tracks.sliceBy(perCollisionID, collision.globalIndex());
 
-      if (track.sign() > 0) {
-        if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt())) {
-          registryPDG.fill(HIST("plus/PDGPi"), track.pt(), mcParticle.pdgCode());
+      // Loop over tracks
+      for (auto& track : groupedTracks) {
+        if (!track.has_mcParticle()) {
+          continue;
         }
-        if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt())) {
-          registryPDG.fill(HIST("plus/PDGKa"), track.pt(), mcParticle.pdgCode());
-        }
-        if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt())) {
-          registryPDG.fill(HIST("plus/PDGPr"), track.pt(), mcParticle.pdgCode());
-        }
-      }
-      if (track.sign() < 0) {
-        if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt())) {
-          registryPDG.fill(HIST("minus/PDGPi"), track.pt(), mcParticle.pdgCode());
-        }
-        if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt())) {
-          registryPDG.fill(HIST("minus/PDGKa"), track.pt(), mcParticle.pdgCode());
-        }
-        if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt())) {
-          registryPDG.fill(HIST("minus/PDGPr"), track.pt(), mcParticle.pdgCode());
-        }
-      }
+        const auto mcParticle = track.mcParticle();
 
-      if (mcParticle.isPhysicalPrimary()) {
         if (track.sign() > 0) {
-          registryPri.fill(HIST("plus/AllPri"), track.pt(), track.eta());
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt())) {
-            registryPri.fill(HIST("plus/PiPri"), track.pt(), track.eta());
+            registryPDG.fill(HIST("plus/PDGPi"), track.pt(), mcParticle.pdgCode());
           }
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt())) {
-            registryPri.fill(HIST("plus/KaPri"), track.pt(), track.eta());
+            registryPDG.fill(HIST("plus/PDGKa"), track.pt(), mcParticle.pdgCode());
           }
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt())) {
-            registryPri.fill(HIST("plus/PrPri"), track.pt(), track.eta());
+            registryPDG.fill(HIST("plus/PDGPr"), track.pt(), mcParticle.pdgCode());
           }
         }
         if (track.sign() < 0) {
-          registryPri.fill(HIST("minus/AllPri"), track.pt(), track.eta());
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt())) {
-            registryPri.fill(HIST("minus/PiPri"), track.pt(), track.eta());
+            registryPDG.fill(HIST("minus/PDGPi"), track.pt(), mcParticle.pdgCode());
           }
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt())) {
-            registryPri.fill(HIST("minus/KaPri"), track.pt(), track.eta());
+            registryPDG.fill(HIST("minus/PDGKa"), track.pt(), mcParticle.pdgCode());
           }
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt())) {
-            registryPri.fill(HIST("minus/PrPri"), track.pt(), track.eta());
+            registryPDG.fill(HIST("minus/PDGPr"), track.pt(), mcParticle.pdgCode());
+          }
+        }
+
+        if (mcParticle.isPhysicalPrimary() && TMath::Abs(mcParticle.eta()) < cfgCutEta) {
+          if (track.sign() > 0) {
+            registryPri.fill(HIST("plus/AllPri"), track.pt(), track.eta());
+            registryPri.fill(HIST("plus/AllPriPt"), track.pt());
+            if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt()) && mcParticle.pdgCode() == 211) {
+              registryPri.fill(HIST("plus/PiPri"), track.pt(), track.eta());
+              registryPri.fill(HIST("plus/PiPriPt"), mcParticle.pt());
+            }
+            if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt()) && mcParticle.pdgCode() == 321) {
+              registryPri.fill(HIST("plus/KaPri"), track.pt(), track.eta());
+              registryPri.fill(HIST("plus/KaPriPt"), mcParticle.pt());
+            }
+            if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt()) && mcParticle.pdgCode() == 2212) {
+              registryPri.fill(HIST("plus/PrPri"), track.pt(), track.eta());
+              registryPri.fill(HIST("plus/PrPriPt"), mcParticle.pt());
+            }
+          }
+          if (track.sign() < 0) {
+            registryPri.fill(HIST("minus/AllPri"), track.pt(), track.eta());
+            registryPri.fill(HIST("minus/AllPriPt"), mcParticle.pt());
+            if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt()) && mcParticle.pdgCode() == -211) {
+              registryPri.fill(HIST("minus/PiPri"), track.pt(), track.eta());
+              registryPri.fill(HIST("minus/PiPriPt"), mcParticle.pt());
+            }
+            if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt()) && mcParticle.pdgCode() == -321) {
+              registryPri.fill(HIST("minus/KaPri"), track.pt(), track.eta());
+              registryPri.fill(HIST("minus/KaPriPt"), mcParticle.pt());
+            }
+            if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt()) && mcParticle.pdgCode() == -2212) {
+              registryPri.fill(HIST("minus/PrPri"), track.pt(), track.eta());
+              registryPri.fill(HIST("minus/PrPriPt"), mcParticle.pt());
+            }
           }
         }
       }
     }
-
     // loop over MC particles
     for (auto& mcparticle : mcparticles) {
       if (!mcparticle.isPhysicalPrimary() || TMath::Abs(mcparticle.eta()) > cfgCutEta)
         continue;
-
-      if (mcparticle.pdgCode() == 211)
+      if (mcparticle.pdgCode() > 0) {
+        registryMCtruth.fill(HIST("plus/MCtruthAllPt"), mcparticle.pt());
+      }
+      if (mcparticle.pdgCode() == 211) {
         registryMCtruth.fill(HIST("plus/MCtruthPi"), mcparticle.pt(), mcparticle.eta());
-      if (mcparticle.pdgCode() == 321)
+        registryMCtruth.fill(HIST("plus/MCtruthPiPt"), mcparticle.pt());
+      }
+      if (mcparticle.pdgCode() == 321) {
         registryMCtruth.fill(HIST("plus/MCtruthKa"), mcparticle.pt(), mcparticle.eta());
-      if (mcparticle.pdgCode() == 2212)
+        registryMCtruth.fill(HIST("plus/MCtruthKaPt"), mcparticle.pt());
+      }
+      if (mcparticle.pdgCode() == 2212) {
         registryMCtruth.fill(HIST("plus/MCtruthPr"), mcparticle.pt(), mcparticle.eta());
+        registryMCtruth.fill(HIST("plus/MCtruthPrPt"), mcparticle.pt());
+      }
 
-      if (mcparticle.pdgCode() == -211)
+      if (mcparticle.pdgCode() < 0) {
+        registryMCtruth.fill(HIST("minus/MCtruthAllPt"), mcparticle.pt());
+      }
+      if (mcparticle.pdgCode() == -211) {
         registryMCtruth.fill(HIST("minus/MCtruthPi"), mcparticle.pt(), mcparticle.eta());
-      if (mcparticle.pdgCode() == -321)
+        registryMCtruth.fill(HIST("minus/MCtruthPiPt"), mcparticle.pt());
+      }
+      if (mcparticle.pdgCode() == -321) {
         registryMCtruth.fill(HIST("minus/MCtruthKa"), mcparticle.pt(), mcparticle.eta());
-      if (mcparticle.pdgCode() == -2212)
+        registryMCtruth.fill(HIST("minus/MCtruthKaPt"), mcparticle.pt());
+      }
+      if (mcparticle.pdgCode() == -2212) {
         registryMCtruth.fill(HIST("minus/MCtruthPr"), mcparticle.pt(), mcparticle.eta());
+        registryMCtruth.fill(HIST("minus/MCtruthPrPt"), mcparticle.pt());
+      }
     }
   }
   PROCESS_SWITCH(femtoWorldEficiencyTask, processMCTruth, "Process MC truth data", true);
