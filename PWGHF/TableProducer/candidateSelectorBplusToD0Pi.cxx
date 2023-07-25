@@ -40,7 +40,7 @@ struct HfCandidateSelectorBplusToD0Pi {
   // Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
   Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID at filtering level"};
-  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
+  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 999, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 9999, "Upper bound of track pT for TPC PID"};
@@ -123,10 +123,10 @@ struct HfCandidateSelectorBplusToD0Pi {
   template <typename T = int>
   bool selectionPID(const T& pidTrackPi)
   {
-    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::PIDAccepted) {
+    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
       return false;
     }
-    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::PIDRejected) {
+    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
       return false;
     }
 

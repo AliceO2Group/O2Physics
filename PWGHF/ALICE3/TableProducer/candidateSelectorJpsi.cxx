@@ -194,8 +194,8 @@ struct HfCandidateSelectorJpsi {
       }
 
       // track-level electron PID TOF selection
-      if (selectorElectron.getStatusTrackPIDTOF(trackPos) == TrackSelectorPID::PIDRejected ||
-          selectorElectron.getStatusTrackPIDTOF(trackNeg) == TrackSelectorPID::PIDRejected) {
+      if (selectorElectron.getStatusTrackPIDTOF(trackPos) == TrackSelectorPID::Rejected ||
+          selectorElectron.getStatusTrackPIDTOF(trackNeg) == TrackSelectorPID::Rejected) {
         selectedEETof = 0;
         selectedEE = 0;
         // if (selectedMuMu == 0) {
@@ -205,8 +205,8 @@ struct HfCandidateSelectorJpsi {
       }
 
       // track-level electron PID TPC selection
-      if (selectorElectron.getStatusTrackPIDTPC(trackPos) == TrackSelectorPID::PIDRejected ||
-          selectorElectron.getStatusTrackPIDTPC(trackNeg) == TrackSelectorPID::PIDRejected) {
+      if (selectorElectron.getStatusTrackPIDTPC(trackPos) == TrackSelectorPID::Rejected ||
+          selectorElectron.getStatusTrackPIDTPC(trackNeg) == TrackSelectorPID::Rejected) {
         selectedEETpc = 0;
         selectedEE = 0;
       }
@@ -271,8 +271,8 @@ struct HfCandidateSelectorJpsi {
       }
       //} else {
       // track-level electron PID TOF selection
-      if (selectorElectron.getStatusTrackPIDTOF(trackPos) == TrackSelectorPID::PIDRejected ||
-          selectorElectron.getStatusTrackPIDTOF(trackNeg) == TrackSelectorPID::PIDRejected) {
+      if (selectorElectron.getStatusTrackPIDTOF(trackPos) == TrackSelectorPID::Rejected ||
+          selectorElectron.getStatusTrackPIDTOF(trackNeg) == TrackSelectorPID::Rejected) {
         selectedEETof = 0;
         selectedEE = 0;
         // if (selectedMuMu == 0) {
@@ -282,8 +282,8 @@ struct HfCandidateSelectorJpsi {
       }
 
       // track-level electron PID RICH selection
-      if (selectorElectron.getStatusTrackPIDRICH(trackPos) == TrackSelectorPID::PIDRejected ||
-          selectorElectron.getStatusTrackPIDRICH(trackNeg) == TrackSelectorPID::PIDRejected) {
+      if (selectorElectron.getStatusTrackPIDRICH(trackPos) == TrackSelectorPID::Rejected ||
+          selectorElectron.getStatusTrackPIDRICH(trackNeg) == TrackSelectorPID::Rejected) {
         selectedEERich = 0;
         selectedEE = 0;
       }
@@ -295,8 +295,8 @@ struct HfCandidateSelectorJpsi {
       // }
 
       // track-level muon PID MID selection
-      if (selectorMuon.getStatusTrackPIDMID(trackPos) != TrackSelectorPID::PIDAccepted ||
-          selectorMuon.getStatusTrackPIDMID(trackNeg) != TrackSelectorPID::PIDAccepted) {
+      if (selectorMuon.getStatusTrackPIDMID(trackPos) != TrackSelectorPID::Accepted ||
+          selectorMuon.getStatusTrackPIDMID(trackNeg) != TrackSelectorPID::Accepted) {
         selectedMuMuMid = 0;
         selectedMuMu = 0;
       }

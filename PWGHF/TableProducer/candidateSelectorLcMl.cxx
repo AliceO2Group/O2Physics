@@ -172,22 +172,22 @@ struct HfCandidateSelectorLcMl {
         int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
         int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
 
-        if (pidTrackPos1Proton == TrackSelectorPID::PIDAccepted &&
-            pidTrackNegKaon == TrackSelectorPID::PIDAccepted &&
-            pidTrackPos2Pion == TrackSelectorPID::PIDAccepted) {
+        if (pidTrackPos1Proton == TrackSelectorPID::Accepted &&
+            pidTrackNegKaon == TrackSelectorPID::Accepted &&
+            pidTrackPos2Pion == TrackSelectorPID::Accepted) {
           pidLcToPKPi = 1; // accept LcToPKPi
-        } else if (pidTrackPos1Proton == TrackSelectorPID::PIDRejected ||
-                   pidTrackNegKaon == TrackSelectorPID::PIDRejected ||
-                   pidTrackPos2Pion == TrackSelectorPID::PIDRejected) {
+        } else if (pidTrackPos1Proton == TrackSelectorPID::Rejected ||
+                   pidTrackNegKaon == TrackSelectorPID::Rejected ||
+                   pidTrackPos2Pion == TrackSelectorPID::Rejected) {
           pidLcToPKPi = 0; // exclude LcToPKPi
         }
-        if (pidTrackPos2Proton == TrackSelectorPID::PIDAccepted &&
-            pidTrackNegKaon == TrackSelectorPID::PIDAccepted &&
-            pidTrackPos1Pion == TrackSelectorPID::PIDAccepted) {
+        if (pidTrackPos2Proton == TrackSelectorPID::Accepted &&
+            pidTrackNegKaon == TrackSelectorPID::Accepted &&
+            pidTrackPos1Pion == TrackSelectorPID::Accepted) {
           pidLcToPiKP = 1; // accept LcToPiKP
-        } else if (pidTrackPos1Pion == TrackSelectorPID::PIDRejected ||
-                   pidTrackNegKaon == TrackSelectorPID::PIDRejected ||
-                   pidTrackPos2Proton == TrackSelectorPID::PIDRejected) {
+        } else if (pidTrackPos1Pion == TrackSelectorPID::Rejected ||
+                   pidTrackNegKaon == TrackSelectorPID::Rejected ||
+                   pidTrackPos2Proton == TrackSelectorPID::Rejected) {
           pidLcToPiKP = 0; // exclude LcToPiKP
         }
       }
@@ -203,22 +203,22 @@ struct HfCandidateSelectorLcMl {
         int pidBayesTrackPos2Pion = selectorPion.getStatusTrackBayesPID(trackPos2);
         int pidBayesTrackNegKaon = selectorKaon.getStatusTrackBayesPID(trackNeg);
 
-        if (pidBayesTrackPos1Proton == TrackSelectorPID::PIDAccepted &&
-            pidBayesTrackNegKaon == TrackSelectorPID::PIDAccepted &&
-            pidBayesTrackPos2Pion == TrackSelectorPID::PIDAccepted) {
+        if (pidBayesTrackPos1Proton == TrackSelectorPID::Accepted &&
+            pidBayesTrackNegKaon == TrackSelectorPID::Accepted &&
+            pidBayesTrackPos2Pion == TrackSelectorPID::Accepted) {
           pidBayesLcToPKPi = 1; // accept LcToPKPi
-        } else if (pidBayesTrackPos1Proton == TrackSelectorPID::PIDRejected ||
-                   pidBayesTrackNegKaon == TrackSelectorPID::PIDRejected ||
-                   pidBayesTrackPos2Pion == TrackSelectorPID::PIDRejected) {
+        } else if (pidBayesTrackPos1Proton == TrackSelectorPID::Rejected ||
+                   pidBayesTrackNegKaon == TrackSelectorPID::Rejected ||
+                   pidBayesTrackPos2Pion == TrackSelectorPID::Rejected) {
           pidBayesLcToPKPi = 0; // exclude LcToPKPi
         }
-        if (pidBayesTrackPos2Proton == TrackSelectorPID::PIDAccepted &&
-            pidBayesTrackNegKaon == TrackSelectorPID::PIDAccepted &&
-            pidBayesTrackPos1Pion == TrackSelectorPID::PIDAccepted) {
+        if (pidBayesTrackPos2Proton == TrackSelectorPID::Accepted &&
+            pidBayesTrackNegKaon == TrackSelectorPID::Accepted &&
+            pidBayesTrackPos1Pion == TrackSelectorPID::Accepted) {
           pidBayesLcToPiKP = 1; // accept LcToPiKP
-        } else if (pidBayesTrackPos1Pion == TrackSelectorPID::PIDRejected ||
-                   pidBayesTrackNegKaon == TrackSelectorPID::PIDRejected ||
-                   pidBayesTrackPos2Proton == TrackSelectorPID::PIDRejected) {
+        } else if (pidBayesTrackPos1Pion == TrackSelectorPID::Rejected ||
+                   pidBayesTrackNegKaon == TrackSelectorPID::Rejected ||
+                   pidBayesTrackPos2Proton == TrackSelectorPID::Rejected) {
           pidBayesLcToPiKP = 0; // exclude LcToPiKP
         }
       }

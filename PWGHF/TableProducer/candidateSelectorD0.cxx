@@ -252,19 +252,19 @@ struct HfCandidateSelectorD0 {
       int pidD0 = -1;
       int pidD0bar = -1;
 
-      if (pidTrackPosPion == TrackSelectorPID::PIDAccepted &&
-          pidTrackNegKaon == TrackSelectorPID::PIDAccepted) {
+      if (pidTrackPosPion == TrackSelectorPID::Accepted &&
+          pidTrackNegKaon == TrackSelectorPID::Accepted) {
         pidD0 = 1; // accept D0
-      } else if (pidTrackPosPion == TrackSelectorPID::PIDRejected ||
-                 pidTrackNegKaon == TrackSelectorPID::PIDRejected) {
+      } else if (pidTrackPosPion == TrackSelectorPID::Rejected ||
+                 pidTrackNegKaon == TrackSelectorPID::Rejected) {
         pidD0 = 0; // exclude D0
       }
 
-      if (pidTrackNegPion == TrackSelectorPID::PIDAccepted &&
-          pidTrackPosKaon == TrackSelectorPID::PIDAccepted) {
+      if (pidTrackNegPion == TrackSelectorPID::Accepted &&
+          pidTrackPosKaon == TrackSelectorPID::Accepted) {
         pidD0bar = 1; // accept D0bar
-      } else if (pidTrackNegPion == TrackSelectorPID::PIDRejected ||
-                 pidTrackPosKaon == TrackSelectorPID::PIDRejected) {
+      } else if (pidTrackNegPion == TrackSelectorPID::Rejected ||
+                 pidTrackPosKaon == TrackSelectorPID::Rejected) {
         pidD0bar = 0; // exclude D0bar
       }
 

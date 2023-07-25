@@ -147,9 +147,9 @@ struct HfCandidateSelectorLcToK0sP {
   bool selectionStandardPID(const T& track)
   {
     if (track.p() < pPidThreshold) {
-      return selectorProtonLowP.getStatusTrackPIDTpcAndTof(track) == TrackSelectorPID::PIDAccepted;
+      return selectorProtonLowP.getStatusTrackPIDTpcAndTof(track) == TrackSelectorPID::Accepted;
     } else {
-      return selectorProtonHighP.getStatusTrackPIDTpcAndTof(track) == TrackSelectorPID::PIDAccepted;
+      return selectorProtonHighP.getStatusTrackPIDTpcAndTof(track) == TrackSelectorPID::Accepted;
     }
   }
 
@@ -161,9 +161,9 @@ struct HfCandidateSelectorLcToK0sP {
     }
 
     if (track.p() < pPidThreshold) {
-      return selectorProtonLowP.getStatusTrackBayesProbPID(track) == TrackSelectorPID::PIDAccepted;
+      return selectorProtonLowP.getStatusTrackBayesProbPID(track) == TrackSelectorPID::Accepted;
     } else {
-      return selectorProtonHighP.getStatusTrackBayesProbPID(track) == TrackSelectorPID::PIDAccepted;
+      return selectorProtonHighP.getStatusTrackBayesProbPID(track) == TrackSelectorPID::Accepted;
     }
   }
 

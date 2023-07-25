@@ -212,22 +212,22 @@ struct HfCandidateSelectorXicToPKPi {
         auto pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
         auto pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
 
-        if (pidTrackPos1Proton == TrackSelectorPID::PIDAccepted &&
-            pidTrackNegKaon == TrackSelectorPID::PIDAccepted &&
-            pidTrackPos2Pion == TrackSelectorPID::PIDAccepted) {
+        if (pidTrackPos1Proton == TrackSelectorPID::Accepted &&
+            pidTrackNegKaon == TrackSelectorPID::Accepted &&
+            pidTrackPos2Pion == TrackSelectorPID::Accepted) {
           pidXicToPKPi = 1; // accept XicpKpi
-        } else if (pidTrackPos1Proton == TrackSelectorPID::PIDRejected ||
-                   pidTrackNegKaon == TrackSelectorPID::PIDRejected ||
-                   pidTrackPos2Pion == TrackSelectorPID::PIDRejected) {
+        } else if (pidTrackPos1Proton == TrackSelectorPID::Rejected ||
+                   pidTrackNegKaon == TrackSelectorPID::Rejected ||
+                   pidTrackPos2Pion == TrackSelectorPID::Rejected) {
           pidXicToPKPi = 0; // exclude XicpKpi
         }
-        if (pidTrackPos2Proton == TrackSelectorPID::PIDAccepted &&
-            pidTrackNegKaon == TrackSelectorPID::PIDAccepted &&
-            pidTrackPos1Pion == TrackSelectorPID::PIDAccepted) {
+        if (pidTrackPos2Proton == TrackSelectorPID::Accepted &&
+            pidTrackNegKaon == TrackSelectorPID::Accepted &&
+            pidTrackPos1Pion == TrackSelectorPID::Accepted) {
           pidXicToPiKP = 1; // accept XicpiKp
-        } else if (pidTrackPos1Pion == TrackSelectorPID::PIDRejected ||
-                   pidTrackNegKaon == TrackSelectorPID::PIDRejected ||
-                   pidTrackPos2Proton == TrackSelectorPID::PIDRejected) {
+        } else if (pidTrackPos1Pion == TrackSelectorPID::Rejected ||
+                   pidTrackNegKaon == TrackSelectorPID::Rejected ||
+                   pidTrackPos2Proton == TrackSelectorPID::Rejected) {
           pidXicToPiKP = 0; // exclude XicpiKp
         }
       }

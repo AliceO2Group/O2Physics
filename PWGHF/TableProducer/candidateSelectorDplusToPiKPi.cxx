@@ -37,7 +37,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   // PID option
-  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
+  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
@@ -166,15 +166,15 @@ struct HfCandidateSelectorDplusToPiKPi {
   bool selectionPID(const T& pidTrackPos1Pion, const T& pidTrackNegKaon, const T& pidTrackPos2Pion)
   {
     if (!acceptPIDNotApplicable &&
-        (pidTrackPos1Pion != TrackSelectorPID::PIDAccepted ||
-         pidTrackNegKaon != TrackSelectorPID::PIDAccepted ||
-         pidTrackPos2Pion != TrackSelectorPID::PIDAccepted)) {
+        (pidTrackPos1Pion != TrackSelectorPID::Accepted ||
+         pidTrackNegKaon != TrackSelectorPID::Accepted ||
+         pidTrackPos2Pion != TrackSelectorPID::Accepted)) {
       return false;
     }
     if (acceptPIDNotApplicable &&
-        (pidTrackPos1Pion == TrackSelectorPID::PIDRejected ||
-         pidTrackNegKaon == TrackSelectorPID::PIDRejected ||
-         pidTrackPos2Pion == TrackSelectorPID::PIDRejected)) {
+        (pidTrackPos1Pion == TrackSelectorPID::Rejected ||
+         pidTrackNegKaon == TrackSelectorPID::Rejected ||
+         pidTrackPos2Pion == TrackSelectorPID::Rejected)) {
       return false;
     }
 
