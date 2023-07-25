@@ -113,8 +113,8 @@ struct HfCandidateSelectorToXiPi {
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- Omegac"};
 
-  TrackSelectorPIDPi selectorPion;
-  TrackSelectorPIDPr selectorProton;
+  TrackSelectorPi selectorPion;
+  TrackSelectorPr selectorProton;
 
   using MyTrackInfo = aod::BigTracksPIDExtended;
 

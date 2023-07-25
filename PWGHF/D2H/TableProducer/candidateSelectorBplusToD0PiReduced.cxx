@@ -59,7 +59,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   int mySelectionFlagD0 = -1;
   int mySelectionFlagD0bar = -1;
 
-  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPi selectorPion;
 
   HistogramRegistry registry{"registry"};
 

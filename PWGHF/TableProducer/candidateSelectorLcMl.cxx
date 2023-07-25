@@ -75,9 +75,9 @@ struct HfCandidateSelectorLcMl {
   int dataTypeML;
   OnnxModel model;
 
-  TrackSelectorPIDPi selectorPion;
-  TrackSelectorPIDKa selectorKaon;
-  TrackSelectorPIDPr selectorProton;
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
+  TrackSelectorPr selectorProton;
 
   using TrksPID = soa::Join<aod::BigTracksPIDExtended, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 

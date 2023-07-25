@@ -36,16 +36,16 @@ struct TrackSelectorPID
 };
 
 template <uint64_t pdg = kPiPlus>
-class TrackSelectorPIDBase
+class TrackSelectorPidBase
 {
  public:
   /// Default constructor
-  TrackSelectorPIDBase() = default;
+  TrackSelectorPidBase() = default;
 
   /// Conversion operator
   template <uint64_t pdgNew>
-  operator TrackSelectorPIDBase<pdgNew>() const {
-    TrackSelectorPIDBase<pdgNew> objNew;
+  operator TrackSelectorPidBase<pdgNew>() const {
+    TrackSelectorPidBase<pdgNew> objNew;
     // TPC
     objNew.setRangePtTpc(mPtTpcMin, mPtTpcMax);
     objNew.setRangeNSigmaTpc(mNSigmaTpcMin, mNSigmaTpcMax);
@@ -65,7 +65,7 @@ class TrackSelectorPIDBase
   }
 
   /// Default destructor
-  ~TrackSelectorPIDBase() = default;
+  ~TrackSelectorPidBase() = default;
 
   // TPC
 
@@ -641,10 +641,10 @@ class TrackSelectorPIDBase
 };
 
 // Predefined types
-using TrackSelectorPIDEl = TrackSelectorPIDBase<kElectron>;  // El
-using TrackSelectorPIDMu = TrackSelectorPIDBase<kMuonMinus>; // Mu
-using TrackSelectorPIDPi = TrackSelectorPIDBase<kPiPlus>;    // Pi
-using TrackSelectorPIDKa = TrackSelectorPIDBase<kKPlus>;     // Ka
-using TrackSelectorPIDPr = TrackSelectorPIDBase<kProton>;    // Pr
+using TrackSelectorEl = TrackSelectorPidBase<kElectron>;  // El
+using TrackSelectorMu = TrackSelectorPidBase<kMuonMinus>; // Mu
+using TrackSelectorPi = TrackSelectorPidBase<kPiPlus>;    // Pi
+using TrackSelectorKa = TrackSelectorPidBase<kKPlus>;     // Ka
+using TrackSelectorPr = TrackSelectorPidBase<kProton>;    // Pr
 
 #endif // COMMON_CORE_TRACKSELECTORPID_H_

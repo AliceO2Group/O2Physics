@@ -59,7 +59,7 @@ struct HfCandidateSelectorBplusToD0Pi {
 
   // check if selectionFlagD (defined in candidateCreatorBplus.cxx) and usePid configurables are in sync
   bool selectionFlagDAndUsePidInSync = true;
-  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPi selectorPion;
 
   using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
 

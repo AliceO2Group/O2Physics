@@ -425,8 +425,8 @@ struct HfCandidateSelectorD0 {
   Configurable<double> cpaMin{"cpaMin", 0.98, "Min. cosine of pointing angle"};
   Configurable<double> massWindow{"massWindow", 0.4, "Half-width of the invariant-mass window"};
 
-  TrackSelectorPIDPi selectorPion;
-  TrackSelectorPIDKa selectorKaon;
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
 
   using TracksWithPid = soa::Join<Tracks,
                                   aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,

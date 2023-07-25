@@ -93,11 +93,11 @@ struct HfTaskQaPidRejection {
   Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 0., "Nsigma cut on RICH combined with TOF"};
 
-  TrackSelectorPIDEl selectorElectron;
-  TrackSelectorPIDMu selectorMuon;
-  TrackSelectorPIDPi selectorPion;
-  TrackSelectorPIDKa selectorKaon;
-  TrackSelectorPIDPr selectorProton;
+  TrackSelectorEl selectorElectron;
+  TrackSelectorMu selectorMuon;
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
+  TrackSelectorPr selectorProton;
 
   static constexpr PDG_t PDGs[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
   static_assert(particle < 5 && "Maximum of particles reached");
@@ -270,11 +270,11 @@ struct HfTaskQaPidRejectionGeneral {
   Configurable<double> nSigmaRichMax{"nSigmaRichMax", 3., "Nsigma cut on RICH only"};
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 0., "Nsigma cut on RICH combined with TOF"};
 
-  TrackSelectorPIDEl selectorElectron;
-  TrackSelectorPIDMu selectorMuon;
-  TrackSelectorPIDPi selectorPion;
-  TrackSelectorPIDKa selectorKaon;
-  TrackSelectorPIDPr selectorProton;
+  TrackSelectorEl selectorElectron;
+  TrackSelectorMu selectorMuon;
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
+  TrackSelectorPr selectorProton;
 
   using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
 

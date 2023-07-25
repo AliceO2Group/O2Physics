@@ -56,8 +56,8 @@ struct HfCandidateSelectorLcToK0sP {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_k0s_p::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
 
-  TrackSelectorPIDPr selectorProtonLowP;
-  TrackSelectorPIDPr selectorProtonHighP;
+  TrackSelectorPr selectorProtonLowP;
+  TrackSelectorPr selectorProtonHighP;
 
   void init(InitContext&)
   {

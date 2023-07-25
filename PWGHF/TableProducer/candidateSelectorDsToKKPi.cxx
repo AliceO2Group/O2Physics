@@ -46,8 +46,8 @@ struct HfCandidateSelectorDsToKKPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_ds_to_k_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Ds candidate selection per pT bin"};
 
-  TrackSelectorPIDPi selectorPion;
-  TrackSelectorPIDKa selectorKaon;
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
 
   void init(InitContext const&)
   {

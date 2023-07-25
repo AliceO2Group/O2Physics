@@ -83,8 +83,8 @@ struct HfCandidateSelectorJpsi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_jpsi_to_e_e::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
-  TrackSelectorPIDEl selectorElectron;
-  TrackSelectorPIDMu selectorMuon;
+  TrackSelectorEl selectorElectron;
+  TrackSelectorMu selectorMuon;
 
   using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
   using ExtendedTracksPID = soa::Join<TracksPID, aod::TracksDCA>;

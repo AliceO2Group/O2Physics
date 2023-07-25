@@ -56,9 +56,9 @@ struct HfCandidateSelectorLc {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Lc candidate selection per pT bin"};
 
-  TrackSelectorPIDPi selectorPion;
-  TrackSelectorPIDKa selectorKaon;
-  TrackSelectorPIDPr selectorProton;
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
+  TrackSelectorPr selectorProton;
 
   using TrksPID = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 

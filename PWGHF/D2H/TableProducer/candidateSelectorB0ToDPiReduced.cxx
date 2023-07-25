@@ -59,7 +59,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
   // variable that will store the value of selectionFlagD (defined in dataCreatorDplusPiReduced.cxx)
   int mySelectionFlagD = -1;
 
-  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPi selectorPion;
 
   HistogramRegistry registry{"registry"};
 

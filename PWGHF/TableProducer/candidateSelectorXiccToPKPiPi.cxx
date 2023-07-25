@@ -49,7 +49,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xicc_to_p_k_pi_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Xicc candidate selection per pT bin"};
 
-  TrackSelectorPIDPi selectorPion;
+  TrackSelectorPi selectorPion;
 
   void init(InitContext const&)
   {
