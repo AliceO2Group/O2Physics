@@ -58,12 +58,12 @@ struct HfCandidateSelectorD0 {
 
   void init(InitContext& initContext)
   {
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     selectorKaon = selectorPion;
   }
 
@@ -236,18 +236,18 @@ struct HfCandidateSelectorD0 {
       int pidTrackNegPion = -1;
 
       if (usePidTpcAndTof) {
-        pidTrackPosKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackPos);
-        pidTrackPosPion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos);
-        pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackNeg);
-        pidTrackNegPion = selectorPion.getStatusTrackPIDTpcAndTof(trackNeg);
+        pidTrackPosKaon = selectorKaon.statusTpcAndTof(trackPos);
+        pidTrackPosPion = selectorPion.statusTpcAndTof(trackPos);
+        pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+        pidTrackNegPion = selectorPion.statusTpcAndTof(trackNeg);
       } else {
-        pidTrackPosKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos);
-        pidTrackPosPion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos);
-        pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
-        pidTrackNegPion = selectorPion.getStatusTrackPIDTpcOrTof(trackNeg);
+        pidTrackPosKaon = selectorKaon.statusTpcOrTof(trackPos);
+        pidTrackPosPion = selectorPion.statusTpcOrTof(trackPos);
+        pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+        pidTrackNegPion = selectorPion.statusTpcOrTof(trackNeg);
       }
 
-      // int pidBayesTrackPos1Pion = selectorPion.getStatusTrackBayesPID(trackPos);
+      // int pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos);
 
       int pidD0 = -1;
       int pidD0bar = -1;

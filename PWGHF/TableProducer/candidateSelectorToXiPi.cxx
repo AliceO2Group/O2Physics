@@ -125,19 +125,19 @@ struct HfCandidateSelectorToXiPi {
 
   void init(InitContext const&)
   {
-    selectorPion.setRangePtTPC(ptPiPidTpcMin, ptPiPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcPiMax, nSigmaTpcPiMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
-    selectorPion.setRangePtTOF(ptPiPidTofMin, ptPiPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofPiMax, nSigmaTofPiMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
+    selectorPion.setRangePtTpc(ptPiPidTpcMin, ptPiPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcPiMax, nSigmaTpcPiMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
+    selectorPion.setRangePtTof(ptPiPidTofMin, ptPiPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofPiMax, nSigmaTofPiMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
 
-    selectorProton.setRangePtTPC(ptPrPidTpcMin, ptPrPidTpcMax);
-    selectorProton.setRangeNSigmaTPC(-nSigmaTpcPrMax, nSigmaTpcPrMax);
-    selectorProton.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPrMax, nSigmaTpcCombinedPrMax);
-    selectorProton.setRangePtTOF(ptPrPidTofMin, ptPrPidTofMax);
-    selectorProton.setRangeNSigmaTOF(-nSigmaTofPrMax, nSigmaTofPrMax);
-    selectorProton.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPrMax, nSigmaTofCombinedPrMax);
+    selectorProton.setRangePtTpc(ptPrPidTpcMin, ptPrPidTpcMax);
+    selectorProton.setRangeNSigmaTpc(-nSigmaTpcPrMax, nSigmaTpcPrMax);
+    selectorProton.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedPrMax, nSigmaTpcCombinedPrMax);
+    selectorProton.setRangePtTof(ptPrPidTofMin, ptPrPidTofMax);
+    selectorProton.setRangeNSigmaTof(-nSigmaTofPrMax, nSigmaTofPrMax);
+    selectorProton.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedPrMax, nSigmaTofCombinedPrMax);
 
     registry.add("hSelPID", "hSelPID;status;entries", {HistType::kTH1F, {{12, 0., 12.}}});
     registry.add("hTest", "Test status consecutive;status;entries", {HistType::kTH1F, {{12, 0., 12.}}});
@@ -472,15 +472,15 @@ struct HfCandidateSelectorToXiPi {
       }
 
       if (usePidTpcOnly) {
-        statusPidPrFromLam = selectorProton.getStatusTrackPIDTPC(trackPrFromLam);
-        statusPidPiFromLam = selectorPion.getStatusTrackPIDTPC(trackPiFromLam);
-        statusPidPiFromCasc = selectorPion.getStatusTrackPIDTPC(trackPiFromCasc);
-        statusPidPiFromCharm = selectorPion.getStatusTrackPIDTPC(trackPiFromOmeg);
+        statusPidPrFromLam = selectorProton.statusTpc(trackPrFromLam);
+        statusPidPiFromLam = selectorPion.statusTpc(trackPiFromLam);
+        statusPidPiFromCasc = selectorPion.statusTpc(trackPiFromCasc);
+        statusPidPiFromCharm = selectorPion.statusTpc(trackPiFromOmeg);
       } else if (usePidTpcTofCombined) {
-        statusPidPrFromLam = selectorProton.getStatusTrackPIDTpcAndTof(trackPrFromLam);
-        statusPidPiFromLam = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromLam);
-        statusPidPiFromCasc = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromCasc);
-        statusPidPiFromCharm = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromOmeg);
+        statusPidPrFromLam = selectorProton.statusTpcAndTof(trackPrFromLam);
+        statusPidPiFromLam = selectorPion.statusTpcAndTof(trackPiFromLam);
+        statusPidPiFromCasc = selectorPion.statusTpcAndTof(trackPiFromCasc);
+        statusPidPiFromCharm = selectorPion.statusTpcAndTof(trackPiFromOmeg);
       }
 
       if (statusPidPrFromLam == TrackSelectorPID::Accepted && statusPidPiFromLam == TrackSelectorPID::Accepted) {

@@ -91,14 +91,14 @@ struct HfCandidateSelectorJpsi {
 
   void init(InitContext const& initContext)
   {
-    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
-    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
+    selectorElectron.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorElectron.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorElectron.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorElectron.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorElectron.setRangePtRich(ptPidRichMin, ptPidRichMax);
+    selectorElectron.setRangeNSigmaRich(-nSigmaRichMax, nSigmaRichMax);
+    selectorElectron.setRangeNSigmaRichCondTof(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
     selectorMuon = selectorElectron;
   }
 
@@ -194,8 +194,8 @@ struct HfCandidateSelectorJpsi {
       }
 
       // track-level electron PID TOF selection
-      if (selectorElectron.getStatusTrackPIDTOF(trackPos) == TrackSelectorPID::Rejected ||
-          selectorElectron.getStatusTrackPIDTOF(trackNeg) == TrackSelectorPID::Rejected) {
+      if (selectorElectron.statusTof(trackPos) == TrackSelectorPID::Rejected ||
+          selectorElectron.statusTof(trackNeg) == TrackSelectorPID::Rejected) {
         selectedEETof = 0;
         selectedEE = 0;
         // if (selectedMuMu == 0) {
@@ -205,8 +205,8 @@ struct HfCandidateSelectorJpsi {
       }
 
       // track-level electron PID TPC selection
-      if (selectorElectron.getStatusTrackPIDTPC(trackPos) == TrackSelectorPID::Rejected ||
-          selectorElectron.getStatusTrackPIDTPC(trackNeg) == TrackSelectorPID::Rejected) {
+      if (selectorElectron.statusTpc(trackPos) == TrackSelectorPID::Rejected ||
+          selectorElectron.statusTpc(trackNeg) == TrackSelectorPID::Rejected) {
         selectedEETpc = 0;
         selectedEE = 0;
       }
@@ -271,8 +271,8 @@ struct HfCandidateSelectorJpsi {
       }
       //} else {
       // track-level electron PID TOF selection
-      if (selectorElectron.getStatusTrackPIDTOF(trackPos) == TrackSelectorPID::Rejected ||
-          selectorElectron.getStatusTrackPIDTOF(trackNeg) == TrackSelectorPID::Rejected) {
+      if (selectorElectron.statusTof(trackPos) == TrackSelectorPID::Rejected ||
+          selectorElectron.statusTof(trackNeg) == TrackSelectorPID::Rejected) {
         selectedEETof = 0;
         selectedEE = 0;
         // if (selectedMuMu == 0) {
@@ -282,8 +282,8 @@ struct HfCandidateSelectorJpsi {
       }
 
       // track-level electron PID RICH selection
-      if (selectorElectron.getStatusTrackPIDRICH(trackPos) == TrackSelectorPID::Rejected ||
-          selectorElectron.getStatusTrackPIDRICH(trackNeg) == TrackSelectorPID::Rejected) {
+      if (selectorElectron.statusRich(trackPos) == TrackSelectorPID::Rejected ||
+          selectorElectron.statusRich(trackNeg) == TrackSelectorPID::Rejected) {
         selectedEERich = 0;
         selectedEE = 0;
       }
@@ -295,8 +295,8 @@ struct HfCandidateSelectorJpsi {
       // }
 
       // track-level muon PID MID selection
-      if (selectorMuon.getStatusTrackPIDMID(trackPos) != TrackSelectorPID::Accepted ||
-          selectorMuon.getStatusTrackPIDMID(trackNeg) != TrackSelectorPID::Accepted) {
+      if (selectorMuon.statusMid(trackPos) != TrackSelectorPID::Accepted ||
+          selectorMuon.statusMid(trackNeg) != TrackSelectorPID::Accepted) {
         selectedMuMuMid = 0;
         selectedMuMu = 0;
       }

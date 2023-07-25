@@ -47,17 +47,17 @@ class TrackSelectorPIDBase
   operator TrackSelectorPIDBase<pdgNew>() const {
     TrackSelectorPIDBase<pdgNew> objNew;
     // TPC
-    objNew.setRangePtTPC(mPtTPCMin, mPtTPCMax);
-    objNew.setRangeNSigmaTPC(mNSigmaTPCMin, mNSigmaTPCMax);
-    objNew.setRangeNSigmaTPCCondTOF(mNSigmaTPCMinCondTOF, mNSigmaTPCMaxCondTOF);
+    objNew.setRangePtTpc(mPtTpcMin, mPtTpcMax);
+    objNew.setRangeNSigmaTpc(mNSigmaTpcMin, mNSigmaTpcMax);
+    objNew.setRangeNSigmaTpcCondTof(mNSigmaTpcMinCondTof, mNSigmaTpcMaxCondTof);
     // TOF
-    objNew.setRangePtTOF(mPtTOFMin, mPtTOFMax);
-    objNew.setRangeNSigmaTOF(mNSigmaTOFMin, mNSigmaTOFMax);
-    objNew.setRangeNSigmaTOFCondTPC(mNSigmaTOFMinCondTPC, mNSigmaTOFMaxCondTPC);
+    objNew.setRangePtTof(mPtTofMin, mPtTofMax);
+    objNew.setRangeNSigmaTof(mNSigmaTofMin, mNSigmaTofMax);
+    objNew.setRangeNSigmaTofCondTpc(mNSigmaTofMinCondTpc, mNSigmaTofMaxCondTpc);
     // RICH
-    objNew.setRangePtRICH(mPtRICHMin, mPtRICHMax);
-    objNew.setRangeNSigmaRICH(mNSigmaRICHMin, mNSigmaRICHMax);
-    objNew.setRangeNSigmaRICHCondTOF(mNSigmaRICHMinCondTOF, mNSigmaRICHMaxCondTOF);
+    objNew.setRangePtRich(mPtRichMin, mPtRichMax);
+    objNew.setRangeNSigmaRich(mNSigmaRichMin, mNSigmaRichMax);
+    objNew.setRangeNSigmaRichCondTof(mNSigmaRichMinCondTof, mNSigmaRichMaxCondTof);
     // Bayesian
     objNew.setRangePtBayes(mPtBayesMin, mPtBayesMax);
     objNew.setProbBayesMin(mProbBayesMin);
@@ -70,45 +70,45 @@ class TrackSelectorPIDBase
   // TPC
 
   /// Set pT range where TPC PID is applicable.
-  void setRangePtTPC(float ptMin, float ptMax)
+  void setRangePtTpc(float ptMin, float ptMax)
   {
-    mPtTPCMin = ptMin;
-    mPtTPCMax = ptMax;
+    mPtTpcMin = ptMin;
+    mPtTpcMax = ptMax;
   }
 
   /// Set TPC nσ range in which a track should be accepted.
-  void setRangeNSigmaTPC(float nsMin, float nsMax)
+  void setRangeNSigmaTpc(float nsMin, float nsMax)
   {
-    mNSigmaTPCMin = nsMin;
-    mNSigmaTPCMax = nsMax;
+    mNSigmaTpcMin = nsMin;
+    mNSigmaTpcMax = nsMax;
   }
 
   /// Set TPC nσ range in which a track should be conditionally accepted if combined with TOF. Set to 0 to disable.
-  void setRangeNSigmaTPCCondTOF(float nsMin, float nsMax)
+  void setRangeNSigmaTpcCondTof(float nsMin, float nsMax)
   {
-    mNSigmaTPCMinCondTOF = nsMin;
-    mNSigmaTPCMaxCondTOF = nsMax;
+    mNSigmaTpcMinCondTof = nsMin;
+    mNSigmaTpcMaxCondTof = nsMax;
   }
 
   /// Checks if track is OK for TPC PID.
   /// \param track  track
   /// \return true if track is OK for TPC PID
   template <typename T>
-  bool isValidTrackPIDTPC(const T& track)
+  bool isValidForTpc(const T& track)
   {
     auto pt = track.pt();
-    return mPtTPCMin <= pt && pt <= mPtTPCMax;
+    return mPtTpcMin <= pt && pt <= mPtTpcMax;
   }
 
   /// Checks if track is compatible with given particle species hypothesis within given TPC nσ range.
   /// \param track  track
-  /// \param conditionalTOF  variable to store the result of selection with looser cuts for conditional accepting of track if combined with TOF
+  /// \param conditionalTof  variable to store the result of selection with looser cuts for conditional accepting of track if combined with TOF
   /// \return true if track satisfies TPC PID hypothesis for given TPC nσ range
   template <typename T>
-  bool isSelectedTrackPIDTPC(const T& track, bool& conditionalTOF)
+  bool isSelectedByTpc(const T& track, bool& conditionalTof)
   {
     // Accept if selection is disabled via large values.
-    if (mNSigmaTPCMin < -999. && mNSigmaTPCMax > 999.) {
+    if (mNSigmaTpcMin < -999. && mNSigmaTpcMax > 999.) {
       return true;
     }
 
@@ -128,27 +128,27 @@ class TrackSelectorPIDBase
         errorPdg();
       }
 
-    if (mNSigmaTPCMinCondTOF < -999. && mNSigmaTPCMaxCondTOF > 999.) {
-      conditionalTOF = true;
+    if (mNSigmaTpcMinCondTof < -999. && mNSigmaTpcMaxCondTof > 999.) {
+      conditionalTof = true;
     } else {
-      conditionalTOF = mNSigmaTPCMinCondTOF <= nSigma && nSigma <= mNSigmaTPCMaxCondTOF;
+      conditionalTof = mNSigmaTpcMinCondTof <= nSigma && nSigma <= mNSigmaTpcMaxCondTof;
     }
-    return mNSigmaTPCMin <= nSigma && nSigma <= mNSigmaTPCMax;
+    return mNSigmaTpcMin <= nSigma && nSigma <= mNSigmaTpcMax;
   }
 
   /// Returns status of TPC PID selection for a given track.
   /// \param track  track
   /// \return TPC selection status (see TrackSelectorPID::Status)
   template <typename T>
-  int getStatusTrackPIDTPC(const T& track)
+  int statusTpc(const T& track)
   {
-    if (!isValidTrackPIDTPC(track)) {
+    if (!isValidForTpc(track)) {
       return TrackSelectorPID::NotApplicable; // PID not applicable
     }
-    bool condTOF = false;
-    if (isSelectedTrackPIDTPC(track, condTOF)) {
+    bool condTof = false;
+    if (isSelectedByTpc(track, condTof)) {
       return TrackSelectorPID::Accepted; // accepted
-    } else if (condTOF) {
+    } else if (condTof) {
       return TrackSelectorPID::Conditional; // potential to be accepted if combined with TOF
     } else {
       return TrackSelectorPID::Rejected; // rejected
@@ -158,45 +158,45 @@ class TrackSelectorPIDBase
   // TOF
 
   /// Set pT range where TOF PID is applicable.
-  void setRangePtTOF(float ptMin, float ptMax)
+  void setRangePtTof(float ptMin, float ptMax)
   {
-    mPtTOFMin = ptMin;
-    mPtTOFMax = ptMax;
+    mPtTofMin = ptMin;
+    mPtTofMax = ptMax;
   }
 
   /// Set TOF nσ range in which a track should be accepted.
-  void setRangeNSigmaTOF(float nsMin, float nsMax)
+  void setRangeNSigmaTof(float nsMin, float nsMax)
   {
-    mNSigmaTOFMin = nsMin;
-    mNSigmaTOFMax = nsMax;
+    mNSigmaTofMin = nsMin;
+    mNSigmaTofMax = nsMax;
   }
 
   /// Set TOF nσ range in which a track should be conditionally accepted if combined with TPC. Set to 0 to disable.
-  void setRangeNSigmaTOFCondTPC(float nsMin, float nsMax)
+  void setRangeNSigmaTofCondTpc(float nsMin, float nsMax)
   {
-    mNSigmaTOFMinCondTPC = nsMin;
-    mNSigmaTOFMaxCondTPC = nsMax;
+    mNSigmaTofMinCondTpc = nsMin;
+    mNSigmaTofMaxCondTpc = nsMax;
   }
 
   /// Checks if track is OK for TOF PID.
   /// \param track  track
   /// \return true if track is OK for TOF PID
   template <typename T>
-  bool isValidTrackPIDTOF(const T& track)
+  bool isValidForTof(const T& track)
   {
     auto pt = track.pt();
-    return mPtTOFMin <= pt && pt <= mPtTOFMax;
+    return mPtTofMin <= pt && pt <= mPtTofMax;
   }
 
   /// Checks if track is compatible with given particle species hypothesis within given TOF nσ range.
   /// \param track  track
-  /// \param conditionalTPC  variable to store the result of selection with looser cuts for conditional accepting of track if combined with TPC
+  /// \param conditionalTpc  variable to store the result of selection with looser cuts for conditional accepting of track if combined with TPC
   /// \return true if track satisfies TOF PID hypothesis for given TOF nσ range
   template <typename T>
-  bool isSelectedTrackPIDTOF(const T& track, bool& conditionalTPC)
+  bool isSelectedByTof(const T& track, bool& conditionalTpc)
   {
     // Accept if selection is disabled via large values.
-    if (mNSigmaTOFMin < -999. && mNSigmaTOFMax > 999.) {
+    if (mNSigmaTofMin < -999. && mNSigmaTofMax > 999.) {
       return true;
     }
 
@@ -216,27 +216,27 @@ class TrackSelectorPIDBase
         errorPdg();
       }
 
-    if (mNSigmaTOFMinCondTPC < -999. && mNSigmaTOFMaxCondTPC > 999.) {
-      conditionalTPC = true;
+    if (mNSigmaTofMinCondTpc < -999. && mNSigmaTofMaxCondTpc > 999.) {
+      conditionalTpc = true;
     } else {
-      conditionalTPC = mNSigmaTOFMinCondTPC <= nSigma && nSigma <= mNSigmaTOFMaxCondTPC;
+      conditionalTpc = mNSigmaTofMinCondTpc <= nSigma && nSigma <= mNSigmaTofMaxCondTpc;
     }
-    return mNSigmaTOFMin <= nSigma && nSigma <= mNSigmaTOFMax;
+    return mNSigmaTofMin <= nSigma && nSigma <= mNSigmaTofMax;
   }
 
   /// Returns status of TOF PID selection for a given track.
   /// \param track  track
   /// \return TOF selection status (see TrackSelectorPID::Status)
   template <typename T>
-  int getStatusTrackPIDTOF(const T& track)
+  int statusTof(const T& track)
   {
-    if (!isValidTrackPIDTOF(track)) {
+    if (!isValidForTof(track)) {
       return TrackSelectorPID::NotApplicable; // PID not applicable
     }
-    bool condTPC = false;
-    if (isSelectedTrackPIDTOF(track, condTPC)) {
+    bool condTpc = false;
+    if (isSelectedByTof(track, condTpc)) {
       return TrackSelectorPID::Accepted; // accepted
-    } else if (condTPC) {
+    } else if (condTpc) {
       return TrackSelectorPID::Conditional; // potential to be accepted if combined with TPC
     } else {
       return TrackSelectorPID::Rejected; // rejected
@@ -246,48 +246,48 @@ class TrackSelectorPIDBase
   // RICH
 
   /// Set pT range where RICH PID is applicable.
-  void setRangePtRICH(float ptMin, float ptMax)
+  void setRangePtRich(float ptMin, float ptMax)
   {
-    mPtRICHMin = ptMin;
-    mPtRICHMax = ptMax;
+    mPtRichMin = ptMin;
+    mPtRichMax = ptMax;
   }
 
   /// Set RICH nσ range in which a track should be accepted.
-  void setRangeNSigmaRICH(float nsMin, float nsMax)
+  void setRangeNSigmaRich(float nsMin, float nsMax)
   {
-    mNSigmaRICHMin = nsMin;
-    mNSigmaRICHMax = nsMax;
+    mNSigmaRichMin = nsMin;
+    mNSigmaRichMax = nsMax;
   }
 
   /// Set RICH nσ range in which a track should be conditionally accepted if combined with TOF.
-  void setRangeNSigmaRICHCondTOF(float nsMin, float nsMax)
+  void setRangeNSigmaRichCondTof(float nsMin, float nsMax)
   {
-    mNSigmaRICHMinCondTOF = nsMin;
-    mNSigmaRICHMaxCondTOF = nsMax;
+    mNSigmaRichMinCondTof = nsMin;
+    mNSigmaRichMaxCondTof = nsMax;
   }
 
   /// Checks if track is OK for RICH PID.
   /// \param track  track
   /// \return true if track is OK for RICH PID
   template <typename T>
-  bool isValidTrackPIDRICH(const T& track)
+  bool isValidForRich(const T& track)
   {
     if (track.richId() < 0) {
       return false;
     }
     auto pt = track.pt();
-    return mPtRICHMin <= pt && pt <= mPtRICHMax;
+    return mPtRichMin <= pt && pt <= mPtRichMax;
   }
 
   /// Checks if track is compatible with given particle species hypothesis within given RICH nσ range.
   /// \param track  track
-  /// \param conditionalTOF  variable to store the result of selection with looser cuts for conditional accepting of track if combined with TOF
+  /// \param conditionalTof  variable to store the result of selection with looser cuts for conditional accepting of track if combined with TOF
   /// \return true if track satisfies RICH PID hypothesis for given RICH nσ range
   template <typename T>
-  bool isSelectedTrackPIDRICH(const T& track, bool& conditionalTOF)
+  bool isSelectedByRich(const T& track, bool& conditionalTof)
   {
     // Accept if selection is disabled via large values.
-    if (mNSigmaRICHMin < -999. && mNSigmaRICHMax > 999.) {
+    if (mNSigmaRichMin < -999. && mNSigmaRichMax > 999.) {
       return true;
     }
 
@@ -307,27 +307,27 @@ class TrackSelectorPIDBase
           errorPdg();
         }
 
-    if (mNSigmaRICHMinCondTOF < -999. && mNSigmaRICHMaxCondTOF > 999.) {
-      conditionalTOF = true;
+    if (mNSigmaRichMinCondTof < -999. && mNSigmaRichMaxCondTof > 999.) {
+      conditionalTof = true;
     } else {
-      conditionalTOF = mNSigmaRICHMinCondTOF <= nSigma && nSigma <= mNSigmaRICHMaxCondTOF;
+      conditionalTof = mNSigmaRichMinCondTof <= nSigma && nSigma <= mNSigmaRichMaxCondTof;
     }
-    return mNSigmaRICHMin <= nSigma && nSigma <= mNSigmaRICHMax;
+    return mNSigmaRichMin <= nSigma && nSigma <= mNSigmaRichMax;
   }
 
   /// Returns status of RICH PID selection for a given track.
   /// \param track  track
   /// \return RICH selection status (see TrackSelectorPID::Status)
   template <typename T>
-  int getStatusTrackPIDRICH(const T& track)
+  int statusRich(const T& track)
   {
-    if (!isValidTrackPIDRICH(track)) {
+    if (!isValidForRich(track)) {
       return TrackSelectorPID::NotApplicable; // PID not applicable
     }
-    bool condTOF = false;
-    if (isSelectedTrackPIDRICH(track, condTOF)) {
+    bool condTof = false;
+    if (isSelectedByRich(track, condTof)) {
       return TrackSelectorPID::Accepted; // accepted
-    } else if (condTOF) {
+    } else if (condTof) {
       return TrackSelectorPID::Conditional; // potential to be accepted if combined with TOF
     } else {
       return TrackSelectorPID::Rejected; // rejected
@@ -340,7 +340,7 @@ class TrackSelectorPIDBase
   /// \param track  track
   /// \return true if track is OK for MID PID
   template <typename T>
-  bool isValidTrackPIDMID(const T& track)
+  bool isValidForMid(const T& track)
   {
     if constexpr (pdg == kMuonMinus) {
       return track.midId() > -1;
@@ -354,7 +354,7 @@ class TrackSelectorPIDBase
   /// \param track  track
   /// \return true if track has been identified as muon by the MID detector
   template <typename T>
-  bool isSelectedTrackPIDMID(const T& track)
+  bool isSelectedByMid(const T& track)
   {
     if constexpr (pdg == kMuonMinus) {
       return track.mid().midIsMuon() == 1; // FIXME: change to return track.midIsMuon() once the column is bool.
@@ -368,13 +368,13 @@ class TrackSelectorPIDBase
   /// \param track  track
   /// \return MID selection status (see TrackSelectorPID::Status)
   template <typename T>
-  int getStatusTrackPIDMID(const T& track)
+  int statusMid(const T& track)
   {
     if constexpr (pdg == kMuonMinus) {
-      if (!isValidTrackPIDMID(track)) {
+      if (!isValidForMid(track)) {
         return TrackSelectorPID::NotApplicable; // PID not applicable
       }
-      if (isSelectedTrackPIDMID(track)) {
+      if (isSelectedByMid(track)) {
         return TrackSelectorPID::Accepted; // accepted
       } else {
         return TrackSelectorPID::Rejected; // rejected
@@ -391,18 +391,18 @@ class TrackSelectorPIDBase
   /// \param track  track
   /// \return status of combined PID (TPC or TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  int getStatusTrackPIDTpcOrTof(const T& track)
+  int statusTpcOrTof(const T& track)
   {
-    int statusTPC = getStatusTrackPIDTPC(track);
-    int statusTOF = getStatusTrackPIDTOF(track);
+    int pidTpc = statusTpc(track);
+    int pidTof = statusTof(track);
 
-    if (statusTPC == TrackSelectorPID::Accepted || statusTOF == TrackSelectorPID::Accepted) {
+    if (pidTpc == TrackSelectorPID::Accepted || pidTof == TrackSelectorPID::Accepted) {
       return TrackSelectorPID::Accepted;
     }
-    if (statusTPC == TrackSelectorPID::Conditional && statusTOF == TrackSelectorPID::Conditional) {
+    if (pidTpc == TrackSelectorPID::Conditional && pidTof == TrackSelectorPID::Conditional) {
       return TrackSelectorPID::Accepted;
     }
-    if (statusTPC == TrackSelectorPID::Rejected || statusTOF == TrackSelectorPID::Rejected) {
+    if (pidTpc == TrackSelectorPID::Rejected || pidTof == TrackSelectorPID::Rejected) {
       return TrackSelectorPID::Rejected;
     }
     return TrackSelectorPID::NotApplicable; // (NotApplicable for one detector) and (NotApplicable or Conditional for the other)
@@ -412,30 +412,30 @@ class TrackSelectorPIDBase
   /// \param track  track
   /// \return status of combined PID (TPC and TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  int getStatusTrackPIDTpcAndTof(const T& track)
+  int statusTpcAndTof(const T& track)
   {
-    int statusTPC = TrackSelectorPID::NotApplicable;
+    int pidTpc = TrackSelectorPID::NotApplicable;
     if (track.hasTPC()) {
-      statusTPC = getStatusTrackPIDTPC(track);
+      pidTpc = statusTpc(track);
     }
-    int statusTOF = TrackSelectorPID::NotApplicable;
+    int pidTof = TrackSelectorPID::NotApplicable;
     if (track.hasTOF()) {
-      statusTOF = getStatusTrackPIDTOF(track);
+      pidTof = statusTof(track);
     }
 
-    if (statusTPC == TrackSelectorPID::Accepted && statusTOF == TrackSelectorPID::Accepted) {
+    if (pidTpc == TrackSelectorPID::Accepted && pidTof == TrackSelectorPID::Accepted) {
       return TrackSelectorPID::Accepted;
     }
-    if (statusTPC == TrackSelectorPID::Accepted && (statusTOF == TrackSelectorPID::NotApplicable || statusTOF == TrackSelectorPID::Conditional)) {
+    if (pidTpc == TrackSelectorPID::Accepted && (pidTof == TrackSelectorPID::NotApplicable || pidTof == TrackSelectorPID::Conditional)) {
       return TrackSelectorPID::Accepted;
     }
-    if ((statusTPC == TrackSelectorPID::NotApplicable || statusTPC == TrackSelectorPID::Conditional) && statusTOF == TrackSelectorPID::Accepted) {
+    if ((pidTpc == TrackSelectorPID::NotApplicable || pidTpc == TrackSelectorPID::Conditional) && pidTof == TrackSelectorPID::Accepted) {
       return TrackSelectorPID::Accepted;
     }
-    if (statusTPC == TrackSelectorPID::Conditional && statusTOF == TrackSelectorPID::Conditional) {
+    if (pidTpc == TrackSelectorPID::Conditional && pidTof == TrackSelectorPID::Conditional) {
       return TrackSelectorPID::Accepted;
     }
-    if (statusTPC == TrackSelectorPID::Rejected || statusTOF == TrackSelectorPID::Rejected) {
+    if (pidTpc == TrackSelectorPID::Rejected || pidTof == TrackSelectorPID::Rejected) {
       return TrackSelectorPID::Rejected;
     }
     return TrackSelectorPID::NotApplicable; // (NotApplicable for one detector) and (NotApplicable or Conditional for the other)
@@ -443,56 +443,56 @@ class TrackSelectorPIDBase
 
   /// Checks whether a track is identified as electron and rejected as pion by TOF or RICH.
   /// \param track  track
-  /// \param useTOF  switch to use TOF
-  /// \param useRICH  switch to use RICH
+  /// \param useTof  switch to use TOF
+  /// \param useRich  switch to use RICH
   /// \return true if track is selected by TOF or RICH
   /// \note Ported from https://github.com/feisenhu/ALICE3-LoI-LMee/blob/main/efficiency/macros/anaEEstudy.cxx
   template <typename T>
-  bool isElectronAndNotPion(const T& track, bool useTOF = true, bool useRICH = true)
+  bool isElectronAndNotPion(const T& track, bool useTof = true, bool useRich = true)
   {
-    bool isSelTOF = false;
-    bool isSelRICH = false;
-    bool hasRICH = track.richId() > -1;
-    bool hasTOF = isValidTrackPIDTOF(track);
-    auto nSigmaTOFEl = track.tofNSigmaEl();
-    auto nSigmaTOFPi = track.tofNSigmaPi();
-    auto nSigmaRICHEl = hasRICH ? track.rich().richNsigmaEl() : -1000.;
-    auto nSigmaRICHPi = hasRICH ? track.rich().richNsigmaPi() : -1000.;
+    bool isSelTof = false;
+    bool isSelRich = false;
+    bool hasRich = track.richId() > -1;
+    bool hasTof = isValidForTof(track);
+    auto nSigmaTofEl = track.tofNSigmaEl();
+    auto nSigmaTofPi = track.tofNSigmaPi();
+    auto nSigmaRichEl = hasRich ? track.rich().richNsigmaEl() : -1000.;
+    auto nSigmaRichPi = hasRich ? track.rich().richNsigmaPi() : -1000.;
     auto p = track.p();
 
     // TOF
-    if (useTOF && hasTOF && (p < 0.6)) {
-      if (p > 0.4 && hasRICH) {
-        if ((std::abs(nSigmaTOFEl) < mNSigmaTOFMax) && (std::abs(nSigmaRICHEl) < mNSigmaRICHMax)) {
-          isSelTOF = true; // is selected as electron by TOF and RICH
+    if (useTof && hasTof && (p < 0.6)) {
+      if (p > 0.4 && hasRich) {
+        if ((std::abs(nSigmaTofEl) < mNSigmaTofMax) && (std::abs(nSigmaRichEl) < mNSigmaRichMax)) {
+          isSelTof = true; // is selected as electron by TOF and RICH
         }
       } else if (p <= 0.4) {
-        if (std::abs(nSigmaTOFEl) < mNSigmaTOFMax) {
-          isSelTOF = true; // is selected as electron by TOF
+        if (std::abs(nSigmaTofEl) < mNSigmaTofMax) {
+          isSelTof = true; // is selected as electron by TOF
         }
       } else {
-        isSelTOF = false; // This is rejecting all the heavier particles which do not have a RICH signal in the p area of 0.4-0.6 GeV/c
+        isSelTof = false; // This is rejecting all the heavier particles which do not have a RICH signal in the p area of 0.4-0.6 GeV/c
       }
-      if (std::abs(nSigmaTOFPi) < mNSigmaTOFMax) {
-        isSelTOF = false; // is selected as pion by TOF
+      if (std::abs(nSigmaTofPi) < mNSigmaTofMax) {
+        isSelTof = false; // is selected as pion by TOF
       }
     } else {
-      isSelTOF = false;
+      isSelTof = false;
     }
 
     // RICH
-    if (useRICH && hasRICH) {
-      if (std::abs(nSigmaRICHEl) < mNSigmaRICHMax) {
-        isSelRICH = true; // is selected as electron by RICH
+    if (useRich && hasRich) {
+      if (std::abs(nSigmaRichEl) < mNSigmaRichMax) {
+        isSelRich = true; // is selected as electron by RICH
       }
-      if ((std::abs(nSigmaRICHPi) < mNSigmaRICHMax) && (p > 1.0) && (p < 2.0)) {
-        isSelRICH = false; // is selected as pion by RICH
+      if ((std::abs(nSigmaRichPi) < mNSigmaRichMax) && (p > 1.0) && (p < 2.0)) {
+        isSelRich = false; // is selected as pion by RICH
       }
     } else {
-      isSelRICH = false;
+      isSelRich = false;
     }
 
-    return isSelRICH || isSelTOF;
+    return isSelRich || isSelTof;
   }
 
   // Bayesian
@@ -514,7 +514,7 @@ class TrackSelectorPIDBase
   /// \param track  track
   /// \return true if track is OK for Bayesian PID
   template <typename T>
-  bool isValidTrackBayesPID(const T& track)
+  bool isValidForBayes(const T& track)
   {
     auto pt = track.pt();
     return (mPtBayesMin <= pt && pt <= mPtBayesMax);
@@ -524,7 +524,7 @@ class TrackSelectorPIDBase
   /// \param track  track
   /// \return true if selected species has the highest Bayesian probability
   template <typename T>
-  bool isSelectedTrackBayesPID(const T& track)
+  bool isSelectedByBayes(const T& track)
   {
     // Get index of the most probable species for a given track.
     if constexpr (pdg == kElectron) {
@@ -547,7 +547,7 @@ class TrackSelectorPIDBase
   /// \param track  track
   /// \return true if track satisfies PID hypothesis for given Bayesian probability range
   template <typename T>
-  bool isSelectedTrackBayesProbPID(const T& track)
+  bool isSelectedByBayesProb(const T& track)
   {
     if (mProbBayesMin < 0.) { // switch off with negative values
       return true;
@@ -576,16 +576,15 @@ class TrackSelectorPIDBase
   /// \param track  track
   /// \return Bayesian selection status (see TrackSelectorPID::Status)
   template <typename T>
-  int getStatusTrackBayesPID(const T& track)
+  int statusBayes(const T& track)
   {
-    if (isValidTrackBayesPID(track)) {
-      if (isSelectedTrackBayesPID(track)) {
-        return TrackSelectorPID::Accepted; // accepted
-      } else {
-        return TrackSelectorPID::Rejected; // rejected
-      }
-    } else {
+    if (!isValidForBayes(track)) {
       return TrackSelectorPID::NotApplicable; // PID not applicable
+    }
+    if (isSelectedByBayes(track)) {
+      return TrackSelectorPID::Accepted; // accepted
+    } else {
+      return TrackSelectorPID::Rejected; // rejected
     }
   }
 
@@ -593,43 +592,42 @@ class TrackSelectorPIDBase
   /// \param track  track
   /// \return Bayesian selection status (see TrackSelectorPID::Status)
   template <typename T>
-  int getStatusTrackBayesProbPID(const T& track)
+  int statusBayesProb(const T& track)
   {
-    if (isValidTrackBayesPID(track)) {
-      if (isSelectedTrackBayesProbPID(track)) {
-        return TrackSelectorPID::Accepted; // accepted
-      } else {
-        return TrackSelectorPID::Rejected; // rejected
-      }
-    } else {
+    if (!isValidForBayes(track)) {
       return TrackSelectorPID::NotApplicable; // PID not applicable
+    }
+    if (isSelectedByBayesProb(track)) {
+      return TrackSelectorPID::Accepted; // accepted
+    } else {
+      return TrackSelectorPID::Rejected; // rejected
     }
   }
 
  private:
   // TPC
-  float mPtTPCMin = 0.;                ///< minimum pT for TPC PID [GeV/c]
-  float mPtTPCMax = 100.;              ///< maximum pT for TPC PID [GeV/c]
-  float mNSigmaTPCMin = -3.;           ///< minimum number of TPC σ
-  float mNSigmaTPCMax = 3.;            ///< maximum number of TPC σ
-  float mNSigmaTPCMinCondTOF = 0.;     ///< minimum number of TPC σ if combined with TOF
-  float mNSigmaTPCMaxCondTOF = 0.;     ///< maximum number of TPC σ if combined with TOF
+  float mPtTpcMin = 0.;                ///< minimum pT for TPC PID [GeV/c]
+  float mPtTpcMax = 100.;              ///< maximum pT for TPC PID [GeV/c]
+  float mNSigmaTpcMin = -3.;           ///< minimum number of TPC σ
+  float mNSigmaTpcMax = 3.;            ///< maximum number of TPC σ
+  float mNSigmaTpcMinCondTof = 0.;     ///< minimum number of TPC σ if combined with TOF
+  float mNSigmaTpcMaxCondTof = 0.;     ///< maximum number of TPC σ if combined with TOF
 
   // TOF
-  float mPtTOFMin = 0.;                ///< minimum pT for TOF PID [GeV/c]
-  float mPtTOFMax = 100.;              ///< maximum pT for TOF PID [GeV/c]
-  float mNSigmaTOFMin = -3.;           ///< minimum number of TOF σ
-  float mNSigmaTOFMax = 3.;            ///< maximum number of TOF σ
-  float mNSigmaTOFMinCondTPC = 0.;     ///< minimum number of TOF σ if combined with TPC
-  float mNSigmaTOFMaxCondTPC = 0.;     ///< maximum number of TOF σ if combined with TPC
+  float mPtTofMin = 0.;                ///< minimum pT for TOF PID [GeV/c]
+  float mPtTofMax = 100.;              ///< maximum pT for TOF PID [GeV/c]
+  float mNSigmaTofMin = -3.;           ///< minimum number of TOF σ
+  float mNSigmaTofMax = 3.;            ///< maximum number of TOF σ
+  float mNSigmaTofMinCondTpc = 0.;     ///< minimum number of TOF σ if combined with TPC
+  float mNSigmaTofMaxCondTpc = 0.;     ///< maximum number of TOF σ if combined with TPC
 
   // RICH
-  float mPtRICHMin = 0.;                ///< minimum pT for RICH PID [GeV/c]
-  float mPtRICHMax = 100.;              ///< maximum pT for RICH PID [GeV/c]
-  float mNSigmaRICHMin = -3.;           ///< minimum number of RICH σ
-  float mNSigmaRICHMax = 3.;            ///< maximum number of RICH σ
-  float mNSigmaRICHMinCondTOF = 0.;     ///< minimum number of RICH σ if combined with TOF
-  float mNSigmaRICHMaxCondTOF = 0.;     ///< maximum number of RICH σ if combined with TOF
+  float mPtRichMin = 0.;                ///< minimum pT for RICH PID [GeV/c]
+  float mPtRichMax = 100.;              ///< maximum pT for RICH PID [GeV/c]
+  float mNSigmaRichMin = -3.;           ///< minimum number of RICH σ
+  float mNSigmaRichMax = 3.;            ///< maximum number of RICH σ
+  float mNSigmaRichMinCondTof = 0.;     ///< minimum number of RICH σ if combined with TOF
+  float mNSigmaRichMaxCondTof = 0.;     ///< maximum number of RICH σ if combined with TOF
 
   // Bayesian
   float mPtBayesMin = 0.;    ///< minimum pT for Bayesian PID [GeV/c]

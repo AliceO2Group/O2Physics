@@ -68,16 +68,16 @@ struct HfCandidateSelectorLcToK0sP {
       LOGF(fatal, "Cannot enable processWithStandardPID and processWithBayesPID at the same time. Please choose one.");
     }
 
-    selectorProtonLowP.setRangeNSigmaTPC(-nSigmaTpcMaxLowP, nSigmaTpcMaxLowP);
-    selectorProtonLowP.setRangeNSigmaTOF(-nSigmaTofMaxLowP, nSigmaTofMaxLowP);
-    selectorProtonLowP.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMaxLowP, nSigmaTpcCombinedMaxLowP);
-    selectorProtonLowP.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMaxLowP, nSigmaTofCombinedMaxLowP);
+    selectorProtonLowP.setRangeNSigmaTpc(-nSigmaTpcMaxLowP, nSigmaTpcMaxLowP);
+    selectorProtonLowP.setRangeNSigmaTof(-nSigmaTofMaxLowP, nSigmaTofMaxLowP);
+    selectorProtonLowP.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMaxLowP, nSigmaTpcCombinedMaxLowP);
+    selectorProtonLowP.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMaxLowP, nSigmaTofCombinedMaxLowP);
     selectorProtonLowP.setProbBayesMin(probBayesMinLowP);
 
-    selectorProtonHighP.setRangeNSigmaTPC(-nSigmaTpcMaxHighP, nSigmaTpcMaxHighP);
-    selectorProtonHighP.setRangeNSigmaTOF(-nSigmaTofMaxHighP, nSigmaTofMaxHighP);
-    selectorProtonHighP.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMaxHighP, nSigmaTpcCombinedMaxHighP);
-    selectorProtonHighP.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMaxHighP, nSigmaTofCombinedMaxHighP);
+    selectorProtonHighP.setRangeNSigmaTpc(-nSigmaTpcMaxHighP, nSigmaTpcMaxHighP);
+    selectorProtonHighP.setRangeNSigmaTof(-nSigmaTofMaxHighP, nSigmaTofMaxHighP);
+    selectorProtonHighP.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMaxHighP, nSigmaTpcCombinedMaxHighP);
+    selectorProtonHighP.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMaxHighP, nSigmaTofCombinedMaxHighP);
     selectorProtonHighP.setProbBayesMin(probBayesMinHighP);
   }
 
@@ -147,9 +147,9 @@ struct HfCandidateSelectorLcToK0sP {
   bool selectionStandardPID(const T& track)
   {
     if (track.p() < pPidThreshold) {
-      return selectorProtonLowP.getStatusTrackPIDTpcAndTof(track) == TrackSelectorPID::Accepted;
+      return selectorProtonLowP.statusTpcAndTof(track) == TrackSelectorPID::Accepted;
     } else {
-      return selectorProtonHighP.getStatusTrackPIDTpcAndTof(track) == TrackSelectorPID::Accepted;
+      return selectorProtonHighP.statusTpcAndTof(track) == TrackSelectorPID::Accepted;
     }
   }
 
@@ -161,9 +161,9 @@ struct HfCandidateSelectorLcToK0sP {
     }
 
     if (track.p() < pPidThreshold) {
-      return selectorProtonLowP.getStatusTrackBayesProbPID(track) == TrackSelectorPID::Accepted;
+      return selectorProtonLowP.statusBayesProb(track) == TrackSelectorPID::Accepted;
     } else {
-      return selectorProtonHighP.getStatusTrackBayesProbPID(track) == TrackSelectorPID::Accepted;
+      return selectorProtonHighP.statusBayesProb(track) == TrackSelectorPID::Accepted;
     }
   }
 

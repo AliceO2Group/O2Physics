@@ -79,12 +79,12 @@ struct HfCandidateSelectorDplusToPiKPi {
 
   void init(InitContext const&)
   {
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     selectorKaon = selectorPion;
 
     if (activateQA) {
@@ -224,9 +224,9 @@ struct HfCandidateSelectorDplusToPiKPi {
       }
 
       // track-level PID selection
-      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos1);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackNeg);
-      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos2);
+      int pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
+      int pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+      int pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
 
       if (!selectionPID(pidTrackPos1Pion, pidTrackNegKaon, pidTrackPos2Pion)) { // exclude D±
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);

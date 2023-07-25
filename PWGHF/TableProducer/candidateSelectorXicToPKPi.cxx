@@ -57,12 +57,12 @@ struct HfCandidateSelectorXicToPKPi {
 
   void init(InitContext const&)
   {
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     selectorKaon = selectorPion;
     selectorProton = selectorPion;
   }
@@ -206,11 +206,11 @@ struct HfCandidateSelectorXicToPKPi {
         pidXicToPiKP = 1;
       } else {
         // track-level PID selection
-        auto pidTrackPos1Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos1);
-        auto pidTrackPos2Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos2);
-        auto pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos1);
-        auto pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
-        auto pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
+        auto pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1);
+        auto pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2);
+        auto pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
+        auto pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
+        auto pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
 
         if (pidTrackPos1Proton == TrackSelectorPID::Accepted &&
             pidTrackNegKaon == TrackSelectorPID::Accepted &&

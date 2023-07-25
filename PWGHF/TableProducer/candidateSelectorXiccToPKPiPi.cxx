@@ -53,12 +53,12 @@ struct HfCandidateSelectorXiccToPKPiPi {
 
   void init(InitContext const&)
   {
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
   }
 
   /// Conjugate-independent topological cuts
@@ -165,7 +165,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
         pidPi = 1;
       } else {
         // track-level PID selection
-        int pidPion = selectorPion.getStatusTrackPIDTpcOrTof(trackPi);
+        int pidPion = selectorPion.statusTpcOrTof(trackPi);
         if (pidPion == TrackSelectorPID::Accepted) {
           pidPi = 1;
         }

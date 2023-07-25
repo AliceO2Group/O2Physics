@@ -434,8 +434,8 @@ struct HfCandidateSelectorD0 {
 
   void init(InitContext const&)
   {
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpc, nSigmaTpc);
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpc, nSigmaTpc);
     selectorKaon = selectorPion;
   }
 
@@ -508,10 +508,10 @@ struct HfCandidateSelectorD0 {
       }
 
       // track-level PID selection
-      int pidTrackPosKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos);
-      int pidTrackPosPion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
-      int pidTrackNegPion = selectorPion.getStatusTrackPIDTpcOrTof(trackNeg);
+      int pidTrackPosKaon = selectorKaon.statusTpcOrTof(trackPos);
+      int pidTrackPosPion = selectorPion.statusTpcOrTof(trackPos);
+      int pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+      int pidTrackNegPion = selectorPion.statusTpcOrTof(trackNeg);
 
       int pidD0 = -1;
       int pidD0bar = -1;

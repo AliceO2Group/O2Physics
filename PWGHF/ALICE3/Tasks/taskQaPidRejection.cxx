@@ -108,14 +108,14 @@ struct HfTaskQaPidRejection {
 
   void init(InitContext&)
   {
-    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
-    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
+    selectorElectron.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorElectron.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorElectron.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorElectron.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorElectron.setRangePtRich(ptPidRichMin, ptPidRichMax);
+    selectorElectron.setRangeNSigmaRich(-nSigmaRichMax, nSigmaRichMax);
+    selectorElectron.setRangeNSigmaRichCondTof(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
     selectorMuon = selectorElectron;
     selectorPion = selectorElectron;
     selectorKaon = selectorElectron;
@@ -170,15 +170,15 @@ struct HfTaskQaPidRejection {
       if (particlePDG != 0 && mcParticle.pdgCode() != particlePDG) { // Checking PDG code
         continue;
       }
-      bool isTOFhpElectron = !(selectorElectron.getStatusTrackPIDTOF(track) == TrackSelectorPID::Rejected);
-      bool isRICHhpElectron = !(selectorElectron.getStatusTrackPIDRICH(track) == TrackSelectorPID::Rejected);
-      bool isTOFhpPion = !(selectorPion.getStatusTrackPIDTOF(track) == TrackSelectorPID::Rejected);
-      bool isRICHhpPion = !(selectorPion.getStatusTrackPIDRICH(track) == TrackSelectorPID::Rejected);
-      bool isTOFhpKaon = !(selectorKaon.getStatusTrackPIDTOF(track) == TrackSelectorPID::Rejected);
-      bool isRICHhpKaon = !(selectorKaon.getStatusTrackPIDRICH(track) == TrackSelectorPID::Rejected);
-      bool isTOFhpProton = !(selectorProton.getStatusTrackPIDTOF(track) == TrackSelectorPID::Rejected);
-      bool isRICHhpProton = !(selectorProton.getStatusTrackPIDRICH(track) == TrackSelectorPID::Rejected);
-      bool isMIDhpMuon = (selectorMuon.getStatusTrackPIDMID(track) == TrackSelectorPID::Accepted);
+      bool isTOFhpElectron = !(selectorElectron.statusTof(track) == TrackSelectorPID::Rejected);
+      bool isRICHhpElectron = !(selectorElectron.statusRich(track) == TrackSelectorPID::Rejected);
+      bool isTOFhpPion = !(selectorPion.statusTof(track) == TrackSelectorPID::Rejected);
+      bool isRICHhpPion = !(selectorPion.statusRich(track) == TrackSelectorPID::Rejected);
+      bool isTOFhpKaon = !(selectorKaon.statusTof(track) == TrackSelectorPID::Rejected);
+      bool isRICHhpKaon = !(selectorKaon.statusRich(track) == TrackSelectorPID::Rejected);
+      bool isTOFhpProton = !(selectorProton.statusTof(track) == TrackSelectorPID::Rejected);
+      bool isRICHhpProton = !(selectorProton.statusRich(track) == TrackSelectorPID::Rejected);
+      bool isMIDhpMuon = (selectorMuon.statusMid(track) == TrackSelectorPID::Accepted);
 
       if (mcParticle.isPhysicalPrimary()) {
         histos.fill(HIST("tracking/pteta"), track.pt(), track.eta());
@@ -282,14 +282,14 @@ struct HfTaskQaPidRejectionGeneral {
 
   void init(InitContext&)
   {
-    selectorElectron.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorElectron.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorElectron.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorElectron.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorElectron.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorElectron.setRangePtRICH(ptPidRichMin, ptPidRichMax);
-    selectorElectron.setRangeNSigmaRICH(-nSigmaRichMax, nSigmaRichMax);
-    selectorElectron.setRangeNSigmaRICHCondTOF(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
+    selectorElectron.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorElectron.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorElectron.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorElectron.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorElectron.setRangePtRich(ptPidRichMin, ptPidRichMax);
+    selectorElectron.setRangeNSigmaRich(-nSigmaRichMax, nSigmaRichMax);
+    selectorElectron.setRangeNSigmaRichCondTof(-nSigmaRichCombinedTofMax, nSigmaRichCombinedTofMax);
     selectorMuon = selectorElectron;
     selectorPion = selectorElectron;
     selectorKaon = selectorElectron;
@@ -373,11 +373,11 @@ struct HfTaskQaPidRejectionGeneral {
         histos.fill(HIST("hKaonNoSel/pteta"), track.pt(), track.eta());
       }
 
-      bool isRICHhpElectron = !(selectorElectron.getStatusTrackPIDRICH(track) == TrackSelectorPID::Rejected);
-      // bool isRICHhpPion = !(selectorPion.getStatusTrackPIDRICH(track) == TrackSelectorPID::Rejected);
-      // bool isRICHhpKaon = !(selectorKaon.getStatusTrackPIDRICH(track) == TrackSelectorPID::Rejected);
-      // bool isRICHhpProton = !(selectorProton.getStatusTrackPIDRICH(track) == TrackSelectorPID::Rejected);
-      bool isMIDhpMuon = (selectorMuon.getStatusTrackPIDMID(track) == TrackSelectorPID::Accepted);
+      bool isRICHhpElectron = !(selectorElectron.statusRich(track) == TrackSelectorPID::Rejected);
+      // bool isRICHhpPion = !(selectorPion.statusRich(track) == TrackSelectorPID::Rejected);
+      // bool isRICHhpKaon = !(selectorKaon.statusRich(track) == TrackSelectorPID::Rejected);
+      // bool isRICHhpProton = !(selectorProton.statusRich(track) == TrackSelectorPID::Rejected);
+      bool isMIDhpMuon = (selectorMuon.statusMid(track) == TrackSelectorPID::Accepted);
 
       bool isRICHElLoose = isRICHhpElectron;
 

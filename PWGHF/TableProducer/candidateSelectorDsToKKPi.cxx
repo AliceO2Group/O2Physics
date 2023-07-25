@@ -51,10 +51,10 @@ struct HfCandidateSelectorDsToKKPi {
 
   void init(InitContext const&)
   {
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
     selectorKaon = selectorPion;
   }
 
@@ -189,11 +189,11 @@ struct HfCandidateSelectorDsToKKPi {
       }
 
       // track-level PID selection
-      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos1);
-      int pidTrackPos1Kaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos1);
-      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
-      int pidTrackPos2Kaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos2);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
+      int pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
+      int pidTrackPos1Kaon = selectorKaon.statusTpcOrTof(trackPos1);
+      int pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
+      int pidTrackPos2Kaon = selectorKaon.statusTpcOrTof(trackPos2);
+      int pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
 
       bool pidDsToKKPi = !(pidTrackPos1Kaon == TrackSelectorPID::Rejected ||
                            pidTrackNegKaon == TrackSelectorPID::Rejected ||

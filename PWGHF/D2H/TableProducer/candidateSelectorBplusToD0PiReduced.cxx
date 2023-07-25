@@ -66,12 +66,12 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   void init(InitContext const& initContext)
   {
     if (usePid) {
-      selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-      selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-      selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-      selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-      selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-      selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+      selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+      selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+      selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+      selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+      selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+      selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     }
 
     if (activateQA) {
@@ -148,7 +148,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       // track-level PID selection
       if (usePid) {
         auto trackPi = hfCandBp.prong1_as<HfTracksPidReduced>();
-        int pidTrackPi = selectorPion.getStatusTrackPIDTpcAndTof(trackPi);
+        int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         if (!hf_sel_candidate_bplus::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B+ candidate selection failed at PID selection");
           hfSelBplusToD0PiCandidate(statusBplus);

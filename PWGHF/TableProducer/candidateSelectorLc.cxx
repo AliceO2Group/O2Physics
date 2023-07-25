@@ -64,12 +64,12 @@ struct HfCandidateSelectorLc {
 
   void init(InitContext const&)
   {
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
     selectorKaon = selectorPion;
     selectorProton = selectorPion;
@@ -196,17 +196,17 @@ struct HfCandidateSelectorLc {
         int pidTrackPos2Pion = 999;
         int pidTrackNegKaon = 999;
         if (usePidTpcAndTof) {
-          pidTrackPos1Proton = selectorProton.getStatusTrackPIDTpcAndTof(trackPos1);
-          pidTrackPos2Proton = selectorProton.getStatusTrackPIDTpcAndTof(trackPos2);
-          pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos1);
-          pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos2);
-          pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackNeg);
+          pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1);
+          pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2);
+          pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
+          pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
+          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
         } else {
-          pidTrackPos1Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos1);
-          pidTrackPos2Proton = selectorProton.getStatusTrackPIDTpcOrTof(trackPos2);
-          pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos1);
-          pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
-          pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
+          pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1);
+          pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2);
+          pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
+          pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
+          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
         }
 
         if (pidTrackPos1Proton == TrackSelectorPID::Accepted &&
@@ -234,11 +234,11 @@ struct HfCandidateSelectorLc {
         pidBayesLcToPKPi = 1;
         pidBayesLcToPiKP = 1;
       } else {
-        int pidBayesTrackPos1Proton = selectorProton.getStatusTrackBayesPID(trackPos1);
-        int pidBayesTrackPos2Proton = selectorProton.getStatusTrackBayesPID(trackPos2);
-        int pidBayesTrackPos1Pion = selectorPion.getStatusTrackBayesPID(trackPos1);
-        int pidBayesTrackPos2Pion = selectorPion.getStatusTrackBayesPID(trackPos2);
-        int pidBayesTrackNegKaon = selectorKaon.getStatusTrackBayesPID(trackNeg);
+        int pidBayesTrackPos1Proton = selectorProton.statusBayes(trackPos1);
+        int pidBayesTrackPos2Proton = selectorProton.statusBayes(trackPos2);
+        int pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos1);
+        int pidBayesTrackPos2Pion = selectorPion.statusBayes(trackPos2);
+        int pidBayesTrackNegKaon = selectorKaon.statusBayes(trackNeg);
 
         if (pidBayesTrackPos1Proton == TrackSelectorPID::Accepted &&
             pidBayesTrackNegKaon == TrackSelectorPID::Accepted &&
