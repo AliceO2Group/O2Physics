@@ -1652,18 +1652,14 @@ struct LFNucleiBATask {
             histos.fill(HIST("debug/qa/h1TPCncrHighPNeg"), track.tpcNClsCrossedRows());
           }
         }
+
+        histos.fill(HIST("debug/h2TPCsignVsTPCmomentumFull"), track.tpcInnerParam() / (1.f * track.sign()), track.tpcSignal());
+        histos.fill(HIST("tracks/pion/h2PionVspTNSigmaTPC"), track.pt(), track.tpcNSigmaPi());
+        histos.fill(HIST("tracks/kaon/h2KaonVspTNSigmaTPC"), track.pt(), track.tpcNSigmaKa());
       }
 
       if (enablePtSpectra)
         histos.fill(HIST("tracks/eff/h2pVsTPCmomentum"), track.tpcInnerParam(), track.p());
-      //  TPC
-      if (enableDebug)
-        histos.fill(HIST("debug/h2TPCsignVsTPCmomentumFull"), track.tpcInnerParam() / (1.f * track.sign()), track.tpcSignal());
-
-      if (enableDebug) {
-        histos.fill(HIST("tracks/pion/h2PionVspTNSigmaTPC"), track.pt(), track.tpcNSigmaPi());
-        histos.fill(HIST("tracks/kaon/h2KaonVspTNSigmaTPC"), track.pt(), track.tpcNSigmaKa());
-      }
 
       if (enableFiltering) {
         if (track.tpcNSigmaKa() < 5)
@@ -2951,9 +2947,20 @@ struct LFNucleiBATask {
   void processDataFiltered(o2::aod::LfCandNucleusEvents::iterator const& event,
                            o2::aod::LfCandNucleusFull const& tracks)
   {
+    // Runs on data filtered on the fly with LF Tree creator nuclei task
+    // Takes as input full AO2Ds
     fillHistograms<false /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
   } // CLOSING PROCESS DATA ON FILTERED DATA
   PROCESS_SWITCH(LFNucleiBATask, processDataFiltered, "process data on the filtered data", false);
+
+  void processDataLight(o2::aod::LfCandNucleusEvents::iterator const& event,
+                        o2::aod::LfCandNucleusDummy const& tracks)
+  {
+    // Runs on derived tables produced with LF Tree creator nuclei task
+    // Takes as input derived trees
+    fillHistograms<false /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
+  } // CLOSING PROCESS DATA ON FILTERED DATA
+  PROCESS_SWITCH(LFNucleiBATask, processDataLight, "process data on the derived trees", false);
 
   /////////////
   // MC Reco //

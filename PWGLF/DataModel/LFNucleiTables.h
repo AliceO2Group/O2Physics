@@ -100,6 +100,43 @@ DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
 } // namespace full
+namespace dummy
+{
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPi, tpcNSigmaPi,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaKa, tpcNSigmaKa,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPr, tpcNSigmaPr,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaTr, tpcNSigmaTr,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaAl, tpcNSigmaAl,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPi, tofNSigmaPi,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaKa, tofNSigmaKa,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPr, tofNSigmaPr,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaTr, tofNSigmaTr,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaAl, tofNSigmaAl,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffDe, tpcExpSignalDiffDe,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffHe, tpcExpSignalDiffHe,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalDiffPr, tofExpSignalDiffPr,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalDiffDe, tofExpSignalDiffDe,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalDiffHe, tofExpSignalDiffHe,
+                           [](bool b) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpMom, tofExpMom,
+                           [](bool b) -> float { return 0.f; });
+} // namespace dummy
 
 /*
 namespace fullMC
@@ -140,6 +177,45 @@ DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>);
+DECLARE_SOA_TABLE_FULL(LfCandNucleusDummy, "LfCandNucleus", "AOD", "LFNUCL",
+                       o2::soa::Index<>,
+                       full::LfCandNucleusEventId,
+                       full::DcaXY, full::DcaZ,
+                       full::TPCNSigmaDe, full::TPCNSigmaHe,
+                       full::TOFNSigmaDe, full::TOFNSigmaHe,
+                       full::IsEvTimeTOF,
+                       full::IsEvTimeT0AC,
+                       full::HasTOF,
+                       full::HasTRD,
+                       full::TPCInnerParam,
+                       full::Beta,
+                       full::TPCSignal,
+                       full::Pt,
+                       full::Eta,
+                       full::Phi,
+                       full::Sign,
+                       full::ITSNCls,
+                       track::TPCNClsFindable,
+                       track::TPCNClsFindableMinusFound,
+                       track::TPCNClsFindableMinusCrossedRows,
+                       full::TPCChi2Ncl,
+                       full::ITSChi2NCl,
+                       track::ITSClusterMap,
+                       full::IsPVContributor,
+                       full::P<full::Pt, full::Eta>,
+                       dummy::TPCNSigmaPi<full::HasTOF>, dummy::TPCNSigmaKa<full::HasTOF>, dummy::TPCNSigmaPr<full::HasTOF>,
+                       dummy::TPCNSigmaTr<full::HasTOF>, dummy::TPCNSigmaAl<full::HasTOF>,
+                       dummy::TOFNSigmaPi<full::HasTOF>, dummy::TOFNSigmaKa<full::HasTOF>, dummy::TOFNSigmaPr<full::HasTOF>,
+                       dummy::TOFNSigmaTr<full::HasTOF>, dummy::TOFNSigmaAl<full::HasTOF>,
+                       dummy::TPCExpSignalDiffPr<full::HasTOF>, dummy::TPCExpSignalDiffDe<full::HasTOF>, dummy::TPCExpSignalDiffHe<full::HasTOF>,
+                       dummy::TOFExpSignalDiffPr<full::HasTOF>, dummy::TOFExpSignalDiffDe<full::HasTOF>, dummy::TOFExpSignalDiffHe<full::HasTOF>,
+                       dummy::TOFExpMom<full::HasTOF>,
+                       full::Rapidity<full::Pt, full::Eta>,
+                       track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                       track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                       track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                       track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>);
+
 DECLARE_SOA_TABLE(LfCandNucleusExtra, "AOD", "LFNUCLEXTRA",
                   full::TPCNSigmaPi, full::TPCNSigmaKa, full::TPCNSigmaPr,
                   full::TPCNSigmaTr, full::TPCNSigmaAl,
@@ -148,6 +224,7 @@ DECLARE_SOA_TABLE(LfCandNucleusExtra, "AOD", "LFNUCLEXTRA",
                   full::TPCExpSignalDiffPr, full::TPCExpSignalDiffDe, full::TPCExpSignalDiffHe,
                   full::TOFExpSignalDiffPr, full::TOFExpSignalDiffDe, full::TOFExpSignalDiffHe,
                   full::TOFExpMom);
+
 DECLARE_SOA_TABLE(LfCandNucleusMC, "AOD", "LFNUCLMC",
                   mcparticle::PdgCode,
                   full::IsPhysicalPrimary,
