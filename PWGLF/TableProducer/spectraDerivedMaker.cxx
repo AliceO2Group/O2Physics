@@ -51,17 +51,16 @@ struct spectraDerivedMaker {
   Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1, 8 CentralityFT0C, 9 CentralityFT0M, 10 CentralityFV0A"};
   // Custom track cuts for the cut variation study
   TrackSelection customTrackCuts;
-  Configurable<bool> useCustomTrackCuts{"useCustomTrackCuts", false, "Flag to use custom track cuts"};
-  Configurable<int> itsPattern{"itsPattern", 0, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
+  Configurable<int> itsPattern{"itsPattern", 1, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
   Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
   Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
-  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
-  Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
-  Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
+  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 60.f, "Additional cut on the minimum number of crossed rows in the TPC"};
+  Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.7f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
+  Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 7.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
   Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
   Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
-  Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum value of the DCA z"};
+  Configurable<float> maxDcaZ{"maxDcaZ", 3.f, "Additional cut on the maximum value of the DCA z"};
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
 
   // Histograms
@@ -70,31 +69,29 @@ struct spectraDerivedMaker {
   void init(o2::framework::InitContext&)
   {
     // Custom track cuts
-    if (useCustomTrackCuts.value) {
-      LOG(info) << "Using custom track cuts from values:";
-      LOG(info) << "\trequireITS=" << requireITS.value;
-      LOG(info) << "\trequireTPC=" << requireTPC.value;
-      LOG(info) << "\trequireGoldenChi2=" << requireGoldenChi2.value;
-      LOG(info) << "\tmaxChi2PerClusterTPC=" << maxChi2PerClusterTPC.value;
-      LOG(info) << "\tminNCrossedRowsTPC=" << minNCrossedRowsTPC.value;
-      LOG(info) << "\tminTPCNClsFound=" << minTPCNClsFound.value;
-      LOG(info) << "\tmaxChi2PerClusterITS=" << maxChi2PerClusterITS.value;
-      LOG(info) << "\tmaxDcaZ=" << maxDcaZ.value;
+    LOG(info) << "Using custom track cuts from values:";
+    LOG(info) << "\trequireITS=" << requireITS.value;
+    LOG(info) << "\trequireTPC=" << requireTPC.value;
+    LOG(info) << "\trequireGoldenChi2=" << requireGoldenChi2.value;
+    LOG(info) << "\tmaxChi2PerClusterTPC=" << maxChi2PerClusterTPC.value;
+    LOG(info) << "\tminNCrossedRowsTPC=" << minNCrossedRowsTPC.value;
+    LOG(info) << "\tminTPCNClsFound=" << minTPCNClsFound.value;
+    LOG(info) << "\tmaxChi2PerClusterITS=" << maxChi2PerClusterITS.value;
+    LOG(info) << "\tmaxDcaZ=" << maxDcaZ.value;
 
-      customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value);
-      LOG(info) << "Customizing track cuts:";
-      customTrackCuts.SetRequireITSRefit(requireITS.value);
-      customTrackCuts.SetRequireTPCRefit(requireTPC.value);
-      customTrackCuts.SetRequireGoldenChi2(requireGoldenChi2.value);
-      customTrackCuts.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
-      customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
-      customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
-      customTrackCuts.SetMinNClustersTPC(minTPCNClsFound.value);
-      customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
-      customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10000.f; }); // No DCAxy cut will be used, this is done via the member function of the task
-      customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
-      customTrackCuts.print();
-    }
+    customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value);
+    LOG(info) << "Customizing track cuts:";
+    customTrackCuts.SetRequireITSRefit(requireITS.value);
+    customTrackCuts.SetRequireTPCRefit(requireTPC.value);
+    customTrackCuts.SetRequireGoldenChi2(requireGoldenChi2.value);
+    customTrackCuts.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
+    customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
+    customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
+    customTrackCuts.SetMinNClustersTPC(minTPCNClsFound.value);
+    customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
+    customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10.f; }); // No DCAxy cut will be used, this is done via the member function of the task
+    customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
+    customTrackCuts.print();
     // Histograms
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
 
@@ -102,14 +99,14 @@ struct spectraDerivedMaker {
     histos.add("event/sampledvertexz", "Sampled collisions", HistType::kTH1D, {vtxZAxis});
     auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1D, {{10, 0.5, 10.5}});
     h->GetXaxis()->SetBinLabel(1, "Events read");
-    h->GetXaxis()->SetBinLabel(2, "INEL>0");
-    h->GetXaxis()->SetBinLabel(3, "INEL>1");
+    h->GetXaxis()->SetBinLabel(2, "INEL>0 (fraction)");
+    h->GetXaxis()->SetBinLabel(3, "INEL>1 (fraction)");
     h->GetXaxis()->SetBinLabel(4, "Ev. sel. passed");
-    h->GetXaxis()->SetBinLabel(5, "INEL>0");
-    h->GetXaxis()->SetBinLabel(6, "INEL>1");
+    h->GetXaxis()->SetBinLabel(5, "INEL>0 (fraction)");
+    h->GetXaxis()->SetBinLabel(6, "INEL>1 (fraction)");
     h->GetXaxis()->SetBinLabel(7, "posZ passed");
-    h->GetXaxis()->SetBinLabel(8, "INEL>0");
-    h->GetXaxis()->SetBinLabel(9, "INEL>1");
+    h->GetXaxis()->SetBinLabel(8, "INEL>0 (fraction)");
+    h->GetXaxis()->SetBinLabel(9, "INEL>1 (fraction)");
 
     h = histos.add<TH1>("tracksel", "tracksel", HistType::kTH1D, {{10, 0.5, 10.5}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
@@ -155,27 +152,17 @@ struct spectraDerivedMaker {
     }
   }
 
-  int mNInelTrks = 0;
   template <bool fillHistograms = false, bool fillMultiplicity = false, typename CollisionType, typename TrackType>
   bool isEventSelected(CollisionType const& collision, TrackType const& tracks)
   {
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 1.f);
     }
-    mNInelTrks = 0; // Reset it
-    for (const auto& trk : tracks) {
-      if (trk.isPVContributor() && std::abs(trk.eta()) < 1.f) {
-        mNInelTrks++;
-      }
-      if (mNInelTrks >= 2) {
-        break;
-      }
-    }
     if constexpr (fillHistograms) {
-      if (mNInelTrks >= 1) {
+      if (collision.multNTracksPVeta1() >= 1) {
         histos.fill(HIST("evsel"), 2.f);
       }
-      if (mNInelTrks >= 2) {
+      if (collision.multNTracksPVeta1() >= 2) {
         histos.fill(HIST("evsel"), 3.f);
       }
     }
@@ -184,10 +171,10 @@ struct spectraDerivedMaker {
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 4.f);
-      if (mNInelTrks >= 1) {
+      if (collision.multNTracksPVeta1() >= 1) {
         histos.fill(HIST("evsel"), 5.f);
       }
-      if (mNInelTrks >= 2) {
+      if (collision.multNTracksPVeta1() >= 2) {
         histos.fill(HIST("evsel"), 6.f);
       }
     }
@@ -196,10 +183,10 @@ struct spectraDerivedMaker {
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 7.f);
-      if (mNInelTrks >= 1) {
+      if (collision.multNTracksPVeta1() >= 1) {
         histos.fill(HIST("evsel"), 8.f);
       }
-      if (mNInelTrks >= 2) {
+      if (collision.multNTracksPVeta1() >= 2) {
         histos.fill(HIST("evsel"), 9.f);
       }
       histos.fill(HIST("event/vertexz"), collision.posZ());
@@ -234,40 +221,12 @@ struct spectraDerivedMaker {
   }
 
   template <typename TrackType>
-  bool passesDCAxyCut(TrackType const& track) const
-  {
-    if (useCustomTrackCuts.value) {
-      for (int i = 0; i < static_cast<int>(TrackSelection::TrackCuts::kNCuts); i++) {
-        if (i == static_cast<int>(TrackSelection::TrackCuts::kDCAxy)) {
-          continue;
-        }
-        if (!customTrackCuts.IsSelected(track, static_cast<TrackSelection::TrackCuts>(i))) {
-          return false;
-        }
-      }
-      return (abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / pow(track.pt(), 1.1f))));
-    }
-    return track.isGlobalTrack();
-  }
-
-  template <typename TrackType>
   bool passesCutWoDCA(TrackType const& track) const
   {
-    if (useCustomTrackCuts.value) {
-      for (int i = 0; i < static_cast<int>(TrackSelection::TrackCuts::kNCuts); i++) {
-        if (i == static_cast<int>(TrackSelection::TrackCuts::kDCAxy)) {
-          continue;
-        }
-        if (i == static_cast<int>(TrackSelection::TrackCuts::kDCAz)) {
-          continue;
-        }
-        if (!customTrackCuts.IsSelected(track, static_cast<TrackSelection::TrackCuts>(i))) {
-          return false;
-        }
-      }
+    if (customTrackCuts.IsSelected(track)) {
       return true;
     }
-    return track.isGlobalTrackWoDCA();
+    return false;
   }
 
   template <bool fillHistograms = false, typename TrackType>
@@ -291,85 +250,6 @@ struct spectraDerivedMaker {
       histos.fill(HIST("tracksel"), 3);
       if (track.hasTOF()) {
         histos.fill(HIST("tracksel"), 4);
-      }
-    }
-    if constexpr (fillHistograms) {
-      if (track.hasITS() && track.hasTPC() && track.hasTRD() && track.hasTOF()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_tpc_trd_tof"), track.pt());
-        } else {
-          histos.fill(HIST("Data/neg/pt/its_tpc_trd_tof"), track.pt());
-        }
-      }
-      if (track.hasITS() && track.hasTPC() && track.hasTRD()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_tpc_trd"), track.pt());
-        } else {
-          histos.fill(HIST("Data/neg/pt/its_tpc_trd"), track.pt());
-        }
-      }
-      if (track.hasITS() && track.hasTPC() && track.hasTOF()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
-        } else {
-          histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
-        }
-      }
-      if (track.hasITS() && track.hasTRD() && track.hasTOF()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_trd_tof"), track.pt());
-        } else {
-          histos.fill(HIST("Data/neg/pt/its_trd_tof"), track.pt());
-        }
-      }
-      if (track.hasTPC() && track.hasTRD() && track.hasTOF()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/tpc_trd_tof"), track.pt());
-        } else {
-          histos.fill(HIST("Data/neg/pt/tpc_trd_tof"), track.pt());
-        }
-      }
-      if (track.hasITS() && track.hasTPC()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
-        } else {
-          histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
-        }
-      }
-      if (track.hasTRD() && track.hasTOF()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/trd_tof"), track.pt());
-        } else {
-          histos.fill(HIST("Data/neg/pt/trd_tof"), track.pt());
-        }
-      }
-      if (track.hasTPC() && track.hasTOF()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/tpc_tof"), track.pt());
-        } else {
-          histos.fill(HIST("Data/neg/pt/tpc_tof"), track.pt());
-        }
-      }
-      if (track.hasITS() && track.hasTOF()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_tof"), track.pt());
-        } else {
-          histos.fill(HIST("Data/neg/pt/its_tof"), track.pt());
-        }
-      }
-      if (track.hasTPC() && track.hasTRD()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/tpc_trd"), track.pt());
-        } else {
-          histos.fill(HIST("Data/neg/pt/tpc_trd"), track.pt());
-        }
-      }
-      if (track.hasITS() && track.hasTRD()) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_trd"), track.pt());
-        } else {
-          histos.fill(HIST("Data/neg/pt/its_trd"), track.pt());
-        }
       }
     }
     return true;
@@ -398,6 +278,7 @@ struct spectraDerivedMaker {
               collision.posZ(),
               collision.centFT0M(),
               collision.sel8(),
+              collision.multNTracksPVeta1(),
               collision.bc().runNumber());
 
     tableTrack.reserve(tracks.size());
@@ -413,7 +294,6 @@ struct spectraDerivedMaker {
                  o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaPi()),
                  o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaKa()),
                  o2::aod::spectra::packInTable<o2::aod::spectra::binningNSigma>(trk.tofNSigmaPr()),
-
                  trk.pt() * trk.sign(), trk.eta(), trk.phi(),
                  trk.length(),
                  trk.tpcSignal(),
@@ -427,7 +307,9 @@ struct spectraDerivedMaker {
                  trk.hasTRD(),
                  trk.tofFlags(),
                  o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaXY()),
-                 o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaZ()));
+                 o2::aod::spectra::packInTable<o2::aod::spectra::binningDCA>(trk.dcaZ()),
+                 trk.isGlobalTrack(),
+                 trk.isGlobalTrackWoDCA());
     }
   }
   PROCESS_SWITCH(spectraDerivedMaker, processData, "Process data for derived dataset production", true);

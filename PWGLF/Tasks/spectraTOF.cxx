@@ -47,7 +47,7 @@ struct tofSpectra {
   Configurable<float> cfgCutEtaMax{"cfgCutEtaMax", 0.8f, "Max eta range for tracks"};
   Configurable<float> cfgCutEtaMin{"cfgCutEtaMin", -0.8f, "Min eta range for tracks"};
   Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
-  Configurable<int> cfgINELCut{"cfgINELCut", 0, "Event selection: 0 no sel, 1 sel8, 2 INEL>0, 3 INEL>1"};
+  Configurable<int> cfgINELCut{"cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
   Configurable<bool> enableDcaGoodEvents{"enableDcaGoodEvents", true, "Enables the MC plots with the correct match between data and MC"};
   Configurable<bool> enableTrackCutHistograms{"enableTrackCutHistograms", true, "Enables track cut histograms, before and after the cut"};
   Configurable<bool> enableDeltaHistograms{"enableDeltaHistograms", true, "Enables the delta TPC and TOF histograms"};
@@ -183,14 +183,22 @@ struct tofSpectra {
     histos.add("event/vertexz", "", HistType::kTH1D, {vtxZAxis});
     auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1D, {{10, 0.5, 10.5}});
     h->GetXaxis()->SetBinLabel(1, "Events read");
-    h->GetXaxis()->SetBinLabel(2, "INEL>0");
-    h->GetXaxis()->SetBinLabel(3, "INEL>1");
+    h->GetXaxis()->SetBinLabel(2, "INEL>0 (fraction)");
+    h->GetXaxis()->SetBinLabel(3, "INEL>1 (fraction)");
     h->GetXaxis()->SetBinLabel(4, "Ev. sel. passed");
-    h->GetXaxis()->SetBinLabel(5, "INEL>0");
-    h->GetXaxis()->SetBinLabel(6, "INEL>1");
+    h->GetXaxis()->SetBinLabel(5, "INEL>0 (fraction)");
+    h->GetXaxis()->SetBinLabel(6, "INEL>1 (fraction)");
     h->GetXaxis()->SetBinLabel(7, "posZ passed");
-    h->GetXaxis()->SetBinLabel(8, "INEL>0");
-    h->GetXaxis()->SetBinLabel(9, "INEL>1");
+    if (cfgINELCut.value == 1) {
+      h->GetXaxis()->SetBinLabel(8, "INEL>0");
+    } else {
+      h->GetXaxis()->SetBinLabel(8, "INEL>0 (fraction)");
+    }
+    if (cfgINELCut.value == 1) {
+      h->GetXaxis()->SetBinLabel(9, "INEL>1");
+    } else {
+      h->GetXaxis()->SetBinLabel(9, "INEL>1 (fraction)");
+    }
 
     h = histos.add<TH1>("tracksel", "tracksel", HistType::kTH1D, {{10, 0.5, 10.5}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
@@ -233,7 +241,8 @@ struct tofSpectra {
 
     if (enableTrackCutHistograms) {
       const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
-      histos.add("track/Eta", "Eta", HistType::kTH1D, {{binsEta, "#eta tracks"}});
+      histos.add("track/pos/Eta", "Eta Positive tracks", HistType::kTH1D, {{binsEta, "#eta tracks"}});
+      histos.add("track/neg/Eta", "Eta Negative tracks", HistType::kTH1D, {{binsEta, "#eta tracks"}});
       // its histograms
       histos.add("track/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH2D, {{8, -0.5, 7.5}, chargeAxis});
       histos.add("track/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH2D, {{100, 0, 40}, chargeAxis});
@@ -758,27 +767,17 @@ struct tofSpectra {
     }
   }
 
-  int mNInelTrks = 0;
   template <bool fillHistograms = false, bool fillMultiplicity = false, typename CollisionType, typename TrackType>
   bool isEventSelected(CollisionType const& collision, TrackType const& tracks)
   {
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 1.f);
     }
-    mNInelTrks = 0; // Reset it
-    for (const auto& trk : tracks) {
-      if (trk.isPVContributor() && std::abs(trk.eta()) < 1.f) {
-        mNInelTrks++;
-      }
-      if (mNInelTrks >= 2) {
-        break;
-      }
-    }
     if constexpr (fillHistograms) {
-      if (mNInelTrks >= 1) {
+      if (collision.multNTracksPVeta1() >= 1) {
         histos.fill(HIST("evsel"), 2.f);
       }
-      if (mNInelTrks >= 2) {
+      if (collision.multNTracksPVeta1() >= 2) {
         histos.fill(HIST("evsel"), 3.f);
       }
     }
@@ -787,10 +786,10 @@ struct tofSpectra {
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 4.f);
-      if (mNInelTrks >= 1) {
+      if (collision.multNTracksPVeta1() >= 1) {
         histos.fill(HIST("evsel"), 5.f);
       }
-      if (mNInelTrks >= 2) {
+      if (collision.multNTracksPVeta1() >= 2) {
         histos.fill(HIST("evsel"), 6.f);
       }
     }
@@ -799,11 +798,15 @@ struct tofSpectra {
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 7.f);
-      if (mNInelTrks >= 1) {
+      if (collision.multNTracksPVeta1() >= 1) {
         histos.fill(HIST("evsel"), 8.f);
+      } else if (cfgINELCut == 1) {
+        return false;
       }
-      if (mNInelTrks >= 2) {
+      if (collision.multNTracksPVeta1() >= 2) {
         histos.fill(HIST("evsel"), 9.f);
+      } else if (cfgINELCut == 2) {
+        return false;
       }
       histos.fill(HIST("event/vertexz"), collision.posZ());
 
@@ -877,6 +880,11 @@ struct tofSpectra {
     if constexpr (fillHistograms) {
       histos.fill(HIST("tracksel"), 2);
       if (enableTrackCutHistograms) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("track/pos/Eta"), track.eta());
+        } else {
+          histos.fill(HIST("track/neg/Eta"), track.eta());
+        }
         if (track.hasITS() && track.hasTPC()) {
           histos.fill(HIST("track/ITS/itsNCls"), track.itsNCls(), track.sign());
           histos.fill(HIST("track/ITS/itsChi2NCl"), track.itsChi2NCl(), track.sign());
@@ -1036,7 +1044,6 @@ struct tofSpectra {
         if (!isTrackSelected<true>(track)) {
           continue;
         }
-        histos.fill(HIST("track/Eta"), track.eta());
         fillParticleHistos<false, PID::Pion>(track, collision);
         fillParticleHistos<false, PID::Kaon>(track, collision);
         fillParticleHistos<false, PID::Proton>(track, collision);
