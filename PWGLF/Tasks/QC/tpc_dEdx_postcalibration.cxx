@@ -125,8 +125,7 @@ struct tpc_dEdx_postcalibration {
     registryCh.add(
       "dEdx_vs_Momentum", "dE/dx", HistType::kTH2F,
       {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {1500, 0, 1500, "dE/dx (a. u.)"}});
-    
-      registryPi.add(
+    registryPi.add(
       "dEdx_vs_Momentum_Pi", "dE/dx", HistType::kTH2F,
       {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
     registryKa.add(
