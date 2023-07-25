@@ -714,8 +714,8 @@ struct HfCorrelatorDsHadrons {
         // DsToKKPi and DsToPiKK division
         if (cand.isSelDsToKKPi() >= selectionFlagDs) {
           // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d), KKPi", cand.index(), pAssoc.index(), c1.index(), c2.index(), cand.collision().index(), pAssoc.collision().index());
-          entryDsHadronPair(getDeltaPhi(cand.phi(), pAssoc.phi()),
-                            cand.eta() - pAssoc.eta(),
+          entryDsHadronPair(getDeltaPhi(pAssoc.phi(), cand.phi()),
+                            pAssoc.eta() - cand.eta(),
                             cand.pt(),
                             pAssoc.pt(),
                             poolBin);
@@ -723,8 +723,8 @@ struct HfCorrelatorDsHadrons {
           entryDsHadronGenInfo(false);
         } else if (cand.isSelDsToPiKK() >= selectionFlagDs) {
           // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d), PiKK", cand.index(), pAssoc.index(), c1.index(), c2.index(), cand.collision().index(), pAssoc.collision().index());
-          entryDsHadronPair(getDeltaPhi(cand.phi(), pAssoc.phi()),
-                            cand.eta() - pAssoc.eta(),
+          entryDsHadronPair(getDeltaPhi(pAssoc.phi(), cand.phi()),
+                            pAssoc.eta() - cand.eta(),
                             cand.pt(),
                             pAssoc.pt(),
                             poolBin);
@@ -782,16 +782,16 @@ struct HfCorrelatorDsHadrons {
         isDsSignal = std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi;
         // DsToKKPi and DsToPiKK division
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          entryDsHadronPair(getDeltaPhi(candidate.phi(), pAssoc.phi()),
-                            candidate.eta() - pAssoc.eta(),
+          entryDsHadronPair(getDeltaPhi(pAssoc.phi(), candidate.phi()),
+                            pAssoc.eta() - candidate.eta(),
                             candidate.pt(),
                             pAssoc.pt(),
                             poolBin);
           entryDsHadronRecoInfo(invMassDsToKKPi(candidate), isDsSignal);
           entryDsHadronGenInfo(isDsPrompt);
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          entryDsHadronPair(getDeltaPhi(candidate.phi(), pAssoc.phi()),
-                            candidate.eta() - pAssoc.eta(),
+          entryDsHadronPair(getDeltaPhi(pAssoc.phi(), candidate.phi()),
+                            pAssoc.eta() - candidate.eta(),
                             candidate.pt(),
                             pAssoc.pt(),
                             poolBin);
