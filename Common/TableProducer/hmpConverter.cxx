@@ -25,33 +25,32 @@ struct hmpConverter {
   void process(aod::HMPID_000 const& hmpLegacy, aod::Tracks const&)
   {
     for (auto& hmpData : hmpLegacy) {
-      
+
       float phots[] = {0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};
-    
+
       auto track = hmpData.track();
       auto hmpidSignal = hmpData.hmpidSignal();
-      auto hmpidXTrack = -999.; // dummy 
+      auto hmpidXTrack = -999.; // dummy
       auto hmpidYTrack = -999.; // dummy
       auto hmpidXMip = -999.;   // dummy
       auto hmpidYMip = -999.;   // dummy
       auto hmpidNPhotons = hmpData.hmpidNPhotons();
       auto hmpidQMip = hmpData.hmpidQMip();
-      auto hmpidClusSize = -999; //dummy
-      auto hmpidMom = -999;      //dummy
+      auto hmpidClusSize = -999; // dummy
+      auto hmpidMom = -999;      // dummy
       auto hmpidPhotsCharge = phots;
 
-
       HMPID_001(track,
-               hmpidSignal,
-               hmpidXTrack,
-               hmpidYTrack,
-               hmpidXMip,
-               hmpidYMip,
-               hmpidNPhotons,
-               hmpidQMip,
-               hmpidClusSize,
-               hmpidMom,
-               hmpidPhotsCharge);
+                hmpidSignal,
+                hmpidXTrack,
+                hmpidYTrack,
+                hmpidXMip,
+                hmpidYMip,
+                hmpidNPhotons,
+                hmpidQMip,
+                hmpidClusSize,
+                hmpidMom,
+                hmpidPhotsCharge);
     }
   }
 };
