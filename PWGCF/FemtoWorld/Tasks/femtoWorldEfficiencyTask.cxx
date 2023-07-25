@@ -110,12 +110,12 @@ struct femtoWorldEficiencyTask {
     registryPri.add("plus/KaPri", "KaPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
     registryPri.add("plus/PrPri", "PrPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
     registryPri.add("plus/AllPri", "AllPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    
+
     registryPri.add("minus/PiPri", "PiPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
     registryPri.add("minus/KaPri", "KaPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
     registryPri.add("minus/PrPri", "PrPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
     registryPri.add("minus/AllPri", "AllPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    
+
     registryPri.add("plus/PiPriPt", "PiPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
     registryPri.add("plus/KaPriPt", "KaPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
     registryPri.add("plus/PrPriPt", "PrPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
@@ -134,7 +134,7 @@ struct femtoWorldEficiencyTask {
     registryMCtruth.add("minus/MCtruthPi", "MC truth pions;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
     registryMCtruth.add("minus/MCtruthKa", "MC truth kaons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
     registryMCtruth.add("minus/MCtruthPr", "MC truth protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    
+
     registryMCtruth.add("plus/MCtruthPiPt", "MC truth pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
     registryMCtruth.add("plus/MCtruthKaPt", "MC truth kaons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
     registryMCtruth.add("plus/MCtruthPrPt", "MC truth protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
@@ -308,15 +308,15 @@ struct femtoWorldEficiencyTask {
           if (track.sign() > 0) {
             registryPri.fill(HIST("plus/AllPri"), track.pt(), track.eta());
             registryPri.fill(HIST("plus/AllPriPt"), track.pt());
-            if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt()) && mcParticle.pdgCode()==211) {
+            if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt()) && mcParticle.pdgCode() == 211) {
               registryPri.fill(HIST("plus/PiPri"), track.pt(), track.eta());
               registryPri.fill(HIST("plus/PiPriPt"), mcParticle.pt());
             }
-            if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt()) && mcParticle.pdgCode()==321) {
+            if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt()) && mcParticle.pdgCode() == 321) {
               registryPri.fill(HIST("plus/KaPri"), track.pt(), track.eta());
               registryPri.fill(HIST("plus/KaPriPt"), mcParticle.pt());
             }
-            if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt()) && mcParticle.pdgCode()==2212) {
+            if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt()) && mcParticle.pdgCode() == 2212) {
               registryPri.fill(HIST("plus/PrPri"), track.pt(), track.eta());
               registryPri.fill(HIST("plus/PrPriPt"), mcParticle.pt());
             }
@@ -324,17 +324,17 @@ struct femtoWorldEficiencyTask {
           if (track.sign() < 0) {
             registryPri.fill(HIST("minus/AllPri"), track.pt(), track.eta());
             registryPri.fill(HIST("minus/AllPriPt"), mcParticle.pt());
-            if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt()) && mcParticle.pdgCode()==-211) {
+            if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt()) && mcParticle.pdgCode() == -211) {
               registryPri.fill(HIST("minus/PiPri"), track.pt(), track.eta());
               registryPri.fill(HIST("minus/PiPriPt"), mcParticle.pt());
             }
-            if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt()) && mcParticle.pdgCode()==-321) {
+            if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt()) && mcParticle.pdgCode() == -321) {
               registryPri.fill(HIST("minus/KaPri"), track.pt(), track.eta());
               registryPri.fill(HIST("minus/KaPriPt"), mcParticle.pt());
             }
             if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt()) && mcParticle.pdgCode() == -2212) {
               registryPri.fill(HIST("minus/PrPri"), track.pt(), track.eta());
-	            registryPri.fill(HIST("minus/PrPriPt"), mcParticle.pt());
+              registryPri.fill(HIST("minus/PrPriPt"), mcParticle.pt());
             }
           }
         }
@@ -344,7 +344,7 @@ struct femtoWorldEficiencyTask {
     for (auto& mcparticle : mcparticles) {
       if (!mcparticle.isPhysicalPrimary() || TMath::Abs(mcparticle.eta()) > cfgCutEta)
         continue;
-      if (mcparticle.pdgCode() > 0){
+      if (mcparticle.pdgCode() > 0) {
         registryMCtruth.fill(HIST("plus/MCtruthAllPt"), mcparticle.pt());
       }
       if (mcparticle.pdgCode() == 211) {
@@ -360,7 +360,7 @@ struct femtoWorldEficiencyTask {
         registryMCtruth.fill(HIST("plus/MCtruthPrPt"), mcparticle.pt());
       }
 
-      if (mcparticle.pdgCode() < 0){
+      if (mcparticle.pdgCode() < 0) {
         registryMCtruth.fill(HIST("minus/MCtruthAllPt"), mcparticle.pt());
       }
       if (mcparticle.pdgCode() == -211) {
