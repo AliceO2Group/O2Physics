@@ -580,11 +580,11 @@ class VarManager : public TObject
   static bool fgUsedKF;
   static void SetVariableDependencies(); // toggle those variables on which other used variables might depend
 
-  static std::map<int, int> fgRunMap;   // map of runs to be used in histogram axes
-  static TString fgRunStr;              // semi-colon separated list of runs, to be used for histogram axis labels
-  static std::vector<int> fgRunList;    // vector of runs, to be used for histogram axis
-  static float CenterOfMassEnergy;      // collision energy
-  static float MassofCollidingParticle; // mass of the colliding particle
+  static std::map<int, int> fgRunMap;     // map of runs to be used in histogram axes
+  static TString fgRunStr;                // semi-colon separated list of runs, to be used for histogram axis labels
+  static std::vector<int> fgRunList;      // vector of runs, to be used for histogram axis
+  static float fgCenterOfMassEnergy;      // collision energy
+  static float fgMassofCollidingParticle; // mass of the colliding particle
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);

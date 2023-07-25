@@ -24,8 +24,8 @@ float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 std::map<int, int> VarManager::fgRunMap;
 TString VarManager::fgRunStr = "";
 std::vector<int> VarManager::fgRunList = {0};
-float VarManager::CenterOfMassEnergy = 13600;         // GeV
-float VarManager::MassofCollidingParticle = 9.382720; // GeV
+float VarManager::fgCenterOfMassEnergy = 13600;         // GeV
+float VarManager::fgMassofCollidingParticle = 9.382720; // GeV
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
@@ -171,18 +171,18 @@ float VarManager::GetRunIndex(double Runnumber)
 }
 
 //__________________________________________________________________
-void VarManager::SetCollisionSystem(TString system, float Energy)
+void VarManager::SetCollisionSystem(TString system, float energy)
 {
   //
   // Set the collision system and the center of mass energy
   //
-  CenterOfMassEnergy = Energy;
+  fgCenterOfMassEnergy = energy;
 
   if (system.Contains("PbPb")) {
-    MassofCollidingParticle = MassProton * 208;
+    fgMassofCollidingParticle = MassProton * 208;
   }
   if (system.Contains("pp")) {
-    MassofCollidingParticle = MassProton;
+    fgMassofCollidingParticle = MassProton;
   }
   // TO Do: add more systems
 }
