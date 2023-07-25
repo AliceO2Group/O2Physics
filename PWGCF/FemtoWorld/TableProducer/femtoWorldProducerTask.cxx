@@ -211,8 +211,8 @@ struct femtoWorldProducerTask {
 
   // PHI Candidates
   FemtoWorldPhiSelection PhiCuts;
-  Configurable<std::vector<float>> ConfPhiSign{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kPhiSign, "ConfPhi"), std::vector<float>{-1, 1}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kPhiSign, "Phi selection: ")};
-  Configurable<std::vector<float>> ConfPhiPtMin{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kpTPhiMin, "ConfPhi"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kpTPhiMin, "Phi selection: ")};
+  //Configurable<std::vector<float>> ConfPhiSign{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kPhiSign, "ConfPhi"), std::vector<float>{-1, 1}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kPhiSign, "Phi selection: ")};
+  //Configurable<std::vector<float>> ConfPhiPtMin{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kpTPhiMin, "ConfPhi"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kpTPhiMin, "Phi selection: ")};
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
 
@@ -284,6 +284,7 @@ struct femtoWorldProducerTask {
         o2PhysicsTrackSelection->SetRequireHitsInITSLayers(1, {0, 1, 2, 3});
       }
     }
+
     mRunNumber = 0;
     mMagField = 0.0;
     /// Initializing CCDB
@@ -360,8 +361,7 @@ struct femtoWorldProducerTask {
     mMagField = output;
     mRunNumber = bc.runNumber();
   }
-  void processProdRun2(aod::FemtoFullCollisionRun2 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
-                       o2::aod::V0Datas const& fullV0s)
+  void processProdTrackRun2(aod::FemtoFullCollisionRun2 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
     /*auto bc = col.bc_as<aod::BCsWithTimestamps>();
@@ -452,9 +452,97 @@ struct femtoWorldProducerTask {
                   -999.);
       tmpIDtrack.push_back(track.globalIndex());
     }
+  }
+  PROCESS_SWITCH(femtoWorldProducerTask, processProdTrackRun2, "Produce Femto tables", true);
 
-    if (ConfStoreV0) {
-      for (auto& v0 : fullV0s) {
+  void processProdTrackV0Run2(aod::FemtoFullCollisionRun2 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
+                       o2::aod::V0Datas const& fullV0s)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+
+    /// First thing to do is to check whether the basic event selection criteria are fulfilled
+    // If the basic selection is NOT fulfilled:
+    // in case of skimming run - don't store such collisions
+    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
+    if (!colCuts.isSelected(col)) {
+      if (ConfIsTrigger) {
+        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), mMagField, col.centRun2V0M());
+      }
+      return;
+    }
+
+    const auto vtxZ = col.posZ();
+    const auto mult = col.multFV0M();
+    const auto spher = colCuts.computeSphericity(col, tracks);
+    const auto centrality = col.centRun2V0M();
+    colCuts.fillQA(col);
+
+    outputCollision(vtxZ, mult, spher, mMagField, centrality);
+
+    int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
+    std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
+
+    for (auto& track : tracks) {
+      /// if the most open selection criteria are not fulfilled there is no point looking further at the track
+      if (!trackCuts.isSelectedMinimal(track)) {
+        continue;
+      }
+      trackCuts.fillQA<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::TrackType::kNoChild>(track);
+      // the bit-wise container of the systematic variations is obtained
+      // now the table is filled
+      outputParts(outputCollision.lastIndex(),
+                  track.pt(),
+                  track.eta(),
+                  track.phi(),
+                  track.p(),
+                  1,
+                  -999., // D0mass
+                  -999., // D0bar mass
+                  -999., // D0 flag
+                  -999., // D0bar flag
+                  aod::femtoworldparticle::ParticleType::kTrack,
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kCuts),
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kPID),
+                  track.dcaXY(),
+                  childIDs, 0, 0, // początek nowej części
+                  track.sign(),
+                  track.beta(),
+                  track.itsChi2NCl(),
+                  track.tpcChi2NCl(),
+                  track.tpcNSigmaKa(),
+                  track.tofNSigmaKa(),
+                  (uint8_t)track.tpcNClsFound(),
+                  track.tpcNClsFindable(),
+                  (uint8_t)track.tpcNClsCrossedRows(),
+                  track.tpcNClsShared(),
+                  track.tpcInnerParam(),
+                  track.itsNCls(),
+                  track.itsNClsInnerBarrel(),
+                  track.dcaXY(),
+                  track.dcaZ(),
+                  track.tpcSignal(),
+                  track.tpcNSigmaStoreEl(),
+                  track.tpcNSigmaStorePi(),
+                  track.tpcNSigmaStoreKa(),
+                  track.tpcNSigmaStorePr(),
+                  track.tpcNSigmaStoreDe(),
+                  track.tofNSigmaStoreEl(),
+                  track.tofNSigmaStorePi(),
+                  track.tofNSigmaStoreKa(),
+                  track.tofNSigmaStorePr(),
+                  track.tofNSigmaStoreDe(),
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.);
+      tmpIDtrack.push_back(track.globalIndex());
+    }
+
+    for (auto& v0 : fullV0s) {
         auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
         auto negtrack = v0.negTrack_as<aod::FemtoFullTracks>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
         // const auto dcaXYpos = postrack.dcaXY();
@@ -641,12 +729,25 @@ struct femtoWorldProducerTask {
                       -999.);
         }
       }
-    }
   }
-  PROCESS_SWITCH(femtoWorldProducerTask, processProdRun2, "Produce Femto tables", true);
+  PROCESS_SWITCH(femtoWorldProducerTask, processProdTrackV0Run2, "Produce Femto tables", true);
 
-  void processPhiMesonsRun2(aod::FemtoFullCollisionRun2 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks, o2::aod::V0Datas const& fullV0s)
+  void processProdTrackPhiRun2(aod::FemtoFullCollisionRun2 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks, o2::aod::V0Datas const& fullV0s)
   {
+
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+
+    /// First thing to do is to check whether the basic event selection criteria are fulfilled
+    // If the basic selection is NOT fulfilled:
+    // in case of skimming run - don't store such collisions
+    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
+    if (!colCuts.isSelected(col)) {
+      if (ConfIsTrigger) {
+        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), mMagField, col.centRun2V0M());
+      }
+      return;
+    }
 
     const auto vtxZ = col.posZ();
     const auto mult = col.multFV0M();
@@ -658,6 +759,65 @@ struct femtoWorldProducerTask {
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
+
+    for (auto& track : tracks) {
+      /// if the most open selection criteria are not fulfilled there is no point looking further at the track
+      if (!trackCuts.isSelectedMinimal(track)) {
+        continue;
+      }
+      trackCuts.fillQA<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::TrackType::kNoChild>(track);
+      // the bit-wise container of the systematic variations is obtained
+      // now the table is filled
+      outputParts(outputCollision.lastIndex(),
+                  track.pt(),
+                  track.eta(),
+                  track.phi(),
+                  track.p(),
+                  1,
+                  -999., // D0mass
+                  -999., // D0bar mass
+                  -999., // D0 flag
+                  -999., // D0bar flag
+                  aod::femtoworldparticle::ParticleType::kTrack,
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kCuts),
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kPID),
+                  track.dcaXY(),
+                  childIDs, 0, 0, // początek nowej części
+                  track.sign(),
+                  track.beta(),
+                  track.itsChi2NCl(),
+                  track.tpcChi2NCl(),
+                  track.tpcNSigmaKa(),
+                  track.tofNSigmaKa(),
+                  (uint8_t)track.tpcNClsFound(),
+                  track.tpcNClsFindable(),
+                  (uint8_t)track.tpcNClsCrossedRows(),
+                  track.tpcNClsShared(),
+                  track.tpcInnerParam(),
+                  track.itsNCls(),
+                  track.itsNClsInnerBarrel(),
+                  track.dcaXY(),
+                  track.dcaZ(),
+                  track.tpcSignal(),
+                  track.tpcNSigmaStoreEl(),
+                  track.tpcNSigmaStorePi(),
+                  track.tpcNSigmaStoreKa(),
+                  track.tpcNSigmaStorePr(),
+                  track.tpcNSigmaStoreDe(),
+                  track.tofNSigmaStoreEl(),
+                  track.tofNSigmaStorePi(),
+                  track.tofNSigmaStoreKa(),
+                  track.tofNSigmaStorePr(),
+                  track.tofNSigmaStoreDe(),
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.);
+      tmpIDtrack.push_back(track.globalIndex());
+    }
 
     for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
       if ((p1.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet) || (p2.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet)) {
@@ -878,25 +1038,38 @@ struct femtoWorldProducerTask {
       }
     }
   }
-  PROCESS_SWITCH(femtoWorldProducerTask, processPhiMesonsRun2, "Process data", false);
+  PROCESS_SWITCH(femtoWorldProducerTask, processProdTrackPhiRun2, "Process data", false);
 
-  void processCharmMesonsRun2(aod::FemtoFullCollisionRun2 const& collision, aod::FemtoFullTracks const& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
+  void processProdTrackD0Run2(aod::FemtoFullCollisionRun2 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
   // void processCharmMesons(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
   {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
 
-    const auto vtxZ = collision.posZ();
-    const auto mult = collision.multFV0M();
-    const auto spher = colCuts.computeSphericity(collision, tracks);
-    const auto centrality = collision.centRun2V0M();
-    colCuts.fillQA(collision);
+    /// First thing to do is to check whether the basic event selection criteria are fulfilled
+    // If the basic selection is NOT fulfilled:
+    // in case of skimming run - don't store such collisions
+    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
+    if (!colCuts.isSelected(col)) {
+      if (ConfIsTrigger) {
+        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), mMagField, col.centRun2V0M());
+      }
+      return;
+    }
+
+    const auto vtxZ = col.posZ();
+    const auto mult = col.multFV0M();
+    const auto spher = colCuts.computeSphericity(col, tracks);
+    const auto centrality = col.centRun2V0M();
+    colCuts.fillQA(col);
 
     outputCollision(vtxZ, mult, spher, mMagField, centrality);
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
 
-    int nTracks = 0;
-    if (collision.numContrib() > 1) {
+    /*int nTracks = 0;
+    if (col.numContrib() > 1) {
       for (const auto& track : tracks) {
         if (track.eta() < -4.0 || track.eta() > 4.0) {
           continue;
@@ -906,6 +1079,65 @@ struct femtoWorldProducerTask {
         }
         nTracks++;
       }
+    }*/
+
+    for (const auto& track : tracks) {
+      /// if the most open selection criteria are not fulfilled there is no point looking further at the track
+      if (!trackCuts.isSelectedMinimal(track)) {
+        continue;
+      }
+      trackCuts.fillQA<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::TrackType::kNoChild>(track);
+      // the bit-wise container of the systematic variations is obtained
+      // now the table is filled
+      outputParts(outputCollision.lastIndex(),
+                  track.pt(),
+                  track.eta(),
+                  track.phi(),
+                  track.p(),
+                  1,
+                  -999., // D0mass
+                  -999., // D0bar mass
+                  -999., // D0 flag
+                  -999., // D0bar flag
+                  aod::femtoworldparticle::ParticleType::kTrack,
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kCuts),
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kPID),
+                  track.dcaXY(),
+                  childIDs, 0, 0, // początek nowej części
+                  track.sign(),
+                  track.beta(),
+                  track.itsChi2NCl(),
+                  track.tpcChi2NCl(),
+                  track.tpcNSigmaKa(),
+                  track.tofNSigmaKa(),
+                  (uint8_t)track.tpcNClsFound(),
+                  track.tpcNClsFindable(),
+                  (uint8_t)track.tpcNClsCrossedRows(),
+                  track.tpcNClsShared(),
+                  track.tpcInnerParam(),
+                  track.itsNCls(),
+                  track.itsNClsInnerBarrel(),
+                  track.dcaXY(),
+                  track.dcaZ(),
+                  track.tpcSignal(),
+                  track.tpcNSigmaStoreEl(),
+                  track.tpcNSigmaStorePi(),
+                  track.tpcNSigmaStoreKa(),
+                  track.tpcNSigmaStorePr(),
+                  track.tpcNSigmaStoreDe(),
+                  track.tofNSigmaStoreEl(),
+                  track.tofNSigmaStorePi(),
+                  track.tofNSigmaStoreKa(),
+                  track.tofNSigmaStorePr(),
+                  track.tofNSigmaStoreDe(),
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.);
+      tmpIDtrack.push_back(track.globalIndex());
     }
 
     // loop over 2-prong candidates
@@ -1091,9 +1323,97 @@ struct femtoWorldProducerTask {
       }
     }
   }
-  PROCESS_SWITCH(femtoWorldProducerTask, processCharmMesonsRun2, "Process data", false);
+  PROCESS_SWITCH(femtoWorldProducerTask, processProdTrackD0Run2, "Process data", false);
 
-  void processProdRun3(aod::FemtoFullCollisionRun3 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
+  void processProdTrackRun3(aod::FemtoFullCollisionRun3 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+
+    /// First thing to do is to check whether the basic event selection criteria are fulfilled
+    // If the basic selection is NOT fulfilled:
+    // in case of skimming run - don't store such collisions
+    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
+    if (!colCuts.isSelected(col)) {
+      if (ConfIsTrigger) {
+        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), mMagField, col.centFT0M());
+      }
+      return;
+    }
+
+    const auto vtxZ = col.posZ();
+    // const auto mult = col.multFV0M();
+    const auto spher = colCuts.computeSphericity(col, tracks);
+    const auto centrality = col.centFT0M();
+    colCuts.fillQA(col);
+
+    outputCollision(vtxZ, col.multFT0M(), spher, mMagField, centrality);
+
+    int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
+    std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
+
+    for (auto& track : tracks) {
+      /// if the most open selection criteria are not fulfilled there is no point looking further at the track
+      if (!trackCuts.isSelectedMinimal(track)) {
+        continue;
+      }
+      trackCuts.fillQA<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::TrackType::kNoChild>(track);
+      // the bit-wise container of the systematic variations is obtained
+      // now the table is filled
+      outputParts(outputCollision.lastIndex(),
+                  track.pt(),
+                  track.eta(),
+                  track.phi(),
+                  track.p(),
+                  1,
+                  -999., // D0mass
+                  -999., // D0bar mass
+                  -999., // D0 flag
+                  -999., // D0bar flag
+                  aod::femtoworldparticle::ParticleType::kTrack,
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kCuts),
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kPID),
+                  track.dcaXY(),
+                  childIDs, 0, 0, // początek nowej części
+                  track.sign(),
+                  track.beta(),
+                  track.itsChi2NCl(),
+                  track.tpcChi2NCl(),
+                  track.tpcNSigmaKa(),
+                  track.tofNSigmaKa(),
+                  (uint8_t)track.tpcNClsFound(),
+                  track.tpcNClsFindable(),
+                  (uint8_t)track.tpcNClsCrossedRows(),
+                  track.tpcNClsShared(),
+                  track.tpcInnerParam(),
+                  track.itsNCls(),
+                  track.itsNClsInnerBarrel(),
+                  track.dcaXY(),
+                  track.dcaZ(),
+                  track.tpcSignal(),
+                  track.tpcNSigmaStoreEl(),
+                  track.tpcNSigmaStorePi(),
+                  track.tpcNSigmaStoreKa(),
+                  track.tpcNSigmaStorePr(),
+                  track.tpcNSigmaStoreDe(),
+                  track.tofNSigmaStoreEl(),
+                  track.tofNSigmaStorePi(),
+                  track.tofNSigmaStoreKa(),
+                  track.tofNSigmaStorePr(),
+                  track.tofNSigmaStoreDe(),
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.);
+      tmpIDtrack.push_back(track.globalIndex());
+    }
+  }
+  PROCESS_SWITCH(femtoWorldProducerTask, processProdTrackRun3, "Produce Femto tables", true);
+
+  void processProdTrackV0Run3(aod::FemtoFullCollisionRun3 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
                        o2::aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
@@ -1370,10 +1690,24 @@ struct femtoWorldProducerTask {
       }
     }
   }
-  PROCESS_SWITCH(femtoWorldProducerTask, processProdRun3, "Produce Femto tables", true);
+  PROCESS_SWITCH(femtoWorldProducerTask, processProdTrackV0Run3, "Produce Femto tables", true);
 
-  void processPhiMesonsRun3(aod::FemtoFullCollisionRun3 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks, o2::aod::V0Datas const& fullV0s)
+  void processProdTrackPhiRun3(aod::FemtoFullCollisionRun3 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks, o2::aod::V0Datas const& fullV0s)
   {
+
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+
+    /// First thing to do is to check whether the basic event selection criteria are fulfilled
+    // If the basic selection is NOT fulfilled:
+    // in case of skimming run - don't store such collisions
+    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
+    if (!colCuts.isSelected(col)) {
+      if (ConfIsTrigger) {
+        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), mMagField, col.centFT0M());
+      }
+      return;
+    }
 
     const auto vtxZ = col.posZ();
     // const auto mult = col.multFV0M();
@@ -1385,6 +1719,65 @@ struct femtoWorldProducerTask {
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
+
+    for (auto& track : tracks) {
+      /// if the most open selection criteria are not fulfilled there is no point looking further at the track
+      if (!trackCuts.isSelectedMinimal(track)) {
+        continue;
+      }
+      trackCuts.fillQA<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::TrackType::kNoChild>(track);
+      // the bit-wise container of the systematic variations is obtained
+      // now the table is filled
+      outputParts(outputCollision.lastIndex(),
+                  track.pt(),
+                  track.eta(),
+                  track.phi(),
+                  track.p(),
+                  1,
+                  -999., // D0mass
+                  -999., // D0bar mass
+                  -999., // D0 flag
+                  -999., // D0bar flag
+                  aod::femtoworldparticle::ParticleType::kTrack,
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kCuts),
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kPID),
+                  track.dcaXY(),
+                  childIDs, 0, 0, // początek nowej części
+                  track.sign(),
+                  track.beta(),
+                  track.itsChi2NCl(),
+                  track.tpcChi2NCl(),
+                  track.tpcNSigmaKa(),
+                  track.tofNSigmaKa(),
+                  (uint8_t)track.tpcNClsFound(),
+                  track.tpcNClsFindable(),
+                  (uint8_t)track.tpcNClsCrossedRows(),
+                  track.tpcNClsShared(),
+                  track.tpcInnerParam(),
+                  track.itsNCls(),
+                  track.itsNClsInnerBarrel(),
+                  track.dcaXY(),
+                  track.dcaZ(),
+                  track.tpcSignal(),
+                  track.tpcNSigmaStoreEl(),
+                  track.tpcNSigmaStorePi(),
+                  track.tpcNSigmaStoreKa(),
+                  track.tpcNSigmaStorePr(),
+                  track.tpcNSigmaStoreDe(),
+                  track.tofNSigmaStoreEl(),
+                  track.tofNSigmaStorePi(),
+                  track.tofNSigmaStoreKa(),
+                  track.tofNSigmaStorePr(),
+                  track.tofNSigmaStoreDe(),
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.);
+      tmpIDtrack.push_back(track.globalIndex());
+    }
 
     for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
       if ((p1.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet) || (p2.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet)) {
@@ -1605,35 +1998,96 @@ struct femtoWorldProducerTask {
       }
     }
   }
-  PROCESS_SWITCH(femtoWorldProducerTask, processPhiMesonsRun3, "Process data", false);
+  PROCESS_SWITCH(femtoWorldProducerTask, processProdTrackPhiRun3, "Process data", false);
 
-  void processCharmMesonsRun3(aod::FemtoFullCollisionRun3 const& collision, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
+  void processProdTrackD0Run3(aod::FemtoFullCollisionRun3 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
   // void processCharmMesons(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
   {
+    
     // get magnetic field for run
-    getMagneticFieldTesla(collision.bc_as<aod::BCsWithTimestamps>());
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
 
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     // If the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
-    if (!colCuts.isSelected(collision)) {
+    if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(collision.posZ(), collision.multFV0M(), colCuts.computeSphericity(collision, tracks), mMagField, collision.centFT0M());
+        outputCollision(col.posZ(), col.multFT0M(), colCuts.computeSphericity(col, tracks), mMagField, col.centFT0M());
       }
       return;
     }
 
-    const auto vtxZ = collision.posZ();
-    // const auto mult = collision.multFV0M();
-    const auto spher = colCuts.computeSphericity(collision, tracks);
-    const auto centrality = collision.centFT0M();
-    colCuts.fillQA(collision);
 
-    outputCollision(vtxZ, collision.multFT0M(), spher, mMagField, centrality);
+    const auto vtxZ = col.posZ();
+    // const auto mult = collision.multFV0M();
+    const auto spher = colCuts.computeSphericity(col, tracks);
+    const auto centrality = col.centFT0M();
+    colCuts.fillQA(col);
+
+    outputCollision(vtxZ, col.multFT0M(), spher, mMagField, centrality);
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
+
+    for (const auto& track : tracks) {
+      /// if the most open selection criteria are not fulfilled there is no point looking further at the track
+      if (!trackCuts.isSelectedMinimal(track)) {
+        continue;
+      }
+      trackCuts.fillQA<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::TrackType::kNoChild>(track);
+      // the bit-wise container of the systematic variations is obtained
+      // now the table is filled
+      outputParts(outputCollision.lastIndex(),
+                  track.pt(),
+                  track.eta(),
+                  track.phi(),
+                  track.p(),
+                  1,
+                  -999., // D0mass
+                  -999., // D0bar mass
+                  -999., // D0 flag
+                  -999., // D0bar flag
+                  aod::femtoworldparticle::ParticleType::kTrack,
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kCuts),
+                  0, // cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kPID),
+                  track.dcaXY(),
+                  childIDs, 0, 0, // początek nowej części
+                  track.sign(),
+                  track.beta(),
+                  track.itsChi2NCl(),
+                  track.tpcChi2NCl(),
+                  track.tpcNSigmaKa(),
+                  track.tofNSigmaKa(),
+                  (uint8_t)track.tpcNClsFound(),
+                  track.tpcNClsFindable(),
+                  (uint8_t)track.tpcNClsCrossedRows(),
+                  track.tpcNClsShared(),
+                  track.tpcInnerParam(),
+                  track.itsNCls(),
+                  track.itsNClsInnerBarrel(),
+                  track.dcaXY(),
+                  track.dcaZ(),
+                  track.tpcSignal(),
+                  track.tpcNSigmaStoreEl(),
+                  track.tpcNSigmaStorePi(),
+                  track.tpcNSigmaStoreKa(),
+                  track.tpcNSigmaStorePr(),
+                  track.tpcNSigmaStoreDe(),
+                  track.tofNSigmaStoreEl(),
+                  track.tofNSigmaStorePi(),
+                  track.tofNSigmaStoreKa(),
+                  track.tofNSigmaStorePr(),
+                  track.tofNSigmaStoreDe(),
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.);
+      tmpIDtrack.push_back(track.globalIndex());
+    }
 
     // loop over 2-prong candidates
     for (const auto& candidate : candidates) { // selectedD0Candidates
@@ -1647,11 +2101,10 @@ struct femtoWorldProducerTask {
       // we retrieve also the event index from one of the daughters
       auto posDauTrack = candidate.prong0_as<aod::FemtoFullTracks>(); // positive daughter
       auto negDauTrack = candidate.prong1_as<aod::FemtoFullTracks>(); // negative daughter
-                                                                      // candidate.prong1_as<aod::BigTracksPID>().tofNSigmaPi()
+      // candidate.prong1_as<aod::BigTracksPID>().tofNSigmaPi()
       // candidate.prong1_as<aod::BigTracksPID>().tofNSigmaKa()
 
       if ((candidate.isSelD0() == 1) || (candidate.isSelD0bar() == 1)) { // temporary true value, we are doing simpler version first
-        LOGF(info, "D0 FLAG: %llu, anty-D0 FLAG: %llu", candidate.isSelD0(), candidate.isSelD0bar());
         int postrackID = candidate.prong0Id();
         int rowInPrimaryTrackTablePos = -1;
         rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
@@ -1820,7 +2273,7 @@ struct femtoWorldProducerTask {
       }
     }
   }
-  PROCESS_SWITCH(femtoWorldProducerTask, processCharmMesonsRun3, "Process data", false);
+  PROCESS_SWITCH(femtoWorldProducerTask, processProdTrackD0Run3, "Process data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
