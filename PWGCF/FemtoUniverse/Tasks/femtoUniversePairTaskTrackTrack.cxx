@@ -86,25 +86,10 @@ struct femtoUniversePairTaskTrackTrack {
     Configurable<int> ConfPIDPartOne{"ConfPIDPartOne", 2, "Particle 1 - Read from cutCulator"};           // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
     Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.5, "Lower limit for Pt for the first particle"}; // change according to wrzesa cuts
     Configurable<float> cfgPtHighPart1{"cfgPtHighPart1", 1.5, "Higher limit for Pt for the first particle"};
-    Configurable<float> cfgEtaLowPart1{"cfgEtaLowPart1", -0.8, "Lower limit for Eta for the first particle"};
-    Configurable<float> cfgEtaHighPart1{"cfgEtaHighPart1", 0.8, "Higher limit for Eta for the first particle"};
-    Configurable<float> cfgDcaXYPart1{"cfgDcaXYPart1", 2.4, "Value for DCA_XY for the first particle"};
-    Configurable<float> cfgDcaZPart1{"cfgDcaZPart1", 3.2, "Value for DCA_Z for the first particle"};
-    Configurable<int> cfgTpcClPart1{"cfgTpcClPart1", 88, "Number of tpc clasters for the first particle"};
-    Configurable<float> cfgTpcCrosRoPart1{"cfgTpcCrosRoPart1", 0.8, "Number of tpc crossed rows over TPC clusters for the first particle"}; // NOT WORKING //crossed rows over tpc clusters
-    Configurable<float> cfgChi2TpcPart1{"cfgChi2TpcPart1", 4.0, "Chi2 / cluster for the TPC track segment for the second particle"};
-    Configurable<float> cfgChi2ItsPart1{"cfgChi2ItsPart1", 36.0, "Chi2 / cluster for the ITS track segment for the second particle"};
-    Configurable<int> signPart1{"signPart1", 1, "Sign of the first particle"};
   } trackonefilter;
 
   /// Partition for particle 1
-  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::pt > trackonefilter.cfgPtLowPart1) && (aod::femtouniverseparticle::pt < trackonefilter.cfgPtHighPart1) // pT cuts
-                                           && (aod::femtouniverseparticle::eta > trackonefilter.cfgEtaLowPart1) && (aod::femtouniverseparticle::eta < trackonefilter.cfgEtaHighPart1)                                                                                                 // Eta cuts
-                                           && (o2::aod::track::dcaXY < trackonefilter.cfgDcaXYPart1) && (o2::aod::track::dcaZ < trackonefilter.cfgDcaZPart1)                                                                                                                          // DCA cuts for XY and Z
-                                           && (aod::femtouniverseparticle::tpcNClsFound > (uint8_t)trackonefilter.cfgTpcClPart1)                                                                                                                                                      // Number of found TPC clusters
-                                           && (aod::femtouniverseparticle::tpcNClsCrossedRows > (uint8_t)trackonefilter.cfgTpcCrosRoPart1)                                                                                                                                            // Crossed rows TPC
-                                           //&& (o2::aod::track::itsChi2NCl < trackonefilter.cfgChi2ItsPart1) && (o2::aod::track::tpcChi2NCl < trackonefilter.cfgChi2TpcPart1);           // Chi2 cuts
-                                           && (aod::femtouniverseparticle::sign == trackonefilter.signPart1);                                                               // Sign
+  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));                             // && ((aod::femtouniverseparticle::cut & ConfCutPartOne) == ConfCutPartOne);
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)); // && ((aod::femtouniverseparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for particle 1
@@ -114,29 +99,12 @@ struct femtoUniversePairTaskTrackTrack {
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
   struct : o2::framework::ConfigurableGroup {
     Configurable<int> ConfTrackChoicePartTwo{"ConfTrackChoicePartTwo", 0, "Type of particle (track1): {0:Proton, 1:Pion, 2:Kaon}"};
-    Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", -2212, "Particle 2 - PDG code"}; // Can we identify antiparticles be their PDG code?
+    Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
     // Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 5542474, "Particle 2 - Selection bit"};
-    Configurable<int> ConfPIDPartTwo{"ConfPIDPartTwo", 2, "Particle 2 - Read from cutCulator"};            // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
-    Configurable<float> cfgPtLowPart2{"cfgPtLowPart2", 0.5, "Lower limit for Pt for the second particle"}; // change according to wrzesa cuts
-    Configurable<float> cfgPtHighPart2{"cfgPtHighPart2", 1.5, "Higher limit for Pt for the second particle"};
-    Configurable<float> cfgEtaLowPart2{"cfgEtaLowPart2", -0.8, "Lower limit for Eta for the first particle"};
-    Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the first particle"};
-    Configurable<float> cfgDcaXYPart2{"cfgDcaXYPart2", 2.4, "Value for DCA_XY for the second particle"};
-    Configurable<float> cfgDcaZPart2{"cfgDcaZPart2", 3.2, "Value for DCA_Z for the second particle"};
-    Configurable<int> cfgTpcClPart2{"cfgTpcClPart2", 88, "Number of tpc clasters for the first particle"};
-    Configurable<float> cfgTpcCrosRoPart2{"cfgTpcCrosRoPart2", 0.8, "Number of tpc crossed rows over TPC clusters for the first particle"};
-    Configurable<float> cfgChi2TpcPart2{"cfgChi2TpcPart2", 4.0, "Chi2 / cluster for the TPC track segment for the second particle"};
-    Configurable<float> cfgChi2ItsPart2{"cfgChi2ItsPart2", 36.0, "Chi2 / cluster for the ITS track segment for the second particle"};
-    Configurable<int> signPart2{"signPart2", -1, "Sign of the second particle"};
+    Configurable<int> ConfPIDPartTwo{"ConfPIDPartTwo", 2, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
   } tracktwofilter;
   /// Partition for particle 2
-  Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::pt > tracktwofilter.cfgPtLowPart2) && (aod::femtouniverseparticle::pt < tracktwofilter.cfgPtHighPart2) // pT cuts
-                                           && (aod::femtouniverseparticle::eta > tracktwofilter.cfgEtaLowPart2) && (aod::femtouniverseparticle::eta < tracktwofilter.cfgEtaHighPart2)                                                                                                 // Eta cuts
-                                           && (o2::aod::track::dcaXY < tracktwofilter.cfgDcaXYPart2) && (o2::aod::track::dcaZ < tracktwofilter.cfgDcaZPart2)                                                                                                                          // DCA cuts for XY and Z
-                                           && (aod::femtouniverseparticle::tpcNClsFound > (uint8_t)tracktwofilter.cfgTpcClPart2)                                                                                                                                                      // Number of found TPC clusters
-                                           && (aod::femtouniverseparticle::tpcNClsCrossedRows > (uint8_t)tracktwofilter.cfgTpcCrosRoPart2)                                                                                                                                            // Crossed rows TPC
-                                           //&& (o2::aod::track::itsChi2NCl < tracktwofilter.cfgChi2ItsPart2) && (o2::aod::track::tpcChi2NCl < tracktwofilter.cfgChi2TpcPart2);            // Chi2 cuts
-                                           && (aod::femtouniverseparticle::sign == tracktwofilter.signPart2); // Sign
+  Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::pt > trackonefilter.cfgPtLowPart1) && (aod::femtouniverseparticle::pt < trackonefilter.cfgPtHighPart1);
 
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsTwoMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));
 
