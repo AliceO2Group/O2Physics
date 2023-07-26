@@ -49,6 +49,8 @@ struct HfCandidateSelectorDsToKKPi {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
+  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa>;
+
   void init(InitContext const&)
   {
     selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);

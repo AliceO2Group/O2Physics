@@ -116,7 +116,7 @@ struct HfCandidateSelectorToXiPi {
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
 
-  using MyTrackInfo = aod::BigTracksPIDExtended;
+  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidPr, aod::TracksDCA>;
 
   HistogramRegistry registry{"registry"}; // for QA of selections
 
@@ -177,7 +177,7 @@ struct HfCandidateSelectorToXiPi {
     registry.add("hSelMassOme", "hSelMassOme;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
   }
 
-  void process(aod::HfCandToXiPi const& candidates, MyTrackInfo const&)
+  void process(aod::HfCandToXiPi const& candidates, TracksPid const&)
   {
     double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
     double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);
@@ -189,10 +189,10 @@ struct HfCandidateSelectorToXiPi {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
-      auto trackV0PosDau = candidate.posTrack_as<MyTrackInfo>();    // positive V0 daughter
-      auto trackV0NegDau = candidate.negTrack_as<MyTrackInfo>();    // negative V0 daughter
-      auto trackPiFromCasc = candidate.bachelor_as<MyTrackInfo>();  // pion <- cascade
-      auto trackPiFromOmeg = candidate.primaryPi_as<MyTrackInfo>(); // pion <- omegac
+      auto trackV0PosDau = candidate.posTrack_as<TracksPid>();    // positive V0 daughter
+      auto trackV0NegDau = candidate.negTrack_as<TracksPid>();    // negative V0 daughter
+      auto trackPiFromCasc = candidate.bachelor_as<TracksPid>();  // pion <- cascade
+      auto trackPiFromOmeg = candidate.primaryPi_as<TracksPid>(); // pion <- omegac
 
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;

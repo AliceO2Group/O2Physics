@@ -86,8 +86,8 @@ struct HfCandidateSelectorJpsi {
   TrackSelectorEl selectorElectron;
   TrackSelectorMu selectorMuon;
 
-  using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
-  using ExtendedTracksPID = soa::Join<TracksPID, aod::TracksDCA>;
+  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidEl, aod::TracksPidMu, aod::TracksPidPi, aod::HfTrackIndexALICE3PID>;
+  using ExtendedTracksPID = soa::Join<TracksPid, aod::TracksDCA>;
 
   void init(InitContext const& initContext)
   {

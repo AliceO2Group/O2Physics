@@ -61,7 +61,10 @@ struct HfCandidateSelectorBplusToD0Pi {
   bool selectionFlagDAndUsePidInSync = true;
   TrackSelectorPi selectorPion;
 
-  using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
+  using TracksPidWithSel = soa::Join<aod::BigTracks,
+                              aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr,
+                              // aod::TracksDCA,
+                              aod::TrackSelection>;
 
   HistogramRegistry registry{"registry"};
 
@@ -133,7 +136,7 @@ struct HfCandidateSelectorBplusToD0Pi {
     return true;
   }
 
-  void process(aod::HfCandBplus const& hfCandBs, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, TracksPIDWithSel const&)
+  void process(aod::HfCandBplus const& hfCandBs, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, TracksPidWithSel const&)
   {
 
     for (auto& hfCandB : hfCandBs) { // looping over Bplus candidates
@@ -153,7 +156,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       }
 
       // D0 is always index0 and pi is index1 by default
-      auto trackPi = hfCandB.prong1_as<TracksPIDWithSel>();
+      auto trackPi = hfCandB.prong1_as<TracksPidWithSel>();
 
       // topological cuts
       if (!hf_sel_candidate_bplus::selectionTopol(hfCandB, cuts, binsPt)) {

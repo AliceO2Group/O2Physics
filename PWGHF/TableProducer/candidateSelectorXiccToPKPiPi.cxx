@@ -51,6 +51,8 @@ struct HfCandidateSelectorXiccToPKPiPi {
 
   TrackSelectorPi selectorPion;
 
+  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPi>;
+
   void init(InitContext const&)
   {
     selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
@@ -138,12 +140,12 @@ struct HfCandidateSelectorXiccToPKPiPi {
     return true;
   }
 
-  void process(aod::HfCandXicc const& hfCandXiccs, aod::HfCand3Prong const&, aod::BigTracksPID const&)
+  void process(aod::HfCandXicc const& hfCandXiccs, aod::HfCand3Prong const&, TracksPid const&)
   {
     // looping over 3-prong candidates
     for (auto& hfCandXicc : hfCandXiccs) {
       auto hfCandXic = hfCandXicc.prong0();
-      auto trackPi = hfCandXicc.prong1_as<aod::BigTracksPID>();
+      auto trackPi = hfCandXicc.prong1_as<TracksPid>();
       // final selection flag: 0 - rejected, 1 - accepted
       auto statusXiccToPKPiPi = 0;
 

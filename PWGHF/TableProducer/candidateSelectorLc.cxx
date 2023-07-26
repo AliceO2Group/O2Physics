@@ -60,7 +60,9 @@ struct HfCandidateSelectorLc {
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;
 
-  using TrksPID = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
+  using TracksPid = soa::Join<aod::BigTracks,
+                              aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr,
+                              aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
   void init(InitContext const&)
   {
@@ -143,7 +145,7 @@ struct HfCandidateSelectorLc {
     return true;
   }
 
-  void process(aod::HfCand3Prong const& candidates, TrksPID const&)
+  void process(aod::HfCand3Prong const& candidates, TracksPid const&)
   {
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {
@@ -157,9 +159,9 @@ struct HfCandidateSelectorLc {
         continue;
       }
 
-      auto trackPos1 = candidate.prong0_as<TrksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<TrksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<TrksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackPos1 = candidate.prong0_as<TracksPid>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<TracksPid>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<TracksPid>(); // positive daughter (negative for the antiparticles)
 
       // implement filter bit 4 cut - should be done before this task at the track selection level
 

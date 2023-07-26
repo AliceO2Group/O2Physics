@@ -55,6 +55,9 @@ struct HfCandidateSelectorXicToPKPi {
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;
 
+  using TracksPid = soa::Join<aod::BigTracks,
+                              aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
+
   void init(InitContext const&)
   {
     selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
@@ -161,7 +164,7 @@ struct HfCandidateSelectorXicToPKPi {
     return true;
   }
 
-  void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
+  void process(aod::HfCand3Prong const& candidates, TracksPid const&)
   {
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {
@@ -175,9 +178,9 @@ struct HfCandidateSelectorXicToPKPi {
         continue;
       }
 
-      auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackPos1 = candidate.prong0_as<TracksPid>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<TracksPid>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<TracksPid>(); // positive daughter (negative for the antiparticles)
 
       // implement filter bit 4 cut - should be done before this task at the track selection level
 

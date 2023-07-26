@@ -60,7 +60,10 @@ struct HfCandidateSelectorB0ToDPi {
   bool selectionFlagDAndUsePidInSync = true;
   TrackSelectorPi selectorPion;
 
-  using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
+  using TracksPidWithSel = soa::Join<aod::BigTracks,
+                              aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr,
+                              // aod::TracksDCA,
+                              aod::TrackSelection>;
 
   HistogramRegistry registry{"registry"};
 
@@ -113,7 +116,7 @@ struct HfCandidateSelectorB0ToDPi {
   }
 
   void process(aod::HfCandB0 const& hfCandsB0,
-               TracksPIDWithSel const&)
+               TracksPidWithSel const&)
   {
     for (const auto& hfCandB0 : hfCandsB0) {
       int statusB0ToDPi = 0;
@@ -151,7 +154,7 @@ struct HfCandidateSelectorB0ToDPi {
       }
       // track-level PID selection
       if (usePid) {
-        auto trackPi = hfCandB0.prong1_as<TracksPIDWithSel>();
+        auto trackPi = hfCandB0.prong1_as<TracksPidWithSel>();
         int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         if (!hf_sel_candidate_b0::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");

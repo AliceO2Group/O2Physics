@@ -30,7 +30,7 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_casc;
 using namespace o2::analysis::hf_cuts_lc_to_k0s_p;
 
-using MyBigTracksBayes = soa::Join<aod::BigTracksPID, aod::pidBayesPr, aod::pidBayesEl, aod::pidBayesMu, aod::pidBayesKa, aod::pidBayesPi>;
+using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPr, aod::pidBayesPr>;
 
 struct HfCandidateSelectorLcToK0sP {
   Produces<aod::HfSelLcToK0sP> hfSelLcToK0sPCandidate;
@@ -195,12 +195,12 @@ struct HfCandidateSelectorLcToK0sP {
   }
   PROCESS_SWITCH(HfCandidateSelectorLcToK0sP, processWithStandardPID, "Use standard PID for bachelor track", true);
 
-  void processWithBayesPID(aod::HfCandCascade const& candidates, MyBigTracksBayes const& tracks)
+  void processWithBayesPID(aod::HfCandCascade const& candidates, TracksPid const& tracks)
   {
     int statusLc = 0; // final selection flag : 0-rejected  1-accepted
 
     for (const auto& candidate : candidates) {                    // looping over cascade candidates
-      const auto& bach = candidate.prong0_as<MyBigTracksBayes>(); // bachelor track
+      const auto& bach = candidate.prong0_as<TracksPid>(); // bachelor track
 
       statusLc = 0;
 
