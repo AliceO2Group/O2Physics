@@ -124,10 +124,13 @@ struct k892analysis {
       histos.add("QAMCTrue/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
       histos.add("QAMCTrue/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
       histos.add("QAMCTrue/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {dcazAxis});
-      histos.add("h3recok892invmass", "Invariant mass of Reconstructed MC K(892)0", kTH3F, {multAxis, ptAxis, invMassAxis});
-      histos.add("truek892pt", "pT distribution of True MC K(892)0", kTH1F, {ptAxis});
-      histos.add("reconk892pt", "pT distribution of Reconstructed MC K(892)0", kTH1F, {ptAxis});
-      histos.add("reconk892invmass", "Inv mass distribution of Reconstructed MC Phi", kTH1F, {invMassAxis});
+      histos.add("h3Reck892invmass", "Invariant mass of Reconstructed MC K(892)0", kTH3F, {multAxis, ptAxis, invMassAxis});
+      histos.add("h3Reck892invmassAnti", "Invariant mass of Reconstructed MC Anti-K(892)0", kTH3F, {multAxis, ptAxis, invMassAxis});
+      histos.add("k892Gen", "pT distribution of True MC K(892)0", kTH1F, {ptAxis});
+      histos.add("k892GenAnti", "pT distribution of True MC Anti-K(892)0", kTH1F, {ptAxis});
+      histos.add("k892Rec", "pT distribution of Reconstructed MC K(892)0", kTH1F, {ptAxis});
+      histos.add("k892RecAnti", "pT distribution of Reconstructed MC Anti-K(892)0", kTH1F, {ptAxis});
+      histos.add("k892Recinvmass", "Inv mass distribution of Reconstructed MC Phi", kTH1F, {invMassAxis});
     }
     // Print output histograms statistics
     LOG(info) << "Size of the histograms in spectraTOF";
@@ -287,9 +290,15 @@ struct k892analysis {
           histos.fill(HIST("QAMCTrue/trkDCAz_ka"), trk2.dcaZ());
 
           // MC histograms
-          histos.fill(HIST("reconk892pt"), lResonance.Pt());
-          histos.fill(HIST("reconk892invmass"), lResonance.M());
-          histos.fill(HIST("h3recok892invmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          if (trk1.motherPDG() > 0) {
+            histos.fill(HIST("k892Rec"), lResonance.Pt());
+            histos.fill(HIST("k892Recinvmass"), lResonance.M());
+            histos.fill(HIST("h3Reck892invmass"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          } else {
+            histos.fill(HIST("k892RecAnti"), lResonance.Pt());
+            histos.fill(HIST("k892Recinvmass"), lResonance.M());
+            histos.fill(HIST("h3Reck892invmassAnti"), collision.multV0M(), lResonance.Pt(), lResonance.M());
+          }
         }
       } else {
         if constexpr (!IsMix)
@@ -338,7 +347,10 @@ struct k892analysis {
       }
       if (!pass1 || !pass2) // If we have both decay products
         continue;
-      histos.fill(HIST("truek892pt"), part.pt());
+      if (part.pdgCode() > 0)
+        histos.fill(HIST("k892Gen"), part.pt());
+      else
+        histos.fill(HIST("k892GenAnti"), part.pt());
     }
   }
   PROCESS_SWITCH(k892analysis, processMCTrue, "Process Event for MC", false);
