@@ -229,50 +229,50 @@ struct kinkAnalysis {
     int anParticleName = cfgParticleSpec;
     if (cfgIsMC) {
       switch (anParticleName) {
-      case SigmaPlusToPi:
-	if (cfgMotherCharge == 1)
-	  particlePdgCode = 3222;
-	else
-	  particlePdgCode = -3222;
-	break;
-	
-      case SigmaPlusToProton:
-	if (cfgMotherCharge == 1)
-	  particlePdgCode = 3222;
-	else
-	  particlePdgCode = -3222;
-	break;
-	
-      case Xi:
-	if (cfgMotherCharge == -1)
-	  particlePdgCode = 3312;
-	else
-	  particlePdgCode = -3312;
-	break;
-	
-      case OmegaToL:
-	if (cfgMotherCharge == -1)
-	  particlePdgCode = 3334;
-	else
-	  particlePdgCode = -3334;
-	break;
-	
-      case OmegaToXi:
-	if (cfgMotherCharge == -1)
-	  particlePdgCode = 3334;
-	else
-	  particlePdgCode = -3334;
-	break;
-	
-      case SigmaMinus:
-	if (cfgMotherCharge == -1)
-	  particlePdgCode = 3112;
-	else
-	  particlePdgCode = -3112;
-	break;
-	
-      default:
-	particlePdgCode = 3112;
+        case SigmaPlusToPi:
+          if (cfgMotherCharge == 1)
+            particlePdgCode = 3222;
+          else
+            particlePdgCode = -3222;
+          break;
+
+        case SigmaPlusToProton:
+          if (cfgMotherCharge == 1)
+            particlePdgCode = 3222;
+          else
+            particlePdgCode = -3222;
+          break;
+
+        case Xi:
+          if (cfgMotherCharge == -1)
+            particlePdgCode = 3312;
+          else
+            particlePdgCode = -3312;
+          break;
+
+        case OmegaToL:
+          if (cfgMotherCharge == -1)
+            particlePdgCode = 3334;
+          else
+            particlePdgCode = -3334;
+          break;
+
+        case OmegaToXi:
+          if (cfgMotherCharge == -1)
+            particlePdgCode = 3334;
+          else
+            particlePdgCode = -3334;
+          break;
+
+        case SigmaMinus:
+          if (cfgMotherCharge == -1)
+            particlePdgCode = 3112;
+          else
+            particlePdgCode = -3112;
+          break;
+
+        default:
+          particlePdgCode = 3112;
       }
     }
 
@@ -377,6 +377,7 @@ struct kinkAnalysis {
 
     std::vector<uint8_t> selected(tracks.size(), 0u);
     std::vector<uint64_t> globalBCvector;
+
     int index{0};
     for (const auto& track : tracks) {
       if (track.has_collision()) {
@@ -720,15 +721,15 @@ struct kinkAnalysis {
               mass = sqrt((neutronE + pionE) * (neutronE + pionE) - sigmaPabsDC * sigmaPabsDC);
 
               if ((chargeM == -1) && (chargeD == -1)) {
-		if (cfgIsMC) {
-		  histos.fill(HIST("hcodes"), motherPdg);
+                if (cfgIsMC) {
+                  histos.fill(HIST("hcodes"), motherPdg);
                   if (motherPdg == particlePdgCode)
                     histos.fill(HIST("hPtMinusRecMcTrth"), mass, sigmaPt);
                 }
                 histos.fill(HIST("hMassMinusPt"), mass, sigmaPt);
               }
               if ((chargeM == 1) && (chargeD == 1)) {
-		if (cfgIsMC) {
+                if (cfgIsMC) {
                   if (motherPdg == particlePdgCode)
                     histos.fill(HIST("hPtPlusRecMcTrth"), mass, sigmaPt);
                 }
@@ -749,8 +750,8 @@ struct kinkAnalysis {
 
         } // try
 
-      }   // inner track loop
-    }     // outer track loop
+      } // inner track loop
+    }   // outer track loop
   }
 
   void processReco(CompleteCollisions const& collisions, CompleteTracks const& tracks, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcWtmp)
