@@ -372,10 +372,12 @@ struct femtoWorldPairTaskTrackD0 {
       if (magFieldTesla1 != magFieldTesla2) {
         continue;
       }
+
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsD0D0bar))) {
         if (!(IsParticleNSigma(p1.p(), p1.tpcNSigmaPr(), p1.tofNSigmaPr(), p1.tpcNSigmaPi(), p1.tofNSigmaPi(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
           continue;
         }
+        
         mixedEventCont.setPair(p1, p2, collision1.multV0M());
       }
     }
