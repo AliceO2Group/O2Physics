@@ -36,6 +36,10 @@ DECLARE_SOA_COLUMN(MultTPC, multTPC, int);
 DECLARE_SOA_COLUMN(MultNTracksPV, multNTracksPV, int);
 DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
 DECLARE_SOA_COLUMN(MultNTracksPVetaHalf, multNTracksPVetaHalf, int);
+DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, //! is INEL > 0
+                           [](int multPveta1) -> bool { return multPveta1 > 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
+                           [](int multPveta1) -> bool { return multPveta1 > 1; });
 
 } // namespace mult
 DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
@@ -50,7 +54,9 @@ DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
                   mult::MultTPC,
                   mult::MultNTracksPV,
                   mult::MultNTracksPVeta1,
-                  mult::MultNTracksPVetaHalf);
+                  mult::MultNTracksPVetaHalf,
+                  mult::IsInelGt0<mult::MultNTracksPVeta1>,
+                  mult::IsInelGt1<mult::MultNTracksPVeta1>);
 using Mult = Mults::iterator;
 
 namespace multZeq
