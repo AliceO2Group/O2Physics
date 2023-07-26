@@ -79,9 +79,9 @@ class FemtoWorldPairCleaner
       return false;
     } else if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
       return true;
-    }
-
-    else {
+    } else if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kD0D0bar) {
+      return true;
+    } else {
       LOG(fatal) << "FemtoWorldPairCleaner: Combination of objects not defined - quitting!";
       return false;
     }
