@@ -30,8 +30,6 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_casc;
 using namespace o2::analysis::hf_cuts_lc_to_k0s_p;
 
-using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPr, aod::pidBayesPr>;
-
 struct HfCandidateSelectorLcToK0sP {
   Produces<aod::HfSelLcToK0sP> hfSelLcToK0sPCandidate;
 
@@ -58,6 +56,8 @@ struct HfCandidateSelectorLcToK0sP {
 
   TrackSelectorPr selectorProtonLowP;
   TrackSelectorPr selectorProtonHighP;
+
+  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPr, aod::pidBayesPr>;
 
   void init(InitContext&)
   {

@@ -86,8 +86,7 @@ struct HfCandidateSelectorJpsi {
   TrackSelectorEl selectorElectron;
   TrackSelectorMu selectorMuon;
 
-  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidEl, aod::TracksPidMu, aod::TracksPidPi, aod::HfTrackIndexALICE3PID>;
-  using ExtendedTracksPID = soa::Join<TracksPid, aod::TracksDCA>;
+  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidEl, aod::TracksPidMu, aod::TracksPidPi, aod::HfTrackIndexALICE3PID, aod::TracksDCA>;
 
   void init(InitContext const& initContext)
   {
@@ -226,7 +225,7 @@ struct HfCandidateSelectorJpsi {
 
   PROCESS_SWITCH(HfCandidateSelectorJpsi, processAlice2, "Use ALICE 2 detector setup", true);
 
-  void processAlice3(aod::HfCand2Prong const& candidates, ExtendedTracksPID const&, aod::RICHs const&, aod::MIDs const&)
+  void processAlice3(aod::HfCand2Prong const& candidates, TracksPid const&, aod::RICHs const&, aod::MIDs const&)
   {
     // looping over 2-prong candidates
     for (auto& candidate : candidates) {
@@ -237,8 +236,8 @@ struct HfCandidateSelectorJpsi {
         continue;
       }
 
-      auto trackPos = candidate.prong0_as<ExtendedTracksPID>(); // positive daughter
-      auto trackNeg = candidate.prong1_as<ExtendedTracksPID>(); // negative daughter
+      auto trackPos = candidate.prong0_as<TracksPid>(); // positive daughter
+      auto trackNeg = candidate.prong1_as<TracksPid>(); // negative daughter
 
       int selectedEETopol = 1;
       int selectedEETpc = 1;
