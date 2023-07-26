@@ -186,8 +186,13 @@ struct bbParams {
     TH1F* h = nullptr;
     f->GetObject("hpar", h);
     if (!h) {
-      LOG(error) << "The input file does not contain the histogram hpar";
-      return false;
+      // Reattempt with ccdb name
+      f->GetObject("ccdb_object", h);
+      if (!h) {
+        f->ls();
+        LOG(fatal) << "The input file does not contain the histograms hpar or ccdb_object";
+        return false;
+      }
     }
     LOG(info) << "bbParams `" << name << "` :: Setting parameters from TH1F " << h->GetName() << " in file " << f->GetName();
     return setValues(h);
@@ -683,6 +688,10 @@ struct lfTpcPid {
       bbNeg##Particle.updateValues(collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>(), ccdb);                      \
       float bb = 0.f;                                                                                                    \
       for (auto const& trk : tracks) {                                                                                   \
+        if (!trk.hasTPC()) {                                                                                             \
+          tablePID##Particle(aod::pidtpc_tiny::binning::underflowBin);                                                   \
+          continue;                                                                                                      \
+        }                                                                                                                \
         if (skipTPCOnly) {                                                                                               \
           if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {                                                         \
             tablePID##Particle(aod::pidtpc_tiny::binning::underflowBin);                                                 \
@@ -732,6 +741,10 @@ struct lfTpcPid {
       float expSigma = 1.f;                                                                         \
       for (auto const& trk : tracks) {                                                              \
         if (skipTPCOnly) {                                                                          \
+          if (!trk.hasTPC()) {                                                                      \
+            tablePIDFull##Particle(-999.f, -999.f);                                                 \
+            continue;                                                                               \
+          }                                                                                         \
           if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {                                    \
             tablePIDFull##Particle(-999.f, -999.f);                                                 \
             continue;                                                                               \
@@ -786,6 +799,11 @@ struct lfTpcPid {
           tablePIDFullKa(-999.f, -999.f);
           tablePIDFullPr(-999.f, -999.f);
           continue;
+        }
+        if (!trk.hasTPC()) {
+          tablePIDFullPi(-999.f, -999.f);
+          tablePIDFullKa(-999.f, -999.f);
+          tablePIDFullPr(-999.f, -999.f);
         }
       }
       if (trk.sign() > 0) {
