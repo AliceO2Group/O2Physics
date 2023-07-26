@@ -440,7 +440,7 @@ struct lambda1520analysis {
     for (auto& part : resoParents) {   // loop over all MC particles
       if (abs(part.pdgCode()) != 3124) // Lambda1520(0)
         continue;
-      if (abs(part.y()) > 0.5)         // rapidity cut
+      if (abs(part.y()) > 0.5) // rapidity cut
         continue;
       bool pass1 = false;
       bool pass2 = false;
