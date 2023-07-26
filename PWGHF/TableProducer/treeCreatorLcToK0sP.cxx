@@ -74,7 +74,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandCascFull, "AOD", "HFCANDCASCFull",
+DECLARE_SOA_TABLE(HfCandCascFulls, "AOD", "HFCANDCASCFULL",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -144,14 +144,14 @@ DECLARE_SOA_TABLE(HfCandCascFull, "AOD", "HFCANDCASCFull",
                   full::FlagMc,
                   full::OriginMcRec);
 
-DECLARE_SOA_TABLE(HfCandCascFullEvents, "AOD", "HFCANDCASCFullE",
+DECLARE_SOA_TABLE(HfCandCascFullEs, "AOD", "HFCANDCASCFULLE",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ);
 
-DECLARE_SOA_TABLE(HfCandCascFullParticles, "AOD", "HFCANDCASCFullP",
+DECLARE_SOA_TABLE(HfCandCascFullPs, "AOD", "HFCANDCASCFULLP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -164,9 +164,9 @@ DECLARE_SOA_TABLE(HfCandCascFullParticles, "AOD", "HFCANDCASCFullP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLcToK0sP {
-  Produces<o2::aod::HfCandCascFull> rowCandidateFull;
-  Produces<o2::aod::HfCandCascFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandCascFullParticles> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandCascFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandCascFullEs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandCascFullPs> rowCandidateFullParticles;
 
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 

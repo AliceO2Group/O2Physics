@@ -74,7 +74,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandXFull, "AOD", "HFCANDXFull",
+DECLARE_SOA_TABLE(HfCandXFulls, "AOD", "HFCANDXFULL",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -118,7 +118,7 @@ DECLARE_SOA_TABLE(HfCandXFull, "AOD", "HFCANDXFull",
                   full::MCflag,
                   full::OriginMcRec);
 
-DECLARE_SOA_TABLE(HfCandXFullEvents, "AOD", "HFCANDXFullE",
+DECLARE_SOA_TABLE(HfCandXFullEvs, "AOD", "HFCANDXFULLEV",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -127,7 +127,7 @@ DECLARE_SOA_TABLE(HfCandXFullEvents, "AOD", "HFCANDXFullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandXFullParticles, "AOD", "HFCANDXFullP",
+DECLARE_SOA_TABLE(HfCandXFullPs, "AOD", "HFCANDXFULLP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -140,9 +140,9 @@ DECLARE_SOA_TABLE(HfCandXFullParticles, "AOD", "HFCANDXFullP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorXToJpsiPiPi {
-  Produces<o2::aod::HfCandXFull> rowCandidateFull;
-  Produces<o2::aod::HfCandXFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandXFullParticles> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandXFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandXFullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandXFullPs> rowCandidateFullParticles;
 
   void init(InitContext const&)
   {

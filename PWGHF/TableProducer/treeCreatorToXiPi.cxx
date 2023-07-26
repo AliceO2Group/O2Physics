@@ -137,7 +137,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 
 } // namespace full
 
-DECLARE_SOA_TABLE(HfToXiPiFull, "AOD", "HFTOXIPIFULL",
+DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::CollisionId, full::XPv, full::YPv, full::ZPv, collision::NumContrib,
                   full::XDecayVtxOmegac, full::YDecayVtxOmegac, full::ZDecayVtxOmegac,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
@@ -169,7 +169,7 @@ DECLARE_SOA_TABLE(HfToXiPiFull, "AOD", "HFTOXIPIFULL",
                   full::TofNSigmaPiFromOmega, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
                   full::FlagMcMatchRec, full::DebugMcRec);
 
-DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENTS",
+DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENT",
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -179,7 +179,7 @@ DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENTS",
 /// Writes the full information in an output TTree
 struct HfTreeCreatorToXiPi {
 
-  Produces<o2::aod::HfToXiPiFull> rowCandidateFull;
+  Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
   Produces<o2::aod::HfToXiPiEvents> rowCandidateEvents;
 
   void init(InitContext const&)
