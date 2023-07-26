@@ -133,25 +133,25 @@ static const std::tuple pdgCharmDaughters{
   std::array{2212, -321, 211},  // Lc
   std::array{2212, -321, 211}}; // Xic
 
-static const float massPi = RecoDecay::getMassPDG(211);
-static const float massK = RecoDecay::getMassPDG(321);
-static const float massProton = RecoDecay::getMassPDG(2212);
-static const float massPhi = RecoDecay::getMassPDG(333);
-static const float massD0 = RecoDecay::getMassPDG(421);
-static const float massDPlus = RecoDecay::getMassPDG(411);
-static const float massDs = RecoDecay::getMassPDG(431);
-static const float massLc = RecoDecay::getMassPDG(4122);
-static const float massXic = RecoDecay::getMassPDG(4232);
-static const float massDStar = RecoDecay::getMassPDG(413);
-static const float massBPlus = RecoDecay::getMassPDG(511);
-static const float massB0 = RecoDecay::getMassPDG(521);
-static const float massBs = RecoDecay::getMassPDG(531);
-static const float massLb = RecoDecay::getMassPDG(5122);
-static const float massXib = RecoDecay::getMassPDG(5232);
-static const float massGamma = RecoDecay::getMassPDG(22);
-static const float massK0S = RecoDecay::getMassPDG(310);
-static const float massLambda = RecoDecay::getMassPDG(3122);
-static const float massXi = RecoDecay::getMassPDG(3312);
+static const float massPi = 0.13957;
+static const float massK = 0.493677;
+static const float massProton = 0.938272;
+static const float massPhi = 1.019455;
+static const float massD0 = 1.86484;
+static const float massDPlus = 1.86962;
+static const float massDs = 1.9685;
+static const float massLc = 2.28646;
+static const float massXic = 2.4679;
+static const float massDStar = 2.01027;
+static const float massBPlus = 5.27915;
+static const float massB0 = 5.27953;
+static const float massBs = 5.3663;
+static const float massLb = 5.6202;
+static const float massXib = 5.7924;
+static const float massGamma = 0.;
+static const float massK0S = 0.497614;
+static const float massLambda = 1.11568;
+static const float massXi = 1.32171;
 
 static const AxisSpec ptAxis{50, 0.f, 50.f};
 static const AxisSpec pAxis{50, 0.f, 10.f};
@@ -175,10 +175,11 @@ constexpr float cutsMinPt[1][4] = {{0.5, 0.1, 0.8, 0.5}}; // beauty, D*, femto, 
 static const std::vector<std::string> labelsColumnsMinPt = {"Beauty", "DstarPlus", "Femto", "CharmBaryon"};
 
 // min pT for all tracks combined  (except for V0 and cascades)
-constexpr float cutsNsigma[2][5] = {{3., 3., 3., 2.5, 3.},  // TPC proton from Lc, pi/K from D0, K from 3-prong, femto, pi/K from Xic/Omegac
-                                    {3., 3., 3., 2.5, 3.}}; // TOF proton from Lc, pi/K from D0, K from 3-prong, femto, pi/K from Xic/Omegac
+constexpr float cutsNsigma[3][5] = {{3., 3., 3., 5., 3.},           // TPC proton from Lc, pi/K from D0, K from 3-prong, femto, pi/K from Xic/Omegac
+                                    {3., 3., 3., 2.5, 3.},          // TOF proton from Lc, pi/K from D0, K from 3-prong, femto, pi/K from Xic/Omegac
+                                    {999., 999., 999., 2.5, 999.}}; // Sum in quadrature of TPC and TOF (used only for femto for pT < 4 GeV/c)
 static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "Femto", "PiKaFromCharmBaryon"};
-static const std::vector<std::string> labelsRowsNsigma = {"TPC", "TOF"};
+static const std::vector<std::string> labelsRowsNsigma = {"TPC", "TOF", "Comb"};
 
 // high pt
 constexpr float cutsHighPtThresholds[1][2] = {{8., 8.}}; // 2-prongs, 3-prongs
@@ -315,7 +316,7 @@ int8_t isSelectedTrackForSoftPionOrBeauty(const T track, const T1& trackPar, con
 /// \param hProtonTOFPID histo with NsigmaTOF vs. p
 /// \return true if track passes all cuts
 template <typename T1, typename T2, typename H2, typename H3>
-bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& femtoMinProtonPt, const float& femtoMaxNsigmaProton, const int setTPCCalib, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplineProton, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID)
+bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& femtoMinProtonPt, const std::array<float, 3>& femtoMaxNsigmaProton, const int setTPCCalib, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplineProton, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID)
 {
   if (trackPar.getPt() < femtoMinProtonPt) {
     return false;
@@ -344,8 +345,14 @@ bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& fe
 
   float NSigma = std::sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
 
-  if (NSigma > femtoMaxNsigmaProton) {
-    return false;
+  if (trackPar.getPt() <= 4.f) {
+    if (NSigma > femtoMaxNsigmaProton[2]) {
+      return false;
+    }
+  } else {
+    if (NSigmaTPC > femtoMaxNsigmaProton[0] || NSigmaTOF > femtoMaxNsigmaProton[1]) {
+      return false;
+    }
   }
 
   if (activateQA > 1) {
