@@ -66,7 +66,7 @@ struct HfCandidateSelectorD0Alice3Forward {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_d0_to_pi_k::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "D0 candidate selection per pT bin"};
 
-  using TracksPid = soa::Join<aod::BigTracksPIDExtended, aod::Tracks, aod::FRICHTracksIndex, aod::TracksExtra>;
+  using TracksSel = soa::Join<aod::BigTracksPIDExtended, aod::FRICHTracksIndex>;
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
@@ -174,7 +174,7 @@ struct HfCandidateSelectorD0Alice3Forward {
     return true;
   }
 
-  void process(aod::HfCand2Prong const& candidates, TracksPid const& forwardtracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCand2Prong const& candidates, TracksSel const& forwardtracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
 
     for (auto& candidate : candidates) {
@@ -196,8 +196,8 @@ struct HfCandidateSelectorD0Alice3Forward {
         continue;
       }
 
-      auto trackPos = candidate.prong0_as<TracksPid>();
-      auto trackNeg = candidate.prong1_as<TracksPid>();
+      auto trackPos = candidate.prong0_as<TracksSel>();
+      auto trackNeg = candidate.prong1_as<TracksSel>();
 
       // auto momentumPosTrack = trackPos.p();
       // auto momentumNegTrack = trackNeg.p();

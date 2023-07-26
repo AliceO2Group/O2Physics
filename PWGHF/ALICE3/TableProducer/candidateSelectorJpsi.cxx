@@ -86,7 +86,8 @@ struct HfCandidateSelectorJpsi {
   TrackSelectorEl selectorElectron;
   TrackSelectorMu selectorMuon;
 
-  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidEl, aod::TracksPidMu, aod::TracksPidPi, aod::HfTrackIndexALICE3PID, aod::TracksDCA>;
+  using TracksSelAlice2 = soa::Join<aod::BigTracks, aod::TracksPidEl, aod::TracksDCA>;
+  using TracksSelAlice3 = soa::Join<aod::BigTracks, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::HfTrackIndexALICE3PID, aod::TracksDCA>;
 
   void init(InitContext const& initContext)
   {
@@ -156,7 +157,7 @@ struct HfCandidateSelectorJpsi {
     return true;
   }
 
-  void processAlice2(aod::HfCand2Prong const& candidates, aod::BigTracksPIDExtended const&)
+  void processAlice2(aod::HfCand2Prong const& candidates, TracksSelAlice2 const&)
   {
     // looping over 2-prong candidates
     for (auto& candidate : candidates) {
@@ -167,8 +168,8 @@ struct HfCandidateSelectorJpsi {
         continue;
       }
 
-      auto trackPos = candidate.prong0_as<aod::BigTracksPIDExtended>(); // positive daughter
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPIDExtended>(); // negative daughter
+      auto trackPos = candidate.prong0_as<TracksSelAlice2>(); // positive daughter
+      auto trackNeg = candidate.prong1_as<TracksSelAlice2>(); // negative daughter
 
       int selectedEETopol = 1;
       int selectedEETpc = 1;
@@ -225,7 +226,7 @@ struct HfCandidateSelectorJpsi {
 
   PROCESS_SWITCH(HfCandidateSelectorJpsi, processAlice2, "Use ALICE 2 detector setup", true);
 
-  void processAlice3(aod::HfCand2Prong const& candidates, TracksPid const&, aod::RICHs const&, aod::MIDs const&)
+  void processAlice3(aod::HfCand2Prong const& candidates, TracksSelAlice3 const&, aod::RICHs const&, aod::MIDs const&)
   {
     // looping over 2-prong candidates
     for (auto& candidate : candidates) {
@@ -236,8 +237,8 @@ struct HfCandidateSelectorJpsi {
         continue;
       }
 
-      auto trackPos = candidate.prong0_as<TracksPid>(); // positive daughter
-      auto trackNeg = candidate.prong1_as<TracksPid>(); // negative daughter
+      auto trackPos = candidate.prong0_as<TracksSelAlice3>(); // positive daughter
+      auto trackNeg = candidate.prong1_as<TracksSelAlice3>(); // negative daughter
 
       int selectedEETopol = 1;
       int selectedEETpc = 1;

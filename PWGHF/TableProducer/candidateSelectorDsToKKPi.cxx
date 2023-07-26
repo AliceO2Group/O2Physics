@@ -49,7 +49,7 @@ struct HfCandidateSelectorDsToKKPi {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
-  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa>;
+  using TracksSel = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa>;
 
   void init(InitContext const&)
   {
@@ -151,7 +151,7 @@ struct HfCandidateSelectorDsToKKPi {
     return true;
   }
 
-  void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
+  void process(aod::HfCand3Prong const& candidates, TracksSel const&)
   {
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {
@@ -167,9 +167,9 @@ struct HfCandidateSelectorDsToKKPi {
       SETBIT(statusDsToKKPi, aod::SelectionStep::RecoSkims);
       SETBIT(statusDsToPiKK, aod::SelectionStep::RecoSkims);
 
-      auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackPos1 = candidate.prong0_as<TracksSel>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<TracksSel>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<TracksSel>(); // positive daughter (negative for the antiparticles)
 
       // topological selections
       if (!selection(candidate)) {

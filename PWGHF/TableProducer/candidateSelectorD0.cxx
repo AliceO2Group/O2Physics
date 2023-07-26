@@ -56,7 +56,7 @@ struct HfCandidateSelectorD0 {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
-  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksDCA>;
+  using TracksSel = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksDCA>;
 
   void init(InitContext& initContext)
   {
@@ -188,7 +188,7 @@ struct HfCandidateSelectorD0 {
     return true;
   }
 
-  void process(aod::HfCand2Prong const& candidates, TracksPid const&)
+  void process(aod::HfCand2Prong const& candidates, TracksSel const&)
   {
     // looping over 2-prong candidates
     for (auto& candidate : candidates) {
@@ -207,8 +207,8 @@ struct HfCandidateSelectorD0 {
       }
       statusHFFlag = 1;
 
-      auto trackPos = candidate.prong0_as<TracksPid>(); // positive daughter
-      auto trackNeg = candidate.prong1_as<TracksPid>(); // negative daughter
+      auto trackPos = candidate.prong0_as<TracksSel>(); // positive daughter
+      auto trackNeg = candidate.prong1_as<TracksSel>(); // negative daughter
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {

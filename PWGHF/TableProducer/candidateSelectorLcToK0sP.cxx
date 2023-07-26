@@ -57,7 +57,7 @@ struct HfCandidateSelectorLcToK0sP {
   TrackSelectorPr selectorProtonLowP;
   TrackSelectorPr selectorProtonHighP;
 
-  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPr, aod::pidBayesPr>;
+  using TracksSel = soa::Join<aod::BigTracks, aod::TracksPidPr, aod::pidBayesPr>;
 
   void init(InitContext&)
   {
@@ -195,12 +195,12 @@ struct HfCandidateSelectorLcToK0sP {
   }
   PROCESS_SWITCH(HfCandidateSelectorLcToK0sP, processWithStandardPID, "Use standard PID for bachelor track", true);
 
-  void processWithBayesPID(aod::HfCandCascade const& candidates, TracksPid const& tracks)
+  void processWithBayesPID(aod::HfCandCascade const& candidates, TracksSel const& tracks)
   {
     int statusLc = 0; // final selection flag : 0-rejected  1-accepted
 
     for (const auto& candidate : candidates) {                    // looping over cascade candidates
-      const auto& bach = candidate.prong0_as<TracksPid>(); // bachelor track
+      const auto& bach = candidate.prong0_as<TracksSel>(); // bachelor track
 
       statusLc = 0;
 
