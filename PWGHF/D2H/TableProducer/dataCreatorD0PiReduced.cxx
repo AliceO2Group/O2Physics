@@ -93,7 +93,7 @@ struct HfDataCreatorD0PiReduced {
   // Fitter to redo D0-vertex to get extrapolated daughter tracks (2-prong vertex filter)
   o2::vertexing::DCAFitterN<2> df2;
 
-  using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TracksPidAll, aod::TrackSelection>;
+  using TracksPIDWithSel = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TracksPidAll, aod::TrackSelection>;
   using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);

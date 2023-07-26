@@ -96,7 +96,6 @@ using TracksPidMu = soa::Join<aod::pidTPCFullMu, aod::pidTOFFullMu>;
 using TracksPidPi = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi>;
 using TracksPidKa = soa::Join<aod::pidTPCFullKa, aod::pidTOFFullKa>;
 using TracksPidPr = soa::Join<aod::pidTPCFullPr, aod::pidTOFFullPr>;
-using BigTracksPIDExtended = soa::Join<BigTracks, aod::TracksDCA>;
 
 // FIXME: this is a workaround until we get the index columns to work with joins.
 
