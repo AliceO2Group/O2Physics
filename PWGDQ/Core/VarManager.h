@@ -1262,9 +1262,9 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   }
 
   // TO DO: get the correct values from CCDB
-  double BeamMomentum = TMath::Sqrt(CenterOfMassEnergy * CenterOfMassEnergy / 4 - MassofCollidingParticle * MassofCollidingParticle); // GeV
-  ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, CenterOfMassEnergy / 2);
-  ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, CenterOfMassEnergy / 2);
+  double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
+  ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
+  ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, fgCenterOfMassEnergy / 2);
 
   // Boost to center of mass frame
   ROOT::Math::Boost boostv12{v12.BoostToCM()};
