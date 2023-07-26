@@ -375,6 +375,30 @@ struct femtoUniverseProducerTask {
     ccdb->setCreatedNotAfter(now);
   }
 
+  // maybe in the future use track.passedPtRange() https://aliceo2group.github.io/analysis-framework/docs/basics-usage/HelperTasks.html?highlight=passedPtRange
+  template <typename ParticleType>
+  bool isGlobalTrack(ParticleType const& track)
+  {
+    if (track.pt() < ConfGlobalTracks.ConfPtLowGlobalTrack || track.pt() > ConfGlobalTracks.ConfPtHighGlobalTrack) { // pT cut
+      return false;
+    } else if (track.eta() < ConfGlobalTracks.ConfEtaLowGlobalTrack || track.eta() > ConfGlobalTracks.ConfEtaHighGlobalTrack) { // eta cut
+      return false;
+    } else if (track.dcaXY() > ConfGlobalTracks.ConfDcaXYGlobalTrack) { // DCA XY cut
+      return false;
+    } else if (track.dcaZ() > ConfGlobalTracks.ConfDcaZGlobalTrack) { // DCA Z cut
+      return false;
+    } else if (track.tpcNClsFound() < (uint8_t)ConfGlobalTracks.ConfTpcClGlobalTrack) { // number of tpc clusters cut
+      return false;
+    } else if (track.tpcNClsCrossedRows() < (uint8_t)ConfGlobalTracks.ConfTpcCrosRoGlobalTrack) { // number of tpc clusters crossed rows cut
+      return false;
+    } else if (track.itsChi2NCl() > ConfGlobalTracks.ConfChi2ItsGlobalTrack) { // max chi^2 per cluster ITS cut
+      return false;
+    } else if (track.tpcChi2NCl() > ConfGlobalTracks.ConfChi2TpcGlobalTrack) { // max chi^2 per cluster TPC cut
+      return false;
+    }
+    return true;
+  }
+
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
   void getMagneticFieldTesla(aod::BCsWithTimestamps::iterator bc)
   {
@@ -520,22 +544,8 @@ struct femtoUniverseProducerTask {
       /// point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
         continue;
-      } else if (ConfGlobalTracks.ConfUseGlobalTrack) {                                                                  // maybe in the future use track.passedPtRange() https://aliceo2group.github.io/analysis-framework/docs/basics-usage/HelperTasks.html?highlight=passedPtRange
-        if (track.pt() < ConfGlobalTracks.ConfPtLowGlobalTrack || track.pt() > ConfGlobalTracks.ConfPtHighGlobalTrack) { // pT cut
-          continue;
-        } else if (track.eta() < ConfGlobalTracks.ConfEtaLowGlobalTrack || track.eta() > ConfGlobalTracks.ConfEtaHighGlobalTrack) { // eta cut
-          continue;
-        } else if (track.dcaXY() > ConfGlobalTracks.ConfDcaXYGlobalTrack) { // DCA XY cut
-          continue;
-        } else if (track.dcaZ() > ConfGlobalTracks.ConfDcaZGlobalTrack) { // DCA Z cut
-          continue;
-        } else if (track.tpcNClsFound() < (uint8_t)ConfGlobalTracks.ConfTpcClGlobalTrack) { // number of tpc clusters cut
-          continue;
-        } else if (track.tpcNClsCrossedRows() < (uint8_t)ConfGlobalTracks.ConfTpcCrosRoGlobalTrack) { // number of tpc clusters crossed rows cut
-          continue;
-        } else if (track.itsChi2NCl() > ConfGlobalTracks.ConfChi2ItsGlobalTrack) { // max chi^2 per cluster ITS cut
-          continue;
-        } else if (track.tpcChi2NCl() > ConfGlobalTracks.ConfChi2TpcGlobalTrack) { // max chi^2 per cluster TPC cut
+      } else if (ConfGlobalTracks.ConfUseGlobalTrack) {
+        if (!isGlobalTrack(track)) {
           continue;
         }
       }
@@ -662,7 +672,18 @@ struct femtoUniverseProducerTask {
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     // lorentz vectors and filling the tables
     for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
-      // implementing cuts for phi children
+      // global track cuts for phi meson daughters
+      if (ConfGlobalTracks.ConfUseGlobalTrack) { // maybe in the future use track.passedPtRange() https://aliceo2group.github.io/analysis-framework/docs/basics-usage/HelperTasks.html?highlight=passedPtRange
+        // daughter 1 -- global track cut
+        if (!isGlobalTrack(p1)) {
+          continue;
+        }
+        // daughter 2 -- global track cut
+        if (!isGlobalTrack(p2)) {
+          continue;
+        }
+      }
+      // implementing PID cuts for phi children
       if (!(IsKaonNSigma(p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
         continue;
       }
