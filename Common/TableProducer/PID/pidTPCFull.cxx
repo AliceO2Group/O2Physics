@@ -361,10 +361,10 @@ struct tpcPidFull {
             return;
           }
         }
-        auto expSignal = response->GetExpectedSignal(trk, pid); 
+        auto expSignal = response->GetExpectedSignal(trk, pid);
         auto expSigma = response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid);
         if (expSignal < 0. || expSigma < 0.) { // skip if expected signal invalid
-          table(-999.f,-999.f);
+          table(-999.f, -999.f);
           return;
         }
 

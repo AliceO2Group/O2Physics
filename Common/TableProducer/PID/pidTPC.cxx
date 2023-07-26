@@ -360,7 +360,7 @@ struct tpcPid {
             return;
           }
         }
-        auto expSignal = response->GetExpectedSignal(trk, pid); 
+        auto expSignal = response->GetExpectedSignal(trk, pid);
         auto expSigma = response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid);
         if (expSignal < 0. || expSigma < 0.) { // skip if expected signal invalid
           table(aod::pidtpc_tiny::binning::underflowBin);
