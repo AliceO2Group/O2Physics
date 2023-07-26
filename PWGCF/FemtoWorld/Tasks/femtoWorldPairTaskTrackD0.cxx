@@ -71,12 +71,12 @@ struct femtoWorldPairTaskTrackD0 {
   Configurable<float> ConfNsigmaTPCPion{"ConfNsigmaTPCPion", 3.0, "TPC Pion Sigma for momentum < 0.5"};
   /// Table for both particles
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
-  //Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
+  // Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
 
   /// Particle 1 (track)
-  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 211, "Particle 1 - PDG code"};                                 // pion+ (211), proton (2212)
-  //Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
-  Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.5, "Lower limit for Pt for the first particle"};                      // change according to wrzesa cuts
+  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 211, "Particle 1 - PDG code"}; // pion+ (211), proton (2212)
+  // Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
+  Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.5, "Lower limit for Pt for the first particle"}; // change according to wrzesa cuts
   Configurable<float> cfgPtHighPart1{"cfgPtHighPart1", 1.5, "Higher limit for Pt for the first particle"};
   Configurable<float> cfgEtaLowPart1{"cfgEtaLowPart1", -0.8, "Lower limit for Eta for the first particle"};
   Configurable<float> cfgEtaHighPart1{"cfgEtaHighPart1", 0.8, "Higher limit for Eta for the first particle"};
@@ -279,7 +279,7 @@ struct femtoWorldPairTaskTrackD0 {
     auto groupPartsD0D0barDaugh = partsD0D0barDaughters->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
 
     for (auto& d0d0bar : groupPartsD0D0bar) {
-      if (d0d0bar.flagD0() == 1){
+      if (d0d0bar.flagD0() == 1) {
         registry.fill(HIST("hInvMassD0"), d0d0bar.massD0());
         registry.fill(HIST("hMomentumD0"), d0d0bar.p());
         registry.fill(HIST("hPtD0"), d0d0bar.pt());
@@ -287,7 +287,7 @@ struct femtoWorldPairTaskTrackD0 {
         registry.fill(HIST("hEtaD0"), d0d0bar.eta());
         registry.fill(HIST("hDecayLengthD0"), d0d0bar.decayLength());
       }
-      if (d0d0bar.flagD0bar() == 1){
+      if (d0d0bar.flagD0bar() == 1) {
         registry.fill(HIST("hInvMassD0bar"), d0d0bar.massD0bar());
         registry.fill(HIST("hMomentumD0bar"), d0d0bar.p());
         registry.fill(HIST("hPtD0bar"), d0d0bar.pt());
