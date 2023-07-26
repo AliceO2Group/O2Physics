@@ -360,19 +360,26 @@ struct tpcPid {
             return;
           }
         }
+        auto expSignal = response->GetExpectedSignal(trk, pid); 
+        auto expSigma = response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid);
+        if (expSignal < 0. || expSigma < 0.) { // skip if expected signal invalid
+          table(aod::pidtpc_tiny::binning::underflowBin);
+          return;
+        }
+
         if (useNetworkCorrection) {
 
           // Here comes the application of the network. The output--dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
           // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
           if (network.getNumOutputNodes() == 1) {
-            aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - network_prediction[count_tracks + tracksForNet_size * pid] * response->GetExpectedSignal(trk, pid)) / response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid), table);
+            aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - network_prediction[count_tracks + tracksForNet_size * pid] * expSignal) / expSigma, table);
           } else if (network.getNumOutputNodes() == 2) {
-            aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() / response->GetExpectedSignal(trk, pid) - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]), table);
+            aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() / expSignal - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]), table);
           } else if (network.getNumOutputNodes() == 3) {
-            if (trk.tpcSignal() / response->GetExpectedSignal(trk, pid) >= network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) {
-              aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() / response->GetExpectedSignal(trk, pid) - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]), table);
+            if (trk.tpcSignal() / expSignal >= network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) {
+              aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]), table);
             } else {
-              aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() / response->GetExpectedSignal(trk, pid) - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]), table);
+              aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]), table);
             }
           } else {
             LOGF(fatal, "Network output-dimensions incompatible!");

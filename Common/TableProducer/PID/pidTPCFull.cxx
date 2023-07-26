@@ -361,30 +361,37 @@ struct tpcPidFull {
             return;
           }
         }
+        auto expSignal = response->GetExpectedSignal(trk, pid); 
+        auto expSigma = response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid);
+        if (expSignal < 0. || expSigma < 0.) { // skip if expected signal invalid
+          table(-999.f,-999.f);
+          return;
+        }
+
 
         if (useNetworkCorrection) {
 
           // Here comes the application of the network. The output--dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
           // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
           if (network.getNumOutputNodes() == 1) {
-            table(response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid),
-                  (trk.tpcSignal() - network_prediction[count_tracks + tracksForNet_size * pid] * response->GetExpectedSignal(trk, pid)) / response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid));
+            table(expSigma,
+                  (trk.tpcSignal() - network_prediction[count_tracks + tracksForNet_size * pid] * expSignal) / expSigma);
           } else if (network.getNumOutputNodes() == 2) {
-            table((network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * response->GetExpectedSignal(trk, pid),
-                  (trk.tpcSignal() / response->GetExpectedSignal(trk, pid) - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]));
+            table((network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal,
+                  (trk.tpcSignal() / expSignal - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]));
           } else if (network.getNumOutputNodes() == 3) {
-            if (trk.tpcSignal() / response->GetExpectedSignal(trk, pid) >= network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) {
-              table((network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) * response->GetExpectedSignal(trk, pid),
-                    (trk.tpcSignal() / response->GetExpectedSignal(trk, pid) - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]));
+            if (trk.tpcSignal() / expSignal >= network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) {
+              table((network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) * expSignal,
+                    (trk.tpcSignal() / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]));
             } else {
-              table((network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]) * response->GetExpectedSignal(trk, pid),
-                    (trk.tpcSignal() / response->GetExpectedSignal(trk, pid) - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]));
+              table((network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]) * expSignal,
+                    (trk.tpcSignal() / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]));
             }
           } else {
             LOGF(fatal, "Network output-dimensions incompatible!");
           }
         } else {
-          table(response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid),
+          table(expSigma,
                 response->GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid));
         }
       };
