@@ -127,7 +127,7 @@ struct JetFinderTask {
   void processNeutralJets(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                           JetClusters const& clusters)
   {
-    if (!collision.alias_bit(kTVXinEMC)) {
+    if (!hasEMCAL(collision)) {
       return;
     }
     inputParticles.clear();
@@ -140,7 +140,7 @@ struct JetFinderTask {
                        JetTracks const& tracks,
                        JetClusters const& clusters)
   {
-    if (!collision.alias_bit(kTVXinEMC)) {
+    if (!hasEMCAL(collision)) {
       return;
     }
     inputParticles.clear();
