@@ -368,7 +368,6 @@ struct tpcPidFull {
           return;
         }
 
-
         if (useNetworkCorrection) {
 
           // Here comes the application of the network. The output--dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
