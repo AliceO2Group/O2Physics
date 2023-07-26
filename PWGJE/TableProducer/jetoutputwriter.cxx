@@ -22,6 +22,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -29,44 +30,55 @@ using namespace o2::framework::expressions;
 
 struct JetOutputWriter {
 
-  Produces<JetCollisionsMarked> jetCollisionsOutput;
-  Produces<JetCollisionsMarked> jetTracksOutput;
+  Configurable<float> jetPtMin{"jetPtMin", 1.f, "Minimum jet pt to accept event"};
 
-  bool acceptCollision(JetCollision const &collision) {
+  Produces<o2::aod::StoredJCollisions> storedJetCollisions;
+  Produces<o2::aod::StoredJTracks> storedJetTracks;
+
+  std::vector<bool> collFlag;
+
+  bool acceptCollision(o2::aod::JCollision const& collision)
+  {
     return true;
   }
 
-  template <typename Jets>
-  void process(JetCollision const &collision, Jets const& jets) {
-    bool keepCollision = false;
-    for (const auto &jet : jets) {
-      // TODO: replace with meangingful condition
-      keepCollision = jet.pt() > 10.;
-    }
+  // explicit process function used to reset acceptance flags
+  void process(o2::aod::JCollisions const& collisions)
+  {
+    collFlag.reserve(collisions.size());
+    std::fill(collFlag.begin(), collFlag.end(), false);
   }
 
-  // add specializations for all jets
+  template <typename Jets>
+  void processJets(Jets& jets)
+  {
+    for (const auto& jet : jets) {
+      if (jet.pt() > jetPtMin) {
+        collFlag[jet.collisionId()] = true;
+      }
+    }
+  }
+// TODO: replace with PROCESS_SWITCH_FULL when available
+#define PROCESS_SWITCH_JKL(_Class_, _Method_, _Name_, _Help_, _Default_) \
+  decltype(ProcessConfigurable{&_Class_ ::_Method_, #_Name_, _Default_, _Help_}) do##_Name_ = ProcessConfigurable{&_Class_ ::_Method_, #_Name_, _Default_, _Help_};
+  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::ChargedJets>, processChargedJets, "process charged jets", true);
+  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::NeutralJets>, processNeutralJets, "process neutral jets", true);
+  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::D0ChargedJets>, processD0ChargedJets, "process D0 charged jets", true);
+  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::LcChargedJets>, processLcChargedJets, "process Lc charged jets", true);
 
-  // how can we ensure running order?
-
-  // how to template for all possible jets?
-  void process(JetCollisions const& collision, JetTracks const& tracks, Jets const &jets) {
-    if (acceptCollision(collision)) {
-      jetCollisionsOutput(collision);
+  void processCollisions(o2::aod::JCollision const& collision, o2::aod::JTracks const& tracks)
+  {
+    if (collFlag[collision.globalIndex()]) {
+      storedJetCollisions(collision.posZ(), collision.eventSel());
 
       for (const auto &track : tracks) {
-        jetTracksOutput(jetCollisionsOutput.lastIndex(), ...);
-      }
-
-      // do we want to modify the jets table at this stage?
-      // or do we filter the jets at the level of the jet finder already?
-      // the latter would avoid having to rewrite the jet tables
-      // but we anyway have to rewrite the consituent tables
-      for (const auto &jet : jets) {
-        jetsOutput();
+        storedJetTracks(storedJetCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.trackSel());
       }
     }
   }
+  // process switch for output writing must be last
+  // to run after all jet selections
+  PROCESS_SWITCH(JetOutputWriter, processCollisions, "write collisions and tracks to output tables", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
