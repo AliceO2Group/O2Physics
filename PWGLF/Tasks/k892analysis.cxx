@@ -175,7 +175,7 @@ struct k892analysis {
   {
     if (hasTOF && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (2.0 * nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
       return true;
-    } else if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaPion) {
+    } else if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
       return true;
     }
     return false;
@@ -214,7 +214,7 @@ struct k892analysis {
         }
         //  --- PID QA Kaon
         histos.fill(HIST("QAbefore/TPC_Nsigmaka_all"), trk2ptKa, trk2NSigmaKaTPC);
-        if (isTrk1hasTOF) {
+        if (isTrk2hasTOF) {
           histos.fill(HIST("QAbefore/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
           histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
         }
@@ -240,7 +240,7 @@ struct k892analysis {
         }
         //  --- PID QA Kaon
         histos.fill(HIST("QAafter/TPC_Nsigmaka_all"), trk2ptKa, trk2NSigmaKaTPC);
-        if (isTrk1hasTOF) {
+        if (isTrk2hasTOF) {
           histos.fill(HIST("QAafter/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
           histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
         }

@@ -108,6 +108,7 @@ DECLARE_SOA_COLUMN(DaughterPDG1, daughterPDG1, int); //! PDG code of the first D
 DECLARE_SOA_COLUMN(DaughterPDG2, daughterPDG2, int); //! PDG code of the second Daughter particle
 DECLARE_SOA_COLUMN(DaughterID1, daughterId1, int);   //! Id of the first Daughter particle
 DECLARE_SOA_COLUMN(DaughterID2, daughterId2, int);   //! Id of the second Daughter particle
+DECLARE_SOA_COLUMN(SiblingIds, siblingIds, int[2]);  //! Index of the particles with the same mother
 DECLARE_SOA_COLUMN(BachTrkID, bachtrkID, int);       //! Id of the bach track from cascade
 DECLARE_SOA_COLUMN(V0ID, v0ID, int);                 //! Id of the V0 from cascade
 } // namespace resodaughter
@@ -191,6 +192,7 @@ DECLARE_SOA_TABLE(ResoMCTracks, "AOD", "RESOMCTRACKS",
                   mcparticle::PdgCode,
                   resodaughter::MothersId,
                   resodaughter::MotherPDG,
+                  resodaughter::SiblingIds,
                   resodaughter::IsPhysicalPrimary,
                   resodaughter::ProducedByGenerator);
 using ResoMCTrack = ResoMCTracks::iterator;
