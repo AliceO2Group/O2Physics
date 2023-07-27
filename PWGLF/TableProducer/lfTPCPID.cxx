@@ -202,12 +202,15 @@ struct bbParams {
   /// Set values from a configuration. In this case also the post calibration is checked
   bool init(const Configurable<std::vector<std::string>>& cfg, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
   {
+    LOG(info) << "bbParams `" << name << "` :: initializing from configurable '" << cfg.name << "' of size " << cfg.value.size();
+    if (cfg.value.size() != 3) {
+      LOG(fatal) << "bbParams `" << name << "` :: The input configurable has the wrong size " << cfg.value.size() << " while expecting 3";
+    }
     const std::string bb = cfg.value.at(0);
     const std::string post = cfg.value.at(1);
     const std::string simple = cfg.value.at(2);
-
     // First we check the post calib
-    if (post.size() <= 1) {
+    if (post.size() > 1) {
       LOG(info) << "bbParams `" << name << "` :: Loading parameters from configurable '" << cfg.name << "' with value '" << post << "'";
       std::string s = post;
       if (s.rfind("ccdb://", 0) == 0) {
@@ -659,6 +662,12 @@ struct lfTpcPid {
     }                                                                                                      \
   }
 
+    if (doprocessStandalone) { // If in standalone mode we enable the configuration of tables of interest
+      doprocessFullPi.value = true;
+      doprocessFullKa.value = true;
+      doprocessFullPr.value = true;
+    }
+
     InitPerParticle(El);
     InitPerParticle(Mu);
     InitPerParticle(Pi);
@@ -668,6 +677,12 @@ struct lfTpcPid {
     InitPerParticle(Tr);
     InitPerParticle(He);
     InitPerParticle(Al);
+
+    if (doprocessStandalone) { // If in standalone mode we disable after their configuration the process functions
+      doprocessFullPi.value = false;
+      doprocessFullKa.value = false;
+      doprocessFullPr.value = false;
+    }
 
 #undef InitPerParticle
   }
