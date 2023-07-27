@@ -74,7 +74,6 @@ struct k1analysis {
   Configurable<double> cMaxAngle{"cMaxAngle", 4, "Maximum angle between K(892)0 and bachelor pion"};
   Configurable<double> cMinPairAsym{"cMinPairAsym", -1, "Minimum pair asymmetry"};
   Configurable<double> cMaxPairAsym{"cMaxPairAsym", 1, "Maximum pair asymmetry"};
-  
 
   // K1 selection
   Configurable<double> cK1MaxRap{"cK1MaxRap", 0.5, "K1 maximum rapidity"};
