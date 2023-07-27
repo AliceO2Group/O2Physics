@@ -458,7 +458,6 @@ struct tofSpectra {
           histos.add(hpt_den_prm[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
           histos.add(hpt_den_str[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
           histos.add(hpt_den_mat[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
-
           //***************************************************************************************
         } else {
           histos.add(hpt_num_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
