@@ -1080,6 +1080,20 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("muonLowPt210SigmaPDCA")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt2"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts10SigmaPDCA"));
+    cut->AddCut(GetAnalysisCut("MCHMID"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonLowPt510SigmaPDCA")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt5"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts10SigmaPDCA"));
+    cut->AddCut(GetAnalysisCut("MCHMID"));
+    return cut;
+  }
+
   if (!nameStr.compare("muonLowPt")) {
     cut->AddCut(GetAnalysisCut("muonLowPt"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
