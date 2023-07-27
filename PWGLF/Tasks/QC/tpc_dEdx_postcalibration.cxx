@@ -118,9 +118,9 @@ struct tpc_dEdx_postcalibration {
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
   Configurable<bool> useTOFpi{"useTOFpi", true, "use TOF for pion ID"};
   Configurable<bool> useTOFpr{"useTOFpr", true, "use TOF for proton ID"};
-  Configurable<bool> doContaminations{"doContaminations", true, "Flag to produce the plots for the contaminations"};
-  Configurable<bool> usePt{"usePt", true, "Flag to use PT instead of the TPCInnerParam"};
-  ConfigurableAxis pBins{"pBins", {200, -10.0, 10.0}, "Binning in p"};
+  Configurable<bool> doContaminations{"doContaminations", false, "Flag to produce the plots for the contaminations"};
+  Configurable<bool> usePt{"usePt", false, "Flag to use PT instead of the TPCInnerParam"};
+  ConfigurableAxis pBins{"pBins", {200, -10.0, 10.0}, "Binning in TPC inner param. or pT"};
   ConfigurableAxis dEdxBins{"dEdxBins", {3000, 0.f, 1500.f}, "Binning in dE/dx"};
   ConfigurableAxis nsigmaBins{"nsigmaBins", {200, -5, 5}, "Binning in nsigma"};
 
@@ -148,10 +148,10 @@ struct tpc_dEdx_postcalibration {
       {pAxis, dEdxBins});
     registryDe.add(
       "dEdx_vs_Momentum_De", "dE/dx", HistType::kTH2F,
-      {{2000, -3.0, 3.0, "z#upoint p (GeV/c)"}, dEdxBins});
+      {pAxis, dEdxBins});
     registryTr.add(
       "dEdx_vs_Momentum_Tr", "dE/dx", HistType::kTH2F,
-      {{200, -3.0, 3.0, "z#upoint p (GeV/c)"}, dEdxBins});
+      {pAxis, dEdxBins});
     registryHe.add(
       "dEdx_vs_Momentum_He", "dE/dx", HistType::kTH2F,
       {pAxis, dEdxBins});
@@ -175,7 +175,8 @@ struct tpc_dEdx_postcalibration {
     registryHe.add(
       "nsigmaTPC_vs_Momentum_He", "nsigmaTPC", HistType::kTH2F,
       {pAxis, nsigmaAxis});
-    if (doContaminations) {
+
+    if (doContaminations) { // If requested, also produce the contaminations plots
       registryPi.add(
         "nsigmaTPC_vs_Momentum_Ka", "nsigmaTPC", HistType::kTH2F,
         {pAxis, nsigmaAxis});
