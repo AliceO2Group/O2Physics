@@ -42,7 +42,6 @@ enum EvFlags : uint8_t {
   EvINELgt1 = 0x4  // Event with at least 2 PV contributors from the |eta| < 1
 };
 
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(CollisionZ, zcoll, float);
 DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
 DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);
@@ -111,7 +110,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsINELgt1, isINELgt1, //! True if the Event belongs t
 } // namespace mycascades
 
 DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
-                  mycascades::CollisionId, mycascades::CollisionZ, mycascades::MultFT0M, mycascades::MultFV0A, mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega, mycascades::Eta, mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
+                  mycascades::CollisionZ, mycascades::MultFT0M, mycascades::MultFV0A, mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega, mycascades::Eta, mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
                   mycascades::CascCosPA, mycascades::V0CosPA, mycascades::DCAPosToPV, mycascades::DCANegToPV,
                   mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::PosEta, mycascades::NegEta,
                   mycascades::BachEta, mycascades::PosITSHits, mycascades::NegITSHits, mycascades::BachITSHits,
@@ -139,7 +138,6 @@ enum EvFlags : uint8_t {
   EvINELgt1 = 0x4  // Event with at least 2 PV contributors from the |eta| < 1
 };
 
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! MC collision of this particle
 DECLARE_SOA_COLUMN(CollisionZ, zcoll, float);
 DECLARE_SOA_COLUMN(Sign, sign, float);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
@@ -169,7 +167,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsINELgt1, isINELgt1, //! True if the Event belongs t
 } // namespace myMCcascades
 
 DECLARE_SOA_TABLE(MyMCCascades, "AOD", "MYMCCASCADES", o2::soa::Index<>,
-                  myMCcascades::McCollisionId,
                   myMCcascades::CollisionZ, myMCcascades::Sign, myMCcascades::PdgCode,
                   myMCcascades::Y, myMCcascades::Eta, myMCcascades::Phi, myMCcascades::Pt,
                   myMCcascades::IsPrimary, myMCcascades::NAssocColl, myMCcascades::NChInFT0M,
