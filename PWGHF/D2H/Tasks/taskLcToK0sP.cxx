@@ -239,8 +239,7 @@ struct HfTaskLcToK0sP {
     }
   }
 
-  void
-    process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates, aod::BigTracksPID const&)
+  void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates, aod::BigTracksPID const&)
   {
     // Printf("Candidates: %d", candidates.size());
     for (auto& candidate : candidates) {

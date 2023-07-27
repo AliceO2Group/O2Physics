@@ -102,6 +102,7 @@ struct HfTaskQaPidRejection {
   static constexpr PDG_t PDGs[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
   static_assert(particle < 5 && "Maximum of particles reached");
   static constexpr int particlePDG = PDGs[particle];
+
   using TracksPid = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
 
   HistogramRegistry histos{"HistogramsRejection"};
