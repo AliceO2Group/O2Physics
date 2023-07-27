@@ -121,22 +121,13 @@ struct femtoUniverseProducerTask {
 
   struct : o2::framework::ConfigurableGroup {
     Configurable<bool> ConfUseGlobalTrack{"ConfUseGlobalTrack", true, "Use global track cuts (as defined in the official o2 documentation)"};
-    Configurable<float> ConfPtLowGlobalTrack{"ConfPtLowGlobalTrack", 0.14, "Lower limit for Pt for the global track"};             // pT low
-    Configurable<float> ConfPtHighGlobalTrack{"ConfPtHighGlobalTrack", 5.0, "Higher limit for Pt for the global track"};           // pT high
-    Configurable<float> ConfEtaLowGlobalTrack{"ConfEtaLowGlobalTrack", -0.8, "Lower limit for Eta for the global track"};          // eta low
-    Configurable<float> ConfEtaHighGlobalTrack{"ConfEtaHighGlobalTrack", 0.8, "Higher limit for Eta for the global track"};        // eta high
-    Configurable<float> ConfDcaXYGlobalTrack{"ConfDcaXYGlobalTrack", 2.4, "Value for DCA_XY for the global track"};                // max dca to vertex XY
-    Configurable<float> ConfDcaZGlobalTrack{"ConfDcaZGlobalTrack", 3.2, "Value for DCA_Z for the global track"};                   // max dca to vertex Z
-    Configurable<int> ConfTpcClGlobalTrack{"ConfTpcClGlobalTrack", 88, "Number of tpc clasters for the global track"};             // min number of found TPC clusters
-    Configurable<int> ConfTpcCrosRoGlobalTrack{"ConfTpcCrosRoGlobalTrack", 70, "Number of tpc crossed rows for the global track"}; // min number of crossed rows
-    Configurable<float> ConfChi2TpcGlobalTrack{"ConfChi2TpcGlobalTrack", 4.0, "Chi2 / cluster for the TPC track segment for the global track"};
-    Configurable<float> ConfChi2ItsGlobalTrack{"ConfChi2ItsGlobalTrack", 36.0, "Chi2 / cluster for the ITS track segment for the global track"};
+    Configurable<float> ConfPtLowGlobalTrack{"ConfPtLowGlobalTrack", 0.14, "Lower limit for Pt for the global track"}; // pT low
   } ConfGlobalTracks;
 
   Configurable<std::vector<float>> ConfTrkCharge{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kSign, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkPtmin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMin, "ConfTrk"), std::vector<float>{0.5f, 0.4f, 0.6f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMin, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkPtmin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMin, "ConfTrk"), std::vector<float>{0.1f, 0.4f, 0.6f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkPtmax{
-    FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMax, "ConfTrk"), std::vector<float>{5.4f, 5.6f, 5.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMax, "Track selection: ")};
+    FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMax, "ConfTrk"), std::vector<float>{9.0f, 9.5f, 10.0f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMax, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkEta{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kEtaMax, "ConfTrk"), std::vector<float>{0.8f, 0.7f, 0.9f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kEtaMax, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkTPCnclsMin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kTPCnClsMin, "ConfTrk"), std::vector<float>{80.f, 70.f, 60.f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kTPCnClsMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkTPCfCls{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kTPCfClsMin, "ConfTrk"), std::vector<float>{0.7f, 0.83f, 0.9f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kTPCfClsMin, "Track selection: ")};
@@ -183,15 +174,10 @@ struct femtoUniverseProducerTask {
   // PHI
   FemtoUniversePhiSelection phiCuts;
   struct : o2::framework::ConfigurableGroup {
-    Configurable<std::vector<float>> ConfPhiSign{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhiSign, "ConfPhi"), std::vector<float>{-1, 1}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhiSign, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiPtMin{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhipTMin, "ConfPhi"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhipTMin, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiPtMax{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhipTMax, "ConfPhi"), std::vector<float>{3.3f, 3.4f, 3.5f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhipTMax, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiEtaMax{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhietaMax, "ConfPhi"), std::vector<float>{0.8f, 0.7f, 0.9f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhietaMax, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiDCADaughMax{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhiDCADaughMax, "ConfPhi"), std::vector<float>{1.2f, 1.5f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhiDCADaughMax, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiCPAMin{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhiCPAMin, "ConfPhi"), std::vector<float>{0.99f, 0.995f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhiCPAMin, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiTranRadMin{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhiTranRadMin, "ConfPhi"), std::vector<float>{0.2f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhiTranRadMin, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiTranRadMax{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhiTranRadMax, "ConfPhi"), std::vector<float>{100.f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhiTranRadMax, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiDecVtxMax{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhiDecVtxMax, "ConfPhi"), std::vector<float>{100.f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhiDecVtxMax, "Phi selection: ")};
+    Configurable<float> ConfPhiEtaMax{"ConfPhiEtaMax", 0.8f, "Phi cut: max eta"};
+    Configurable<float> ConfPhiEtaMin{"ConfPhiEtaMin", -0.8f, "Phi cut: min eta"};
+    Configurable<float> ConfPhiPtMax{"ConfPhiPtMax", 0.14f, "Phi cut: max pt"};
+    Configurable<float> ConfPhiPtMin{"ConfPhiPtMin", 10.0f, "Phi cut: min pt"};
   } ConfPhiSelection;
 
   struct : o2::framework::ConfigurableGroup {
@@ -338,17 +324,6 @@ struct femtoUniverseProducerTask {
     }
 
     if (ConfIsActivatePhi) {
-      // selection for Phi meson
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiSign, femtoUniversePhiSelection::kPhiSign, femtoUniverseSelection::kEqual);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiPtMin, femtoUniversePhiSelection::kPhipTMin, femtoUniverseSelection::kLowerLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiPtMax, femtoUniversePhiSelection::kPhipTMax, femtoUniverseSelection::kUpperLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiEtaMax, femtoUniversePhiSelection::kPhietaMax, femtoUniverseSelection::kAbsUpperLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiDCADaughMax, femtoUniversePhiSelection::kPhiDCADaughMax, femtoUniverseSelection::kUpperLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiCPAMin, femtoUniversePhiSelection::kPhiCPAMin, femtoUniverseSelection::kLowerLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiTranRadMin, femtoUniversePhiSelection::kPhiTranRadMin, femtoUniverseSelection::kLowerLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiTranRadMax, femtoUniversePhiSelection::kPhiTranRadMax, femtoUniverseSelection::kUpperLimit);
-      phiCuts.setSelection(ConfPhiSelection.ConfPhiDecVtxMax, femtoUniversePhiSelection::kPhiDecVtxMax, femtoUniverseSelection::kUpperLimit);
-
       // selection for Phi meson daughters
       phiCuts.setChildCuts(femtoUniversePhiSelection::kPosTrack, ConfPhiChildSelection.ConfPhiChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
       phiCuts.setChildCuts(femtoUniversePhiSelection::kPosTrack, ConfPhiChildSelection.ConfPhiChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
@@ -359,9 +334,6 @@ struct femtoUniverseProducerTask {
       // initializing for Phi meson
       LOGF(info, "DEBUG: before phicuts.init");
       phiCuts.init<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
-
-      // phiCuts setting and initializing
-      phiCuts.setInvMassLimits(ConfPhiCommon.ConfInvMassLowLimitPhi, ConfPhiCommon.ConfInvMassUpLimitPhi);
     }
 
     mRunNumber = 0;
@@ -375,27 +347,10 @@ struct femtoUniverseProducerTask {
     ccdb->setCreatedNotAfter(now);
   }
 
-  // maybe in the future use track.passedPtRange() https://aliceo2group.github.io/analysis-framework/docs/basics-usage/HelperTasks.html?highlight=passedPtRange
   template <typename ParticleType>
   bool isGlobalTrack(ParticleType const& track)
   {
-    if (track.pt() < ConfGlobalTracks.ConfPtLowGlobalTrack || track.pt() > ConfGlobalTracks.ConfPtHighGlobalTrack) { // pT cut
-      return false;
-    } else if (track.eta() < ConfGlobalTracks.ConfEtaLowGlobalTrack || track.eta() > ConfGlobalTracks.ConfEtaHighGlobalTrack) { // eta cut
-      return false;
-    } else if (track.dcaXY() > ConfGlobalTracks.ConfDcaXYGlobalTrack) { // DCA XY cut
-      return false;
-    } else if (track.dcaZ() > ConfGlobalTracks.ConfDcaZGlobalTrack) { // DCA Z cut
-      return false;
-    } else if (track.tpcNClsFound() < (uint8_t)ConfGlobalTracks.ConfTpcClGlobalTrack) { // number of tpc clusters cut
-      return false;
-    } else if (track.tpcNClsCrossedRows() < (uint8_t)ConfGlobalTracks.ConfTpcCrosRoGlobalTrack) { // number of tpc clusters crossed rows cut
-      return false;
-    } else if (track.itsChi2NCl() > ConfGlobalTracks.ConfChi2ItsGlobalTrack) { // max chi^2 per cluster ITS cut
-      return false;
-    } else if (track.tpcChi2NCl() > ConfGlobalTracks.ConfChi2TpcGlobalTrack) { // max chi^2 per cluster TPC cut
-      return false;
-    }
+    // return (track.isGlobalTrack());
     return true;
   }
 
@@ -498,6 +453,7 @@ struct femtoUniverseProducerTask {
       outputPartsMCLabels(-1);
     }
   }
+
   template <bool isMC, typename CollisionType, typename TrackType>
   void fillCollisions(CollisionType const& col, TrackType const& tracks)
   {
@@ -671,7 +627,7 @@ struct femtoUniverseProducerTask {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     // lorentz vectors and filling the tables
-    for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
+    for (auto& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
       // global track cuts for phi meson daughters
       if (ConfGlobalTracks.ConfUseGlobalTrack) { // maybe in the future use track.passedPtRange() https://aliceo2group.github.io/analysis-framework/docs/basics-usage/HelperTasks.html?highlight=passedPtRange
         // daughter 1 -- global track cut
@@ -691,10 +647,10 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
+      // track1 and track2 lorentz vectors initializing
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      // getting particle mass
       float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPhiChildOne.ConfPDGCodePartOne)->Mass();
       float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPhiChildTwo.ConfPDGCodePartTwo)->Mass();
 
@@ -704,30 +660,41 @@ struct femtoUniverseProducerTask {
       TLorentzVector sumVec(part1Vec);
       sumVec += part2Vec;
 
-      float phiEta = sumVec.Eta();
+      // Phi meson transverse momenta (with cut) [by default it is set to 0.14 GeV -- 10 GeV]
       float phiPt = sumVec.Pt();
-      // float phiP = sumVec.P();
-      float phiPhi = sumVec.Phi();
-      if (sumVec.Phi() < 0) {
-        phiPhi = sumVec.Phi() + 2 * o2::constants::math::PI;
-      } else if (sumVec.Phi() >= 0) {
-        phiPhi = sumVec.Phi();
+      if ((phiPt < ConfPhiSelection.ConfPhiPtMin) || (phiPt > ConfPhiSelection.ConfPhiPtMax)) {
+        continue;
       }
-      float phiM = sumVec.M(); // mass of the reconstructed Phi meson
 
-      // this cut probably is not doing anything, check it
-      //  if (((phiM < ConfPhiCommon.ConfInvMassLowLimitPhi) || (phiM > ConfPhiCommon.ConfInvMassUpLimitPhi))) {
-      //    continue;
-      //  }
+      // Phi meson pseudorapidity (with cut) [by default it is set to -0.8 -- 0.8]
+      float phiEta = sumVec.Eta();
+      if (phiEta < ConfPhiSelection.ConfPhiEtaMin || phiEta > ConfPhiSelection.ConfPhiEtaMax) {
+        continue;
+      }
 
+      // Phi meson azimuthal angle
+      float phiPhi = sumVec.Phi();
+      if (phiPhi < 0) {
+        phiPhi = phiPhi + 2 * o2::constants::math::PI;
+      } else if (phiPhi >= 0) {
+        phiPhi = phiPhi;
+      }
+
+      // invariant mass (with cut)
+      float phiM = sumVec.M();
+      if (((phiM < ConfPhiCommon.ConfInvMassLowLimitPhi) || (phiM > ConfPhiCommon.ConfInvMassUpLimitPhi))) {
+        continue;
+      }
+
+      // QA histograms for Phi meson
       phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, ConfPhiChildOne.ConfPDGCodePartOne, ConfPhiChildTwo.ConfPDGCodePartTwo); ///\todo fill QA also for daughters
 
+      // filling table for Phi meson daughter (K+)
       int postrackID = p1.globalIndex();
       int rowInPrimaryTrackTablePos = -1; // does it do anything?
       rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
       childIDs[0] = rowInPrimaryTrackTablePos;
       childIDs[1] = 0;
-
       outputParts(outputCollision.lastIndex(), p1.pt(),
                   p1.eta(), p1.phi(),
                   aod::femtouniverseparticle::ParticleType::kPhiChild,
@@ -741,6 +708,8 @@ struct femtoUniverseProducerTask {
       if constexpr (isMC) {
         fillMCParticle(p1, o2::aod::femtouniverseparticle::ParticleType::kPhiChild);
       }
+
+      // filling table for Phi meson daughter (K-)
       int negtrackID = p2.globalIndex();
       int rowInPrimaryTrackTableNeg = -1;
       rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
@@ -761,8 +730,9 @@ struct femtoUniverseProducerTask {
       if constexpr (isMC) {
         fillMCParticle(p2, o2::aod::femtouniverseparticle::ParticleType::kPhiChild);
       }
-      std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
 
+      // filling table for Phi meson particle
+      std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
       outputParts(outputCollision.lastIndex(),
                   phiPt,
                   phiEta,
@@ -776,13 +746,16 @@ struct femtoUniverseProducerTask {
                   -999); // v0.mAntiLambda()
 
       if (ConfIsDebug) {
+        // fillDebugParticle<isTrack0orV0, isPhi>
         fillDebugParticle<true, false>(p1); // QA for positive daughter
         fillDebugParticle<true, false>(p2); // QA for negative daughter
         fillDebugParticle<false, true>(p1); // QA for phi
       }
-      // if constexpr (isMC) {
-      //   fillMCParticle(v0, o2::aod::femtouniverseparticle::ParticleType::kV0);
-      // }
+
+      // TODO: figure out how to save phi mesons when using MC data
+      //  if constexpr (isMC) {
+      //    fillMCParticle(v0, o2::aod::femtouniverseparticle::ParticleType::kV0);
+      //  }
     }
   }
 
