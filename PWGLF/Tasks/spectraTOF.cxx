@@ -396,7 +396,7 @@ struct tofSpectra {
       switch (multiplicityEstimator) {
         case MultCodes::kNoMultiplicity: // No multiplicity
           break;
-        case MultCodes::kMultFV0M:       // MultFV0M
+        case MultCodes::kMultFV0M: // MultFV0M
           multAxis.name = "MultFV0M";
           break;
         case MultCodes::kMultFT0M: // MultFT0M
@@ -525,7 +525,7 @@ struct tofSpectra {
     switch (multiplicityEstimator) {
       case MultCodes::kNoMultiplicity: // No multiplicity
         break;
-      case MultCodes::kMultFV0M:       // MultFV0M
+      case MultCodes::kMultFV0M: // MultFV0M
         // multiplicity = collision.multFV0M();
         // multiplicity = collision.multZeqFV0A() + collision.multZeqFV0C();
         multiplicity = collision.multZeqFV0A();
@@ -1169,7 +1169,7 @@ struct tofSpectra {
       case MultCodes::kNoMultiplicity: // No multiplicity
         multiplicity = 50;             // to check if its filled
         break;
-      case MultCodes::kMultFV0M:       // MultFV0M
+      case MultCodes::kMultFV0M: // MultFV0M
 
         multiplicity = collision.multZeqFV0A();
         break;
@@ -1239,7 +1239,7 @@ struct tofSpectra {
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
         if (makeTHnSparseChoice) {
-          histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.eta());      // RD
+          histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.eta()); // RD
           if (track.hasTOF()) {
             histos.fill(HIST(hpt_numtof_str[i]), track.pt(), multiplicity, track.eta()); // RD
           }
@@ -1251,7 +1251,7 @@ struct tofSpectra {
         }
       } else {
         if (makeTHnSparseChoice) {
-          histos.fill(HIST(hpt_num_mat[i]), track.pt(), multiplicity, track.eta());      // RD
+          histos.fill(HIST(hpt_num_mat[i]), track.pt(), multiplicity, track.eta()); // RD
           if (track.hasTOF()) {
             histos.fill(HIST(hpt_numtof_mat[i]), track.pt(), multiplicity, track.eta()); // RD
           }
@@ -1359,7 +1359,7 @@ struct tofSpectra {
       case MultCodes::kNoMultiplicity: // No multiplicity
         multiplicity = 50;             // to check if its filled
         break;
-      case MultCodes::kMultFV0M:       // MultFV0M
+      case MultCodes::kMultFV0M: // MultFV0M
 
         multiplicity = collision.multZeqFV0A();
         break;
