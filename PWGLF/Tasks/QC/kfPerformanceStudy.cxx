@@ -11,7 +11,7 @@
 //
 /// \brief this task allows for the direct one-to-one comparison of 
 //         cascades computed with standard DCAFitter methods and the KFparticle 
-//         package. It is meant for the purpose of QA.
+//         package. It is meant for the purposes of larger-scale QA of KF reco.
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -28,14 +28,13 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include <cmath>
-//#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-// allows for candidate-by-candidate comparison
+// allows for candidate-by-candidate comparison using Cascade to []CascData link table
 using CascadesCrossLinked = soa::Join<aod::Cascades, aod::CascDataLink, aod::KFCascDataLink>;
 
 struct kfPerformanceStudy {
@@ -89,14 +88,16 @@ struct kfPerformanceStudy {
       float dcaXYKF = 0.0f;
       int charge = 1;
 
+      // get charge from bachelor (unambiguous wrt to building)
       auto bachTrack = cascade.bachelor_as<aod::TracksIU>();
       if(bachTrack.sign()<0)
         charge = -1;
 
       histos.fill(HIST("hChargeCounter"), charge);
 
-      if(cascade.has_cascData()){
-        //was picked up by default DCAfitter recovery
+      if(cascade.has_cascData()){ 
+        // check aod::Cascades -> aod::CascData link
+        // if present: this candidate was accepted by default DCAfitter building
         auto cascdata = cascade.cascData(); 
         pt = cascdata.pt();
         massLambda = cascdata.mLambda();
@@ -104,8 +105,9 @@ struct kfPerformanceStudy {
         massOmega = cascdata.mOmega();
         dcaXY = cascdata.dcaXYCascToPV();
       }
-      if(cascade.has_kfCascData()){
-        //was picked up by default DCAfitter recovery
+      if(cascade.has_kfCascData()){ 
+        // check aod::Cascades -> aod::KFCascData link
+        // if present: this candidate was accepted by KF building
         auto cascdata = cascade.kfCascData(); 
         ptKF = cascdata.pt();
         massLambdaKF = cascdata.mLambda();
@@ -115,25 +117,24 @@ struct kfPerformanceStudy {
       }
       
       histos.fill(HIST("hPtCorrelation"), pt, ptKF);
-      histos.fill(HIST("h3dMassLambda"), pt, massLambda, massLambdaKF);
-      histos.fill(HIST("h3dDCAxy"), pt, dcaXY, dcaXYKF);
+      histos.fill(HIST("h3dMassLambda"), pt, massLambda, massLambdaKF); // <- implicit pT choice, beware
+      histos.fill(HIST("h3dDCAxy"), pt, dcaXY, dcaXYKF); // <- implicit pT choice, beware
       if(charge<0){
         histos.fill(HIST("hMassXiMinus"), pt, massXi);
         histos.fill(HIST("hMassOmegaMinus"), pt, massOmega);
         histos.fill(HIST("hKFMassXiMinus"), ptKF, massXiKF);
         histos.fill(HIST("hKFMassOmegaMinus"), ptKF, massOmegaKF);
-        histos.fill(HIST("h3dMassXiMinus"), pt, massXi, massXiKF);
-        histos.fill(HIST("h3dMassOmegaMinus"), pt, massOmega, massOmegaKF);
+        histos.fill(HIST("h3dMassXiMinus"), pt, massXi, massXiKF); // <- implicit pT choice, beware
+        histos.fill(HIST("h3dMassOmegaMinus"), pt, massOmega, massOmegaKF); // <- implicit pT choice, beware
       }
       if(charge>0){
         histos.fill(HIST("hMassXiPlus"), pt, massXi);
         histos.fill(HIST("hMassOmegaPlus"), pt, massOmega);
         histos.fill(HIST("hKFMassXiPlus"), ptKF, massXiKF);
         histos.fill(HIST("hKFMassOmegaPlus"), ptKF, massOmegaKF);
-        histos.fill(HIST("h3dMassXiPlus"), pt, massXi, massXiKF);
-        histos.fill(HIST("h3dMassOmegaPlus"), pt, massOmega, massOmegaKF);
+        histos.fill(HIST("h3dMassXiPlus"), pt, massXi, massXiKF); // <- implicit pT choice, beware
+        histos.fill(HIST("h3dMassOmegaPlus"), pt, massOmega, massOmegaKF); // <- implicit pT choice, beware
       }
-
     }
   }
 };
