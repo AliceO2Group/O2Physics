@@ -451,9 +451,24 @@ struct reso2initializer {
       }
       return lMothersPDGs;
     };
+    auto getSiblingsIndeces = [&](auto const& theMcParticle) {
+      std::vector<int> lSiblingsIndeces{};
+      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+        LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
+        for (auto& lDaughter : lMother.template daughters_as<aod::McParticles>()) {
+          LOGF(debug, "   daughter index lDaughter: %d", lDaughter.globalIndex());
+          if (lDaughter.globalIndex() != 0 && lDaughter.globalIndex() != theMcParticle.globalIndex()) {
+            lSiblingsIndeces.push_back(lDaughter.globalIndex());
+          }
+        }
+      }
+      return lSiblingsIndeces;
+    };
     // ------
     std::vector<int> mothers = {-1, -1};
     std::vector<int> motherPDGs = {-1, -1};
+    int siblings[2] = {0, 0};
+    std::vector<int> siblings_temp = {-1, -1};
     if (track.has_mcParticle()) {
       //
       // Get the MC particle
@@ -461,14 +476,20 @@ struct reso2initializer {
       if (particle.has_mothers()) {
         mothers = getMothersIndeces(particle);
         motherPDGs = getMothersPDGCodes(particle);
+        siblings_temp = getSiblingsIndeces(particle);
       }
       while (mothers.size() > 2) {
         mothers.pop_back();
         motherPDGs.pop_back();
       }
+      if (siblings_temp.size() > 0)
+        siblings[0] = siblings_temp[0];
+      if (siblings_temp.size() > 1)
+        siblings[1] = siblings_temp[1];
       reso2mctracks(particle.pdgCode(),
                     mothers[0],
                     motherPDGs[0],
+                    siblings,
                     particle.isPhysicalPrimary(),
                     particle.producedByGenerator());
     } else {
@@ -476,6 +497,7 @@ struct reso2initializer {
       reso2mctracks(0,
                     mothers[0],
                     motherPDGs[0],
+                    siblings,
                     0,
                     0);
     }
