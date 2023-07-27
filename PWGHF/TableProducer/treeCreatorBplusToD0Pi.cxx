@@ -189,15 +189,17 @@ struct HfTreeCreatorBplusToD0Pi {
 
   Configurable<int> isSignal{"isSignal", 1, "save only MC matched candidates"};
 
+  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa>;
+
   void init(InitContext const&)
   {
   }
 
   void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mccollisions,
+               aod::McCollisions const&,
                soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& particles,
-               aod::BigTracksPID const& tracks,
+               TracksPid const&,
                aod::HfCand2Prong const&)
   {
 
@@ -223,10 +225,10 @@ struct HfTreeCreatorBplusToD0Pi {
                            float FunctionCt,
                            float FunctionY) {
         auto d0Cand = candidate.prong0();
-        auto piCand = candidate.prong1_as<aod::BigTracksPID>();
+        auto piCand = candidate.prong1_as<TracksPid>();
         // adding D0 daughters to the table
-        auto d0Daughter0 = d0Cand.prong0_as<aod::BigTracksPID>();
-        auto d0Daughter1 = d0Cand.prong1_as<aod::BigTracksPID>();
+        auto d0Daughter0 = d0Cand.prong0_as<TracksPid>();
+        auto d0Daughter1 = d0Cand.prong1_as<TracksPid>();
 
         auto invMassD0 = 0.;
         if (piCand.sign() > 0) {

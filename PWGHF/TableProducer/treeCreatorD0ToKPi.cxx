@@ -157,6 +157,8 @@ struct HfTreeCreatorD0ToKPi {
   Produces<o2::aod::HfCand2ProngFullEvents> rowCandidateFullEvents;
   Produces<o2::aod::HfCand2ProngFullParticles> rowCandidateFullParticles;
 
+  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa>;
+
   void init(InitContext const&)
   {
   }
@@ -240,7 +242,7 @@ struct HfTreeCreatorD0ToKPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates,
-                   aod::BigTracksPID const&, aod::BCs const&)
+                   TracksPid const&, aod::BCs const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -251,8 +253,8 @@ struct HfTreeCreatorD0ToKPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (auto const& candidate : candidates) {
-      auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-      auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+      auto prong0 = candidate.prong0_as<TracksPid>();
+      auto prong1 = candidate.prong1_as<TracksPid>();
       double yD = yD0(candidate);
       double eD = eD0(candidate);
       double ctD = ctD0(candidate);
@@ -267,7 +269,7 @@ struct HfTreeCreatorD0ToKPi {
                  aod::McCollisions const&,
                  soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particles,
-                 aod::BigTracksPID const&, aod::BCs const&)
+                 TracksPid const&, aod::BCs const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -278,8 +280,8 @@ struct HfTreeCreatorD0ToKPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (auto const& candidate : candidates) {
-      auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-      auto prong1 = candidate.prong0_as<aod::BigTracksPID>();
+      auto prong0 = candidate.prong0_as<TracksPid>();
+      auto prong1 = candidate.prong0_as<TracksPid>();
       double yD = yD0(candidate);
       double eD = eD0(candidate);
       double ctD = ctD0(candidate);

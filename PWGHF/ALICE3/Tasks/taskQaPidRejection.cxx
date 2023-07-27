@@ -51,11 +51,11 @@ DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID", //!
 } // namespace o2::aod
 
 struct HfTaskQaPidRejectionAlice3PidIndexBuilder {
-  Builds<o2::aod::HfTrackIndexALICE3PID> index;
-  void init(o2::framework::InitContext&) {}
+  Builds<aod::HfTrackIndexALICE3PID> index;
+  void init(InitContext&) {}
 };
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
+void customize(std::vector<ConfigParamSpec>& workflowOptions)
 {
   std::vector<ConfigParamSpec> options{
     {"rej-el", VariantType::Int, 1, {"Efficiency for the Electron PDG code"}},
@@ -69,7 +69,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// Task to QA the efficiency of a particular particle defined by particlePDG
-template <o2::track::pid_constants::ID particle>
+template <track::pid_constants::ID particle>
 struct HfTaskQaPidRejection {
   // Particle selection
   Configurable<int> nBinsEta{"nBinsEta", 40, "Number of eta bins"};
@@ -103,7 +103,7 @@ struct HfTaskQaPidRejection {
   static_assert(particle < 5 && "Maximum of particles reached");
   static constexpr int particlePDG = PDGs[particle];
 
-  using TracksPid = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
+  using TracksPid = soa::Join<aod::Tracks, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::HfTrackIndexALICE3PID>;
 
   HistogramRegistry histos{"HistogramsRejection"};
 
@@ -158,10 +158,10 @@ struct HfTaskQaPidRejection {
     histos.add("trackingMIDselMuon/peta", commonTitle + " Primary;" + p, kTH2D, {ptAxis, etaAxis});
   }
 
-  void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
-               const o2::soa::Join<TracksPid, o2::aod::McTrackLabels>& tracks,
-               const o2::aod::McCollisions& mcCollisions,
-               const o2::aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
+  void process(const soa::Join<aod::Collisions, aod::McCollisionLabels>& collisions,
+               const soa::Join<TracksPid, aod::McTrackLabels>& tracks,
+               const aod::McCollisions& mcCollisions,
+               const aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
   {
     std::vector<int64_t> recoEvt(collisions.size());
     std::vector<int64_t> recoTracks(tracks.size());
@@ -277,7 +277,7 @@ struct HfTaskQaPidRejectionGeneral {
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;
 
-  using TracksPid = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
+  using TracksPid = soa::Join<aod::Tracks, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::HfTrackIndexALICE3PID>;
 
   HistogramRegistry histos{"HistogramsRejection"};
 
@@ -349,10 +349,10 @@ struct HfTaskQaPidRejectionGeneral {
     histos.add("hKaonMID/peta", commonTitle + " Primary;" + p, kTH2D, {ptAxis, etaAxis});
   }
 
-  void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
-               const o2::soa::Join<TracksPid, o2::aod::McTrackLabels>& tracks,
-               const o2::aod::McCollisions& mcCollisions,
-               const o2::aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
+  void process(const soa::Join<aod::Collisions, aod::McCollisionLabels>& collisions,
+               const soa::Join<TracksPid, aod::McTrackLabels>& tracks,
+               const aod::McCollisions& mcCollisions,
+               const aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
   {
     for (const auto& track : tracks) {
 
@@ -502,19 +502,19 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   WorkflowSpec w;
   w.push_back(adaptAnalysisTask<HfTaskQaPidRejectionAlice3PidIndexBuilder>(cfgc));
   if (cfgc.options().get<int>("rej-el")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Electron>>(cfgc, TaskName{"hf-task-qa-pid-rejection-electron"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<track::PID::Electron>>(cfgc, TaskName{"hf-task-qa-pid-rejection-electron"}));
   }
   if (cfgc.options().get<int>("rej-ka")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Kaon>>(cfgc, TaskName{"hf-task-qa-pid-rejection-kaon"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<track::PID::Kaon>>(cfgc, TaskName{"hf-task-qa-pid-rejection-kaon"}));
   }
   if (cfgc.options().get<int>("rej-pr")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Proton>>(cfgc, TaskName{"hf-task-qa-pid-rejection-proton"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<track::PID::Proton>>(cfgc, TaskName{"hf-task-qa-pid-rejection-proton"}));
   }
   if (cfgc.options().get<int>("rej-mu")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Muon>>(cfgc, TaskName{"hf-task-qa-pid-rejection-mu"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<track::PID::Muon>>(cfgc, TaskName{"hf-task-qa-pid-rejection-mu"}));
   }
   if (cfgc.options().get<int>("rej-pi")) {
-    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<o2::track::PID::Pion>>(cfgc, TaskName{"hf-task-qa-pid-rejection-pion"}));
+    w.push_back(adaptAnalysisTask<HfTaskQaPidRejection<track::PID::Pion>>(cfgc, TaskName{"hf-task-qa-pid-rejection-pion"}));
   }
   w.push_back(adaptAnalysisTask<HfTaskQaPidRejectionGeneral>(cfgc));
   return w;
