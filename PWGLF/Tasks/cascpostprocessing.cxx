@@ -111,7 +111,7 @@ struct cascpostprocessing {
       registry.get<TH1>(HIST("hCandidate"))->GetXaxis()->SetBinLabel(n, CutLabel[n - 1]);
     }
 
-    registry.add("CascadeSelectionSummary", "CascadeSelectionSummary", HistType::kTH1F, {{29, -0.5, 26.5}});
+    registry.add("CascadeSelectionSummary", "CascadeSelectionSummary", HistType::kTH1F, {{29, -0.5, 28.5}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("CascadeSelectionSummary"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("CascadeSelectionSummary"))->GetXaxis()->SetBinLabel(n, CutLabelSummary[n - 1]);
     }
