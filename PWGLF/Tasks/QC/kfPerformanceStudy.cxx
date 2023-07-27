@@ -76,17 +76,11 @@ struct kfPerformanceStudy {
   {
     histos.fill(HIST("hEventCounter"), 0.5);
     for (auto& cascade : Cascades) { // allows for cross-referencing everything 
-      float pt = 0.0f; 
-      float ptKF = 0.0f; 
-      float massXi = 0.0f; 
-      float massXiKF = 0.0f; 
-      float massOmega = 0.0f; 
-      float massOmegaKF = 0.0f; 
-      float massLambda = 0.0f; 
-      float massLambdaKF = 0.0f;
-      float dcaXY = 0.0f; 
-      float dcaXYKF = 0.0f;
-      int charge = 1;
+      float pt = 0.0f, ptKF = 0.0f; 
+      float massXi = 0.0f, massXiKF = 0.0f; 
+      float massOmega = 0.0f, massOmegaKF = 0.0f; 
+      float massLambda = 0.0f, massLambdaKF = 0.0f; 
+      float dcaXY = 0.0f, dcaXYKF = 0.0f; 
 
       // get charge from bachelor (unambiguous wrt to building)
       auto bachTrack = cascade.bachelor_as<aod::TracksIU>();
