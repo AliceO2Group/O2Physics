@@ -254,9 +254,9 @@ struct k1analysis {
       lResonanceK892 = lDecayDaughter1 + lDecayDaughter2;
 
       if constexpr (!IsMix) {
-        histos.fill(HIST("k892invmass"), lResonanceK892.M());                                                   // quick check
-        if (trk1.sign() > 0) {                                                                                  // Positive pion
-          if (trk2.sign() > 0)                                                                                  // Positive kaon
+        histos.fill(HIST("k892invmass"), lResonanceK892.M()); // quick check
+        if (trk1.sign() > 0) {                                // Positive pion
+          if (trk2.sign() > 0)                                // Positive kaon
             histos.fill(HIST("hK892invmass_MM"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M());
           else                                                                                                  // Negative kaon
             histos.fill(HIST("hK892invmass_AM"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M()); // Anti-K(892)0
@@ -384,11 +384,11 @@ struct k1analysis {
           histos.fill(HIST("hReconK1pt"), lResonanceK1.Pt());
           histos.fill(HIST("QAMCafter/InvMass_piK_pipi"), lResonanceK892.M(), tempPiPi.M());
 
-          if ((bTrack.sign() > 0) && (trk2.sign() > 0)) {        // Matter
+          if ((bTrack.sign() > 0) && (trk2.sign() > 0)) { // Matter
             histos.fill(HIST("hK1invmass_MM_MC"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
             histos.fill(HIST("k1invmass_MC"), lResonanceK1.M()); // quick check
           }
-          if ((bTrack.sign() < 0) && (trk2.sign() < 0)) {        // Anti-matter
+          if ((bTrack.sign() < 0) && (trk2.sign() < 0)) { // Anti-matter
             histos.fill(HIST("hK1invmass_AA_MC"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
             histos.fill(HIST("k1invmass_MC"), lResonanceK1.M()); // quick check
           }
@@ -398,14 +398,14 @@ struct k1analysis {
   }
 
   void processData(aod::ResoCollision& collision,
-                        aod::ResoTracks const& resotracks)
+                   aod::ResoTracks const& resotracks)
   {
     fillHistograms<false, false>(collision, resotracks, resotracks);
   }
   PROCESS_SWITCH(k1analysis, processData, "Process Event for data without Partitioning", true);
 
   void processMC(aod::ResoCollision& collision,
-                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
+                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks, aod::McParticles const& mcParticles)
   {
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }
@@ -416,7 +416,7 @@ struct k1analysis {
     for (auto& part : resoParents) {    // loop over all pre-filtered MC particles
       if (abs(part.pdgCode()) != 10323) // K892(0)
         continue;
-      if (abs(part.y()) > 0.5) {        // rapidity cut
+      if (abs(part.y()) > 0.5) { // rapidity cut
         continue;
       }
       bool pass1 = false;
