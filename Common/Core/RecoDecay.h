@@ -535,6 +535,9 @@ class RecoDecay
   /// \return particle mass
   static double getMassPDG(int pdg)
   {
+    LOGF(error, "Function RecoDecay::getMassPDG is deprecated and will be removed soon.");
+    LOGF(error, "Please use the Mass function in the O2DatabasePDG service instead.");
+    LOGF(error, "See the example of usage in Tutorials/src/usingPDGService.cxx.");
     // Try to get the particle mass from the list first.
     for (const auto& particle : mListMass) {
       if (std::get<0>(particle) == pdg) {
