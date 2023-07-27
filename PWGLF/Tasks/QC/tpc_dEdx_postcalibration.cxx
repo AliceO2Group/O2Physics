@@ -118,52 +118,85 @@ struct tpc_dEdx_postcalibration {
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
   Configurable<bool> useTOFpi{"useTOFpi", true, "use TOF for pion ID"};
   Configurable<bool> useTOFpr{"useTOFpr", true, "use TOF for proton ID"};
+  Configurable<bool> doContaminations{"doContaminations", true, "Flag to produce the plots for the contaminations"};
+  Configurable<bool> usePt{"usePt", true, "Flag to use PT instead of the TPCInnerParam"};
+  ConfigurableAxis pBins{"pBins", {200, -10.0, 10.0}, "Binning in p"};
+  ConfigurableAxis dEdxBins{"dEdxBins", {3000, 0.f, 1500.f}, "Binning in dE/dx"};
+  ConfigurableAxis nsigmaBins{"nsigmaBins", {200, -5, 5}, "Binning in nsigma"};
 
   void init(InitContext const&)
   {
+    AxisSpec pAxis{pBins, "z#upoint p (GeV/c)"};
+    if (usePt) {
+      pAxis.title = "#it{p}_{T} (GeV/c)";
+    }
+    const AxisSpec dedxAxis{dEdxBins, "d#it{E}/d#it{x} Arb. units"};
+    const AxisSpec nsigmaAxis{nsigmaBins, "n#sigma_{TPC}"};
+
     // Raw dE/dx vs. TPC momentum
     registryCh.add(
       "dEdx_vs_Momentum", "dE/dx", HistType::kTH2F,
-      {{200, -10.0, 10.0, "z#upoint p (GeV/c)"}, {1500, 0, 1500, "dE/dx (a. u.)"}});
+      {pAxis, dEdxBins});
     registryPi.add(
       "dEdx_vs_Momentum_Pi", "dE/dx", HistType::kTH2F,
-      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {pAxis, dEdxBins});
     registryKa.add(
       "dEdx_vs_Momentum_Ka", "dE/dx", HistType::kTH2F,
-      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {pAxis, dEdxBins});
     registryPr.add(
       "dEdx_vs_Momentum_Pr", "dE/dx", HistType::kTH2F,
-      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {pAxis, dEdxBins});
     registryDe.add(
       "dEdx_vs_Momentum_De", "dE/dx", HistType::kTH2F,
-      {{2000, -3.0, 3.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {{2000, -3.0, 3.0, "z#upoint p (GeV/c)"}, dEdxBins});
     registryTr.add(
       "dEdx_vs_Momentum_Tr", "dE/dx", HistType::kTH2F,
-      {{200, -3.0, 3.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {{200, -3.0, 3.0, "z#upoint p (GeV/c)"}, dEdxBins});
     registryHe.add(
       "dEdx_vs_Momentum_He", "dE/dx", HistType::kTH2F,
-      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {3000, 0, 1500, "dE/dx (a. u.)"}});
+      {pAxis, dEdxBins});
 
     // nsigma_(TPC) vs. TPC momentum
     registryPi.add(
       "nsigmaTPC_vs_Momentum_Pi", "nsigmaTPC", HistType::kTH2F,
-      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {pAxis, nsigmaAxis});
     registryKa.add(
       "nsigmaTPC_vs_Momentum_Ka", "nsigmaTPC", HistType::kTH2F,
-      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {pAxis, nsigmaAxis});
     registryPr.add(
       "nsigmaTPC_vs_Momentum_Pr", "nsigmaTPC", HistType::kTH2F,
-      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {pAxis, nsigmaAxis});
     registryDe.add(
       "nsigmaTPC_vs_Momentum_De", "nsigmaTPC", HistType::kTH2F,
-      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {pAxis, nsigmaAxis});
     registryTr.add(
       "nsigmaTPC_vs_Momentum_Tr", "nsigmaTPC", HistType::kTH2F,
-      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {pAxis, nsigmaAxis});
     registryHe.add(
       "nsigmaTPC_vs_Momentum_He", "nsigmaTPC", HistType::kTH2F,
-      {{2000, -10.0, 10.0, "z#upoint p (GeV/c)"}, {200, -5, 5, "n#sigma_{TPC}"}});
+      {pAxis, nsigmaAxis});
+    if (doContaminations) {
+      registryPi.add(
+        "nsigmaTPC_vs_Momentum_Ka", "nsigmaTPC", HistType::kTH2F,
+        {pAxis, nsigmaAxis});
+      registryPi.add(
+        "nsigmaTPC_vs_Momentum_Pr", "nsigmaTPC", HistType::kTH2F,
+        {pAxis, nsigmaAxis});
 
+      registryKa.add(
+        "nsigmaTPC_vs_Momentum_Pi", "nsigmaTPC", HistType::kTH2F,
+        {pAxis, nsigmaAxis});
+      registryKa.add(
+        "nsigmaTPC_vs_Momentum_Pr", "nsigmaTPC", HistType::kTH2F,
+        {pAxis, nsigmaAxis});
+
+      registryPr.add(
+        "nsigmaTPC_vs_Momentum_Pi", "nsigmaTPC", HistType::kTH2F,
+        {pAxis, nsigmaAxis});
+      registryPr.add(
+        "nsigmaTPC_vs_Momentum_Ka", "nsigmaTPC", HistType::kTH2F,
+        {pAxis, nsigmaAxis});
+    }
     // Event Counter
     registryCh.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20.0, +20.0, "z_{vtx} (cm)"}});
   }
@@ -316,23 +349,42 @@ struct tpc_dEdx_postcalibration {
         continue;
       if (!trk.passedTPCRefit())
         continue;
+      float signedP = trk.sign() * trk.tpcInnerParam();
+      if (usePt) {
+        signedP = trk.sign() * trk.pt();
+      }
 
       // Charged Particles
-      registryCh.fill(HIST("dEdx_vs_Momentum"), trk.sign() * trk.tpcInnerParam(), trk.tpcSignal());
+      registryCh.fill(HIST("dEdx_vs_Momentum"), signedP,
+                      trk.tpcSignal());
 
       // Kaons
       if (trk.tpcInnerParam() > 0.4 && trk.hasTOF() && TMath::Abs(trk.tofNSigmaKa()) < 2.0) {
-        registryKa.fill(HIST("dEdx_vs_Momentum_Ka"), trk.sign() * trk.tpcInnerParam(),
+        registryKa.fill(HIST("dEdx_vs_Momentum_Ka"), signedP,
                         trk.tpcSignal());
-        registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), trk.sign() * trk.tpcInnerParam(),
+        registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), signedP,
                         trk.tpcNSigmaKa());
+
+        if (doContaminations) {
+          registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Pi"), signedP,
+                          trk.tpcNSigmaPi());
+          registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Pr"), signedP,
+                          trk.tpcNSigmaPr());
+        }
       }
 
       if (trk.tpcInnerParam() < 0.4) {
-        registryKa.fill(HIST("dEdx_vs_Momentum_Ka"), trk.sign() * trk.tpcInnerParam(),
+        registryKa.fill(HIST("dEdx_vs_Momentum_Ka"), signedP,
                         trk.tpcSignal());
-        registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), trk.sign() * trk.tpcInnerParam(),
+        registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), signedP,
                         trk.tpcNSigmaKa());
+
+        if (doContaminations) {
+          registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Pi"), signedP,
+                          trk.tpcNSigmaPi());
+          registryKa.fill(HIST("nsigmaTPC_vs_Momentum_Pr"), signedP,
+                          trk.tpcNSigmaPr());
+        }
       }
 
       // Selection of high dE/dx Objects
@@ -341,28 +393,28 @@ struct tpc_dEdx_postcalibration {
 
       // Deuterons
       if (trk.tpcInnerParam() > 1.0 && trk.hasTOF() && TMath::Abs(trk.tofNSigmaDe()) < 3.0) {
-        registryDe.fill(HIST("dEdx_vs_Momentum_De"), trk.sign() * trk.tpcInnerParam(),
+        registryDe.fill(HIST("dEdx_vs_Momentum_De"), signedP,
                         trk.tpcSignal());
-        registryDe.fill(HIST("nsigmaTPC_vs_Momentum_De"), trk.sign() * trk.tpcInnerParam(),
+        registryDe.fill(HIST("nsigmaTPC_vs_Momentum_De"), signedP,
                         trk.tpcNSigmaDe());
       }
 
       if (trk.tpcInnerParam() < 1.0) {
-        registryDe.fill(HIST("dEdx_vs_Momentum_De"), trk.sign() * trk.tpcInnerParam(),
+        registryDe.fill(HIST("dEdx_vs_Momentum_De"), signedP,
                         trk.tpcSignal());
-        registryDe.fill(HIST("nsigmaTPC_vs_Momentum_De"), trk.sign() * trk.tpcInnerParam(),
+        registryDe.fill(HIST("nsigmaTPC_vs_Momentum_De"), signedP,
                         trk.tpcNSigmaDe());
       }
 
       // Heavier Nuclei
-      registryTr.fill(HIST("dEdx_vs_Momentum_Tr"), trk.sign() * trk.tpcInnerParam(),
+      registryTr.fill(HIST("dEdx_vs_Momentum_Tr"), signedP,
                       trk.tpcSignal());
-      registryTr.fill(HIST("nsigmaTPC_vs_Momentum_Tr"), trk.sign() * trk.tpcInnerParam(),
+      registryTr.fill(HIST("nsigmaTPC_vs_Momentum_Tr"), signedP,
                       trk.tpcNSigmaTr());
-      registryHe.fill(HIST("dEdx_vs_Momentum_He"), 2.0 * trk.sign() * trk.tpcInnerParam(),
+      registryHe.fill(HIST("dEdx_vs_Momentum_He"), 2.0 * signedP,
                       trk.tpcSignal());
       registryHe.fill(HIST("nsigmaTPC_vs_Momentum_He"),
-                      2.0 * trk.sign() * trk.tpcInnerParam(), trk.tpcNSigmaHe());
+                      2.0 * signedP, trk.tpcNSigmaHe());
     }
 
     // Loop over Reconstructed V0s
@@ -386,40 +438,75 @@ struct tpc_dEdx_postcalibration {
       if (!negTrack.passedTPCRefit())
         continue;
 
+      float signedPpos = posTrack.sign() * posTrack.tpcInnerParam();
+      float signedPneg = negTrack.sign() * negTrack.tpcInnerParam();
+      if (usePt) {
+        signedPpos = posTrack.sign() * posTrack.pt();
+        signedPneg = negTrack.sign() * negTrack.pt();
+      }
+
       // K0s Selection
       if (passedK0Selection(v0, negTrack, posTrack, collision)) {
-        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), negTrack.sign() * negTrack.tpcInnerParam(),
-                        negTrack.tpcSignal());
-        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), posTrack.sign() * posTrack.tpcInnerParam(),
-                        posTrack.tpcSignal());
+        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), signedPneg, negTrack.tpcSignal());
+        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), signedPpos, posTrack.tpcSignal());
         registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pi"),
-                        negTrack.sign() * negTrack.tpcInnerParam(), negTrack.tpcNSigmaPi());
+                        signedPneg, negTrack.tpcNSigmaPi());
         registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pi"),
-                        posTrack.sign() * posTrack.tpcInnerParam(), posTrack.tpcNSigmaPi());
+                        signedPpos, posTrack.tpcNSigmaPi());
+        if (doContaminations) {
+          registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Ka"),
+                          signedPneg, negTrack.tpcNSigmaKa());
+          registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pr"),
+                          signedPneg, negTrack.tpcNSigmaPr());
+          registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Ka"),
+                          signedPpos, posTrack.tpcNSigmaKa());
+          registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pr"),
+                          signedPpos, posTrack.tpcNSigmaPr());
+        }
       }
 
       // Lambda Selection
       if (passedLambdaSelection(v0, negTrack, posTrack, collision)) {
-        registryPr.fill(HIST("dEdx_vs_Momentum_Pr"), posTrack.sign() * posTrack.tpcInnerParam(),
-                        posTrack.tpcSignal());
+        registryPr.fill(HIST("dEdx_vs_Momentum_Pr"), signedPpos, posTrack.tpcSignal());
         registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Pr"),
-                        posTrack.sign() * posTrack.tpcInnerParam(), posTrack.tpcNSigmaPr());
-        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), negTrack.sign() * negTrack.tpcInnerParam(),
-                        negTrack.tpcSignal());
+                        signedPpos, posTrack.tpcNSigmaPr());
+        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), signedPneg, negTrack.tpcSignal());
         registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pi"),
-                        negTrack.sign() * negTrack.tpcInnerParam(), negTrack.tpcNSigmaPi());
+                        signedPneg, negTrack.tpcNSigmaPi());
+
+        if (doContaminations) {
+          registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Pi"),
+                          signedPpos, posTrack.tpcNSigmaPi());
+          registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Ka"),
+                          signedPpos, posTrack.tpcNSigmaKa());
+
+          registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pr"),
+                          signedPneg, negTrack.tpcNSigmaPr());
+          registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Ka"),
+                          signedPneg, negTrack.tpcNSigmaKa());
+        }
       }
 
       // AntiLambda Selection
       if (passedAntiLambdaSelection(v0, negTrack, posTrack, collision)) {
-        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), posTrack.sign() * posTrack.tpcInnerParam(),
-                        posTrack.tpcSignal());
+        registryPi.fill(HIST("dEdx_vs_Momentum_Pi"), signedPpos, posTrack.tpcSignal());
         registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pi"),
-                        posTrack.sign() * posTrack.tpcInnerParam(), posTrack.tpcNSigmaPi());
-        registryPr.fill(HIST("dEdx_vs_Momentum_Pr"), negTrack.sign() * negTrack.tpcInnerParam(),
-                        negTrack.tpcSignal());
+                        signedPpos, posTrack.tpcNSigmaPi());
+        registryPr.fill(HIST("dEdx_vs_Momentum_Pr"), signedPneg, negTrack.tpcSignal());
         registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Pr"),
-                        negTrack.sign() * negTrack.tpcInnerParam(), negTrack.tpcNSigmaPr());
+                        signedPneg, negTrack.tpcNSigmaPr());
+
+        if (doContaminations) {
+          registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pi"),
+                          signedPpos, posTrack.tpcNSigmaPi());
+          registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Ka"),
+                          signedPpos, posTrack.tpcNSigmaKa());
+
+          registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Pr"),
+                          signedPneg, negTrack.tpcNSigmaPr());
+          registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Ka"),
+                          signedPneg, negTrack.tpcNSigmaKa());
+        }
       }
     }
   }
