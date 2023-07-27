@@ -32,6 +32,7 @@
 #include "Framework/HistogramRegistry.h"
 
 #include "Common/DataModel/PIDResponse.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -83,15 +84,38 @@ struct LfTreeCreatorNuclei {
                        (trackSelType.value == 3);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                    aod::pidTOFbeta, aod::TOFSignal, aod::pidEvTimeFlags,
-                                    aod::pidTPCFullPi, aod::pidTOFFullPi,
-                                    aod::pidTPCFullKa, aod::pidTOFFullKa,
-                                    aod::pidTPCFullPr, aod::pidTOFFullPr,
-                                    aod::pidTPCFullDe, aod::pidTOFFullDe,
-                                    aod::pidTPCFullTr, aod::pidTOFFullTr,
-                                    aod::pidTPCFullHe, aod::pidTOFFullHe,
-                                    aod::pidTPCFullAl, aod::pidTOFFullAl>;
+  // using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+  //                                   aod::pidTOFbeta, aod::TOFSignal, aod::pidEvTimeFlags,
+  //                                   aod::pidTPCFullPi, aod::pidTOFFullPi,
+  //                                   aod::pidTPCFullKa, aod::pidTOFFullKa,
+  //                                   aod::pidTPCFullPr, aod::pidTOFFullPr,
+  //                                   aod::pidTPCFullDe, aod::pidTOFFullDe,
+  //                                   aod::pidTPCFullTr, aod::pidTOFFullTr,
+  //                                   aod::pidTPCFullHe, aod::pidTOFFullHe,
+  //                                   aod::pidTPCFullAl, aod::pidTOFFullAl>;
+
+  using TrackCandidates0 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+                                     aod::pidTOFbeta, aod::TOFSignal, aod::pidEvTimeFlags,
+                                     aod::pidTPCFullPi, aod::pidTOFFullPi,
+                                     aod::pidTPCFullKa, aod::pidTOFFullKa,
+                                     aod::pidTOFFullPr,
+                                     aod::pidTOFFullDe,
+                                     aod::pidTOFFullTr,
+                                     aod::pidTOFFullHe,
+                                     aod::pidTOFFullAl>;
+  using TrackCandidates = soa::Join<TrackCandidates0,
+                                    aod::pidTPCFullPr,
+                                    aod::pidTPCFullDe,
+                                    aod::pidTPCFullTr,
+                                    aod::pidTPCFullHe,
+                                    aod::pidTPCFullAl>;
+
+  using TrackCandidatesLfPid = soa::Join<TrackCandidates0,
+                                         aod::pidTPCLfFullPr,
+                                         aod::pidTPCLfFullDe,
+                                         aod::pidTPCLfFullTr,
+                                         aod::pidTPCLfFullHe,
+                                         aod::pidTPCLfFullAl>;
 
   template <bool isMC, typename TrackType, typename CollisionType>
   void fillForOneEvent(CollisionType const& collision, TrackType const& tracks)
@@ -187,6 +211,20 @@ struct LfTreeCreatorNuclei {
   }
 
   PROCESS_SWITCH(LfTreeCreatorNuclei, processData, "process Data", true);
+
+  void processDataLF(soa::Filtered<EventCandidates> const& collisions,
+                     soa::Filtered<TrackCandidatesLfPid> const& tracks, aod::BCs const&)
+  {
+    for (const auto& collision : collisions) {
+      if (useEvsel && !collision.sel8()) {
+        continue;
+      }
+      const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
+      fillForOneEvent<false>(collision, tracksInCollision);
+    }
+  }
+
+  PROCESS_SWITCH(LfTreeCreatorNuclei, processDataLF, "process Data w/custom TPC response", false);
 
   void processMC(soa::Filtered<soa::Join<EventCandidates, aod::McCollisionLabels>> const& collisions,
                  soa::Filtered<soa::Join<TrackCandidates, aod::McTrackLabels>> const& tracks,
