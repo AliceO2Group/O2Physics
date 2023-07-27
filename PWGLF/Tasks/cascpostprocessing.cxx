@@ -104,7 +104,7 @@ struct cascpostprocessing {
     TString CutLabel[24] = {"All", "MassWin", "y", "EtaDau", "DCADauToPV", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "ctau", "CompDecayMass", "Bach-baryon", "NTPCrows", "OOBRej"};
     TString CutLabelSummary[27] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegtopv", "dcabachtopv", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "proplifetime", "rejcomp", "ptthrtof", "bachBaryonCosPA", "bachBaryonDCAxyToPV", "NTPCrows", "OOBRej"};
 
-    registry.add("hCandidate", "hCandidate", HistType::kTH1F, {{25, -0.5, 24.5}});
+    registry.add("hCandidate", "hCandidate", HistType::kTH1F, {{24, -0.5, 23.5}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hCandidate"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hCandidate"))->GetXaxis()->SetBinLabel(n, CutLabel[n - 1]);
     }

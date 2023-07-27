@@ -110,6 +110,7 @@ struct cascqaanalysis {
       }
       registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1F, {{200, -20.f, 20.f}}});
       registry.add("hNchFT0MNAssocMCCollisions", "hNchFT0MNAssocMCCollisions", {HistType::kTH3F, {nChargedFT0MGenAxis, nAssocCollAxis, eventTypeAxis}});
+      registry.add("hNchFT0MNAssocMCCollisionsSameType", "hNchFT0MNAssocMCCollisionsSameType", {HistType::kTH3F, {nChargedFT0MGenAxis, nAssocCollAxis, eventTypeAxis}});
       registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
       registry.add("hNchFT0MGenEvType", "hNchFT0MGenEvType", {HistType::kTH2F, {nChargedFT0MGenAxis, eventTypeAxis}});
     } else {
@@ -342,7 +343,7 @@ struct cascqaanalysis {
         registry.fill(HIST("hCandidateCounter"), 2.5); // passed topo cuts
         // Fill table
         if (fRand->Rndm() < lEventScale) {
-          mycascades(casc.globalIndex(), collision.posZ(), collision.centFT0M(), collision.centFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
+          mycascades(collision.posZ(), collision.centFT0M(), collision.centFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
                      casc.mXi(), casc.mOmega(), casc.mLambda(), casc.cascradius(), casc.v0radius(),
                      casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                      casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(), casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
@@ -449,7 +450,7 @@ struct cascqaanalysis {
         }
         // Fill table
         if (fRand->Rndm() < lEventScale) {
-          mycascades(casc.globalIndex(), collision.posZ(), nchFT0, collision.multFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
+          mycascades(collision.posZ(), nchFT0, collision.multFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
                      casc.mXi(), casc.mOmega(), casc.mLambda(), casc.cascradius(), casc.v0radius(),
                      casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                      casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(), casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
@@ -485,13 +486,13 @@ struct cascqaanalysis {
     uint8_t flagsGen = 0;
     flagsGen |= o2::aod::myMCcascades::EvFlags::EvINEL;
     registry.fill(HIST("hNEventsMC"), 2.5);
-    // Generated collision is INEL>=0
+    // Generated collision is INEL>0
     if (isINELgtNmc(mcParticles, 0)) {
       flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
       evType++;
       registry.fill(HIST("hNEventsMC"), 3.5);
     }
-    // Generated collision is INEL>=1
+    // Generated collision is INEL>1
     if (isINELgtNmc(mcParticles, 1)) {
       flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
       evType++;
@@ -543,12 +544,30 @@ struct cascqaanalysis {
     auto isAssocToINEL = [&mcCollision](CollisionIndexAndType i) { return (i.index == mcCollision.globalIndex()) && ((i.typeFlag & o2::aod::myMCcascades::EvFlags::EvINEL) == o2::aod::myMCcascades::EvFlags::EvINEL); };
     auto isAssocToINELgt0 = [&mcCollision](CollisionIndexAndType i) { return (i.index == mcCollision.globalIndex()) && ((i.typeFlag & o2::aod::myMCcascades::EvFlags::EvINELgt0) == o2::aod::myMCcascades::EvFlags::EvINELgt0); };
     auto isAssocToINELgt1 = [&mcCollision](CollisionIndexAndType i) { return (i.index == mcCollision.globalIndex()) && ((i.typeFlag & o2::aod::myMCcascades::EvFlags::EvINELgt1) == o2::aod::myMCcascades::EvFlags::EvINELgt1); };
-    // at least 1 selected reconstructed INEL event has the same global index as mcCollision
-    const auto evtReconstructedAndINEL = std::find_if(SelectedEvents.begin(), SelectedEvents.end(), isAssocToINEL) != SelectedEvents.end();
-    // at least 1 selected reconstructed INELgt0 event has the same global index as mcCollision
-    const auto evtReconstructedAndINELgt0 = std::find_if(SelectedEvents.begin(), SelectedEvents.end(), isAssocToINELgt0) != SelectedEvents.end();
-    // at least 1 selected reconstructed INELgt1 event has the same global index as mcCollision
-    const auto evtReconstructedAndINELgt1 = std::find_if(SelectedEvents.begin(), SelectedEvents.end(), isAssocToINELgt1) != SelectedEvents.end();
+    // number of reconstructed INEL events that have the same global index as mcCollision
+    const auto evtReconstructedAndINEL = std::count_if(SelectedEvents.begin(), SelectedEvents.end(), isAssocToINEL);
+    // number of reconstructed INEL > 0 events that have the same global index as mcCollision
+    const auto evtReconstructedAndINELgt0 = std::count_if(SelectedEvents.begin(), SelectedEvents.end(), isAssocToINELgt0);
+    // number of reconstructed INEL > 1 events that have the same global index as mcCollision
+    const auto evtReconstructedAndINELgt1 = std::count_if(SelectedEvents.begin(), SelectedEvents.end(), isAssocToINELgt1);
+
+    switch (evType) {
+      case 0: {
+        registry.fill(HIST("hNchFT0MNAssocMCCollisionsSameType"), nchFT0, evtReconstructedAndINEL, evType);
+        break;
+      }
+      case 1: {
+        registry.fill(HIST("hNchFT0MNAssocMCCollisionsSameType"), nchFT0, evtReconstructedAndINELgt0, evType);
+        break;
+      }
+      case 2: {
+        registry.fill(HIST("hNchFT0MNAssocMCCollisionsSameType"), nchFT0, evtReconstructedAndINELgt1, evType);
+        break;
+      }
+      default:
+        LOGF(fatal, "incorrect evType in cascqaanalysis task");
+        break;
+    }
 
     uint8_t flagsAssoc = 0;
     if (evtReconstructedAndINEL) {
@@ -571,8 +590,7 @@ struct cascqaanalysis {
       } else {
         continue;
       }
-      myMCcascades(mcCollision.globalIndex(),
-                   mcCollision.posZ(), sign, mcParticle.pdgCode(),
+      myMCcascades(mcCollision.posZ(), sign, mcParticle.pdgCode(),
                    mcParticle.y(), mcParticle.eta(), mcParticle.phi(), mcParticle.pt(),
                    mcParticle.isPhysicalPrimary(), nAssocColl, nchFT0,
                    flagsAssoc,
