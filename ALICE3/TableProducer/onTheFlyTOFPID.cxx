@@ -196,7 +196,7 @@ struct OnTheFlyTOFPID {
   /// \param particle the particle to convert (mcParticle)
   /// \param o2track the address of the resulting TrackParCov
   template <typename McParticleType>
-  void convertMCParticleToO2Track(McParticleType& particle)
+  o2::track::TrackParCov convertMCParticleToO2Track(McParticleType& particle)
   {
     // FIXME: this is a fundamentally important piece of code.
     // It could be placed in a utility file instead of here.
