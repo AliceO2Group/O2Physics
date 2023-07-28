@@ -196,7 +196,7 @@ struct OnTheFlyTOFPID {
   /// \param particle the particle to convert (mcParticle)
   /// \param o2track the address of the resulting TrackParCov
   template <typename McParticleType>
-  void convertMCParticleToO2Track(McParticleType& particle, o2::track::TrackParCov& o2track)
+  void convertMCParticleToO2Track(McParticleType& particle)
   {
     // FIXME: this is a fundamentally important piece of code.
     // It could be placed in a utility file instead of here.
@@ -216,8 +216,8 @@ struct OnTheFlyTOFPID {
     params[3] = 1. / std::tan(theta);
     params[4] = charge / particle.pt();
 
-    // Initialize TrackParCov in-place
-    new (&o2track)(o2::track::TrackParCov)(x, particle.phi(), params, covm);
+    // Return TrackParCov
+    return o2::track::TrackParCov(x, particle.phi(), params, covm);
   }
 
   /// function to calculate track length of this track up to a certain radius
@@ -361,9 +361,8 @@ struct OnTheFlyTOFPID {
       if (!track.has_mcParticle()) // should always be OK but check please
         continue;
 
-      o2::track::TrackParCov o2track;
       auto mcParticle = track.mcParticle();
-      convertMCParticleToO2Track(mcParticle, o2track);
+      o2::track::TrackParCov o2track = convertMCParticleToO2Track(mcParticle);
 
       float xPv = -100, trackLengthInnerTOF = -1, trackLengthOuterTOF = -1;
       if (o2track.propagateToDCA(mcPvVtx, dBz))
