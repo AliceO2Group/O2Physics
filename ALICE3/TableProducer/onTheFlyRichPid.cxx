@@ -13,6 +13,7 @@
 // Task to add a table of track parameters propagated to the primary vertex
 //
 
+#include <utility>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -39,7 +40,6 @@
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "DetectorsVertexing/HelixHelper.h"
 
-#include <utility>
 #include "TableHelper.h"
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 
