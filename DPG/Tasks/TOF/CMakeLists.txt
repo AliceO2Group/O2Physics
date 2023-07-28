@@ -16,5 +16,5 @@ o2physics_add_dpl_workflow(tof-skimscreation
 
 o2physics_add_dpl_workflow(tof-calib
   SOURCES tofOfflineCalib.cxx
-  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase
   COMPONENT_NAME Analysis)

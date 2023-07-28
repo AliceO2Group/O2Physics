@@ -122,8 +122,7 @@ struct tofSkimsTableCreator {
       break;
     }
 
-    tableColRow(collision.globalIndex(),
-                evTimeTOF,
+    tableColRow(evTimeTOF,
                 evTimeTOFErr,
                 evTimeTOFMult,
                 evTimeT0A,
@@ -149,7 +148,7 @@ struct tofSkimsTableCreator {
           }
         }
       }
-      tableRow(trk.collisionId(),
+      tableRow(tableColRow.lastIndex(),
                trk.p(),
                trk.pt() * trk.sign(),
                trk.eta(),
