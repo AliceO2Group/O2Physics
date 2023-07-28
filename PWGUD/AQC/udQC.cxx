@@ -33,10 +33,14 @@ struct UDQC {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> bf231dd9 (Ran clang-format)
   SliceCache cache;
   Preslice<aod::Zdcs> perBCzdc = aod::zdc::bcId;
   Preslice<aod::Calos> perBCcalo = aod::calo::bcId;
 
+<<<<<<< HEAD
   static constexpr std::string_view hcFIT1s[5] = {"cleanFIT1FV0A", "cleanFIT1FT0A", "cleanFIT1FT0C", "cleanFIT1FDDA", "cleanFIT1FDDC"};
   static constexpr std::string_view hcFIT2s[5] = {"cleanFIT2FV0A", "cleanFIT2FT0A", "cleanFIT2FT0C", "cleanFIT2FDDA", "cleanFIT2FDDC"};
 =======
@@ -46,6 +50,8 @@ struct UDQC {
     Preslice<aod::Calos> perBCcalo = aod::calo::bcId;
     
 >>>>>>> 50bbe42b (Fixed compilation errors)
+=======
+>>>>>>> bf231dd9 (Ran clang-format)
   // constants
   static const int nBCpOrbit = 3564;
   static const int ns = 20;    // number of BCs to save (used in processF[V0, T0, DD])
