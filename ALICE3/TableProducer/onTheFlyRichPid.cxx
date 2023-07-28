@@ -529,16 +529,16 @@ struct OnTheFlyRichPid {
           double pt_resolution = std::pow(recoTrack.getP() / std::cosh(recoTrack.getEta()), 2) * std::sqrt(recoTrack.getSigma1Pt2());
           double eta_resolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-recoTrack.getEta())))) * std::sqrt(recoTrack.getSigmaTgl2());
           if (flagRICHLoadDelphesLUTs) {
-            pt_resolution = mSmearer.getPtRes(pdgInfoThis->PdgCode(), dNdEta, recoTrack.getEta(), recoTrack.getP() / cosh(recoTrack.getEta()));
-            eta_resolution = mSmearer.getEtaRes(pdgInfoThis->PdgCode(), dNdEta, recoTrack.getEta(), recoTrack.getP() / cosh(recoTrack.getEta()));
+            pt_resolution = mSmearer.getPtRes(pdgInfoThis->PdgCode(), dNdEta, recoTrack.getEta(), recoTrack.getP() / std::cosh(recoTrack.getEta()));
+            eta_resolution = mSmearer.getEtaRes(pdgInfoThis->PdgCode(), dNdEta, recoTrack.getEta(), recoTrack.getP() / std::cosh(recoTrack.getEta()));
           }
           // cout << endl <<  "Pt resolution: " << pt_resolution << ", Eta resolution: " << eta_resolution << endl << endl;
-          float barrelTrackAngularReso = calculate_track_time_resolution_advanced(recoTrack.getP() / cosh(recoTrack.getEta()), recoTrack.getEta(), pt_resolution, eta_resolution, masses[ii], bRichRefractiveIndex);
+          float barrelTrackAngularReso = calculate_track_time_resolution_advanced(recoTrack.getP() / std::cosh(recoTrack.getEta()), recoTrack.getEta(), pt_resolution, eta_resolution, masses[ii], bRichRefractiveIndex);
           barrelTotalAngularReso = std::hypot(barrelRICHAngularResolution, barrelTrackAngularReso);
           if (doQAplots && hypothesisAngleBarrelRich > error_value + 1. && measuredAngleBarrelRich > error_value + 1. && barrelRICHAngularResolution > error_value + 1. && flagReachesRadiator) {
             float momentum = recoTrack.getP();
             // float pseudorapidity = recoTrack.getEta();
-            // float transverse_momentum = momentum / cosh(pseudorapidity);
+            // float transverse_momentum = momentum / std::cosh(pseudorapidity);
             if (ii == 0 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
               histos.fill(HIST("h2dBarrelAngularResTrackElecVsP"), momentum, 1000.0 * barrelTrackAngularReso);
               histos.fill(HIST("h2dBarrelAngularResTotalElecVsP"), momentum, 1000.0 * barrelTotalAngularReso);
