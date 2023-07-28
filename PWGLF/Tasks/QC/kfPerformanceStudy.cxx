@@ -81,6 +81,7 @@ struct kfPerformanceStudy {
       float massOmega = 0.0f, massOmegaKF = 0.0f;
       float massLambda = 0.0f, massLambdaKF = 0.0f;
       float dcaXY = 0.0f, dcaXYKF = 0.0f;
+      int charge = 0;
 
       // get charge from bachelor (unambiguous wrt to building)
       auto bachTrack = cascade.bachelor_as<aod::TracksIU>();
