@@ -234,7 +234,7 @@ double TrackSmearer::getPtRes(int pdg, float nch, float eta, float pt)
 }
 
 /*****************************************************************/
-// relative uncertainty on eta
+// absolute uncertainty on eta
 double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
 {
   float dummy = 0.0f;
