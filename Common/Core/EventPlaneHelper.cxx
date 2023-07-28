@@ -70,7 +70,7 @@ double EventPlaneHelper::GetPhiFT0(int chno)
   float offsetX = 0.;
   float offsetY = 0.; // No offset for FT0-C (default case).
 
-  if (chno < 96) {    // Channel in FT0-A, non-zero offset must be applied. // LOKI: make general.
+  if (chno < 96) { // Channel in FT0-A, non-zero offset must be applied. // LOKI: make general.
     offsetX = mOffsetFT0AX;
     offsetY = mOffsetFT0AY;
   }
@@ -93,7 +93,7 @@ void EventPlaneHelper::SumQvectors(int det, int chno, float ampl, TComplex& Qvec
     case 0:                  // FT0. Note: the channel number for FT0-C should
       phi = GetPhiFT0(chno); // already be given in the right range.
       break;
-    case 1:                  // FV0.
+    case 1: // FV0.
       phi = GetPhiFV0(chno);
       break;
     default:

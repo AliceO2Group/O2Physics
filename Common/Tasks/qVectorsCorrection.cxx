@@ -164,7 +164,7 @@ struct qVectorsCorrection {
           break;
       } // End switch(centBin)
 
-    }   // Go to the next qVec.
+    } // Go to the next qVec.
 
     // The QA histograms can now be used to obtain the selected correction
     // constants for each centrality class and detector, before filling the
