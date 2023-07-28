@@ -18,8 +18,8 @@
 /// determination.
 ///
 
-#ifndef O2_ANALYSIS_EVTPLANES_H_
-#define O2_ANALYSIS_EVTPLANES_H_
+#ifndef COMMON_DATAMODEL_EVTPLANES_H_
+#define COMMON_DATAMODEL_EVTPLANES_H_
 
 #include "Framework/AnalysisDataModel.h"
 
@@ -33,14 +33,13 @@ DECLARE_SOA_COLUMN(EvtPlFT0C, evtPlFT0C, float);    //! Event plane for FT0C.
 DECLARE_SOA_COLUMN(EvtPlFV0A, evtPlFV0A, float);    //! Event plane for FV0A.
 DECLARE_SOA_COLUMN(EvtPlBPos, evtPlBPos, float);    //! Event plane for the central barrel, positive pseudorapidity.
 DECLARE_SOA_COLUMN(EvtPlBNeg, evtPlBNeg, float);    //! Event plane for the central barrel, negative pseudorapidity.
-} // namespace ep
 
+} // namespace ep
 DECLARE_SOA_TABLE(EvtPlanes, "AOD", "EVTPLANES",    //! Table with all event planes.
                   ep::Cent,
                   ep::EvtPlFT0A, ep::EvtPlFT0C, ep::EvtPlFV0A,
                   ep::EvtPlBPos, ep::EvtPlBNeg);
-
 using EvtPlane = EvtPlanes::iterator;
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_EVTPLANES_H_
+#endif // COMMON_DATAMODEL_EVTPLANES_H_

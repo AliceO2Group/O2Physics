@@ -17,6 +17,15 @@
 /// \brief  ...
 ///
 
+// C++/ROOT includes.
+#include <chrono>
+#include <string>
+#include <vector>
+#include <TComplex.h>
+#include <TH1F.h>
+#include <TH2D.h>
+#include <TMath.h>
+
 // o2Physics includes.
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -30,15 +39,6 @@
 #include "Common/Core/EventPlaneHelper.h"
 
 // o2 includes.
-
-// C++/ROOT includes.
-#include <chrono>
-#include <string>
-#include <vector>
-#include <TComplex.h>
-#include <TH1F.h>
-#include <TH2D.h>
-#include <TMath.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -170,9 +170,9 @@ struct qVectorsCorrection {
     
     } // Go to the next qVec.
 
-  // The QA histograms can now be used to obtain the selected correction
-  // constants for each centrality class and detector, before filling the
-  // corresponding TH1 histograms.
+    // The QA histograms can now be used to obtain the selected correction
+    // constants for each centrality class and detector, before filling the
+    // corresponding TH1 histograms.
   static_for<0, 7>([&](auto iCent) {
     constexpr int indexCent = iCent.value;
     printf("Centrality class: %s\n", qV::centClasses[indexCent].data());
@@ -244,8 +244,8 @@ struct qVectorsCorrection {
       hist1D->SetBinContent(i+1, corrConst[i]);
       printf("Index: %d corrConst: %e\n", i, corrConst[i]);
     }
-  }); // Go to the next centrality class.
-
+  }
+  ); // Go to the next centrality class.
   }   // End void process(...)
 };
 

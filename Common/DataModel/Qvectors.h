@@ -18,8 +18,8 @@
 /// determination.
 ///
 
-#ifndef O2_ANALYSIS_QVECTORS_H_
-#define O2_ANALYSIS_QVECTORS_H_
+#ifndef COMMON_DATAMODEL_QVECTORS_H_
+#define COMMON_DATAMODEL_QVECTORS_H_
 
 #include "Framework/AnalysisDataModel.h"
 
@@ -42,8 +42,7 @@ DECLARE_SOA_TABLE(Qvectors, "AOD", "QVECTORS",          //! Table with all Qvect
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm,
                   qvec::QvecFT0CRe, qvec::QvecFT0CIm,
                   qvec::QvecFV0ARe, qvec::QvecFV0AIm);
-
 using Qvector = Qvectors::iterator;
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_QVECTORS_H_
+#endif // COMMON_DATAMODEL_QVECTORS_H_

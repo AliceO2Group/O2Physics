@@ -18,8 +18,11 @@
 ///         calculations with FIT.
 ///
 
-#ifndef O2_ANALYSIS_EVENTPLANEHELPER_H
-#define O2_ANALYSIS_EVENTPLANEHELPER_H
+#ifndef COMMON_CORE_EVENTPLANEHELPER_H_
+#define COMMON_CORE_EVENTPLANEHELPER_H_
+
+#include <vector>
+#include <memory>
 
 #include "TNamed.h"
 
@@ -89,4 +92,4 @@ private:
   ClassDefNV(EventPlaneHelper, 1)
 };
 
-#endif // O2_ANALYSIS_EVENTPLANEHELPER_H_
+#endif // COMMON_CORE_EVENTPLANEHELPER_H_

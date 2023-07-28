@@ -18,6 +18,13 @@
 ///         (with or without corrections) and save the results in a dedicated table.
 ///
 
+// C++/ROOT includes.
+#include <chrono>
+#include <string>
+#include <vector>
+#include <TComplex.h>
+#include <TMath.h>
+
 // o2Physics includes.
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -35,13 +42,6 @@
 #include <CCDB/BasicCCDBManager.h>
 #include "DetectorsCommonDataFormats/AlignParam.h"
 
-// C++/ROOT includes.
-#include <chrono>
-#include <string>
-#include <vector>
-#include <TComplex.h>
-#include <TMath.h>
-
 using namespace o2;
 using namespace o2::framework;
 
@@ -53,7 +53,7 @@ struct qVectorsTable {
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL",
       "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<long> nolaterthan{"ccdb-no-later-than",
+    Configurable<int> nolaterthan{"ccdb-no-later-than",
       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
       "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
@@ -325,7 +325,6 @@ struct qVectorsTable {
             qVectFT0C[0], qVectFT0C[1],
             qVectFV0A[0], qVectFV0A[1]);
   } // End process.
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

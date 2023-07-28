@@ -19,6 +19,16 @@
 ///
 
 // o2Physics includes.
+
+// C++/ROOT includes.
+#include <chrono>
+#include <string>
+#include <vector>
+
+#include <TComplex.h>
+#include <TMath.h>
+
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -36,13 +46,6 @@
 // o2 includes.
 #include <CCDB/BasicCCDBManager.h>
 #include "DetectorsCommonDataFormats/AlignParam.h"
-
-// C++/ROOT includes.
-#include <chrono>
-#include <string>
-#include <vector>
-#include <TComplex.h>
-#include <TMath.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -154,7 +157,6 @@ struct evtPlanesTable {
             evtPlaneValues[0], evtPlaneValues[1], evtPlaneValues[2],
             evtPlaneValues[3], evtPlaneValues[4]);
   } // void process(aod::Qvector const& qVec)
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
