@@ -19,5 +19,5 @@ o2physics_add_header_only_library(DataModel
                                           CollisionAssociationTables.h
                                           TrackSelectionTables.h
                                           McCollisionExtra.h
-										  Qvectors.h
-										  EvtPlanes.h)
+                                          Qvectors.h
+                                          EvtPlanes.h)
