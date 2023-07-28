@@ -18,17 +18,17 @@
 ///         (with or without corrections) and save the results in a dedicated table.
 ///
 
-// o2Physics includes.
+using namespace o2;
+using namespace o2::framework;
 
 // C++/ROOT includes.
 #include <chrono>
 #include <string>
 #include <vector>
-
 #include <TComplex.h>
 #include <TMath.h>
 
-
+// o2Physics includes.
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -46,9 +46,6 @@
 // o2 includes.
 #include <CCDB/BasicCCDBManager.h>
 #include "DetectorsCommonDataFormats/AlignParam.h"
-
-using namespace o2;
-using namespace o2::framework;
 
 namespace ep
 {

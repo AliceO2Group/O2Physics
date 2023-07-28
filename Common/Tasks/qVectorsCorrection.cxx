@@ -173,78 +173,77 @@ struct qVectorsCorrection {
     // The QA histograms can now be used to obtain the selected correction
     // constants for each centrality class and detector, before filling the
     // corresponding TH1 histograms.
-  static_for<0, 7>([&](auto iCent) {
-    constexpr int indexCent = iCent.value;
-    printf("Centrality class: %s\n", qV::centClasses[indexCent].data());
+    static_for<0, 7>([&](auto iCent) {
+      constexpr int indexCent = iCent.value;
+      printf("Centrality class: %s\n", qV::centClasses[indexCent].data());
 
-    const std::shared_ptr<TH1> hist1D =
-      histosQA.get<TH1>(HIST(qV::centClasses[indexCent])+HIST("histQvecCorrConst"));
+      const std::shared_ptr<TH1> hist1D =
+        histosQA.get<TH1>(HIST(qV::centClasses[indexCent])+HIST("histQvecCorrConst"));
 
-    // corr1-4 represent the 4 correction constants to obtain in one pass.
-    // If "Recenter": meanX, meanY, stdX, stdY (in order).
-    // If "Twist": aPlus, aMinus, lambdaPlus, lambdaMinus (in order).
-    float corrConst[12] = {0.};
+      // corr1-4 represent the 4 correction constants to obtain in one pass.
+      // If "Recenter": meanX, meanY, stdX, stdY (in order).
+      // If "Twist": aPlus, aMinus, lambdaPlus, lambdaMinus (in order).
+      float corrConst[12] = {0.};
 
-    const std::shared_ptr<TH2> histFT0A =
-      histosQA.get<TH2>(HIST(qV::centClasses[indexCent])+HIST("histQvecFT0A"));
-    const std::shared_ptr<TH2> histFT0C =
-      histosQA.get<TH2>(HIST(qV::centClasses[indexCent])+HIST("histQvecFT0C"));
-    const std::shared_ptr<TH2> histFV0A =
-      histosQA.get<TH2>(HIST(qV::centClasses[indexCent])+HIST("histQvecFV0A"));
+      const std::shared_ptr<TH2> histFT0A =
+        histosQA.get<TH2>(HIST(qV::centClasses[indexCent])+HIST("histQvecFT0A"));
+      const std::shared_ptr<TH2> histFT0C =
+        histosQA.get<TH2>(HIST(qV::centClasses[indexCent])+HIST("histQvecFT0C"));
+      const std::shared_ptr<TH2> histFV0A =
+        histosQA.get<TH2>(HIST(qV::centClasses[indexCent])+HIST("histQvecFV0A"));
 
-    if ((std::string)cfgCorrStep == "Recenter") {  // Get the constants for the recentering.
-      std::string corrLabel[12] = { // Label for each element of corrConst.
-        "FT0A-meanX", "FT0A-meanY", "FT0A-stdX", "FT0A-stdY",
-        "FT0C-meanX", "FT0C-meanY", "FT0C-stdX", "FT0C-stdY",
-        "FV0A-meanX", "FV0A-meanY", "FV0A-stdX", "FV0A-stdY"
-      };
+      if ((std::string)cfgCorrStep == "Recenter") {  // Get the constants for the recentering.
+        std::string corrLabel[12] = { // Label for each element of corrConst.
+          "FT0A-meanX", "FT0A-meanY", "FT0A-stdX", "FT0A-stdY",
+          "FT0C-meanX", "FT0C-meanY", "FT0C-stdX", "FT0C-stdY",
+          "FV0A-meanX", "FV0A-meanY", "FV0A-stdX", "FV0A-stdY"
+        };
 
-      // Get the constants for FT0A.
-      helperEP.GetCorrRecentering(histFT0A, corrConst[0], corrConst[1]);
-      helperEP.GetCorrWidth(histFT0A, corrConst[2], corrConst[3]);
+        // Get the constants for FT0A.
+        helperEP.GetCorrRecentering(histFT0A, corrConst[0], corrConst[1]);
+        helperEP.GetCorrWidth(histFT0A, corrConst[2], corrConst[3]);
 
-      // Get the constants for FT0C.
-      helperEP.GetCorrRecentering(histFT0C, corrConst[4], corrConst[5]);
-      helperEP.GetCorrWidth(histFT0C, corrConst[6], corrConst[7]);
+        // Get the constants for FT0C.
+        helperEP.GetCorrRecentering(histFT0C, corrConst[4], corrConst[5]);
+        helperEP.GetCorrWidth(histFT0C, corrConst[6], corrConst[7]);
 
-      // Get the constants for FV0A.
-      helperEP.GetCorrRecentering(histFV0A, corrConst[8], corrConst[9]);
-      helperEP.GetCorrWidth(histFV0A, corrConst[10], corrConst[11]);
+        // Get the constants for FV0A.
+        helperEP.GetCorrRecentering(histFV0A, corrConst[8], corrConst[9]);
+        helperEP.GetCorrWidth(histFV0A, corrConst[10], corrConst[11]);
+
+        for (int i = 0; i < 12; i++) {
+          hist1D->GetXaxis()->SetBinLabel(i+1, corrLabel[i].data());
+        }
+      } else if ((std::string)cfgCorrStep == "Twist") { // End recentering.
+        std::string corrLabel[12] = { // Label for each element of corrConst.
+          "FT0A-aPlus", "FT0A-aMinus", "FT0A-lambdaPlus", "FT0A-lambdaMinus",
+          "FT0C-aPlus", "FT0C-aMinus", "FT0C-lambdaPlus", "FT0C-lambdaMinus",
+          "FV0A-aPlus", "FV0A-aMinus", "FV0A-lambdaPlus", "FV0A-lambdaMinus"
+        };
+
+        // Get the constants for FT0A.
+        helperEP.GetCorrTwistRecale(histFT0A, corrConst[0], corrConst[1],
+                                    corrConst[2], corrConst[3]);
+
+        // Get the constants for FT0C.
+        helperEP.GetCorrTwistRecale(histFT0C, corrConst[4], corrConst[5],
+                                    corrConst[6], corrConst[7]);
+
+        // Get the constants for FV0A.
+        /// NOTE: Decomment once FV0A has been implemented.
+        //helperEP.GetCorrTwistRecale(histFV0A, corrConst[8], corrConst[9],
+        //                            corrConst[10], corrConst[11]);
+
+        for (int i = 0; i < 12; i++) {
+          hist1D->GetXaxis()->SetBinLabel(i+1, corrLabel[i].data());
+        }
+      } // End twisting+rescaling.
 
       for (int i = 0; i < 12; i++) {
-        hist1D->GetXaxis()->SetBinLabel(i+1, corrLabel[i].data());
+        hist1D->SetBinContent(i+1, corrConst[i]);
+        printf("Index: %d corrConst: %e\n", i, corrConst[i]);
       }
-    } // End recentering.
-    else if ((std::string)cfgCorrStep == "Twist") {
-      std::string corrLabel[12] = { // Label for each element of corrConst.
-        "FT0A-aPlus", "FT0A-aMinus", "FT0A-lambdaPlus", "FT0A-lambdaMinus",
-        "FT0C-aPlus", "FT0C-aMinus", "FT0C-lambdaPlus", "FT0C-lambdaMinus",
-        "FV0A-aPlus", "FV0A-aMinus", "FV0A-lambdaPlus", "FV0A-lambdaMinus"
-      };
-
-      // Get the constants for FT0A.
-      helperEP.GetCorrTwistRecale(histFT0A, corrConst[0], corrConst[1],
-                                  corrConst[2], corrConst[3]);
-
-      // Get the constants for FT0C.
-      helperEP.GetCorrTwistRecale(histFT0C, corrConst[4], corrConst[5],
-                                  corrConst[6], corrConst[7]);
-
-      // Get the constants for FV0A.
-      /// NOTE: Decomment once FV0A has been implemented.
-      //helperEP.GetCorrTwistRecale(histFV0A, corrConst[8], corrConst[9],
-      //                            corrConst[10], corrConst[11]);
-
-      for (int i = 0; i < 12; i++) {
-        hist1D->GetXaxis()->SetBinLabel(i+1, corrLabel[i].data());
-      }
-    } // End twisting+rescaling.
-
-    for (int i = 0; i < 12; i++) {
-      hist1D->SetBinContent(i+1, corrConst[i]);
-      printf("Index: %d corrConst: %e\n", i, corrConst[i]);
     }
-  }
   ); // Go to the next centrality class.
   }   // End void process(...)
 };

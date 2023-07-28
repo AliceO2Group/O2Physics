@@ -18,6 +18,9 @@
 ///         (with or without corrections) and save the results in a dedicated table.
 ///
 
+using namespace o2;
+using namespace o2::framework;
+
 // C++/ROOT includes.
 #include <chrono>
 #include <string>
@@ -41,9 +44,6 @@
 // o2 includes.
 #include <CCDB/BasicCCDBManager.h>
 #include "DetectorsCommonDataFormats/AlignParam.h"
-
-using namespace o2;
-using namespace o2::framework;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected,
   aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
