@@ -48,7 +48,7 @@ DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);         //! DCA negative pron
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
 
-// Saved from KF particle fit for specic table 
+// Saved from KF particle fit for specic table
 DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float); //!
 
 // Derived expressions
@@ -298,9 +298,9 @@ DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
 
 namespace kfcascdata
 {
-  // declare in different namespace to 'overload' operator
-  DECLARE_SOA_COLUMN(MLambda, mLambda, float); //!
-}
+// declare in different namespace to 'overload' operator
+DECLARE_SOA_COLUMN(MLambda, mLambda, float); //!
+} // namespace kfcascdata
 
 namespace cascdata
 {
@@ -345,18 +345,18 @@ DECLARE_SOA_COLUMN(DCAZCascToPV, dcaZCascToPV, float);         //!
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
-DECLARE_SOA_COLUMN(KFTrackMat, kfTrackCovMat, float[15]); //! covariance matrix elements for KF method
+DECLARE_SOA_COLUMN(KFTrackMat, kfTrackCovMat, float[15]);     //! covariance matrix elements for KF method
 
 // Selection to avoid spurious invariant mass correlation
 // bachelor-baryon cosine of pointing angle / DCA to PV
 DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
 DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
 
-// Saved from KF particle fit for specic table 
+// Saved from KF particle fit for specic table
 // note: separate chi2 is a consequence of fit -> conversion -> propagation -> fit logic
 //       which, in turn, is necessary to do material corrections at the moment
 //       this could be improved in the future!
-DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float); //!
+DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float);           //!
 DECLARE_SOA_COLUMN(KFCascadeChi2, kfCascadeChi2, float); //!
 
 // Saved from strangeness tracking
@@ -460,7 +460,7 @@ DECLARE_SOA_TABLE(StoredKFCascDatas, "AOD", "KFCASCDATA", //!
                   cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV,
 
                   // KF particle fit specific
-                  kfcascdata::MLambda, cascdata::KFV0Chi2, cascdata::KFCascadeChi2, 
+                  kfcascdata::MLambda, cascdata::KFV0Chi2, cascdata::KFCascadeChi2,
 
                   // Dynamic columns
                   cascdata::Pt<cascdata::Px, cascdata::Py>,

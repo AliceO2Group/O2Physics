@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \brief this task allows for the direct one-to-one comparison of 
-//         cascades computed with standard DCAFitter methods and the KFparticle 
+/// \brief this task allows for the direct one-to-one comparison of
+//         cascades computed with standard DCAFitter methods and the KFparticle
 //         package. It is meant for the purposes of larger-scale QA of KF reco.
 
 #include "Framework/runDataProcessing.h"
@@ -44,15 +44,15 @@ struct kfPerformanceStudy {
   ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.222f, 1.422f}, ""};
   ConfigurableAxis axisOmegaMass{"axisOmegaMass", {200, 1.572f, 1.772f}, ""};
   ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -1.0f, 1.0f}, ""};
-  
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
   {
-    histos.add("hEventCounter", "hEventCounter", kTH1F, {{1,0.0f,1.0f}});
-    histos.add("hChargeCounter", "hChargeCounter", kTH1F, {{3,-1.5f,1.5f}});
+    histos.add("hEventCounter", "hEventCounter", kTH1F, {{1, 0.0f, 1.0f}});
+    histos.add("hChargeCounter", "hChargeCounter", kTH1F, {{3, -1.5f, 1.5f}});
 
-    //baseline simple histograms of mass
+    // baseline simple histograms of mass
     histos.add("hMassXiMinus", "hMassXiMinus", kTH2F, {axisPt, axisXiMass});
     histos.add("hMassXiPlus", "hMassXiPlus", kTH2F, {axisPt, axisXiMass});
     histos.add("hMassOmegaMinus", "hMassOmegaMinus", kTH2F, {axisPt, axisOmegaMass});
@@ -62,11 +62,11 @@ struct kfPerformanceStudy {
     histos.add("hKFMassOmegaMinus", "hKFMassOmegaMinus", kTH2F, {axisPt, axisOmegaMass});
     histos.add("hKFMassOmegaPlus", "hKFMassOmegaPlus", kTH2F, {axisPt, axisOmegaMass});
 
-    histos.add("h3dMassXiMinus", "h3dMassXiMinus", kTH3F, {axisPt, axisXiMass,axisXiMass});
-    histos.add("h3dMassXiPlus", "h3dMassXiPlus", kTH3F, {axisPt, axisXiMass,axisXiMass});
-    histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", kTH3F, {axisPt, axisOmegaMass,axisOmegaMass});
-    histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axisPt, axisOmegaMass,axisOmegaMass});
-    
+    histos.add("h3dMassXiMinus", "h3dMassXiMinus", kTH3F, {axisPt, axisXiMass, axisXiMass});
+    histos.add("h3dMassXiPlus", "h3dMassXiPlus", kTH3F, {axisPt, axisXiMass, axisXiMass});
+    histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", kTH3F, {axisPt, axisOmegaMass, axisOmegaMass});
+    histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axisPt, axisOmegaMass, axisOmegaMass});
+
     histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisPt, axisLambdaMass, axisLambdaMass}); /// for x check only
     histos.add("h3dDCAxy", "h3dDCAxy", kTH3F, {axisPt, axisDCAxy, axisDCAxy});
     histos.add("hPtCorrelation", "hPtCorrelation", kTH2F, {axisPt, axisPt});
@@ -75,58 +75,58 @@ struct kfPerformanceStudy {
   void process(aod::Collision const& Collision, CascadesCrossLinked const& Cascades, aod::CascDatas const&, aod::KFCascDatas const&, aod::TracksIU const&)
   {
     histos.fill(HIST("hEventCounter"), 0.5);
-    for (auto& cascade : Cascades) { // allows for cross-referencing everything 
-      float pt = 0.0f, ptKF = 0.0f; 
-      float massXi = 0.0f, massXiKF = 0.0f; 
-      float massOmega = 0.0f, massOmegaKF = 0.0f; 
-      float massLambda = 0.0f, massLambdaKF = 0.0f; 
-      float dcaXY = 0.0f, dcaXYKF = 0.0f; 
+    for (auto& cascade : Cascades) { // allows for cross-referencing everything
+      float pt = 0.0f, ptKF = 0.0f;
+      float massXi = 0.0f, massXiKF = 0.0f;
+      float massOmega = 0.0f, massOmegaKF = 0.0f;
+      float massLambda = 0.0f, massLambdaKF = 0.0f;
+      float dcaXY = 0.0f, dcaXYKF = 0.0f;
 
       // get charge from bachelor (unambiguous wrt to building)
       auto bachTrack = cascade.bachelor_as<aod::TracksIU>();
-      if(bachTrack.sign()<0)
+      if (bachTrack.sign() < 0)
         charge = -1;
 
       histos.fill(HIST("hChargeCounter"), charge);
 
-      if(cascade.has_cascData()){ 
+      if (cascade.has_cascData()) {
         // check aod::Cascades -> aod::CascData link
         // if present: this candidate was accepted by default DCAfitter building
-        auto cascdata = cascade.cascData(); 
+        auto cascdata = cascade.cascData();
         pt = cascdata.pt();
         massLambda = cascdata.mLambda();
         massXi = cascdata.mXi();
         massOmega = cascdata.mOmega();
         dcaXY = cascdata.dcaXYCascToPV();
       }
-      if(cascade.has_kfCascData()){ 
+      if (cascade.has_kfCascData()) {
         // check aod::Cascades -> aod::KFCascData link
         // if present: this candidate was accepted by KF building
-        auto cascdata = cascade.kfCascData(); 
+        auto cascdata = cascade.kfCascData();
         ptKF = cascdata.pt();
         massLambdaKF = cascdata.mLambda();
         massXiKF = cascdata.mXi();
         massOmegaKF = cascdata.mOmega();
         dcaXYKF = cascdata.dcaXYCascToPV();
       }
-      
+
       histos.fill(HIST("hPtCorrelation"), pt, ptKF);
       histos.fill(HIST("h3dMassLambda"), pt, massLambda, massLambdaKF); // <- implicit pT choice, beware
-      histos.fill(HIST("h3dDCAxy"), pt, dcaXY, dcaXYKF); // <- implicit pT choice, beware
-      if(charge<0){
+      histos.fill(HIST("h3dDCAxy"), pt, dcaXY, dcaXYKF);                // <- implicit pT choice, beware
+      if (charge < 0) {
         histos.fill(HIST("hMassXiMinus"), pt, massXi);
         histos.fill(HIST("hMassOmegaMinus"), pt, massOmega);
         histos.fill(HIST("hKFMassXiMinus"), ptKF, massXiKF);
         histos.fill(HIST("hKFMassOmegaMinus"), ptKF, massOmegaKF);
-        histos.fill(HIST("h3dMassXiMinus"), pt, massXi, massXiKF); // <- implicit pT choice, beware
+        histos.fill(HIST("h3dMassXiMinus"), pt, massXi, massXiKF);          // <- implicit pT choice, beware
         histos.fill(HIST("h3dMassOmegaMinus"), pt, massOmega, massOmegaKF); // <- implicit pT choice, beware
       }
-      if(charge>0){
+      if (charge > 0) {
         histos.fill(HIST("hMassXiPlus"), pt, massXi);
         histos.fill(HIST("hMassOmegaPlus"), pt, massOmega);
         histos.fill(HIST("hKFMassXiPlus"), ptKF, massXiKF);
         histos.fill(HIST("hKFMassOmegaPlus"), ptKF, massOmegaKF);
-        histos.fill(HIST("h3dMassXiPlus"), pt, massXi, massXiKF); // <- implicit pT choice, beware
+        histos.fill(HIST("h3dMassXiPlus"), pt, massXi, massXiKF);          // <- implicit pT choice, beware
         histos.fill(HIST("h3dMassOmegaPlus"), pt, massOmega, massOmegaKF); // <- implicit pT choice, beware
       }
     }

@@ -161,7 +161,7 @@ struct cascadeBuilder {
   Configurable<float> dQAXiMassWindow{"dQAXiMassWindow", 0.005, "Xi mass window for ITS cluster map QA"};
   Configurable<float> dQAOmegaMassWindow{"dQAOmegaMassWindow", 0.005, "Omega mass window for ITS cluster map QA"};
 
-  // for KF particle operation 
+  // for KF particle operation
   Configurable<bool> kfTuneForOmega{"kfTuneForOmega", false, "if enabled, take main cascade properties from Omega fit instead of Xi fit (= default)"};
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
   Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", true, "KF: use Lambda mass constraint"};
@@ -289,7 +289,7 @@ struct cascadeBuilder {
   void init(InitContext& context)
   {
     resetHistos();
-    registry.add("hKFParticleStatistics", "hKFParticleStatistics", kTH1F, {{10,-0.5f,9.5f}});
+    registry.add("hKFParticleStatistics", "hKFParticleStatistics", kTH1F, {{10, -0.5f, 9.5f}});
 
     // Optionally, add extra QA histograms to processing chain
     if (d_doQA) {
@@ -621,7 +621,7 @@ struct cascadeBuilder {
   // FIXME: could be an utility somewhere else
   // from Carolina Reetz (thank you!)
   template <typename T>
-  KFParticle createKFParticleFromTrackParCov(const o2::track::TrackParametrizationWithError<T>& trackparCov, int charge, float mass) 
+  KFParticle createKFParticleFromTrackParCov(const o2::track::TrackParametrizationWithError<T>& trackparCov, int charge, float mass)
   {
     std::array<T, 3> xyz, pxpypz;
     float xyzpxpypz[6];
@@ -643,7 +643,7 @@ struct cascadeBuilder {
     float Mini, SigmaMini, M, SigmaM;
     kfPart.GetMass(Mini, SigmaMini);
     LOG(debug) << "Daughter KFParticle mass before creation: " << Mini << " +- " << SigmaMini;
-    
+
     try {
       kfPart.Create(xyzpxpypz, cv.data(), charge, mass);
     } catch (std::runtime_error& e) {
@@ -670,9 +670,9 @@ struct cascadeBuilder {
     pxpypz[0] = kfParticle.GetPx();
     pxpypz[1] = kfParticle.GetPy();
     pxpypz[2] = kfParticle.GetPz();
-    
+
     // set covariance matrix elements (lower triangle)
-    for (int i =0; i < 21; i++) {
+    for (int i = 0; i < 21; i++) {
       cv[i] = kfParticle.GetCovariance(i);
     }
 
@@ -947,8 +947,8 @@ struct cascadeBuilder {
   {
     registry.fill(HIST("hKFParticleStatistics"), 0.0f);
     //*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*
-    // KF particle based rebuilding 
-    // dispenses prior V0 generation, uses constrained (re-)fit based on bachelor charge 
+    // KF particle based rebuilding
+    // dispenses prior V0 generation, uses constrained (re-)fit based on bachelor charge
     //*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*
 
     // Track casting
@@ -997,18 +997,18 @@ struct cascadeBuilder {
     o2::track::TrackParCov posTrackParCov = getTrackParCov(posTrack);
 
     float massPosTrack, massNegTrack;
-    if (cascadecandidate.charge < 0) { 
+    if (cascadecandidate.charge < 0) {
       massPosTrack = o2::constants::physics::MassProton;
       massNegTrack = o2::constants::physics::MassPionCharged;
-    }  else { 
+    } else {
       massPosTrack = o2::constants::physics::MassPionCharged;
       massNegTrack = o2::constants::physics::MassProton;
     }
 
     //__________________________________________
     //*>~<* step 1 : V0 with dca fitter, uses material corrections implicitly
-    // This is optional - move close to minima and therefore take material 
-    if(kfDoDCAFitterPreMinim){
+    // This is optional - move close to minima and therefore take material
+    if (kfDoDCAFitterPreMinim) {
       int nCand = 0;
       try {
         nCand = fitter.process(posTrackParCov, negTrackParCov);
@@ -1019,7 +1019,7 @@ struct cascadeBuilder {
       if (nCand == 0) {
         return false;
       }
-      // save classical DCA daughters 
+      // save classical DCA daughters
       cascadecandidate.v0dcadau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
 
       // re-acquire from DCA fitter
@@ -1054,7 +1054,7 @@ struct cascadeBuilder {
 
     //__________________________________________
     //*>~<* step 3 : Cascade with dca fitter (with material corrections)
-    if(kfDoDCAFitterPreMinim){
+    if (kfDoDCAFitterPreMinim) {
       int nCandCascade = 0;
       try {
         nCandCascade = fitter.process(v0TrackParCov, lBachelorTrack);
@@ -1065,7 +1065,7 @@ struct cascadeBuilder {
       if (nCandCascade == 0)
         return false;
 
-      // save classical DCA daughters 
+      // save classical DCA daughters
       cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
 
       v0TrackParCov = fitter.getTrack(0);
@@ -1075,7 +1075,7 @@ struct cascadeBuilder {
     //__________________________________________
     //*>~<* step 4 : Cascade with KF particle (potentially mass-constrained if asked)
     float massBachelorPion = o2::constants::physics::MassPionCharged;
-    float massBachelorKaon = o2::constants::physics::MassKaonCharged;      
+    float massBachelorKaon = o2::constants::physics::MassKaonCharged;
 
     KFParticle kfpV0 = createKFParticleFromTrackParCov(v0TrackParCov, 0, o2::constants::physics::MassLambda);
     KFParticle kfpBachPion = createKFParticleFromTrackParCov(lBachelorTrack, cascadecandidate.charge, massBachelorPion);
@@ -1110,9 +1110,9 @@ struct cascadeBuilder {
 
     //__________________________________________
     //*>~<* step 5 : propagate cascade to primary vertex with material corrections if asked
-    if(!kfTuneForOmega){
+    if (!kfTuneForOmega) {
       lCascadeTrack = getTrackParCovFromKFP(KFXi, o2::track::PID::XiMinus, cascadecandidate.charge);
-    }else{
+    } else {
       lCascadeTrack = getTrackParCovFromKFP(KFOmega, o2::track::PID::OmegaMinus, cascadecandidate.charge);
     }
     dcaInfo[0] = 999;
@@ -1124,14 +1124,14 @@ struct cascadeBuilder {
     //__________________________________________
     //*>~<* step 6 : acquire all parameters for analysis
 
-    // basic indices 
+    // basic indices
     cascadecandidate.v0Id = v0.globalIndex();
     cascadecandidate.bachelorId = bachTrack.globalIndex();
 
-    // KF chi2 
+    // KF chi2
     cascadecandidate.kfV0Chi2 = KFV0.GetChi2();
     cascadecandidate.kfCascadeChi2 = KFXi.GetChi2();
-    if(kfTuneForOmega)
+    if (kfTuneForOmega)
       cascadecandidate.kfCascadeChi2 = KFOmega.GetChi2();
 
     // Daughter momentum not KF-updated FIXME
@@ -1144,15 +1144,15 @@ struct cascadeBuilder {
     cascadecandidate.v0pos[1] = KFV0.GetY();
     cascadecandidate.v0pos[2] = KFV0.GetZ();
 
-    // Mother position + momentum is KF updated 
-    if(!kfTuneForOmega){
+    // Mother position + momentum is KF updated
+    if (!kfTuneForOmega) {
       cascadecandidate.pos[0] = KFXi.GetX();
       cascadecandidate.pos[1] = KFXi.GetY();
       cascadecandidate.pos[2] = KFXi.GetZ();
       cascadecandidate.cascademom[0] = KFXi.GetPx();
       cascadecandidate.cascademom[1] = KFXi.GetPy();
       cascadecandidate.cascademom[2] = KFXi.GetPz();
-    }else{
+    } else {
       cascadecandidate.pos[0] = KFOmega.GetX();
       cascadecandidate.pos[1] = KFOmega.GetY();
       cascadecandidate.pos[2] = KFOmega.GetZ();
@@ -1176,7 +1176,7 @@ struct cascadeBuilder {
       return false;
 
     // Calculate masses a priori
-    cascadecandidate.kfMLambda = KFV0.GetMass(); 
+    cascadecandidate.kfMLambda = KFV0.GetMass();
     cascadecandidate.mXi = KFXi.GetMass();
     cascadecandidate.mOmega = KFOmega.GetMass();
     cascadecandidate.yXi = KFXi.GetRapidity();
@@ -1184,7 +1184,6 @@ struct cascadeBuilder {
     registry.fill(HIST("hKFParticleStatistics"), 1.0f);
     return true;
   }
-
 
   template <class TTrackTo, typename TCascTable>
   void buildStrangenessTables(TCascTable const& cascades)
@@ -1254,35 +1253,34 @@ struct cascadeBuilder {
         continue; // doesn't pass cascade selections
       registry.fill(HIST("hKFParticleStatistics"), 2.0f);
       kfcascdata(cascadecandidate.v0Id,
-               cascade.globalIndex(),
-               cascadecandidate.bachelorId,
-               cascade.collisionId(),
-               cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
-               cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
-               cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
-               cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
-               cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
-               cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
-               cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0], // <--- redundant but ok
-               cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1], // <--- redundant but ok
-               cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
-               cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
-               cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
-               cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,
-               cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV, 
-               cascadecandidate.kfMLambda, cascadecandidate.kfV0Chi2, cascadecandidate.kfCascadeChi2);
+                 cascade.globalIndex(),
+                 cascadecandidate.bachelorId,
+                 cascade.collisionId(),
+                 cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
+                 cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
+                 cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
+                 cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
+                 cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
+                 cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
+                 cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0], // <--- redundant but ok
+                 cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1], // <--- redundant but ok
+                 cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
+                 cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
+                 cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
+                 cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,
+                 cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV,
+                 cascadecandidate.kfMLambda, cascadecandidate.kfV0Chi2, cascadecandidate.kfCascadeChi2);
 
       if (createCascCovMats) {
         gpu::gpustd::array<float, 15> covmatrix;
         float trackCovariance[15];
         covmatrix = lBachelorTrack.getCov();
-        for(int i=0;i<15;i++)
-          trackCovariance[i] = covmatrix[i]; 
+        for (int i = 0; i < 15; i++)
+          trackCovariance[i] = covmatrix[i];
         kfcasccovs(trackCovariance);
       }
     }
   }
-
 
   template <class TTrackTo, typename TCascTable, typename TStraTrack>
   void buildStrangenessTablesWithStrangenessTracking(TCascTable const& cascades, TStraTrack const& trackedCascades)
