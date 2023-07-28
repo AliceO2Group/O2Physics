@@ -14,7 +14,7 @@
 //
 
 #include <utility>
-#include <math.h>
+#include <cmath>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
