@@ -171,8 +171,8 @@ struct qVectorsTable {
     float qVectFT0C[2] = {0.}; // Real and imaginary parts of the Q-vector in FT0C.
     float qVectFV0A[2] = {0.}; // Real and imaginary parts of the Q-vector in FV0A.
 
-    TComplex QvecDet(0);       // Complex value of the Q-vector for any detector.
-    double sumAmplDet = 0.;    // Sum of the amplitudes of all non-dead channels in any detector.
+    TComplex QvecDet(0);    // Complex value of the Q-vector for any detector.
+    double sumAmplDet = 0.; // Sum of the amplitudes of all non-dead channels in any detector.
 
     /// First check if the collision has a found FT0. If yes, calculate the
     /// Q-vectors for FT0A and FT0C (both real and imaginary parts). If no,
