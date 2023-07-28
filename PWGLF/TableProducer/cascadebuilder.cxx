@@ -953,7 +953,7 @@ struct cascadeBuilder {
 
     // Track casting
     auto bachTrack = cascade.template bachelor_as<TTrackTo>();
-    auto v0 = cascade.template v0();
+    auto v0 = cascade.v0();
     auto posTrack = v0.template posTrack_as<TTrackTo>();
     auto negTrack = v0.template negTrack_as<TTrackTo>();
     auto const& collision = cascade.collision();
