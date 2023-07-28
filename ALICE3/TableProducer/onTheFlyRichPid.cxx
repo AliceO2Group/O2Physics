@@ -148,7 +148,7 @@ struct OnTheFlyRichPid {
     float l_aerogel_z[number_of_mirrors_in_z];
     float l_detector_z[number_of_mirrors_in_z]; // new for hybrid
     // Central sector
-    int i_central_mirror = int((number_of_mirrors_in_z) / 2.0);
+    int i_central_mirror = static_cast<int>((number_of_mirrors_in_z) / 2.0);
     float m_val = std::tan(0.0);
     theta_bi[i_central_mirror] = std::atan(m_val);
     R0_tilt[i_central_mirror] = R_max;
@@ -160,7 +160,7 @@ struct OnTheFlyRichPid {
     theta_max[i_central_mirror] = M_PI / 2.0 - std::atan(t);
     theta_min[i_central_mirror] = M_PI / 2.0 + std::atan(t);
     mProjectiveLengthInner = R_min * t;
-    for (int i = int((number_of_mirrors_in_z) / 2.0) + 1; i < number_of_mirrors_in_z; i++) {
+    for (int i = static_cast<int>((number_of_mirrors_in_z) / 2.0) + 1; i < number_of_mirrors_in_z; i++) {
       float par_a = t;
       float par_b = 2.0 * R_max / square_size_z;
       m_val = (std::sqrt(par_a * par_a * par_b * par_b + par_b * par_b - 1.0) + par_a * par_b * par_b) / (par_b * par_b - 1.0);
