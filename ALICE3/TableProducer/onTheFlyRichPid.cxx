@@ -14,6 +14,7 @@
 //
 
 #include <utility>
+#include <math.h>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -36,7 +37,6 @@
 #include "TRandom3.h"
 #include "TVector3.h"
 #include "TString.h"
-#include "math.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "DetectorsVertexing/HelixHelper.h"
 
