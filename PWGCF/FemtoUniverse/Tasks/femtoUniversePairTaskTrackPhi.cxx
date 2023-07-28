@@ -168,7 +168,8 @@ struct femtoUniversePairTaskTrackPhi {
         return false;
       }
     } else if (mom > 0.4) {
-      if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < twotracksconfigs.ConfNsigmaCombinedProton) {
+      // if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < twotracksconfigs.ConfNsigmaCombinedProton) {
+      if (TMath::Abs(nsigmaTPCPr) < twotracksconfigs.ConfNsigmaCombinedProton) {
         return true;
       } else {
         return false;
@@ -194,7 +195,8 @@ struct femtoUniversePairTaskTrackPhi {
           return false;
         }
       } else if (mom > 0.5) {
-        if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < twotracksconfigs.ConfNsigmaCombinedKaon) {
+        // if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < twotracksconfigs.ConfNsigmaCombinedKaon) {
+        if (TMath::Abs(nsigmaTPCK) < twotracksconfigs.ConfNsigmaCombinedKaon) {
           return true;
         } else {
           return false;
@@ -220,7 +222,8 @@ struct femtoUniversePairTaskTrackPhi {
           return false;
         }
       } else if (mom > 0.5) {
-        if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < twotracksconfigs.ConfNsigmaCombinedPion) {
+        // if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < twotracksconfigs.ConfNsigmaCombinedPion) {
+        if (TMath::Abs(nsigmaTPCPi) < twotracksconfigs.ConfNsigmaCombinedPion) {
           return true;
         } else {
           return false;
@@ -342,7 +345,7 @@ struct femtoUniversePairTaskTrackPhi {
       }
     }
     /// Now build the combinations
-    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
+    for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
       // if (p1.p() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxP") || p1.pt() > twotracksconfigs.ConfCutTable->get("PartOne", "MaxPt") || p2.p() > twotracksconfigs.ConfCutTable->get("PartTwo", "MaxP") || p2.pt() > twotracksconfigs.ConfCutTable->get("PartTwo", "MaxPt")) {
       //   continue;
       // }

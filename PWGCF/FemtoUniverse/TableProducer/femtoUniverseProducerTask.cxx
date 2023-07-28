@@ -236,7 +236,8 @@ struct femtoUniverseProducerTask {
           return false;
         }
       } else if (mom > 0.4) {
-        if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfPhiCommon.ConfNsigmaCombinedKaon) {
+        // if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfPhiCommon.ConfNsigmaCombinedKaon) {
+        if (TMath::Abs(nsigmaTPCK) < ConfPhiCommon.ConfNsigmaCombinedKaon) {
           return true;
         } else {
           return false;
@@ -694,7 +695,6 @@ struct femtoUniverseProducerTask {
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      // getting particle mass
       float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPhiChildOne.ConfPDGCodePartOne)->Mass();
       float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPhiChildTwo.ConfPDGCodePartTwo)->Mass();
 
@@ -705,20 +705,26 @@ struct femtoUniverseProducerTask {
       sumVec += part2Vec;
 
       float phiEta = sumVec.Eta();
+      if (TMath::Abs(phiEta) < 0.8) {
+        continue;
+      }
+
       float phiPt = sumVec.Pt();
-      // float phiP = sumVec.P();
+      if ((phiPt < 0.14) || (phiPt > 10.0)) {
+        continue;
+      }
+
       float phiPhi = sumVec.Phi();
       if (sumVec.Phi() < 0) {
         phiPhi = sumVec.Phi() + 2 * o2::constants::math::PI;
       } else if (sumVec.Phi() >= 0) {
         phiPhi = sumVec.Phi();
       }
-      float phiM = sumVec.M(); // mass of the reconstructed Phi meson
+      float phiM = sumVec.M();
 
-      // this cut probably is not doing anything, check it
-      //  if (((phiM < ConfPhiCommon.ConfInvMassLowLimitPhi) || (phiM > ConfPhiCommon.ConfInvMassUpLimitPhi))) {
-      //    continue;
-      //  }
+      if (((phiM < ConfPhiCommon.ConfInvMassLowLimitPhi) || (phiM > ConfPhiCommon.ConfInvMassUpLimitPhi))) {
+        continue;
+      }
 
       phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, ConfPhiChildOne.ConfPDGCodePartOne, ConfPhiChildTwo.ConfPDGCodePartTwo); ///\todo fill QA also for daughters
 
