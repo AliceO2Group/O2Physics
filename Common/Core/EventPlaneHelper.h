@@ -32,18 +32,30 @@
 
 class EventPlaneHelper
 {
-public:
+ public:
   EventPlaneHelper() = default;
 
   // Setters/getters for the data members.
-  void SetOffsetFT0A(double offsetX, double offsetY) {
-    mOffsetFT0AX = offsetX; mOffsetFT0AY = offsetY;}
-  void SetOffsetFT0C(double offsetX, double offsetY) {
-    mOffsetFT0CX = offsetX; mOffsetFT0CY = offsetY;}
-  void SetOffsetFV0left(double offsetX, double offsetY) {
-    mOffsetFV0leftX = offsetX; mOffsetFV0leftY = offsetY;}
-  void SetOffsetFV0right(double offsetX, double offsetY) {
-    mOffsetFV0rightX = offsetX; mOffsetFV0rightY = offsetY;}
+  void SetOffsetFT0A(double offsetX, double offsetY)
+  {
+    mOffsetFT0AX = offsetX;
+    mOffsetFT0AY = offsetY;
+  }
+  void SetOffsetFT0C(double offsetX, double offsetY)
+  {
+    mOffsetFT0CX = offsetX;
+    mOffsetFT0CY = offsetY;
+  }
+  void SetOffsetFV0left(double offsetX, double offsetY)
+  {
+    mOffsetFV0leftX = offsetX;
+    mOffsetFV0leftY = offsetY;
+  }
+  void SetOffsetFV0right(double offsetX, double offsetY)
+  {
+    mOffsetFV0rightX = offsetX;
+    mOffsetFV0rightY = offsetY;
+  }
 
   // Methods to calculate the azimuthal angles for each part of FIT, given the channel number.
   double GetPhiFT0(int chno);
@@ -79,15 +91,15 @@ public:
   // Method to calculate the resolution R2 for the provided profile.
   double GetResolution(const std::shared_ptr<TProfile> prof);
 
-private:
-  double mOffsetFT0AX = 0.;       // X-coordinate of the offset of FT0-A.
-  double mOffsetFT0AY = 0.;       // Y-coordinate of the offset of FT0-A.
-  double mOffsetFT0CX = 0.;       // X-coordinate of the offset of FT0-C.
-  double mOffsetFT0CY = 0.;       // Y-coordinate of the offset of FT0-C.
-  double mOffsetFV0leftX = 0.;    // X-coordinate of the offset of FV0-A left.
-  double mOffsetFV0leftY = 0.;    // Y-coordinate of the offset of FV0-A left.
-  double mOffsetFV0rightX = 0.;   // X-coordinate of the offset of FV0-A right.
-  double mOffsetFV0rightY = 0.;   // Y-coordinate of the offset of FV0-A right.
+ private:
+  double mOffsetFT0AX = 0.;     // X-coordinate of the offset of FT0-A.
+  double mOffsetFT0AY = 0.;     // Y-coordinate of the offset of FT0-A.
+  double mOffsetFT0CX = 0.;     // X-coordinate of the offset of FT0-C.
+  double mOffsetFT0CY = 0.;     // Y-coordinate of the offset of FT0-C.
+  double mOffsetFV0leftX = 0.;  // X-coordinate of the offset of FV0-A left.
+  double mOffsetFV0leftY = 0.;  // Y-coordinate of the offset of FV0-A left.
+  double mOffsetFV0rightX = 0.; // X-coordinate of the offset of FV0-A right.
+  double mOffsetFV0rightY = 0.; // Y-coordinate of the offset of FV0-A right.
 
   ClassDefNV(EventPlaneHelper, 1)
 };

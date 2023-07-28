@@ -27,17 +27,17 @@ namespace o2::aod
 {
 namespace qvec
 {
-DECLARE_SOA_COLUMN(Cent, cent, float);                //! Centrality percentile.
-DECLARE_SOA_COLUMN(QvecFT0ARe, qvecFT0ARe, float);    //! Real part of Qvec in FT0A.
-DECLARE_SOA_COLUMN(QvecFT0AIm, qvecFT0AIm, float);    //! Imaginary part for FT0A.
-DECLARE_SOA_COLUMN(QvecFT0CRe, qvecFT0CRe, float);    //! Real part of Qvec in FT0C.
-DECLARE_SOA_COLUMN(QvecFT0CIm, qvecFT0CIm, float);    //! Imaginary part for FT0C.
-DECLARE_SOA_COLUMN(QvecFV0ARe, qvecFV0ARe, float);      //! Real part of Qvec in FV0A.
-DECLARE_SOA_COLUMN(QvecFV0AIm, qvecFV0AIm, float);      //! Imaginary part for FV0A.
+DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality percentile.
+DECLARE_SOA_COLUMN(QvecFT0ARe, qvecFT0ARe, float); //! Real part of Qvec in FT0A.
+DECLARE_SOA_COLUMN(QvecFT0AIm, qvecFT0AIm, float); //! Imaginary part for FT0A.
+DECLARE_SOA_COLUMN(QvecFT0CRe, qvecFT0CRe, float); //! Real part of Qvec in FT0C.
+DECLARE_SOA_COLUMN(QvecFT0CIm, qvecFT0CIm, float); //! Imaginary part for FT0C.
+DECLARE_SOA_COLUMN(QvecFV0ARe, qvecFV0ARe, float); //! Real part of Qvec in FV0A.
+DECLARE_SOA_COLUMN(QvecFV0AIm, qvecFV0AIm, float); //! Imaginary part for FV0A.
 /// NOTE: Add here Qx,Qy for other systems.
 } // namespace qvec
 
-DECLARE_SOA_TABLE(Qvectors, "AOD", "QVECTORS",          //! Table with all Qvectors.
+DECLARE_SOA_TABLE(Qvectors, "AOD", "QVECTORS", //! Table with all Qvectors.
                   qvec::Cent,
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm,
                   qvec::QvecFT0CRe, qvec::QvecFT0CIm,
