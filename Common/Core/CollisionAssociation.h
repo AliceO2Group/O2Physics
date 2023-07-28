@@ -235,14 +235,6 @@ class CollisionAssociation
   }
 
  private:
-<<<<<<< HEAD
-  float mNumSigmaForTimeCompat{4.};                                                  // number of sigma for time compatibility
-  float mTimeMargin{500.};                                                           // additional time margin in ns
-  int mTrackSelection{o2::aod::track_association::TrackSelection::GlobalTrackWoDCA}; // track selection for central barrel tracks (standard association only)
-  bool mUsePvAssociation{true};                                                      // use the information of PV contributors
-  bool mIncludeUnassigned{true};                                                     // include tracks that were originally not assigned to any collision
-  bool mFillTableOfCollIdsPerTrack{false};                                           // fill additional table with vectors of compatible collisions per track
-=======
   float mNumSigmaForTimeCompat{4.};                                         // number of sigma for time compatibility
   float mTimeMargin{500.};                                                  // additional time margin in ns
   int mTrackSelection{track_association::TrackSelection::GlobalTrackWoDCA}; // track selection for central barrel tracks (standard association only)
@@ -250,7 +242,6 @@ class CollisionAssociation
   bool mIncludeUnassigned{true};                                            // include tracks that were originally not assigned to any collision
   bool mFillTableOfCollIdsPerTrack{false};                                  // fill additional table with vectors of compatible collisions per track
   int mBcWindowForOneSigma{115};                                            // BC window to be multiplied by the number of sigmas to define maximum window to be considered 
->>>>>>> Modify maximum bc offset for tracks to be considered in time-based reassociation
 };
 
 #endif // COMMON_CORE_COLLISIONASSOCIATION_H_
