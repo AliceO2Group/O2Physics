@@ -127,28 +127,34 @@ struct OnTheFlyRichPid {
   std::vector<float> theta_min;
   std::vector<float> theta_max;
 
-  // Update centors of projective geometry
+  // Update projective geometry
   void updateProjectiveParameters()
   {
-    det_centers.resize(mNumberSectors);
-    rad_centers.resize(mNumberSectors);
-    angle_centers.resize(mNumberSectors);
-    theta_min.resize(mNumberSectors);
-    theta_max.resize(mNumberSectors);
+    const int number_of_sectors_in_z = mNumberSectors;
+    det_centers.resize(number_of_sectors_in_z);
+    rad_centers.resize(number_of_sectors_in_z);
+    angle_centers.resize(number_of_sectors_in_z);
+    theta_min.resize(number_of_sectors_in_z);
+    theta_max.resize(number_of_sectors_in_z);
     float square_size_barrel_cylinder = 2.0 * mTileLengthCentral;
     float square_size_z = mTileLength;
     float R_min = mRadiusProjIn;
     float R_max = mRadiusProjOut;
-    const int number_of_mirrors_in_z = mNumberSectors;
-    float theta_bi[number_of_mirrors_in_z];
-    float R0_tilt[number_of_mirrors_in_z];
-    float z0_tilt[number_of_mirrors_in_z];
-    float T_r_plus_g[number_of_mirrors_in_z];
-    // float R0_tilt_rad[number_of_mirrors_in_z];
-    float l_aerogel_z[number_of_mirrors_in_z];
-    float l_detector_z[number_of_mirrors_in_z]; // new for hybrid
+    std::vector<float> theta_bi;
+    std::vector<float> R0_tilt;
+    std::vector<float> z0_tilt;
+    std::vector<float> T_r_plus_g;
+    std::vector<float> l_aerogel_z;
+    std::vector<float> l_detector_z;
+    theta_bi.resize(number_of_sectors_in_z);
+    R0_tilt.resize(number_of_sectors_in_z);
+    z0_tilt.resize(number_of_sectors_in_z);
+    T_r_plus_g.resize(number_of_sectors_in_z);
+    l_aerogel_z.resize(number_of_sectors_in_z);
+    l_detector_z.resize(number_of_sectors_in_z);
+
     // Central sector
-    int i_central_mirror = static_cast<int>((number_of_mirrors_in_z) / 2.0);
+    int i_central_mirror = int((number_of_sectors_in_z) / 2.0);
     float m_val = std::tan(0.0);
     theta_bi[i_central_mirror] = std::atan(m_val);
     R0_tilt[i_central_mirror] = R_max;
@@ -160,7 +166,7 @@ struct OnTheFlyRichPid {
     theta_max[i_central_mirror] = M_PI / 2.0 - std::atan(t);
     theta_min[i_central_mirror] = M_PI / 2.0 + std::atan(t);
     mProjectiveLengthInner = R_min * t;
-    for (int i = static_cast<int>((number_of_mirrors_in_z) / 2.0) + 1; i < number_of_mirrors_in_z; i++) {
+    for (int i = int((number_of_sectors_in_z) / 2.0) + 1; i < number_of_sectors_in_z; i++) {
       float par_a = t;
       float par_b = 2.0 * R_max / square_size_z;
       m_val = (std::sqrt(par_a * par_a * par_b * par_b + par_b * par_b - 1.0) + par_a * par_b * par_b) / (par_b * par_b - 1.0);
@@ -186,9 +192,11 @@ struct OnTheFlyRichPid {
       mProjectiveLengthInner = R_min * t; // <-- At the end of the loop this will be the maximum Z
     }
     // Coordinate radiali layer considerati
-    float R0_detector[number_of_mirrors_in_z];
-    float R0_aerogel[number_of_mirrors_in_z];
-    for (int i = 0; i < number_of_mirrors_in_z; i++) {
+    std::vector<float> R0_detector;
+    std::vector<float> R0_aerogel;
+    R0_detector.resize(number_of_sectors_in_z);
+    R0_aerogel.resize(number_of_sectors_in_z);
+    for (int i = 0; i < number_of_sectors_in_z; i++) {
       R0_detector[i] = R0_tilt[i];
       det_centers[i].SetXYZ(R0_detector[i], 0, R0_detector[i] * std::tan(theta_bi[i]));
       R0_aerogel[i] = R0_tilt[i] - (T_r_plus_g[i]) * std::cos(theta_bi[i]);
@@ -304,7 +312,7 @@ struct OnTheFlyRichPid {
     float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
 
     // condition of circles touching - if not satisfied returned value if false
-    if (centerDistance < trcCircle.rC + radius && centerDistance > fabs(trcCircle.rC - radius)) {
+    if (centerDistance < trcCircle.rC + radius && centerDistance > std::fabs(trcCircle.rC - radius)) {
       return true;
     } else {
       return false;
@@ -315,7 +323,7 @@ struct OnTheFlyRichPid {
   /// \param eta the pseudorapidity of the tarck (assuming primary vertex at origin)
   float radiusRipple(float eta)
   {
-    float polar = 2.0 * atan(exp(-eta));
+    float polar = 2.0 * std::atan(std::exp(-eta));
     float i_sector = 0;
     bool flag_sector = false;
     for (int j_sec = 0; j_sec < mNumberSectors; j_sec++) {
@@ -411,9 +419,9 @@ struct OnTheFlyRichPid {
     // Uses light speed in m/ps, magnetic field in T (*0.1 for conversion kGauss -> T)
     double a0 = mass * mass;
     double a1 = refractive_index;
-    double dtheta_on_dpt = a0 / (pt * sqrt(a0 + pow(pt * cosh(eta), 2)) * sqrt(pow(pt * cosh(eta), 2) * (pow(a1, 2) - 1.0) - a0));
-    double dtheta_on_deta = (a0 * tanh(eta)) / (sqrt(a0 + pow(pt * cosh(eta), 2)) * sqrt(pow(pt * cosh(eta), 2) * (pow(a1, 2) - 1.0) - a0));
-    double track_angular_resolution = hypot(fabs(dtheta_on_dpt) * track_pt_resolution, fabs(dtheta_on_deta) * track_eta_resolution);
+    double dtheta_on_dpt = a0 / (pt * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)) * std::sqrt(std::pow(pt * std::cosh(eta), 2) * (std::pow(a1, 2) - 1.0) - a0));
+    double dtheta_on_deta = (a0 * std::tanh(eta)) / (std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)) * std::sqrt(std::pow(pt * std::cosh(eta), 2) * (std::pow(a1, 2) - 1.0) - a0));
+    double track_angular_resolution = std::hypot(std::fabs(dtheta_on_dpt) * track_pt_resolution, std::fabs(dtheta_on_deta) * track_eta_resolution);
     return track_angular_resolution;
   }
 
@@ -518,36 +526,36 @@ struct OnTheFlyRichPid {
         // Evaluate total sigma (layer + tracking resolution)
         float barrelTotalAngularReso = barrelRICHAngularResolution;
         if (flagIncludeTrackAngularRes) {
-          double pt_resolution = pow(recoTrack.getP() / cosh(recoTrack.getEta()), 2) * sqrt(recoTrack.getSigma1Pt2());
-          double eta_resolution = fabs(sin(2.0 * atan(exp(-recoTrack.getEta())))) * sqrt(recoTrack.getSigmaTgl2());
+          double pt_resolution = std::pow(recoTrack.getP() / std::cosh(recoTrack.getEta()), 2) * std::sqrt(recoTrack.getSigma1Pt2());
+          double eta_resolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-recoTrack.getEta())))) * std::sqrt(recoTrack.getSigmaTgl2());
           if (flagRICHLoadDelphesLUTs) {
             pt_resolution = mSmearer.getPtRes(pdgInfoThis->PdgCode(), dNdEta, recoTrack.getEta(), recoTrack.getP() / cosh(recoTrack.getEta()));
             eta_resolution = mSmearer.getEtaRes(pdgInfoThis->PdgCode(), dNdEta, recoTrack.getEta(), recoTrack.getP() / cosh(recoTrack.getEta()));
           }
           // cout << endl <<  "Pt resolution: " << pt_resolution << ", Eta resolution: " << eta_resolution << endl << endl;
           float barrelTrackAngularReso = calculate_track_time_resolution_advanced(recoTrack.getP() / cosh(recoTrack.getEta()), recoTrack.getEta(), pt_resolution, eta_resolution, masses[ii], bRichRefractiveIndex);
-          barrelTotalAngularReso = hypot(barrelRICHAngularResolution, barrelTrackAngularReso);
+          barrelTotalAngularReso = std::hypot(barrelRICHAngularResolution, barrelTrackAngularReso);
           if (doQAplots && hypothesisAngleBarrelRich > error_value + 1. && measuredAngleBarrelRich > error_value + 1. && barrelRICHAngularResolution > error_value + 1. && flagReachesRadiator) {
             float momentum = recoTrack.getP();
             // float pseudorapidity = recoTrack.getEta();
             // float transverse_momentum = momentum / cosh(pseudorapidity);
-            if (ii == 0 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
+            if (ii == 0 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
               histos.fill(HIST("h2dBarrelAngularResTrackElecVsP"), momentum, 1000.0 * barrelTrackAngularReso);
               histos.fill(HIST("h2dBarrelAngularResTotalElecVsP"), momentum, 1000.0 * barrelTotalAngularReso);
             }
-            if (ii == 1 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
+            if (ii == 1 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
               histos.fill(HIST("h2dBarrelAngularResTrackMuonVsP"), momentum, 1000.0 * barrelTrackAngularReso);
               histos.fill(HIST("h2dBarrelAngularResTotalMuonVsP"), momentum, 1000.0 * barrelTotalAngularReso);
             }
-            if (ii == 2 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
+            if (ii == 2 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
               histos.fill(HIST("h2dBarrelAngularResTrackPionVsP"), momentum, 1000.0 * barrelTrackAngularReso);
               histos.fill(HIST("h2dBarrelAngularResTotalPionVsP"), momentum, 1000.0 * barrelTotalAngularReso);
             }
-            if (ii == 3 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
+            if (ii == 3 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
               histos.fill(HIST("h2dBarrelAngularResTrackKaonVsP"), momentum, 1000.0 * barrelTrackAngularReso);
               histos.fill(HIST("h2dBarrelAngularResTotalKaonVsP"), momentum, 1000.0 * barrelTotalAngularReso);
             }
-            if (ii == 4 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
+            if (ii == 4 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
               histos.fill(HIST("h2dBarrelAngularResTrackProtVsP"), momentum, 1000.0 * barrelTrackAngularReso);
               histos.fill(HIST("h2dBarrelAngularResTotalProtVsP"), momentum, 1000.0 * barrelTotalAngularReso);
             }
@@ -571,35 +579,35 @@ struct OnTheFlyRichPid {
         if (barrelRichTheta > error_value + 1. && barrelRICHAngularResolution > error_value + 1. && flagReachesRadiator) {
           histos.fill(HIST("h2dAngleVsMomentumBarrelRICH"), momentum, barrelRichTheta);
 
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
             histos.fill(HIST("h2dBarrelNsigmaTrueElecVsElecHypothesis"), momentum, nSigmaBarrelRich[0]);
             histos.fill(HIST("h2dBarrelNsigmaTrueElecVsMuonHypothesis"), momentum, nSigmaBarrelRich[1]);
             histos.fill(HIST("h2dBarrelNsigmaTrueElecVsPionHypothesis"), momentum, nSigmaBarrelRich[2]);
             histos.fill(HIST("h2dBarrelNsigmaTrueElecVsKaonHypothesis"), momentum, nSigmaBarrelRich[3]);
             histos.fill(HIST("h2dBarrelNsigmaTrueElecVsProtHypothesis"), momentum, nSigmaBarrelRich[4]);
           }
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
             histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsElecHypothesis"), momentum, nSigmaBarrelRich[0]);
             histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsMuonHypothesis"), momentum, nSigmaBarrelRich[1]);
             histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsPionHypothesis"), momentum, nSigmaBarrelRich[2]);
             histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsKaonHypothesis"), momentum, nSigmaBarrelRich[3]);
             histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsProtHypothesis"), momentum, nSigmaBarrelRich[4]);
           }
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
             histos.fill(HIST("h2dBarrelNsigmaTruePionVsElecHypothesis"), momentum, nSigmaBarrelRich[0]);
             histos.fill(HIST("h2dBarrelNsigmaTruePionVsMuonHypothesis"), momentum, nSigmaBarrelRich[1]);
             histos.fill(HIST("h2dBarrelNsigmaTruePionVsPionHypothesis"), momentum, nSigmaBarrelRich[2]);
             histos.fill(HIST("h2dBarrelNsigmaTruePionVsKaonHypothesis"), momentum, nSigmaBarrelRich[3]);
             histos.fill(HIST("h2dBarrelNsigmaTruePionVsProtHypothesis"), momentum, nSigmaBarrelRich[4]);
           }
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
             histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsElecHypothesis"), momentum, nSigmaBarrelRich[0]);
             histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsMuonHypothesis"), momentum, nSigmaBarrelRich[1]);
             histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsPionHypothesis"), momentum, nSigmaBarrelRich[2]);
             histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsKaonHypothesis"), momentum, nSigmaBarrelRich[3]);
             histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsProtHypothesis"), momentum, nSigmaBarrelRich[4]);
           }
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
             histos.fill(HIST("h2dBarrelNsigmaTrueProtVsElecHypothesis"), momentum, nSigmaBarrelRich[0]);
             histos.fill(HIST("h2dBarrelNsigmaTrueProtVsMuonHypothesis"), momentum, nSigmaBarrelRich[1]);
             histos.fill(HIST("h2dBarrelNsigmaTrueProtVsPionHypothesis"), momentum, nSigmaBarrelRich[2]);
