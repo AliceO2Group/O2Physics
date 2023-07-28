@@ -241,7 +241,7 @@ double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
   auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
   auto sigmatgl = sqrt(lutEntry->covm[9]);                   // sigmatgl2
   auto etaRes = fabs(sin(2.0 * atan(exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
-  etaRes /= lutEntry->eta;
+  etaRes /= lutEntry->eta;                                   // relative uncertainty
   return etaRes;
 }
 /*****************************************************************/
