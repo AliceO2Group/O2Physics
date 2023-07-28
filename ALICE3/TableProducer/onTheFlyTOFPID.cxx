@@ -310,9 +310,9 @@ struct OnTheFlyTOFPID {
     double a0 = mass * mass;
     double a1 = 0.299792458 * (0.1 * magneticField) * (0.01 * o2::constants::physics::LightSpeedCm2NS / 1e+3);
     double a2 = (det_radius * 0.01) * (det_radius * 0.01) * (0.299792458) * (0.299792458) * (0.1 * magneticField) * (0.1 * magneticField) / 2.0;
-    double dtof_on_dpt = (pow(pt, 4) * pow(cosh(eta), 2) * acos(1.0 - a2 / pow(pt, 2)) - 2.0 * a2 * pow(pt, 2) * (a0 + pow(pt * cosh(eta), 2)) / sqrt(a2 * (2.0 * pow(pt, 2) - a2))) / (a1 * pow(pt, 3) * sqrt(a0 + pow(pt * cosh(eta), 2)));
-    double dtof_on_deta = pow(pt, 2) * sinh(eta) * cosh(eta) * acos(1.0 - a2 / pow(pt, 2)) / (a1 * sqrt(a0 + pow(pt * cosh(eta), 2)));
-    double track_time_resolution = hypot(fabs(dtof_on_dpt) * track_pt_resolution, fabs(dtof_on_deta) * track_eta_resolution);
+    double dtof_on_dpt = (std::pow(pt, 4) * std::pow(std::cosh(eta), 2) * std::acos(1.0 - a2 / std::pow(pt, 2)) - 2.0 * a2 * std::pow(pt, 2) * (a0 + std::pow(pt * std::cosh(eta), 2)) / std::sqrt(a2 * (2.0 * std::pow(pt, 2) - a2))) / (a1 * std::pow(pt, 3) * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
+    double dtof_on_deta = std::pow(pt, 2) * std::sinh(eta) * std::cosh(eta) * std::acos(1.0 - a2 / std::pow(pt, 2)) / (a1 * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
+    double track_time_resolution = std::hypot(std::fabs(dtof_on_dpt) * track_pt_resolution, std::fabs(dtof_on_deta) * track_eta_resolution);
     return track_time_resolution;
   }
 
@@ -432,36 +432,36 @@ struct OnTheFlyTOFPID {
         float innerTotalTimeReso = innerTOFTimeReso;
         float outerTotalTimeReso = outerTOFTimeReso;
         if (flagIncludeTrackTimeRes) {
-          double pt_resolution = pow(recoTrack.getP() / cosh(recoTrack.getEta()), 2) * sqrt(recoTrack.getSigma1Pt2());
-          double eta_resolution = fabs(sin(2.0 * atan(exp(-recoTrack.getEta())))) * sqrt(recoTrack.getSigmaTgl2());
+          double pt_resolution = std::pow(recoTrack.getP() / std::cosh(recoTrack.getEta()), 2) * std::sqrt(recoTrack.getSigma1Pt2());
+          double eta_resolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-recoTrack.getEta())))) * std::sqrt(recoTrack.getSigmaTgl2());
           if (flagTOFLoadDelphesLUTs) {
-            pt_resolution = mSmearer.getPtRes(pdgInfoThis->PdgCode(), dNdEta, recoTrack.getEta(), recoTrack.getP() / cosh(recoTrack.getEta()));
-            eta_resolution = mSmearer.getEtaRes(pdgInfoThis->PdgCode(), dNdEta, recoTrack.getEta(), recoTrack.getP() / cosh(recoTrack.getEta()));
+            pt_resolution = mSmearer.getPtRes(pdgInfoThis->PdgCode(), dNdEta, recoTrack.getEta(), recoTrack.getP() / std::cosh(recoTrack.getEta()));
+            eta_resolution = mSmearer.getEtaRes(pdgInfoThis->PdgCode(), dNdEta, recoTrack.getEta(), recoTrack.getP() / std::cosh(recoTrack.getEta()));
           }
-          float innerTrackTimeReso = calculate_track_time_resolution_advanced(recoTrack.getP() / cosh(recoTrack.getEta()), recoTrack.getEta(), pt_resolution, eta_resolution, masses[ii], innerTOFRadius, dBz);
-          float outerTrackTimeReso = calculate_track_time_resolution_advanced(recoTrack.getP() / cosh(recoTrack.getEta()), recoTrack.getEta(), pt_resolution, eta_resolution, masses[ii], outerTOFRadius, dBz);
-          innerTotalTimeReso = hypot(innerTOFTimeReso, innerTrackTimeReso);
-          outerTotalTimeReso = hypot(outerTOFTimeReso, outerTrackTimeReso);
+          float innerTrackTimeReso = calculate_track_time_resolution_advanced(recoTrack.getP() / std::cosh(recoTrack.getEta()), recoTrack.getEta(), pt_resolution, eta_resolution, masses[ii], innerTOFRadius, dBz);
+          float outerTrackTimeReso = calculate_track_time_resolution_advanced(recoTrack.getP() / std::cosh(recoTrack.getEta()), recoTrack.getEta(), pt_resolution, eta_resolution, masses[ii], outerTOFRadius, dBz);
+          innerTotalTimeReso = std::hypot(innerTOFTimeReso, innerTrackTimeReso);
+          outerTotalTimeReso = std::hypot(outerTOFTimeReso, outerTrackTimeReso);
 
           if (doQAplots && trackLengthRecoInnerTOF > 0) {
             float momentum = recoTrack.getP();
-            if (ii == 0 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
+            if (ii == 0 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
               histos.fill(HIST("h2dInnerTimeResTrackElecVsP"), momentum, innerTrackTimeReso);
               histos.fill(HIST("h2dInnerTimeResTotalElecVsP"), momentum, innerTotalTimeReso);
             }
-            if (ii == 1 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
+            if (ii == 1 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
               histos.fill(HIST("h2dInnerTimeResTrackMuonVsP"), momentum, innerTrackTimeReso);
               histos.fill(HIST("h2dInnerTimeResTotalMuonVsP"), momentum, innerTotalTimeReso);
             }
-            if (ii == 2 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
+            if (ii == 2 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
               histos.fill(HIST("h2dInnerTimeResTrackPionVsP"), momentum, innerTrackTimeReso);
               histos.fill(HIST("h2dInnerTimeResTotalPionVsP"), momentum, innerTotalTimeReso);
             }
-            if (ii == 3 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
+            if (ii == 3 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
               histos.fill(HIST("h2dInnerTimeResTrackKaonVsP"), momentum, innerTrackTimeReso);
               histos.fill(HIST("h2dInnerTimeResTotalKaonVsP"), momentum, innerTotalTimeReso);
             }
-            if (ii == 4 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
+            if (ii == 4 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
               histos.fill(HIST("h2dInnerTimeResTrackProtVsP"), momentum, innerTrackTimeReso);
               histos.fill(HIST("h2dInnerTimeResTotalProtVsP"), momentum, innerTotalTimeReso);
             }
@@ -469,27 +469,27 @@ struct OnTheFlyTOFPID {
           if (doQAplots && trackLengthRecoOuterTOF > 0) {
             float momentum = recoTrack.getP();
             float pseudorapidity = recoTrack.getEta();
-            float transverse_momentum = momentum / cosh(pseudorapidity);
-            if (ii == 0 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
+            float transverse_momentum = momentum / std::cosh(pseudorapidity);
+            if (ii == 0 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
               histos.fill(HIST("h2dOuterTimeResTrackElecVsP"), momentum, outerTrackTimeReso);
               histos.fill(HIST("h2dOuterTimeResTotalElecVsP"), momentum, outerTotalTimeReso);
             }
-            if (ii == 1 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
+            if (ii == 1 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
               histos.fill(HIST("h2dOuterTimeResTrackMuonVsP"), momentum, outerTrackTimeReso);
               histos.fill(HIST("h2dOuterTimeResTotalMuonVsP"), momentum, outerTotalTimeReso);
             }
-            if (ii == 2 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
+            if (ii == 2 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
               histos.fill(HIST("h2dOuterTimeResTrackPionVsP"), momentum, outerTrackTimeReso);
               histos.fill(HIST("h2dOuterTimeResTotalPionVsP"), momentum, outerTotalTimeReso);
 
               histos.fill(HIST("h2dRelativePtResolution"), transverse_momentum, 100.0 * pt_resolution / transverse_momentum);
-              histos.fill(HIST("h2dRelativeEtaResolution"), pseudorapidity, 100.0 * eta_resolution / fabs(pseudorapidity + 1e-6));
+              histos.fill(HIST("h2dRelativeEtaResolution"), pseudorapidity, 100.0 * eta_resolution / (std::fabs(pseudorapidity) + 1e-6));
             }
-            if (ii == 3 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
+            if (ii == 3 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
               histos.fill(HIST("h2dOuterTimeResTrackKaonVsP"), momentum, outerTrackTimeReso);
               histos.fill(HIST("h2dOuterTimeResTotalKaonVsP"), momentum, outerTotalTimeReso);
             }
-            if (ii == 4 && fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
+            if (ii == 4 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
               histos.fill(HIST("h2dOuterTimeResTrackProtVsP"), momentum, outerTrackTimeReso);
               histos.fill(HIST("h2dOuterTimeResTotalProtVsP"), momentum, outerTotalTimeReso);
             }
@@ -508,35 +508,35 @@ struct OnTheFlyTOFPID {
       if (doQAplots) {
         float momentum = recoTrack.getP();
         if (trackLengthRecoInnerTOF > 0) {
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
             histos.fill(HIST("h2dInnerNsigmaTrueElecVsElecHypothesis"), momentum, nSigmaInnerTOF[0]);
             histos.fill(HIST("h2dInnerNsigmaTrueElecVsMuonHypothesis"), momentum, nSigmaInnerTOF[1]);
             histos.fill(HIST("h2dInnerNsigmaTrueElecVsPionHypothesis"), momentum, nSigmaInnerTOF[2]);
             histos.fill(HIST("h2dInnerNsigmaTrueElecVsKaonHypothesis"), momentum, nSigmaInnerTOF[3]);
             histos.fill(HIST("h2dInnerNsigmaTrueElecVsProtHypothesis"), momentum, nSigmaInnerTOF[4]);
           }
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
             histos.fill(HIST("h2dInnerNsigmaTrueMuonVsElecHypothesis"), momentum, nSigmaInnerTOF[0]);
             histos.fill(HIST("h2dInnerNsigmaTrueMuonVsMuonHypothesis"), momentum, nSigmaInnerTOF[1]);
             histos.fill(HIST("h2dInnerNsigmaTrueMuonVsPionHypothesis"), momentum, nSigmaInnerTOF[2]);
             histos.fill(HIST("h2dInnerNsigmaTrueMuonVsKaonHypothesis"), momentum, nSigmaInnerTOF[3]);
             histos.fill(HIST("h2dInnerNsigmaTrueMuonVsProtHypothesis"), momentum, nSigmaInnerTOF[4]);
           }
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
             histos.fill(HIST("h2dInnerNsigmaTruePionVsElecHypothesis"), momentum, nSigmaInnerTOF[0]);
             histos.fill(HIST("h2dInnerNsigmaTruePionVsMuonHypothesis"), momentum, nSigmaInnerTOF[1]);
             histos.fill(HIST("h2dInnerNsigmaTruePionVsPionHypothesis"), momentum, nSigmaInnerTOF[2]);
             histos.fill(HIST("h2dInnerNsigmaTruePionVsKaonHypothesis"), momentum, nSigmaInnerTOF[3]);
             histos.fill(HIST("h2dInnerNsigmaTruePionVsProtHypothesis"), momentum, nSigmaInnerTOF[4]);
           }
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
             histos.fill(HIST("h2dInnerNsigmaTrueKaonVsElecHypothesis"), momentum, nSigmaInnerTOF[0]);
             histos.fill(HIST("h2dInnerNsigmaTrueKaonVsMuonHypothesis"), momentum, nSigmaInnerTOF[1]);
             histos.fill(HIST("h2dInnerNsigmaTrueKaonVsPionHypothesis"), momentum, nSigmaInnerTOF[2]);
             histos.fill(HIST("h2dInnerNsigmaTrueKaonVsKaonHypothesis"), momentum, nSigmaInnerTOF[3]);
             histos.fill(HIST("h2dInnerNsigmaTrueKaonVsProtHypothesis"), momentum, nSigmaInnerTOF[4]);
           }
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
             histos.fill(HIST("h2dInnerNsigmaTrueProtVsElecHypothesis"), momentum, nSigmaInnerTOF[0]);
             histos.fill(HIST("h2dInnerNsigmaTrueProtVsMuonHypothesis"), momentum, nSigmaInnerTOF[1]);
             histos.fill(HIST("h2dInnerNsigmaTrueProtVsPionHypothesis"), momentum, nSigmaInnerTOF[2]);
@@ -545,35 +545,35 @@ struct OnTheFlyTOFPID {
           }
         }
         if (trackLengthRecoOuterTOF > 0) {
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
             histos.fill(HIST("h2dOuterNsigmaTrueElecVsElecHypothesis"), momentum, nSigmaOuterTOF[0]);
             histos.fill(HIST("h2dOuterNsigmaTrueElecVsMuonHypothesis"), momentum, nSigmaOuterTOF[1]);
             histos.fill(HIST("h2dOuterNsigmaTrueElecVsPionHypothesis"), momentum, nSigmaOuterTOF[2]);
             histos.fill(HIST("h2dOuterNsigmaTrueElecVsKaonHypothesis"), momentum, nSigmaOuterTOF[3]);
             histos.fill(HIST("h2dOuterNsigmaTrueElecVsProtHypothesis"), momentum, nSigmaOuterTOF[4]);
           }
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
             histos.fill(HIST("h2dOuterNsigmaTrueMuonVsElecHypothesis"), momentum, nSigmaOuterTOF[0]);
             histos.fill(HIST("h2dOuterNsigmaTrueMuonVsMuonHypothesis"), momentum, nSigmaOuterTOF[1]);
             histos.fill(HIST("h2dOuterNsigmaTrueMuonVsPionHypothesis"), momentum, nSigmaOuterTOF[2]);
             histos.fill(HIST("h2dOuterNsigmaTrueMuonVsKaonHypothesis"), momentum, nSigmaOuterTOF[3]);
             histos.fill(HIST("h2dOuterNsigmaTrueMuonVsProtHypothesis"), momentum, nSigmaOuterTOF[4]);
           }
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
             histos.fill(HIST("h2dOuterNsigmaTruePionVsElecHypothesis"), momentum, nSigmaOuterTOF[0]);
             histos.fill(HIST("h2dOuterNsigmaTruePionVsMuonHypothesis"), momentum, nSigmaOuterTOF[1]);
             histos.fill(HIST("h2dOuterNsigmaTruePionVsPionHypothesis"), momentum, nSigmaOuterTOF[2]);
             histos.fill(HIST("h2dOuterNsigmaTruePionVsKaonHypothesis"), momentum, nSigmaOuterTOF[3]);
             histos.fill(HIST("h2dOuterNsigmaTruePionVsProtHypothesis"), momentum, nSigmaOuterTOF[4]);
           }
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
             histos.fill(HIST("h2dOuterNsigmaTrueKaonVsElecHypothesis"), momentum, nSigmaOuterTOF[0]);
             histos.fill(HIST("h2dOuterNsigmaTrueKaonVsMuonHypothesis"), momentum, nSigmaOuterTOF[1]);
             histos.fill(HIST("h2dOuterNsigmaTrueKaonVsPionHypothesis"), momentum, nSigmaOuterTOF[2]);
             histos.fill(HIST("h2dOuterNsigmaTrueKaonVsKaonHypothesis"), momentum, nSigmaOuterTOF[3]);
             histos.fill(HIST("h2dOuterNsigmaTrueKaonVsProtHypothesis"), momentum, nSigmaOuterTOF[4]);
           }
-          if (fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
             histos.fill(HIST("h2dOuterNsigmaTrueProtVsElecHypothesis"), momentum, nSigmaOuterTOF[0]);
             histos.fill(HIST("h2dOuterNsigmaTrueProtVsMuonHypothesis"), momentum, nSigmaOuterTOF[1]);
             histos.fill(HIST("h2dOuterNsigmaTrueProtVsPionHypothesis"), momentum, nSigmaOuterTOF[2]);
