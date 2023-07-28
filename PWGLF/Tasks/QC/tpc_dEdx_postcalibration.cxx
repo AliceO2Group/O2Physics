@@ -196,8 +196,9 @@ struct tpc_dEdx_postcalibration {
         registryPi.add("nsigmaTOF_vs_Momentum_Ka", "nsigmaTOF", HistType::kTH2F, {pAxis, nsigmaAxis});
         registryPi.add("nsigmaTOF_vs_Momentum_Pr", "nsigmaTOF", HistType::kTH2F, {pAxis, nsigmaAxis});
 
-        registryKa.add("nsigmaTOF_vs_Momentum_Pi", "nsigmaTOF", HistType::kTH2F, {pAxis, nsigmaAxis});
-        registryKa.add("nsigmaTOF_vs_Momentum_Pr", "nsigmaTOF", HistType::kTH2F, {pAxis, nsigmaAxis});
+        // Not ok until we remove ID with TOF
+        // registryKa.add("nsigmaTOF_vs_Momentum_Pi", "nsigmaTOF", HistType::kTH2F, {pAxis, nsigmaAxis});
+        // registryKa.add("nsigmaTOF_vs_Momentum_Pr", "nsigmaTOF", HistType::kTH2F, {pAxis, nsigmaAxis});
 
         registryPr.add("nsigmaTOF_vs_Momentum_Pi", "nsigmaTOF", HistType::kTH2F, {pAxis, nsigmaAxis});
         registryPr.add("nsigmaTOF_vs_Momentum_Ka", "nsigmaTOF", HistType::kTH2F, {pAxis, nsigmaAxis});
@@ -492,14 +493,14 @@ struct tpc_dEdx_postcalibration {
           registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Pi"), signedPpos, posTrack.tpcNSigmaPi());
           registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), signedPpos, posTrack.tpcNSigmaKa());
 
-          registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pr"), signedPneg, negTrack.tpcNSigmaPr());
           registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), signedPneg, negTrack.tpcNSigmaKa());
+          registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pr"), signedPneg, negTrack.tpcNSigmaPr());
           if (addTOF) {
             registryPr.fill(HIST("nsigmaTOF_vs_Momentum_Pi"), signedPpos, posTrack.tofNSigmaPi());
             registryPr.fill(HIST("nsigmaTOF_vs_Momentum_Ka"), signedPpos, posTrack.tofNSigmaKa());
 
-            registryPi.fill(HIST("nsigmaTOF_vs_Momentum_Pr"), signedPneg, negTrack.tofNSigmaPr());
             registryPi.fill(HIST("nsigmaTOF_vs_Momentum_Ka"), signedPneg, negTrack.tofNSigmaKa());
+            registryPi.fill(HIST("nsigmaTOF_vs_Momentum_Pr"), signedPneg, negTrack.tofNSigmaPr());
           }
         }
       }
@@ -517,16 +518,16 @@ struct tpc_dEdx_postcalibration {
           registryPr.fill(HIST("nsigmaTOF_vs_Momentum_Pr"), signedPneg, negTrack.tofNSigmaPr());
         }
         if (doContaminations) {
-          registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pi"), signedPpos, posTrack.tpcNSigmaPi());
           registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), signedPpos, posTrack.tpcNSigmaKa());
+          registryPi.fill(HIST("nsigmaTPC_vs_Momentum_Pr"), signedPpos, posTrack.tpcNSigmaPr());
 
-          registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Pr"), signedPneg, negTrack.tpcNSigmaPr());
+          registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Pi"), signedPneg, negTrack.tpcNSigmaPi());
           registryPr.fill(HIST("nsigmaTPC_vs_Momentum_Ka"), signedPneg, negTrack.tpcNSigmaKa());
           if (addTOF) {
-            registryPi.fill(HIST("nsigmaTOF_vs_Momentum_Pi"), signedPpos, posTrack.tofNSigmaPi());
             registryPi.fill(HIST("nsigmaTOF_vs_Momentum_Ka"), signedPpos, posTrack.tofNSigmaKa());
+            registryPi.fill(HIST("nsigmaTOF_vs_Momentum_Pr"), signedPpos, posTrack.tofNSigmaPr());
 
-            registryPr.fill(HIST("nsigmaTOF_vs_Momentum_Pr"), signedPneg, negTrack.tofNSigmaPr());
+            registryPr.fill(HIST("nsigmaTOF_vs_Momentum_Pi"), signedPneg, negTrack.tofNSigmaPi());
             registryPr.fill(HIST("nsigmaTOF_vs_Momentum_Ka"), signedPneg, negTrack.tofNSigmaKa());
           }
         }

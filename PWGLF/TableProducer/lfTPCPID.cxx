@@ -755,11 +755,11 @@ struct lfTpcPid {
       float bb = 0.f;                                                                               \
       float expSigma = 1.f;                                                                         \
       for (auto const& trk : tracks) {                                                              \
+        if (!trk.hasTPC()) {                                                                        \
+          tablePIDFull##Particle(-999.f, -999.f);                                                   \
+          continue;                                                                                 \
+        }                                                                                           \
         if (skipTPCOnly) {                                                                          \
-          if (!trk.hasTPC()) {                                                                      \
-            tablePIDFull##Particle(-999.f, -999.f);                                                 \
-            continue;                                                                               \
-          }                                                                                         \
           if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {                                    \
             tablePIDFull##Particle(-999.f, -999.f);                                                 \
             continue;                                                                               \
@@ -808,17 +808,18 @@ struct lfTpcPid {
     float bb = 0.f;
     float expSigma = 1.f;
     for (auto const& trk : tracks) {
+      if (!trk.hasTPC()) {
+        tablePIDFullPi(-999.f, -999.f);
+        tablePIDFullKa(-999.f, -999.f);
+        tablePIDFullPr(-999.f, -999.f);
+        continue;
+      }
       if (skipTPCOnly) {
         if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
           tablePIDFullPi(-999.f, -999.f);
           tablePIDFullKa(-999.f, -999.f);
           tablePIDFullPr(-999.f, -999.f);
           continue;
-        }
-        if (!trk.hasTPC()) {
-          tablePIDFullPi(-999.f, -999.f);
-          tablePIDFullKa(-999.f, -999.f);
-          tablePIDFullPr(-999.f, -999.f);
         }
       }
       if (trk.sign() > 0) {
