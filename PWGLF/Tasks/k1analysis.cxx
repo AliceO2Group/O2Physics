@@ -360,11 +360,21 @@ struct k1analysis {
         // Rapidity cut
         if (lResonanceK1.Rapidity() > cK1MaxRap || lResonanceK1.Rapidity() < cK1MinRap)
           continue;
+<<<<<<< HEAD
         // Opening angle cut
         auto lK1Angle = lResonanceK892.Angle(lDecayDaughter_bach.Vect());
         // Pair asymmetry cut
         auto lPairAsym = (lResonanceK892.E() - lDecayDaughter_bach.E()) / (lResonanceK892.E() + lDecayDaughter_bach.E());
         // PiPi, PiKa mass range cut
+=======
+
+        // Opening angle cut
+        auto lK1Angle = lResonanceK892.Angle(lDecayDaughter_bach.Vect());
+
+        // Pari asymmetry cut
+        auto lPairAsym = (lResonanceK892.E() - lDecayDaughter_bach.E()) / (lResonanceK892.E() + lDecayDaughter_bach.E());
+
+>>>>>>> master
         TLorentzVector tempPiPi = lDecayDaughter1 + lDecayDaughter_bach;
         TLorentzVector tempPiKa = lDecayDaughter2 + lDecayDaughter_bach;
         if constexpr (!IsMix) {
