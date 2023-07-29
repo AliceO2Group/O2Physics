@@ -27,7 +27,6 @@ struct hmpConverter {
     for (auto& hmpData : hmpLegacy) {
 
       float phots[] = {0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};
-
       auto trackid = hmpData.trackId();
       auto hmpidSignal = hmpData.hmpidSignal();
       auto hmpidXTrack = -999.; // dummy
