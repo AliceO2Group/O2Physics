@@ -211,7 +211,7 @@ struct lambdaAnalysis {
       selTracks(trkPr, trkFlagPr);
       selTracks(trkKa, trkFlagKa);
 
-      if(!trkFlagPr || !trkFlagKa)
+      if (!trkFlagPr || !trkFlagKa)
         continue;
 
       // PID Selection for Protons and Kaons. pT dependent cuts.
