@@ -515,10 +515,7 @@ struct lambda1520analysis {
           if (trk1.sign() > 0) {
             histos.fill(HIST("Result/Data/lambda1520invmassLSPP"), lResonance.M());
             histos.fill(HIST("Result/Data/h3lambda1520invmassLSPP"), collision.multV0M(), lResonance.Pt(), lResonance.M());
-          }
-
-          // Like sign pair --
-          else {
+          } else { // Like sign pair --
             histos.fill(HIST("Result/Data/lambda1520invmassLSMM"), lResonance.M());
             histos.fill(HIST("Result/Data/h3lambda1520invmassLSMM"), collision.multV0M(), lResonance.Pt(), lResonance.M());
           }
