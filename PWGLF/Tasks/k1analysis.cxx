@@ -304,9 +304,9 @@ struct k1analysis {
       lResonanceK892 = lDecayDaughter1 + lDecayDaughter2;
 
       if constexpr (!IsMix) {
-        histos.fill(HIST("k892invmass"), lResonanceK892.M());                                                   // quick check
-        if (trk1.sign() > 0) {                                                                                  // Positive pion
-          if (trk2.sign() > 0)                                                                                  // Positive kaon
+        histos.fill(HIST("k892invmass"), lResonanceK892.M()); // quick check
+        if (trk1.sign() > 0) {                                // Positive pion
+          if (trk2.sign() > 0)                                // Positive kaon
             histos.fill(HIST("hK892invmass_PP"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M());
           else                                                                                                  // Negative kaon
             histos.fill(HIST("hK892invmass_PN"), collision.multV0M(), lResonanceK892.Pt(), lResonanceK892.M()); // Anti-K(892)0
@@ -431,11 +431,11 @@ struct k1analysis {
               histos.fill(HIST("QAMC/K1OA"), lK1Angle);
               histos.fill(HIST("QAMC/K1PairAsymm"), lPairAsym);
 
-              if ((bTrack.sign() > 0) && (trk2.sign() > 0)) {        // Matter
+              if ((bTrack.sign() > 0) && (trk2.sign() > 0)) { // Matter
                 histos.fill(HIST("hK1invmass_NPP_MC"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
                 histos.fill(HIST("k1invmass_MC"), lResonanceK1.M()); // quick check
               }
-              if ((bTrack.sign() < 0) && (trk2.sign() < 0)) {        // Anti-matter
+              if ((bTrack.sign() < 0) && (trk2.sign() < 0)) { // Anti-matter
                 histos.fill(HIST("hK1invmass_PNN_MC"), collision.multV0M(), lResonanceK1.Pt(), lResonanceK1.M());
                 histos.fill(HIST("k1invmass_MC"), lResonanceK1.M()); // quick check
               }
@@ -487,7 +487,7 @@ struct k1analysis {
     for (auto& part : resoParents) {    // loop over all pre-filtered MC particles
       if (abs(part.pdgCode()) != 10323) // K892(0)
         continue;
-      if (abs(part.y()) > 0.5) {        // rapidity cut
+      if (abs(part.y()) > 0.5) { // rapidity cut
         continue;
       }
       bool pass1 = false;
