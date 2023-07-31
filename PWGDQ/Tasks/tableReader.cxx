@@ -742,6 +742,8 @@ struct AnalysisSameEventPairing {
   Configurable<bool> fNoCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> fCollisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
+  Configurable<float> fCenterMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
@@ -897,6 +899,8 @@ struct AnalysisSameEventPairing {
     // ccdb->setCaching(true);
     // ccdb->setLocalObjectValidityChecking();
     // ccdb->setCreatedNotAfter(nolaterthan.value);
+
+    VarManager::SetCollisionSystem((TString)fCollisionSystem, fCenterMassEnergy); // set collision system and center of mass energy
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram); // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars());                      // provide the list of required variables so that VarManager knows what to fill

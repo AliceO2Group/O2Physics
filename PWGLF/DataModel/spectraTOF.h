@@ -283,11 +283,13 @@ struct binningNSigma {
   static constexpr float bin_width = (binned_max - binned_min) / nbins;
 };
 
+// Collision info
 DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occurred
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);
+DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
 DECLARE_SOA_DYNAMIC_COLUMN(CentFV0A, centFV0A, //! Dummy
                            [](bool v) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(CentFT0A, centFT0A, //! Dummy
@@ -306,13 +308,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFDDC, multZeqFDDC, //! Dummy
                            [](bool v) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, //! Dummy
                            [](bool v) -> float { return 0.f; });
-DECLARE_SOA_DYNAMIC_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, //! Dummy
-                           [](bool v) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultTracklets, multTracklets, //! Dummy
                            [](bool v) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultTPC, multTPC, //! Dummy
                            [](bool v) -> float { return 0.f; });
 
+// Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                  //! Index to the collision
 DECLARE_SOA_COLUMN(PtSigned, ptSigned, float);                                   //! Pt (signed) of the track
 DECLARE_SOA_COLUMN(Eta, eta, float);                                             //! Eta of the track
@@ -360,8 +361,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(TRDSignal, trdSignal, //! Dummy
                            [](float v) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float signedpt, float eta) -> float { return std::abs(signedpt) * cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float v) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, [](float v) -> bool { return true; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrack, isGlobalTrack, [](float v) -> bool { return true; });
+DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
+DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
 DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float v) -> uint32_t { return 0; });          // Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(TRDPattern, trdPattern, [](float v) -> uint8_t { return 0; }); // Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                            //! Track rapidity, computed under the mass assumption given as input
@@ -383,6 +384,7 @@ DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
                   collision::PosZ,
                   spectra::CentFT0M,
                   spectra::Sel8,
+                  spectra::MultNTracksPVeta1,
                   spectra::RunNumber,
                   spectra::CentFV0A<spectra::Sel8>,
                   spectra::CentFT0A<spectra::Sel8>,
@@ -393,7 +395,6 @@ DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
                   spectra::MultZeqFDDA<spectra::Sel8>,
                   spectra::MultZeqFDDC<spectra::Sel8>,
                   spectra::MultZeqNTracksPV<spectra::Sel8>,
-                  spectra::MultNTracksPVeta1<spectra::Sel8>,
                   spectra::MultTracklets<spectra::Sel8>,
                   spectra::MultTPC<spectra::Sel8>
 
@@ -426,6 +427,8 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   pidflags::TOFFlags,
                   spectra::DCAxyStore,
                   spectra::DCAzStore,
+                  spectra::IsGlobalTrack,
+                  spectra::IsGlobalTrackWoDCA,
                   spectra::DCAxy<spectra::DCAxyStore>,
                   spectra::DCAz<spectra::DCAzStore>,
                   spectra::Pt<spectra::PtSigned>,
@@ -438,8 +441,6 @@ DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
                   spectra::TRDSignal<track::TOFChi2>,
                   spectra::Flags<track::TOFChi2>,
                   spectra::TrackType<track::TOFChi2>,
-                  spectra::IsGlobalTrack<track::TOFChi2>,
-                  spectra::IsGlobalTrackWoDCA<track::TOFChi2>,
                   spectra::TRDPattern<track::TOFChi2>,
                   track::ITSNCls<track::ITSClusterMap>, track::ITSNClsInnerBarrel<track::ITSClusterMap>,
                   track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,

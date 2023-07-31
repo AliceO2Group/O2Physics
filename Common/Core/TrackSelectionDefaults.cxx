@@ -40,7 +40,7 @@ TrackSelection getGlobalTrackSelection()
 }
 
 // Default track selection requiring a particular Run 3 ITS matching
-TrackSelection getGlobalTrackSelectionRun3ITSMatch(int matching, TrackSelection::GlobalTrackRun3DCAxyCut passFlag)
+TrackSelection getGlobalTrackSelectionRun3ITSMatch(int matching, int passFlag)
 {
   TrackSelection selectedTracks = getGlobalTrackSelection();
   selectedTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track); // Requiring that this is a Run 3 track
@@ -69,6 +69,7 @@ TrackSelection getGlobalTrackSelectionRun3ITSMatch(int matching, TrackSelection:
       selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.004f + 0.013f / pt; }); // Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
       break;
     default:
+      LOG(fatal) << "getGlobalTrackSelectionRun3ITSMatch with undefined DCA cut";
       break;
   }
   return selectedTracks;
