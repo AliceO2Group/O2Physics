@@ -487,7 +487,7 @@ struct k1analysis {
     for (auto& part : resoParents) {    // loop over all pre-filtered MC particles
       if (abs(part.pdgCode()) != 10323) // K892(0)
         continue;
-      if (abs(part.y()) > 0.5) {        // rapidity cut
+      if (abs(part.y()) > 0.5) { // rapidity cut
         continue;
       }
       bool pass1 = false;
