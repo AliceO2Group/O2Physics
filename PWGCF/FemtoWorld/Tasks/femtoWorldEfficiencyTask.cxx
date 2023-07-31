@@ -12,6 +12,8 @@
 /// \file femtoWorldEfficiencyTask.cxx
 /// \author Lukasz Graczykowski, WUT Warsaw, lgraczyk@cern.ch
 /// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
+/// \author Alicja Plachta, WUT Warsaw, alicja.plachta@cern.ch
+/// \author Barbara Chytla, WUT Warsaw, barbara.chytla@cern.ch
 
 // O2 includes
 #include "Common/DataModel/PIDResponse.h"
@@ -36,7 +38,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using TracksPID = aod::FullTracks; // This is okay.
-using TracksPID = soa::Join<aod::FullTracks, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>; // for helper task with "full"
+using TracksPID = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>; // for helper task with "full"
 // using TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>; // This is okay for "no full"
 
 using CollisionsEvSel = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
@@ -49,14 +51,20 @@ struct femtoWorldEficiencyTask {
   HistogramRegistry registryPID{"PIDHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryPDG{"PDGHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryPri{"PriHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry registryPriCuts{"PriHistosCuts", {}, OutputObjHandlingPolicy::AnalysisObject, false, true}; // for tracking efficiency = cuts only
 
   HistogramRegistry registryMCtruth{"MCtruthHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // configurables
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> pidnSigmaCut{"pidnSigmaCut", 3.0f, "TPC and TOF PID cut "};
   Configurable<float> tofPtCut{"tofPtCut", 0.5f, "From what pT TOF is used"};
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run 3 data"}; // Choose if running on converted data or  run 3 data
+  // track cuts
+  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+  Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.2, "Lower limit for Pt"};
+  Configurable<float> cfgPtHighPart1{"cfgPtHighPart1", 4., "Higher limit for Pt"};
+  Configurable<float> cfgDcaXYPart1{"cfgDcaXYPart1", 2.4, "Value of max. DCA_XY"};
+  Configurable<float> cfgDcaZPart1{"cfgDcaZPart1", 3.2, "Value of max. DCA_Z"};
   /// Event cuts
   o2::analysis::femtoWorld::FemtoWorldCollisionSelection colCuts;
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
@@ -98,52 +106,62 @@ struct femtoWorldEficiencyTask {
     registryPID.addClone("pid/kaon/", "pid/proton/");
 
     // PDG
-    registryPDG.add("plus/PDGPi", "PDGPi;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 10}, {8001, -4000.5, 4000.5}}});
-    registryPDG.add("plus/PDGKa", "PDGKa;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 10}, {8001, -4000.5, 4000.5}}});
-    registryPDG.add("plus/PDGPr", "PDGPr;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 10}, {8001, -4000.5, 4000.5}}});
+    registryPDG.add("plus/PDGPi", "PDGPi;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {8001, -4000.5, 4000.5}}});
+    registryPDG.add("plus/PDGKa", "PDGKa;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {8001, -4000.5, 4000.5}}});
+    registryPDG.add("plus/PDGPr", "PDGPr;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {8001, -4000.5, 4000.5}}});
 
-    registryPDG.add("minus/PDGPi", "PDGPi;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 10}, {8001, -4000.5, 4000.5}}});
-    registryPDG.add("minus/PDGKa", "PDGKa;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 10}, {8001, -4000.5, 4000.5}}});
-    registryPDG.add("minus/PDGPr", "PDGPr;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 10}, {8001, -4000.5, 4000.5}}});
+    registryPDG.add("minus/PDGPi", "PDGPi;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {8001, -4000.5, 4000.5}}});
+    registryPDG.add("minus/PDGKa", "PDGKa;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {8001, -4000.5, 4000.5}}});
+    registryPDG.add("minus/PDGPr", "PDGPr;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {8001, -4000.5, 4000.5}}});
 
-    registryPri.add("plus/PiPri", "PiPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryPri.add("plus/KaPri", "KaPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryPri.add("plus/PrPri", "PrPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryPri.add("plus/AllPri", "AllPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+    // Pri
+    registryPri.add("plus/PiPri", "PiPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryPri.add("plus/KaPri", "KaPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryPri.add("plus/PrPri", "PrPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryPri.add("plus/AllPri", "AllPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
 
-    registryPri.add("minus/PiPri", "PiPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryPri.add("minus/KaPri", "KaPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryPri.add("minus/PrPri", "PrPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryPri.add("minus/AllPri", "AllPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+    registryPri.add("minus/PiPri", "PiPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryPri.add("minus/KaPri", "KaPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryPri.add("minus/PrPri", "PrPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryPri.add("minus/AllPri", "AllPri;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
 
-    registryPri.add("plus/PiPriPt", "PiPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
-    registryPri.add("plus/KaPriPt", "KaPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryPri.add("plus/PiPriPt", "PiPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPri.add("plus/KaPriPt", "KaPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryPri.add("plus/PrPriPt", "PrPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
-    registryPri.add("plus/AllPriPt", "AllPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryPri.add("plus/AllPriPt", "AllPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
-    registryPri.add("minus/PiPriPt", "PiPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
-    registryPri.add("minus/KaPriPt", "KaPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryPri.add("minus/PiPriPt", "PiPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPri.add("minus/KaPriPt", "KaPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryPri.add("minus/PrPriPt", "PrPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
-    registryPri.add("minus/AllPriPt", "AllPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryPri.add("minus/AllPriPt", "AllPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+
+    // Pri our tracking cuts only
+    registryPriCuts.add("plus/PiPriPt", "PiPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPriCuts.add("plus/KaPriPt", "KaPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPriCuts.add("plus/PrPriPt", "PrPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+
+    registryPriCuts.add("minus/PiPriPt", "PiPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPriCuts.add("minus/KaPriPt", "KaPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPriCuts.add("minus/PrPriPt", "PrPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
     // MC truth
-    registryMCtruth.add("plus/MCtruthPi", "MC truth pions;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryMCtruth.add("plus/MCtruthKa", "MC truth kaons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryMCtruth.add("plus/MCtruthPr", "MC truth protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("plus/MCtruthPi", "MC truth pions;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("plus/MCtruthKa", "MC truth kaons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("plus/MCtruthPr", "MC truth protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
 
-    registryMCtruth.add("minus/MCtruthPi", "MC truth pions;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryMCtruth.add("minus/MCtruthKa", "MC truth kaons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
-    registryMCtruth.add("minus/MCtruthPr", "MC truth protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 10}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("minus/MCtruthPi", "MC truth pions;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("minus/MCtruthKa", "MC truth kaons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("minus/MCtruthPr", "MC truth protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
 
-    registryMCtruth.add("plus/MCtruthPiPt", "MC truth pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
-    registryMCtruth.add("plus/MCtruthKaPt", "MC truth kaons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryMCtruth.add("plus/MCtruthPiPt", "MC truth pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCtruth.add("plus/MCtruthKaPt", "MC truth kaons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryMCtruth.add("plus/MCtruthPrPt", "MC truth protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
-    registryMCtruth.add("plus/MCtruthAllPt", "MC truth all;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryMCtruth.add("plus/MCtruthAllPt", "MC truth all;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
-    registryMCtruth.add("minus/MCtruthPiPt", "MC truth pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
-    registryMCtruth.add("minus/MCtruthKaPt", "MC truth kaons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryMCtruth.add("minus/MCtruthPiPt", "MC truth pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCtruth.add("minus/MCtruthKaPt", "MC truth kaons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryMCtruth.add("minus/MCtruthPrPt", "MC truth protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
-    registryMCtruth.add("minus/MCtruthAllPt", "MC truth all;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 10}}});
+    registryMCtruth.add("minus/MCtruthAllPt", "MC truth all;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
   }
 
   bool IsNSigmaAccept(float nsigmaTPC, float nsigmaTOF, float mom)
@@ -160,7 +178,7 @@ struct femtoWorldEficiencyTask {
     return false;
   }
 
-  Filter trackFilter = nabs(aod::track::eta) < cfgCutEta; // Eta cut
+  Filter trackFilter = nabs(aod::track::eta) < cfgCutEta; // Eta cut (doesn't do anything)
   Filter trackCutFilter = requireGlobalTrackInFilter();   // Global track cuts
   void processReco(const CollisionsEvSel::iterator& collision,
                    soa::Filtered<TracksPID> const& tracks /*, aod::BCsWithTimestamps const&*/)
@@ -265,7 +283,7 @@ struct femtoWorldEficiencyTask {
 
   using BigTracksMC = soa::Join<TracksPID, aod::McTrackLabels>;
   Preslice<BigTracksMC> perCollisionID = aod::track::collisionId;
-
+  Filter trackCutFilterTruth = requireGlobalTrackInFilter();
   void processMCTruth(aod::McCollision const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, aod::McParticles const& mcparticles, soa::Filtered<BigTracksMC> const& tracks)
   {
     // Loop over reconstructed collisions corresponding to MC collision
@@ -304,8 +322,9 @@ struct femtoWorldEficiencyTask {
           }
         }
 
-        if (mcParticle.isPhysicalPrimary() && TMath::Abs(mcParticle.eta()) < cfgCutEta) {
+        if (mcParticle.isPhysicalPrimary() && TMath::Abs(mcParticle.eta()) < cfgCutEta && mcParticle.pt() > cfgPtLowPart1 && mcParticle.pt() < cfgPtHighPart1 && TMath::Abs(track.dcaXY()) < cfgDcaXYPart1 && TMath::Abs(track.dcaZ()) < cfgDcaZPart1) {
           if (track.sign() > 0) {
+            // PID only
             registryPri.fill(HIST("plus/AllPri"), track.pt(), track.eta());
             registryPri.fill(HIST("plus/AllPriPt"), track.pt());
             if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt()) && mcParticle.pdgCode() == 211) {
@@ -320,8 +339,19 @@ struct femtoWorldEficiencyTask {
               registryPri.fill(HIST("plus/PrPri"), track.pt(), track.eta());
               registryPri.fill(HIST("plus/PrPriPt"), mcParticle.pt());
             }
+            // tracking efficiency only
+            if (mcParticle.pdgCode() == 211) {
+              registryPriCuts.fill(HIST("plus/PiPriPt"), mcParticle.pt());
+            }
+            if (mcParticle.pdgCode() == 321) {
+              registryPriCuts.fill(HIST("plus/KaPriPt"), mcParticle.pt());
+            }
+            if (mcParticle.pdgCode() == 2212) {
+              registryPriCuts.fill(HIST("plus/PrPriPt"), mcParticle.pt());
+            }
           }
           if (track.sign() < 0) {
+            // PID only
             registryPri.fill(HIST("minus/AllPri"), track.pt(), track.eta());
             registryPri.fill(HIST("minus/AllPriPt"), mcParticle.pt());
             if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt()) && mcParticle.pdgCode() == -211) {
@@ -335,6 +365,16 @@ struct femtoWorldEficiencyTask {
             if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt()) && mcParticle.pdgCode() == -2212) {
               registryPri.fill(HIST("minus/PrPri"), track.pt(), track.eta());
               registryPri.fill(HIST("minus/PrPriPt"), mcParticle.pt());
+            }
+            // tracking efficiency only
+            if (mcParticle.pdgCode() == -211) {
+              registryPriCuts.fill(HIST("minus/PiPriPt"), mcParticle.pt());
+            }
+            if (mcParticle.pdgCode() == -321) {
+              registryPriCuts.fill(HIST("minus/KaPriPt"), mcParticle.pt());
+            }
+            if (mcParticle.pdgCode() == -2212) {
+              registryPriCuts.fill(HIST("minus/PrPriPt"), mcParticle.pt());
             }
           }
         }
