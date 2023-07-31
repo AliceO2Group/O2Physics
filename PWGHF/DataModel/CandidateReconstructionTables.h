@@ -116,6 +116,8 @@ DECLARE_SOA_COLUMN(FlagDplusToPiKPi, flagDplusToPiKPi, uint8_t); //!
 DECLARE_SOA_COLUMN(FlagLcToPKPi, flagLcToPKPi, uint8_t);         //!
 DECLARE_SOA_COLUMN(FlagDsToKKPi, flagDsToKKPi, uint8_t);         //!
 DECLARE_SOA_COLUMN(FlagXicToPKPi, flagXicToPKPi, uint8_t);       //!
+
+DECLARE_SOA_COLUMN(FlagDstarToD0Pi, flagDstarToD0Pi, uint8_t); //!
 } // namespace hf_track_index
 
 DECLARE_SOA_TABLE(Hf2Prongs_000, "AOD", "HF2PRONG", //! Table for HF 2 prong candidates (Run 2 converted format)
@@ -184,10 +186,19 @@ namespace hf_track_index
 DECLARE_SOA_INDEX_COLUMN_FULL(ProngD0, prongD0, int, Hf2Prongs, ""); //! Index to a D0 prong
 } // namespace hf_track_index
 
-DECLARE_SOA_TABLE(HfDstars, "AOD", "HFDSTAR", //! D* -> D0pi candidates
+DECLARE_SOA_TABLE(HfDstars_000, "AOD", "HFDSTAR", //! D* -> D0pi candidates (Run 2 converted format)
                   o2::soa::Index<>,
                   hf_track_index::Prong0Id,
                   hf_track_index::ProngD0Id);
+
+DECLARE_SOA_TABLE(HfDstars_001, "AOD", "HFDSTAR", //! D* -> D0pi candidates (Run 3 format)
+                  o2::soa::Index<>,
+                  hf_track_index::CollisionId,
+                  hf_track_index::Prong0Id,
+                  hf_track_index::ProngD0Id,
+                  hf_track_index::HFflag);
+
+using HfDstars = HfDstars_001;
 using HfDstar = HfDstars::iterator;
 
 DECLARE_SOA_TABLE(HfCutStatus2Prong, "AOD", "HFCUTSTATUS2P", //!
@@ -200,6 +211,9 @@ DECLARE_SOA_TABLE(HfCutStatus3Prong, "AOD", "HFCUTSTATUS3P", //!
                   hf_track_index::FlagLcToPKPi,
                   hf_track_index::FlagDsToKKPi,
                   hf_track_index::FlagXicToPKPi);
+
+DECLARE_SOA_TABLE(HfCutStatusDstar, "AOD", "HFCUTSTATUSDST", //!
+                  hf_track_index::FlagDstarToD0Pi);
 
 namespace hf_pv_refit_cand_2prong
 {

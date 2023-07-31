@@ -58,6 +58,7 @@ enum CandidateType {
   Cand2Prong = 0,
   Cand3Prong,
   CandV0bachelor,
+  CandDstar,
   NCandidateTypes
 };
 
@@ -77,6 +78,7 @@ static const double massK = RecoDecay::getMassPDG(kKPlus);
 static const double massProton = RecoDecay::getMassPDG(kProton);
 static const double massElectron = RecoDecay::getMassPDG(kElectron);
 static const double massMuon = RecoDecay::getMassPDG(kMuonPlus);
+static const double massDzero = RecoDecay::getMassPDG(o2::analysis::pdg::kD0);
 
 // #define MY_DEBUG
 
@@ -904,9 +906,12 @@ struct HfTrackIndexSkimCreator {
   Produces<aod::Hf3Prongs> rowTrackIndexProng3;
   Produces<aod::HfCutStatus3Prong> rowProng3CutStatus;
   Produces<aod::HfPvRefit3Prong> rowProng3PVrefit;
+  Produces<aod::HfDstars> rowTrackIndexDstar;
+  Produces<aod::HfCutStatusDstar> rowDstarCutStatus;
 
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<int> do3Prong{"do3Prong", 0, "do 3 prong"};
+  Configurable<bool> doDstar{"doDstar", false, "do D* candidates"};
   Configurable<bool> debug{"debug", false, "debug mode"};
   Configurable<bool> debugPvRefit{"debugPvRefit", false, "debug lines for primary vertex refit"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
@@ -951,6 +956,9 @@ struct HfTrackIndexSkimCreator {
   // Xic+ cuts
   Configurable<std::vector<double>> binsPtXicToPKPi{"binsPtXicToPKPi", std::vector<double>{hf_cuts_presel_3prong::vecBinsPt}, "pT bin limits for Xic->pKpi pT-dependent cuts"};
   Configurable<LabeledArray<double>> cutsXicToPKPi{"cutsXicToPKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::nBinsPt, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Xic->pKpi selections per pT bin"};
+  // D*+ cuts
+  Configurable<std::vector<double>> binsPtDstarToD0Pi{"binsPtDstarToD0Pi", std::vector<double>{hf_cuts_presel_dstar::vecBinsPt}, "pT bin limits for D*+->D0pi pT-dependent cuts"};
+  Configurable<LabeledArray<double>> cutsDstarToD0Pi{"cutsDstarToD0Pi", {hf_cuts_presel_dstar::cuts[0], hf_cuts_presel_dstar::nBinsPt, hf_cuts_presel_dstar::nCutVars, hf_cuts_presel_dstar::labelsPt, hf_cuts_presel_dstar::labelsCutVar}, "D*+->D0pi selections per pT bin"};
 
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -964,6 +972,7 @@ struct HfTrackIndexSkimCreator {
   static constexpr int kN3ProngDecays = hf_cand_3prong::DecayType::N3ProngDecays; // number of 3-prong hadron types
   static constexpr int kNCuts2Prong = 4;                                          // how many different selections are made on 2-prongs
   static constexpr int kNCuts3Prong = 4;                                          // how many different selections are made on 3-prongs
+  static constexpr int kNCutsDstar = 3;                                           // how many different selections are made on Dstars
   std::array<std::array<std::array<double, 2>, 2>, kN2ProngDecays> arrMass2Prong;
   std::array<std::array<std::array<double, 3>, 2>, kN3ProngDecays> arrMass3Prong;
   // arrays of 2-prong and 3-prong cuts
@@ -1344,6 +1353,68 @@ struct HfTrackIndexSkimCreator {
         }
       }
     }
+  }
+
+  /// Method to perform selections for D* candidates before vertex reconstruction
+  /// \param pVecTrack0 is the momentum array of the first daughter track (same charge)
+  /// \param pVecTrack1 is the momentum array of the second daughter track (opposite charge)
+  /// \param pVecTrack2 is the momentum array of the third daughter track (same charge)
+  /// \param cutStatus is the cut status (filled only in case of debug)
+  /// \return a bitmap with selection outcome
+  template <typename T1>
+  uint8_t isDstarSelected(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, int8_t cutStatus)
+  {
+    uint8_t isSelected{1};
+    /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
+    int deltaMassIndex, deltaMassD0Index;
+    static auto cacheIndices = [](LabeledArray<double>& cutDstar, int& deltaMassIdx, int& deltaMassD0Idx) {
+      deltaMassIdx = cutDstar.colmap.find("deltaMassMax")->second;
+      deltaMassD0Idx = cutDstar.colmap.find("deltaMassD0")->second;
+      return true;
+    };
+    cacheIndices(cutsDstarToD0Pi.value, deltaMassIndex, deltaMassD0Index);
+
+    auto arrMom = array{pVecTrack0, pVecTrack1, pVecTrack2};
+    auto arrMomD0 = array{pVecTrack0, pVecTrack1};
+    auto pT = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + ptTolerance; // add tolerance because of no reco decay vertex
+
+    // pT
+    auto pTBin = findBin(binsPtDstarToD0Pi, pT);
+    // return immediately if it is outside the defined pT bins
+    if (pTBin == -1) {
+      isSelected = 0;
+      if (debug) {
+        CLRBIT(cutStatus, 0);
+      } else {
+        return isSelected;
+      }
+    }
+
+    // D0 mass
+    double deltaMassD0 = cutsDstarToD0Pi->get(pTBin, deltaMassD0Index);
+    double invMassD0 = RecoDecay::m(arrMomD0, std::array{211, 321});
+    if (std::abs(invMassD0 - massDzero) > deltaMassD0) {
+      isSelected = 0;
+      if (debug) {
+        CLRBIT(cutStatus, 1);
+      } else {
+        return isSelected;
+      }
+    }
+
+    // D*+ mass
+    double maxDeltaMass = cutsDstarToD0Pi->get(pTBin, deltaMassIndex);
+    double invMassDstar = RecoDecay::m(arrMom, std::array{211, 321, 211});
+    if (invMassDstar - invMassD0 > maxDeltaMass) {
+      isSelected = 0;
+      if (debug) {
+        CLRBIT(cutStatus, 1);
+      } else {
+        return isSelected;
+      }
+    }
+
+    return 0;
   }
 
   /// Method for the PV refit excluding the candidate daughters
@@ -1793,15 +1864,12 @@ struct HfTrackIndexSkimCreator {
             }
           }
 
-          // 3-prong vertex reconstruction
-          if (do3Prong == 1) {
-            if (!sel3ProngStatusPos1 || !sel3ProngStatusNeg1) {
+          // 3-prong vertex and D* reconstruction
+          if (do3Prong == 1 || doDstar) {
+            if (!doDstar && (!sel3ProngStatusPos1 || !sel3ProngStatusNeg1)) {
               continue;
             }
 
-            if (tracks.size() < 2) {
-              continue;
-            }
             // second loop over positive tracks
             // for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
             for (auto trackIndexPos2 = trackIndexPos1 + 1; trackIndexPos2 != groupedTrackIndices.end(); ++trackIndexPos2) {
@@ -1810,16 +1878,38 @@ struct HfTrackIndexSkimCreator {
                 continue;
               }
 
-              // retrieve the selection flag that corresponds to this collision
-              auto isSelProngPos2 = trackIndexPos2.isSelProng();
-              if (!TESTBIT(isSelProngPos2, CandidateType::Cand3Prong)) {
-                continue;
-              }
-
               auto trackParVarPos2 = getTrackParCov(trackPos2);
               std::array<float, 3> pVecTrackPos2{trackPos2.px(), trackPos2.py(), trackPos2.pz()};
               o2::gpu::gpustd::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
-              if (thisCollId != trackPos2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
+              bool propagatedPos2{false};
+
+              // first we build D*+ candidates if enabled
+              auto isSelProngPos2 = trackIndexPos2.isSelProng();
+              uint8_t isSelectedDstar{0};
+              if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (whichHypo2Prong[0] == 1 || whichHypo2Prong[0] == 3)) { // the 2-prong decay is compatible with a D0
+                if (TESTBIT(isSelProngPos2, CandidateType::CandDstar)) { // compatible with a soft pion
+                  if (thisCollId != trackPos2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
+                    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
+                    getPxPyPz(trackParVarPos2, pVecTrackPos2);
+                    propagatedPos2 = true;
+                  }
+                  uint8_t cutStatus{BIT(kNCutsDstar) - 1};
+                  isSelectedDstar = isDstarSelected(pVecTrackPos1, pVecTrackNeg1, pVecTrackPos2, cutStatus); // we do not compute the D* decay vertex at this stage because we are not interested in applying topological selections
+                  if (isSelectedDstar) {
+                    rowTrackIndexDstar(thisCollId, trackPos2.globalIndex(), rowTrackIndexProng2.lastIndex(), isSelectedDstar);
+                    if (debug) {
+                      rowDstarCutStatus(cutStatus);
+                    }
+                  }
+                }
+              }
+
+              // retrieve the selection flag that corresponds to this collision
+              if (!TESTBIT(isSelProngPos2, CandidateType::Cand3Prong) || !do3Prong || (!sel3ProngStatusPos1 || !sel3ProngStatusNeg1)) {
+                continue;
+              }
+
+              if (thisCollId != trackPos2.collisionId() && !propagatedPos2) { // this is not the "default" collision for this track, we have to re-propagate it
                 o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
                 getPxPyPz(trackParVarPos2, pVecTrackPos2);
               }
@@ -2029,16 +2119,38 @@ struct HfTrackIndexSkimCreator {
                 continue;
               }
 
-              // retrieve the selection flag that corresponds to this collision
-              auto isSelProngNeg2 = trackIndexNeg2.isSelProng();
-              if (!TESTBIT(isSelProngNeg2, CandidateType::Cand3Prong)) {
-                continue;
-              }
-
               auto trackParVarNeg2 = getTrackParCov(trackNeg2);
               std::array<float, 3> pVecTrackNeg2{trackNeg2.px(), trackNeg2.py(), trackNeg2.pz()};
               o2::gpu::gpustd::array<float, 2> dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
-              if (thisCollId != trackNeg2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
+              bool propagatedNeg2{false};
+
+              // first we build D*+ candidates if enabled
+              auto isSelProngNeg2 = trackIndexNeg2.isSelProng();
+              uint8_t isSelectedDstar{0};
+              if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (whichHypo2Prong[0] == 1 || whichHypo2Prong[0] == 3)) { // the 2-prong decay is compatible with a D0
+                if (TESTBIT(isSelProngNeg2, CandidateType::CandDstar)) { // compatible with a soft pion
+                  if (thisCollId != trackNeg2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
+                    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
+                    getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
+                    propagatedNeg2 = true;
+                  }
+                  uint8_t cutStatus{BIT(kNCutsDstar) - 1};
+                  isSelectedDstar = isDstarSelected(pVecTrackNeg1, pVecTrackPos1, pVecTrackNeg2, cutStatus); // we do not compute the D* decay vertex at this stage because we are not interested in applying topological selections
+                  if (isSelectedDstar) {
+                    rowTrackIndexDstar(thisCollId, trackNeg2.globalIndex(), rowTrackIndexProng2.lastIndex(), isSelectedDstar);
+                    if (debug) {
+                      rowDstarCutStatus(cutStatus);
+                    }
+                  }
+                }
+              }
+
+              // retrieve the selection flag that corresponds to this collision
+              if (!TESTBIT(isSelProngNeg2, CandidateType::Cand3Prong) || !do3Prong || (!sel3ProngStatusPos1 || !sel3ProngStatusNeg1)) {
+                continue;
+              }
+
+              if (thisCollId != trackNeg2.collisionId() && !propagatedNeg2) { // this is not the "default" collision for this track, we have to re-propagate it
                 o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
                 getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
               }
