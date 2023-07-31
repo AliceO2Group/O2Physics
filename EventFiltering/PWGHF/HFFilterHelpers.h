@@ -296,8 +296,8 @@ class HfFilterHelper
 
   // selections
   std::vector<double> mPtBinsTracks{};                        // vector of pT bins for single track cuts
-  LabeledArray<double> mCutsSingleTrackBeauty3Prong{};        // dca selections for the 3-prong b-hadron pion daughter 
-  LabeledArray<double> mCutsSingleTrackBeauty4Prong{};        // dca selections for the 4-prong b-hadron pion daughter 
+  LabeledArray<double> mCutsSingleTrackBeauty3Prong{};        // dca selections for the 3-prong b-hadron pion daughter
+  LabeledArray<double> mCutsSingleTrackBeauty4Prong{};        // dca selections for the 4-prong b-hadron pion daughter
   float mPtMinSoftPionForDstar{0.1};                          // minimum pt for the D*+ soft pion
   float mPtMinBeautyBachelor{0.5};                            // minimum pt for the b-hadron pion daughter
   float mPtMinProtonForFemto{0.8};                            // minimum pt for the proton for femto
@@ -315,8 +315,8 @@ class HfFilterHelper
   float mMaxNsigmaPrForLambda{4.};                            // maximum Nsigma TPC and TOF for protons in Lambda decays
   float mDeltaMassK0s{0.02};                                  // delta mass cut for K0S in charm excited decays
   float mDeltaMassLambda{0.01};                               // delta mass cut for Lambda in charm excited decays
-  float mMinPtXiBachelor{0.1};                                // minimum pt for Xi bachelor            
-  float mDeltaMassXi{0.01};                                   // delta mass cut for Xi in Xic/Omegac decays 
+  float mMinPtXiBachelor{0.1};                                // minimum pt for Xi bachelor
+  float mDeltaMassXi{0.01};                                   // delta mass cut for Xi in Xic/Omegac decays
   float mDeltaMassLambdaFromXi{0.01};                         // delta mass cut for Lambda <- Xi in Xic/Omegac decays
   float mCosPaXi{0.99};                                       // minimum cosp for Xi in Xic/Omegac decays
   float mCosPaLambdaFromXi{0.99};                             // minimum cosp for Xi in Xic/Omegac decays
@@ -328,7 +328,7 @@ class HfFilterHelper
   float mNSigmaTofPiCharmBaryonBachelor{3.};                  // maximum Nsigma TOF for pions in Xic/Omegac decays
 
   // PID recalibrations
-  int mTpcPidCalibrationOption{0};                        // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation) 
+  int mTpcPidCalibrationOption{0};                        // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
   std::array<TH3F*, 4> mHistMapPiPr{};                    // Map for TPC PID postcalibrations for pions and protons
   std::array<std::vector<double>, 6> mBetheBlochPiKaPr{}; // Bethe-Bloch parametrisations for pions, antipions, kaons, antikaons, protons, antiprotons in TPC
 };
@@ -1230,7 +1230,7 @@ inline std::array<T, 3> HfFilterHelper::predictONNX(std::vector<T>& inputFeature
 /// \param ccdbPaths  are the paths on CCDB for pions, antipions, kaons, antikaons, protons, antiprotons
 inline void HfFilterHelper::setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 6>& ccdbPaths)
 {
-  for (int iSpecie{0u}; iSpecie<6; ++iSpecie) {
+  for (int iSpecie{0u}; iSpecie < 6; ++iSpecie) {
     std::map<std::string, std::string> metadata;
     auto hSpline = ccdbApi.retrieveFromTFileAny<TH1F>(ccdbPaths[iSpecie], metadata, bunchCrossing.timestamp());
 
@@ -1394,13 +1394,13 @@ inline float HfFilterHelper::getTPCPostCalib(const T& track, const int& pidSpeci
 
   if (pidSpecies == kKa) {
     tpcNSigma = track.tpcNSigmaKa();
-    iHist=0; // same as pions
+    iHist = 0; // same as pions
   } else if (pidSpecies == kPi) {
     tpcNSigma = track.tpcNSigmaPi();
-    iHist=0;
+    iHist = 0;
   } else if (pidSpecies == kPr) {
     tpcNSigma = track.tpcNSigmaPr();
-    iHist=2;
+    iHist = 2;
   } else {
     LOG(fatal) << "Wrong PID Species be selected, please check!";
   }
