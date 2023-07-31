@@ -1987,6 +1987,8 @@ DECLARE_SOA_TABLE(HfCandScMcGen, "AOD", "HFCANDSCMCGEN", //!
                   hf_cand_sigmac::FlagMcMatchGen,
                   hf_cand_sigmac::OriginMcGen);
 
+#undef HFCAND_COLUMNS
+
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
