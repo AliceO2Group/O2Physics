@@ -63,7 +63,7 @@ AxisSpec axisPoolBin = {9, 0., 9., "PoolBin"};
 // binning type
 std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
 // std::vector<double> zBins{VARIABLE_WIDTH, -10.0, 10.0};
-std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500.0, 5000.};
+std::vector<double> multBins{VARIABLE_WIDTH, 0., 500.0, 5000., 10000.};
 // std::vector<double> multBins{VARIABLE_WIDTH, 0., 500.0, 5000.};
 std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MCGen multiplicity is defined by counting primaries
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
