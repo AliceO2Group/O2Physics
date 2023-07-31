@@ -61,7 +61,7 @@ struct HfFilterPrepareMlSamples { // Main struct
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int currentRun = 0; // needed to detect if the run changed and trigger update of calibrations etc.
 
-  void init(InitContext&)
+  void init(o2::framework::InitContext&)
   {
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
@@ -112,8 +112,8 @@ struct HfFilterPrepareMlSamples { // Main struct
       auto pVec2Prong = RecoDecay::pVec(pVecPos, pVecNeg);
       auto pt2Prong = RecoDecay::pt(pVec2Prong);
 
-      auto invMassD0 = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massPi, massK});
-      auto invMassD0bar = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massK, massPi});
+      auto invMassD0 = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321)});
+      auto invMassD0bar = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
 
       int8_t sign = 0;
       int8_t flag = RecoDecay::OriginType::None;
@@ -179,22 +179,22 @@ struct HfFilterPrepareMlSamples { // Main struct
       auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
       auto pt3Prong = RecoDecay::pt(pVec3Prong);
 
-      auto invMassDplus = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massPi});
+      auto invMassDplus = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
 
-      auto invMassDsToKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massK, massK, massPi});
-      auto invMassDsToPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massK});
+      auto invMassDsToKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
+      auto invMassDsToPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(321)});
 
-      auto invMassLcToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massProton, massK, massPi});
-      auto invMassLcToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massProton});
+      auto invMassLcToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(2212), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
+      auto invMassLcToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(2212)});
 
-      auto invMassXicToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massProton, massK, massPi});
-      auto invMassXicToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massK, massProton});
+      auto invMassXicToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(2212), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
+      auto invMassXicToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(2212)});
 
       float deltaMassKKFirst = -1.f;
       float deltaMassKKSecond = -1.f;
       if (TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DsToKKPi)) {
-        deltaMassKKFirst = std::abs(RecoDecay::m(std::array{pVecFirst, pVecSecond}, std::array{massK, massK}) - massPhi);
-        deltaMassKKSecond = std::abs(RecoDecay::m(std::array{pVecThird, pVecSecond}, std::array{massK, massK}) - massPhi);
+        deltaMassKKFirst = std::abs(RecoDecay::m(std::array{pVecFirst, pVecSecond}, std::array{helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(321)}) - helper.mPdgDataBase->Mass(333));
+        deltaMassKKSecond = std::abs(RecoDecay::m(std::array{pVecThird, pVecSecond}, std::array{helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(321)}) - helper.mPdgDataBase->Mass(333));
       }
       int8_t sign = 0;
       int8_t flag = RecoDecay::OriginType::None;
