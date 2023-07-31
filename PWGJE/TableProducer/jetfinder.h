@@ -215,7 +215,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, float par
     if (particle.eta() < particleEtaMin || particle.eta() > particleEtaMax) {
       continue;
     }
-    if (particle.getGenStatusCode() != 1) { // CHECK : Does this exclude the HF hadron?
+    if (!particle.isPhysicalPrimary()) { // CHECK : Does this exclude the HF hadron?
       continue;
     }
     auto pdgParticle = pdg->GetParticle(particle.pdgCode());
