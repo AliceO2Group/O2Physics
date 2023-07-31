@@ -207,14 +207,31 @@ class HfFilterHelper
   void setPtBinsSingleTracks(std::vector<double> ptBins) { mPtBinsTracks = ptBins; }
   void setMinPtBeautyBachelor(float minPt) { mPtMinBeautyBachelor = minPt; }
   void setMinPtDstarSoftPion(float minPt) { mPtMinSoftPionForDstar = minPt; }
-  void setCutsSingleTrackBeauty(LabeledArray<double> cutsSingleTrack3P, LabeledArray<double> cutsSingleTrack4P) { mCutsSingleTrackBeauty3Prong = cutsSingleTrack3P; mCutsSingleTrackBeauty4Prong = cutsSingleTrack4P; }
+  void setCutsSingleTrackBeauty(LabeledArray<double> cutsSingleTrack3P, LabeledArray<double> cutsSingleTrack4P)
+  {
+    mCutsSingleTrackBeauty3Prong = cutsSingleTrack3P;
+    mCutsSingleTrackBeauty4Prong = cutsSingleTrack4P;
+  }
   void setMinPtProtonForFemto(float minPt) { mPtMinProtonForFemto = minPt; }
   void setNsigmaProtonCutsForFemto(std::array<float, 3> nSigmaCuts) { mNSigmaPrCutsForFemto = nSigmaCuts; }
-  void setNsigmaProtonCutsForCharmBaryons(float nSigmaTpc, float nSigmaTof) { mNSigmaTpcPrCutForCharmBaryons = nSigmaTpc; mNSigmaTofPrCutForCharmBaryons = nSigmaTof; }
-  void setNsigmaKaonCutsFor3Prongs(float nSigmaTpc, float nSigmaTof) { mNSigmaTpcKaCutFor3Prongs = nSigmaTpc; mNSigmaTofKaCutFor3Prongs = nSigmaTof; }
-  void setNsigmaPionKaonCutsForDzero(float nSigmaTpc, float nSigmaTof) { mNSigmaTpcPiKaCutForDzero = nSigmaTpc; mNSigmaTofPiKaCutForDzero = nSigmaTof; }
+  void setNsigmaProtonCutsForCharmBaryons(float nSigmaTpc, float nSigmaTof)
+  {
+    mNSigmaTpcPrCutForCharmBaryons = nSigmaTpc;
+    mNSigmaTofPrCutForCharmBaryons = nSigmaTof;
+  }
+  void setNsigmaKaonCutsFor3Prongs(float nSigmaTpc, float nSigmaTof)
+  {
+    mNSigmaTpcKaCutFor3Prongs = nSigmaTpc;
+    mNSigmaTofKaCutFor3Prongs = nSigmaTof;
+  }
+  void setNsigmaPionKaonCutsForDzero(float nSigmaTpc, float nSigmaTof)
+  {
+    mNSigmaTpcPiKaCutForDzero = nSigmaTpc;
+    mNSigmaTofPiKaCutForDzero = nSigmaTof;
+  }
   void setDeltaMassCharmHadForBeauty(float delta) { mDeltaMassCharmHadForBeauty = delta; }
-  void setV0Selections(float minGammaCosPa, float minK0sLambdaCosPa, float minK0sLambdaRadius, float nSigmaPrFromLambda, float deltaMassK0s, float deltaMassLambda) {
+  void setV0Selections(float minGammaCosPa, float minK0sLambdaCosPa, float minK0sLambdaRadius, float nSigmaPrFromLambda, float deltaMassK0s, float deltaMassLambda)
+  {
     mMinGammaCosinePa = minGammaCosPa;
     mMinK0sLambdaCosinePa = minK0sLambdaCosPa;
     mMinK0sLambdaRadius = minK0sLambdaRadius;
@@ -222,7 +239,8 @@ class HfFilterHelper
     mDeltaMassK0s = deltaMassK0s;
     mDeltaMassLambda = deltaMassLambda;
   }
-  void setXiSelections(float minPtXiBachelor, float deltaMassXi, float deltaMassLambda, float cosPaXi, float cosPaLambdaFromXi, float maxDcaxyXi, float nSigma) {
+  void setXiSelections(float minPtXiBachelor, float deltaMassXi, float deltaMassLambda, float cosPaXi, float cosPaLambdaFromXi, float maxDcaxyXi, float nSigma)
+  {
     mMinPtXiBachelor = minPtXiBachelor;
     mDeltaMassXi = deltaMassXi;
     mDeltaMassLambdaFromXi = deltaMassLambda;
@@ -233,7 +251,11 @@ class HfFilterHelper
   }
   void setCutsSingleTrackCharmBaryonBachelor(LabeledArray<double> cutsSingleTrack) { mCutsSingleTrackCharmBaryonBachelor = cutsSingleTrack; }
   void setMinPtCharmBaryonBachelor(float minPt) { mPtMinBeautyBachelor = minPt; }
-  void setNsigmaPiCutsForCharmBaryonBachelor(float nSigmaTpc, float nSigmaTof) { mNSigmaTpcPiCharmBaryonBachelor = nSigmaTpc; mNSigmaTofPiCharmBaryonBachelor = nSigmaTof; }
+  void setNsigmaPiCutsForCharmBaryonBachelor(float nSigmaTpc, float nSigmaTof)
+  {
+    mNSigmaTpcPiCharmBaryonBachelor = nSigmaTpc;
+    mNSigmaTofPiCharmBaryonBachelor = nSigmaTof;
+  }
 
   void setTpcPidCalibrationOption(int opt) { mTpcPidCalibrationOption = opt; }
 
@@ -1075,10 +1097,10 @@ inline int8_t HfFilterHelper::isBDTSelected(const T& scores, const U& thresholdB
     return retValue;
   }
   if (scores[1] > thresholdBDTScores.get(0u, 1u)) {
-    retValue |= BIT(1);//RecoDecay::OriginType::Prompt);
+    retValue |= BIT(RecoDecay::OriginType::Prompt);
   }
   if (scores[2] > thresholdBDTScores.get(0u, 2u)) {
-    retValue |= BIT(2);//RecoDecay::OriginType::NonPrompt);
+    retValue |= BIT(RecoDecay::OriginType::NonPrompt);
   }
 
   return retValue;
@@ -1404,7 +1426,7 @@ inline float HfFilterHelper::getTPCPostCalib(const T& track, const int& pidSpeci
   } else {
     LOG(fatal) << "Wrong PID Species be selected, please check!";
   }
-  if (!mHistMapPiPr[iHist] || !mHistMapPiPr[iHist+1]) {
+  if (!mHistMapPiPr[iHist] || !mHistMapPiPr[iHist + 1]) {
     LOGP(warn, "Postcalibration TPC PID histograms not set. Use default Nsigma values.");
   }
 
