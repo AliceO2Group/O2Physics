@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
+///
 /// \brief A task for Asynchronus Quality Control for Ultra-perimpheral and Diffraction (AQC-UD)
 /// \author Anisa Khatun, anisa.khatun@cern.ch
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
@@ -686,7 +686,7 @@ struct UDQC {
         }
         constexpr int index = n.value;
         registry.fill(HIST(hcFIT2s[index]), nMinBC, isDGcandidate * 1.);
-        registry.fill(HIST(hcRelBCs[index]), (float)bcnum);
+        registry.fill(HIST(hcRelBCs[index]), static_cast<float>(bcnum));
         FITlims[n] = 1000000.;
       });
     }
