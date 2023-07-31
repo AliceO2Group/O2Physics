@@ -63,7 +63,7 @@ AxisSpec axisPoolBin = {9, 0., 9., "PoolBin"};
 // binning type
 std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
 // std::vector<double> zBins{VARIABLE_WIDTH, -10.0, 10.0};
-std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500.0, 5000.};
+std::vector<double> multBins{VARIABLE_WIDTH, 0., 500.0, 5000., 10000.};
 // std::vector<double> multBins{VARIABLE_WIDTH, 0., 500.0, 5000.};
 std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MCGen multiplicity is defined by counting primaries
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
@@ -161,6 +161,7 @@ struct HfCorrelatorDsHadrons {
   Produces<aod::DsHadronGenInfo> entryDsHadronGenInfo;
 
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
+  Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
   Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying D-meson efficiency weights"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
@@ -177,7 +178,7 @@ struct HfCorrelatorDsHadrons {
 
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
   Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
-  Filter trackFilter = (aod::track::eta < std::abs(etaTrackMax)) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (aod::track::dcaXY < std::abs(dcaXYTrackMax)) && (aod::track::dcaZ < std::abs(dcaZTrackMax));
+  Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
 
   using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;      // collisionFilter applied
   using SelCollisionsWithDsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;              // collisionFilter applied
@@ -692,7 +693,7 @@ struct HfCorrelatorDsHadrons {
     }
 
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<soa::Join<aod::Collisions, aod::Mults>, CandDsData, MyTracksData, BinningType> pairData{corrBinning, 5, -1, collisions, tracksTuple, &cache};
+    Pair<soa::Join<aod::Collisions, aod::Mults>, CandDsData, MyTracksData, BinningType> pairData{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     for (auto& [c1, tracks1, c2, tracks2] : pairData) {
       if (tracks1.size() == 0) {
@@ -762,7 +763,7 @@ struct HfCorrelatorDsHadrons {
       }
     }
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelCollisionsWithDs, CandDsMcReco, MyTracksData, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple, &cache};
+    Pair<SelCollisionsWithDs, CandDsMcReco, MyTracksData, BinningType> pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     bool isDsPrompt = false;
     bool isDsSignal = false;
