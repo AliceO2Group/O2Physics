@@ -499,7 +499,7 @@ struct hypertriton3bodyFinder {
         float massV0LambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
         float massV0AntiLambdaHyp = RecoDecay::m(array{array{pP[0], pP[1], pP[2]}, array{pN[0], pN[1], pN[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
         float massMargin = 20 * (0.001 * (1. + 0.5 * ptV0)) + 0.07;
-        if (massV0LambdaHyp - o2::constants::MassLambda > massMargin && massV0AntiLambdaHyp - o2::constants::MassLambda > massMargin) {
+        if (massV0LambdaHyp - o2::constants::physics::MassLambda > massMargin && massV0AntiLambdaHyp - o2::constants::physics::MassLambda > massMargin) {
           continue;
         }
         registry.fill(HIST("hV0Counter"), 7.5);
