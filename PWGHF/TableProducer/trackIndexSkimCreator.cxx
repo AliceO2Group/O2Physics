@@ -319,7 +319,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   // single-track cuts
   static const int nCuts = 4;
   // array of 2-prong and 3-prong cuts
-  std::array<LabeledArray<double>, 4> cutsSingleTrack;
+  std::array<LabeledArray<double>, CandidateType::NCandidateTypes> cutsSingleTrack;
 
   // QA of PV refit
   ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};

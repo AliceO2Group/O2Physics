@@ -91,13 +91,21 @@ constexpr double binsPtTrack[nBinsPtTrack + 1] = {
   1000.0};
 auto vecBinsPtTrack = std::vector<double>{binsPtTrack, binsPtTrack + nBinsPtTrack + 1};
 
-// default values for the cuts
+// default values for the cuts of displaced tracks
 constexpr double cutsTrack[nBinsPtTrack][nCutVarsTrack] = {{0.0025, 10.},  /* 0   < pt < 0.5 */
                                                            {0.0025, 10.},  /* 0.5 < pt < 1 */
                                                            {0.0025, 10.},  /* 1   < pt < 1.5 */
                                                            {0.0025, 10.},  /* 1.5 < pt < 2 */
                                                            {0.0000, 10.},  /* 2   < pt < 3 */
                                                            {0.0000, 10.}}; /* 3   < pt < 1000 */
+
+// default values for the cuts of primary tracks (e.g. D* soft pions)
+constexpr double cutsTrackPrimary[nBinsPtTrack][nCutVarsTrack] = {{0.0000, 2.},  /* 0   < pt < 0.5 */
+                                                                  {0.0000, 2.},  /* 0.5 < pt < 1 */
+                                                                  {0.0000, 2.},  /* 1   < pt < 1.5 */
+                                                                  {0.0000, 2.},  /* 1.5 < pt < 2 */
+                                                                  {0.0000, 2.},  /* 2   < pt < 3 */
+                                                                  {0.0000, 2.}}; /* 3   < pt < 1000 */
 
 // row labels
 static const std::vector<std::string> labelsPtTrack{};
