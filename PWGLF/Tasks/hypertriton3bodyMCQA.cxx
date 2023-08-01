@@ -361,7 +361,7 @@ struct hypertriton3bodyAnalysisMc {
   // PROCESS_SWITCH(hypertriton3bodyAnalysis, processRun3, "Process Run 3 data", true);
 };
 
-//check vtx3body with mclabels
+// check vtx3body with mclabels
 struct hypertriton3bodyLabelCheck {
   HistogramRegistry registry{
     "registry",
@@ -373,7 +373,8 @@ struct hypertriton3bodyLabelCheck {
     },
   };
 
-  void init(InitContext const&) {
+  void init(InitContext const&)
+  {
     registry.get<TH1>(HIST("hLabeledVtxCounter"))->GetXaxis()->SetBinLabel(1, "Readin");
     registry.get<TH1>(HIST("hLabeledVtxCounter"))->GetXaxis()->SetBinLabel(2, "TrueMCH3L");
   }
@@ -394,8 +395,7 @@ struct hypertriton3bodyLabelCheck {
         if (mcparticle.pdgCode() > 0) {
           registry.fill(HIST("hMassTruesH3L"), vtx.mHypertriton());
           registry.fill(HIST("hMassTruesH3LMatter"), vtx.mHypertriton());
-        }
-        else {
+        } else {
           registry.fill(HIST("hMassTruesH3L"), vtx.mAntiHypertriton());
           registry.fill(HIST("hMassTruesH3LAntiMatter"), vtx.mAntiHypertriton());
         }
