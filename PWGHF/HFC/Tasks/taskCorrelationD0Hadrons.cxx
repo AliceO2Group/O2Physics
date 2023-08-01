@@ -111,46 +111,77 @@ struct HfTaskCorrelationD0Hadrons {
     {{"hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
      {"hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
      {"hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
-     {"hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
+     {"hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
+     {"hDeltaEtaPtIntSignalRegionSoftPi", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+     {"hDeltaPhiPtIntSignalRegionSoftPi", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
+     {"hCorrel2DPtIntSignalRegionSoftPi", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
+     {"hCorrel2DVsPtSignalRegionSoftPi", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
      {"hDeltaEtaPtIntSidebands", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
      {"hDeltaPhiPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
      {"hCorrel2DPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
-     {"hCorrel2DVsPtSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
-     {"hCorrel2DVsPtRecSig", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}}}},
-     {"hCorrel2DVsPtRecBg", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}}}},
+     {"hCorrel2DVsPtSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
+     {"hDeltaEtaPtIntSidebandsSoftPi", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+     {"hDeltaPhiPtIntSidebandsSoftPi", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
+     {"hCorrel2DPtIntSidebandsSoftPi", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
+     {"hCorrel2DVsPtSidebandsSoftPi", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
+     {"hCorrel2DVsPtRecSig", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
+     {"hCorrel2DVsPtRecBg", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
      // correlation histograms for MCRec for signal only
-     {"hCorrel2DVsPtSignalRegionRecSig", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}}}},
+     {"hCorrel2DVsPtSignalRegionRecSig", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
+     {"hCorrel2DVsPtSignalRegionSoftPiRecSig", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
      {"hCorrel2DPtIntSignalRegionRecSig", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
+     {"hCorrel2DPtIntSignalRegionSoftPiRecSig", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
      {"hDeltaEtaPtIntSignalRegionRecSig", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+     {"hDeltaEtaPtIntSignalRegionSoftPiRecSig", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
      {"hDeltaPhiPtIntSignalRegionRecSig", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
-     {"hCorrel2DVsPtSidebandsRecSig", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}}}},
+     {"hDeltaPhiPtIntSignalRegionSoftPiRecSig", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
+     {"hCorrel2DVsPtSidebandsRecSig", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
+     {"hCorrel2DVsPtSidebandsSoftPiRecSig", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
      {"hCorrel2DPtIntSidebandsRecSig", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
+     {"hCorrel2DPtIntSidebandsSoftPiRecSig", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
      {"hDeltaEtaPtIntSidebandsRecSig", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+     {"hDeltaEtaPtIntSidebandsSoftPiRecSig", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
      {"hDeltaPhiPtIntSidebandsRecSig", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
+     {"hDeltaPhiPtIntSidebandsSoftPiRecSig", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
      // correlation histograms for MCRec for reflection candidates only
-     {"hCorrel2DVsPtSignalRegionRecRef", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}}}},
+     {"hCorrel2DVsPtSignalRegionRecRef", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
      {"hCorrel2DPtIntSignalRegionRecRef", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
      {"hDeltaEtaPtIntSignalRegionRecRef", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
      {"hDeltaPhiPtIntSignalRegionRecRef", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
-     {"hCorrel2DVsPtSidebandsRecRef", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}}}},
+     {"hCorrel2DVsPtSidebandsRecRef", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
      {"hCorrel2DPtIntSidebandsRecRef", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
      {"hDeltaEtaPtIntSidebandsRecRef", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
      {"hDeltaPhiPtIntSidebandsRecRef", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
+     {"hCorrel2DVsPtSignalRegionSoftPiRecRef", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
+     {"hCorrel2DPtIntSignalRegionSoftPiRecRef", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
+     {"hDeltaEtaPtIntSignalRegionSoftPiRecRef", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+     {"hDeltaPhiPtIntSignalRegionSoftPiRecRef", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
+     {"hCorrel2DVsPtSidebandsSoftPiRecRef", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
+     {"hCorrel2DPtIntSidebandsSoftPiRecRef", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
+     {"hDeltaEtaPtIntSidebandsSoftPiRecRef", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+     {"hDeltaPhiPtIntSidebandsSoftPiRecRef", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
      // correlation histograms for MCRec for background candidates only
-     {"hCorrel2DVsPtSignalRegionRecBg", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}}}},
+     {"hCorrel2DVsPtSignalRegionRecBg", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
      {"hCorrel2DPtIntSignalRegionRecBg", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
      {"hDeltaEtaPtIntSignalRegionRecBg", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
      {"hDeltaPhiPtIntSignalRegionRecBg", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
-     {"hCorrel2DVsPtSidebandsRecBg", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}}}},
+     {"hCorrel2DVsPtSidebandsRecBg", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
      {"hCorrel2DPtIntSidebandsRecBg", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
      {"hDeltaEtaPtIntSidebandsRecBg", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
      {"hDeltaPhiPtIntSidebandsRecBg", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
+     {"hCorrel2DVsPtSignalRegionSoftPiRecBg", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
+     {"hCorrel2DPtIntSignalRegionSoftPiRecBg", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
+     {"hDeltaEtaPtIntSignalRegionSoftPiRecBg", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+     {"hDeltaPhiPtIntSignalRegionSoftPiRecBg", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
+     {"hCorrel2DVsPtSidebandsSoftPiRecBg", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}},
+     {"hCorrel2DPtIntSidebandsSoftPiRecBg", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
+     {"hDeltaEtaPtIntSidebandsSoftPiRecBg", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+     {"hDeltaPhiPtIntSidebandsSoftPiRecBg", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}},
      // correlation histograms for MCGen
-     {"hCorrel2DVsPtGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}}}}, // note: axes 3 and 4 (the pT) are updated in the init(),
+     {"hCorrel2DVsPtGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {nEtaBinsCorrelations, etaMinCorrelations, etaMaxCorrelations}, {10, 0., 10.}, {11, 0., 11.}, {9, 0., 9.}}}}, // note: axes 3 and 4 (the pT) are updated in the init(),
      {"hCorrel2DPtIntGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}, {200, -10., 10.}}}},
      {"hDeltaEtaPtIntGen", stringMCParticles + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
      {"hDeltaPhiPtIntGen", stringMCParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {{nPhiBinsCorrelations, phiMinCorrelations, phiMaxCorrelations}}}}
-
     }};
 
   void init(o2::framework::InitContext&)
@@ -161,18 +192,34 @@ struct HfTaskCorrelationD0Hadrons {
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebands"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegion"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebands"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionSoftPi"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsSoftPi"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionSoftPi"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsSoftPi"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionRecSig"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionSoftPiRecSig"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRecSig"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsSoftPiRecSig"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionRecSig"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionSoftPiRecSig"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRecSig"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsSoftPiRecSig"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionRecRef"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRecRef"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionRecRef"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRecRef"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionSoftPiRecRef"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsSoftPiRecRef"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionSoftPiRecRef"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsSoftPiRecRef"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionRecBg"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRecBg"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionRecBg"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsRecBg"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionSoftPiRecBg"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsSoftPiRecBg"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionSoftPiRecBg"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsSoftPiRecBg"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtRecSig"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtRecSig"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtRecBg"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
@@ -196,6 +243,7 @@ struct HfTaskCorrelationD0Hadrons {
       int signalStatus = pairEntry.signalStatus();
       int effBinD = o2::analysis::findBin(binsEfficiency, ptD);
       int ptBinD = o2::analysis::findBin(binsCorrelations, ptD);
+      int poolBin = pairEntry.poolBin();
 
       // reject entries outside pT ranges of interest
       if (ptBinD < 0 || effBinD < 0) {
@@ -217,38 +265,74 @@ struct HfTaskCorrelationD0Hadrons {
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
       if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && ((signalStatus == 1) || (signalStatus == 3))) {
         // in signal region
-        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegion"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
       }
+      
+      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && ((signalStatus == 11) || (signalStatus == 13))) {
+        // in signal region, fills for soft pion only in ME
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DPtIntSignalRegionSoftPi"), deltaPhi, deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSignalRegionSoftPi"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSignalRegionSoftPi"), deltaPhi, efficiencyWeight);
+      }
 
       if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (signalStatus >= 2)) {
         // in signal region
-        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegion"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+      }
+      
+      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (signalStatus >= 12)) {
+        // in signal region, fills for soft pion only in ME
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DPtIntSignalRegionSoftPi"), deltaPhi, deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSignalRegionSoftPi"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSignalRegionSoftPi"), deltaPhi, efficiencyWeight);
       }
 
       if (((massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) ||
            (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD))) &&
           ((signalStatus == 1) || (signalStatus == 3))) {
         // in sideband region
-        registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebands"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebands"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebands"), deltaPhi, efficiencyWeight);
+      }
+      
+      if (((massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) ||
+           (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD))) &&
+          ((signalStatus == 11) || (signalStatus == 13))) {
+        // in sideband region, fills for soft pion only in ME
+        registry.fill(HIST("hCorrel2DVsPtSidebandsSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DPtIntSidebandsSoftPi"), deltaPhi, deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSidebandsSoftPi"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSidebandsSoftPi"), deltaPhi, efficiencyWeight);
       }
 
       if (((massDbar > sidebandLeftOuter->at(ptBinD) && massDbar < sidebandLeftInner->at(ptBinD)) ||
            (massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD))) &&
           (signalStatus >= 2)) {
         // in sideband region
-        registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebands"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebands"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebands"), deltaPhi, efficiencyWeight);
+      }
+      
+      if (((massDbar > sidebandLeftOuter->at(ptBinD) && massDbar < sidebandLeftInner->at(ptBinD)) ||
+           (massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD))) &&
+          (signalStatus >= 12)) {
+        // in sideband region, fills for soft pion only in ME
+        registry.fill(HIST("hCorrel2DVsPtSidebandsSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DPtIntSidebandsSoftPi"), deltaPhi, deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSidebandsSoftPi"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSidebandsSoftPi"), deltaPhi, efficiencyWeight);
       }
     }
   }
@@ -265,8 +349,8 @@ struct HfTaskCorrelationD0Hadrons {
       double massD = pairEntry.mD();
       double massDbar = pairEntry.mDbar();
       int signalStatus = pairEntry.signalStatus();
-
       int ptBinD = o2::analysis::findBin(binsCorrelations, ptD);
+      int poolBin = pairEntry.poolBin();
 
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
@@ -284,27 +368,35 @@ struct HfTaskCorrelationD0Hadrons {
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
 
       // ---------------------- Fill plots for signal case, D0 ->1, D0bar ->8 ---------------------------------------------
-      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && (signalStatus == 1)) {
-        // in signal region
-        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecSig"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && (TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0Sig))) {
+        // in signal region, performs operation (signalStatus & 1), SE-> softpi removed, ME-> inclusive
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecSig"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionRecSig"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecSig"), deltaPhi, efficiencyWeight);
       }
 
-      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (signalStatus == 8)) {
-        // in signal region
-        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecSig"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0barSig))) {
+        // in signal region, performs operation (signalStatus & 8), SE-> softpi removed, ME-> inclusive
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecSig"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionRecSig"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecSig"), deltaPhi, efficiencyWeight);
+      }
+      
+      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (signalStatus >= BIT(o2::aod::hf_correlation_d0_hadron::kSoftPi))) {
+        // in signal region, fills for soft pion only for event mixing, performs operation (signalStatus >= 64)
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPiRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DPtIntSignalRegionSoftPiRecSig"), deltaPhi, deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSignalRegionSoftPiRecSig"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSignalRegionSoftPiRecSig"), deltaPhi, efficiencyWeight);
       }
 
       if ((((massD > sidebandLeftOuter->at(ptBinD)) && (massD < sidebandLeftInner->at(ptBinD))) ||
            ((massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)))) &&
-          (signalStatus == 1)) {
-        // in sideband region
-        registry.fill(HIST("hCorrel2DVsPtSidebandsRecSig"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+          ((TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0Sig)))) {
+        // in sideband region, performs operation (signalStatus & 1), SE-> softpi removed, ME-> inclusive
+        registry.fill(HIST("hCorrel2DVsPtSidebandsRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsRecSig"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsRecSig"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandsRecSig"), deltaPhi, efficiencyWeight);
@@ -312,36 +404,54 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((((massDbar > sidebandLeftOuter->at(ptBinD)) && (massDbar < sidebandLeftInner->at(ptBinD))) ||
            ((massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD)))) &&
-          (signalStatus == 8)) {
-        // in sideband region
-        registry.fill(HIST("hCorrel2DVsPtSidebandsRecSig"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+          (TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0barSig))) {
+        // in sideband region, performs operation (signalStatus & 8), SE-> softpi removed, ME-> inclusive
+        registry.fill(HIST("hCorrel2DVsPtSidebandsRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsRecSig"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsRecSig"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandsRecSig"), deltaPhi, efficiencyWeight);
+      }
+      
+      if ((((massDbar > sidebandLeftOuter->at(ptBinD)) && (massDbar < sidebandLeftInner->at(ptBinD))) ||
+           ((massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD)))) &&
+          (signalStatus >= BIT(o2::aod::hf_correlation_d0_hadron::kSoftPi))) {
+        // in sideband region, fills for soft pion only for event mixing, performs operation (signalStatus >= 64)
+        registry.fill(HIST("hCorrel2DVsPtSidebandsSoftPiRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DPtIntSidebandsSoftPiRecSig"), deltaPhi, deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSidebandsSoftPiRecSig"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSidebandsSoftPiRecSig"), deltaPhi, efficiencyWeight);
       }
 
       // ---------------------- Fill plots for reflection case, D0 ->2, D0bar ->16 ---------------------------------------------
-      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && (signalStatus == 2)) {
-        // in signal region
+      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0Ref)) {
+        // in signal region, performs operation (signalStatus & 2), SE-> softpi removed, ME-> inclusive
         registry.fill(HIST("hCorrel2DVsPtSignalRegionRecRef"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecRef"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionRecRef"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecRef"), deltaPhi, efficiencyWeight);
       }
 
-      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (signalStatus == 16)) {
-        // in signal region
-        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecRef"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0barRef)) {
+        // in signal region, performs operation (signalStatus & 16), SE-> softpi removed, ME-> inclusive
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecRef"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecRef"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionRecRef"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecRef"), deltaPhi, efficiencyWeight);
+      }
+      
+      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (signalStatus >= BIT(o2::aod::hf_correlation_d0_hadron::kSoftPi))) {
+        // in signal region, fills for soft pion only for event mixing, performs operation (signalStatus >= 64)
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPiRecRef"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DPtIntSignalRegionSoftPiRecRef"), deltaPhi, deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSignalRegionSoftPiRecRef"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSignalRegionSoftPiRecRef"), deltaPhi, efficiencyWeight);
       }
 
       if ((((massD > sidebandLeftOuter->at(ptBinD)) && (massD < sidebandLeftInner->at(ptBinD))) ||
            ((massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)))) &&
-          (signalStatus == 2)) {
-        // in sideband region
-        registry.fill(HIST("hCorrel2DVsPtSidebandsRecRef"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+          TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0Ref)) {
+        // in sideband region, performs operation (signalStatus & 2), SE-> softpi removed, ME-> inclusive
+        registry.fill(HIST("hCorrel2DVsPtSidebandsRecRef"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsRecRef"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsRecRef"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandsRecRef"), deltaPhi, efficiencyWeight);
@@ -349,36 +459,54 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((((massDbar > sidebandLeftOuter->at(ptBinD)) && (massDbar < sidebandLeftInner->at(ptBinD))) ||
            ((massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD)))) &&
-          (signalStatus == 16)) {
-        // in sideband region
-        registry.fill(HIST("hCorrel2DVsPtSidebandsRecRef"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+          TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0barRef)) {
+        // in sideband region, performs operation (signalStatus & 16), SE-> softpi removed, ME-> inclusive
+        registry.fill(HIST("hCorrel2DVsPtSidebandsRecRef"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsRecRef"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsRecRef"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandsRecRef"), deltaPhi, efficiencyWeight);
+      }
+      
+      if ((((massDbar > sidebandLeftOuter->at(ptBinD)) && (massDbar < sidebandLeftInner->at(ptBinD))) ||
+           ((massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD)))) &&
+          (signalStatus >= BIT(o2::aod::hf_correlation_d0_hadron::kSoftPi))) {
+        // in sideband region, fills for soft pion only for event mixing, performs operation (signalStatus >= 64)
+        registry.fill(HIST("hCorrel2DVsPtSidebandsSoftPiRecRef"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DPtIntSidebandsSoftPiRecRef"), deltaPhi, deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSidebandsSoftPiRecRef"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSidebandsSoftPiRecRef"), deltaPhi, efficiencyWeight);
       }
 
       // ---------------------- Fill plots for background case, D0 ->4, D0bar ->32 ---------------------------------------------
-      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && (signalStatus == 4)) {
-        // in signal region
-        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecBg"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+      if ((massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) && TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0Bg)) {
+        // in signal region, performs operation (signalStatus & 4), SE-> softpi removed, ME-> inclusive
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecBg"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecBg"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionRecBg"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecBg"), deltaPhi, efficiencyWeight);
       }
 
-      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (signalStatus == 32)) {
-        // in signal region
-        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecBg"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0barBg)) {
+        // in signal region, performs operation (signalStatus & 32), SE-> softpi removed, ME-> inclusive
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecBg"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecBg"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionRecBg"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecBg"), deltaPhi, efficiencyWeight);
+      }
+      
+      if ((massDbar > signalRegionInner->at(ptBinD) && massDbar < signalRegionOuter->at(ptBinD)) && (signalStatus >= BIT(o2::aod::hf_correlation_d0_hadron::kSoftPi))) {
+        // in signal region, fills for soft pion only for event mixing, performs operation (signalStatus >= 64)
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPiRecBg"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DPtIntSignalRegionSoftPiRecBg"), deltaPhi, deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSignalRegionSoftPiRecBg"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSignalRegionSoftPiRecBg"), deltaPhi, efficiencyWeight);
       }
 
       if ((((massD > sidebandLeftOuter->at(ptBinD)) && (massD < sidebandLeftInner->at(ptBinD))) ||
            ((massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)))) &&
-          (signalStatus == 4)) {
-        // in sideband region
-        registry.fill(HIST("hCorrel2DVsPtSidebandsRecBg"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+          TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0Bg)) {
+        // in sideband region, performs operation (signalStatus & 4), SE-> softpi removed, ME-> inclusive
+        registry.fill(HIST("hCorrel2DVsPtSidebandsRecBg"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsRecBg"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsRecBg"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandsRecBg"), deltaPhi, efficiencyWeight);
@@ -386,12 +514,22 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((((massDbar > sidebandLeftOuter->at(ptBinD)) && (massDbar < sidebandLeftInner->at(ptBinD))) ||
            ((massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD)))) &&
-          (signalStatus == 32)) {
-        // in sideband region
-        registry.fill(HIST("hCorrel2DVsPtSidebandsRecBg"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+          TESTBIT(signalStatus,o2::aod::hf_correlation_d0_hadron::kD0barBg)) {
+        // in sideband region, performs operation (signalStatus & 32), SE-> softpi removed, ME-> inclusive
+        registry.fill(HIST("hCorrel2DVsPtSidebandsRecBg"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsRecBg"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsRecBg"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandsRecBg"), deltaPhi, efficiencyWeight);
+      }
+      
+      if ((((massDbar > sidebandLeftOuter->at(ptBinD)) && (massDbar < sidebandLeftInner->at(ptBinD))) ||
+           ((massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD)))) &&
+          (signalStatus >= BIT(o2::aod::hf_correlation_d0_hadron::kSoftPi))) {
+        // in sideband region, fills for soft pion only for event mixing, performs operation (signalStatus >= 64)
+        registry.fill(HIST("hCorrel2DVsPtSidebandsSoftPiRecBg"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DPtIntSidebandsSoftPiRecBg"), deltaPhi, deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSidebandsSoftPiRecBg"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSidebandsSoftPiRecBg"), deltaPhi, efficiencyWeight);
       }
     }
   }
@@ -406,6 +544,7 @@ struct HfTaskCorrelationD0Hadrons {
       double deltaEta = pairEntry.deltaEta();
       double ptD = pairEntry.ptD();
       double ptHadron = pairEntry.ptHadron();
+      int poolBin = pairEntry.poolBin();
       // reject entries outside pT ranges of interest
       if (o2::analysis::findBin(binsCorrelations, ptD) < 0) {
         continue;
@@ -414,7 +553,7 @@ struct HfTaskCorrelationD0Hadrons {
         ptHadron = ptHadronMax + 0.5;
       }
 
-      registry.fill(HIST("hCorrel2DVsPtGen"), deltaPhi, deltaEta, ptD, ptHadron);
+      registry.fill(HIST("hCorrel2DVsPtGen"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
       registry.fill(HIST("hCorrel2DPtIntGen"), deltaPhi, deltaEta);
       registry.fill(HIST("hDeltaEtaPtIntGen"), deltaEta);
       registry.fill(HIST("hDeltaPhiPtIntGen"), deltaPhi);
