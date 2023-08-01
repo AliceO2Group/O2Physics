@@ -908,6 +908,7 @@ struct HfTrackIndexSkimCreator {
   Produces<aod::HfPvRefit3Prong> rowProng3PVrefit;
   Produces<aod::HfDstars> rowTrackIndexDstar;
   Produces<aod::HfCutStatusDstar> rowDstarCutStatus;
+  Produces<aod::HfPvRefitDstar> rowDstarPVrefit;
 
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<int> do3Prong{"do3Prong", 0, "do 3 prong"};
@@ -1061,6 +1062,7 @@ struct HfTrackIndexSkimCreator {
       registry.add("hMassLcToPKPi", "#Lambda_{c}^{#plus} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
       registry.add("hMassDsToKKPi", "D_{s}^{#plus} candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
       registry.add("hMassXicToPKPi", "#Xi_{c}^{#plus} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
+      registry.add("hMassDstarToD0Pi", "D^{*#plus} candidates;inv. mass (K #pi #pi) - mass (K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 0.25}}});
 
       // needed for PV refitting
       if (doprocess2And3ProngsWithPvRefit) {
@@ -1360,9 +1362,10 @@ struct HfTrackIndexSkimCreator {
   /// \param pVecTrack1 is the momentum array of the second daughter track (opposite charge)
   /// \param pVecTrack2 is the momentum array of the third daughter track (same charge)
   /// \param cutStatus is the cut status (filled only in case of debug)
+  /// \param deltaMass is the M(Kpipi) - M(Kpi) value to be filled in the control histogram
   /// \return a bitmap with selection outcome
-  template <typename T1>
-  uint8_t isDstarSelected(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, int8_t cutStatus)
+  template <typename T1, typename T2>
+  uint8_t isDstarSelected(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, int8_t cutStatus, T2& deltaMass)
   {
     uint8_t isSelected{1};
     /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
@@ -1405,7 +1408,8 @@ struct HfTrackIndexSkimCreator {
     // D*+ mass
     double maxDeltaMass = cutsDstarToD0Pi->get(pTBin, deltaMassIndex);
     double invMassDstar = RecoDecay::m(arrMom, std::array{211, 321, 211});
-    if (invMassDstar - invMassD0 > maxDeltaMass) {
+    deltaMass = invMassDstar - invMassD0;
+    if (deltaMass > maxDeltaMass) {
       isSelected = 0;
       if (debug) {
         CLRBIT(cutStatus, 1);
@@ -1894,55 +1898,49 @@ struct HfTrackIndexSkimCreator {
                     propagatedPos2 = true;
                   }
                   uint8_t cutStatus{BIT(kNCutsDstar) - 1};
-                  isSelectedDstar = isDstarSelected(pVecTrackPos1, pVecTrackNeg1, pVecTrackPos2, cutStatus); // we do not compute the D* decay vertex at this stage because we are not interested in applying topological selections
+                  float deltaMass{-1.};
+                  isSelectedDstar = isDstarSelected(pVecTrackPos1, pVecTrackNeg1, pVecTrackPos2, cutStatus, deltaMass); // we do not compute the D* decay vertex at this stage because we are not interested in applying topological selections
                   if (isSelectedDstar) {
-                    rowTrackIndexDstar(thisCollId, trackPos2.globalIndex(), rowTrackIndexProng2.lastIndex(), isSelectedDstar);
-                    if (debug) {
-                      rowDstarCutStatus(cutStatus);
+                    rowTrackIndexDstar(thisCollId, trackPos2.globalIndex(), rowTrackIndexProng2.lastIndex());
+                    if (fillHistograms) {
+                      registry.fill(HIST("hMassDstarToD0Pi"), deltaMass);
+                    }
+                  }
+                  if (debug) {
+                    rowDstarCutStatus(cutStatus);
+                  }
+                }
+              }
+
+              // preselection of 3-prong candidates
+              int isSelected3ProngCand = n3ProngBit;
+              if (do3Prong && TESTBIT(isSelProngPos2, CandidateType::Cand3Prong) && (sel3ProngStatusPos1 && sel3ProngStatusNeg1)) {
+                if (thisCollId != trackPos2.collisionId() && !propagatedPos2) { // this is not the "default" collision for this track and we still did not re-propagate it, we have to re-propagate it
+                  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
+                  getPxPyPz(trackParVarPos2, pVecTrackPos2);
+                }
+
+                if (debug) {
+                  for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
+                    for (int iCut = 0; iCut < kNCuts3Prong; iCut++) {
+                      cutStatus3Prong[iDecay3P][iCut] = true;
                     }
                   }
                 }
-              }
 
-              // retrieve the selection flag that corresponds to this collision
-              if (!TESTBIT(isSelProngPos2, CandidateType::Cand3Prong) || !do3Prong || (!sel3ProngStatusPos1 || !sel3ProngStatusNeg1)) {
-                continue;
-              }
-
-              if (thisCollId != trackPos2.collisionId() && !propagatedPos2) { // this is not the "default" collision for this track, we have to re-propagate it
-                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
-                getPxPyPz(trackParVarPos2, pVecTrackPos2);
-              }
-
-              int isSelected3ProngCand = n3ProngBit;
-
-              if (debug) {
-                for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
-                  for (int iCut = 0; iCut < kNCuts3Prong; iCut++) {
-                    cutStatus3Prong[iDecay3P][iCut] = true;
-                  }
+                // 3-prong preselections
+                is3ProngPreselected(pVecTrackPos1, pVecTrackNeg1, pVecTrackPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+                if (!debug && isSelected3ProngCand == 0) {
+                  continue;
                 }
+              } else {
+                isSelected3ProngCand = 0;
               }
 
-              // 3-prong preselections
-              is3ProngPreselected(pVecTrackPos1, pVecTrackNeg1, pVecTrackPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
-              if (!debug && isSelected3ProngCand == 0) {
+              // if we did not preselected any D* or 3-prong candidate, continue
+              if (!debug && (isSelectedDstar == 0 && isSelected3ProngCand == 0)) {
                 continue;
               }
-
-              // reconstruct the 3-prong secondary vertex
-              if (df3.process(trackParVarPos1, trackParVarNeg1, trackParVarPos2) == 0) {
-                continue;
-              }
-              // get secondary vertex
-              const auto& secondaryVertex3 = df3.getPCACandidate();
-              // get track momenta
-              std::array<float, 3> pvec0;
-              std::array<float, 3> pvec1;
-              std::array<float, 3> pvec2;
-              df3.getTrack(0).getPxPyPzGlo(pvec0);
-              df3.getTrack(1).getPxPyPzGlo(pvec1);
-              df3.getTrack(2).getPxPyPzGlo(pvec2);
 
               /// PV refit excluding the candidate daughters, if contributors
               std::array<float, 3> pvRefitCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
@@ -2031,17 +2029,33 @@ struct HfTrackIndexSkimCreator {
                     LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
                   }
                 }
+                if (isSelectedDstar) {
+                  rowDstarPVrefit(pvRefitCoord3Prong2Pos1Neg[0], pvRefitCoord3Prong2Pos1Neg[1], pvRefitCoord3Prong2Pos1Neg[2],
+                                  pvRefitCovMatrix3Prong2Pos1Neg[0], pvRefitCovMatrix3Prong2Pos1Neg[1], pvRefitCovMatrix3Prong2Pos1Neg[2], pvRefitCovMatrix3Prong2Pos1Neg[3], pvRefitCovMatrix3Prong2Pos1Neg[4], pvRefitCovMatrix3Prong2Pos1Neg[5]);
+                }
+              } // end of D*
+
+              if (!debug && isSelected3ProngCand == 0) { // below only for 3-prong candidates
+                continue;
               }
 
-              auto pVecCandProng3Pos = RecoDecay::pVec(pvec0, pvec1, pvec2);
-              // 3-prong selections after secondary vertex
-              std::array<float, 3> pvCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()};
-              if constexpr (doPvRefit) {
-                pvCoord3Prong2Pos1Neg[0] = pvRefitCoord3Prong2Pos1Neg[0];
-                pvCoord3Prong2Pos1Neg[1] = pvRefitCoord3Prong2Pos1Neg[1];
-                pvCoord3Prong2Pos1Neg[2] = pvRefitCoord3Prong2Pos1Neg[2];
+              // reconstruct the 3-prong secondary vertex
+              if (df3.process(trackParVarPos1, trackParVarNeg1, trackParVarPos2) == 0) {
+                continue;
               }
-              is3ProngSelected(pVecCandProng3Pos, secondaryVertex3, pvCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
+              // get secondary vertex
+              const auto& secondaryVertex3 = df3.getPCACandidate();
+              // get track momenta
+              array<float, 3> pvec0;
+              array<float, 3> pvec1;
+              array<float, 3> pvec2;
+              df3.getTrack(0).getPxPyPzGlo(pvec0);
+              df3.getTrack(1).getPxPyPzGlo(pvec1);
+              df3.getTrack(2).getPxPyPzGlo(pvec2);
+              auto pVecCandProng3Pos = RecoDecay::pVec(pvec0, pvec1, pvec2);
+
+              // 3-prong selections after secondary vertex
+              is3ProngSelected(pVecCandProng3Pos, secondaryVertex3, pvRefitCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
               if (!debug && isSelected3ProngCand == 0) {
                 continue;
               }
@@ -2127,7 +2141,7 @@ struct HfTrackIndexSkimCreator {
               // first we build D*+ candidates if enabled
               auto isSelProngNeg2 = trackIndexNeg2.isSelProng();
               uint8_t isSelectedDstar{0};
-              if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (whichHypo2Prong[0] == 1 || whichHypo2Prong[0] == 3)) { // the 2-prong decay is compatible with a D0
+              if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (whichHypo2Prong[0] >= 2)) { // the 2-prong decay is compatible with a D0bar
                 if (TESTBIT(isSelProngNeg2, CandidateType::CandDstar)) { // compatible with a soft pion
                   if (thisCollId != trackNeg2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
@@ -2135,56 +2149,49 @@ struct HfTrackIndexSkimCreator {
                     propagatedNeg2 = true;
                   }
                   uint8_t cutStatus{BIT(kNCutsDstar) - 1};
-                  isSelectedDstar = isDstarSelected(pVecTrackNeg1, pVecTrackPos1, pVecTrackNeg2, cutStatus); // we do not compute the D* decay vertex at this stage because we are not interested in applying topological selections
+                  float deltaMass{-1.};
+                  isSelectedDstar = isDstarSelected(pVecTrackNeg1, pVecTrackPos1, pVecTrackNeg2, cutStatus, deltaMass); // we do not compute the D* decay vertex at this stage because we are not interested in applying topological selections
                   if (isSelectedDstar) {
-                    rowTrackIndexDstar(thisCollId, trackNeg2.globalIndex(), rowTrackIndexProng2.lastIndex(), isSelectedDstar);
-                    if (debug) {
-                      rowDstarCutStatus(cutStatus);
+                    rowTrackIndexDstar(thisCollId, trackNeg2.globalIndex(), rowTrackIndexProng2.lastIndex());
+                    if (fillHistograms) {
+                      registry.fill(HIST("hMassDstarToD0Pi"), deltaMass);
+                    }
+                  }
+                  if (debug) {
+                    rowDstarCutStatus(cutStatus);
+                  }
+                }
+              }
+
+              // preselection of 3-prong candidates
+              int isSelected3ProngCand = n3ProngBit;
+              if (do3Prong && TESTBIT(isSelProngNeg2, CandidateType::Cand3Prong) && (sel3ProngStatusPos1 && sel3ProngStatusNeg1)) {
+                if (thisCollId != trackNeg2.collisionId() && !propagatedNeg2) { // this is not the "default" collision for this track and we still did not re-propagate it, we have to re-propagate it
+                  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
+                  getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
+                }
+
+                if (debug) {
+                  for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
+                    for (int iCut = 0; iCut < kNCuts3Prong; iCut++) {
+                      cutStatus3Prong[iDecay3P][iCut] = true;
                     }
                   }
                 }
-              }
 
-              // retrieve the selection flag that corresponds to this collision
-              if (!TESTBIT(isSelProngNeg2, CandidateType::Cand3Prong) || !do3Prong || (!sel3ProngStatusPos1 || !sel3ProngStatusNeg1)) {
-                continue;
-              }
-
-              if (thisCollId != trackNeg2.collisionId() && !propagatedNeg2) { // this is not the "default" collision for this track, we have to re-propagate it
-                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
-                getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
-              }
-
-              int isSelected3ProngCand = n3ProngBit;
-
-              if (debug) {
-                for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
-                  for (int iCut = 0; iCut < kNCuts3Prong; iCut++) {
-                    cutStatus3Prong[iDecay3P][iCut] = true;
-                  }
+                // 3-prong preselections
+                is3ProngPreselected(pVecTrackNeg1, pVecTrackPos1, pVecTrackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+                if (!debug && isSelected3ProngCand == 0) {
+                  continue;
                 }
+              } else {
+                isSelected3ProngCand = 0;
               }
 
-              // 3-prong preselections
-              is3ProngPreselected(pVecTrackNeg1, pVecTrackPos1, pVecTrackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
-              if (!debug && isSelected3ProngCand == 0) {
+              // if we did not preselected any D* or 3-prong candidate, continue
+              if (!debug && (isSelectedDstar == 0 && isSelected3ProngCand == 0)) {
                 continue;
               }
-
-              // reconstruct the 3-prong secondary vertex
-              if (df3.process(trackParVarNeg1, trackParVarPos1, trackParVarNeg2) == 0) {
-                continue;
-              }
-
-              // get secondary vertex
-              const auto& secondaryVertex3 = df3.getPCACandidate();
-              // get track momenta
-              std::array<float, 3> pvec0;
-              std::array<float, 3> pvec1;
-              std::array<float, 3> pvec2;
-              df3.getTrack(0).getPxPyPzGlo(pvec0);
-              df3.getTrack(1).getPxPyPzGlo(pvec1);
-              df3.getTrack(2).getPxPyPzGlo(pvec2);
 
               /// PV refit excluding the candidate daughters, if contributors
               std::array<float, 3> pvRefitCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
@@ -2273,17 +2280,33 @@ struct HfTrackIndexSkimCreator {
                     LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
                   }
                 }
+                if (isSelectedDstar) {
+                  rowDstarPVrefit(pvRefitCoord3Prong1Pos2Neg[0], pvRefitCoord3Prong1Pos2Neg[1], pvRefitCoord3Prong1Pos2Neg[2],
+                                  pvRefitCovMatrix3Prong1Pos2Neg[0], pvRefitCovMatrix3Prong1Pos2Neg[1], pvRefitCovMatrix3Prong1Pos2Neg[2], pvRefitCovMatrix3Prong1Pos2Neg[3], pvRefitCovMatrix3Prong1Pos2Neg[4], pvRefitCovMatrix3Prong1Pos2Neg[5]);
+                }
+              } // end of D*
+
+              if (!debug && isSelected3ProngCand == 0) { // below only for 3-prong candidates
+                continue;
               }
 
-              auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
-              // 3-prong selections after secondary vertex
-              std::array<float, 3> pvCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()};
-              if constexpr (doPvRefit) {
-                pvCoord3Prong1Pos2Neg[0] = pvRefitCoord3Prong1Pos2Neg[0];
-                pvCoord3Prong1Pos2Neg[1] = pvRefitCoord3Prong1Pos2Neg[1];
-                pvCoord3Prong1Pos2Neg[2] = pvRefitCoord3Prong1Pos2Neg[2];
+              // reconstruct the 3-prong secondary vertex
+              if (df3.process(trackParVarNeg1, trackParVarPos1, trackParVarNeg2) == 0) {
+                continue;
               }
-              is3ProngSelected(pVecCandProng3Neg, secondaryVertex3, pvCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
+              // get secondary vertex
+              const auto& secondaryVertex3 = df3.getPCACandidate();
+              // get track momenta
+              array<float, 3> pvec0;
+              array<float, 3> pvec1;
+              array<float, 3> pvec2;
+              df3.getTrack(0).getPxPyPzGlo(pvec0);
+              df3.getTrack(1).getPxPyPzGlo(pvec1);
+              df3.getTrack(2).getPxPyPzGlo(pvec2);
+              auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
+
+              // 3-prong selections after secondary vertex
+              is3ProngSelected(pVecCandProng3Neg, secondaryVertex3, pvRefitCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
               if (!debug && isSelected3ProngCand == 0) {
                 continue;
               }
@@ -2291,8 +2314,10 @@ struct HfTrackIndexSkimCreator {
               // fill table row
               rowTrackIndexProng3(thisCollId, trackNeg1.globalIndex(), trackPos1.globalIndex(), trackNeg2.globalIndex(), isSelected3ProngCand);
               // fill table row of coordinates of PV refit
-              rowProng3PVrefit(pvRefitCoord3Prong1Pos2Neg[0], pvRefitCoord3Prong1Pos2Neg[1], pvRefitCoord3Prong1Pos2Neg[2],
-                               pvRefitCovMatrix3Prong1Pos2Neg[0], pvRefitCovMatrix3Prong1Pos2Neg[1], pvRefitCovMatrix3Prong1Pos2Neg[2], pvRefitCovMatrix3Prong1Pos2Neg[3], pvRefitCovMatrix3Prong1Pos2Neg[4], pvRefitCovMatrix3Prong1Pos2Neg[5]);
+              if constexpr (doPvRefit) {
+                rowProng3PVrefit(pvRefitCoord3Prong1Pos2Neg[0], pvRefitCoord3Prong1Pos2Neg[1], pvRefitCoord3Prong1Pos2Neg[2],
+                                 pvRefitCovMatrix3Prong1Pos2Neg[0], pvRefitCovMatrix3Prong1Pos2Neg[1], pvRefitCovMatrix3Prong1Pos2Neg[2], pvRefitCovMatrix3Prong1Pos2Neg[3], pvRefitCovMatrix3Prong1Pos2Neg[4], pvRefitCovMatrix3Prong1Pos2Neg[5]);
+              }
 
               if (debug) {
                 int Prong3CutStatus[kN3ProngDecays];
