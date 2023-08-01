@@ -48,6 +48,9 @@ DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);         //! DCA negative pron
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
 
+// Saved from KF particle fit for specic table
+DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float); //!
+
 // Derived expressions
 // Momenta
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! V0 pT
@@ -293,6 +296,12 @@ DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
                   v0tag::IsFromCascade,
                   v0tag::IsFromTrackedCascade);
 
+namespace kfcascdata
+{
+// declare in different namespace to 'overload' operator
+DECLARE_SOA_COLUMN(MLambda, mLambda, float); //!
+} // namespace kfcascdata
+
 namespace cascdata
 {
 // Necessary for full filtering functionality
@@ -336,11 +345,19 @@ DECLARE_SOA_COLUMN(DCAZCascToPV, dcaZCascToPV, float);         //!
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
+DECLARE_SOA_COLUMN(KFTrackMat, kfTrackCovMat, float[15]);     //! covariance matrix elements for KF method
 
 // Selection to avoid spurious invariant mass correlation
 // bachelor-baryon cosine of pointing angle / DCA to PV
 DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
 DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
+
+// Saved from KF particle fit for specic table
+// note: separate chi2 is a consequence of fit -> conversion -> propagation -> fit logic
+//       which, in turn, is necessary to do material corrections at the moment
+//       this could be improved in the future!
+DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float);           //!
+DECLARE_SOA_COLUMN(KFCascadeChi2, kfCascadeChi2, float); //!
 
 // Saved from strangeness tracking
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float); //!
@@ -429,6 +446,39 @@ DECLARE_SOA_TABLE(StoredCascDatas, "AOD", "CASCDATA", //!
                   cascdata::Eta<cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::Phi<cascdata::Px, cascdata::Py>);
 
+DECLARE_SOA_TABLE(StoredKFCascDatas, "AOD", "KFCASCDATA", //!
+                  o2::soa::Index<>, cascdata::V0Id, cascdata::CascadeId, cascdata::BachelorId, cascdata::CollisionId,
+                  cascdata::Sign, cascdata::MXi, cascdata::MOmega,
+                  cascdata::X, cascdata::Y, cascdata::Z,
+                  cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda,
+                  cascdata::PxPos, cascdata::PyPos, cascdata::PzPos,
+                  cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg,
+                  cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
+                  cascdata::Px, cascdata::Py, cascdata::Pz,
+                  cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
+                  cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
+                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV,
+
+                  // KF particle fit specific
+                  kfcascdata::MLambda, cascdata::KFV0Chi2, cascdata::KFCascadeChi2,
+
+                  // Dynamic columns
+                  cascdata::Pt<cascdata::Px, cascdata::Py>,
+                  cascdata::V0Radius<cascdata::Xlambda, cascdata::Ylambda>,
+                  cascdata::CascRadius<cascdata::X, cascdata::Y>,
+                  cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
+                  cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
+
+                  // Invariant masses
+                  cascdata::M<cascdata::MXi, cascdata::MOmega>,
+
+                  // Longitudinal
+                  cascdata::YXi<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::YOmega<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::Eta<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::Phi<cascdata::Px, cascdata::Py>);
+
 DECLARE_SOA_TABLE(StoredTraCascDatas, "AOD", "TRACASCDATA", //!
                   o2::soa::Index<>, cascdata::V0Id, cascdata::CascadeId, cascdata::BachelorId, cascdata::StrangeTrackId, cascdata::CollisionId,
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,
@@ -441,6 +491,8 @@ DECLARE_SOA_TABLE(StoredTraCascDatas, "AOD", "TRACASCDATA", //!
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
                   cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
                   cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV,
+
+                  // Strangeness tracking specific
                   cascdata::MatchingChi2, cascdata::TopologyChi2, cascdata::ItsClsSize,
 
                   // Dynamic columns
@@ -463,14 +515,23 @@ DECLARE_SOA_TABLE(StoredTraCascDatas, "AOD", "TRACASCDATA", //!
 DECLARE_SOA_TABLE_FULL(CascCovs, "CascCovs", "AOD", "CASCCOVS", //!
                        cascdata::PositionCovMat, cascdata::MomentumCovMat);
 
+DECLARE_SOA_TABLE_FULL(KFCascCovs, "KFCascCovs", "AOD", "KFCASCCOVS", //!
+                       cascdata::KFTrackMat);
+
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(CascDatas, StoredCascDatas, "CascDATAEXT", //!
                                 cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda);
+
+// extended table with expression columns that can be used as arguments of dynamic columns
+DECLARE_SOA_EXTENDED_TABLE_USER(KFCascDatas, StoredKFCascDatas, "KFCascDATAEXT", //!
+                                cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda);
+
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(TraCascDatas, StoredTraCascDatas, "TraCascDATAEXT", //!
                                 cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda);
 
 using CascData = CascDatas::iterator;
+using KFCascData = KFCascDatas::iterator;
 using TraCascData = TraCascDatas::iterator;
 
 // For compatibility with previous table declarations
@@ -480,13 +541,18 @@ using CascDataExt = CascDatas;
 namespace cascdata
 {
 DECLARE_SOA_INDEX_COLUMN(CascData, cascData); //! Index to CascData entry
+DECLARE_SOA_INDEX_COLUMN(KFCascData, kfCascData); //! Index to CascData entry
 }
 
 DECLARE_SOA_TABLE(CascDataLink, "AOD", "CASCDATALINK", //! Joinable table with Cascades which links to CascData which is not produced for all entries
                   cascdata::CascDataId);
+DECLARE_SOA_TABLE(KFCascDataLink, "AOD", "KFCASCDATALINK", //! Joinable table with Cascades which links to CascData which is not produced for all entries
+                  cascdata::KFCascDataId);
 
 using CascadesLinked = soa::Join<Cascades, CascDataLink>;
 using CascadeLinked = CascadesLinked::iterator;
+using KFCascadesLinked = soa::Join<Cascades, KFCascDataLink>;
+using KFCascadeLinked = KFCascadesLinked::iterator;
 
 namespace casctag
 {
