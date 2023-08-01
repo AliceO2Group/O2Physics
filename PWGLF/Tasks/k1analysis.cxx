@@ -389,7 +389,7 @@ struct k1analysis {
           continue;
 
         if constexpr (!IsMix) {                                   // Same event pair
-          if (trk1.sign() * trk2.sign() > 0) {                    // K892
+          if (trk1.sign() * trk2.sign() < 0) {                    // K892
             if (bTrack.sign() > 0) {                              // bachelor pi+
               if (trk2.sign() > 0) {                              // kaon + means K(892)0 is matter.
                 histos.fill(HIST("k1invmass"), lResonanceK1.M()); // quick check
@@ -446,7 +446,7 @@ struct k1analysis {
             }
           }
         } else {                                                      // Mixed event pair
-          if (trk1.sign() * trk2.sign() > 0) {                        // K892
+          if (trk1.sign() * trk2.sign() < 0) {                        // K892
             if (bTrack.sign() > 0) {                                  // bachelor pi+
               if (trk2.sign() > 0) {                                  // kaon + means K(892)0 is matter.
                 histos.fill(HIST("k1invmass_Mix"), lResonanceK1.M()); // quick check
