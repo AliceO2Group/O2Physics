@@ -562,7 +562,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     // quality cut for soft pion
     hasGoodQuality = true;
     if (doCutQuality.value && (debug || TESTBIT(statusProng, CandidateType::CandDstar))) {
-     if (useIsGlobalTrackForSoftPion) {
+      if (useIsGlobalTrackForSoftPion) {
         if (hfTrack.isGlobalTrack() != (uint8_t) true) {
           hasGoodQuality = false;
         }
@@ -1940,8 +1940,8 @@ struct HfTrackIndexSkimCreator {
               auto isSelProngPos2 = trackIndexPos2.isSelProng();
               uint8_t isSelectedDstar{0};
               if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (whichHypo2Prong[0] == 1 || whichHypo2Prong[0] == 3)) { // the 2-prong decay is compatible with a D0
-                if (TESTBIT(isSelProngPos2, CandidateType::CandDstar)) { // compatible with a soft pion
-                  if (thisCollId != trackPos2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
+                if (TESTBIT(isSelProngPos2, CandidateType::CandDstar)) {                                                                                  // compatible with a soft pion
+                  if (thisCollId != trackPos2.collisionId()) {                                                                                            // this is not the "default" collision for this track, we have to re-propagate it
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
                     getPxPyPz(trackParVarPos2, pVecTrackPos2);
                     propagatedPos2 = true;
@@ -2191,8 +2191,8 @@ struct HfTrackIndexSkimCreator {
               auto isSelProngNeg2 = trackIndexNeg2.isSelProng();
               uint8_t isSelectedDstar{0};
               if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (whichHypo2Prong[0] >= 2)) { // the 2-prong decay is compatible with a D0bar
-                if (TESTBIT(isSelProngNeg2, CandidateType::CandDstar)) { // compatible with a soft pion
-                  if (thisCollId != trackNeg2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
+                if (TESTBIT(isSelProngNeg2, CandidateType::CandDstar)) {                                                       // compatible with a soft pion
+                  if (thisCollId != trackNeg2.collisionId()) {                                                                 // this is not the "default" collision for this track, we have to re-propagate it
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
                     getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
                     propagatedNeg2 = true;
