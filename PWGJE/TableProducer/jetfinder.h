@@ -16,6 +16,7 @@
 #ifndef PWGJE_TABLEPRODUCER_JETFINDER_H_
 #define PWGJE_TABLEPRODUCER_JETFINDER_H_
 
+#include <array>
 #include <vector>
 #include <string>
 
@@ -214,7 +215,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, float par
     if (particle.eta() < particleEtaMin || particle.eta() > particleEtaMax) {
       continue;
     }
-    if (particle.getGenStatusCode() != 1) { // CHECK : Does this exclude the HF hadron?
+    if (!particle.isPhysicalPrimary()) { // CHECK : Does this exclude the HF hadron?
       continue;
     }
     auto pdgParticle = pdg->GetParticle(particle.pdgCode());
@@ -245,6 +246,21 @@ bool selectCollision(T const& collision, std::string eventSelection)
   } else {
     return true;
   }
+}
+
+template <typename T>
+bool hasEMCAL(T const& collision)
+{
+  // Check for EMCAL in readout requires any of the EMCAL trigger classes (including EMC in MB trigger) to fire
+  std::array<triggerAliases, 11> selectAliases = {{triggerAliases::kTVXinEMC, triggerAliases::kEMC7, triggerAliases::kDMC7, triggerAliases::kEG1, triggerAliases::kEG2, triggerAliases::kDG1, triggerAliases::kDG2, triggerAliases::kEJ1, triggerAliases::kEJ2, triggerAliases::kDJ1, triggerAliases::kDJ2}};
+  bool found = false;
+  for (auto alias : selectAliases) {
+    if (collision.alias_bit(alias)) {
+      found = true;
+      break;
+    }
+  }
+  return found;
 }
 
 #endif // PWGJE_TABLEPRODUCER_JETFINDER_H_

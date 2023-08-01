@@ -19,7 +19,7 @@
 ///
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
-
+#include "PWGLF/DataModel/LFParticleIdentification.h"
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
@@ -65,6 +65,8 @@ struct LfTreeCreatorNuclei {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> nsigmacutLow{"nsigmacutLow", -8.0, "Value of the Nsigma cut"};
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +8.0, "Value of the Nsigma cut"};
+  Configurable<float> ptcutLow{"ptcutLow", 0.f, "Value of the lower pt cut for the filtering (option 3)"};
+  Configurable<float> ptcutHigh{"ptcutHigh", 10.f, "Value of the upper pt cut for the filtering (option 3)"};
   Configurable<float> filterDeTPC{"filterDeTPC", 15.0, "Value of the Nsigma cut for deuterons for the filtering (option 3)"};
   Configurable<float> filterHeTPC{"filterHeTPC", 15.0, "Value of the Nsigma cut for helium3 for the filtering (option 3)"};
   Configurable<int> trackSelType{"trackSelType", 0, "Option for the track cut: 0 isGlobalTrackWoDCA, 1 isGlobalTrack, 3 is for filtered mode"};
@@ -85,13 +87,13 @@ struct LfTreeCreatorNuclei {
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                     aod::pidTOFbeta, aod::TOFSignal, aod::pidEvTimeFlags,
-                                    aod::pidTPCFullPi, aod::pidTOFFullPi,
-                                    aod::pidTPCFullKa, aod::pidTOFFullKa,
-                                    aod::pidTPCFullPr, aod::pidTOFFullPr,
-                                    aod::pidTPCFullDe, aod::pidTOFFullDe,
-                                    aod::pidTPCFullTr, aod::pidTOFFullTr,
-                                    aod::pidTPCFullHe, aod::pidTOFFullHe,
-                                    aod::pidTPCFullAl, aod::pidTOFFullAl>;
+                                    aod::pidTPCLfFullPi, aod::pidTOFFullPi,
+                                    aod::pidTPCLfFullKa, aod::pidTOFFullKa,
+                                    aod::pidTPCLfFullPr, aod::pidTOFFullPr,
+                                    aod::pidTPCLfFullDe, aod::pidTOFFullDe,
+                                    aod::pidTPCLfFullTr, aod::pidTOFFullTr,
+                                    aod::pidTPCLfFullHe, aod::pidTOFFullHe,
+                                    aod::pidTPCLfFullAl, aod::pidTOFFullAl>;
 
   template <bool isMC, typename TrackType, typename CollisionType>
   void fillForOneEvent(CollisionType const& collision, TrackType const& tracks)
@@ -121,6 +123,9 @@ struct LfTreeCreatorNuclei {
           continue;
         }
         if (track.tpcNClsCrossedRows() < 90) {
+          continue;
+        }
+        if ((track.pt() < ptcutLow.value) || (track.pt() > ptcutHigh.value)) {
           continue;
         }
         if ((TMath::Abs(track.tpcNSigmaDe()) > filterDeTPC.value) && (TMath::Abs(track.tpcNSigmaHe()) > filterHeTPC.value)) {

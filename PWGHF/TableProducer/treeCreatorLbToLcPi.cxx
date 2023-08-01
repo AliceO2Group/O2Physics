@@ -94,7 +94,7 @@ DECLARE_SOA_COLUMN(NSigTOFTrk3Pr, nSigTOFrk3Pr, float);
 } // namespace full
 
 // put the arguments into the table
-DECLARE_SOA_TABLE(HfCandLbFull, "AOD", "HFCANDLbFull",
+DECLARE_SOA_TABLE(HfCandLbFulls, "AOD", "HFCANDLBFULL",
                   full::RSecondaryVertex,
                   full::DecayLength,
                   full::DecayLengthXY,
@@ -187,7 +187,7 @@ struct HfTreeCreatorLbToLcPiAlice3PidIndexBuilder {
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLbToLcPi {
-  Produces<o2::aod::HfCandLbFull> rowCandidateFull;
+  Produces<o2::aod::HfCandLbFulls> rowCandidateFull;
 
   using TracksExtendedPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
 
