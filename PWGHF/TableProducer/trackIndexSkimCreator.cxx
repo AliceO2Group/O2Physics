@@ -294,6 +294,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   Configurable<double> ptMaxSoftPionForDstar{"ptMaxSoftPionForDstar", 2., "max. track pT for soft pion in D* candidate"};
   Configurable<double> etaMinSoftPionForDstar{"etaMinSoftPionForDstar", -99999., "min. pseudorapidity for soft pion in D* candidate"};
   Configurable<double> etaMaxSoftPionForDstar{"etaMaxSoftPionForDstar", 0.8, "max. pseudorapidity for soft pion in D* candidate"};
+  Configurable<LabeledArray<double>> cutsTrackDstar{"cutsTrackDstar", {hf_cuts_single_track::cutsTrackPrimary[0], nBinsPtTrack, nCutVarsTrack, labelsPtTrack, labelsCutVarTrack}, "Single-track selections per pT bin for the soft pion of D* candidates"};
   Configurable<bool> useIsGlobalTrackForSoftPion{"useIsGlobalTrackForSoftPion", false, "check isGlobalTrack status for soft pion tracks"};
   Configurable<bool> useIsGlobalTrackWoDCAForSoftPion{"useIsGlobalTrackWoDCAForSoftPion", false, "check isGlobalTrackWoDCA status for soft pion tracks"};
   Configurable<bool> useIsQualityTrackITSForSoftPion{"useIsQualityTrackITSForSoftPion", true, "check qualityTracksITS status for soft pion tracks"};
@@ -318,7 +319,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   // single-track cuts
   static const int nCuts = 4;
   // array of 2-prong and 3-prong cuts
-  std::array<LabeledArray<double>, 3> cutsSingleTrack;
+  std::array<LabeledArray<double>, 4> cutsSingleTrack;
 
   // QA of PV refit
   ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
@@ -329,7 +330,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
   void init(InitContext const&)
   {
-    cutsSingleTrack = {cutsTrack2Prong, cutsTrack3Prong, cutsTrackBach};
+    cutsSingleTrack = {cutsTrack2Prong, cutsTrack3Prong, cutsTrackBach, cutsTrackDstar};
 
     if (etaMinTrack2Prong == -99999.) {
       etaMinTrack2Prong.value = -etaMaxTrack2Prong;
@@ -589,33 +590,16 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       }
     }
 
-    iDebugCut = 5;
     // DCA cut
+    iDebugCut = 5;
     if ((debug || statusProng > 0)) {
-      if ((debug || TESTBIT(statusProng, CandidateType::Cand2Prong)) && !isSelectedTrackDCA(trackPt, dca, CandidateType::Cand2Prong)) {
-        CLRBIT(statusProng, CandidateType::Cand2Prong);
-        if (debug) {
-          // cutStatus[CandidateType::Cand2Prong][3] = false;
-          if (fillHistograms) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
-          }
-        }
-      }
-      if ((debug || TESTBIT(statusProng, CandidateType::Cand3Prong)) && !isSelectedTrackDCA(trackPt, dca, CandidateType::Cand3Prong)) {
-        CLRBIT(statusProng, CandidateType::Cand3Prong);
-        if (debug) {
-          // cutStatus[CandidateType::Cand3Prong][3] = false;
-          if (fillHistograms) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
-          }
-        }
-      }
-      if ((debug || TESTBIT(statusProng, CandidateType::CandV0bachelor)) && !isSelectedTrackDCA(trackPt, dca, CandidateType::CandV0bachelor)) {
-        CLRBIT(statusProng, CandidateType::CandV0bachelor);
-        if (debug) {
-          // cutStatus[CandidateType::CandV0bachelor][3] = false;
-          if (fillHistograms) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
+      for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; ++iCandType) {
+        if ((debug || TESTBIT(statusProng, iCandType)) && !isSelectedTrackDCA(trackPt, dca, iCandType)) {
+          CLRBIT(statusProng, iCandType);
+          if (debug) {
+            if (fillHistograms) {
+              registry.fill(HIST("hRejTracks"), (nCuts + 1) * iCandType + iDebugCut);
+            }
           }
         }
       }
