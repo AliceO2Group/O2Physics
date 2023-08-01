@@ -253,6 +253,11 @@ struct hypertriton3bodyAnalysisMc {
         registry.fill(HIST("hSelectedTrueHypertritonCounter"), 5.5);
       }
 
+      // 3sigma region for Dalitz plot
+      double mcsigma = 0.0018; // from local MC
+      double lowerlimit = o2::constants::physics::MassHyperTriton - 3 * mcsigma;
+      double upperlimit = o2::constants::physics::MassHyperTriton + 3 * mcsigma;
+
       // Hypertriton
       if (TMath::Abs(vtx.track0_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(vtx.track1_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(vtx.track2_as<MyTracks>().tpcNSigmaDe()) < TpcPidNsigmaCut) {
         registry.fill(HIST("hSelectedCandidatesCounter"), 6.5);
