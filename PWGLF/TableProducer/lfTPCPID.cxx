@@ -19,6 +19,7 @@
 // ROOT includes
 #include "TFile.h"
 #include "TSystem.h"
+#include "TF1.h"
 #include "TGraph.h"
 #include "TList.h"
 
@@ -77,6 +78,9 @@ struct bbParams {
   TGraph* postCorrection = nullptr;
   TGraph* postCorrectionSigma = nullptr;
 
+  TF1* postCorrectionFun = nullptr;
+  TF1* postCorrectionFunSigma = nullptr;
+
   // Utility parameters for the usage
   bool takeFromCcdb = false;     // Flag to get the parameters from the CCDB
   bool takePostFromCcdb = false; // Flag to get the post calib parameters from the CCDB
@@ -107,29 +111,13 @@ struct bbParams {
   }
 
   ///
-  /// Set the values of the BetheBloch from a configurable array
-  bool setValues(const char* particle, const Configurable<LabeledArray<float>>& p)
-  {
-    if (p->get(particle, "Set parameters") < 1.5f) {
-      LOG(info) << "bbParams `" << name << "` :: Using default parameters for " << particle << " as entry `Set parameters` " << p->get(particle, "Set parameters") << " < 1.5";
-      return false;
-    }
-    std::vector<float> v{p->get(particle, "bb1"),
-                         p->get(particle, "bb2"),
-                         p->get(particle, "bb3"),
-                         p->get(particle, "bb4"),
-                         p->get(particle, "bb5"),
-                         p->get(particle, "MIP value"),
-                         p->get(particle, "Charge exponent"),
-                         p->get(particle, "Resolution")};
-    LOG(info) << "bbParams `" << name << "` :: Setting custom Bethe-Bloch parameters for mass hypothesis " << particle;
-    return setValues(v);
-  }
-
-  ///
   /// Set the values of the BetheBloch from TH1F
   bool setValues(TH1F* h)
   {
+    if (!h) {
+      LOG(warning) << "bbParams `" << name << "` :: The input histogram of Bethe-Bloch parameters is not valid";
+      return false;
+    }
     if (isSimple) {
       return setValuesSimple(h);
     }
@@ -144,7 +132,7 @@ struct bbParams {
                          static_cast<float>(h->GetBinContent(axis->FindBin("Charge exponent"))),
                          static_cast<float>(h->GetBinContent(axis->FindBin("Resolution")))};
     if (h->GetNbinsX() != n) {
-      LOG(error) << "The input histogram of Bethe-Bloch parameters has the wrong size " << n << " while expecting " << h->GetNbinsX();
+      LOG(fatal) << "The input histogram of Bethe-Bloch parameters has the wrong size " << n << " while expecting " << h->GetNbinsX();
       return false;
     }
     LOG(info) << "bbParams `" << name << "` :: Setting custom Bethe-Bloch parameters from histogram " << h->GetName();
@@ -166,7 +154,14 @@ struct bbParams {
                          0.f,
                          static_cast<float>(h->GetBinContent(axis->FindBin("Resolution")))};
     if (h->GetNbinsX() != n) {
-      LOG(error) << "The input histogram of Bethe-Bloch parameters has the wrong size " << n << " while expecting " << h->GetNbinsX();
+      LOG(fatal) << "The input histogram of Bethe-Bloch parameters has the wrong size " << n << " while expecting " << h->GetNbinsX();
+      return false;
+    }
+    // Check that it is indeed simple
+    axis->FindBin("MIP value");
+    axis->FindBin("Charge exponent");
+    if (h->GetNbinsX() == n) {
+      LOG(fatal) << "The input histogram of Bethe-Bloch parameters is compatible with the full parametrization";
       return false;
     }
     LOG(info) << "bbParams `" << name << "` :: Setting simple custom Bethe-Bloch parameters from histogram " << h->GetName();
@@ -174,46 +169,89 @@ struct bbParams {
   }
 
   ///
-  /// Set values from an input file
-  bool setValues(TFile* f)
+  /// @brief Set the post calibration from a TList
+  /// @param l List containing the post calibration objects as TF1 or TGraph
+  void setPostCorrection(TList* l)
   {
-    if (!f) {
-      LOG(fatal) << "The input file is not valid";
+    if (!l) {
+      LOG(warning) << "bbParams `" << name << "` :: Did not find the post calib list in the CCDB";
+      return;
     }
-    if (!f->IsOpen()) {
-      LOG(fatal) << "The input file " << f->GetName() << " is not open";
-    }
-    TH1F* h = nullptr;
-    f->GetObject("hpar", h);
-    if (!h) {
-      // Reattempt with ccdb name
-      f->GetObject("ccdb_object", h);
-      if (!h) {
-        f->ls();
-        LOG(fatal) << "The input file does not contain the histograms hpar or ccdb_object";
-        return false;
+    // TObject* obj = l->FindObject(Form("%s_postCorrection", name.c_str()));
+    TObject* obj = l->FindObject(Form("dEdx_MinusBB_%s", name.c_str()));
+    if (!obj) {
+      LOG(warning) << "Did not find the post calib object in the CCDB, cannot assign post calibration";
+    } else {
+      TString cn = obj->ClassName();
+      if (cn.Contains("TF1")) {
+        postCorrectionFun = static_cast<TF1*>(l->FindObject(obj->GetName()));
+      } else if (cn.Contains("TGraph")) {
+        postCorrection = static_cast<TGraph*>(l->FindObject(obj->GetName()));
+      } else {
+        LOG(fatal) << "Cannot hanlde class " << cn << " for post calib object";
       }
     }
-    LOG(info) << "bbParams `" << name << "` :: Setting parameters from TH1F " << h->GetName() << " in file " << f->GetName();
-    return setValues(h);
+    // obj = l->FindObject(Form("%s_postCorrectionSigma", name.c_str()));
+    obj = l->FindObject(Form("sigmaFitOverSigmaParam_%s", name.c_str()));
+    if (!obj) {
+      LOG(warning) << "Did not find the post calib sigma object in the CCDB, cannot assign post calibration for sigma";
+    } else {
+      TString cn = obj->ClassName();
+      if (cn.Contains("TF1")) {
+        postCorrectionFunSigma = static_cast<TF1*>(l->FindObject(obj->GetName()));
+      } else if (cn.Contains("TGraph")) {
+        postCorrectionSigma = static_cast<TGraph*>(l->FindObject(obj->GetName()));
+      } else {
+        LOG(fatal) << "Cannot hanlde class " << cn << " for post calib sigma object";
+      }
+    }
   }
 
   ///
   /// Set values from a configuration. In this case also the post calibration is checked
-  bool init(const Configurable<std::vector<std::string>>& cfg, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
+  void init(const char* particle, const Configurable<LabeledArray<float>>& confParams,
+            const Configurable<std::vector<std::string>>& cfg, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
   {
-    LOG(info) << "bbParams `" << name << "` :: initializing from configurable '" << cfg.name << "' of size " << cfg.value.size();
+    LOG(info) << "bbParams `" << name << "` :: inizializing parameters from json with particle " << particle;
+    // First check the json configuration
+    if (confParams->get(particle, "Set parameters") < 1.5f) { // Keep the default hardcoded values
+      LOG(info) << "bbParams `" << name << "` :: Using default parameters for " << particle << " as entry `Set parameters` " << confParams->get(particle, "Set parameters") << " < 1.5";
+    } else {
+      LOG(info) << "bbParams `" << name << "` :: Setting custom Bethe-Bloch parameters from JSON for mass hypothesis " << particle;
+      std::vector<float> v{confParams->get(particle, "bb1"),
+                           confParams->get(particle, "bb2"),
+                           confParams->get(particle, "bb3"),
+                           confParams->get(particle, "bb4"),
+                           confParams->get(particle, "bb5"),
+                           confParams->get(particle, "MIP value"),
+                           confParams->get(particle, "Charge exponent"),
+                           confParams->get(particle, "Resolution")};
+      setValues(v);
+    }
+
+    // Check the TFile/CCDB configuration
     if (cfg.value.size() != 3) {
       LOG(fatal) << "bbParams `" << name << "` :: The input configurable has the wrong size " << cfg.value.size() << " while expecting 3";
     }
     const std::string bb = cfg.value.at(0);
     const std::string post = cfg.value.at(1);
     const std::string simple = cfg.value.at(2);
-    // First we check the post calib
+    LOG(info) << "bbParams `" << name << "` :: initializing from configurable '" << cfg.name << "' bb = " << bb << " post = " << post << " simple = " << simple;
+    if (simple == "true" || simple == "yes") { // Check if the parametrization to be used is simple
+      LOG(info) << "bbParams `" << name << "` :: using simple BetheBloch parametrization";
+      isSimple = true;
+    } else {
+      LOG(info) << "bbParams `" << name << "` :: using full BetheBloch parametrization";
+    }
+
+    // First we check the post calib. In case the post calib is enabled, the BB parameters should be also coming from same source
     if (post.size() > 1) {
-      LOG(info) << "bbParams `" << name << "` :: Loading parameters from configurable '" << cfg.name << "' with value '" << post << "'";
+      if (bb.size() > 1) {
+        LOG(fatal) << "Cannot define post calibration path and BB parameters path at the same time as the BB parameters will be taken from the post. calib. source. Pick one!";
+      }
+      LOG(info) << "bbParams `" << name << "` :: Loading calib. and post calib. from configurable '" << cfg.name << "' with value '" << post << "'";
       std::string s = post;
-      if (s.rfind("ccdb://", 0) == 0) {
+      if (s.rfind("ccdb://", 0) == 0) { // Getting post calib. from CCDB
         s.replace(0, 7, "");
         ccdbPathPost = s;
         if (ccdbObj->getTimestamp() == 0) { // If the timestamp is 0 we expect to get the timestamp from the run number
@@ -221,38 +259,64 @@ struct bbParams {
           LOG(info) << "bbParams `" << name << "` :: For post calib asked to query the parameters from the CCDB and got timestamp " << ccdbObj->getTimestamp() << " -> will take the object corresponding to the run number";
         } else {
           LOG(info) << "bbParams `" << name << "` :: For post calib fetching parameters from CCDB (only once) using timestamp " << ccdbObj->getTimestamp() << " and path " << s;
-          TList* postL = ccdbObj->get<TList>(s);
-          postCorrection = static_cast<TGraph*>(postL->FindObject(Form("%s_postCorrection", name.c_str())));
-          postCorrectionSigma = static_cast<TGraph*>(postL->FindObject(Form("%s_postCorrectionSigma", name.c_str())));
+          TList* l = ccdbObj->get<TList>(s);
+          setPostCorrection(l);
+          setValues(static_cast<TH1F*>(l->FindObject(Form("BBParameter_%s", name.c_str()))));
         }
+      } else { // Getting post calib. from file
+        TFile* f = TFile::Open(post.c_str(), "READ");
+        if (!f) {
+          LOG(fatal) << "The input file " << post << " is not valid";
+        }
+        if (!f->IsOpen()) {
+          LOG(fatal) << "The input file " << f->GetName() << " is not open";
+        }
+        TList* l = static_cast<TList*>(f->Get("ccdb_object"));
+        if (!l) {
+          f->ls();
+          LOG(fatal) << "The input file " << post << " does not contain the TList ccdb_object";
+        }
+        setPostCorrection(l);
+        setValues(static_cast<TH1F*>(l->FindObject(Form("BBParameter_%s", name.c_str()))));
       }
     }
 
     // Check the BetheBloch parameters
-    if (bb.size() <= 1) {
-      return false;
-    }
-    if (simple == "true") { // Check if the parametrization to be used is simple
-      LOG(info) << "bbParams `" << name << "` :: using simple parametrization";
-      isSimple = true;
-    } else {
-      LOG(info) << "bbParams `" << name << "` :: using full parametrization";
-    }
-    LOG(info) << "bbParams `" << name << "` :: Loading parameters from configurable '" << cfg.name << "' with value '" << bb << "'";
-    std::string s = bb;
-    if (s.rfind("ccdb://", 0) == 0) {
-      s.replace(0, 7, "");
-      ccdbPath = s;
-      if (ccdbObj->getTimestamp() == 0) { // If the timestamp is 0 we expect to get the timestamp from the run number
-        takeFromCcdb = true;
-        LOG(info) << "bbParams `" << name << "` :: Asked to query the parameters from the CCDB and got timestamp " << ccdbObj->getTimestamp() << " -> will take the object corresponding to the run number";
-        return false;
+    if (bb.size() > 1) {
+      LOG(info) << "bbParams `" << name << "` :: Loading parameters from configurable '" << cfg.name << "' with value '" << bb << "'";
+      std::string s = bb;
+      if (s.rfind("ccdb://", 0) == 0) { // Check if the path is a CCDB path
+        s.replace(0, 7, "");
+        ccdbPath = s;
+        if (ccdbObj->getTimestamp() == 0) { // If the timestamp is 0 we expect to get the timestamp from the run number
+          takeFromCcdb = true;
+          LOG(info) << "bbParams `" << name << "` :: Asked to query the parameters from the CCDB and got timestamp " << ccdbObj->getTimestamp() << " -> will take the object corresponding to the run number";
+        } else {
+          LOG(info) << "bbParams `" << name << "` :: Fetching parameters from CCDB (only once) using timestamp " << ccdbObj->getTimestamp() << " and path " << s;
+          setValues(ccdbObj->get<TH1F>(s));
+        }
+      } else { // Getting BetheBloch parameters from file
+        TFile* f = TFile::Open(bb.c_str(), "READ");
+        if (!f) {
+          LOG(fatal) << "The input file " << post << " is not valid";
+        }
+        if (!f->IsOpen()) {
+          LOG(fatal) << "The input file " << f->GetName() << " is not open";
+        }
+        TH1F* h = nullptr;
+        f->GetObject("hpar", h);
+        if (!h) {
+          // Reattempt with ccdb name
+          f->GetObject("ccdb_object", h);
+          if (!h) {
+            f->ls();
+            LOG(fatal) << "The input file does not contain the histograms hpar or ccdb_object";
+          }
+        }
+        LOG(info) << "bbParams `" << name << "` :: Setting parameters from TH1F " << h->GetName() << " in file " << f->GetName();
+        setValues(h);
       }
-      LOG(info) << "bbParams `" << name << "` :: Fetching parameters from CCDB (only once) using timestamp " << ccdbObj->getTimestamp() << " and path " << s;
-      TH1F* h = ccdbObj->get<TH1F>(s);
-      return setValues(h);
     }
-    return setValues(TFile::Open(bb.c_str(), "READ"));
   }
 
   /// @brief Function to update the values of the parameters from the CCDB
@@ -270,8 +334,11 @@ struct bbParams {
     if (takePostFromCcdb) {
       LOG(info) << "bbParams `" << name << "` :: Updating post calib from run number " << lastRunNumber << " to " << bunchCrossing.runNumber() << ". Taking them from CCDB path '" << ccdbPathPost << "' with timestamp " << bunchCrossing.timestamp();
       TList* postL = ccdbObj->getForTimeStamp<TList>(ccdbPathPost, bunchCrossing.timestamp());
-      postCorrection = static_cast<TGraph*>(postL->FindObject(Form("%s_postCorrection", name.c_str())));
-      postCorrectionSigma = static_cast<TGraph*>(postL->FindObject(Form("%s_postCorrectionSigma", name.c_str())));
+      setPostCorrection(postL);
+      if (postL) {
+        setValues(static_cast<TH1F*>(postL->FindObject(Form("BBParameter_%s", name.c_str()))));
+      }
+      return false;
     }
     // Secondly we check the BB parameters
     if (!takeFromCcdb) {
@@ -313,6 +380,7 @@ struct lfTpcPid {
   // Input parameters
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<bool> skipTPCOnly{"skipTPCOnly", true, "Flag to skip TPC only tracks (faster but affects the analyses that use TPC only tracks)"};
+  Configurable<bool> fatalOnNonExisting{"fatalOnNonExisting", true, "Fatal message if calibrations not found on the CCDB"};
 
   // Parameters setting from json
   Configurable<LabeledArray<float>> bbParameters{"bbParameters",
@@ -408,10 +476,13 @@ struct lfTpcPid {
     if (params.postCorrection != nullptr) {
       corr = params.postCorrection->Eval(track.tpcInnerParam());
     }
-    if (params.isSimple) {
-      return o2::tpc::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) - corr;
+    if (params.postCorrectionFun != nullptr) {
+      corr = params.postCorrectionFun->Eval(track.tpcInnerParam());
     }
-    return params.mip * o2::tpc::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) * std::pow(charge, params.exp) - corr;
+    if (params.isSimple) {
+      return o2::tpc::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) + corr;
+    }
+    return params.mip * o2::tpc::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) * std::pow(charge, params.exp) + corr;
   }
 
   template <typename T>
@@ -512,6 +583,9 @@ struct lfTpcPid {
     float corr = 1.f;
     if (params.postCorrectionSigma != nullptr) {
       corr = params.postCorrectionSigma->Eval(track.tpcInnerParam());
+    }
+    if (params.postCorrectionFunSigma != nullptr) {
+      corr = params.postCorrectionFunSigma->Eval(track.tpcInnerParam());
     }
     return params.res * bb * corr;
   }
@@ -620,14 +694,16 @@ struct lfTpcPid {
       LOGP(info, "Initialising LF TPC PID response for fixed timestamp {}:", ts);
       ccdb->setTimestamp(ts);
     }
+    if (!fatalOnNonExisting) {
+      LOG(warning) << "Setting the CCDB to not fatal when the object is not found. This means that you have no garantuee that the parameters used are correct. Expert user only!!!";
+      ccdb->setFatalWhenNull(false);
+    }
 
 #define InitPerParticle(Particle)                                                                          \
   if (doprocess##Particle || doprocessFull##Particle) {                                                    \
     LOG(info) << "Enabling " << #Particle;                                                                 \
-    bb##Particle.setValues(#Particle, bbParameters);                                                       \
-    bb##Particle.init(fileParamBb##Particle, ccdb);                                                        \
-    bbNeg##Particle.setValues(#Particle, bbParameters);                                                    \
-    bbNeg##Particle.init(fileParamBbNeg##Particle, ccdb);                                                  \
+    bb##Particle.init(#Particle, bbParameters, fileParamBb##Particle, ccdb);                               \
+    bbNeg##Particle.init(#Particle, bbParameters, fileParamBbNeg##Particle, ccdb);                         \
     auto h = histos.add<TH1>(Form("%s", #Particle), "", kTH1F, {{10, 0, 10}});                             \
     h->SetBit(TH1::kIsAverage);                                                                            \
     h->SetBinContent(1, bb##Particle.bb1);                                                                 \
