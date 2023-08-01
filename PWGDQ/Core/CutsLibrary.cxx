@@ -932,17 +932,17 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   // 4 cuts to separate pos & neg tracks in pos & neg eta range applying electron PID
-  if (!nameStr.compare("lmee_posNSigmaRun3_posEta_tight")) {
+  if (!nameStr.compare("lmee_posNSigmaRun3_posEta_corr_strongNSigE")) {
     cut->AddCut(GetAnalysisCut("posTrack"));
     cut->AddCut(GetAnalysisCut("posEtaSel"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
     cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
 
     AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
-    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_tight"));
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_corr_strongNSigE"));
 
     AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
-    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_tight"));
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_corr_strongNSigE"));
 
     AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
     cut_pid_OR->AddCut(cut_tpc_nSigma);
@@ -951,17 +951,17 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("lmee_negNSigmaRun3_posEta_tight")) {
+  if (!nameStr.compare("lmee_negNSigmaRun3_posEta_corr_strongNSigE")) {
     cut->AddCut(GetAnalysisCut("negTrack"));
     cut->AddCut(GetAnalysisCut("posEtaSel"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
     cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
 
     AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
-    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_tight"));
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_corr_strongNSigE"));
 
     AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
-    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_tight"));
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_corr_strongNSigE"));
 
     AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
     cut_pid_OR->AddCut(cut_tpc_nSigma);
@@ -970,17 +970,17 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("lmee_posNSigmaRun3_negEta_tight")) {
+  if (!nameStr.compare("lmee_posNSigmaRun3_negEta_corr_strongNSigE")) {
     cut->AddCut(GetAnalysisCut("posTrack"));
     cut->AddCut(GetAnalysisCut("negEtaSel"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
     cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
 
     AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
-    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_tight"));
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_corr_strongNSigE"));
 
     AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
-    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_tight"));
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_corr_strongNSigE"));
 
     AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
     cut_pid_OR->AddCut(cut_tpc_nSigma);
@@ -989,17 +989,17 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("lmee_negNSigmaRun3_negEta_tight")) {
+  if (!nameStr.compare("lmee_negNSigmaRun3_negEta_corr_strongNSigE")) {
     cut->AddCut(GetAnalysisCut("negTrack"));
     cut->AddCut(GetAnalysisCut("negEtaSel"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
     cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
 
     AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
-    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_tight"));
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPID_TPCnsigma_corr_strongNSigE"));
 
     AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
-    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_tight"));
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_corr_strongNSigE"));
 
     AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
     cut_pid_OR->AddCut(cut_tpc_nSigma);
