@@ -388,7 +388,13 @@ class V0PhotonCut : public TNamed
         if (abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 15.f) {
           return false;
         }
-        if (track.x() > 82.9 && abs(track.y()) < 20.f && abs(abs(track.z()) - 43.5f) < 3.5f && 15.f < abs(track.dcaXY())) {
+
+        if (track.x() > 82.9 && abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 5.f) {
+          return false;
+        }
+
+        const float slope = TMath::Tan(2 * TMath::ATan(TMath::Exp(-0.5)));
+        if (track.x() > 82.9 && abs(track.y()) < 40.f && abs(abs(track.z()) - track.x() / slope) < 3.5f && 15.f < abs(track.dcaXY())) {
           return false;
         }
         return true;
