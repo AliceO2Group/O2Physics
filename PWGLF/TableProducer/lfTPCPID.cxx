@@ -160,7 +160,7 @@ struct bbParams {
     // Check that it is indeed simple
     axis->FindBin("MIP value");
     axis->FindBin("Charge exponent");
-    if (h->GetNbinsX() != n) {
+    if (h->GetNbinsX() == n) {
       LOG(fatal) << "The input histogram of Bethe-Bloch parameters is compatible with the full parametrization";
       return false;
     }
