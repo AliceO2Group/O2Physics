@@ -245,6 +245,26 @@ double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
   return etaRes;
 }
 /*****************************************************************/
+// absolute uncertainty on pt
+double TrackSmearer::getAbsPtRes(int pdg, float nch, float eta, float pt)
+{
+  float dummy = 0.0f;
+  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
+  auto val = sqrt(lutEntry->covm[14]) * pow(lutEntry->pt, 2);
+  return val;
+}
+
+/*****************************************************************/
+// absolute uncertainty on eta
+double TrackSmearer::getAbsEtaRes(int pdg, float nch, float eta, float pt)
+{
+  float dummy = 0.0f;
+  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
+  auto sigmatgl = sqrt(lutEntry->covm[9]);                   // sigmatgl2
+  auto etaRes = fabs(sin(2.0 * atan(exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
+  return etaRes;
+}
+/*****************************************************************/
 // efficiency
 double TrackSmearer::getEfficiency(int pdg, float nch, float eta, float pt)
 {
