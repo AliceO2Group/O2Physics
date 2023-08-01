@@ -78,6 +78,7 @@ struct OnTheFlyTracker {
   Configurable<bool> populateTrackSelection{"populateTrackSelection", false, "populate TrackSelection table (legacy)"};
 
   Configurable<bool> doExtraQA{"doExtraQA", false, "do extra 2D QA plots"};
+  Configurable<bool> extraQAwithoutDecayDaughters{"extraQAwithoutDecayDaughters", false, "remove decay daughters from qa plots (yes/no)"};
 
   Configurable<std::string> lutEl{"lutEl", "lutCovm.el.dat", "LUT for electrons"};
   Configurable<std::string> lutMu{"lutMu", "lutCovm.mu.dat", "LUT for muons"};
@@ -106,10 +107,11 @@ struct OnTheFlyTracker {
     TrackAlice3() = default;
     ~TrackAlice3() = default;
     TrackAlice3(const TrackAlice3& src) = default;
-    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, const float t = 0, const float te = 1) : o2::track::TrackParCov(src), mcLabel{label}, timeEst{t, te} {}
+    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, const float t = 0, const float te = 1, bool decayDauInput = false) : o2::track::TrackParCov(src), mcLabel{label}, timeEst{t, te}, isDecayDau(decayDauInput) {}
     const TimeEst& getTimeMUS() const { return timeEst; }
     int64_t mcLabel;
     TimeEst timeEst; ///< time estimate in ns
+    bool isDecayDau;
   };
 
   // necessary for particle charges
@@ -319,6 +321,11 @@ struct OnTheFlyTracker {
       if (mcParticle.pt() < minPt) {
         continue;
       }
+
+      bool isDecayDaughter = false;
+      if (mcParticle.getProcess() == 4)
+        isDecayDaughter = true;
+
       multiplicityCounter++;
       o2::track::TrackParCov trackParCov;
       convertMCParticleToO2Track(mcParticle, trackParCov);
@@ -352,7 +359,7 @@ struct OnTheFlyTracker {
 
       // populate vector with track if we reco-ed it
       const float t = (ir.timeInBCNS + gRandom->Gaus(0., 100.)) * 1e-3;
-      tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3});
+      tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3, isDecayDaughter});
     }
 
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
@@ -439,7 +446,7 @@ struct OnTheFlyTracker {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
         }
-        if (doExtraQA) {
+        if (doExtraQA && (!extraQAwithoutDecayDaughters || (extraQAwithoutDecayDaughters && !trackParCov.isDecayDau))) {
           histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
         }
