@@ -62,8 +62,10 @@ class V0PhotonCut : public TNamed
     kIsWithinBeamPipe,
     kRequireITSTPC,
     kRequireITSonly,
-    kTPConly,
-    kAntiTPConly,
+    kRequireTPConly,
+    kRequireTPCTRD,
+    kRequireTPCTOF,
+    kRequireTPCTRDTOF,
     kNCuts
   };
 
@@ -174,10 +176,16 @@ class V0PhotonCut : public TNamed
       if (mRequireITSTPC && !IsSelectedTrack(track, V0PhotonCuts::kRequireITSTPC)) {
         return false;
       }
-      if (mRequireTPConly && !IsSelectedTrack(track, V0PhotonCuts::kTPConly)) {
+      if (mRequireTPConly && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPConly)) {
         return false;
       }
-      if (mRequireAntiTPConly && !IsSelectedTrack(track, V0PhotonCuts::kAntiTPConly)) {
+      if (mRequireTPCTRD && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPCTRD)) {
+        return false;
+      }
+      if (mRequireTPCTOF && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPCTOF)) {
+        return false;
+      }
+      if (mRequireTPCTRDTOF && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPCTRDTOF)) {
         return false;
       }
     }
@@ -391,11 +399,17 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kRequireITSonly:
         return track.hasITS() & (!track.hasTPC() & !track.hasTOF() & !track.hasTRD());
 
-      case V0PhotonCuts::kTPConly:
+      case V0PhotonCuts::kRequireTPConly:
         return track.hasTPC() & (!track.hasITS() & !track.hasTOF() & !track.hasTRD());
 
-      case V0PhotonCuts::kAntiTPConly:
-        return track.hasTPC() & (track.hasITS() | track.hasTOF() | track.hasTRD());
+      case V0PhotonCuts::kRequireTPCTRD:
+        return track.hasTPC() & track.hasTRD() & !track.hasITS();
+
+      case V0PhotonCuts::kRequireTPCTOF:
+        return track.hasTPC() & track.hasTOF() & !track.hasITS();
+
+      case V0PhotonCuts::kRequireTPCTRDTOF:
+        return track.hasTPC() & track.hasTOF() & !track.hasITS() & track.hasTRD();
 
       default:
         return false;
@@ -436,7 +450,9 @@ class V0PhotonCut : public TNamed
   void SetRequireITSTPC(bool flag);
   void SetRequireITSonly(bool flag);
   void SetRequireTPConly(bool flag);
-  void SetRequireAntiTPConly(bool flag);
+  void SetRequireTPCTRD(bool flag);
+  void SetRequireTPCTOF(bool flag);
+  void SetRequireTPCTRDTOF(bool flag);
 
   /// @brief Print the track selection
   void print() const;
@@ -480,7 +496,9 @@ class V0PhotonCut : public TNamed
   bool mRequireITSTPC{false};
   bool mRequireITSonly{false};
   bool mRequireTPConly{false};
-  bool mRequireAntiTPConly{false};
+  bool mRequireTPCTRD{false};
+  bool mRequireTPCTOF{false};
+  bool mRequireTPCTRDTOF{false};
 
   ClassDef(V0PhotonCut, 1);
 };
