@@ -188,6 +188,8 @@ class TrackSmearer
   // bool smearTrack(Track& track, bool atDCA = true); // Only in DelphesO2
   double getPtRes(int pdg, float nch, float eta, float pt);
   double getEtaRes(int pdg, float nch, float eta, float pt);
+  double getAbsPtRes(int pdg, float nch, float eta, float pt);
+  double getAbsEtaRes(int pdg, float nch, float eta, float pt);
   double getEfficiency(int pdg, float nch, float eta, float pt);
 
   int getIndexPDG(int pdg)
