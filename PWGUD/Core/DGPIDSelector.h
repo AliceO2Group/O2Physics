@@ -201,9 +201,9 @@ struct DGAnaparHolder {
   float mMinptsys;
   float mMaxptsys;
   int mNCombine;
-  std::vector<int> mNetCharges;     // all PV tracks
-  std::vector<int> mUnlikeCharges;  // selected PV tracks
-  std::vector<int> mLikeCharges;    // selected PV tracks
+  std::vector<int> mNetCharges;    // all PV tracks
+  std::vector<int> mUnlikeCharges; // selected PV tracks
+  std::vector<int> mLikeCharges;   // selected PV tracks
   std::vector<int> mDGPIDs;
   std::vector<float> mDGPIDCutValues;
 

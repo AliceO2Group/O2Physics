@@ -74,7 +74,7 @@ struct DiffMCQA {
       registry.add("MCTruth/recCols", "Number of reconstructed collisions; Number of reconstructed collisions; Entries", {HistType::kTH1F, {{31, -0.5, 30.5}}});
     }
 
-    if (context.mOptions.get<bool>("processMain")) {      
+    if (context.mOptions.get<bool>("processMain")) {
       registry.add("all/mcCols", "Has MC truth collision; Has MC truth collision; Entries", {HistType::kTH1F, {{2, -0.5, 1.5}}});
 
       // non diffractive events
@@ -232,7 +232,7 @@ struct DiffMCQA {
     } else {
       registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(2., 1.);
     }
-    
+
     // number of reconstructed collision
     registry.get<TH1>(HIST("MCTruth/recCols"))->Fill(collisions.size(), 1.);
   }
@@ -262,7 +262,7 @@ struct DiffMCQA {
     } else {
       registry.get<TH1>(HIST("all/mcCols"))->Fill(0., 1.);
     }
-    
+
     // global tracks
     Partition<TCs> goodTracks = requireGlobalTrackInFilter();
     goodTracks.bindTable(tracks);

@@ -291,11 +291,16 @@ struct DGCandAnalyzer {
     auto bitMin = anaPars.dBCMin() + 16;
     auto bitMax = anaPars.dBCMax() + 16;
     for (auto bit = bitMin; bit <= bitMax; bit++) {
-      if (anaPars.FITvetoes()[0] && TESTBIT(dgcand.bbFV0Apf(), bit)) return;
-      if (anaPars.FITvetoes()[1] && TESTBIT(dgcand.bbFT0Apf(), bit)) return;
-      if (anaPars.FITvetoes()[2] && TESTBIT(dgcand.bbFT0Cpf(), bit)) return;
-      if (anaPars.FITvetoes()[3] && TESTBIT(dgcand.bbFDDApf(), bit)) return;
-      if (anaPars.FITvetoes()[4] && TESTBIT(dgcand.bbFDDCpf(), bit)) return;
+      if (anaPars.FITvetoes()[0] && TESTBIT(dgcand.bbFV0Apf(), bit))
+        return;
+      if (anaPars.FITvetoes()[1] && TESTBIT(dgcand.bbFT0Apf(), bit))
+        return;
+      if (anaPars.FITvetoes()[2] && TESTBIT(dgcand.bbFT0Cpf(), bit))
+        return;
+      if (anaPars.FITvetoes()[3] && TESTBIT(dgcand.bbFDDApf(), bit))
+        return;
+      if (anaPars.FITvetoes()[4] && TESTBIT(dgcand.bbFDDCpf(), bit))
+        return;
     }
 
     // fill BBFlag histograms
@@ -439,7 +444,7 @@ struct DGCandAnalyzer {
         }
       }
     }
-    
+
     // process the like sign combinations
     if (nIVMs[1] > 0) {
       goodIVMs = 0;
@@ -465,7 +470,7 @@ struct DGCandAnalyzer {
             continue;
           }
         }
-        
+
         // update system/IVMptSysDG
         registry.fill(HIST("system/likeIVMptSysDG"), ivm.M(), ivm.Perp());
         for (auto ind : ivm.trkinds()) {
