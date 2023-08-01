@@ -23,7 +23,6 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UDHelpers.h"
-#include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/DGPIDSelector.h"
 #include "PWGUD/Core/UDGoodRunSelector.h"
 
@@ -45,7 +44,6 @@ struct DGCandAnalyzer {
   TDatabasePDG* pdg = nullptr;
 
   // get a DGCutparHolder and DGAnaparHolder
-  DGCutparHolder diffCuts = DGCutparHolder();
   Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
   // analysis cuts
@@ -74,7 +72,8 @@ struct DGCandAnalyzer {
 
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using UDCollisionFull = UDCollisionsFull::iterator;
-  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  // using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
 
   template <typename TTrack>
   void fillSignalHists(DGParticle ivm, TTrack const& dgtracks, DGPIDSelector pidsel)
@@ -89,17 +88,17 @@ struct DGCandAnalyzer {
     auto m1 = particleMass(pdg, pidsel.getAnaPars().PIDs()[0]);
     auto ene1 = sqrt(pow(tr1.px(), 2.) + pow(tr1.py(), 2.) + pow(tr1.pz(), 2.) + m1);
     auto lv1 = TLorentzVector(tr1.px(), tr1.py(), tr1.pz(), ene1);
-    LOGF(debug, "pid1 %f mass %f energy %f", pidsel.getAnaPars().PIDs()[0], m1, ene1);
     auto signalTPC1 = tr1.tpcSignal();
-    auto signalTOF1 = tr1.tofSignal() / 1.E6;
+    auto signalTOF1 = tr1.tofSignal() / 1.E4;
 
     auto tr2 = dgtracks.begin() + ivm.trkinds()[1];
     auto m2 = particleMass(pdg, pidsel.getAnaPars().PIDs()[1]);
     auto ene2 = sqrt(pow(tr2.px(), 2.) + pow(tr2.py(), 2.) + pow(tr2.pz(), 2.) + m2);
     auto lv2 = TLorentzVector(tr2.px(), tr2.py(), tr2.pz(), ene2);
-    LOGF(debug, "pid2 %f mass %f energy %f", pidsel.getAnaPars().PIDs()[1], m2, ene2);
     auto signalTPC2 = tr2.tpcSignal();
-    auto signalTOF2 = tr2.tofSignal() / 1.E6;
+    auto signalTOF2 = tr2.tofSignal() / 1.E4;
+
+    LOGF(debug, "TOF signals %f %f", signalTOF1, signalTOF2);
 
     registry.fill(HIST("2Prong/TPCsignal1"), tr1.tpcInnerParam(), signalTPC1);
     registry.fill(HIST("2Prong/TPCsignal2"), tr2.tpcInnerParam(), signalTPC2);
@@ -127,7 +126,6 @@ struct DGCandAnalyzer {
     // PDG
     pdg = TDatabasePDG::Instance();
 
-    diffCuts = (DGCutparHolder)DGCuts;
     anaPars = (DGAnaparHolder)DGPars;
     pidsel.init(anaPars);
     grsel.init(goodRunsFile);
@@ -165,9 +163,12 @@ struct DGCandAnalyzer {
     registry.add("tracks/ptTrkdcaXYDG", "dcaXY versus track pT in DG candidates", {HistType::kTH2F, {axispt, {80, -2., 2.}}});
     registry.add("tracks/ptTrkdcaZDG", "dcaZ versus track pT in DG candidates", {HistType::kTH2F, {axispt, {400, -20., 20.}}});
 
-    registry.add("system/nIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}});
-    registry.add("system/IVMptSysDG", "Invariant mass versus system pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
-    registry.add("system/IVMptTrkDG", "Invariant mass versus track pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
+    registry.add("system/nUnlikeIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}});
+    registry.add("system/unlikeIVMptSysDG", "Invariant mass versus system pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
+    registry.add("system/unlikeIVMptTrkDG", "Invariant mass versus track pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
+    registry.add("system/nLikeIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}});
+    registry.add("system/likeIVMptSysDG", "Invariant mass versus system pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
+    registry.add("system/likeIVMptTrkDG", "Invariant mass versus track pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
 
     // FIT signals
     registry.add("FIT/FT0AAmplitude", "Total amplitude in FV0A", {HistType::kTH1F, {{5000, 0., 5000.}}});
@@ -185,24 +186,28 @@ struct DGCandAnalyzer {
     // 2 track events
     registry.add("2Prong/TPCNCl1", "Number of found TPC clusters of track 1", {HistType::kTH1F, {{200, 0., 200.}}});
     registry.add("2Prong/TPCNCl2", "Number of found TPC clusters of track 2", {HistType::kTH1F, {{200, 0., 200.}}});
-    registry.add("2Prong/TPCChi2NCl1", "TPC chi2 of track 1", {HistType::kTH1F, {{200, 0., 50.}}});
-    registry.add("2Prong/TPCChi2NCl2", "TPC chi2 of track 2", {HistType::kTH1F, {{200, 0., 50.}}});
+    registry.add("2Prong/TPCChi2NCl1", "TPC chi2 of track 1", {HistType::kTH1F, {{1000, 0., 10.}}});
+    registry.add("2Prong/TPCChi2NCl2", "TPC chi2 of track 2", {HistType::kTH1F, {{1000, 0., 10.}}});
     registry.add("2Prong/TPCsignal1", "TPC signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
     registry.add("2Prong/TPCsignal2", "TPC signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
     registry.add("2Prong/sig1VsSig2TPC", "TPC signals of track 1 versus track 2", {HistType::kTH2F, {{300, 0., 300.}, {300, 0., 300.}}});
-    registry.add("2Prong/TOFsignal1", "TOF signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {400, -100., 100.}}});
-    registry.add("2Prong/TOFsignal2", "TOF signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {400, -100., 100.}}});
-    registry.add("2Prong/sig1VsSig2TOF", "TOF signals of track 1 versus track 2", {HistType::kTH2F, {{160, -20., 60.}, {160, -20., 60.}}});
+    registry.add("2Prong/TOFsignal1", "TOF signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {2000, -5., 5.}}});
+    registry.add("2Prong/TOFsignal2", "TOF signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {2000, -5., 5.}}});
+    registry.add("2Prong/sig1VsSig2TOF", "TOF signals of track 1 versus track 2", {HistType::kTH2F, {{1000, -5., 5.}, {1000, -5., 5.}}});
     registry.add("2Prong/eta1Vseta2", "etas of track 1 versus track 2", {HistType::kTH2F, {{200, -2.0, 2.0}, {200, -2.0, 2.0}}});
     registry.add("2Prong/pt1pt2", "pTs of track 1 versus track 2", {HistType::kTH2F, {axispt, axispt}});
     registry.add("2Prong/pt1eta1", "pT versus eta of track 1", {HistType::kTH2F, {axispt, {200, -2.0, 2.0}}});
     registry.add("2Prong/pt2eta2", "pT versus eta of track 2", {HistType::kTH2F, {axispt, {200, -2.0, 2.0}}});
-    registry.add("2Prong/Angle", "Angle between both tracks", {HistType::kTH1F, {{140, -0.2, 3.3}}});
-    registry.add("2Prong/AngleIVM", "Angle versis invariant mass", {HistType::kTH2F, {axisIVM, {140, -0.2, 3.3}}});
+    registry.add("2Prong/Angle", "Angle between both tracks", {HistType::kTH1F, {{175, -0.2, 3.3}}});
+    registry.add("2Prong/AngleIVM", "Angle versis invariant mass", {HistType::kTH2F, {axisIVM, {175, -0.2, 3.3}}});
     registry.add("2Prong/pt1IVM", "pT of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, axispt}});
     registry.add("2Prong/pt2IVM", "pT of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, axispt}});
     registry.add("2Prong/eta1IVM", "eta of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, -2.0, 2.0}}});
     registry.add("2Prong/eta2IVM", "eta of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, -2.0, 2.0}}});
+    registry.add("2Prong/chi2NCl1IVM", "TPC chi2 of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 2.0}}});
+    registry.add("2Prong/chi2NCl2IVM", "TPC chi2 of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 2.0}}});
+    registry.add("2Prong/NCl1IVM", "Number of found TPC clusters of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 200.}}});
+    registry.add("2Prong/NCl2IVM", "Number of found TPC clusters of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 200.}}});
   }
 
   void process(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
@@ -255,13 +260,13 @@ struct DGCandAnalyzer {
     if (dgcand.numContrib() != PVContributors.size()) {
       LOGF(info, "Missmatch of PVContributors %d != %d", dgcand.numContrib(), PVContributors.size());
     }
-    if (dgcand.numContrib() < diffCuts.minNTracks() || dgcand.numContrib() > diffCuts.maxNTracks()) {
-      LOGF(debug, "Rejected 1: %d not in range [%d, %d].", dgcand.numContrib(), diffCuts.minNTracks(), diffCuts.maxNTracks());
+    if (dgcand.numContrib() < anaPars.minNTracks() || dgcand.numContrib() > anaPars.maxNTracks()) {
+      LOGF(debug, "Rejected 1: %d not in range [%d, %d].", dgcand.numContrib(), anaPars.minNTracks(), anaPars.maxNTracks());
       return;
     }
 
     // skip events with out-of-range net charge
-    auto netChargeValues = diffCuts.netCharges();
+    auto netChargeValues = anaPars.netCharges();
     if (std::find(netChargeValues.begin(), netChargeValues.end(), dgcand.netCharge()) == netChargeValues.end()) {
       LOGF(debug, "Rejected 2: %d not in set.", dgcand.netCharge());
       return;
@@ -269,7 +274,7 @@ struct DGCandAnalyzer {
 
     // skip events with out-of-range rgtrwTOF
     auto rtrwTOF = udhelpers::rPVtrwTOF<false>(dgtracks, PVContributors.size());
-    auto minRgtrwTOF = candCase != 1 ? 1.0 : diffCuts.minRgtrwTOF();
+    auto minRgtrwTOF = candCase != 1 ? 1.0 : anaPars.minRgtrwTOF();
     if (rtrwTOF < minRgtrwTOF) {
       LOGF(debug, "Rejected 3: %f below threshold of %f.", rtrwTOF, minRgtrwTOF);
       return;
@@ -282,6 +287,22 @@ struct DGCandAnalyzer {
     registry.fill(HIST("FIT/FDDAAmplitude"), dgcand.totalFDDAmplitudeA(), 1.);
     registry.fill(HIST("FIT/FDDCAmplitude"), dgcand.totalFDDAmplitudeC(), 1.);
 
+    // check FIT information
+    auto bitMin = anaPars.dBCMin() + 16;
+    auto bitMax = anaPars.dBCMax() + 16;
+    for (auto bit = bitMin; bit <= bitMax; bit++) {
+      if (anaPars.FITvetoes()[0] && TESTBIT(dgcand.bbFV0Apf(), bit))
+        return;
+      if (anaPars.FITvetoes()[1] && TESTBIT(dgcand.bbFT0Apf(), bit))
+        return;
+      if (anaPars.FITvetoes()[2] && TESTBIT(dgcand.bbFT0Cpf(), bit))
+        return;
+      if (anaPars.FITvetoes()[3] && TESTBIT(dgcand.bbFDDApf(), bit))
+        return;
+      if (anaPars.FITvetoes()[4] && TESTBIT(dgcand.bbFDDCpf(), bit))
+        return;
+    }
+
     // fill BBFlag histograms
     for (auto bit = 0; bit < 33; bit++) {
       registry.fill(HIST("FIT/BBFV0A"), bit - 16, TESTBIT(dgcand.bbFV0Apf(), bit));
@@ -291,25 +312,11 @@ struct DGCandAnalyzer {
       registry.fill(HIST("FIT/BBFDDC"), bit - 16, TESTBIT(dgcand.bbFDDCpf(), bit));
     }
 
-    // check FIT information
-    auto bitMin = anaPars.dBCMin() + 16;
-    auto bitMax = anaPars.dBCMax() + 16;
-    for (auto bit = bitMin; bit <= bitMax; bit++) {
-      if (TESTBIT(dgcand.bbFT0Apf(), bit) ||
-          TESTBIT(dgcand.bbFT0Cpf(), bit) ||
-          TESTBIT(dgcand.bbFV0Apf(), bit) ||
-          TESTBIT(dgcand.bbFDDApf(), bit) ||
-          TESTBIT(dgcand.bbFDDCpf(), bit)) {
-        return;
-      }
-    }
-
     // find track combinations which are compatible with PID cuts
     auto nIVMs = pidsel.computeIVMs(PVContributors);
-    LOGF(debug, "Number of IVMs %d", nIVMs);
 
-    // update candCase histogram
-    if (nIVMs > 0) {
+    // process the unlike sign combinations
+    if (nIVMs[0] > 0 || nIVMs[1] > 0) {
       // check bcnum
       if (bcnums.find(bcnum) != bcnums.end()) {
         LOGF(info, "candCase %i bcnum %i allready found! ", candCase, bcnum);
@@ -324,12 +331,13 @@ struct DGCandAnalyzer {
     }
 
     // update histogram stat/candCase and stat/nDGperRun
+    registry.fill(HIST("stat/candCaseSel"), 1, 1.);
     registry.fill(HIST("stat/candCaseSel"), candCase, 1.);
     registry.get<TH1>(HIST("stat/nDGperRun"))->Fill(Form("%d", run), 1);
 
     // update histograms
     int goodIVMs = 0;
-    for (auto ivm : pidsel.IVMs()) {
+    for (auto ivm : pidsel.unlikeIVMs()) {
       // cut on pt-system
       if (ivm.Perp() < anaPars.minptsys() || ivm.Perp() > anaPars.maxptsys()) {
         continue;
@@ -349,35 +357,45 @@ struct DGCandAnalyzer {
         LOGF(debug, "angle %f (%f / %f)", angle, anaPars.minAlpha(), anaPars.maxAlpha());
         if (angle < anaPars.minAlpha() || angle > anaPars.maxAlpha()) {
           continue;
-        } else {
-          registry.fill(HIST("2Prong/Angle"), angle, 1.);
-          registry.fill(HIST("2Prong/AngleIVM"), ivm.M(), angle, 1.);
         }
 
-        registry.fill(HIST("2Prong/TPCNCl1"), trk1.tpcNClsFindable() - trk1.tpcNClsFindableMinusFound(), 1.);
-        registry.fill(HIST("2Prong/TPCNCl2"), trk2.tpcNClsFindable() - trk2.tpcNClsFindableMinusFound(), 1.);
+        // update 2Prong histograms
+        registry.fill(HIST("2Prong/Angle"), angle, 1.);
+        registry.fill(HIST("2Prong/AngleIVM"), ivm.M(), angle, 1.);
+
         registry.fill(HIST("2Prong/TPCChi2NCl1"), trk1.tpcChi2NCl(), 1.);
         registry.fill(HIST("2Prong/TPCChi2NCl2"), trk2.tpcChi2NCl(), 1.);
         registry.fill(HIST("2Prong/pt1eta1"), trk1.pt(), v1.Eta(), 1.);
         registry.fill(HIST("2Prong/pt2eta2"), trk2.pt(), v2.Eta(), 1.);
         registry.fill(HIST("2Prong/pt1pt2"), trk1.pt(), trk2.pt(), 1.);
+        registry.fill(HIST("2Prong/pt1IVM"), ivm.M(), trk1.pt(), 1.);
+        registry.fill(HIST("2Prong/pt2IVM"), ivm.M(), trk2.pt(), 1.);
         registry.fill(HIST("2Prong/eta1IVM"), ivm.M(), v1.Eta(), 1.);
         registry.fill(HIST("2Prong/eta2IVM"), ivm.M(), v2.Eta(), 1.);
+        registry.fill(HIST("2Prong/chi2NCl1IVM"), ivm.M(), trk1.tpcChi2NCl(), 1.);
+        registry.fill(HIST("2Prong/chi2NCl2IVM"), ivm.M(), trk2.tpcChi2NCl(), 1.);
+
+        auto nTPCCL = trk1.tpcNClsFindable() - trk1.tpcNClsFindableMinusFound();
+        registry.fill(HIST("2Prong/TPCNCl1"), nTPCCL, 1.);
+        registry.fill(HIST("2Prong/NCl1IVM"), ivm.M(), nTPCCL, 1.);
+        nTPCCL = trk2.tpcNClsFindable() - trk2.tpcNClsFindableMinusFound();
+        registry.fill(HIST("2Prong/TPCNCl2"), nTPCCL, 1.);
+        registry.fill(HIST("2Prong/NCl2IVM"), ivm.M(), nTPCCL, 1.);
 
         fillSignalHists(ivm, PVContributors, pidsel);
       }
 
       // update system/IVMptSysDG
-      registry.fill(HIST("system/IVMptSysDG"), ivm.M(), ivm.Perp());
+      registry.fill(HIST("system/unlikeIVMptSysDG"), ivm.M(), ivm.Perp());
       for (auto ind : ivm.trkinds()) {
         auto track = PVContributors.begin() + ind;
-        registry.fill(HIST("system/IVMptTrkDG"), ivm.M(), track.pt());
+        registry.fill(HIST("system/unlikeIVMptTrkDG"), ivm.M(), track.pt());
       }
       goodIVMs++;
     }
 
     // fill histograms with PV track information of collisions with DG candidates
-    registry.fill(HIST("system/nIVMs"), goodIVMs, 1.);
+    registry.fill(HIST("system/nUnlikeIVMs"), goodIVMs, 1.);
     if (goodIVMs > 0) {
 
       // loop over PV tracks and update histograms
@@ -388,10 +406,10 @@ struct DGCandAnalyzer {
         registry.fill(HIST("tracks/trackHits"), 3., track.hasTRD() * 1.);
         registry.fill(HIST("tracks/trackHits"), 4., track.hasTOF() * 1.);
 
-        registry.fill(HIST("tracks/dcaXYDG"), track.dcaXY());
-        registry.fill(HIST("tracks/ptTrkdcaXYDG"), track.pt(), track.dcaXY());
-        registry.fill(HIST("tracks/dcaZDG"), track.dcaZ());
-        registry.fill(HIST("tracks/ptTrkdcaZDG"), track.pt(), track.dcaZ());
+        // registry.fill(HIST("tracks/dcaXYDG"), track.dcaXY());
+        // registry.fill(HIST("tracks/ptTrkdcaXYDG"), track.pt(), track.dcaXY());
+        // registry.fill(HIST("tracks/dcaZDG"), track.dcaZ());
+        // registry.fill(HIST("tracks/ptTrkdcaZDG"), track.pt(), track.dcaZ());
         registry.fill(HIST("tracks/TPCNCl"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound(), 1.);
         registry.fill(HIST("tracks/TPCChi2NCl"), track.tpcChi2NCl(), 1.);
 
@@ -425,6 +443,43 @@ struct DGCandAnalyzer {
           registry.fill(HIST("tracks/nSigmaTOFPPr"), track.pt(), track.tofNSigmaPr());
         }
       }
+    }
+
+    // process the like sign combinations
+    if (nIVMs[1] > 0) {
+      goodIVMs = 0;
+      for (auto ivm : pidsel.likeIVMs()) {
+        // cut on pt-system
+        if (ivm.Perp() < anaPars.minptsys() || ivm.Perp() > anaPars.maxptsys()) {
+          continue;
+        }
+
+        // applicable to 2-track events - cut on angle between two tracks
+        if (anaPars.nCombine() == 2) {
+          auto ind1 = ivm.trkinds()[0];
+          auto trk1 = PVContributors.begin() + ind1;
+          auto v1 = TVector3(trk1.px(), trk1.py(), trk1.pz());
+          auto ind2 = ivm.trkinds()[1];
+          auto trk2 = PVContributors.begin() + ind2;
+          auto v2 = TVector3(trk2.px(), trk2.py(), trk2.pz());
+
+          // cut on angle
+          auto angle = v1.Angle(v2);
+          LOGF(debug, "angle %f (%f / %f)", angle, anaPars.minAlpha(), anaPars.maxAlpha());
+          if (angle < anaPars.minAlpha() || angle > anaPars.maxAlpha()) {
+            continue;
+          }
+        }
+
+        // update system/IVMptSysDG
+        registry.fill(HIST("system/likeIVMptSysDG"), ivm.M(), ivm.Perp());
+        for (auto ind : ivm.trkinds()) {
+          auto track = PVContributors.begin() + ind;
+          registry.fill(HIST("system/likeIVMptTrkDG"), ivm.M(), track.pt());
+        }
+        goodIVMs++;
+      }
+      registry.fill(HIST("system/nLikeIVMs"), goodIVMs, 1.);
     }
   }
 };

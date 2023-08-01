@@ -87,7 +87,7 @@ struct tracksWGTInBCs {
       }
 
       // only consider tracks with good timing
-      if (track.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
+      if (std::abs(track.trackTimeRes()) <= o2::constants::lhc::LHCBunchSpacingNS) {
         registry.get<TH1>(HIST("barrel/Tracks"))->Fill(4., 1.);
 
         // get first compatible BC
@@ -96,6 +96,7 @@ struct tracksWGTInBCs {
 
           // compute the BC closest in time
           auto firstCompatibleBC = ambTracksSlice.begin().bc().begin().globalBC();
+          LOGF(debug, "Track time %f", track.trackTime());
           closestBC = (uint64_t)(firstCompatibleBC +
                                  (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
@@ -105,6 +106,7 @@ struct tracksWGTInBCs {
         }
 
         // update tracksInBCList
+        LOGF(debug, "Closest BC %d", closestBC);
         tracksInBCList[closestBC].emplace_back((int32_t)track.globalIndex());
       }
     }
@@ -113,6 +115,7 @@ struct tracksWGTInBCs {
     int indBCToStart = 0;
     int indBCToSave;
     for (auto const& tracksInBC : tracksInBCList) {
+      LOGF(debug, "tracksInBC.first %d", tracksInBC.first);
       indBCToSave = -1;
       // find corresponding BC
       for (auto ind = indBCToStart; ind < bcs.size(); ind++) {
@@ -129,7 +132,7 @@ struct tracksWGTInBCs {
       tracksWGTInBCs(indBCToSave, rnum, tracksInBC.first, tracksInBC.second);
       LOGF(debug, " BC %i/%u with %i tracks with good timing", indBCToSave, tracksInBC.first, tracksInBC.second.size());
     }
-    LOGF(info, "barrel done");
+    LOGF(debug, "barrel done");
   }
   PROCESS_SWITCH(tracksWGTInBCs, processBarrel, "Process barrel tracks", false);
 
@@ -159,7 +162,7 @@ struct tracksWGTInBCs {
 
       // only consider tracks with trackTimeRes < LHCBunchSpacingNS
       LOGF(debug, "Time resolution of fwdTrack %f", fwdTrack.trackTimeRes());
-      if (fwdTrack.trackTimeRes() <= o2::constants::lhc::LHCBunchSpacingNS) {
+      if (std::abs(fwdTrack.trackTimeRes()) <= o2::constants::lhc::LHCBunchSpacingNS) {
         registry.get<TH1>(HIST("forward/Tracks"))->Fill(3., 1.);
 
         // get first compatible BC
@@ -202,7 +205,7 @@ struct tracksWGTInBCs {
       fwdTracksWGTInBCs(indBCToSave, rnum, fwdTracksInBC.first, fwdTracksInBC.second);
       LOGF(debug, " BC %i/%u with %i forward tracks with good timing", indBCToSave, fwdTracksInBC.first, fwdTracksInBC.second.size());
     }
-    LOGF(info, "fwd done");
+    LOGF(debug, "fwd done");
   }
   PROCESS_SWITCH(tracksWGTInBCs, processForward, "Process forward tracks", false);
 
