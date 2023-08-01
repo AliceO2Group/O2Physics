@@ -112,8 +112,8 @@ struct HfFilterPrepareMlSamples { // Main struct
       auto pVec2Prong = RecoDecay::pVec(pVecPos, pVecNeg);
       auto pt2Prong = RecoDecay::pt(pVec2Prong);
 
-      auto invMassD0 = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321)});
-      auto invMassD0bar = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
+      auto invMassD0 = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massPi, massKa});
+      auto invMassD0bar = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massKa, massPi});
 
       int8_t sign = 0;
       int8_t flag = RecoDecay::OriginType::None;
@@ -179,22 +179,22 @@ struct HfFilterPrepareMlSamples { // Main struct
       auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
       auto pt3Prong = RecoDecay::pt(pVec3Prong);
 
-      auto invMassDplus = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
+      auto invMassDplus = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massPi});
 
-      auto invMassDsToKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
-      auto invMassDsToPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(321)});
+      auto invMassDsToKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massKa, massKa, massPi});
+      auto invMassDsToPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massKa});
 
-      auto invMassLcToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(2212), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
-      auto invMassLcToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(2212)});
+      auto invMassLcToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massProton, massKa, massPi});
+      auto invMassLcToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massProton});
 
-      auto invMassXicToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(2212), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
-      auto invMassXicToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(2212)});
+      auto invMassXicToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massProton, massKa, massPi});
+      auto invMassXicToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massProton});
 
       float deltaMassKKFirst = -1.f;
       float deltaMassKKSecond = -1.f;
       if (TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DsToKKPi)) {
-        deltaMassKKFirst = std::abs(RecoDecay::m(std::array{pVecFirst, pVecSecond}, std::array{helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(321)}) - helper.mPdgDataBase->Mass(333));
-        deltaMassKKSecond = std::abs(RecoDecay::m(std::array{pVecThird, pVecSecond}, std::array{helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(321)}) - helper.mPdgDataBase->Mass(333));
+        deltaMassKKFirst = std::abs(RecoDecay::m(std::array{pVecFirst, pVecSecond}, std::array{massKa, massKa}) - massPhi);
+        deltaMassKKSecond = std::abs(RecoDecay::m(std::array{pVecThird, pVecSecond}, std::array{massKa, massKa}) - massPhi);
       }
       int8_t sign = 0;
       int8_t flag = RecoDecay::OriginType::None;

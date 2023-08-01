@@ -433,8 +433,8 @@ struct HfFilter { // Main struct for HF triggers
         } // end multi-charm selection
 
         // compute masses already here, needed both for B0 --> D* (--> D0 Pi) Pi and Ds1 --> D* (--> D0 Pi) K0S
-        auto massD0Cand = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321)});
-        auto massD0BarCand = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
+        auto massD0Cand = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massPi, massKa});
+        auto massD0BarCand = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massKa, massPi});
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
@@ -455,10 +455,10 @@ struct HfFilter { // Main struct for HF triggers
           if (!keepEvent[kBeauty3P] && isBeautyTagged) {
             auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(track, trackParThird, dcaThird, kBeauty3P);
             if (isTrackSelected && ((TESTBIT(selD0, 0) && track.sign() < 0) || (TESTBIT(selD0, 1) && track.sign() > 0))) {
-              auto massCand = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{helper.mPdgDataBase->Mass(421), helper.mPdgDataBase->Mass(211)});
+              auto massCand = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
               auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
               auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
-              if (TESTBIT(isTrackSelected, kForBeauty) && std::fabs(massCand - helper.mPdgDataBase->Mass(521)) <= deltaMassBeauty->get(0u, 0u)) {
+              if (TESTBIT(isTrackSelected, kForBeauty) && std::fabs(massCand - massBPlus) <= deltaMassBeauty->get(0u, 0u)) {
                 keepEvent[kBeauty3P] = true;
                 // fill optimisation tree for D0
                 if (applyOptimisation) {
@@ -468,17 +468,17 @@ struct HfFilter { // Main struct for HF triggers
                   hMassVsPtB[kBplus]->Fill(ptCand, massCand);
                 }
               } else if (TESTBIT(isTrackSelected, kSoftPionForBeauty)) {
-                std::array<double, 2> massDausD0{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321)};
+                std::array<float, 2> massDausD0{massPi, massKa};
                 auto massD0dau = massD0Cand;
                 if (track.sign() < 0) {
-                  massDausD0[0] = helper.mPdgDataBase->Mass(321);
-                  massDausD0[1] = helper.mPdgDataBase->Mass(211);
+                  massDausD0[0] = massKa;
+                  massDausD0[1] = massPi;
                   massD0dau = massD0BarCand;
                 }
-                auto massDstarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecThird}, std::array{massDausD0[0], massDausD0[1], helper.mPdgDataBase->Mass(211)});
+                auto massDstarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecThird}, std::array{massDausD0[0], massDausD0[1], massPi});
                 auto massDiffDstar = massDstarCand - massD0dau;
 
-                if (std::fabs(massDiffDstar - (helper.mPdgDataBase->Mass(413) - helper.mPdgDataBase->Mass(421))) <= maxDeltaMassCharmReso->get(0u, 0u)) { // additional check for B0->D*pi polarization studies
+                if (std::fabs(massDiffDstar - (massDStar - massD0)) <= maxDeltaMassCharmReso->get(0u, 0u)) { // additional check for B0->D*pi polarization studies
                   if (activateQA) {
                     hMassVsPtC[kNCharmParticles]->Fill(ptCand, massDiffDstar);
                   }
@@ -497,8 +497,8 @@ struct HfFilter { // Main struct for HF triggers
 
                     auto isTrackFourthSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackB, trackParFourth, dcaFourth, kBeauty3P);
                     if (track.sign() * trackB.sign() < 0 && TESTBIT(isTrackFourthSelected, kForBeauty)) {
-                      auto massCandB0 = RecoDecay::m(std::array{pVecBeauty3Prong, pVecFourth}, std::array{helper.mPdgDataBase->Mass(413), helper.mPdgDataBase->Mass(211)});
-                      if (std::fabs(massCandB0 - helper.mPdgDataBase->Mass(511)) <= deltaMassBeauty->get(0u, 2u)) {
+                      auto massCandB0 = RecoDecay::m(std::array{pVecBeauty3Prong, pVecFourth}, std::array{massDStar, massPi});
+                      if (std::fabs(massCandB0 - massB0) <= deltaMassBeauty->get(0u, 2u)) {
                         keepEvent[kBeauty3P] = true;
                         // fill optimisation tree for D0
                         if (applyOptimisation) {
@@ -521,7 +521,7 @@ struct HfFilter { // Main struct for HF triggers
           if (!keepEvent[kFemto2P] && enableFemtoChannels->get(0u, 0u) && isCharmTagged && track.collisionId() == thisCollId && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1) || !requireCharmMassForFemto)) {
             bool isProton = helper.isSelectedProton4Femto(track, trackParThird, activateQA, hProtonTPCPID, hProtonTOFPID);
             if (isProton) {
-              float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, helper.mPdgDataBase->Mass(421));
+              float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
               if (applyOptimisation) {
                 optimisationTreeFemto(thisCollId, pdg::Code::kD0, pt2Prong, scoresToFill[0], scoresToFill[1], scoresToFill[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr());
               }
@@ -554,11 +554,11 @@ struct HfFilter { // Main struct for HF triggers
                 float massDStarCand{-1.}, massDStarBarCand{999.};
                 float massDiffDstar{-1.}, massDiffDstarBar{999.};
                 if (TESTBIT(selD0, 0)) {
-                  massDStarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(22)});
+                  massDStarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{massPi, massKa, massGamma});
                   massDiffDstar = massDStarCand - massD0Cand;
                 }
                 if (TESTBIT(selD0, 1)) {
-                  massDStarBarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(22)});
+                  massDStarBarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{massKa, massPi, massGamma});
                   massDiffDstarBar = massDStarBarCand - massD0BarCand;
                 }
                 bool isGoodDstar = (massDiffDstar < maxDeltaMassCharmReso->get(0u, 1u));
@@ -597,22 +597,22 @@ struct HfFilter { // Main struct for HF triggers
 
                   int isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackBachelor, trackParBachelor, dcaBachelor, -1);
                   if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0, 0) && trackBachelor.sign() < 0) || (TESTBIT(selD0, 1) && trackBachelor.sign() > 0))) {
-                    std::array<double, 2> massDausD0{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321)};
+                    std::array<float, 2> massDausD0{massPi, massKa};
                     auto massD0dau = massD0Cand;
                     if (trackBachelor.sign() < 0) {
-                      massDausD0[0] = helper.mPdgDataBase->Mass(321);
-                      massDausD0[1] = helper.mPdgDataBase->Mass(211);
+                      massDausD0[0] = massKa;
+                      massDausD0[1] = massPi;
                       massD0dau = massD0BarCand;
                     }
-                    auto massDStarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor}, std::array{massDausD0[0], massDausD0[1], helper.mPdgDataBase->Mass(211)});
+                    auto massDStarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor}, std::array{massDausD0[0], massDausD0[1], massPi});
                     auto massDiffDstar = massDStarCand - massD0dau;
                     auto pVecDStarCand = RecoDecay::pVec(pVec2Prong, pVecBachelor);
                     auto ptDStarCand = RecoDecay::pt(pVecDStarCand);
-                    if (std::fabs(massDiffDstar - (helper.mPdgDataBase->Mass(413) - helper.mPdgDataBase->Mass(421))) <= maxDeltaMassCharmReso->get(0u, 0u)) {
+                    if (std::fabs(massDiffDstar - (massDStar - massD0)) <= maxDeltaMassCharmReso->get(0u, 0u)) {
                       if (activateQA) {
                         hMassVsPtC[kNCharmParticles]->Fill(ptDStarCand, massDiffDstar);
                       }
-                      auto massDStarK0S = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor, pVecV0}, std::array{massDausD0[0], massDausD0[1], helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(310)});
+                      auto massDStarK0S = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor, pVecV0}, std::array{massDausD0[0], massDausD0[1], massPi, massK0S});
                       auto massDiffDsReso = massDStarK0S - massDStarCand;
                       if (massDiffDsReso < maxDeltaMassCharmReso->get(0u, 3u)) {
                         if (activateQA) {
@@ -801,14 +801,14 @@ struct HfFilter { // Main struct for HF triggers
 
           int charmParticleID[kNBeautyParticles - 2] = {pdg::Code::kDPlus, pdg::Code::kDS, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus};
 
-          double massCharmHypos[kNBeautyParticles - 2] = {helper.mPdgDataBase->Mass(411), helper.mPdgDataBase->Mass(431), helper.mPdgDataBase->Mass(4122), helper.mPdgDataBase->Mass(4232)};
-          double massBeautyHypos[kNBeautyParticles - 2] = {helper.mPdgDataBase->Mass(511), helper.mPdgDataBase->Mass(531), helper.mPdgDataBase->Mass(5122), helper.mPdgDataBase->Mass(5232)};
+          float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
+          float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
           float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassBeauty->get(0u, 1u), deltaMassBeauty->get(0u, 3u), deltaMassBeauty->get(0u, 4u), deltaMassBeauty->get(0u, 5u)};
           auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(track, trackParFourth, dcaFourth, kBeauty4P);
           if (track.sign() * sign3Prong < 0 && TESTBIT(isTrackSelected, kForBeauty)) {
             for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty4P]; ++iHypo) {
               if (isBeautyTagged[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1))) {
-                auto massCandB = RecoDecay::m(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], helper.mPdgDataBase->Mass(211)});
+                auto massCandB = RecoDecay::m(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
                 if (std::fabs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                   keepEvent[kBeauty4P] = true;
                   if (applyOptimisation) {
@@ -850,9 +850,9 @@ struct HfFilter { // Main struct for HF triggers
         bool isGoodDsToKKPi = (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 0);
         bool isGoodDsToPiKK = (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 1);
         bool isGoodDPlus = (isCharmTagged[kDplus - 1] || isBeautyTagged[kDplus - 1]) && is3ProngInMass[kDplus - 1];
-        auto massDPlusCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
-        auto massDsKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211)});
-        auto massDsPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(321)});
+        auto massDPlusCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massPi});
+        auto massDsKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massKa, massKa, massPi});
+        auto massDsPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massKa});
         for (auto& v0 : v0sThisCollision) {
           if (!keepEvent[kV0Charm3P] && (isGoodDsToKKPi || isGoodDsToPiKK || isGoodDPlus)) {
             auto posTrack = v0.posTrack_as<BigTracksPID>();
@@ -870,11 +870,11 @@ struct HfFilter { // Main struct for HF triggers
                 float massDsStarToKKPiCand{-1.}, massDsStarToPiKKCand{999.};
                 float massDiffDsStarToKKPi{-1.}, massDiffDsStarToPiKK{999.};
                 if (isGoodDsToKKPi) {
-                  massDsStarToKKPiCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(22)});
+                  massDsStarToKKPiCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massKa, massKa, massPi, massGamma});
                   massDiffDsStarToKKPi = massDsStarToKKPiCand - massDsKKPi;
                 }
                 if (isGoodDsToPiKK) {
-                  massDsStarToPiKKCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(22)});
+                  massDsStarToPiKKCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massKa, massKa, massGamma});
                   massDiffDsStarToPiKK = massDsStarToPiKKCand - massDsPiKK;
                 }
                 bool isGoodDsStarToKKPi = (massDiffDsStarToKKPi < maxDeltaMassCharmReso->get(0u, 1u));
@@ -896,7 +896,7 @@ struct HfFilter { // Main struct for HF triggers
               }
               if (!keepEvent[kV0Charm3P] && isGoodDPlus) {
                 if (TESTBIT(selV0, kK0S)) { // Ds2*
-                  auto massDsStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(310)});
+                  auto massDsStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massKa, massPi, massK0S});
                   auto massDiffDsStar = massDsStarCand - massDPlusCand;
                   if (massDiffDsStar < maxDeltaMassCharmReso->get(0u, 4u)) {
                     if (activateQA) {
@@ -908,7 +908,7 @@ struct HfFilter { // Main struct for HF triggers
                   }
                 }
                 if ((TESTBIT(selV0, kLambda) && sign3Prong > 0) || (TESTBIT(selV0, kAntiLambda) && sign3Prong < 0)) { // Xic(3055) and Xic(3080)
-                  auto massXicStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(321), helper.mPdgDataBase->Mass(211), helper.mPdgDataBase->Mass(3122)});
+                  auto massXicStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massKa, massPi, massLambda});
                   auto massDiffXicStar = massXicStarCand - massDPlusCand;
                   if (massDiffXicStar < maxDeltaMassCharmReso->get(0u, 5u)) {
                     if (activateQA) {
@@ -980,7 +980,7 @@ struct HfFilter { // Main struct for HF triggers
             auto ptCharmBaryon = RecoDecay::pt(RecoDecay::pVec(pVecCascade, pVecBachelor));
 
             if (!keepEvent[kCharmBarToXiBach] && TESTBIT(isSelBachelor, kPionForCharmBaryon)) {
-              auto massXiPi = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{helper.mPdgDataBase->Mass(3312), helper.mPdgDataBase->Mass(211)});
+              auto massXiPi = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{massXi, massPi});
               if (ptCharmBaryon > cutsXiBachelor->get(0u, 0u) && massXiPi >= cutsXiBachelor->get(0u, 2u) && massXiPi <= 2.8f) {
                 keepEvent[kCharmBarToXiBach] = true;
                 if (activateQA) {
@@ -989,7 +989,7 @@ struct HfFilter { // Main struct for HF triggers
               }
             }
             if (!keepEvent[kCharmBarToXiBach] && TESTBIT(isSelBachelor, kKaonForCharmBaryon)) {
-              auto massXiKa = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{helper.mPdgDataBase->Mass(3312), helper.mPdgDataBase->Mass(321)});
+              auto massXiKa = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{massXi, massKa});
               if (ptCharmBaryon > cutsXiBachelor->get(0u, 1u) && massXiKa >= cutsXiBachelor->get(0u, 3u) && massXiKa <= 2.8f) {
                 keepEvent[kCharmBarToXiBach] = true;
                 if (activateQA) {
