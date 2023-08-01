@@ -436,7 +436,7 @@ struct DGPIDSelector {
       }
     }
 
-    return std::vector<int>{(int)mUnlikeIVMs.size(), (int)mLikeIVMs.size()};
+    return std::vector<int>{static_cast<int>(mUnlikeIVMs.size()), static_cast<int>(mLikeIVMs.size())};
   }
 
   DGAnaparHolder getAnaPars() { return mAnaPars; }
