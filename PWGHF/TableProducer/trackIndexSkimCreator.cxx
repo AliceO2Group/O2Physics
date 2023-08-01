@@ -289,6 +289,14 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   Configurable<LabeledArray<double>> cutsTrackBach{"cutsTrackBach", {hf_cuts_single_track::cutsTrack[0], nBinsPtTrack, nCutVarsTrack, labelsPtTrack, labelsCutVarTrack}, "Single-track selections per pT bin for the bachelor of V0-bachelor candidates"};
   Configurable<double> etaMinTrackBach{"etaMinTrackBach", -99999., "min. pseudorapidity for bachelor in cascade candidate"};
   Configurable<double> etaMaxTrackBach{"etaMaxTrackBach", 0.8, "max. pseudorapidity for bachelor in cascade candidate"};
+  // soft pion cuts for D*
+  Configurable<double> ptMinSoftPionForDstar{"ptMinSoftPionForDstar", 0.05, "min. track pT for soft pion in D* candidate"};
+  Configurable<double> ptMaxSoftPionForDstar{"ptMaxSoftPionForDstar", 2., "max. track pT for soft pion in D* candidate"};
+  Configurable<double> etaMinSoftPionForDstar{"etaMinSoftPionForDstar", -99999., "min. pseudorapidity for soft pion in D* candidate"};
+  Configurable<double> etaMaxSoftPionForDstar{"etaMaxSoftPionForDstar", 0.8, "max. pseudorapidity for soft pion in D* candidate"};
+  Configurable<bool> useIsGlobalTrackForSoftPion{"useIsGlobalTrackForSoftPion", false, "check isGlobalTrack status for soft pion tracks"};
+  Configurable<bool> useIsGlobalTrackWoDCAForSoftPion{"useIsGlobalTrackWoDCAForSoftPion", false, "check isGlobalTrackWoDCA status for soft pion tracks"};
+  Configurable<bool> useIsQualityTrackITSForSoftPion{"useIsQualityTrackITSForSoftPion", true, "check qualityTracksITS status for soft pion tracks"};
   // CCDB
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
@@ -332,6 +340,9 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     if (etaMinTrackBach == -99999.) {
       etaMinTrackBach.value = -etaMaxTrackBach;
     }
+    if (etaMinSoftPionForDstar == -99999.) {
+      etaMinSoftPionForDstar.value = -etaMaxSoftPionForDstar;
+    }
 
     if (fillHistograms) {
       // general tracks
@@ -347,12 +358,16 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       registry.add("hDCAToPrimXYVsPtCuts3Prong", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
       registry.add("hEtaCuts3Prong", "tracks selected for 3-prong vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(0.6 * (etaMaxTrack3Prong - etaMinTrack3Prong) * 100), -1.2 * etaMinTrack3Prong, 1.2 * etaMaxTrack3Prong}}});
       // bachelor (for cascades) histograms
-      registry.add("hPtCutsV0bachelor", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+      registry.add("hPtCutsV0bachelor", "tracks selected for V0-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
       registry.add("hDCAToPrimXYVsPtCutsV0bachelor", "tracks selected for V0-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
-      registry.add("hEtaCutsV0bachelor", "tracks selected for 3-prong vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(0.6 * (etaMaxTrackBach - etaMinTrackBach) * 100), -1.2 * etaMinTrackBach, 1.2 * etaMaxTrackBach}}});
+      registry.add("hEtaCutsV0bachelor", "tracks selected for V0-bachelor vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(0.6 * (etaMaxTrackBach - etaMinTrackBach) * 100), -1.2 * etaMinTrackBach, 1.2 * etaMaxTrackBach}}});
+      // soft pion (for D*) histograms
+      registry.add("hPtCutsSoftPionForDstar", "tracks selected for D* soft pion;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+      registry.add("hDCAToPrimXYVsPtCutsSoftPionForDstar", "tracks selected for D* soft pion;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
+      registry.add("hEtaCutsSoftPionForDstar", "tracks selected for D* soft pion;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(0.6 * (etaMaxSoftPionForDstar - etaMinSoftPionForDstar) * 100), -1.2 * etaMinSoftPionForDstar, 1.2 * etaMaxSoftPionForDstar}}});
 
       std::string cutNames[nCuts + 1] = {"selected", "rej pT", "rej eta", "rej track quality", "rej dca"};
-      std::string candNames[CandidateType::NCandidateTypes] = {"2-prong", "3-prong", "bachelor"};
+      std::string candNames[CandidateType::NCandidateTypes] = {"2-prong", "3-prong", "bachelor", "dstar"};
       for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; iCandType++) {
         for (int iCut = 0; iCut < nCuts + 1; iCut++) {
           registry.get<TH1>(HIST("hRejTracks"))->GetXaxis()->SetBinLabel((nCuts + 1) * iCandType + iCut + 1, Form("%s %s", candNames[iCandType].data(), cutNames[iCut].data()));
@@ -463,6 +478,15 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         }
       }
     }
+    if (trackPt < ptMinSoftPionForDstar || trackPt > ptMaxSoftPionForDstar) {
+      CLRBIT(statusProng, CandidateType::CandDstar);
+      if (debug) {
+        // cutStatus[CandidateType::CandV0bachelor][0] = false;
+        if (fillHistograms) {
+          registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iDebugCut);
+        }
+      }
+    }
 
     iDebugCut = 3;
     // eta cut
@@ -500,8 +524,8 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << " tpcNClsFound = " << hfTrack.tpcNClsFound() << " (cut " << tpcNClsFoundMin.value << ")");
 
     iDebugCut = 4;
+    bool hasGoodQuality = true;
     if (doCutQuality.value && (debug || statusProng > 0)) { // FIXME to make a more complete selection e.g track.flags() & o2::aod::track::TPCrefit && track.flags() & o2::aod::track::GoldenChi2 &&
-      bool hasGoodQuality = true;
       if (useIsGlobalTrack) {
         if (hfTrack.isGlobalTrack() != (uint8_t) true) {
           hasGoodQuality = false;
@@ -519,14 +543,47 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         }
       }
       if (!hasGoodQuality) {
-        statusProng = 0;
         MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << " did not pass clusters cut");
-        if (debug) {
-          for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; iCandType++) {
-            // cutStatus[iCandType][2] = false;
+        for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; iCandType++) {
+          if (iCandType == CandidateType::CandDstar) { // different quality criteria for D* soft pions
+            continue;
+          }
+          CLRBIT(statusProng, iCandType);
+          if (debug) {
             if (fillHistograms) {
               registry.fill(HIST("hRejTracks"), (nCuts + 1) * iCandType + iDebugCut);
             }
+          }
+        }
+      }
+    }
+
+    // quality cut for soft pion
+    hasGoodQuality = true;
+    if (doCutQuality.value && (debug || TESTBIT(statusProng, CandidateType::CandDstar))) {
+     if (useIsGlobalTrackForSoftPion) {
+        if (hfTrack.isGlobalTrack() != (uint8_t) true) {
+          hasGoodQuality = false;
+        }
+      } else if (useIsGlobalTrackWoDCAForSoftPion) {
+        if (hfTrack.isGlobalTrackWoDCA() != (uint8_t) true) {
+          hasGoodQuality = false;
+        }
+      } else if (useIsQualityTrackITSForSoftPion) {
+        if (hfTrack.isQualityTrackITS() != (uint8_t) true) {
+          hasGoodQuality = false;
+        }
+      } else {
+        UChar_t clustermap = hfTrack.itsClusterMap();
+        if ((hfTrack.flags() & o2::aod::track::ITSrefit && (TESTBIT(clustermap, 0) || TESTBIT(clustermap, 1)))) {
+          hasGoodQuality = false;
+        }
+      }
+      if (!hasGoodQuality) {
+        CLRBIT(statusProng, CandidateType::CandDstar);
+        if (debug) {
+          if (fillHistograms) {
+            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iDebugCut);
           }
         }
       }
@@ -591,6 +648,14 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         registry.fill(HIST("hDCAToPrimXYVsPtCutsV0bachelor"), trackPt, dca[0]);
         if (debug) {
           registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
+        }
+      }
+      if (TESTBIT(statusProng, CandidateType::CandDstar)) {
+        registry.fill(HIST("hPtCutsSoftPionForDstar"), trackPt);
+        registry.fill(HIST("hEtaCutsSoftPionForDstar"), trackEta);
+        registry.fill(HIST("hDCAToPrimXYVsPtCutsSoftPionForDstar"), trackPt, dca[0]);
+        if (debug) {
+          registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iDebugCut);
         }
       }
     }
