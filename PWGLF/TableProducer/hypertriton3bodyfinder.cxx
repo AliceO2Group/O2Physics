@@ -642,7 +642,7 @@ struct hypertriton3bodyFinder {
 
           // Fix: Reconstruction H3L DCA Check
           vtx3bodydata(
-            t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(),
+            t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(), 0,
             vertexXYZ[0], vertexXYZ[1], vertexXYZ[2],
             p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
             fitter3body.getChi2AtPCACandidate(),
