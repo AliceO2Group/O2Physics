@@ -323,7 +323,7 @@ struct OnTheFlyTracker {
       }
 
       bool isDecayDaughter = false;
-      if(mcParticle.getProcess() == 4) 
+      if (mcParticle.getProcess() == 4)
         isDecayDaughter = true;
 
       multiplicityCounter++;
@@ -361,7 +361,7 @@ struct OnTheFlyTracker {
       const float t = (ir.timeInBCNS + gRandom->Gaus(0., 100.)) * 1e-3;
       tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3, isDecayDaughter});
     }
-  
+
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
     // Calculate primary vertex with tracks from this collision
     // data preparation
@@ -446,7 +446,7 @@ struct OnTheFlyTracker {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
         }
-        if (doExtraQA  && (!extraQAwithoutDecayDaughters || (extraQAwithoutDecayDaughters && trackParCov.isDecayDau)) ) {
+        if (doExtraQA && (!extraQAwithoutDecayDaughters || (extraQAwithoutDecayDaughters && trackParCov.isDecayDau))) {
           histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
         }
