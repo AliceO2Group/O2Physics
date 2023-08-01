@@ -83,7 +83,7 @@ struct OnTheFlyTOFPID {
   Configurable<int> nBinsEta{"nBinsEta", 400, "number of bins plot relative eta error"};
   Configurable<bool> flagIncludeTrackTimeRes{"flagIncludeTrackTimeRes", true, "flag to include or exclude track time resolution"};
   Configurable<float> multiplicityEtaRange{"multiplicityEtaRange", 0.800000012, "eta range to compute the multiplicity"};
-  Configurable<bool> flagTOFLoadDelphesLUTs{"flagTOFLoadDelphesLUTs", true, "flag to load Delphes LUTs for tracking correction (use recoTrack parameters if false)"};
+  Configurable<bool> flagTOFLoadDelphesLUTs{"flagTOFLoadDelphesLUTs", false, "flag to load Delphes LUTs for tracking correction (use recoTrack parameters if false)"};
 
   Configurable<std::string> lutEl{"lutEl", "lutCovm.el.dat", "LUT for electrons"};
   Configurable<std::string> lutMu{"lutMu", "lutCovm.mu.dat", "LUT for muons"};
