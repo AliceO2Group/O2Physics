@@ -176,7 +176,7 @@ DECLARE_SOA_TABLE(LfCandNucleus, "AOD", "LFNUCL",
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>);
 DECLARE_SOA_TABLE_FULL(LfCandNucleusDummy, "LfCandNucleus", "AOD", "LFNUCL",
-                        o2::soa::Index<>,
+                       o2::soa::Index<>,
                        full::LfNuclEventId,
                        full::DcaXY, full::DcaZ,
                        full::TPCNSigmaDe, full::TPCNSigmaHe,
