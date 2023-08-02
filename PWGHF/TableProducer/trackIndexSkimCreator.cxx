@@ -87,7 +87,7 @@ using TracksWithSelAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::Track
     cmd;                             \
   }
 #else
-using TracksWithSelAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>;
+using TracksWithSelAndDCA = soa::Join<aod::BigTracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
@@ -973,8 +973,8 @@ struct HfTrackIndexSkimCreator {
   std::array<std::vector<double>, kN3ProngDecays> pTBins3Prong;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using TracksWithDCA = soa::Join<aod::BigTracks, aod::TracksDCA>;
-  using TracksWithPVRefitAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
+  using TracksWithDCA = soa::Join<aod::BigTracks, aod::TracksExtra, aod::TracksDCA>;
+  using TracksWithPVRefitAndDCA = soa::Join<aod::BigTracks, aod::TracksExtra, aod::TracksDCA, aod::HfPvRefitTrack>;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   // filter collisions
@@ -2360,13 +2360,13 @@ struct HfTrackIndexSkimCreatorCascades {
   double mass2K0sP{0.}; // WHY HERE?
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using TracksWithDCA = soa::Join<aod::BigTracks, aod::TracksDCA>;
+  using TracksWithDCA = soa::Join<aod::BigTracks, aod::TracksExtra, aod::TracksDCA>;
+  using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4);
   // Partition<MyTracks> TracksWithPVRefitAndDCA = aod::hf_sel_track::isSelProng >= 4;
 
-  using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
 

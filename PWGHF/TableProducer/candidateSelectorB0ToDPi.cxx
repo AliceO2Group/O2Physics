@@ -60,7 +60,7 @@ struct HfCandidateSelectorB0ToDPi {
   bool selectionFlagDAndUsePidInSync = true;
   TrackSelectorPi selectorPion;
 
-  using TracksPidWithSel = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TrackSelection>;
+  using TracksPidWithSel = soa::Join<aod::BigTracks, aod::TracksExtra, aod::TracksPidPi, aod::TrackSelection>;
 
   HistogramRegistry registry{"registry"};
 

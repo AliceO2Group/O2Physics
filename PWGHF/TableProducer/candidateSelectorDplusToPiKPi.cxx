@@ -75,7 +75,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
-  using TracksSel = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa>;
+  using TracksSel = soa::Join<aod::BigTracks, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidKa>;
 
   HistogramRegistry registry{"registry"};
 
