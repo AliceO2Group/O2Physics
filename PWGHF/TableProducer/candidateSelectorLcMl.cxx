@@ -70,7 +70,7 @@ struct HfCandidateSelectorLcMl {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  Configurable<int> activateQA{"activateQA", 0, "flag to enable QA histos (0 no QA, 1 basic QA, 2 extended QA)"};
+  Configurable<bool> activateQA{"activateQA", false, "flag to enable QA histos"};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   int dataTypeML;
   OnnxModel model;
@@ -80,7 +80,7 @@ struct HfCandidateSelectorLcMl {
   void init(o2::framework::InitContext&)
   {
     AxisSpec bdtAxis{100, 0.f, 1.f};
-    if (applyML && activateQA != 0) {
+    if (applyML && activateQA) {
       registry.add<TH1>("hLcBDTScoreBkg", "BDT background score distribution for Lc;BDT background score;counts", HistType::kTH1F, {bdtAxis});
       registry.add<TH1>("hLcBDTScorePrompt", "BDT prompt score distribution for Lc;BDT prompt score;counts", HistType::kTH1F, {bdtAxis});
       registry.add<TH1>("hLcBDTScoreNonPrompt", "BDT nonprompt score distribution for Lc;BDT nonprompt score;counts", HistType::kTH1F, {bdtAxis});
@@ -330,7 +330,7 @@ struct HfCandidateSelectorLcMl {
           // non-prompt
           // NOTE: Can be both prompt and non-prompt!
         }
-        if (activateQA != 0) {
+        if (activateQA) {
           registry.fill(HIST("hLcBDTScoreBkg"), scores[0]);
           registry.fill(HIST("hLcBDTScorePrompt"), scores[1]);
           registry.fill(HIST("hLcBDTScoreNonPrompt"), scores[2]);
