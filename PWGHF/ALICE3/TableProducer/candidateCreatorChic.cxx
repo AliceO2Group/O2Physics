@@ -81,7 +81,7 @@ struct HfCandidateCreatorChic {
                soa::Filtered<soa::Join<
                  aod::HfCand2Prong,
                  aod::HfSelJpsi>> const& jpsiCands,
-               aod::BigTracks const& tracks,
+               aod::TracksWCov const& tracks,
                aod::ECALs const& ecals)
   {
     // 2-prong vertex fitter (to rebuild Jpsi vertex)
@@ -114,8 +114,8 @@ struct HfCandidateCreatorChic {
       // create Jpsi track to pass to DCA fitter; use cand table + rebuild vertex
       const std::array<float, 3> vertexJpsi = {jpsiCand.xSecondaryVertex(), jpsiCand.ySecondaryVertex(), jpsiCand.zSecondaryVertex()};
       array<float, 3> pvecJpsi = {jpsiCand.px(), jpsiCand.py(), jpsiCand.pz()};
-      auto prong0 = jpsiCand.prong0_as<aod::BigTracks>();
-      auto prong1 = jpsiCand.prong1_as<aod::BigTracks>();
+      auto prong0 = jpsiCand.prong0_as<aod::TracksWCov>();
+      auto prong1 = jpsiCand.prong1_as<aod::TracksWCov>();
       auto prong0TrackParCov = getTrackParCov(prong0);
       auto prong1TrackParCov = getTrackParCov(prong1);
 

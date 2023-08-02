@@ -71,7 +71,7 @@ struct HfCandidateCreatorXicc {
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& xicCands,
-               aod::BigTracks const& tracks)
+               aod::TracksWCov const& tracks)
   {
     // 3-prong vertex fitter to rebuild the Xic vertex
     o2::vertexing::DCAFitterN<3> df3;
@@ -105,9 +105,9 @@ struct HfCandidateCreatorXicc {
       if (xicCand.isSelXicToPiKP() >= selectionFlagXic) {
         hMassXic->Fill(invMassXicToPiKP(xicCand), xicCand.pt());
       }
-      auto track0 = xicCand.prong0_as<aod::BigTracks>();
-      auto track1 = xicCand.prong1_as<aod::BigTracks>();
-      auto track2 = xicCand.prong2_as<aod::BigTracks>();
+      auto track0 = xicCand.prong0_as<aod::TracksWCov>();
+      auto track1 = xicCand.prong1_as<aod::TracksWCov>();
+      auto track2 = xicCand.prong2_as<aod::TracksWCov>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);

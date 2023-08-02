@@ -81,13 +81,13 @@ static const double massMuon = RecoDecay::getMassPDG(kMuonPlus);
 // #define MY_DEBUG
 
 #ifdef MY_DEBUG
-using TracksWithSelAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
+using TracksWithSelAndDCA = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::McTrackLabels>;
 #define MY_DEBUG_MSG(condition, cmd) \
   if (condition) {                   \
     cmd;                             \
   }
 #else
-using TracksWithSelAndDCA = soa::Join<aod::BigTracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
+using TracksWithSelAndDCA = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection>;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
@@ -973,8 +973,8 @@ struct HfTrackIndexSkimCreator {
   std::array<std::vector<double>, kN3ProngDecays> pTBins3Prong;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using TracksWithDCA = soa::Join<aod::BigTracks, aod::TracksExtra, aod::TracksDCA>;
-  using TracksWithPVRefitAndDCA = soa::Join<aod::BigTracks, aod::TracksExtra, aod::TracksDCA, aod::HfPvRefitTrack>;
+  using TracksWithDCA = aod::TracksWCovDcaExtra;
+  using TracksWithPVRefitAndDCA = soa::Join<aod::TracksWCovDcaExtra, aod::HfPvRefitTrack>;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   // filter collisions
@@ -2360,7 +2360,7 @@ struct HfTrackIndexSkimCreatorCascades {
   double mass2K0sP{0.}; // WHY HERE?
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using TracksWithDCA = soa::Join<aod::BigTracks, aod::TracksExtra, aod::TracksDCA>;
+  using TracksWithDCA = aod::TracksWCovDcaExtra;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
@@ -2742,8 +2742,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using TracksWithPVRefitAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
-  using TracksWithDCA = soa::Join<aod::BigTracks, aod::TracksDCA>;
+  using TracksWithPVRefitAndDCA = soa::Join<aod::TracksWDca, aod::HfPvRefitTrack>;
+  using TracksWithDCA = aod::TracksWCovDca;
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
   Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit

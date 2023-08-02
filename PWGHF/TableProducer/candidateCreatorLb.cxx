@@ -78,7 +78,7 @@ struct HfCandidateCreatorLb {
                soa::Filtered<soa::Join<
                  aod::HfCand3Prong,
                  aod::HfSelLc>> const& lcCands,
-               aod::BigTracks const& tracks)
+               aod::TracksWCov const& tracks)
   {
     // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df2;
@@ -116,9 +116,9 @@ struct HfCandidateCreatorLb {
       hPtLc->Fill(lcCand.pt());
       hCPALc->Fill(lcCand.cpa());
 
-      auto track0 = lcCand.prong0_as<aod::BigTracks>();
-      auto track1 = lcCand.prong1_as<aod::BigTracks>();
-      auto track2 = lcCand.prong2_as<aod::BigTracks>();
+      auto track0 = lcCand.prong0_as<aod::TracksWCov>();
+      auto track1 = lcCand.prong1_as<aod::TracksWCov>();
+      auto track2 = lcCand.prong2_as<aod::TracksWCov>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
