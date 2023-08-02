@@ -347,7 +347,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
     if (fillHistograms) {
       // general tracks
-      registry.add("hRejTracks", "Tracks;;entries", {HistType::kTH1F, {{15, 0.5, 15.5}}});
+      registry.add("hRejTracks", "Tracks;;entries", {HistType::kTH1F, {{20, 0.5, 20.5}}});
       registry.add("hPtNoCuts", "all tracks;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
 
       // 2-prong histograms
@@ -517,6 +517,16 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         // cutStatus[CandidateType::CandV0bachelor][1] = false;
         if (fillHistograms) {
           registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
+        }
+      }
+    }
+
+    if ((debug || TESTBIT(statusProng, CandidateType::CandDstar)) && (trackEta > etaMaxSoftPionForDstar || trackEta < etaMinSoftPionForDstar)) {
+      CLRBIT(statusProng, CandidateType::CandDstar);
+      if (debug) {
+        // cutStatus[CandidateType::CandDstar][1] = false;
+        if (fillHistograms) {
+          registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iDebugCut);
         }
       }
     }
@@ -1111,7 +1121,7 @@ struct HfTrackIndexSkimCreator {
       registry.add("hMassLcToPKPi", "#Lambda_{c}^{#plus} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
       registry.add("hMassDsToKKPi", "D_{s}^{#plus} candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
       registry.add("hMassXicToPKPi", "#Xi_{c}^{#plus} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
-      registry.add("hMassDstarToD0Pi", "D^{*#plus} candidates;inv. mass (K #pi #pi) - mass (K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 0.25}}});
+      registry.add("hMassDstarToD0Pi", "D^{*#plus} candidates;inv. mass (K #pi #pi) - mass (K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0.135, 0.185}}});
 
       // needed for PV refitting
       if (doprocess2And3ProngsWithPvRefit) {
@@ -1444,7 +1454,7 @@ struct HfTrackIndexSkimCreator {
 
     // D0 mass
     double deltaMassD0 = cutsDstarToD0Pi->get(pTBin, deltaMassD0Index);
-    double invMassD0 = RecoDecay::m(arrMomD0, std::array{211, 321});
+    double invMassD0 = RecoDecay::m(arrMomD0, std::array{massPi, massK});
     if (std::abs(invMassD0 - massDzero) > deltaMassD0) {
       isSelected = 0;
       if (debug) {
@@ -1456,7 +1466,7 @@ struct HfTrackIndexSkimCreator {
 
     // D*+ mass
     double maxDeltaMass = cutsDstarToD0Pi->get(pTBin, deltaMassIndex);
-    double invMassDstar = RecoDecay::m(arrMom, std::array{211, 321, 211});
+    double invMassDstar = RecoDecay::m(arrMom, std::array{massPi, massK, massPi});
     deltaMass = invMassDstar - invMassD0;
     if (deltaMass > maxDeltaMass) {
       isSelected = 0;
@@ -1467,7 +1477,7 @@ struct HfTrackIndexSkimCreator {
       }
     }
 
-    return 0;
+    return isSelected;
   }
 
   /// Method for the PV refit excluding the candidate daughters
