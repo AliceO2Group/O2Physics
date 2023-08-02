@@ -314,18 +314,12 @@ bool selectionTopol(const T1& candBs, const T2& cuts, const T3& binsPt)
 
   int pTBin = findBin(binsPt, ptCandBs);
   if (pTBin == -1) {
-    // LOGF(info, "B0 topol selection failed at getpTBin");
+    LOGF(info, "Bs topol selection failed at getpTBin");
     return false;
   }
 
-  // // check that the candidate pT is within the analysis range
-  // if (ptCandBs < ptCandMin || ptCandBs >= ptCandMax) {
-  //   return false;
-  // }
-
   // Bs mass cut
   if (std::abs(o2::aod::hf_cand_bs::invMassBsToDsPi(candBs) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kBS)) > cuts->get(pTBin, "m")) {
-    // Printf("Bs topol selection failed at mass diff check");
     return false;
   }
 
@@ -334,17 +328,10 @@ bool selectionTopol(const T1& candBs, const T2& cuts, const T3& binsPt)
     return false;
   }
 
-  // D- pt
+  // Ds pt
   if (ptDs < cuts->get(pTBin, "pT Ds")) {
     return false;
   }
-
-  /*
-  // D mass cut | already applied in candidateSelectorDplusToPiKPi.cxx
-  if (std::abs(o2::aod::hf_cand_3prong::invMassDplusToPiKPi(hfCandD) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaMD")) {
-    return false;
-  }
-  */
 
   // Bs Decay length
   if (candBs.decayLength() < cuts->get(pTBin, "Bs decLen")) {
@@ -373,6 +360,11 @@ bool selectionTopol(const T1& candBs, const T2& cuts, const T3& binsPt)
 
   // d0 of Ds
   if (std::abs(candBs.impactParameter0()) < cuts->get(pTBin, "d0 Ds")) {
+    return false;
+  }
+
+  // d0(Ds)xd0(pi)
+  if (candBs.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
     return false;
   }
 

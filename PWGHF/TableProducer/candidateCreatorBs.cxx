@@ -42,11 +42,11 @@ struct HfCandidateCreatorBs {
   Produces<aod::HfCandBsBase> rowCandidateBase; // table defined in CandidateReconstructionTables.h
 
   // vertexing
-  // Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useAbsDCADs{"useAbsDCADs", false, "Minimise abs. distance rather than chi2 for 3-prong Ds vertex"};
+  Configurable<bool> useAbsDCABs{"useAbsDCABs", true, "Minimise abs. distance rather than chi2for 2-prong Bs vertex"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
+  Configurable<double> maxR{"maxR", 4., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any Bs is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
@@ -134,7 +134,7 @@ struct HfCandidateCreatorBs {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
+    df2.setUseAbsDCA(useAbsDCABs);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // Initialise fitter to redo Ds-vertex to get extrapolated daughter tracks (3-prong vertex filter)
@@ -145,7 +145,7 @@ struct HfCandidateCreatorBs {
     df3.setMaxDZIni(maxDZIni);
     df3.setMinParamChange(minParamChange);
     df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
+    df3.setUseAbsDCA(useAbsDCADs);
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
     static int ncol = 0;
@@ -176,9 +176,6 @@ struct HfCandidateCreatorBs {
       auto candsDsThisColl = candsDs.sliceBy(candsDsPerCollision, thisCollId);
 
       for (const auto& candDs : candsDsThisColl) { // start loop over filtered Ds candidates indices as associated to this collision in candidateCreator3Prong.cxx
-        hMassDsToKKPi->Fill(invMassDsToKKPi(candDs), candDs.pt());
-        hPtDs->Fill(candDs.pt());
-        hCPADs->Fill(candDs.cpa());
 
         // track0 <-> K, track1 <-> K, track2 <-> pi
         auto track0 = candDs.prong0_as<TracksWithSel>();
@@ -261,7 +258,6 @@ struct HfCandidateCreatorBs {
             continue;
           }
 
-          hPtPion->Fill(trackPion.pt());
           array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
           auto trackParCovPi = getTrackParCov(trackPion);
 
@@ -275,8 +271,6 @@ struct HfCandidateCreatorBs {
           const auto& secondaryVertexBs = df2.getPCACandidate();
           auto chi2PCA = df2.getChi2AtPCACandidate();
           auto covMatrixPCA = df2.calcPCACovMatrixFlat();
-          hCovSVXX->Fill(covMatrixPCA[0]);
-          hCovPVXX->Fill(covMatrixPV[0]);
 
           // propagate Ds and Pi to the Bs vertex
           df2.propagateTracksToVertex();
@@ -289,7 +283,7 @@ struct HfCandidateCreatorBs {
           if (std::abs(massDsPi - massBs) > invMassWindowBs) {
             continue;
           }
-          hMassBsToDsPi->Fill(massDsPi);
+
 
           // compute impact parameters of Ds and Pi
           o2::dataformats::DCA dcaDs;
@@ -306,6 +300,15 @@ struct HfCandidateCreatorBs {
 
           int hfFlag = BIT(hf_cand_bs::DecayType::BsToDsPi);
 
+          // fill output histograms for Bs candidates
+          hMassDsToKKPi->Fill(invMassDsToKKPi(candDs), candDs.pt());
+          hCovSVXX->Fill(covMatrixPCA[0]);
+          hCovPVXX->Fill(covMatrixPV[0]);
+          hMassBsToDsPi->Fill(massDsPi);
+          hPtDs->Fill(candDs.pt());
+          hCPADs->Fill(candDs.cpa());
+          hPtPion->Fill(trackPion.pt());
+          
           // fill the candidate table for the Bs here:
           rowCandidateBase(thisCollId,
                            collision.posX(), collision.posY(), collision.posZ(),
@@ -319,7 +322,7 @@ struct HfCandidateCreatorBs {
                            candDs.globalIndex(), trackPion.globalIndex(),
                            hfFlag);
         } // pi loop
-      }   // D loop
+      }   // Ds loop
     }     // collision loop
   }       // process
 };        // struct
@@ -347,7 +350,6 @@ struct HfCandidateCreatorBsExpressions {
     std::vector<int> arrDaughDsIndex;
     std::array<int, 2> arrPDGDaughDs;
     std::array<int, 2> arrPDGResonantDsPhiPi = {333, kPiPlus}; // Ds± → Phi π±
-    std::array<int, 2> arrPDGResonantDsKstarK = {313, kKPlus}; // Ds± → K*(892)0bar K±
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -372,7 +374,6 @@ struct HfCandidateCreatorBsExpressions {
         // Checking Ds∓ → K- K+ π∓
         indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersDs, pdg::Code::kDSBar, array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
-          // flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi);
           RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, array{0}, 1);
           if (arrDaughDsIndex.size() == 2) {
             for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
@@ -381,14 +382,11 @@ struct HfCandidateCreatorBsExpressions {
             }
             if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
               flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi);
-            } else if ((arrPDGDaughDs[0] == arrPDGResonantDsKstarK[0] && arrPDGDaughDs[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsKstarK[1] && arrPDGDaughDs[1] == arrPDGResonantDsKstarK[0])) {
-              debug = 1;
-              LOGF(debug, "WARNING: Bs decays in the expected final state but Ds decays via K* resonance.");
             }
           }
         } else {
-          debug = 2;
-          LOGF(debug, "WARNING: Bs decays in the expected final state but the condition on the intermediate state is not fulfilled");
+          debug = 1;
+          LOGF(debug, "WARNING: Bs decays in the expected final state but the condition on the intermediate state DsPi->PhiPiPi is not fulfilled");
         }
       }
 
@@ -426,12 +424,22 @@ struct HfCandidateCreatorBsExpressions {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
+      arrDaughDsIndex.clear();
       // Bs0(bar) → Ds∓ π±
-      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kBS, array{-static_cast<int>(pdg::Code::kDSBar), +kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kBS, array{-static_cast<int>(pdg::Code::kDS), +kPiPlus}, true)) {
         // Match Ds∓ -> K- K+ π±
         auto candDsMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(particlesMc, candDsMC, -static_cast<int>(pdg::Code::kDSBar), array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign)) {
-          flag = sign * BIT(hf_cand_bs::DecayType::BsToDsPi);
+        if (RecoDecay::isMatchedMCGen(particlesMc, candDsMC, -static_cast<int>(pdg::Code::kDS), array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
+          RecoDecay::getDaughters(candDsMC, &arrDaughDsIndex, array{0}, 1);
+          if (arrDaughDsIndex.size() == 2) {
+            for (auto jProng = 0u; jProng < arrDaughDsIndex.size(); ++jProng) {
+              auto daughJ = particlesMc.rawIteratorAt(arrDaughDsIndex[jProng]);
+              arrPDGDaughDs[jProng] = std::abs(daughJ.pdgCode());
+            }
+            if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
+              flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi);
+            }
+          }
         }
       }
       rowMcMatchGen(flag, origin);
