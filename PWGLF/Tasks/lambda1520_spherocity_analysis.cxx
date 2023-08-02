@@ -46,20 +46,20 @@ struct lambdaAnalysis {
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV Contributor Track Selection"};
 
   // TPC TOF Protons
-  Configurable<std::vector<float>> protonTPCPIDpt{"protonTPCPIDpt", {999.}, "pT dependent TPC cuts protons"};
-  Configurable<std::vector<int>> protonTPCPIDcut{"protonTPCPIDcut", {3}, "TPC cuts protons"};
-  Configurable<std::vector<float>> protonTOFPIDpt{"protonTOFPIDpt", {999.}, "pT dependent TOF cuts protons"};
+  Configurable<std::vector<float>> protonTPCPIDpt{"protonTPCPIDpt", {0, 0.4, 1.2}, "pT dependent TPC cuts protons"};
+  Configurable<std::vector<int>> protonTPCPIDcut{"protonTPCPIDcut", {0, 4, 3}, "TPC cuts protons"};
+  Configurable<std::vector<float>> protonTOFPIDpt{"protonTOFPIDpt", {0.15}, "pT dependent TOF cuts protons"};
   Configurable<std::vector<int>> protonTOFPIDcut{"protonTOFPIDCut", {3}, "TOF cuts protons"};
 
   // TPC TOF Protons
-  Configurable<std::vector<float>> kaonTPCPIDpt{"kaonTPCPIDpt", {999.}, "pT dependent TPC cuts kaons"};
-  Configurable<std::vector<int>> kaonTPCPIDcut{"kaonTPCPIDcut", {3}, "TPC cuts kaons"};
-  Configurable<std::vector<float>> kaonTOFPIDpt{"kaonTOFPIDpt", {999.}, "pT dependent TOF cuts kaons"};
+  Configurable<std::vector<float>> kaonTPCPIDpt{"kaonTPCPIDpt", {0, 0.2, 0.7}, "pT dependent TPC cuts kaons"};
+  Configurable<std::vector<int>> kaonTPCPIDcut{"kaonTPCPIDcut", {0, 4, 3}, "TPC cuts kaons"};
+  Configurable<std::vector<float>> kaonTOFPIDpt{"kaonTOFPIDpt", {0.15}, "pT dependent TOF cuts kaons"};
   Configurable<std::vector<int>> kaonTOFPIDcut{"kaonTOFPIDcut", {3}, "TOF cuts kaons"};
 
   // Event Mixing.
   Configurable<int> nMix{"nMix", 5, "Number of Events to be mixed"};
-  ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
 
   // Histogram Registry.
@@ -180,7 +180,7 @@ struct lambdaAnalysis {
   void fillDataHistos(trackType const& trk1, trackType const& trk2, float const& sph)
   {
 
-    bool isTrk1Proton{true}, isTrk2Kaon{true}, trk1HasTOF{false}, trk2HasTOF{false};
+    bool isTrk1Proton{false}, isTrk2Kaon{false}, trk1HasTOF{false}, trk2HasTOF{false}, trkFlagPr{true}, trkFlagKa{true};
 
     auto prTpcPIDpt = static_cast<std::vector<float>>(protonTPCPIDpt);
     auto prTpcPIDcut = static_cast<std::vector<int>>(protonTPCPIDcut);
@@ -200,20 +200,27 @@ struct lambdaAnalysis {
       if (trkPr.index() == trkKa.index())
         continue;
 
-      isTrk1Proton = true;
-      isTrk2Kaon = true;
+      trkFlagPr = true;
+      trkFlagKa = true;
+      isTrk1Proton = false;
+      isTrk2Kaon = false;
       trk1HasTOF = false;
       trk2HasTOF = false;
 
-      // Protons
       // pT, DCA and Global Track selection.
-      selTracks(trkPr, isTrk1Proton);
+      selTracks(trkPr, trkFlagPr);
+      selTracks(trkKa, trkFlagKa);
 
+      if (!trkFlagPr || !trkFlagKa)
+        continue;
+
+      // PID Selection for Protons and Kaons. pT dependent cuts.
+      // Protons
       // TPC Only.
       for (int i = 0; i < static_cast<int>(prTpcPIDpt.size()); ++i) {
-        if (trkPr.pt() < prTpcPIDpt[i]) {
-          if (std::abs(trkPr.tpcNSigmaPr()) >= prTpcPIDcut[i]) {
-            isTrk1Proton = false;
+        if (trkPr.pt() > prTpcPIDpt[i]) {
+          if (std::abs(trkPr.tpcNSigmaPr()) < prTpcPIDcut[i]) {
+            isTrk1Proton = true;
           }
         }
       }
@@ -222,23 +229,20 @@ struct lambdaAnalysis {
       if ((trkPr.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
         trk1HasTOF = true;
         for (int i = 0; i < static_cast<int>(prTofPIDpt.size()); ++i) {
-          if (trkPr.pt() < prTofPIDpt[i]) {
-            if (std::abs(trkPr.tofNSigmaPr()) >= prTofPIDcut[i]) {
-              isTrk1Proton = false;
+          if (trkPr.pt() > prTofPIDpt[i]) {
+            if (std::abs(trkPr.tofNSigmaPr()) < prTofPIDcut[i] && std::abs(trkPr.tpcNSigmaPr()) < 3) {
+              isTrk1Proton = true;
             }
           }
         }
       }
 
       // Kaons
-      // pT, DCA and Global Track selection.
-      selTracks(trkKa, isTrk2Kaon);
-
       // TPC Only.
       for (int i = 0; i < static_cast<int>(kaTpcPIDpt.size()); ++i) {
-        if (trkKa.pt() < kaTpcPIDpt[i]) {
-          if (std::abs(trkKa.tpcNSigmaKa()) >= kaTpcPIDcut[i]) {
-            isTrk2Kaon = false;
+        if (trkKa.pt() > kaTpcPIDpt[i]) {
+          if (std::abs(trkKa.tpcNSigmaKa()) < kaTpcPIDcut[i]) {
+            isTrk2Kaon = true;
           }
         }
       }
@@ -246,9 +250,9 @@ struct lambdaAnalysis {
       if ((trkKa.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) == aod::resodaughter::kHasTOF) {
         trk2HasTOF = true;
         for (int i = 0; i < static_cast<int>(kaTofPIDpt.size()); ++i) {
-          if (trkKa.pt() < kaTofPIDpt[i]) {
-            if (std::abs(trkKa.tofNSigmaKa()) >= kaTofPIDcut[i]) {
-              isTrk2Kaon = false;
+          if (trkKa.pt() > kaTofPIDpt[i]) {
+            if (std::abs(trkKa.tofNSigmaKa()) < kaTofPIDcut[i] && std::abs(trkKa.tpcNSigmaKa()) < 3) {
+              isTrk2Kaon = true;
             }
           }
         }
@@ -258,7 +262,7 @@ struct lambdaAnalysis {
       if (!mix)
         fillQA<true>(trkPr, trkKa, trk1HasTOF, trk2HasTOF);
 
-      // Apply Selection.
+      // Apply PID Selection.
       if (!isTrk1Proton || !isTrk2Kaon)
         continue;
 

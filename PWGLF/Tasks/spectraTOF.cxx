@@ -42,7 +42,6 @@ using namespace o2::framework::expressions;
 
 // Spectra task
 struct tofSpectra {
-  Configurable<float> cfgNSigmaCut{"cfgNSigmaCut", 3, "Value of the Nsigma cut"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEtaMax{"cfgCutEtaMax", 0.8f, "Max eta range for tracks"};
   Configurable<float> cfgCutEtaMin{"cfgCutEtaMin", -0.8f, "Min eta range for tracks"};
@@ -194,7 +193,7 @@ struct tofSpectra {
     } else {
       h->GetXaxis()->SetBinLabel(8, "INEL>0 (fraction)");
     }
-    if (cfgINELCut.value == 1) {
+    if (cfgINELCut.value == 2) {
       h->GetXaxis()->SetBinLabel(9, "INEL>1");
     } else {
       h->GetXaxis()->SetBinLabel(9, "INEL>1 (fraction)");

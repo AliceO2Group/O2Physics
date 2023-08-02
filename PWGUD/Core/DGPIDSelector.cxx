@@ -129,6 +129,12 @@ void DGAnaparHolder::Print()
   LOGF(info, "    max dcaz:          %f", mMaxDCAz);
   LOGF(info, "    min dBC:           %d", mdBCMin);
   LOGF(info, "    max dBC:           %d", mdBCMax);
+  LOGF(info, "    FIT vetoes (FV0A, FT0A, FT0C, FDDA, FDDC)");
+  LOGF(info, "      %d %d %d %d %d", mFITvetoes[0], mFITvetoes[1], mFITvetoes[2], mFITvetoes[3], mFITvetoes[4]);
+  LOGF(info, "    min NCl TPC:       %d", mMinNClTPC);
+  LOGF(info, "    max NCl TPC:       %d", mMaxNClTPC);
+  LOGF(info, "    min chi^{2} TPC    %f", mMinChi2NClTPC);
+  LOGF(info, "    max chi^{2} TPC    %f", mMaxChi2NClTPC);
   LOGF(info, "    min track pT:      %f", mMinpt);
   LOGF(info, "    max track pT:      %f", mMaxpt);
   LOGF(info, "    min eta:           %f", mMineta);
@@ -138,8 +144,12 @@ void DGAnaparHolder::Print()
   LOGF(info, "    min system pT:     %f", mMinptsys);
   LOGF(info, "    max system pT:     %f", mMaxptsys);
   LOGF(info, "    nCombine:          %d", mNCombine);
-  LOGF(info, "    net charges");
-  for (auto ch : mNetCharges) {
+  LOGF(info, "    unlike charges");
+  for (auto ch : mUnlikeCharges) {
+    LOGF(info, "      %i", ch);
+  }
+  LOGF(info, "    like charges");
+  for (auto ch : mLikeCharges) {
     LOGF(info, "      %i", ch);
   }
   LOGF(info, "    PIDs");
@@ -300,7 +310,8 @@ DGPIDSelector::DGPIDSelector()
 
 DGPIDSelector::~DGPIDSelector()
 {
-  mIVMs.clear();
+  mUnlikeIVMs.clear();
+  mLikeIVMs.clear();
 }
 
 // -----------------------------------------------------------------------------
@@ -313,7 +324,8 @@ void DGPIDSelector::Print()
 void DGPIDSelector::init(DGAnaparHolder anaPars)
 {
   mAnaPars = anaPars;
-  mIVMs.clear();
+  mUnlikeIVMs.clear();
+  mLikeIVMs.clear();
 }
 
 // -----------------------------------------------------------------------------
