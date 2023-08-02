@@ -174,13 +174,14 @@ struct bbParams {
   void setPostCorrection(TList* l)
   {
     if (!l) {
-      LOG(warning) << "bbParams `" << name << "` :: Did not find the post calib list in the CCDB";
+      LOG(warning) << "bbParams `" << name << "` :: Did not find the post calib list";
       return;
     }
-    // TObject* obj = l->FindObject(Form("%s_postCorrection", name.c_str()));
-    TObject* obj = l->FindObject(Form("dEdx_MinusBB_%s", name.c_str()));
+
+    TString objname = Form("dEdx_MinusBB_%s", name.c_str());
+    TObject* obj = l->FindObject(objname);
     if (!obj) {
-      LOG(warning) << "Did not find the post calib object in the CCDB, cannot assign post calibration";
+      LOG(warning) << "Did not find the post calib object " << objname << ", cannot assign post calibration";
     } else {
       TString cn = obj->ClassName();
       if (cn.Contains("TF1")) {
@@ -191,10 +192,12 @@ struct bbParams {
         LOG(fatal) << "Cannot hanlde class " << cn << " for post calib object";
       }
     }
-    // obj = l->FindObject(Form("%s_postCorrectionSigma", name.c_str()));
-    obj = l->FindObject(Form("sigmaFitOverSigmaParam_%s", name.c_str()));
+
+    objname = Form("sigmaFitOverSigmaParam_%s", name.c_str());
+    obj = l->FindObject(objname);
     if (!obj) {
-      LOG(warning) << "Did not find the post calib sigma object in the CCDB, cannot assign post calibration for sigma";
+      LOG(warning) << "Did not find the post calib sigma object " << objname << ", cannot assign post calibration";
+
     } else {
       TString cn = obj->ClassName();
       if (cn.Contains("TF1")) {
@@ -338,6 +341,7 @@ struct bbParams {
       if (postL) {
         setValues(static_cast<TH1F*>(postL->FindObject(Form("BBParameter_%s", name.c_str()))));
       }
+      lastRunNumber = bunchCrossing.runNumber();
       return false;
     }
     // Secondly we check the BB parameters
