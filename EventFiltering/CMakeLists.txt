@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(central-event-filter-task
                            SOURCES cefpTask.cxx
-                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DataFormatsCTP
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(selected-bc-range-task
