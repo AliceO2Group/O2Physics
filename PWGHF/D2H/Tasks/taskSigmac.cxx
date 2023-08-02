@@ -217,7 +217,7 @@ struct HfTaskSigmac {
   /// @param candidatesSc are the reconstructed candidate Σc0,++
   /// @param
   void process(const aod::HfCandSc& candidatesSc,
-               const RecoLc&, const aod::BigTracksExtended&)
+               const RecoLc&, const aod::BigTracks&)
   {
 
     /// loop over the candidate Σc0,++
@@ -235,7 +235,7 @@ struct HfTaskSigmac {
       double ptSc(candSc.pt()), ptLc(candidateLc.pt());
       double etaSc(candSc.eta()), etaLc(candidateLc.eta());
       double phiSc(candSc.phi()), phiLc(candidateLc.phi());
-      double ptSoftPi(candSc.prong1_as<aod::BigTracksExtended>().pt()), etaSoftPi(candSc.prong1_as<aod::BigTracksExtended>().eta()), phiSoftPi(candSc.prong1_as<aod::BigTracksExtended>().phi());
+      double ptSoftPi(candSc.prong1_as<aod::BigTracks>().pt()), etaSoftPi(candSc.prong1_as<aod::BigTracks>().eta()), phiSoftPi(candSc.prong1_as<aod::BigTracks>().phi());
       /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
       if (isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) {
         massSc = invMassScRecoLcToPKPi(candSc, candidateLc);
