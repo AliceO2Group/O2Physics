@@ -217,7 +217,7 @@ struct HfTreeCreatorDsToKKPi {
   using candDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using candDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using candDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa>;
+  using TracksPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
   Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanGen == decayChannel;

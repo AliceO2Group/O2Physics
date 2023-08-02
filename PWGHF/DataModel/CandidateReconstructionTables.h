@@ -80,8 +80,6 @@ DECLARE_SOA_TABLE(HfPvRefitTrack, "AOD", "HFPVREFITTRACK", //!
                   hf_pv_refit_track::PvRefitDcaXY,
                   hf_pv_refit_track::PvRefitDcaZ);
 
-// using BigTracks = soa::Join<Tracks, TracksCov>;
-using BigTracks = Tracks;
 using TracksWCov = soa::Join<Tracks, TracksCov>;
 using TracksWDca = soa::Join<Tracks, TracksDCA>;
 using TracksWExtra = soa::Join<Tracks, TracksExtra>;
@@ -90,7 +88,7 @@ using TracksWCovExtra = soa::Join<Tracks, TracksCov, TracksExtra>;
 using TracksWDcaExtra = soa::Join<Tracks, TracksDCA, TracksExtra>;
 using TracksWCovDcaExtra = soa::Join<Tracks, TracksCov, TracksDCA, TracksExtra>;
 
-using BigTracksMC = soa::Join<BigTracks, McTrackLabels>;
+using BigTracksMC = soa::Join<Tracks, McTrackLabels>;
 
 using TracksPidEl = soa::Join<aod::pidTPCFullEl, aod::pidTOFFullEl>;
 using TracksPidMu = soa::Join<aod::pidTPCFullMu, aod::pidTOFFullMu>;

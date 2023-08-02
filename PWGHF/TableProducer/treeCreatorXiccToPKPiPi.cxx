@@ -162,7 +162,7 @@ struct HfTreeCreatorXiccToPKPiPi {
   Produces<o2::aod::HfCandXiccFullEs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXiccFullPs> rowCandidateFullParticles;
 
-  using TracksPid = soa::Join<aod::BigTracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using TracksPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
   void init(InitContext const&)
   {

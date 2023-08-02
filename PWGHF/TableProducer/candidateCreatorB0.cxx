@@ -75,7 +75,7 @@ struct HfCandidateCreatorB0 {
   double massDPi{0.};
   double bz{0.};
 
-  using TracksWithSel = soa::Join<aod::BigTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
+  using TracksWithSel = soa::Join<aod::TracksWCovDca, aod::TrackSelection>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagD);
   using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;

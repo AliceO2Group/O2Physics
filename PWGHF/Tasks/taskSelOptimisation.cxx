@@ -105,7 +105,7 @@ struct HfSelOptimisation {
   Configurable<std::vector<float>> cutsToTestMinDcaXY{"cutsToTestMinDcaXY", std::vector<float>{vecCutsMinDCAxy}, "min DCA xy cut values to test"};
   Configurable<std::vector<float>> cutsToTestMinTrackPt{"cutsToTestMinTrackPt", std::vector<float>{vecCutsMinTrackPt}, "min track pT cut values to test"};
 
-  using ExtendedTracks = soa::Join<aod::BigTracks, aod::TracksDCA>;
+  using ExtendedTracks = aod::TracksWDca;
 
   ConfigurableAxis ptBinning{"ptBinning", {0, 0., 2., 5., 20.}, "pT bin limits"};
 

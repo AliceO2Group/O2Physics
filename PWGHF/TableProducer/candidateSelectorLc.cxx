@@ -60,7 +60,7 @@ struct HfCandidateSelectorLc {
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;
 
-  using TracksSel = soa::Join<aod::BigTracks, aod::TracksExtra,
+  using TracksSel = soa::Join<aod::TracksWExtra,
                               aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr,
                               aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 

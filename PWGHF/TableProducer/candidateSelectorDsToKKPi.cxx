@@ -49,7 +49,7 @@ struct HfCandidateSelectorDsToKKPi {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
-  using TracksSel = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa>;
+  using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
 
   void init(InitContext const&)
   {

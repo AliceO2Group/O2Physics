@@ -215,7 +215,7 @@ struct HfTreeCreatorDplusToPiKPi {
 
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa>;
+  using TracksPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));

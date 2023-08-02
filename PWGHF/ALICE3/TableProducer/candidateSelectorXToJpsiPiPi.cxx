@@ -49,7 +49,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_x_to_jpsi_pi_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
-  using TracksSel = soa::Join<aod::BigTracks, aod::TracksPidPi>;
+  using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
   /// Selection on goodness of daughter tracks
   /// \note should be applied at candidate selection

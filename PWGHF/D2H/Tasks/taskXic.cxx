@@ -46,7 +46,7 @@ struct HfTaskXic {
   float etaMaxAcceptance = 0.8;
   float ptMinAcceptance = 0.1;
 
-  using TracksPid = soa::Join<aod::BigTracks,
+  using TracksPid = soa::Join<aod::Tracks,
                               aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);

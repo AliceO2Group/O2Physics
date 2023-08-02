@@ -38,7 +38,7 @@ struct HfTaskLcToK0sP {
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP || aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
 
-  using TracksPid = soa::Join<aod::BigTracks, aod::TracksExtra, aod::TracksPidPr>;
+  using TracksPid = soa::Join<aod::TracksWExtra, aod::TracksPidPr>;
 
   HistogramRegistry registry{"registry"};
 

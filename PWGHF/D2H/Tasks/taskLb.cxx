@@ -74,7 +74,7 @@ struct HfTaskLb {
     registry.add("hInvMassLc", "#Lambda_{b}^{0} candidates;prong0, #Lambda_{c}^{+} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi>> const& candidates, soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&, aod::BigTracks const&)
+  void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi>> const& candidates, soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&, aod::Tracks const&)
   {
     float centrality = collision.centRun2V0M();
     registry.fill(HIST("hCentrality"), centrality);
@@ -88,7 +88,7 @@ struct HfTaskLb {
       }
 
       auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-      auto candPi = candidate.prong1_as<aod::BigTracks>();
+      auto candPi = candidate.prong1();
 
       registry.fill(HIST("hMass"), invMassLbToLcPi(candidate), candidate.pt(), centrality);
       registry.fill(HIST("hPtCand"), candidate.pt());

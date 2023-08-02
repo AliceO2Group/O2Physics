@@ -188,7 +188,7 @@ struct HfTreeCreatorXicToPKPi {
 
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 
-  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
+  using TracksPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
 
   void init(InitContext const&)
   {

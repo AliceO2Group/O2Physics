@@ -153,7 +153,7 @@ struct HfTaskBplus {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
-  void process(aod::Collisions const& collision, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const&, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, aod::BigTracks const&)
+  void process(aod::Collisions const& collision, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const&, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, aod::Tracks const&)
   {
 
     for (const auto& candidate : selectedBPlusCandidates) {
@@ -165,7 +165,7 @@ struct HfTaskBplus {
       }
       auto ptCandBplus = candidate.pt();
       auto candD0 = candidate.prong0_as<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>();
-      auto candPi = candidate.prong1_as<aod::BigTracks>();
+      auto candPi = candidate.prong1();
 
       registry.fill(HIST("hMass"), invMassBplusToD0Pi(candidate), ptCandBplus);
       registry.fill(HIST("hPtCand"), ptCandBplus);

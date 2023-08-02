@@ -189,7 +189,7 @@ struct HfTreeCreatorLbToLcPiAlice3PidIndexBuilder {
 struct HfTreeCreatorLbToLcPi {
   Produces<o2::aod::HfCandLbFulls> rowCandidateFull;
 
-  using TracksPid = soa::Join<aod::BigTracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::HfTrackIndexALICE3PID>;
+  using TracksPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::HfTrackIndexALICE3PID>;
 
   void process(soa::Join<aod::HfCandLb, aod::HfCandLbMcRec, aod::HfSelLbToLcPi> const& candidates,
                soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const&,

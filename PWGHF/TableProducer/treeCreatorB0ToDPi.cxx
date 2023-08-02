@@ -172,7 +172,7 @@ struct HfTreeCreatorB0ToDPi {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandB0, aod::HfCandB0McRec, aod::HfSelB0ToDPi>>;
-  using TracksPid = soa::Join<aod::BigTracks, aod::TracksPidPi>;
+  using TracksPid = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0;
 
