@@ -220,6 +220,7 @@ struct HfCandidateCreator2Prong {
                          errorDecayLength, errorDecayLengthXY,
                          chi2PCA,
                          -999., -999.,
+                         -999., -999.,
                          pvec0[0], pvec0[1], pvec0[2],
                          pvec1[0], pvec1[1], pvec1[2],
                          impactParameter0.getY(), impactParameter1.getY(),
@@ -341,6 +342,7 @@ struct HfCandidateCreator2Prong {
                          errorDecayLength, errorDecayLengthXY, // TODO: much different from the DCAFitterN one
                          KFDZero.GetChi2() / KFDZero.GetNDF(), // TODO: to make sure it should be chi2 only or chi2/ndf, much different from the DCAFitterN one
                          topChi2PerNDF_DZero, topChi2PerNDF_DZeroBar,
+                         KFDZero.GetMass(), KFDZeroBar.GetMass(),
                          KFPosPion.GetPx(), KFPosPion.GetPy(), KFPosPion.GetPz(),
                          KFNegKaon.GetPx(), KFNegKaon.GetPy(), KFNegKaon.GetPz(),
                          impactParameter0XY, impactParameter1XY,

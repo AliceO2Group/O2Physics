@@ -103,8 +103,8 @@ struct HfCandidateSelectorD0 {
     // candidate DCA
     // if (candidate.chi2PCA() > cuts[pTBin][1]) return false;
     // candidate chi2
-    // if (candidate.kfTopChi2OverNDF_DZero() > cuts->get(pTBin, "topological chi2overndf as D0")) return false;
-    // if (candidate.kfTopChi2OverNDF_DZeroBar() > cuts->get(pTBin, "topological chi2overndf as D0bar")) return false;
+    // if (candidate.kfTopChi2OverNDF_DZero() !=-999. && candidate.kfTopChi2OverNDF_DZero() > cuts->get(pTBin, "topological chi2overndf as D0")) return false;
+    // if (candidate.kfTopChi2OverNDF_DZeroBar() !=-999. && candidate.kfTopChi2OverNDF_DZeroBar() > cuts->get(pTBin, "topological chi2overndf as D0bar")) return false;
 
     // decay exponentail law, with tau = beta*gamma*ctau
     // decay length > ctau retains (1-1/e)

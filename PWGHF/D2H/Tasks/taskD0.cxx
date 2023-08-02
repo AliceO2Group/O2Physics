@@ -173,6 +173,10 @@ struct HfTaskD0 {
 
       auto massD0 = invMassD0ToPiK(candidate);
       auto massD0bar = invMassD0barToKPi(candidate);
+      if (candidate.kfGeoMass_DZero() != -999. && candidate.kfGeoMass_DZeroBar() != -999.) {
+        massD0 = candidate.kfGeoMass_DZero();
+        massD0bar = candidate.kfGeoMass_DZeroBar();
+      }
       auto ptCandidate = candidate.pt();
 
       if (candidate.isSelD0() >= selectionFlagD0) {
