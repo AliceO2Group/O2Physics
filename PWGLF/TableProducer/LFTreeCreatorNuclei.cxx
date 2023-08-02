@@ -46,7 +46,7 @@ using namespace o2::framework::expressions;
 
 /// Writes the full information in an output TTree
 struct LfTreeCreatorNuclei {
-  Produces<o2::aod::LfCandNucleusEvents> tableEvents;
+  Produces<o2::aod::LfNuclEvents> tableEvents;
   Produces<o2::aod::LfCandNucleus> tableCandidate;
   Produces<o2::aod::LfCandNucleusExtra> tableCandidateExtra;
   Produces<o2::aod::LfCandNucleusMC> tableCandidateMC;
@@ -99,8 +99,7 @@ struct LfTreeCreatorNuclei {
   void fillForOneEvent(CollisionType const& collision, TrackType const& tracks)
   {
     // Filling event properties
-    tableEvents(collision.bcId(),
-                collision.numContrib(),
+    tableEvents(collision.numContrib(), // collision.bcId(),
                 collision.posX(),
                 collision.posY(),
                 collision.posZ(),
@@ -180,7 +179,8 @@ struct LfTreeCreatorNuclei {
   Preslice<soa::Filtered<TrackCandidates>> perCollision = aod::track::collisionId;
 
   void processData(soa::Filtered<EventCandidates> const& collisions,
-                   soa::Filtered<TrackCandidates> const& tracks, aod::BCs const&)
+                   soa::Filtered<TrackCandidates> const& tracks,
+                   aod::BCs const&)
   {
     for (const auto& collision : collisions) {
       if (useEvsel && !collision.sel8()) {

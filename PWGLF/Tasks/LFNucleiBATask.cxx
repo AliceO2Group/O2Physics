@@ -2947,7 +2947,7 @@ struct LFNucleiBATask {
   PROCESS_SWITCH(LFNucleiBATask, processDataLfPid, "process data with LF PID", false);
 
   // Process function that runs on the filtered data
-  void processDataFiltered(o2::aod::LfCandNucleusEvents::iterator const& event,
+  void processDataFiltered(o2::aod::LfNuclEvents::iterator const& event,
                            o2::aod::LfCandNucleusFull const& tracks)
   {
     // Runs on data filtered on the fly with LF Tree creator nuclei task
@@ -2956,7 +2956,7 @@ struct LFNucleiBATask {
   } // CLOSING PROCESS DATA ON FILTERED DATA
   PROCESS_SWITCH(LFNucleiBATask, processDataFiltered, "process data on the filtered data", false);
 
-  void processDataLight(o2::aod::LfCandNucleusEvents::iterator const& event,
+  void processDataLight(o2::aod::LfNuclEvents::iterator const& event,
                         o2::aod::LfCandNucleusDummy const& tracks)
   {
     // Runs on derived tables produced with LF Tree creator nuclei task
@@ -2979,14 +2979,14 @@ struct LFNucleiBATask {
   PROCESS_SWITCH(LFNucleiBATask, processMCReco, "process mc reco", false);
 
   // Process function that runs on the filtered AO2D (for the MC)
-  void processMCRecoFiltered(o2::aod::LfCandNucleusEvents::iterator const& event,
+  void processMCRecoFiltered(o2::aod::LfNuclEvents::iterator const& event,
                              soa::Join<o2::aod::LfCandNucleusFull, o2::aod::LfCandNucleusMC> const& tracks)
   {
     fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
   } // CLOSING PROCESS MC RECO ON FILTERED DATA
   PROCESS_SWITCH(LFNucleiBATask, processMCRecoFiltered, "process mc reco on the filtered data", false);
 
-  void processMCRecoFilteredLight(o2::aod::LfCandNucleusEvents::iterator const& event,
+  void processMCRecoFilteredLight(o2::aod::LfNuclEvents::iterator const& event,
                                   soa::Join<o2::aod::LfCandNucleusDummy, o2::aod::LfCandNucleusMC> const& tracks)
   {
     fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
