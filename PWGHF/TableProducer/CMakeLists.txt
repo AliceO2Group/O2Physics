@@ -117,7 +117,7 @@ o2physics_add_dpl_workflow(candidate-selector-lc-ml
 
 o2physics_add_dpl_workflow(candidate-selector-lc-to-k0s-p
                     SOURCES candidateSelectorLcToK0sP.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-to-xi-pi

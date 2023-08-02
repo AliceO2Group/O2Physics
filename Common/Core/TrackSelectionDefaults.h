@@ -26,7 +26,7 @@ TrackSelection getGlobalTrackSelection();
 
 // Default track selection requiring a particular Run 3 ITS matching
 TrackSelection getGlobalTrackSelectionRun3ITSMatch(int matching,
-                                                   TrackSelection::GlobalTrackRun3DCAxyCut passFlag = TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+                                                   int passFlag = TrackSelection::GlobalTrackRun3DCAxyCut::Default);
 
 // Default track selection requiring no hit in the SPD and one in the innermost
 // SDD -> complementary tracks to global selection

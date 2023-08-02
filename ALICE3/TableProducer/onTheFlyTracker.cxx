@@ -30,25 +30,16 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/HistogramRegistry.h"
+#include <TPDGCode.h>
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonUtils/NameConf.h"
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "CommonConstants/GeomConstants.h"
 #include "DetectorsVertexing/PVertexer.h"
 #include "DetectorsVertexing/PVertexerHelpers.h"
 #include "SimulationDataFormat/InteractionSampler.h"
-#include "TableHelper.h"
 #include "Field/MagneticField.h"
 
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
@@ -87,6 +78,7 @@ struct OnTheFlyTracker {
   Configurable<bool> populateTrackSelection{"populateTrackSelection", false, "populate TrackSelection table (legacy)"};
 
   Configurable<bool> doExtraQA{"doExtraQA", false, "do extra 2D QA plots"};
+  Configurable<bool> extraQAwithoutDecayDaughters{"extraQAwithoutDecayDaughters", false, "remove decay daughters from qa plots (yes/no)"};
 
   Configurable<std::string> lutEl{"lutEl", "lutCovm.el.dat", "LUT for electrons"};
   Configurable<std::string> lutMu{"lutMu", "lutCovm.mu.dat", "LUT for muons"};
@@ -115,10 +107,11 @@ struct OnTheFlyTracker {
     TrackAlice3() = default;
     ~TrackAlice3() = default;
     TrackAlice3(const TrackAlice3& src) = default;
-    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, const float t = 0, const float te = 1) : o2::track::TrackParCov(src), mcLabel{label}, timeEst{t, te} {}
+    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, const float t = 0, const float te = 1, bool decayDauInput = false) : o2::track::TrackParCov(src), mcLabel{label}, timeEst{t, te}, isDecayDau(decayDauInput) {}
     const TimeEst& getTimeMUS() const { return timeEst; }
-    const int64_t mcLabel;
+    int64_t mcLabel;
     TimeEst timeEst; ///< time estimate in ns
+    bool isDecayDau;
   };
 
   // necessary for particle charges
@@ -161,9 +154,9 @@ struct OnTheFlyTracker {
       mapPdgLut.insert(std::make_pair(2212, lutPrChar));
 
       if (enableNucleiSmearing) {
-        const char* lutDeChar = ((std::string)lutDe).c_str();
-        const char* lutTrChar = ((std::string)lutTr).c_str();
-        const char* lutHe3Char = ((std::string)lutHe3).c_str();
+        const char* lutDeChar = lutDe->c_str();
+        const char* lutTrChar = lutTr->c_str();
+        const char* lutHe3Char = lutHe3->c_str();
         mapPdgLut.insert(std::make_pair(1000010020, lutDeChar));
         mapPdgLut.insert(std::make_pair(1000010030, lutTrChar));
         mapPdgLut.insert(std::make_pair(1000020030, lutHe3Char));
@@ -229,6 +222,7 @@ struct OnTheFlyTracker {
     o2::base::Propagator::Instance()->setMatLUT(lut);
 
     irSampler.setInteractionRate(100);
+    irSampler.setFirstIR(o2::InteractionRecord(0, 0));
     irSampler.init();
 
     vertexer.setValidateWithIR(kFALSE);
@@ -272,7 +266,7 @@ struct OnTheFlyTracker {
     o2::dataformats::VertexBase vtx;
 
     // generate collision time
-    o2::InteractionRecord ir = irSampler.generateCollisionTime();
+    auto ir = irSampler.generateCollisionTime();
 
     // First we compute the number of charged particles in the event
     dNdEta = 0.f;
@@ -327,6 +321,11 @@ struct OnTheFlyTracker {
       if (mcParticle.pt() < minPt) {
         continue;
       }
+
+      bool isDecayDaughter = false;
+      if (mcParticle.getProcess() == 4)
+        isDecayDaughter = true;
+
       multiplicityCounter++;
       o2::track::TrackParCov trackParCov;
       convertMCParticleToO2Track(mcParticle, trackParCov);
@@ -359,8 +358,8 @@ struct OnTheFlyTracker {
       }
 
       // populate vector with track if we reco-ed it
-      const float t = (ir.bc2ns() + gRandom->Gaus(0., 100.)) * 1e-3;
-      tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3});
+      const float t = (ir.timeInBCNS + gRandom->Gaus(0., 100.)) * 1e-3;
+      tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3, isDecayDaughter});
     }
 
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
@@ -447,7 +446,7 @@ struct OnTheFlyTracker {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
         }
-        if (doExtraQA) {
+        if (doExtraQA && (!extraQAwithoutDecayDaughters || (extraQAwithoutDecayDaughters && !trackParCov.isDecayDau))) {
           histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
         }
