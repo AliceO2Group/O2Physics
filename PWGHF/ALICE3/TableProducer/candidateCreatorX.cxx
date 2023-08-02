@@ -264,7 +264,7 @@ struct HfCandidateCreatorXMc {
 
   void process(aod::HfCandX const& candidates,
                aod::HfCand2Prong const&,
-               aod::BigTracksMC const& tracks,
+               aod::TracksWMc const& tracks,
                aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
@@ -282,11 +282,11 @@ struct HfCandidateCreatorXMc {
       origin = 0;
       channel = 0;
       auto jpsiTrack = candidate.prong0();
-      auto daughterPosJpsi = jpsiTrack.prong0_as<aod::BigTracksMC>();
-      auto daughterNegJpsi = jpsiTrack.prong1_as<aod::BigTracksMC>();
+      auto daughterPosJpsi = jpsiTrack.prong0_as<aod::TracksWMc>();
+      auto daughterNegJpsi = jpsiTrack.prong1_as<aod::TracksWMc>();
       auto arrayJpsiDaughters = array{daughterPosJpsi, daughterNegJpsi};
-      auto arrayDaughters = array{candidate.prong1_as<aod::BigTracksMC>(),
-                                  candidate.prong2_as<aod::BigTracksMC>(),
+      auto arrayDaughters = array{candidate.prong1_as<aod::TracksWMc>(),
+                                  candidate.prong2_as<aod::TracksWMc>(),
                                   daughterPosJpsi,
                                   daughterNegJpsi};
 

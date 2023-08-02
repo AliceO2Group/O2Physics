@@ -377,7 +377,7 @@ struct HfDataCreatorD0PiReducedMc {
 
   void processMc(aod::HfCand2ProngReduced const& candsD0,
                  aod::HfTracksReduced const& tracksPion,
-                 aod::BigTracksMC const&,
+                 aod::TracksWMc const&,
                  aod::McParticles const& particlesMc)
   {
     int indexRec = -1;
@@ -386,17 +386,17 @@ struct HfDataCreatorD0PiReducedMc {
     int8_t origin = 0;
 
     for (const auto& candD0 : candsD0) {
-      auto arrayDaughtersD0 = std::array{candD0.prong0_as<aod::BigTracksMC>(),
-                                         candD0.prong1_as<aod::BigTracksMC>()};
+      auto arrayDaughtersD0 = std::array{candD0.prong0_as<aod::TracksWMc>(),
+                                         candD0.prong1_as<aod::TracksWMc>()};
 
       for (const auto& trackPion : tracksPion) {
         if (trackPion.hfReducedCollisionId() != candD0.hfReducedCollisionId()) {
           continue;
         }
         // const auto& trackId = trackPion.globalIndex();
-        auto arrayDaughtersBplus = std::array{candD0.prong0_as<aod::BigTracksMC>(),
-                                              candD0.prong1_as<aod::BigTracksMC>(),
-                                              trackPion.track_as<aod::BigTracksMC>()};
+        auto arrayDaughtersBplus = std::array{candD0.prong0_as<aod::TracksWMc>(),
+                                              candD0.prong1_as<aod::TracksWMc>(),
+                                              trackPion.track_as<aod::TracksWMc>()};
         // B+ → D0(bar) π+ → (K+ π-) π+
         // Printf("Checking B+ → D0bar π+");
         indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBplus, pdg::Code::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
@@ -410,7 +410,7 @@ struct HfDataCreatorD0PiReducedMc {
             LOGF(info, "WARNING: B+ decays in the expected final state but the condition on the intermediate state is not fulfilled");
           }
         }
-        auto indexMother = RecoDecay::getMother(particlesMc, trackPion.track_as<aod::BigTracksMC>().mcParticle_as<aod::McParticles>(), pdg::Code::kBPlus, true);
+        auto indexMother = RecoDecay::getMother(particlesMc, trackPion.track_as<aod::TracksWMc>().mcParticle_as<aod::McParticles>(), pdg::Code::kBPlus, true);
         auto particleMother = particlesMc.rawIteratorAt(indexMother);
 
         rowHfD0PiMcRecReduced(candD0.globalIndex(), trackPion.globalIndex(), flag, origin, particleMother.pt());

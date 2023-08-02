@@ -351,7 +351,7 @@ struct HfTaskLcToK0sP {
 
   void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMcRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particlesMC,
-                 aod::BigTracksMC const& tracks, TracksPid const&)
+                 aod::TracksWMc const& tracks, TracksPid const&)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());

@@ -88,7 +88,7 @@ using TracksWCovExtra = soa::Join<Tracks, TracksCov, TracksExtra>;
 using TracksWDcaExtra = soa::Join<Tracks, TracksDCA, TracksExtra>;
 using TracksWCovDcaExtra = soa::Join<Tracks, TracksCov, TracksDCA, TracksExtra>;
 
-using BigTracksMC = soa::Join<Tracks, McTrackLabels>;
+using TracksWMc = soa::Join<Tracks, McTrackLabels>;
 
 using TracksPidEl = soa::Join<aod::pidTPCFullEl, aod::pidTOFFullEl>;
 using TracksPidMu = soa::Join<aod::pidTPCFullMu, aod::pidTOFFullMu>;

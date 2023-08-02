@@ -240,7 +240,7 @@ struct HfCandidateCreator2ProngExpressions {
   void init(InitContext const&) {}
 
   /// Performs MC matching.
-  void processMc(aod::BigTracksMC const& tracks,
+  void processMc(aod::TracksWMc const& tracks,
                  aod::McParticles const& particlesMC)
   {
     rowCandidateProng2->bindExternalIndices(&tracks);
@@ -256,7 +256,7 @@ struct HfCandidateCreator2ProngExpressions {
       // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
-      auto arrayDaughters = array{candidate.prong0_as<aod::BigTracksMC>(), candidate.prong1_as<aod::BigTracksMC>()};
+      auto arrayDaughters = array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
 
       // D0(bar) → π± K∓
       // Printf("Checking D0(bar) → π± K∓");

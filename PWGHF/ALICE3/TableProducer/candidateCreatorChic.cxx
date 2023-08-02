@@ -215,7 +215,7 @@ struct HfCandidateCreatorChicMc {
 
   void process(aod::HfCandChic const& candidates,
                aod::HfCand2Prong const&,
-               aod::BigTracksMC const& tracks,
+               aod::TracksWMc const& tracks,
                aod::McParticles const& particlesMC,
                aod::ECALs const& ecals)
   {
@@ -231,8 +231,8 @@ struct HfCandidateCreatorChicMc {
       origin = 0;
       channel = 0;
       auto jpsiTrack = candidate.prong0();
-      auto daughterPosJpsi = jpsiTrack.prong0_as<aod::BigTracksMC>();
-      auto daughterNegJpsi = jpsiTrack.prong1_as<aod::BigTracksMC>();
+      auto daughterPosJpsi = jpsiTrack.prong0_as<aod::TracksWMc>();
+      auto daughterNegJpsi = jpsiTrack.prong1_as<aod::TracksWMc>();
       auto arrayJpsiDaughters = array{daughterPosJpsi, daughterNegJpsi};
 
       // chi_c → J/ψ gamma

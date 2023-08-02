@@ -232,7 +232,7 @@ struct HfCandidateCreatorLbMc {
 
   void process(aod::HfCandLb const& candidates,
                aod::HfCand3Prong const&,
-               aod::BigTracksMC const& tracks,
+               aod::TracksWMc const& tracks,
                aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
@@ -248,13 +248,13 @@ struct HfCandidateCreatorLbMc {
       origin = 0;
       debug = 0;
       auto lcCand = candidate.prong0();
-      auto arrayDaughters = array{lcCand.prong0_as<aod::BigTracksMC>(),
-                                  lcCand.prong1_as<aod::BigTracksMC>(),
-                                  lcCand.prong2_as<aod::BigTracksMC>(),
-                                  candidate.prong1_as<aod::BigTracksMC>()};
-      auto arrayDaughtersLc = array{lcCand.prong0_as<aod::BigTracksMC>(),
-                                    lcCand.prong1_as<aod::BigTracksMC>(),
-                                    lcCand.prong2_as<aod::BigTracksMC>()};
+      auto arrayDaughters = array{lcCand.prong0_as<aod::TracksWMc>(),
+                                  lcCand.prong1_as<aod::TracksWMc>(),
+                                  lcCand.prong2_as<aod::TracksWMc>(),
+                                  candidate.prong1_as<aod::TracksWMc>()};
+      auto arrayDaughtersLc = array{lcCand.prong0_as<aod::TracksWMc>(),
+                                    lcCand.prong1_as<aod::TracksWMc>(),
+                                    lcCand.prong2_as<aod::TracksWMc>()};
       // Λb → Λc+ π-
       // Printf("Checking Λb → Λc+ π-");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaB0, array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 2);
