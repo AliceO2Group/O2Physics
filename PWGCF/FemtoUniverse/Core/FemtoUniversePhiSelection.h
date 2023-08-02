@@ -635,6 +635,12 @@ void FemtoUniversePhiSelection::fillQA(C const& col, V const& phi, T const& posT
     float phiPt = sumVec.Pt();
     // float phiP = sumVec.P();
     float phiPhi = sumVec.Phi();
+    if (sumVec.Phi() < 0) {
+      phiPhi = sumVec.Phi() + 2 * o2::constants::math::PI;
+    } else if (sumVec.Phi() >= 0) {
+      phiPhi = sumVec.Phi();
+    }
+
     float phiM = sumVec.M();
 
     mHistogramRegistry->fill(
