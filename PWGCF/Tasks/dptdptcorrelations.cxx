@@ -195,8 +195,19 @@ struct DptDptCorrelationsTask {
     {
       LOGF(info, "Stored NUA&NUE corrections for %d track ids", corrs.size());
       for (uint i = 0; i < corrs.size(); ++i) {
-        LOGF(info, "  Stored NUA&NUE corrections for track id %d %s", i, corrs[i] != nullptr ? "yes" : "no");
+        LOGF(info, "  Stored NUA&NUE corrections %s for track id %d %s", corrs[i] != nullptr ? corrs[i]->GetName() : "nullptr", i, corrs[i] != nullptr ? "yes" : "no");
         fhNuaNue_vsZEtaPhiPt[i] = corrs[i];
+        int nbins = 0;
+        double avg = 0.0;
+        for (int ix = 0; ix < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsX(); ++ix) {
+          for (int iy = 0; iy < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsY(); ++iy) {
+            for (int iz = 0; iz < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsZ(); ++iz) {
+              nbins++;
+              avg += fhNuaNue_vsZEtaPhiPt[i]->GetBinContent(ix + 1, iy + 1, iz + 1);
+            }
+          }
+        }
+        LOGF(info, "Average NUA&NUE correction for track id %d: %f", i, avg / nbins);
       }
       ccdbstored = true;
     }
@@ -216,9 +227,9 @@ struct DptDptCorrelationsTask {
     {
       std::vector<float>* corr = new std::vector<float>(tracks.size(), 1.0f);
       int index = 0;
-      for (auto t : tracks) {
+      for (auto& t : tracks) {
         if (fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()] != nullptr) {
-          (*corr)[index] = fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()]->GetBinContent(zvtx, GetEtaPhiIndex(t) + 0.5, t.pt());
+          (*corr)[index] = fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()]->GetBinContent(fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()]->FindFixBin(zvtx, GetEtaPhiIndex(t) + 0.5, t.pt()));
         }
         index++;
       }
@@ -230,9 +241,9 @@ struct DptDptCorrelationsTask {
     {
       std::vector<float>* ptavg = new std::vector<float>(tracks.size(), 0.0f);
       int index = 0;
-      for (auto t : tracks) {
+      for (auto& t : tracks) {
         if (fhPtAvg_vsEtaPhi[t.trackacceptedid()] != nullptr) {
-          (*ptavg)[index] = fhPtAvg_vsEtaPhi[t.trackacceptedid()]->GetBinContent(fhPtAvg_vsEtaPhi[t.trackacceptedid()]->FindBin(t.eta(), t.phi()));
+          (*ptavg)[index] = fhPtAvg_vsEtaPhi[t.trackacceptedid()]->GetBinContent(fhPtAvg_vsEtaPhi[t.trackacceptedid()]->FindFixBin(t.eta(), t.phi()));
           index++;
         }
       }
@@ -362,7 +373,9 @@ struct DptDptCorrelationsTask {
             fhSum2PtPt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
           }
           fhN2_vsPtPt[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.pt(), track2.pt(), corr);
+          index2++;
         }
+        index1++;
       }
       for (uint pid1 = 0; pid1 < nch; ++pid1) {
         for (uint pid2 = 0; pid2 < nch; ++pid2) {
