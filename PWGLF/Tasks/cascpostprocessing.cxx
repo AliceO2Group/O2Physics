@@ -211,7 +211,7 @@ struct cascpostprocessing {
     // Info for eff x acc from MC
     registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
     registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    if(isMC){
+    if (isMC) {
       registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
       registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
       registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
