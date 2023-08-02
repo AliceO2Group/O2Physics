@@ -100,8 +100,10 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH1F*>(list->FindObject("hQoverPt"))->Fill(obj.sign() / obj.pt());
     reinterpret_cast<TH2F*>(list->FindObject("hEtaPhi"))->Fill(obj.phi(), obj.eta());
     reinterpret_cast<TH2F*>(list->FindObject("hDCAxyz"))->Fill(obj.dcaXY(), obj.dcaZ());
-    reinterpret_cast<TH1F*>(list->FindObject("hNclsTPC"))->Fill(obj.tpcNClsFound());
+    reinterpret_cast<TH2F*>(list->FindObject("hNclsTPC_Pt"))->Fill(obj.pt(), obj.tpcNClsFound());
+    reinterpret_cast<TH2F*>(list->FindObject("hNcrTPC_Pt"))->Fill(obj.pt(), obj.tpcNClsCrossedRows());
     reinterpret_cast<TH1F*>(list->FindObject("hNclsITS"))->Fill(obj.itsNCls());
+    reinterpret_cast<TH1F*>(list->FindObject("hNclsTPC"))->Fill(obj.tpcNClsFound());
     reinterpret_cast<TH1F*>(list->FindObject("hNcrTPC"))->Fill(obj.tpcNClsCrossedRows());
     reinterpret_cast<TH1F*>(list->FindObject("hTPCNcr2Nf"))->Fill(obj.tpcCrossedRowsOverFindableCls());
     reinterpret_cast<TH1F*>(list->FindObject("hTPCNcls2Nf"))->Fill(obj.tpcFoundOverFindableCls());
