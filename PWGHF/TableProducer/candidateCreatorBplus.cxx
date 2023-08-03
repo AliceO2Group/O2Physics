@@ -220,7 +220,7 @@ struct HfCandidateCreatorBplus {
         array<float, 3> pVecD = RecoDecay::pVec(pVec0, pVec1);
 
         // build a D0 neutral track
-        auto trackD0 = o2::dataformats::V0(vertexD0, pVecD, df.calcPCACovMatrixFlat(), trackParCovProng0, trackParCovProng1, {0, 0}, {0, 0});
+        auto trackD0 = o2::dataformats::V0(vertexD0, pVecD, df.calcPCACovMatrixFlat(), trackParCovProng0, trackParCovProng1);
 
         int indexTrack0 = prong0.globalIndex();
         int indexTrack1 = prong1.globalIndex();
