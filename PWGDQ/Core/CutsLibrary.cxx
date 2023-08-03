@@ -508,65 +508,46 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRejLoose_Corr"));
     return cut;
   }
+  
+  if (!nameStr.compare("Dalitz_WithTOF_SPDfirst")) {
+    cut->AddCut(GetAnalysisCut("dalitzStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+    cut->AddCut(GetAnalysisCut("SPDfirst"));
+    
+    AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPIDPrKaPiRejLoose"));
+
+    AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma"));
+
+    AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    cut_pid_OR->AddCut(cut_tpc_nSigma);
+    cut_pid_OR->AddCut(cut_tof_nSigma);
+    cut->AddCut(cut_pid_OR);
+    return cut;
+  }
+
+  if (!nameStr.compare("Dalitz_WithTOF_SPDfirst_Corr")) {
+    cut->AddCut(GetAnalysisCut("dalitzStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
+    cut->AddCut(GetAnalysisCut("SPDfirst"));
+    
+    AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPIDPrKaPiRejLoose_Corr"));
+
+    AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    cut_tof_nSigma->AddCut(GetAnalysisCut("electronPID_TOFnsigma_Corr"));
+
+    AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    cut_pid_OR->AddCut(cut_tpc_nSigma);
+    cut_pid_OR->AddCut(cut_tof_nSigma);
+    cut->AddCut(cut_pid_OR);
+    return cut;
+  }  
 
   for (int i = 1; i <= 8; i++) {
-    if (!nameStr.compare(Form("DalitzCut1_dalitzSelected%d", i))) {
-      cut->AddCut(GetAnalysisCut("dalitzStandardKine"));
-      cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
-      cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
-      cut->AddCut(GetAnalysisCut("electronPIDOnly"));
-      cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
-      return cut;
-    }
-
-    if (!nameStr.compare(Form("DalitzCut2_dalitzSelected%d", i))) {
-      cut->AddCut(GetAnalysisCut("dalitzStandardKine"));
-      cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
-      cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
-      cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRej"));
-      cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
-      return cut;
-    }
-
-    if (!nameStr.compare(Form("DalitzCut2_Corr_dalitzSelected%d", i))) {
-      cut->AddCut(GetAnalysisCut("dalitzStandardKine"));
-      cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
-      cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
-      cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRej"));
-      cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
-      return cut;
-    }
-
-    if (!nameStr.compare(Form("DalitzCut1SPDfirst_dalitzSelected%d", i))) {
-      cut->AddCut(GetAnalysisCut("dalitzStandardKine"));
-      cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
-      cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
-      cut->AddCut(GetAnalysisCut("SPDfirst"));
-      cut->AddCut(GetAnalysisCut("electronPIDOnly"));
-      cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
-      return cut;
-    }
-
-    if (!nameStr.compare(Form("DalitzCut2SPDfirst_dalitzSelected%d", i))) {
-      cut->AddCut(GetAnalysisCut("dalitzStandardKine"));
-      cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
-      cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
-      cut->AddCut(GetAnalysisCut("SPDfirst"));
-      cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRej"));
-      cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
-      return cut;
-    }
-
-    if (!nameStr.compare(Form("DalitzCut2SPDfirst_Corr_dalitzSelected%d", i))) {
-      cut->AddCut(GetAnalysisCut("dalitzStandardKine"));
-      cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
-      cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
-      cut->AddCut(GetAnalysisCut("SPDfirst"));
-      cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRej"));
-      cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
-      return cut;
-    }
-
     if (!nameStr.compare(Form("dalitzSelected%d", i))) {
       cut->AddCut(GetAnalysisCut(Form("dalitzLeg%d", i)));
       return cut;
@@ -1512,18 +1493,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("pairDalitz1Neg")) {
-    cut->AddCut(GetAnalysisCut("pairDalitz1Neg"));
-    return cut;
-  }
-
   if (!nameStr.compare("pairDalitz1Strong")) {
     cut->AddCut(GetAnalysisCut("pairDalitz1Strong"));
-    return cut;
-  }
-
-  if (!nameStr.compare("pairDalitz1StrongNeg")) {
-    cut->AddCut(GetAnalysisCut("pairDalitz1StrongNeg"));
     return cut;
   }
 
@@ -2581,6 +2552,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+<<<<<<< HEAD
   // loop to define TOF PID cuts with and without post calibration
   for (int icase = 0; icase < vecPIDcase.size(); icase++) {
     if (!nameStr.compare(Form("electronPID_TOFnsigma%s_loose", vecPIDcase.at(icase).Data()))) {
@@ -2608,6 +2580,21 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
       }
       return cut;
     }
+=======
+  if (!nameStr.compare("electronPID_TOFnsigma")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTPCnSigmaPi, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.4, 1e+10, false);
+    return cut;
+  }
+  
+  if (!nameStr.compare("electronPID_TOFnsigma_Corr")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.4, 1e+10, false);
+    return cut;
+  }
+>>>>>>> fe8bbbc2 (update cuts and histograms for dalitz selection)
 
     if (!nameStr.compare(Form("electronPID_TOFnsigma%s_strongHadRej", vecPIDcase.at(icase).Data()))) {
       if (icase == 0) {
@@ -2859,28 +2846,10 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("pairDalitz1Neg")) { // To be used when negative field
-    cut->AddCut(VarManager::kMass, 0.0, 0.015, false, VarManager::kPt, 0., 1.);
-    cut->AddCut(VarManager::kMass, 0.0, 0.035, false, VarManager::kPt, 0., 1., true);
-    TF1* fcutHigh = new TF1("f1", "[0] + [0]/[1]*x", -1.5, 1.5);
-    fcutHigh->SetParameters(0.6, 0.12);
-    TF1* fcutLow = new TF1("f2", "-[0] - [0]/[1]*x", -1.5, 1.5);
-    fcutLow->SetParameters(0.6, 0.12);
-    cut->AddCut(VarManager::kPsiPair, fcutLow, fcutHigh, true, VarManager::kDeltaPhiPair, -0.12, 0.);
-    return cut;
-  }
-
   if (!nameStr.compare("pairDalitz1Strong")) {
     cut->AddCut(VarManager::kMass, 0.0, 0.015, false, VarManager::kPt, 0., 1.);
     cut->AddCut(VarManager::kMass, 0.0, 0.035, false, VarManager::kPt, 0., 1., true);
     cut->AddCut(VarManager::kDeltaPhiPair, -1., 0.);
-    return cut;
-  }
-
-  if (!nameStr.compare("pairDalitz1StrongNeg")) { // To be used when negative field
-    cut->AddCut(VarManager::kMass, 0.0, 0.015, false, VarManager::kPt, 0., 1.);
-    cut->AddCut(VarManager::kMass, 0.0, 0.035, false, VarManager::kPt, 0., 1., true);
-    cut->AddCut(VarManager::kDeltaPhiPair, 0., 1.);
     return cut;
   }
 
