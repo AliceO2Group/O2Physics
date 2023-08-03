@@ -32,7 +32,9 @@ struct f0980analysis {
   Preslice<aod::ResoTracks> perRCol = aod::resodaughter::resoCollisionId;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   HistogramRegistry histos{
-      "histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+    "histos",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> cfgMinPt{"cfgMinPt", 0.15,
                                "Minimum transverse momentum for charged track"};
@@ -53,25 +55,26 @@ struct f0980analysis {
   Configurable<int> cfgMinTPCncr{"cfgMinTPCncr", 70, "minimum TPC cluster"};
 
   Configurable<bool> cfgPrimaryTrack{
-      "cfgPrimaryTrack", true,
-      "Primary track selection"}; // kGoldenChi2 | kDCAxy | kDCAz
+    "cfgPrimaryTrack", true,
+    "Primary track selection"}; // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgGlobalWoDCATrack{
-      "cfgGlobalWoDCATrack", true,
-      "Global track selection without DCA"}; // kQualityTracks (kTrackType |
-                                             // kTPCNCls | kTPCCrossedRows |
-                                             // kTPCCrossedRowsOverNCls |
-                                             // kTPCChi2NDF | kTPCRefit |
-                                             // kITSNCls | kITSChi2NDF |
-                                             // kITSRefit | kITSHits) |
-                                             // kInAcceptanceTracks (kPtRange |
-                                             // kEtaRange)
+    "cfgGlobalWoDCATrack", true,
+    "Global track selection without DCA"}; // kQualityTracks (kTrackType |
+                                           // kTPCNCls | kTPCCrossedRows |
+                                           // kTPCCrossedRowsOverNCls |
+                                           // kTPCChi2NDF | kTPCRefit |
+                                           // kITSNCls | kITSChi2NDF |
+                                           // kITSRefit | kITSHits) |
+                                           // kInAcceptanceTracks (kPtRange |
+                                           // kEtaRange)
   Configurable<bool> cfgPVContributor{
-      "cfgPVContributor", true,
-      "PV contributor track selection"}; // PV Contriuibutor
+    "cfgPVContributor", true,
+    "PV contributor track selection"}; // PV Contriuibutor
 
-  void init(o2::framework::InitContext &) {
-    std::vector<double> ptBinning = {0.0, 0.1, 0.2, 0.3, 0.4,  0.5,  0.6, 0.8,
-                                     1.0, 1.5, 2.0, 2.5, 3.0,  3.5,  4.0, 4.5,
+  void init(o2::framework::InitContext&)
+  {
+    std::vector<double> ptBinning = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8,
+                                     1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5,
                                      5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0};
 
     AxisSpec centAxis = {20, 0, 100};
@@ -105,7 +108,9 @@ struct f0980analysis {
 
   double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
 
-  template <typename TrackType> bool SelTrack(const TrackType track) {
+  template <typename TrackType>
+  bool SelTrack(const TrackType track)
+  {
     if (track.pt() < cfgMinPt)
       return false;
     if (std::fabs(track.eta()) > cfgMaxEta)
@@ -124,7 +129,9 @@ struct f0980analysis {
     return true;
   }
 
-  template <typename TrackType> bool SelPion(const TrackType track) {
+  template <typename TrackType>
+  bool SelPion(const TrackType track)
+  {
     if ((track.tofPIDselectionFlag() & aod::resodaughter::kHasTOF) !=
         aod::resodaughter::kHasTOF) {
       if (std::fabs(track.tpcNSigmaPi()) > cfgMaxTPCStandalone) {
@@ -140,10 +147,11 @@ struct f0980analysis {
   }
 
   template <bool IsMC, typename CollisionType, typename TracksType>
-  void fillHistograms(const CollisionType &collision,
-                      const TracksType &dTracks) {
+  void fillHistograms(const CollisionType& collision,
+                      const TracksType& dTracks)
+  {
     TLorentzVector Pion1, Pion2, Reco;
-    for (auto &[trk1, trk2] :
+    for (auto& [trk1, trk2] :
          combinations(CombinationsUpperIndexPolicy(dTracks, dTracks))) {
 
       if (trk1.index() == trk2.index()) {
@@ -190,22 +198,25 @@ struct f0980analysis {
     }
   }
 
-  void processData(aod::ResoCollision &collision,
-                   aod::ResoTracks const &resotracks) {
+  void processData(aod::ResoCollision& collision,
+                   aod::ResoTracks const& resotracks)
+  {
     fillHistograms<false>(collision, resotracks);
   }
   PROCESS_SWITCH(f0980analysis, processData, "Process Event for data", true);
 
   void processMCLight(
-      aod::ResoCollision &collision,
-      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const &resotracks,
-      aod::McParticles const &mcParticles) {
+    aod::ResoCollision& collision,
+    soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks,
+    aod::McParticles const& mcParticles)
+  {
     fillHistograms<true>(collision, resotracks);
   }
   PROCESS_SWITCH(f0980analysis, processMCLight, "Process Event for MC", false);
 
-  void processMCTrue(aod::ResoMCParents &resoParents) {
-    for (auto &part : resoParents) { // loop over all pre-filtered MC particles
+  void processMCTrue(aod::ResoMCParents& resoParents)
+  {
+    for (auto& part : resoParents) { // loop over all pre-filtered MC particles
       if (abs(part.pdgCode()) != 9010221)
         continue;
       if (part.y() < cfgMinRap || part.y() > cfgMaxRap) {
@@ -225,7 +236,8 @@ struct f0980analysis {
   PROCESS_SWITCH(f0980analysis, processMCTrue, "Process Event for MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{
-      adaptAnalysisTask<f0980analysis>(cfgc, TaskName{"lf-f0980analysis"})};
+    adaptAnalysisTask<f0980analysis>(cfgc, TaskName{"lf-f0980analysis"})};
 }
