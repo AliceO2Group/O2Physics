@@ -45,6 +45,7 @@ struct JetOutputWriter {
   // explicit process function used to reset acceptance flags
   void process(o2::aod::JCollisions const& collisions)
   {
+    LOGF(info, "processing %d collisions", collisions.size());
     collFlag.reserve(collisions.size());
     std::fill(collFlag.begin(), collFlag.end(), false);
   }
@@ -62,9 +63,9 @@ struct JetOutputWriter {
 #define PROCESS_SWITCH_JKL(_Class_, _Method_, _Name_, _Help_, _Default_) \
   decltype(ProcessConfigurable{&_Class_ ::_Method_, #_Name_, _Default_, _Help_}) do##_Name_ = ProcessConfigurable{&_Class_ ::_Method_, #_Name_, _Default_, _Help_};
   PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::ChargedJets>, processChargedJets, "process charged jets", true);
-  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::NeutralJets>, processNeutralJets, "process neutral jets", true);
-  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::D0ChargedJets>, processD0ChargedJets, "process D0 charged jets", true);
-  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::LcChargedJets>, processLcChargedJets, "process Lc charged jets", true);
+  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::NeutralJets>, processNeutralJets, "process neutral jets", false);
+  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::D0ChargedJets>, processD0ChargedJets, "process D0 charged jets", false);
+  PROCESS_SWITCH_JKL(JetOutputWriter, processJets<o2::aod::LcChargedJets>, processLcChargedJets, "process Lc charged jets", false);
 
   void processCollisions(o2::aod::JCollision const& collision, o2::aod::JTracks const& tracks)
   {
