@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file candidateSelectorBsToDsPi.cxx
-/// \brief Bs0 → Ds- π+ candidate selector
+/// \brief Bs → Ds- π+ candidate selector
 /// \note adapted from candidateSelectorB0ToDPi.cxx
 ///
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
@@ -125,7 +125,7 @@ struct HfCandidateSelectorBsToDsPi {
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCandBs);
         }
-        //LOGF(info, "Bs candidate selection failed at hfflag check");
+        // LOGF(info, "Bs candidate selection failed at hfflag check");
         continue;
       }
       SETBIT(statusBsToDsPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusBsToDsPi = 1

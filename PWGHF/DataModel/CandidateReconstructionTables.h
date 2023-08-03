@@ -1907,7 +1907,7 @@ enum DecayType { BsToDsPi };
 enum DecayTypeMc : uint8_t { BsToDsPiToKKPiPi = 0,
                              PartlyRecoDecay,
                              OtherDecay,
-                             NDecayTypeMc};
+                             NDecayTypeMc };
 // B0s(B0sbar) → Ds∓ π±
 template <typename T>
 auto ctBs(const T& candidate)

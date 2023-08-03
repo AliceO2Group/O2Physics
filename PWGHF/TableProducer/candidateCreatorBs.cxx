@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file candidateCreatorBs.cxx
-/// \brief Reconstruction of Bs0 candidates
+/// \brief Reconstruction of Bs candidates
 /// \note Adapted from candidateCreatorB0.cxx
 ///
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
@@ -37,7 +37,7 @@ using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_cand_bs; // from CandidateReconstructionTables.h
 using namespace o2::framework::expressions;
 
-/// Reconstruction of Bs0 candidates
+/// Reconstruction of Bs candidates
 struct HfCandidateCreatorBs {
   Produces<aod::HfCandBsBase> rowCandidateBase; // table defined in CandidateReconstructionTables.h
 
@@ -128,7 +128,6 @@ struct HfCandidateCreatorBs {
   {
     // Initialise fitter for Bs vertex (2-prong vertex filter)
     o2::vertexing::DCAFitterN<2> df2;
-    // df2.setBz(bz);
     df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxR);
     df2.setMaxDZIni(maxDZIni);
@@ -139,7 +138,6 @@ struct HfCandidateCreatorBs {
 
     // Initialise fitter to redo Ds-vertex to get extrapolated daughter tracks (3-prong vertex filter)
     o2::vertexing::DCAFitterN<3> df3;
-    // df3.setBz(bz);
     df3.setPropagateToPCA(propagateToPCA);
     df3.setMaxR(maxR);
     df3.setMaxDZIni(maxDZIni);
@@ -227,9 +225,9 @@ struct HfCandidateCreatorBs {
         array<float, 3> pVecKK = RecoDecay::pVec(pVec0, pVec1);
         array<float, 3> pVecDs = RecoDecay::pVec(pVec0, pVec1, pVec2);
         auto trackParCovKK = o2::dataformats::V0(df3.getPCACandidatePos(), pVecKK, df3.calcPCACovMatrixFlat(),
-                                                trackParCov0, trackParCov1, {0, 0}, {0, 0});
+                                                 trackParCov0, trackParCov1, {0, 0}, {0, 0});
         auto trackParCovDs = o2::dataformats::V0(df3.getPCACandidatePos(), pVecDs, df3.calcPCACovMatrixFlat(),
-                                               trackParCovKK, trackParCov2, {0, 0}, {0, 0});
+                                                 trackParCovKK, trackParCov2, {0, 0}, {0, 0});
 
         int indexTrack0 = track0.globalIndex();
         int indexTrack1 = track1.globalIndex();
@@ -275,7 +273,7 @@ struct HfCandidateCreatorBs {
           // propagate Ds and Pi to the Bs vertex
           df2.propagateTracksToVertex();
           // track.getPxPyPzGlo(pVec) modifies pVec of track
-          df2.getTrack(0).getPxPyPzGlo(pVecDs);    // momentum of Ds at the Bs vertex
+          df2.getTrack(0).getPxPyPzGlo(pVecDs);   // momentum of Ds at the Bs vertex
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the Bs vertex
 
           // calculate invariant mass and apply selection
@@ -283,7 +281,6 @@ struct HfCandidateCreatorBs {
           if (std::abs(massDsPi - massBs) > invMassWindowBs) {
             continue;
           }
-
 
           // compute impact parameters of Ds and Pi
           o2::dataformats::DCA dcaDs;
@@ -354,7 +351,6 @@ struct HfCandidateCreatorBsExpressions {
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (auto const& candidate : *rowCandidateBs) {
-      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       debug = 0;
@@ -365,10 +361,10 @@ struct HfCandidateCreatorBsExpressions {
                                     candDs.prong2_as<aod::BigTracksMC>(),
                                     candidate.prong1_as<aod::BigTracksMC>()};
       auto arrayDaughtersDs = array{candDs.prong0_as<aod::BigTracksMC>(),
-                                   candDs.prong1_as<aod::BigTracksMC>(),
-                                   candDs.prong2_as<aod::BigTracksMC>()};
+                                    candDs.prong1_as<aod::BigTracksMC>(),
+                                    candDs.prong2_as<aod::BigTracksMC>()};
 
-      // Checking Bs0(bar) → Ds∓ π± → (K- K+ π∓) π±
+      // Checking Bs(bar) → Ds∓ π± → (K- K+ π∓) π±
       indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kBS, array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
         // Checking Ds∓ → K- K+ π∓
@@ -421,11 +417,10 @@ struct HfCandidateCreatorBsExpressions {
 
     // Match generated particles.
     for (auto const& particle : particlesMc) {
-      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       arrDaughDsIndex.clear();
-      // Bs0(bar) → Ds∓ π±
+      // Bs(bar) → Ds∓ π±
       if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kBS, array{-static_cast<int>(pdg::Code::kDS), +kPiPlus}, true)) {
         // Match Ds∓ -> K- K+ π±
         auto candDsMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());

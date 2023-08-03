@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskBs.cxx
-/// \brief Bs0 → Ds π+ → (K- K+ π-) π+ analysis task
+/// \brief Bs → Ds π+ → (K- K+ π-) π+ analysis task
 /// \note adapted from taskB0.cxx
 ///
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
@@ -29,7 +29,7 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_cand_bs;              // from CandidateReconstructionTables.h
+using namespace o2::aod::hf_cand_bs;               // from CandidateReconstructionTables.h
 using namespace o2::analysis::hf_cuts_bs_to_ds_pi; // from SelectorCuts.h
 using namespace o2::framework::expressions;
 
@@ -158,7 +158,6 @@ struct HfTaskBs {
       }
 
       auto candDs = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>();
-      // auto candPi = candidate.prong1_as<TracksWithSel>();
 
       auto ptCandBs = candidate.pt();
 
@@ -260,7 +259,6 @@ struct HfTaskBs {
     } // rec
 
     // MC gen. level
-    // Printf("MC Particles: %d", particlesMc.size());
     for (auto const& particle : particlesMc) {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
 
@@ -303,7 +301,6 @@ struct HfTaskBs {
         registry.fill(HIST("hPtGenWithProngsInAcceptance"), ptParticle);
         registry.fill(HIST("hEtaGenWithProngsInAcceptance"), particle.eta(), ptParticle);
         registry.fill(HIST("hYGenWithProngsInAcceptance"), yParticle, ptParticle);
-
       }
     } // gen
   }   // process
