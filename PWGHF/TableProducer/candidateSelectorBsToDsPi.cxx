@@ -36,8 +36,6 @@ using namespace o2::analysis::hf_cuts_bs_to_ds_pi; // from SelectorCuts.h
 struct HfCandidateSelectorBsToDsPi {
   Produces<aod::HfSelBsToDsPi> hfSelBsToDsPiCandidate; // table defined in CandidateSelectionTables.h
 
-  //Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
-  //Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
   Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
   Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
@@ -134,7 +132,7 @@ struct HfCandidateSelectorBsToDsPi {
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandBs);
       }
-      
+
       // topological cuts
       if (!hf_sel_candidate_bs::selectionTopol(hfCandBs, cuts, binsPt)) {
         hfSelBsToDsPiCandidate(statusBsToDsPi);

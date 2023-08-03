@@ -308,7 +308,7 @@ struct HfCandidateCreatorBs {
           hPtDs->Fill(candDs.pt());
           hCPADs->Fill(candDs.cpa());
           hPtPion->Fill(trackPion.pt());
-          
+
           // fill the candidate table for the Bs here:
           rowCandidateBase(thisCollId,
                            collision.posX(), collision.posY(), collision.posZ(),

@@ -702,7 +702,7 @@ static const std::vector<std::string> labelsCutVar = {"m", "CPA", "Chi2PCA", "d0
 namespace hf_cuts_bs_to_ds_pi
 {
 static constexpr int nBinsPt = 12;
-static constexpr int nCutVars = 12;
+static constexpr int nCutVars = 10;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
@@ -723,19 +723,19 @@ constexpr double binsPt[nBinsPt + 1] = {
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the cuts
-// DeltaM CPA chi2PCA d0Ds d0Pi pTDs pTPi BsDecayLength BsDecayLengthXY IPProd DeltaMDs CthetaStr
-constexpr double cuts[nBinsPt][nCutVars] = {{1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.8},  /* 0 < pt < 0.5 */
-                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.8},  /* 0.5 < pt < 1 */
-                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.8},  /* 1 < pt < 2 */
-                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.8},  /* 2 < pt < 3 */
-                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.8},  /* 3 < pt < 4 */
-                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.8},  /* 4 < pt < 5 */
-                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.8},  /* 5 < pt < 7 */
-                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.8},  /* 7 < pt < 10 */
-                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.8},  /* 10 < pt < 13 */
-                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.8},  /* 13 < pt < 16 */
-                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.8},  /* 16 < pt < 20 */
-                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.8}}; /* 20 < pt < 24 */
+// DeltaM CPA chi2PCA d0Ds d0Pi pTDs pTPi BsDecayLength BsDecayLengthXY IPProd
+constexpr double cuts[nBinsPt][nCutVars] = {{1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 0 < pt < 0.5 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 0.5 < pt < 1 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 1 < pt < 2 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 2 < pt < 3 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 3 < pt < 4 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 4 < pt < 5 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 5 < pt < 7 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 7 < pt < 10 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 10 < pt < 13 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 13 < pt < 16 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 16 < pt < 20 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.}}; /* 20 < pt < 24 */
 // row labels
 static const std::vector<std::string> labelsPt = {
   "pT bin 0",
@@ -752,7 +752,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 11"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "CPA", "Chi2PCA", "d0 Ds", "d0 Pi", "pT Ds", "pT Pi", "Bs decLen", "Bs decLenXY", "Imp. Par. Product", "DeltaMDs", "Cos ThetaStar"};
+static const std::vector<std::string> labelsCutVar = {"m", "CPA", "Chi2PCA", "d0 Ds", "d0 Pi", "pT Ds", "pT Pi", "Bs decLen", "Bs decLenXY", "Imp. Par. Product"};
 } // namespace hf_cuts_bs_to_ds_pi
 
 namespace hf_cuts_bplus_to_d0_pi

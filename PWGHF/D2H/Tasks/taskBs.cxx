@@ -72,7 +72,7 @@ struct HfTaskBs {
     registry.add("hImpParErr", "B^{0}_{s} candidates;B^{0}_{s} candidate impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, axisPt}});
     registry.add("hIPProd", "B^{0}_{s} candidates;B^{0}_{s} candidate impact parameter product;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, axisPt}});
     registry.add("hInvMassDs", "B^{0}_{s} candidates;prong0, D^{-}_{s} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, axisPt}});
-    
+
     registry.add("hPtGenSig", "B^{0}_{s} candidates (gen+rec);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hPtRecSig", "B^{0}_{s} candidates (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hPtRecBg", "B^{0}_{s} candidates (unmatched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
@@ -96,7 +96,7 @@ struct HfTaskBs {
     registry.add("hImpParProdBsRecBg", "B^{0}_{s} candidates (unmatched);B^{0}_{s} candidate impact parameter product ;entries", {HistType::kTH2F, {{100, -0.01, 0.01}, axisPt}});
     registry.add("hPtProng0RecSig", "B^{0}_{s} candidates (matched);prong 0 (D^{-}_{s}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
     registry.add("hPtProng0RecBg", "B^{0}_{s} candidates (unmatched);prong 0 (D^{-}_{s}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
-    registry.add("hPtProng1RecSig", "B^{0}_{s} candidates (matched);prong 1 (#pi^{-}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});    
+    registry.add("hPtProng1RecSig", "B^{0}_{s} candidates (matched);prong 1 (#pi^{-}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
     registry.add("hPtProng1RecBg", "B^{0}_{s} candidates (unmatched);prong 1 (#pi^{-}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, axisPt}});
     registry.add("hd0Prong0RecSig", "B^{0}_{s} candidates (matched);prong 0 (D^{-}_{s}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
     registry.add("hd0Prong0RecBg", "B^{0}_{s} candidates (unmatched);prong 0 (D^{-}_{s}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
@@ -240,7 +240,7 @@ struct HfTaskBs {
         registry.fill(HIST("hDecLengthNormRecBg"), candidate.decayLengthXYNormalised(), ptCandBs);
         registry.fill(HIST("hImpParProdBsRecBg"), candidate.impactParameterProduct(), ptCandBs);
         registry.fill(HIST("hPtProng0RecBg"), candidate.ptProng0(), ptCandBs);
-        registry.fill(HIST("hPtProng1RecBg"), candidate.ptProng1(), ptCandBs);        
+        registry.fill(HIST("hPtProng1RecBg"), candidate.ptProng1(), ptCandBs);
         registry.fill(HIST("hd0Prong0RecBg"), candidate.impactParameter0(), ptCandBs);
         registry.fill(HIST("hd0Prong1RecBg"), candidate.impactParameter1(), ptCandBs);
         registry.fill(HIST("hCPADsRecBg"), candDs.cpa(), ptCandBs);
