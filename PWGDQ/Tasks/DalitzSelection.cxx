@@ -32,6 +32,7 @@
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
+#include "DataFormatsParameters/GRPMagField.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -70,9 +71,12 @@ struct dalitzPairing {
   Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
+  Configurable<bool> fUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
+  Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
-
+  o2::parameters::GRPMagField* grpmag = nullptr;
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   Filter filterBarrelTrack = o2::aod::track::tpcInnerParam >= fConfigBarrelTrackPINLow && nabs(o2::aod::track::eta) <= fConfigEtaCut && o2::aod::pidtpc::tpcNSigmaEl <= fConfigTPCNSigHigh && o2::aod::pidtpc::tpcNSigmaEl >= fConfigTPCNSigLow;
@@ -261,7 +265,7 @@ struct dalitzPairing {
 
     for (auto& collision : collisions) {
       fTrackmap.clear();
-      VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
+      VarManager::ResetValues(VarManager::kNRunWiseVariables, VarManager::kNBarrelTrackVariables);
       VarManager::FillEvent<gkEventFillMap>(collision);
       bool isEventSelected = fEventCut->IsSelected(VarManager::fgValues);
 
@@ -270,14 +274,35 @@ struct dalitzPairing {
         ((TH1I*)fStatsList->At(0))->Fill(0);
 
         auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-        if (fConfigComputeTPCpostCalib && fCurrentRun != bc.runNumber()) {
-          auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
-          VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
-          VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
-          VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
-          VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
-          VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
-          VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+
+        if (fCurrentRun != bc.runNumber()) {
+          VarManager::ResetValues(0, VarManager::kNRunWiseVariables);
+
+          // We setup the magnetic field, because the conversion rejection cut might depend on it
+          float magField = 0.;          
+          if (fUseRemoteField.value) {
+            grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+            if (grpmag != nullptr) {
+              magField = grpmag->getNominalL3Field();
+            } else {
+              LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bc.timestamp());
+            }
+          } else {
+            magField = fConfigMagField.value;
+          }
+          LOGF(info, "setting mag field to %f", magField);
+          if (magField == 0.) LOGF(fatal, "magnetic field not set correctly, please check");
+          VarManager::fgValues[VarManager::kMagField] = magField;
+
+          if (fConfigComputeTPCpostCalib) {
+            auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
+            VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
+            VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
+            VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
+            VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
+            VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
+            VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+          }
           fCurrentRun = bc.runNumber();
         }
 
