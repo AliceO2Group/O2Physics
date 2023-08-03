@@ -162,7 +162,7 @@ struct HfTreeCreatorXiccToPKPiPi {
   Produces<o2::aod::HfCandXiccFullEs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXiccFullPs> rowCandidateFullParticles;
 
-  using TracksPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
   void init(InitContext const&)
   {
@@ -172,7 +172,7 @@ struct HfTreeCreatorXiccToPKPiPi {
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandXicc, aod::HfCandXiccMcRec, aod::HfSelXiccToPKPiPi> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particles,
-               TracksPid const& tracks,
+               TracksWPid const& tracks,
                aod::HfCand3Prong const&)
   {
 
@@ -219,7 +219,7 @@ struct HfTreeCreatorXiccToPKPiPi {
             candidate.pyProng1(),
             candidate.pzProng1(),
             candidate.chi2PCA(),
-            candidate.prong1_as<TracksPid>().tofNSigmaPi(),
+            candidate.prong1_as<TracksWPid>().tofNSigmaPi(),
             candidate.impactParameter0(),
             candidate.impactParameter1(),
             candidate.errorImpactParameter0(),
@@ -236,11 +236,11 @@ struct HfTreeCreatorXiccToPKPiPi {
             xicCand.decayLength(),
             xicCand.decayLengthXY(),
             xicCand.decayLengthXYNormalised(),
-            xicCand.prong0_as<TracksPid>().tofNSigmaPr(),
-            xicCand.prong0_as<TracksPid>().tofNSigmaPi(),
-            xicCand.prong1_as<TracksPid>().tofNSigmaKa(),
-            xicCand.prong2_as<TracksPid>().tofNSigmaPr(),
-            xicCand.prong2_as<TracksPid>().tofNSigmaPi(),
+            xicCand.prong0_as<TracksWPid>().tofNSigmaPr(),
+            xicCand.prong0_as<TracksWPid>().tofNSigmaPi(),
+            xicCand.prong1_as<TracksWPid>().tofNSigmaKa(),
+            xicCand.prong2_as<TracksWPid>().tofNSigmaPr(),
+            xicCand.prong2_as<TracksWPid>().tofNSigmaPi(),
             1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),

@@ -172,7 +172,7 @@ struct HfTreeCreatorB0ToDPi {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandB0, aod::HfCandB0McRec, aod::HfSelB0ToDPi>>;
-  using TracksPid = soa::Join<aod::Tracks, aod::TracksPidPi>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0;
 
@@ -284,7 +284,7 @@ struct HfTreeCreatorB0ToDPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates,
-                   TracksPid const&)
+                   TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -304,7 +304,7 @@ struct HfTreeCreatorB0ToDPi {
           continue;
         }
       }
-      auto prong1 = candidate.prong1_as<TracksPid>();
+      auto prong1 = candidate.prong1_as<TracksWPid>();
       fillCandidateTable(candidate, prong1);
     }
   }
@@ -315,7 +315,7 @@ struct HfTreeCreatorB0ToDPi {
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandB0McGen> const& particles,
-                 TracksPid const&)
+                 TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -330,7 +330,7 @@ struct HfTreeCreatorB0ToDPi {
         rowCandidateLite.reserve(recSig.size());
       }
       for (const auto& candidate : recSig) {
-        auto prong1 = candidate.prong1_as<TracksPid>();
+        auto prong1 = candidate.prong1_as<TracksWPid>();
         fillCandidateTable<true>(candidate, prong1);
       }
     } else if (fillOnlyBackground) {
@@ -343,7 +343,7 @@ struct HfTreeCreatorB0ToDPi {
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
-        auto prong1 = candidate.prong1_as<TracksPid>();
+        auto prong1 = candidate.prong1_as<TracksWPid>();
         fillCandidateTable<true>(candidate, prong1);
       }
     } else {
@@ -352,7 +352,7 @@ struct HfTreeCreatorB0ToDPi {
         rowCandidateLite.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        auto prong1 = candidate.prong1_as<TracksPid>();
+        auto prong1 = candidate.prong1_as<TracksWPid>();
         fillCandidateTable<true>(candidate, prong1);
       }
     }

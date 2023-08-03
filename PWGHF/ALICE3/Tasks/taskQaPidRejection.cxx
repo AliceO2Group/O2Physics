@@ -103,7 +103,7 @@ struct HfTaskQaPidRejection {
   static_assert(particle < 5 && "Maximum of particles reached");
   static constexpr int particlePDG = PDGs[particle];
 
-  using TracksPid = soa::Join<aod::Tracks, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::HfTrackIndexALICE3PID>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::HfTrackIndexALICE3PID>;
 
   HistogramRegistry histos{"HistogramsRejection"};
 
@@ -159,7 +159,7 @@ struct HfTaskQaPidRejection {
   }
 
   void process(const soa::Join<aod::Collisions, aod::McCollisionLabels>& collisions,
-               const soa::Join<TracksPid, aod::McTrackLabels>& tracks,
+               const soa::Join<TracksWPid, aod::McTrackLabels>& tracks,
                const aod::McCollisions& mcCollisions,
                const aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
   {
@@ -277,7 +277,7 @@ struct HfTaskQaPidRejectionGeneral {
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;
 
-  using TracksPid = soa::Join<aod::Tracks, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::HfTrackIndexALICE3PID>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::HfTrackIndexALICE3PID>;
 
   HistogramRegistry histos{"HistogramsRejection"};
 
@@ -350,7 +350,7 @@ struct HfTaskQaPidRejectionGeneral {
   }
 
   void process(const soa::Join<aod::Collisions, aod::McCollisionLabels>& collisions,
-               const soa::Join<TracksPid, aod::McTrackLabels>& tracks,
+               const soa::Join<TracksWPid, aod::McTrackLabels>& tracks,
                const aod::McCollisions& mcCollisions,
                const aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
   {
