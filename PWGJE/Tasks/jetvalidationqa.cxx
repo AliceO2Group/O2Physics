@@ -173,7 +173,7 @@ struct jetTrackCollisionQa {
     double leadingTrackEta = -1;
     // qa histograms for selected tracks in collision
     for (const auto& t : tracks) {
-      if ((t.collisionId() == collision.globalIndex()) & (selectTrack(t, trackSelection) == true)) {
+      if ((t.collisionId() == collision.globalIndex()) && (selectTrack(t, trackSelection) == true)) {
         fillTrackQA(t);
         if (t.pt() > leadingTrackPt) {
           leadingTrackPt = t.pt();
@@ -191,7 +191,7 @@ struct jetTrackCollisionQa {
     // jet QA hists per jet in this collision
     for (const auto& j : jets) {
       if (j.collisionId() != collision.globalIndex()) {
-        return;
+        continue;
       }
       fillJetQA(j);
       if (j.pt() > leadingJetPt) {
@@ -237,7 +237,7 @@ struct jetTrackCollisionQa {
     double leadingTrackEta = -1;
     // qa histograms for selected tracks in collision
     for (const auto& t : tracks) {
-      if ((t.collisionId() == collision.globalIndex()) & (selectTrack(t, trackSelection) == true)) {
+      if ((t.collisionId() == collision.globalIndex()) && (selectTrack(t, trackSelection) == true)) {
         fillTrackQA(t);
         if (t.pt() > leadingTrackPt) {
           leadingTrackPt = t.pt();
@@ -255,7 +255,7 @@ struct jetTrackCollisionQa {
     // jet QA hists per jet in this collision
     for (const auto& j : jets) {
       if (j.collisionId() != collision.globalIndex()) {
-        return;
+        continue;
       }
       fillJetQA(j);
       if (j.pt() > leadingJetPt) {
@@ -389,8 +389,8 @@ struct mcJetTrackCollisionQa {
   void fillMcTrackHistos(ValidationTracks const& mct, coll collision, bool mc) // could give collision as argument for additional association
   {
     for (const auto& track : mct) {
-      if ((!selectTrack(track, trackSelection)) || (track.collisionId() == collision.globalIndex())) {
-        return;
+      if ((!selectTrack(track, trackSelection)) || !(track.collisionId() == collision.globalIndex())) {
+        continue;
       }
       if (mc == true) {
         if (track.has_mcParticle()) {
