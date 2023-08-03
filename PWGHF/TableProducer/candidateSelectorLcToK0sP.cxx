@@ -607,7 +607,7 @@ struct HfCandidateSelectorLcToK0sP {
     int statusLc = 0; // final selection flag : 0-rejected  1-accepted
 
     for (const auto& candidate : candidates) {                     // looping over cascade candidates
-      const auto& bach = candidate.prong0_as<TracksSel>(); // bachelor track
+      const auto& bach = candidate.prong0_as<TracksSel>();         // bachelor track
 
       statusLc = 0;
 
@@ -640,7 +640,7 @@ struct HfCandidateSelectorLcToK0sP {
     int statusLc = 0; // final selection flag : 0-rejected  1-accepted
 
     for (const auto& candidate : candidates) {                    // looping over cascade candidates
-      const auto& bach = candidate.prong0_as<TracksSelBayes>(); // bachelor track
+      const auto& bach = candidate.prong0_as<TracksSelBayes>();   // bachelor track
 
       statusLc = 0;
 

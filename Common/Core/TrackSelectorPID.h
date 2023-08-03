@@ -24,8 +24,7 @@
 
 /// Class for track selection using PID detectors
 
-struct TrackSelectorPID
-{
+struct TrackSelectorPID {
   /// Selection status
   enum Status {
     NotApplicable = 0,
@@ -44,7 +43,8 @@ class TrackSelectorPidBase
 
   /// Conversion operator
   template <uint64_t pdgNew>
-  operator TrackSelectorPidBase<pdgNew>() const {
+  operator TrackSelectorPidBase<pdgNew>() const
+  {
     TrackSelectorPidBase<pdgNew> objNew;
     // TPC
     objNew.setRangePtTpc(mPtTpcMin, mPtTpcMax);
@@ -114,19 +114,19 @@ class TrackSelectorPidBase
 
     // Get nσ for a given particle hypothesis.
     double nSigma = 100.;
-      if constexpr (pdg == kElectron) {
-        nSigma = track.tpcNSigmaEl();
-      } else if constexpr (pdg == kMuonMinus) {
-        nSigma = track.tpcNSigmaMu();
-      } else if constexpr (pdg == kPiPlus) {
-        nSigma = track.tpcNSigmaPi();
-      } else if constexpr (pdg == kKPlus) {
-        nSigma = track.tpcNSigmaKa();
-      } else if constexpr (pdg == kProton) {
-        nSigma = track.tpcNSigmaPr();
-      } else {
-        errorPdg();
-      }
+    if constexpr (pdg == kElectron) {
+      nSigma = track.tpcNSigmaEl();
+    } else if constexpr (pdg == kMuonMinus) {
+      nSigma = track.tpcNSigmaMu();
+    } else if constexpr (pdg == kPiPlus) {
+      nSigma = track.tpcNSigmaPi();
+    } else if constexpr (pdg == kKPlus) {
+      nSigma = track.tpcNSigmaKa();
+    } else if constexpr (pdg == kProton) {
+      nSigma = track.tpcNSigmaPr();
+    } else {
+      errorPdg();
+    }
 
     if (mNSigmaTpcMinCondTof < -999. && mNSigmaTpcMaxCondTof > 999.) {
       conditionalTof = true;
@@ -202,19 +202,19 @@ class TrackSelectorPidBase
 
     // Get nσ for a given particle hypothesis.
     double nSigma = 100.;
-      if constexpr (pdg == kElectron) {
-        nSigma = track.tofNSigmaEl();
-      } else if constexpr (pdg == kMuonMinus) {
-        nSigma = track.tofNSigmaMu();
-      } else if constexpr (pdg == kPiPlus) {
-        nSigma = track.tofNSigmaPi();
-      } else if constexpr (pdg == kKPlus) {
-        nSigma = track.tofNSigmaKa();
-      } else if constexpr (pdg == kProton) {
-        nSigma = track.tofNSigmaPr();
-      } else {
-        errorPdg();
-      }
+    if constexpr (pdg == kElectron) {
+      nSigma = track.tofNSigmaEl();
+    } else if constexpr (pdg == kMuonMinus) {
+      nSigma = track.tofNSigmaMu();
+    } else if constexpr (pdg == kPiPlus) {
+      nSigma = track.tofNSigmaPi();
+    } else if constexpr (pdg == kKPlus) {
+      nSigma = track.tofNSigmaKa();
+    } else if constexpr (pdg == kProton) {
+      nSigma = track.tofNSigmaPr();
+    } else {
+      errorPdg();
+    }
 
     if (mNSigmaTofMinCondTpc < -999. && mNSigmaTofMaxCondTpc > 999.) {
       conditionalTpc = true;
@@ -293,19 +293,19 @@ class TrackSelectorPidBase
 
     // Get nσ for a given particle hypothesis.
     double nSigma = 100.;
-        if constexpr (pdg == kElectron) {
-          nSigma = track.rich().richNsigmaEl();
-        } else if constexpr (pdg == kMuonMinus) {
-          nSigma = track.rich().richNsigmaMu();
-        } else if constexpr (pdg == kPiPlus) {
-          nSigma = track.rich().richNsigmaPi();
-        } else if constexpr (pdg == kKPlus) {
-          nSigma = track.rich().richNsigmaKa();
-        } else if constexpr (pdg == kProton) {
-          nSigma = track.rich().richNsigmaPr();
-        } else {
-          errorPdg();
-        }
+    if constexpr (pdg == kElectron) {
+      nSigma = track.rich().richNsigmaEl();
+    } else if constexpr (pdg == kMuonMinus) {
+      nSigma = track.rich().richNsigmaMu();
+    } else if constexpr (pdg == kPiPlus) {
+      nSigma = track.rich().richNsigmaPi();
+    } else if constexpr (pdg == kKPlus) {
+      nSigma = track.rich().richNsigmaKa();
+    } else if constexpr (pdg == kProton) {
+      nSigma = track.rich().richNsigmaPr();
+    } else {
+      errorPdg();
+    }
 
     if (mNSigmaRichMinCondTof < -999. && mNSigmaRichMaxCondTof > 999.) {
       conditionalTof = true;
@@ -555,19 +555,19 @@ class TrackSelectorPidBase
 
     // Get probability for a given particle hypothesis.
     double prob = 0.;
-        if constexpr (pdg == kElectron) {
-          prob = track.bayesEl();
-        } else if constexpr (pdg == kMuonMinus) {
-          prob = track.bayesMu();
-        } else if constexpr (pdg == kPiPlus) {
-          prob = track.bayesPi();
-        } else if constexpr (pdg == kKPlus) {
-          prob = track.bayesKa();
-        } else if constexpr (pdg == kProton) {
-          prob = track.bayesPr();
-        } else {
-        errorPdg();
-      }
+    if constexpr (pdg == kElectron) {
+      prob = track.bayesEl();
+    } else if constexpr (pdg == kMuonMinus) {
+      prob = track.bayesMu();
+    } else if constexpr (pdg == kPiPlus) {
+      prob = track.bayesPi();
+    } else if constexpr (pdg == kKPlus) {
+      prob = track.bayesKa();
+    } else if constexpr (pdg == kProton) {
+      prob = track.bayesPr();
+    } else {
+      errorPdg();
+    }
 
     return mProbBayesMin <= prob;
   }
@@ -606,28 +606,28 @@ class TrackSelectorPidBase
 
  private:
   // TPC
-  float mPtTpcMin = 0.;                ///< minimum pT for TPC PID [GeV/c]
-  float mPtTpcMax = 100.;              ///< maximum pT for TPC PID [GeV/c]
-  float mNSigmaTpcMin = -3.;           ///< minimum number of TPC σ
-  float mNSigmaTpcMax = 3.;            ///< maximum number of TPC σ
-  float mNSigmaTpcMinCondTof = 0.;     ///< minimum number of TPC σ if combined with TOF
-  float mNSigmaTpcMaxCondTof = 0.;     ///< maximum number of TPC σ if combined with TOF
+  float mPtTpcMin = 0.;            ///< minimum pT for TPC PID [GeV/c]
+  float mPtTpcMax = 100.;          ///< maximum pT for TPC PID [GeV/c]
+  float mNSigmaTpcMin = -3.;       ///< minimum number of TPC σ
+  float mNSigmaTpcMax = 3.;        ///< maximum number of TPC σ
+  float mNSigmaTpcMinCondTof = 0.; ///< minimum number of TPC σ if combined with TOF
+  float mNSigmaTpcMaxCondTof = 0.; ///< maximum number of TPC σ if combined with TOF
 
   // TOF
-  float mPtTofMin = 0.;                ///< minimum pT for TOF PID [GeV/c]
-  float mPtTofMax = 100.;              ///< maximum pT for TOF PID [GeV/c]
-  float mNSigmaTofMin = -3.;           ///< minimum number of TOF σ
-  float mNSigmaTofMax = 3.;            ///< maximum number of TOF σ
-  float mNSigmaTofMinCondTpc = 0.;     ///< minimum number of TOF σ if combined with TPC
-  float mNSigmaTofMaxCondTpc = 0.;     ///< maximum number of TOF σ if combined with TPC
+  float mPtTofMin = 0.;            ///< minimum pT for TOF PID [GeV/c]
+  float mPtTofMax = 100.;          ///< maximum pT for TOF PID [GeV/c]
+  float mNSigmaTofMin = -3.;       ///< minimum number of TOF σ
+  float mNSigmaTofMax = 3.;        ///< maximum number of TOF σ
+  float mNSigmaTofMinCondTpc = 0.; ///< minimum number of TOF σ if combined with TPC
+  float mNSigmaTofMaxCondTpc = 0.; ///< maximum number of TOF σ if combined with TPC
 
   // RICH
-  float mPtRichMin = 0.;                ///< minimum pT for RICH PID [GeV/c]
-  float mPtRichMax = 100.;              ///< maximum pT for RICH PID [GeV/c]
-  float mNSigmaRichMin = -3.;           ///< minimum number of RICH σ
-  float mNSigmaRichMax = 3.;            ///< maximum number of RICH σ
-  float mNSigmaRichMinCondTof = 0.;     ///< minimum number of RICH σ if combined with TOF
-  float mNSigmaRichMaxCondTof = 0.;     ///< maximum number of RICH σ if combined with TOF
+  float mPtRichMin = 0.;            ///< minimum pT for RICH PID [GeV/c]
+  float mPtRichMax = 100.;          ///< maximum pT for RICH PID [GeV/c]
+  float mNSigmaRichMin = -3.;       ///< minimum number of RICH σ
+  float mNSigmaRichMax = 3.;        ///< maximum number of RICH σ
+  float mNSigmaRichMinCondTof = 0.; ///< minimum number of RICH σ if combined with TOF
+  float mNSigmaRichMaxCondTof = 0.; ///< maximum number of RICH σ if combined with TOF
 
   // Bayesian
   float mPtBayesMin = 0.;    ///< minimum pT for Bayesian PID [GeV/c]
@@ -635,7 +635,8 @@ class TrackSelectorPidBase
   float mProbBayesMin = -1.; ///< minimum Bayesian probability [%]
 
   /// Throw fatal for unsupported PDG values.
-  void errorPdg() {
+  void errorPdg()
+  {
     LOGF(fatal, "Species with PDG code %d not supported", pdg);
   }
 };
