@@ -741,7 +741,11 @@ struct tofSpectra {
     }
 
     // Filling DCA info with the TPC+TOF PID
-    if (std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.f) {
+    bool isDCAPureSample = (std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.f);
+    if (track.pt() <= 0.4) {
+      isDCAPureSample = (nsigmaTPC < 1.f);
+    }
+    if (isDCAPureSample) {
       if (track.sign() > 0) {
         histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
       } else {
