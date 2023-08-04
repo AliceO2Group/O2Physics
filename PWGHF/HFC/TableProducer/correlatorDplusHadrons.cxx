@@ -526,18 +526,16 @@ struct HfCorrelatorDplusHadrons {
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcRecMixedEvent, "Process Mixed Event MCRec", false);
 
   // Event Mixing for the MCGen Mode
-  using myCollisionsMcGen = soa::Join<aod::McCollisions, aod::DmesonSelection>;
-  using fullTracksMcGen = aod::McParticles;
-  using mySelCollisionsMcGen = soa::Filtered<myCollisionsMcGen>;
-  using myTracksMcGen = soa::Filtered<fullTracksMcGen>;
+  using McCollisionsSel = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;
+  using McParticlesSel = soa::Filtered<aod::McParticles>;
 
   Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonSel == true;
   Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
 
-  void processMcGenMixedEvent(mySelCollisionsMcGen& collisions, myTracksMcGen& particlesMc)
+  void processMcGenMixedEvent(McCollisionsSel& collisions, McParticlesSel& particlesMc)
   {
 
-    auto getTracksSize = [&particlesMc, this](mySelCollisionsMcGen::iterator const& collision) {
+    auto getTracksSize = [&particlesMc, this](McCollisionsSel::iterator const& collision) {
       int nTracks = 0;
       auto associatedTracks = particlesMc.sliceByCached(o2::aod::mcparticle::mcCollisionId, collision.globalIndex(), this->cache);
       for (auto const& track : associatedTracks) {
@@ -552,7 +550,7 @@ struct HfCorrelatorDplusHadrons {
     BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zBins, multBins}, true};
 
     auto tracksTuple = std::make_tuple(particlesMc, particlesMc);
-    Pair<mySelCollisionsMcGen, myTracksMcGen, myTracksMcGen, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, collisions, tracksTuple, &cache};
+    Pair<McCollisionsSel, McParticlesSel, McParticlesSel, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, collisions, tracksTuple, &cache};
 
     for (auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {

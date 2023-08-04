@@ -46,6 +46,20 @@ struct HfCandidateSelectorDsToKKPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_ds_to_k_k_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Ds candidate selection per pT bin"};
 
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
+
+  using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
+
+  void init(InitContext const&)
+  {
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorKaon = selectorPion;
+  }
+
   /// Candidate selections independent from the daugther-mass hypothesis
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
@@ -137,17 +151,8 @@ struct HfCandidateSelectorDsToKKPi {
     return true;
   }
 
-  void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
+  void process(aod::HfCand3Prong const& candidates, TracksSel const&)
   {
-    TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-
-    TrackSelectorPID selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus);
-
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {
 
@@ -162,9 +167,9 @@ struct HfCandidateSelectorDsToKKPi {
       SETBIT(statusDsToKKPi, aod::SelectionStep::RecoSkims);
       SETBIT(statusDsToPiKK, aod::SelectionStep::RecoSkims);
 
-      auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackPos1 = candidate.prong0_as<TracksSel>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<TracksSel>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<TracksSel>(); // positive daughter (negative for the antiparticles)
 
       // topological selections
       if (!selection(candidate)) {
@@ -186,19 +191,19 @@ struct HfCandidateSelectorDsToKKPi {
       }
 
       // track-level PID selection
-      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos1);
-      int pidTrackPos1Kaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos1);
-      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos2);
-      int pidTrackPos2Kaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos2);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
+      int pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
+      int pidTrackPos1Kaon = selectorKaon.statusTpcOrTof(trackPos1);
+      int pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
+      int pidTrackPos2Kaon = selectorKaon.statusTpcOrTof(trackPos2);
+      int pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
 
-      bool pidDsToKKPi = !(pidTrackPos1Kaon == TrackSelectorPID::Status::PIDRejected ||
-                           pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                           pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected);
+      bool pidDsToKKPi = !(pidTrackPos1Kaon == TrackSelectorPID::Rejected ||
+                           pidTrackNegKaon == TrackSelectorPID::Rejected ||
+                           pidTrackPos2Pion == TrackSelectorPID::Rejected);
 
-      bool pidDsToPiKK = !(pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
-                           pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                           pidTrackPos2Kaon == TrackSelectorPID::Status::PIDRejected);
+      bool pidDsToPiKK = !(pidTrackPos1Pion == TrackSelectorPID::Rejected ||
+                           pidTrackNegKaon == TrackSelectorPID::Rejected ||
+                           pidTrackPos2Kaon == TrackSelectorPID::Rejected);
 
       if (!pidDsToKKPi && !pidDsToPiKK) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);

@@ -201,6 +201,7 @@ struct HfTreeCreatorD0ToKPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
 
@@ -327,7 +328,7 @@ struct HfTreeCreatorD0ToKPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> const& candidates,
-                   aod::BigTracksPID const&, aod::BCs const&)
+                   TracksWPid const&, aod::BCs const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -348,8 +349,8 @@ struct HfTreeCreatorD0ToKPi {
           continue;
         }
       }
-      auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-      auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+      auto prong0 = candidate.prong0_as<TracksWPid>();
+      auto prong1 = candidate.prong1_as<TracksWPid>();
       double yD = yD0(candidate);
       double eD = eD0(candidate);
       double ctD = ctD0(candidate);
@@ -368,7 +369,7 @@ struct HfTreeCreatorD0ToKPi {
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
                  MatchedGenCandidatesMc const& particles,
-                 aod::BigTracksPID const&, aod::BCs const&)
+                 TracksWPid const&, aod::BCs const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -384,8 +385,8 @@ struct HfTreeCreatorD0ToKPi {
         rowCandidateFull.reserve(reconstructedCandSig.size());
       }
       for (const auto& candidate : reconstructedCandSig) {
-        auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-        auto prong1 = candidate.prong0_as<aod::BigTracksPID>();
+        auto prong0 = candidate.prong0_as<TracksWPid>();
+        auto prong1 = candidate.prong0_as<TracksWPid>();
         double yD = yD0(candidate);
         double eD = eD0(candidate);
         double ctD = ctD0(candidate);
@@ -409,8 +410,8 @@ struct HfTreeCreatorD0ToKPi {
             continue;
           }
         }
-        auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-        auto prong1 = candidate.prong0_as<aod::BigTracksPID>();
+        auto prong0 = candidate.prong0_as<TracksWPid>();
+        auto prong1 = candidate.prong0_as<TracksWPid>();
         double yD = yD0(candidate);
         double eD = eD0(candidate);
         double ctD = ctD0(candidate);
@@ -428,8 +429,8 @@ struct HfTreeCreatorD0ToKPi {
         rowCandidateFull.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        auto prong0 = candidate.prong0_as<aod::BigTracksPID>();
-        auto prong1 = candidate.prong0_as<aod::BigTracksPID>();
+        auto prong0 = candidate.prong0_as<TracksWPid>();
+        auto prong1 = candidate.prong0_as<TracksWPid>();
         double yD = yD0(candidate);
         double eD = eD0(candidate);
         double ctD = ctD0(candidate);

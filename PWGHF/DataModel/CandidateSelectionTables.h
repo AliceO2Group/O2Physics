@@ -277,15 +277,15 @@ bool selectionTopol(const T1& candB0, const T2& cuts, const T3& binsPt)
 
 /// Apply PID selection
 /// \param pidTrackPi PID status of trackPi (prong1 of B0 candidate)
-/// \param acceptPIDNotApplicable switch to accept Status::PIDNotApplicable
+/// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
 /// \return true if prong1 of B0 candidate passes all selections
 template <typename T1 = int, typename T2 = bool>
 bool selectionPID(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
 {
-  if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
+  if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
     return false;
   }
-  if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Status::PIDRejected) {
+  if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
     return false;
   }
 
@@ -350,15 +350,15 @@ bool selectionTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
 
 /// Apply PID selection
 /// \param pidTrackPi PID status of trackPi (prong1 of B+ candidate)
-/// \param acceptPIDNotApplicable switch to accept Status::PIDNotApplicable
+/// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
 /// \return true if prong1 of B+ candidate passes all selections
 template <typename T1 = int, typename T2 = bool>
 bool selectionPID(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
 {
-  if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
+  if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
     return false;
   }
-  if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Status::PIDRejected) {
+  if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
     return false;
   }
 

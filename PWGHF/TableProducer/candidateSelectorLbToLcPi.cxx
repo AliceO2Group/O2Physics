@@ -122,7 +122,7 @@ struct HfCandidateSelectorLbToLcPi {
     return true;
   }
 
-  void process(aod::HfCandLb const& hfCandLbs, soa::Join<aod::HfCand3Prong const&, aod::HfSelLc> const&, aod::BigTracksPID const&)
+  void process(aod::HfCandLb const& hfCandLbs, soa::Join<aod::HfCand3Prong const&, aod::HfSelLc> const&, aod::Tracks const&)
   {
     for (auto& hfCandLb : hfCandLbs) { // looping over Lb candidates
 
@@ -138,7 +138,7 @@ struct HfCandidateSelectorLbToLcPi {
       // Lc is always index0 and pi is index1 by default
       // auto candLc = hfCandLb.prong0();
       auto candLc = hfCandLb.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-      auto trackPi = hfCandLb.prong1_as<aod::BigTracksPID>();
+      auto trackPi = hfCandLb.prong1();
 
       // topological cuts
       if (!selectionTopol(hfCandLb, candLc, trackPi)) {

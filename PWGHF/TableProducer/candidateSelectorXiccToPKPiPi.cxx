@@ -49,6 +49,20 @@ struct HfCandidateSelectorXiccToPKPiPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xicc_to_p_k_pi_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Xicc candidate selection per pT bin"};
 
+  TrackSelectorPi selectorPion;
+
+  using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi>;
+
+  void init(InitContext const&)
+  {
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+  }
+
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
@@ -126,20 +140,12 @@ struct HfCandidateSelectorXiccToPKPiPi {
     return true;
   }
 
-  void process(aod::HfCandXicc const& hfCandXiccs, aod::HfCand3Prong const&, aod::BigTracksPID const&)
+  void process(aod::HfCandXicc const& hfCandXiccs, aod::HfCand3Prong const&, TracksSel const&)
   {
-    TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-
     // looping over 3-prong candidates
     for (auto& hfCandXicc : hfCandXiccs) {
       auto hfCandXic = hfCandXicc.prong0();
-      auto trackPi = hfCandXicc.prong1_as<aod::BigTracksPID>();
+      auto trackPi = hfCandXicc.prong1_as<TracksSel>();
       // final selection flag: 0 - rejected, 1 - accepted
       auto statusXiccToPKPiPi = 0;
 
@@ -161,8 +167,8 @@ struct HfCandidateSelectorXiccToPKPiPi {
         pidPi = 1;
       } else {
         // track-level PID selection
-        int pidPion = selectorPion.getStatusTrackPIDTpcOrTof(trackPi);
-        if (pidPion == TrackSelectorPID::Status::PIDAccepted) {
+        int pidPion = selectorPion.statusTpcOrTof(trackPi);
+        if (pidPion == TrackSelectorPID::Accepted) {
           pidPi = 1;
         }
       }

@@ -229,7 +229,7 @@ struct HfTaskDs {
     }
   }
 
-  void processMc(candDsMcReco const& candidates, candDsMcGen const& particlesMC, aod::BigTracksMC const&)
+  void processMc(candDsMcReco const& candidates, candDsMcGen const& particlesMC, aod::TracksWMc const&)
   {
     // MC rec.
     for (const auto& candidate : reconstructedCandSig) {
@@ -237,7 +237,7 @@ struct HfTaskDs {
         continue;
       }
 
-      auto prong0McPart = candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<candDsMcGen>();
+      auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<candDsMcGen>();
       auto indexMother = RecoDecay::getMother(particlesMC, prong0McPart, pdg::Code::kDS, true);
       auto particleMother = particlesMC.iteratorAt(indexMother);
       registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT

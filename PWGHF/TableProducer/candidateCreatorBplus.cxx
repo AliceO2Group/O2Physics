@@ -81,8 +81,9 @@ struct HfCandidateCreatorBplus {
   double massD0Pi = 0.;
   double bz = 0.;
 
-  using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
+  using TracksWithSel = soa::Join<aod::TracksWCovDca, aod::TrackSelection>;
   using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
   Preslice<CandsDFiltered> candsDPerCollision = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
@@ -329,7 +330,7 @@ struct HfCandidateCreatorBplusExpressions {
   void init(InitContext const&) {}
 
   void processMc(aod::HfCand2Prong const& dzero,
-                 aod::BigTracksMC const& tracks,
+                 aod::TracksWMc const& tracks,
                  aod::McParticles const& particlesMC)
   {
     rowCandidateBPlus->bindExternalIndices(&tracks);
@@ -349,8 +350,8 @@ struct HfCandidateCreatorBplusExpressions {
       flag = 0;
       origin = 0;
       auto candDaughterD0 = candidate.prong0_as<aod::HfCand2Prong>();
-      auto arrayDaughtersD0 = array{candDaughterD0.prong0_as<aod::BigTracksMC>(), candDaughterD0.prong1_as<aod::BigTracksMC>()};
-      auto arrayDaughters = array{candidate.prong1_as<aod::BigTracksMC>(), candDaughterD0.prong0_as<aod::BigTracksMC>(), candDaughterD0.prong1_as<aod::BigTracksMC>()};
+      auto arrayDaughtersD0 = array{candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
+      auto arrayDaughters = array{candidate.prong1_as<aod::TracksWMc>(), candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
 
       // B± → D0bar(D0) π± → (K± π∓) π±
       // Printf("Checking B± → D0(bar) π±");

@@ -215,6 +215,7 @@ struct HfTreeCreatorDplusToPiKPi {
 
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DplusToPiKPi));
@@ -249,9 +250,9 @@ struct HfTreeCreatorDplusToPiKPi {
       originMc = candidate.originMcRec();
     }
 
-    auto prong0 = candidate.template prong0_as<aod::BigTracksPID>();
-    auto prong1 = candidate.template prong1_as<aod::BigTracksPID>();
-    auto prong2 = candidate.template prong2_as<aod::BigTracksPID>();
+    auto prong0 = candidate.template prong0_as<TracksWPid>();
+    auto prong1 = candidate.template prong1_as<TracksWPid>();
+    auto prong2 = candidate.template prong2_as<TracksWPid>();
 
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -362,7 +363,7 @@ struct HfTreeCreatorDplusToPiKPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
-                   aod::BigTracksPID const&)
+                   TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -393,7 +394,7 @@ struct HfTreeCreatorDplusToPiKPi {
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
                  MatchedGenCandidatesMc const& particles,
-                 aod::BigTracksPID const&)
+                 TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());

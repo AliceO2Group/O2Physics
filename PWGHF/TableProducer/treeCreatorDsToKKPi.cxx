@@ -217,6 +217,7 @@ struct HfTreeCreatorDsToKKPi {
   using candDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using candDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using candDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
   Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanGen == decayChannel;
@@ -271,9 +272,9 @@ struct HfTreeCreatorDsToKKPi {
       absCos3PiKDs = std::abs(cos3PiKDsToPiKK(candidate));
     }
 
-    auto prong0 = candidate.template prong0_as<aod::BigTracksPID>();
-    auto prong1 = candidate.template prong1_as<aod::BigTracksPID>();
-    auto prong2 = candidate.template prong2_as<aod::BigTracksPID>();
+    auto prong0 = candidate.template prong0_as<TracksWPid>();
+    auto prong1 = candidate.template prong1_as<TracksWPid>();
+    auto prong2 = candidate.template prong2_as<TracksWPid>();
 
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -383,7 +384,7 @@ struct HfTreeCreatorDsToKKPi {
 
   void processData(aod::Collisions const& collisions,
                    candDsData const& candidates,
-                   aod::BigTracksPID const&)
+                   TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -425,7 +426,7 @@ struct HfTreeCreatorDsToKKPi {
                  aod::McCollisions const&,
                  candDsMcReco const& candidates,
                  candDsMcGen const& particlesMC,
-                 aod::BigTracksPID const&)
+                 TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());

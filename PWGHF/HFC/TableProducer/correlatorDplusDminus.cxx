@@ -134,7 +134,7 @@ struct HfCorrelatorDplusDminus {
   }
 
   /// Dplus-Dminus correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates, aod::BigTracks const& bigtracks)
+  void processData(aod::Collision const& collision, aod::TracksWDca& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -174,7 +174,7 @@ struct HfCorrelatorDplusDminus {
       }
 
       int outerParticleSign = 1; // Dplus
-      auto outerSecondTrack = candidate1.prong1_as<aod::BigTracks>();
+      auto outerSecondTrack = candidate1.prong1_as<aod::TracksWDca>();
       if (outerSecondTrack.sign() == 1) {
         outerParticleSign = -1; // Dminus (second daughter track is positive)
       }
@@ -206,7 +206,7 @@ struct HfCorrelatorDplusDminus {
         if (!(candidate2.hfflag() & 1 << DecayType::DplusToPiKPi)) { // probably dummy since already selected? not sure...
           continue;
         }
-        auto innerSecondTrack = candidate2.prong1_as<aod::BigTracks>();
+        auto innerSecondTrack = candidate2.prong1_as<aod::TracksWDca>();
         if (innerSecondTrack.sign() != 1) { // keep only Dminus (with second daughter track positive)
           continue;
         }
@@ -242,7 +242,7 @@ struct HfCorrelatorDplusDminus {
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processData, "Process data", false);
 
   /// Dplus-Dminus correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates, aod::BigTracks const& bigtracks)
+  void processMcRec(aod::Collision const& collision, aod::TracksWDca& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -285,7 +285,7 @@ struct HfCorrelatorDplusDminus {
       }
 
       int outerParticleSign = 1; // Dplus
-      auto outerSecondTrack = candidate1.prong1_as<aod::BigTracks>();
+      auto outerSecondTrack = candidate1.prong1_as<aod::TracksWDca>();
       if (outerSecondTrack.sign() == 1) {
         outerParticleSign = -1; // Dminus (second daughter track is positive)
       }
@@ -322,7 +322,7 @@ struct HfCorrelatorDplusDminus {
         if (!(candidate2.hfflag() & 1 << DecayType::DplusToPiKPi)) { // check decay channel flag for candidate2
           continue;
         }
-        auto innerSecondTrack = candidate2.prong1_as<aod::BigTracks>();
+        auto innerSecondTrack = candidate2.prong1_as<aod::TracksWDca>();
         if (innerSecondTrack.sign() != 1) { // keep only Dminus (with second daughter track positive)
           continue;
         }

@@ -49,6 +49,8 @@ struct HfCandidateSelectorXToJpsiPiPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_x_to_jpsi_pi_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
+  using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi>;
+
   /// Selection on goodness of daughter tracks
   /// \note should be applied at candidate selection
   /// \param track is daughter track
@@ -187,13 +189,13 @@ struct HfCandidateSelectorXToJpsiPiPi {
     // }
   }
 
-  void process(aod::HfCandX const& hfCandXs, aod::HfCand2Prong const&, aod::BigTracksPID const& tracks)
+  void process(aod::HfCandX const& hfCandXs, aod::HfCand2Prong const&, TracksSel const& tracks)
   {
     for (auto& hfCandX : hfCandXs) { // looping over X candidates
       // note the difference between Jpsi (index0) and pions (index1,2)
       auto candJpsi = hfCandX.prong0();
-      auto trackPos = hfCandX.prong1_as<aod::BigTracksPID>(); // positive daughter
-      auto trackNeg = hfCandX.prong2_as<aod::BigTracksPID>(); // negative daughter
+      auto trackPos = hfCandX.prong1_as<TracksSel>(); // positive daughter
+      auto trackNeg = hfCandX.prong2_as<TracksSel>(); // negative daughter
 
       int selJpsiToEE = 1;
       int selJpsiToMuMu = 1;
