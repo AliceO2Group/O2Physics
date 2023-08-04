@@ -25,9 +25,9 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
-#include "PWGLF/DataModel/LFQATables.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "TH1F.h"
 #include "TH2F.h"
@@ -38,7 +38,7 @@ using namespace o2::framework;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
 struct MultiplicityQa {
-  //Raw multiplicities
+  // Raw multiplicities
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Configurable<int> selection{"sel", 7, "trigger: 7 - sel7, 8 - sel8"};
@@ -61,7 +61,7 @@ struct MultiplicityQa {
   Configurable<bool> useZeqInProfiles{"useZeqInProfiles", true, "use Z-equalized signals in midrap Nch profiles"};
 
   // necessary for particle charges
-  Service<O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   SliceCache cache;
 
@@ -69,7 +69,7 @@ struct MultiplicityQa {
   {
     const AxisSpec axisEvent{10, 0, 10, "Event counter"};
 
-    //Base histograms
+    // Base histograms
     histos.add("multiplicityQa/hEventCounter", "Event counter", kTH1D, {axisEvent});
 
     histos.add("multiplicityQa/hRawFV0", "Raw FV0", kTH1D, {axisMultFV0});
@@ -144,7 +144,7 @@ struct MultiplicityQa {
     }
     histos.fill(HIST("multiplicityQa/hEventCounter"), 2.5);
 
-    //Vertex-Z dependencies, necessary for CCDB objects
+    // Vertex-Z dependencies, necessary for CCDB objects
     histos.fill(HIST("multiplicityQa/hVtxZFV0A"), col.posZ(), col.multFV0A());
     histos.fill(HIST("multiplicityQa/hVtxZFT0A"), col.posZ(), col.multFT0A());
     histos.fill(HIST("multiplicityQa/hVtxZFT0C"), col.posZ(), col.multFT0C());
@@ -160,7 +160,7 @@ struct MultiplicityQa {
 
     LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFV0M=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFT0M=%5.0f multFDDA=%5.0f multFDDC=%5.0f", col.multFV0A(), col.multFV0C(), col.multFV0M(), col.multFT0A(), col.multFT0C(), col.multFT0M(), col.multFDDA(), col.multFDDC());
 
-    //Raw multiplicities
+    // Raw multiplicities
     histos.fill(HIST("multiplicityQa/hRawFV0"), col.multFV0A());
     histos.fill(HIST("multiplicityQa/hRawFT0"), col.multFT0M());
     histos.fill(HIST("multiplicityQa/hRawFT0A"), col.multFT0A());
@@ -168,7 +168,7 @@ struct MultiplicityQa {
     histos.fill(HIST("multiplicityQa/hRawFDD"), col.multFDDM());
     histos.fill(HIST("multiplicityQa/hRawNTracksPV"), col.multNTracksPV());
 
-    //vertex-Z corrected - FIXME
+    // vertex-Z corrected - FIXME
     histos.fill(HIST("multiplicityQa/hZeqFV0"), col.multZeqFV0A());
     histos.fill(HIST("multiplicityQa/hZeqFT0"), col.multZeqFT0A() + col.multZeqFT0C());
     histos.fill(HIST("multiplicityQa/hZeqFT0A"), col.multZeqFT0A());
@@ -292,22 +292,22 @@ struct MultiplicityQa {
       return;
 
     auto mcCollision = col.mcCollision_as<soa::Join<aod::McCollisions, aod::McCollsExtra>>();
-    if (mcCollision.hasRecoCollision() < 1)
+    if (mcCollision.numRecoCollision() < 1)
       return; // total paranoia mode: on
 
     // Profiles
     if (useZeqInProfiles && do2Dplots) {
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFV0"), col.multZeqFV0A(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0"), col.multZeqFT0A() + col.multZeqFT0C(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0A"), col.multZeqFT0A(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0C"), col.multZeqFT0C(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFDD"), col.multZeqFDDA() + col.multZeqFDDC(), mcCollision.hasRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFV0"), col.multZeqFV0A(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0"), col.multZeqFT0A() + col.multZeqFT0C(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0A"), col.multZeqFT0A(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0C"), col.multZeqFT0C(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFDD"), col.multZeqFDDA() + col.multZeqFDDC(), mcCollision.numRecoCollision());
     } else {
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFV0"), col.multFV0A(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0"), col.multFT0A() + col.multFT0C(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0A"), col.multFT0A(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0C"), col.multFT0C(), mcCollision.hasRecoCollision());
-      histos.fill(HIST("multiplicityQa/h2dPVsVsFDD"), col.multFDDA() + col.multFDDC(), mcCollision.hasRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFV0"), col.multFV0A(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0"), col.multFT0A() + col.multFT0C(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0A"), col.multFT0A(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFT0C"), col.multFT0C(), mcCollision.numRecoCollision());
+      histos.fill(HIST("multiplicityQa/h2dPVsVsFDD"), col.multFDDA() + col.multFDDC(), mcCollision.numRecoCollision());
     }
   }
 
@@ -355,7 +355,7 @@ struct MultiplicityQa {
       return;
 
     // Ingredient one: PV finding versus true multiplicity
-    histos.fill(HIST("multiplicityQa/h2dPVsVsNchT0M"), nchFT0, mcCollision.hasRecoCollision());
+    histos.fill(HIST("multiplicityQa/h2dPVsVsNchT0M"), nchFT0, mcCollision.numRecoCollision());
 
     // Ingredient two: true multiplicity vs reco multiplicity
     // important: reco multiplicity of which collision, exactly?

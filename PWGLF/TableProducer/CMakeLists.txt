@@ -43,7 +43,7 @@ o2physics_add_dpl_workflow(lambdakzerotofpid
 
 o2physics_add_dpl_workflow(cascadebuilder
                     SOURCES cascadebuilder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cascadelabelbuilder
@@ -96,6 +96,16 @@ o2physics_add_dpl_workflow(hyhefour-builder
 o2physics_add_dpl_workflow(threebodymcfinder
                     SOURCES threebodymcfinder.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypertriton3bodybuilder
+                    SOURCES hypertriton3bodybuilder.cxx
+                    PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypertriton3bodyfinder
+                    SOURCES hypertriton3bodyfinder.cxx
+                    PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 # Resonances

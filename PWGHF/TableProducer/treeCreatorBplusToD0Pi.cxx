@@ -97,7 +97,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCandBplus, "_0");
 } // namespace full
 
 // put the arguments into the table
-DECLARE_SOA_TABLE(HfCandBplusFull, "AOD", "HFCANDBPFull",
+DECLARE_SOA_TABLE(HfCandBpFulls, "AOD", "HFCANDBPFULL",
                   full::RSecondaryVertex,
                   full::PtProng0,
                   full::PProng0,
@@ -161,7 +161,7 @@ DECLARE_SOA_TABLE(HfCandBplusFull, "AOD", "HFCANDBPFull",
                   full::NSigmaTPCTrk1Ka,
                   full::CandidateId);
 
-DECLARE_SOA_TABLE(HfCandBplusFullEvents, "AOD", "HFCANDBPFullE",
+DECLARE_SOA_TABLE(HfCandBpFullEvs, "AOD", "HFCANDBPFULLEV",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -170,7 +170,7 @@ DECLARE_SOA_TABLE(HfCandBplusFullEvents, "AOD", "HFCANDBPFullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandBplusFullParticles, "AOD", "HFCANDBPFullP",
+DECLARE_SOA_TABLE(HfCandBpFullPs, "AOD", "HFCANDBPFULLP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -183,9 +183,9 @@ DECLARE_SOA_TABLE(HfCandBplusFullParticles, "AOD", "HFCANDBPFullP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorBplusToD0Pi {
-  Produces<o2::aod::HfCandBplusFull> rowCandidateFull;
-  Produces<o2::aod::HfCandBplusFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandBplusFullParticles> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandBpFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandBpFullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandBpFullPs> rowCandidateFullParticles;
 
   Configurable<int> isSignal{"isSignal", 1, "save only MC matched candidates"};
 
@@ -196,7 +196,7 @@ struct HfTreeCreatorBplusToD0Pi {
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi> const& candidates,
-               soa::Join<aod::McParticles_000, aod::HfCandBplusMcGen> const& particles,
+               soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& particles,
                aod::BigTracksPID const& tracks,
                aod::HfCand2Prong const&)
   {

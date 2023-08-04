@@ -38,7 +38,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-template <typename JetTable, typename ConstituentTable, typename ConstituentSubTable>
+template <typename CandidateTableData, typename CandidateTableMCD, typename ParticleTable, typename JetTable, typename ConstituentTable, typename ConstituentSubTable>
 struct JetFinderHFTask {
   Produces<JetTable> jetsTable;
   Produces<ConstituentTable> constituentsTable;
@@ -56,6 +56,7 @@ struct JetFinderHFTask {
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
+  Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
@@ -65,8 +66,6 @@ struct JetFinderHFTask {
   Configurable<float> clusterPhiMax{"clusterPhiMax", 999, "maximum cluster phi"};
 
   // HF candidate level configurables
-  Configurable<std::string> candSpecie_s{"candSpecie_s", "D0", "options are D0, Lc, Bplus"};
-  Configurable<std::string> candDecayChannel_s{"candDecayChannel_s", "default", "look up in task"};
   Configurable<float> candPtMin{"candPtMin", 0.0, "minimum candidate pT"};
   Configurable<float> candPtMax{"candPtMax", 100.0, "maximum candidate pT"};
   Configurable<float> candYMin{"candYMin", -0.8, "minimum candidate eta"};
@@ -93,9 +92,10 @@ struct JetFinderHFTask {
   Configurable<bool> DoRhoAreaSub{"DoRhoAreaSub", false, "do rho area subtraction"};
   Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
 
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
   std::string trackSelection;
   std::string eventSelection;
+  std::string particleSelection;
 
   JetFinder jetFinder;
   std::vector<fastjet::PseudoJet> inputParticles;
@@ -107,6 +107,7 @@ struct JetFinderHFTask {
   {
     trackSelection = static_cast<std::string>(trackSelections);
     eventSelection = static_cast<std::string>(eventSelections);
+    particleSelection = static_cast<std::string>(particleSelections);
 
     if (DoRhoAreaSub) {
       jetFinder.setBkgSubMode(JetFinder::BkgSubMode::rhoAreaSub);
@@ -126,28 +127,17 @@ struct JetFinderHFTask {
     jetFinder.ghostArea = jetGhostArea;
     jetFinder.ghostRepeatN = ghostRepeat;
 
-    auto candSpecie = static_cast<std::string>(candSpecie_s);
-    auto candDecayChannel = static_cast<std::string>(candDecayChannel_s);
-    if (candSpecie == "D0") {
+    if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, CandidatesD0Data>) { // Note : need to be careful if configurable workflow options are added later
       candPDG = static_cast<int>(pdg::Code::kD0);
       candDecay = static_cast<int>(aod::hf_cand_2prong::DecayType::D0ToPiK);
     }
-    if (candSpecie == "Bplus") {
+    if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, CandidatesBplusData>) {
       candPDG = static_cast<int>(pdg::Code::kBPlus);
       candDecay = static_cast<int>(aod::hf_cand_bplus::DecayType::BplusToD0Pi);
     }
-    if (candSpecie == "Lc") {
+    if constexpr (std::is_same_v<std::decay_t<CandidateTableData>, CandidatesLcData>) {
       candPDG = static_cast<int>(pdg::Code::kLambdaCPlus);
       candDecay = static_cast<int>(aod::hf_cand_3prong::DecayType::LcToPKPi);
-    }
-    if (candSpecie == "JPsi") {
-      candPDG = static_cast<int>(pdg::Code::kJPsi);
-      if (candDecayChannel == "default" || candDecayChannel == "ee") {
-        candDecay = static_cast<int>(aod::hf_cand_2prong::DecayType::JpsiToEE);
-      }
-      if (candDecayChannel == "mumu") {
-        candDecay = static_cast<int>(aod::hf_cand_2prong::DecayType::JpsiToMuMu);
-      }
     }
   }
 
@@ -198,9 +188,13 @@ struct JetFinderHFTask {
   }
 
   // function that generalically processes gen level events
-  template <typename T, typename U, typename M>
-  void analyseMCGenParticles(T const& collision, U const& particles, M& candidates)
+  template <typename T, typename U>
+  void analyseMCP(T const& collision, U const& particles)
   {
+    inputParticles.clear();
+    std::vector<typename U::iterator> candidates;
+    candidates.clear();
+
     for (auto const& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) & (1 << candDecay)) {
         auto particleY = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
@@ -214,38 +208,10 @@ struct JetFinderHFTask {
       }
     }
     for (auto& candidate : candidates) {
-      analyseParticles(inputParticles, trackEtaMin, trackEtaMax, jetTypeParticleLevel, particles, pdg->Instance(), std::optional{candidate});
+      analyseParticles(inputParticles, particleSelection, trackEtaMin, trackEtaMax, jetTypeParticleLevel, particles, pdg->Instance(), std::optional{candidate});
       FastJetUtilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), RecoDecay::getMassPDG(candidate.pdgCode()));
       findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, constituentsSubTable, DoConstSub, true);
     }
-  }
-
-  // check if type JetParticles2Prong can be templated. then you can just use one function everywhere
-  // function that is called for gen level events with 2 prong candidates
-  template <typename T, typename U>
-  void analyseMCGen2Prong(T const& collision, U const& particles)
-  {
-    inputParticles.clear();
-    std::vector<JetParticles2Prong::iterator> candidates;
-    candidates.clear();
-    analyseMCGenParticles(collision, particles, candidates);
-  }
-  // function that is called for gen level events with 3 prong candidates
-  template <typename T, typename U>
-  void analyseMCGen3Prong(T const& collision, U const& particles)
-  {
-    inputParticles.clear();
-    std::vector<JetParticles3Prong::iterator> candidates;
-    analyseMCGenParticles(collision, particles, candidates);
-  }
-  // function that is called for gen level events with B+ candidates
-  template <typename T, typename U>
-  void analyseMCGenBplus(T const& collision, U const& particles)
-  {
-    inputParticles.clear();
-    std::vector<JetParticlesBplus::iterator> candidates;
-    candidates.clear();
-    analyseMCGenParticles(collision, particles, candidates);
   }
 
   void processDummy(aod::Collisions const& collision)
@@ -253,57 +219,32 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processDummy, "Dummy process function turned on by default", true);
 
-  void processD0ChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, JetTracks const& tracks, CandidateD0Data const& candidates) { analyseData(collision, tracks, candidates); }
-  PROCESS_SWITCH(JetFinderHFTask, processD0ChargedJetsData, "D0 jet finding on data", false);
+  void processChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, JetTracks const& tracks, CandidateTableData const& candidates) { analyseData(collision, tracks, candidates); }
+  PROCESS_SWITCH(JetFinderHFTask, processChargedJetsData, "charged hf jet finding on data", false);
 
-  void processD0ChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, JetTracks const& tracks, CandidateD0MC const& candidates) { analyseMCD(collision, tracks, candidates); }
-  PROCESS_SWITCH(JetFinderHFTask, processD0ChargedJetsMCD, "D0 finding on MC detector level", false);
+  void processChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, JetTracks const& tracks, CandidateTableMCD const& candidates) { analyseMCD(collision, tracks, candidates); }
+  PROCESS_SWITCH(JetFinderHFTask, processChargedJetsMCD, "charged hf jet finding on MC detector level", false);
 
-  void processBplusChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, JetTracks const& tracks, CandidateBplusData const& candidates, aod::HfCand2Prong const& HFdaughters) { analyseData(collision, tracks, candidates); }
-  PROCESS_SWITCH(JetFinderHFTask, processBplusChargedJetsData, "B+ jet finding on data", false);
-
-  void processBplusChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, JetTracks const& tracks, CandidateBplusMC const& candidates, aod::HfCand2Prong const& HFdaughters) { analyseMCD(collision, tracks, candidates); }
-  PROCESS_SWITCH(JetFinderHFTask, processBplusChargedJetsMCD, "B+ finding on MC detector level", false);
-
-  void processLcChargedJetsData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, JetTracks const& tracks, CandidateLcData const& candidates) { analyseData(collision, tracks, candidates); }
-  PROCESS_SWITCH(JetFinderHFTask, processLcChargedJetsData, "Lc jet finding on data", false);
-
-  void processLcChargedJetsMCD(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, JetTracks const& tracks, CandidateLcMC const& candidates) { analyseMCD(collision, tracks, candidates); }
-  PROCESS_SWITCH(JetFinderHFTask, processLcChargedJetsMCD, "Lc finding on MC detector level", false);
-
-  void process2ProngJetsMCP(aod::McCollision const& collision,
-                            JetParticles2Prong const& particles)
+  void processChargedJetsMCP(aod::McCollision const& collision,
+                             ParticleTable const& particles)
   {
-    analyseMCGen2Prong(collision, particles);
+    analyseMCP(collision, particles);
   }
-  PROCESS_SWITCH(JetFinderHFTask, process2ProngJetsMCP, "2-prong HF jet finding on MC particle level", false);
-
-  void process3ProngJetsMCP(aod::McCollision const& collision,
-                            JetParticles3Prong const& particles)
-  {
-    analyseMCGen3Prong(collision, particles);
-  }
-  PROCESS_SWITCH(JetFinderHFTask, process3ProngJetsMCP, "3-prong HF jet finding on MC particle level", false);
-
-  void processBplusJetsMCP(aod::McCollision const& collision,
-                           JetParticlesBplus const& particles)
-  {
-    analyseMCGenBplus(collision, particles);
-  }
-  PROCESS_SWITCH(JetFinderHFTask, processBplusJetsMCP, "B+ HF jet finding on MC particle level", false);
+  PROCESS_SWITCH(JetFinderHFTask, processChargedJetsMCP, "hf jet finding on MC particle level", false);
 };
 /*
-using JetFinderD0DataCharged = JetFinderHFTask<o2::aod::D0ChargedJets, o2::aod::D0ChargedJetConstituents, o2::aod::D0ChargedJetConstituentsSub>;
-using JetFinderD0MCDetectorLevelCharged = JetFinderHFTask<o2::aod::D0ChargedMCDetectorLevelJets, o2::aod::D0ChargedMCDetectorLevelJetConstituents, o2::aod::D0ChargedMCDetectorLevelJetConstituentsSub>;
-using JetFinderD0MCParticleLevelCharged = JetFinderHFTask<o2::aod::D0ChargedMCParticleLevelJets, o2::aod::D0ChargedMCParticleLevelJetConstituents, o2::aod::D0ChargedMCParticleLevelJetConstituentsSub>;
 
-using JetFinderBplusDataCharged = JetFinderHFTask<o2::aod::BplusChargedJets, o2::aod::BplusChargedJetConstituents, o2::aod::BplusChargedJetConstituentsSub>;
-using JetFinderBplusMCDetectorLevelCharged = JetFinderHFTask<o2::aod::BplusChargedMCDetectorLevelJets, o2::aod::BplusChargedMCDetectorLevelJetConstituents, o2::aod::BplusChargedMCDetectorLevelJetConstituentsSub>;
-using JetFinderBplusMCParticleLevelCharged = JetFinderHFTask<o2::aod::BplusChargedMCParticleLevelJets, o2::aod::BplusChargedMCParticleLevelJetConstituents, o2::aod::BplusChargedMCParticleLevelJetConstituentsSub>;
+using JetFinderD0DataCharged = JetFinderHFTask<CandidatesD0Data,CandidatesD0MCD,ParticlesD0,o2::aod::D0ChargedJets, o2::aod::D0ChargedJetConstituents, o2::aod::D0ChargedJetConstituentsSub>;
+using JetFinderD0MCDetectorLevelCharged = JetFinderHFTask<CandidatesD0Data,CandidatesD0MCD,ParticlesD0,o2::aod::D0ChargedMCDetectorLevelJets, o2::aod::D0ChargedMCDetectorLevelJetConstituents, o2::aod::D0ChargedMCDetectorLevelJetConstituentsSub>;
+using JetFinderD0MCParticleLevelCharged = JetFinderHFTask<CandidatesD0Data,CandidatesD0MCD,ParticlesD0,o2::aod::D0ChargedMCParticleLevelJets, o2::aod::D0ChargedMCParticleLevelJetConstituents, o2::aod::D0ChargedMCParticleLevelJetConstituentsSub>;
 
-using JetFinderLcDataCharged = JetFinderHFTask<o2::aod::LcChargedJets, o2::aod::LcChargedJetConstituents, o2::aod::LcChargedJetConstituentsSub>;
-using JetFinderLcMCDetectorLevelCharged = JetFinderHFTask<o2::aod::LcChargedMCDetectorLevelJets, o2::aod::LcChargedMCDetectorLevelJetConstituents, o2::aod::LcChargedMCDetectorLevelJetConstituentsSub>;
-using JetFinderLcMCParticleLevelCharged = JetFinderHFTask<o2::aod::LcChargedMCParticleLevelJets, o2::aod::LcChargedMCParticleLevelJetConstituents, o2::aod::LcChargedMCParticleLevelJetConstituentsSub>;
+using JetFinderBplusDataCharged = JetFinderHFTask<CandidatesBplusData,CandidatesBplusMCD,ParticlesBplus,o2::aod::BplusChargedJets, o2::aod::BplusChargedJetConstituents, o2::aod::BplusChargedJetConstituentsSub>;
+using JetFinderBplusMCDetectorLevelCharged = JetFinderHFTask<CandidatesBplusData,CandidatesBplusMCD,ParticlesBplus,o2::aod::BplusChargedMCDetectorLevelJets, o2::aod::BplusChargedMCDetectorLevelJetConstituents, o2::aod::BplusChargedMCDetectorLevelJetConstituentsSub>;
+using JetFinderBplusMCParticleLevelCharged = JetFinderHFTask<CandidatesBplusData,CandidatesBplusMCD,ParticlesBplus,o2::aod::BplusChargedMCParticleLevelJets, o2::aod::BplusChargedMCParticleLevelJetConstituents, o2::aod::BplusChargedMCParticleLevelJetConstituentsSub>;
+
+using JetFinderLcDataCharged = JetFinderHFTask<CandidatesLcData,CandidatesLcMCD,ParticlesLc,o2::aod::LcChargedJets, o2::aod::LcChargedJetConstituents, o2::aod::LcChargedJetConstituentsSub>;
+using JetFinderLcMCDetectorLevelCharged = JetFinderHFTask<CandidatesLcData,CandidatesLcMCD,ParticlesLc,o2::aod::LcChargedMCDetectorLevelJets, o2::aod::LcChargedMCDetectorLevelJetConstituents, o2::aod::LcChargedMCDetectorLevelJetConstituentsSub>;
+using JetFinderLcMCParticleLevelCharged = JetFinderHFTask<CandidatesLcData,CandidatesLcMCD,ParticlesLc,o2::aod::LcChargedMCParticleLevelJets, o2::aod::LcChargedMCParticleLevelJetConstituents, o2::aod::LcChargedMCParticleLevelJetConstituentsSub>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

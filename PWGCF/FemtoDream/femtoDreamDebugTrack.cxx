@@ -50,8 +50,13 @@ struct femtoDreamDebugTrack {
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
   Configurable<int> ConfPIDPartOne{"ConfPIDPartOne", 1, "Particle 1 - Read from cutCulator"};
   Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{"ConfTrkPIDnSigmaMax", std::vector<float>{3.5f, 3.f, 2.5f}, "This configurable needs to be the same as the one used in the producer task"};
-  ConfigurableAxis ConfTempFitVarBins{"ConfDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
-  ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfTempFitVarBins{"ConfTempFitVarBins", {300, -0.15, 0.15}, "Binning of the TempFitVar"};
+  ConfigurableAxis ConfNsigmaTPCBins{"ConfNsigmaTPCBins", {1600, -8, 8}, "Binning of Nsigma TPC plot"};
+  ConfigurableAxis ConfNsigmaTOFBins{"ConfNsigmaTOFBins", {3000, -15, 15}, "Binning of the Nsigma TOF plot"};
+  ConfigurableAxis ConfNsigmaTPCTOFBins{"ConfNsigmaTPCTOFBins", {1000, 0, 10}, "Binning of the Nsigma TPC+TOF plot"};
+  ConfigurableAxis ConfTempFitVarMomentumBins{"ConfMomentumBins", {20, 0.5, 4.05}, "pT/p_reco/p_tpc binning of the Momentum vs. TempFitVar/Nsigma plot"};
+  Configurable<int> ConfTempFitVarMomentum{"ConfTempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
+  ConfigurableAxis ConfDummy{"ConfDummy", {1, 0, 1}, "Dummy axis for inv mass"};
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
@@ -76,7 +81,7 @@ struct femtoDreamDebugTrack {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    trackHisto.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfIsMC, ConfPDGCodePartOne.value, true);
+    trackHisto.init(&qaRegistry, ConfTempFitVarMomentumBins, ConfTempFitVarBins, ConfNsigmaTPCBins, ConfNsigmaTOFBins, ConfNsigmaTPCTOFBins, ConfDummy, ConfIsMC, ConfPDGCodePartOne.value, true);
     vPIDPartOne = ConfPIDPartOne.value;
     kNsigma = ConfTrkPIDnSigmaMax.value;
   }
@@ -93,7 +98,7 @@ struct femtoDreamDebugTrack {
       if (!isFullPIDSelected(part.pidcut(), part.p(), ConfCutTable->get("PIDthr"), vPIDPartOne, ConfNspecies, kNsigma, ConfCutTable->get("nSigmaTPC"), ConfCutTable->get("nSigmaTPCTOF"))) {
         continue;
       }
-      trackHisto.fillQA<isMC, true>(part);
+      trackHisto.fillQA<isMC, true>(part, ConfTempFitVarMomentum.value);
     }
   }
 

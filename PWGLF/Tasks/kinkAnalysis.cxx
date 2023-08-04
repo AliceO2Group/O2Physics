@@ -46,9 +46,6 @@
 
 #include "ReconstructionDataFormats/Track.h"
 
-#include "TF1.h"
-#include "TMath.h"
-
 #include <iostream>
 using namespace std;
 
@@ -69,10 +66,21 @@ namespace kink
 constexpr std::array<float, 7> LayerRadii{2.33959f, 3.14076f, 3.91924f, 19.6213f, 24.5597f, 34.388f, 39.3329f};
 }
 
-struct kinkAnalysis {
+struct KinkCandidates {
+  int chargeMother;
+  int globalIndexMother;
+  int globalIndexDaughter;
+  int mcParticleIdxMother;
+  int mcParticleIdxDaughter;
+  float prx, pry, prz;
+  float decayvtxX, decayvtxY, decayvtxZ;
+  float mthinnerpx, mthinnerpy, mthinnerpz;
+  float mthouterpx, mthouterpy, mthouterpz;
+  float dghtpx, dghtpy, dghtpz;
+  unsigned int flags = 0u;
+};
 
-  TF1* f1;
-  TF1* f2;
+struct kinkAnalysis {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -98,18 +106,24 @@ struct kinkAnalysis {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> dcaKinkDtopv{"dcaKinkDtopv", .2, "DCA kink daughter To PV"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
-  Configurable<int> cfgMotherCharge{"cfgMotherCharge", +1, "mother charge"};
-  Configurable<int> cfgDaughterCharge{"cfgDaughterCharge", +1, "mother charge"};
+  Configurable<int> cfgMotherCharge{"cfgMotherCharge", -1, "mother charge"};
+  Configurable<int> cfgDaughterCharge{"cfgDaughterCharge", -1, "mother charge"};
   Configurable<int> cfgParticleSpec{"cfgParticleSpec", SigmaPlusToProton, "particle species"};
   Configurable<float> cfgLowerHistLimit{"cfgLowerHistLimit", 1.1, "lower limit for inv mass histo"};
   Configurable<float> cfgUpperHistLimit{"cfgUpperHistLimit", 1.4, "upper limit for inv mass histo"};
-
-  Configurable<float> qTupper{"qTupper", 0.190, "upper qT cut"};
+  Configurable<float> cfgNsigmaTPCdaughter{"cfgNsigmaTPCdaughter", 3, "nSigma TPC for the daughter track"};
+  Configurable<float> qTupper{"qTupper", 0.195, "upper qT cut"};
   Configurable<float> qTlower{"qTLower", 0.150, "upper qT cut"};
+  Configurable<float> kinkAngle{"kinkAngle", 0.5, "mother-daughter angle cutoff"};
+  Configurable<float> zDiff{"zDiff", 20., "mother-daughter z diff"};
+  Configurable<float> phiDiff{"phiDiff", 100., "mother-daughter phi diff"};
+  Configurable<bool> cfgIsMC{"cfgIsMC", true, "data or MC"};
 
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::dataformats::MeanVertexObject* mVtx = nullptr;
   o2::vertexing::DCAFitterN<2> ft2;
+
+  std::vector<KinkCandidates> mKinkCandidates;
 
   int mRunNumber;
   float mBz;
@@ -121,6 +135,8 @@ struct kinkAnalysis {
 
   std::array<float, 3> sigmaPDC = {0, 0, 0};
   std::array<float, 3> pionPDC = {0, 0, 0};
+  std::array<float, 3> sigmaPin = {0, 0, 0};
+
   float pionPabsDC = 0;
   float sigmaPabsDC = 0;
   float sigmaPt = 0.;
@@ -136,6 +152,7 @@ struct kinkAnalysis {
   float neutronM = 0;
   float mass;
   float radToDeg = 180. / M_PI;
+  int particlePdgCode;
 
   o2::track::TrackParCov SigmaTr;
   o2::track::TrackParCov SigmaTr2;
@@ -143,12 +160,12 @@ struct kinkAnalysis {
 
   float mMother, mChargedDaughter, mNeutralDaughter;
 
-  using CompleteTracksMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCPi>;
   using CompleteTracks = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
   using CompleteCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
   struct TrackCand {
     int Idxtr;
+    int mcParticleIdx = -1;
     VBracket vBracket{};
   };
 
@@ -209,6 +226,56 @@ struct kinkAnalysis {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    int anParticleName = cfgParticleSpec;
+    if (cfgIsMC) {
+      switch (anParticleName) {
+        case SigmaPlusToPi:
+          if (cfgMotherCharge == 1)
+            particlePdgCode = 3222;
+          else
+            particlePdgCode = -3222;
+          break;
+
+        case SigmaPlusToProton:
+          if (cfgMotherCharge == 1)
+            particlePdgCode = 3222;
+          else
+            particlePdgCode = -3222;
+          break;
+
+        case Xi:
+          if (cfgMotherCharge == -1)
+            particlePdgCode = 3312;
+          else
+            particlePdgCode = -3312;
+          break;
+
+        case OmegaToL:
+          if (cfgMotherCharge == -1)
+            particlePdgCode = 3334;
+          else
+            particlePdgCode = -3334;
+          break;
+
+        case OmegaToXi:
+          if (cfgMotherCharge == -1)
+            particlePdgCode = 3334;
+          else
+            particlePdgCode = -3334;
+          break;
+
+        case SigmaMinus:
+          if (cfgMotherCharge == -1)
+            particlePdgCode = 3112;
+          else
+            particlePdgCode = -3112;
+          break;
+
+        default:
+          particlePdgCode = 3112;
+      }
+    }
+
     mRunNumber = 0;
     mBz = 0.f;
 
@@ -220,6 +287,9 @@ struct kinkAnalysis {
     const AxisSpec axisSigmaMass{300, cfgLowerHistLimit, cfgUpperHistLimit, "#it{M}_{inv} (Gev/#it{c^{2}})"};
     const AxisSpec axisdtime{10000, 0, 50, "#delta t"};
     const AxisSpec axisPt{500, 0., 50., "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisdphi{360, 0, 360, "#delta phi"};
+    const AxisSpec axisdz{400, -20., 20, "#delta z"};
+    const AxisSpec axisPdgCodes{8001, -4000.5, 4000.5, "mother pdg codes"};
 
     // create histograms
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
@@ -228,19 +298,20 @@ struct kinkAnalysis {
     histos.add("hVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     histos.add("hCollId", "collision id", HistType::kTH1F, {{1000, 0., 100000., "collision id"}});
     histos.add("hRadiusMth", "hRadiusMth", kTH1F, {axisRmother});
-    histos.add("hMassMinus", "hMassMinus", kTH1F, {axisSigmaMass});
     histos.add("hMassMinusPt", "hMassMinusPt", kTH2F, {axisSigmaMass, axisPt});
-    histos.add("hMassPlus", "hMassPlus", kTH1F, {axisSigmaMass});
     histos.add("hMassPlusPt", "hMassPlusPt", kTH2F, {axisSigmaMass, axisPt});
-    histos.add("hBackgroundPosNeg", "hBackgroundPosNeg", kTH1F, {axisSigmaMass});
     histos.add("hBackgroundPosNegPt", "hBackgroundPosNegPt", kTH2F, {axisSigmaMass, axisPt});
-    histos.add("hBackgroundNegPos", "hBackgroundNegPos", kTH1F, {axisSigmaMass});
     histos.add("hBackgroundNegPosPt", "hBackgroundNegPosPt", kTH2F, {axisSigmaMass, axisPt});
-
     histos.add("hDCAdaughterToPV", "hDCAdaughterToPV", kTH1F, {axisDCAdaugh});
     histos.add("hDCAMotherToPV", "hDCAMotherToPV", kTH1F, {axisDCAdaugh});
     histos.add("hdeltatime", "hdeltatime", kTH1F, {axisdtime});
     histos.add("hdelt_tthresh", "hdelt_tthresh", kTH2F, {axisdtime, axisdtime});
+    histos.add("hdeltaphi", "hdeltaphi", kTH1F, {axisdphi});
+    histos.add("hdeltaz", "hdeltaz", kTH1F, {axisdz});
+    histos.add("generatedPt", "generatedPt", kTH1F, {axisPt});
+    histos.add("hPtMinusRecMcTrth", "hPtMinusRecMcTrth", kTH2F, {axisSigmaMass, axisPt});
+    histos.add("hPtPlusRecMcTrth", "hPtPlusRecMcTrth", kTH2F, {axisSigmaMass, axisPt});
+    histos.add("hcodes", "hcodes", kTH1F, {axisPdgCodes});
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(cfgLUTpath));
     ft2.setMaxChi2(5);
@@ -298,7 +369,7 @@ struct kinkAnalysis {
 
   std::array<std::vector<TrackCand>, 4> makeTracksPool(CompleteCollisions const& collisions, CompleteTracks const& tracks, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const&)
   {
-
+    mKinkCandidates.clear();
     std::unordered_map<int, std::pair<int, int>> tmap;
     TrackCand trForpool;
 
@@ -306,6 +377,7 @@ struct kinkAnalysis {
 
     std::vector<uint8_t> selected(tracks.size(), 0u);
     std::vector<uint64_t> globalBCvector;
+
     int index{0};
     for (const auto& track : tracks) {
       if (track.has_collision()) {
@@ -403,7 +475,7 @@ struct kinkAnalysis {
     return pools;
   }
 
-  void calculateInvMass(CompleteCollisions const& collisions, CompleteTracks const& tracks, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcWtmp, gsl::span<std::vector<TrackCand>> trackPoolM, gsl::span<std::vector<TrackCand>> trackPoolD, int chargeM, int chargeD, int particleName)
+  void calculateInvMass(CompleteCollisions const& collisions, CompleteTracks const& tracks, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcWtmp, gsl::span<std::vector<TrackCand>> trackPoolM, gsl::span<std::vector<TrackCand>> trackPoolD, int chargeM, int chargeD, int particleName, const aod::McParticles* partTable = nullptr)
   {
 
     int ntrInner = chargeM < 0 ? trackPoolM[NEG].size() : trackPoolM[POS].size();
@@ -411,6 +483,7 @@ struct kinkAnalysis {
 
     const int poolCh1 = chargeM < 0 ? 1 : 0;
     const int poolCh2 = chargeD < 0 ? 1 : 0;
+    int motherPdg = 3112;
 
     switch (particleName) {
       case SigmaMinus:
@@ -479,14 +552,19 @@ struct kinkAnalysis {
     }
 
     for (int itp = 0; itp < ntrInner; itp++) { // HERE change neg->pos to get the other charge!!!
-      auto& seedP = trackPoolM[poolCh1][itp];
-      int firstN = mVtxSecondTrack[poolCh2][seedP.vBracket.getMin()];
-      if (firstN < 0) {
+      auto& seedM = trackPoolM[poolCh1][itp];
+      int firstD = mVtxSecondTrack[poolCh2][seedM.vBracket.getMin()];
+      if (firstD < 0) {
         LOG(debug) << "No partner is found for pos.track " << itp << " out of " << ntrInner;
         continue;
       }
 
-      const auto& trackM = tracks.iteratorAt(seedP.Idxtr);
+      const auto& trackM = tracks.iteratorAt(seedM.Idxtr);
+      if ((seedM.mcParticleIdx != -1) && partTable) {
+        auto mcParticle = partTable->rawIteratorAt(seedM.mcParticleIdx);
+        motherPdg = mcParticle.pdgCode();
+      }
+
       if (trackM.has_collision()) {
         auto const& collision = trackM.collision_as<CompleteCollisions>();
         primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
@@ -510,15 +588,17 @@ struct kinkAnalysis {
       if (motherdcaXY > 0.03)
         continue;
 
-      for (int itn = firstN; itn < ntrOuter; itn++) {
-        auto& seedN = trackPoolD[poolCh2][itn];
-        if (seedN.vBracket.isOutside(seedP.vBracket)) {
+      for (int itn = firstD; itn < ntrOuter; itn++) {
+        auto& seedD = trackPoolD[poolCh2][itn];
+        if (seedD.vBracket.isOutside(seedM.vBracket)) {
           LOG(debug) << "Brackets do not match";
           continue;
         }
 
-        const auto& trackDgh = tracks.iteratorAt(static_cast<uint64_t>(seedN.Idxtr));
+        const auto& trackDgh = tracks.iteratorAt(static_cast<uint64_t>(seedD.Idxtr));
         PionTr = getTrackParCov(trackDgh);
+
+        SigmaTr2.getPxPyPzGlo(sigmaPin);
 
         if ((particleName == SigmaMinus) || (particleName == SigmaPlusToPi) || (particleName == Xi) || (particleName == OmegaToXi)) {
           if (trackDgh.tpcNSigmaPi() > 3.)
@@ -542,10 +622,14 @@ struct kinkAnalysis {
           continue;
 
         // check how much the tracks are close in space
+        if ((cfgIsMC) && (motherPdg == particlePdgCode)) {
+          histos.fill(HIST("hdeltaphi"), (SigmaTr.getPhi() - PionTr.getPhi()) * radToDeg);
+          histos.fill(HIST("hdeltaz"), SigmaTr.getZ() - PionTr.getZ());
+        }
 
-        if (std::abs(SigmaTr.getZ() - PionTr.getZ()) > 20.)
+        if (std::abs(SigmaTr.getZ() - PionTr.getZ()) > zDiff)
           continue;
-        if ((std::abs(SigmaTr.getPhi() - PionTr.getPhi()) * radToDeg) > 100.)
+        if ((std::abs(SigmaTr.getPhi() - PionTr.getPhi()) * radToDeg) > phiDiff)
           continue;
 
         {
@@ -620,9 +704,6 @@ struct kinkAnalysis {
                     continue;
               }
 
-              if (std::abs(neutronM - mNeutralDaughter) > 0.1)
-                continue;
-
               if (theta * radToDeg < 0.5)
                 continue;
 
@@ -632,27 +713,35 @@ struct kinkAnalysis {
               if (sqrt(R[0] * R[0] + R[1] * R[1]) < 18.)
                 continue;
 
+              if (chargeM == chargeD)
+                mKinkCandidates.emplace_back(KinkCandidates{chargeM, seedM.Idxtr, seedD.Idxtr, seedM.mcParticleIdx, seedD.mcParticleIdx, primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(), R[0], R[1], R[2], sigmaPin[0], sigmaPin[1], sigmaPin[2], sigmaPDC[0], sigmaPDC[1], sigmaPDC[2], pionPDC[0], pionPDC[1], pionPDC[2]});
+
               neutronE = sqrt(mNeutralDaughter * mNeutralDaughter + pow((sigmaPDC[2] - pionPDC[2]), 2) + pow((sigmaPDC[1] - pionPDC[1]), 2) + pow((sigmaPDC[0] - pionPDC[0]), 2));
 
               mass = sqrt((neutronE + pionE) * (neutronE + pionE) - sigmaPabsDC * sigmaPabsDC);
 
               if ((chargeM == -1) && (chargeD == -1)) {
-                histos.fill(HIST("hMassMinus"), mass);
+                if (cfgIsMC) {
+                  histos.fill(HIST("hcodes"), motherPdg);
+                  if (motherPdg == particlePdgCode)
+                    histos.fill(HIST("hPtMinusRecMcTrth"), mass, sigmaPt);
+                }
                 histos.fill(HIST("hMassMinusPt"), mass, sigmaPt);
               }
               if ((chargeM == 1) && (chargeD == 1)) {
-                histos.fill(HIST("hMassPlus"), mass);
+                if (cfgIsMC) {
+                  if (motherPdg == particlePdgCode)
+                    histos.fill(HIST("hPtPlusRecMcTrth"), mass, sigmaPt);
+                }
                 histos.fill(HIST("hMassPlusPt"), mass, sigmaPt);
               }
+
               if ((chargeM == -1) && (chargeD == 1)) {
-                histos.fill(HIST("hBackgroundNegPos"), mass);
                 histos.fill(HIST("hBackgroundNegPosPt"), mass, sigmaPt);
               }
               if ((chargeM == 1) && (chargeD == -1)) {
-                histos.fill(HIST("hBackgroundPosNeg"), mass);
                 histos.fill(HIST("hBackgroundPosNegPt"), mass, sigmaPt);
               }
-
             } // true
           } catch (std::runtime_error& e) {
             continue;
@@ -667,7 +756,6 @@ struct kinkAnalysis {
 
   void processReco(CompleteCollisions const& collisions, CompleteTracks const& tracks, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcWtmp)
   {
-
     auto firstcollision = collisions.begin();
     auto bc1 = firstcollision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc1);
@@ -689,140 +777,46 @@ struct kinkAnalysis {
 
   PROCESS_SWITCH(kinkAnalysis, processReco, "process reconstructed information", true);
 
-  void processSim(aod::Collisions const& collisions, CompleteTracksMC const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
+  void processSim(CompleteCollisions const& collisions, CompleteTracks const& tracks, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcWtmp, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
-
     auto firstcollision = collisions.begin();
-    auto bc = firstcollision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
+    auto bc1 = firstcollision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc1);
 
-    o2::dataformats::VertexBase primaryVertex;
+    for (const auto& mcParticle : particlesMC) {
+      if (mcParticle.pdgCode() != particlePdgCode)
+        continue;
+      histos.fill(HIST("generatedPt"), mcParticle.pt());
+    }
 
-    for (const auto& trackM : tracks) {
-      if (trackM.has_mcParticle()) {
-        auto mcParticle = trackM.mcParticle();
-        if (mcParticle.pdgCode() != 3112)
-          continue;
-        if (!(trackM.hasITS()))
-          continue;
-        if (trackM.hasTPC())
-          continue;
-        if (trackM.hasTRD())
-          continue;
-        if (trackM.hasTOF())
-          continue;
-        if (trackM.itsNCls() >= 6)
-          continue;
-        if (trackM.itsNClsInnerBarrel() < 3)
-          continue;
-        if (trackM.itsChi2NCl() > 4)
-          continue;
+    auto trackPools = makeTracksPool(collisions, tracks, ambiTracks, bcWtmp);
 
-        SigmaTr = getTrackParCov(trackM);
-
-        if (trackM.has_collision()) {
-          auto const& collision = trackM.collision_as<CompleteCollisions>();
-          primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
-          primaryVertex.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-          histos.fill(HIST("hRecVtxZData"), primaryVertex.getZ());
-        } else {
-          primaryVertex.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
-          histos.fill(HIST("hRecVtxZData"), primaryVertex.getZ());
+    for (auto& pool : trackPools) {
+      for (auto& track : pool) {
+        auto label = trackLabelsMC.iteratorAt(track.Idxtr);
+        if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
+          continue;
         }
+        track.mcParticleIdx = label.mcParticleId();
+      }
+    }
 
-        for (const auto& trackDgh : tracks) {
-          if (!(trackDgh.hasITS()))
-            continue;
-          if (trackDgh.itsNCls() > 2)
-            continue;
-          if (trackDgh.itsNClsInnerBarrel() > 0)
-            continue;
-          if (trackDgh.tpcNClsCrossedRows() < 70)
-            continue;
-          if (trackDgh.sign() != trackM.sign())
-            continue;
+    LOG(info) << "Collected for mother " << trackPools[POS].size() << " positive and " << trackPools[NEG].size() << " negative seeds";
 
-          PionTr = getTrackParCov(trackDgh);
-          // float rD=std::sqrt(trackDgh.x()*trackDgh.x()+trackDgh.y()*trackDgh.y()+trackDgh.z()*trackDgh.z());
-          // o2::base::Propagator::Instance()->PropagateToXBxByBz(SigmaTr, rD);
-          o2::base::Propagator::Instance()->PropagateToXBxByBz(SigmaTr, kink::LayerRadii[trackM.itsNCls() - 1]);
+    LOG(info) << "Collected for daughter " << trackPools[2 + POS].size() << " positive and " << trackPools[2 + NEG].size() << " negative seeds";
 
-          gpu::gpustd::array<float, 2> dcaInfo;
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, PionTr, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
-          auto kinkdcaXY = dcaInfo[0];
-          histos.fill(HIST("hDCAdaughterToPV"), kinkdcaXY);
+    gsl::span<std::vector<TrackCand>> trackPoolsMth{trackPools.data(), 2};
+    gsl::span<std::vector<TrackCand>> trackPoolsDhgt{trackPools.data() + 2, 2};
 
-          if (kinkdcaXY < dcaKinkDtopv)
-            continue;
+    calculateInvMass(collisions, tracks, ambiTracks, bcWtmp, trackPoolsMth, trackPoolsDhgt, cfgMotherCharge, cfgDaughterCharge, cfgParticleSpec, &particlesMC);
 
-          {
-            try {
-              ft2.process(PionTr, SigmaTr);
-              ft2.propagateTracksToVertex();
-              if (ft2.isPropagateTracksToVertexDone() == true) {
-                auto SigmaTrDCA = ft2.getTrack(1);
-                auto PionTrDCA = ft2.getTrack(0);
-                SigmaTrDCA.getPxPyPzGlo(sigmaPDC);
-                sigmaPabsDC = SigmaTrDCA.getP();
-                etaS = SigmaTr.getEta();
-                phiS = SigmaTr.getPhi();
+    // for (auto& candidates : mKinkCandidates) {
 
-                PionTrDCA.getPxPyPzGlo(pionPDC);
-                pionPabsDC = PionTrDCA.getP();
-                etaP = PionTr.getEta();
-                phiP = PionTr.getPhi();
+    // }
 
-                pionE = 0;
-                neutronE = 0;
-
-                if (ft2.getChi2AtPCACandidate() < 0)
-                  continue;
-                std::array<float, 3> R = ft2.getPCACandidatePos();
-
-                pionE = sqrt(0.1396 * 0.1396 + pionPabsDC * pionPabsDC);
-
-                costheta = (sigmaPDC[0] * pionPDC[0] + sigmaPDC[1] * pionPDC[1] + sigmaPDC[2] * pionPDC[2]) / (sigmaPabsDC * pionPabsDC);
-                theta = std::acos(costheta);
-                qT = pionPabsDC * std::sin(theta);
-
-                histos.fill(HIST("hqT"), qT);
-
-                sigmaE = sqrt(1.197 * 1.197 + sigmaPabsDC * sigmaPabsDC); // 1.1974
-                neutronPabs = sqrt(pow((sigmaPDC[2] - pionPDC[2]), 2) + pow((sigmaPDC[1] - pionPDC[1]), 2) + pow((sigmaPDC[0] - pionPDC[0]), 2));
-                neutronM = sqrt((sigmaE - pionE) * (sigmaE - pionE) - neutronPabs * neutronPabs);
-
-                if (std::abs(neutronM - 0.939) > 0.1)
-                  continue;
-
-                if ((theta * radToDeg) < 0.5)
-                  continue;
-
-                if ((qT < 0.16) || (qT > 0.195))
-                  continue;
-
-                histos.fill(HIST("hRadiusMth"), sqrt(R[0] * R[0] + R[1] * R[1]));
-
-                if (sqrt(R[0] * R[0] + R[1] * R[1]) < 18.)
-                  continue;
-
-                neutronE = sqrt(0.9396 * 0.9396 + pow((sigmaPDC[2] - pionPDC[2]), 2) + pow((sigmaPDC[1] - pionPDC[1]), 2) + pow((sigmaPDC[0] - pionPDC[0]), 2));
-
-                mass = sqrt((neutronE + pionE) * (neutronE + pionE) - sigmaPabsDC * sigmaPabsDC);
-
-                histos.fill(HIST("hMass"), mass);
-
-              } // true
-            } catch (std::runtime_error& e) {
-              continue;
-            }
-            //} //dca fitter option
-
-          } // try
-
-        } // inner loop
-      }   // has MC particle
-    }     // outer loop
-  }       // process
+    calculateInvMass(collisions, tracks, ambiTracks, bcWtmp, trackPoolsMth, trackPoolsDhgt, -1, +1, cfgParticleSpec, &particlesMC);
+    calculateInvMass(collisions, tracks, ambiTracks, bcWtmp, trackPoolsMth, trackPoolsDhgt, +1, -1, cfgParticleSpec, &particlesMC);
+  } // process
 
   PROCESS_SWITCH(kinkAnalysis, processSim, "process sim information", false);
 };

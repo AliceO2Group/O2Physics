@@ -135,10 +135,8 @@ struct HfCandidateCreatorLb {
 
       array<float, 3> pvecpK = {track0.px() + track1.px(), track0.py() + track1.py(), track0.pz() + track1.pz()};
       array<float, 3> pvecLc = {pvecpK[0] + track2.px(), pvecpK[1] + track2.py(), pvecpK[2] + track2.pz()};
-      auto trackpK = o2::dataformats::V0(df3.getPCACandidatePos(), pvecpK, df3.calcPCACovMatrixFlat(),
-                                         trackParVar0, trackParVar1, {0, 0}, {0, 0});
-      auto trackLc = o2::dataformats::V0(df3.getPCACandidatePos(), pvecLc, df3.calcPCACovMatrixFlat(),
-                                         trackpK, trackParVar2, {0, 0}, {0, 0});
+      auto trackpK = o2::dataformats::V0(df3.getPCACandidatePos(), pvecpK, df3.calcPCACovMatrixFlat(), trackParVar0, trackParVar1);
+      auto trackLc = o2::dataformats::V0(df3.getPCACandidatePos(), pvecLc, df3.calcPCACovMatrixFlat(), trackpK, trackParVar2);
 
       int index0Lc = track0.globalIndex();
       int index1Lc = track1.globalIndex();

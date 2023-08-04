@@ -104,7 +104,17 @@ o2physics_add_dpl_workflow(zdc-converter
                     PUBLIC_LINK_LIBRARIES
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(hmpid-converter
+                    SOURCES hmpConverter.cxx
+                    PUBLIC_LINK_LIBRARIES
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(fwdtrack-to-collision-associator
                     SOURCES fwdtrackToCollisionAssociator.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(mccollisionextra
+                    SOURCES mcCollsExtra.cxx
+                    PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

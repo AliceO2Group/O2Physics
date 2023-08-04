@@ -19,6 +19,7 @@
 #ifndef PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
 #define PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
 
+#include <fairlogger/Logger.h>
 #include <vector>
 #include <string>
 
@@ -100,7 +101,7 @@ class FemtoDreamContainer
     mHistogramRegistry->add((folderName + "/relPairkstarMult_ReconNoFake").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
     mHistogramRegistry->add((folderName + "/hNoMCtruthPairsCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
     mHistogramRegistry->add((folderName + "/hFakePairsCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
-    mHistogramRegistry->add((folderName + "/kstar_resolution").c_str(), "; #it{k} _{T} reconstructed (GeV/#it{c}); #it{k} _{T} truth (GeV/#it{c})", kTH2F, {femtoObsAxis, femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/kstar_resolution").c_str(), "; #it{k}_{*} reconstructed (GeV/#it{c}); #it{k}_{*} truth (GeV/#it{c})", kTH2F, {femtoObsAxis, femtoObsAxis});
   }
 
   /// Templated function to initialize the histograms for the task

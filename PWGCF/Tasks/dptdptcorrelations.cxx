@@ -67,6 +67,8 @@ bool ptorder = false;
 PairCuts fPairCuts;              // pair suppression engine
 bool fUseConversionCuts = false; // suppress resonances and conversions
 bool fUseTwoTrackCut = false;    // suppress too close tracks
+
+std::vector<std::string> tname = {"O", "T"}; ///< the track names
 } // namespace correlationstask
 
 // Task for building <dpt,dpt> correlations
@@ -108,17 +110,6 @@ struct DptDptCorrelationsTask {
     std::vector<std::vector<TProfile*>> fhSum2PtPtnw_vsC{nch, {nch, nullptr}};   //!<! un-weighted accumulated \f${p_T}_1 {p_T}_2\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
     std::vector<std::vector<TProfile*>> fhSum2DptDptnw_vsC{nch, {nch, nullptr}}; //!<! un-weighted accumulated \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
 
-    /// \enum TrackPairs
-    /// \brief The track combinations hadled by the class
-    typedef enum {
-      kOO = 0,    ///< one-one pairs
-      kOT,        ///< one-two pairs
-      kTO,        ///< two-one pairs
-      kTT,        ///< two-two pairs
-      nTrackPairs ///< the number of track pairs
-    } trackpairs;
-
-    std::vector<std::string> tname = {"O", "T"}; ///< the external track names, one and two, for histogram creation
     std::vector<std::vector<std::string>> trackPairsNames = {{"OO", "OT"}, {"TO", "TT"}};
     bool ccdbstored = false;
 
@@ -204,8 +195,19 @@ struct DptDptCorrelationsTask {
     {
       LOGF(info, "Stored NUA&NUE corrections for %d track ids", corrs.size());
       for (uint i = 0; i < corrs.size(); ++i) {
-        LOGF(info, "  Stored NUA&NUE corrections for track id %d %s", i, corrs[i] != nullptr ? "yes" : "no");
+        LOGF(info, "  Stored NUA&NUE corrections %s for track id %d %s", corrs[i] != nullptr ? corrs[i]->GetName() : "nullptr", i, corrs[i] != nullptr ? "yes" : "no");
         fhNuaNue_vsZEtaPhiPt[i] = corrs[i];
+        int nbins = 0;
+        double avg = 0.0;
+        for (int ix = 0; ix < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsX(); ++ix) {
+          for (int iy = 0; iy < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsY(); ++iy) {
+            for (int iz = 0; iz < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsZ(); ++iz) {
+              nbins++;
+              avg += fhNuaNue_vsZEtaPhiPt[i]->GetBinContent(ix + 1, iy + 1, iz + 1);
+            }
+          }
+        }
+        LOGF(info, "Average NUA&NUE correction for track id %d: %f", i, avg / nbins);
       }
       ccdbstored = true;
     }
@@ -225,9 +227,9 @@ struct DptDptCorrelationsTask {
     {
       std::vector<float>* corr = new std::vector<float>(tracks.size(), 1.0f);
       int index = 0;
-      for (auto t : tracks) {
+      for (auto& t : tracks) {
         if (fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()] != nullptr) {
-          (*corr)[index] = fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()]->GetBinContent(zvtx, GetEtaPhiIndex(t) + 0.5, t.pt());
+          (*corr)[index] = fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()]->GetBinContent(fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()]->FindFixBin(zvtx, GetEtaPhiIndex(t) + 0.5, t.pt()));
         }
         index++;
       }
@@ -239,9 +241,9 @@ struct DptDptCorrelationsTask {
     {
       std::vector<float>* ptavg = new std::vector<float>(tracks.size(), 0.0f);
       int index = 0;
-      for (auto t : tracks) {
+      for (auto& t : tracks) {
         if (fhPtAvg_vsEtaPhi[t.trackacceptedid()] != nullptr) {
-          (*ptavg)[index] = fhPtAvg_vsEtaPhi[t.trackacceptedid()]->GetBinContent(fhPtAvg_vsEtaPhi[t.trackacceptedid()]->FindBin(t.eta(), t.phi()));
+          (*ptavg)[index] = fhPtAvg_vsEtaPhi[t.trackacceptedid()]->GetBinContent(fhPtAvg_vsEtaPhi[t.trackacceptedid()]->FindFixBin(t.eta(), t.phi()));
           index++;
         }
       }
@@ -371,7 +373,9 @@ struct DptDptCorrelationsTask {
             fhSum2PtPt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
           }
           fhN2_vsPtPt[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.pt(), track2.pt(), corr);
+          index2++;
         }
+        index1++;
       }
       for (uint pid1 = 0; pid1 < nch; ++pid1) {
         for (uint pid2 = 0; pid2 < nch; ++pid2) {
@@ -842,41 +846,39 @@ struct DptDptCorrelationsTask {
     int ixDCE = getDCEindex(collision);
     if (!(ixDCE < 0)) {
       if (ccdblst != nullptr && !(dataCE[ixDCE]->isCCDBstored())) {
-        dataCE[ixDCE]->storeTrackCorrections(
-          std::vector<TH3*>{reinterpret_cast<TH3*>(ccdblst->FindObject(
-                              TString::Format("correction_%02d-%02d_p1",
-                                              static_cast<int>(fCentMultMin[ixDCE]),
-                                              static_cast<int>(fCentMultMax[ixDCE]))
-                                .Data())),
-                            reinterpret_cast<TH3*>(ccdblst->FindObject(
-                              TString::Format("correction_%02d-%02d_m1",
-                                              static_cast<int>(fCentMultMin[ixDCE]),
-                                              static_cast<int>(fCentMultMax[ixDCE]))
-                                .Data()))});
         if constexpr (gen) {
-          dataCE[ixDCE]->storePtAverages(
-            std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("trueptavgetaphi_%02d-%02d_p",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data())),
-                              reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("trueptavgetaphi_%02d-%02d_m",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data()))});
+          std::vector<TH2*> ptavgs{tname.size(), nullptr};
+          for (uint isp = 0; isp < tname.size(); ++isp) {
+            ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
+              TString::Format("trueptavgetaphi_%02d-%02d_%s",
+                              static_cast<int>(fCentMultMin[ixDCE]),
+                              static_cast<int>(fCentMultMax[ixDCE]),
+                              tname[isp].c_str())
+                .Data()));
+          }
+          dataCE[ixDCE]->storePtAverages(ptavgs);
         } else {
-          dataCE[ixDCE]->storePtAverages(
-            std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("ptavgetaphi_%02d-%02d_p",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data())),
-                              reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("ptavgetaphi_%02d-%02d_m",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data()))});
+          std::vector<TH3*> corrs{tname.size(), nullptr};
+          for (uint isp = 0; isp < tname.size(); ++isp) {
+            corrs[isp] = reinterpret_cast<TH3*>(ccdblst->FindObject(
+              TString::Format("correction_%02d-%02d_%s",
+                              static_cast<int>(fCentMultMin[ixDCE]),
+                              static_cast<int>(fCentMultMax[ixDCE]),
+                              tname[isp].c_str())
+                .Data()));
+          }
+          dataCE[ixDCE]->storeTrackCorrections(corrs);
+
+          std::vector<TH2*> ptavgs{tname.size(), nullptr};
+          for (uint isp = 0; isp < tname.size(); ++isp) {
+            ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
+              TString::Format("ptavgetaphi_%02d-%02d_%s",
+                              static_cast<int>(fCentMultMin[ixDCE]),
+                              static_cast<int>(fCentMultMax[ixDCE]),
+                              tname[isp].c_str())
+                .Data()));
+          }
+          dataCE[ixDCE]->storePtAverages(ptavgs);
         }
       }
 
@@ -916,40 +918,38 @@ struct DptDptCorrelationsTask {
     if (!(ixDCE < 0)) {
       if (ccdblst != nullptr && !(dataCEME[ixDCE]->isCCDBstored())) {
         if constexpr (gen) {
-          dataCEME[ixDCE]->storePtAverages(
-            std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("trueptavgetaphi_%02d-%02d_p",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data())),
-                              reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("trueptavgetaphi_%02d-%02d_m",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data()))});
+          std::vector<TH2*> ptavgs{tname.size(), nullptr};
+          for (uint isp = 0; isp < tname.size(); ++isp) {
+            ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
+              TString::Format("trueptavgetaphi_%02d-%02d_%s",
+                              static_cast<int>(fCentMultMin[ixDCE]),
+                              static_cast<int>(fCentMultMax[ixDCE]),
+                              tname[isp].c_str())
+                .Data()));
+          }
+          dataCEME[ixDCE]->storePtAverages(ptavgs);
         } else {
-          dataCEME[ixDCE]->storeTrackCorrections(
-            std::vector<TH3*>{reinterpret_cast<TH3*>(ccdblst->FindObject(
-                                TString::Format("correction_%02d-%02d_p1",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data())),
-                              reinterpret_cast<TH3*>(ccdblst->FindObject(
-                                TString::Format("correction_%02d-%02d_m1",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data()))});
-          dataCEME[ixDCE]->storePtAverages(
-            std::vector<TH2*>{reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("ptavgetaphi_%02d-%02d_p",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data())),
-                              reinterpret_cast<TH2*>(ccdblst->FindObject(
-                                TString::Format("ptavgetaphi_%02d-%02d_m",
-                                                static_cast<int>(fCentMultMin[ixDCE]),
-                                                static_cast<int>(fCentMultMax[ixDCE]))
-                                  .Data()))});
+          std::vector<TH3*> corrs{tname.size(), nullptr};
+          for (uint isp = 0; isp < tname.size(); ++isp) {
+            corrs[isp] = reinterpret_cast<TH3*>(ccdblst->FindObject(
+              TString::Format("correction_%02d-%02d_%s",
+                              static_cast<int>(fCentMultMin[ixDCE]),
+                              static_cast<int>(fCentMultMax[ixDCE]),
+                              tname[isp].c_str())
+                .Data()));
+          }
+          dataCEME[ixDCE]->storeTrackCorrections(corrs);
+
+          std::vector<TH2*> ptavgs{tname.size(), nullptr};
+          for (uint isp = 0; isp < tname.size(); ++isp) {
+            ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
+              TString::Format("ptavgetaphi_%02d-%02d_%s",
+                              static_cast<int>(fCentMultMin[ixDCE]),
+                              static_cast<int>(fCentMultMax[ixDCE]),
+                              tname[isp].c_str())
+                .Data()));
+          }
+          dataCEME[ixDCE]->storePtAverages(ptavgs);
         }
       }
 

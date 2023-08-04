@@ -13,94 +13,72 @@
 /// \since June 27, 2023
 
 #include <cmath>
-#include <TLorentzVector.h>
 #include <TMath.h>
+#include <TPDGCode.h>
 #include <TObjArray.h>
+#include <TLorentzVector.h>
+#include <TDatabasePDG.h>
 
-#include "ReconstructionDataFormats/Track.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/DataTypes.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-
-#include "Framework/HistogramRegistry.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/PID.h"
+#include "ReconstructionDataFormats/TrackParametrization.h"
+#include "ReconstructionDataFormats/TrackParametrizationWithError.h"
+#include "ReconstructionDataFormats/DCA.h"
 
 #include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "TPDGCode.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 struct AntimatterAbsorptionHMPID {
 
-  // Registry (Data)
-  HistogramRegistry pos_reg{
-    "positive_tracks",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
-  HistogramRegistry neg_reg{
-    "negative_tracks",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
-  HistogramRegistry pion_pos_reg{
-    "pion_pos",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
-  HistogramRegistry kaon_pos_reg{
-    "kaon_pos",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
-  HistogramRegistry proton_reg{
-    "proton",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
-  HistogramRegistry deuteron_reg{
-    "deuteron",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
-  HistogramRegistry pion_neg_reg{
-    "pion_neg",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
-  HistogramRegistry kaon_neg_reg{
-    "kaon_neg",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
-  HistogramRegistry antiproton_reg{
-    "antiproton",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
-  HistogramRegistry antideuteron_reg{
-    "antideuteron",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
+  // Registry Data
+  HistogramRegistry pos_reg{"positive_tracks", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry neg_reg{"negative_tracks", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry pion_pos_reg{"pion_pos", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry kaon_pos_reg{"kaon_pos", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry proton_reg{"proton", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry deuteron_reg{"deuteron", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry pion_neg_reg{"pion_neg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry kaon_neg_reg{"kaon_neg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry antiproton_reg{"antiproton", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry antideuteron_reg{"antideuteron", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  // Registry MC
+  HistogramRegistry pion_plus_MC_reg{"pion_plus_MC_reg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry pion_minus_MC_reg{"pion_minus_MC_reg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry kaon_plus_MC_reg{"kaon_plus_MC_reg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry kaon_minus_MC_reg{"kaon_minus_MC_reg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry proton_MC_reg{"proton_MC_reg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry antiproton_MC_reg{"antiproton_MC_reg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry deuteron_MC_reg{"deuteron_MC_reg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry antideuteron_MC_reg{"antideuteron_MC_reg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(o2::framework::InitContext&)
   {
@@ -161,13 +139,13 @@ struct AntimatterAbsorptionHMPID {
     neg_reg.add("histPhi", "phi", HistType::kTH2F,
                 {pAxis, {200, 0.0, TMath::TwoPi(), "phi"}});
 
-    // Pion
+    // Pion Pos
     pion_pos_reg.add("histTpcNsigmaData", "nsigmaTPC (#pi)", HistType::kTH2F,
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (#pi)"}});
     pion_pos_reg.add("histTofNsigmaData", "nsigmaTOF (#pi)", HistType::kTH2F,
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (#pi)"}});
 
-    // Kaon
+    // Kaon Pos
     kaon_pos_reg.add("histTpcNsigmaData", "nsigmaTPC (K)", HistType::kTH2F,
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (K)"}});
     kaon_pos_reg.add("histTofNsigmaData", "nsigmaTOF (K)", HistType::kTH2F,
@@ -185,13 +163,13 @@ struct AntimatterAbsorptionHMPID {
     deuteron_reg.add("histTofNsigmaData", "nsigmaTOF (d)", HistType::kTH2F,
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (d)"}});
 
-    // Pion
+    // Pion Neg
     pion_neg_reg.add("histTpcNsigmaData", "nsigmaTPC (#pi)", HistType::kTH2F,
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (#pi)"}});
     pion_neg_reg.add("histTofNsigmaData", "nsigmaTOF (#pi)", HistType::kTH2F,
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (#pi)"}});
 
-    // Kaon
+    // Kaon Neg
     kaon_neg_reg.add("histTpcNsigmaData", "nsigmaTPC (K)", HistType::kTH2F,
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (K)"}});
     kaon_neg_reg.add("histTofNsigmaData", "nsigmaTOF (K)", HistType::kTH2F,
@@ -210,6 +188,16 @@ struct AntimatterAbsorptionHMPID {
                          {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (d)"}});
     antideuteron_reg.add("histTofNsigmaData", "nsigmaTOF (d)", HistType::kTH2F,
                          {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (d)"}});
+
+    // MC Energy loss correction maps
+    pion_plus_MC_reg.add("energy_loss_corr", "energy_loss_corr_piplus", HistType::kTH2F, {{300, 0.0, +3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {300, 0.0, +3.0, "#it{p}_{absorber} (GeV/#it{c})"}});
+    pion_minus_MC_reg.add("energy_loss_corr", "energy_loss_corr_piminus", HistType::kTH2F, {{300, 0.0, +3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {300, 0.0, +3.0, "#it{p}_{absorber} (GeV/#it{c})"}});
+    kaon_plus_MC_reg.add("energy_loss_corr", "energy_loss_corr_kaonplus", HistType::kTH2F, {{300, 0.0, +3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {300, 0.0, +3.0, "#it{p}_{absorber} (GeV/#it{c})"}});
+    kaon_minus_MC_reg.add("energy_loss_corr", "energy_loss_corr_kaonminus", HistType::kTH2F, {{300, 0.0, +3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {300, 0.0, +3.0, "#it{p}_{absorber} (GeV/#it{c})"}});
+    proton_MC_reg.add("energy_loss_corr", "energy_loss_corr_proton", HistType::kTH2F, {{300, 0.0, +3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {300, 0.0, +3.0, "#it{p}_{absorber} (GeV/#it{c})"}});
+    antiproton_MC_reg.add("energy_loss_corr", "energy_loss_antiproton", HistType::kTH2F, {{300, 0.0, +3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {300, 0.0, +3.0, "#it{p}_{absorber} (GeV/#it{c})"}});
+    deuteron_MC_reg.add("energy_loss_corr", "energy_loss_corr_deuteron", HistType::kTH2F, {{300, 0.0, +3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {300, 0.0, +3.0, "#it{p}_{absorber} (GeV/#it{c})"}});
+    antideuteron_MC_reg.add("energy_loss_corr", "energy_loss_antideuteron", HistType::kTH2F, {{300, 0.0, +3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {300, 0.0, +3.0, "#it{p}_{absorber} (GeV/#it{c})"}});
   }
 
   // Configurables
@@ -222,38 +210,30 @@ struct AntimatterAbsorptionHMPID {
   Configurable<float> phiMax{"phiMax", TMath::TwoPi(), "phiMax"};
   Configurable<float> nsigmaTPCMin{"nsigmaTPCMin", -3.0, "nsigmaTPCMin"};
   Configurable<float> nsigmaTPCMax{"nsigmaTPCMax", +3.0, "nsigmaTPCMax"};
-  Configurable<float> minReqClusterITS{
-    "minReqClusterITS", 1.0, "min number of clusters required in ITS"};
-  Configurable<float> minTPCnClsFound{"minTPCnClsFound", 0.0f,
-                                      "minTPCnClsFound"};
-  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f,
-                                         "min number of crossed rows TPC"};
-  Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f,
-                                 "max chi2 per cluster ITS"};
-  Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f,
-                                 "max chi2 per cluster TPC"};
+  Configurable<float> nsigmaTOFMin{"nsigmaTOFMin", -3.0, "nsigmaTOFMin"};
+  Configurable<float> nsigmaTOFMax{"nsigmaTOFMax", +3.5, "nsigmaTOFMax"};
+  Configurable<float> minReqClusterITS{"minReqClusterITS", 1.0, "min number of clusters required in ITS"};
+  Configurable<float> minTPCnClsFound{"minTPCnClsFound", 0.0f, "minTPCnClsFound"};
+  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of crossed rows TPC"};
+  Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
+  Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   Configurable<float> maxDCA_xy{"maxDCA_xy", 0.5f, "maxDCA_xy"};
   Configurable<float> maxDCA_z{"maxDCA_z", 2.0f, "maxDCA_z"};
-  Configurable<int> lastRequiredTrdCluster{
-    "lastRequiredTrdCluster", 5, "Last TRD cluster (-1 = no requirement)"};
-  Configurable<bool> enable_PVcontributor_global{
-    "enable_PVcontributor_global", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_proton{
-    "enable_PVcontributor_proton", true, "is PV contributor (proton)"};
-  Configurable<bool> enable_PVcontributor_antiproton{
-    "enable_PVcontributor_antiproton", true, "is PV contributor (antiproton)"};
-  Configurable<bool> enable_PVcontributor_deuteron{
-    "enable_PVcontributor_deuteron", true, "is PV contributor (deuteron)"};
-  Configurable<bool> enable_PVcontributor_antideuteron{
-    "enable_PVcontributor_antideuteron", true, "is PV contributor (antideuteron)"};
+  Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last TRD cluster (-1 = no requirement)"};
+  Configurable<bool> enable_PVcontributor_global{"enable_PVcontributor_global", true, "is PV contributor (global)"};
+  Configurable<bool> enable_PVcontributor_proton{"enable_PVcontributor_proton", true, "is PV contributor (proton)"};
+  Configurable<bool> enable_PVcontributor_antiproton{"enable_PVcontributor_antiproton", true, "is PV contributor (antiproton)"};
+  Configurable<bool> enable_PVcontributor_deuteron{"enable_PVcontributor_deuteron", true, "is PV contributor (deuteron)"};
+  Configurable<bool> enable_PVcontributor_antideuteron{"enable_PVcontributor_antideuteron", true, "is PV contributor (antideuteron)"};
 
   template <typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& event, const TracksType& tracks)
   {
-
+    // Event Selection
     if (!event.sel8())
       return;
 
+    // Event Counter
     pos_reg.fill(HIST("histRecVtxZData"), event.posZ());
 
     // Loop over Reconstructed Tracks
@@ -282,14 +262,12 @@ struct AntimatterAbsorptionHMPID {
       // Fill QA Histograms (Positive Tracks)
       if (track.sign() > 0) {
 
-        pos_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(),
-                     track.tpcSignal());
+        pos_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(), track.tpcSignal());
         pos_reg.fill(HIST("histTofSignalData"), track.p(), track.beta());
         pos_reg.fill(HIST("histDcaxyVsPData"), track.p(), track.dcaXY());
         pos_reg.fill(HIST("histDcaZVsPtData"), track.p(), track.dcaZ());
         pos_reg.fill(HIST("histNClusterTPC"), track.p(), track.tpcNClsFound());
-        pos_reg.fill(HIST("histNCrossedRowTPC"), track.p(),
-                     track.tpcNClsCrossedRows());
+        pos_reg.fill(HIST("histNCrossedRowTPC"), track.p(), track.tpcNClsCrossedRows());
         pos_reg.fill(HIST("histNClusterITS"), track.p(), track.itsNCls());
         pos_reg.fill(HIST("histChi2TPC"), track.p(), track.tpcChi2NCl());
         pos_reg.fill(HIST("histChi2ITS"), track.p(), track.itsChi2NCl());
@@ -300,14 +278,12 @@ struct AntimatterAbsorptionHMPID {
       // Fill QA Histograms (Negative Tracks)
       if (track.sign() < 0) {
 
-        neg_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(),
-                     track.tpcSignal());
+        neg_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(), track.tpcSignal());
         neg_reg.fill(HIST("histTofSignalData"), track.p(), track.beta());
         neg_reg.fill(HIST("histDcaxyVsPData"), track.p(), track.dcaXY());
         neg_reg.fill(HIST("histDcaZVsPtData"), track.p(), track.dcaZ());
         neg_reg.fill(HIST("histNClusterTPC"), track.p(), track.tpcNClsFound());
-        neg_reg.fill(HIST("histNCrossedRowTPC"), track.p(),
-                     track.tpcNClsCrossedRows());
+        neg_reg.fill(HIST("histNCrossedRowTPC"), track.p(), track.tpcNClsCrossedRows());
         neg_reg.fill(HIST("histNClusterITS"), track.p(), track.itsNCls());
         neg_reg.fill(HIST("histChi2TPC"), track.p(), track.tpcChi2NCl());
         neg_reg.fill(HIST("histChi2ITS"), track.p(), track.itsChi2NCl());
@@ -344,25 +320,17 @@ struct AntimatterAbsorptionHMPID {
         continue;
 
       if (track.sign() > 0) {
-        pion_pos_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                          track.tpcNSigmaPi());
-        kaon_pos_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                          track.tpcNSigmaKa());
-        proton_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                        track.tpcNSigmaPr());
-        deuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                          track.tpcNSigmaDe());
+        pion_pos_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaPi());
+        kaon_pos_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaKa());
+        proton_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaPr());
+        deuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaDe());
       }
 
       if (track.sign() < 0) {
-        pion_neg_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                          track.tpcNSigmaPi());
-        kaon_neg_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                          track.tpcNSigmaKa());
-        antiproton_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                            track.tpcNSigmaPr());
-        antideuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(),
-                              track.tpcNSigmaDe());
+        pion_neg_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaPi());
+        kaon_neg_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaKa());
+        antiproton_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaPr());
+        antideuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaDe());
       }
 
       bool passedPionTPCsel = false;
@@ -381,71 +349,319 @@ struct AntimatterAbsorptionHMPID {
       if (track.tpcNSigmaPr() > nsigmaTPCMin &&
           track.tpcNSigmaPr() < nsigmaTPCMax)
         passedProtTPCsel = true;
+
       if (track.tpcNSigmaDe() > nsigmaTPCMin &&
           track.tpcNSigmaDe() < nsigmaTPCMax)
         passedDeutTPCsel = true;
 
-      if (track.hasTOF()) {
-        if (track.sign() > 0) {
-          if (passedPionTPCsel)
-            pion_pos_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                              track.tofNSigmaPi());
+      if (!track.hasTOF())
+        continue;
 
-          if (passedKaonTPCsel)
-            kaon_pos_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                              track.tofNSigmaKa());
-          if (passedProtTPCsel)
-            proton_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                            track.tofNSigmaPr());
-          if (passedDeutTPCsel)
-            deuteron_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                              track.tofNSigmaDe());
-        }
+      if (track.sign() > 0) {
+        if (passedPionTPCsel)
+          pion_pos_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaPi());
+        if (passedKaonTPCsel)
+          kaon_pos_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaKa());
+        if (passedProtTPCsel)
+          proton_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaPr());
+        if (passedDeutTPCsel)
+          deuteron_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaDe());
+      }
 
-        if (track.sign() < 0) {
-          if (passedPionTPCsel)
-            pion_neg_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                              track.tofNSigmaPi());
-
-          if (passedKaonTPCsel)
-            kaon_neg_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                              track.tofNSigmaKa());
-          if (passedProtTPCsel)
-            antiproton_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                                track.tofNSigmaPr());
-          if (passedDeutTPCsel)
-            antideuteron_reg.fill(HIST("histTofNsigmaData"), track.p(),
-                                  track.tofNSigmaDe());
-        }
+      if (track.sign() < 0) {
+        if (passedPionTPCsel)
+          pion_neg_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaPi());
+        if (passedKaonTPCsel)
+          kaon_neg_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaKa());
+        if (passedProtTPCsel)
+          antiproton_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaPr());
+        if (passedDeutTPCsel)
+          antideuteron_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaDe());
       }
     }
   }
 
-  Filter collisionFilter = (nabs(aod::collision::posZ) < zVertexRange);
-  Filter trackFilter =
-    (nabs(aod::track::eta) < 0.8f && requireGlobalTrackWoDCAInFilter());
+  // Filter collisionFilter = (nabs(aod::collision::posZ) < zVertexRange);
+  // Filter trackFilter = (nabs(aod::track::eta) < 0.8f && requireGlobalTrackWoDCAInFilter());
 
-  using EventCandidates =
-    soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels>;
+  // using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
 
-  using TrackCandidates = soa::Filtered<soa::Join<
-    aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-    aod::pidTPCLfFullPi, aod::pidTOFFullPi,
-    aod::pidTPCLfFullKa, aod::pidTOFFullKa,
-    aod::pidTPCLfFullPr, aod::pidTOFFullPr,
-    aod::pidTPCLfFullDe, aod::pidTOFFullDe,
-    aod::pidTPCLfFullTr, aod::pidTOFFullTr,
-    aod::pidTPCLfFullHe, aod::pidTOFFullHe,
-    aod::pidTPCLfFullAl, aod::pidTOFFullAl,
-    aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal,
-    aod::pidTOFmass, aod::pidTOFbeta>>;
+  /*
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;
+  */
+  // Info for TPC PID
+  using PidInfoTPC = soa::Join<aod::pidTPCLfFullPi, aod::pidTPCLfFullKa,
+                               aod::pidTPCLfFullPr, aod::pidTPCLfFullDe,
+                               aod::pidTPCLfFullTr, aod::pidTPCLfFullHe,
+                               aod::pidTPCLfFullAl>;
+
+  // Info for TOF PID
+  using PidInfoTOF = soa::Join<aod::pidTOFFullPi, aod::pidTOFFullKa,
+                               aod::pidTOFFullPr, aod::pidTOFFullDe,
+                               aod::pidTOFFullTr, aod::pidTOFFullHe,
+                               aod::pidTOFFullAl,
+                               aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
+
+  // Propagated tracks
+  using TrackCandidatesIU = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA,
+                                      PidInfoTPC, PidInfoTOF,
+                                      aod::TrackSelection, aod::TrackSelectionExtension>;
+
+  // Propagated to PV tracks
+  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA,
+                                    PidInfoTPC, PidInfoTOF,
+                                    aod::TrackSelection, aod::TrackSelectionExtension>;
+
+  // using TrackCandidates = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
 
   void processData(EventCandidates::iterator const& event,
-                   TrackCandidates const& tracks)
+                   TrackCandidatesIU const& tracksIU)
+  //  , TrackCandidates const& tracks)
   {
-    fillHistograms(event, tracks);
+    fillHistograms(event, tracksIU);
   }
   PROCESS_SWITCH(AntimatterAbsorptionHMPID, processData, "process data", true);
+
+  // Process MC
+  void processMC(soa::Join<EventCandidates, aod::McCollisionLabels>::iterator const& event,
+                 soa::Join<TrackCandidatesIU, aod::McTrackLabels> const& tracksIU,
+                 //  soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks,
+                 aod::McParticles& mcParticles,
+                 aod::McCollisions const& mcCollisions)
+  {
+
+    float radius_hmpid = 500;
+
+    for (auto track : tracksIU) {
+
+      // Get MC Particle
+      if (!track.has_mcParticle())
+        continue;
+      const auto particle = track.mcParticle();
+
+      // Track Selection
+      if (!track.isGlobalTrackWoDCA())
+        continue;
+      if (!track.passedITSRefit())
+        continue;
+      if (!track.passedTPCRefit())
+        continue;
+      if (track.itsNCls() < minReqClusterITS)
+        continue;
+      if (track.tpcNClsFound() < minTPCnClsFound)
+        continue;
+      if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+        continue;
+      if (track.tpcChi2NCl() > maxChi2TPC)
+        continue;
+      if (track.itsChi2NCl() > maxChi2ITS)
+        continue;
+      if (TMath::Abs(track.dcaXY()) > maxDCA_xy)
+        continue;
+      if (TMath::Abs(track.dcaZ()) > maxDCA_z)
+        continue;
+      if (enable_PVcontributor_global && !(track.isPVContributor()))
+        continue;
+      if (track.eta() < etaMin)
+        continue;
+      if (track.eta() > etaMax)
+        continue;
+      if (track.phi() < phiMin)
+        continue;
+      if (track.phi() > phiMax)
+        continue;
+
+      // TOF Hit Requirement
+      if (!track.hasTOF())
+        continue;
+
+      // Pi Plus
+      if (particle.pdgCode() == 211) {
+        if (track.tpcNSigmaPi() < nsigmaTPCMin)
+          continue;
+        if (track.tpcNSigmaPi() > nsigmaTPCMax)
+          continue;
+        if (track.tofNSigmaPi() < nsigmaTOFMin)
+          continue;
+        if (track.tofNSigmaPi() > nsigmaTOFMax)
+          continue;
+
+        double p_vtx = track.p();
+        auto par_cov = getTrackParCov(track);
+        par_cov.setPID(2); // Pion
+        auto prop = o2::base::Propagator::Instance();
+        float xtogo = 0;
+        if (!par_cov.getXatLabR(radius_hmpid, xtogo, prop->getNominalBz(), o2::track::DirType::DirOutward) || !prop->PropagateToXBxByBz(par_cov, xtogo, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrLUT)) {
+          continue;
+        }
+        double p_hmpid = track.p();
+        pion_plus_MC_reg.fill(HIST("energy_loss_corr"), p_vtx, p_hmpid);
+      }
+
+      // Pi Minus
+      if (particle.pdgCode() == -211) {
+        if (track.tpcNSigmaPi() < nsigmaTPCMin)
+          continue;
+        if (track.tpcNSigmaPi() > nsigmaTPCMax)
+          continue;
+        if (track.tofNSigmaPi() < nsigmaTOFMin)
+          continue;
+        if (track.tofNSigmaPi() > nsigmaTOFMax)
+          continue;
+
+        double p_vtx = track.p();
+        auto par_cov = getTrackParCov(track);
+        par_cov.setPID(2); // Pion
+        auto prop = o2::base::Propagator::Instance();
+        float xtogo = 0;
+        if (!par_cov.getXatLabR(radius_hmpid, xtogo, prop->getNominalBz(), o2::track::DirType::DirOutward) || !prop->PropagateToXBxByBz(par_cov, xtogo, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrLUT)) {
+          continue;
+        }
+        double p_hmpid = track.p();
+        pion_minus_MC_reg.fill(HIST("energy_loss_corr"), p_vtx, p_hmpid);
+      }
+
+      // Kaon Plus
+      if (particle.pdgCode() == 321) {
+        if (track.tpcNSigmaKa() < nsigmaTPCMin)
+          continue;
+        if (track.tpcNSigmaKa() > nsigmaTPCMax)
+          continue;
+        if (track.tofNSigmaKa() < nsigmaTOFMin)
+          continue;
+        if (track.tofNSigmaKa() > nsigmaTOFMax)
+          continue;
+
+        double p_vtx = track.p();
+        auto par_cov = getTrackParCov(track);
+        par_cov.setPID(3); // Kaon
+        auto prop = o2::base::Propagator::Instance();
+        float xtogo = 0;
+        if (!par_cov.getXatLabR(radius_hmpid, xtogo, prop->getNominalBz(), o2::track::DirType::DirOutward) || !prop->PropagateToXBxByBz(par_cov, xtogo, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrLUT)) {
+          continue;
+        }
+        double p_hmpid = track.p();
+        kaon_plus_MC_reg.fill(HIST("energy_loss_corr"), p_vtx, p_hmpid);
+      }
+
+      // Kaon Minus
+      if (particle.pdgCode() == -321) {
+        if (track.tpcNSigmaKa() < nsigmaTPCMin)
+          continue;
+        if (track.tpcNSigmaKa() > nsigmaTPCMax)
+          continue;
+        if (track.tofNSigmaKa() < nsigmaTOFMin)
+          continue;
+        if (track.tofNSigmaKa() > nsigmaTOFMax)
+          continue;
+
+        double p_vtx = track.p();
+        auto par_cov = getTrackParCov(track);
+        par_cov.setPID(3); // Kaon
+        auto prop = o2::base::Propagator::Instance();
+        float xtogo = 0;
+        if (!par_cov.getXatLabR(radius_hmpid, xtogo, prop->getNominalBz(), o2::track::DirType::DirOutward) || !prop->PropagateToXBxByBz(par_cov, xtogo, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrLUT)) {
+          continue;
+        }
+        double p_hmpid = track.p();
+        kaon_minus_MC_reg.fill(HIST("energy_loss_corr"), p_vtx, p_hmpid);
+      }
+
+      // Proton
+      if (particle.pdgCode() == 2212) {
+        if (track.tpcNSigmaPr() < nsigmaTPCMin)
+          continue;
+        if (track.tpcNSigmaPr() > nsigmaTPCMax)
+          continue;
+        if (track.tofNSigmaPr() < nsigmaTOFMin)
+          continue;
+        if (track.tofNSigmaPr() > nsigmaTOFMax)
+          continue;
+
+        double p_vtx = track.p();
+        auto par_cov = getTrackParCov(track);
+        par_cov.setPID(4); // Proton
+        auto prop = o2::base::Propagator::Instance();
+        float xtogo = 0;
+        if (!par_cov.getXatLabR(radius_hmpid, xtogo, prop->getNominalBz(), o2::track::DirType::DirOutward) || !prop->PropagateToXBxByBz(par_cov, xtogo, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrLUT)) {
+          continue;
+        }
+        double p_hmpid = track.p();
+        proton_MC_reg.fill(HIST("energy_loss_corr"), p_vtx, p_hmpid);
+      }
+
+      // AntiProton
+      if (particle.pdgCode() == -2212) {
+        if (track.tpcNSigmaPr() < nsigmaTPCMin)
+          continue;
+        if (track.tpcNSigmaPr() > nsigmaTPCMax)
+          continue;
+        if (track.tofNSigmaPr() < nsigmaTOFMin)
+          continue;
+        if (track.tofNSigmaPr() > nsigmaTOFMax)
+          continue;
+
+        double p_vtx = track.p();
+        auto par_cov = getTrackParCov(track);
+        par_cov.setPID(4); // Proton
+        auto prop = o2::base::Propagator::Instance();
+        float xtogo = 0;
+        if (!par_cov.getXatLabR(radius_hmpid, xtogo, prop->getNominalBz(), o2::track::DirType::DirOutward) || !prop->PropagateToXBxByBz(par_cov, xtogo, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrLUT)) {
+          continue;
+        }
+        double p_hmpid = track.p();
+        antiproton_MC_reg.fill(HIST("energy_loss_corr"), p_vtx, p_hmpid);
+      }
+
+      // Deuteron
+      if (particle.pdgCode() == 1000010020) {
+        if (track.tpcNSigmaDe() < nsigmaTPCMin)
+          continue;
+        if (track.tpcNSigmaDe() > nsigmaTPCMax)
+          continue;
+        if (track.tofNSigmaDe() < nsigmaTOFMin)
+          continue;
+        if (track.tofNSigmaDe() > nsigmaTOFMax)
+          continue;
+
+        double p_vtx = track.p();
+        auto par_cov = getTrackParCov(track);
+        par_cov.setPID(5); // Deuteron
+        auto prop = o2::base::Propagator::Instance();
+        float xtogo = 0;
+        if (!par_cov.getXatLabR(radius_hmpid, xtogo, prop->getNominalBz(), o2::track::DirType::DirOutward) || !prop->PropagateToXBxByBz(par_cov, xtogo, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrLUT)) {
+          continue;
+        }
+        double p_hmpid = track.p();
+        deuteron_MC_reg.fill(HIST("energy_loss_corr"), p_vtx, p_hmpid);
+      }
+
+      // AntiDeuteron
+      if (particle.pdgCode() == -1000010020) {
+        if (track.tpcNSigmaDe() < nsigmaTPCMin)
+          continue;
+        if (track.tpcNSigmaDe() > nsigmaTPCMax)
+          continue;
+        if (track.tofNSigmaDe() < nsigmaTOFMin)
+          continue;
+        if (track.tofNSigmaDe() > nsigmaTOFMax)
+          continue;
+
+        double p_vtx = track.p();
+        auto par_cov = getTrackParCov(track);
+        par_cov.setPID(5); // Deuteron
+        auto prop = o2::base::Propagator::Instance();
+        float xtogo = 0;
+        if (!par_cov.getXatLabR(radius_hmpid, xtogo, prop->getNominalBz(), o2::track::DirType::DirOutward) || !prop->PropagateToXBxByBz(par_cov, xtogo, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrLUT)) {
+          continue;
+        }
+        double p_hmpid = track.p();
+        antideuteron_MC_reg.fill(HIST("energy_loss_corr"), p_vtx, p_hmpid);
+      }
+    }
+  }
+  PROCESS_SWITCH(AntimatterAbsorptionHMPID, processMC, "process MC", false);
 };
 
 //**********************************************************************************************************************************************

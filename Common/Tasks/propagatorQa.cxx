@@ -438,6 +438,38 @@ struct propagatorQa {
     }
   }
   PROCESS_SWITCH(propagatorQa, processData, "process data", false);
+
+  void processMatLUTTest(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA> const& tracks, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracksIU, aod::BCsWithTimestamps const&)
+  {
+    /* check the previous run number */
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+    gpu::gpustd::array<float, 2> dcaInfo;
+
+    for (auto& trackIU : tracksIU) {
+      if (trackIU.tpcNClsFound() < minTPCClustersRequired)
+        continue; // skip if not enough TPC clusters
+
+      if (trackIU.trackType() != aod::track::TrackIU && trackIU.x() > maxXtoConsider)
+        continue; // skip if not track IU or if beyong the max X to be considered
+
+      o2::track::TrackParCov trackParCov = getTrackParCov(trackIU);
+
+      dcaInfo[0] = 999;
+      dcaInfo[1] = 999;
+
+      // Recalculate the propagation with this instance of the matLUT
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCov, maxPropagStep, matCorr, &dcaInfo);
+
+      auto track = tracks.iteratorAt(trackIU.globalIndex() - tracksIU.offset());
+
+      histos.fill(HIST("hDeltaTanLambdaVsPt"), track.tgl(), track.tgl() - trackParCov.getTgl());
+      histos.fill(HIST("hDeltaPtVsPt"), track.pt(), track.pt() - trackParCov.getPt());
+      histos.fill(HIST("hDeltaDCAs"), track.dcaXY() - dcaInfo[0]);
+      histos.fill(HIST("hDeltaDCAsVsPt"), track.pt(), track.dcaXY() - dcaInfo[0]);
+    }
+  }
+  PROCESS_SWITCH(propagatorQa, processMatLUTTest, "process mat lut test", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

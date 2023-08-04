@@ -94,7 +94,7 @@ struct UDTutorial02b {
     }
 
     // skip events with out-of-range net charge
-    auto netChargeValues = anaPars.netCharges();
+    auto netChargeValues = anaPars.unlikeCharges();
     if (std::find(netChargeValues.begin(), netChargeValues.end(), dgcand.netCharge()) == netChargeValues.end()) {
       if (verbose) {
         LOGF(info, "<UDTutorials02> Candidate rejected: Net charge %d not in selected set.", dgcand.netCharge());
@@ -127,11 +127,11 @@ struct UDTutorial02b {
     // find track combinations which are compatible with PID cuts
     auto nIVMs = pidsel.computeIVMs(PVContributors);
     if (verbose) {
-      LOGF(info, "<<UDTutorials02> Found %d candidates", nIVMs);
+      LOGF(info, "<<UDTutorials02> Found %d/%d candidates", nIVMs[0], nIVMs[1]);
     }
 
     // update histograms
-    for (auto ivm : pidsel.IVMs()) {
+    for (auto ivm : pidsel.unlikeIVMs()) {
       // cut on pt-system
       if (ivm.Perp() < anaPars.minptsys() || ivm.Perp() > anaPars.maxptsys()) {
         continue;

@@ -27,6 +27,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -305,7 +306,7 @@ struct strangenessFilter {
   // using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::MultZeqs>::iterator;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>>;
-  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
+  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTPCLfFullPr, aod::pidTPCLfFullKa>;
   using Cascades = aod::CascDataExt;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;

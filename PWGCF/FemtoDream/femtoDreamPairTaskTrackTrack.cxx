@@ -120,6 +120,7 @@ struct femtoDreamPairTaskTrackTrack {
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+  ConfigurableAxis ConfDummy{"ConfDummy", {1, 0, 1}, "Dummy axis"};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -132,10 +133,11 @@ struct femtoDreamPairTaskTrackTrack {
 
   void init(InitContext&)
   {
+
     eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfIsMC, ConfPDGCodePartOne);
+    trackHistoPartOne.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePartOne);
     if (!ConfIsSame) {
-      trackHistoPartTwo.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfIsMC, ConfPDGCodePartTwo);
+      trackHistoPartTwo.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePartTwo);
     }
 
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
@@ -192,7 +194,7 @@ struct femtoDreamPairTaskTrackTrack {
         continue;
       }
 
-      trackHistoPartOne.fillQA<isMC, false>(part);
+      trackHistoPartOne.fillQA<isMC, false>(part, 0);
     }
 
     if (!ConfIsSame) {
@@ -210,7 +212,7 @@ struct femtoDreamPairTaskTrackTrack {
                                ConfCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;
         }
-        trackHistoPartTwo.fillQA<isMC, false>(part);
+        trackHistoPartTwo.fillQA<isMC, false>(part, 0);
       }
     }
     /// Now build the combinations

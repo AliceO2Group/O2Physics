@@ -56,27 +56,32 @@ std::shared_ptr<TH1> hIsMatterGenTwoBody;
 } // namespace
 
 struct hyperCandidate {
-  float recoPt() const { return std::hypot(mom[0], mom[1]); }
-  float recoPhi() const { return std::atan2(mom[1], mom[0]); }
-  float recoEta() const { return std::asinh(mom[2] / recoPt()); }
+  float recoPtHe3() const { return std::hypot(momHe3[0], momHe3[1]); }
+  float recoPhiHe3() const { return std::atan2(momHe3[1], momHe3[0]); }
+  float recoEtaHe3() const { return std::asinh(momHe3[2] / recoPtHe3()); }
+  float recoPtPi() const { return std::hypot(momPi[0], momPi[1]); }
+  float recoPhiPi() const { return std::atan2(momPi[1], momPi[0]); }
+  float recoEtaPi() const { return std::asinh(momPi[2] / recoPtPi()); }
   float genPt() const { return std::hypot(gMom[0], gMom[1]); }
+  float genPtHe3() const { return std::hypot(gMomHe3[0], gMomHe3[1]); }
   float genPhi() const { return std::atan2(gMom[1], gMom[0]); }
   float genEta() const { return std::asinh(gMom[2] / genPt()); }
 
   int posTrackID;
   int negTrackID;
-  float massH3L = -10;
-  float massH4L = -10;
   float dcaV0dau = -10;
   float cosPA = -10;
   float nSigmaHe3 = -10;
   float he3DCAXY = -10;
   float piDCAXY = -10;
-  float momHe3 = -10.f;
-  float momPi = -10.f;
-  std::array<float, 3> mom;
+  float momHe3TPC = -10.f;
+  float momPiTPC = -10.f;
+  std::array<float, 3> momHe3;
+  std::array<float, 3> momPi;
+  std::array<float, 3> primVtx;
   std::array<float, 3> decVtx;
   std::array<float, 3> gMom;
+  std::array<float, 3> gMomHe3;
   std::array<float, 3> gDecVtx;
   uint16_t tpcSignalHe3 = 0u;
   uint16_t tpcSignalPi = 0u;
@@ -281,8 +286,8 @@ struct hyperRecoTask {
       hypCand.tpcSignalHe3 = hypCand.isMatter ? posTrack.tpcSignal() : negTrack.tpcSignal();
       hypCand.nTPCClustersPi = !hypCand.isMatter ? posTrack.tpcNClsFound() : negTrack.tpcNClsFound();
       hypCand.tpcSignalPi = !hypCand.isMatter ? posTrack.tpcSignal() : negTrack.tpcSignal();
-      hypCand.momHe3 = hypCand.isMatter ? posTrack.tpcInnerParam() : negTrack.tpcInnerParam();
-      hypCand.momPi = !hypCand.isMatter ? posTrack.tpcInnerParam() : negTrack.tpcInnerParam();
+      hypCand.momHe3TPC = hypCand.isMatter ? posTrack.tpcInnerParam() : negTrack.tpcInnerParam();
+      hypCand.momPiTPC = !hypCand.isMatter ? posTrack.tpcInnerParam() : negTrack.tpcInnerParam();
 
       auto posTrackCov = getTrackParCov(posTrack);
       auto negTrackCov = getTrackParCov(negTrack);
@@ -300,63 +305,52 @@ struct hyperRecoTask {
 
       auto& hePropTrack = hypCand.isMatter ? fitter.getTrack(0) : fitter.getTrack(1);
       auto& piPropTrack = hypCand.isMatter ? fitter.getTrack(1) : fitter.getTrack(0);
-
-      std::array<float, 3> heTrackP;
-      std::array<float, 3> piTrackP;
-
-      hePropTrack.getPxPyPzGlo(heTrackP);
-      piPropTrack.getPxPyPzGlo(piTrackP);
+      hePropTrack.getPxPyPzGlo(hypCand.momHe3);
+      piPropTrack.getPxPyPzGlo(hypCand.momPi);
 
       // he momentum has to be multiplied by 2 (charge)
       for (int i = 0; i < 3; i++) {
-        heTrackP[i] *= 2;
+        hypCand.momHe3[i] *= 2;
       }
 
-      float heP2 = heTrackP[0] * heTrackP[0] + heTrackP[1] * heTrackP[1] + heTrackP[2] * heTrackP[2];
-      float piP2 = piTrackP[0] * piTrackP[0] + piTrackP[1] * piTrackP[1] + piTrackP[2] * piTrackP[2];
-
+      float heP2 = hypCand.momHe3[0] * hypCand.momHe3[0] + hypCand.momHe3[1] * hypCand.momHe3[1] + hypCand.momHe3[2] * hypCand.momHe3[2];
+      float piP2 = hypCand.momPi[0] * hypCand.momPi[0] + hypCand.momPi[1] * hypCand.momPi[1] + hypCand.momPi[2] * hypCand.momPi[2];
       float he3E = std::sqrt(heP2 + he3Mass * he3Mass);
       float he4E = std::sqrt(heP2 + he4Mass * he4Mass);
       float piE = std::sqrt(piP2 + piMass * piMass);
-
       float h3lE = he3E + piE;
       float h4lE = he4E + piE;
 
-      auto posPrimVtx = array{collision.posX(), collision.posY(), collision.posZ()};
-
+      hypCand.primVtx = array{collision.posX(), collision.posY(), collision.posZ()};
+      std::array<float, 3> hypMom;
       const auto& vtx = fitter.getPCACandidate();
       for (int i = 0; i < 3; i++) {
         hypCand.decVtx[i] = vtx[i];
-        hypCand.mom[i] = heTrackP[i] + piTrackP[i];
+        hypMom[i] = hypCand.momHe3[i] + hypCand.momPi[i];
       }
 
-      hypCand.massH3L = std::sqrt(h3lE * h3lE - hypCand.mom[0] * hypCand.mom[0] - hypCand.mom[1] * hypCand.mom[1] - hypCand.mom[2] * hypCand.mom[2]);
-      hypCand.massH4L = std::sqrt(h4lE * h4lE - hypCand.mom[0] * hypCand.mom[0] - hypCand.mom[1] * hypCand.mom[1] - hypCand.mom[2] * hypCand.mom[2]);
-
+      float massH3L = std::sqrt(h3lE * h3lE - hypMom[0] * hypMom[0] - hypMom[1] * hypMom[1] - hypMom[2] * hypMom[2]);
+      float massH4L = std::sqrt(h4lE * h4lE - hypMom[0] * hypMom[0] - hypMom[1] * hypMom[1] - hypMom[2] * hypMom[2]);
       bool isHypMass = false;
-
-      if (hypCand.massH3L > o2::constants::physics::MassHyperTriton - masswidth && hypCand.massH3L < o2::constants::physics::MassHyperTriton + masswidth)
+      if (massH3L > o2::constants::physics::MassHyperTriton - masswidth && massH3L < o2::constants::physics::MassHyperTriton + masswidth)
         isHypMass = true;
-
-      if (hypCand.massH4L > o2::constants::physics::MassHyperhydrog4 - masswidth && hypCand.massH4L < o2::constants::physics::MassHyperhydrog4 + masswidth)
+      if (massH4L > o2::constants::physics::MassHyperhydrog4 - masswidth && massH4L < o2::constants::physics::MassHyperhydrog4 + masswidth)
         isHypMass = true;
-
       if (!isHypMass)
         continue;
 
       hypCand.dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
-
       if (hypCand.dcaV0dau > dcav0dau) {
         continue;
       }
 
-      hypCand.cosPA = RecoDecay::cpa(posPrimVtx, array{hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2]}, array{hypCand.mom[0], hypCand.mom[1], hypCand.mom[2]});
-      if (hypCand.cosPA < v0cospa) {
+      double cosPA = RecoDecay::cpa(hypCand.primVtx, array{hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2]}, array{hypMom[0], hypMom[1], hypMom[2]});
+      if (cosPA < v0cospa) {
         continue;
       }
 
       for (int i = 0; i < 3; i++) {
-        hypCand.decVtx[i] = hypCand.decVtx[i] - posPrimVtx[i];
+        hypCand.decVtx[i] = hypCand.decVtx[i] - hypCand.primVtx[i];
       }
 
       // if survived all selections, propagate decay daughters to PV
@@ -403,10 +397,10 @@ struct hyperRecoTask {
                 continue;
               auto posPrimVtx = array{posMother.vx(), posMother.vy(), posMother.vz()};
               auto secVtx = array{mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
-              auto posMom = array{posMother.px(), posMother.py(), posMother.pz()};
+              hypCand.gMom = array{posMother.px(), posMother.py(), posMother.pz()};
+              hypCand.gMomHe3 = mcTrackPos.pdgCode() == heDauPdg ? array{mcTrackPos.px(), mcTrackPos.py(), mcTrackPos.pz()} : array{mcTrackNeg.px(), mcTrackNeg.py(), mcTrackNeg.pz()};
               for (int i = 0; i < 3; i++) {
                 hypCand.gDecVtx[i] = secVtx[i] - posPrimVtx[i];
-                hypCand.gMom[i] = posMom[i];
               }
               hypCand.isSignal = true;
               hypCand.pdgCode = posMother.pdgCode();
@@ -424,10 +418,12 @@ struct hyperRecoTask {
       std::array<float, 3> secVtx;
       std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
       std::array<float, 3> momMother = {mcPart.px(), mcPart.py(), mcPart.pz()};
+      std::array<float, 3> momHe3;
       bool isHeFound = false;
       for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
         if (std::abs(mcDaught.pdgCode()) == heDauPdg) {
           secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
+          momHe3 = {mcDaught.px(), mcDaught.py(), mcDaught.pz()};
           isHeFound = true;
           break;
         }
@@ -454,6 +450,7 @@ struct hyperRecoTask {
       for (int i = 0; i < 3; i++) {
         hypCand.gDecVtx[i] = secVtx[i] - primVtx[i];
         hypCand.gMom[i] = momMother[i];
+        hypCand.gMomHe3[i] = momHe3[i];
       }
       hypCand.posTrackID = -1;
       hypCand.negTrackID = -1;
@@ -492,12 +489,14 @@ struct hyperRecoTask {
     }
 
     for (auto& hypCand : hyperCandidates) {
-      outputDataTable(hypCand.isMatter, hypCand.recoPt(), hypCand.recoPhi(), hypCand.recoEta(),
-                      hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2], hypCand.massH3L, hypCand.massH4L,
-                      hypCand.dcaV0dau, hypCand.cosPA, hypCand.nSigmaHe3,
-                      hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi, hypCand.momHe3,
-                      hypCand.momPi, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                      hypCand.he3DCAXY, hypCand.piDCAXY);
+      outputDataTable(hypCand.isMatter,
+                      hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
+                      hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
+                      hypCand.primVtx[0], hypCand.primVtx[1], hypCand.primVtx[2],
+                      hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                      hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
+                      hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                      hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
@@ -532,13 +531,15 @@ struct hyperRecoTask {
       if (!hypCand.isSignal && mcSignalOnly)
         continue;
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
-      outputMCTable(hypCand.isMatter, hypCand.recoPt(), hypCand.recoPhi(), hypCand.recoEta(),
-                    hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2], hypCand.massH3L, hypCand.massH4L,
-                    hypCand.dcaV0dau, hypCand.cosPA, hypCand.nSigmaHe3,
-                    hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi, hypCand.momHe3,
-                    hypCand.momPi, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                    hypCand.he3DCAXY, hypCand.piDCAXY,
-                    chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(),
+      outputMCTable(hypCand.isMatter,
+                    hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
+                    hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
+                    hypCand.primVtx[0], hypCand.primVtx[1], hypCand.primVtx[2],
+                    hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                    hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
+                    hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                    hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
+                    chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
     }
   }
