@@ -36,6 +36,24 @@ using namespace o2::analysis;
 
 namespace o2::aod
 {
+// Table aliases
+
+using TracksWCov = soa::Join<Tracks, TracksCov>;
+using TracksWDca = soa::Join<Tracks, TracksDCA>;
+using TracksWExtra = soa::Join<Tracks, TracksExtra>;
+using TracksWCovDca = soa::Join<Tracks, TracksCov, TracksDCA>;
+using TracksWCovExtra = soa::Join<Tracks, TracksCov, TracksExtra>;
+using TracksWDcaExtra = soa::Join<Tracks, TracksDCA, TracksExtra>;
+using TracksWCovDcaExtra = soa::Join<Tracks, TracksCov, TracksDCA, TracksExtra>;
+
+using TracksWMc = soa::Join<Tracks, McTrackLabels>;
+
+using TracksPidEl = soa::Join<aod::pidTPCFullEl, aod::pidTOFFullEl>;
+using TracksPidMu = soa::Join<aod::pidTPCFullMu, aod::pidTOFFullMu>;
+using TracksPidPi = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi>;
+using TracksPidKa = soa::Join<aod::pidTPCFullKa, aod::pidTOFFullKa>;
+using TracksPidPr = soa::Join<aod::pidTPCFullPr, aod::pidTOFFullPr>;
+
 namespace hf_sel_collision
 {
 DECLARE_SOA_COLUMN(WhyRejectColl, whyRejectColl, int); //!
@@ -79,16 +97,6 @@ DECLARE_SOA_TABLE(HfPvRefitTrack, "AOD", "HFPVREFITTRACK", //!
                   hf_pv_refit_track::PvRefitSigmaZ2,
                   hf_pv_refit_track::PvRefitDcaXY,
                   hf_pv_refit_track::PvRefitDcaZ);
-
-using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra>;
-using BigTracksExtended = soa::Join<BigTracks, aod::TracksDCA>;
-using BigTracksMC = soa::Join<BigTracks, McTrackLabels>;
-using BigTracksPID = soa::Join<BigTracks,
-                               aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                               aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using BigTracksPIDExtended = soa::Join<BigTracksPID, aod::TracksDCA>;
-
-// FIXME: this is a workaround until we get the index columns to work with joins.
 
 namespace hf_track_index
 {
@@ -1985,6 +1993,8 @@ DECLARE_SOA_TABLE(HfCandScMcRec, "AOD", "HFCANDSCMCREC", //!
 DECLARE_SOA_TABLE(HfCandScMcGen, "AOD", "HFCANDSCMCGEN", //!
                   hf_cand_sigmac::FlagMcMatchGen,
                   hf_cand_sigmac::OriginMcGen);
+
+#undef HFCAND_COLUMNS
 
 } // namespace o2::aod
 

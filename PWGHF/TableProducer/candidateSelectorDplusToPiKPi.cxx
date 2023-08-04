@@ -37,7 +37,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   // PID option
-  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
+  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
@@ -72,23 +72,22 @@ struct HfCandidateSelectorDplusToPiKPi {
 
   o2::ccdb::CcdbApi ccdbApi;
 
-  TrackSelectorPID selectorPion;
-  TrackSelectorPID selectorKaon;
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
+
+  using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TracksPidKa>;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
-    selectorPion.setPDG(kPiPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     selectorKaon = selectorPion;
-    selectorKaon.setPDG(kKPlus);
 
     if (activateQA) {
       constexpr int kNBinsSelections = 1 + aod::SelectionStep::NSelectionSteps;
@@ -115,21 +114,6 @@ struct HfCandidateSelectorDplusToPiKPi {
       outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
     }
   }
-
-  /*
-  /// Selection on goodness of daughter tracks
-  /// \note should be applied at candidate selection
-  /// \param track is daughter track
-  /// \return true if track is good
-  template <typename T>
-  bool daughterSelection(const T& track)
-  {
-    if (track.tpcNClsFound() == 0) {
-      return false; //is it clusters findable or found - need to check
-    }
-    return true;
-  }
-  */
 
   /// Candidate selections
   /// \param candidate is candidate
@@ -184,22 +168,22 @@ struct HfCandidateSelectorDplusToPiKPi {
   bool selectionPID(const T& pidTrackPos1Pion, const T& pidTrackNegKaon, const T& pidTrackPos2Pion)
   {
     if (!acceptPIDNotApplicable &&
-        (pidTrackPos1Pion != TrackSelectorPID::Status::PIDAccepted ||
-         pidTrackNegKaon != TrackSelectorPID::Status::PIDAccepted ||
-         pidTrackPos2Pion != TrackSelectorPID::Status::PIDAccepted)) {
+        (pidTrackPos1Pion != TrackSelectorPID::Accepted ||
+         pidTrackNegKaon != TrackSelectorPID::Accepted ||
+         pidTrackPos2Pion != TrackSelectorPID::Accepted)) {
       return false;
     }
     if (acceptPIDNotApplicable &&
-        (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
-         pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-         pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected)) {
+        (pidTrackPos1Pion == TrackSelectorPID::Rejected ||
+         pidTrackNegKaon == TrackSelectorPID::Rejected ||
+         pidTrackPos2Pion == TrackSelectorPID::Rejected)) {
       return false;
     }
 
     return true;
   }
 
-  void process(aod::HfCand3Prong const& candidates, aod::BigTracksPID const&)
+  void process(aod::HfCand3Prong const& candidates, TracksSel const&)
   {
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {
@@ -224,19 +208,9 @@ struct HfCandidateSelectorDplusToPiKPi {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoSkims, ptCand);
       }
 
-      auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-
-      /*
-      // daughter track validity selection
-      if (!daughterSelection(trackPos1) ||
-          !daughterSelection(trackNeg) ||
-          !daughterSelection(trackPos2)) {
-        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
-        continue;
-      }
-      */
+      auto trackPos1 = candidate.prong0_as<TracksSel>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<TracksSel>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<TracksSel>(); // positive daughter (negative for the antiparticles)
 
       // topological selection
       if (!selection(candidate, trackPos1, trackNeg, trackPos2)) {
@@ -252,9 +226,9 @@ struct HfCandidateSelectorDplusToPiKPi {
       }
 
       // track-level PID selection
-      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos1);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackNeg);
-      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos2);
+      int pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
+      int pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+      int pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
 
       if (!selectionPID(pidTrackPos1Pion, pidTrackNegKaon, pidTrackPos2Pion)) { // exclude D±
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);

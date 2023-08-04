@@ -53,20 +53,21 @@ struct HfCandidateSelectorD0 {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_d0_to_pi_k::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "D0 candidate selection per pT bin"};
 
-  /*
-  /// Selection on goodness of daughter tracks
-  /// \note should be applied at candidate selection
-  /// \param track is daughter track
-  /// \return true if track is good
-  template <typename T>
-  bool daughterSelection(const T& track)
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
+
+  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
+
+  void init(InitContext& initContext)
   {
-    if (track.tpcNClsFound() == 0) {
-      return false; //is it clusters findable or found - need to check
-    }
-    return true;
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+    selectorKaon = selectorPion;
   }
-  */
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
@@ -187,19 +188,8 @@ struct HfCandidateSelectorD0 {
     return true;
   }
 
-  void process(aod::HfCand2Prong const& candidates, aod::BigTracksPIDExtended const&)
+  void process(aod::HfCand2Prong const& candidates, TracksSel const&)
   {
-    TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-
-    TrackSelectorPID selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus);
-
     // looping over 2-prong candidates
     for (auto& candidate : candidates) {
 
@@ -217,15 +207,8 @@ struct HfCandidateSelectorD0 {
       }
       statusHFFlag = 1;
 
-      auto trackPos = candidate.prong0_as<aod::BigTracksPIDExtended>(); // positive daughter
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPIDExtended>(); // negative daughter
-
-      /*
-      if (!daughterSelection(trackPos) || !daughterSelection(trackNeg)) {
-        hfSelD0Candidate(statusD0, statusD0bar);
-        continue;
-      }
-      */
+      auto trackPos = candidate.prong0_as<TracksSel>(); // positive daughter
+      auto trackNeg = candidate.prong1_as<TracksSel>(); // negative daughter
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
@@ -255,33 +238,35 @@ struct HfCandidateSelectorD0 {
       int pidTrackNegPion = -1;
 
       if (usePidTpcAndTof) {
-        pidTrackPosKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackPos);
-        pidTrackPosPion = selectorPion.getStatusTrackPIDTpcAndTof(trackPos);
-        pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcAndTof(trackNeg);
-        pidTrackNegPion = selectorPion.getStatusTrackPIDTpcAndTof(trackNeg);
+        pidTrackPosKaon = selectorKaon.statusTpcAndTof(trackPos);
+        pidTrackPosPion = selectorPion.statusTpcAndTof(trackPos);
+        pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+        pidTrackNegPion = selectorPion.statusTpcAndTof(trackNeg);
       } else {
-        pidTrackPosKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos);
-        pidTrackPosPion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos);
-        pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
-        pidTrackNegPion = selectorPion.getStatusTrackPIDTpcOrTof(trackNeg);
+        pidTrackPosKaon = selectorKaon.statusTpcOrTof(trackPos);
+        pidTrackPosPion = selectorPion.statusTpcOrTof(trackPos);
+        pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+        pidTrackNegPion = selectorPion.statusTpcOrTof(trackNeg);
       }
+
+      // int pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos);
 
       int pidD0 = -1;
       int pidD0bar = -1;
 
-      if (pidTrackPosPion == TrackSelectorPID::Status::PIDAccepted &&
-          pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted) {
+      if (pidTrackPosPion == TrackSelectorPID::Accepted &&
+          pidTrackNegKaon == TrackSelectorPID::Accepted) {
         pidD0 = 1; // accept D0
-      } else if (pidTrackPosPion == TrackSelectorPID::Status::PIDRejected ||
-                 pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected) {
+      } else if (pidTrackPosPion == TrackSelectorPID::Rejected ||
+                 pidTrackNegKaon == TrackSelectorPID::Rejected) {
         pidD0 = 0; // exclude D0
       }
 
-      if (pidTrackNegPion == TrackSelectorPID::Status::PIDAccepted &&
-          pidTrackPosKaon == TrackSelectorPID::Status::PIDAccepted) {
+      if (pidTrackNegPion == TrackSelectorPID::Accepted &&
+          pidTrackPosKaon == TrackSelectorPID::Accepted) {
         pidD0bar = 1; // accept D0bar
-      } else if (pidTrackNegPion == TrackSelectorPID::Status::PIDRejected ||
-                 pidTrackPosKaon == TrackSelectorPID::Status::PIDRejected) {
+      } else if (pidTrackNegPion == TrackSelectorPID::Rejected ||
+                 pidTrackPosKaon == TrackSelectorPID::Rejected) {
         pidD0bar = 0; // exclude D0bar
       }
 

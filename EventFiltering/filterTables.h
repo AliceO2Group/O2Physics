@@ -21,8 +21,6 @@ namespace o2::aod
 {
 namespace filtering
 {
-DECLARE_SOA_COLUMN(H2, hasH2, bool); //!
-DECLARE_SOA_COLUMN(H3, hasH3, bool); //!
 DECLARE_SOA_COLUMN(He, hasHe, bool); //!
 
 // diffraction
@@ -65,15 +63,19 @@ DECLARE_SOA_COLUMN(LLL, hasLLL, bool); //! has L-L-L tripletD
 DECLARE_SOA_COLUMN(JetChHighPt, hasJetChHighPt, bool); //! high-pT charged jet
 
 // full jets
-DECLARE_SOA_COLUMN(EMCALReadout, hasEMCALinReadout, bool);       //! EMCAL readout
-DECLARE_SOA_COLUMN(JetFullHighPt, hasJetFullHighPt, bool);       //! high-pT full jet
-DECLARE_SOA_COLUMN(JetFullLowPt, hasJetFullLowPt, bool);         //! low-pT full jet
-DECLARE_SOA_COLUMN(JetNeutralHighPt, hasJetNeutralHighPt, bool); //! high-pT neutral jet
-DECLARE_SOA_COLUMN(JetNeutralLowPt, hasJetNeutralLowPt, bool);   //! low-pT neutral jet
-DECLARE_SOA_COLUMN(GammaHighPtEMCAL, hasGammaHighPtEMCAL, bool); //! Photon trigger in EMCAL, high threshold
-DECLARE_SOA_COLUMN(GammaHighPtDCAL, hasGammaHighPtDCAL, bool);   //! Photon trigger in DCAL, high threshold
-DECLARE_SOA_COLUMN(GammaLowPtEMCAL, hasGammaLowPtEMCAL, bool);   //! Photon trigger in EMCAL, low threshold
-DECLARE_SOA_COLUMN(GammaLowPtDCAL, hasGammaLowPtDCAL, bool);     //! Photon trigger in DCAL, low threshold
+DECLARE_SOA_COLUMN(EMCALReadout, hasEMCALinReadout, bool);               //! EMCAL readout
+DECLARE_SOA_COLUMN(JetFullHighPt, hasJetFullHighPt, bool);               //! high-pT full jet
+DECLARE_SOA_COLUMN(JetFullLowPt, hasJetFullLowPt, bool);                 //! low-pT full jet
+DECLARE_SOA_COLUMN(JetNeutralHighPt, hasJetNeutralHighPt, bool);         //! high-pT neutral jet
+DECLARE_SOA_COLUMN(JetNeutralLowPt, hasJetNeutralLowPt, bool);           //! low-pT neutral jet
+DECLARE_SOA_COLUMN(GammaVeryHighPtEMCAL, hasGammaVeryHighPtEMCAL, bool); //! Photon trigger in EMCAL, very high threshold
+DECLARE_SOA_COLUMN(GammaVeryHighPtDCAL, hasGammaVeryHighPtDCAL, bool);   //! Photon trigger in DCAL, very high threshold
+DECLARE_SOA_COLUMN(GammaHighPtEMCAL, hasGammaHighPtEMCAL, bool);         //! Photon trigger in EMCAL, high threshold
+DECLARE_SOA_COLUMN(GammaHighPtDCAL, hasGammaHighPtDCAL, bool);           //! Photon trigger in DCAL, high threshold
+DECLARE_SOA_COLUMN(GammaLowPtEMCAL, hasGammaLowPtEMCAL, bool);           //! Photon trigger in EMCAL, low threshold
+DECLARE_SOA_COLUMN(GammaLowPtDCAL, hasGammaLowPtDCAL, bool);             //! Photon trigger in DCAL, low threshold
+DECLARE_SOA_COLUMN(GammaVeryLowPtEMCAL, hasGammaVeryLowPtEMCAL, bool);   //! Photon trigger in EMCAL, very low threshold
+DECLARE_SOA_COLUMN(GammaVeryLowPtDCAL, hasGammaVeryLowPtDCAL, bool);     //! Photon trigger in DCAL, very low threshold
 
 // strangeness (lf)
 DECLARE_SOA_COLUMN(Omega, hasOmega, bool);                       //! at leat 1 Omega
@@ -130,7 +132,7 @@ DECLARE_SOA_COLUMN(BCend, hasBCend, uint64_t);     //! CEFP bcrange
 
 // nuclei
 DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!
-                  filtering::H2, filtering::H3, filtering::He);
+                  filtering::He);
 using NucleiFilter = NucleiFilters::iterator;
 
 // diffraction
@@ -164,7 +166,7 @@ DECLARE_SOA_TABLE(JetFilters, "AOD", "JetFilters", //!
 using JetFilter = JetFilters::iterator;
 
 DECLARE_SOA_TABLE(FullJetFilters, "AOD", "FullJetFilters", //!
-                  filtering::EMCALReadout, filtering::JetFullHighPt, filtering::JetFullLowPt, filtering::JetNeutralHighPt, filtering::JetNeutralLowPt, filtering::GammaHighPtEMCAL, filtering::GammaHighPtDCAL, filtering::GammaLowPtEMCAL, filtering::GammaLowPtDCAL);
+                  filtering::EMCALReadout, filtering::JetFullHighPt, filtering::JetFullLowPt, filtering::JetNeutralHighPt, filtering::JetNeutralLowPt, filtering::GammaVeryHighPtEMCAL, filtering::GammaVeryHighPtDCAL, filtering::GammaHighPtEMCAL, filtering::GammaHighPtDCAL, filtering::GammaLowPtEMCAL, filtering::GammaLowPtDCAL, filtering::GammaVeryLowPtEMCAL, filtering::GammaVeryLowPtDCAL);
 
 using FullJetFilter = FullJetFilters::iterator;
 
