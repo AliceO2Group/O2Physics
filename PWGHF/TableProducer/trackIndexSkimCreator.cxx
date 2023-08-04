@@ -2558,7 +2558,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
           const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
           // we build the neutral track to then build the cascade
-          auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg, {0, 0}, {0, 0}); // build the V0 track
+          auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track
 
           // now we find the DCA between the V0 and the bachelor, for the cascade
           int nCand2 = fitter.process(trackV0, trackBach);
@@ -2918,7 +2918,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
         std::array<float, 6> covVtxCasc = dfc.calcPCACovMatrixFlat();
         std::array<float, 3> pvecCascAsM = {pvecV0[0] + pvecXiDauPion[0], pvecV0[1] + pvecXiDauPion[1], pvecV0[2] + pvecXiDauPion[2]};
 
-        auto trackCasc = o2::dataformats::V0(coordVtxCasc, pvecCascAsM, covVtxCasc, trackV0, trackParVarXiDauCharged, {0, 0}, {0, 0});
+        auto trackCasc = o2::dataformats::V0(coordVtxCasc, pvecCascAsM, covVtxCasc, trackV0, trackParVarXiDauCharged);
 
         //-------------------combining cascade and pion tracks--------------------------
         // first loop over positive tracks
