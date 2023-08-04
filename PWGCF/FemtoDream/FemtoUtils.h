@@ -99,29 +99,36 @@ int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int mo
 {
   int partOrigin = 0;
   if (partType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
-
     switch (abs(motherPDG)) {
       case 3122:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughterLambda;
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterLambda;
         break;
       case 3222:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughterSigmaplus;
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaplus;
         break;
       default:
-        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughter;
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
     } // switch
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0) {
-    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughter;
+    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
-    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughter;
+    switch (abs(motherPDG)) {
+      case 3122:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterLambda;
+        break;
+      case 3222:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaplus;
+        break;
+      default:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
+    } // switch
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
-    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughter;
-
+    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor) {
-    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kDaughter;
+    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
   }
   return partOrigin;
 };

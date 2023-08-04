@@ -64,12 +64,15 @@ struct reso2initializer {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
-  Configurable<bool> cfgFatalWhenNull{"cfgFatalWhenNull", true, "Fatal when null"};
+  Configurable<bool> cfgFatalWhenNull{"cfgFatalWhenNull", true, "Fatal when null on ccdb access"};
 
   // Configurables
   Configurable<bool> ConfIsRun3{"ConfIsRun3", true, "Running on Pilot beam"}; // Choose if running on converted data or pilot beam
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> ConfFillQA{"ConfFillQA", false, "Fill QA histograms"};
+
+  // Track filter from tpcSkimsTableCreator
+  Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
@@ -116,8 +119,14 @@ struct reso2initializer {
 
   // Pre-filters for efficient process
   // Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && ((nabs(aod::pidtof::tofNSigmaPi) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaKa) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < pidnSigmaPreSelectionCut))); // TOF
+  Filter trackFilter = (trackSelection.node() == 0) || // from tpcSkimsTableCreator
+                       ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                       ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                       ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
   Filter tpcPIDFilter = nabs(aod::pidtpc::tpcNSigmaPi) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaKa) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < pidnSigmaPreSelectionCut; // TPC
-  Filter trackFilter = nabs(aod::track::eta) < cfgCutEta;                                                                                                                                                    // Eta cut
+  Filter trackEtaFilter = nabs(aod::track::eta) < cfgCutEta;                                                                                                                                                 // Eta cut
   Filter collisionFilter = nabs(aod::collision::posZ) < ConfEvtZvtx;
 
   // MC Resonance parent filter
@@ -442,9 +451,24 @@ struct reso2initializer {
       }
       return lMothersPDGs;
     };
+    auto getSiblingsIndeces = [&](auto const& theMcParticle) {
+      std::vector<int> lSiblingsIndeces{};
+      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+        LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
+        for (auto& lDaughter : lMother.template daughters_as<aod::McParticles>()) {
+          LOGF(debug, "   daughter index lDaughter: %d", lDaughter.globalIndex());
+          if (lDaughter.globalIndex() != 0 && lDaughter.globalIndex() != theMcParticle.globalIndex()) {
+            lSiblingsIndeces.push_back(lDaughter.globalIndex());
+          }
+        }
+      }
+      return lSiblingsIndeces;
+    };
     // ------
     std::vector<int> mothers = {-1, -1};
     std::vector<int> motherPDGs = {-1, -1};
+    int siblings[2] = {0, 0};
+    std::vector<int> siblings_temp = {-1, -1};
     if (track.has_mcParticle()) {
       //
       // Get the MC particle
@@ -452,14 +476,20 @@ struct reso2initializer {
       if (particle.has_mothers()) {
         mothers = getMothersIndeces(particle);
         motherPDGs = getMothersPDGCodes(particle);
+        siblings_temp = getSiblingsIndeces(particle);
       }
       while (mothers.size() > 2) {
         mothers.pop_back();
         motherPDGs.pop_back();
       }
+      if (siblings_temp.size() > 0)
+        siblings[0] = siblings_temp[0];
+      if (siblings_temp.size() > 1)
+        siblings[1] = siblings_temp[1];
       reso2mctracks(particle.pdgCode(),
                     mothers[0],
                     motherPDGs[0],
+                    siblings,
                     particle.isPhysicalPrimary(),
                     particle.producedByGenerator());
     } else {
@@ -467,6 +497,7 @@ struct reso2initializer {
       reso2mctracks(0,
                     mothers[0],
                     motherPDGs[0],
+                    siblings,
                     0,
                     0);
     }

@@ -115,7 +115,7 @@ struct JetMatching {
     int index_bjet = 0;
     int index_tjet = 0;
     for (const auto& bjet : jetsBasePerColl) {
-      LOGF(info, "jet index: %d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
+      LOGF(debug, "jet index: %d (coll %d, pt %g, phi %g) with %d tracks, %d HF candidates",
            bjet.index(), bjet.collisionId(), bjet.pt(), bjet.phi(), bjet.tracks().size(), bjet.hfcandidates().size());
       const auto hfcand = bjet.template hfcandidates_first_as<HfCandidates>();
       if (hfcand.flagMcMatchRec() & getHfFlag()) {
@@ -124,7 +124,7 @@ struct JetMatching {
         for (const auto& tjet : jetsTagPerColl) {
           const auto cand = tjet.template hfcandidates_first_as<McParticles>();
           if (cand.globalIndex() == hfCandMcId) {
-            LOGF(info, "Found HF match: %d (pt %g) <-> %d (pt %g)",
+            LOGF(debug, "Found HF match: %d (pt %g) <-> %d (pt %g)",
                  bjet.globalIndex(), bjet.pt(), tjet.globalIndex(), tjet.pt());
             baseToTagHF[index_bjet] = index_tjet;
             tagToBaseHF[index_tjet] = index_bjet;
@@ -183,11 +183,11 @@ struct JetMatching {
         jetsBaseIsMC ? ptSum = getPtSum_FirstArgIsMC(btracksMcParts, ttracksTracks) : ptSum = getPtSum_SecondArgIsMC(btracksTracks, ttracksMcParts);
 
         if (ptSum > tjet.pt() * minPtFraction) {
-          LOGF(info, "Found pt match: %d (pt %g) <-> %d (pt %g)",
+          LOGF(debug, "Found pt match: %d (pt %g) <-> %d (pt %g)",
                bjet.globalIndex(), bjet.pt(), tjet.globalIndex(), tjet.pt());
           baseToTagPt[index_bjet] = index_tjet;
         } else {
-          LOGF(info, "DID NOT find pt match: %d (pt %g) <-> %d (pt %g)",
+          LOGF(debug, "DID NOT find pt match: %d (pt %g) <-> %d (pt %g)",
                bjet.globalIndex(), bjet.pt(), tjet.globalIndex(), tjet.pt());
         }
         index_tjet++;
@@ -207,11 +207,11 @@ struct JetMatching {
         jetsBaseIsMC ? ptSum = getPtSum_SecondArgIsMC(ttracksTracks, btracksMcParts) : ptSum = getPtSum_FirstArgIsMC(ttracksMcParts, btracksTracks);
 
         if (ptSum > bjet.pt() * minPtFraction) {
-          LOGF(info, "Found pt match: %d (pt %g) <-> %d (pt %g)",
+          LOGF(debug, "Found pt match: %d (pt %g) <-> %d (pt %g)",
                tjet.globalIndex(), tjet.pt(), bjet.globalIndex(), bjet.pt());
           tagToBasePt[index_tjet] = index_bjet;
         } else {
-          LOGF(info, "DID NOT find pt match: %d (pt %g) <-> %d (pt %g)",
+          LOGF(debug, "DID NOT find pt match: %d (pt %g) <-> %d (pt %g)",
                bjet.globalIndex(), bjet.pt(), tjet.globalIndex(), tjet.pt());
         }
         index_bjet++;
@@ -239,7 +239,7 @@ struct JetMatching {
   //         }
   //       }
   //       if (ptSum > tjet.pt() * minPtFraction) {
-  //         LOGF(info, "Found pt match: %d (pt %g) <-> %d (pt %g)",
+  //         LOGF(debug, "Found pt match: %d (pt %g) <-> %d (pt %g)",
   //              bjet.globalIndex(), bjet.pt(), tjet.globalIndex(), tjet.pt());
   //         baseToTagPt[index_bjet] = index_tjet;
   //       }
@@ -263,7 +263,7 @@ struct JetMatching {
   //         }
   //       }
   //       if (ptSum > bjet.pt() * minPtFraction) {
-  //         LOGF(info, "Found pt match: %d (pt %g) <-> %d (pt %g)",
+  //         LOGF(debug, "Found pt match: %d (pt %g) <-> %d (pt %g)",
   //              tjet.globalIndex(), tjet.pt(), bjet.globalIndex(), bjet.pt());
   //         tagToBasePt[index_tjet] = index_bjet;
   //       }
@@ -331,7 +331,7 @@ struct JetMatching {
         hfjetidTemp = jetsBasePerColl.iteratorAt(hfjetidTemp).globalIndex();
         hfjetidTagToBase[jet.globalIndex()].push_back(hfjetidTemp);
       }
-      LOGF(info, "registering matches for tag jet %d (%d): geo -> %d (%d), pT -> %d (%d), HF -> %d",
+      LOGF(debug, "registering matches for tag jet %d (%d): geo -> %d (%d), pT -> %d (%d), HF -> %d",
            jet.index(), jet.globalIndex(), geojetidTemp, tagToBaseGeo[jet.index()], ptjetidTemp, tagToBasePt[jet.index()], tagToBaseHF[jet.index()]);
     }
   }
@@ -366,7 +366,7 @@ struct JetMatching {
         hfjetidTemp = jetsTagPerColl.iteratorAt(hfjetidTemp).globalIndex();
         hfjetidBaseToTag[jet.globalIndex()].push_back(hfjetidTemp);
       }
-      LOGF(info, "registering matches for base jet %d (%d): geo -> %d (%d), pT -> %d (%d), HF -> %d",
+      LOGF(debug, "registering matches for base jet %d (%d): geo -> %d (%d), pT -> %d (%d), HF -> %d",
            jet.index(), jet.globalIndex(), geojetidTemp, baseToTagGeo[jet.index()], ptjetidTemp, baseToTagPt[jet.index()], baseToTagHF[jet.index()]);
     }
   }
@@ -405,7 +405,7 @@ struct JetMatching {
         std::vector<int> baseToTagGeo(jetsBasePerColl.size(), -1), baseToTagHF(jetsBasePerColl.size(), -1), baseToTagPt(jetsBasePerColl.size(), -1);
         std::vector<int> tagToBaseGeo(jetsTagPerColl.size(), -1), tagToBaseHF(jetsTagPerColl.size(), -1), tagToBasePt(jetsTagPerColl.size(), -1);
 
-        LOGF(info, "performing geometric matching for mcCollision %d and collision %d (%d / %d jets)",
+        LOGF(debug, "performing geometric matching for mcCollision %d and collision %d (%d / %d jets)",
              mcCollision.globalIndex(), collision.globalIndex(), jetsBasePerColl.size(), jetsTagPerColl.size());
 
         doAllMatching(jetsBasePerColl, jetsTagPerColl, baseToTagGeo, baseToTagHF, baseToTagPt, tagToBaseGeo, tagToBaseHF, tagToBasePt);

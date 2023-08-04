@@ -75,7 +75,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandDsLite, "AOD", "HFCANDDsLite",
+DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
                   full::PtProng0,
                   full::PtProng1,
                   full::PtProng2,
@@ -115,7 +115,7 @@ DECLARE_SOA_TABLE(HfCandDsLite, "AOD", "HFCANDDsLite",
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec)
 
-DECLARE_SOA_TABLE(HfCandDsFull, "AOD", "HFCANDDsFull",
+DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -178,7 +178,7 @@ DECLARE_SOA_TABLE(HfCandDsFull, "AOD", "HFCANDDsFull",
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec);
 
-DECLARE_SOA_TABLE(HfCandDsFullEvents, "AOD", "HFCANDDsFullE",
+DECLARE_SOA_TABLE(HfCandDsFullEvs, "AOD", "HFCANDDSFULLEV",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -187,7 +187,7 @@ DECLARE_SOA_TABLE(HfCandDsFullEvents, "AOD", "HFCANDDsFullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandDsFullParticles, "AOD", "HFCANDDsFullP",
+DECLARE_SOA_TABLE(HfCandDsFullPs, "AOD", "HFCANDDSFULLP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -199,10 +199,10 @@ DECLARE_SOA_TABLE(HfCandDsFullParticles, "AOD", "HFCANDDsFullP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorDsToKKPi {
-  Produces<o2::aod::HfCandDsFull> rowCandidateFull;
-  Produces<o2::aod::HfCandDsFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandDsFullParticles> rowCandidateFullParticles;
-  Produces<o2::aod::HfCandDsLite> rowCandidateLite;
+  Produces<o2::aod::HfCandDsFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandDsFullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandDsFullPs> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandDsLites> rowCandidateLite;
 
   Configurable<int> decayChannel{"decayChannel", 1, "Switch between decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 1, "Selection flag for Ds"};
@@ -217,6 +217,7 @@ struct HfTreeCreatorDsToKKPi {
   using candDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using candDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using candDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
   Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanGen == decayChannel;
@@ -271,9 +272,9 @@ struct HfTreeCreatorDsToKKPi {
       absCos3PiKDs = std::abs(cos3PiKDsToPiKK(candidate));
     }
 
-    auto prong0 = candidate.template prong0_as<aod::BigTracksPID>();
-    auto prong1 = candidate.template prong1_as<aod::BigTracksPID>();
-    auto prong2 = candidate.template prong2_as<aod::BigTracksPID>();
+    auto prong0 = candidate.template prong0_as<TracksWPid>();
+    auto prong1 = candidate.template prong1_as<TracksWPid>();
+    auto prong2 = candidate.template prong2_as<TracksWPid>();
 
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -383,7 +384,7 @@ struct HfTreeCreatorDsToKKPi {
 
   void processData(aod::Collisions const& collisions,
                    candDsData const& candidates,
-                   aod::BigTracksPID const&)
+                   TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -425,7 +426,7 @@ struct HfTreeCreatorDsToKKPi {
                  aod::McCollisions const&,
                  candDsMcReco const& candidates,
                  candDsMcGen const& particlesMC,
-                 aod::BigTracksPID const&)
+                 TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());

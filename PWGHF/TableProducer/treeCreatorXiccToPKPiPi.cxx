@@ -82,7 +82,7 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
 // put the arguments into the table
-DECLARE_SOA_TABLE(HfCandXiccFull, "AOD", "HFCANDXiccFull",
+DECLARE_SOA_TABLE(HfCandXiccFulls, "AOD", "HFCANDXICCFULL",
                   full::RSecondaryVertex,
                   full::DecayLength,
                   full::DecayLengthXY,
@@ -136,7 +136,7 @@ DECLARE_SOA_TABLE(HfCandXiccFull, "AOD", "HFCANDXiccFull",
                   full::MCflag,
                   full::OriginMcRec);
 
-DECLARE_SOA_TABLE(HfCandXiccFullEvents, "AOD", "HFCANDXiccFullE",
+DECLARE_SOA_TABLE(HfCandXiccFullEs, "AOD", "HFCANDXICCFULLE",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -145,7 +145,7 @@ DECLARE_SOA_TABLE(HfCandXiccFullEvents, "AOD", "HFCANDXiccFullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandXiccFullParticles, "AOD", "HFCANDXiccFullP",
+DECLARE_SOA_TABLE(HfCandXiccFullPs, "AOD", "HFCANDXICCFULLP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -158,9 +158,11 @@ DECLARE_SOA_TABLE(HfCandXiccFullParticles, "AOD", "HFCANDXiccFullP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorXiccToPKPiPi {
-  Produces<o2::aod::HfCandXiccFull> rowCandidateFull;
-  Produces<o2::aod::HfCandXiccFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandXiccFullParticles> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandXiccFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandXiccFullEs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandXiccFullPs> rowCandidateFullParticles;
+
+  using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
   void init(InitContext const&)
   {
@@ -170,7 +172,7 @@ struct HfTreeCreatorXiccToPKPiPi {
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandXicc, aod::HfCandXiccMcRec, aod::HfSelXiccToPKPiPi> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particles,
-               aod::BigTracksPID const& tracks,
+               TracksWPid const& tracks,
                aod::HfCand3Prong const&)
   {
 
@@ -217,7 +219,7 @@ struct HfTreeCreatorXiccToPKPiPi {
             candidate.pyProng1(),
             candidate.pzProng1(),
             candidate.chi2PCA(),
-            candidate.prong1_as<aod::BigTracksPID>().tofNSigmaPi(),
+            candidate.prong1_as<TracksWPid>().tofNSigmaPi(),
             candidate.impactParameter0(),
             candidate.impactParameter1(),
             candidate.errorImpactParameter0(),
@@ -234,11 +236,11 @@ struct HfTreeCreatorXiccToPKPiPi {
             xicCand.decayLength(),
             xicCand.decayLengthXY(),
             xicCand.decayLengthXYNormalised(),
-            xicCand.prong0_as<aod::BigTracksPID>().tofNSigmaPr(),
-            xicCand.prong0_as<aod::BigTracksPID>().tofNSigmaPi(),
-            xicCand.prong1_as<aod::BigTracksPID>().tofNSigmaKa(),
-            xicCand.prong2_as<aod::BigTracksPID>().tofNSigmaPr(),
-            xicCand.prong2_as<aod::BigTracksPID>().tofNSigmaPi(),
+            xicCand.prong0_as<TracksWPid>().tofNSigmaPr(),
+            xicCand.prong0_as<TracksWPid>().tofNSigmaPi(),
+            xicCand.prong1_as<TracksWPid>().tofNSigmaKa(),
+            xicCand.prong2_as<TracksWPid>().tofNSigmaPr(),
+            xicCand.prong2_as<TracksWPid>().tofNSigmaPi(),
             1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),

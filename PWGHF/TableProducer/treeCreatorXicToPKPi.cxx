@@ -83,7 +83,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
+DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::CollisionId,
                   collision::PosX,
                   collision::PosY,
@@ -157,7 +157,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFull, "AOD", "HFCAND3PFull",
                   full::IsCandidateSwapped,
                   full::CandidateId);
 
-DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
+DECLARE_SOA_TABLE(HfCandXicFullEvs, "AOD", "HFCANDXICFULLEV",
                   full::CollisionId,
                   collision::BCId,
                   collision::NumContrib,
@@ -167,7 +167,7 @@ DECLARE_SOA_TABLE(HfCand3ProngFullEvents, "AOD", "HFCAND3PFullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
+DECLARE_SOA_TABLE(HfCandXicFullPs, "AOD", "HFCANDXICFULLP",
                   full::CollisionId,
                   collision::BCId,
                   full::Pt,
@@ -182,11 +182,13 @@ DECLARE_SOA_TABLE(HfCand3ProngFullParticles, "AOD", "HFCAND3PFullP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorXicToPKPi {
-  Produces<o2::aod::HfCand3ProngFull> rowCandidateFull;
-  Produces<o2::aod::HfCand3ProngFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCand3ProngFullParticles> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandXicFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandXicFullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandXicFullPs> rowCandidateFullParticles;
 
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
+
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
 
   void init(InitContext const&)
   {
@@ -196,9 +198,8 @@ struct HfTreeCreatorXicToPKPi {
                  aod::McCollisions const& mccollisions,
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelXicToPKPi> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
-                 aod::BigTracksPID const& tracks)
+                 TracksWPid const& tracks)
   {
-
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto& collision : collisions) {
@@ -216,9 +217,9 @@ struct HfTreeCreatorXicToPKPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (auto& candidate : candidates) {
-      auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,
@@ -328,7 +329,7 @@ struct HfTreeCreatorXicToPKPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi> const& candidates,
-                   aod::BigTracksPID const& tracks)
+                   TracksWPid const& tracks)
   {
 
     // Filling event properties
@@ -348,9 +349,9 @@ struct HfTreeCreatorXicToPKPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (auto& candidate : candidates) {
-      auto trackPos1 = candidate.prong0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,

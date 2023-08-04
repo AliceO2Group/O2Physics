@@ -81,7 +81,7 @@ struct HfCandidateCreatorChic {
                soa::Filtered<soa::Join<
                  aod::HfCand2Prong,
                  aod::HfSelJpsi>> const& jpsiCands,
-               aod::BigTracks const& tracks,
+               aod::TracksWCov const& tracks,
                aod::ECALs const& ecals)
   {
     // 2-prong vertex fitter (to rebuild Jpsi vertex)
@@ -114,8 +114,8 @@ struct HfCandidateCreatorChic {
       // create Jpsi track to pass to DCA fitter; use cand table + rebuild vertex
       const std::array<float, 3> vertexJpsi = {jpsiCand.xSecondaryVertex(), jpsiCand.ySecondaryVertex(), jpsiCand.zSecondaryVertex()};
       array<float, 3> pvecJpsi = {jpsiCand.px(), jpsiCand.py(), jpsiCand.pz()};
-      auto prong0 = jpsiCand.prong0_as<aod::BigTracks>();
-      auto prong1 = jpsiCand.prong1_as<aod::BigTracks>();
+      auto prong0 = jpsiCand.prong0_as<aod::TracksWCov>();
+      auto prong1 = jpsiCand.prong1_as<aod::TracksWCov>();
       auto prong0TrackParCov = getTrackParCov(prong0);
       auto prong1TrackParCov = getTrackParCov(prong1);
 
@@ -128,7 +128,7 @@ struct HfCandidateCreatorChic {
       prong1TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), bz);
       const std::array<float, 6> covJpsi = df2.calcPCACovMatrixFlat();
       // define the Jpsi track
-      auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov, {0, 0}, {0, 0}); // FIXME: also needs covxyz???
+      auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov); // FIXME: also needs covxyz???
 
       // -----------------------------------------------------------------
       // loop over gamma candidates
@@ -215,7 +215,7 @@ struct HfCandidateCreatorChicMc {
 
   void process(aod::HfCandChic const& candidates,
                aod::HfCand2Prong const&,
-               aod::BigTracksMC const& tracks,
+               aod::TracksWMc const& tracks,
                aod::McParticles const& particlesMC,
                aod::ECALs const& ecals)
   {
@@ -231,8 +231,8 @@ struct HfCandidateCreatorChicMc {
       origin = 0;
       channel = 0;
       auto jpsiTrack = candidate.prong0();
-      auto daughterPosJpsi = jpsiTrack.prong0_as<aod::BigTracksMC>();
-      auto daughterNegJpsi = jpsiTrack.prong1_as<aod::BigTracksMC>();
+      auto daughterPosJpsi = jpsiTrack.prong0_as<aod::TracksWMc>();
+      auto daughterNegJpsi = jpsiTrack.prong1_as<aod::TracksWMc>();
       auto arrayJpsiDaughters = array{daughterPosJpsi, daughterNegJpsi};
 
       // chi_c → J/ψ gamma

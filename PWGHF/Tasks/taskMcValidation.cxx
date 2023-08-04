@@ -311,7 +311,7 @@ struct HfTaskMcValidationRec {
   using HfCand2ProngWithMCRec = soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec>;
   using HfCand3ProngWithMCRec = soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>;
   using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels>;
-  using TracksWithSel = soa::Join<aod::BigTracksMC, aod::TrackSelection, aod::TrackCompColls>;
+  using TracksWithSel = soa::Join<aod::TracksWMc, aod::TracksExtra, aod::TrackSelection, aod::TrackCompColls>;
   using McCollisionWithHFSignalInfo = soa::Join<aod::McCollisions, aod::CollWithHFSignal>;
 
   Partition<TracksWithSel> tracksFilteredGlobalTrackWoDCA = requireGlobalTrackWoDCAInFilter();

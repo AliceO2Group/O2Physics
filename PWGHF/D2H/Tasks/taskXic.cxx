@@ -46,6 +46,9 @@ struct HfTaskXic {
   float etaMaxAcceptance = 0.8;
   float ptMinAcceptance = 0.1;
 
+  using TracksWPid = soa::Join<aod::Tracks,
+                               aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> selectedMCXicCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
@@ -181,7 +184,9 @@ struct HfTaskXic {
     return std::abs(etaProng) <= etaMaxAcceptance && ptProng >= ptMinAcceptance;
   }
 
-  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA> const& tracks, soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& candidates, aod::BigTracksPID const&)
+  void process(aod::Collision const& collision,
+               soa::Join<TracksWPid, aod::TracksDCA> const& tracks,
+               soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& candidates)
   {
     int nTracks = 0;
 
@@ -241,9 +246,9 @@ struct HfTaskXic {
       registry.fill(HIST("Data/hChi2PCA"), candidate.chi2PCA(), ptCandidate);
 
       // PID histos
-      const auto& trackProng0 = candidate.prong0_as<aod::BigTracksPID>(); // bachelor track
-      const auto& trackProng1 = candidate.prong1_as<aod::BigTracksPID>(); // bachelor track
-      const auto& trackProng2 = candidate.prong2_as<aod::BigTracksPID>(); // bachelor track
+      const auto& trackProng0 = candidate.prong0_as<TracksWPid>(); // bachelor track
+      const auto& trackProng1 = candidate.prong1_as<TracksWPid>(); // bachelor track
+      const auto& trackProng2 = candidate.prong2_as<TracksWPid>(); // bachelor track
 
       auto momentumProng0 = trackProng0.p();
       auto momentumProng1 = trackProng1.p();
@@ -278,7 +283,7 @@ struct HfTaskXic {
   }
   // Fill MC histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::BigTracksMC const& /*tracks*/)
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC)
   {
 
     // MC rec.

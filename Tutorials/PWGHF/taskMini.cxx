@@ -425,9 +425,19 @@ struct HfCandidateSelectorD0 {
   Configurable<double> cpaMin{"cpaMin", 0.98, "Min. cosine of pointing angle"};
   Configurable<double> massWindow{"massWindow", 0.4, "Half-width of the invariant-mass window"};
 
+  TrackSelectorPi selectorPion;
+  TrackSelectorKa selectorKaon;
+
   using TracksWithPid = soa::Join<Tracks,
-                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+                                  aod::pidTPCFullPi, aod::pidTPCFullKa,
+                                  aod::pidTOFFullPi, aod::pidTOFFullKa>;
+
+  void init(InitContext const&)
+  {
+    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpc, nSigmaTpc);
+    selectorKaon = selectorPion;
+  }
 
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
@@ -471,13 +481,6 @@ struct HfCandidateSelectorD0 {
   void process(aod::HfCandProng2 const& candidates,
                TracksWithPid const&)
   {
-    TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpc, nSigmaTpc);
-
-    TrackSelectorPID selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus);
-
     // looping over 2-prong candidates
     for (auto const& candidate : candidates) {
 
@@ -505,31 +508,31 @@ struct HfCandidateSelectorD0 {
       }
 
       // track-level PID selection
-      int pidTrackPosKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackPos);
-      int pidTrackPosPion = selectorPion.getStatusTrackPIDTpcOrTof(trackPos);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDTpcOrTof(trackNeg);
-      int pidTrackNegPion = selectorPion.getStatusTrackPIDTpcOrTof(trackNeg);
+      int pidTrackPosKaon = selectorKaon.statusTpcOrTof(trackPos);
+      int pidTrackPosPion = selectorPion.statusTpcOrTof(trackPos);
+      int pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+      int pidTrackNegPion = selectorPion.statusTpcOrTof(trackNeg);
 
       int pidD0 = -1;
       int pidD0bar = -1;
 
-      if (pidTrackPosPion == TrackSelectorPID::Status::PIDAccepted &&
-          pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted) {
+      if (pidTrackPosPion == TrackSelectorPID::Accepted &&
+          pidTrackNegKaon == TrackSelectorPID::Accepted) {
         pidD0 = 1; // accept D0
-      } else if (pidTrackPosPion == TrackSelectorPID::Status::PIDRejected ||
-                 pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-                 pidTrackNegPion == TrackSelectorPID::Status::PIDAccepted ||
-                 pidTrackPosKaon == TrackSelectorPID::Status::PIDAccepted) {
+      } else if (pidTrackPosPion == TrackSelectorPID::Rejected ||
+                 pidTrackNegKaon == TrackSelectorPID::Rejected ||
+                 pidTrackNegPion == TrackSelectorPID::Accepted ||
+                 pidTrackPosKaon == TrackSelectorPID::Accepted) {
         pidD0 = 0; // exclude D0
       }
 
-      if (pidTrackNegPion == TrackSelectorPID::Status::PIDAccepted &&
-          pidTrackPosKaon == TrackSelectorPID::Status::PIDAccepted) {
+      if (pidTrackNegPion == TrackSelectorPID::Accepted &&
+          pidTrackPosKaon == TrackSelectorPID::Accepted) {
         pidD0bar = 1; // accept D0bar
-      } else if (pidTrackPosPion == TrackSelectorPID::Status::PIDAccepted ||
-                 pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted ||
-                 pidTrackNegPion == TrackSelectorPID::Status::PIDRejected ||
-                 pidTrackPosKaon == TrackSelectorPID::Status::PIDRejected) {
+      } else if (pidTrackPosPion == TrackSelectorPID::Accepted ||
+                 pidTrackNegKaon == TrackSelectorPID::Accepted ||
+                 pidTrackNegPion == TrackSelectorPID::Rejected ||
+                 pidTrackPosKaon == TrackSelectorPID::Rejected) {
         pidD0bar = 0; // exclude D0bar
       }
 

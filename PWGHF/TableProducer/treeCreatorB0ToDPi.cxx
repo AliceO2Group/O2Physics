@@ -62,7 +62,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandB0Lite, "AOD", "HFCANDB0Lite",
+DECLARE_SOA_TABLE(HfCandB0Lites, "AOD", "HFCANDB0LITE",
                   hf_cand::Chi2PCA,
                   full::DecayLength,
                   full::DecayLengthXY,
@@ -86,7 +86,7 @@ DECLARE_SOA_TABLE(HfCandB0Lite, "AOD", "HFCANDB0Lite",
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec);
 
-DECLARE_SOA_TABLE(HfCandB0Full, "AOD", "HFCANDB0Full",
+DECLARE_SOA_TABLE(HfCandB0Fulls, "AOD", "HFCANDB0FULL",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -136,7 +136,7 @@ DECLARE_SOA_TABLE(HfCandB0Full, "AOD", "HFCANDB0Full",
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec);
 
-DECLARE_SOA_TABLE(HfCandB0FullEvents, "AOD", "HFCANDB0FullE",
+DECLARE_SOA_TABLE(HfCandB0FullEvs, "AOD", "HFCANDB0FULLEV",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -145,7 +145,7 @@ DECLARE_SOA_TABLE(HfCandB0FullEvents, "AOD", "HFCANDB0FullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandB0FullParticles, "AOD", "HFCANDB0FullP",
+DECLARE_SOA_TABLE(HfCandB0FullPs, "AOD", "HFCANDB0FULLP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -157,10 +157,10 @@ DECLARE_SOA_TABLE(HfCandB0FullParticles, "AOD", "HFCANDB0FullP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorB0ToDPi {
-  Produces<o2::aod::HfCandB0Full> rowCandidateFull;
-  Produces<o2::aod::HfCandB0FullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandB0FullParticles> rowCandidateFullParticles;
-  Produces<o2::aod::HfCandB0Lite> rowCandidateLite;
+  Produces<o2::aod::HfCandB0Fulls> rowCandidateFull;
+  Produces<o2::aod::HfCandB0FullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandB0FullPs> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandB0Lites> rowCandidateLite;
 
   Configurable<int> selectionFlagB0{"selectionB0", 1, "Selection Flag for B0"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
@@ -172,6 +172,7 @@ struct HfTreeCreatorB0ToDPi {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandB0, aod::HfCandB0McRec, aod::HfSelB0ToDPi>>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0;
 
@@ -283,7 +284,7 @@ struct HfTreeCreatorB0ToDPi {
 
   void processData(aod::Collisions const& collisions,
                    soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi>> const& candidates,
-                   aod::BigTracksPID const&)
+                   TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -303,7 +304,7 @@ struct HfTreeCreatorB0ToDPi {
           continue;
         }
       }
-      auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+      auto prong1 = candidate.prong1_as<TracksWPid>();
       fillCandidateTable(candidate, prong1);
     }
   }
@@ -314,7 +315,7 @@ struct HfTreeCreatorB0ToDPi {
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandB0McGen> const& particles,
-                 aod::BigTracksPID const&)
+                 TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -329,7 +330,7 @@ struct HfTreeCreatorB0ToDPi {
         rowCandidateLite.reserve(recSig.size());
       }
       for (const auto& candidate : recSig) {
-        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong1_as<TracksWPid>();
         fillCandidateTable<true>(candidate, prong1);
       }
     } else if (fillOnlyBackground) {
@@ -342,7 +343,7 @@ struct HfTreeCreatorB0ToDPi {
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
-        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong1_as<TracksWPid>();
         fillCandidateTable<true>(candidate, prong1);
       }
     } else {
@@ -351,7 +352,7 @@ struct HfTreeCreatorB0ToDPi {
         rowCandidateLite.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        auto prong1 = candidate.prong1_as<aod::BigTracksPID>();
+        auto prong1 = candidate.prong1_as<TracksWPid>();
         fillCandidateTable<true>(candidate, prong1);
       }
     }

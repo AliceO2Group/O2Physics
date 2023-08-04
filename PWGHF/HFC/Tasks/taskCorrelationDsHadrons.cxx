@@ -55,7 +55,7 @@ const TString stringMCParticles = "MC gen - D,Hadron particles;";
 const TString stringMCReco = "MC reco - D,Hadron candidates ";
 
 // histogram axes definition
-AxisSpec axisDetlaEta = {200, -4., 4., ""};
+AxisSpec axisDetlaEta = {100, -2., 2., ""};
 AxisSpec axisDetlaPhi = {64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf, ""};
 AxisSpec axisPtD = {10, 0., 10., ""};
 AxisSpec axisPtHadron = {11, 0., 11., ""};
@@ -144,6 +144,8 @@ struct HfTaskCorrelationDsHadrons {
     registry.get<THnSparse>(HIST("hCorrel2DVsPtBkgMcRec"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGen"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGen"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGenPromptDivision"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGenPromptDivision"))->Sumw2();
   }
 
   void processData(DsHadronPairFull const& pairEntries)

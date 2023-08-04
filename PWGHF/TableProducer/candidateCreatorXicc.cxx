@@ -71,7 +71,7 @@ struct HfCandidateCreatorXicc {
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& xicCands,
-               aod::BigTracks const& tracks)
+               aod::TracksWCov const& tracks)
   {
     // 3-prong vertex fitter to rebuild the Xic vertex
     o2::vertexing::DCAFitterN<3> df3;
@@ -105,9 +105,9 @@ struct HfCandidateCreatorXicc {
       if (xicCand.isSelXicToPiKP() >= selectionFlagXic) {
         hMassXic->Fill(invMassXicToPiKP(xicCand), xicCand.pt());
       }
-      auto track0 = xicCand.prong0_as<aod::BigTracks>();
-      auto track1 = xicCand.prong1_as<aod::BigTracks>();
-      auto track2 = xicCand.prong2_as<aod::BigTracks>();
+      auto track0 = xicCand.prong0_as<aod::TracksWCov>();
+      auto track1 = xicCand.prong1_as<aod::TracksWCov>();
+      auto track2 = xicCand.prong2_as<aod::TracksWCov>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
@@ -124,10 +124,8 @@ struct HfCandidateCreatorXicc {
 
       array<float, 3> pvecpK = {track0.px() + track1.px(), track0.py() + track1.py(), track0.pz() + track1.pz()};
       array<float, 3> pvecxic = {pvecpK[0] + track2.px(), pvecpK[1] + track2.py(), pvecpK[2] + track2.pz()};
-      auto trackpK = o2::dataformats::V0(df3.getPCACandidatePos(), pvecpK, df3.calcPCACovMatrixFlat(),
-                                         trackParVar0, trackParVar1, {0, 0}, {0, 0});
-      auto trackxic = o2::dataformats::V0(df3.getPCACandidatePos(), pvecxic, df3.calcPCACovMatrixFlat(),
-                                          trackpK, trackParVar2, {0, 0}, {0, 0});
+      auto trackpK = o2::dataformats::V0(df3.getPCACandidatePos(), pvecpK, df3.calcPCACovMatrixFlat(), trackParVar0, trackParVar1);
+      auto trackxic = o2::dataformats::V0(df3.getPCACandidatePos(), pvecxic, df3.calcPCACovMatrixFlat(), trackpK, trackParVar2);
 
       int index0Xic = track0.globalIndex();
       int index1Xic = track1.globalIndex();
@@ -206,7 +204,7 @@ struct HfCandidateCreatorXiccMc {
 
   void process(aod::HfCandXicc const& candidates,
                aod::HfCand3Prong const&,
-               aod::BigTracksMC const& tracks,
+               aod::TracksWMc const& tracks,
                aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
@@ -222,13 +220,13 @@ struct HfCandidateCreatorXiccMc {
       origin = 0;
       debug = 0;
       auto xicCand = candidate.prong0();
-      auto arrayDaughters = array{xicCand.prong0_as<aod::BigTracksMC>(),
-                                  xicCand.prong1_as<aod::BigTracksMC>(),
-                                  xicCand.prong2_as<aod::BigTracksMC>(),
-                                  candidate.prong1_as<aod::BigTracksMC>()};
-      auto arrayDaughtersXic = array{xicCand.prong0_as<aod::BigTracksMC>(),
-                                     xicCand.prong1_as<aod::BigTracksMC>(),
-                                     xicCand.prong2_as<aod::BigTracksMC>()};
+      auto arrayDaughters = array{xicCand.prong0_as<aod::TracksWMc>(),
+                                  xicCand.prong1_as<aod::TracksWMc>(),
+                                  xicCand.prong2_as<aod::TracksWMc>(),
+                                  candidate.prong1_as<aod::TracksWMc>()};
+      auto arrayDaughtersXic = array{xicCand.prong0_as<aod::TracksWMc>(),
+                                     xicCand.prong1_as<aod::TracksWMc>(),
+                                     xicCand.prong2_as<aod::TracksWMc>()};
       // Ξcc±± → p± K∓ π± π±
       // Printf("Checking Ξcc±± → p± K∓ π± π±");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCCPlusPlus, array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
