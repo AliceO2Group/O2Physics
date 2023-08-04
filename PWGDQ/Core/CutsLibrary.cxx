@@ -481,13 +481,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRejLoose_Corr"));
     return cut;
   }
-  
+
   if (!nameStr.compare("Dalitz_WithTOF_SPDfirst")) {
     cut->AddCut(GetAnalysisCut("dalitzStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
     cut->AddCut(GetAnalysisCut("SPDfirst"));
-    
+
     AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
     cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPIDPrKaPiRejLoose"));
 
@@ -506,7 +506,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
     cut->AddCut(GetAnalysisCut("SPDfirst"));
-    
+
     AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
     cut_tpc_nSigma->AddCut(GetAnalysisCut("electronPIDPrKaPiRejLoose_Corr"));
 
@@ -518,7 +518,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut_pid_OR->AddCut(cut_tof_nSigma);
     cut->AddCut(cut_pid_OR);
     return cut;
-  }  
+  }
 
   for (int i = 1; i <= 8; i++) {
     if (!nameStr.compare(Form("dalitzSelected%d", i))) {
@@ -2328,7 +2328,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.4, 1e+10, false);
     return cut;
   }
-  
+
   if (!nameStr.compare("electronPID_TOFnsigma_Corr")) {
     cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -3., 3., false, VarManager::kPin, 0.0, 1e+10, false);
     cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);

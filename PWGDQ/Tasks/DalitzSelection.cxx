@@ -279,7 +279,7 @@ struct dalitzPairing {
           VarManager::ResetValues(0, VarManager::kNRunWiseVariables);
 
           // We setup the magnetic field, because the conversion rejection cut might depend on it
-          float magField = 0.;          
+          float magField = 0.;
           if (fUseRemoteField.value) {
             grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
             if (grpmag != nullptr) {
@@ -291,7 +291,8 @@ struct dalitzPairing {
             magField = fConfigMagField.value;
           }
           LOGF(info, "setting mag field to %f", magField);
-          if (magField == 0.) LOGF(fatal, "magnetic field not set correctly, please check");
+          if (magField == 0.)
+            LOGF(fatal, "magnetic field not set correctly, please check");
           VarManager::fgValues[VarManager::kMagField] = magField;
 
           if (fConfigComputeTPCpostCalib) {
