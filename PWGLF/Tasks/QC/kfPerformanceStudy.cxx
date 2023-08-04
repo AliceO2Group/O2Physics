@@ -120,7 +120,7 @@ struct kfPerformanceStudy {
       histos.fill(HIST("hPtCorrelation"), pt, ptKF);
       histos.fill(HIST("h3dMassLambda"), pt, massLambda, massLambdaKF); // <- implicit pT choice, beware
       histos.fill(HIST("h3dDCAxy"), pt, dcaXY, dcaXYKF);                // <- implicit pT choice, beware
-      histos.fill(HIST("h3dPointingAngle"), pt, pointingAngle, pointingAngleKF);                // <- implicit pT choice, beware
+      histos.fill(HIST("h3dPointingAngle"), pt, pointingAngle, pointingAngleKF); // <- implicit pT choice, beware
       if (charge < 0) {
         histos.fill(HIST("hMassXiMinus"), pt, massXi);
         histos.fill(HIST("hMassOmegaMinus"), pt, massOmega);
