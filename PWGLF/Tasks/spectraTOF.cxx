@@ -211,12 +211,12 @@ struct tofSpectra {
     h->GetXaxis()->SetBinLabel(2, "EvTimeDefined");
     h->GetXaxis()->SetBinLabel(3, "EvTimeTOF");
     h->GetXaxis()->SetBinLabel(4, "EvTimeT0AC");
-    h->GetXaxis()->SetBinLabel(5, "EvTimeTOFT0AV");
+    h->GetXaxis()->SetBinLabel(5, "EvTimeTOFT0AC");
     h->GetXaxis()->SetBinLabel(6, "AnyEvTime (selected)");
     h->GetXaxis()->SetBinLabel(7, "EvTimeDefined (selected)");
     h->GetXaxis()->SetBinLabel(8, "EvTimeTOF (selected)");
     h->GetXaxis()->SetBinLabel(9, "EvTimeT0AC (selected)");
-    h->GetXaxis()->SetBinLabel(10, "EvTimeTOFT0AV (selected)");
+    h->GetXaxis()->SetBinLabel(10, "EvTimeTOFT0AC (selected)");
 
     histos.add("Centrality/FV0A", "FV0A", HistType::kTH1D, {{binsPercentile, "Centrality FV0A"}});
     histos.add("Centrality/FT0M", "FT0M", HistType::kTH1D, {{binsPercentile, "Centrality FT0M"}});
