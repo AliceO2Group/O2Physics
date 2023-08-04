@@ -182,6 +182,12 @@ struct QaEfficiency {
                                                                     "MC/el/neg_pdg/pt/prm/its_tpc_tof", "MC/mu/neg_pdg/pt/prm/its_tpc_tof", "MC/pi/neg_pdg/pt/prm/its_tpc_tof",
                                                                     "MC/ka/neg_pdg/pt/prm/its_tpc_tof", "MC/pr/neg_pdg/pt/prm/its_tpc_tof", "MC/de/neg_pdg/pt/prm/its_tpc_tof",
                                                                     "MC/tr/neg_pdg/pt/prm/its_tpc_tof", "MC/he/neg_pdg/pt/prm/its_tpc_tof", "MC/al/neg_pdg/pt/prm/its_tpc_tof"};
+  static constexpr std::string_view hPtTrkItsTpcTofPrm[nHistograms] = {"MC/el/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/mu/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/pi/pos_pdg/pt/prm/trk/its_tpc_tof",
+                                                                       "MC/ka/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/pr/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/de/pos_pdg/pt/prm/trk/its_tpc_tof",
+                                                                       "MC/tr/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/he/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/al/pos_pdg/pt/prm/trk/its_tpc_tof",
+                                                                       "MC/el/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/mu/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/pi/neg_pdg/pt/prm/trk/its_tpc_tof",
+                                                                       "MC/ka/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/pr/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/de/neg_pdg/pt/prm/trk/its_tpc_tof",
+                                                                       "MC/tr/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/he/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/al/neg_pdg/pt/prm/trk/its_tpc_tof"};
   static constexpr std::string_view hPtGeneratedPrm[nHistograms] = {"MC/el/pos_pdg/pt/prm/generated", "MC/mu/pos_pdg/pt/prm/generated", "MC/pi/pos_pdg/pt/prm/generated",
                                                                     "MC/ka/pos_pdg/pt/prm/generated", "MC/pr/pos_pdg/pt/prm/generated", "MC/de/pos_pdg/pt/prm/generated",
                                                                     "MC/tr/pos_pdg/pt/prm/generated", "MC/he/pos_pdg/pt/prm/generated", "MC/al/pos_pdg/pt/prm/generated",
@@ -504,6 +510,7 @@ struct QaEfficiency {
     registry->add(hPtItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (primaries) " + tagPt, kTH1F, {axisPt});
     registry->add(hPtTrkItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (reco primaries) " + tagPt, kTH1F, {axisPt});
     registry->add(hPtItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (primaries) " + tagPt, kTH1F, {axisPt});
+    registry->add(hPtTrkItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (reco primaries) " + tagPt, kTH1F, {axisPt});
     registry->add(hPtGeneratedPrm[histogramIndex].data(), "Generated (primaries) " + tagPt, kTH1F, {axisPt});
 
     registry->add(hPtItsTpcStr[histogramIndex].data(), "ITS-TPC tracks (from weak decays) " + tagPt, kTH1F, {axisPt});
@@ -609,7 +616,7 @@ struct QaEfficiency {
     makeEfficiency("TPC_vsPt", HIST(hPtTpc[histogramIndex]));
     makeEfficiency("ITS-TPC_vsPt", HIST(hPtItsTpc[histogramIndex]));
     makeEfficiency("ITS-TOF_vsPt", HIST(hPtItsTof[histogramIndex]));
-    makeEfficiency("Tpc-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]));
+    makeEfficiency("TPC-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]));
     makeEfficiency("ITS-TPC-TRD_vsPt", HIST(hPtItsTpcTrd[histogramIndex]));
     makeEfficiency("ITS-TPC-TOF_vsPt", HIST(hPtItsTpcTof[histogramIndex]));
     makeEfficiency("ITS-TPC-TRD-TOF_vsPt", HIST(hPtItsTpcTrdTof[histogramIndex]));
@@ -619,6 +626,7 @@ struct QaEfficiency {
     makeEfficiency("ITS-TPC_vsPt_Prm", HIST(hPtItsTpcPrm[histogramIndex]));
     makeEfficiency("ITS-TPC_vsPt_Prm_Trk", HIST(hPtTrkItsTpcPrm[histogramIndex]));
     makeEfficiency("ITS-TPC-TOF_vsPt_Prm", HIST(hPtItsTpcTofPrm[histogramIndex]));
+    makeEfficiency("ITS-TPC-TOF_vsPt_Prm_Trk", HIST(hPtTrkItsTpcTofPrm[histogramIndex]));
 
     makeEfficiency("ITS-TPC_vsPt_Str", HIST(hPtItsTpcStr[histogramIndex]));
     makeEfficiency("ITS-TPC_vsPt_Str_Trk", HIST(hPtTrkItsTpcStr[histogramIndex]));
@@ -1080,6 +1088,7 @@ struct QaEfficiency {
         h->fill(HIST(hPhiTrkItsTpcPrm[histogramIndex]), track.phi());
         if (passedTOF) {
           h->fill(HIST(hPtItsTpcTofPrm[histogramIndex]), mcParticle.pt());
+          h->fill(HIST(hPtTrkItsTpcTofPrm[histogramIndex]), track.pt());
           h->fill(HIST(hEtaItsTpcTofPrm[histogramIndex]), mcParticle.eta());
           h->fill(HIST(hPhiItsTpcTofPrm[histogramIndex]), mcParticle.phi());
         }
@@ -1214,7 +1223,7 @@ struct QaEfficiency {
     doFillEfficiency("TPC_vsPt", HIST(hPtTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TPC_vsPt", HIST(hPtItsTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TOF_vsPt", HIST(hPtItsTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
-    doFillEfficiency("Tpc-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
+    doFillEfficiency("TPC-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TPC-TRD_vsPt", HIST(hPtItsTpcTrd[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TPC-TOF_vsPt", HIST(hPtItsTpcTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
     doFillEfficiency("ITS-TPC-TRD-TOF_vsPt", HIST(hPtItsTpcTrdTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
@@ -1224,6 +1233,7 @@ struct QaEfficiency {
     doFillEfficiency("ITS-TPC_vsPt_Prm", HIST(hPtItsTpcPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
     doFillEfficiency("ITS-TPC_vsPt_Prm_Trk", HIST(hPtTrkItsTpcPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
     doFillEfficiency("ITS-TPC-TOF_vsPt_Prm", HIST(hPtItsTpcTofPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
+    doFillEfficiency("ITS-TPC-TOF_vsPt_Prm_Trk", HIST(hPtTrkItsTpcTofPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
 
     doFillEfficiency("ITS-TPC_vsPt_Str", HIST(hPtItsTpcStr[histogramIndex]), HIST(hPtGeneratedStr[histogramIndex]));
     doFillEfficiency("ITS-TPC_vsPt_Str_Trk", HIST(hPtTrkItsTpcStr[histogramIndex]), HIST(hPtGeneratedStr[histogramIndex]));
