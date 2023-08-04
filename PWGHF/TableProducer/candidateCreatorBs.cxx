@@ -75,7 +75,7 @@ struct HfCandidateCreatorBs {
   double massDsPi{0.};
   double bz{0.};
 
-  using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
+  using TracksWithSel = soa::Join<aod::TracksWCovDca, aod::TrackSelection>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
   using CandsDsFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
@@ -333,7 +333,7 @@ struct HfCandidateCreatorBsExpressions {
   void init(InitContext const&) {}
 
   void processMc(aod::HfCand3Prong const& ds,
-                 aod::BigTracksMC const& tracks,
+                 aod::TracksWMc const& tracks,
                  aod::McParticles const& particlesMc)
   {
     rowCandidateBs->bindExternalIndices(&tracks);
@@ -356,13 +356,13 @@ struct HfCandidateCreatorBsExpressions {
       debug = 0;
       arrDaughDsIndex.clear();
       auto candDs = candidate.prong0();
-      auto arrayDaughtersBs = array{candDs.prong0_as<aod::BigTracksMC>(),
-                                    candDs.prong1_as<aod::BigTracksMC>(),
-                                    candDs.prong2_as<aod::BigTracksMC>(),
-                                    candidate.prong1_as<aod::BigTracksMC>()};
-      auto arrayDaughtersDs = array{candDs.prong0_as<aod::BigTracksMC>(),
-                                    candDs.prong1_as<aod::BigTracksMC>(),
-                                    candDs.prong2_as<aod::BigTracksMC>()};
+      auto arrayDaughtersBs = array{candDs.prong0_as<aod::TracksWMc>(),
+                                    candDs.prong1_as<aod::TracksWMc>(),
+                                    candDs.prong2_as<aod::TracksWMc>(),
+                                    candidate.prong1_as<aod::TracksWMc>()};
+      auto arrayDaughtersDs = array{candDs.prong0_as<aod::TracksWMc>(),
+                                    candDs.prong1_as<aod::TracksWMc>(),
+                                    candDs.prong2_as<aod::TracksWMc>()};
 
       // Checking Bs(bar) → Ds∓ π± → (K- K+ π∓) π±
       indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kBS, array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);

@@ -44,7 +44,7 @@ struct HfTaskBs {
   // MC checks
   Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "Flag to enable DecayType histogram"};
 
-  using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
+  using TracksWithSel = soa::Join<aod::Tracks, aod::TrackSelection>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_bs::isSelBsToDsPi >= selectionFlagBs);
 
@@ -184,7 +184,7 @@ struct HfTaskBs {
   /// Bs MC analysis and fill histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCandBs, aod::HfSelBsToDsPi, aod::HfCandBsMcRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandBsMcGen> const& particlesMc,
-                 aod::BigTracksMC const&,
+                 aod::TracksWMc const&,
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec> const&)
   {
     // MC rec
@@ -202,7 +202,7 @@ struct HfTaskBs {
       int flagMcMatchRecBs = std::abs(candidate.flagMcMatchRec());
 
       if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
-        auto indexMother = RecoDecay::getMother(particlesMc, candidate.prong1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBsMcGen>>(), pdg::Code::kBS, true);
+        auto indexMother = RecoDecay::getMother(particlesMc, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBsMcGen>>(), pdg::Code::kBS, true);
         auto particleMother = particlesMc.rawIteratorAt(indexMother);
 
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
