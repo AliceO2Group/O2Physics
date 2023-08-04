@@ -208,8 +208,7 @@ struct JetFinderQATask {
   template <typename T>
   void fillMCMatchedHistograms(T const& mcdjet, float weight = 1.0)
   {
-    if (mcdjet.has_matchedJetCand() && mcdjet.matchedJetCandId() >= 0) {
-      const auto& mcpjet = mcdjet.template matchedJetGeo_as<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>>();
+    for (auto& mcpjet : mcdjet.template matchedJetGeo_as<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>>()) {
 
       registry.fill(HIST("h3_jet_r_jet_pt_part_jet_pt"), mcdjet.r() / 100.0, mcpjet.pt(), mcdjet.pt(), weight);
       registry.fill(HIST("h3_jet_r_jet_eta_part_jet_eta"), mcdjet.r() / 100.0, mcpjet.eta(), mcdjet.eta(), weight);
