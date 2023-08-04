@@ -148,6 +148,7 @@ struct cascadeBuilder {
 
   // generate and fill extra QA histograms if requested
   Configurable<bool> d_doQA{"d_doQA", false, "Do basic QA"};
+  Configurable<bool> d_doQA_beforeSelection{"d_doQA_beforeSelection",false,"Do basic QA before applying cuts"};
   Configurable<int> dQANBinsRadius{"dQANBinsRadius", 500, "Number of radius bins in QA histo"};
   Configurable<int> dQANBinsPtCoarse{"dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
   Configurable<int> dQANBinsMass{"dQANBinsMass", 400, "Number of mass bins for QA histograms"};
@@ -291,6 +292,20 @@ struct cascadeBuilder {
     resetHistos();
     registry.add("hKFParticleStatistics", "hKFParticleStatistics", kTH1F, {{10, -0.5f, 9.5f}});
 
+    // Optionally, add extra QA histograms to processing chain
+    if (d_doQA_beforeSelection) {
+      // Basic histograms containing invariant masses of all candidates
+      const AxisSpec axisVsPtCoarse{(int)dQANBinsPtCoarse, 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
+      const AxisSpec axisXiMass{(int)dQANBinsMass, 1.222f, 1.6f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisOmegaMass{(int)dQANBinsMass, 1.572f, 1.9f, "Inv. Mass (GeV/c^{2})"};
+
+      registry.add("h2dXiMinusMass_Before", "h2dXiMinusMass_Before", kTH2F, {axisVsPtCoarse, axisXiMass});
+      registry.add("h2dXiPlusMass_Before", "h2dXiPlusMass_Before", kTH2F, {axisVsPtCoarse, axisXiMass});
+      registry.add("h2dOmegaMinusMass_Before", "h2dOmegaMinusMass_Before", kTH2F, {axisVsPtCoarse, axisOmegaMass});
+      registry.add("h2dOmegaPlusMass_Before", "h2dOmegaPlusMass_Before", kTH2F, {axisVsPtCoarse, axisOmegaMass});
+
+      registry.add("h2dTopoVarCascPointingAngle_Before", "h2dTopoVarCascPointingAngle_Before", kTH2D, {axisPtQA, axisTopoVarPointingAngle});
+    }
     // Optionally, add extra QA histograms to processing chain
     if (d_doQA) {
       // Basic histograms containing invariant masses of all built candidates
@@ -764,6 +779,29 @@ struct cascadeBuilder {
 
     // Overall cascade charge
     cascadecandidate.charge = bachTrack.signed1Pt() > 0 ? +1 : -1;
+
+    if(d_doQA_beforeSelection){
+      auto lPt = RecoDecay::sqrtSumOfSquares(v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[1]);
+
+      cascadecandidate.mXi = RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
+      cascadecandidate.mOmega = RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassLambda});
+
+      if (cascadecandidate.charge < 0)
+        registry.fill(HIST("h2dXiMinusMass_Before"), lPt, cascadecandidate.mXi);
+      if (cascadecandidate.charge > 0)
+        registry.fill(HIST("h2dXiPlusMass_Before"), lPt, cascadecandidate.mXi);
+      if (cascadecandidate.charge < 0)
+        registry.fill(HIST("h2dOmegaMinusMass_Before"), lPt, cascadecandidate.mOmega);
+      if (cascadecandidate.charge > 0)
+        registry.fill(HIST("h2dOmegaPlusMass_Before"), lPt, cascadecandidate.mOmega);
+
+        cascadecandidate.cosPA = RecoDecay::cpa(
+          array{collision.posX(), collision.posY(), collision.posZ()},
+          array{cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2]},
+          array{v0.pxpos() + v0.pxneg() + cascadecandidate.bachP[0], v0.pypos() + v0.pyneg() + cascadecandidate.bachP[1], v0.pzpos() + v0.pzneg() + cascadecandidate.bachP[2]});
+
+        registry.fill(HIST("h2dTopoVarCascPointingAngle_Before"), lPt, TMath::ACos(cascadecandidate.cosPA));
+    }
 
     // check also against charge
     if (cascadecandidate.charge < 0 && TMath::Abs(v0.mLambda() - 1.116) > lambdaMassWindow)
