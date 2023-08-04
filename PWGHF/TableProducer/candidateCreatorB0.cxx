@@ -75,7 +75,7 @@ struct HfCandidateCreatorB0 {
   double massDPi{0.};
   double bz{0.};
 
-  using TracksWithSel = soa::Join<aod::BigTracksExtended, aod::TrackSelection>;
+  using TracksWithSel = soa::Join<aod::TracksWCovDca, aod::TrackSelection>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagD);
   using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
@@ -331,7 +331,7 @@ struct HfCandidateCreatorB0Expressions {
   void init(InitContext const&) {}
 
   void processMc(aod::HfCand3Prong const& dplus,
-                 aod::BigTracksMC const& tracks,
+                 aod::TracksWMc const& tracks,
                  aod::McParticles const& particlesMc)
   {
     rowCandidateB0->bindExternalIndices(&tracks);
@@ -351,13 +351,13 @@ struct HfCandidateCreatorB0Expressions {
       origin = 0;
       debug = 0;
       auto candD = candidate.prong0();
-      auto arrayDaughtersB0 = array{candD.prong0_as<aod::BigTracksMC>(),
-                                    candD.prong1_as<aod::BigTracksMC>(),
-                                    candD.prong2_as<aod::BigTracksMC>(),
-                                    candidate.prong1_as<aod::BigTracksMC>()};
-      auto arrayDaughtersD = array{candD.prong0_as<aod::BigTracksMC>(),
-                                   candD.prong1_as<aod::BigTracksMC>(),
-                                   candD.prong2_as<aod::BigTracksMC>()};
+      auto arrayDaughtersB0 = array{candD.prong0_as<aod::TracksWMc>(),
+                                    candD.prong1_as<aod::TracksWMc>(),
+                                    candD.prong2_as<aod::TracksWMc>(),
+                                    candidate.prong1_as<aod::TracksWMc>()};
+      auto arrayDaughtersD = array{candD.prong0_as<aod::TracksWMc>(),
+                                   candD.prong1_as<aod::TracksWMc>(),
+                                   candD.prong2_as<aod::TracksWMc>()};
 
       // B0 → D- π+ → (π- K+ π-) π+
       // Printf("Checking B0 → D- π+");

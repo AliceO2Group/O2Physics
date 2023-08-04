@@ -93,7 +93,9 @@ struct HfDataCreatorD0PiReduced {
   // Fitter to redo D0-vertex to get extrapolated daughter tracks (2-prong vertex filter)
   o2::vertexing::DCAFitterN<2> df2;
 
-  using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
+  using TracksPidAll = soa::Join<aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                 aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using TracksPIDWithSel = soa::Join<aod::TracksWCovDcaExtra, TracksPidAll, aod::TrackSelection>;
   using CandsDFiltered = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
@@ -374,7 +376,7 @@ struct HfDataCreatorD0PiReducedMc {
 
   void processMc(aod::HfCand2ProngReduced const& candsD0,
                  aod::HfTracksReduced const& tracksPion,
-                 aod::BigTracksMC const&,
+                 aod::TracksWMc const&,
                  aod::McParticles const& particlesMc)
   {
     int indexRec = -1;
@@ -383,17 +385,17 @@ struct HfDataCreatorD0PiReducedMc {
     int8_t origin = 0;
 
     for (const auto& candD0 : candsD0) {
-      auto arrayDaughtersD0 = std::array{candD0.prong0_as<aod::BigTracksMC>(),
-                                         candD0.prong1_as<aod::BigTracksMC>()};
+      auto arrayDaughtersD0 = std::array{candD0.prong0_as<aod::TracksWMc>(),
+                                         candD0.prong1_as<aod::TracksWMc>()};
 
       for (const auto& trackPion : tracksPion) {
         if (trackPion.hfReducedCollisionId() != candD0.hfReducedCollisionId()) {
           continue;
         }
         // const auto& trackId = trackPion.globalIndex();
-        auto arrayDaughtersBplus = std::array{candD0.prong0_as<aod::BigTracksMC>(),
-                                              candD0.prong1_as<aod::BigTracksMC>(),
-                                              trackPion.track_as<aod::BigTracksMC>()};
+        auto arrayDaughtersBplus = std::array{candD0.prong0_as<aod::TracksWMc>(),
+                                              candD0.prong1_as<aod::TracksWMc>(),
+                                              trackPion.track_as<aod::TracksWMc>()};
         // B+ → D0(bar) π+ → (K+ π-) π+
         // Printf("Checking B+ → D0bar π+");
         indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBplus, pdg::Code::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
@@ -407,7 +409,7 @@ struct HfDataCreatorD0PiReducedMc {
             LOGF(info, "WARNING: B+ decays in the expected final state but the condition on the intermediate state is not fulfilled");
           }
         }
-        auto indexMother = RecoDecay::getMother(particlesMc, trackPion.track_as<aod::BigTracksMC>().mcParticle_as<aod::McParticles>(), pdg::Code::kBPlus, true);
+        auto indexMother = RecoDecay::getMother(particlesMc, trackPion.track_as<aod::TracksWMc>().mcParticle_as<aod::McParticles>(), pdg::Code::kBPlus, true);
         auto particleMother = particlesMc.rawIteratorAt(indexMother);
 
         rowHfD0PiMcRecReduced(candD0.globalIndex(), trackPion.globalIndex(), flag, origin, particleMother.pt());

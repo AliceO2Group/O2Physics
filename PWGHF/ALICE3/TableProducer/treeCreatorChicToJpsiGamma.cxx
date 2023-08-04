@@ -129,7 +129,7 @@ struct HfTreeCreatorChicToJpsiGamma {
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandChic, aod::HfCandChicMcRec, aod::HfSelChicToJpsiGamma> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& particles,
-               aod::BigTracksPID const& tracks,
+               aod::Tracks const& tracks,
                aod::HfCand2Prong const& jpsiCands)
   {
 
@@ -168,8 +168,8 @@ struct HfTreeCreatorChicToJpsiGamma {
                            float FunctionY) {
         if (FunctionSelection >= 1) {
           rowCandidateFull(
-            candidate.prong0().prong0_as<aod::BigTracksPID>().collision().bcId(),
-            candidate.prong0().prong0_as<aod::BigTracksPID>().collision().numContrib(),
+            candidate.prong0().prong0().collision().bcId(),
+            candidate.prong0().prong0().collision().numContrib(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),

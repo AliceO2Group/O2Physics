@@ -538,7 +538,7 @@ struct HfCorrelatorDsHadrons {
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcRec, "Process MC Reco mode", false);
 
   /// Ds-Hadron correlation - for calculating efficiencies using MC reco-level analysis
-  void processMcEfficiencies(CandDsMcReco const& candidates, CandDsMcGen const& particlesMc, MyTracksData const& tracksData, aod::BigTracksMC const&)
+  void processMcEfficiencies(CandDsMcReco const& candidates, CandDsMcGen const& particlesMc, MyTracksData const& tracksData, aod::TracksWMc const&)
   {
     // MC rec.
     for (auto& candidate : candidates) {
@@ -552,7 +552,7 @@ struct HfCorrelatorDsHadrons {
         continue;
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << DecayType::DsToKKPi) {
-        auto prong0McPart = candidate.prong0_as<aod::BigTracksMC>().mcParticle_as<CandDsMcGen>();
+        auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<CandDsMcGen>();
         // DsToKKPi and DsToPiKK division
         if ((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) {
           fillHistoMcRecSig(candidate, 0.);

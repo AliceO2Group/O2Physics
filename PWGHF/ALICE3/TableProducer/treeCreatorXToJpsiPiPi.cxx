@@ -144,6 +144,8 @@ struct HfTreeCreatorXToJpsiPiPi {
   Produces<o2::aod::HfCandXFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXFullPs> rowCandidateFullParticles;
 
+  using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+
   void init(InitContext const&)
   {
   }
@@ -152,7 +154,7 @@ struct HfTreeCreatorXToJpsiPiPi {
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandX, aod::HfCandXMcRec, aod::HfSelXToJpsiPiPi> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXMcGen> const& particles,
-               aod::BigTracksPID const& tracks)
+               TracksWPid const& tracks)
   {
 
     // Filling event properties
@@ -187,8 +189,8 @@ struct HfTreeCreatorXToJpsiPiPi {
                            float FunctionPiBalance) {
         if (FunctionSelection >= 1) {
           rowCandidateFull(
-            candidate.prong1_as<aod::BigTracksPID>().collision().bcId(),
-            candidate.prong1_as<aod::BigTracksPID>().collision().numContrib(),
+            candidate.prong1_as<TracksWPid>().collision().bcId(),
+            candidate.prong1_as<TracksWPid>().collision().numContrib(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
@@ -207,12 +209,12 @@ struct HfTreeCreatorXToJpsiPiPi {
             candidate.impactParameter0(),
             candidate.impactParameter1(),
             candidate.impactParameter2(),
-            candidate.prong1_as<aod::BigTracksPID>().tofNSigmaPi(),
-            candidate.prong1_as<aod::BigTracksPID>().tofNSigmaKa(),
-            candidate.prong1_as<aod::BigTracksPID>().tofNSigmaPr(),
-            candidate.prong2_as<aod::BigTracksPID>().tofNSigmaPi(),
-            candidate.prong2_as<aod::BigTracksPID>().tofNSigmaKa(),
-            candidate.prong2_as<aod::BigTracksPID>().tofNSigmaPr(),
+            candidate.prong1_as<TracksWPid>().tofNSigmaPi(),
+            candidate.prong1_as<TracksWPid>().tofNSigmaKa(),
+            candidate.prong1_as<TracksWPid>().tofNSigmaPr(),
+            candidate.prong2_as<TracksWPid>().tofNSigmaPi(),
+            candidate.prong2_as<TracksWPid>().tofNSigmaKa(),
+            candidate.prong2_as<TracksWPid>().tofNSigmaPr(),
             1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),
