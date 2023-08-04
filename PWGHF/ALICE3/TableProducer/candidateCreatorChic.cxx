@@ -128,7 +128,7 @@ struct HfCandidateCreatorChic {
       prong1TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), bz);
       const std::array<float, 6> covJpsi = df2.calcPCACovMatrixFlat();
       // define the Jpsi track
-      auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov, {0, 0}, {0, 0}); // FIXME: also needs covxyz???
+      auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov); // FIXME: also needs covxyz???
 
       // -----------------------------------------------------------------
       // loop over gamma candidates

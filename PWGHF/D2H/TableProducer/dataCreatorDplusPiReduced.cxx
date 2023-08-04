@@ -290,10 +290,8 @@ struct HfDataCreatorDplusPiReduced {
         // D∓ → π∓ K± π∓
         std::array<float, 3> pVecPiK = RecoDecay::pVec(pVec0, pVec1);
         std::array<float, 3> pVecD = RecoDecay::pVec(pVec0, pVec1, pVec2);
-        auto trackParCovPiK = o2::dataformats::V0(df3.getPCACandidatePos(), pVecPiK, df3.calcPCACovMatrixFlat(),
-                                                  trackParCov0, trackParCov1, {0, 0}, {0, 0});
-        auto trackParCovD = o2::dataformats::V0(df3.getPCACandidatePos(), pVecD, df3.calcPCACovMatrixFlat(),
-                                                trackParCovPiK, trackParCov2, {0, 0}, {0, 0});
+        auto trackParCovPiK = o2::dataformats::V0(df3.getPCACandidatePos(), pVecPiK, df3.calcPCACovMatrixFlat(), trackParCov0, trackParCov1);
+        auto trackParCovD = o2::dataformats::V0(df3.getPCACandidatePos(), pVecD, df3.calcPCACovMatrixFlat(), trackParCovPiK, trackParCov2);
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (const auto& trackId : trackIdsThisCollision) {
