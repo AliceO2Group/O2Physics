@@ -481,11 +481,8 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     }
     if (trackPt < ptMinSoftPionForDstar || trackPt > ptMaxSoftPionForDstar) {
       CLRBIT(statusProng, CandidateType::CandDstar);
-      if (debug) {
-        // cutStatus[CandidateType::CandV0bachelor][0] = false;
-        if (fillHistograms) {
-          registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iDebugCut);
-        }
+      if (debug && fillHistograms) {
+        registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iDebugCut);
       }
     }
 
