@@ -580,7 +580,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         }
       } else {
         UChar_t clustermap = hfTrack.itsClusterMap();
-        if ((hfTrack.flags() & o2::aod::track::ITSrefit && (TESTBIT(clustermap, 0) || TESTBIT(clustermap, 1)))) {
+        if (!(hfTrack.flags() & o2::aod::track::ITSrefit && (TESTBIT(clustermap, 0) || TESTBIT(clustermap, 1)))) {
           hasGoodQuality = false;
         }
       }
@@ -588,7 +588,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         CLRBIT(statusProng, CandidateType::CandDstar);
         if (debug) {
           if (fillHistograms) {
-          if (debug && fillHistograms) { 
+          if (debug && fillHistograms) {
             registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iDebugCut);
             ....
           }
@@ -602,7 +602,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; ++iCandType) {
         if ((debug || TESTBIT(statusProng, iCandType)) && !isSelectedTrackDCA(trackPt, dca, iCandType)) {
           CLRBIT(statusProng, iCandType);
-          if (debug && fillHistograms) { 
+          if (debug && fillHistograms) {
               registry.fill(HIST("hRejTracks"), (nCuts + 1) * iCandType + iDebugCut);
             }
           }
