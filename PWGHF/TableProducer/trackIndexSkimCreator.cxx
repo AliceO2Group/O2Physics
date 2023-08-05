@@ -586,11 +586,8 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       }
       if (!hasGoodQuality) {
         CLRBIT(statusProng, CandidateType::CandDstar);
-        if (debug) {
-          if (fillHistograms) {
-          if (debug && fillHistograms) {
-            registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iDebugCut);
-          }
+        if (debug && fillHistograms) {
+          registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iDebugCut);
         }
       }
     }
@@ -602,8 +599,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         if ((debug || TESTBIT(statusProng, iCandType)) && !isSelectedTrackDCA(trackPt, dca, iCandType)) {
           CLRBIT(statusProng, iCandType);
           if (debug && fillHistograms) {
-              registry.fill(HIST("hRejTracks"), (nCuts + 1) * iCandType + iDebugCut);
-            }
+            registry.fill(HIST("hRejTracks"), (nCuts + 1) * iCandType + iDebugCut);
           }
         }
       }
