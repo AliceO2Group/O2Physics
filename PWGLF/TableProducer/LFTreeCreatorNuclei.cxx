@@ -50,12 +50,21 @@ struct LfTreeCreatorNuclei {
   Produces<o2::aod::LfCandNucleus> tableCandidate;
   Produces<o2::aod::LfCandNucleusExtra> tableCandidateExtra;
   Produces<o2::aod::LfCandNucleusMC> tableCandidateMC;
+  HistogramRegistry hEvents{"hEvents", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
     if (doprocessData == true && doprocessMC == true) {
       LOGF(fatal, "Cannot enable processData and processMC at the same time. Please choose one.");
     }
+
+    hEvents.add("eventSelection", "eventSelection", kTH1D, {{5, -0.5, 4.5}});
+    auto h = hEvents.get<TH1>(HIST("eventSelection"));
+    h->GetXaxis()->SetBinLabel(1, "total");
+    h->GetXaxis()->SetBinLabel(2, "sel8");
+    h->GetXaxis()->SetBinLabel(3, "z-vertex");
+    h->GetXaxis()->SetBinLabel(4, "not empty");
+    h->GetXaxis()->SetBinLabel(5, "With a good track");
   }
 
   // track
@@ -76,6 +85,7 @@ struct LfTreeCreatorNuclei {
   Configurable<float> cfgHighCutVertex{"cfgHighCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgLowCutVertex{"cfgLowCutVertex", -10.0f, "Accepted z-vertex range"};
   Configurable<bool> useEvsel{"useEvsel", true, "Use sel8 for run3 Event Selection"};
+  Configurable<bool> doSkim{"doSkim", false, "Save events that contains only selected tracks (for filtered mode)"};
 
   Filter collisionFilter = (aod::collision::posZ < cfgHighCutVertex && aod::collision::posZ > cfgLowCutVertex);
   // Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
@@ -94,6 +104,32 @@ struct LfTreeCreatorNuclei {
                                     aod::pidTPCLfFullTr, aod::pidTOFFullTr,
                                     aod::pidTPCLfFullHe, aod::pidTOFFullHe,
                                     aod::pidTPCLfFullAl, aod::pidTOFFullAl>;
+
+  template <bool isMC, typename TrackType, typename CollisionType>
+  bool checkQuality(CollisionType const& collision, TrackType const& tracks)
+  {
+    bool out = kFALSE;
+    for (auto& track : tracks) {
+
+      if (track.itsNClsInnerBarrel() < nITSInnerBarrelHits) {
+        continue;
+      }
+      if (!track.hasTPC()) {
+        continue;
+      }
+      if (track.tpcNClsCrossedRows() < 90) {
+        continue;
+      }
+      if ((track.pt() < ptcutLow.value) || (track.pt() > ptcutHigh.value)) {
+        continue;
+      }
+      if ((TMath::Abs(track.tpcNSigmaDe()) > filterDeTPC.value) && (TMath::Abs(track.tpcNSigmaHe()) > filterHeTPC.value)) {
+        continue;
+      }
+      out = kTRUE;
+    }
+    return out;
+  }
 
   template <bool isMC, typename TrackType, typename CollisionType>
   void fillForOneEvent(CollisionType const& collision, TrackType const& tracks)
@@ -131,6 +167,7 @@ struct LfTreeCreatorNuclei {
           continue;
         }
       }
+
       tableCandidate(
         tableEvents.lastIndex(),
         track.dcaXY(), track.dcaZ(),
@@ -183,11 +220,22 @@ struct LfTreeCreatorNuclei {
                    aod::BCs const&)
   {
     for (const auto& collision : collisions) {
+      hEvents.fill(HIST("eventSelection"), 0);
       if (useEvsel && !collision.sel8()) {
         continue;
       }
+      hEvents.fill(HIST("eventSelection"), 1);
+      if (collision.posZ() >= cfgHighCutVertex && collision.posZ() <= cfgLowCutVertex)
+        continue;
+      hEvents.fill(HIST("eventSelection"), 2);
       const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
+      if (tracksInCollision.size() == 0)
+        continue;
+      hEvents.fill(HIST("eventSelection"), 3);
+      if (doSkim && (trackSelType.value == 3) && !checkQuality<false>(collision, tracksInCollision))
+        continue;
       fillForOneEvent<false>(collision, tracksInCollision);
+      hEvents.fill(HIST("eventSelection"), 4);
     }
   }
 
