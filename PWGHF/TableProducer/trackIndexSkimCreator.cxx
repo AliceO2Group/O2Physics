@@ -590,7 +590,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
           if (fillHistograms) {
           if (debug && fillHistograms) {
             registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iDebugCut);
-            ....
           }
         }
       }
