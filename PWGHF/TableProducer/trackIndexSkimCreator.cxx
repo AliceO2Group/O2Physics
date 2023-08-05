@@ -520,11 +520,8 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
     if ((debug || TESTBIT(statusProng, CandidateType::CandDstar)) && (trackEta > etaMaxSoftPionForDstar || trackEta < etaMinSoftPionForDstar)) {
       CLRBIT(statusProng, CandidateType::CandDstar);
-      if (debug) {
-        // cutStatus[CandidateType::CandDstar][1] = false;
-        if (fillHistograms) {
-          registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iDebugCut);
-        }
+      if (debug && fillHistograms) {
+        registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iDebugCut);
       }
     }
 
