@@ -554,7 +554,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
             continue;
           }
           CLRBIT(statusProng, iCandType);
-          if (debug && fillHistograms) { ....
+          if (debug && fillHistograms) {
             if (fillHistograms) {
               registry.fill(HIST("hRejTracks"), (nCuts + 1) * iCandType + iDebugCut);
             }
