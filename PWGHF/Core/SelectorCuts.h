@@ -225,7 +225,6 @@ namespace hf_cuts_presel_dstar
 static constexpr int nBinsPt = 2;
 static constexpr int nCutVars = 2;
 // default values for the pT bin edges (can be used to configure histogram axis)
-// common for any 2-prong candidate
 // offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
   1.,
