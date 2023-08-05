@@ -89,6 +89,7 @@ struct createPCM {
   Configurable<float> max_tpcdEdx{"max_tpcdEdx", 110.0, "max TPC dE/dx"};
   Configurable<float> margin_r{"margin_r", 7.0, "margin for r cut"};
   Configurable<float> max_qt_arm{"max_qt_arm", 0.03, "max qt for AP cut in GeV/c"};
+  Configurable<float> min_r_tpconly{"min_r_tpconly", 32.f, "min Rxy for V0 with TPConly tracks"};
 
   int mRunNumber;
   float d_bz;
@@ -240,7 +241,7 @@ struct createPCM {
       return false;
     }
 
-    if (recalculatedVtxR < 16.f && (!pos.hasITS() || !ele.hasITS())) {
+    if (recalculatedVtxR < min_r_tpconly && (!pos.hasITS() || !ele.hasITS())) {
       return false;
     }
 

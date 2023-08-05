@@ -130,7 +130,10 @@ class V0PhotonCut : public TNamed
     bool isTPConly_ele = !ele.hasITS() & ele.hasTPC() & !ele.hasTRD() & !ele.hasTOF();
 
     if (isITSonly_pos && isITSonly_ele) {
-      if (0.04 < v0.mGammaKFPV() && v0.mGammaKFPV() + 0.01 < v0.mGammaKFSV() && v0.mGammaKFSV() < std::min(v0.mGammaKFPV() + 0.04, v0.mGammaKFPV() * 1.5 + 0.01)) {
+      // if (0.04 < v0.mGammaKFPV() && v0.mGammaKFPV() + 0.01 < v0.mGammaKFSV() && v0.mGammaKFSV() < std::min(v0.mGammaKFPV() + 0.04, v0.mGammaKFPV() * 1.5 + 0.01)) {
+      //   return false;
+      // }
+      if (v0.mGammaKFSV() > 0.06 && v0.recalculatedVtxR() < 12.f) {
         return false;
       }
     }
