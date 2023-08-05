@@ -602,8 +602,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; ++iCandType) {
         if ((debug || TESTBIT(statusProng, iCandType)) && !isSelectedTrackDCA(trackPt, dca, iCandType)) {
           CLRBIT(statusProng, iCandType);
-          if (debug) {
-            if (fillHistograms) {
+          if (debug && fillHistograms) { 
               registry.fill(HIST("hRejTracks"), (nCuts + 1) * iCandType + iDebugCut);
             }
           }
