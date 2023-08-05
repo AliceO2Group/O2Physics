@@ -1414,7 +1414,7 @@ struct HfTrackIndexSkimCreator {
   /// \param deltaMass is the M(Kpipi) - M(Kpi) value to be filled in the control histogram
   /// \return a bitmap with selection outcome
   template <typename T1, typename T2>
-  uint8_t isDstarSelected(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, int8_t& cutStatus, T2& deltaMass)
+  uint8_t isDstarSelected(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, uint8_t& cutStatus, T2& deltaMass)
   {
     uint8_t isSelected{1};
     /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
