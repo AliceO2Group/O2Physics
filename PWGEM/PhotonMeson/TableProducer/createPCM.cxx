@@ -89,6 +89,8 @@ struct createPCM {
   Configurable<float> max_tpcdEdx{"max_tpcdEdx", 110.0, "max TPC dE/dx"};
   Configurable<float> margin_r{"margin_r", 7.0, "margin for r cut"};
   Configurable<float> max_qt_arm{"max_qt_arm", 0.03, "max qt for AP cut in GeV/c"};
+  Configurable<float> max_r_req_its{"max_r_req_its", 16.0, "min Rxy for V0 with ITS hits"};
+  Configurable<float> min_r_tpconly{"min_r_tpconly", 32.0, "min Rxy for V0 with TPConly tracks"};
 
   int mRunNumber;
   float d_bz;
@@ -200,6 +202,15 @@ struct createPCM {
   template <typename TTrack>
   bool reconstructV0(TTrack const& ele, TTrack const& pos)
   {
+    bool isITSonly_pos = pos.hasITS() & !pos.hasTPC();
+    bool isITSonly_ele = ele.hasITS() & !ele.hasTPC();
+    bool isTPConly_pos = !pos.hasITS() & pos.hasTPC();
+    bool isTPConly_ele = !ele.hasITS() & ele.hasTPC();
+
+    if ((isITSonly_pos && isTPConly_ele) || (isITSonly_ele && isTPConly_pos)) {
+      return false;
+    }
+
     // fitter is memeber variable.
     auto pTrack = getTrackParCov(pos); // positive
     auto nTrack = getTrackParCov(ele); // negative
@@ -240,7 +251,10 @@ struct createPCM {
       return false;
     }
 
-    if (recalculatedVtxR < 16.f && (!pos.hasITS() || !ele.hasITS())) {
+    if (recalculatedVtxR < max_r_req_its && (!pos.hasITS() || !ele.hasITS())) {
+      return false;
+    }
+    if (recalculatedVtxR < min_r_tpconly && (!pos.hasITS() && !ele.hasITS())) {
       return false;
     }
 
@@ -318,6 +332,10 @@ struct createPCM {
       return false;
     }
     if (!track.hasITS() && !track.hasTPC()) {
+      return false;
+    }
+
+    if (track.hasITS() & !track.hasTPC() & (track.hasTRD() | track.hasTOF())) { // remove unrealistic track. this should not happen.
       return false;
     }
 
