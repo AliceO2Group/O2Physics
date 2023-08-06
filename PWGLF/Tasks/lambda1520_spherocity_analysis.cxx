@@ -42,6 +42,7 @@ struct lambdaAnalysis {
 
   // Tracks
   Configurable<float> cfgPtMin{"ptMin", 0.15, "Minimum Track pT"};
+  Configurable<float> cfgPtMax{"ptMax", 999., "Maximum Track pT"};
   Configurable<float> cfgEtaCut{"etaCut", 0.8, "Pseudorapidity cut"};
   Configurable<float> cfgDcaz{"dcazMin", 1., "Minimum DCAz"};
   Configurable<float> cfgDcaxy{"dcaxyMin", 0.1, "Minimum DCAxy"};
@@ -125,7 +126,7 @@ struct lambdaAnalysis {
   bool selTracks(T const& track)
   {
 
-    if (track.pt() < cfgPtMin)
+    if (track.pt() < cfgPtMin || track.pt() > cfgPtMax)
       return false;
 
     if (std::abs(track.dcaZ()) > cfgDcaz)
