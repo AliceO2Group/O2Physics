@@ -316,7 +316,7 @@ int8_t isSelectedTrackForSoftPionOrBeauty(const T track, const T1& trackPar, con
 /// \param hProtonTOFPID histo with NsigmaTOF vs. p
 /// \return true if track passes all cuts
 template <typename T1, typename T2, typename H2, typename H3>
-bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& femtoMinProtonPt, const std::array<float, 3>& femtoMaxNsigmaProton, const int setTPCCalib, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplineProton, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID)
+bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& femtoMinProtonPt, const float& ptThreshold, const std::array<float, 3>& femtoMaxNsigmaProton, const int setTPCCalib, H3 hMapProton, const std::array<std::vector<double>, 2>& hSplineProton, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID)
 {
   if (trackPar.getPt() < femtoMinProtonPt) {
     return false;
@@ -345,12 +345,12 @@ bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const float& fe
 
   float NSigma = std::sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
 
-  if (trackPar.getPt() <= 4.f) {
+  if (trackPar.getPt() <= ptThreshold) {
     if (NSigma > femtoMaxNsigmaProton[2]) {
       return false;
     }
   } else {
-    if (NSigmaTPC > femtoMaxNsigmaProton[0] || NSigmaTOF > femtoMaxNsigmaProton[1]) {
+    if (std::fabs(NSigmaTPC) > femtoMaxNsigmaProton[0] || std::fabs(NSigmaTOF) > femtoMaxNsigmaProton[1]) {
       return false;
     }
   }
