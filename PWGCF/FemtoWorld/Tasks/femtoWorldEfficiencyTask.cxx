@@ -52,6 +52,7 @@ struct femtoWorldEficiencyTask {
   HistogramRegistry registryPDG{"PDGHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryPri{"PriHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryPriCuts{"PriHistosCuts", {}, OutputObjHandlingPolicy::AnalysisObject, false, true}; // for tracking efficiency = cuts only
+  HistogramRegistry registryGlobal{"GlobalTrackHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   HistogramRegistry registryMCtruth{"MCtruthHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
@@ -86,12 +87,24 @@ struct femtoWorldEficiencyTask {
     registryQAtrack.add("after/all/plus/eta", "Charged particles #eta", kTH1F, {{400, -1.0, 1.0, "#eta"}});
     registryQAtrack.add("after/all/plus/phi", "Charged particles #varphi", kTH1F, {{360, 0.0, constants::math::TwoPI, "#varphi"}});
     registryQAtrack.add("after/all/plus/etaphi", "#eta - #varphi;#eta;#varphi", {HistType::kTH2F, {{200, -1, 1}, {200, 0, 2 * TMath::Pi()}}});
+    registryQAtrack.add("after/all/plus/DCAxy", "DCAyx; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{1000, 0, 10}, {1000, -5, 5}});
+    registryQAtrack.add("after/all/plus/DCAz", "DCAz; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{1000, 0, 10}, {1000, -5, 5}});
     registryQAtrack.addClone("after/all/plus/", "after/all/minus/");
     registryQAtrack.addClone("after/all/", "after/pion/");
     registryQAtrack.addClone("after/all/", "after/kaon/");
     registryQAtrack.addClone("after/all/", "after/proton/");
 
-    // pid cuts
+    // global track histos
+    registryGlobal.add("crossedRows", "Number of crossed rows TPC", kTH1F, {{159, 0, 158, "N crossed rows"}});
+    registryGlobal.add("RowsOverClustersTPC", "Ratio of crossed rows over findable TPC clusters", kTH1F, {{100, 0.5, 2., "N crossed rows"}});
+    registryGlobal.add("chi2TPC", "Chi2 per TPC cluster", kTH1F, {{500, 0, 5, "Chi2 per TPC cluster"}});
+    registryGlobal.add("chi2ITS", "Chi2 per ITS cluster", kTH1F, {{500, 0, 40, "Chi2 per ITS cluster"}});
+    registryGlobal.add("dcaZ", "DCA to z vertex", kTH1F, {{500, 0, 4., "DCA to z vertex"}});
+    registryGlobal.add("dcaXY", "DCA to xy vertex", kTH1F, {{500, 0, 4., "DCA to xy vertex"}});
+    registryGlobal.add("clustersITS", "Number of ITS clusters", kTH1F, {{8, 0, 7, "N crossed rows"}}); // perhaps change to itsClusterMap
+    registryGlobal.add("pt", "#it{p}_{T}", kTH1F, {{150, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryGlobal.add("eta", "#eta", kTH1F, {{400, -1.0, 1.0, "#eta"}});
+    registryGlobal.add("TOFmatching", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
     // nsigmas
     registryPID.add("pid/plus/TOF_TPC_Map", "TOF + TPC Combined PID for all;#sigma_{TOF}^{all};#sigma_{TPC}^{all}", {HistType::kTH2F, {{100, -5, 5}, {100, -5, 5}}});
@@ -178,14 +191,14 @@ struct femtoWorldEficiencyTask {
     return false;
   }
 
-  Filter trackFilter = nabs(aod::track::eta) < cfgCutEta; // Eta cut (doesn't do anything)
-  Filter trackCutFilter = requireGlobalTrackInFilter();   // Global track cuts
+  Filter trackFilter = nabs(aod::track::eta) < cfgCutEta && requireGlobalTrackInFilter(); // Eta cut
+  // Filter trackCutFilter = requireGlobalTrackInFilter();   // Global track cuts
   void processReco(const CollisionsEvSel::iterator& collision,
-                   soa::Filtered<TracksPID> const& tracks /*, aod::BCsWithTimestamps const&*/)
+                   soa::Filtered<soa::Join<TracksPID, aod::TrackSelection>> const& tracks /*, aod::BCsWithTimestamps const&*/)
   {
     // auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     //  Default event selection
-    colCuts.printCuts();
+    // colCuts.printCuts();
     if (!colCuts.isSelected(collision))
       return;
     colCuts.fillQA(collision);
@@ -200,18 +213,32 @@ struct femtoWorldEficiencyTask {
       if (track.pt() > tofPtCut && !track.hasTOF())
         continue; // if no TOF information above tofPtCut reject such track
 
+      registryGlobal.fill(HIST("crossedRows"), track.tpcNClsCrossedRows());
+      registryGlobal.fill(HIST("RowsOverClustersTPC"), track.tpcCrossedRowsOverFindableCls());
+      registryGlobal.fill(HIST("chi2TPC"), track.tpcChi2NCl());
+      registryGlobal.fill(HIST("chi2ITS"), track.itsChi2NCl());
+      registryGlobal.fill(HIST("dcaZ"), track.dcaZ());
+      registryGlobal.fill(HIST("dcaXY"), track.dcaXY());
+      registryGlobal.fill(HIST("clustersITS"), track.itsNCls());
+      registryGlobal.fill(HIST("pt"), track.pt());
+      registryGlobal.fill(HIST("eta"), track.eta());
+
       // no PID histograms
       if (track.sign() > 0) {
         registryQAtrack.fill(HIST("after/all/plus/etaphi"), track.eta(), track.phi());
         registryQAtrack.fill(HIST("after/all/plus/pt"), track.pt());
         registryQAtrack.fill(HIST("after/all/plus/eta"), track.eta());
         registryQAtrack.fill(HIST("after/all/plus/phi"), track.phi());
+        registryQAtrack.fill(HIST("after/all/plus/DCAxy"), track.pt(), track.dcaXY());
+        registryQAtrack.fill(HIST("after/all/plus/DCAz"), track.pt(), track.dcaZ());
       }
       if (track.sign() < 0) {
         registryQAtrack.fill(HIST("after/all/minus/etaphi"), track.eta(), track.phi());
         registryQAtrack.fill(HIST("after/all/minus/pt"), track.pt());
         registryQAtrack.fill(HIST("after/all/minus/eta"), track.eta());
         registryQAtrack.fill(HIST("after/all/minus/phi"), track.phi());
+        registryQAtrack.fill(HIST("after/all/minus/DCAxy"), track.pt(), track.dcaXY());
+        registryQAtrack.fill(HIST("after/all/minus/DCAz"), track.pt(), track.dcaZ());
       }
 
       // Add PID selection criteria here
@@ -225,6 +252,8 @@ struct femtoWorldEficiencyTask {
           registryQAtrack.fill(HIST("after/pion/plus/pt"), track.pt());
           registryQAtrack.fill(HIST("after/pion/plus/eta"), track.eta());
           registryQAtrack.fill(HIST("after/pion/plus/phi"), track.phi());
+          registryQAtrack.fill(HIST("after/pion/plus/DCAxy"), track.pt(), track.dcaXY());
+          registryQAtrack.fill(HIST("after/pion/plus/DCAz"), track.pt(), track.dcaZ());
         }
         if (track.sign() < 0) {
           registryPID.fill(HIST("pid/pion/minus/TOF_TPC_Map"), track.tofNSigmaPi(), track.tpcNSigmaPi());
@@ -235,6 +264,8 @@ struct femtoWorldEficiencyTask {
           registryQAtrack.fill(HIST("after/pion/minus/pt"), track.pt());
           registryQAtrack.fill(HIST("after/pion/minus/eta"), track.eta());
           registryQAtrack.fill(HIST("after/pion/minus/phi"), track.phi());
+          registryQAtrack.fill(HIST("after/pion/minus/DCAxy"), track.pt(), track.dcaXY());
+          registryQAtrack.fill(HIST("after/pion/minus/DCAz"), track.pt(), track.dcaZ());
         }
       }
       if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt())) {
@@ -246,6 +277,8 @@ struct femtoWorldEficiencyTask {
           registryQAtrack.fill(HIST("after/kaon/plus/pt"), track.pt());
           registryQAtrack.fill(HIST("after/kaon/plus/eta"), track.eta());
           registryQAtrack.fill(HIST("after/kaon/plus/phi"), track.phi());
+          registryQAtrack.fill(HIST("after/kaon/plus/DCAxy"), track.pt(), track.dcaXY());
+          registryQAtrack.fill(HIST("after/kaon/plus/DCAz"), track.pt(), track.dcaZ());
         }
         if (track.sign() < 0) {
           registryPID.fill(HIST("pid/kaon/minus/TOF_TPC_Map"), track.tofNSigmaKa(), track.tpcNSigmaKa());
@@ -255,6 +288,8 @@ struct femtoWorldEficiencyTask {
           registryQAtrack.fill(HIST("after/kaon/minus/pt"), track.pt());
           registryQAtrack.fill(HIST("after/kaon/minus/eta"), track.eta());
           registryQAtrack.fill(HIST("after/kaon/minus/phi"), track.phi());
+          registryQAtrack.fill(HIST("after/kaon/minus/DCAxy"), track.pt(), track.dcaXY());
+          registryQAtrack.fill(HIST("after/kaon/minus/DCAz"), track.pt(), track.dcaZ());
         }
       }
       if (IsNSigmaAccept(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.pt())) {
@@ -266,6 +301,8 @@ struct femtoWorldEficiencyTask {
           registryQAtrack.fill(HIST("after/proton/plus/pt"), track.pt());
           registryQAtrack.fill(HIST("after/proton/plus/eta"), track.eta());
           registryQAtrack.fill(HIST("after/proton/plus/phi"), track.phi());
+          registryQAtrack.fill(HIST("after/proton/plus/DCAxy"), track.pt(), track.dcaXY());
+          registryQAtrack.fill(HIST("after/proton/plus/DCAz"), track.pt(), track.dcaZ());
         }
         if (track.sign() < 0) {
           registryPID.fill(HIST("pid/proton/minus/TOF_TPC_Map"), track.tofNSigmaPr(), track.tpcNSigmaPr());
@@ -275,13 +312,15 @@ struct femtoWorldEficiencyTask {
           registryQAtrack.fill(HIST("after/proton/minus/pt"), track.pt());
           registryQAtrack.fill(HIST("after/proton/minus/eta"), track.eta());
           registryQAtrack.fill(HIST("after/proton/minus/phi"), track.phi());
+          registryQAtrack.fill(HIST("after/proton/minus/DCAxy"), track.pt(), track.dcaXY());
+          registryQAtrack.fill(HIST("after/proton/minus/DCAz"), track.pt(), track.dcaZ());
         }
       }
     }
   }
   PROCESS_SWITCH(femtoWorldEficiencyTask, processReco, "Process reconstructed data", true);
 
-  using BigTracksMC = soa::Join<TracksPID, aod::McTrackLabels>;
+  using BigTracksMC = soa::Join<TracksPID, aod::McTrackLabels, aod::TrackSelection>;
   Preslice<BigTracksMC> perCollisionID = aod::track::collisionId;
   Filter trackCutFilterTruth = requireGlobalTrackInFilter();
   void processMCTruth(aod::McCollision const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, aod::McParticles const& mcparticles, soa::Filtered<BigTracksMC> const& tracks)
@@ -322,11 +361,15 @@ struct femtoWorldEficiencyTask {
           }
         }
 
-        if (mcParticle.isPhysicalPrimary() && TMath::Abs(mcParticle.eta()) < cfgCutEta && mcParticle.pt() > cfgPtLowPart1 && mcParticle.pt() < cfgPtHighPart1 && TMath::Abs(track.dcaXY()) < cfgDcaXYPart1 && TMath::Abs(track.dcaZ()) < cfgDcaZPart1) {
+        if (mcParticle.isPhysicalPrimary() && TMath::Abs(track.eta()) < cfgCutEta && track.pt() > cfgPtLowPart1 && track.pt() < cfgPtHighPart1 /*&&  TMath::Abs(track.dcaXY()) < cfgDcaXYPart1 && TMath::Abs(track.dcaZ()) < cfgDcaZPart1 */) {
           if (track.sign() > 0) {
             // PID only
             registryPri.fill(HIST("plus/AllPri"), track.pt(), track.eta());
             registryPri.fill(HIST("plus/AllPriPt"), track.pt());
+            // histogram pt TOF matching
+            if (track.hasTOF()) {
+              registryGlobal.fill(HIST("TOFmatching"), mcParticle.pt());
+            }
             if (IsNSigmaAccept(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.pt()) && mcParticle.pdgCode() == 211) {
               registryPri.fill(HIST("plus/PiPri"), track.pt(), track.eta());
               registryPri.fill(HIST("plus/PiPriPt"), mcParticle.pt());
@@ -382,7 +425,7 @@ struct femtoWorldEficiencyTask {
     }
     // loop over MC particles
     for (auto& mcparticle : mcparticles) {
-      if (!mcparticle.isPhysicalPrimary() || TMath::Abs(mcparticle.eta()) > cfgCutEta)
+      if (!mcparticle.isPhysicalPrimary() || TMath::Abs(mcparticle.eta()) > cfgCutEta || mcparticle.pt() < cfgPtLowPart1 || mcparticle.pt() > cfgPtHighPart1)
         continue;
       if (mcparticle.pdgCode() > 0) {
         registryMCtruth.fill(HIST("plus/MCtruthAllPt"), mcparticle.pt());
