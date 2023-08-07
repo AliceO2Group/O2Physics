@@ -73,23 +73,19 @@ std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MC
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
 BinningType corrBinning{{zBins, multBins}, true};
 
-using FullCollisions = soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>;
-using FullTracks = soa::Join<aod::Tracks, aod::TracksDCA>;
-using SelectedCollisions = soa::Filtered<FullCollisions>;
-using SelectedTracks = soa::Filtered<FullTracks>;
+using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;
+using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>>;
 using SelectedCandidatesData = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 using SelectedCandidatesMcRec = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
-using FullCollisionsMcGen = soa::Join<aod::McCollisions, aod::DmesonSelection>;
-using FullTracksMcGen = aod::McParticles;
-using SelectedCollisionsMcGen = soa::Filtered<FullCollisionsMcGen>;
-using SelectedTracksMcGen = soa::Filtered<FullTracksMcGen>;
+using SelectedCollisionsMcGen = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;
+using SelectedTracksMcGen = soa::Filtered<aod::McParticles>;
 
 // Code to select collisions with at least one D0
 struct HfCorrelatorD0HadronsSelection {
   SliceCache cache;
 
   Produces<aod::DmesonSelection> d0Sel;
-  
+
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<float> yCandMax{"yCandMax", 4.0, "max. cand. rapidity"};
@@ -631,10 +627,9 @@ struct HfCorrelatorD0Hadrons {
 
   PROCESS_SWITCH(HfCorrelatorD0Hadrons, processMcGen, "Process MC Gen mode", false);
 
-
   // ====================== Implement Event mixing on Data ===================================
-  
-  void processDataMixedEvent(SelectedCollisions& collisions, SelectedCandidatesData& candidates, SelectedTracks& tracks)
+
+  void processDataMixedEvent(SelectedCollisions& collisions, SelectedCandidatesData const& candidates, SelectedTracks const& tracks)
   {
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<SelectedCollisions, SelectedCandidatesData, SelectedTracks, BinningType> pairData{corrBinning, 5, -1, collisions, tracksTuple, &cache};
@@ -691,12 +686,11 @@ struct HfCorrelatorD0Hadrons {
       }
     }
   }
-  PROCESS_SWITCH(HfCorrelatorD0Hadrons, processDataMixedEvent, "Process data mixezd event", false);
-
-  
+  PROCESS_SWITCH(HfCorrelatorD0Hadrons, processDataMixedEvent, "Process data mixed event", false);
+ 
   // ====================== Implement Event mixing on McRec ===================================
 
-  void processMcRecMixedEvent(SelectedCollisions& collisions, SelectedCandidatesMcRec& candidates, SelectedTracks& tracks)
+  void processMcRecMixedEvent(SelectedCollisions& collisions, SelectedCandidatesMcRec const& candidates, SelectedTracks const& tracks)
   {
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<SelectedCollisions, SelectedCandidatesMcRec, SelectedTracks, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple, &cache};
@@ -794,8 +788,8 @@ struct HfCorrelatorD0Hadrons {
   PROCESS_SWITCH(HfCorrelatorD0Hadrons, processMcRecMixedEvent, "Process Mixed Event MCRec", false);
 
   // ====================== Implement Event mixing on McGen ===================================
-  
-  void processMcGenMixedEvent(SelectedCollisionsMcGen& collisions, SelectedTracksMcGen& particlesMc)
+
+  void processMcGenMixedEvent(SelectedCollisionsMcGen& collisions, SelectedTracksMcGen const& particlesMc)
   {
 
     auto getTracksSize = [&particlesMc, this](SelectedCollisionsMcGen::iterator const& collision) {
