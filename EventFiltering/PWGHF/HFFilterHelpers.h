@@ -42,15 +42,6 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/DataTypes.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
