@@ -124,7 +124,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check 
                              return false;
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassRegionCheck, invMassRegionCheck,
-                           [](int rXi, int rOmega, int value, int region) -> int {
+                           [](int rXi, int rOmega, int value, int region) -> bool {
                              if (value == 0 && rXi == region)
                                return true;
                              if (value == 1 && rXi == region)
@@ -133,7 +133,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(InvMassRegionCheck, invMassRegionCheck,
                                return true;
                              if (value == 3 && rOmega == region)
                                return true;
-                             return -1;
+                             return false;
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassRegion, invMassRegion,
                            [](int rXi, int rOmega, int value) -> int {
