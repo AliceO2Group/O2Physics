@@ -578,7 +578,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         if (hfTrack.isQualityTrackITS() != (uint8_t) true) {
           hasGoodQuality = false;
         }
-      } else {
+      } else { // selections for Run2 converted data
         UChar_t clustermap = hfTrack.itsClusterMap();
         if (!(hfTrack.flags() & o2::aod::track::ITSrefit && (TESTBIT(clustermap, 0) || TESTBIT(clustermap, 1)))) {
           hasGoodQuality = false;
@@ -1307,7 +1307,7 @@ struct HfTrackIndexSkimCreator {
   {
     if (debug || isSelected > 0) {
 
-      /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
+      /// FIXME: this would be better fixed by having a convention on the position of cuts in the 2D Array
       static std::vector<int> cospIndex;
       static auto cacheIndices = [](std::array<LabeledArray<double>, kN2ProngDecays>& cut2Prong, std::vector<int>& cosp) {
         cosp.resize(cut2Prong.size());
@@ -1355,7 +1355,7 @@ struct HfTrackIndexSkimCreator {
   {
     if (debug || isSelected > 0) {
 
-      /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
+      /// FIXME: this would be better fixed by having a convention on the position of cuts in the 2D Array
       static std::vector<int> cospIndex;
       static std::vector<int> decLenIndex;
       static auto cacheIndices = [](std::array<LabeledArray<double>, kN3ProngDecays>& cut3Prong, std::vector<int>& cosp, std::vector<int>& decL) {
@@ -1417,7 +1417,7 @@ struct HfTrackIndexSkimCreator {
   uint8_t isDstarSelected(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, uint8_t& cutStatus, T2& deltaMass)
   {
     uint8_t isSelected{1};
-    /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
+    /// FIXME: this would be better fixed by having a convention on the position of cuts in the 2D Array
     int deltaMassIndex, deltaMassD0Index;
     static auto cacheIndices = [](LabeledArray<double>& cutDstar, int& deltaMassIdx, int& deltaMassD0Idx) {
       deltaMassIdx = cutDstar.colmap.find("deltaMassMax")->second;
