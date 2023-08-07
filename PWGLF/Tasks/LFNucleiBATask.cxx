@@ -1207,6 +1207,9 @@ struct LFNucleiBATask {
       }
     }
 
+    if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex)
+      return;
+
     float gamma = 0., massTOF = 0., hePt = 0.f;
     bool isTriton = kFALSE;
     bool deRapCut = kFALSE;
