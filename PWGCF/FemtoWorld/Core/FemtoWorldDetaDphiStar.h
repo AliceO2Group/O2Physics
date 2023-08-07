@@ -213,4 +213,4 @@ class FemtoWorldDetaDphiStar
 } /* namespace femtoWorld */
 } /* namespace o2::analysis */
 
-#endif  // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDDETADPHISTAR_H_
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDDETADPHISTAR_H_
