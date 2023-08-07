@@ -481,7 +481,7 @@ struct femtoUniversePairTaskTrackTrack {
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
   void processSameEventMC(o2::aod::FDCollision& col,
-                          soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
+                          soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
                           o2::aod::FDMCParticles&)
   {
     fillCollision(col);
@@ -580,7 +580,7 @@ struct femtoUniversePairTaskTrackTrack {
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
   void processMixedEventMC(o2::aod::FDCollisions& cols,
-                           soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
+                           soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
                            o2::aod::FDMCParticles&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
