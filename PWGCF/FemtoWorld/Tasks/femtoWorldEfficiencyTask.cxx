@@ -95,13 +95,13 @@ struct femtoWorldEficiencyTask {
     registryQAtrack.addClone("after/all/", "after/proton/");
 
     // global track histos
-    registryGlobal.add("crossedRows", "Number of crossed rows TPC", kTH1F, {{159, 0, 158, "N crossed rows"}});                                // tpcNClsCrossedRows
-    registryGlobal.add("RowsOverClustersTPC", "Ratio of crossed rows over findable TPC clusters", kTH1F, {{100, 0.5, 2., "N crossed rows"}}); // tpcCrossedRowsOverFindableCls
-    registryGlobal.add("chi2TPC", "Chi2 per TPC cluster", kTH1F, {{500, 0, 5, "Chi2 per TPC cluster"}});                                      // tpcChi2NCl
-    registryGlobal.add("chi2ITS", "Chi2 per ITS cluster", kTH1F, {{500, 0, 40, "Chi2 per ITS cluster"}});                                     // itsChi2NCl
+    registryGlobal.add("crossedRows", "Number of crossed rows TPC", kTH1F, {{159, 0, 158, "N crossed rows"}});
+    registryGlobal.add("RowsOverClustersTPC", "Ratio of crossed rows over findable TPC clusters", kTH1F, {{100, 0.5, 2., "N crossed rows"}});
+    registryGlobal.add("chi2TPC", "Chi2 per TPC cluster", kTH1F, {{500, 0, 5, "Chi2 per TPC cluster"}});
+    registryGlobal.add("chi2ITS", "Chi2 per ITS cluster", kTH1F, {{500, 0, 40, "Chi2 per ITS cluster"}});
     registryGlobal.add("dcaZ", "DCA to z vertex", kTH1F, {{500, 0, 4., "DCA to z vertex"}});
     registryGlobal.add("dcaXY", "DCA to xy vertex", kTH1F, {{500, 0, 4., "DCA to xy vertex"}});
-    registryGlobal.add("clustersITS", "Number of ITS clusters", kTH1F, {{8, 0, 7, "N crossed rows"}}); // ITSNCls;  	itsClusterMap
+    registryGlobal.add("clustersITS", "Number of ITS clusters", kTH1F, {{8, 0, 7, "N crossed rows"}}); // perhaps change to itsClusterMap
     registryGlobal.add("pt", "#it{p}_{T}", kTH1F, {{150, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryGlobal.add("eta", "#eta", kTH1F, {{400, -1.0, 1.0, "#eta"}});
     registryGlobal.add("TOFmatching", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
