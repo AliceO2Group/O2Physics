@@ -173,6 +173,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setMinPtDstarSoftPion(minPtCuts->get(0u, 1u));
     helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty4Prong);
     helper.setMinPtProtonForFemto(minPtCuts->get(0u, 2u));
+    helper.setPtThresholdPidStrategyForFemto(ptThresholdForFemtoPid);
     helper.setNsigmaProtonCutsForFemto(std::array{nSigmaPidCuts->get(0u, 3u), nSigmaPidCuts->get(1u, 3u), nSigmaPidCuts->get(2u, 3u)});
     helper.setNsigmaProtonCutsForCharmBaryons(nSigmaPidCuts->get(0u, 0u), nSigmaPidCuts->get(1u, 0u));
     helper.setNsigmaPionKaonCutsForDzero(nSigmaPidCuts->get(0u, 1u), nSigmaPidCuts->get(1u, 1u));

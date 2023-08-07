@@ -231,6 +231,7 @@ class HfFilterHelper
     mCutsSingleTrackBeauty4Prong = cutsSingleTrack4P;
   }
   void setMinPtProtonForFemto(float minPt) { mPtMinProtonForFemto = minPt; }
+  void setPtThresholdPidStrategyForFemto(float ptThreshold) { mPtThresholdPidStrategyForFemto = ptThreshold; }
   void setNsigmaProtonCutsForFemto(std::array<float, 3> nSigmaCuts) { mNSigmaPrCutsForFemto = nSigmaCuts; }
   void setNsigmaProtonCutsForCharmBaryons(float nSigmaTpc, float nSigmaTof)
   {
@@ -311,7 +312,7 @@ class HfFilterHelper
 
   // helpers
   template <typename T>
-  T computeRelativeMomentum(const std::array<T, 3>& pTrack, const std::array<T, 3>& CharmCandMomentum, const T& CharmMass);
+  T computeRelativeMomentum(const std::array<T, 3>& pTrack, const std::array<T, 3>& CharmCandMomentum, const T& CharmMass)
   template <typename T>
   int computeNumberOfCandidates(std::vector<std::vector<T>> indices)
 
@@ -341,6 +342,7 @@ class HfFilterHelper
   float mPtMinSoftPionForDstar{0.1};                          // minimum pt for the D*+ soft pion
   float mPtMinBeautyBachelor{0.5};                            // minimum pt for the b-hadron pion daughter
   float mPtMinProtonForFemto{0.8};                            // minimum pt for the proton for femto
+  float mPtThresholdPidStrategyForFemto{8.};                  // pt threshold to change strategy for proton PID for femto
   std::array<float, 3> mNSigmaPrCutsForFemto{3., 3., 3.};     // cut values for Nsigma TPC, TOF, combined for femto protons
   float mNSigmaTpcPrCutForCharmBaryons{3.};                   // maximum Nsigma TPC for protons in Lc and Xic decays
   float mNSigmaTofPrCutForCharmBaryons{3.};                   // maximum Nsigma TOF for protons in Lc and Xic decays
@@ -470,12 +472,12 @@ inline bool HfFilterHelper::isSelectedProton4Femto(const T1& track, const T2& tr
 
   float NSigma = std::sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
 
-  if (trackPar.getPt() <= 4.f) {
+  if (trackPar.getPt() <= mPtThresholdPidStrategyForFemto) {
     if (NSigma > mNSigmaPrCutsForFemto[2]) {
       return false;
     }
   } else {
-    if (NSigmaTPC > mNSigmaPrCutsForFemto[0] || NSigmaTOF > mNSigmaPrCutsForFemto[1]) {
+    if (std::fabs(NSigmaTPC) > mNSigmaPrCutsForFemto[0] || std::fabs(NSigmaTOF) > mNSigmaPrCutsForFemto[1]) {
       return false;
     }
   }
