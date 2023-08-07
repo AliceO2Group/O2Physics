@@ -1684,7 +1684,7 @@ struct cascadePreselector {
     if (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lBachTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)
-      bitset(maskElement, bitdEdxOmegaPlus);
+      bitset(maskElement, bitdEdxXiPlus);
     if (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow &&
         TMath::Abs(lBachTrack.tpcNSigmaKa()) < ddEdxPreSelectionWindow)
