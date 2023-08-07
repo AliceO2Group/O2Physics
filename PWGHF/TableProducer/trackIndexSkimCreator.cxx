@@ -1426,8 +1426,8 @@ struct HfTrackIndexSkimCreator {
     };
     cacheIndices(cutsDstarToD0Pi.value, deltaMassIndex, deltaMassD0Index);
 
-    auto arrMom = array{pVecTrack0, pVecTrack1, pVecTrack2};
-    auto arrMomD0 = array{pVecTrack0, pVecTrack1};
+    auto arrMom = std::array{pVecTrack0, pVecTrack1, pVecTrack2};
+    auto arrMomD0 = std::array{pVecTrack0, pVecTrack1};
     auto pT = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + ptTolerance; // add tolerance because of no reco decay vertex
 
     // pT
