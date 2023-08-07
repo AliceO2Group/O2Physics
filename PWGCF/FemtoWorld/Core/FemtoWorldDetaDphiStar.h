@@ -206,11 +206,11 @@ class FemtoWorldDetaDphiStar
         histdetadpiRadii[iHist][i]->Fill(part1.eta() - part2.eta(), dphi);
       }
     }
-    return (dPhiAvg / (float)num);
+    return (dPhiAvg / static_cast<float>(num));
   }
 };
 
 } /* namespace femtoWorld */
 } /* namespace o2::analysis */
 
-#endif /* PWGCF_FEMTOWORLD_CORE_FEMTOWORLDDETADPHISTAR_H_ */
+#endif  // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDDETADPHISTAR_H_
