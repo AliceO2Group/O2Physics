@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2PHYSICS_UPCHELPERS_H
-#define O2PHYSICS_UPCHELPERS_H
+#ifndef PWGUD_CORE_UPCHELPERS_H_
+#define PWGUD_CORE_UPCHELPERS_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
@@ -130,4 +130,4 @@ void applyBarrelCuts(UPCCutparHolder& upcCuts, const BarrelTracks::iterator& tra
 
 } // namespace upchelpers
 
-#endif // O2PHYSICS_UPCHELPERS_H
+#endif // PWGUD_CORE_UPCHELPERS_H_
