@@ -116,7 +116,7 @@ struct femtoUniverseProducerTask {
   //     "ConfRejectITSHitandTOFMissing", false,
   //     "True: reject if neither ITS hit nor TOF timing satisfied"};
 
-  Configurable<int> ConfTrkPDGCode{"ConfTrkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"};
+  Configurable<int> ConfTrkPDGCode{"ConfTrkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"}; // only for checking the particle origin (particles for which PDG does not match are marked as "Fake")
   FemtoUniverseTrackSelection trackCuts;
 
   struct : o2::framework::ConfigurableGroup {
@@ -262,12 +262,12 @@ struct femtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == false && doprocessFullMC == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == false && (doprocessFullMC || doprocessTrackMC) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == true && doprocessFullMC == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData) == true && (doprocessFullMC || doprocessTrackMC) == true) {
       LOGF(fatal,
-           "Cannot enable processFullData and processFullMC at the same time. "
+           "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
     }
 
@@ -813,7 +813,22 @@ struct femtoUniverseProducerTask {
     // fill the tables
     fillCollisionsAndTracksAndV0AndPhi<true>(col, tracks, fullV0s);
   }
-  PROCESS_SWITCH(femtoUniverseProducerTask, processFullMC, "Provide MC data", false);
+  PROCESS_SWITCH(femtoUniverseProducerTask, processFullMC, "Provide MC data (tracks, V0, Phi)", false);
+
+  void
+    processTrackMC(aod::FemtoFullCollisionMC const& col,
+                   aod::BCsWithTimestamps const&,
+                   soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                   aod::McCollisions const& mcCollisions,
+                   aod::McParticles const& mcParticles)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisions<true>(col, tracks);
+    fillTracks<true>(tracks);
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMC, "Provide MC data for track analysis", true);
 
   void
     processTrackData(aod::FemtoFullCollision const& col,
