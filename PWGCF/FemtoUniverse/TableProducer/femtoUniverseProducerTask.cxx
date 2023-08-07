@@ -116,7 +116,7 @@ struct femtoUniverseProducerTask {
   //     "ConfRejectITSHitandTOFMissing", false,
   //     "True: reject if neither ITS hit nor TOF timing satisfied"};
 
-  Configurable<int> ConfTrkPDGCode{"ConfTrkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"}; //only for checking the particle origin (particles for which PDG does not match are marked as "Fake")
+  Configurable<int> ConfTrkPDGCode{"ConfTrkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"}; // only for checking the particle origin (particles for which PDG does not match are marked as "Fake")
   FemtoUniverseTrackSelection trackCuts;
 
   struct : o2::framework::ConfigurableGroup {
@@ -815,14 +815,12 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processFullMC, "Provide MC data (tracks, V0, Phi)", false);
 
-
-
   void
     processTrackMC(aod::FemtoFullCollisionMC const& col,
-                     aod::BCsWithTimestamps const&,
-                     soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                     aod::McCollisions const& mcCollisions,
-                     aod::McParticles const& mcParticles)  
+                   aod::BCsWithTimestamps const&,
+                   soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                   aod::McCollisions const& mcCollisions,
+                   aod::McParticles const& mcParticles)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -831,7 +829,6 @@ struct femtoUniverseProducerTask {
     fillTracks<true>(tracks);
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMC, "Provide MC data for track analysis", true);
-
 
   void
     processTrackData(aod::FemtoFullCollision const& col,
