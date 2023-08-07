@@ -211,6 +211,7 @@ DECLARE_SOA_TABLE(UDTracksCov, "AOD", "UDTRACKCOV",
 
 DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
                   pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                  pidtofbeta::Beta, pidtofbeta::BetaError,
                   pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr);
 
 DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
