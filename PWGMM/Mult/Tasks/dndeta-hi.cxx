@@ -288,7 +288,7 @@ struct MultiplicityCounter {
   {
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
-      if (!useEvSel || (bc.selection_bit(kIsBBT0A) &
+      if (!useEvSel || (bc.selection_bit(kIsBBT0A) &&
                         bc.selection_bit(kIsBBT0C)) != 0) {
         registry.fill(HIST("Events/Selection"), 5.);
         cols.clear();
