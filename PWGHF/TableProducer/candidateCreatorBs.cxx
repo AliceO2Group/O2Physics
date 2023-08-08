@@ -44,7 +44,7 @@ struct HfCandidateCreatorBs {
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCADs{"useAbsDCADs", false, "Minimise abs. distance rather than chi2 for 3-prong Ds vertex"};
-  Configurable<bool> useAbsDCABs{"useAbsDCABs", true, "Minimise abs. distance rather than chi2for 2-prong Bs vertex"};
+  Configurable<bool> useAbsDCABs{"useAbsDCABs", true, "Minimise abs. distance rather than chi2 for 2-prong Bs vertex"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   Configurable<double> maxR{"maxR", 4., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
@@ -83,11 +83,11 @@ struct HfCandidateCreatorBs {
   Preslice<CandsDsFiltered> candsDsPerCollision = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
-  OutputObj<TH1F> hMassDsToKKPi{TH1F("hMassDsToKKPi", "D_{s}^{#minus} candidates;inv. mass (K^{#minus} K^{#plus} #pi^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-  OutputObj<TH1F> hPtDs{TH1F("hPtDs", "D_{s}^{#minus} candidates;D_{s}^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
-  OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
-  OutputObj<TH1F> hCPADs{TH1F("hCPADs", "D_{s}^{#minus} candidates;D_{s}^{#minus} cosine of pointing angle;entries", 110, -1.1, 1.1)};
-  OutputObj<TH1F> hMassBsToDsPi{TH1F("hMassBsToDsPi", "2-prong candidates;inv. mass (B_{s}^{0} #rightarrow D_{s}^{#minus}#pi^{#plus} #rightarrow #K^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
+  OutputObj<TH1F> hMassDsToKKPi{TH1F("hMassDsToKKPi", "D_{s} candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hPtDs{TH1F("hPtDs", "D_{s}candidates;D_{s} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
+  OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi candidates;#pi candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
+  OutputObj<TH1F> hCPADs{TH1F("hCPADs", "D_{s} candidates;D_{s} cosine of pointing angle;entries", 110, -1.1, 1.1)};
+  OutputObj<TH1F> hMassBsToDsPi{TH1F("hMassBsToDsPi", "2-prong candidates;inv. mass (B_{s} #rightarrow D_{s}#pi #rightarrow KK#pi#pi) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 

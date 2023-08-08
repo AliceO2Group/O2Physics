@@ -50,9 +50,9 @@ struct HfTaskBs {
 
   HistogramRegistry registry{
     "registry",
-    {{"hPtProng0", "B^{0}_{s} candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}},
-     {"hPtProng1", "B^{0}_{s} candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 10.}}}},
-     {"hPtCand", "B^{0}_{s} candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}}}};
+    {{"hPtProng0", "B^{0}_{s} candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 40.}}}},
+     {"hPtProng1", "B^{0}_{s} candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 16.}}}},
+     {"hPtCand", "B^{0}_{s} candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 40.}}}}}};
 
   void init(InitContext const&)
   {
@@ -124,7 +124,7 @@ struct HfTaskBs {
     registry.add("hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);B^{0}_{s} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
 
     if (checkDecayTypeMc) {
-      constexpr uint8_t kNBinsDecayTypeMc = DecayTypeMc::OtherDecay;
+      constexpr uint8_t kNBinsDecayTypeMc = DecayTypeMc::NDecayTypeMc;
       TString labels[kNBinsDecayTypeMc];
       labels[DecayTypeMc::BsToDsPiToKKPiPi] = "B^{0}_{s} #rightarrow (D^{-}_{s} #rightarrow K^{-} K^{+} #pi^{-}) #pi^{+}";
       labels[DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
