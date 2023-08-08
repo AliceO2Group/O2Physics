@@ -34,10 +34,8 @@ using namespace o2::track;
 struct tofSkimsTableCreator {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::TOFEvTime, aod::EvTimeTOFOnly, aod::TOFSignal, aod::pidEvTimeFlags,
-                         aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                         aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
                          aod::TrackSelection>;
-  using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::FT0sCorrected>;
+  using Coll = soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>;
 
   // Tables to be produced
   Produces<o2::aod::SkimmedTOFColl> tableColRow;
