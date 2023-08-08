@@ -174,7 +174,7 @@ struct OnTheFlyTracker {
       mSmearer.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
 
       // smear un-reco'ed tracks if asked to do so
-      mSmearer.skipUnreconstructed(static_cast<bool>(processUnreconstructedTracks));
+      mSmearer.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
     }
 
     // Basic QA
