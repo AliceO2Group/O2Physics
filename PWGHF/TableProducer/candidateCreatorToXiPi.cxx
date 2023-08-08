@@ -148,7 +148,7 @@ struct HfCandidateCreatorToXiPi {
       auto thisCollId = collision.globalIndex();
       auto groupedCascades = cascades.sliceBy(cascadesPerCollision, thisCollId);
 
-      for (auto const& casc : groupedCascades) {
+      for (const auto& casc : groupedCascades) {
 
         //----------------accessing particles in the decay chain-------------
         // cascade daughter - charged particle
@@ -243,7 +243,7 @@ struct HfCandidateCreatorToXiPi {
 
         //-------------------combining cascade and pion tracks--------------------------
         auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-        for (auto const& trackIndexPion : groupedTrackIndices) {
+        for (const auto& trackIndexPion : groupedTrackIndices) {
 
           auto trackPion = trackIndexPion.track_as<MyTracks>();
 

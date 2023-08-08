@@ -417,7 +417,7 @@ struct HfDataCreatorD0PiReducedMc {
     } // rec
 
     // Match generated particles.
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : particlesMc) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
@@ -444,7 +444,7 @@ struct HfDataCreatorD0PiReducedMc {
       std::array<float, 2> yProngs;
       std::array<float, 2> etaProngs;
       int counter = 0;
-      for (auto const& daught : particle.daughters_as<aod::McParticles>()) {
+      for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
         ptProngs[counter] = daught.pt();
         etaProngs[counter] = daught.eta();
         yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));

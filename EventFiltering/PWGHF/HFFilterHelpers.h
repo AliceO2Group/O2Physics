@@ -1013,7 +1013,7 @@ bool isSelectedCascade(const Casc& casc, const V0& v0, const array<T, 3>& dauTra
   }
 
   // additional track cuts
-  for (auto const& dauTrack : dauTracks) {
+  for (const auto& dauTrack : dauTracks) {
     //  TPC clusters selections
     if (dauTrack.tpcNClsFound() < 70) { // TODO: put me as a configurable please
       return false;

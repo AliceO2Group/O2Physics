@@ -83,7 +83,7 @@ struct HfDplusSelection {
     if (selectedDplusCandidates.size() > 0) {
       auto selectedDplusCandidatesGrouped = selectedDplusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
-      for (auto const& candidate1 : selectedDplusCandidatesGrouped) {
+      for (const auto& candidate1 : selectedDplusCandidatesGrouped) {
         if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
           continue;
         }
@@ -103,7 +103,7 @@ struct HfDplusSelection {
     bool isDplusFound = 0;
     if (recoFlagDplusCandidates.size() > 0) {
       auto selectedDplusCandidatesGroupedMc = recoFlagDplusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-      for (auto const& candidate1 : selectedDplusCandidatesGroupedMc) {
+      for (const auto& candidate1 : selectedDplusCandidatesGroupedMc) {
         // check decay channel flag for candidate1
         if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
           continue;
@@ -125,7 +125,7 @@ struct HfDplusSelection {
   void processDplusSelectionMcGen(aod::McCollision const& mcCollision, aod::McParticles const& particlesMc)
   {
     bool isDplusFound = 0;
-    for (auto const& particle1 : particlesMc) {
+    for (const auto& particle1 : particlesMc) {
       if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
         continue;
       }
@@ -237,7 +237,7 @@ struct HfCorrelatorDplusHadrons {
 
       auto selectedDplusCandidatesGrouped = selectedDplusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
-      for (auto const& candidate1 : selectedDplusCandidatesGrouped) {
+      for (const auto& candidate1 : selectedDplusCandidatesGrouped) {
         if (yCandMax >= 0. && std::abs(yDplus(candidate1)) > yCandMax) {
           continue;
         }
@@ -324,7 +324,7 @@ struct HfCorrelatorDplusHadrons {
       auto selectedDplusCandidatesGroupedMc = recoFlagDplusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       // MC reco level
       bool flagDplusSignal = false;
-      for (auto const& candidate1 : selectedDplusCandidatesGroupedMc) {
+      for (const auto& candidate1 : selectedDplusCandidatesGroupedMc) {
         // check decay channel flag for candidate1
         if (!(candidate1.hfflag() & 1 << DecayType::DplusToPiKPi)) {
           continue;
@@ -401,7 +401,7 @@ struct HfCorrelatorDplusHadrons {
 
     auto getTracksSize = [&particlesMc](aod::McCollision const& collision) {
       int nTracks = 0;
-      for (auto const& track : particlesMc) {
+      for (const auto& track : particlesMc) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
           nTracks++;
         }
@@ -412,7 +412,7 @@ struct HfCorrelatorDplusHadrons {
     BinningTypeMCGen corrBinningMcGen{{getTracksSize}, {zBins, multBinsMcGen}, true};
 
     // MC gen level
-    for (auto const& particle1 : particlesMc) {
+    for (const auto& particle1 : particlesMc) {
       // check if the particle is Dplus  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != pdg::Code::kDPlus) {
         continue;
@@ -435,7 +435,7 @@ struct HfCorrelatorDplusHadrons {
         continue;
       }
       registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus for normalisation)
-      for (auto const& particle2 : particlesMc) {
+      for (const auto& particle2 : particlesMc) {
 
         // Check Mother of particle 2
         bool flagMotherFound = false;
@@ -538,7 +538,7 @@ struct HfCorrelatorDplusHadrons {
     auto getTracksSize = [&particlesMc, this](McCollisionsSel::iterator const& collision) {
       int nTracks = 0;
       auto associatedTracks = particlesMc.sliceByCached(o2::aod::mcparticle::mcCollisionId, collision.globalIndex(), this->cache);
-      for (auto const& track : associatedTracks) {
+      for (const auto& track : associatedTracks) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
           nTracks++;
         }

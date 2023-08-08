@@ -150,7 +150,7 @@ struct HfTaskCorrelationDsHadrons {
 
   void processData(DsHadronPairFull const& pairEntries)
   {
-    for (auto const& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -191,7 +191,7 @@ struct HfTaskCorrelationDsHadrons {
   /// D-Hadron correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
   void processMcRec(DsHadronPairFull const& pairEntries)
   {
-    for (auto const& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -243,7 +243,7 @@ struct HfTaskCorrelationDsHadrons {
   /// D-Hadron correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGen(DsHadronPairFull const& pairEntries)
   {
-    for (auto const& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();

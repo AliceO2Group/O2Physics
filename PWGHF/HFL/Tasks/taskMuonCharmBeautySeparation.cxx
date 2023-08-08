@@ -64,7 +64,7 @@ struct HfTaskMuonCharmBeautySeparation {
 
     registry.fill(HIST("hZvtx"), zvtx);
 
-    for (auto const& muon : tracks) {
+    for (const auto& muon : tracks) {
       registry.fill(HIST("hTrackType"), muon.trackType());
       if (muon.has_collision()) {
         if (muon.trackType() == 0) {

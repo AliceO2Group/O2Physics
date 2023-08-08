@@ -185,7 +185,7 @@ struct HfCandidateSelectorToXiPi {
     int collId = -999;
 
     // looping over omegac candidates
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 

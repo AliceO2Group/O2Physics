@@ -94,7 +94,7 @@ struct HfTaskSingleMuonSource {
 
     HistogramConfigSpec h3PtDCAChi2{HistType::kTH3F, {axisPt, axisDCA, axisChi2}};
 
-    for (auto const& src : muonSources) {
+    for (const auto& src : muonSources) {
       registry.add(Form("h3%sPtDCAChi2", src.Data()), "", h3PtDCAChi2);
     }
   }

@@ -936,7 +936,7 @@ struct HfFilter { // Main struct for HF triggers
 
       if (!keepEvent[kCharmBarToXiBach]) {
         auto cascThisColl = cascades.sliceBy(cascPerCollision, thisCollId);
-        for (auto const& casc : cascThisColl) {
+        for (const auto& casc : cascThisColl) {
           if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check that V0 data are stored
             continue;
           }

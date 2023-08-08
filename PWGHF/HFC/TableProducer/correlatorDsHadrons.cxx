@@ -93,7 +93,7 @@ struct HfCorrelatorDsHadronsSelCollision {
     bool isDsFound = false;
     if (selectedDsAllCand.size() > 0) {
       auto selectedDsAllCandGrouped = selectedDsAllCand->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-      for (auto const& candidate : selectedDsAllCandGrouped) {
+      for (const auto& candidate : selectedDsAllCandGrouped) {
         if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
           continue;
         }
@@ -114,7 +114,7 @@ struct HfCorrelatorDsHadronsSelCollision {
     bool isDsFound = false;
     if (recoFlagDsCandidates.size() > 0) {
       auto selectedDsCandidatesGroupedMc = recoFlagDsCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-      for (auto const& candidate : selectedDsCandidatesGroupedMc) {
+      for (const auto& candidate : selectedDsCandidatesGroupedMc) {
         if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
           continue;
         }
@@ -133,7 +133,7 @@ struct HfCorrelatorDsHadronsSelCollision {
   void processDsSelCollisionsMcGen(aod::McCollision const& mccollision, CandDsMcGen const& particlesMc)
   {
     bool isDsFound = false;
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : particlesMc) {
       if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
         continue;
       }
@@ -582,7 +582,7 @@ struct HfCorrelatorDsHadrons {
     }
 
     // MC gen level for Ds meson reconstruction's efficiency
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : particlesMc) {
       // check if the particle is Ds
       if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
         continue;
@@ -600,7 +600,7 @@ struct HfCorrelatorDsHadrons {
     }
 
     // MC gen level for particles associated reconstruction's efficiency
-    for (auto const& particleAssoc : particlesMc) {
+    for (const auto& particleAssoc : particlesMc) {
       if (std::abs(particleAssoc.eta()) > etaTrackMax) {
         continue;
       }
@@ -637,7 +637,7 @@ struct HfCorrelatorDsHadrons {
     bool isDsPrompt = false;
 
     // MC gen level
-    for (auto const& particle : particlesMc) {
+    for (const auto& particle : particlesMc) {
       // check if the particle is Ds
       if (std::abs(particle.pdgCode()) != pdg::Code::kDS) {
         continue;
@@ -656,7 +656,7 @@ struct HfCorrelatorDsHadrons {
         isDsPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
 
         // Ds Hadron correlation dedicated section
-        for (auto const& particleAssoc : particlesMc) {
+        for (const auto& particleAssoc : particlesMc) {
           if (std::abs(particleAssoc.eta()) > etaTrackMax) {
             continue;
           }
