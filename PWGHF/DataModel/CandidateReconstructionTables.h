@@ -1901,9 +1901,9 @@ DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
 // mapping of decay types
 enum DecayType { BsToDsPi };
 
-enum DecayTypeMc : uint8_t { BsToDsPiToKKPiPi = 0,  // Bs(bar) → Ds∓ π± → (Phi π∓) π± → (K- K+ π∓) π±
-                             PartlyRecoDecay,       // 4 final state particles have another common b-hadron ancestor
-                             OtherDecay };          // other decay
+enum DecayTypeMc : uint8_t { BsToDsPiToKKPiPi = 0, // Bs(bar) → Ds∓ π± → (Phi π∓) π± → (K- K+ π∓) π±
+                             PartlyRecoDecay,      // 4 final state particles have another common b-hadron ancestor
+                             OtherDecay };         // other decay
 
 // Bs(bar) → Ds∓ π±
 template <typename T>
