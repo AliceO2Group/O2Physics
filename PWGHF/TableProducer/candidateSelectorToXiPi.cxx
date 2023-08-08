@@ -177,7 +177,8 @@ struct HfCandidateSelectorToXiPi {
     registry.add("hSelMassOme", "hSelMassOme;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
   }
 
-  void process(aod::HfCandToXiPi const& candidates, TracksSel const&)
+  void process(aod::HfCandToXiPi const& candidates,
+               TracksSel const&)
   {
     double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
     double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);

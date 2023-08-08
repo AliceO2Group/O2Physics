@@ -249,7 +249,9 @@ struct HfTaskSingleMuonSource {
     }
   }
 
-  void process(MyCollisions::iterator const& collision, McMuons const& muons, aod::McParticles const&)
+  void process(MyCollisions::iterator const& collision,
+               McMuons const& muons,
+               aod::McParticles const&)
   {
     // event selections
     if (!collision.sel8()) {

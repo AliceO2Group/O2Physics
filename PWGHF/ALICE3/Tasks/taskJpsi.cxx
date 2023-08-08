@@ -192,7 +192,8 @@ struct HfTaskJpsiMc {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelJpsi, aod::HfCand2ProngMcRec>> const& candidates,
-               McParticlesHf const& particlesMC, aod::TracksWMc const& tracks)
+               McParticlesHf const& particlesMC,
+               aod::TracksWMc const& tracks)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());

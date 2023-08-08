@@ -88,7 +88,8 @@ struct HfCorrelatorDsHadronsSelCollision {
   Partition<CandDsMcReco> recoFlagDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
   /// Code to select collisions with at least one Ds meson - for real data and data-like analysis
-  void processDsSelCollisionsData(aod::Collision const& collision, CandDsData const& candidates)
+  void processDsSelCollisionsData(aod::Collision const& collision,
+                                  CandDsData const& candidates)
   {
     bool isDsFound = false;
     if (selectedDsAllCand.size() > 0) {
@@ -109,7 +110,8 @@ struct HfCorrelatorDsHadronsSelCollision {
   PROCESS_SWITCH(HfCorrelatorDsHadronsSelCollision, processDsSelCollisionsData, "Process Ds Collision Selection Data", true);
 
   /// Code to select collisions with at least one Ds meson - for MC reco-level analysis
-  void processDsSelCollisionsMcRec(aod::Collision const& collision, CandDsMcReco const& candidates)
+  void processDsSelCollisionsMcRec(aod::Collision const& collision,
+                                   CandDsMcReco const& candidates)
   {
     bool isDsFound = false;
     if (recoFlagDsCandidates.size() > 0) {
@@ -130,7 +132,8 @@ struct HfCorrelatorDsHadronsSelCollision {
   PROCESS_SWITCH(HfCorrelatorDsHadronsSelCollision, processDsSelCollisionsMcRec, "Process Ds Collision Selection MCRec", false);
 
   /// Code to select collisions with at least one Ds meson - for MC gen-level analysis
-  void processDsSelCollisionsMcGen(aod::McCollision const& mccollision, CandDsMcGen const& particlesMc)
+  void processDsSelCollisionsMcGen(aod::McCollision const& mccollision,
+                                   CandDsMcGen const& particlesMc)
   {
     bool isDsFound = false;
     for (const auto& particle : particlesMc) {
@@ -350,7 +353,9 @@ struct HfCorrelatorDsHadrons {
   }
 
   /// Ds-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processData(SelCollisionsWithDs::iterator const& collision, CandDsData const& candidates, MyTracksData const& tracks)
+  void processData(SelCollisionsWithDs::iterator const& collision,
+                   CandDsData const& candidates,
+                   MyTracksData const& tracks)
   {
     // if (selectedDsAllCand.size() > 0) {
     if (candidates.size() > 0) {
@@ -427,7 +432,9 @@ struct HfCorrelatorDsHadrons {
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processData, "Process data", true);
 
   /// Ds-Hadron correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  void processMcRec(SelCollisionsWithDs::iterator const& collision, CandDsMcReco const& candidates, MyTracksData const& tracks)
+  void processMcRec(SelCollisionsWithDs::iterator const& collision,
+                    CandDsMcReco const& candidates,
+                    MyTracksData const& tracks)
   {
     if (candidates.size() > 0) {
       registry.fill(HIST("hZVtx"), collision.posZ());
@@ -538,7 +545,10 @@ struct HfCorrelatorDsHadrons {
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcRec, "Process MC Reco mode", false);
 
   /// Ds-Hadron correlation - for calculating efficiencies using MC reco-level analysis
-  void processMcEfficiencies(CandDsMcReco const& candidates, CandDsMcGen const& particlesMc, MyTracksData const& tracksData, aod::TracksWMc const&)
+  void processMcEfficiencies(CandDsMcReco const& candidates,
+                             CandDsMcGen const& particlesMc,
+                             MyTracksData const& tracksData,
+                             aod::TracksWMc const&)
   {
     // MC rec.
     for (const auto& candidate : candidates) {
@@ -616,7 +626,8 @@ struct HfCorrelatorDsHadrons {
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcEfficiencies, "Process MC for calculating efficiencies", false);
 
   /// Ds-Hadron correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(SelCollisionsWithDsMc::iterator const& mccollision, CandDsMcGen const& particlesMc)
+  void processMcGen(SelCollisionsWithDsMc::iterator const& mccollision,
+                    CandDsMcGen const& particlesMc)
   {
     int counterDsHadron = 0;
     registry.fill(HIST("hMcEvtCount"), 0);

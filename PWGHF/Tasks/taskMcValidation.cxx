@@ -150,7 +150,8 @@ struct HfTaskMcValidationGen {
     return true;
   }
 
-  void process(aod::McCollision const& mccollision, aod::McParticles const& particlesMC)
+  void process(aod::McCollision const& mccollision,
+               aod::McParticles const& particlesMC)
   {
     if (!selectVertex(mccollision)) {
       return;

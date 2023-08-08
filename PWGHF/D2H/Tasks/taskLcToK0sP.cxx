@@ -241,7 +241,8 @@ struct HfTaskLcToK0sP {
     }
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates, TracksWPid const&)
+  void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates,
+               TracksWPid const&)
   {
     // Printf("Candidates: %d", candidates.size());
     for (const auto& candidate : candidates) {
@@ -351,7 +352,8 @@ struct HfTaskLcToK0sP {
 
   void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMcRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particlesMC,
-                 aod::TracksWMc const& tracks, TracksWPid const&)
+                 aod::TracksWMc const& tracks,
+                 TracksWPid const&)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());

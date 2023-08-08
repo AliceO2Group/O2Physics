@@ -216,8 +216,9 @@ struct HfTaskSigmac {
   /// @brief process function to fill the histograms needed in analysis (data)
   /// @param candidatesSc are the reconstructed candidate Σc0,++
   /// @param
-  void process(const aod::HfCandSc& candidatesSc,
-               const RecoLc&, const aod::Tracks&)
+  void process(aod::HfCandSc const& candidatesSc,
+               RecoLc const&,
+               aod::Tracks const&)
   {
 
     /// loop over the candidate Σc0,++
@@ -351,11 +352,12 @@ struct HfTaskSigmac {
   /// @param candidatesSc are the reconstructed candidate Σc0,++ with MC info
   /// @param particlesMc are the generated particles with flags wheter they are Σc0,++ or not
   /// @param
-  void processMc(const soa::Join<aod::HfCandSc, aod::HfCandScMcRec>& candidatesSc,
+  void processMc(soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidatesSc,
                  aod::McParticles const& particlesMc,
                  soa::Join<aod::McParticles, aod::HfCandScMcGen> const& particlesMcSc,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMcLc,
-                 soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&, const aod::TracksWMc&)
+                 soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&,
+                 aod::TracksWMc const&)
   {
 
     /// MC generated particles

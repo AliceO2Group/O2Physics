@@ -144,7 +144,11 @@ struct HfCandidateSelectorLcParametrizedPid {
     return true;
   }
 
-  void process(aod::HfCand3Prong const& candidates, TracksSel const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCand3Prong const& candidates,
+               TracksSel const& barreltracks,
+               aod::McParticles const& mcParticles,
+               aod::RICHs const&,
+               aod::FRICHs const&)
   {
     for (const auto& candidate : candidates) {
 

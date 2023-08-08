@@ -153,7 +153,10 @@ struct HfTaskBplus {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
-  void process(aod::Collisions const& collision, soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const&, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, aod::Tracks const&)
+  void process(aod::Collisions const& collision,
+               soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const&,
+               soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&,
+               aod::Tracks const&)
   {
 
     for (const auto& candidate : selectedBPlusCandidates) {
@@ -195,7 +198,9 @@ struct HfTaskBplus {
   }   // process
 
   void processMc(soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec> const&,
-                 soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& particlesMC, aod::TracksWMc const& tracks, aod::HfCand2Prong const&)
+                 soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& particlesMC,
+                 aod::TracksWMc const& tracks,
+                 aod::HfCand2Prong const&)
   {
     // MC rec
     for (const auto& candidate : selectedBPlusCandidatesMC) {

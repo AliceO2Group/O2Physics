@@ -110,7 +110,8 @@ struct HfTaskOmegacSt {
     df2.setUseAbsDCA(useAbsDCA);
   }
 
-  void processMc(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  void processMc(aod::McCollision const& mcCollision,
+                 aod::McParticles const& mcParticles)
   {
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.pdgCode() != kOmegaMinus) {
@@ -127,9 +128,14 @@ struct HfTaskOmegacSt {
   }
   PROCESS_SWITCH(HfTaskOmegacSt, processMc, "Process MC", true);
 
-  void process(aod::Collision const& collision, aod::McCollisions const& mcCollisions,
-               aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
-               aod::V0s const& v0s, TracksExt const& tracks, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
+  void process(aod::Collision const& collision,
+               aod::McCollisions const&,
+               aod::AssignedTrackedCascades const& trackedCascades,
+               aod::Cascades const&,
+               aod::V0s const&,
+               TracksExt const& tracks,
+               aod::McParticles const&,
+               aod::BCsWithTimestamps const&)
   {
     const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {

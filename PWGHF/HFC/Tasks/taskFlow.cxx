@@ -206,7 +206,7 @@ struct HfTaskFlow {
   //  FIXME: Some collisions are rejected here, what causes (part of) differences with the D0 task
   //  ---------------
   template <typename TCollision>
-  bool isCollisionSelected(TCollision collision, bool fillHistograms = false)
+  bool isCollisionSelected(TCollision const& collision, bool fillHistograms = false)
   {
     if (processRun2 == true) {
       //  Run 2: trigger selection for data case
@@ -239,7 +239,7 @@ struct HfTaskFlow {
   }
 
   template <typename TTracks>
-  void fillQA(float multiplicity, TTracks tracks)
+  void fillQA(float multiplicity, TTracks const& tracks)
   {
     int Ntracks = 0;
     for (const auto& track1 : tracks) {
@@ -254,7 +254,7 @@ struct HfTaskFlow {
   }
 
   template <typename TTracks>
-  void fillMixingQA(float multiplicity, float vz, TTracks tracks)
+  void fillMixingQA(float multiplicity, float vz, TTracks const& tracks)
   {
     registry.fill(HIST("hMultiplicityMixing"), multiplicity);
     registry.fill(HIST("hVtxZMixing"), vz);
@@ -270,7 +270,7 @@ struct HfTaskFlow {
   }
 
   template <typename TTracks>
-  void fillHFMixingQA(float multiplicity, float vz, TTracks tracks)
+  void fillHFMixingQA(float multiplicity, float vz, TTracks const& tracks)
   {
     registry.fill(HIST("hMultiplicityHFMixing"), multiplicity);
     registry.fill(HIST("hVtxZHFMixing"), vz);
@@ -286,7 +286,7 @@ struct HfTaskFlow {
   }
 
   template <typename TTracks>
-  void fillMFTQA(float multiplicity, TTracks tracks)
+  void fillMFTQA(float multiplicity, TTracks const& tracks)
   {
     for (const auto& track1 : tracks) {
       registry.fill(HIST("hEtaMFT"), track1.eta());
@@ -299,7 +299,7 @@ struct HfTaskFlow {
 
   //  TODO: Check how to put this into a Filter
   template <typename TTrack>
-  bool isAcceptedCandidate(TTrack candidate)
+  bool isAcceptedCandidate(TTrack const& candidate)
   {
     if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
       return false;
@@ -312,7 +312,7 @@ struct HfTaskFlow {
 
   //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
   template <typename TTracks>
-  void fillCandidateQA(TTracks candidates)
+  void fillCandidateQA(TTracks const& candidates)
   {
     for (const auto& candidate : candidates) {
       if (!isAcceptedCandidate(candidate)) {
@@ -347,7 +347,7 @@ struct HfTaskFlow {
   }
 
   template <typename TTarget, typename TTracksTrig, typename TTracksAssoc>
-  void fillCorrelations(TTarget target, TTracksTrig tracks1, TTracksAssoc tracks2, float multiplicity, float posZ)
+  void fillCorrelations(TTarget target, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, float multiplicity, float posZ)
   {
     auto triggerWeight = 1;
     auto associatedWeight = 1;

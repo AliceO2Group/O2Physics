@@ -132,7 +132,11 @@ struct HfCandidateCreatorSigmac0plusplus {
   /// @param collision is a o2::aod::Collision
   /// @param tracks are the tracks (with dcaXY, dcaZ information) in the collision → soft-pion candidate tracks
   /// @param candidates are 3-prong candidates satisfying the analysis selections for Λc+ → pK-π+ (and charge conj.)
-  void process(const o2::aod::Collisions& collisions, aod::TrackAssoc const& trackIndices, const TracksSigmac& tracks, CandidatesLc const& candidates, aod::BCsWithTimestamps const& bcWithTimeStamps)
+  void process(aod::Collisions const& collisions,
+               aod::TrackAssoc const& trackIndices,
+               TracksSigmac const& tracks,
+               CandidatesLc const& candidates,
+               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
 
     for (const auto& collision : collisions) {
@@ -268,12 +272,13 @@ struct HfCandidateSigmac0plusplusMc {
 
   /// @brief dummy process function, to be run on data
   /// @param
-  void process(const aod::Tracks&) {}
+  void process(aod::Tracks const&) {}
 
   /// @brief process function for MC matching of Σc0,++ → Λc+(→pK-π+) π- reconstructed candidates and counting of generated ones
   /// @param candidatesSigmac reconstructed Σc0,++ candidates
   /// @param particlesMc table of generated particles
-  void processMc(aod::McParticles const& particlesMc, const TracksMC& tracks,
+  void processMc(aod::McParticles const& particlesMc,
+                 TracksMC const& tracks,
                  LambdacMc const& /*, const LambdacMcGen&*/)
   {
 

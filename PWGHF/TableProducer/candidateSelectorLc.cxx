@@ -145,7 +145,8 @@ struct HfCandidateSelectorLc {
     return true;
   }
 
-  void process(aod::HfCand3Prong const& candidates, TracksSel const&)
+  void process(aod::HfCand3Prong const& candidates,
+               TracksSel const&)
   {
     // looping over 3-prong candidates
     for (const auto& candidate : candidates) {

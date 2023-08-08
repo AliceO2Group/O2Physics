@@ -140,7 +140,9 @@ struct HfCandidateSelectorXiccToPKPiPi {
     return true;
   }
 
-  void process(aod::HfCandXicc const& hfCandXiccs, aod::HfCand3Prong const&, TracksSel const&)
+  void process(aod::HfCandXicc const& hfCandXiccs,
+               aod::HfCand3Prong const&,
+               TracksSel const&)
   {
     // looping over 3-prong candidates
     for (const auto& hfCandXicc : hfCandXiccs) {

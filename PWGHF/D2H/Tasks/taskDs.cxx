@@ -229,7 +229,9 @@ struct HfTaskDs {
     }
   }
 
-  void processMc(candDsMcReco const& candidates, candDsMcGen const& particlesMC, aod::TracksWMc const&)
+  void processMc(candDsMcReco const& candidates,
+                 candDsMcGen const& particlesMC,
+                 aod::TracksWMc const&)
   {
     // MC rec.
     for (const auto& candidate : reconstructedCandSig) {

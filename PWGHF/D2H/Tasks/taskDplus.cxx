@@ -129,7 +129,8 @@ struct HfTaskDplus {
   }
 
   void processMc(soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC,
+                 aod::TracksWMc const& tracks)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());

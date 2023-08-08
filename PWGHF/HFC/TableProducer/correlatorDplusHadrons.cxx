@@ -77,7 +77,8 @@ struct HfDplusSelection {
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> selectedDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>> recoFlagDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
-  void processDplusSelectionData(aod::Collision const& collision, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
+  void processDplusSelectionData(aod::Collision const& collision,
+                                 soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
   {
     bool isDplusFound = 0;
     if (selectedDplusCandidates.size() > 0) {
@@ -98,7 +99,8 @@ struct HfDplusSelection {
   }
   PROCESS_SWITCH(HfDplusSelection, processDplusSelectionData, "Process Dplus Selection Data", false);
 
-  void processDplusSelectionMcRec(aod::Collision const& collision, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
+  void processDplusSelectionMcRec(aod::Collision const& collision,
+                                  soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
   {
     bool isDplusFound = 0;
     if (recoFlagDplusCandidates.size() > 0) {
@@ -122,7 +124,8 @@ struct HfDplusSelection {
   }
   PROCESS_SWITCH(HfDplusSelection, processDplusSelectionMcRec, "Process Dplus Selection MCRec", false);
 
-  void processDplusSelectionMcGen(aod::McCollision const& mcCollision, aod::McParticles const& particlesMc)
+  void processDplusSelectionMcGen(aod::McCollision const& mcCollision,
+                                  aod::McParticles const& particlesMc)
   {
     bool isDplusFound = 0;
     for (const auto& particle1 : particlesMc) {
@@ -211,7 +214,9 @@ struct HfCorrelatorDplusHadrons {
   }
 
   /// Dplus-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
+  void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
+                   soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                   soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
   {
     if (selectedDplusCandidates.size() > 0) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
@@ -298,7 +303,9 @@ struct HfCorrelatorDplusHadrons {
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processData, "Process data", false);
 
   /// Dplus-Hadron correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  void processMcRec(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
+  void processMcRec(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
+                    soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                    soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
   {
     if (recoFlagDplusCandidates.size() > 0) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
@@ -394,7 +401,8 @@ struct HfCorrelatorDplusHadrons {
 
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcRec, "Process MC Reco mode", true);
   /// Dplus-Hadron correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(aod::McCollision const& mcCollision, aod::McParticles const& particlesMc)
+  void processMcGen(aod::McCollision const& mcCollision,
+                    aod::McParticles const& particlesMc)
   {
     int counterDplusHadron = 0;
     registry.fill(HIST("hMCEvtCount"), 0);

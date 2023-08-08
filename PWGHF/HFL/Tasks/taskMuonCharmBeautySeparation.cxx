@@ -51,7 +51,8 @@ struct HfTaskMuonCharmBeautySeparation {
     registry.add("hForwardMultiplicity", "Multiplicity in forward direction", {HistType::kTH1F, {{20, 0, 20}}});
   }
 
-  void process(aod::Collisions::iterator const& collision, soa::Join<aod::FwdTracks, aod::FwdTracksDCA> const& tracks)
+  void process(aod::Collisions::iterator const& collision,
+               soa::Join<aod::FwdTracks, aod::FwdTracksDCA> const& tracks)
   {
     auto pt = 0.;
     auto dcax = 0.;

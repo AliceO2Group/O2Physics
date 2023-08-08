@@ -133,7 +133,9 @@ struct HfCorrelatorD0D0bar {
   }
 
   /// D0-D0bar correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
+  void processData(aod::Collision const& collision,
+                   soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                   soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -242,7 +244,9 @@ struct HfCorrelatorD0D0bar {
   PROCESS_SWITCH(HfCorrelatorD0D0bar, processData, "Process data", false);
 
   /// D0-D0bar correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
-  void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates)
+  void processMcRec(aod::Collision const& collision,
+                    soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                    soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const&)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -383,7 +387,8 @@ struct HfCorrelatorD0D0bar {
   PROCESS_SWITCH(HfCorrelatorD0D0bar, processMcRec, "Process MC Reco mode", true);
 
   /// D0-D0bar correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(aod::McCollision const& mccollision, MCParticlesPlus const& particlesMC)
+  void processMcGen(aod::McCollision const&,
+                    MCParticlesPlus const& particlesMC)
   {
     int counterD0D0bar = 0;
     registry.fill(HIST("hMCEvtCount"), 0);
@@ -474,7 +479,8 @@ struct HfCorrelatorD0D0bar {
   PROCESS_SWITCH(HfCorrelatorD0D0bar, processMcGen, "Process MC Gen mode", false);
 
   /// c-cbar correlator table builder - for MC gen-level analysis
-  void processCCbar(aod::McCollision const& mccollision, MCParticlesPlus const& particlesMC)
+  void processCCbar(aod::McCollision const&,
+                    MCParticlesPlus const& particlesMC)
   {
     registry.fill(HIST("hMCEvtCount"), 0);
     int counterCCbar = 0, counterCCbarBeforeEtasel = 0;
