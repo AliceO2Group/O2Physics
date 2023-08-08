@@ -181,6 +181,11 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float inte
     if (gRandom->Uniform() > eff)
       isReconstructed = false;
   }
+
+  // return false already now in case not reco'ed
+  if (!isReconstructed && mSkipUnreconstructed)
+    return false;
+
   // transform params vector and smear
   double params_[5];
   for (int i = 0; i < 5; ++i) {
