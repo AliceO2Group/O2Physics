@@ -197,17 +197,19 @@ struct DptDptCorrelationsTask {
       for (uint i = 0; i < corrs.size(); ++i) {
         LOGF(info, "  Stored NUA&NUE corrections %s for track id %d %s", corrs[i] != nullptr ? corrs[i]->GetName() : "nullptr", i, corrs[i] != nullptr ? "yes" : "no");
         fhNuaNue_vsZEtaPhiPt[i] = corrs[i];
-        int nbins = 0;
-        double avg = 0.0;
-        for (int ix = 0; ix < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsX(); ++ix) {
-          for (int iy = 0; iy < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsY(); ++iy) {
-            for (int iz = 0; iz < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsZ(); ++iz) {
-              nbins++;
-              avg += fhNuaNue_vsZEtaPhiPt[i]->GetBinContent(ix + 1, iy + 1, iz + 1);
+        if (fhNuaNue_vsZEtaPhiPt[i] != nullptr) {
+          int nbins = 0;
+          double avg = 0.0;
+          for (int ix = 0; ix < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsX(); ++ix) {
+            for (int iy = 0; iy < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsY(); ++iy) {
+              for (int iz = 0; iz < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsZ(); ++iz) {
+                nbins++;
+                avg += fhNuaNue_vsZEtaPhiPt[i]->GetBinContent(ix + 1, iy + 1, iz + 1);
+              }
             }
           }
+          LOGF(info, "Average NUA&NUE correction for track id %d: %f", i, avg / nbins);
         }
-        LOGF(info, "Average NUA&NUE correction for track id %d: %f", i, avg / nbins);
       }
       ccdbstored = true;
     }
