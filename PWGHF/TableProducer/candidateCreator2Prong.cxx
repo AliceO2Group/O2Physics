@@ -104,7 +104,7 @@ struct HfCandidateCreator2Prong {
   template <bool doPvRefit = false, typename Cand>
   void runCreator2Prong(aod::Collisions const& collisions,
                         Cand const& rowsTrackIndexProng2,
-                        aod::BigTracks const& tracks,
+                        aod::TracksWCov const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // 2-prong vertex fitter
@@ -132,8 +132,8 @@ struct HfCandidateCreator2Prong {
 
     // loop over pairs of track indices
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
-      auto track0 = rowTrackIndexProng2.template prong0_as<aod::BigTracks>();
-      auto track1 = rowTrackIndexProng2.template prong1_as<aod::BigTracks>();
+      auto track0 = rowTrackIndexProng2.template prong0_as<aod::TracksWCov>();
+      auto track1 = rowTrackIndexProng2.template prong1_as<aod::TracksWCov>();
       auto trackParVarPos1 = getTrackParCov(track0);
       auto trackParVarNeg1 = getTrackParCov(track1);
       auto collision = rowTrackIndexProng2.collision();
@@ -371,7 +371,7 @@ struct HfCandidateCreator2Prong {
 
   void processPvRefit(aod::Collisions const& collisions,
                       soa::Join<aod::Hf2Prongs, aod::HfPvRefit2Prong> const& rowsTrackIndexProng2,
-                      aod::BigTracks const& tracks,
+                      aod::TracksWCov const& tracks,
                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreator2Prong<true>(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
@@ -381,7 +381,7 @@ struct HfCandidateCreator2Prong {
 
   void processNoPvRefit(aod::Collisions const& collisions,
                         aod::Hf2Prongs const& rowsTrackIndexProng2,
-                        aod::BigTracks const& tracks,
+                        aod::TracksWCov const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreator2Prong(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
@@ -399,7 +399,7 @@ struct HfCandidateCreator2ProngExpressions {
   void init(InitContext const&) {}
 
   /// Performs MC matching.
-  void processMc(aod::BigTracksMC const& tracks,
+  void processMc(aod::TracksWMc const& tracks,
                  aod::McParticles const& particlesMC)
   {
     rowCandidateProng2->bindExternalIndices(&tracks);
@@ -415,7 +415,7 @@ struct HfCandidateCreator2ProngExpressions {
       // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
-      auto arrayDaughters = array{candidate.prong0_as<aod::BigTracksMC>(), candidate.prong1_as<aod::BigTracksMC>()};
+      auto arrayDaughters = array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
 
       // D0(bar) → π± K∓
       // Printf("Checking D0(bar) → π± K∓");

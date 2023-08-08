@@ -81,13 +81,13 @@ static const double massMuon = RecoDecay::getMassPDG(kMuonPlus);
 // #define MY_DEBUG
 
 #ifdef MY_DEBUG
-using TracksWithSelAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
+using TracksWithSelAndDCA = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::McTrackLabels>;
 #define MY_DEBUG_MSG(condition, cmd) \
   if (condition) {                   \
     cmd;                             \
   }
 #else
-using TracksWithSelAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>;
+using TracksWithSelAndDCA = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection>;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
@@ -973,8 +973,7 @@ struct HfTrackIndexSkimCreator {
   std::array<std::vector<double>, kN3ProngDecays> pTBins3Prong;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using TracksWithDCA = soa::Join<aod::BigTracks, aod::TracksDCA>;
-  using TracksWithPVRefitAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
+  using TracksWithPVRefitAndDCA = soa::Join<aod::TracksWCovDcaExtra, aod::HfPvRefitTrack>;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   // filter collisions
@@ -2279,7 +2278,7 @@ struct HfTrackIndexSkimCreator {
     SelectedCollisions const& collisions,
     aod::BCsWithTimestamps const& bcWithTimeStamps,
     FilteredTrackAssocSel const& trackIndices,
-    TracksWithDCA const& tracks)
+    aod::TracksWCovDcaExtra const& tracks)
   {
     run2And3Prongs(collisions, bcWithTimeStamps, trackIndices, tracks);
   }
@@ -2360,13 +2359,12 @@ struct HfTrackIndexSkimCreatorCascades {
   double mass2K0sP{0.}; // WHY HERE?
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using TracksWithDCA = soa::Join<aod::BigTracks, aod::TracksDCA>;
+  using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4);
   // Partition<MyTracks> TracksWithPVRefitAndDCA = aod::hf_sel_track::isSelProng >= 4;
 
-  using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
 
@@ -2406,7 +2404,7 @@ struct HfTrackIndexSkimCreatorCascades {
   void processCascades(SelectedCollisions const& collisions,
                        aod::V0Datas const& v0s, // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
                        FilteredTrackAssocSel const& trackIndices,
-                       TracksWithDCA const& tracks,
+                       aod::TracksWCovDcaExtra const& tracks,
 #ifdef MY_DEBUG
                        aod::McParticles& mcParticles,
 #endif
@@ -2436,7 +2434,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
       // for (const auto& bach : selectedTracks) {
       for (const auto& bachIdx : groupedBachTrackIndices) {
-        auto bach = bachIdx.track_as<TracksWithDCA>();
+        auto bach = bachIdx.track_as<aod::TracksWCovDcaExtra>();
 
         MY_DEBUG_MSG(1, printf("\n"); LOG(info) << "Bachelor loop");
 #ifdef MY_DEBUG
@@ -2472,8 +2470,8 @@ struct HfTrackIndexSkimCreatorCascades {
         for (const auto& v0 : groupedV0s) {
           MY_DEBUG_MSG(1, LOG(info) << "*** Checking next K0S");
           // selections on the V0 daughters
-          const auto& trackV0DaughPos = v0.posTrack_as<TracksWithDCA>();
-          const auto& trackV0DaughNeg = v0.negTrack_as<TracksWithDCA>();
+          const auto& trackV0DaughPos = v0.posTrack_as<aod::TracksWCovDcaExtra>();
+          const auto& trackV0DaughNeg = v0.negTrack_as<aod::TracksWCovDcaExtra>();
 
           // check not to take the same track twice (as bachelor and V0 daughter)
           if (trackV0DaughPos.globalIndex() == bach.globalIndex() || trackV0DaughNeg.globalIndex() == bach.globalIndex()) {
@@ -2558,7 +2556,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
           const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
           // we build the neutral track to then build the cascade
-          auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg, {0, 0}, {0, 0}); // build the V0 track
+          auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track
 
           // now we find the DCA between the V0 and the bachelor, for the cascade
           int nCand2 = fitter.process(trackV0, trackBach);
@@ -2742,8 +2740,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using TracksWithPVRefitAndDCA = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
-  using TracksWithDCA = soa::Join<aod::BigTracks, aod::TracksDCA>;
+  using TracksWithPVRefitAndDCA = soa::Join<aod::TracksWDca, aod::HfPvRefitTrack>;
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
   Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
@@ -2809,7 +2806,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   void processLfCascades(SelectedCollisions const& collisions,
                          aod::CascDataFull const& cascades,
                          FilteredTrackAssocSel const& trackIndices,
-                         TracksWithDCA const& tracks,
+                         aod::TracksWCovDca const& tracks,
                          aod::BCsWithTimestamps const&,
                          aod::V0sLinked const&,
                          V0Full const&)
@@ -2850,7 +2847,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
         registry.fill(HIST("hCandidateCounter"), 0.5); // all candidates
 
-        auto trackXiDauCharged = casc.bachelor_as<TracksWithDCA>(); // pion <- xi track from TracksWithPVRefitAndDCA table
+        auto trackXiDauCharged = casc.bachelor_as<aod::TracksWCovDca>(); // pion <- xi track from TracksWithPVRefitAndDCA table
         // cascade daughter - V0
         if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check that V0 data are stored
           continue;
@@ -2859,9 +2856,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
         auto v0index = casc.v0_as<aod::V0sLinked>();
         auto v0 = v0index.v0Data_as<V0Full>(); // V0 element from LF table containing V0 info
         // V0 positive daughter
-        auto trackV0DauPos = v0.posTrack_as<TracksWithDCA>(); // p <- V0 track (positive track) from TracksWithPVRefitAndDCA table
+        auto trackV0DauPos = v0.posTrack_as<aod::TracksWCovDca>(); // p <- V0 track (positive track) from TracksWithPVRefitAndDCA table
         // V0 negative daughter
-        auto trackV0DauNeg = v0.negTrack_as<TracksWithDCA>(); // pion <- V0 track (negative track) from TracksWithPVRefitAndDCA table
+        auto trackV0DauNeg = v0.negTrack_as<aod::TracksWCovDca>(); // pion <- V0 track (negative track) from TracksWithPVRefitAndDCA table
 
         // check that particles come from the same collision
         if (rejDiffCollTrack) {
@@ -2918,13 +2915,13 @@ struct HfTrackIndexSkimCreatorLfCascades {
         std::array<float, 6> covVtxCasc = dfc.calcPCACovMatrixFlat();
         std::array<float, 3> pvecCascAsM = {pvecV0[0] + pvecXiDauPion[0], pvecV0[1] + pvecXiDauPion[1], pvecV0[2] + pvecXiDauPion[2]};
 
-        auto trackCasc = o2::dataformats::V0(coordVtxCasc, pvecCascAsM, covVtxCasc, trackV0, trackParVarXiDauCharged, {0, 0}, {0, 0});
+        auto trackCasc = o2::dataformats::V0(coordVtxCasc, pvecCascAsM, covVtxCasc, trackV0, trackParVarXiDauCharged);
 
         //-------------------combining cascade and pion tracks--------------------------
         // first loop over positive tracks
         auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (auto trackIdPion1 = groupedBachTrackIndices.begin(); trackIdPion1 != groupedBachTrackIndices.end(); ++trackIdPion1) {
-          auto trackPion1 = trackIdPion1.track_as<TracksWithDCA>();
+          auto trackPion1 = trackIdPion1.track_as<aod::TracksWCovDca>();
 
           if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion1.collisionId())) {
             continue;
@@ -2947,7 +2944,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
           if (do3Prong) {
             // second loop over positive tracks
             for (auto trackIdPion2 = trackIdPion1 + 1; trackIdPion2 != groupedBachTrackIndices.end(); ++trackIdPion2) {
-              auto trackPion2 = trackIdPion2.track_as<TracksWithDCA>();
+              auto trackPion2 = trackIdPion2.track_as<aod::TracksWCovDca>();
 
               if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion2.collisionId())) {
                 continue;

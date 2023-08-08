@@ -39,7 +39,7 @@ struct HfCandidateSelectorB0ToDPi {
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
   Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
-  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::PIDNotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
+  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
@@ -56,24 +56,23 @@ struct HfCandidateSelectorB0ToDPi {
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // check if selectionFlagD (defined in candidateCreatorB0.cxx) and usePid configurables are in sync
+
   bool selectionFlagDAndUsePidInSync = true;
+  TrackSelectorPi selectorPion;
 
-  TrackSelectorPID selectorPion;
-
-  using TracksPIDWithSel = soa::Join<aod::BigTracksPIDExtended, aod::TrackSelection>;
+  using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TrackSelection>;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext& initContext)
   {
     if (usePid) {
-      selectorPion.setPDG(kPiPlus);
-      selectorPion.setRangePtTPC(ptPidTpcMin, ptPidTpcMax);
-      selectorPion.setRangeNSigmaTPC(-nSigmaTpcMax, nSigmaTpcMax);
-      selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-      selectorPion.setRangePtTOF(ptPidTofMin, ptPidTofMax);
-      selectorPion.setRangeNSigmaTOF(-nSigmaTofMax, nSigmaTofMax);
-      selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+      selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+      selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+      selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+      selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
+      selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+      selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     }
 
     if (activateQA) {
@@ -114,7 +113,7 @@ struct HfCandidateSelectorB0ToDPi {
   }
 
   void process(aod::HfCandB0 const& hfCandsB0,
-               TracksPIDWithSel const&)
+               TracksPidWithSel const&)
   {
     for (const auto& hfCandB0 : hfCandsB0) {
       int statusB0ToDPi = 0;
@@ -152,8 +151,8 @@ struct HfCandidateSelectorB0ToDPi {
       }
       // track-level PID selection
       if (usePid) {
-        auto trackPi = hfCandB0.prong1_as<TracksPIDWithSel>();
-        int pidTrackPi = selectorPion.getStatusTrackPIDTpcAndTof(trackPi);
+        auto trackPi = hfCandB0.prong1_as<TracksPidWithSel>();
+        int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         if (!hf_sel_candidate_b0::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
           hfSelB0ToDPiCandidate(statusB0ToDPi);

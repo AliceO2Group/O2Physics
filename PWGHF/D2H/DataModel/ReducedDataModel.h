@@ -134,7 +134,7 @@ namespace hf_track_pid_reduced
 DECLARE_SOA_COLUMN(Pt, pt, float); //! Transverse momentum of the track in GeV/c
 } // namespace hf_track_pid_reduced
 
-// table with all attributes needed to call getStatusTrackPIDTpcAndTof() in the selector task
+// table with all attributes needed to call statusTpcAndTof() in the selector task
 DECLARE_SOA_TABLE(HfTracksPidReduced, "AOD", "HFTRACKPIDRED", //! Table with PID track information for reduced workflow
                   o2::soa::Index<>,
                   hf_track_index_reduced::HfReducedCollisionId,

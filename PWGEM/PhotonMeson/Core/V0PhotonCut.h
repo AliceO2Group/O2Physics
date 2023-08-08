@@ -16,6 +16,7 @@
 #ifndef PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 
+#include <algorithm>
 #include <set>
 #include <vector>
 #include <utility>
@@ -122,15 +123,27 @@ class V0PhotonCut : public TNamed
     auto pos = v0.template posTrack_as<TLeg>();
     auto ele = v0.template negTrack_as<TLeg>();
 
-    // if(pos.hasITS() && ele.hasITS()){
-    //   bool ret = sqrt(pow(v0.alpha() / 0.95, 2) + pow(v0.qtarm() / 0.02, 2) ) < 1.0;
-    //   if (!ret){
-    //     return false;
-    //   }
-    // }
-    // if (v0.recalculatedVtxR() > std::min(pos.x(), ele.x()) + 7.f && (pos.x() > 1.f && ele.x() > 1.f)) {
-    //   return false;
-    // }
+    // bool isITSonly_pos = pos.hasITS() & !pos.hasTPC() & !pos.hasTRD() & !pos.hasTOF();
+    // bool isITSonly_ele = ele.hasITS() & !ele.hasTPC() & !ele.hasTRD() & !ele.hasTOF();
+    // if (isITSonly_pos && isITSonly_ele) {
+    //  if (0.04 < v0.mGammaKFPV() && v0.mGammaKFPV() + 0.01 < v0.mGammaKFSV() && v0.mGammaKFSV() < std::min(v0.mGammaKFPV() + 0.04, v0.mGammaKFPV() * 1.5 + 0.01)) {
+    //    return false;
+    //  }
+    //}
+
+    if (pos.hasITS() && ele.hasITS()) {
+      if (v0.mGammaKFSV() > 0.06 && v0.recalculatedVtxR() < 12.f) {
+        return false;
+      }
+    }
+
+    bool isTPConly_pos = !pos.hasITS() & pos.hasTPC() & !pos.hasTRD() & !pos.hasTOF();
+    bool isTPConly_ele = !ele.hasITS() & ele.hasTPC() & !ele.hasTRD() & !ele.hasTOF();
+    if (isTPConly_pos && isTPConly_ele) {
+      if (v0.mGammaKFSV() > v0.mGammaKFPV()) {
+        return false;
+      }
+    }
 
     for (auto& track : {pos, ele}) {
       if (!IsSelectedTrack(track, V0PhotonCuts::kTrackPtRange)) {
@@ -152,7 +165,7 @@ class V0PhotonCut : public TNamed
         return false;
       }
 
-      bool isITSonly = track.hasITS() & (!track.hasTPC() & !track.hasTOF() & !track.hasTRD());
+      bool isITSonly = track.hasITS() & !track.hasTPC() & !track.hasTOF() & !track.hasTRD();
 
       if (isITSonly) {
         if (!CheckITSCuts(track)) {

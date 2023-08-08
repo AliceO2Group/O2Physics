@@ -34,13 +34,13 @@ using namespace o2::aod::hf_cand_2prong;
 // #define MY_DEBUG
 
 #ifdef MY_DEBUG
-using MyBigTracks = aod::BigTracksMC;
+using MyBigTracks = soa::Join<aod::TracksWCov, aod::McTrackLabels>;
 #define MY_DEBUG_MSG(condition, cmd) \
   if (condition) {                   \
     cmd;                             \
   }
 #else
-using MyBigTracks = aod::BigTracks;
+using MyBigTracks = aod::TracksWCov;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
@@ -172,7 +172,7 @@ struct HfCandidateCreatorCascade {
       const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
       const std::array<float, 3> momentumV0 = {v0.px(), v0.py(), v0.pz()};
       // we build the neutral track to then build the cascade
-      auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg, {0, 0}, {0, 0}); // build the V0 track (indices for v0 daughters set to 0 for now)
+      auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track (indices for v0 daughters set to 0 for now)
 
       // reconstruct the cascade secondary vertex
       if (df.process(trackV0, trackParCovBach) == 0) {
@@ -258,7 +258,9 @@ struct HfCandidateCreatorCascadeMc {
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
 
-  void processMc(aod::BigTracksMC const& tracks,
+  using MyTracksWMc = soa::Join<aod::TracksWCov, aod::McTrackLabels>;
+
+  void processMc(MyTracksWMc const& tracks,
                  aod::McParticles const& particlesMC)
   {
     int8_t sign = 0;
@@ -274,9 +276,9 @@ struct HfCandidateCreatorCascadeMc {
 
       origin = 0;
 
-      const auto& bach = candidate.prong0_as<aod::BigTracksMC>();
-      const auto& trackV0DaughPos = candidate.posTrack_as<aod::BigTracksMC>();
-      const auto& trackV0DaughNeg = candidate.negTrack_as<aod::BigTracksMC>();
+      const auto& bach = candidate.prong0_as<MyTracksWMc>();
+      const auto& trackV0DaughPos = candidate.posTrack_as<MyTracksWMc>();
+      const auto& trackV0DaughNeg = candidate.negTrack_as<MyTracksWMc>();
 
       auto arrayDaughtersV0 = array{trackV0DaughPos, trackV0DaughNeg};
       auto arrayDaughtersLc = array{bach, trackV0DaughPos, trackV0DaughNeg};

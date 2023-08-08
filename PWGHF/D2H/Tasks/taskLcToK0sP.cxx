@@ -38,6 +38,8 @@ struct HfTaskLcToK0sP {
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP || aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
 
+  using TracksWPid = soa::Join<aod::TracksWExtra, aod::TracksPidPr>;
+
   HistogramRegistry registry{"registry"};
 
   void init(InitContext& context)
@@ -239,8 +241,7 @@ struct HfTaskLcToK0sP {
     }
   }
 
-  void
-    process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates, aod::BigTracksPID const&)
+  void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates, TracksWPid const&)
   {
     // Printf("Candidates: %d", candidates.size());
     for (auto& candidate : candidates) {
@@ -335,7 +336,7 @@ struct HfTaskLcToK0sP {
       registry.fill(HIST("hCtCand"), ctLc);
       registry.fill(HIST("hCtCandVsPtCand"), ctLc, ptCand);
 
-      const auto& bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor track
+      const auto& bach = candidate.prong0_as<TracksWPid>(); // bachelor track
       auto tpcNSigmaPr = bach.tpcNSigmaPr();
       auto pBach = bach.p();
       registry.fill(HIST("hTPCNSigmaPrBach"), tpcNSigmaPr);
@@ -350,7 +351,7 @@ struct HfTaskLcToK0sP {
 
   void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMcRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particlesMC,
-                 aod::BigTracksMC const& tracks, aod::BigTracksPID const&)
+                 aod::TracksWMc const& tracks, TracksWPid const&)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
@@ -387,7 +388,7 @@ struct HfTaskLcToK0sP {
       auto decayLengthXY = candidate.decayLengthXY();
       auto ctLc = o2::aod::hf_cand_3prong::ctLc(candidate);
 
-      const auto& bach = candidate.prong0_as<aod::BigTracksPID>(); // bachelor track
+      const auto& bach = candidate.prong0_as<TracksWPid>(); // bachelor track
       auto tpcNSigmaPr = bach.tpcNSigmaPr();
       auto pBach = bach.p();
 

@@ -151,7 +151,7 @@ struct HfTaskChicMc {
   }
 
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HfSelChicToJpsiGamma, aod::HfCandChicMcRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& particlesMC, aod::BigTracksMC const& tracks)
+               soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& particlesMC, aod::TracksWMc const& tracks)
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());

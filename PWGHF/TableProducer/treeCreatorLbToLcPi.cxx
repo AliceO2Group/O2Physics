@@ -189,11 +189,11 @@ struct HfTreeCreatorLbToLcPiAlice3PidIndexBuilder {
 struct HfTreeCreatorLbToLcPi {
   Produces<o2::aod::HfCandLbFulls> rowCandidateFull;
 
-  using TracksExtendedPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::HfTrackIndexALICE3PID>;
 
   void process(soa::Join<aod::HfCandLb, aod::HfCandLbMcRec, aod::HfSelLbToLcPi> const& candidates,
                soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const&,
-               TracksExtendedPID const&,
+               TracksWPid const&,
                aod::FRICHs const&,
                aod::RICHs const&)
   {
@@ -207,10 +207,10 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionY) {
         if (FunctionSelection >= 1) {
           auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc>>();
-          auto track0 = candidate.prong1_as<TracksExtendedPID>(); // daughter pion track
-          auto track1 = candLc.prong0_as<TracksExtendedPID>();    // granddaughter tracks (lc decay particles)
-          auto track2 = candLc.prong1_as<TracksExtendedPID>();
-          auto track3 = candLc.prong2_as<TracksExtendedPID>();
+          auto track0 = candidate.prong1_as<TracksWPid>(); // daughter pion track
+          auto track1 = candLc.prong0_as<TracksWPid>();    // granddaughter tracks (lc decay particles)
+          auto track2 = candLc.prong1_as<TracksWPid>();
+          auto track3 = candLc.prong2_as<TracksWPid>();
 
           auto RICHTrk0Pi = -5000.0;
           auto RICHTrk1Pi = -5000.0;
