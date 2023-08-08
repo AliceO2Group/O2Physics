@@ -130,7 +130,7 @@ struct OnTheFlyTracker {
 
   // For processing and vertexing
   std::vector<TrackAlice3> tracksAlice3;
-  std::vector<TrackAlice3> ghostTracksAlice3; 
+  std::vector<TrackAlice3> ghostTracksAlice3;
   std::vector<o2::InteractionRecord> bcData;
   o2::steer::InteractionSampler irSampler;
   o2::vertexing::PVertexer vertexer;
@@ -368,9 +368,9 @@ struct OnTheFlyTracker {
 
       // populate vector with track if we reco-ed it
       const float t = (ir.timeInBCNS + gRandom->Gaus(0., 100.)) * 1e-3;
-      if( reconstructed ){
+      if (reconstructed) {
         tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3, isDecayDaughter});
-      }else{
+      } else {
         ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3, isDecayDaughter});
       }
     }
@@ -491,7 +491,7 @@ struct OnTheFlyTracker {
       }
       TracksAlice3(true);
     }
-    // populate ghost tracks 
+    // populate ghost tracks
     for (const auto& trackParCov : ghostTracksAlice3) {
       // Fixme: collision index could be changeable
       aod::track::TrackTypeEnum trackType = aod::track::Track;
