@@ -54,6 +54,7 @@ struct HfCandidateSelectorBsToDsPi {
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bs_to_ds_pi::cuts[0], nBinsPt, nCutVars, labelsPt, labelsCutVar}, "Bs candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
+
   // check if selectionFlagDs (defined in candidateCreatorBs.cxx) and usePid configurables are in sync
   bool selectionFlagDsAndUsePidInSync = true;
 
@@ -124,7 +125,6 @@ struct HfCandidateSelectorBsToDsPi {
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCandBs);
         }
-        // LOGF(info, "Bs candidate selection failed at hfflag check");
         continue;
       }
       SETBIT(statusBsToDsPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusBsToDsPi = 1
@@ -135,7 +135,6 @@ struct HfCandidateSelectorBsToDsPi {
       // topological cuts
       if (!hf_sel_candidate_bs::selectionTopol(hfCandBs, cuts, binsPt)) {
         hfSelBsToDsPiCandidate(statusBsToDsPi);
-        // LOGF(info, "Bs candidate selection failed at topology selection");
         continue;
       }
       SETBIT(statusBsToDsPi, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusBsToDsPi = 3
@@ -153,7 +152,6 @@ struct HfCandidateSelectorBsToDsPi {
         auto trackPi = hfCandBs.prong1_as<TracksPidWithSel>();
         int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         if (!hf_sel_candidate_bs::selectionPID(pidTrackPi, acceptPIDNotApplicable.value)) {
-          // LOGF(info, "Bs candidate selection failed at PID selection");
           hfSelBsToDsPiCandidate(statusBsToDsPi);
           continue;
         }
@@ -164,7 +162,6 @@ struct HfCandidateSelectorBsToDsPi {
       }
 
       hfSelBsToDsPiCandidate(statusBsToDsPi);
-      // LOGF(info, "Bs candidate selection passed all selections");
     }
   }
 };

@@ -1897,18 +1897,15 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand3Prong, "_0"); // Ds in
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
-DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       // particle origin, reconstruction level
-DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       // particle origin, generator level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
 
 // mapping of decay types
 enum DecayType { BsToDsPi };
 
-enum DecayTypeMc : uint8_t { BsToDsPiToKKPiPi = 0,
-                             PartlyRecoDecay,
-                             OtherDecay,
-                             NDecayTypeMc };
-// B0s(B0sbar) → Ds∓ π±
+enum DecayTypeMc : uint8_t { BsToDsPiToKKPiPi = 0,  // Bs(bar) → Ds∓ π± → (Phi π∓) π± → (K- K+ π∓) π±
+                             PartlyRecoDecay,       // 4 final state particles have another common b-hadron ancestor
+                             OtherDecay };          // other decay
+
+// Bs(bar) → Ds∓ π±
 template <typename T>
 auto ctBs(const T& candidate)
 {
@@ -1982,14 +1979,11 @@ using HfCandBs = HfCandBsExt;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandBsMcRec, "AOD", "HFCANDBSMCREC",
-                  hf_cand_bs::FlagMcMatchRec,
-                  hf_cand_bs::OriginMcRec,
-                  hf_cand_bs::DebugMcRec);
+                  hf_cand_bs::FlagMcMatchRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandBsMcGen, "AOD", "HFCANDBSMCGEN",
-                  hf_cand_bs::FlagMcMatchGen,
-                  hf_cand_bs::OriginMcGen);
+                  hf_cand_bs::FlagMcMatchGen);
 
 // specific Σc0,++ candidate properties
 namespace hf_cand_sigmac

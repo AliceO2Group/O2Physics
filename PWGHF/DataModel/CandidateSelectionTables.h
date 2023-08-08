@@ -302,7 +302,7 @@ DECLARE_SOA_COLUMN(IsSelBsToDsPi, isSelBsToDsPi, int); //!
 
 /// Apply topological cuts as defined in SelectorCuts.h
 /// \param candBs Bs candidate
-/// \param cuts Bs candidate selection per pT bin"
+/// \param cuts Bs candidate selections
 /// \param binsPt pT bin limits
 /// \return true if candidate passes all selections
 template <typename T1, typename T2, typename T3>
@@ -314,7 +314,6 @@ bool selectionTopol(const T1& candBs, const T2& cuts, const T3& binsPt)
 
   int pTBin = findBin(binsPt, ptCandBs);
   if (pTBin == -1) {
-    LOGF(info, "Bs topol selection failed at getpTBin");
     return false;
   }
 
