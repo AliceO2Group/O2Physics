@@ -565,20 +565,20 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     hasGoodQuality = true;
     if (doCutQuality.value && (debug || TESTBIT(statusProng, CandidateType::CandDstar))) {
       if (useIsGlobalTrackForSoftPion) {
-        if (hfTrack.isGlobalTrack() != (uint8_t) true) {
+        if (!hfTrack.isGlobalTrack()) {
           hasGoodQuality = false;
         }
       } else if (useIsGlobalTrackWoDCAForSoftPion) {
-        if (hfTrack.isGlobalTrackWoDCA() != (uint8_t) true) {
+        if (!hfTrack.isGlobalTrackWoDCA()) {
           hasGoodQuality = false;
         }
       } else if (useIsQualityTrackITSForSoftPion) {
-        if (hfTrack.isQualityTrackITS() != (uint8_t) true) {
+        if (!hfTrack.isQualityTrackITS()) {
           hasGoodQuality = false;
         }
       } else { // selections for Run2 converted data
         UChar_t clustermap = hfTrack.itsClusterMap();
-        if (!(hfTrack.flags() & o2::aod::track::ITSrefit && (TESTBIT(clustermap, 0) || TESTBIT(clustermap, 1)))) {
+        if (!(TESTBIT(hfTrack.flags(), o2::aod::track::ITSrefit) && (TESTBIT(clustermap, 0) || TESTBIT(clustermap, 1)))) {
           hasGoodQuality = false;
         }
       }
