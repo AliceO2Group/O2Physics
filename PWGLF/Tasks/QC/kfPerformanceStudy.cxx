@@ -89,9 +89,9 @@ struct kfPerformanceStudy {
 
       // get charge from bachelor (unambiguous wrt to building)
       auto bachTrack = cascade.bachelor_as<aod::TracksIU>();
-      if (bachTrack.sign() < 0){
+      if (bachTrack.sign() < 0) {
         charge = -1;
-      }else{
+      } else {
         charge = +1;
       }
 
