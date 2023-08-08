@@ -261,10 +261,9 @@ DECLARE_SOA_COLUMN(ZSecondaryVertex, zSecondaryVertex, float); //!
 DECLARE_SOA_DYNAMIC_COLUMN(RSecondaryVertex, rSecondaryVertex, //!
                            [](float xVtxS, float yVtxS) -> float { return RecoDecay::sqrtSumOfSquares(xVtxS, yVtxS); });
 DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float); //! sum of (non-weighted) distances of the secondary vertex to its prongs
-DECLARE_SOA_COLUMN(KFTopChi2OverNDF_DZero, kfTopChi2OverNDF_DZero, float);       //!
-DECLARE_SOA_COLUMN(KFTopChi2OverNDF_DZeroBar, kfTopChi2OverNDF_DZeroBar, float); //!
-DECLARE_SOA_COLUMN(KFGeoMass_DZero, kfGeoMass_DZero, float);                     //!
-DECLARE_SOA_COLUMN(KFGeoMass_DZeroBar, kfGeoMass_DZeroBar, float);               //!
+DECLARE_SOA_COLUMN(KFTopChi2OverNDF, kfTopChi2OverNDF, float);     //!
+DECLARE_SOA_COLUMN(KFGeoMass_DZero, kfGeoMass_DZero, float);       //!
+DECLARE_SOA_COLUMN(KFGeoMass_DZeroBar, kfGeoMass_DZeroBar, float); //!
 // prong properties
 DECLARE_SOA_COLUMN(PxProng0, pxProng0, float); //!
 DECLARE_SOA_COLUMN(PyProng0, pyProng0, float); //!
@@ -487,9 +486,6 @@ DECLARE_SOA_TABLE(HfCand2ProngBase, "AOD", "HFCAND2PBASE", //!
                   o2::soa::Index<>,
                   // general columns
                   HFCAND_COLUMNS,
-                  hf_cand::KFTopChi2OverNDF_DZero,
-                  hf_cand::KFTopChi2OverNDF_DZeroBar,
-                  hf_cand::KFGeoMass_DZero, hf_cand::KFGeoMass_DZeroBar,
                   // 2-prong specific columns
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
@@ -525,6 +521,10 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCand2ProngExt, HfCand2ProngBase, "HFCAND2PEXT"
                                 hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz);
 
 using HfCand2Prong = HfCand2ProngExt;
+
+DECLARE_SOA_TABLE(HfCand2ProngKF, "AOD", "HFCAND2PKF",
+                  hf_cand::KFTopChi2OverNDF,
+                  hf_cand::KFGeoMass_DZero, hf_cand::KFGeoMass_DZeroBar);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCand2ProngMcRec, "AOD", "HFCAND2PMCREC", //!
