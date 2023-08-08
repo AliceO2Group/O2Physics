@@ -352,7 +352,7 @@ struct HfCandidateSigmac0plusplusMc {
       /// → here we check level 1. first, and then levels 2. and 3. are inherited by the Λc+ → pK-π+ MC matching in candidateCreator3Prong.cxx
       if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaC0, array{static_cast<int>(pdg::Code::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
         // generated Σc0
-        // for (auto& daughter : particle.daughters_as<LambdacMcGen>()) {
+        // for (const auto& daughter : particle.daughters_as<LambdacMcGen>()) {
         for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)
@@ -366,7 +366,7 @@ struct HfCandidateSigmac0plusplusMc {
         }
       } else if (RecoDecay::isMatchedMCGen(particlesMc, particle, pdg::Code::kSigmaCPlusPlus, array{static_cast<int>(pdg::Code::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
         // generated Σc++
-        // for (auto& daughter : particle.daughters_as<LambdacMcGen>()) {
+        // for (const auto& daughter : particle.daughters_as<LambdacMcGen>()) {
         for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != pdg::Code::kLambdaCPlus)

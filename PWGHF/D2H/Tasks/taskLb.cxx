@@ -79,7 +79,7 @@ struct HfTaskLb {
     float centrality = collision.centRun2V0M();
     registry.fill(HIST("hCentrality"), centrality);
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
         continue;
       }
@@ -181,7 +181,7 @@ struct HfTaskLbMc {
                soa::Join<aod::McParticles, aod::HfCandLbMcGen> const& particlesMC, aod::TracksWMc const& tracks, aod::HfCand3Prong const&)
   {
     // MC rec
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       // Printf("(Panos) MC candidate: pT: %lf",candidate.pt());
       if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
         continue;
@@ -237,7 +237,7 @@ struct HfTaskLbMc {
 
     // MC gen. level
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
 
         auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
@@ -247,7 +247,7 @@ struct HfTaskLbMc {
 
         float ptProngs[2], yProngs[2], etaProngs[2];
         int counter = 0;
-        for (auto& daught : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
           yProngs[counter] = RecoDecay::y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));

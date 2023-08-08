@@ -49,7 +49,7 @@ struct HfTaskLcParametrizedPid {
   void process(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLcParametrizedPid, aod::HfCand3ProngMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
   {
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
@@ -114,7 +114,7 @@ struct HfTaskLcParametrizedPid {
       }
     }
 
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
         if (std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
           continue;

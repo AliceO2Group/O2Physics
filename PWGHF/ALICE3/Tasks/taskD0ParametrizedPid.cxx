@@ -61,7 +61,7 @@ struct HfTaskD0ParametrizedPid {
   // void process(const o2::aod::Collision& collision, soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0ParametrizedPid, aod::HfCand2ProngMcRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
   {
     // float ncontributor = collision.numContrib();
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       // if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
       //   continue;
       // }
@@ -108,7 +108,7 @@ struct HfTaskD0ParametrizedPid {
       }
     }
 
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
       //   continue;
       // }

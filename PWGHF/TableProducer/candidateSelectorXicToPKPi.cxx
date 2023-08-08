@@ -166,7 +166,7 @@ struct HfCandidateSelectorXicToPKPi {
   void process(aod::HfCand3Prong const& candidates, TracksSel const&)
   {
     // looping over 3-prong candidates
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // final selection flag: 0 - rejected, 1 - accepted
       auto statusXicToPKPi = 0;

@@ -155,7 +155,7 @@ struct HfCorrelatorD0D0bar {
 
     auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
-    for (auto& candidate1 : selectedD0CandidatesGrouped) {
+    for (const auto& candidate1 : selectedD0CandidatesGrouped) {
       if (yCandMax >= 0. && std::abs(yD0(candidate1)) > yCandMax) {
         continue;
       }
@@ -194,7 +194,7 @@ struct HfCorrelatorD0D0bar {
       if (candidate1.isSelD0() < selectionFlagD0) {
         continue;
       }
-      for (auto& candidate2 : selectedD0CandidatesGrouped) {
+      for (const auto& candidate2 : selectedD0CandidatesGrouped) {
         if (!(candidate2.hfflag() & 1 << DecayType::D0ToPiK)) { // check decay channel flag for candidate2
           continue;
         }
@@ -269,7 +269,7 @@ struct HfCorrelatorD0D0bar {
     bool flagD0Reflection = false;
     bool flagD0barSignal = false;
     bool flagD0barReflection = false;
-    for (auto& candidate1 : selectedD0CandidatesGroupedMC) {
+    for (const auto& candidate1 : selectedD0CandidatesGroupedMC) {
       // check decay channel flag for candidate1
       if (!(candidate1.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
@@ -323,7 +323,7 @@ struct HfCorrelatorD0D0bar {
       }
       flagD0Signal = candidate1.flagMcMatchRec() == 1 << DecayType::D0ToPiK;        // flagD0Signal 'true' if candidate1 matched to D0 (particle)
       flagD0Reflection = candidate1.flagMcMatchRec() == -(1 << DecayType::D0ToPiK); // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
-      for (auto& candidate2 : selectedD0CandidatesGroupedMC) {
+      for (const auto& candidate2 : selectedD0CandidatesGroupedMC) {
         if (!(candidate2.hfflag() & 1 << DecayType::D0ToPiK)) { // check decay channel flag for candidate2
           continue;
         }
@@ -388,7 +388,7 @@ struct HfCorrelatorD0D0bar {
     int counterD0D0bar = 0;
     registry.fill(HIST("hMCEvtCount"), 0);
     // MC gen level
-    for (auto& particle1 : particlesMC) {
+    for (const auto& particle1 : particlesMC) {
       // check if the particle is D0 or D0bar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
         continue;
@@ -412,7 +412,7 @@ struct HfCorrelatorD0D0bar {
         continue;
       }
       registry.fill(HIST("hCountD0triggersMCGen"), 0, particle1.pt()); // to count trigger D0 (for normalisation)
-      for (auto& particle2 : particlesMC) {
+      for (const auto& particle2 : particlesMC) {
         if (particle2.pdgCode() != pdg::Code::kD0Bar) { // check that inner particle is D0bar
           continue;
         }
@@ -447,13 +447,13 @@ struct HfCorrelatorD0D0bar {
             if (rightDecayChannels) { // fill with D and Dbar daughter particls acceptance checks
               bool candidate1DauInAcc = true;
               bool candidate2DauInAcc = true;
-              for (auto& dau : particle1.daughters_as<MCParticlesPlus>()) {
+              for (const auto& dau : particle1.daughters_as<MCParticlesPlus>()) {
                 if (std::abs(dau.eta()) > etaCut) {
                   candidate1DauInAcc = false;
                   break;
                 }
               }
-              for (auto& dau : particle2.daughters_as<MCParticlesPlus>()) {
+              for (const auto& dau : particle2.daughters_as<MCParticlesPlus>()) {
                 if (std::abs(dau.eta()) > etaCut) {
                   candidate2DauInAcc = false;
                   break;
@@ -480,7 +480,7 @@ struct HfCorrelatorD0D0bar {
     int counterCCbar = 0, counterCCbarBeforeEtasel = 0;
 
     // loop over particles at MC gen level
-    for (auto& particle1 : particlesMC) {
+    for (const auto& particle1 : particlesMC) {
       if (std::abs(particle1.pdgCode()) != PDG_t::kCharm) { // search c or cbar particles
         continue;
       }
@@ -510,7 +510,7 @@ struct HfCorrelatorD0D0bar {
       }
       registry.fill(HIST("hCountCtriggersMCGen"), 0, particle1.pt()); // to count trigger c quark (for normalisation)
 
-      for (auto& particle2 : particlesMC) {
+      for (const auto& particle2 : particlesMC) {
         if (particle2.pdgCode() != PDG_t::kCharmBar) { // check that inner particle is a cbar
           continue;
         }

@@ -94,7 +94,7 @@ struct HfTaskDplus {
 
   void process(soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
   {
-    for (auto& candidate : selectedDPlusCandidates) {
+    for (const auto& candidate : selectedDPlusCandidates) {
       // not possible in Filter since expressions do not support binary operators
       if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
@@ -133,7 +133,7 @@ struct HfTaskDplus {
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
-    for (auto& candidate : recoFlagDPlusCandidates) {
+    for (const auto& candidate : recoFlagDPlusCandidates) {
       // not possible in Filter since expressions do not support binary operators
       if (!(candidate.hfflag() & 1 << DecayType::DplusToPiKPi)) {
         continue;
@@ -191,7 +191,7 @@ struct HfTaskDplus {
     }
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::DplusToPiKPi) {
         auto ptGen = particle.pt();
         auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));

@@ -177,7 +177,7 @@ struct HfCandidateSelectorD0ParametrizedPid {
   void process(aod::HfCand2Prong const& candidates, TracksSel const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // selection flag
       int statusD0NoPid = 0;

@@ -242,7 +242,7 @@ struct HfTaskFlow {
   void fillQA(float multiplicity, TTracks tracks)
   {
     int Ntracks = 0;
-    for (auto& track1 : tracks) {
+    for (const auto& track1 : tracks) {
       Ntracks++;
       registry.fill(HIST("hPt"), track1.pt());
       registry.fill(HIST("hEta"), track1.eta());
@@ -260,7 +260,7 @@ struct HfTaskFlow {
     registry.fill(HIST("hVtxZMixing"), vz);
 
     int Ntracks = 0;
-    for (auto& track1 : tracks) {
+    for (const auto& track1 : tracks) {
       Ntracks++;
       registry.fill(HIST("hPtMixing"), track1.pt());
       registry.fill(HIST("hEtaMixing"), track1.eta());
@@ -276,7 +276,7 @@ struct HfTaskFlow {
     registry.fill(HIST("hVtxZHFMixing"), vz);
 
     int Ntracks = 0;
-    for (auto& track1 : tracks) {
+    for (const auto& track1 : tracks) {
       Ntracks++;
       registry.fill(HIST("hPtHFMixing"), track1.pt());
       registry.fill(HIST("hEtaHFMixing"), track1.eta());
@@ -288,7 +288,7 @@ struct HfTaskFlow {
   template <typename TTracks>
   void fillMFTQA(float multiplicity, TTracks tracks)
   {
-    for (auto& track1 : tracks) {
+    for (const auto& track1 : tracks) {
       registry.fill(HIST("hEtaMFT"), track1.eta());
       float phi = track1.phi();
       o2::math_utils::bringTo02Pi(phi);
@@ -314,7 +314,7 @@ struct HfTaskFlow {
   template <typename TTracks>
   void fillCandidateQA(TTracks candidates)
   {
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!isAcceptedCandidate(candidate)) {
         continue;
       }
@@ -352,7 +352,7 @@ struct HfTaskFlow {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
 
-    for (auto& track1 : tracks1) {
+    for (const auto& track1 : tracks1) {
 
       float eta1 = track1.eta();
       float pt1 = track1.pt();
@@ -381,7 +381,7 @@ struct HfTaskFlow {
         target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, invmass, triggerWeight);
       }
 
-      for (auto& track2 : tracks2) {
+      for (const auto& track2 : tracks2) {
 
         //  case of h-h correlations where the two types of tracks are the same
         //  this avoids autocorrelations and double counting of particle pairs
@@ -435,7 +435,7 @@ struct HfTaskFlow {
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
     Pair<aodCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
 
-    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+    for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
       if (!(isCollisionSelected(collision1, false))) {
         continue;

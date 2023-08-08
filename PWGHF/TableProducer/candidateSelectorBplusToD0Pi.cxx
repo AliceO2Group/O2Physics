@@ -136,7 +136,7 @@ struct HfCandidateSelectorBplusToD0Pi {
   void process(aod::HfCandBplus const& hfCandBs, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&, TracksPidWithSel const&)
   {
 
-    for (auto& hfCandB : hfCandBs) { // looping over Bplus candidates
+    for (const auto& hfCandB : hfCandBs) { // looping over Bplus candidates
 
       int statusBplus = 0;
       auto ptCandB = hfCandB.pt();

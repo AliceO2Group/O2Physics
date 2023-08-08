@@ -78,7 +78,7 @@ struct HfTaskLcCentrality {
     float centrality = collision.centRun2V0M();
     registry.fill(HIST("hCentrality"), centrality);
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
@@ -147,7 +147,7 @@ struct HfTaskLcCentralityMc {
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
       }
@@ -176,7 +176,7 @@ struct HfTaskLcCentralityMc {
     }
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::LcToPKPi) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;

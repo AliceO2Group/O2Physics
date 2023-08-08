@@ -221,7 +221,7 @@ struct HfTaskSigmac {
   {
 
     /// loop over the candidate Σc0,++
-    for (auto& candSc : candidatesSc) {
+    for (const auto& candSc : candidatesSc) {
 
       const int8_t chargeSc = candSc.charge(); // either Σc0 or Σc++
 
@@ -359,7 +359,7 @@ struct HfTaskSigmac {
   {
 
     /// MC generated particles
-    for (auto& particle : particlesMcSc) {
+    for (const auto& particle : particlesMcSc) {
 
       /// reject immediately particles different from Σc0,++
       bool isSc0Gen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi));
@@ -471,7 +471,7 @@ struct HfTaskSigmac {
     } /// end loop over generated particles
 
     /// reconstructed Σc0,++ matched to MC
-    for (auto& candSc : candidatesSc) {
+    for (const auto& candSc : candidatesSc) {
 
       /// Candidate selected as Σc0 and/or Σc++
       if (!(candSc.hfflag() & 1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && !(candSc.hfflag() & 1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi)) {

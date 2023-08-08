@@ -177,7 +177,7 @@ struct HfCandidateSelectorD0Alice3Forward {
   void process(aod::HfCand2Prong const& candidates, TracksSel const& forwardtracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
 
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // selection flag
       int statusHFFlag = 0;

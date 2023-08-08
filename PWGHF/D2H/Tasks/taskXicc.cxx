@@ -72,7 +72,7 @@ struct HfTaskXicc {
   void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi>> const& candidates)
   // void process(aod::HfCandXicc const& candidates)
   {
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::XiccToXicPi)) {
         continue;
       }
@@ -179,7 +179,7 @@ struct HfTaskXiccMc {
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::XiccToXicPi)) {
         continue;
       }
@@ -260,7 +260,7 @@ struct HfTaskXiccMc {
     } // end of loop over reconstructed candidates
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::XiccToXicPi) {
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandMax) {
           continue;

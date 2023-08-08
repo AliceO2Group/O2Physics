@@ -63,7 +63,7 @@ struct HfTaskD0Alice3Barrel {
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel, aod::HfCand2ProngMcRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
   {
     // float centrality = collision.centV0M();
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       // if (centrality<=centralitySelectionMin && centrality>centralitySelectionMax) {
       // continue;
       // }
@@ -137,7 +137,7 @@ struct HfTaskD0Alice3Barrel {
       }
     }
 
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
         if (std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
           continue;

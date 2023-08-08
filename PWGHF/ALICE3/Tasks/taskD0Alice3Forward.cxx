@@ -43,7 +43,7 @@ struct HfTaskD0Alice3Forward {
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Forward, aod::HfCand2ProngMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& particlesMC, aod::TracksWMc const& tracks)
   {
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
@@ -66,7 +66,7 @@ struct HfTaskD0Alice3Forward {
       }
     }
 
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
         if (std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
           continue;

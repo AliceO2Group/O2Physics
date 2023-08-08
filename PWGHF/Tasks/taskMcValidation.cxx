@@ -163,7 +163,7 @@ struct HfTaskMcValidationGen {
     std::array<int, nCharmHadrons> counterPrompt{0}, counterNonPrompt{0};
     bool hasSignal = false;
 
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (!particle.has_mothers()) {
         continue;
       }
@@ -428,7 +428,7 @@ struct HfTaskMcValidationRec {
       registry.fill(HIST("histNtracks"), tracksGlobalWoDCAColl1.size());
       auto tracksColl1 = tracksInAcc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       int nContributors = 0, nGoodContributors = 0;
-      for (auto& track : tracksColl1) {
+      for (const auto& track : tracksColl1) {
         if (!track.isPVContributor()) {
           continue;
         }
@@ -450,7 +450,7 @@ struct HfTaskMcValidationRec {
           float radColl1 = std::sqrt(collision.posX() * collision.posX() + collision.posY() * collision.posY());
           float radColl2 = std::sqrt(collision2.posX() * collision2.posX() + collision2.posY() * collision2.posY());
           int nFromBeautyColl1 = 0, nFromBeautyColl2 = 0;
-          for (auto& trackColl1 : tracksColl1) {
+          for (const auto& trackColl1 : tracksColl1) {
             if (trackColl1.has_mcParticle() && trackColl1.isPVContributor()) {
               auto particleColl1 = trackColl1.mcParticle();
               auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particleColl1, true);
@@ -460,7 +460,7 @@ struct HfTaskMcValidationRec {
             }
           }
           auto tracksColl2 = tracksInAcc->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
-          for (auto& trackColl2 : tracksColl2) {
+          for (const auto& trackColl2 : tracksColl2) {
             if (trackColl2.has_mcParticle() && trackColl2.isPVContributor()) {
               auto particleColl2 = trackColl2.mcParticle();
               auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particleColl2, true);
@@ -476,7 +476,7 @@ struct HfTaskMcValidationRec {
     }
 
     // loop over tracks
-    for (auto& track : tracksFilteredGlobalTrackWoDCA) {
+    for (const auto& track : tracksFilteredGlobalTrackWoDCA) {
       // check number of ITS hits
       int nITSlayers = 0;
       uint8_t ITSHitMap = track.itsClusterMap();
@@ -544,7 +544,7 @@ struct HfTaskMcValidationRec {
     }
 
     // loop over 2-prong candidates
-    for (auto& cand2Prong : cand2Prongs) {
+    for (const auto& cand2Prong : cand2Prongs) {
 
       // determine which kind of candidate it is
       bool isD0Sel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK);
@@ -602,7 +602,7 @@ struct HfTaskMcValidationRec {
     } // end loop on 2-prong candidates
 
     // loop over 3-prong candidates
-    for (auto& cand3Prong : cand3Prongs) {
+    for (const auto& cand3Prong : cand3Prongs) {
 
       // determine which kind of candidate it is
       bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi);

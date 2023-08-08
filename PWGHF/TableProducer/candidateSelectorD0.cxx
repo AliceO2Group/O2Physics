@@ -191,7 +191,7 @@ struct HfCandidateSelectorD0 {
   void process(aod::HfCand2Prong const& candidates, TracksSel const&)
   {
     // looping over 2-prong candidates
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // final selection flag: 0 - rejected, 1 - accepted
       int statusD0 = 0;

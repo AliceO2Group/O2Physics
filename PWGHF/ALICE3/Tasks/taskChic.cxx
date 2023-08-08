@@ -73,7 +73,7 @@ struct HfTaskChic {
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HfSelChicToJpsiGamma>> const& candidates)
   {
     int decayMode = modeChicToJpsiToMuMuGamma ? hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma : hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
@@ -156,7 +156,7 @@ struct HfTaskChicMc {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
     int decayMode = modeChicToJpsiToMuMuGamma ? hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma : hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
@@ -199,7 +199,7 @@ struct HfTaskChicMc {
     } // rec
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
         auto mchic = RecoDecay::getMassPDG(pdg::Code::kChiC1); // chi_c1(1p)
         if (yCandMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, mchic)) > yCandMax) {
@@ -213,7 +213,7 @@ struct HfTaskChicMc {
         // properties of gen matched chic, to get a first look at some cuts
         float ptProngs[3];
         int counter = 0;
-        for (auto& dau : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& dau : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = dau.pt();
           counter++;
         }

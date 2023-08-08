@@ -365,7 +365,7 @@ struct HfCandidateCreatorBplusExpressions {
     }
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // Printf("New gen. candidate");
       flag = 0;
       origin = 0;

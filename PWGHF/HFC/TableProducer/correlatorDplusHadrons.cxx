@@ -439,7 +439,7 @@ struct HfCorrelatorDplusHadrons {
 
         // Check Mother of particle 2
         bool flagMotherFound = false;
-        for (auto& m : particle2.mothers_as<aod::McParticles>()) {
+        for (const auto& m : particle2.mothers_as<aod::McParticles>()) {
           if (m.globalIndex() == particle1.globalIndex()) {
             flagMotherFound = true;
             break;
@@ -488,10 +488,10 @@ struct HfCorrelatorDplusHadrons {
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<mySelCollisions, myCandidatesData, myTracks, BinningType> pairData{corrBinning, 5, -1, collisions, tracksTuple, &cache};
 
-    for (auto& [c1, tracks1, c2, tracks2] : pairData) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pairData) {
       // LOGF(info, "Mixed event collisions: Index = (%d, %d), tracks Size: (%d, %d), Z Vertex: (%f, %f), Pool Bin: (%d, %d)", c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size(), c1.posZ(), c2.posZ(), corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFV0M())),corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()))); // For debug
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
-      for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+      for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
         if (yCandMax >= 0. && std::abs(yDplus(t1)) > yCandMax) {
           continue;
@@ -511,9 +511,9 @@ struct HfCorrelatorDplusHadrons {
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<mySelCollisions, myCandidatesMcRec, myTracks, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple, &cache};
 
-    for (auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
-      for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+      for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
         if (yCandMax >= 0. && std::abs(yDplus(t1)) > yCandMax) {
           continue;
@@ -552,8 +552,8 @@ struct HfCorrelatorDplusHadrons {
     auto tracksTuple = std::make_tuple(particlesMc, particlesMc);
     Pair<McCollisionsSel, McParticlesSel, McParticlesSel, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, collisions, tracksTuple, &cache};
 
-    for (auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
-      for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
+      for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
         // Check track t1 is Dplus
         if (std::abs(t1.pdgCode()) != pdg::Code::kDPlus) {

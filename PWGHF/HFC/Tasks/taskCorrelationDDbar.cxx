@@ -234,7 +234,7 @@ struct HfTaskCorrelationDDbar {
   /// Works on both USL and LS analyses pair tables
   void processData(aod::DDbarPairFull const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       //define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -291,7 +291,7 @@ struct HfTaskCorrelationDDbar {
   /// Works on both USL and LS analyses pair tables
   void processMcRec(aod::DDbarPairFull const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       //define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
@@ -438,7 +438,7 @@ struct HfTaskCorrelationDDbar {
   /// Works on both USL and LS analyses pair tables (and if tables are filled with quark pairs as well)
   void processMcGen(aod::DDbarPair const& pairEntries)
   {
-    for (auto& pairEntry : pairEntries) {
+    for (const auto& pairEntry : pairEntries) {
       //define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();

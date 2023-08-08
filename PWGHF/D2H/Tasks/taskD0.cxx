@@ -163,7 +163,7 @@ struct HfTaskD0 {
 
   void process(soa::Join<aod::HfCand2Prong, aod::HfSelD0>& candidates)
   {
-    for (auto& candidate : selectedD0Candidates) {
+    for (const auto& candidate : selectedD0Candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
@@ -221,7 +221,7 @@ struct HfTaskD0 {
   {
     // MC rec.
     // Printf("MC Candidates: %d", candidates.size());
-    for (auto& candidate : recoFlag2Prong) {
+    for (const auto& candidate : recoFlag2Prong) {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
@@ -380,7 +380,7 @@ struct HfTaskD0 {
     }
     // MC gen.
     // Printf("MC Particles: %d", particlesMC.size());
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::D0ToPiK) {
         if (yCandGenMax >= 0. && std::abs(RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > yCandGenMax) {
           continue;

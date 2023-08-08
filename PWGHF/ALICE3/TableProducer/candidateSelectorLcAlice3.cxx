@@ -145,7 +145,7 @@ struct HfCandidateSelectorLcAlice3 {
 
   void process(aod::HfCand3Prong const& candidates, TracksSel const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       // selection flag
 

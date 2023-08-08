@@ -541,7 +541,7 @@ struct HfCorrelatorDsHadrons {
   void processMcEfficiencies(CandDsMcReco const& candidates, CandDsMcGen const& particlesMc, MyTracksData const& tracksData, aod::TracksWMc const&)
   {
     // MC rec.
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
@@ -623,7 +623,7 @@ struct HfCorrelatorDsHadrons {
 
     auto getTracksSize = [&particlesMc](SelCollisionsWithDsMc::iterator const& mccollision) {
       int nTracks = 0;
-      for (auto& track : particlesMc) {
+      for (const auto& track : particlesMc) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
           nTracks++;
         }
@@ -695,7 +695,7 @@ struct HfCorrelatorDsHadrons {
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<soa::Join<aod::Collisions, aod::Mults>, CandDsData, MyTracksData, BinningType> pairData{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
-    for (auto& [c1, tracks1, c2, tracks2] : pairData) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pairData) {
       if (tracks1.size() == 0) {
         continue;
       }
@@ -704,7 +704,7 @@ struct HfCorrelatorDsHadrons {
       int poolBinDs = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFV0M()));
       registry.fill(HIST("hTracksPoolBin"), poolBin);
       registry.fill(HIST("hDsPoolBin"), poolBinDs);
-      for (auto& [cand, pAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+      for (const auto& [cand, pAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if (!(cand.hfflag() & 1 << DecayType::DsToKKPi)) {
           continue;
         }
@@ -739,7 +739,7 @@ struct HfCorrelatorDsHadrons {
 
   void processMcRecME(SelCollisionsWithDs& collisions, CandDsMcReco& candidates, MyTracksData& tracks)
   {
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
         continue;
       }
@@ -767,12 +767,12 @@ struct HfCorrelatorDsHadrons {
 
     bool isDsPrompt = false;
     bool isDsSignal = false;
-    for (auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
       int poolBinDs = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFV0M()));
       registry.fill(HIST("hTracksPoolBin"), poolBin);
       registry.fill(HIST("hDsPoolBin"), poolBinDs);
-      for (auto& [candidate, pAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+      for (const auto& [candidate, pAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
         if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {
           continue;

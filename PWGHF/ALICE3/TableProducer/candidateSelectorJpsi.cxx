@@ -160,7 +160,7 @@ struct HfCandidateSelectorJpsi {
   void processAlice2(aod::HfCand2Prong const& candidates, TracksSelAlice2 const&)
   {
     // looping over 2-prong candidates
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       if (!(candidate.hfflag() & 1 << DecayType::JpsiToEE) && !(candidate.hfflag() & 1 << DecayType::JpsiToMuMu)) {
         hfSelJpsiCandidate(0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -229,7 +229,7 @@ struct HfCandidateSelectorJpsi {
   void processAlice3(aod::HfCand2Prong const& candidates, TracksSelAlice3 const&, aod::RICHs const&, aod::MIDs const&)
   {
     // looping over 2-prong candidates
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
 
       if (!(candidate.hfflag() & 1 << DecayType::JpsiToEE) && !(candidate.hfflag() & 1 << DecayType::JpsiToMuMu)) {
         hfSelJpsiCandidate(0, 0, 0, 0, 0, 0, 0, 0, 0);

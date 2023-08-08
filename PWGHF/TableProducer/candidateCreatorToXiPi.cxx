@@ -457,7 +457,7 @@ struct HfCandidateCreatorToXiPiMc {
     int pdgCodeProton = kProton;              // 2212
 
     // Match reconstructed candidates.
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       // Printf("New rec. candidate");
       flag = 0;
       // origin = 0;
@@ -538,7 +538,7 @@ struct HfCandidateCreatorToXiPiMc {
     } // close loop over candidates
 
     // Match generated particles.
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       // Printf("New gen. candidate");
       flag = -9;
       sign = -9;
