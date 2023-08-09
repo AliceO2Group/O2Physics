@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// \brief Analyses reduced tables (DGCandidates, DGTracks) of DG candidates produced with DGCandProducer
+// \brief Analyses UD tables (DGCandidates, DGTracks) of DG candidates produced with DGCandProducer
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  06.06.2022
 
@@ -75,6 +75,7 @@ struct DGCandAnalyzer {
   // using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
   using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
 
+  // a function to fill 2Prong histograms
   template <typename TTrack>
   void fillSignalHists(DGParticle ivm, TTrack const& dgtracks, DGPIDSelector pidsel)
   {
@@ -254,6 +255,13 @@ struct DGCandAnalyzer {
     }
     registry.fill(HIST("stat/candCaseAll"), candCase, 1.);
 
+    // fill FIT amplitude histograms
+    registry.fill(HIST("FIT/FT0AAmplitude"), dgcand.totalFT0AmplitudeA(), 1.);
+    registry.fill(HIST("FIT/FT0CAmplitude"), dgcand.totalFT0AmplitudeC(), 1.);
+    registry.fill(HIST("FIT/FV0AAmplitude"), dgcand.totalFV0AmplitudeA(), 1.);
+    registry.fill(HIST("FIT/FDDAAmplitude"), dgcand.totalFDDAmplitudeA(), 1.);
+    registry.fill(HIST("FIT/FDDCAmplitude"), dgcand.totalFDDAmplitudeC(), 1.);
+
     // skip events with too few/many tracks
     Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
     PVContributors.bindTable(dgtracks);
@@ -279,13 +287,6 @@ struct DGCandAnalyzer {
       LOGF(debug, "Rejected 3: %f below threshold of %f.", rtrwTOF, minRgtrwTOF);
       return;
     }
-
-    // fill FIT amplitude histograms
-    registry.fill(HIST("FIT/FT0AAmplitude"), dgcand.totalFT0AmplitudeA(), 1.);
-    registry.fill(HIST("FIT/FT0CAmplitude"), dgcand.totalFT0AmplitudeC(), 1.);
-    registry.fill(HIST("FIT/FV0AAmplitude"), dgcand.totalFV0AmplitudeA(), 1.);
-    registry.fill(HIST("FIT/FDDAAmplitude"), dgcand.totalFDDAmplitudeA(), 1.);
-    registry.fill(HIST("FIT/FDDCAmplitude"), dgcand.totalFDDAmplitudeC(), 1.);
 
     // check FIT information
     auto bitMin = anaPars.dBCMin() + 16;
@@ -316,23 +317,22 @@ struct DGCandAnalyzer {
     auto nIVMs = pidsel.computeIVMs(PVContributors);
 
     // process the unlike sign combinations
-    if (nIVMs[0] > 0 || nIVMs[1] > 0) {
-      // check bcnum
-      if (bcnums.find(bcnum) != bcnums.end()) {
-        LOGF(info, "candCase %i bcnum %i allready found! ", candCase, bcnum);
-        registry.fill(HIST("stat/candCaseSel"), 4, 1.);
-        return;
-      } else {
-        bcnums.insert(bcnum);
-      }
-    } else {
+    if (nIVMs[0] == 0 && nIVMs[1] == 0) {
       LOGF(debug, "Rejected 4: no IVMs.");
       return;
     }
 
     // update histogram stat/candCase and stat/nDGperRun
-    registry.fill(HIST("stat/candCaseSel"), 1, 1.);
+    registry.fill(HIST("stat/candCaseSel"), 0, 1.);
     registry.fill(HIST("stat/candCaseSel"), candCase, 1.);
+
+    // check bcnum
+    if (bcnums.find(bcnum) != bcnums.end()) {
+      LOGF(info, "candCase %i bcnum %i allready found! ", candCase, bcnum);
+      registry.fill(HIST("stat/candCaseSel"), 4, 1.);
+    } else {
+      bcnums.insert(bcnum);
+    }
     registry.get<TH1>(HIST("stat/nDGperRun"))->Fill(Form("%d", run), 1);
 
     // update histograms
@@ -446,41 +446,39 @@ struct DGCandAnalyzer {
     }
 
     // process the like sign combinations
-    if (nIVMs[1] > 0) {
-      goodIVMs = 0;
-      for (auto ivm : pidsel.likeIVMs()) {
-        // cut on pt-system
-        if (ivm.Perp() < anaPars.minptsys() || ivm.Perp() > anaPars.maxptsys()) {
+    goodIVMs = 0;
+    for (auto ivm : pidsel.likeIVMs()) {
+      // cut on pt-system
+      if (ivm.Perp() < anaPars.minptsys() || ivm.Perp() > anaPars.maxptsys()) {
+        continue;
+      }
+
+      // applicable to 2-track events - cut on angle between two tracks
+      if (anaPars.nCombine() == 2) {
+        auto ind1 = ivm.trkinds()[0];
+        auto trk1 = PVContributors.begin() + ind1;
+        auto v1 = TVector3(trk1.px(), trk1.py(), trk1.pz());
+        auto ind2 = ivm.trkinds()[1];
+        auto trk2 = PVContributors.begin() + ind2;
+        auto v2 = TVector3(trk2.px(), trk2.py(), trk2.pz());
+
+        // cut on angle
+        auto angle = v1.Angle(v2);
+        LOGF(debug, "angle %f (%f / %f)", angle, anaPars.minAlpha(), anaPars.maxAlpha());
+        if (angle < anaPars.minAlpha() || angle > anaPars.maxAlpha()) {
           continue;
         }
-
-        // applicable to 2-track events - cut on angle between two tracks
-        if (anaPars.nCombine() == 2) {
-          auto ind1 = ivm.trkinds()[0];
-          auto trk1 = PVContributors.begin() + ind1;
-          auto v1 = TVector3(trk1.px(), trk1.py(), trk1.pz());
-          auto ind2 = ivm.trkinds()[1];
-          auto trk2 = PVContributors.begin() + ind2;
-          auto v2 = TVector3(trk2.px(), trk2.py(), trk2.pz());
-
-          // cut on angle
-          auto angle = v1.Angle(v2);
-          LOGF(debug, "angle %f (%f / %f)", angle, anaPars.minAlpha(), anaPars.maxAlpha());
-          if (angle < anaPars.minAlpha() || angle > anaPars.maxAlpha()) {
-            continue;
-          }
-        }
-
-        // update system/IVMptSysDG
-        registry.fill(HIST("system/likeIVMptSysDG"), ivm.M(), ivm.Perp());
-        for (auto ind : ivm.trkinds()) {
-          auto track = PVContributors.begin() + ind;
-          registry.fill(HIST("system/likeIVMptTrkDG"), ivm.M(), track.pt());
-        }
-        goodIVMs++;
       }
-      registry.fill(HIST("system/nLikeIVMs"), goodIVMs, 1.);
+
+      // update system/IVMptSysDG
+      registry.fill(HIST("system/likeIVMptSysDG"), ivm.M(), ivm.Perp());
+      for (auto ind : ivm.trkinds()) {
+        auto track = PVContributors.begin() + ind;
+        registry.fill(HIST("system/likeIVMptTrkDG"), ivm.M(), track.pt());
+      }
+      goodIVMs++;
     }
+    registry.fill(HIST("system/nLikeIVMs"), goodIVMs, 1.);
   }
 };
 
