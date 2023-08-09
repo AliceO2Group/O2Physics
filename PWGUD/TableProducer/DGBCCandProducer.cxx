@@ -248,7 +248,8 @@ struct DGBCCandProducer {
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, aod::TracksExtra, /*aod::TracksCov,*/ aod::TracksDCA, aod::TrackSelection,
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                        aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+                        aod::TOFSignal, aod::pidTOFbeta,
+                        aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FTCs = aod::FwdTracks;
 
   Preslice<TCs> TCperCollision = aod::track::collisionId;
@@ -376,6 +377,8 @@ struct DGBCCandProducer {
                     track.tpcNSigmaPi(),
                     track.tpcNSigmaKa(),
                     track.tpcNSigmaPr(),
+                    track.beta(),
+                    track.betaerror(),
                     track.tofNSigmaEl(),
                     track.tofNSigmaMu(),
                     track.tofNSigmaPi(),
