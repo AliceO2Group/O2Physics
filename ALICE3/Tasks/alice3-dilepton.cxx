@@ -107,7 +107,7 @@ struct Alice3Dilepton {
     registry.add("Reconstructed/Track/Pt", "Track Pt", kTH1F, {axisPt});
     registry.add("Reconstructed/Track/Eta", "Track Eta", kTH1F, {axisEta});
     registry.add("Reconstructed/Track/Phi", "Track Eta", kTH1F, {axisPhi});
-    registry.add("Reconstructed/Particle/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
+    registry.add("Reconstructed/Track/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
     registry.add("Reconstructed/Track/SigmaOTofvspt", "Track #sigma oTOF", kTH2F, {axisPt, axisSigmaEl});
     registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
     registry.add("Reconstructed/Track/outerTOFTrackLength", "Track length outer TOF", kTH1F, {axisTrackLengthOuterTOF});
