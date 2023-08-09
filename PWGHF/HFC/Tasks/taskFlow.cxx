@@ -427,7 +427,7 @@ struct HfTaskFlow {
   }
 
   template <typename TTracksTrig, typename TTracksAssoc, typename TLambda>
-  void mixCollisions(aodCollisions& collisions, TTracksTrig& tracks1, TTracksAssoc& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
+  void mixCollisions(aodCollisions const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
   {
     using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getPartsSize)>, aod::collision::PosZ, decltype(getPartsSize)>;
     BinningType binningWithTracksSize{{getPartsSize}, {axisVertex, axisMultiplicity}, true};
@@ -534,8 +534,8 @@ struct HfTaskFlow {
   // =====================================
   //    process mixed event correlations: h-h case
   // =====================================
-  void processMixedTpcTpcHH(aodCollisions& collisions,
-                            aodTracks& tracks)
+  void processMixedTpcTpcHH(aodCollisions const& collisions,
+                            aodTracks const& tracks)
   {
     //  we want to group collisions based on charged-track multiplicity
     auto getTracksSize = [&tracks, this](aodCollisions::iterator const& col) {
@@ -551,9 +551,9 @@ struct HfTaskFlow {
   // =====================================
   //    process mixed event correlations: h-h case
   // =====================================
-  void processMixedHfHadrons(aodCollisions& collisions,
-                             aodTracks& tracks,
-                             hfCandidates& candidates)
+  void processMixedHfHadrons(aodCollisions const& collisions,
+                             aodTracks const& tracks,
+                             hfCandidates const& candidates)
   {
     //  we want to group collisions based on charged-track multiplicity
     auto getTracksSize = [&tracks, this](aodCollisions::iterator const& col) {

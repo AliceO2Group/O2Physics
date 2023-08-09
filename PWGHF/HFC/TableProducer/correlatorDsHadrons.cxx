@@ -694,7 +694,9 @@ struct HfCorrelatorDsHadrons {
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcGen, "Process MC Gen mode", false);
 
   // Event Mixing
-  void processDataME(soa::Join<aod::Collisions, aod::Mults>& collisions, CandDsData& candidates, MyTracksData& tracks)
+  void processDataME(soa::Join<aod::Collisions, aod::Mults> const& collisions,
+                     CandDsData const& candidates,
+                     MyTracksData const& tracks)
   {
     if (candidates.size() == 0) {
       return;
@@ -748,7 +750,9 @@ struct HfCorrelatorDsHadrons {
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processDataME, "Process Mixed Event Data", false);
 
-  void processMcRecME(SelCollisionsWithDs& collisions, CandDsMcReco& candidates, MyTracksData& tracks)
+  void processMcRecME(SelCollisionsWithDs const& collisions,
+                      CandDsMcReco const& candidates,
+                      MyTracksData const& tracks)
   {
     for (const auto& candidate : candidates) {
       if (yCandMax >= 0. && std::abs(yDs(candidate)) > yCandMax) {

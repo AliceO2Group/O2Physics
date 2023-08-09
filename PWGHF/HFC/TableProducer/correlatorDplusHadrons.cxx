@@ -491,7 +491,9 @@ struct HfCorrelatorDplusHadrons {
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
   Filter dplusfilter = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= 1;
 
-  void processDataMixedEvent(mySelCollisions& collisions, myCandidatesData& candidates, myTracks& tracks)
+  void processDataMixedEvent(mySelCollisions const& collisions,
+                             myCandidatesData const& candidates,
+                             myTracks const& tracks)
   {
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<mySelCollisions, myCandidatesData, myTracks, BinningType> pairData{corrBinning, 5, -1, collisions, tracksTuple, &cache};
@@ -514,7 +516,9 @@ struct HfCorrelatorDplusHadrons {
   // Event Mixing for the MCRec Mode
   using myCandidatesMcRec = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>>;
 
-  void processMcRecMixedEvent(mySelCollisions& collisions, myCandidatesMcRec& candidates, myTracks& tracks)
+  void processMcRecMixedEvent(mySelCollisions const& collisions,
+                              myCandidatesMcRec const& candidates,
+                              myTracks const& tracks)
   {
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<mySelCollisions, myCandidatesMcRec, myTracks, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple, &cache};
@@ -540,7 +544,8 @@ struct HfCorrelatorDplusHadrons {
   Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonSel == true;
   Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
 
-  void processMcGenMixedEvent(McCollisionsSel& collisions, McParticlesSel& particlesMc)
+  void processMcGenMixedEvent(McCollisionsSel const& collisions,
+                              McParticlesSel const& particlesMc)
   {
 
     auto getTracksSize = [&particlesMc, this](McCollisionsSel::iterator const& collision) {
