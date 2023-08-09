@@ -1284,20 +1284,42 @@ DECLARE_SOA_TABLE(DDbarRecoInfo, "AOD", "DDBARRECOINFO",
 // definition of columns and tables for D0-Hadron correlation pairs
 namespace hf_correlation_d0_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
-DECLARE_SOA_COLUMN(PtD, ptD, float);
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);
-DECLARE_SOA_COLUMN(MD, mD, float);
-DECLARE_SOA_COLUMN(MDbar, mDbar, float);
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);       //! DeltaPhi between D0 and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);       //! DeltaEta between D0 and Hadrons
+DECLARE_SOA_COLUMN(PtD, ptD, float);                 //! Transverse momentum of D0
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);       //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MD, mD, float);                   //! Invariant mass of D0
+DECLARE_SOA_COLUMN(MDbar, mDbar, float);             //! Invariant mass of D0bar
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int); //! Tag for D0,D0bar
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);           //! Pool Bin for the MixedEvent
+
+enum ParticleTypeData {
+  D0Only = 1,        // Identified as D0
+  D0barOnly,         // Identified as D0bar
+  D0D0barBoth,       // Identified as both D0 and D0bar
+  D0OnlySoftPi = 11, // Identified as D0 with soft pion
+  D0barOnlySoftPi,   // Identified as D0bar with soft pion
+  D0D0barBothSoftPi  // Identified as both D0 and D0bar with soft pion
+};
+
+enum ParticleTypeMcRec {
+  D0Sig = 0, // D0 signal
+  D0Ref,     // D0 reflection
+  D0Bg,      // D0 background
+  D0barSig,  // D0bar signal
+  D0barRef,  // D0bar reflection
+  D0barBg,   // D0bar background
+  SoftPi     // pairs including soft pion
+};
 } // namespace hf_correlation_d0_hadron
-DECLARE_SOA_TABLE(DHadronPair, "AOD", "DHADRONPAIR",
+DECLARE_SOA_TABLE(DHadronPair, "AOD", "DHADRONPAIR", //! D0-Hadrons pairs Informations
                   aod::hf_correlation_d0_hadron::DeltaPhi,
                   aod::hf_correlation_d0_hadron::DeltaEta,
                   aod::hf_correlation_d0_hadron::PtD,
-                  aod::hf_correlation_d0_hadron::PtHadron);
-DECLARE_SOA_TABLE(DHadronRecoInfo, "AOD", "DHADRONRECOINFO",
+                  aod::hf_correlation_d0_hadron::PtHadron,
+                  aod::hf_correlation_d0_hadron::PoolBin);
+
+DECLARE_SOA_TABLE(DHadronRecoInfo, "AOD", "DHADRONRECOINFO", //! D0-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_d0_hadron::MD,
                   aod::hf_correlation_d0_hadron::MDbar,
                   aod::hf_correlation_d0_hadron::SignalStatus);
