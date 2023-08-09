@@ -72,7 +72,8 @@ struct DGCandProducer {
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                        aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+                        aod::TOFSignal, aod::pidTOFbeta,
+                        aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FWs = aod::FwdTracks;
 
   // MC inputs
@@ -81,7 +82,8 @@ struct DGCandProducer {
   using MCTCs = soa::Join<aod::Tracks, aod::TracksExtra, /*aod::TracksCov,*/ aod::TracksDCA, aod::TrackSelection,
                           aod::McTrackLabels,
                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                          aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+                          aod::TOFSignal, aod::pidTOFbeta,
+                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using MCTC = MCTCs::iterator;
 
   // extract FIT information
@@ -200,6 +202,8 @@ struct DGCandProducer {
                     track.tpcNSigmaPi(),
                     track.tpcNSigmaKa(),
                     track.tpcNSigmaPr(),
+                    track.beta(),
+                    track.betaerror(),
                     track.tofNSigmaEl(),
                     track.tofNSigmaMu(),
                     track.tofNSigmaPi(),
