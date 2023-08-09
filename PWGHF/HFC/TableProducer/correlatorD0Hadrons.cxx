@@ -95,7 +95,8 @@ struct HfCorrelatorD0HadronsSelection {
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0candidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
-  void processD0SelectionData(aod::Collision const& collision, soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
+  void processD0SelectionData(aod::Collision const& collision,
+                              soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
   {
     bool isD0Found = 0;
     if (selectedD0Candidates.size() > 0) {
@@ -119,7 +120,8 @@ struct HfCorrelatorD0HadronsSelection {
   }
   PROCESS_SWITCH(HfCorrelatorD0HadronsSelection, processD0SelectionData, "Process D0 Selection Data", false);
 
-  void processD0SelectionMcRec(aod::Collision const& collision, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates)
+  void processD0SelectionMcRec(aod::Collision const& collision,
+                               soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates)
   {
     bool isD0Found = 0;
     if (selectedD0candidatesMc.size() > 0) {
@@ -142,7 +144,8 @@ struct HfCorrelatorD0HadronsSelection {
   }
   PROCESS_SWITCH(HfCorrelatorD0HadronsSelection, processD0SelectionMcRec, "Process D0 Selection MCRec", true);
 
-  void processD0SelectionMcGen(aod::McCollision const& mcCollision, aod::McParticles const& particlesMc)
+  void processD0SelectionMcGen(aod::McCollision const& mcCollision,
+                               aod::McParticles const& particlesMc)
   {
     bool isD0Found = 0;
     for (const auto& particle1 : particlesMc) {

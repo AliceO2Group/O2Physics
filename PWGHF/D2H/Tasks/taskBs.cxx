@@ -147,7 +147,9 @@ struct HfTaskBs {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
-  void process(soa::Filtered<soa::Join<aod::HfCandBs, aod::HfSelBsToDsPi>> const& candidates, soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi> const&, TracksWithSel const&)
+  void process(soa::Filtered<soa::Join<aod::HfCandBs, aod::HfSelBsToDsPi>> const& candidates,
+               soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi> const&,
+               TracksWithSel const&)
   {
     for (const auto& candidate : candidates) {
       if (!TESTBIT(candidate.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
