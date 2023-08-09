@@ -222,6 +222,8 @@ struct JetTriggerQA {
     registry.add("hSelectedJetRPtZThetaSq", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z #theta^{2}"}});
 
     // Jet low trigger
+    registry.add("hSelectedJetLowRMaxPtEta", "Leading selected jets (low threshold) #it{p}_{T} and #eta", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
+    registry.add("hSelectedJetLowRMaxPtPhi", "Leading selected jets (low threshold) #it{p}_{T} and #phi", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
     registry.add("hSelectedJetLowRPtEta", "Selected jets (low threshold) #it{p}_{T} and #eta", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
     registry.add("hSelectedJetLowRPtPhi", "Selected jets (low threshold) #it{p}_{T} and #phi", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
     registry.add("hSelectedJetLowRPtTrackPt", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisTrackInJet});
@@ -774,6 +776,10 @@ struct JetTriggerQA {
       if (isTrigger(TriggerType_t::kEmcalJetFull) || isTrigger(TriggerType_t::kEmcalJetNeutral)) {
         registry.fill(HIST("hSelectedJetRMaxPtEta"), jetR, jetPt, jetEta);
         registry.fill(HIST("hSelectedJetRMaxPtPhi"), jetR, jetPt, jetPhi);
+      }
+      if (isTrigger(TriggerType_t::kEmcalJetFullLow) || isTrigger(TriggerType_t::kEmcalJetNeutralLow)) {
+        registry.fill(HIST("hSelectedJetLowRMaxPtEta"), jetR, jetPt, jetEta);
+        registry.fill(HIST("hSelectedJetLowRMaxPtPhi"), jetR, jetPt, jetPhi);
       }
       if (maxClusterObservableEMCAL > 0) {
         registry.fill(HIST("hJetRMaxPtClusterMaxPt"), jetR, jetPt, maxClusterObservableEMCAL);
