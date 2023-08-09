@@ -236,7 +236,7 @@ struct HfCandidateSelectorD0 {
         continue;
       }
       statusHFFlag = 1;
-      
+
       auto ptCand = candidate.pt();
       auto trackPos = candidate.prong0_as<TracksSel>(); // positive daughter
       auto trackNeg = candidate.prong1_as<TracksSel>(); // negative daughter
