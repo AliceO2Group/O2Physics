@@ -21,7 +21,8 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "Index.h"
-#include "TDatabasePDG.h"
+#include <TDatabasePDG.h>
+#include <TPDGCode.h>
 
 #include "bestCollisionTable.h"
 
@@ -37,6 +38,8 @@ AxisSpec EtaAxis = {22, -2.2, 2.2};
 // AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
+AxisSpec PtAxisEff = {{0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
+                       1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}};
 AxisSpec PtAxis_wide = {1041, -0.05, 104.05};
 
 static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
@@ -68,6 +71,9 @@ static constexpr bool hasCent()
   }
 }
 } // namespace
+
+static constexpr std::string_view species[] = {"pi", "p", "e", "K"};
+static constexpr std::array<int, 4> speciesIds{kPiPlus, kProton, kElectron, kKPlus};
 
 struct MultiplicityCounter {
   SliceCache cache;
@@ -233,6 +239,10 @@ struct MultiplicityCounter {
       registry.add({"Tracks/Control/PtEfficiency", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyFakes", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      for (auto i = 0u; i < speciesIds.size(); ++i) {
+        registry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtGen").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+        registry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtEfficiency").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      }
     }
     if (doprocessTrackEfficiencyIndexed) {
       registry.add({"Tracks/Control/PtGenI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
@@ -243,6 +253,10 @@ struct MultiplicityCounter {
       registry.add({"Tracks/Control/PtEfficiencyISecondariesNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/Mask", " ; bit", {HistType::kTH1F, {{17, -0.5, 16.5}}}});
       registry.add({"Tracks/Control/ITSClusters", " ; layer", {HistType::kTH1F, {{8, 0.5, 8.5}}}});
+      for (auto i = 0u; i < speciesIds.size(); ++i) {
+        registry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtGenI").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+        registry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtEfficiencyI").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      }
     }
   }
 
@@ -515,7 +529,7 @@ struct MultiplicityCounter {
   void processTrackEfficiencyIndexedGeneral(
     typename soa::Join<C, aod::McCollisionLabels>::iterator const& collision,
     MC const&, ParticlesI const& particles,
-    FiLTracks const& tracks)
+    FiLTracks const& /*tracks*/)
   {
     if (useEvSel && !collision.sel8()) {
       return;
@@ -536,8 +550,18 @@ struct MultiplicityCounter {
         continue;
       }
       registry.fill(HIST("Tracks/Control/PtGenINoEtaCut"), particle.pt());
+
       if (std::abs(particle.eta()) < estimatorEta) {
         registry.fill(HIST("Tracks/Control/PtGenI"), particle.pt());
+        if (particle.pdgCode() == speciesIds[0]) {
+          registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtGenI"), particle.pt());
+        } else if (particle.pdgCode() == speciesIds[1]) {
+          registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtGenI"), particle.pt());
+        } else if (particle.pdgCode() == speciesIds[2]) {
+          registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtGenI"), particle.pt());
+        } else if (particle.pdgCode() == speciesIds[3]) {
+          registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtGenI"), particle.pt());
+        }
       }
       if (particle.has_tracks()) {
         auto counted = false;
@@ -553,6 +577,15 @@ struct MultiplicityCounter {
           if (std::abs(track.eta()) < estimatorEta) {
             if (!counted) {
               registry.fill(HIST("Tracks/Control/PtEfficiencyI"), particle.pt());
+              if (particle.pdgCode() == speciesIds[0]) {
+                registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiencyI"), particle.pt());
+              } else if (particle.pdgCode() == speciesIds[1]) {
+                registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiencyI"), particle.pt());
+              } else if (particle.pdgCode() == speciesIds[2]) {
+                registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiencyI"), particle.pt());
+              } else if (particle.pdgCode() == speciesIds[3]) {
+                registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiencyI"), particle.pt());
+              }
               counted = true;
             }
           }
@@ -645,6 +678,15 @@ struct MultiplicityCounter {
         registry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
         if (std::abs(otrack.eta()) < estimatorEta) {
           registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
+          if (particle.pdgCode() == speciesIds[0]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiency"), particle.pt());
+          } else if (particle.pdgCode() == speciesIds[1]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiency"), particle.pt());
+          } else if (particle.pdgCode() == speciesIds[2]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiency"), particle.pt());
+          } else if (particle.pdgCode() == speciesIds[3]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiency"), particle.pt());
+          }
         }
       } else {
         registry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), otrack.pt());
@@ -662,6 +704,15 @@ struct MultiplicityCounter {
         registry.fill(HIST("Tracks/Control/PtEfficiencyNoEtaCut"), particle.pt());
         if (std::abs(track.eta()) < estimatorEta) {
           registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
+          if (particle.pdgCode() == speciesIds[0]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtEfficiency"), particle.pt());
+          } else if (particle.pdgCode() == speciesIds[1]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtEfficiency"), particle.pt());
+          } else if (particle.pdgCode() == speciesIds[2]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtEfficiency"), particle.pt());
+          } else if (particle.pdgCode() == speciesIds[3]) {
+            registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtEfficiency"), particle.pt());
+          }
         }
       } else {
         registry.fill(HIST("Tracks/Control/PtEfficiencyFakes"), track.pt());
@@ -680,6 +731,15 @@ struct MultiplicityCounter {
       registry.fill(HIST("Tracks/Control/PtGenNoEtaCut"), particle.pt());
       if (std::abs(particle.eta()) < estimatorEta) {
         registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
+        if (particle.pdgCode() == speciesIds[0]) {
+          registry.fill(HIST("Tracks/Control/") + HIST(species[0]) + HIST("/PtGen"), particle.pt());
+        } else if (particle.pdgCode() == speciesIds[1]) {
+          registry.fill(HIST("Tracks/Control/") + HIST(species[1]) + HIST("/PtGen"), particle.pt());
+        } else if (particle.pdgCode() == speciesIds[2]) {
+          registry.fill(HIST("Tracks/Control/") + HIST(species[2]) + HIST("/PtGen"), particle.pt());
+        } else if (particle.pdgCode() == speciesIds[3]) {
+          registry.fill(HIST("Tracks/Control/") + HIST(species[3]) + HIST("/PtGen"), particle.pt());
+        }
       }
     }
   }
