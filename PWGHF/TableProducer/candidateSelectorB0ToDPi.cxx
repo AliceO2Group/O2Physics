@@ -91,7 +91,7 @@ struct HfCandidateSelectorB0ToDPi {
 
     int selectionFlagD = -1;
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec const& device : workflows.devices) {
+    for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-b0") == 0) {
         for (const auto& option : device.options) {
           if (option.name.compare("selectionFlagD") == 0) {
