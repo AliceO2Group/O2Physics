@@ -110,7 +110,6 @@ function(add_root_dictionary target)
   set(dictionaryFile ${CMAKE_CURRENT_BINARY_DIR}/${dictionary}.cxx)
   set(pcmBase ${dictionary}_rdict.pcm)
   set(pcmFile ${lib_output_dir}/${pcmBase})
-  
   set(o2physics_targetPCMMAP_TARGET "${o2physics_targetPCMMAP_TARGET};${target}" CACHE INTERNAL "target/PCM map (target)")
   set(o2physics_targetPCMMAP_PCM "${o2physics_targetPCMMAP_PCM};${pcmFile}" CACHE INTERNAL "target/PCM map (pcm)")
 
