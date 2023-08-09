@@ -709,8 +709,8 @@ struct HfTaskMcEfficiency {
   // process functions for MC
   void processMcD0(soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates,
                    TracksWithSelectionMC const& tracks,
-                  aod::McParticles const& mcParticles,
-                  aod::McCollisionLabels const& colls)
+                   aod::McParticles const& mcParticles,
+                   aod::McCollisionLabels const& colls)
   {
     std::vector<int> pdgCodes{pdg::kD0Bar, pdg::kD0};
     candidate2ProngMcLoop(candidates, tracks, mcParticles, colls, pdgCodes);
@@ -738,9 +738,9 @@ struct HfTaskMcEfficiency {
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcDs, "Process MC for Ds+ signal", false);
 
   void processMcLc(soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
-                  TracksWithSelectionMC const& tracks,
-                  aod::McParticles const& mcParticles,
-                  aod::McCollisionLabels const& colls)
+                   TracksWithSelectionMC const& tracks,
+                   aod::McParticles const& mcParticles,
+                   aod::McCollisionLabels const& colls)
   {
     std::vector<int> pdgCodes{pdg::kLambdaCPlus};
     candidate3ProngMcLoop<false, false, true>(candidates, tracks, mcParticles, colls, pdgCodes);

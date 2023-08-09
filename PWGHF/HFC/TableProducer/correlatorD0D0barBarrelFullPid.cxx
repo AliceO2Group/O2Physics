@@ -135,8 +135,8 @@ struct HfCorrelatorD0D0barBarrelFullPid {
 
   /// D0-D0bar correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision,
-                        soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
-                        soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel> const&)
+                   soa::Join<aod::Tracks, aod::TracksDCA> const& tracks,
+                   soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel> const&)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {

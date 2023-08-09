@@ -282,7 +282,7 @@ struct HfTaskCorrelationDDbar {
         registry.fill(HIST("hDeltaPtDDbarSidebands"), ptDbar - ptD, efficiencyWeight);
         registry.fill(HIST("hDeltaPtMaxMinSidebands"), std::abs(ptDbar - ptD), efficiencyWeight);
       }
-    } //end loop
+    } // end loop
   }
 
   PROCESS_SWITCH(HfTaskCorrelationDDbar, processData, "Process data", false);
@@ -429,7 +429,7 @@ struct HfTaskCorrelationDDbar {
             break;
         }
       }
-    } //end loop
+    } // end loop
   }
 
   PROCESS_SWITCH(HfTaskCorrelationDDbar, processMcRec, "Process MC Reco mode", true);
@@ -456,7 +456,7 @@ struct HfTaskCorrelationDDbar {
       registry.fill(HIST("hDeltaPhiPtIntMCGen"), deltaPhi);
       registry.fill(HIST("hDeltaPtDDbarMCGen"), ptDbar - ptD);
       registry.fill(HIST("hDeltaPtMaxMinMCGen"), std::abs(ptDbar - ptD));
-    } //end loop
+    } // end loop
   }
 
   PROCESS_SWITCH(HfTaskCorrelationDDbar, processMcGen, "Process MC Gen mode", false);
