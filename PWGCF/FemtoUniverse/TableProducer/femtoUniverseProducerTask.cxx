@@ -828,7 +828,7 @@ struct femtoUniverseProducerTask {
     fillCollisions<true>(col, tracks);
     fillTracks<true>(tracks);
   }
-  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMC, "Provide MC data for track analysis", true);
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMC, "Provide MC data for track analysis", false);
 
   void
     processTrackData(aod::FemtoFullCollision const& col,
