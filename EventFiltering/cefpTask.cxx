@@ -216,6 +216,7 @@ struct centralEventFilterTask {
   Configurable<float> cfgTimingCut{"cfgTimingCut", 1.f, "nsigma timing cut associating BC and collisions"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  FILTER_CONFIGURABLE(F1ProtonFilters);
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
   FILTER_CONFIGURABLE(DqFilters);
