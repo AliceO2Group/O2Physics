@@ -234,23 +234,23 @@ struct MultiplicityCounter {
     }
 
     if (doprocessTrackEfficiency) {
-      registry.add({"Tracks/Control/PtGen", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
-      registry.add({"Tracks/Control/PtGenNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
-      registry.add({"Tracks/Control/PtEfficiency", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
-      registry.add({"Tracks/Control/PtEfficiencyNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
-      registry.add({"Tracks/Control/PtEfficiencyFakes", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtGen", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Tracks/Control/PtGenNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Tracks/Control/PtEfficiency", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Tracks/Control/PtEfficiencyNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Tracks/Control/PtEfficiencyFakes", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
       for (auto i = 0u; i < speciesIds.size(); ++i) {
         registry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtGen").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
         registry.add({(std::string("Tracks/Control/") + std::string(species[i]) + "/PtEfficiency").c_str(), " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
       }
     }
     if (doprocessTrackEfficiencyIndexed) {
-      registry.add({"Tracks/Control/PtGenI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
-      registry.add({"Tracks/Control/PtGenINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
-      registry.add({"Tracks/Control/PtEfficiencyI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
-      registry.add({"Tracks/Control/PtEfficiencyINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
-      registry.add({"Tracks/Control/PtEfficiencyISecondaries", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
-      registry.add({"Tracks/Control/PtEfficiencyISecondariesNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtGenI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Tracks/Control/PtGenINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Tracks/Control/PtEfficiencyI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Tracks/Control/PtEfficiencyINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Tracks/Control/PtEfficiencyISecondaries", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
+      registry.add({"Tracks/Control/PtEfficiencyISecondariesNoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxisEff}}});
       registry.add({"Tracks/Control/Mask", " ; bit", {HistType::kTH1F, {{17, -0.5, 16.5}}}});
       registry.add({"Tracks/Control/ITSClusters", " ; layer", {HistType::kTH1F, {{8, 0.5, 8.5}}}});
       for (auto i = 0u; i < speciesIds.size(); ++i) {
