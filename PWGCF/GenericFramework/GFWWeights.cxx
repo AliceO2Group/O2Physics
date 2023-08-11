@@ -11,7 +11,8 @@
 
 #include "GFWWeights.h"
 #include "TMath.h"
-GFWWeights::GFWWeights() : fDataFilled(kFALSE),
+GFWWeights::GFWWeights() : TNamed("", ""),
+                           fDataFilled(kFALSE),
                            fMCFilled(kFALSE),
                            fW_data(0),
                            fW_mcrec(0),
@@ -21,6 +22,17 @@ GFWWeights::GFWWeights() : fDataFilled(kFALSE),
                            fAccInt(0),
                            fNbinsPt(0),
                            fbinsPt(0){};
+GFWWeights::GFWWeights(const char* name) : TNamed(name, name),
+                                           fDataFilled(kFALSE),
+                                           fMCFilled(kFALSE),
+                                           fW_data(0),
+                                           fW_mcrec(0),
+                                           fW_mcgen(0),
+                                           fEffInt(0),
+                                           fIntEff(0),
+                                           fAccInt(0),
+                                           fNbinsPt(0),
+                                           fbinsPt(0){};
 GFWWeights::~GFWWeights()
 {
   delete fW_data;

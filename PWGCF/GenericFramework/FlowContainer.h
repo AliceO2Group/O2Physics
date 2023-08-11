@@ -158,9 +158,9 @@ class FlowContainer : public TNamed
   int fMultiRebin;          //! do not store
   double* fMultiRebinEdges; //! do not store
   TAxis* fXAxis;
-  int fNbinsPt;          //! Do not store; stored in the fXAxis
-  double* fbinsPt;       //! Do not store; stored in fXAxis
-  bool fPropagateErrors; //! do not store
+  int fNbinsPt;             //! Do not store; stored in the fXAxis
+  double* fbinsPt;          //! Do not store; stored in fXAxis
+  bool fPropagateErrors;    //! do not store
   TProfile* GetRefFlowProfile(const char* order, double m1 = -1, double m2 = -1);
   ClassDef(FlowContainer, 2);
 };
