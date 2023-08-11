@@ -549,14 +549,9 @@ struct DptDptFilterTracks {
         particleMaxDCAZ = cfgTrackSelection->mDCAz;
       }
       ownTrackSelection.ResetITSRequirements();
-      ownTrackSelection.SetRequireITSRefit(false);
-      ownTrackSelection.SetRequireTPCRefit(false);
-      ownTrackSelection.SetRequireGoldenChi2(false);
       ownTrackSelection.SetMinNClustersTPC(cfgTrackSelection->mTPCclusters);
       ownTrackSelection.SetMinNCrossedRowsTPC(cfgTrackSelection->mTPCxRows);
-      ownTrackSelection.SetMinNCrossedRowsOverFindableClustersTPC(0);
-      ownTrackSelection.SetMaxChi2PerClusterITS(1e6f);
-      ownTrackSelection.SetMaxDcaXYPtDep(std::function<float(float)>{});
+      ownTrackSelection.SetMaxDcaXYPtDep([&](float) { return cfgTrackSelection->mDCAxy; });
       ownTrackSelection.SetMaxDcaXY(cfgTrackSelection->mDCAxy);
       ownTrackSelection.SetMaxDcaZ(cfgTrackSelection->mDCAz);
       o2::aod::track::TrackTypeEnum ttype;
