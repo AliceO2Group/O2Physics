@@ -12,7 +12,7 @@
 /// \file treeCreatorBsToDsPi.cxx
 /// \brief Writer of Bs → Ds- π+ candidates in the form of flat tables to be stored in TTrees.
 ///        Intended for debug, local optimization of analysis on small samples or ML training.
-///        In this file, the output tables are defined and filled.
+///        The output tables are defined and filled in this file.
 /// \note Adapted from treeCreatorB0T0DPi.cxx
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
@@ -161,7 +161,6 @@ struct HfTreeCreatorBsToDsPi {
 
   Configurable<int> selectionFlagBs{"selectionBs", 1, "Selection Flag for Bs"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
-
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
