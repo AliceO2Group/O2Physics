@@ -282,7 +282,7 @@ struct hstrangecorrelationfilter {
 
       auto posdau = v0.posTrack_as<DauTracks>();
       auto negdau = v0.negTrack_as<DauTracks>();
-      auto origV0entry = v0.v0_as<V0LinkedTagged>(); //retrieve tags
+      auto origV0entry = v0.v0_as<V0LinkedTagged>(); // retrieve tags
 
       if (negdau.tpcNClsCrossedRows() < minTPCNCrossedRows)
         continue;
@@ -367,8 +367,8 @@ struct hstrangecorrelationfilter {
             (compatibleLambda && massRegLambda > 0 && massRegLambda < 4) ||
             (compatibleAntiLambda && massRegAntiLambda > 0 && massRegAntiLambda < 4)) // end major condition check
       ) {
-        assocV0(v0.collisionId(), v0.globalIndex(), 
-                compatibleK0Short, compatibleLambda, compatibleAntiLambda, 
+        assocV0(v0.collisionId(), v0.globalIndex(),
+                compatibleK0Short, compatibleLambda, compatibleAntiLambda,
                 origV0entry.isTrueK0Short(), origV0entry.isTrueLambda(), origV0entry.isTrueAntiLambda(),
                 massRegK0Short, massRegLambda, massRegAntiLambda);
       }
@@ -472,9 +472,9 @@ struct hstrangecorrelationfilter {
             ((compatibleXiMinus || compatibleXiPlus) && massRegXi > 0 && massRegXi < 4) ||
             ((compatibleOmegaMinus || compatibleOmegaPlus) && massRegOmega > 0 && massRegOmega < 4)) // end major condition check
       ) {
-        assocCascades(casc.collisionId(), casc.globalIndex(), 
-                      compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus, 
-                      origCascadeEntry.isTrueXiMinus(), origCascadeEntry.isTrueXiPlus(), 
+        assocCascades(casc.collisionId(), casc.globalIndex(),
+                      compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus,
+                      origCascadeEntry.isTrueXiMinus(), origCascadeEntry.isTrueXiPlus(),
                       origCascadeEntry.isTrueOmegaMinus(), origCascadeEntry.isTrueOmegaPlus(),
                       massRegXi, massRegOmega);
       }
