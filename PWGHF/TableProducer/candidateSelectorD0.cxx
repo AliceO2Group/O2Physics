@@ -233,6 +233,9 @@ struct HfCandidateSelectorD0 {
 
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+        if (applyMl) {
+          hfMlD0Candidate(outputMl);
+        }
         continue;
       }
       statusHFFlag = 1;
@@ -244,6 +247,9 @@ struct HfCandidateSelectorD0 {
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+        if (applyMl) {
+          hfMlD0Candidate(outputMl);
+        }
         continue;
       }
       statusTopol = 1;
@@ -258,6 +264,9 @@ struct HfCandidateSelectorD0 {
 
       if (!topolD0 && !topolD0bar) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+        if (applyMl) {
+          hfMlD0Candidate(outputMl);
+        }
         continue;
       }
       statusCand = 1;
@@ -303,6 +312,9 @@ struct HfCandidateSelectorD0 {
 
       if (pidD0 == 0 && pidD0bar == 0) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+        if (applyMl) {
+          hfMlD0Candidate(outputMl);
+        }
         continue;
       }
 
