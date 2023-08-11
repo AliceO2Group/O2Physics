@@ -129,7 +129,7 @@ struct correlateStrangeness {
           continue;
         if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
           continue;
-        if (pttrigger < axisRanges[3][0] || ptassoc > axisRanges[3][1])
+        if (pttrigger < axisRanges[3][0] || pttrigger > axisRanges[3][1])
           continue;
 
         static_for<0, 2>([&](auto i) {
@@ -190,7 +190,7 @@ struct correlateStrangeness {
           continue;
         if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
           continue;
-        if (pttrigger < axisRanges[3][0] || ptassoc > axisRanges[3][1])
+        if (pttrigger < axisRanges[3][0] || pttrigger > axisRanges[3][1])
           continue;
 
         static_for<0, 3>([&](auto i) {
